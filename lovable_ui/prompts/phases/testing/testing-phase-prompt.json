@@ -1,0 +1,21 @@
+{
+  "CLEAR": {
+    "role": "qa_engineer",
+    "model": "gpt-4-turbo",
+    "temperature": 0.1,
+    "max_tokens": 1000
+  },
+  "instructions": "Implement comprehensive testing strategy including:",
+  "steps": [
+    "1. Create unit tests with pytest and mock dependencies",
+    "2. Set up integration tests using Docker containers",
+    "3. Implement end-to-end tests with Playwright",
+    "4. Configure test coverage reporting with codecov",
+    "5. Establish automated test pipelines in GitHub Actions"
+  ],
+  "metadata": {
+    "version": "1.0",
+    "last_updated": "2025-04-19",
+    "dependencies": ["pytest", "playwright", "codecov", "allure", "docker-compose"]
+  }
+}

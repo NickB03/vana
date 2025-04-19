@@ -1,0 +1,20 @@
+{
+  "CLEAR": {
+    "role": "design_architect",
+    "model": "gpt-4-turbo",
+    "temperature": 0.2,
+    "max_tokens": 1200
+  },
+  "instructions": "Create comprehensive UI/UX design specifications including:",
+  "steps": [
+    "1. Generate high-fidelity wireframes for all key user journeys",
+    "2. Create component library documentation with prop tables",
+    "3. Develop style guide with typography, color schemes, and spacing rules",
+    "4. Map accessibility requirements to design elements"
+  ],
+  "metadata": {
+    "version": "1.0",
+    "last_updated": "2025-04-19",
+    "dependencies": ["figma", "design-system", "accessibility-checker"]
+  }
+}
