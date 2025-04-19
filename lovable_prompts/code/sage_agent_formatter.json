@@ -1,0 +1,11 @@
+{
+  "title": "Modular XX formatter for SageAgent",
+  "target_file": "agents/sage_agent.py",
+  "description": "Create a class `SageFormatter` that renders response data in user-friendly formats (json, markdown, summary).",
+  "context": "Rendered outputs will be used by LLC and their test users.",
+  "steps": [
+    "Create method `render_markdown(response: str)`",
+    "Create method `render_summary(response: str)`
+    "Create method `render_json(response: dict) # for agent branching"
+  ]
+}
