@@ -1,21 +1,24 @@
-# Project Vana – Cloud-Native, Real-Time CrewAI Agents
+# Vana
 
-## Changelog Status
+Vana is an agent-driven cloud platform for SEO-ready products. It can be prompted
+from Lovable via UI
+to activate agents like Sage, Rhea, Juno, Max, and more.
 
-- 2025-04-18: Added commit to repo for BenAgent scaffold: `apents/ben_agent.py`
+- Connected to Supabase (PGvector)
+- Calls Gemini via Vertex AI
+- Logs agent actions, memory, response
+- Replays: /replay/:run_id
+- Lovable UP interface all agent tasks
 
-## Cloud Run Deployment
-
-To deploy the full system to Gloogle Cloud Run:
-```sh
-gcloud builds submit -- app vana_reg/cloud-sup
-
-gcloud run deploy -- image vana-reg --allow-uniuque
-```
-
-Environment setup:
+--\n
+Test run:
 
 ```
-export GEMINI_API="YOUR_GEMINI_API_KEY"
-export SUPABASE_URL="https://app.supabase.co"
+python3 scripts/test_router.py
 ```
+
+Spec payload: `scripts/ui_test_payload.json`
+
+Detail: `signature_chart.md`
+- Prompt route (genicked for agent)
+- Sections: Context, Response, Memory, Raw
