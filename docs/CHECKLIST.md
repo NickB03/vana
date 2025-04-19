@@ -38,12 +38,5 @@
 - [x] Gemini client added: `korvus_config/gemini_client.py`
 - [x] Chunking/embedding config: `korvus_config/embedder.py`
 - [x] Rag writer added: `korvus_writer.py` (embed user output)
-- [ ] Tag/metadata filtering in query
-
-## 🚀 Launch Prep
-
-- [ ] Build minimal frontend with Lovable
-- [ ] Validate file → embed → context → chat loop
-- [ ] Capture + summarize feedback loop from agents
-- [ ] Mark admin endpoints as gated/not live
-- [ ] Prepare 30s demo or screen loop
+- [x] Agent bridge: `embed+ log + generate` synched
+- [x] Demo loop json added: `scripts/demo_loop.py`
