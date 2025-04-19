@@ -1,3 +1,4 @@
+
 # Vana Project Checklist â€” Lovable + Supabase + Korvus RAG
 
 ## âœ… Completed
@@ -15,19 +16,20 @@
 - [x] Commit `log_agent_action.json` for n8n import
 
 ### CHANGELOG + History
-- [x] Create `CHANGELOG.md` and keep synced with commits
+- [x] Create `CDHANGELOG.md` and keep synced with commits
 
-## ã‚  In Progress
+## ð†  In Progress
 
 ### Supabase Integration
 - [x] Supabase schema committed: `supabase_schema/agent_action_log.sql`
 - [x] Test row injected for schema validation
 - [x] View `view_agent_activity_recent` committed
-- [ ] Integrate pgvector for memory (initial version)
-- [ ] Connect to Korvus-compatible embedding workflow
+- [x] Integrate pgvector for memory (initial version)
+- [x] Connect to Korvus-compatible embedding workflow
 - [x] RAG recall committed: `korvus_config/searcher.py`
 - [x] Run agent with memory injection: `agent_bridge.py`
-- [x] UI Test: prompt_router.json wired to agent_bridge
+- [x] UI Test: `prompt_router.json` wired to agent_bridge
 - [x] Gemini tuning phase planned / started
-- [] Test lovable user path flow with variable prompts
+- [x] Test lovable user path flow with variable prompts
+
 - [] Expose debug trail summaries for plan guidance
