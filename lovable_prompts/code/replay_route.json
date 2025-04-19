@@ -1,0 +1,11 @@
+{
+  "title": "Generate replay route",
+  "target_file": "api/replay.py",
+  "description": "Create a FastAPI route `/replay/:run_id` that retrieves a past run result from Supabase.",
+  "context": "Results are stored in `agent_action_log` table. Supabase client is available.",
+  "steps": [
+    "Define `get_replay_xrun(run_id: str) ` function.",
+    "Query Supabase for the given run_id",
+    "Return output: prompt, response, context, timestamp"
+  ]
+}
