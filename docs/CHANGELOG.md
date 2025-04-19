@@ -9,3 +9,5 @@
   - `n8n_workflows/log_agent_action.md`
 - 2025-04-19: Added commit for RheaAgent scaffold: `agents/rhea_agent.py`
 - 2025-04-19: Added commit for SageAgent scaffold: `agents/sage_agent.py`
+- 2025-04-19: Added commit for JunoAgent scaffold: `agents/juno_agent.py`
+- 2025-04-19: Added commit for KailAgent scaffold: `agents/kail_agent.py`
