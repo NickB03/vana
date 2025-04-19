@@ -11,9 +11,6 @@ with open("scripts/ui_test_payload.json") as f:
 
 res = requests.post("http://localhost:8000/run", json=payload)
 
-if res.status_code == 200:
-    print("\n--- Response ---")
-    print(res.json())
-else:
-    print("FAILED::", res.status_code)
-    print(res.text)
+print("\n--- Response ---")
+print(res.status_code)
+print(res.json())
