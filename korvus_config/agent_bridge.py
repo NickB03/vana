@@ -27,7 +27,7 @@ def run_agent(prompt: str,metadata: dict):
     context_chunks = search_memory(prompt, **metadata)
     context_text = "\n\n".join(chunk["content"] for chunk in context_chunks)
 
-    full_prompt = f""{primary_instruction}\nContext:\n{context_text}\n\nTask: {prompt}"
+    full_prompt = f"""{primary_instruction}\nContext:\n{context_text}\n\nTask: {prompt}"""
     response = gemini.generate(full_prompt)
     log_memory(response, metadata)
     return response

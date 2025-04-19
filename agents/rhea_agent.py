@@ -27,7 +27,14 @@ class RheaAgent:
         )
 
     def assemble_prompt(self, context_blocks: list) -> str:
-        formatted_context = \"\\n---\\n"join(context_blocks)
-        return f"@GENT: {self.agent_id}\nPROJECT: {self.project_id or "unspecified"}
-
-CONTEXT:\n{formatted_context}\n\nTASK:\n{self.task}\n\n---\n\nRESPONSE: \n"
+        # Join context blocks with a separator
+        formatted_context = "\n---\n".join(context_blocks)
+        # Construct the full prompt using an f-string
+        return (
+            f"@GENT: {self.agent_id}\n"
+            f"PROJECT: {self.project_id or 'unspecified'}\n\n"
+            f"CONTEXT:\n{formatted_context}\n\n"
+            f"TASK:\n{self.task}\n\n"
+            f"---\n\n"
+            f"RESPONSE:\n"
+        )

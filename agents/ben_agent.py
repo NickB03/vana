@@ -28,20 +28,16 @@ class BenAgent:
         )
 
     def assemble_prompt(self, context_blocks: list) -> str:
-        formatted_context = \"\\n---\\n\".join(context_blocks)
-        return f"`
- AGENT: {self.agent_id}
-PROJECT: {self.project_id or "unspecified"}
-
-TANK:
-{formatted_context}
-
-{self.task}
-
----
-
-RESPONSE: 
-`"
+        formatted_context = "\n---\n".join(context_blocks)
+        # Construct the full prompt using a multi-line f-string
+        return (
+            f"AGENT: {self.agent_id}\n"
+            f"PROJECT: {self.project_id or 'unspecified'}\n\n"
+            f"CONTEXT:\n{formatted_context}\n\n"
+            f"TASK:\n{getattr(self, 'task', 'No task specified')}\n\n"
+            f"---\n\n"
+            f"RESPONSE:\n"
+        )
 
     def run_llm(self, assembled_prompt: str, gemini_client):
         return gemini_client.generate(prompt=assembled_prompt)
