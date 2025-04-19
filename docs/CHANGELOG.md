@@ -8,3 +8,4 @@
   - `n8n_workflows/trigger_on_agent_prompt.md`
   - `n8n_workflows/log_agent_action.md`
 - 2025-04-19: Added commit for RheaAgent scaffold: `agents/rhea_agent.py`
+- 2025-04-19: Added commit for SageAgent scaffold: `agents/sage_agent.py`
