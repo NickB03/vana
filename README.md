@@ -52,16 +52,60 @@ For complete API specifications and endpoints, see [API.md](docs/API.md).
 
 ## Minimal Deployment
 
-RunTime: `Python 3.11]` + `uvicorn`
+## Deployment Guide
 
-```sh
-gitclue build
-pip envery|
+### Prerequisites
+- Docker Desktop installed
+- Google Cloud SDK configured
+- Python 3.11+ and pip
 
-gcloud builds submit build..,
-gcloud run deploy vana-server --image gcr.io/analystai/vana-server
-gcloud run services update vana-server \\
-  --update-env-vars GEMINI_API_KEY=**,SUPABASE_URL=***,SUPABASE_KEY=***
+### Production Deployment
+```bash
+# Build and push Docker image
+docker build -t gcr.io/$(gcloud config get-value project)/vana-server:latest .
+docker push gcr.io/$(gcloud config get-value project)/vana-server:latest
+
+# Deploy to Cloud Run
+gcloud run deploy vana-server \
+  --image gcr.io/$(gcloud config get-value project)/vana-server:latest \
+  --set-env-vars=GEMINI_API_KEY=...,SUPABASE_URL=...,SUPABASE_KEY=... \
+  --region=us-central1 \
+  --allow-unauthenticated \
+  --min-instances=1 \
+  --max-instances=10
+```
+
+### Local Development
+```bash
+# Install dependencies
+pip install -U uvicorn[standard] gunicorn n8n supabase-client korvus
+
+# Start local server
+uvicorn main:app --reload
+```
+
+### Environment Variables
+```env
+# Required for all environments
+GEMINI_API_KEY=your_gemini_key
+SUPABASE_URL=your_supabase_url
+SUPABASE_KEY=your_supabase_key
+OPENAI_API_KEY=your_openai_key
+
+# Optional development settings
+DEBUG=true
+LOG_LEVEL=debug
+```
+
+### CI/CD Integration
+```mermaid
+graph TD
+    A[Git Push] --> B[GitHub Actions]
+    B --> C{Build Status}
+    C -->|Success| D[Deploy to Cloud Run]
+    C -->|Failure| E[Send Alert]
+    D --> F[Update Documentation]
+    F --> G[Notify Team]
 ```
 
 ## Testing
