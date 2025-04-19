@@ -25,10 +25,5 @@
 - [x] View `view_agent_activity_recent` committed
 - [ ] Integrate pgvector for memory (initial version)
 - [ ] Connect to Korvus-compatible embedding workflow
-
-### Lovable UI Prep
-- [x] Scaffold lovable_ui/ 
-- [x] Supabase config stub added
-- [x] Sage + Rhea chat prompts committed
-- [x] Max, Juno, Kail chat prompts committed
-- [x] Api bridge committed: `lovable_ui/api_bridge/prompt_router.py`
+- [x] RAG recall committed: `korvus_config/searcher.py`
+- [x] Run agent with memory injection: `agent_bridge.py`
