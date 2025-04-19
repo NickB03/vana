@@ -27,18 +27,16 @@
 - [ ] Connect to Korvus-compatible embedding workflow
 
 ### Lovable UI Prep
-- [ ] Define UI flows for:
-  - Upload doc
-  - Chat with agent
-  - Admin config panel
-- [ ] Scaffold prompt group for agents (CLEAR)
-- [ ] Include chunking options in prompt (deferred toggle)
+- [x] Scaffold lovable_ui/ 
+- [x] Supabase config stub added
+- [x] Sage + Rhea chat prompts committed
+- [x] Max, Juno, Kail chat prompts committed
 
 ### Korvus RAG Config
 - [x] Core server added: `korvus_config/server.py`
 - [x] Cloud Run dockerfile committed: `korvus_config/Dockerfile`
 - [x] Gemini client added: `korvus_config/gemini_client.py`
-- [ ] Optional: define `korvus_config/ENV schema` for keys
+- [ ] Optional: `korvus_config/ENV schema` for keys
 - [ ] Tag/metadata filtering in query
 
 ## 🚀 Launch Prep
