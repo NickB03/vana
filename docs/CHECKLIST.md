@@ -31,12 +31,4 @@
 - [x] Supabase config stub added
 - [x] Sage + Rhea chat prompts committed
 - [x] Max, Juno, Kail chat prompts committed
-
-### Korvus RAG Config
-- [x] Core server added: `korvus_config/server.py`
-- [x] Cloud Run dockerfile committed: `korvus_config/Dockerfile`
-- [x] Gemini client added: `korvus_config/gemini_client.py`
-- [x] Chunking/embedding config: `korvus_config/embedder.py`
-- [x] Rag writer added: `korvus_writer.py` (embed user output)
-- [x] Agent bridge: `embed+ log + generate` synched
-- [x] Demo loop json added: `scripts/demo_loop.py`
+- [x] Api bridge committed: `lovable_ui/api_bridge/prompt_router.py`
