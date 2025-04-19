@@ -27,3 +27,7 @@
 - [ ] Connect to Korvus-compatible embedding workflow
 - [x] RAG recall committed: `korvus_config/searcher.py`
 - [x] Run agent with memory injection: `agent_bridge.py`
+- [x] UI Test: prompt_router.json wired to agent_bridge
+- [x] Gemini tuning phase planned / started
+- [] Test lovable user path flow with variable prompts
+- [] Expose debug trail summaries for plan guidance
