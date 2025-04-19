@@ -1,13 +1,8 @@
+# CHANGELOG
 
-# CHANGELOG — Project Vana
-## Scaffold + Integration Timeline
-
-- 2025-04-18: Added commit to repo for BenAgent scaffold: `agents/ben_agent.py`
-- 2025-04-19: Scaffolded and committed n8n workflows:
-  - `n8n_workflows/trigger_on_file_upload.md`
-  - `n8n_workflows/trigger_on_agent_prompt.md`
-  - `n8n_workflows/log_agent_action.md`
-- 2025-04-19: Added commit for RheaAgent scaffold: `agents/rhea_agent.py`
-- 2025-04-19: Added commit for SageAgent scaffold: `agents/sage_agent.py`
-- 2025-04-19: Added commit for JunoAgent scaffold: `agents/juno_agent.py`
-- 2025-04-19: Added commit for KailAgent scaffold: `agents/kail_agent.py`
+## 2025-04-18T
+- Added /replay/:run_id endpoint for rerunning agent prompts
+- Supabase schema: added replay_ref_id to agent_action_log
+- FastAPI: mounted `/replay`/[run_id]`, returns complete run with current memory
+- Lovable: added SageCard.csx + lovable_admin_panel.zip
+ - Kits user view panel with responses history
