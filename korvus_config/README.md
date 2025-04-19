@@ -1,19 +1,32 @@
-# Korvus Cloud Run Deployment
+# Korvus Config
 
-This directory contains the TSAPI backend to run Korvus as a Service on Cloud Run.
+This module exposes the `/embed` and `/search` endpoints via FastAPI. Korvus runs in GCP Cloud Run as a container service.
 
-This is used by agents to /search memory and /embed content with metadata.
+## Structure
 
-It requires no dependencies or database.
+- `korvus_writer.py` = embed + log to Supabase
+- `korvus_search.py` = recall memory via Supabase +pgvector
+- `embedder.py` = Vertex AI embedding model
+- `server.py` = API wrapper (FastAPI)
+- `gemini_client.py` = Text/Chat bison access via Vertex AI 
+- `agent_bridge.py` = cordinates LLM + embed + supported logging
 
-Deployment flow:
+## Endpoints
 
-```sh
-goit clone https://github.com/NickB03/vana
-cd to korvus_config
-docker build -t vana-korvus
-gcp container images:build.timestamp
+### /embed
+- Receives [text, user_id, agent_id]
+- Generates embedding via Vertex AI - textembedding-gecko
+- Stores in Supabase `vector_index`
 
-```
+## /search
+- Receives a memory request **query**
+- Returns closest content by cosine similarity
+- Built on top of Supabase `vector_index`
 
-RunTime: Cloud Run will build and expose the UVICORN server on 8080 internally.
+## Deployment
+- Runs as a Cloud Run service
+- Service name: korvus-vana
+- Authorized via vertex-sa
+- Uses secret key or service account with JWT header
+- Supabase secure auth token used for insert/search
+~ Websucket: https://github.com/NickB03/vana
