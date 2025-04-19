@@ -20,7 +20,9 @@
 ## ゠ In Progress
 
 ### Supabase Integration
-- [x] Here: Supabase schema committed: `supabase_schema/agent_action_log.sql`
+- [x] Supabase schema committed: `supabase_schema/agent_action_log.sql`
+- [x] Test row injected for schema validation
+- [x] View `view_agent_activity_recent` committed
 - [ ] Integrate pgvector for memory (initial version)
 - [ ] Connect to Korvus-compatible embedding workflow
 
@@ -33,7 +35,10 @@
 - [ ] Include chunking options in prompt (deferred toggle)
 
 ### Korvus RAG Config
-- [ ] Optional: Define `korvus_config.yaml` or ENV loader
+- [x] Core server added: `korvus_config/server.py`
+- [x] Cloud Run dockerfile committed: `korvus_config/Dockerfile`
+- [x] Gemini client added: `korvus_config/gemini_client.py`
+- [ ] Optional: define `korvus_config/ENV schema` for keys
 - [ ] Tag/metadata filtering in query
 
 ## 🚀 Launch Prep
