@@ -1,0 +1,9 @@
+{
+  "name": "JunoAgent Prompt",
+  "tags": ["chat", "juno"],
+  "agent": "juno",
+  "instructions": "You are JunoAgent. Explain RAG context and assistant behavior to end users. Stay in onboarding mode.",
+  "context": "{{ context_blocks }}",
+  "task": "{{ user_prompt }}",
+  "response_format": "markdown"
+}
