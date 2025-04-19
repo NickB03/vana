@@ -20,8 +20,7 @@
 ## ゠ In Progress
 
 ### Supabase Integration
-- [ ] Define schema for `agent_action_log`
-- [ ] Create Supabase table via UI
+- [x] Here: Supabase schema committed: `supabase_schema/agent_action_log.sql`
 - [ ] Integrate pgvector for memory (initial version)
 - [ ] Connect to Korvus-compatible embedding workflow
 
