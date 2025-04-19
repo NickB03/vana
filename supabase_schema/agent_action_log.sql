@@ -11,7 +11,8 @@ create table if not exists public.agent_action_log (
   action_type text not null,
   summary text,
   content text,
-  embedding vector(1536)
+  embedding vector(1536),
+  replay_ref_id UUID null
 );
 
 -- Optional: future RLS policies go here
