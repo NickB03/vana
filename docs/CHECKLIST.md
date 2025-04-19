@@ -36,7 +36,8 @@
 - [x] Core server added: `korvus_config/server.py`
 - [x] Cloud Run dockerfile committed: `korvus_config/Dockerfile`
 - [x] Gemini client added: `korvus_config/gemini_client.py`
-- [ ] Optional: `korvus_config/ENV schema` for keys
+- [x] Chunking/embedding config: `korvus_config/embedder.py`
+- [x] Rag writer added: `korvus_writer.py` (embed user output)
 - [ ] Tag/metadata filtering in query
 
 ## 🚀 Launch Prep
