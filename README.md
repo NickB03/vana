@@ -1,30 +1,21 @@
+# Ben-Vana-Context — Handoff Summary (Pre-Promo Ready)
 
-# 🧠 | Project Vana (Virtual Autonomous Neural Agents)
+This document is full system context, deployment status, and frontend readiness for the Vana platform.
+It serves as the memory anchor for agent routing, Lovable integration, and Korvus-based memory pipelines.
 
-Project Vana is a fully functional, cloud-ready AI agent team designed to support and accelerate software development and creative projects.
-This is a highly synthetic product platform + portfolio package that can scale interiors.
+---
 
-Current features:
+## SYSTEM OVERVIEW - “Ready for Prompt“
 
-- CrewAI-based agents with defined personas, goals, and background.
-- n8n for orchestration and external API integrations.
-- Supabase as backend (auth, DB, storage).
-- Lovable.dev for generating the real frontend UI -- no mocks, real logic.
-- Extensible RAG memory (Korvus + Vertex AI on GCP).
+# Agent System
+- Gemini-powered RAG pipeline with Korvus memory injection
+- Persona-specific prompts via `agent_id` – configures `gemini_prompts/{agent}.system.md`
+- Logs actions + metadata to Supabase
+- Replay support: rerun any past prompt via "/replay/:run_id"
 
-## Supplement System Details
+## Memory + Embedding
+- Uses Korvus for context retrieval (`search_memory()`)
+- Injected into full prompt block alongside task
+- Embedding stored in Supabase PGVector
 
-This project includes:
-- Context-aware memory and response encoding
-- Repromptable run and precision repay
-```\prompt
-//run
-/replay/:run_id / / get json of run
-/run / / post rerun request
-```
-
-- Lovable features: `SageCard` + `AdminPanel` + `PromptDebug`.
-- Logged agent actions via Supabase
-- Injects memory context via Korvus (Supabase PGVector)
-- Responses generated via Vertex AI 
-- schema sync = `agent_action_log` + view_agent_activity_recent
+---
