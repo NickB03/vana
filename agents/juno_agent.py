@@ -4,11 +4,12 @@ class AgentContext:
         self.task = task
         self.project_id = project_id
 
-export class JunoAgent:
+
+class JunoAgent:
     def __init__(self, context: AgentContext):
         self.context = context
-        self.agent_id = "juno
- 
+        self.agent_id = "juno" # Added closing quote
+
     def receive_task(self, task: str):
         self.context.task = task
 
@@ -24,10 +25,12 @@ export class JunoAgent:
     def run_llm(self, assembled_prompt: str, gemini_client):
         return gemini_client.generate(prompt=assembled_prompt)
 
-    def post_process(self, response: str) => str:
+    # Corrected Python type hint syntax
+    def post_process(self, response: str) -> str:
         return response
 
-    def log_action(self, output: str, summary: str):
+    # Added n8n_logger parameter to match ben_agent.py and likely intent
+    def log_action(self, output: str, summary: str, n8n_logger):
         return n8n_logger.log_action(
             agent_id=self.agent_id,
             user_id=self.context.user_id,

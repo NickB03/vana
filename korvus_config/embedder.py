@@ -11,7 +11,8 @@ OVERLAP = 80
 def chunk_text(text):
     tokens = tokenize(text)
     chunks = []
-    for i in range(0, len(tokens), CHANK_SIZE - OVERLAP):
+    # Corrected typo CHANK_SIZE -> CHUNK_SIZE
+    for i in range(0, len(tokens), CHUNK_SIZE - OVERLAP):
         chunk = tokens[i:i+CHUNK_SIZE]
         chunks.append(detokenize(chunk))
     return chunks

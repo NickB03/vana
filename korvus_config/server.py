@@ -10,9 +10,9 @@ from fastapi import FastAPI, Request
 from korvus_client import KorvusClient
 
 app = FastAPI()
-korvus = KorvusClient()
+korvus = KorvusClient() # Note: Using the client here is likely incorrect architecture.
 
-`@app.post("search")`
+@app.post("/search") # Corrected decorator syntax
 async def search_memory(req: Request):
     data = await req.json()
     results = korvus.query_memory(
@@ -24,7 +24,7 @@ async def search_memory(req: Request):
     )
     return {"results": results}
 
-@app.post("embed")
+@app.post("/embed") # Corrected decorator syntax
 async def embed_text(req: Request):
     data = await req.json()
     embedding = korvus.embed_text(

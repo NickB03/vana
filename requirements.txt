@@ -1,3 +1,10 @@
 crewai
 crewai-tools
 pyyaml
+fastapi
+uvicorn[standard]
+google-cloud-aiplatform
+supabase-client
+requests
+tiktoken
+# Add pgvector or other specific libraries if known

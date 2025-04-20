@@ -7,7 +7,7 @@ insert into public.agent_action_log (
   summary,
   content,
   embedding
-values (
+) values ( -- Added closing parenthesis
   'demo_user_123',
   'max',
   'demo_project_abc',

@@ -4,7 +4,8 @@ class AgentContext:
         self.task = task
         self.project_id = project_id
 
-export class BenAgent:
+
+class BenAgent:
     def __init__(self, context: AgentContext):
         self.context = context
         self.agent_id = "ben"

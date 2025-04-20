@@ -22,7 +22,8 @@ class KorvusClient:
         }
         r = requests.post(f"{self.base_url}/search", json=payload)
         r.raise_for_status()
-        return [res"chunk" for res in r.json().get("results", [])
+        # Corrected syntax assuming 'chunk' is a key in each result object
+        return [res.get("chunk") for res in r.json().get("results", [])]
 
     def embed_text(self, text, metadata):
         payload = {

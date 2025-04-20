@@ -4,7 +4,8 @@ class AgentContext:
         self.task = task
         self.project_id = project_id
 
-export class KailAgent:
+
+class KailAgent:
     def __init__(self, context: AgentContext):
         self.context = context
         self.agent_id = "kail"
@@ -24,10 +25,12 @@ export class KailAgent:
     def run_llm(self, assembled_prompt: str, gemini_client):
         return gemini_client.generate(prompt=assembled_prompt)
 
-    def post_process(self, response: str) => str:
+    # Corrected Python type hint syntax
+    def post_process(self, response: str) -> str:
         return response
 
-    def log_action(self, output: str, summary: str):
+    # Added n8n_logger parameter
+    def log_action(self, output: str, summary: str, n8n_logger):
         return n8n_logger.log_action(
             agent_id=self.agent_id,
             user_id=self.context.user_id,

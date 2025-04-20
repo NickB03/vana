@@ -4,7 +4,8 @@ class AgentContext:
         self.task = task
         self.project_id = project_id
 
-export class OnboardAgent:
+
+class OnboardAgent:
     def __init__(self, context: AgentContext):
         self.context = context
         self.agent_id = "onboard"
@@ -12,7 +13,9 @@ export class OnboardAgent:
     def receive_task(self, task: str):
         self.context.task = task
 
-    def get_context(self, *):
+    # Corrected signature to match other agents and resolve Pylance error
+    def get_context(self, korvus_client):
+        # Note: Implementation still returns hardcoded string, doesn't use korvus_client
         return "Generate agent team dynamically from local config."
 
     def run_llm(self, task: str, gemini_client):
@@ -21,8 +24,9 @@ export class OnboardAgent:
     def post_process(self, response: str) -> str:
         return response
 
-    def log_action(self, output: str, summary: str):
-        return n8.log_action(
+    # Added n8n_logger parameter and corrected n8 -> n8n_logger
+    def log_action(self, output: str, summary: str, n8n_logger):
+        return n8n_logger.log_action(
             agent_id=self.agent_id,
             user_id=self.context.user_id,
             project_id=self.context.project_id,
