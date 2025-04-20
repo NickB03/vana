@@ -1,0 +1,235 @@
+# VANA - Multi-Agent System Using Google ADK
+
+![VANA Logo](https://img.shields.io/badge/VANA-Agent%20Development%20Kit-blue)
+![License](https://img.shields.io/badge/license-MIT-green)
+![Python](https://img.shields.io/badge/python-3.9%2B-blue)
+![Status](https://img.shields.io/badge/status-development-orange)
+
+VANA is a sophisticated multi-agent system built using Google's Agent Development Kit (ADK). It implements a hierarchical agent structure with specialized AI agents led by a coordinator agent, providing a powerful framework for complex AI tasks.
+
+## 📋 Table of Contents
+
+- [Overview](#overview)
+- [Features](#features)
+- [Architecture](#architecture)
+- [Prerequisites](#prerequisites)
+- [Installation](#installation)
+- [Configuration](#configuration)
+- [Usage](#usage)
+- [Agent Team](#agent-team)
+- [Vector Search Integration](#vector-search-integration)
+- [Deployment](#deployment)
+- [Development](#development)
+- [Contributing](#contributing)
+- [License](#license)
+
+## 🔍 Overview
+
+VANA (Versatile Agent Network Architecture) is a code-first implementation of a multi-agent system using Google's Agent Development Kit. The system features a hierarchical agent structure with Ben as the coordinator and specialist agents for specific tasks, all sharing knowledge through Vector Search.
+
+This project demonstrates how to build, configure, and deploy a team of specialized AI agents that can collaborate to solve complex problems, with each agent having specific responsibilities and capabilities.
+
+## ✨ Features
+
+- **Hierarchical Agent Structure**: 6 specialized AI agents led by Ben (Project Lead)
+- **Shared Knowledge Base**: Vector storage via Vertex AI Vector Search
+- **Native Multi-Agent Support**: Built-in delegation through ADK
+- **Development UI**: Built-in developer UI for testing
+- **Cloud Deployment**: Seamless deployment to Vertex AI Agent Engine
+
+## 🏗️ Architecture
+
+VANA follows a hierarchical architecture with a coordinator agent (Ben) delegating tasks to specialist agents:
+
+```
+                    [Ben - Coordinator]
+                    /        |        \
+         ┌─────────┐   ┌─────────┐   ┌─────────┐
+         │  Rhea   │   │   Max   │   │  Sage   │
+         │(Meta-Arch)│   │(Interface)│   │(Platform)│
+         └─────────┘   └─────────┘   └─────────┘
+         ┌─────────┐   ┌─────────┐
+         │   Kai   │   │  Juno   │
+         │(Edge Cases)│   │(Story)│
+         └─────────┘   └─────────┘
+```
+
+All agents share access to a common Vector Search index for knowledge retrieval, enabling consistent information access across the agent team.
+
+For detailed architecture information, see [vana-adk-architecture.md](vana-adk-architecture.md).
+
+## 📋 Prerequisites
+
+Before you begin, ensure you have:
+
+- Python 3.9 or higher
+- Google Cloud Platform account with billing enabled
+- Project ID with Vertex AI API enabled
+- Service account with appropriate permissions
+- Google ADK installed
+
+### Required GCP Permissions
+
+Your service account needs the following permissions:
+- `aiplatform.indexes.list`
+- `aiplatform.indexes.create`
+- `aiplatform.indexEndpoints.list`
+- `aiplatform.indexEndpoints.create`
+- `aiplatform.indexEndpoints.deployIndex`
+
+## 🚀 Installation
+
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/NickB03/vana.git
+   cd vana
+   ```
+
+2. Create and activate a virtual environment:
+   ```bash
+   python -m venv .venv
+   source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+   ```
+
+3. Install dependencies:
+   ```bash
+   pip install -r adk-setup/requirements.txt
+   ```
+
+## ⚙️ Configuration
+
+1. Create a `.env` file based on the following template:
+   ```
+   # Google Cloud Project Details
+   GOOGLE_CLOUD_PROJECT=your-project-id
+   GOOGLE_CLOUD_LOCATION=us-central1
+   GOOGLE_STORAGE_BUCKET=your-storage-bucket
+   GOOGLE_APPLICATION_CREDENTIALS=./secrets/your-credentials.json
+
+   # ADK Configuration
+   GOOGLE_GENAI_USE_VERTEXAI=True
+   MODEL=gemini-2.0-flash
+   VECTOR_SEARCH_INDEX_NAME=vana-shared-index
+   VECTOR_SEARCH_DIMENSIONS=768
+   ```
+
+2. Create a `secrets` directory and add your service account key:
+   ```bash
+   mkdir -p secrets
+   # Add your service account JSON key to the secrets directory
+   ```
+
+3. Set up Vector Search:
+   ```bash
+   python setup_vector_search.py
+   ```
+
+## 🖥️ Usage
+
+### Local Development
+
+Start the ADK development server:
+
+```bash
+cd adk-setup
+adk web
+```
+
+This will launch a web interface at http://localhost:8000 where you can interact with your agents.
+
+### Running Individual Agents
+
+To run a specific agent:
+
+```bash
+adk run vana.agents.team
+```
+
+## 👥 Agent Team
+
+VANA features a team of specialized agents:
+
+- **Ben (Coordinator)**: Project Lead & DevOps Strategist
+- **Rhea**: Meta-Architect of Agent Intelligence
+- **Max**: Interaction Engineer
+- **Sage**: Platform Automator
+- **Kai**: Edge Case Hunter
+- **Juno**: Story Engineer
+
+Each agent has specific tools and capabilities designed for their role.
+
+## 🔍 Vector Search Integration
+
+VANA uses Vertex AI Vector Search for knowledge retrieval:
+
+1. The `setup_vector_search.py` script creates and configures the Vector Search index
+2. Agents use the `search_knowledge` tool to query the shared knowledge base
+3. Embeddings are generated using Vertex AI's text embedding models
+
+## 🚀 Deployment
+
+Deploy to Vertex AI Agent Engine:
+
+```bash
+python adk-setup/deploy.py
+```
+
+This will:
+1. Package your agent code
+2. Upload it to Vertex AI
+3. Create an Agent Engine deployment
+4. Provide a URL to access your deployed agent
+
+## 💻 Development
+
+### Project Structure
+
+```
+vana/
+├── .env                      # Environment variables
+├── .gitignore                # Git ignore file
+├── adk-setup/                # ADK implementation
+│   ├── deploy.py             # Deployment script
+│   ├── requirements.txt      # Python dependencies
+│   ├── scripts/              # Utility scripts
+│   └── vana/                 # Core package
+│       ├── agents/           # Agent definitions
+│       ├── config/           # Configuration
+│       └── tools/            # Agent tools
+├── setup_vector_search.py    # Vector Search setup
+└── README.md                 # This file
+```
+
+### Adding New Agents
+
+To add a new agent:
+
+1. Create a new agent definition in `adk-setup/vana/agents/`
+2. Add any specialized tools in `adk-setup/vana/tools/`
+3. Update the agent hierarchy in `adk-setup/vana/agents/team.py`
+
+## 🤝 Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## 📄 License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+---
+
+## 📚 Additional Resources
+
+- [Google ADK Documentation](https://cloud.google.com/vertex-ai/docs/agent-development-kit/overview)
+- [Vertex AI Vector Search](https://cloud.google.com/vertex-ai/docs/vector-search/overview)
+- [Gemini API Documentation](https://cloud.google.com/vertex-ai/docs/generative-ai/model-reference/gemini)
+
+---
+
+Developed with ❤️ using Google's Agent Development Kit
