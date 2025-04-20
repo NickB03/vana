@@ -109,21 +109,51 @@ This will install all the necessary software packages. It might take a few minut
 
 Vector Search allows your agents to find relevant information quickly.
 
-### 3.1 Update the Setup Script
+### 3.1 Create a Service Account for Vector Search
 
-1. Open the `setup_vector_search.py` file in a text editor
-2. Make sure the file has the correct project information
-3. Save and close the file
+1. Go to the [Google Cloud Console](https://console.cloud.google.com/)
+2. Select your project (analystai-454200)
+3. In the left menu, go to "IAM & Admin" > "Service Accounts"
+4. Click "Create Service Account"
+5. Name it "vana-vector-search-sa" and click "Create and Continue"
+6. Add the following roles:
+   - Vertex AI User (`roles/aiplatform.user`)
+   - Vertex AI Admin (`roles/aiplatform.admin`)
+   - Storage Object Admin (`roles/storage.objectAdmin`)
+7. Click "Continue" and then "Done"
 
-### 3.2 Run the Setup Script
+### 3.2 Create a Service Account Key
+
+1. Find your new service account in the list and click on the three dots (⋮) at the end of the row
+2. Select "Manage keys"
+3. In the "Keys" tab, click "Add Key" > "Create new key"
+4. Choose "JSON" and click "Create"
+5. The key file will download automatically
+
+### 3.3 Add the Key to Your Project
+
+1. Rename the downloaded key file to something simple like "analystai-454200-vector-search.json"
+2. Move the key file to the "secrets" folder in your project
+3. Update the `.env` file to point to your new key file:
+   ```
+   GOOGLE_APPLICATION_CREDENTIALS=./secrets/analystai-454200-vector-search.json
+   ```
+
+### 3.4 Run the Setup Script
 
 Run this command:
 
 ```
+source .venv/bin/activate
 python setup_vector_search.py
 ```
 
-This will create a Vector Search index in your Google Cloud project. It might take a few minutes to complete.
+This will:
+1. Create a Vector Search index with the appropriate configuration
+2. Create a Vector Search index endpoint
+3. Deploy the index to the endpoint
+
+The process might take 5-10 minutes to complete. You'll see progress messages in the terminal.
 
 ## Step 4: Running the Agent Locally
 
@@ -216,8 +246,17 @@ If Python can't find a module:
 
 If the Vector Search setup fails:
 1. Check your Google Cloud project has the Vertex AI API enabled
-2. Verify your service account has Vector Search Admin permissions
+2. Verify your service account has Vertex AI Admin permissions
 3. Make sure your `.env` file has the correct project ID and location
+4. If you see errors about machine types or shard sizes, try modifying the `setup_vector_search.py` script to use:
+   ```python
+   # When creating the index
+   shard_size="SHARD_SIZE_SMALL"  # Compatible with e2-standard-2
+
+   # When deploying the index
+   machine_type="e2-standard-2"  # Affordable machine type
+   ```
+5. If you see network configuration errors, add `public_endpoint_enabled=True` to the endpoint creation parameters
 
 ### Web interface doesn't load
 

@@ -162,9 +162,16 @@ Each agent has specific tools and capabilities designed for their role.
 
 VANA uses Vertex AI Vector Search for knowledge retrieval:
 
-1. The `setup_vector_search.py` script creates and configures the Vector Search index
-2. Agents use the `search_knowledge` tool to query the shared knowledge base
-3. Embeddings are generated using Vertex AI's text embedding models
+1. The `setup_vector_search.py` script creates and configures the Vector Search index:
+   - Creates a Vector Search index with SHARD_SIZE_SMALL configuration
+   - Creates a public Vector Search index endpoint
+   - Deploys the index to the endpoint using e2-standard-2 machines
+
+2. Agents use the `search_knowledge_tool` to query the shared knowledge base
+
+3. Embeddings are generated using Vertex AI's text-embedding-004 model
+
+4. The system requires a service account with Vertex AI Admin permissions
 
 ## 🚀 Deployment
 
