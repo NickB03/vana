@@ -1,137 +1,73 @@
 # Vana
 
-Vana is an agent-driven cloud platform for SEO-ready products, providing agent-based prompting, memory, responses, and recall with high visibility.
+Vana is a cloud-state system for applications requiring agent-led prompts, cloud embedding, structured logging, natural language processing, and code generation.
 
-This README is the complete, end-to-end system checklist and deployment guide.
+- Target users: Frameworks, Researchers, Management
+- Deployment: GCP Cloud Run + Vertex AI + Supabase
+- Code: Prompt-driven via Lovable, using agents and scripts to build.
 
----
 
-## Stacks used:
-- Lovable - for prompt control and UP configs
-- Supabase - async database and memory storage
-- Gemini - main runtime provider
-- Korvus - embedding/recall service
-- N8N - orchestration layer
-- GCP - cloud run compute
+## Components
 
----
+The system is organized as a generative prompt platform, based on activatable agents using CrewAI patterns.
 
-## Technical Architecture
+These reside in module-level folders with direct structure and devdoc-triggers.
 
-## Technical Architecture
+| Folder         | Role | Primary Files |
+ |----------------|-----------------------------------|
+ |  lovable_prompts/   | Lovable prompts to generate code (apis, utilities, cli) | *.json
+ |  config/          | Gloval config (main agent ids) | globals.py
+ |  agents/         | CrewAI-style agent modules (stateful, callable, loggable) | *.py
+ |  korvus_config/  | /embed / search api wrapper | *.py
+ |  supabase_schema/ | SQL tables + views (memory, action logs) | *.sql
+ |  scripts/       | Local development utilities test ~ invocation | *.py, json
 
-For detailed architecture diagrams and component explanations, see [ARCHITECTURE.md](docs/ARCHITECTURE.md).
+Example: Lovable might use `/lovable_prompts/embed_and_log_action.json` to generate a script that calls Vertex AI and stores the result in Supabase.
 
-Key components:
-- **Lovable UI**: Frontend interface handling user prompts and response display
-- **n8n Workflows**: Orchestration layer connecting UI events to backend processing
-- **Korvus Memory Service**: Vector database for context-aware AI operations
-  - Embedding generation
-  - Memory recall/search
-  - Context management
-- **Gemini API**: LLM processing for:
-  - Prompt generation
-  - Response synthesis
-  - Agent-specific task execution
-- **Supabase Database**: Relational storage for:
-  - Agent action logs
-  - System configurations
-  - Audit trails
 
-[View full architecture diagram](docs/ARCHITECTURE.md#system-diagram)
+## Architecture + Agents
 
-## API Documentation
+Vana uses `AgentContext` and a CrewAIstyle pattern across all agents.
 
-For complete API specifications and endpoints, see [API.md](docs/API.md).
-
-## Documentation Index
-- [Agent Roster](docs/AGENTS.md)
-- [System Architecture](docs/ARCHITECTURE.md)
-- [API Documentation](docs/API.md)
----
-
-## Minimal Deployment
-
-## Deployment Guide
-
-### Prerequisites
-- Docker Desktop installed
-- Google Cloud SDK configured
-- Python 3.11+ and pip
-
-### Production Deployment
-```bash
-# Build and push Docker image
-docker build -t gcr.io/$(gcloud config get-value project)/vana-server:latest .
-docker push gcr.io/$(gcloud config get-value project)/vana-server:latest
-
-# Deploy to Cloud Run
-gcloud run deploy vana-server \
-  --image gcr.io/$(gcloud config get-value project)/vana-server:latest \
-  --set-env-vars=GEMINI_API_KEY=...,SUPABASE_URL=...,SUPABASE_KEY=... \
-  --region=us-central1 \
-  --allow-unauthenticated \
-  --min-instances=1 \
-  --max-instances=10
-```
-
-### Local Development
-```bash
-# Install dependencies
-pip install -U uvicorn[standard] gunicorn n8n supabase-client korvus
-
-# Start local server
-uvicorn main:app --reload
-```
-
-### Environment Variables
-```env
-# Required for all environments
-GEMINI_API_KEY=your_gemini_key
-SUPABASE_URL=your_supabase_url
-SUPABASE_KEY=your_supabase_key
-OPENAI_API_KEY=your_openai_key
-
-# Optional development settings
-DEBUG=true
-LOG_LEVEL=debug
-```
-
-### CI/CD Integration
-```mermaid
-graph TD
-    A[Git Push] --> B[GitHub Actions]
-    B --> C{Build Status}
-    C -->|Success| D[Deploy to Cloud Run]
-    C -->|Failure| E[Send Alert]
-    D --> F[Update Documentation]
-    F --> G[Notify Team]
-```
-
-## Testing
+Every agent shares a common lifecycle:
 
 ```python
-python scripts/test_router.py
+def receive_task(task: str): None:...
+
+€ef get_context(): ... via Supabase
+
+`def run_llm():... via Vertex AI / Gemini
+
+def post_process(response: str):...
+
+def log_action(...): ... stores the output in Supabase
 ```
 
-Test payload used:
-- `scripts/ui_test_payload.json`
+The folder `agents/` contains 7 agents with full lifecycles. Each controls a different tasktype.
 
-## Lovable Studio Integration
+ - ben_agent.py          # orgchestrates action action
+ - juno_agent.py         # file-based logger
+ - kail_agent.py         # schema curator
+ - max_agent.py          # system deployment
+ - onboard_agent.py     # agent generator
+ - rhea_agent.py       # memory retrieval
+ - sage_agent.py       # markdown / summarizer
 
-- SageCard.tsx = markdown rendering of responses
-- AdminPanel.tsx = view of past runs from Supabase
-- PROMPTDERUCK = raw prompt to Gemini
-- MemoryTag.tsx = memory context snap
+## Supabase
 
-## Cloud Run Environment
+Schemas live in `supabase_schema`. Agent logs and context encriched memories are represented as tables plus views.
 
-- GEMINI_API_KEY
-- SUPABASE_URL
-- SUPABASE_KEY
+A factory model can use Supabase client UK or the WV to browse tables via UI
 
-## URI Path suummary
 
-Hook to /run with Lovable:
- * Lovable posts to `/run` route
- * Replay interface is /replay/:run_id
+## Deployment
+
+Validated cloud run with Vatex AI + Supabase.
+
+Agent nodes run locally van `gcrun cloud run` via app defined in `server.py`.
+
+Setics:
+
+- Service name: `vana-server`
+- Runs in `gcp/auto deploy[envs]`.
+- Uses configured envs from `globals.py`.
