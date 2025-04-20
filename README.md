@@ -15,59 +15,40 @@ These reside in module-level folders with direct structure and devdoc-triggers.
 
 | Folder         | Role | Primary Files |
  |----------------|-----------------------------------|
- |  lovable_prompts/   | Lovable prompts to generate code (apis, utilities, cli) | *.json
- |  config/          | Gloval config (main agent ids) | globals.py
+ |  lovable_prompts/   | Lovable prompts [Nick-used only] to instruct the code generator | *.json
+ |  config/          | Global config (main agent ids) | globals.py
  |  agents/         | CrewAI-style agent modules (stateful, callable, loggable) | *.py
- |  korvus_config/  | /embed / search api wrapper | *.py
+ |  korvus_config/  | embed/search api wrapper | *.py
  |  supabase_schema/ | SQL tables + views (memory, action logs) | *.sql
- |  scripts/       | Local development utilities test ~ invocation | *.py, json
-
-Example: Lovable might use `/lovable_prompts/embed_and_log_action.json` to generate a script that calls Vertex AI and stores the result in Supabase.
-
+ |  scripts/       | local development utilities test * / invocation | *.py, json
+Note: Lovable prompts are not part of runtime code; they are nick_only blueprints to instruct the code generator.
 
 ## Architecture + Agents
 
-Vana uses `AgentContext` and a CrewAIstyle pattern across all agents.
+Vana uses `AgentContext` and a CrewAIstyle pattern for agents.
 
-Every agent shares a common lifecycle:
+every agent has the lifecycle:
 
-```python
-def receive_task(task: str): None:...
+ - receive_task(task)
+ - get_context(client)
+ - run_llm(prompt)
+ - post_process(response)
+ - log_action(action, summary)
 
-€ef get_context(): ... via Supabase
+View `embed_and_log_action.json` as an example Lovable prompt for code generation.
 
-`def run_llm():... via Vertex AI / Gemini
+See `/VANA_CONTEXT_DUMP.md` for full system rehydration.
 
-def post_process(response: str):...
+## Supabase Set up
+- Supabase configured via user interface only
+- No code generation on schema itself
 
-def log_action(...): ... stores the output in Supabase
-```
+## Model usage
 
-The folder `agents/` contains 7 agents with full lifecycles. Each controls a different tasktype.
+- Default: Vertex AI (ia Gemini)
+- Upgradeable: future-state models load via OpenRouter
 
- - ben_agent.py          # orgchestrates action action
- - juno_agent.py         # file-based logger
- - kail_agent.py         # schema curator
- - max_agent.py          # system deployment
- - onboard_agent.py     # agent generator
- - rhea_agent.py       # memory retrieval
- - sage_agent.py       # markdown / summarizer
+## Setup/deploy
+ - GCP Cloud Run + Supabase + FastAPI
+- Environment handled in `server.py`
 
-## Supabase
-
-Schemas live in `supabase_schema`. Agent logs and context encriched memories are represented as tables plus views.
-
-A factory model can use Supabase client UK or the WV to browse tables via UI
-
-
-## Deployment
-
-Validated cloud run with Vatex AI + Supabase.
-
-Agent nodes run locally van `gcrun cloud run` via app defined in `server.py`.
-
-Setics:
-
-- Service name: `vana-server`
-- Runs in `gcp/auto deploy[envs]`.
-- Uses configured envs from `globals.py`.
