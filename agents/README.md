@@ -22,12 +22,20 @@ You can expect all agents to support the following methods:
 - reformat(): cleans up response
 - log_action(): submits to Supabase
 
+
+## Important Clarifications
+
+- These agents do NOT use Lovable prompts - they are controlled fully by system context.
+ - Model injection with Gcloud Renderer (Vertex AI) currently; future models (openrouter/ollama) integrated with config.
+- Each agent is modular and can be called individually or composed into blocks.
+
 ## Agent List
 
-- `ben_agent.py`: DevOps strategy, orrchestrates other agents.
-- `juno_agent.py`: Data capture, file logging.
-- `kil_agent.py`: Schema curation + validation
-- `max_agent.py`: System deploy logic + env tests
-- `onboard_agent.py`: First-time user flow
-- `rhea_agent.py`: Memory index creator + full recall
-- `sage_agent.py`: Renderer class (JSON, markdown, summary)
+- ben_agent.py - Dev Ops strategy, orchestrates other agents
+- juno_agent.py - Data capture, file logging
+- kail_agent.py - Schema curator + validation
+- max_agent.py - System deploy logic + env tests
+- onboard_agent.py - Generative code, customized
+- rhea_agent.py - Retrieve from stored memories
+- sage_agent.py - Rendering/summarization
+
