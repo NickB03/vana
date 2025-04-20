@@ -1,36 +1,32 @@
-from crewai import Crew, Agent, Task
-from crewai_tools import tool
-import yaml
+class AgentContext:
+    def __init__(self, user_id, task, project_id=None):
+        self.user_id = user_id
+        self.task = task
+        self.project_id = project_id
 
-# Load agent config
-with open("config/agents.yaml", "r") as f:
-    agents_data = yaml.safe_load(f)
+export class OnboardAgent:
+    def __init__(self, context: AgentContext):
+        self.context = context
+        self.agent_id = "onboard"
 
-# Create agents
-agents = []
-for name, data in agents_data.items():
-    agents.append(Agent(
-        name=name.capitalize(),
-        role=data.get("role", ""),
-        goal=data.get("goal", ""),
-        backstory=data.get("backstory", ""),
-        allow_delegation=data.get("allow_delegation", False),
-        verbose=True
-    ))
+    def receive_task(self, task: str):
+        self.context.task = task
 
-# Define task
-task = Task(
-    description="Design a scalable architecture for a multi-agent AI platform called AnalystAI. Include RAG capability, a visual UI, and robust orchestration strategy.",
-    expected_output="A Markdown-formatted technical spec for AnalystAI including agent roles, tools, infra layers, and sandboxing strategy.",
-    agents=agents
-)
+    def get_context(self, *):
+        return "Generate agent team dynamically from local config."
 
-# Run the crew
-crew = Crew(
-    agents=agents,
-    tasks=[task],
-    verbose=True
-)
+    def run_llm(self, task: str, gemini_client):
+        return gemini_client.generate(prompt=task)
 
-result = crew.kickoff()
-print("=== Final Output ===\n", result)
+    def post_process(self, response: str) -> str:
+        return response
+
+    def log_action(self, output: str, summary: str):
+        return n8.log_action(
+            agent_id=self.agent_id,
+            user_id=self.context.user_id,
+            project_id=self.context.project_id,
+            action_type="task",
+            summary=summary,
+            content=output
+        )
