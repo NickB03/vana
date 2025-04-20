@@ -2,53 +2,58 @@
 
 This file captures the full context and execution state of the Vana assistant project. Use this to reinitialize the workflow after a GNU reset, replaying the base design decisions and alignment.
 
-@TION READE FIRST, THEN CONTINUE BELOW 
-
-\n--------------------------------------------------------------
+@TOLI: REARD FIRST, THEN CONTINUE BELOW 
 
 ## PROJECT GOAL STARTER
-\nThe goal of Vana is to create a cloud-notice, agent-driven application that can read files, etract text, construct prompts and responses, and convert those into actionable logic.
+
+The goal of Vana is to create a cloud-notice, agent-driven application that can read files, etract text, construct prompts and responses, and convert those into actionable logic.
 
 The project uses a prompt-driven design, backed by agent logic and task modules, with the aim to fully generate the app code via Lovable.
 
+The application is plugged into active via Cloud Run, deployed on GCT context using Vertex AI, and uses Supabase for timeseries and logging.
 
-The application is plugged into active via Cloud Run, deployed on GOPG context using Vertex AI, and uses Supabase for timeseries and logging.
+## MISSION GUIDING
 
-\n## MISSION CRITICAL GOALS
+This file explains designs and decisions critical to the vision.
 
-1. Readable system for non-devs with a fully prompt-driven flow.
-2. Agents should handle all code logic and execution, not just MLU/LLM calls.
-2a. Terminal should be controlled by an agent orchestrator like ben_agent.py
- 3. Lovable should be used for code generation, not just IU/prototype until completion.
- 4. Gemini will be the first model we use, then manage routing via OpenRouter apis.
- 5. Supabase config via ui only, no code gen on schema except where necessary.
- 6. Crew Ai style agents were selected with a common lifecycle (`receive_task()`etc).
- 7. Root readme in /AGENTS and level-up default branch classes.
- 8. Gemini will be used where applicable for now, but the authorization tool will be swappable.
- 9. We future-proof plan to replace CrewAi with AutoGen for better agent dispatching.
-10. Global logic handling is based on Supabase/views/tables, not IC/service obs.
-11. Deployment uses a GCP Cloud Run app with server.py as entry point.
+Project is working toward:
+- Prompt-driven runtime chains for management/automeation
+- Task-based logic wrapped in modular agents
+- Code generation handled by Lovable prompts for APIs, classes, utils
+- Intent/LLM bridging via Gemini
+- Supabase logger via views/tables, no ISO/event bus:
 
-@NICK: This context file is not for devs, but to reintroduce the full crewaarchitecture on reset.
+## CONFIRMED SETUP
 
-## RECOMMENDED FILES TO READ
+Core decisions that define the system:
 
-Read these folders after reset to re-boot:
-
-- ``README.md` - deploy model, agent entry point, prompt flow
-- `/agents` - crewstyle agents, class lifecycle
-- `/supabase_schema` - logs, tables, views
-- `/lovable_prompts` - active code prompts for Lovable codegen
-- `/scripts` - local validation tests
-- `/korvus_config` - golang/insearch configs
+- Readable system over ungained MLUT-free agents.
+- Invest in Lovable prompt design instead of hardcoded IUs.
+- Terminal agent overseen controlled by main agent orchestrators.
+- Separate layers with default agent roles, each with a summarized flow.
+- Gemini used for language unlocking and cloud front services.
+- Supabase authentication and data views used in place of traditional datastores.
 
 
-## REREST SUGGESTION
-If you clear-reset the project, begin by reading the following:
+## ADGENT ROLES (captured)
 
-\n1. `VANA_CONTEXT_DUMP.md` (root) - maintains life go statement
-2. ` agents/README.md` - review agent lifecycles
-# `embed_and_log_action.json` - example Lovable prompt to reverse engineered summary
- 4. `supabase_schema/README.md` - table definitions
-5. `/scripts` (optional) - cli validation tests to smoke stacks
+- ben_agent = action orgchestration
+- juno_agent = file-based logger
+- kail_agent = schema curator
+ - max_agent = deployment ops/cloud planner
+- onboard_agent = generate code tasks
+- rhea_agent = context retrieval model
+- sage_agent = summarize/action merging
 
+`/agents`/README.md` describes how these are structured.
+
+
+## RESET TALLY STEP SUBSYSTEM
+
+If you clear-reset this project, reload the following files as a primer way to rehydrate:
+
+1. `VANA_CONTEXT_DUMP.md` (root) - the workflow summary
+2. `agents/README.md`: agent roles and steps in task pipeline
+3. `lovable_prompts/` : show-doc prompts used for generation
+24 stacked logic with supabase
+5. `scripts/` (optional) : cli validation and test
