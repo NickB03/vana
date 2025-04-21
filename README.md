@@ -119,10 +119,17 @@ Your service account needs the following permissions:
    # Add your service account JSON key to the secrets directory
    ```
 
-3. Set up Vector Search:
+3. Run the setup script:
    ```bash
-   python setup_vector_search.py
+   python setup_vana.py
    ```
+
+   This will:
+   - Verify API enablement
+   - Check service account permissions
+   - Set up Vector Search
+   - Populate Vector Search with knowledge documents
+   - Test Vector Search integration
 
 ## 🖥️ Usage
 
@@ -187,8 +194,8 @@ VANA uses Vertex AI Vector Search for knowledge retrieval:
    - Vector Search index has been created and configured
    - Knowledge documents have been embedded and uploaded
    - Index update operation has completed successfully
-   - Query functionality is currently experiencing issues (501 UNIMPLEMENTED error)
-   - Working with Google Cloud experts to resolve query issues
+   - Query functionality has been fixed based on GCP engineer recommendations
+   - The system is now fully functional
 
 6. The system requires a service account with Vertex AI Admin permissions
 
@@ -225,12 +232,12 @@ vana/
 ├── knowledge_docs/           # Text files for Vector Search
 ├── tools/                    # Shared tools
 │   └── search_knowledge_tool.py  # Vector Search tool
+├── setup_vana.py             # Main setup script
+├── verify_apis.py            # Verify API enablement
+├── check_permissions.py      # Check service account permissions
 ├── setup_vector_search.py    # Vector Search setup
-├── prepare_embeddings.py     # Generate and upload embeddings
-├── update_index_api.py       # Update Vector Search index
-├── check_operation.py        # Check operation status
-├── check_deployment.py       # Check index deployment
-├── test_vector_search.py     # Test search functionality
+├── populate_vector_search.py # Populate Vector Search with knowledge
+├── test_vector_search.py     # Test Vector Search integration
 ├── checklist.md              # Project checklist
 ├── next-steps.md             # Detailed setup guide
 ├── project_handoff.md        # Comprehensive project status for handoff
@@ -263,7 +270,7 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ## 📚 Additional Resources
 
-- [Google ADK Documentation](https://cloud.google.com/vertex-ai/docs/agent-development-kit/overview)
+- [Google ADK Documentation](https://github.com/google/adk-docs)
 - [Vertex AI Vector Search](https://cloud.google.com/vertex-ai/docs/vector-search/overview)
 - [Gemini API Documentation](https://cloud.google.com/vertex-ai/docs/generative-ai/model-reference/gemini)
 

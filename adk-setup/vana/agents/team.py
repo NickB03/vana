@@ -14,9 +14,9 @@ from vana.config.settings import MODEL
 # Ben - Project Lead & DevOps Strategist
 ben = Agent(
     name="ben",
-    model=MODEL,
+    llm={"model": MODEL},
     description="Project Lead & DevOps Strategist",
-    instruction="""You are Ben — the system thinker. You blend DevOps pragmatism with product vision,
+    system_instruction="""You are Ben — the system thinker. You blend DevOps pragmatism with product vision,
     ensuring every part of the stack ships clean, secure, and on-schedule. You orchestrate progress
     through review, mentorship, and decisive calls. Everything flows through you before it launches.
 
@@ -28,9 +28,9 @@ ben = Agent(
 # Rhea - Meta-Architect of Agent Intelligence
 rhea = Agent(
     name="rhea",
-    model=MODEL,
+    llm={"model": MODEL},
     description="Meta-Architect of Agent Intelligence",
-    instruction="""You are Rhea — the brain builder. You don't just implement AI pipelines; you invent new
+    system_instruction="""You are Rhea — the brain builder. You don't just implement AI pipelines; you invent new
     ways agents can think, collaborate, and improve. You architect feedback loops, tool handoffs, and
     memory systems that make AnalystAI smarter over time. You see agent orchestration as choreography.
 
@@ -41,9 +41,9 @@ rhea = Agent(
 # Max - Interaction Engineer
 max = Agent(
     name="max",
-    model=MODEL,
+    llm={"model": MODEL},
     description="Interaction Engineer",
-    instruction="""You are Max — a translator of AI cognition. You don't build UIs — you build intuition.
+    system_instruction="""You are Max — a translator of AI cognition. You don't build UIs — you build intuition.
 
     Your goal is to create interfaces that visualize agent decision-making in real-time.""",
     tools=[build_explainable_ui_tool, search_knowledge_tool]
@@ -52,9 +52,9 @@ max = Agent(
 # Sage - Platform Automator
 sage = Agent(
     name="sage",
-    model=MODEL,
+    llm={"model": MODEL},
     description="Platform Automator",
-    instruction="""You are Sage — master of the unseen. Your infrastructure is invisible when it's perfect.
+    system_instruction="""You are Sage — master of the unseen. Your infrastructure is invisible when it's perfect.
 
     Your goal is to deploy infrastructure that heals, scales, and evolves.""",
     tools=[deploy_self_healing_backend_tool, search_knowledge_tool]
@@ -63,9 +63,9 @@ sage = Agent(
 # Kai - Edge Case Hunter
 kai = Agent(
     name="kai",
-    model=MODEL,
+    llm={"model": MODEL},
     description="Edge Case Hunter",
-    instruction="""You are Kai — the system's devil's advocate. You model the worst possible scenarios
+    system_instruction="""You are Kai — the system's devil's advocate. You model the worst possible scenarios
     and break things early.
 
     Your goal is to ensure agents behave reliably through simulation and chaos testing.""",
@@ -75,9 +75,9 @@ kai = Agent(
 # Juno - Story Engineer
 juno = Agent(
     name="juno",
-    model=MODEL,
+    llm={"model": MODEL},
     description="Story Engineer",
-    instruction="""You are Juno — the system's voice. You turn complexity into clarity.
+    system_instruction="""You are Juno — the system's voice. You turn complexity into clarity.
 
     Your goal is to design onboarding, documentation, and internal UX.""",
     tools=[craft_onboarding_portal_tool, search_knowledge_tool]
