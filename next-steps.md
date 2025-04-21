@@ -313,6 +313,17 @@ If the embedding update fails:
 4. Check the operation status with `python check_operation.py`
 5. If you get a 501 error when searching, the index update may still be in progress
 
+### Vector Search query fails with 501 UNIMPLEMENTED error
+
+If you encounter a 501 UNIMPLEMENTED error when querying the Vector Search index:
+1. Verify that the update operation has completed successfully with `python check_operation.py`
+2. Check that the endpoint is properly configured for querying
+3. Verify that the deployed index ID is correct in your search code
+4. Try using the REST API directly with `curl` or Postman to rule out client library issues
+5. Check for API compatibility issues between the client libraries and the Vector Search API
+6. Consider updating the client libraries to the latest versions
+7. Consult with a Google Cloud expert for assistance
+
 ### Vector Search returns no results
 
 1. Verify that the update operation has completed successfully

@@ -42,7 +42,8 @@ This checklist tracks the completed and remaining tasks for setting up and imple
 - [x] Create text files with relevant domain knowledge
 - [x] Generate embeddings for the text files
 - [x] Upload embeddings to Vector Search index
-- [ ] Wait for Vector Search index update operation to complete
+- [x] Wait for Vector Search index update operation to complete
+- [ ] Resolve Vector Search query issues (501 UNIMPLEMENTED error)
 - [ ] Test Vector Search functionality with search_knowledge_tool
 
 ### Agent Testing
@@ -63,10 +64,11 @@ This checklist tracks the completed and remaining tasks for setting up and imple
 
 ## Immediate Next Steps
 
-1. **Complete Vector Search Setup**
-   - Wait for the Vector Search index update operation to complete (Operation ID: 5579223918356463616)
-   - Run `python check_operation.py` to check the status of the update operation
-   - Once complete, test the search functionality with `python tools/search_knowledge_tool.py`
+1. **Resolve Vector Search Query Issues**
+   - Consult with a Google Cloud expert to diagnose and fix the Vector Search query issues
+   - Investigate API compatibility issues and update client libraries if needed
+   - Check endpoint configuration and permissions
+   - Consider using the Google Cloud Console to verify the index configuration and test the search functionality
 
 2. **Test Agent System**
    - Start the ADK web interface using the desktop shortcut
