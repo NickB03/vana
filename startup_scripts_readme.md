@@ -39,7 +39,28 @@ These startup scripts perform the following actions:
 5. Install or update required packages
 6. Verify the existence of the `.env` file
 7. Check if the service account key for Vector Search is available
-8. Start the ADK web interface on http://localhost:8000
+8. Start the ADK web interface in the background on http://localhost:8000
+9. Open your default web browser to the ADK interface
+10. Allow you to close the terminal window while keeping the server running
+
+## Stopping the Server
+
+### On macOS
+
+To stop the ADK web server that's running in the background:
+
+```bash
+pkill -f 'adk web'
+```
+
+### On Windows
+
+To stop the ADK web server that's running in the background:
+
+1. Open Task Manager (Ctrl+Shift+Esc)
+2. Look for Python processes
+3. Select the process running the ADK web server
+4. Click "End task"
 
 ## Troubleshooting
 
@@ -50,6 +71,7 @@ If you encounter any issues:
 3. Check that your `.env` file exists and contains the correct configuration
 4. Ensure the service account key file is in the `secrets` directory
 5. If the ADK web interface fails to start, check that port 8000 is not already in use
+6. If you can't access the web interface after the script runs, try manually opening http://localhost:8000 in your browser
 
 ## Customization
 

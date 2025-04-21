@@ -54,11 +54,19 @@ if not exist secrets\%KEY_PATH% (
     pause
 )
 
-:: Start the ADK web interface
-echo Starting ADK web interface...
+:: Start the ADK web interface in the background
+echo Starting ADK web interface in the background...
 cd adk-setup
-adk web
 
-:: Keep terminal open if the server exits
-echo ADK web interface has stopped.
-pause
+:: Launch the ADK web server and open the browser
+start /B cmd /c "adk web > nul 2>&1"
+timeout /t 3 > nul
+start http://localhost:8000
+
+echo.
+echo ADK web interface is now running at http://localhost:8000
+echo You can close this terminal window.
+echo To stop the server later, open Task Manager and end the Python processes.
+
+:: Give the user time to read the message
+timeout /t 5 > nul

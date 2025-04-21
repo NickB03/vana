@@ -49,11 +49,16 @@ if [ ! -f "secrets/$(grep GOOGLE_APPLICATION_CREDENTIALS .env | cut -d= -f2 | se
     read -p "Press Enter to continue anyway or Ctrl+C to exit..."
 fi
 
-# Start the ADK web interface
-echo "Starting ADK web interface..."
+# Start the ADK web interface in the background
+echo "Starting ADK web interface in the background..."
 cd adk-setup
-adk web
 
-# Keep terminal open if the server exits
-echo "ADK web interface has stopped."
-read -p "Press Enter to exit..."
+# Launch the ADK web server and open the browser
+(adk web > /dev/null 2>&1 &) && sleep 3 && open http://localhost:8000
+
+echo "\nADK web interface is now running at http://localhost:8000"
+echo "You can close this terminal window."
+echo "To stop the server later, run: pkill -f 'adk web'"
+
+# Give the user time to read the message
+sleep 5
