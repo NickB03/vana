@@ -37,7 +37,13 @@ secrets/
 *.json
 !package.json
 !package-lock.json
+!.env.example
+!frontend/.env.example
+!adk-setup/.env.example
 .service-account.json
+*credentials*.json
+*credential*.json
+*service-account*.json
 
 # IDE
 .idea/
