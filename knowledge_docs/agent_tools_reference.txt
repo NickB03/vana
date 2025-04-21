@@ -1,0 +1,92 @@
+# Agent Tools Reference
+
+## Coordinator Tools
+
+1. **coordinate_task**:
+   - Function: Assign tasks to specialist agents
+   - Parameters: task_description, assigned_agent
+   - Returns: Coordination response
+   - Usage: Ben uses this to delegate work to specialists
+
+2. **conduct_daily_checkin**:
+   - Function: Review and validate completed tasks
+   - Parameters: tasks
+   - Returns: PR merge summary and task closeout
+   - Usage: Ben uses this for project management
+
+## Knowledge Tools
+
+1. **search_knowledge**:
+   - Function: Search the Vector Search index for relevant information
+   - Parameters: query
+   - Returns: Formatted search results
+   - Usage: All agents use this to retrieve domain knowledge
+
+## Specialist Tools
+
+1. **design_agent_architecture**:
+   - Function: Design modular agent architectures
+   - Parameters: requirements
+   - Returns: Architecture design and templates
+   - Usage: Rhea uses this for agent system design
+
+2. **build_explainable_ui**:
+   - Function: Create interfaces for agent visualization
+   - Parameters: specifications
+   - Returns: UI mockups and components
+   - Usage: Max uses this for interface design
+
+3. **deploy_self_healing_backend**:
+   - Function: Deploy infrastructure with autoscaling
+   - Parameters: config
+   - Returns: Deployment configurations
+   - Usage: Sage uses this for infrastructure setup
+
+4. **simulate_user_failures**:
+   - Function: Create chaos testing scenarios
+   - Parameters: test_scenarios
+   - Returns: Test suites and failure hooks
+   - Usage: Kai uses this for reliability testing
+
+5. **craft_onboarding_portal**:
+   - Function: Build documentation and walkthroughs
+   - Parameters: topic
+   - Returns: Documentation and code examples
+   - Usage: Juno uses this for knowledge sharing
+
+## Tool Implementation
+
+Tools are implemented using the FunctionTool class from ADK:
+
+```python
+from google.adk.tools import FunctionTool
+
+def my_tool_function(param1: str, param2: str) -> str:
+    """Tool description.
+    
+    Args:
+        param1: Description of param1
+        param2: Description of param2
+        
+    Returns:
+        Tool result description
+    """
+    # Tool implementation
+    return result
+
+my_tool = FunctionTool(func=my_tool_function)
+```
+
+Tools are assigned to agents during agent creation:
+
+```python
+from google.adk.agents import Agent
+
+agent = Agent(
+    name="agent_name",
+    model=MODEL,
+    description="Agent description",
+    instruction="Agent instructions",
+    tools=[tool1, tool2, tool3]
+)
+```

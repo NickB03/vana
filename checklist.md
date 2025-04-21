@@ -20,6 +20,10 @@ This checklist tracks the completed and remaining tasks for setting up and imple
 - [x] Create Vector Search index with SHARD_SIZE_SMALL
 - [x] Create public Vector Search index endpoint
 - [x] Deploy index to endpoint with e2-standard-2 machine type
+- [x] Create knowledge documents for Vector Search
+- [x] Generate embeddings using Vertex AI text-embedding-004 model
+- [x] Upload embeddings to Google Cloud Storage
+- [x] Update Vector Search index with embeddings
 
 ### ADK Code Updates
 - [x] Update agent_tools.py to use FunctionTool from ADK 0.2.0
@@ -35,9 +39,11 @@ This checklist tracks the completed and remaining tasks for setting up and imple
 ## 🔲 Remaining Tasks
 
 ### Vector Search Content
-- [ ] Create text files with relevant domain knowledge
-- [ ] Generate embeddings for the text files
-- [ ] Upload embeddings to Vector Search index
+- [x] Create text files with relevant domain knowledge
+- [x] Generate embeddings for the text files
+- [x] Upload embeddings to Vector Search index
+- [ ] Wait for Vector Search index update operation to complete
+- [ ] Test Vector Search functionality with search_knowledge_tool
 
 ### Agent Testing
 - [ ] Test Ben (coordinator agent) with basic queries
@@ -57,20 +63,22 @@ This checklist tracks the completed and remaining tasks for setting up and imple
 
 ## Immediate Next Steps
 
-1. **Populate Vector Search Index**
-   - Create at least 5-10 knowledge documents relevant to your domain
-   - Run embedding generation script
-   - Verify documents are searchable
+1. **Complete Vector Search Setup**
+   - Wait for the Vector Search index update operation to complete (Operation ID: 5579223918356463616)
+   - Run `python check_operation.py` to check the status of the update operation
+   - Once complete, test the search functionality with `python tools/search_knowledge_tool.py`
 
 2. **Test Agent System**
    - Start the ADK web interface using the desktop shortcut
    - Test basic queries with Ben
    - Test specialized queries that should trigger delegation
+   - Verify that agents can retrieve knowledge using the search_knowledge_tool
 
 3. **Iterate and Improve**
    - Review agent responses and identify areas for improvement
    - Update agent instructions or tools as needed
    - Add more knowledge to Vector Search if gaps are identified
+   - Monitor Vector Search performance and costs
 
 ## Resources
 

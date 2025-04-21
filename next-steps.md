@@ -155,6 +155,52 @@ This will:
 
 The process might take 5-10 minutes to complete. You'll see progress messages in the terminal.
 
+### 3.5 Prepare Knowledge Documents
+
+Create text files with relevant knowledge in the `knowledge_docs` directory:
+
+```
+mkdir -p knowledge_docs
+# Add your .txt files to this directory
+```
+
+### 3.6 Generate and Upload Embeddings
+
+Run the embedding generation script:
+
+```
+python prepare_embeddings.py
+```
+
+This will:
+1. Read all text files in the `knowledge_docs` directory
+2. Generate embeddings using Vertex AI's text-embedding-004 model
+3. Upload the embeddings to Google Cloud Storage
+
+### 3.7 Update the Vector Search Index
+
+Run the index update script:
+
+```
+python update_index_api.py
+```
+
+This will initiate an update operation to add the embeddings to the Vector Search index. The operation may take some time to complete.
+
+### 3.8 Check the Update Operation Status
+
+Check the status of the update operation:
+
+```
+python check_operation.py
+```
+
+Once the operation is complete, you can test the search functionality:
+
+```
+python tools/search_knowledge_tool.py
+```
+
 ## Step 4: Running the Agent Locally
 
 Now you'll start the agent system on your computer.
@@ -257,6 +303,23 @@ If the Vector Search setup fails:
    machine_type="e2-standard-2"  # Affordable machine type
    ```
 5. If you see network configuration errors, add `public_endpoint_enabled=True` to the endpoint creation parameters
+
+### Vector Search embedding update fails
+
+If the embedding update fails:
+1. Check that your embeddings are in the correct format (see `prepare_embeddings.py`)
+2. Verify that the GCS path is a directory, not a file (e.g., `gs://bucket-name/directory/` not `gs://bucket-name/file.json`)
+3. Make sure the update operation has enough time to complete (can take 10+ minutes)
+4. Check the operation status with `python check_operation.py`
+5. If you get a 501 error when searching, the index update may still be in progress
+
+### Vector Search returns no results
+
+1. Verify that the update operation has completed successfully
+2. Check that your query is relevant to the content in your knowledge documents
+3. Try using the REST API directly with `curl` or Postman to rule out client library issues
+4. Verify that the deployed index ID is correct in your search code
+5. Check the logs in Google Cloud Console for any errors
 
 ### Web interface doesn't load
 

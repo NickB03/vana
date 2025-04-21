@@ -1,0 +1,60 @@
+# ADK Development Guide
+
+## Google Agent Development Kit (ADK)
+
+The Agent Development Kit (ADK) is Google's framework for building, testing, and deploying AI agents. VANA uses ADK version 0.2.0 for agent development.
+
+## Key Components
+
+1. **Agents**:
+   - Created using the `Agent` class
+   - Configured with a model, description, and instructions
+   - Assigned tools for specific capabilities
+   - Example: `ben = Agent(name="ben", model=MODEL, description="Project Lead", tools=[tool1, tool2])`
+
+2. **Tools**:
+   - Created using the `FunctionTool` class
+   - Wrap Python functions to make them available to agents
+   - Include descriptions and parameter definitions
+   - Example: `search_tool = FunctionTool(func=search_knowledge)`
+
+3. **Models**:
+   - VANA uses Gemini 2.0 Flash as the default model
+   - Configured via the MODEL environment variable
+   - Accessed through Vertex AI
+
+## Development Workflow
+
+1. **Local Development**:
+   - Run `adk web` to start the local development server
+   - Access the web interface at http://localhost:8000
+   - Test agents and tools interactively
+
+2. **Deployment**:
+   - Use `deploy.py` to deploy agents to Vertex AI Agent Engine
+   - Configure deployment settings in the script
+   - Monitor deployed agents in the Google Cloud Console
+
+## Best Practices
+
+1. **Agent Design**:
+   - Give clear, specific instructions to each agent
+   - Limit each agent to a focused set of responsibilities
+   - Use system messages to establish agent personality and behavior
+
+2. **Tool Implementation**:
+   - Keep tools simple and focused on a single task
+   - Provide clear documentation in function docstrings
+   - Handle errors gracefully within tools
+
+3. **Testing**:
+   - Test agents with a variety of inputs
+   - Verify tool functionality independently
+   - Check agent delegation and coordination
+
+## Debugging
+
+Common issues include:
+- Import errors: Check package versions and imports
+- Tool execution errors: Add error handling to tools
+- Agent misunderstandings: Refine instructions and examples

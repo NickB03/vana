@@ -167,11 +167,23 @@ VANA uses Vertex AI Vector Search for knowledge retrieval:
    - Creates a public Vector Search index endpoint
    - Deploys the index to the endpoint using e2-standard-2 machines
 
-2. Agents use the `search_knowledge_tool` to query the shared knowledge base
+2. Knowledge documents are processed and embedded:
+   - Text files are stored in the `knowledge_docs` directory
+   - The `prepare_embeddings.py` script generates embeddings using Vertex AI's text-embedding-004 model
+   - Embeddings are uploaded to Google Cloud Storage in a structured format
+   - The `update_index_api.py` script updates the Vector Search index with the embeddings
 
-3. Embeddings are generated using Vertex AI's text-embedding-004 model
+3. Agents use the `search_knowledge_tool` to query the shared knowledge base:
+   - Queries are converted to embeddings using the same model
+   - The Vector Search index finds semantically similar documents
+   - Results are returned with metadata including source and content
 
-4. The system requires a service account with Vertex AI Admin permissions
+4. Monitoring and maintenance:
+   - The `check_operation.py` script monitors long-running operations
+   - The `check_deployment.py` script verifies index deployment status
+   - The `test_vector_search.py` script tests search functionality
+
+5. The system requires a service account with Vertex AI Admin permissions
 
 ## 🚀 Deployment
 
@@ -203,7 +215,17 @@ vana/
 │       ├── agents/           # Agent definitions
 │       ├── config/           # Configuration
 │       └── tools/            # Agent tools
+├── knowledge_docs/           # Text files for Vector Search
+├── tools/                    # Shared tools
+│   └── search_knowledge_tool.py  # Vector Search tool
 ├── setup_vector_search.py    # Vector Search setup
+├── prepare_embeddings.py     # Generate and upload embeddings
+├── update_index_api.py       # Update Vector Search index
+├── check_operation.py        # Check operation status
+├── check_deployment.py       # Check index deployment
+├── test_vector_search.py     # Test search functionality
+├── checklist.md              # Project checklist
+├── next-steps.md             # Detailed setup guide
 └── README.md                 # This file
 ```
 

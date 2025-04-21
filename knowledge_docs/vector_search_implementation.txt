@@ -1,0 +1,47 @@
+# Vector Search Implementation Guide
+
+## Overview
+
+Vector Search enables semantic search capabilities by converting text into high-dimensional vectors (embeddings) and finding similar vectors in a database. This allows agents to retrieve relevant information based on meaning rather than just keywords.
+
+## Setup Process
+
+1. **Create a Service Account**:
+   - Go to Google Cloud Console
+   - Create a service account with Vertex AI Admin permissions
+   - Generate a JSON key file
+   - Store the key in the secrets directory
+   - Update the .env file with the key path
+
+2. **Create Vector Search Index**:
+   - Run the setup_vector_search.py script
+   - This creates an index with 768 dimensions
+   - Uses DOT_PRODUCT_DISTANCE as the similarity measure
+   - Configures with SHARD_SIZE_SMALL for compatibility with e2-standard-2 machines
+
+3. **Create and Deploy Index Endpoint**:
+   - The script creates a public endpoint
+   - Deploys the index to the endpoint
+   - Uses e2-standard-2 machine type with 1 replica
+
+## Embedding Generation
+
+Text is converted to embeddings using:
+- Vertex AI's text-embedding-004 model
+- 768-dimensional vectors
+- Normalized vectors for consistent similarity scoring
+
+## Querying Vector Search
+
+1. Generate an embedding for the query text
+2. Send the embedding to the Vector Search endpoint
+3. Retrieve the most similar documents (neighbors)
+4. Process and format the results for the agent
+
+## Troubleshooting
+
+Common issues include:
+- Permission errors: Check service account roles
+- Network errors: Ensure public_endpoint_enabled=True
+- Machine type compatibility: Use SHARD_SIZE_SMALL with e2-standard-2
+- Quota limits: Request quota increases if needed

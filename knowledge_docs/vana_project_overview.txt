@@ -1,0 +1,62 @@
+# VANA Project Overview
+
+## Project Purpose
+
+VANA (Versatile Agent Network Architecture) is a multi-agent system designed to demonstrate effective agent collaboration, specialization, and knowledge sharing. The system showcases how different AI agents can work together to solve complex problems.
+
+## Key Features
+
+1. **Multi-Agent Collaboration**:
+   - Coordinator agent (Ben) delegates tasks to specialists
+   - Specialists focus on their domains of expertise
+   - Agents share knowledge through Vector Search
+
+2. **Vector Search Integration**:
+   - Semantic knowledge retrieval
+   - Shared knowledge base for all agents
+   - Continuous learning through new document embeddings
+
+3. **Modular Architecture**:
+   - Easy to add new specialist agents
+   - Flexible tool integration
+   - Configurable agent behaviors
+
+4. **Google Cloud Integration**:
+   - Built on Vertex AI and ADK
+   - Uses Gemini models for agent intelligence
+   - Leverages Vector Search for knowledge retrieval
+
+## Use Cases
+
+1. **Agent Architecture Design**:
+   - Design modular agent systems
+   - Create agent collaboration patterns
+   - Implement memory and feedback loops
+
+2. **User Interface Development**:
+   - Build explainable AI interfaces
+   - Visualize agent decision-making
+   - Create intuitive user experiences
+
+3. **Infrastructure Deployment**:
+   - Design self-healing systems
+   - Implement scalable architectures
+   - Automate deployment processes
+
+4. **Testing and Simulation**:
+   - Create chaos testing scenarios
+   - Identify edge cases and failure modes
+   - Improve system reliability
+
+5. **Documentation and Onboarding**:
+   - Create clear technical documentation
+   - Design onboarding experiences
+   - Explain complex concepts simply
+
+## Getting Started
+
+1. Set up the environment with the startup script
+2. Configure Vector Search for knowledge retrieval
+3. Test the system with the ADK web interface
+4. Add domain-specific knowledge to the Vector Search index
+5. Customize agent behaviors for specific use cases

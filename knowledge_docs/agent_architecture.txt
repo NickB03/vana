@@ -1,0 +1,39 @@
+# Agent Architecture Overview
+
+## Multi-Agent System Design
+
+The VANA system uses a team of specialized agents coordinated by a lead agent. Each agent has specific responsibilities:
+
+1. **Ben (Project Lead & DevOps Strategist)**: Coordinates tasks and ensures cross-agent harmony. All requests flow through Ben, who delegates to specialist agents as needed.
+
+2. **Rhea (Meta-Architect of Agent Intelligence)**: Designs agent workflows, feedback loops, and memory systems. Specializes in agent orchestration and collaboration patterns.
+
+3. **Max (Interaction Engineer)**: Creates interfaces that visualize agent decision-making in real-time. Focuses on making AI cognition transparent to users.
+
+4. **Sage (Platform Automator)**: Deploys infrastructure that heals, scales, and evolves. Ensures the system remains reliable and performant.
+
+5. **Kai (Edge Case Hunter)**: Tests the system with challenging scenarios and identifies potential failure modes. Improves system reliability through simulation.
+
+6. **Juno (Story Engineer)**: Creates documentation, onboarding materials, and internal UX. Translates complex concepts into clear explanations.
+
+## Agent Communication
+
+Agents communicate through a structured protocol:
+- Task delegation from Ben to specialists
+- Results reporting from specialists back to Ben
+- Knowledge sharing through the Vector Search index
+- Tool usage for specific capabilities
+
+## Tool Integration
+
+Agents have access to various tools:
+- Knowledge retrieval via Vector Search
+- Task coordination and delegation
+- Domain-specific tools for each specialist agent
+
+## Memory and Context
+
+The system maintains context through:
+- Shared Vector Search knowledge base
+- Session history for ongoing conversations
+- Agent-specific memory for specialized knowledge
