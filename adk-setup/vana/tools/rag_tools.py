@@ -12,17 +12,19 @@ def search_knowledge(query: str) -> str:
         Relevant search results from the vector store
     """
     try:
-        # Initialize vector search endpoint
-        index_endpoint = aiplatform.MatchingEngineIndexEndpoint(
-            index_endpoint_name="projects/analystai-454200/locations/us-central1/indexEndpoints/vana-shared-index"
-        )
+        # Use the correct endpoint resource name and deployed index ID
+        endpoint_resource_name = "projects/960076421399/locations/us-central1/indexEndpoints/5085685481161621504"
+        deployed_index_id = "vanasharedindex"
+
+        # Initialize the endpoint object
+        index_endpoint = aiplatform.MatchingEngineIndexEndpoint(index_endpoint_name=endpoint_resource_name)
 
         # Generate embedding for query
         embedding = generate_embedding(query)
 
         # Search for similar content
         results = index_endpoint.find_neighbors(
-            deployed_index_id="vana-index",
+            deployed_index_id=deployed_index_id,
             queries=[embedding],
             num_neighbors=5
         )
