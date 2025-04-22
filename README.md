@@ -215,6 +215,13 @@ This will:
 
 ## 💻 Development
 
+### Continuous Integration (CI)
+
+- Automated tests are run on every push and pull request to the `main` branch using GitHub Actions.
+- The workflow is defined in [`.github/workflows/ci.yml`](.github/workflows/ci.yml).
+- The CI pipeline sets up Python, installs dependencies, and runs all available tests using `pytest`.
+- Check the "Actions" tab on GitHub for build and test results.
+
 ### Project Structure
 
 ```

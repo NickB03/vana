@@ -227,6 +227,12 @@ Key changes in the ADK approach:
 4. Evaluate with `adk eval`
 5. Deploy to Agent Engine
 
+#### Continuous Integration (CI)
+
+- All pushes and pull requests to `main` trigger automated tests via GitHub Actions.
+- The workflow is defined in `.github/workflows/ci.yml` and runs `pytest` on the codebase.
+- CI status is visible in the GitHub "Actions" tab.
+
 ---
 
 ## 11. Automated GitHub Knowledge Sync

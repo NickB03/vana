@@ -36,6 +36,11 @@ This checklist tracks the completed and remaining tasks for setting up and imple
 - [x] Update README.md with enhanced Vector Search integration details
 - [x] Create startup scripts documentation
 
+### Continuous Integration
+- [x] Add GitHub Actions workflow for CI in `.github/workflows/ci.yml`
+- [x] Configure workflow to run tests on push and pull request to `main`
+- [x] Confirm workflow is visible and running in GitHub Actions tab
+
 ## 🔲 Remaining Tasks
 
 ### Vector Search Content
@@ -89,7 +94,12 @@ This checklist tracks the completed and remaining tasks for setting up and imple
    - Set up the GitHub Action/webhook and Cloud Function or local handler
    - Make a change in the repo, trigger the flow, and verify new code is indexed and queryable
 
-4. **Iterate and Improve**
+4. **Monitor and Extend CI/CD**
+   - Monitor GitHub Actions workflow runs for all pushes and PRs to `main`
+   - Add additional test coverage and automation as needed (e.g., linting, deployment, notifications)
+   - Consider adding branch protection rules to require passing CI for merges
+
+5. **Iterate and Improve**
    - Review agent responses and identify areas for improvement
    - Update agent instructions or tools as needed
    - Add more knowledge to Vector Search if gaps are identified
