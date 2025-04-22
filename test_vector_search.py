@@ -133,9 +133,8 @@ def main():
                 print("❌ No deployed indexes found.")
                 return
 
-            # Use the first deployed index
-            deployed_index = deployed_indexes[0]
-            deployed_index_id = deployed_index.deployed_index_id
+            # Use the provided ID directly
+            deployed_index_id = "081a89d0-bae5-4b36-9112-90cd74e1afa8"
             print(f"Using deployed index: {deployed_index_id}")
 
             # Get a query from the user or use default
