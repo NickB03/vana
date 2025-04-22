@@ -54,11 +54,11 @@ def parse_arguments():
 
 def upload_to_gcs(local_file: str, gcs_directory: str) -> str:
     """Upload a file to Google Cloud Storage.
-    
+
     Args:
         local_file: Path to the local file
         gcs_directory: Directory in the GCS bucket
-        
+
     Returns:
         GCS URI of the uploaded file
     """
@@ -66,85 +66,86 @@ def upload_to_gcs(local_file: str, gcs_directory: str) -> str:
         # Initialize GCS client
         storage_client = storage.Client()
         bucket = storage_client.bucket(BUCKET_NAME)
-        
-        # Generate a unique filename
-        filename = os.path.basename(local_file)
+
+        # Create a directory structure for the embeddings
+        # Vector Search requires a directory with JSON files
         timestamp = int(time.time())
-        gcs_filename = f"{gcs_directory}/{timestamp}_{filename}"
-        
-        # Upload the file
+        directory_name = f"{gcs_directory}/{timestamp}"
+
+        # Upload the JSON file directly
+        gcs_filename = f"{directory_name}/embeddings.json"
         blob = bucket.blob(gcs_filename)
         blob.upload_from_filename(local_file)
-        
-        # Get the GCS URI
-        gcs_uri = f"gs://{BUCKET_NAME}/{gcs_filename}"
-        logger.info(f"Uploaded {local_file} to {gcs_uri}")
-        
+
+        # Get the GCS URI (directory path)
+        gcs_uri = f"gs://{BUCKET_NAME}/{directory_name}"
+        logger.info(f"Uploaded {local_file} to {gcs_uri}/embeddings.json")
+
         return gcs_uri
     except Exception as e:
         logger.error(f"Error uploading to GCS: {str(e)}")
         raise
 
-def create_update_operation(index_id: str, gcs_uri: str) -> aiplatform.Operation:
+def create_update_operation(index_id: str, gcs_uri: str):
     """Create an update operation for the Vector Search index.
-    
+
     Args:
         index_id: ID of the Vector Search index
         gcs_uri: GCS URI of the embeddings file
-        
+
     Returns:
         Update operation
     """
     try:
         # Initialize Vertex AI
         aiplatform.init(project=PROJECT_ID, location=LOCATION)
-        
+
         # Get the index
         index_name = f"projects/{PROJECT_ID}/locations/{LOCATION}/indexes/{index_id}"
         index = aiplatform.MatchingEngineIndex(index_name=index_name)
-        
+
         # Create the update operation
         operation = index.update_embeddings(
             contents_delta_uri=gcs_uri,
             is_complete_overwrite=False
         )
-        
+
         logger.info(f"Created update operation: {operation.operation.name}")
         return operation
     except Exception as e:
         logger.error(f"Error creating update operation: {str(e)}")
         raise
 
-def monitor_operation(operation: aiplatform.Operation, timeout: int = 3600) -> bool:
+def monitor_operation(operation, timeout: int = 3600) -> bool:
     """Monitor an operation until completion.
-    
+
     Args:
         operation: Operation to monitor
         timeout: Timeout in seconds
-        
+
     Returns:
         True if the operation completed successfully, False otherwise
     """
     try:
         # Start time
         start_time = time.time()
-        
+
         # Monitor the operation
         while not operation.done():
             elapsed_time = time.time() - start_time
             if elapsed_time > timeout:
                 logger.warning(f"Operation timed out after {elapsed_time:.1f} seconds")
                 return False
-            
+
             # Log progress
             logger.info(f"Operation in progress... ({elapsed_time:.1f}s elapsed)")
             time.sleep(30)  # Check every 30 seconds
-        
+
         # Check if the operation was successful
         if operation.error.message:
             logger.error(f"Operation failed: {operation.error.message}")
             return False
-        
+
         logger.info(f"Operation completed successfully in {time.time() - start_time:.1f} seconds")
         return True
     except Exception as e:
@@ -153,12 +154,12 @@ def monitor_operation(operation: aiplatform.Operation, timeout: int = 3600) -> b
 
 def prepare_embeddings_file(embeddings_file: str) -> str:
     """Prepare the embeddings file for upload to GCS.
-    
+
     This function ensures the embeddings file is in the correct format for batch updates.
-    
+
     Args:
         embeddings_file: Path to the embeddings file
-        
+
     Returns:
         Path to the prepared embeddings file
     """
@@ -166,12 +167,12 @@ def prepare_embeddings_file(embeddings_file: str) -> str:
         # Read the embeddings file
         with open(embeddings_file, "r") as f:
             embeddings_data = json.load(f)
-        
+
         # Check if the file is already in the correct format
         if isinstance(embeddings_data, list) and all(isinstance(item, dict) and "id" in item and "embedding" in item for item in embeddings_data):
             logger.info(f"Embeddings file is already in the correct format")
             return embeddings_file
-        
+
         # Convert to the correct format if needed
         prepared_data = []
         for item in embeddings_data:
@@ -179,18 +180,18 @@ def prepare_embeddings_file(embeddings_file: str) -> str:
                 "id": item.get("id", str(uuid.uuid4())),
                 "embedding": item.get("embedding", item.get("feature_vector", [])),
             }
-            
+
             # Add metadata if available
             if "metadata" in item:
                 prepared_item["metadata"] = item["metadata"]
-            
+
             prepared_data.append(prepared_item)
-        
+
         # Write the prepared data to a new file
         prepared_file = f"{os.path.splitext(embeddings_file)[0]}_prepared.json"
         with open(prepared_file, "w") as f:
             json.dump(prepared_data, f)
-        
+
         logger.info(f"Prepared embeddings file: {prepared_file}")
         return prepared_file
     except Exception as e:
@@ -200,19 +201,19 @@ def prepare_embeddings_file(embeddings_file: str) -> str:
 def main():
     """Main function."""
     args = parse_arguments()
-    
+
     logger.info("Starting batch update for Vector Search index")
-    
+
     try:
         # Prepare the embeddings file
         prepared_file = prepare_embeddings_file(args.embeddings_file)
-        
+
         # Upload to GCS
         gcs_uri = upload_to_gcs(prepared_file, args.gcs_directory)
-        
+
         # Create update operation
         operation = create_update_operation(INDEX_ID, gcs_uri)
-        
+
         # Monitor the operation if requested
         if args.wait:
             success = monitor_operation(operation, args.timeout)
@@ -223,7 +224,7 @@ def main():
                 return 1
         else:
             logger.info(f"Batch update operation started. Check the operation status manually.")
-        
+
         return 0
     except Exception as e:
         logger.error(f"Error in batch update: {str(e)}")
