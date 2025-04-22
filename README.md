@@ -204,6 +204,8 @@ VANA uses Vertex AI Vector Search for knowledge retrieval:
    - Index update operation has completed successfully
    - Query functionality has been verified with the comprehensive verification script
    - GitHub knowledge sync has been implemented for automated updates
+   - ADK integration workarounds have been implemented
+   - Comprehensive testing framework has been created
    - The system is now fully functional
 
 7. The system requires a service account with Vertex AI Admin permissions
@@ -304,6 +306,9 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 - [Google ADK Documentation](https://github.com/google/adk-docs)
 - [Vertex AI Vector Search](https://cloud.google.com/vertex-ai/docs/vector-search/overview)
 - [Gemini API Documentation](https://cloud.google.com/vertex-ai/docs/generative-ai/model-reference/gemini)
+- [RAG Integration Guide](README-RAG.md)
+- [Project Status (April 22, 2025)](project_status_4.22.md)
+- [Troubleshooting Guide](docs/troubleshooting.md)
 
 ---
 
@@ -335,5 +340,16 @@ This project is licensed under the MIT License - see the LICENSE file for detail
   - A direct testing framework is available in [scripts/test_vector_search_direct.py](scripts/test_vector_search_direct.py).
   - This script tests the Vector Search integration without relying on ADK agents.
   - It's useful for verifying that the Vector Search functionality is working correctly, even if there are issues with the ADK integration.
+
+- **ADK Integration Workarounds:**
+  - The `tools/adk_wrapper.py` provides a compatibility layer that handles ADK import issues.
+  - The wrapper tries multiple import strategies to ensure compatibility.
+  - The `scripts/agent_harness.py` provides a testing environment for agents with fallback to direct testing if ADK is not available.
+  - The `scripts/test_adk_import.py` script helps diagnose ADK package issues.
+
+- **Comprehensive Testing Framework:**
+  - The `scripts/comprehensive_vector_search_test.py` tests Vector Search with multiple queries.
+  - The `scripts/monitor_rag_health.py` monitors the health of the RAG system.
+  - These scripts provide detailed metrics and logs for system health monitoring.
 
 Developed with ❤️ using Google's Agent Development Kit
