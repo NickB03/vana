@@ -185,19 +185,28 @@ VANA uses Vertex AI Vector Search for knowledge retrieval:
    - The Vector Search index finds semantically similar documents
    - Results are returned with metadata including source and content
 
-4. Monitoring and maintenance:
-   - The `check_operation.py` script monitors long-running operations
-   - The `check_deployment.py` script verifies index deployment status
-   - The `test_vector_search.py` script tests search functionality
+4. Verification and monitoring:
+   - The `verify_vector_search.py` script provides comprehensive testing of the entire RAG pipeline
+   - Tests each component: connection, extraction, chunking, embedding, storage, and retrieval
+   - Provides detailed logging and error reporting
+   - The `test_vector_search.py` script offers a simpler search functionality test
 
-5. Current status:
+5. GitHub knowledge sync:
+   - The `scripts/github_sync/sync_knowledge.py` script synchronizes repository content with Vector Search
+   - Processes repository files, generates embeddings, and updates the Vector Search index
+   - Automated through GitHub Actions workflow in `.github/workflows/knowledge_sync.yml`
+   - Keeps the knowledge base up-to-date with the latest code changes
+   - See `scripts/github_sync/README.md` for detailed usage instructions
+
+6. Current status:
    - Vector Search index has been created and configured
    - Knowledge documents have been embedded and uploaded
    - Index update operation has completed successfully
-   - Query functionality has been fixed based on GCP engineer recommendations
+   - Query functionality has been verified with the comprehensive verification script
+   - GitHub knowledge sync has been implemented for automated updates
    - The system is now fully functional
 
-6. The system requires a service account with Vertex AI Admin permissions
+7. The system requires a service account with Vertex AI Admin permissions
 
 ## 🚀 Deployment
 
@@ -228,6 +237,10 @@ This will:
 vana/
 ├── .env                      # Environment variables
 ├── .gitignore                # Git ignore file
+├── .github/                  # GitHub configuration
+│   └── workflows/            # GitHub Actions workflows
+│       ├── ci.yml            # Continuous Integration workflow
+│       └── knowledge_sync.yml # Knowledge sync workflow
 ├── adk-setup/                # ADK implementation
 │   ├── deploy.py             # Deployment script
 │   ├── requirements.txt      # Python dependencies
@@ -237,6 +250,11 @@ vana/
 │       ├── config/           # Configuration
 │       └── tools/            # Agent tools
 ├── knowledge_docs/           # Text files for Vector Search
+├── scripts/                  # Utility scripts
+│   └── github_sync/          # GitHub knowledge sync scripts
+│       ├── sync_knowledge.py # Main sync script
+│       ├── test_sync.py      # Test script for sync
+│       └── README.md         # Documentation for sync scripts
 ├── tools/                    # Shared tools
 │   └── search_knowledge_tool.py  # Vector Search tool
 ├── setup_vana.py             # Main setup script
@@ -244,7 +262,8 @@ vana/
 ├── check_permissions.py      # Check service account permissions
 ├── setup_vector_search.py    # Vector Search setup
 ├── populate_vector_search.py # Populate Vector Search with knowledge
-├── test_vector_search.py     # Test Vector Search integration
+├── verify_vector_search.py   # Comprehensive Vector Search verification
+├── test_vector_search.py     # Simple Vector Search test
 ├── checklist.md              # Project checklist
 ├── next-steps.md             # Detailed setup guide
 ├── project_handoff.md        # Comprehensive project status for handoff

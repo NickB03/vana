@@ -1,0 +1,62 @@
+name: Knowledge Sync
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      max_files:
+        description: 'Maximum number of files to process'
+        required: false
+        default: '1000'
+      file_types:
+        description: 'File types to process (comma-separated)'
+        required: false
+        default: '.py,.md,.txt'
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    env:
+      GOOGLE_CLOUD_PROJECT: ${{ secrets.GOOGLE_CLOUD_PROJECT }}
+      GOOGLE_CLOUD_LOCATION: ${{ secrets.GOOGLE_CLOUD_LOCATION }}
+      GOOGLE_STORAGE_BUCKET: ${{ secrets.GOOGLE_STORAGE_BUCKET }}
+      GOOGLE_APPLICATION_CREDENTIALS: ./secrets/service-account-key.json
+      VECTOR_SEARCH_INDEX_NAME: vana-shared-index
+      VECTOR_SEARCH_DIMENSIONS: 768
+      DEPLOYED_INDEX_ID: vanasharedindex
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # Fetch all history for proper analysis
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.10'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install python-dotenv google-cloud-aiplatform vertexai google-cloud-storage
+
+    - name: Set up Google Cloud credentials
+      run: |
+        mkdir -p secrets
+        echo "${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}" > ./secrets/service-account-key.json
+
+    - name: Run knowledge sync
+      run: |
+        python scripts/github_sync/sync_knowledge.py \
+          --repo-path . \
+          --file-types ${{ github.event.inputs.file_types || '.py,.md,.txt' }} \
+          --max-files ${{ github.event.inputs.max_files || '1000' }}
+
+    - name: Upload log file
+      uses: actions/upload-artifact@v3
+      with:
+        name: knowledge-sync-logs
+        path: github_knowledge_sync.log
+        retention-days: 7
