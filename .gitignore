@@ -23,11 +23,18 @@ wheels/
 # Virtual Environment
 .env
 .venv
+.venv/
 env/
 venv/
 ENV/
 env.bak/
 venv.bak/
+
+# Large files
+*.tar.gz
+*.zip
+*.rar
+*.7z
 
 # Secrets and credentials
 secrets/
