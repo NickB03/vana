@@ -132,23 +132,6 @@ To create a new agent using the ADK:
 2. Create an agent with those tools
 3. Run the agent using the ADK runner
 
-```python
-from google.adk.agents import Agent
-from google.adk.tools import FunctionTool
-
-def my_tool(input: str) -> str:
-    return f"Processed: {input}"
-
-my_tool_instance = FunctionTool(func=my_tool)
-
-my_agent = Agent(
-    name="my_agent",
-    llm={"model": "gemini-2.0-flash"},
-    system_instruction="You are a helpful assistant.",
-    tools=[my_tool_instance]
-)
-```
-
 ## Testing
 
 The ADK provides a web interface for testing your agents:
@@ -161,17 +144,7 @@ This will launch a web interface at http://localhost:8000 where you can interact
 
 ## Deployment
 
-To deploy your agent to Vertex AI Agent Engine:
-
-```python
-from vertexai import agent_engines
-
-remote_app = agent_engines.create(
-    agent_engine=my_agent,
-    display_name="My Agent",
-    description="A helpful assistant"
-)
-```""",
+To deploy your agent to Vertex AI Agent Engine, you can use the agent_engines module.""",
         
         "agent_architecture.txt": """# VANA Agent Architecture
 
@@ -179,18 +152,7 @@ VANA (Versatile Agent Network Architecture) implements a hierarchical agent stru
 
 ## Agent Hierarchy
 
-```
-                    [Ben - Coordinator]
-                    /        |        \\
-         ┌─────────┐   ┌─────────┐   ┌─────────┐
-         │  Rhea   │   │   Max   │   │  Sage   │
-         │(Meta-Arch)│   │(Interface)│   │(Platform)│
-         └─────────┘   └─────────┘   └─────────┘
-         ┌─────────┐   ┌─────────┐
-         │   Kai   │   │  Juno   │
-         │(Edge Cases)│   │(Story)│
-         └─────────┘   └─────────┘
-```
+The hierarchy has Ben as the coordinator at the top, with specialist agents below.
 
 ## Agent Roles
 
@@ -203,19 +165,7 @@ VANA (Versatile Agent Network Architecture) implements a hierarchical agent stru
 
 ## Agent Implementation
 
-Each agent is implemented using the ADK Agent class:
-
-```python
-from google.adk.agents import Agent
-
-ben = Agent(
-    name="ben",
-    llm={"model": "gemini-2.0-flash"},
-    description="Project Lead & DevOps Strategist",
-    system_instruction="You are Ben — the system thinker...",
-    tools=[coordinate_task_tool, conduct_daily_checkin_tool]
-)
-```
+Each agent is implemented using the ADK Agent class.
 
 ## Agent Communication
 
@@ -237,55 +187,15 @@ This document provides a reference for the tools available to VANA agents.
 
 Assigns tasks to specialist agents.
 
-```python
-def coordinate_task(task_description: str, assigned_agent: str) -> str:
-    """Coordinate task assignment to specialist agents.
-    
-    Args:
-        task_description: Description of the task to be coordinated
-        assigned_agent: Name of the agent to assign the task to
-        
-    Returns:
-        Coordination response
-    """
-    return f"Task '{task_description}' has been assigned to {assigned_agent}"
-```
-
 ### conduct_daily_checkin_tool
 
 Reviews and validates tasks, merges PRs, and updates the roadmap.
-
-```python
-def conduct_daily_checkin(tasks: str) -> str:
-    """Final release gate: validate CI/test/doc, merge PRs, update roadmap.
-    
-    Args:
-        tasks: Tasks to review and validate
-        
-    Returns:
-        PR merge summary, task closeout, and updated metadata
-    """
-    return f"Daily checkin completed for: {tasks}"
-```
 
 ## Knowledge Tools
 
 ### search_knowledge_tool
 
-Searches the shared knowledge base for relevant information.
-
-```python
-def search_knowledge(query: str) -> str:
-    """Search the shared knowledge base for relevant information.
-    
-    Args:
-        query: Search query text
-        
-    Returns:
-        Relevant search results from the vector store
-    """
-    # Implementation details...
-```""",
+Searches the shared knowledge base for relevant information.""",
         
         "vana_project_overview.txt": """# VANA Project Overview
 
@@ -332,35 +242,7 @@ Vector Search is used to provide a shared knowledge base for all agents in the V
 
 ## Setup
 
-The Vector Search index is created and configured using the `setup_vector_search.py` script:
-
-```python
-from google.cloud import aiplatform
-
-# Create the index
-index = aiplatform.MatchingEngineIndex.create_tree_ah_index(
-    display_name="vana-shared-index",
-    dimensions=768,
-    approximate_neighbors_count=150,
-    distance_measure_type="DOT_PRODUCT_DISTANCE",
-    leaf_node_embedding_count=500,
-    description="VANA shared knowledge index"
-)
-
-# Create the endpoint
-endpoint = aiplatform.MatchingEngineIndexEndpoint.create(
-    display_name="vana-shared-index",
-    description="VANA shared knowledge endpoint",
-    public_endpoint_enabled=True
-)
-
-# Deploy the index to the endpoint
-endpoint.deploy_index(
-    index=index,
-    deployed_index_id="vana-shared-index",
-    machine_type="e2-standard-2"
-)
-```
+The Vector Search index is created and configured using the `setup_vector_search.py` script.
 
 ## Knowledge Documents
 
@@ -368,36 +250,11 @@ Knowledge documents are stored in the `knowledge_docs` directory as text files. 
 
 ## Search Implementation
 
-The `search_knowledge_tool` function in `rag_tools.py` is used to search the Vector Search index:
-
-```python
-def search_knowledge(query: str) -> str:
-    """Search the shared knowledge base for relevant information."""
-    # Generate embedding for query
-    embedding = generate_embedding(query)
-    
-    # Search for similar content
-    results = index_endpoint.find_neighbors(
-        deployed_index_id="vana-shared-index",
-        queries=[embedding],
-        num_neighbors=5
-    )
-    
-    # Format and return results
-    return format_search_results(results)
-```
+The `search_knowledge_tool` function in `rag_tools.py` is used to search the Vector Search index.
 
 ## Embedding Generation
 
-Embeddings are generated using the Vertex AI text-embedding-004 model:
-
-```python
-def generate_embedding(text: str) -> List[float]:
-    """Generate embedding for text using Vertex AI."""
-    model = aiplatform.TextEmbeddingModel.from_pretrained("text-embedding-004")
-    embeddings = model.get_embeddings([text])
-    return embeddings[0].values
-```"""
+Embeddings are generated using the Vertex AI text-embedding-004 model."""
     }
     
     # Write sample documents to files

@@ -209,7 +209,36 @@ This project plan outlines the implementation of VANA using Google's Agent Devel
 - Response time < 2 seconds
 - Successful agent delegation in test scenarios
 
+## Phase 6: Automated GitHub Knowledge Sync (1-2 days)
+
+### Tasks:
+1. **Set Up GitHub Trigger**
+   - Configure a GitHub Action or webhook to trigger on push/merge to main.
+2. **Sync Repo Content**
+   - Pull the latest codebase or changed files to a staging area.
+3. **Preprocess and Chunk Files**
+   - Identify relevant files (e.g., `.py`, `.md`, `.json`), chunk as needed for embedding.
+4. **Generate Embeddings**
+   - Use the embedding pipeline to create vector representations for new/changed files.
+5. **Update Vector Search Index**
+   - Upload new embeddings to GCS and update the Vertex AI Vector Search index.
+6. **Test End-to-End**
+   - Make a change in the repo, trigger the flow, and verify new code is queryable by agents.
+
+### Deliverables:
+- Automated pipeline for syncing GitHub repo knowledge to the vector index
+- Documentation of the flow in architecture and README
+- Checklist items for operational steps
+
+### Rationale:
+- Ensures agents always have up-to-date code knowledge
+- Enables continuous improvement and rapid iteration
+- Reduces manual intervention
+
+---
+
 ## Next Steps
 1. Create `.env` file with GCP credentials
 2. Initialize ADK environment
 3. Begin implementing agent team starting with Ben
+4. Implement and test the Automated GitHub Knowledge Sync pipeline
