@@ -16,6 +16,8 @@ Options:
 import os
 import glob
 import uuid
+import json
+import time
 import argparse
 import logging
 from typing import List, Dict, Tuple
@@ -168,8 +170,55 @@ def generate_embeddings(chunks: List[Dict[str, str]]) -> List[Tuple[Dict[str, st
 
     return all_embeddings
 
-def update_vector_search(chunk_embeddings: List[Tuple[Dict[str, str], List[float]]]):
-    """Update the Vector Search index with new embeddings."""
+def export_embeddings_to_file(chunk_embeddings: List[Tuple[Dict[str, str], List[float]]], output_file: str = "embeddings.json") -> str:
+    """Export embeddings to a JSON file for batch updates.
+
+    Args:
+        chunk_embeddings: List of (chunk, embedding) tuples
+        output_file: Path to the output file
+
+    Returns:
+        Path to the output file
+    """
+    try:
+        # Create embeddings in the format expected by the batch update process
+        embeddings_data = []
+
+        for chunk, embedding in chunk_embeddings:
+            # Create a datapoint with id, embedding, and metadata
+            datapoint = {
+                "id": str(uuid.uuid4()),
+                "embedding": embedding,
+                "metadata": {
+                    "source": chunk["source"],
+                    "start_char": str(chunk["start_char"]),
+                    "end_char": str(chunk["end_char"]),
+                    "text": chunk["text"][:1000] + "..." if len(chunk["text"]) > 1000 else chunk["text"]
+                }
+            }
+
+            # Log the chunk information
+            logger.info(f"Processing chunk from {chunk['source']} ({chunk['start_char']}-{chunk['end_char']})")
+            embeddings_data.append(datapoint)
+
+        # Write the embeddings to a file
+        with open(output_file, "w") as f:
+            json.dump(embeddings_data, f)
+
+        logger.info(f"Exported {len(embeddings_data)} embeddings to {output_file}")
+        return output_file
+
+    except Exception as e:
+        logger.error(f"Error exporting embeddings to file: {str(e)}")
+        raise
+
+def update_vector_search(chunk_embeddings: List[Tuple[Dict[str, str], List[float]]]) -> bool:
+    """Update the Vector Search index with new embeddings.
+
+    This function tries two approaches:
+    1. Direct updates using StreamUpdate (if enabled)
+    2. Batch updates by exporting embeddings to a file
+    """
     # Initialize Vertex AI
     aiplatform.init(project=PROJECT_ID, location=LOCATION)
 
@@ -194,7 +243,6 @@ def update_vector_search(chunk_embeddings: List[Tuple[Dict[str, str], List[float
     datapoints = []
     for chunk, embedding in chunk_embeddings:
         # Create a simple datapoint with just datapoint_id and feature_vector
-        # These are the field names expected by the API
         datapoint = {
             "datapoint_id": str(uuid.uuid4()),
             "feature_vector": embedding
@@ -205,10 +253,7 @@ def update_vector_search(chunk_embeddings: List[Tuple[Dict[str, str], List[float
 
         datapoints.append(datapoint)
 
-    # Try to upload datapoints in batches
-    batch_size = 100
-    success = False
-
+    # Try to upload datapoints directly first
     try:
         # Attempt to upload the first batch to see if direct updates are supported
         if datapoints:
@@ -218,28 +263,39 @@ def update_vector_search(chunk_embeddings: List[Tuple[Dict[str, str], List[float
             logger.info("✅ Index supports direct updates. Proceeding with full upload.")
 
             # If we get here, the index supports direct updates
+            batch_size = 100
             for i in range(0, len(datapoints), batch_size):
                 batch = datapoints[i:i+batch_size]
                 logger.info(f"Uploading batch {i//batch_size + 1}/{(len(datapoints)-1)//batch_size + 1}...")
                 index.upsert_datapoints(datapoints=batch)
 
             logger.info(f"Successfully uploaded {len(datapoints)} chunks to Vector Search")
-            success = True
+            return True
     except Exception as e:
         if "StreamUpdate is not enabled" in str(e):
             logger.warning("⚠️ This index does not support direct updates (StreamUpdate is not enabled)")
-            logger.warning("To update this index, you need to:")
-            logger.warning("1. Export the embeddings to Google Cloud Storage")
-            logger.warning("2. Use the Google Cloud Console or the Vector Search API to update the index")
-
-            # For demonstration purposes, we'll consider this a "success" with a warning
-            logger.info(f"Generated {len(datapoints)} embeddings that are ready for export")
-            success = True
+            logger.info("Falling back to batch update approach...")
         else:
             logger.error(f"Error uploading to Vector Search: {str(e)}")
-            success = False
+            logger.info("Falling back to batch update approach...")
 
-    return success
+    # If direct updates failed, export embeddings to a file for batch updates
+    try:
+        # Export embeddings to a file
+        timestamp = int(time.time())
+        output_file = f"embeddings_{timestamp}.json"
+        export_embeddings_to_file(chunk_embeddings, output_file)
+
+        logger.info("Embeddings exported successfully for batch update")
+        logger.info("To update the index, run:")
+        logger.info(f"python scripts/batch_update_index.py --embeddings-file {output_file} --wait")
+
+        # For GitHub Actions, we'll consider this a success
+        # The actual update will be done by a separate workflow or manually
+        return True
+    except Exception as e:
+        logger.error(f"Error exporting embeddings for batch update: {str(e)}")
+        return False
 
 def main():
     """Main function."""

@@ -54,9 +54,34 @@ jobs:
           --file-types ${{ github.event.inputs.file_types || '.py,.md,.txt' }} \
           --max-files ${{ github.event.inputs.max_files || '1000' }}
 
-    - name: Upload log file
+        # Find the latest embeddings file
+        EMBEDDINGS_FILE=$(ls -t embeddings_*.json | head -1)
+
+        if [ -n "$EMBEDDINGS_FILE" ]; then
+          echo "Found embeddings file: $EMBEDDINGS_FILE"
+
+          # Run batch update
+          python scripts/batch_update_index.py \
+            --embeddings-file "$EMBEDDINGS_FILE" \
+            --wait \
+            --timeout 1800
+        else
+          echo "No embeddings file found. Skipping batch update."
+        fi
+
+    - name: Upload log files
       uses: actions/upload-artifact@v3
       with:
         name: knowledge-sync-logs
-        path: github_knowledge_sync.log
+        path: |
+          github_knowledge_sync.log
+          batch_update_index.log
+        retention-days: 7
+
+    - name: Upload embeddings file
+      uses: actions/upload-artifact@v3
+      if: ${{ success() }}
+      with:
+        name: embeddings-file
+        path: embeddings_*.json
         retention-days: 7
