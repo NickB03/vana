@@ -276,4 +276,23 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ---
 
+## 🛠️ Troubleshooting & Integration Notes
+
+- **Vertex AI Vector Search Integration (April 2025):**
+  - The `google-cloud-aiplatform` library must be pinned to version `1.38.0` for compatibility with the current codebase.
+  - All code interacting with Vector Search endpoints must use the endpoint resource name string (not an object) and the correct deployed index ID.
+  - Example usage:
+    ```python
+    endpoint_resource_name = "projects/960076421399/locations/us-central1/indexEndpoints/5085685481161621504"
+    deployed_index_id = "vanasharedindex"
+    endpoint = aiplatform.MatchingEngineIndexEndpoint(index_endpoint_name=endpoint_resource_name)
+    results = endpoint.find_neighbors(
+        deployed_index_id=deployed_index_id,
+        queries=[embedding],
+        num_neighbors=5
+    )
+    ```
+  - See `test_vector_search.py` and `adk-setup/vana/tools/rag_tools.py` for working reference implementations.
+  - If you see errors like `'str' object has no attribute 'resource_name'` or `'MatchingEngineIndexEndpoint' object has no attribute '_public_match_client'`, check your library version and endpoint usage.
+
 Developed with ❤️ using Google's Agent Development Kit

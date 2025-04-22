@@ -202,6 +202,22 @@ ben = Agent(
 
 The ADK web interface is successfully running and can be accessed at http://localhost:8002. This provides a way to interact with the agents and test their functionality.
 
+## Automated GitHub Knowledge Sync
+
+To ensure agents always have up-to-date knowledge of the codebase, VANA is implementing an automated pipeline that syncs the latest GitHub repository content into the Vector Search index.
+
+**Flow:**
+1. **Trigger:** A GitHub Action or webhook triggers on push/merge to the main branch.
+2. **Sync:** The automation pulls the latest codebase (or changed files) to a staging area.
+3. **Preprocess:** Relevant files (e.g., `.py`, `.md`, `.json`) are extracted and chunked as needed.
+4. **Embed:** The embedding pipeline generates vector representations for new/changed files.
+5. **Index Update:** Embeddings are uploaded to GCS and the Vertex AI Vector Search index is updated.
+6. **Query:** Agents immediately have access to the latest code knowledge via the RAG tool.
+
+**Status:**  
+- Architecture, project plan, and checklist have been updated to reflect this new automation.
+- Implementation is the next milestone to ensure code knowledge is always current and queryable by agents.
+
 ## Conclusion
 
-The Vector Search integration is partially implemented but experiencing technical issues that need to be resolved. The ADK web interface is working correctly, and the agent definitions have been updated to match the latest ADK patterns. Further work is needed to fully resolve the Vector Search integration issues.
+The Vector Search integration is now fully functional, and the project is moving forward with automated knowledge sync to keep agent code knowledge up to date.

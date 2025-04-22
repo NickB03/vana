@@ -62,6 +62,15 @@ This checklist tracks the completed and remaining tasks for setting up and imple
 - [ ] Test deployed agent
 - [ ] Monitor performance and costs
 
+### Automated GitHub Knowledge Sync
+- [ ] Set up GitHub Action or webhook to trigger on push/merge to main
+- [ ] Script to pull latest repo content or changed files
+- [ ] Preprocess and chunk relevant files for embedding
+- [ ] Run embedding pipeline on new/changed files
+- [ ] Upload embeddings to GCS and update Vector Search index
+- [ ] Test end-to-end: make a repo change, trigger flow, verify new code is queryable by agents
+- [ ] Document the flow in architecture and README
+
 ## Immediate Next Steps
 
 1. **Resolve Vector Search Query Issues**
@@ -76,7 +85,11 @@ This checklist tracks the completed and remaining tasks for setting up and imple
    - Test specialized queries that should trigger delegation
    - Verify that agents can retrieve knowledge using the search_knowledge_tool
 
-3. **Iterate and Improve**
+3. **Implement and Test Automated GitHub Knowledge Sync**
+   - Set up the GitHub Action/webhook and Cloud Function or local handler
+   - Make a change in the repo, trigger the flow, and verify new code is indexed and queryable
+
+4. **Iterate and Improve**
    - Review agent responses and identify areas for improvement
    - Update agent instructions or tools as needed
    - Add more knowledge to Vector Search if gaps are identified

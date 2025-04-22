@@ -41,14 +41,18 @@ def search_vector_index(query_embedding, index, top_k=5):
 
     # Get the first deployed index endpoint
     deployed_index = deployed_indexes[0]
-    endpoint = deployed_index.index_endpoint
+    endpoint_resource_name = deployed_index.index_endpoint
+    deployed_index_id = deployed_index.deployed_index_id
 
-    print(f"Using deployed index: {deployed_index.deployed_index_id}")
-    print(f"Endpoint: {endpoint.resource_name}")
+    print(f"Using deployed index: {deployed_index_id}")
+    print(f"Endpoint resource name: {endpoint_resource_name}")
+
+    # Initialize the endpoint object
+    endpoint = aiplatform.MatchingEngineIndexEndpoint(index_endpoint_name=endpoint_resource_name)
 
     # Search the index
     response = endpoint.find_neighbors(
-        deployed_index_id=deployed_index.deployed_index_id,
+        deployed_index_id=deployed_index_id,
         queries=[query_embedding],
         num_neighbors=top_k
     )
