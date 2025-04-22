@@ -227,3 +227,32 @@ Key changes in the ADK approach:
 4. Evaluate with `adk eval`
 5. Deploy to Agent Engine
 
+#### Continuous Integration (CI)
+
+- All pushes and pull requests to `main` trigger automated tests via GitHub Actions.
+- The workflow is defined in `.github/workflows/ci.yml` and runs `pytest` on the codebase.
+- CI status is visible in the GitHub "Actions" tab.
+
+---
+
+## 11. Automated GitHub Knowledge Sync
+
+To ensure agents always have up-to-date knowledge of the codebase, VANA integrates an automated pipeline that syncs the latest GitHub repository content into the Vector Search index.
+
+**Flow:**
+1. **Trigger:** A GitHub Action or webhook triggers on push/merge to the main branch.
+2. **Sync:** The automation pulls the latest codebase (or changed files) to a staging area.
+3. **Preprocess:** Relevant files (e.g., `.py`, `.md`, `.json`) are extracted and chunked as needed.
+4. **Embed:** The embedding pipeline generates vector representations for new/changed files.
+5. **Index Update:** Embeddings are uploaded to GCS and the Vertex AI Vector Search index is updated.
+6. **Query:** Agents immediately have access to the latest code knowledge via the RAG tool.
+
+**Benefits:**
+- Code knowledge is always current and queryable by agents.
+- No manual intervention required after initial setup.
+- Supports continuous improvement and rapid iteration.
+
+**See also:**  
+- `README.md` Troubleshooting & Integration Notes  
+- `vana-adk-project-plan.md` for implementation milestones  
+- `checklist.md` for operational steps
