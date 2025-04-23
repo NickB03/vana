@@ -85,3 +85,54 @@ jobs:
         name: embeddings-file
         path: embeddings_*.json
         retention-days: 7
+
+    - name: Run comprehensive Vector Search test
+      run: |
+        # Create logs directory
+        mkdir -p logs
+
+        # Run comprehensive test
+        python scripts/comprehensive_vector_search_test.py \
+          --verbose \
+          --output logs/vector_search_results.json \
+          > logs/vector_search_comprehensive.log
+
+        # Check the test results
+        if [ $? -eq 0 ]; then
+          echo "✅ Comprehensive Vector Search test passed"
+        else
+          echo "⚠️ Comprehensive Vector Search test had issues"
+          # Don't fail the workflow, just report the issue
+        fi
+
+    - name: Upload test results
+      uses: actions/upload-artifact@v3
+      with:
+        name: vector-search-test-results
+        path: |
+          logs/vector_search_results.json
+          logs/vector_search_comprehensive.log
+        retention-days: 7
+
+    - name: Run RAG health monitoring
+      run: |
+        # Run health monitoring
+        python scripts/monitor_rag_health.py \
+          > logs/rag_health.log
+
+        # Check the health monitoring results
+        if [ $? -eq 0 ]; then
+          echo "✅ RAG system is healthy"
+        else
+          echo "⚠️ RAG system has issues"
+          # Don't fail the workflow, just report the issue
+        fi
+
+    - name: Upload health monitoring results
+      uses: actions/upload-artifact@v3
+      with:
+        name: rag-health-monitoring
+        path: |
+          logs/rag_health.log
+          metrics/rag_health_*.json
+        retention-days: 7
