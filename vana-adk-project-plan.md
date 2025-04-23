@@ -159,7 +159,12 @@ This project plan outlines the implementation of VANA using Google's Agent Devel
 ## Phase 5: Testing and Optimization (2 days)
 
 ### Tasks:
-1. **Create Evaluation Dataset**
+1. **Set Up Continuous Integration (CI)**
+   - Add a GitHub Actions workflow in `.github/workflows/ci.yml` to run automated tests on every push and pull request to `main`.
+   - The workflow sets up Python, installs dependencies, and runs `pytest` on the codebase.
+   - Monitor the "Actions" tab on GitHub for build and test results.
+
+2. **Create Evaluation Dataset**
    ```json
    {
      "samples": [

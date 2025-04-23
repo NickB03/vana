@@ -185,19 +185,30 @@ VANA uses Vertex AI Vector Search for knowledge retrieval:
    - The Vector Search index finds semantically similar documents
    - Results are returned with metadata including source and content
 
-4. Monitoring and maintenance:
-   - The `check_operation.py` script monitors long-running operations
-   - The `check_deployment.py` script verifies index deployment status
-   - The `test_vector_search.py` script tests search functionality
+4. Verification and monitoring:
+   - The `verify_vector_search.py` script provides comprehensive testing of the entire RAG pipeline
+   - Tests each component: connection, extraction, chunking, embedding, storage, and retrieval
+   - Provides detailed logging and error reporting
+   - The `test_vector_search.py` script offers a simpler search functionality test
 
-5. Current status:
+5. GitHub knowledge sync:
+   - The `scripts/github_sync/sync_knowledge.py` script synchronizes repository content with Vector Search
+   - Processes repository files, generates embeddings, and updates the Vector Search index
+   - Automated through GitHub Actions workflow in `.github/workflows/knowledge_sync.yml`
+   - Keeps the knowledge base up-to-date with the latest code changes
+   - See `scripts/github_sync/README.md` for detailed usage instructions
+
+6. Current status:
    - Vector Search index has been created and configured
    - Knowledge documents have been embedded and uploaded
    - Index update operation has completed successfully
-   - Query functionality has been fixed based on GCP engineer recommendations
+   - Query functionality has been verified with the comprehensive verification script
+   - GitHub knowledge sync has been implemented for automated updates
+   - ADK integration workarounds have been implemented
+   - Comprehensive testing framework has been created
    - The system is now fully functional
 
-6. The system requires a service account with Vertex AI Admin permissions
+7. The system requires a service account with Vertex AI Admin permissions
 
 ## 🚀 Deployment
 
@@ -215,12 +226,23 @@ This will:
 
 ## 💻 Development
 
+### Continuous Integration (CI)
+
+- Automated tests are run on every push and pull request to the `main` branch using GitHub Actions.
+- The workflow is defined in [`.github/workflows/ci.yml`](.github/workflows/ci.yml).
+- The CI pipeline sets up Python, installs dependencies, and runs all available tests using `pytest`.
+- Check the "Actions" tab on GitHub for build and test results.
+
 ### Project Structure
 
 ```
 vana/
 ├── .env                      # Environment variables
 ├── .gitignore                # Git ignore file
+├── .github/                  # GitHub configuration
+│   └── workflows/            # GitHub Actions workflows
+│       ├── ci.yml            # Continuous Integration workflow
+│       └── knowledge_sync.yml # Knowledge sync workflow
 ├── adk-setup/                # ADK implementation
 │   ├── deploy.py             # Deployment script
 │   ├── requirements.txt      # Python dependencies
@@ -229,7 +251,17 @@ vana/
 │       ├── agents/           # Agent definitions
 │       ├── config/           # Configuration
 │       └── tools/            # Agent tools
+├── docs/                     # Documentation
+│   └── troubleshooting.md    # Troubleshooting guide
 ├── knowledge_docs/           # Text files for Vector Search
+├── scripts/                  # Utility scripts
+│   ├── github_sync/          # GitHub knowledge sync scripts
+│   │   ├── sync_knowledge.py # Main sync script
+│   │   ├── test_sync.py      # Test script for sync
+│   │   └── README.md         # Documentation for sync scripts
+│   ├── test_vector_search_direct.py # Direct Vector Search test
+│   ├── test_agent_knowledge.py # Agent knowledge retrieval test
+│   └── test_end_to_end.py    # End-to-end system test
 ├── tools/                    # Shared tools
 │   └── search_knowledge_tool.py  # Vector Search tool
 ├── setup_vana.py             # Main setup script
@@ -237,7 +269,8 @@ vana/
 ├── check_permissions.py      # Check service account permissions
 ├── setup_vector_search.py    # Vector Search setup
 ├── populate_vector_search.py # Populate Vector Search with knowledge
-├── test_vector_search.py     # Test Vector Search integration
+├── verify_vector_search.py   # Comprehensive Vector Search verification
+├── test_vector_search.py     # Simple Vector Search test
 ├── checklist.md              # Project checklist
 ├── next-steps.md             # Detailed setup guide
 ├── project_handoff.md        # Comprehensive project status for handoff
@@ -273,10 +306,18 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 - [Google ADK Documentation](https://github.com/google/adk-docs)
 - [Vertex AI Vector Search](https://cloud.google.com/vertex-ai/docs/vector-search/overview)
 - [Gemini API Documentation](https://cloud.google.com/vertex-ai/docs/generative-ai/model-reference/gemini)
+- [RAG Integration Guide](README-RAG.md)
+- [Project Status (April 22, 2025)](project_status_4.22.md)
+- [Troubleshooting Guide](docs/troubleshooting.md)
 
 ---
 
 ## 🛠️ Troubleshooting & Integration Notes
+
+- **Comprehensive Troubleshooting Guide:**
+  - A detailed troubleshooting guide is available in [docs/troubleshooting.md](docs/troubleshooting.md).
+  - The guide covers common issues with Vector Search integration, embedding generation, search functionality, ADK integration, and knowledge sync.
+  - It provides step-by-step solutions for each issue and includes commands for diagnosing and fixing problems.
 
 - **Vertex AI Vector Search Integration (April 2025):**
   - The `google-cloud-aiplatform` library must be pinned to version `1.38.0` for compatibility with the current codebase.
@@ -294,5 +335,21 @@ This project is licensed under the MIT License - see the LICENSE file for detail
     ```
   - See `test_vector_search.py` and `adk-setup/vana/tools/rag_tools.py` for working reference implementations.
   - If you see errors like `'str' object has no attribute 'resource_name'` or `'MatchingEngineIndexEndpoint' object has no attribute '_public_match_client'`, check your library version and endpoint usage.
+
+- **Direct Testing Framework:**
+  - A direct testing framework is available in [scripts/test_vector_search_direct.py](scripts/test_vector_search_direct.py).
+  - This script tests the Vector Search integration without relying on ADK agents.
+  - It's useful for verifying that the Vector Search functionality is working correctly, even if there are issues with the ADK integration.
+
+- **ADK Integration Workarounds:**
+  - The `tools/adk_wrapper.py` provides a compatibility layer that handles ADK import issues.
+  - The wrapper tries multiple import strategies to ensure compatibility.
+  - The `scripts/agent_harness.py` provides a testing environment for agents with fallback to direct testing if ADK is not available.
+  - The `scripts/test_adk_import.py` script helps diagnose ADK package issues.
+
+- **Comprehensive Testing Framework:**
+  - The `scripts/comprehensive_vector_search_test.py` tests Vector Search with multiple queries.
+  - The `scripts/monitor_rag_health.py` monitors the health of the RAG system.
+  - These scripts provide detailed metrics and logs for system health monitoring.
 
 Developed with ❤️ using Google's Agent Development Kit

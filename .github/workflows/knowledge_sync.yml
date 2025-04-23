@@ -1,0 +1,138 @@
+name: Knowledge Sync
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      max_files:
+        description: 'Maximum number of files to process'
+        required: false
+        default: '1000'
+      file_types:
+        description: 'File types to process (comma-separated)'
+        required: false
+        default: '.py,.md,.txt'
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    env:
+      GOOGLE_CLOUD_PROJECT: ${{ secrets.GOOGLE_CLOUD_PROJECT }}
+      GOOGLE_CLOUD_LOCATION: ${{ secrets.GOOGLE_CLOUD_LOCATION }}
+      GOOGLE_STORAGE_BUCKET: ${{ secrets.GOOGLE_STORAGE_BUCKET }}
+      GOOGLE_APPLICATION_CREDENTIALS: ./secrets/service-account-key.json
+      VECTOR_SEARCH_INDEX_NAME: vana-shared-index
+      VECTOR_SEARCH_DIMENSIONS: 768
+      DEPLOYED_INDEX_ID: vanasharedindex
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # Fetch all history for proper analysis
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.10'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install python-dotenv google-cloud-aiplatform vertexai google-cloud-storage
+
+    - name: Set up Google Cloud credentials
+      run: |
+        mkdir -p secrets
+        echo "${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}" > ./secrets/service-account-key.json
+
+    - name: Run knowledge sync
+      run: |
+        python scripts/github_sync/sync_knowledge.py \
+          --repo-path . \
+          --file-types ${{ github.event.inputs.file_types || '.py,.md,.txt' }} \
+          --max-files ${{ github.event.inputs.max_files || '1000' }}
+
+        # Find the latest embeddings file
+        EMBEDDINGS_FILE=$(ls -t embeddings_*.json | head -1)
+
+        if [ -n "$EMBEDDINGS_FILE" ]; then
+          echo "Found embeddings file: $EMBEDDINGS_FILE"
+
+          # Run batch update
+          python scripts/batch_update_index.py \
+            --embeddings-file "$EMBEDDINGS_FILE" \
+            --wait \
+            --timeout 1800
+        else
+          echo "No embeddings file found. Skipping batch update."
+        fi
+
+    - name: Upload log files
+      uses: actions/upload-artifact@v3
+      with:
+        name: knowledge-sync-logs
+        path: |
+          github_knowledge_sync.log
+          batch_update_index.log
+        retention-days: 7
+
+    - name: Upload embeddings file
+      uses: actions/upload-artifact@v3
+      if: ${{ success() }}
+      with:
+        name: embeddings-file
+        path: embeddings_*.json
+        retention-days: 7
+
+    - name: Run comprehensive Vector Search test
+      run: |
+        # Create logs directory
+        mkdir -p logs
+
+        # Run comprehensive test
+        python scripts/comprehensive_vector_search_test.py \
+          --verbose \
+          --output logs/vector_search_results.json \
+          > logs/vector_search_comprehensive.log
+
+        # Check the test results
+        if [ $? -eq 0 ]; then
+          echo "✅ Comprehensive Vector Search test passed"
+        else
+          echo "⚠️ Comprehensive Vector Search test had issues"
+          # Don't fail the workflow, just report the issue
+        fi
+
+    - name: Upload test results
+      uses: actions/upload-artifact@v3
+      with:
+        name: vector-search-test-results
+        path: |
+          logs/vector_search_results.json
+          logs/vector_search_comprehensive.log
+        retention-days: 7
+
+    - name: Run RAG health monitoring
+      run: |
+        # Run health monitoring
+        python scripts/monitor_rag_health.py \
+          > logs/rag_health.log
+
+        # Check the health monitoring results
+        if [ $? -eq 0 ]; then
+          echo "✅ RAG system is healthy"
+        else
+          echo "⚠️ RAG system has issues"
+          # Don't fail the workflow, just report the issue
+        fi
+
+    - name: Upload health monitoring results
+      uses: actions/upload-artifact@v3
+      with:
+        name: rag-health-monitoring
+        path: |
+          logs/rag_health.log
+          metrics/rag_health_*.json
+        retention-days: 7

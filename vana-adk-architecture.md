@@ -1,6 +1,6 @@
 # VANA ADK Architecture Plan
 
-**Project ID**: analystai-454200  
+**Project ID**: analystai-454200
 **Document Type**: Technical Architecture Reference
 **Framework**: Google ADK (Agent Development Kit)
 
@@ -227,6 +227,12 @@ Key changes in the ADK approach:
 4. Evaluate with `adk eval`
 5. Deploy to Agent Engine
 
+#### Continuous Integration (CI)
+
+- All pushes and pull requests to `main` trigger automated tests via GitHub Actions.
+- The workflow is defined in `.github/workflows/ci.yml` and runs `pytest` on the codebase.
+- CI status is visible in the GitHub "Actions" tab.
+
 ---
 
 ## 11. Automated GitHub Knowledge Sync
@@ -246,7 +252,104 @@ To ensure agents always have up-to-date knowledge of the codebase, VANA integrat
 - No manual intervention required after initial setup.
 - Supports continuous improvement and rapid iteration.
 
-**See also:**  
-- `README.md` Troubleshooting & Integration Notes  
-- `vana-adk-project-plan.md` for implementation milestones  
+## 12. ADK Integration Workarounds
+
+To address challenges with the Google ADK package, VANA implements several workarounds:
+
+### 12.1. ADK Wrapper
+
+The `tools/adk_wrapper.py` provides a compatibility layer that handles ADK import issues:
+
+```python
+class ADKWrapper:
+    """Wrapper for ADK functionality that handles import issues."""
+
+    def __init__(self):
+        self.adk_module = None
+        self.agent_module = None
+        self._initialize()
+
+    def _initialize(self):
+        """Initialize the ADK wrapper by trying multiple import strategies."""
+        # Strategy 1: Direct import
+        try:
+            import google.adk
+            self.adk_module = google.adk
+            return
+        except ImportError:
+            pass
+
+        # Strategy 2: Import through google.cloud.aiplatform
+        try:
+            from google.cloud import aiplatform
+            if hasattr(aiplatform, 'adk'):
+                self.adk_module = aiplatform.adk
+                return
+        except ImportError:
+            pass
+
+        # Strategy 3: Try aiplatform.agents for direct agent access
+        try:
+            from google.cloud.aiplatform import agents
+            self.agent_module = agents
+            return
+        except ImportError:
+            pass
+```
+
+### 12.2. Agent Test Harness
+
+The `scripts/agent_harness.py` provides a testing environment for agents with fallback to direct testing if ADK is not available:
+
+```python
+class MockAgent:
+    """Mock agent for testing when ADK is not available."""
+
+    def __init__(self, name, description, instructions):
+        self.name = name
+        self.description = description
+        self.instructions = instructions
+        self.tools = []
+
+    def add_tool(self, tool_fn, name, description):
+        """Add a tool to the agent."""
+        self.tools.append({
+            "function": tool_fn,
+            "name": name,
+            "description": description
+        })
+
+    def run(self, query):
+        """Run the agent with direct tool access."""
+        # Implementation that uses search_knowledge_tool directly
+```
+
+### 12.3. Direct Vector Search Testing
+
+The `scripts/test_vector_search_direct.py` provides a way to test Vector Search without relying on ADK agents:
+
+```python
+def search_knowledge(query):
+    """Search the knowledge base for information related to the query."""
+    # Generate embedding for the query
+    embedding = generate_embedding(query)
+
+    # Get the Vector Search endpoint
+    endpoint, deployed_index_id = get_vector_search_endpoint()
+
+    # Search the index
+    results = endpoint.find_neighbors(
+        deployed_index_id=deployed_index_id,
+        queries=[embedding],
+        num_neighbors=5
+    )
+
+    # Format and return the results
+    return format_results(results)
+```
+
+**See also:**
+- `README-RAG.md` for detailed information about the RAG integration
+- `README.md` Troubleshooting & Integration Notes
+- `docs/troubleshooting.md` for solutions to common issues
 - `checklist.md` for operational steps
