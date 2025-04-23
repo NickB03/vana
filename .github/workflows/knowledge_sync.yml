@@ -70,7 +70,7 @@ jobs:
         fi
 
     - name: Upload log files
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4  # Updated from v3 to v4 to fix workflow failures
       with:
         name: knowledge-sync-logs
         path: |
@@ -79,7 +79,7 @@ jobs:
         retention-days: 7
 
     - name: Upload embeddings file
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4  # Updated from v3 to v4 to fix workflow failures
       if: ${{ success() }}
       with:
         name: embeddings-file
@@ -106,7 +106,7 @@ jobs:
         fi
 
     - name: Upload test results
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4  # Updated from v3 to v4 to fix workflow failures
       with:
         name: vector-search-test-results
         path: |
@@ -129,7 +129,7 @@ jobs:
         fi
 
     - name: Upload health monitoring results
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4  # Updated from v3 to v4 to fix workflow failures
       with:
         name: rag-health-monitoring
         path: |
