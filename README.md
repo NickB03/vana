@@ -18,6 +18,7 @@ VANA is a sophisticated multi-agent system built using Google's Agent Developmen
 - [Usage](#usage)
 - [Agent Team](#agent-team)
 - [Vector Search Integration](#vector-search-integration)
+- [n8n MCP Integration](#n8n-mcp-integration)
 - [Deployment](#deployment)
 - [Development](#development)
 - [Contributing](#contributing)
@@ -199,6 +200,36 @@ VANA uses Vertex AI Vector Search for knowledge retrieval:
 
 6. The system requires a service account with Vertex AI Admin permissions
 
+## 🔄 n8n MCP Integration
+
+VANA integrates with n8n and the Model Context Protocol (MCP) for enhanced memory management:
+
+1. **n8n MCP Server**:
+   - Allows Ben (Claude) to directly configure n8n workflows for memory management
+   - Provides standardized command handling through MCP
+   - Enables persistent memory across sessions
+
+2. **Memory Commands**:
+   - `!memory_on` - Start buffering new chat turns
+   - `!memory_off` - Stop buffering, discard uncommitted memory
+   - `!rag` - Save buffered memory permanently into vector store
+
+3. **Setup and Configuration**:
+   - The `mcp-servers/n8n-mcp` directory contains the MCP server code
+   - The `launch_vana_with_mcp.sh` script starts the VANA environment with the MCP server
+   - See [n8n-mcp-server-setup.md](docs/n8n-mcp-server-setup.md) for detailed setup instructions
+
+4. **Benefits**:
+   - Workflow orchestration for memory operations
+   - Standardized command handling
+   - Persistent memory across sessions
+   - Integration with Ragie.ai for vector storage
+
+5. **Requirements**:
+   - Node.js (v18.17.0, v20, or v22 recommended)
+   - n8n API key
+   - Ragie API key
+
 ## 🚀 Deployment
 
 Deploy to Vertex AI Agent Engine:
@@ -229,7 +260,16 @@ vana/
 │       ├── agents/           # Agent definitions
 │       ├── config/           # Configuration
 │       └── tools/            # Agent tools
+├── docs/                     # Documentation
+│   └── n8n-mcp-server-setup.md  # n8n MCP server setup guide
 ├── knowledge_docs/           # Text files for Vector Search
+├── mcp-servers/              # MCP server implementations
+│   └── n8n-mcp/              # n8n MCP server
+│       ├── build/            # Compiled server code
+│       ├── src/              # Source code
+│       ├── .env              # Environment variables
+│       └── start-mcp-server.sh  # Script to start the MCP server
+├── n8n-local/                # Local n8n installation
 ├── tools/                    # Shared tools
 │   └── search_knowledge_tool.py  # Vector Search tool
 ├── setup_vana.py             # Main setup script
@@ -238,6 +278,7 @@ vana/
 ├── setup_vector_search.py    # Vector Search setup
 ├── populate_vector_search.py # Populate Vector Search with knowledge
 ├── test_vector_search.py     # Test Vector Search integration
+├── launch_vana_with_mcp.sh   # Script to launch VANA with MCP server
 ├── checklist.md              # Project checklist
 ├── next-steps.md             # Detailed setup guide
 ├── project_handoff.md        # Comprehensive project status for handoff
