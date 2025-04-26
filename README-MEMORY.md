@@ -48,15 +48,36 @@ Test the memory system using various queries to ensure it retrieves relevant inf
 
 ## Next Steps
 
+### Phase 2: n8n and MCP Integration (In Progress)
+1. Deploy n8n on Railway.app for workflow orchestration
+   - Set up manual memory save workflow
+   - Set up daily memory sync workflow
+   - Configure webhooks for MCP integration
+2. Implement MCP-based memory protocol
+   - Add memory commands (`!memory_on`, `!memory_off`, `!rag`)
+   - Create memory buffer management system
+   - Connect MCP interface to n8n workflows
+
+### Phase 3: Advanced Features (Planned)
 1. Integrate memory tools with all agents
-2. Set up n8n for more sophisticated memory orchestration
-3. Transition to Vertex AI Vector Search for long-term scalability
-4. Implement MCP-based memory protocol
+2. Transition to Vertex AI Vector Search for long-term scalability
+3. Implement multi-agent shared memory pools
+4. Add advanced memory operations and analytics
 
 ## Architecture
+
+### Current Architecture (Phase 1)
 
 ```
 [ADK Agent] --> [Memory Tool] --> [Ragie API] --> [Vector Knowledge Base]
 ```
 
 This simple architecture provides a clean, fast path to agent memory without excessive engineering.
+
+### Planned Architecture (Phase 2)
+
+```
+[ADK Agent] <--> [MCP Interface] <--> [n8n Workflows] <--> [Ragie API] <--> [Vector Knowledge Base]
+```
+
+The Phase 2 architecture adds n8n for workflow orchestration and MCP for standardized command handling, providing more sophisticated memory management capabilities.

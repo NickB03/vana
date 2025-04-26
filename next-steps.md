@@ -9,6 +9,7 @@ This guide provides step-by-step instructions to get your VANA multi-agent syste
 - [Step 4: Running the Agent Locally](#step-4-running-the-agent-locally)
 - [Step 5: Testing Your Agent](#step-5-testing-your-agent)
 - [Step 6: Deploying to Google Cloud](#step-6-deploying-to-google-cloud)
+- [Step 7: Setting Up n8n and MCP for Memory Management](#step-7-setting-up-n8n-and-mcp-for-memory-management)
 - [Troubleshooting](#troubleshooting)
 
 ## Step 1: Setting Up Your Environment
@@ -339,6 +340,234 @@ If the web interface doesn't appear:
 2. Try accessing http://localhost:8000 in a different browser
 3. Make sure no other application is using port 8000
 
+### n8n deployment fails
+
+If the n8n deployment on Railway fails:
+1. Check that your GitHub repository is properly connected to Railway
+2. Verify that all required environment variables are set
+3. Check the Railway logs for any error messages
+4. Try deploying a simpler application first to verify your Railway setup
+
+### n8n workflows fail
+
+If the n8n workflows fail:
+1. Check the execution history in n8n for error messages
+2. Verify that the webhook URL is correct and accessible
+3. Check that the Ragie API key is valid
+4. Test the workflow with sample data to isolate the issue
+
+### MCP commands don't work
+
+If the MCP commands don't work:
+1. Check that the memory buffer manager is properly initialized
+2. Verify that the webhook URL is correct in the MCP interface
+3. Check the logs for any error messages
+4. Test each component separately to isolate the issue
+
 ---
 
 If you encounter any issues not covered here, please reach out to the development team for assistance.
+
+## Step 7: Setting Up n8n and MCP for Memory Management
+
+This step will enhance your agent's memory capabilities by adding workflow orchestration with n8n and standardized command handling with MCP.
+
+### 7.1 Deploy n8n on Railway.app
+
+1. Create a Railway.app account:
+   - Go to [Railway.app](https://railway.app)
+   - Sign up with your GitHub account
+
+2. Fork the n8n repository:
+   - Go to [n8n GitHub repository](https://github.com/n8n-io/n8n)
+   - Click the "Fork" button in the top right
+   - Select your GitHub account as the destination
+
+3. Deploy to Railway:
+   - In Railway, click "New Project"
+   - Select "Deploy from GitHub repo"
+   - Choose your forked n8n repository
+   - Configure environment variables:
+     ```
+     N8N_BASIC_AUTH_USER=your_username
+     N8N_BASIC_AUTH_PASSWORD=your_password
+     WEBHOOK_URL=your_railway_app_url
+     RAGIE_API_KEY=your_ragie_api_key
+     ```
+   - Click "Deploy"
+
+4. Verify deployment:
+   - Once deployed, Railway will provide a URL
+   - Open the URL in your browser
+   - Log in with the credentials you set in the environment variables
+
+### 7.2 Create n8n Workflows
+
+1. Create the Manual Memory Save Workflow:
+   - In n8n, click "Create new workflow"
+   - Name it "Manual Memory Save"
+   - Add a Webhook node as the trigger
+   - Configure it to listen for POST requests at /save-memory
+   - Add the remaining nodes as described in the documentation
+   - Save and activate the workflow
+
+2. Create the Daily Memory Sync Workflow:
+   - In n8n, click "Create new workflow"
+   - Name it "Daily Memory Sync"
+   - Add a Schedule node as the trigger
+   - Configure it to run daily at your preferred time
+   - Add the remaining nodes as described in the documentation
+   - Save and activate the workflow
+
+### 7.3 Implement MCP Interface
+
+1. Create the Memory Buffer Manager:
+   ```bash
+   mkdir -p tools/memory/mcp
+   touch tools/memory/mcp/__init__.py
+   touch tools/memory/mcp/buffer.py
+   ```
+
+2. Add the buffer manager code to buffer.py:
+   ```python
+   class MemoryBufferManager:
+       def __init__(self):
+           self.buffer = []
+           self.memory_on = False
+
+       def add_message(self, message):
+           if self.memory_on:
+               self.buffer.append(message)
+
+       def get_buffer(self):
+           return self.buffer
+
+       def clear(self):
+           self.buffer = []
+
+       def start_recording(self):
+           self.memory_on = True
+
+       def stop_recording(self):
+           self.memory_on = False
+   ```
+
+3. Create the MCP interface:
+   ```bash
+   touch tools/memory/mcp/interface.py
+   ```
+
+4. Add the MCP interface code to interface.py:
+   ```python
+   import os
+   import requests
+   from .buffer import MemoryBufferManager
+
+   class MemoryMCP:
+       def __init__(self, buffer_manager=None):
+           self.buffer_manager = buffer_manager or MemoryBufferManager()
+           self.webhook_url = os.environ.get("N8N_WEBHOOK_URL")
+
+       def handle_command(self, command):
+           if command == "!memory_on":
+               self.buffer_manager.start_recording()
+               return "Memory recording started"
+
+           elif command == "!memory_off":
+               self.buffer_manager.stop_recording()
+               self.buffer_manager.clear()
+               return "Memory recording stopped and buffer cleared"
+
+           elif command == "!rag":
+               if not self.buffer_manager.memory_on:
+                   return "Error: Memory recording is not active"
+
+               # Trigger n8n webhook for saving memory
+               self._trigger_save_workflow()
+               return "Memory saved to knowledge base"
+
+       def _trigger_save_workflow(self):
+           """Trigger the n8n workflow to save memory"""
+           payload = {
+               "buffer": self.buffer_manager.get_buffer(),
+               "memory_on": self.buffer_manager.memory_on
+           }
+
+           try:
+               response = requests.post(self.webhook_url, json=payload)
+               response.raise_for_status()
+
+               # Clear buffer if save was successful
+               if response.status_code == 200:
+                   self.buffer_manager.clear()
+
+               return response.json()
+           except Exception as e:
+               print(f"Error triggering save workflow: {e}")
+               return None
+   ```
+
+### 7.4 Integrate with Ben Agent
+
+1. Update the Ben agent to use the MCP interface:
+   ```bash
+   # Edit the memory_enabled_ben.py file
+   nano adk-setup/vana/agents/memory_enabled_ben.py
+   ```
+
+2. Add the following code to the Ben agent:
+   ```python
+   from tools.memory.mcp.interface import MemoryMCP
+   from tools.memory.mcp.buffer import MemoryBufferManager
+
+   class BenAgent(Agent):
+       # ... existing code ...
+
+       def __init__(self, *args, **kwargs):
+           super().__init__(*args, **kwargs)
+
+           # Set up memory buffer and MCP
+           self.memory_buffer = MemoryBufferManager()
+           self.memory_mcp = MemoryMCP(self.memory_buffer)
+
+       def process_message(self, message):
+           # Check if it's a memory command
+           if message.startswith("!"):
+               command = message.split()[0]
+               return self.memory_mcp.handle_command(command)
+
+           # Otherwise, process normally and add to buffer if memory is on
+           response = super().process_message(message)
+
+           if self.memory_mcp.memory_on:
+               self.memory_buffer.add_message({
+                   "role": "user",
+                   "content": message
+               })
+               self.memory_buffer.add_message({
+                   "role": "assistant",
+                   "content": response
+               })
+
+           return response
+   ```
+
+### 7.5 Test the Integration
+
+1. Start the agent:
+   ```bash
+   python run_memory_agent.py
+   ```
+
+2. Test the memory commands:
+   - Type `!memory_on` to start recording
+   - Have a conversation with the agent
+   - Type `!rag` to save the conversation to the knowledge base
+   - Type `!memory_off` to stop recording
+
+3. Verify in n8n:
+   - Check the execution history in n8n
+   - Verify that the workflow was triggered
+   - Check that the data was uploaded to Ragie
+
+For more detailed information, see the [n8n and MCP Integration Documentation](docs/n8n-mcp-integration.md) and the [n8n and MCP Integration Checklist](docs/n8n-mcp-checklist.md).
