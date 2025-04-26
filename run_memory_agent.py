@@ -11,10 +11,16 @@ Requires:
 """
 
 import os
+import sys
 from dotenv import load_dotenv
 from google.adk import Agent
 from google.adk.run import Orchestrator
-from adk-setup.vana.agents.memory_enabled_ben import get_agent
+
+# Add the project root to the path so we can import our modules
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+
+# Import the agent
+from adk_setup.vana.agents.memory_enabled_ben import get_agent
 
 # Load environment variables from .env file
 load_dotenv()
