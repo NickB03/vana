@@ -166,6 +166,32 @@ The following tasks need to be completed to finish the n8n and MCP integration:
    - Need to implement robust error handling in the MCP interface
    - Need to handle cases where the n8n webhook is unavailable or returns an error
 
+## Pending Changes
+
+There are several modified files in the repository that have not been committed yet. These files contain debugging code and test scripts related to the Ragie memory integration:
+
+1. **adk-setup/vana/agents/memory_enabled_ben.py**:
+   - The memory-enabled Ben agent with Ragie integration
+   - No significant changes, just the base implementation
+
+2. **run_memory_agent.py**:
+   - Script to run the memory-enabled Ben agent for testing
+   - Contains debugging code for ADK 0.3.0 compatibility
+
+3. **tools/memory/agent_tools.py**:
+   - Contains the memory tool implementation for ADK agents
+   - Has debugging code with forced debug=True for detailed logging
+
+4. **tools/memory/ragie_client.py**:
+   - Core functions for interacting with the Ragie API
+   - Added debug parameter for detailed logging
+
+5. **direct_ragie_test.py** (new file):
+   - Test script to directly query the Ragie API without agent interpretation
+   - Useful for debugging and testing the Ragie integration
+
+These files should be reviewed and cleaned up before finalizing the implementation. The debugging code should be removed or made configurable in the final version.
+
 ## Contact Information
 
 - **Project Owner**: Nick
