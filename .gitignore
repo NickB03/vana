@@ -80,3 +80,4 @@ yarn-error.log*
 .env.test.local
 .env.production.local
 .env
+google-cloud-cli-458.0.0-darwin-x86_64.tar.gz
