@@ -5,8 +5,31 @@ This guide provides step-by-step instructions for deploying n8n on Railway.app f
 ## Prerequisites
 
 - GitHub account
-- Railway.app account
+- Railway.app account (Hobby plan - $5/month)
 - Ragie API key
+
+## Railway Pricing
+
+Railway.app currently offers two pricing plans:
+
+1. **Hobby Plan** ($5/mo minimum spend)
+   - Includes $5 of usage monthly
+   - 8 GB RAM / 8 vCPU per service
+   - Single developer workspace
+   - Community support
+   - 7-day log history
+   - Global regions
+
+2. **Pro Plan** ($20/mo minimum spend)
+   - Includes $20 of usage monthly
+   - 32 GB RAM / 32 vCPU per service
+   - Unlimited team seats
+   - Railway Support (1 Business Day)
+   - 30-day log history
+   - SOC2 compliance report
+   - Multiple concurrent regions
+
+For the VANA memory integration, the **Hobby Plan** is sufficient and recommended.
 
 ## Deployment Steps
 
