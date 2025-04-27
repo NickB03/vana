@@ -44,6 +44,7 @@ secrets/
 *.json
 !package.json
 !package-lock.json
+!augment-config.json
 !.env.example
 !frontend/.env.example
 !adk-setup/.env.example

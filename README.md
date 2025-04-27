@@ -19,6 +19,7 @@ VANA is a sophisticated multi-agent system built using Google's Agent Developmen
 - [Agent Team](#agent-team)
 - [Vector Search Integration](#vector-search-integration)
 - [n8n MCP Integration](#n8n-mcp-integration)
+- [Knowledge Graph Integration](#knowledge-graph-integration)
 - [Deployment](#deployment)
 - [Development](#development)
 - [Contributing](#contributing)
@@ -28,6 +29,7 @@ VANA is a sophisticated multi-agent system built using Google's Agent Developmen
   - [Environment Setup](docs/environment-setup.md)
   - [n8n MCP Server Setup](docs/n8n-mcp-server-setup.md)
   - [Enhanced Memory Operations](docs/enhanced-memory-operations.md)
+  - [Knowledge Graph Setup](docs/knowledge-graph-setup.md)
 
 ## 🔍 Overview
 
@@ -39,9 +41,11 @@ This project demonstrates how to build, configure, and deploy a team of speciali
 
 - **Hierarchical Agent Structure**: 6 specialized AI agents led by Ben (Project Lead)
 - **Shared Knowledge Base**: Vector storage via Vertex AI Vector Search
+- **Persistent Memory**: MCP Knowledge Graph for long-term memory across sessions
 - **Native Multi-Agent Support**: Built-in delegation through ADK
 - **Development UI**: Built-in developer UI for testing
 - **Cloud Deployment**: Seamless deployment to Vertex AI Agent Engine
+- **Chat History Integration**: Import past Claude conversations into the Knowledge Graph
 
 ## 🏗️ Architecture
 
@@ -248,6 +252,42 @@ VANA integrates with n8n and the Model Context Protocol (MCP) for enhanced memor
    - See [Environment Setup Guide](docs/environment-setup.md) for details
    - For security, store sensitive credentials in `secrets/.env`
 
+## 🧠 Knowledge Graph Integration
+
+VANA integrates with a hosted MCP Knowledge Graph for persistent memory and knowledge management:
+
+1. **MCP Knowledge Graph**:
+   - Provides persistent memory across sessions
+   - Stores structured knowledge as entities and relationships
+   - Enables agents to build and query a knowledge base over time
+
+2. **Key Features**:
+   - Entity and relationship storage
+   - Semantic search capabilities
+   - Metadata and property management
+   - Historical conversation tracking
+
+3. **Integration with Claude**:
+   - Import past Claude chat history
+   - Automatically extract entities and relationships
+   - Make historical knowledge available to agents
+
+4. **Commands**:
+   - `!kg_query [entity_type] [query]` - Search for entities
+   - `!kg_store [entity_name] [entity_type] [observation]` - Store new information
+   - `!kg_context` - Show current Knowledge Graph context
+
+5. **Setup and Configuration**:
+   - Uses community-hosted MCP server
+   - Configuration stored in `augment-config.json`
+   - See [Knowledge Graph Setup Guide](docs/knowledge-graph-setup.md) for detailed instructions
+
+6. **Benefits**:
+   - No self-hosting required
+   - Accessible from any device
+   - Persistent knowledge across sessions
+   - Structured knowledge representation
+
 ## 🚀 Deployment
 
 Deploy to Vertex AI Agent Engine:
@@ -281,7 +321,8 @@ vana/
 ├── docs/                     # Documentation
 │   ├── n8n-mcp-server-setup.md  # n8n MCP server setup guide
 │   ├── environment-setup.md     # Environment variable setup guide
-│   └── enhanced-memory-operations.md  # Enhanced memory operations guide
+│   ├── enhanced-memory-operations.md  # Enhanced memory operations guide
+│   └── knowledge-graph-setup.md # Knowledge Graph setup guide
 ├── knowledge_docs/           # Text files for Vector Search
 ├── mcp-servers/              # MCP server implementations
 │   └── n8n-mcp/              # n8n MCP server
@@ -299,6 +340,10 @@ vana/
 ├── populate_vector_search.py # Populate Vector Search with knowledge
 ├── test_vector_search.py     # Test Vector Search integration
 ├── launch_vana_with_mcp.sh   # Script to launch VANA with MCP server
+├── scripts/                  # Utility scripts
+│   ├── import_claude_history.py  # Import Claude chat history to Knowledge Graph
+│   └── test_mcp_connection.py    # Test MCP Knowledge Graph connection
+├── augment-config.json       # Augment configuration for Knowledge Graph
 ├── checklist.md              # Project checklist
 ├── next-steps.md             # Detailed setup guide
 ├── project_handoff.md        # Comprehensive project status for handoff
@@ -363,5 +408,6 @@ For detailed documentation on specific aspects of the VANA project, please refer
 - [Environment Setup Guide](docs/environment-setup.md) - How to set up environment variables and manage credentials
 - [n8n MCP Server Setup](docs/n8n-mcp-server-setup.md) - How to set up and configure the n8n MCP server
 - [Enhanced Memory Operations](docs/enhanced-memory-operations.md) - Advanced memory capabilities including filtering, tagging, and analytics
+- [Knowledge Graph Setup](docs/knowledge-graph-setup.md) - How to set up and use the MCP Knowledge Graph with Claude chat history
 
 Developed with ❤️ using Google's Agent Development Kit

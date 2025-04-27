@@ -1,0 +1,21 @@
+{
+  "knowledgeGraph": {
+    "provider": "mcp",
+    "config": {
+      "serverUrl": "https://mcp.community.augment.co",
+      "namespace": "vana-project",
+      "apiKey": "YOUR_API_KEY_HERE"
+    }
+  },
+  "memory": {
+    "enabled": true,
+    "autoSave": true,
+    "autoLoad": true
+  },
+  "chatHistory": {
+    "import": {
+      "enabled": true,
+      "sources": ["claude"]
+    }
+  }
+}
