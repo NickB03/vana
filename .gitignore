@@ -81,3 +81,7 @@ yarn-error.log*
 .env.production.local
 .env
 google-cloud-cli-458.0.0-darwin-x86_64.tar.gz
+
+# n8n local installation
+n8n-local/
+node_modules/
