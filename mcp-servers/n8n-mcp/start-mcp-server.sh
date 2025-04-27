@@ -2,10 +2,10 @@
 
 # Set environment variables
 export N8N_API_URL=http://localhost:5678/api/v1
-export N8N_API_KEY="your_n8n_api_key"
+export N8N_API_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJjMWRiMzg5Ny1jZGExLTRjNTItODNjNy1mNTVmODVmZTkxZGYiLCJpc3MiOiJuOG4iLCJhdWQiOiJwdWJsaWMtYXBpIiwiaWF0IjoxNzQ1NzAyNzExfQ.RX5YBYj1xPYHUj7Du3AnNSmsLqC30gqprR5cRTYVcLk"
 export N8N_WEBHOOK_USERNAME=vana_webhook
 export N8N_WEBHOOK_PASSWORD=vana_webhook_password
-export RAGIE_API_KEY="your_ragie_api_key"
+export RAGIE_API_KEY="tnt_GSntfmqfmli_QbZFHsP7SkceqqLggWZEsmy5BeixreYN6Pe9lAKTwjz"
 export DEBUG=true
 
 # Start the MCP server
