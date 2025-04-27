@@ -29,7 +29,9 @@ VANA is a sophisticated multi-agent system built using Google's Agent Developmen
   - [Environment Setup](docs/environment-setup.md)
   - [n8n MCP Server Setup](docs/n8n-mcp-server-setup.md)
   - [Enhanced Memory Operations](docs/enhanced-memory-operations.md)
-  - [Knowledge Graph Setup](docs/knowledge-graph-setup.md)
+  - [Knowledge Graph Integration](docs/knowledge-graph-integration.md)
+  - [Launch Configuration](docs/launch-configuration.md)
+  - [Vertex AI Transition](docs/vertex-ai-transition.md)
 
 ## 🔍 Overview
 
@@ -260,33 +262,47 @@ VANA integrates with a hosted MCP Knowledge Graph for persistent memory and know
    - Provides persistent memory across sessions
    - Stores structured knowledge as entities and relationships
    - Enables agents to build and query a knowledge base over time
+   - Complements Vector Search with structured knowledge representation
 
 2. **Key Features**:
    - Entity and relationship storage
    - Semantic search capabilities
    - Metadata and property management
    - Historical conversation tracking
+   - Hybrid search combining Knowledge Graph and Vector Search
 
 3. **Integration with Claude**:
    - Import past Claude chat history
    - Automatically extract entities and relationships
    - Make historical knowledge available to agents
+   - Enhance agent reasoning with structured knowledge
 
-4. **Commands**:
-   - `!kg_query [entity_type] [query]` - Search for entities
-   - `!kg_store [entity_name] [entity_type] [observation]` - Store new information
+4. **Knowledge Graph Commands**:
+   - `!kg_on` - Enable Knowledge Graph integration
+   - `!kg_off` - Disable Knowledge Graph integration
+   - `!kg_query <entity_type> <query>` - Search for entities
+   - `!kg_store <entity_name> <entity_type> <observation>` - Store new information
+   - `!kg_relationship <entity1> <relationship> <entity2>` - Store a relationship
    - `!kg_context` - Show current Knowledge Graph context
 
-5. **Setup and Configuration**:
+5. **Hybrid Search Commands**:
+   - `!hybrid_search <query>` - Search both Knowledge Graph and Vector Search
+   - `!vector_search <query>` - Search only Vector Search
+   - `!kg_search <query>` - Search only Knowledge Graph
+
+6. **Setup and Configuration**:
    - Uses community-hosted MCP server
    - Configuration stored in `augment-config.json`
-   - See [Knowledge Graph Setup Guide](docs/knowledge-graph-setup.md) for detailed instructions
+   - See [Knowledge Graph Integration Guide](docs/knowledge-graph-integration.md) for detailed instructions
+   - See [Launch Configuration Guide](docs/launch-configuration.md) for setup instructions
 
-6. **Benefits**:
+7. **Benefits**:
    - No self-hosting required
    - Accessible from any device
    - Persistent knowledge across sessions
    - Structured knowledge representation
+   - Enhanced reasoning through hybrid search
+   - Automatic entity extraction from conversations
 
 ## 🚀 Deployment
 
@@ -408,6 +424,8 @@ For detailed documentation on specific aspects of the VANA project, please refer
 - [Environment Setup Guide](docs/environment-setup.md) - How to set up environment variables and manage credentials
 - [n8n MCP Server Setup](docs/n8n-mcp-server-setup.md) - How to set up and configure the n8n MCP server
 - [Enhanced Memory Operations](docs/enhanced-memory-operations.md) - Advanced memory capabilities including filtering, tagging, and analytics
-- [Knowledge Graph Setup](docs/knowledge-graph-setup.md) - How to set up and use the MCP Knowledge Graph with Claude chat history
+- [Knowledge Graph Integration](docs/knowledge-graph-integration.md) - How to set up and use the MCP Knowledge Graph with Claude chat history
+- [Launch Configuration](docs/launch-configuration.md) - How to configure and launch the VANA environment with MCP Knowledge Graph
+- [Vertex AI Transition](docs/vertex-ai-transition.md) - Guide to transitioning from Ragie.ai to Vertex AI Vector Search
 
 Developed with ❤️ using Google's Agent Development Kit
