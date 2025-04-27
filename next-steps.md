@@ -10,6 +10,7 @@ This guide provides step-by-step instructions to get your VANA multi-agent syste
 - [Step 5: Testing Your Agent](#step-5-testing-your-agent)
 - [Step 6: Deploying to Google Cloud](#step-6-deploying-to-google-cloud)
 - [Step 7: Setting Up n8n and MCP for Memory Management](#step-7-setting-up-n8n-and-mcp-for-memory-management)
+- [Step 8: Setting Up MCP Knowledge Graph](#step-8-setting-up-mcp-knowledge-graph)
 - [Troubleshooting](#troubleshooting)
 
 ## Step 1: Setting Up Your Environment
@@ -364,9 +365,111 @@ If the MCP commands don't work:
 3. Check the logs for any error messages
 4. Test each component separately to isolate the issue
 
+### Knowledge Graph issues
+
+If you encounter issues with the Knowledge Graph:
+1. Verify that you have a valid API key from the MCP community server
+2. Check that the API key is correctly set in the augment-config.json file
+3. Verify that the server URL is accessible from your network
+4. Test the connection using the test_mcp_connection.py script
+5. Check the logs for any error messages
+
 ---
 
 If you encounter any issues not covered here, please reach out to the development team for assistance.
+
+## Step 8: Setting Up MCP Knowledge Graph
+
+This step will set up the MCP Knowledge Graph for persistent memory across sessions and import your past Claude chat history.
+
+### 8.1 Configure Augment for Knowledge Graph
+
+1. Create or update the augment-config.json file in your project root:
+   ```bash
+   # Create the file if it doesn't exist
+   touch augment-config.json
+
+   # Edit the file with your preferred text editor
+   nano augment-config.json
+   ```
+
+2. Add the following configuration to the file:
+   ```json
+   {
+     "knowledgeGraph": {
+       "provider": "mcp",
+       "config": {
+         "serverUrl": "https://mcp.community.augment.co",
+         "namespace": "vana-project",
+         "apiKey": "YOUR_API_KEY_HERE"
+       }
+     },
+     "memory": {
+       "enabled": true,
+       "autoSave": true,
+       "autoLoad": true
+     },
+     "chatHistory": {
+       "import": {
+         "enabled": true,
+         "sources": ["claude"]
+       }
+     }
+   }
+   ```
+
+3. Replace `YOUR_API_KEY_HERE` with your actual API key from the MCP community server.
+
+### 8.2 Test the Connection
+
+1. Run the test script to verify the connection to the MCP Knowledge Graph:
+   ```bash
+   python scripts/test_mcp_connection.py --api-key YOUR_API_KEY
+   ```
+
+2. If the test is successful, you should see a message indicating that all tests passed.
+
+### 8.3 Import Claude Chat History
+
+1. If your Claude chat history is in text format, convert it to JSON first:
+   ```bash
+   python scripts/claude_history_converter.py --input path/to/claude_history.txt --output claude_history.json
+   ```
+
+2. Import the chat history into the Knowledge Graph:
+   ```bash
+   python scripts/import_claude_history.py --input claude_history.json --api-key YOUR_API_KEY
+   ```
+
+3. The script will extract entities and relationships from your chat history and store them in the Knowledge Graph.
+
+### 8.4 Use Knowledge Graph Commands
+
+Once the Knowledge Graph is set up, you can use the following commands in your conversations with Claude:
+
+1. `!kg_query [entity_type] [query]` - Search for entities in the Knowledge Graph
+   ```
+   !kg_query project "VANA"
+   ```
+
+2. `!kg_store [entity_name] [entity_type] [observation]` - Store new information
+   ```
+   !kg_store VANA project "VANA is a multi-agent system using Google's ADK"
+   ```
+
+3. `!kg_context` - Show the current Knowledge Graph context
+   ```
+   !kg_context
+   ```
+
+### 8.5 Monitor and Manage
+
+1. Visit the MCP community dashboard (URL provided when you obtain your API key)
+2. Navigate to your namespace
+3. View entities, relationships, and usage statistics
+4. Manage permissions and access controls
+
+For more detailed information, see the [Knowledge Graph Setup Guide](docs/knowledge-graph-setup.md).
 
 ## Step 7: Setting Up n8n and MCP for Memory Management
 

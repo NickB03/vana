@@ -35,6 +35,10 @@ This checklist tracks the completed and remaining tasks for setting up and imple
 - [x] Update next-steps.md with detailed Vector Search setup instructions
 - [x] Update README.md with enhanced Vector Search integration details
 - [x] Create startup scripts documentation
+- [x] Create comprehensive architecture documentation
+- [x] Create environment setup guide
+- [x] Create Knowledge Graph setup documentation
+- [x] Create enhanced memory operations documentation
 
 ### Continuous Integration
 - [x] Add GitHub Actions workflow for CI in `.github/workflows/ci.yml`
@@ -53,12 +57,32 @@ This checklist tracks the completed and remaining tasks for setting up and imple
 - [x] Implement comprehensive testing framework for Vector Search
 - [x] Create health monitoring system for RAG pipeline
 
+### Knowledge Graph Integration
+- [x] Set up MCP Knowledge Graph configuration
+- [x] Create scripts for importing Claude chat history
+- [x] Implement entity and relationship extraction
+- [x] Create Knowledge Graph documentation
+- [ ] Obtain API key from MCP community server
+- [ ] Test connection to hosted MCP Knowledge Graph
+- [ ] Import Claude chat history into Knowledge Graph
+- [ ] Integrate Knowledge Graph commands with agents
+
+### Memory Management
+- [x] Implement n8n MCP server for memory management
+- [x] Create memory buffer manager for conversation recording
+- [x] Develop enhanced memory operations with filtering, tagging, and analytics
+- [x] Set up secure credential management for memory services
+- [ ] Transition from Ragie.ai to Vertex AI Vector Search for memory storage
+- [ ] Update memory tools to use Vertex AI instead of Ragie.ai
+- [ ] Test memory operations with the new backend
+
 ### Agent Testing
 - [x] Create agent test harness for testing with or without ADK
 - [x] Implement ADK wrapper to handle import issues
 - [ ] Test Ben (coordinator agent) with basic queries
 - [ ] Test delegation to specialist agents
 - [x] Test knowledge retrieval using Vector Search
+- [ ] Test Knowledge Graph integration with agents
 - [ ] Verify all tools are working correctly
 
 ### Agent Optimization
@@ -90,31 +114,51 @@ This checklist tracks the completed and remaining tasks for setting up and imple
    - ✅ Added health monitoring system for RAG pipeline
    - ✅ Updated search_knowledge_tool with verified approach
 
-2. **Test Agent System with ADK Wrapper**
-   - Use the agent test harness to test agents with or without ADK
+2. **Complete Knowledge Graph Integration**
+   - Obtain API key from MCP community server
+   - Test connection to hosted MCP Knowledge Graph
+   - Import Claude chat history into Knowledge Graph
+   - Integrate Knowledge Graph commands with agents
+   - Test and optimize Knowledge Graph queries
+
+3. **Transition Memory System to Vertex AI**
+   - Update memory tools to use Vertex AI Vector Search instead of Ragie.ai
+   - Ensure compatibility with existing memory commands
+   - Test memory operations with the new backend
+   - Update documentation to reflect the changes
+   - Migrate existing memories to the new system
+
+4. **Test Agent System with Knowledge Graph**
+   - Use the agent test harness to test agents with Knowledge Graph
    - Test basic queries with Ben using the ADK wrapper
    - Test specialized queries that should trigger delegation
-   - Verify that agents can retrieve knowledge using the search_knowledge_tool
+   - Verify that agents can retrieve and store information in the Knowledge Graph
+   - Test memory operations with the new backend
 
-3. **✅ Implement Automated GitHub Knowledge Sync**
+5. **✅ Implement Automated GitHub Knowledge Sync**
    - ✅ Set up the GitHub Action workflow for knowledge sync
    - ✅ Implemented batch update process for Vector Search
    - ✅ Set up GitHub secrets for knowledge sync workflow
    - Test the workflow by making a change in the repo and verifying new code is indexed and queryable
 
-4. **Monitor and Extend CI/CD**
+6. **Monitor and Extend CI/CD**
    - Monitor GitHub Actions workflow runs for all pushes and PRs to `main`
    - Add additional test coverage and automation as needed (e.g., linting, deployment, notifications)
    - Consider adding branch protection rules to require passing CI for merges
 
-5. **Iterate and Improve**
+7. **Iterate and Improve**
    - Review agent responses and identify areas for improvement
-   - Update agent instructions or tools as needed
-   - Add more knowledge to Vector Search if gaps are identified
-   - Monitor Vector Search performance and costs
+   - Update agent instructions to leverage the Knowledge Graph
+   - Add more knowledge to Vector Search and Knowledge Graph if gaps are identified
+   - Monitor performance and costs of both systems
 
 ## Resources
 
 - [Google ADK Documentation](https://cloud.google.com/vertex-ai/docs/agent-development-kit/overview)
 - [Vertex AI Vector Search](https://cloud.google.com/vertex-ai/docs/vector-search/overview)
 - [Gemini API Documentation](https://cloud.google.com/vertex-ai/docs/generative-ai/model-reference/gemini)
+- [MCP Knowledge Graph Documentation](https://mcp.community.augment.co/docs)
+- [n8n Documentation](https://docs.n8n.io/)
+- [VANA Knowledge Graph Setup](docs/knowledge-graph-setup.md)
+- [VANA Memory Operations](docs/enhanced-memory-operations.md)
+- [VANA Environment Setup](docs/environment-setup.md)
