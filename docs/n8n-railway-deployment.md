@@ -66,8 +66,21 @@ N8N_BASIC_AUTH_ACTIVE=true
 N8N_BASIC_AUTH_USER=your_username
 N8N_BASIC_AUTH_PASSWORD=your_password
 
-# Ragie API Key
-RAGIE_API_KEY=your_ragie_api_key
+# Google Cloud Configuration
+GOOGLE_CLOUD_PROJECT=your_google_cloud_project_id
+GOOGLE_CLOUD_LOCATION=us-central1
+GOOGLE_AUTH_TOKEN=your_google_auth_token
+GOOGLE_APPLICATION_CREDENTIALS=/path/to/service-account-key.json
+
+# Vector Search Configuration
+VECTOR_SEARCH_INDEX_ID=your_vector_search_index_id
+VECTOR_SEARCH_ENDPOINT_ID=your_vector_search_endpoint_id
+DEPLOYED_INDEX_ID=your_deployed_index_id
+
+# MCP Knowledge Graph Configuration
+MCP_API_KEY=your_mcp_api_key
+MCP_SERVER_URL=https://mcp.community.augment.co
+MCP_NAMESPACE=vana-project
 
 # Database Configuration (Railway will provide these automatically)
 DB_TYPE=postgresdb
@@ -79,6 +92,8 @@ NODE_ENV=production
 GENERIC_TIMEZONE=UTC
 N8N_VERSION=1.31.0
 ```
+
+Note: For the `GOOGLE_AUTH_TOKEN`, you'll need to generate a token using the Google Cloud SDK or use a service account key. The `GOOGLE_APPLICATION_CREDENTIALS` should point to a service account key file that has been uploaded to your Railway project.
 
 ### 5. Connect Database to n8n
 
@@ -100,12 +115,19 @@ N8N_VERSION=1.31.0
 
 ## Configuring Webhooks
 
-After deployment, you'll need to update the `WEBHOOK_URL` environment variable with the actual URL of your deployed n8n instance:
+After deployment, you'll need to update the webhook-related environment variables with the actual URL of your deployed n8n instance:
 
 1. In your Railway project, go to the "Variables" tab
-2. Add a new variable:
+2. Add or update the following variables:
    - Key: `WEBHOOK_URL`
    - Value: The URL of your deployed n8n instance (e.g., `https://your-n8n-instance.railway.app`)
+
+3. Add webhook endpoints for specific workflows:
+   - Key: `MEMORY_SAVE_WEBHOOK`
+   - Value: `https://your-n8n-instance.railway.app/webhook/save-memory`
+
+   - Key: `KG_SYNC_WEBHOOK`
+   - Value: `https://your-n8n-instance.railway.app/webhook/kg-sync`
 
 ## Troubleshooting
 
@@ -132,3 +154,21 @@ If you cannot log in to n8n:
 1. Verify that `N8N_BASIC_AUTH_ACTIVE` is set to `true`
 2. Check that you're using the correct username and password
 3. Ensure that the environment variables are properly set in Railway
+
+### Vector Search Issues
+
+If you encounter issues with Vector Search integration:
+
+1. Verify that the Google Cloud environment variables are correctly set
+2. Check that the service account has the necessary permissions
+3. Ensure that the Vector Search index and endpoint exist
+4. Test the Vector Search connection using the Google Cloud Console
+
+### Knowledge Graph Issues
+
+If you encounter issues with the Knowledge Graph integration:
+
+1. Verify that the MCP API key is valid
+2. Check that the MCP server URL is accessible
+3. Ensure that the namespace is correctly set
+4. Test the Knowledge Graph connection using a simple API request

@@ -1,6 +1,6 @@
 # Enhanced Memory Operations for VANA
 
-This document describes the enhanced memory operations available in the VANA system, which extend the basic memory capabilities with more sophisticated features.
+This document describes the enhanced memory operations available in the VANA system, which extend the basic memory capabilities with more sophisticated features, including the transition to Vertex AI Vector Search and the integration with MCP Knowledge Graph.
 
 ## Overview
 
@@ -10,6 +10,8 @@ The enhanced memory operations provide the following capabilities:
 2. **Memory Tagging**: Add tags to memories for better organization
 3. **Memory Prioritization**: Prioritize memories based on relevance to both query and context
 4. **Memory Analytics**: Get insights about stored memories
+5. **Knowledge Graph Integration**: Store and retrieve structured knowledge
+6. **Hybrid Search**: Combine Vector Search and Knowledge Graph for comprehensive results
 
 ## Command Reference
 
@@ -30,6 +32,14 @@ The enhanced memory operations provide the following capabilities:
 | `!memory_filter tags <query> <tag1> <tag2> ...` | Filter memories by tags |
 | `!memory_analytics` | Get analytics about stored memories |
 | `!memory_help` | Show help text for memory commands |
+
+### Knowledge Graph Commands
+
+| Command | Description |
+|---------|-------------|
+| `!kg_query [entity_type] [query]` | Search for entities in the Knowledge Graph |
+| `!kg_store [entity_name] [entity_type] [observation]` | Store new information in the Knowledge Graph |
+| `!kg_context` | Show the current Knowledge Graph context |
 
 ## Usage Examples
 
@@ -90,6 +100,32 @@ Memories by date (last 7 days):
 - 2023-09-07: 5
 ```
 
+### Knowledge Graph Operations
+
+```
+User: !kg_store VANA project "VANA is a multi-agent system using Google's ADK and Vertex AI Vector Search for memory management."
+Assistant: Successfully stored entity: VANA (project)
+
+User: !kg_query project "VANA"
+Assistant: Found 1 entities for query: VANA
+
+1. VANA (project)
+   VANA is a multi-agent system using Google's ADK and Vertex AI Vector Search for memory management.
+
+User: !kg_context
+Assistant: Current Knowledge Graph Context:
+
+Projects:
+- VANA
+- Vector Search
+- ADK
+
+Concepts:
+- Memory Management
+- Multi-agent System
+- Knowledge Graph
+```
+
 ## Implementation Details
 
 ### Memory Filtering
@@ -127,12 +163,32 @@ Analytics provide insights about:
 - Most common tags
 - Usage patterns
 
+### Knowledge Graph Integration
+
+The Knowledge Graph provides structured knowledge representation:
+
+- **Entities**: Named objects or concepts (e.g., VANA, Vector Search)
+- **Entity Types**: Categories for entities (e.g., project, concept)
+- **Observations**: Information about entities
+- **Relationships**: Connections between entities
+- **Context**: Current state of the Knowledge Graph
+
+### Hybrid Search
+
+The hybrid search approach combines Vector Search and Knowledge Graph:
+
+1. **Vector Search**: Used for semantic similarity and unstructured content
+2. **Knowledge Graph**: Used for structured knowledge and relationships
+3. **Fallback Mechanism**: If one system fails, the other is used
+4. **Result Merging**: Results from both systems are combined and ranked
+
 ## Integration with n8n
 
 The enhanced memory operations are integrated with n8n workflows:
 
 1. **Manual Memory Save Workflow**: Handles the `!rag` command with tag support
 2. **Daily Memory Sync Workflow**: Automatically syncs recent conversations
+3. **Knowledge Graph Sync Workflow**: Extracts entities and relationships from memories and stores them in the Knowledge Graph
 
 ## Error Handling
 
@@ -150,4 +206,10 @@ Planned enhancements for the memory system:
 1. **Memory Summarization**: Automatically summarize large memory sets
 2. **Memory Visualization**: Visual representation of memory connections
 3. **Memory Pruning**: Automatically remove redundant or outdated memories
-4. **Cross-Agent Memory Sharing**: Share memories between different agents
+4. **Cross-Agent Memory Sharing**: Share memories between different agents with fine-grained permissions
+5. **Memory-Based Agent Specialization**: Allow agents to develop specializations based on their memory
+6. **Knowledge Graph Visualization**: Create a visual interface for exploring the Knowledge Graph
+7. **Automated Entity Extraction**: Improve entity extraction with machine learning
+8. **Relationship Inference**: Automatically infer relationships between entities
+9. **Hybrid Search Optimization**: Optimize the combination of Vector Search and Knowledge Graph
+10. **Memory Analytics Dashboard**: Create a comprehensive dashboard for memory analytics
