@@ -58,11 +58,17 @@ Test the memory system using various queries to ensure it retrieves relevant inf
    - Create memory buffer management system
    - Connect MCP interface to n8n workflows
 
-### Phase 3: Advanced Features (Planned)
-1. Integrate memory tools with all agents
-2. Transition to Vertex AI Vector Search for long-term scalability
-3. Implement multi-agent shared memory pools
-4. Add advanced memory operations and analytics
+### Phase 3: Advanced Features (Implemented)
+1. Enhanced memory operations
+   - Memory filtering by date, tags, and relevance
+   - Memory tagging for better organization
+   - Memory prioritization based on query and context
+   - Memory analytics for insights
+2. Integrate memory tools with all agents
+3. Transition to Vertex AI Vector Search for long-term scalability
+4. Implement multi-agent shared memory pools
+
+See [docs/enhanced-memory-operations.md](docs/enhanced-memory-operations.md) for details on the enhanced memory operations.
 
 ## Architecture
 
@@ -74,10 +80,24 @@ Test the memory system using various queries to ensure it retrieves relevant inf
 
 This simple architecture provides a clean, fast path to agent memory without excessive engineering.
 
-### Planned Architecture (Phase 2)
+### Current Architecture (Phase 2-3)
 
 ```
-[ADK Agent] <--> [MCP Interface] <--> [n8n Workflows] <--> [Ragie API] <--> [Vector Knowledge Base]
+                                                                 ┌─────────────────────┐
+                                                                 │  Enhanced Memory    │
+                                                                 │    Operations       │
+                                                                 └─────────┬───────────┘
+                                                                           │
+┌─────────────┐     ┌─────────────────┐     ┌─────────────────┐     ┌─────▼─────────┐     ┌─────────────────────┐
+│ ADK Agent   │<--->│  MCP Interface  │<--->│  n8n Workflows  │<--->│  Ragie API    │<--->│ Vector Knowledge    │
+└─────────────┘     └─────────────────┘     └─────────────────┘     └───────────────┘     │ Base                │
+                                                                                          └─────────────────────┘
 ```
 
-The Phase 2 architecture adds n8n for workflow orchestration and MCP for standardized command handling, providing more sophisticated memory management capabilities.
+The current architecture includes:
+- n8n for workflow orchestration
+- MCP for standardized command handling
+- Enhanced memory operations for advanced memory capabilities
+- Ragie.ai as the vector knowledge base
+
+This provides a robust memory management system with sophisticated filtering, tagging, and analytics capabilities.

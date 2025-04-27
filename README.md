@@ -23,6 +23,11 @@ VANA is a sophisticated multi-agent system built using Google's Agent Developmen
 - [Development](#development)
 - [Contributing](#contributing)
 - [License](#license)
+- [Additional Resources](#additional-resources)
+- [Documentation](#documentation)
+  - [Environment Setup](docs/environment-setup.md)
+  - [n8n MCP Server Setup](docs/n8n-mcp-server-setup.md)
+  - [Enhanced Memory Operations](docs/enhanced-memory-operations.md)
 
 ## 🔍 Overview
 
@@ -99,20 +104,28 @@ Your service account needs the following permissions:
 
 ## ⚙️ Configuration
 
-1. Create a `.env` file based on the following template:
-   ```
-   # Google Cloud Project Details
-   GOOGLE_CLOUD_PROJECT=your-project-id
-   GOOGLE_CLOUD_LOCATION=us-central1
-   GOOGLE_STORAGE_BUCKET=your-storage-bucket
-   GOOGLE_APPLICATION_CREDENTIALS=./secrets/your-credentials.json
+1. Set up environment variables using one of the following methods:
 
-   # ADK Configuration
-   GOOGLE_GENAI_USE_VERTEXAI=True
-   MODEL=gemini-2.0-flash
-   VECTOR_SEARCH_INDEX_NAME=vana-shared-index
-   VECTOR_SEARCH_DIMENSIONS=768
+   **Option 1: Project Root `.env` (Standard)**
+   ```bash
+   # Copy the example file
+   cp .env.example .env
+
+   # Edit with your favorite text editor
+   nano .env
    ```
+
+   **Option 2: Secrets Directory (More Secure, Recommended)**
+   ```bash
+   # Create the secrets directory if it doesn't exist
+   mkdir -p secrets
+
+   # Create and edit the secrets file
+   cp .env.example secrets/.env
+   nano secrets/.env
+   ```
+
+   For detailed information on environment variable setup, see [Environment Setup Guide](docs/environment-setup.md).
 
 2. Create a `secrets` directory and add your service account key:
    ```bash
@@ -230,6 +243,11 @@ VANA integrates with n8n and the Model Context Protocol (MCP) for enhanced memor
    - n8n API key
    - Ragie API key
 
+6. **Environment Setup**:
+   - API keys and credentials are stored in environment variables
+   - See [Environment Setup Guide](docs/environment-setup.md) for details
+   - For security, store sensitive credentials in `secrets/.env`
+
 ## 🚀 Deployment
 
 Deploy to Vertex AI Agent Engine:
@@ -261,7 +279,9 @@ vana/
 │       ├── config/           # Configuration
 │       └── tools/            # Agent tools
 ├── docs/                     # Documentation
-│   └── n8n-mcp-server-setup.md  # n8n MCP server setup guide
+│   ├── n8n-mcp-server-setup.md  # n8n MCP server setup guide
+│   ├── environment-setup.md     # Environment variable setup guide
+│   └── enhanced-memory-operations.md  # Enhanced memory operations guide
 ├── knowledge_docs/           # Text files for Vector Search
 ├── mcp-servers/              # MCP server implementations
 │   └── n8n-mcp/              # n8n MCP server
@@ -335,5 +355,13 @@ This project is licensed under the MIT License - see the LICENSE file for detail
     ```
   - See `test_vector_search.py` and `adk-setup/vana/tools/rag_tools.py` for working reference implementations.
   - If you see errors like `'str' object has no attribute 'resource_name'` or `'MatchingEngineIndexEndpoint' object has no attribute '_public_match_client'`, check your library version and endpoint usage.
+
+## 📚 Documentation
+
+For detailed documentation on specific aspects of the VANA project, please refer to the following guides:
+
+- [Environment Setup Guide](docs/environment-setup.md) - How to set up environment variables and manage credentials
+- [n8n MCP Server Setup](docs/n8n-mcp-server-setup.md) - How to set up and configure the n8n MCP server
+- [Enhanced Memory Operations](docs/enhanced-memory-operations.md) - Advanced memory capabilities including filtering, tagging, and analytics
 
 Developed with ❤️ using Google's Agent Development Kit

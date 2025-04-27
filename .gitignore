@@ -47,6 +47,7 @@ secrets/
 !.env.example
 !frontend/.env.example
 !adk-setup/.env.example
+!mcp-servers/n8n-mcp/.env.example
 .service-account.json
 *credentials*.json
 *credential*.json
