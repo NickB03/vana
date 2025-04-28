@@ -1,232 +1,123 @@
 #!/usr/bin/env python3
 """
-Run Optimized Hybrid Search
+Run Optimized Search Script for VANA
 
-This script demonstrates the optimized hybrid search implementation
-and compares it with the original implementation.
+This script runs the optimized hybrid search implementation with optional web integration.
+It can be used to test and compare the different search implementations.
+
+Usage:
+    python scripts/run_optimized_search.py --query "What is VANA architecture?" --include-web
+    python scripts/run_optimized_search.py --query "How does hybrid search work?" --no-web
+    python scripts/run_optimized_search.py --query "What are the latest ADK features?" --include-web --count 10
 """
 
 import os
 import sys
-import json
-import time
-import logging
 import argparse
-from typing import Dict, Any
+import time
+import json
+from typing import List, Dict, Any
 
-# Add the project root to the Python path
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
-# Configure logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+# Add project root to path
+sys.path.insert(0, os.path.abspath(os.path.dirname(os.path.dirname(__file__))))
 
 # Import search implementations
 try:
-    from tools.hybrid_search import HybridSearch
-    from tools.enhanced_hybrid_search import EnhancedHybridSearch
-    from tools.enhanced_hybrid_search_optimized import EnhancedHybridSearchOptimized
+    from tools.enhanced_hybrid_search_optimized import OptimizedHybridSearch
+    from tools.web_search_client import get_web_search_client
 except ImportError as e:
-    logger.error(f"Error importing search implementations: {str(e)}")
+    print(f"Error importing required modules: {e}")
+    print("Make sure you run this script from the project root or scripts directory.")
     sys.exit(1)
 
 
-def measure_latency(func, *args, **kwargs):
-    """
-    Measure latency of a function
-    
-    Args:
-        func: Function to measure
-        *args: Function arguments
-        **kwargs: Function keyword arguments
-        
-    Returns:
-        Tuple of (function result, latency in milliseconds)
-    """
+def parse_arguments():
+    """Parse command line arguments."""
+    parser = argparse.ArgumentParser(description="Run VANA optimized search with optional web integration")
+    parser.add_argument("--query", "-q", type=str, required=True, help="Search query")
+    parser.add_argument("--include-web", action="store_true", help="Include web search results")
+    parser.add_argument("--no-web", action="store_true", help="Exclude web search results")
+    parser.add_argument("--count", "-c", type=int, default=5, help="Number of results to return")
+    parser.add_argument("--mock", action="store_true", help="Use mock web search client instead of real API")
+    parser.add_argument("--verbose", "-v", action="store_true", help="Print verbose output")
+    parser.add_argument("--compare", action="store_true", help="Compare with basic hybrid search")
+    return parser.parse_args()
+
+
+def format_results(results: List[Dict[str, Any]], include_metadata: bool = False) -> str:
+    """Format search results for display."""
+    formatted = ""
+    for i, result in enumerate(results):
+        formatted += f"{i+1}. {result['title']}\n"
+        formatted += f"   Source: {result['source']}\n"
+        if 'link' in result:
+            formatted += f"   URL: {result['link']}\n"
+        if 'snippet' in result:
+            formatted += f"   Snippet: {result['snippet']}\n"
+        if include_metadata and 'metadata' in result:
+            formatted += f"   Metadata: {json.dumps(result['metadata'], indent=2)}\n"
+        formatted += "\n"
+    return formatted
+
+
+def run_optimized_search(query: str, include_web: bool = False, result_count: int = 5, use_mock: bool = False, verbose: bool = False):
+    """Run optimized hybrid search with optional web integration."""
+    print(f"Running optimized search for query: '{query}'")
+    print(f"Include web results: {include_web}")
+    print(f"Number of results: {result_count}")
+    print(f"Using mock web client: {use_mock}")
+    print("-" * 50)
+
+    # Get web search client if needed
+    web_client = None
+    if include_web:
+        web_client = get_web_search_client(use_mock=use_mock)
+        print(f"Using {'mock' if use_mock else 'real'} web search client")
+
+    # Create optimized hybrid search instance
+    search = OptimizedHybridSearch(web_search_client=web_client)
+
+    # Measure search time
     start_time = time.time()
-    result = func(*args, **kwargs)
+    results = search.search(query, result_count=result_count, include_web=include_web)
     end_time = time.time()
-    
-    latency = (end_time - start_time) * 1000  # Convert to milliseconds
-    
-    return result, latency
 
+    # Print results
+    print(f"\nFound {len(results)} results in {end_time - start_time:.2f} seconds:\n")
+    print(format_results(results, include_metadata=verbose))
 
-def run_search(query: str, top_k: int = 5, include_web: bool = True):
-    """
-    Run search with different implementations
-    
-    Args:
-        query: Search query
-        top_k: Number of results to retrieve
-        include_web: Whether to include web search results
-    """
-    logger.info(f"Running search for query: {query}")
-    
-    # Initialize search implementations
-    hybrid_search = HybridSearch()
-    enhanced_search = EnhancedHybridSearch()
-    optimized_search = EnhancedHybridSearchOptimized()
-    
-    # Check availability
-    hs_available = hasattr(hybrid_search, 'vector_search_client') and hybrid_search.vector_search_client.is_available()
-    ehs_available = hasattr(enhanced_search, 'vs_available') and enhanced_search.vs_available
-    opt_available = hasattr(optimized_search, 'vs_available') and optimized_search.vs_available
-    
-    logger.info(f"Availability: Hybrid Search: {hs_available}, Enhanced: {ehs_available}, Optimized: {opt_available}")
-    
-    results = {}
-    
-    # Run Hybrid Search
-    if hs_available:
-        try:
-            hs_results, hs_latency = measure_latency(hybrid_search.search, query, top_k=top_k)
-            results["hybrid_search"] = {
-                "results": hs_results,
-                "latency": hs_latency,
-                "result_count": len(hs_results.get("combined", []))
-            }
-            logger.info(f"Hybrid Search: {len(hs_results.get('combined', []))} results in {hs_latency:.2f} ms")
-        except Exception as e:
-            logger.error(f"Error in Hybrid Search: {str(e)}")
-            results["hybrid_search"] = {"error": str(e)}
-    
-    # Run Enhanced Hybrid Search
-    if ehs_available:
-        try:
-            ehs_results, ehs_latency = measure_latency(enhanced_search.search, query, top_k=top_k, include_web=include_web)
-            results["enhanced_hybrid_search"] = {
-                "results": ehs_results,
-                "latency": ehs_latency,
-                "result_count": len(ehs_results.get("combined", []))
-            }
-            logger.info(f"Enhanced Hybrid Search: {len(ehs_results.get('combined', []))} results in {ehs_latency:.2f} ms")
-        except Exception as e:
-            logger.error(f"Error in Enhanced Hybrid Search: {str(e)}")
-            results["enhanced_hybrid_search"] = {"error": str(e)}
-    
-    # Run Optimized Hybrid Search
-    if opt_available:
-        try:
-            # Get query category
-            category = optimized_search.classify_query(query)
-            logger.info(f"Query category: {category}")
-            
-            # Run search
-            opt_results, opt_latency = measure_latency(optimized_search.search, query, top_k=top_k, include_web=include_web)
-            results["optimized_hybrid_search"] = {
-                "results": opt_results,
-                "latency": opt_latency,
-                "result_count": len(opt_results.get("combined", [])),
-                "category": category
-            }
-            logger.info(f"Optimized Hybrid Search: {len(opt_results.get('combined', []))} results in {opt_latency:.2f} ms")
-        except Exception as e:
-            logger.error(f"Error in Optimized Hybrid Search: {str(e)}")
-            results["optimized_hybrid_search"] = {"error": str(e)}
-    
-    return results
-
-
-def display_results(results: Dict[str, Any]):
-    """
-    Display search results
-    
-    Args:
-        results: Search results from different implementations
-    """
-    print("\n=== Search Results ===\n")
-    
-    # Display performance comparison
-    print("Performance Comparison:")
-    print("-" * 80)
-    print(f"{'Implementation':<25} {'Latency (ms)':<15} {'Result Count':<15}")
-    print("-" * 80)
-    
-    for impl, data in results.items():
-        if "error" in data:
-            print(f"{impl:<25} {'ERROR':<15} {'N/A':<15}")
-        else:
-            print(f"{impl:<25} {data['latency']:.2f} ms{'':<8} {data['result_count']:<15}")
-    
-    print("\n")
-    
-    # Display optimized search results
-    if "optimized_hybrid_search" in results and "error" not in results["optimized_hybrid_search"]:
-        opt_data = results["optimized_hybrid_search"]
-        opt_results = opt_data["results"]
-        
-        print("Optimized Hybrid Search Results:")
-        print("-" * 80)
-        
-        # Format results
-        if hasattr(optimized_search, 'format_results'):
-            formatted = optimized_search.format_results(opt_results)
-            print(formatted)
-        else:
-            # Manual formatting
-            for i, result in enumerate(opt_results.get("combined", [])[:5], 1):
-                source = result.get("source", "unknown")
-                content = result.get("content", "")
-                score = result.get("final_score", 0)
-                
-                print(f"{i}. [{source.upper()}] (Score: {score:.2f})")
-                print(f"   {content[:200]}...")
-                print()
-    
-    print("-" * 80)
+    # Print source distribution if verbose
+    if verbose:
+        sources = {}
+        for result in results:
+            source = result["source"]
+            sources[source] = sources.get(source, 0) + 1
+        print("Source distribution:")
+        for source, count in sources.items():
+            print(f"  {source}: {count} results ({count/len(results)*100:.1f}%)")
 
 
 def main():
-    """Main function"""
-    parser = argparse.ArgumentParser(description="Run Optimized Hybrid Search")
-    parser.add_argument("--query", required=True, help="Search query")
-    parser.add_argument("--top-k", type=int, default=5, help="Number of results to retrieve")
-    parser.add_argument("--include-web", action="store_true", help="Include web search results")
-    parser.add_argument("--output", help="Output file for results (JSON)")
+    """Main function."""
+    args = parse_arguments()
     
-    args = parser.parse_args()
+    # Resolve include_web flag
+    include_web = args.include_web or not args.no_web
     
-    # Run search
-    results = run_search(args.query, args.top_k, args.include_web)
+    # Run optimized search
+    run_optimized_search(
+        query=args.query,
+        include_web=include_web,
+        result_count=args.count,
+        use_mock=args.mock,
+        verbose=args.verbose
+    )
     
-    # Display results
-    display_results(results)
-    
-    # Save results to file if specified
-    if args.output:
-        try:
-            # Create a simplified version of results for JSON serialization
-            simplified_results = {}
-            for impl, data in results.items():
-                if "error" in data:
-                    simplified_results[impl] = {"error": data["error"]}
-                else:
-                    simplified_results[impl] = {
-                        "latency": data["latency"],
-                        "result_count": data["result_count"]
-                    }
-                    
-                    # Add combined results
-                    combined = []
-                    for result in data["results"].get("combined", [])[:5]:
-                        combined.append({
-                            "source": result.get("source", "unknown"),
-                            "content": result.get("content", "")[:200],
-                            "score": result.get("final_score", 0)
-                        })
-                    
-                    simplified_results[impl]["combined"] = combined
-            
-            with open(args.output, "w") as f:
-                json.dump(simplified_results, f, indent=2)
-            
-            logger.info(f"Results saved to {args.output}")
-        except Exception as e:
-            logger.error(f"Error saving results to {args.output}: {str(e)}")
-    
-    return 0
+    # Implement comparison with basic hybrid search if needed
+    if args.compare:
+        print("\nComparison with basic hybrid search not yet implemented.")
+        print("This will be added in a future update.")
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    main()
