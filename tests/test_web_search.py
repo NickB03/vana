@@ -1,75 +1,88 @@
-#!/usr/bin/env python3
 """
-Test Web Search Tool for VANA
+Test script for WebSearchClient implementation.
 
-This script tests the web search functionality using Google Custom Search API.
+This script tests both the mock implementation and (if credentials are available)
+the real implementation of WebSearchClient.
+
+Usage:
+    python -m tests.test_web_search
 """
 
 import os
 import sys
-import logging
-from dotenv import load_dotenv
+import unittest
+from typing import List, Dict, Any
 
-# Add the project root to the Python path
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+# Add project root to path
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-# Import the WebSearchClient
-from tools.web_search import WebSearchClient
+from tools.web_search_client import get_web_search_client, MockWebSearchClient, WebSearchClient
 
-# Load environment variables
-load_dotenv()
 
-# Configure logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+class TestWebSearchClient(unittest.TestCase):
+    """Test WebSearchClient implementation."""
 
-def test_web_search():
-    """Test the web search functionality"""
-    # Initialize the web search client
-    client = WebSearchClient()
-    
-    # Check if web search is available
-    if not client.is_available():
-        logger.error("Web search is not available. Please set GOOGLE_SEARCH_API_KEY and GOOGLE_SEARCH_ENGINE_ID.")
-        return False
-    
-    # Test search
-    query = "What is Google's Agent Development Kit (ADK)?"
-    logger.info(f"Testing web search with query: {query}")
-    
-    results = client.search(query, num_results=3)
-    
-    if not results:
-        logger.error("No search results found.")
-        return False
-    
-    # Print results
-    logger.info(f"Found {len(results)} results:")
-    for i, result in enumerate(results, 1):
-        logger.info(f"{i}. {result.get('title')}")
-        logger.info(f"   URL: {result.get('url')}")
-        logger.info(f"   Snippet: {result.get('snippet')}")
-        logger.info("")
-    
-    # Test formatting
-    formatted = client.format_results(results)
-    logger.info("Formatted results:")
-    logger.info(formatted)
-    
-    return True
+    def test_mock_client(self):
+        """Test the mock client implementation."""
+        client = get_web_search_client(use_mock=True)
+        
+        # Test basic functionality
+        self.assertIsInstance(client, MockWebSearchClient)
+        
+        # Test specific query matching
+        results = client.search("VANA architecture")
+        self.assertTrue(len(results) > 0)
+        self.assertEqual(results[0]["title"], "VANA Architecture Overview")
+        
+        # Test another query
+        results = client.search("hybrid search in detail")
+        self.assertTrue(len(results) > 0)
+        self.assertTrue("Hybrid Search" in results[0]["title"])
+        
+        # Test default results
+        results = client.search("something completely unrelated")
+        self.assertTrue(len(results) > 0)
+        self.assertEqual(results[0]["title"], "Generic Search Result")
+        
+        # Test result count limiting
+        results = client.search("VANA architecture", num_results=1)
+        self.assertEqual(len(results), 1)
+        
+        print("Mock client tests passed.")
 
-def main():
-    """Main function"""
-    logger.info("Testing Web Search Tool for VANA")
-    
-    success = test_web_search()
-    
-    if success:
-        logger.info("Web search test completed successfully!")
-        return 0
-    else:
-        logger.error("Web search test failed.")
-        return 1
+    def test_real_client(self):
+        """Test the real client implementation if credentials are available."""
+        # Skip the test if credentials are not available
+        if not os.environ.get("GOOGLE_SEARCH_API_KEY") or not os.environ.get("GOOGLE_SEARCH_ENGINE_ID"):
+            print("Skipping real client test - API credentials not found.")
+            return
+            
+        try:
+            client = get_web_search_client(use_mock=False)
+            self.assertIsInstance(client, WebSearchClient)
+            
+            # Test basic search
+            results = client.search("Google Cloud Platform")
+            self.assertTrue(len(results) > 0)
+            
+            # Verify result structure
+            result = results[0]
+            self.assertIn("title", result)
+            self.assertIn("link", result)
+            self.assertIn("snippet", result)
+            self.assertEqual(result["source"], "web")
+            
+            # Test result count limiting
+            results = client.search("Google Cloud Platform", num_results=3)
+            self.assertLessEqual(len(results), 3)
+            
+            print("Real client tests passed.")
+            
+        except Exception as e:
+            self.fail(f"Real client test failed: {e}")
+
 
 if __name__ == "__main__":
-    sys.exit(main())
+    # Run tests
+    print("Testing WebSearchClient...")
+    unittest.main()
