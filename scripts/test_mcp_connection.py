@@ -1,167 +1,165 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 """
-Test MCP Connection for VANA
+Test MCP Knowledge Graph Connection Script
 
-This script tests the connection to the MCP server to verify proper configuration
-and accessibility. It performs basic Knowledge Graph and Vector Search operations
-to ensure that all tools are properly connected.
+This script tests the connection to the MCP Knowledge Graph server
+and verifies that the API key, namespace, and server URL are correctly configured.
 
 Usage:
-    python scripts/test_mcp_connection.py [--api-key API_KEY]
-
-Options:
-    --api-key API_KEY   Override the API key in the config file
+    python scripts/test_mcp_connection.py
 """
 
-import json
 import os
 import sys
+import json
 import argparse
 import requests
-from dotenv import load_dotenv
+from typing import Dict, Any, List, Optional
 
-# Add root directory to path
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+# Add project root to path
+sys.path.insert(0, os.path.abspath(os.path.dirname(os.path.dirname(__file__))))
 
-# Load environment variables
-load_dotenv()
-
-def load_config():
-    """Load MCP configuration from file"""
+def load_environment():
+    """Load environment variables from .env file."""
     try:
-        with open("claude-mcp-config.json", "r") as f:
-            return json.load(f)
-    except FileNotFoundError:
-        print("Error: claude-mcp-config.json not found")
-        return None
-    except json.JSONDecodeError:
-        print("Error: Invalid JSON in claude-mcp-config.json")
-        return None
-
-def test_server_connection(config, api_key=None):
-    """Test basic connection to MCP server"""
-    # Use PLACEHOLDER_MCP_SERVER_URL in the config file
-    url = f"{config['serverUrl']}/api/v1/health"
-
-    # Use provided API key or default from config
-    headers = {
-        "Authorization": f"Bearer {api_key or config['apiKey'].replace('${MCP_API_KEY}', os.environ.get('MCP_API_KEY', ''))}"
-    }
-
-    try:
-        response = requests.get(url, headers=headers)
-        response.raise_for_status()
-        print(f"✅ Server connection successful: {url}")
+        # Check for .env file in project root
+        env_file = ".env"
+        if not os.path.exists(env_file):
+            # Check for .env file in secrets directory
+            env_file = "secrets/.env"
+            if not os.path.exists(env_file):
+                print("❌ No .env file found in project root or secrets directory.")
+                return False
+        
+        # Load environment variables from the .env file
+        with open(env_file, "r") as f:
+            for line in f:
+                line = line.strip()
+                if line and not line.startswith("#"):
+                    key, value = line.split("=", 1)
+                    os.environ[key] = value
         return True
-    except requests.exceptions.RequestException as e:
-        print(f"❌ Server connection failed: {e}")
+    except Exception as e:
+        print(f"❌ Error loading environment variables: {e}")
         return False
 
-def test_knowledge_graph(config, api_key=None):
-    """Test Knowledge Graph functionality"""
-    url = f"{config['serverUrl']}/api/v1/{config['namespace']}/knowledge-graph/query"
-
-    # Use provided API key or default from config
-    headers = {
-        "Authorization": f"Bearer {api_key or config['apiKey'].replace('${MCP_API_KEY}', os.environ.get('MCP_API_KEY', ''))}",
-        "Content-Type": "application/json"
-    }
-
-    # Simple query to test connection
-    payload = {
-        "query": "*"
-    }
-
+def load_mcp_config() -> Dict[str, Any]:
+    """Load MCP configuration from JSON file."""
     try:
-        response = requests.post(url, headers=headers, json=payload)
-        response.raise_for_status()
-        data = response.json()
+        config_file = "claude-mcp-config.json"
+        if not os.path.exists(config_file):
+            print(f"❌ MCP config file not found: {config_file}")
+            return {}
+        
+        with open(config_file, "r") as f:
+            config = json.load(f)
+        
+        # Resolve environment variables
+        for key, value in config.items():
+            if isinstance(value, str) and value.startswith("${") and value.endswith("}"):
+                env_var = value[2:-1]
+                if env_var in os.environ:
+                    config[key] = os.environ[env_var]
+                else:
+                    print(f"⚠️ Environment variable not found: {env_var}")
+                    config[key] = ""
+        
+        return config
+    except Exception as e:
+        print(f"❌ Error loading MCP config: {e}")
+        return {}
 
-        # Check if we got a valid response
-        if "entities" in data:
-            print(f"✅ Knowledge Graph query successful: {len(data['entities'])} entities found")
+def test_knowledge_graph_connection(server_url: str, api_key: str, namespace: str) -> bool:
+    """Test connection to the MCP Knowledge Graph server."""
+    try:
+        # Create headers with API key
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {api_key}"
+        }
+        
+        # Create test entity to verify connection
+        test_entity = {
+            "name": "TestEntity",
+            "entityType": "TestType",
+            "observations": ["This is a test entity to verify connection"]
+        }
+        
+        # Send request to create entity
+        url = f"{server_url}/api/v1/kg/{namespace}/entities"
+        response = requests.post(url, headers=headers, json={"entities": [test_entity]})
+        
+        if response.status_code == 200 or response.status_code == 201:
+            print("✅ Successfully connected to MCP Knowledge Graph server.")
+            print(f"✅ Created test entity in namespace: {namespace}")
+            
+            # Delete the test entity to clean up
+            delete_url = f"{server_url}/api/v1/kg/{namespace}/entities"
+            delete_response = requests.delete(delete_url, headers=headers, json={"entityNames": ["TestEntity"]})
+            
+            if delete_response.status_code == 200:
+                print("✅ Successfully deleted test entity.")
+            else:
+                print(f"⚠️ Failed to delete test entity. Status code: {delete_response.status_code}")
+                print(f"⚠️ Response: {delete_response.text}")
+            
             return True
         else:
-            print("❌ Knowledge Graph query failed: Invalid response format")
+            print(f"❌ Failed to connect to MCP Knowledge Graph server. Status code: {response.status_code}")
+            print(f"❌ Response: {response.text}")
             return False
-    except requests.exceptions.RequestException as e:
-        print(f"❌ Knowledge Graph query failed: {e}")
-        return False
-
-def test_vector_search(config, api_key=None):
-    """Test Vector Search functionality through MCP"""
-    url = f"{config['serverUrl']}/api/v1/{config['namespace']}/vector-search/query"
-
-    # Use provided API key or default from config
-    headers = {
-        "Authorization": f"Bearer {api_key or config['apiKey'].replace('${MCP_API_KEY}', os.environ.get('MCP_API_KEY', ''))}",
-        "Content-Type": "application/json"
-    }
-
-    # Simple query to test connection
-    payload = {
-        "query": "What is VANA?",
-        "top_k": 3
-    }
-
-    try:
-        response = requests.post(url, headers=headers, json=payload)
-        response.raise_for_status()
-        data = response.json()
-
-        # Check if we got a valid response
-        if "results" in data:
-            print(f"✅ Vector Search query successful: {len(data['results'])} results found")
-            return True
-        else:
-            print("❌ Vector Search query failed: Invalid response format")
-            return False
-    except requests.exceptions.RequestException as e:
-        print(f"❌ Vector Search query failed: {e}")
+    except Exception as e:
+        print(f"❌ Error testing Knowledge Graph connection: {e}")
         return False
 
 def main():
-    """Main entry point"""
-    parser = argparse.ArgumentParser(description="Test MCP connection for VANA")
-    parser.add_argument("--api-key", help="Override the API key in the config file")
+    """Main function."""
+    parser = argparse.ArgumentParser(description="Test MCP Knowledge Graph connection")
+    parser.add_argument("--verbose", "-v", action="store_true", help="Show verbose output")
     args = parser.parse_args()
 
-    # Load config
-    config = load_config()
-    if not config:
+    print("📝 Testing MCP Knowledge Graph connection...")
+    
+    # Load environment variables
+    if not load_environment():
+        print("❌ Failed to load environment variables.")
         sys.exit(1)
-
-    print(f"Testing connection to MCP server: {config['serverUrl']}")
-    print(f"Namespace: {config['namespace']}")
-    print("-----------------------------------")
-
-    # Test server connection
-    server_ok = test_server_connection(config, args.api_key)
-    if not server_ok:
-        print("\nError: Could not connect to MCP server")
-        print("Please check your API key and server URL")
-        print("You may need to set the MCP_API_KEY environment variable or use --api-key")
+    
+    # Load MCP configuration
+    mcp_config = load_mcp_config()
+    if not mcp_config:
+        print("❌ Failed to load MCP configuration.")
         sys.exit(1)
-
-    # Test Knowledge Graph
-    kg_ok = test_knowledge_graph(config, args.api_key)
-
-    # Test Vector Search
-    vs_ok = test_vector_search(config, args.api_key)
-
-    # Print summary
-    print("\nTest Results:")
-    print(f"Server Connection: {'✅ PASS' if server_ok else '❌ FAIL'}")
-    print(f"Knowledge Graph: {'✅ PASS' if kg_ok else '❌ FAIL'}")
-    print(f"Vector Search: {'✅ PASS' if vs_ok else '❌ FAIL'}")
-
-    # Overall result
-    if server_ok and kg_ok and vs_ok:
-        print("\n✅ All tests passed! Your MCP connection is properly configured.")
-        return 0
+    
+    # Get configuration values
+    server_url = mcp_config.get("serverUrl", "")
+    api_key = mcp_config.get("apiKey", "")
+    namespace = mcp_config.get("namespace", "")
+    
+    # Verify configuration values
+    if not server_url:
+        print("❌ Missing server URL in MCP configuration.")
+        sys.exit(1)
+    if not api_key:
+        print("❌ Missing API key in MCP configuration.")
+        sys.exit(1)
+    if not namespace:
+        print("❌ Missing namespace in MCP configuration.")
+        sys.exit(1)
+    
+    # Show configuration if verbose
+    if args.verbose:
+        print(f"🔍 Server URL: {server_url}")
+        print(f"🔍 API Key: {'*' * 8 + api_key[-4:] if api_key else 'None'}")
+        print(f"🔍 Namespace: {namespace}")
+    
+    # Test connection
+    if test_knowledge_graph_connection(server_url, api_key, namespace):
+        print("✅ MCP Knowledge Graph connection test passed.")
+        sys.exit(0)
     else:
-        print("\n❌ Some tests failed. Please check the errors above.")
-        return 1
+        print("❌ MCP Knowledge Graph connection test failed.")
+        sys.exit(1)
 
 if __name__ == "__main__":
-    sys.exit(main())
+    main()
