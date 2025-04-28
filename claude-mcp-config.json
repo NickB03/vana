@@ -1,0 +1,6 @@
+{
+  "serverUrl": "https://mcp.community.augment.co",
+  "apiKey": "${MCP_API_KEY}",
+  "namespace": "vana-project",
+  "tools": ["knowledge_graph", "vector_search"]
+}
