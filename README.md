@@ -32,6 +32,9 @@ VANA is a sophisticated multi-agent system built using Google's Agent Developmen
   - [Knowledge Graph Integration](docs/knowledge-graph-integration.md)
   - [Launch Configuration](docs/launch-configuration.md)
   - [Vertex AI Transition](docs/vertex-ai-transition.md)
+  - [Document Processing Strategy](docs/document-processing-strategy.md)
+  - [Enhanced Knowledge Graph](docs/enhanced-knowledge-graph.md)
+  - [VANA Command Reference](docs/vana-command-reference.md)
 
 ## 🔍 Overview
 
@@ -48,6 +51,10 @@ This project demonstrates how to build, configure, and deploy a team of speciali
 - **Development UI**: Built-in developer UI for testing
 - **Cloud Deployment**: Seamless deployment to Vertex AI Agent Engine
 - **Chat History Integration**: Import past Claude conversations into the Knowledge Graph
+- **Enhanced Document Processing**: PDF support, semantic chunking, and metadata enrichment
+- **Advanced Entity Extraction**: NLP-based entity and relationship extraction
+- **Comprehensive Evaluation Framework**: Metrics for precision, recall, F1 score, and NDCG
+- **Web Search Integration**: Google Custom Search API integration for up-to-date information
 
 ## 🏗️ Architecture
 
@@ -106,6 +113,10 @@ Your service account needs the following permissions:
 3. Install dependencies:
    ```bash
    pip install -r adk-setup/requirements.txt
+
+   # Install additional dependencies for enhanced features
+   pip install PyPDF2 spacy Pillow pytesseract
+   python -m spacy download en_core_web_sm
    ```
 
 ## ⚙️ Configuration
@@ -271,38 +282,60 @@ VANA integrates with a hosted MCP Knowledge Graph for persistent memory and know
    - Historical conversation tracking
    - Hybrid search combining Knowledge Graph and Vector Search
 
-3. **Integration with Claude**:
+3. **Enhanced Entity Extraction**:
+   - NLP-based entity extraction using spaCy
+   - Rule-based pattern matching for domain-specific entities
+   - Relationship inference between entities
+   - Entity linking with confidence scoring
+   - Automated document processing for entity extraction
+
+4. **Integration with Claude**:
    - Import past Claude chat history
    - Automatically extract entities and relationships
    - Make historical knowledge available to agents
    - Enhance agent reasoning with structured knowledge
 
-4. **Knowledge Graph Commands**:
+5. **Knowledge Graph Commands**:
    - `!kg_on` - Enable Knowledge Graph integration
    - `!kg_off` - Disable Knowledge Graph integration
    - `!kg_query <entity_type> <query>` - Search for entities
    - `!kg_store <entity_name> <entity_type> <observation>` - Store new information
    - `!kg_relationship <entity1> <relationship> <entity2>` - Store a relationship
    - `!kg_context` - Show current Knowledge Graph context
+   - `!kg_extract <text>` - Extract entities from text
+   - `!kg_related <entity_name> <relationship_type>` - Find related entities
+   - `!kg_infer <entity_name>` - Infer relationships for an entity
 
-5. **Hybrid Search Commands**:
+6. **Hybrid Search Commands**:
    - `!hybrid_search <query>` - Search both Knowledge Graph and Vector Search
    - `!vector_search <query>` - Search only Vector Search
    - `!kg_search <query>` - Search only Knowledge Graph
+   - `!web_search <query>` - Search the web for information
 
-6. **Setup and Configuration**:
+7. **Document Processing**:
+   - PDF support with metadata extraction
+   - Multi-modal support with image OCR
+   - Semantic chunking for better knowledge retrieval
+   - Metadata enrichment with keywords and structure analysis
+   - Automated entity extraction from documents
+
+8. **Setup and Configuration**:
    - Uses community-hosted MCP server
    - Configuration stored in `augment-config.json`
    - See [Knowledge Graph Integration Guide](docs/knowledge-graph-integration.md) for detailed instructions
-   - See [Launch Configuration Guide](docs/launch-configuration.md) for setup instructions
+   - See [Enhanced Knowledge Graph](docs/enhanced-knowledge-graph.md) for advanced features
+   - See [Document Processing Strategy](docs/document-processing-strategy.md) for document processing details
+   - See [VANA Command Reference](docs/vana-command-reference.md) for all available commands
 
-7. **Benefits**:
+9. **Benefits**:
    - No self-hosting required
    - Accessible from any device
    - Persistent knowledge across sessions
    - Structured knowledge representation
    - Enhanced reasoning through hybrid search
    - Automatic entity extraction from conversations
+   - Comprehensive document processing pipeline
+   - Advanced entity linking and relationship inference
 
 ## 🚀 Deployment
 
@@ -338,7 +371,10 @@ vana/
 │   ├── n8n-mcp-server-setup.md  # n8n MCP server setup guide
 │   ├── environment-setup.md     # Environment variable setup guide
 │   ├── enhanced-memory-operations.md  # Enhanced memory operations guide
-│   └── knowledge-graph-setup.md # Knowledge Graph setup guide
+│   ├── knowledge-graph-setup.md # Knowledge Graph setup guide
+│   ├── document-processing-strategy.md # Document processing strategy
+│   ├── enhanced-knowledge-graph.md # Enhanced Knowledge Graph features
+│   └── vana-command-reference.md # VANA command reference
 ├── knowledge_docs/           # Text files for Vector Search
 ├── mcp-servers/              # MCP server implementations
 │   └── n8n-mcp/              # n8n MCP server
@@ -348,7 +384,22 @@ vana/
 │       └── start-mcp-server.sh  # Script to start the MCP server
 ├── n8n-local/                # Local n8n installation
 ├── tools/                    # Shared tools
-│   └── search_knowledge_tool.py  # Vector Search tool
+│   ├── search_knowledge_tool.py  # Vector Search tool
+│   ├── document_processing/  # Document processing tools
+│   │   ├── document_processor.py # Document processor
+│   │   └── semantic_chunker.py # Semantic chunker
+│   ├── knowledge_graph/      # Knowledge Graph tools
+│   │   ├── entity_extractor.py # Entity extractor
+│   │   └── knowledge_graph_manager.py # Knowledge Graph manager
+│   └── web_search.py         # Web search tool
+├── tests/                    # Test scripts
+│   ├── test_data/            # Test data
+│   ├── test_document_processor.py # Document processor test
+│   ├── test_entity_extractor.py # Entity extractor test
+│   ├── test_knowledge_graph_manager.py # Knowledge Graph manager test
+│   ├── test_semantic_chunking.py # Semantic chunker test
+│   ├── test_web_search.py    # Web search test
+│   └── evaluate_retrieval.py # Retrieval evaluation framework
 ├── setup_vana.py             # Main setup script
 ├── verify_apis.py            # Verify API enablement
 ├── check_permissions.py      # Check service account permissions
@@ -427,5 +478,8 @@ For detailed documentation on specific aspects of the VANA project, please refer
 - [Knowledge Graph Integration](docs/knowledge-graph-integration.md) - How to set up and use the MCP Knowledge Graph with Claude chat history
 - [Launch Configuration](docs/launch-configuration.md) - How to configure and launch the VANA environment with MCP Knowledge Graph
 - [Vertex AI Transition](docs/vertex-ai-transition.md) - Guide to transitioning from Ragie.ai to Vertex AI Vector Search
+- [Document Processing Strategy](docs/document-processing-strategy.md) - Comprehensive document processing pipeline with PDF support and metadata enrichment
+- [Enhanced Knowledge Graph](docs/enhanced-knowledge-graph.md) - Advanced entity extraction, relationship inference, and document processing
+- [VANA Command Reference](docs/vana-command-reference.md) - Complete reference for all VANA commands and tools
 
 Developed with ❤️ using Google's Agent Development Kit
