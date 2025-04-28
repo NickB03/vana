@@ -1,5 +1,5 @@
 {
-  "serverUrl": "https://mcp.community.augment.co",
+  "serverUrl": "https://knowledge-graph-default.modelcontextprotocol.com",
   "apiKey": "${MCP_API_KEY}",
   "namespace": "vana-project",
   "tools": ["knowledge_graph", "vector_search"]
