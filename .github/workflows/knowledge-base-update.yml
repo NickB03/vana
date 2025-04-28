@@ -1,0 +1,109 @@
+name: Knowledge Base Update
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'docs/**'
+      - 'knowledge/**'
+  schedule:
+    - cron: '0 0 * * 0'  # Run weekly on Sunday at midnight
+  workflow_dispatch:  # Allow manual triggering
+
+jobs:
+  update-knowledge-base:
+    runs-on: ubuntu-latest
+    
+    env:
+      GOOGLE_CLOUD_PROJECT: ${{ secrets.GOOGLE_CLOUD_PROJECT }}
+      GOOGLE_CLOUD_LOCATION: ${{ secrets.GOOGLE_CLOUD_LOCATION }}
+      GOOGLE_STORAGE_BUCKET: ${{ secrets.GOOGLE_STORAGE_BUCKET }}
+      VECTOR_SEARCH_INDEX_ID: ${{ secrets.VECTOR_SEARCH_INDEX_ID }}
+      VECTOR_SEARCH_ENDPOINT_ID: ${{ secrets.VECTOR_SEARCH_ENDPOINT_ID }}
+      DEPLOYED_INDEX_ID: ${{ secrets.DEPLOYED_INDEX_ID }}
+      MCP_API_KEY: ${{ secrets.MCP_API_KEY }}
+      MCP_NAMESPACE: vana-project
+      MCP_SERVER_URL: https://knowledge-graph-default.modelcontextprotocol.com
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0  # Fetch all history for all branches and tags
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v1
+        with:
+          credentials_json: ${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}
+      
+      - name: Set up Google Cloud SDK
+        uses: google-github-actions/setup-gcloud@v1
+      
+      - name: Find changed knowledge files
+        id: changed-files
+        run: |
+          if [[ "${{ github.event_name }}" == "push" ]]; then
+            # Get list of changed files in docs and knowledge directories
+            CHANGED_FILES=$(git diff --name-only ${{ github.event.before }} ${{ github.event.after }} | grep -E '^(docs|knowledge)/')
+          else
+            # For scheduled or manual runs, process all files
+            CHANGED_FILES=$(find docs knowledge -type f -name "*.md" -o -name "*.txt" -o -name "*.pdf")
+          fi
+          
+          # Save to output
+          echo "files<<EOF" >> $GITHUB_OUTPUT
+          echo "$CHANGED_FILES" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+          
+          # Count files
+          FILE_COUNT=$(echo "$CHANGED_FILES" | wc -l)
+          echo "count=$FILE_COUNT" >> $GITHUB_OUTPUT
+      
+      - name: Process changed files
+        if: steps.changed-files.outputs.count > 0
+        run: |
+          # Create a directory for processed files
+          mkdir -p data/processed
+          
+          # Process files in batches to avoid rate limits
+          echo "${{ steps.changed-files.outputs.files }}" | xargs -I{} python scripts/expand_knowledge_base.py --input-file {} --output-dir data/processed --upload
+      
+      - name: Verify Vector Search index
+        run: |
+          python scripts/verify_vector_search.py
+      
+      - name: Test Knowledge Graph connection
+        run: |
+          python scripts/test_mcp_connection.py
+      
+      - name: Run search quality evaluation
+        run: |
+          python scripts/evaluate_search_quality.py --output search_quality_report.md --include-web --mock-web
+      
+      - name: Upload search quality report
+        uses: actions/upload-artifact@v3
+        with:
+          name: search-quality-report
+          path: search_quality_report.md
+      
+      - name: Send notification on failure
+        if: failure()
+        uses: rtCamp/action-slack-notify@v2
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+          SLACK_CHANNEL: vana-alerts
+          SLACK_COLOR: danger
+          SLACK_TITLE: Knowledge Base Update Failed
+          SLACK_MESSAGE: 'Knowledge Base update workflow failed. Please check the logs.'
+          SLACK_FOOTER: 'VANA Project'
