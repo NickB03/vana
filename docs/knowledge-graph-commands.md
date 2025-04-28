@@ -6,6 +6,97 @@ This document provides a detailed reference for all Knowledge Graph commands ava
 
 The Knowledge Graph provides a structured representation of knowledge, allowing for more sophisticated reasoning and retrieval. The commands in this reference enable you to interact with the Knowledge Graph, including querying for entities, storing new information, and viewing the current context.
 
+## Knowledge Graph Structure
+
+The Knowledge Graph represents knowledge as a network of entities and relationships. Here's a simplified ASCII diagram showing the structure:
+
+```
+                                  +----------------+
+                                  |    project     |
+                                  |    "VANA"      |
+                                  +-------+--------+
+                                          |
+                                          | uses
+                                          |
+                 +------------------------+------------------------+
+                 |                        |                        |
+        +--------v---------+    +---------v--------+    +---------v--------+
+        |    technology    |    |    technology    |    |      agent       |
+        | "Vector Search"  |    | "Knowledge Graph"|    |      "Ben"       |
+        +--------+---------+    +---------+--------+    +---------+--------+
+                 |                        |                        |
+                 | provides               | provides               | coordinates
+                 |                        |                        |
+        +--------v---------+    +---------v--------+    +---------v--------+
+        |     concept      |    |     concept      |    |      agent       |
+        | "Semantic Search"|    |"Structured Data" |    |     "Rhea"       |
+        +------------------+    +------------------+    +------------------+
+```
+
+### Entity Types
+
+The Knowledge Graph supports various entity types, including:
+
+- **project**: Represents a project or system (e.g., "VANA")
+- **technology**: Represents a technology or tool (e.g., "Vector Search", "Knowledge Graph")
+- **agent**: Represents an agent in the system (e.g., "Ben", "Rhea")
+- **concept**: Represents a concept or idea (e.g., "Semantic Search", "Structured Data")
+- **document**: Represents a document or file (e.g., "README.md", "knowledge-graph-commands.md")
+- **person**: Represents a person (e.g., "User", "Developer")
+
+### Relationship Types
+
+The Knowledge Graph supports various relationship types, including:
+
+- **uses**: Indicates that one entity uses another (e.g., "VANA" uses "Vector Search")
+- **contains**: Indicates that one entity contains another (e.g., "VANA" contains "Ben")
+- **requires**: Indicates that one entity requires another (e.g., "Vector Search" requires "Google Cloud")
+- **created_by**: Indicates that one entity was created by another (e.g., "VANA" created_by "Developer")
+- **part_of**: Indicates that one entity is part of another (e.g., "Ben" part_of "VANA")
+- **knows_about**: Indicates that one entity knows about another (e.g., "Ben" knows_about "Vector Search")
+- **related_to**: A generic relationship type for when a more specific type is not applicable
+
+### VANA Knowledge Graph Example
+
+Here's a concrete example of how the VANA project is represented in the Knowledge Graph:
+
+```
+                                  +----------------+
+                                  |    project     |
+                                  |    "VANA"      |
+                                  +-------+--------+
+                                          |
+                 +------------------------+------------------------+
+                 |                        |                        |
+                 | uses                   | uses                   | contains
+                 v                        v                        v
+        +----------------+      +------------------+      +----------------+
+        |  technology    |      |    technology    |      |     agent      |
+        | "Vector Search"|      | "Knowledge Graph"|      |     "Ben"      |
+        +-------+--------+      +--------+---------+      +-------+--------+
+                |                        |                        |
+                | part_of                | part_of                | coordinates
+                v                        v                        v
+        +----------------+      +------------------+      +----------------+
+        |    concept     |      |     concept      |      |     agent      |
+        | "Memory System"|      | "Memory System"  |      |    "Rhea"      |
+        +----------------+      +------------------+      +----------------+
+                                                                  |
+                                                                  | specializes_in
+                                                                  v
+                                                          +----------------+
+                                                          |    concept     |
+                                                          | "Meta-Architect"|
+                                                          +----------------+
+```
+
+In this example:
+- "VANA" is a project that uses "Vector Search" and "Knowledge Graph" technologies
+- "VANA" contains the agent "Ben"
+- "Ben" coordinates the agent "Rhea"
+- "Rhea" specializes in the concept "Meta-Architect"
+- Both "Vector Search" and "Knowledge Graph" are part of the "Memory System" concept
+
 ## Command Reference
 
 ### Basic Commands
@@ -214,7 +305,7 @@ class KnowledgeGraphManager:
         self.api_key = os.environ.get("MCP_API_KEY")
         self.server_url = os.environ.get("MCP_SERVER_URL")
         self.namespace = os.environ.get("MCP_NAMESPACE", "vana-project")
-    
+
     def query(self, entity_type, query_text):
         """Query the Knowledge Graph for entities"""
         try:
@@ -232,7 +323,7 @@ class KnowledgeGraphManager:
         except Exception as e:
             print(f"Error querying Knowledge Graph: {e}")
             return None
-    
+
     def store(self, entity_name, entity_type, observation):
         """Store information in the Knowledge Graph"""
         try:
@@ -253,7 +344,7 @@ class KnowledgeGraphManager:
         except Exception as e:
             print(f"Error storing in Knowledge Graph: {e}")
             return None
-    
+
     def get_context(self):
         """Get the current Knowledge Graph context"""
         try:
@@ -267,7 +358,7 @@ class KnowledgeGraphManager:
         except Exception as e:
             print(f"Error getting Knowledge Graph context: {e}")
             return None
-    
+
     def query_related(self, entity_name, relationship_type):
         """Query for entities related to a specific entity"""
         try:
@@ -285,7 +376,7 @@ class KnowledgeGraphManager:
         except Exception as e:
             print(f"Error querying related entities: {e}")
             return None
-    
+
     def store_relationship(self, entity1, relationship, entity2):
         """Store a relationship between two entities"""
         try:
@@ -304,7 +395,7 @@ class KnowledgeGraphManager:
         except Exception as e:
             print(f"Error storing relationship: {e}")
             return None
-    
+
     def delete(self, entity_name):
         """Delete an entity from the Knowledge Graph"""
         try:
@@ -330,40 +421,40 @@ The Knowledge Graph commands are integrated with the MCP interface in the `Memor
 ```python
 def handle_command(self, command):
     # ... existing code ...
-    
+
     # Knowledge Graph commands
     elif command.startswith("!kg_query"):
         parts = command.split()
         if len(parts) < 3:
             return "Error: Invalid query command. Use !kg_query [entity_type] [query]"
-        
+
         entity_type = parts[1]
         query = " ".join(parts[2:])
         result = self.kg_manager.query(entity_type, query)
-        
+
         # Format and return results
         # ...
-    
+
     elif command.startswith("!kg_store"):
         parts = command.split()
         if len(parts) < 4:
             return "Error: Invalid store command. Use !kg_store [entity_name] [entity_type] [observation]"
-        
+
         entity_name = parts[1]
         entity_type = parts[2]
         observation = " ".join(parts[3:])
-        
+
         result = self.kg_manager.store(entity_name, entity_type, observation)
-        
+
         # Format and return results
         # ...
-    
+
     elif command == "!kg_context":
         result = self.kg_manager.get_context()
-        
+
         # Format and return results
         # ...
-    
+
     # ... additional Knowledge Graph commands ...
 ```
 

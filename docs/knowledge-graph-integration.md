@@ -5,6 +5,7 @@ This document provides a comprehensive guide to integrating the MCP Knowledge Gr
 ## Table of Contents
 
 - [Overview](#overview)
+- [Getting Started](#getting-started)
 - [Setup and Configuration](#setup-and-configuration)
 - [Usage with Augment](#usage-with-augment)
 - [Integration with Vector Search](#integration-with-vector-search)
@@ -22,6 +23,135 @@ Key benefits of the Knowledge Graph integration:
 - **Relationship-Based Reasoning**: The Knowledge Graph can answer questions about relationships between entities that would be difficult to answer with Vector Search alone.
 - **Hybrid Search**: Combining Vector Search and Knowledge Graph enables more comprehensive knowledge retrieval.
 - **Entity Extraction**: The Knowledge Graph can automatically extract entities from text, making it easier to build and maintain the knowledge base.
+
+## Getting Started
+
+This quick start guide will help you set up and start using the Knowledge Graph integration with VANA. Follow these steps to get up and running quickly.
+
+### Step 1: Set Up Environment Variables
+
+Create a `.env` file in the project root directory with the following variables:
+
+```bash
+# MCP Knowledge Graph Configuration
+MCP_API_KEY=your_api_key_here
+MCP_SERVER_URL=https://mcp.community.augment.co
+MCP_NAMESPACE=vana-project
+
+# Vertex AI Vector Search Configuration
+GOOGLE_CLOUD_PROJECT=your_gcp_project
+GOOGLE_CLOUD_LOCATION=us-central1
+VECTOR_SEARCH_ENDPOINT_ID=your_endpoint_id
+DEPLOYED_INDEX_ID=your_deployed_index_id
+```
+
+### Step 2: Verify the Connection
+
+Run the connection test script to verify that you can connect to the Knowledge Graph:
+
+```bash
+python scripts/test_mcp_connection.py
+```
+
+You should see output similar to:
+
+```
+=== Testing Connection ===
+Successfully connected to Knowledge Graph server
+Connection test passed
+
+=== Testing Entity Operations ===
+Storing test entity: Test Entity 20250428123456
+Successfully stored test entity
+Querying for test entity: Test Entity 20250428123456
+Successfully queried for test entity, found 1 entities
+Successfully deleted test entity
+Entity Operations test passed
+
+=== Testing Relationship Operations ===
+Storing test entities: Test Entity 1 20250428123456 and Test Entity 2 20250428123456
+Storing relationship: Test Entity 1 20250428123456 -> related_to -> Test Entity 2 20250428123456
+Successfully stored relationship
+Cleaning up test entities
+Relationship Operations test passed
+
+=== Testing Context ===
+Successfully retrieved Knowledge Graph context
+Context test passed
+
+✅ All tests passed! The MCP Knowledge Graph connection is working correctly.
+```
+
+### Step 3: Import Some Initial Knowledge
+
+Import some initial knowledge to the Knowledge Graph:
+
+```bash
+# Store basic VANA project information
+python -c "
+from tools.knowledge_graph.knowledge_graph_manager import KnowledgeGraphManager
+kg = KnowledgeGraphManager()
+
+# Store entities
+kg.store('VANA', 'project', 'VANA is a sophisticated multi-agent system built using Google\'s Agent Development Kit (ADK).')
+kg.store('Vector_Search', 'technology', 'Vertex AI Vector Search provides semantic search capabilities for the VANA memory system.')
+kg.store('Knowledge_Graph', 'technology', 'MCP Knowledge Graph provides structured knowledge representation for the VANA memory system.')
+kg.store('Ben', 'agent', 'Ben is the coordinator agent for the VANA system.')
+kg.store('Rhea', 'agent', 'Rhea is the Meta-Architect agent for the VANA system.')
+
+# Store relationships
+kg.store_relationship('VANA', 'uses', 'Vector_Search')
+kg.store_relationship('VANA', 'uses', 'Knowledge_Graph')
+kg.store_relationship('VANA', 'contains', 'Ben')
+kg.store_relationship('Ben', 'coordinates', 'Rhea')
+
+print('Successfully imported initial knowledge to the Knowledge Graph')
+"
+```
+
+### Step 4: Test Hybrid Search
+
+Run a test hybrid search to verify that both Vector Search and Knowledge Graph are working together:
+
+```bash
+python scripts/test_hybrid_search.py
+```
+
+This will run a series of tests to verify that the hybrid search is working correctly, including:
+- Vector Search with no Knowledge Graph results
+- Knowledge Graph with no Vector Search results
+- Combined results with scoring
+- Fallback mechanisms when one system fails
+
+### Step 5: Use Knowledge Graph Commands
+
+Now you can use the Knowledge Graph commands in your VANA environment:
+
+```
+# Query for VANA project information
+!kg_query project VANA
+
+# Get the current Knowledge Graph context
+!kg_context
+
+# Store a new entity
+!kg_store ADK technology "Google's Agent Development Kit (ADK) is a framework for building multi-agent systems."
+
+# Store a relationship
+!kg_relationship VANA uses ADK
+
+# Perform a hybrid search
+!hybrid_search How does VANA use Vector Search and Knowledge Graph?
+```
+
+### Next Steps
+
+Once you have the basic Knowledge Graph integration working, you can:
+
+1. Import your Claude chat history to the Knowledge Graph using the `import_claude_history.py` script
+2. Customize the Knowledge Graph structure with your own entity and relationship types
+3. Integrate the Knowledge Graph with your own applications using the provided API
+4. Explore the hybrid search capabilities to combine Vector Search and Knowledge Graph results
 
 ## Setup and Configuration
 
