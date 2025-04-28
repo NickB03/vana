@@ -1,317 +1,167 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 """
-Test MCP Knowledge Graph Connection
+Test MCP Connection for VANA
 
-This script tests the connection to the MCP Knowledge Graph server and performs
-basic operations to verify that the Knowledge Graph is working correctly.
+This script tests the connection to the MCP server to verify proper configuration
+and accessibility. It performs basic Knowledge Graph and Vector Search operations
+to ensure that all tools are properly connected.
 
 Usage:
-    python test_mcp_connection.py --api-key <mcp_api_key>
+    python scripts/test_mcp_connection.py [--api-key API_KEY]
 
-Optional arguments:
-    --server-url <url>      MCP server URL (default: PLACEHOLDER_MCP_SERVER_URL)
-    --namespace <namespace> MCP namespace (default: vana-project)
-    --verbose               Enable verbose output
+Options:
+    --api-key API_KEY   Override the API key in the config file
 """
 
+import json
 import os
 import sys
 import argparse
 import requests
-import logging
-
-from datetime import datetime
-from typing import Dict, Any
 from dotenv import load_dotenv
+
+# Add root directory to path
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # Load environment variables
 load_dotenv()
 
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(levelname)s - %(message)s",
-    datefmt="%Y-%m-%d %H:%M:%S"
-)
-logger = logging.getLogger(__name__)
+def load_config():
+    """Load MCP configuration from file"""
+    try:
+        with open("claude-mcp-config.json", "r") as f:
+            return json.load(f)
+    except FileNotFoundError:
+        print("Error: claude-mcp-config.json not found")
+        return None
+    except json.JSONDecodeError:
+        print("Error: Invalid JSON in claude-mcp-config.json")
+        return None
 
-class KnowledgeGraphClient:
-    """Client for interacting with MCP Knowledge Graph"""
+def test_server_connection(config, api_key=None):
+    """Test basic connection to MCP server"""
+    # Use PLACEHOLDER_MCP_SERVER_URL in the config file
+    url = f"{config['serverUrl']}/api/v1/health"
 
-    def __init__(self, api_key: str, server_url: str = "PLACEHOLDER_MCP_SERVER_URL", namespace: str = "vana-project"):
-        """Initialize the Knowledge Graph client"""
-        self.api_key = api_key
-        self.server_url = server_url
-        self.namespace = namespace
+    # Use provided API key or default from config
+    headers = {
+        "Authorization": f"Bearer {api_key or config['apiKey'].replace('${MCP_API_KEY}', os.environ.get('MCP_API_KEY', ''))}"
+    }
 
-    def ping(self) -> bool:
-        """Ping the Knowledge Graph server"""
-        try:
-            response = requests.get(
-                f"{self.server_url}/api/kg/ping",
-                headers={"Authorization": f"Bearer {self.api_key}"}
-            )
-            response.raise_for_status()
+    try:
+        response = requests.get(url, headers=headers)
+        response.raise_for_status()
+        print(f"✅ Server connection successful: {url}")
+        return True
+    except requests.exceptions.RequestException as e:
+        print(f"❌ Server connection failed: {e}")
+        return False
+
+def test_knowledge_graph(config, api_key=None):
+    """Test Knowledge Graph functionality"""
+    url = f"{config['serverUrl']}/api/v1/{config['namespace']}/knowledge-graph/query"
+
+    # Use provided API key or default from config
+    headers = {
+        "Authorization": f"Bearer {api_key or config['apiKey'].replace('${MCP_API_KEY}', os.environ.get('MCP_API_KEY', ''))}",
+        "Content-Type": "application/json"
+    }
+
+    # Simple query to test connection
+    payload = {
+        "query": "*"
+    }
+
+    try:
+        response = requests.post(url, headers=headers, json=payload)
+        response.raise_for_status()
+        data = response.json()
+
+        # Check if we got a valid response
+        if "entities" in data:
+            print(f"✅ Knowledge Graph query successful: {len(data['entities'])} entities found")
             return True
-        except Exception as e:
-            logger.error(f"Failed to ping Knowledge Graph server: {e}")
+        else:
+            print("❌ Knowledge Graph query failed: Invalid response format")
             return False
-
-    def store_entity(self, entity_name: str, entity_type: str, observation: str) -> Dict[str, Any]:
-        """Store an entity in the Knowledge Graph"""
-        try:
-            response = requests.post(
-                f"{self.server_url}/api/kg/store",
-                json={
-                    "namespace": self.namespace,
-                    "entities": [{
-                        "name": entity_name,
-                        "type": entity_type,
-                        "observation": observation
-                    }]
-                },
-                headers={"Authorization": f"Bearer {self.api_key}"}
-            )
-            response.raise_for_status()
-            return response.json()
-        except Exception as e:
-            logger.error(f"Error storing entity: {e}")
-            return {"success": False, "error": str(e)}
-
-    def query(self, entity_type: str, query_text: str) -> Dict[str, Any]:
-        """Query the Knowledge Graph for entities"""
-        try:
-            response = requests.get(
-                f"{self.server_url}/api/kg/query",
-                params={
-                    "namespace": self.namespace,
-                    "entity_type": entity_type,
-                    "query": query_text
-                },
-                headers={"Authorization": f"Bearer {self.api_key}"}
-            )
-            response.raise_for_status()
-            return response.json()
-        except Exception as e:
-            logger.error(f"Error querying Knowledge Graph: {e}")
-            return {"entities": []}
-
-    def store_relationship(self, entity1: str, relationship: str, entity2: str) -> Dict[str, Any]:
-        """Store a relationship between two entities"""
-        try:
-            response = requests.post(
-                f"{self.server_url}/api/kg/relationship",
-                json={
-                    "namespace": self.namespace,
-                    "entity1": entity1,
-                    "relationship": relationship,
-                    "entity2": entity2
-                },
-                headers={"Authorization": f"Bearer {self.api_key}"}
-            )
-            response.raise_for_status()
-            return response.json()
-        except Exception as e:
-            logger.error(f"Error storing relationship: {e}")
-            return {"success": False, "error": str(e)}
-
-    def get_context(self) -> Dict[str, Any]:
-        """Get the current Knowledge Graph context"""
-        try:
-            response = requests.get(
-                f"{self.server_url}/api/kg/context",
-                params={"namespace": self.namespace},
-                headers={"Authorization": f"Bearer {self.api_key}"}
-            )
-            response.raise_for_status()
-            return response.json()
-        except Exception as e:
-            logger.error(f"Error getting Knowledge Graph context: {e}")
-            return {"context": {}}
-
-    def delete_entity(self, entity_name: str) -> Dict[str, Any]:
-        """Delete an entity from the Knowledge Graph"""
-        try:
-            response = requests.delete(
-                f"{self.server_url}/api/kg/entity",
-                params={
-                    "namespace": self.namespace,
-                    "entity": entity_name
-                },
-                headers={"Authorization": f"Bearer {self.api_key}"}
-            )
-            response.raise_for_status()
-            return response.json()
-        except Exception as e:
-            logger.error(f"Error deleting entity: {e}")
-            return {"success": False, "error": str(e)}
-
-def test_connection(kg_client: KnowledgeGraphClient) -> bool:
-    """Test the connection to the Knowledge Graph server"""
-    logger.info("Testing connection to Knowledge Graph server...")
-
-    # Test ping
-    if not kg_client.ping():
-        logger.error("Failed to connect to Knowledge Graph server")
+    except requests.exceptions.RequestException as e:
+        print(f"❌ Knowledge Graph query failed: {e}")
         return False
 
-    logger.info("Successfully connected to Knowledge Graph server")
-    return True
+def test_vector_search(config, api_key=None):
+    """Test Vector Search functionality through MCP"""
+    url = f"{config['serverUrl']}/api/v1/{config['namespace']}/vector-search/query"
 
-def test_entity_operations(kg_client: KnowledgeGraphClient, verbose: bool = False) -> bool:
-    """Test entity operations (store, query, delete)"""
-    logger.info("Testing entity operations...")
+    # Use provided API key or default from config
+    headers = {
+        "Authorization": f"Bearer {api_key or config['apiKey'].replace('${MCP_API_KEY}', os.environ.get('MCP_API_KEY', ''))}",
+        "Content-Type": "application/json"
+    }
 
-    # Create a test entity
-    test_entity_name = f"Test Entity {datetime.now().strftime('%Y%m%d%H%M%S')}"
-    test_entity_type = "test"
-    test_observation = "This is a test entity created by the MCP connection test script"
+    # Simple query to test connection
+    payload = {
+        "query": "What is VANA?",
+        "top_k": 3
+    }
 
-    # Store the entity
-    logger.info(f"Storing test entity: {test_entity_name}")
-    result = kg_client.store_entity(test_entity_name, test_entity_type, test_observation)
+    try:
+        response = requests.post(url, headers=headers, json=payload)
+        response.raise_for_status()
+        data = response.json()
 
-    if not result.get("success", False):
-        logger.error(f"Failed to store test entity: {result.get('error', 'Unknown error')}")
+        # Check if we got a valid response
+        if "results" in data:
+            print(f"✅ Vector Search query successful: {len(data['results'])} results found")
+            return True
+        else:
+            print("❌ Vector Search query failed: Invalid response format")
+            return False
+    except requests.exceptions.RequestException as e:
+        print(f"❌ Vector Search query failed: {e}")
         return False
-
-    logger.info("Successfully stored test entity")
-
-    # Query for the entity
-    logger.info(f"Querying for test entity: {test_entity_name}")
-    result = kg_client.query(test_entity_type, test_entity_name)
-
-    entities = result.get("entities", [])
-    if not entities:
-        logger.error("Failed to query for test entity")
-        return False
-
-    logger.info(f"Successfully queried for test entity, found {len(entities)} entities")
-
-    if verbose:
-        for entity in entities:
-            logger.info(f"Entity: {entity.get('name')} ({entity.get('type')})")
-            logger.info(f"Observation: {entity.get('observation')}")
-
-    # Delete the entity
-    logger.info(f"Deleting test entity: {test_entity_name}")
-    result = kg_client.delete_entity(test_entity_name)
-
-    if not result.get("success", False):
-        logger.error(f"Failed to delete test entity: {result.get('error', 'Unknown error')}")
-        return False
-
-    logger.info("Successfully deleted test entity")
-
-    return True
-
-def test_relationship_operations(kg_client: KnowledgeGraphClient) -> bool:
-    """Test relationship operations (store, query)"""
-    logger.info("Testing relationship operations...")
-
-    # Create two test entities
-    test_entity1_name = f"Test Entity 1 {datetime.now().strftime('%Y%m%d%H%M%S')}"
-    test_entity2_name = f"Test Entity 2 {datetime.now().strftime('%Y%m%d%H%M%S')}"
-    test_entity_type = "test"
-
-    # Store the entities
-    logger.info(f"Storing test entities: {test_entity1_name} and {test_entity2_name}")
-    kg_client.store_entity(test_entity1_name, test_entity_type, "This is test entity 1")
-    kg_client.store_entity(test_entity2_name, test_entity_type, "This is test entity 2")
-
-    # Store a relationship between the entities
-    logger.info(f"Storing relationship: {test_entity1_name} -> related_to -> {test_entity2_name}")
-    result = kg_client.store_relationship(test_entity1_name, "related_to", test_entity2_name)
-
-    if not result.get("success", False):
-        logger.error(f"Failed to store relationship: {result.get('error', 'Unknown error')}")
-        # Clean up entities
-        kg_client.delete_entity(test_entity1_name)
-        kg_client.delete_entity(test_entity2_name)
-        return False
-
-    logger.info("Successfully stored relationship")
-
-    # Clean up entities
-    logger.info("Cleaning up test entities")
-    kg_client.delete_entity(test_entity1_name)
-    kg_client.delete_entity(test_entity2_name)
-
-    return True
-
-def test_context(kg_client: KnowledgeGraphClient, verbose: bool = False) -> bool:
-    """Test getting the Knowledge Graph context"""
-    logger.info("Testing Knowledge Graph context...")
-
-    result = kg_client.get_context()
-    context = result.get("context", {})
-
-    if not context:
-        logger.warning("No context available in the Knowledge Graph")
-        return True  # Not a failure, just no context
-
-    logger.info("Successfully retrieved Knowledge Graph context")
-
-    if verbose:
-        logger.info("Context:")
-        for entity_type, entities in context.items():
-            logger.info(f"{entity_type.capitalize()}s:")
-            for entity in entities[:3]:
-                logger.info(f"- {entity.get('name', '')}")
-
-            if len(entities) > 3:
-                logger.info(f"  ... and {len(entities) - 3} more {entity_type}s")
-
-    return True
 
 def main():
-    """Main function"""
-    parser = argparse.ArgumentParser(description="Test MCP Knowledge Graph Connection")
-    parser.add_argument("--api-key", help="MCP API key")
-    parser.add_argument("--server-url", default="PLACEHOLDER_MCP_SERVER_URL", help="MCP server URL")
-    parser.add_argument("--namespace", default="vana-project", help="MCP namespace")
-    parser.add_argument("--verbose", action="store_true", help="Enable verbose output")
-
+    """Main entry point"""
+    parser = argparse.ArgumentParser(description="Test MCP connection for VANA")
+    parser.add_argument("--api-key", help="Override the API key in the config file")
     args = parser.parse_args()
 
-    # Get API key from arguments or environment variables
-    api_key = args.api_key or os.environ.get("MCP_API_KEY")
-
-    if not api_key:
-        logger.error("MCP API key is required. Please provide it with --api-key or set the MCP_API_KEY environment variable.")
+    # Load config
+    config = load_config()
+    if not config:
         sys.exit(1)
 
-    # Initialize Knowledge Graph client
-    kg_client = KnowledgeGraphClient(
-        api_key=api_key,
-        server_url=args.server_url,
-        namespace=args.namespace
-    )
+    print(f"Testing connection to MCP server: {config['serverUrl']}")
+    print(f"Namespace: {config['namespace']}")
+    print("-----------------------------------")
 
-    # Run tests
-    tests = [
-        ("Connection", lambda client, _: test_connection(client)),
-        ("Entity Operations", test_entity_operations),
-        ("Relationship Operations", lambda client, _: test_relationship_operations(client)),
-        ("Context", test_context)
-    ]
+    # Test server connection
+    server_ok = test_server_connection(config, args.api_key)
+    if not server_ok:
+        print("\nError: Could not connect to MCP server")
+        print("Please check your API key and server URL")
+        print("You may need to set the MCP_API_KEY environment variable or use --api-key")
+        sys.exit(1)
 
-    success = True
+    # Test Knowledge Graph
+    kg_ok = test_knowledge_graph(config, args.api_key)
 
-    for test_name, test_func in tests:
-        logger.info(f"\n=== Testing {test_name} ===")
-        if not test_func(kg_client, args.verbose):
-            logger.error(f"{test_name} test failed")
-            success = False
-        else:
-            logger.info(f"{test_name} test passed")
+    # Test Vector Search
+    vs_ok = test_vector_search(config, args.api_key)
 
-    if success:
-        logger.info("\n✅ All tests passed! The MCP Knowledge Graph connection is working correctly.")
-        sys.exit(0)
+    # Print summary
+    print("\nTest Results:")
+    print(f"Server Connection: {'✅ PASS' if server_ok else '❌ FAIL'}")
+    print(f"Knowledge Graph: {'✅ PASS' if kg_ok else '❌ FAIL'}")
+    print(f"Vector Search: {'✅ PASS' if vs_ok else '❌ FAIL'}")
+
+    # Overall result
+    if server_ok and kg_ok and vs_ok:
+        print("\n✅ All tests passed! Your MCP connection is properly configured.")
+        return 0
     else:
-        logger.error("\n❌ Some tests failed. Please check the logs for details.")
-        sys.exit(1)
+        print("\n❌ Some tests failed. Please check the errors above.")
+        return 1
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())
