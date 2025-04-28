@@ -2,69 +2,84 @@
 
 ## Overview
 
-VANA (Versatile Agent Network Architecture) is a multi-agent system built using Google's Agent Development Kit (ADK) that implements a code-first approach to agent definition. The system features a hierarchical agent structure with Ben as the coordinator and specialist agents for specific tasks, all sharing knowledge through Vector Search and memory management through n8n and MCP.
+VANA (Versatile Agent Network Architecture) is an intelligent agent system built using Google's Agent Development Kit (ADK) that implements a code-first approach to agent definition. For the MVP, VANA operates as a single primary agent leveraging Vertex AI Vector Search and Knowledge Graph for comprehensive knowledge retrieval, with a simplified architecture focused on core functionality.
 
 ## System Architecture
 
 ### Core Components
 
-1. **Agent Hierarchy**
-   - **Ben (Project Lead)**: Coordinates the team and delegates tasks
-   - **Specialist Agents**: Handle specific domains (Rhea, Max, Sage, Kai, Juno)
-   - **Agent Communication**: Structured protocol for task delegation and results reporting
+1. **Agent System**
+   - **Vana (Primary Agent)**: Handles user interactions and knowledge retrieval
+   - **Google ADK**: Code-first agent definition with built-in tools
+   - **External Tools**: Access to specialized capabilities via MCP
 
 2. **Knowledge Management**
    - **Vector Search**: Semantic search capabilities via Vertex AI Vector Search
-   - **Memory System**: Long-term memory via Ragie.ai integration
+   - **Knowledge Graph**: Structured knowledge representation with entities and relationships
+   - **Hybrid Search**: Combined approach leveraging both Vector Search and Knowledge Graph
    - **GitHub Knowledge Sync**: Automated pipeline to keep knowledge up-to-date
 
 3. **Integration Layer**
-   - **n8n Workflows**: Automation for memory management
-   - **MCP Server**: Model Context Protocol for agent communication
-   - **Railway Deployment**: Hosting for n8n server
+   - **External MCP Server**: Community-hosted Model Context Protocol server
+   - **Knowledge Graph API**: Structured knowledge storage and retrieval
+   - **Vertex AI Services**: Managed AI platform for embeddings and search
 
 ### Architecture Diagram
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                        User Interface                           │
-└───────────────────────────────┬─────────────────────────────────┘
-                                │
-┌───────────────────────────────▼─────────────────────────────────┐
-│                         Ben (Coordinator)                       │
-└───┬───────────────┬───────────────────┬───────────────────┬─────┘
-    │               │                   │                   │
-┌───▼───┐       ┌───▼───┐           ┌───▼───┐           ┌───▼───┐
-│  Rhea  │       │  Max   │           │  Sage  │           │  Kai   │
-│ (Data) │       │ (Code) │           │ (Infra)│           │ (Test) │
-└───────┘       └───────┘           └───────┘           └───────┘
-                                                            │
-┌─────────────────────────────────────────────────┐     ┌───▼───┐
-│              Knowledge Management               │     │  Juno  │
-├─────────────────────────────────────────────────┤     │ (Docs) │
-│ ┌─────────────┐  ┌─────────────┐  ┌───────────┐ │     └───────┘
-│ │Vector Search│  │  Ragie.ai   │  │GitHub Sync│ │
-│ └─────────────┘  └─────────────┘  └───────────┘ │
-└─────────────────────────────────────────────────┘
-                        │
-┌───────────────────────▼───────────────────────────┐
-│               Integration Layer                   │
-├───────────────────────────────────────────────────┤
-│ ┌─────────────┐  ┌─────────────┐  ┌─────────────┐ │
-│ │n8n Workflows│  │ MCP Server  │  │  Railway    │ │
-│ └─────────────┘  └─────────────┘  └─────────────┘ │
-└───────────────────────────────────────────────────┘
+┌─────────────────────────────┐
+│                             │
+│    Google ADK Web UI        │
+│    (http://localhost:8080)  │
+│                             │
+└───────────────┬─────────────┘
+                │
+                ▼
+┌─────────────────────────────┐
+│                             │
+│      Vana Agent             │
+│  (Primary Agent Interface)  │
+│                             │
+└───────────┬─────────────────┘
+            │
+            │ Tool Calls
+            │
+┌───────────┼─────────────────┐
+│           │                 │
+│  ┌────────▼─────────┐       │
+│  │                  │       │
+│  │  External MCP    │       │
+│  │  Server          │       │
+│  │                  │       │
+│  └──┬──────────┬────┘       │
+│     │          │            │
+│     │          │            │
+│  ┌──▼────┐  ┌──▼────────┐   │
+│  │       │  │           │   │
+│  │Vector │  │Knowledge  │   │
+│  │Search │  │Graph      │   │
+│  │       │  │           │   │
+│  └──┬────┘  └──┬────────┘   │
+│     │          │            │
+│  ┌──▼──────────▼────────┐   │
+│  │                      │   │
+│  │    Hybrid Search     │   │
+│  │    (Combined Results)│   │
+│  │                      │   │
+│  └──────────────────────┘   │
+│                             │
+└─────────────────────────────┘
 ```
 
 ## Data Flow
 
 ### Agent Communication Flow
 
-1. User query → Ben (Coordinator)
-2. Ben analyzes and routes to appropriate specialist
-3. Specialist agent processes task using tools
-4. Specialist returns results to Ben
-5. Ben synthesizes and returns final response
+1. User query → Vana Agent
+2. Vana analyzes the query and determines required knowledge
+3. Vana calls appropriate tools (Vector Search, Knowledge Graph, or Hybrid Search)
+4. External MCP server processes tool requests
+5. Vana synthesizes results and returns response to user
 
 ### Vector Search Flow
 
@@ -74,14 +89,21 @@ VANA (Versatile Agent Network Architecture) is a multi-agent system built using 
 4. Vector Search finds similar content
 5. Results returned and incorporated into agent response
 
-### Memory Management Flow
+### Knowledge Graph Flow
 
-1. User activates memory recording with `!memory_on` command
-2. Conversation is buffered in the MemoryBufferManager
-3. User triggers memory save with `!rag` command
-4. MCP server sends buffer to n8n webhook
-5. n8n workflow processes and saves to Ragie.ai
-6. Future queries can retrieve relevant memories
+1. Agent receives query requiring structured knowledge
+2. Agent calls `kg_query` or `hybrid_search` tool
+3. MCP server processes the request to Knowledge Graph
+4. Knowledge Graph finds relevant entities and relationships
+5. Results returned and incorporated into agent response
+
+### Hybrid Search Flow
+
+1. Agent receives complex query requiring both semantic and structured knowledge
+2. Agent calls `hybrid_search` tool
+3. Tool queries both Vector Search and Knowledge Graph in parallel
+4. Results from both sources are combined and ranked
+5. Combined results returned to agent for comprehensive response
 
 ## Technology Stack
 
@@ -101,10 +123,10 @@ VANA (Versatile Agent Network Architecture) is a multi-agent system built using 
 
 ### Integration Technologies
 
-- **n8n**: Workflow automation tool
 - **MCP**: Model Context Protocol for agent communication
-- **Railway**: Hosting platform for n8n
-- **Ragie.ai**: External vector database for memory
+- **External MCP Server**: Community-hosted MCP server
+- **Knowledge Graph API**: Structured knowledge representation
+- **Hybrid Search**: Combined Vector Search and Knowledge Graph retrieval
 
 ## Deployment Architecture
 
@@ -114,25 +136,27 @@ VANA (Versatile Agent Network Architecture) is a multi-agent system built using 
 # Run ADK development UI
 adk web
 
-# Test individual agents
-adk run vana.agents.ben
+# Test Vana agent
+adk run vana.agents.vana
 
 # Run evaluations
 adk eval vana evaluation_set.json
 
-# Start n8n MCP server
-cd mcp-servers/n8n-mcp
-./start-mcp-server.sh
+# Configure MCP connection
+export MCP_API_KEY=your_api_key
+export MCP_SERVER_URL=https://mcp.community.augment.co
+export MCP_NAMESPACE=vana-project
 ```
 
 ### Production Deployment
 
 ```bash
-# Deploy n8n to Railway
-railway up
-
-# Deploy agents to Vertex AI Agent Engine
+# Deploy agent to Vertex AI Agent Engine
 python deploy.py
+
+# Configure production environment variables
+gcloud secrets create MCP_API_KEY --data-file=/path/to/mcp_api_key.txt
+gcloud secrets create VECTOR_SEARCH_ENDPOINT_ID --data-file=/path/to/endpoint_id.txt
 ```
 
 ## Security Architecture
@@ -155,9 +179,9 @@ python deploy.py
 
 The system implements graceful degradation at multiple levels:
 
-1. **Memory System**: Falls back to Vector Search if Ragie.ai is unavailable
+1. **Hybrid Search**: Falls back to Vector Search if Knowledge Graph is unavailable
 2. **Vector Search**: Falls back to agent's built-in knowledge if search fails
-3. **Agent Delegation**: Falls back to Ben if specialist agents are unavailable
+3. **Knowledge Graph**: Falls back to direct entity lookup if relationship queries fail
 
 ### Error Recovery
 
@@ -177,8 +201,9 @@ The system implements graceful degradation at multiple levels:
 
 - Agent response times
 - Tool usage patterns
-- Vector search query performance
-- Memory retrieval success rates
+- Vector Search query performance
+- Knowledge Graph query success rates
+- Hybrid Search result quality
 
 ## Appendices
 
@@ -199,12 +224,14 @@ The system implements graceful degradation at multiple levels:
 4. Evaluate with `adk eval`
 5. Deploy to Agent Engine
 
-### Appendix C: n8n Workflow Reference
+### Appendix C: Knowledge Commands Reference
 
-| Workflow | Purpose | Trigger |
-|----------|---------|---------|
-| Manual Memory Save | Save conversation to Ragie | `!rag` command |
-| Daily Memory Sync | Scheduled memory backup | Time-based schedule |
+| Command | Purpose | Example |
+|---------|---------|---------|
+| `!vector_search` | Search Vector Search | `!vector_search What is VANA?` |
+| `!kg_query` | Query Knowledge Graph | `!kg_query project VANA` |
+| `!hybrid_search` | Search both systems | `!hybrid_search How does VANA work?` |
+| `!kg_store` | Store entity in Knowledge Graph | `!kg_store VANA project "VANA is a system..."` |
 
 ### Appendix D: Troubleshooting Guide
 
