@@ -7,7 +7,7 @@ This document outlines VANA's comprehensive strategy for document processing, in
 ## Document Processing Pipeline
 
 ```
-Raw Document → Parse/Extract → Semantic Chunking → 
+Raw Document → Parse/Extract → Semantic Chunking →
 Embedding Generation → Vector Storage → Knowledge Graph Extraction
 ```
 
@@ -25,23 +25,23 @@ def parse_document(project_id, location, processor_id, file_path, mime_type):
     # Initialize Document AI client
     client = documentai.DocumentProcessorServiceClient()
     processor_name = f"projects/{project_id}/locations/{location}/processors/{processor_id}"
-    
+
     # Read document content
     with open(file_path, "rb") as file:
         content = file.read()
-    
+
     # Configure document
     raw_document = documentai.RawDocument(content=content, mime_type=mime_type)
-    
+
     # Process document
     request = documentai.ProcessRequest(
         name=processor_name,
         raw_document=raw_document
     )
-    
+
     result = client.process_document(request=request)
     document = result.document
-    
+
     return document
 ```
 
@@ -53,6 +53,22 @@ The system will support:
 - Markdown (.md)
 - Microsoft Office (.docx, .xlsx, .pptx)
 - HTML (.html)
+- Image files with OCR (.jpg, .png, .gif)
+
+### Multi-Modal Support
+
+VANA now includes support for processing multi-modal content:
+
+1. **Image Processing**
+   - OCR for text extraction from images
+   - Image metadata extraction
+   - Image content classification
+
+2. **PDF Advanced Processing**
+   - Extract text, tables, and images
+   - Preserve document structure
+   - Extract metadata (title, author, creation date)
+   - Handle scanned PDFs with OCR
 
 ## Semantic Chunking Strategy
 
@@ -69,36 +85,36 @@ The system will support:
 def semantic_document_chunking(document, target_chunk_size=3000, min_chunk_size=500, overlap=300):
     """
     Perform semantic chunking respecting document structure
-    
+
     Args:
         document: Parsed Document AI document
         target_chunk_size: Target token count per chunk (3000 recommended for text-embedding-004)
         min_chunk_size: Minimum chunk size to consider complete
         overlap: Token overlap between chunks
-        
+
     Returns:
         List of chunk objects with text and metadata
     """
     # Extract document structure
     sections = extract_document_sections(document)
     chunks = []
-    
+
     for section in sections:
         # Get section metadata
         section_path = section.get("path", "")
         section_heading = section.get("heading", "")
-        
+
         # Split section text into paragraphs
         paragraphs = split_into_paragraphs(section.get("text", ""))
-        
+
         # Initialize chunk
         current_chunk = []
         current_tokens = 0
-        
+
         for paragraph in paragraphs:
             # Count tokens in paragraph
             para_tokens = len(paragraph.split())
-            
+
             # If adding paragraph exceeds target AND we have content, create a chunk
             if current_tokens + para_tokens > target_chunk_size and current_tokens >= min_chunk_size:
                 # Create chunk
@@ -114,7 +130,7 @@ def semantic_document_chunking(document, target_chunk_size=3000, min_chunk_size=
                         "chunk_id": f"{document.get('doc_id', 'doc')}_{len(chunks)}"
                     }
                 })
-                
+
                 # Start new chunk with overlap
                 overlap_paragraphs = get_overlap_paragraphs(current_chunk, overlap)
                 current_chunk = overlap_paragraphs + [paragraph]
@@ -123,7 +139,7 @@ def semantic_document_chunking(document, target_chunk_size=3000, min_chunk_size=
                 # Add paragraph to current chunk
                 current_chunk.append(paragraph)
                 current_tokens += para_tokens
-        
+
         # Add final chunk if not empty
         if current_chunk and current_tokens >= min_chunk_size:
             chunk_text = "\n\n".join(current_chunk)
@@ -138,7 +154,7 @@ def semantic_document_chunking(document, target_chunk_size=3000, min_chunk_size=
                     "chunk_id": f"{document.get('doc_id', 'doc')}_{len(chunks)}"
                 }
             })
-    
+
     return chunks
 ```
 
@@ -178,7 +194,38 @@ def semantic_document_chunking(document, target_chunk_size=3000, min_chunk_size=
   "token_count": 2048,
   "languages": ["en"],
   "tags": ["tag1", "tag2"],
-  "confidence": 0.95
+  "confidence": 0.95,
+
+  // Enhanced metadata
+  "keywords": ["keyword1", "keyword2"],
+  "summary": "Brief summary of the content",
+  "reading_time_minutes": 5.2,
+  "structure": {
+    "has_headings": true,
+    "has_lists": true,
+    "has_code_blocks": false,
+    "has_tables": true,
+    "section_count": 8
+  },
+
+  // Multi-modal metadata
+  "has_images": true,
+  "image_count": 3,
+  "images": [
+    {
+      "id": "img_001",
+      "width": 800,
+      "height": 600,
+      "format": "JPEG",
+      "ocr_text": "Text extracted from image"
+    }
+  ],
+
+  // PDF-specific metadata
+  "page_count": 15,
+  "title": "Document title from PDF metadata",
+  "subject": "Document subject",
+  "producer": "PDF producer software"
 }
 ```
 
@@ -219,5 +266,34 @@ def semantic_document_chunking(document, target_chunk_size=3000, min_chunk_size=
 
 1. **Pipeline Testing**: Verify end-to-end document processing
 2. **Chunking Quality**: Evaluate semantic coherence of chunks
-3. **Retrieval Testing**: Measure precision and recall of document retrieval
-4. **Performance Testing**: Monitor resource usage and processing time
+3. **Retrieval Testing**: Measure precision, recall, F1 score, and NDCG of document retrieval
+4. **Performance Testing**: Monitor resource usage, processing time, and latency
+5. **Multi-Modal Testing**: Verify image processing and OCR accuracy
+6. **PDF Processing Testing**: Test extraction from various PDF formats and structures
+7. **Metadata Extraction Testing**: Verify accuracy of extracted metadata
+
+### Comprehensive Evaluation Framework
+
+VANA now includes a comprehensive evaluation framework for measuring retrieval quality:
+
+```python
+# Run the evaluation framework
+python tests/evaluate_retrieval.py
+
+# View results
+cat logs/retrieval_evaluation_summary_*.json
+```
+
+The evaluation framework measures:
+
+1. **Precision**: Fraction of retrieved information that is relevant
+2. **Recall**: Fraction of relevant information that is retrieved
+3. **F1 Score**: Harmonic mean of precision and recall
+4. **NDCG**: Normalized Discounted Cumulative Gain for ranking quality
+5. **Latency**: Time taken to retrieve results
+
+Results are categorized by:
+- Query category (general, technology, implementation, etc.)
+- Query difficulty (easy, medium, hard)
+
+This allows for targeted improvements to specific aspects of the retrieval system.
