@@ -13,6 +13,7 @@ from google.generativeai.adk import base_agent
 from google.generativeai.adk import agent as agent_lib
 from google.generativeai.adk import tool as tool_lib
 from tools.hybrid_search import HybridSearch
+from tools.enhanced_hybrid_search import EnhancedHybridSearch
 from tools.knowledge_graph.knowledge_graph_manager import KnowledgeGraphManager
 from tools.vector_search.vector_search_client import VectorSearchClient
 from tools.web_search import WebSearchClient
@@ -46,7 +47,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Initialize tools
-hybrid_search = HybridSearch()
+hybrid_search = EnhancedHybridSearch()
 kg_manager = KnowledgeGraphManager()
 vector_search_client = VectorSearchClient()
 web_search_client = WebSearchClient()
@@ -93,7 +94,8 @@ class VanaAgent(agent_lib.LlmAgent):
     Knowledge Retrieval:
     - !vector_search [query] - Search for semantically similar content
     - !kg_query [entity_type] [query] - Query the Knowledge Graph
-    - !hybrid_search [query] - Combined search of both systems
+    - !hybrid_search [query] - Combined search of Vector Search and Knowledge Graph
+    - !enhanced_search [query] - Combined search of Vector Search, Knowledge Graph, and Web Search
     - !web_search [query] - Search the web for recent information
 
     Knowledge Storage:
@@ -219,6 +221,26 @@ class VanaAgent(agent_lib.LlmAgent):
         except Exception as e:
             logger.error(f"Error in hybrid_search: {str(e)}")
             return f"Error in hybrid search: {str(e)}"
+
+    @tool_lib.tool("enhanced_search")
+    def enhanced_search_tool(self, query: str, top_k: int = 5) -> str:
+        """
+        Search using Vector Search, Knowledge Graph, and Web Search for comprehensive results.
+
+        Args:
+            query: The search query
+            top_k: Maximum number of results to return (default: 5)
+
+        Returns:
+            Formatted string with enhanced search results
+        """
+        try:
+            logger.info(f"Performing enhanced search for: {query}")
+            results = hybrid_search.search(query, top_k=top_k, include_web=True)
+            return hybrid_search.format_results(results)
+        except Exception as e:
+            logger.error(f"Error in enhanced_search: {str(e)}")
+            return f"Error in enhanced search: {str(e)}"
 
     @tool_lib.tool("kg_store")
     def kg_store(self, entity_name: str, entity_type: str, observation: str) -> str:
