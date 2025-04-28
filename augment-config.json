@@ -3,7 +3,7 @@
   "knowledgeGraph": {
     "provider": "mcp",
     "config": {
-      "serverUrl": "https://mcp.community.augment.co",
+      "serverUrl": "PLACEHOLDER_MCP_SERVER_URL",
       "namespace": "vana-project",
       "apiKey": "${MCP_API_KEY}"
     }

@@ -9,7 +9,7 @@ Usage:
     python test_mcp_connection.py --api-key <mcp_api_key>
 
 Optional arguments:
-    --server-url <url>      MCP server URL (default: https://mcp.community.augment.co)
+    --server-url <url>      MCP server URL (default: PLACEHOLDER_MCP_SERVER_URL)
     --namespace <namespace> MCP namespace (default: vana-project)
     --verbose               Enable verbose output
 """
@@ -38,7 +38,7 @@ logger = logging.getLogger(__name__)
 class KnowledgeGraphClient:
     """Client for interacting with MCP Knowledge Graph"""
 
-    def __init__(self, api_key: str, server_url: str = "https://mcp.community.augment.co", namespace: str = "vana-project"):
+    def __init__(self, api_key: str, server_url: str = "PLACEHOLDER_MCP_SERVER_URL", namespace: str = "vana-project"):
         """Initialize the Knowledge Graph client"""
         self.api_key = api_key
         self.server_url = server_url
@@ -268,7 +268,7 @@ def main():
     """Main function"""
     parser = argparse.ArgumentParser(description="Test MCP Knowledge Graph Connection")
     parser.add_argument("--api-key", help="MCP API key")
-    parser.add_argument("--server-url", default="https://mcp.community.augment.co", help="MCP server URL")
+    parser.add_argument("--server-url", default="PLACEHOLDER_MCP_SERVER_URL", help="MCP server URL")
     parser.add_argument("--namespace", default="vana-project", help="MCP namespace")
     parser.add_argument("--verbose", action="store_true", help="Enable verbose output")
 

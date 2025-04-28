@@ -144,7 +144,7 @@ adk eval vana evaluation_set.json
 
 # Configure MCP connection
 export MCP_API_KEY=your_api_key
-export MCP_SERVER_URL=https://mcp.community.augment.co
+export MCP_SERVER_URL=PLACEHOLDER_MCP_SERVER_URL
 export MCP_NAMESPACE=vana-project
 ```
 

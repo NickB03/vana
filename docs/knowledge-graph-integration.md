@@ -35,7 +35,7 @@ Create a `.env` file in the project root directory with the following variables:
 ```bash
 # MCP Knowledge Graph Configuration
 MCP_API_KEY=your_api_key_here
-MCP_SERVER_URL=https://mcp.community.augment.co
+MCP_SERVER_URL=PLACEHOLDER_MCP_SERVER_URL
 MCP_NAMESPACE=vana-project
 
 # Vertex AI Vector Search Configuration
@@ -166,14 +166,14 @@ Once you have the basic Knowledge Graph integration working, you can:
 The following environment variables are used for Knowledge Graph integration:
 
 - `MCP_API_KEY`: API key for the MCP server
-- `MCP_SERVER_URL`: URL of the MCP server (default: https://mcp.community.augment.co)
+- `MCP_SERVER_URL`: URL of the MCP server (default: PLACEHOLDER_MCP_SERVER_URL)
 - `MCP_NAMESPACE`: Namespace for the Knowledge Graph (default: vana-project)
 
 These can be set in a `.env` file in the project root directory:
 
 ```bash
 MCP_API_KEY=your_api_key_here
-MCP_SERVER_URL=https://mcp.community.augment.co
+MCP_SERVER_URL=PLACEHOLDER_MCP_SERVER_URL
 MCP_NAMESPACE=vana-project
 ```
 
@@ -187,7 +187,7 @@ The `augment-config.json` file in the project root directory configures Augment 
   "knowledgeGraph": {
     "provider": "mcp",
     "config": {
-      "serverUrl": "https://mcp.community.augment.co",
+      "serverUrl": "PLACEHOLDER_MCP_SERVER_URL",
       "namespace": "vana-project",
       "apiKey": "${MCP_API_KEY}"
     }
@@ -284,7 +284,7 @@ from tools.hybrid_search import HybridSearch
 # Initialize the hybrid search
 hybrid_search = HybridSearch(
     api_key="your_api_key_here",
-    server_url="https://mcp.community.augment.co",
+    server_url="PLACEHOLDER_MCP_SERVER_URL",
     namespace="vana-project",
     project="your_gcp_project",
     location="us-central1",

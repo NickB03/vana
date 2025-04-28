@@ -14,7 +14,7 @@ The MCP Knowledge Graph provides persistent memory across sessions, allowing age
 2. Navigate to the "Knowledge Graph" section
 3. Select "MCP" as the provider
 4. Enter the following configuration:
-   - Server URL: `https://mcp.community.augment.co`
+   - Server URL: `PLACEHOLDER_MCP_SERVER_URL`
    - Namespace: `vana-project` (or your preferred namespace)
    - API Key: (obtain from the MCP community server)
 
@@ -25,7 +25,7 @@ Alternatively, you can create an `augment-config.json` file in your project root
   "knowledgeGraph": {
     "provider": "mcp",
     "config": {
-      "serverUrl": "https://mcp.community.augment.co",
+      "serverUrl": "PLACEHOLDER_MCP_SERVER_URL",
       "namespace": "vana-project",
       "apiKey": "YOUR_API_KEY_HERE"
     }
