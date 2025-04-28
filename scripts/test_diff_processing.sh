@@ -101,10 +101,10 @@ try:
         
         if "stats" in res:
             stats = res["stats"]
-            print(f"   - Vector Search updates: {stats.get('vector_search_updates', 0)}")
-            print(f"   - Knowledge Graph updates: {stats.get('entities_updated', 0)}")
-            print(f"   - Entities extracted: {stats.get('entities_extracted', 0)}")
-            print(f"   - Deprecated chunks: {stats.get('deprecated_chunks', 0)}")
+            print(f"   - Vector Search updates: {stats.get(\"vector_search_updates\", 0)}")
+            print(f"   - Knowledge Graph updates: {stats.get(\"entities_updated\", 0)}")
+            print(f"   - Entities extracted: {stats.get(\"entities_extracted\", 0)}")
+            print(f"   - Deprecated chunks: {stats.get(\"deprecated_chunks\", 0)}")
 except Exception as e:
     print(f"Error reading results: {e}")
 '
