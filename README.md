@@ -37,6 +37,7 @@ VANA is a sophisticated multi-agent system built using Google's Agent Developmen
   - [Document Processing Strategy](docs/document-processing-strategy.md)
   - [Enhanced Knowledge Graph](docs/enhanced-knowledge-graph.md)
   - [VANA Command Reference](docs/vana-command-reference.md)
+  - [Web Search Configuration](docs/web-search-configuration.md)
   - [Web Search Integration](docs/web-search-integration.md)
   - [Optimized Search Guide](docs/optimized-search-guide.md)
   - [Enhanced Knowledge Evaluation](docs/enhanced-knowledge-evaluation.md)
@@ -400,6 +401,7 @@ VANA integrates with Google Custom Search API for web search capabilities:
      GOOGLE_SEARCH_API_KEY=your_google_search_api_key
      GOOGLE_SEARCH_ENGINE_ID=your_search_engine_id
      ```
+   - See [Web Search Configuration](docs/web-search-configuration.md) for detailed setup instructions
 
 3. **Features**:
    - Up-to-date information from the web
@@ -455,7 +457,9 @@ vana/
 │   ├── knowledge-graph-setup.md # Knowledge Graph setup guide
 │   ├── document-processing-strategy.md # Document processing strategy
 │   ├── enhanced-knowledge-graph.md # Enhanced Knowledge Graph features
-│   └── vana-command-reference.md # VANA command reference
+│   ├── vana-command-reference.md # VANA command reference
+│   ├── web-search-configuration.md # Web search API configuration
+│   └── web-search-integration.md # Web search implementation details
 ├── knowledge_docs/           # Text files for Vector Search
 ├── mcp-servers/              # MCP server implementations
 │   └── n8n-mcp/              # n8n MCP server
@@ -562,7 +566,8 @@ For detailed documentation on specific aspects of the VANA project, please refer
 - [Document Processing Strategy](docs/document-processing-strategy.md) - Comprehensive document processing pipeline with PDF support and metadata enrichment
 - [Enhanced Knowledge Graph](docs/enhanced-knowledge-graph.md) - Advanced entity extraction, relationship inference, and document processing
 - [VANA Command Reference](docs/vana-command-reference.md) - Complete reference for all VANA commands and tools
-- [Web Search Integration](docs/web-search-integration.md) - How to integrate and use Google Custom Search API for web search
+- [Web Search Configuration](docs/web-search-configuration.md) - How to set up and configure Google Custom Search API for web search
+- [Web Search Integration](docs/web-search-integration.md) - Implementation details for integrating web search into VANA
 - [Optimized Search Guide](docs/optimized-search-guide.md) - Guide to the optimized hybrid search implementation
 - [Enhanced Knowledge Evaluation](docs/enhanced-knowledge-evaluation.md) - Framework for evaluating knowledge base quality
 
