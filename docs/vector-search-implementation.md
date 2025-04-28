@@ -89,11 +89,11 @@ The Vector Search component will be exposed through the ADK agent as:
 def vector_search(self, query: str, top_k: int = 5) -> str:
     """
     Search for information in the knowledge base.
-    
+
     Args:
         query: The search query
         top_k: Maximum number of results to return (default: 5)
-        
+
     Returns:
         Formatted string with search results
     """
@@ -118,9 +118,56 @@ def vector_search(self, query: str, top_k: int = 5) -> str:
    - Test with incrementally growing corpus sizes
    - Verify throughput under concurrent queries
 
+## Enhanced Hybrid Search
+
+The enhanced hybrid search combines Vector Search, Knowledge Graph, and Web Search to provide the most comprehensive results. It leverages the strengths of each approach:
+
+- **Vector Search**: Provides semantic understanding and similarity-based retrieval
+- **Knowledge Graph**: Provides structured knowledge and explicit relationships
+- **Web Search**: Provides up-to-date information from the web
+
+### Implementation
+
+The enhanced hybrid search is implemented in `tools/enhanced_hybrid_search.py` and includes:
+
+1. **Query Processing**: Analyzes and processes the query
+2. **Parallel Search**: Sends the query to Vector Search, Knowledge Graph, and Web Search
+3. **Result Merging**: Combines results from all sources with deduplication
+4. **Dynamic Ranking**: Ranks results based on relevance, source quality, and recency
+5. **Response Formatting**: Generates a coherent response with source attribution
+
+### Usage
+
+```python
+from tools.enhanced_hybrid_search import EnhancedHybridSearch
+
+# Initialize enhanced hybrid search
+hybrid_search = EnhancedHybridSearch()
+
+# Perform search with all sources
+results = hybrid_search.search("What is VANA?", top_k=5, include_web=True)
+
+# Format results
+formatted = hybrid_search.format_results(results)
+print(formatted)
+```
+
+### Web Search Integration
+
+The web search component uses the Google Custom Search API to retrieve up-to-date information from the web. It is implemented in `tools/web_search.py` and includes:
+
+1. **Query Processing**: Prepares the query for web search
+2. **API Request**: Sends the query to the Google Custom Search API
+3. **Result Processing**: Extracts relevant information from the API response
+4. **Result Formatting**: Formats the results for integration with hybrid search
+
+For testing purposes, a mock implementation is provided in `tools/web_search_mock.py`.
+
 ## Future Enhancements
 
 1. **Multi-modal Embeddings**: Extend to handle image and code content
 2. **Query Expansion**: Implement automatic query expansion techniques
 3. **Personalized Ranking**: Adjust ranking based on user context
 4. **Cross-lingual Retrieval**: Implement using multilingual embedding models
+5. **Query Understanding**: Improve query analysis for better routing
+6. **Multi-hop Reasoning**: Enable following multiple relationship paths for complex queries

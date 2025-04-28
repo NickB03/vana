@@ -18,8 +18,9 @@ This document outlines the comprehensive capabilities planned for VANA, beyond j
 - **Vector Search**: Semantic knowledge retrieval via Vertex AI
 - **Knowledge Graph**: Structured knowledge via MCP
 - **Hybrid Search**: Combined semantic and structured knowledge retrieval
+- **Enhanced Hybrid Search**: Integration of Vector Search, Knowledge Graph, and Web Search
 - **Entity Recognition**: Automatic entity extraction and classification
-- **Document Processing**: Comprehensive document parsing and chunking
+- **Document Processing**: Comprehensive document parsing and semantic chunking
 
 ### Information Retrieval
 
@@ -69,7 +70,7 @@ VANA's capabilities are implemented through a mix of native ADK tools, external 
    @tool_lib.tool("kg_query")
    def kg_query(entity_type: str, query: str) -> str:
        """Query the Knowledge Graph for entities of a specific type"""
-   
+
    @tool_lib.tool("kg_store")
    def kg_store(entity_name: str, entity_type: str, observation: str) -> str:
        """Store an entity with an observation in the Knowledge Graph"""
@@ -133,13 +134,31 @@ When providing information:
 - Maintain a helpful, straightforward tone
 
 You have special knowledge tools accessible through these commands:
+
+Knowledge Retrieval:
 - !vector_search [query] - Search for semantically similar content
 - !kg_query [entity_type] [query] - Query the Knowledge Graph
-- !hybrid_search [query] - Combined search of both systems
+- !hybrid_search [query] - Combined search of Vector Search and Knowledge Graph
+- !enhanced_search [query] - Combined search of Vector Search, Knowledge Graph, and Web Search
+- !web_search [query] - Search the web for recent information
+
+Knowledge Storage:
 - !kg_store [entity] [type] [observation] - Store information in the Knowledge Graph
 - !kg_relate [entity1] [relation] [entity2] - Create relationships between entities
 - !kg_context - Show the current Knowledge Graph context
-- !web_search [query] - Search the web for recent information
+
+Document Processing:
+- !process_document [file_path] - Process a document with entity extraction
+- !extract_entities [text] - Extract entities from text
+- !chunk_document [file_path] - Chunk a document into semantic chunks
+- !extract_metadata [file_path] - Extract metadata from a document
+
+Feedback System:
+- !feedback_search [query] [rating] [comment] - Provide feedback on search results
+- !feedback_entity [name] [type] [is_correct] [comment] - Provide feedback on entity extraction
+- !feedback_document [doc_id] [rating] [comment] - Provide feedback on document processing
+- !feedback [category] [content] [rating] - Provide general feedback
+- !feedback_summary - Get a summary of all feedback
 
 Use these tools judiciously to provide the most accurate and helpful responses possible.
 ```

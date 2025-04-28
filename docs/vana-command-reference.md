@@ -68,6 +68,26 @@ Search using both Vector Search and Knowledge Graph for comprehensive results.
 !hybrid_search How to implement hybrid search? top_k=10
 ```
 
+### Enhanced Hybrid Search
+
+Search using Vector Search, Knowledge Graph, and Web Search for the most comprehensive results.
+
+```
+!enhanced_search <query>
+```
+
+**Parameters:**
+- `query`: The search query text
+- `top_k`: (Optional) Maximum number of results to return (default: 5)
+- `include_web`: (Optional) Whether to include web search results (default: true)
+
+**Example:**
+```
+!enhanced_search What is the architecture of VANA?
+!enhanced_search Latest developments in vector search top_k=10
+!enhanced_search How to implement hybrid search? include_web=false
+```
+
 ### Web Search
 
 Search the web for recent information.
