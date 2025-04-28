@@ -9,23 +9,25 @@ VANA is a sophisticated multi-agent system built using Google's Agent Developmen
 
 ## 📋 Table of Contents
 
-- [Overview](#overview)
-- [Features](#features)
-- [Architecture](#architecture)
-- [Prerequisites](#prerequisites)
-- [Installation](#installation)
-- [Configuration](#configuration)
-- [Usage](#usage)
-- [Agent Team](#agent-team)
-- [Vector Search Integration](#vector-search-integration)
-- [n8n MCP Integration](#n8n-mcp-integration)
-- [Knowledge Graph Integration](#knowledge-graph-integration)
-- [Deployment](#deployment)
-- [Development](#development)
-- [Contributing](#contributing)
-- [License](#license)
-- [Additional Resources](#additional-resources)
-- [Documentation](#documentation)
+- [Overview](#-overview)
+- [Features](#-features)
+- [Architecture](#-architecture)
+- [Prerequisites](#-prerequisites)
+- [Installation](#-installation)
+- [Configuration](#-configuration)
+- [Usage](#-usage)
+- [Agent Team](#-agent-team)
+- [Vector Search Integration](#-vector-search-integration)
+- [n8n MCP Integration](#-n8n-mcp-integration)
+- [Knowledge Graph Integration](#-knowledge-graph-integration)
+- [Enhanced Hybrid Search](#-enhanced-hybrid-search)
+- [Web Search Integration](#-web-search-integration)
+- [Deployment](#-deployment)
+- [Development](#-development)
+- [Contributing](#-contributing)
+- [License](#-license)
+- [Additional Resources](#-additional-resources)
+- [Documentation](#-documentation)
   - [Environment Setup](docs/environment-setup.md)
   - [n8n MCP Server Setup](docs/n8n-mcp-server-setup.md)
   - [Enhanced Memory Operations](docs/enhanced-memory-operations.md)
@@ -35,6 +37,9 @@ VANA is a sophisticated multi-agent system built using Google's Agent Developmen
   - [Document Processing Strategy](docs/document-processing-strategy.md)
   - [Enhanced Knowledge Graph](docs/enhanced-knowledge-graph.md)
   - [VANA Command Reference](docs/vana-command-reference.md)
+  - [Web Search Integration](docs/web-search-integration.md)
+  - [Optimized Search Guide](docs/optimized-search-guide.md)
+  - [Enhanced Knowledge Evaluation](docs/enhanced-knowledge-evaluation.md)
 
 ## 🔍 Overview
 
@@ -55,6 +60,8 @@ This project demonstrates how to build, configure, and deploy a team of speciali
 - **Advanced Entity Extraction**: NLP-based entity and relationship extraction
 - **Comprehensive Evaluation Framework**: Metrics for precision, recall, F1 score, and NDCG
 - **Web Search Integration**: Google Custom Search API integration for up-to-date information
+- **Enhanced Hybrid Search**: Combined search across Vector Search, Knowledge Graph, and Web
+- **Optimized Search Algorithms**: Query classification, improved relevance calculation, and result diversity
 
 ## 🏗️ Architecture
 
@@ -306,20 +313,14 @@ VANA integrates with a hosted MCP Knowledge Graph for persistent memory and know
    - `!kg_related <entity_name> <relationship_type>` - Find related entities
    - `!kg_infer <entity_name>` - Infer relationships for an entity
 
-6. **Hybrid Search Commands**:
-   - `!hybrid_search <query>` - Search both Knowledge Graph and Vector Search
-   - `!vector_search <query>` - Search only Vector Search
-   - `!kg_search <query>` - Search only Knowledge Graph
-   - `!web_search <query>` - Search the web for information
-
-7. **Document Processing**:
+6. **Document Processing**:
    - PDF support with metadata extraction
    - Multi-modal support with image OCR
    - Semantic chunking for better knowledge retrieval
    - Metadata enrichment with keywords and structure analysis
    - Automated entity extraction from documents
 
-8. **Setup and Configuration**:
+7. **Setup and Configuration**:
    - Uses community-hosted MCP server
    - Configuration stored in `augment-config.json`
    - See [Knowledge Graph Integration Guide](docs/knowledge-graph-integration.md) for detailed instructions
@@ -327,7 +328,7 @@ VANA integrates with a hosted MCP Knowledge Graph for persistent memory and know
    - See [Document Processing Strategy](docs/document-processing-strategy.md) for document processing details
    - See [VANA Command Reference](docs/vana-command-reference.md) for all available commands
 
-9. **Benefits**:
+8. **Benefits**:
    - No self-hosting required
    - Accessible from any device
    - Persistent knowledge across sessions
@@ -336,6 +337,86 @@ VANA integrates with a hosted MCP Knowledge Graph for persistent memory and know
    - Automatic entity extraction from conversations
    - Comprehensive document processing pipeline
    - Advanced entity linking and relationship inference
+
+## 🔍 Enhanced Hybrid Search
+
+VANA implements an enhanced hybrid search that combines multiple search methods:
+
+1. **Components**:
+   - Vector Search for semantic similarity
+   - Knowledge Graph for structured knowledge
+   - Web Search for up-to-date information
+   - Result Merger for combining and ranking results
+   - Feedback System for continuous improvement
+
+2. **Key Features**:
+   - Multi-source search in parallel
+   - Sophisticated result ranking
+   - Source weighting and diversity
+   - Query classification and preprocessing
+   - Comprehensive result formatting
+
+3. **Optimized Algorithms**:
+   - Query classification for optimal source weights
+   - Enhanced relevance calculation with proximity analysis
+   - Improved result diversity with source balancing
+   - Intelligent query preprocessing
+   - Performance optimization for reduced latency
+
+4. **Commands**:
+   - `!hybrid_search <query>` - Basic hybrid search (Vector Search + Knowledge Graph)
+   - `!enhanced_search <query>` - Enhanced hybrid search with web integration
+   - `!vector_search <query>` - Search only Vector Search
+   - `!kg_search <query>` - Search only Knowledge Graph
+   - `!web_search <query>` - Search only the web
+
+5. **Implementation**:
+   - `tools/hybrid_search.py` - Basic hybrid search
+   - `tools/enhanced_hybrid_search.py` - Enhanced hybrid search with web
+   - `tools/enhanced_hybrid_search_optimized.py` - Optimized implementation
+
+6. **Benefits**:
+   - More comprehensive search results
+   - Up-to-date information from the web
+   - Better result quality through sophisticated ranking
+   - Improved performance through optimization
+   - Continuous improvement through feedback
+
+## 🌐 Web Search Integration
+
+VANA integrates with Google Custom Search API for web search capabilities:
+
+1. **Implementation**:
+   - Uses Google's Custom Search API
+   - Configurable through environment variables
+   - Mock implementation for testing
+   - Integration with enhanced hybrid search
+
+2. **Configuration**:
+   - Requires Google API Key
+   - Requires Custom Search Engine ID
+   - Stored in environment variables:
+     ```
+     GOOGLE_SEARCH_API_KEY=your_google_search_api_key
+     GOOGLE_SEARCH_ENGINE_ID=your_search_engine_id
+     ```
+
+3. **Features**:
+   - Up-to-date information from the web
+   - Configurable result count
+   - Source attribution for web results
+   - Error handling and fallback mechanisms
+   - Rate limiting and caching
+
+4. **Commands**:
+   - `!web_search <query>` - Search the web for information
+   - `!enhanced_search <query> include_web=true` - Include web results in hybrid search
+
+5. **Benefits**:
+   - Access to real-time information
+   - Complement to internal knowledge base
+   - Improved response quality for time-sensitive queries
+   - Broader knowledge coverage
 
 ## 🚀 Deployment
 
@@ -481,5 +562,8 @@ For detailed documentation on specific aspects of the VANA project, please refer
 - [Document Processing Strategy](docs/document-processing-strategy.md) - Comprehensive document processing pipeline with PDF support and metadata enrichment
 - [Enhanced Knowledge Graph](docs/enhanced-knowledge-graph.md) - Advanced entity extraction, relationship inference, and document processing
 - [VANA Command Reference](docs/vana-command-reference.md) - Complete reference for all VANA commands and tools
+- [Web Search Integration](docs/web-search-integration.md) - How to integrate and use Google Custom Search API for web search
+- [Optimized Search Guide](docs/optimized-search-guide.md) - Guide to the optimized hybrid search implementation
+- [Enhanced Knowledge Evaluation](docs/enhanced-knowledge-evaluation.md) - Framework for evaluating knowledge base quality
 
 Developed with ❤️ using Google's Agent Development Kit
