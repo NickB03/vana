@@ -23,7 +23,7 @@ sys.path.insert(0, os.path.abspath(os.path.dirname(os.path.dirname(__file__))))
 
 # Import search implementations
 try:
-    from tools.enhanced_hybrid_search_optimized import OptimizedHybridSearch
+    from tools.enhanced_hybrid_search_optimized import EnhancedHybridSearchOptimized
     from tools.web_search_client import get_web_search_client
 except ImportError as e:
     print(f"Error importing required modules: {e}")
@@ -75,35 +75,35 @@ def run_optimized_search(query: str, include_web: bool = False, result_count: in
         print(f"Using {'mock' if use_mock else 'real'} web search client")
 
     # Create optimized hybrid search instance
-    search = OptimizedHybridSearch(web_search_client=web_client)
+    search = EnhancedHybridSearchOptimized(web_search_client=web_client)
 
     # Measure search time
     start_time = time.time()
-    results = search.search(query, result_count=result_count, include_web=include_web)
+    results = search.search(query, top_k=result_count, include_web=include_web)
     end_time = time.time()
 
     # Print results
-    print(f"\nFound {len(results)} results in {end_time - start_time:.2f} seconds:\n")
-    print(format_results(results, include_metadata=verbose))
+    print(f"\nFound {len(results['combined'])} results in {end_time - start_time:.2f} seconds:\n")
+    print(format_results(results['combined'], include_metadata=verbose))
 
     # Print source distribution if verbose
     if verbose:
         sources = {}
-        for result in results:
+        for result in results['combined']:
             source = result["source"]
             sources[source] = sources.get(source, 0) + 1
         print("Source distribution:")
         for source, count in sources.items():
-            print(f"  {source}: {count} results ({count/len(results)*100:.1f}%)")
+            print(f"  {source}: {count} results ({count/len(results['combined'])*100:.1f}%)")
 
 
 def main():
     """Main function."""
     args = parse_arguments()
-    
+
     # Resolve include_web flag
     include_web = args.include_web or not args.no_web
-    
+
     # Run optimized search
     run_optimized_search(
         query=args.query,
@@ -112,7 +112,7 @@ def main():
         use_mock=args.mock,
         verbose=args.verbose
     )
-    
+
     # Implement comparison with basic hybrid search if needed
     if args.compare:
         print("\nComparison with basic hybrid search not yet implemented.")

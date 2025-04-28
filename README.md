@@ -22,6 +22,8 @@ VANA is a sophisticated multi-agent system built using Google's Agent Developmen
 - [Knowledge Graph Integration](#-knowledge-graph-integration)
 - [Enhanced Hybrid Search](#-enhanced-hybrid-search)
 - [Web Search Integration](#-web-search-integration)
+- [Feedback Collection](#-feedback-collection)
+- [Automated Knowledge Base Maintenance](#-automated-knowledge-base-maintenance)
 - [Deployment](#-deployment)
 - [Development](#-development)
 - [Contributing](#-contributing)
@@ -41,6 +43,10 @@ VANA is a sophisticated multi-agent system built using Google's Agent Developmen
   - [Web Search Integration](docs/web-search-integration.md)
   - [Optimized Search Guide](docs/optimized-search-guide.md)
   - [Enhanced Knowledge Evaluation](docs/enhanced-knowledge-evaluation.md)
+  - [Feedback Collection System](docs/feedback-collection-system.md)
+  - [Automated Knowledge Base Maintenance](docs/automated-knowledge-base-maintenance.md)
+  - [Project Status](docs/project-status.md)
+  - [Auggie Next Steps](docs/auggie-next-steps.md)
 
 ## 🔍 Overview
 
@@ -419,6 +425,104 @@ VANA integrates with Google Custom Search API for web search capabilities:
    - Complement to internal knowledge base
    - Improved response quality for time-sensitive queries
    - Broader knowledge coverage
+
+## 📊 Feedback Collection
+
+VANA includes a comprehensive feedback collection system for search results:
+
+1. **Implementation**:
+   - SQLite database for feedback storage
+   - Flask API for feedback collection
+   - Client library for programmatic feedback submission
+   - Command-line interface for manual feedback submission
+
+2. **Features**:
+   - Overall rating for search results (1-5)
+   - Individual result ratings
+   - Free-form comments
+   - Source tracking (which search implementation was used)
+   - Timestamp and query tracking
+   - Statistical analysis of feedback
+
+3. **Components**:
+   - `tools/feedback_collector.py` - Core feedback collection functionality
+   - `tools/feedback_api.py` - Flask API for feedback collection
+   - `tools/feedback_client.py` - Client for submitting feedback
+
+4. **Usage**:
+   - **API**: Submit feedback via HTTP POST to `/feedback`
+   - **Client Library**:
+     ```python
+     from tools.feedback_client import FeedbackClient
+
+     client = FeedbackClient()
+     client.submit_feedback(
+         query="What is VANA?",
+         rating=4,
+         comments="Good results, but missing some information",
+         result_ratings=[5, 4, 3, 2, 1]
+     )
+     ```
+   - **Command Line**:
+     ```bash
+     python -m tools.feedback_client submit --query "What is VANA?" --rating 4 --comments "Good results" --result-ratings "5,4,3,2,1"
+     ```
+
+5. **Analysis**:
+   - Statistical analysis of feedback by query type, implementation, and result position
+   - Identification of problematic queries
+   - Comparison of search implementations
+   - Position analysis for result relevance
+   - Export functionality for further analysis
+
+6. **Benefits**:
+   - Continuous improvement of search algorithms
+   - Data-driven optimization
+   - User satisfaction tracking
+   - Identification of knowledge gaps
+   - Performance comparison between implementations
+
+## 🔄 Automated Knowledge Base Maintenance
+
+VANA includes automated knowledge base maintenance through GitHub Actions:
+
+1. **Implementation**:
+   - GitHub Actions workflow for automatic updates
+   - Document processing pipeline for new content
+   - Verification scripts for system health
+   - Notification system for failures
+
+2. **Workflow**:
+   - Triggered on document changes in `docs/` and `knowledge/` directories
+   - Runs on a weekly schedule for regular maintenance
+   - Can be manually triggered through workflow dispatch
+   - Processes changed documents and updates the knowledge base
+   - Verifies system health after updates
+   - Generates quality reports
+
+3. **Components**:
+   - `.github/workflows/knowledge-base-update.yml` - GitHub Actions workflow
+   - `scripts/expand_knowledge_base.py` - Document processing script
+   - `scripts/verify_vector_search.py` - Vector Search verification script
+   - `scripts/test_mcp_connection.py` - MCP Knowledge Graph verification script
+   - `scripts/evaluate_search_quality.py` - Search quality evaluation script
+
+4. **Features**:
+   - Automatic processing of new documents
+   - Semantic chunking for better knowledge retrieval
+   - Entity extraction for Knowledge Graph
+   - Batch updates to Vector Search
+   - Comprehensive verification and testing
+   - Quality reporting and monitoring
+   - Failure notifications
+
+5. **Benefits**:
+   - Consistent knowledge base maintenance
+   - Reduced manual effort
+   - Regular quality checks
+   - Early detection of issues
+   - Comprehensive documentation of changes
+   - Improved knowledge base quality over time
 
 ## 🚀 Deployment
 
