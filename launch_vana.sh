@@ -37,6 +37,30 @@ else
     echo ""
 fi
 
+# Check for Google Search API key
+if [ -z "$GOOGLE_SEARCH_API_KEY" ] || [ -z "$GOOGLE_SEARCH_ENGINE_ID" ]; then
+  echo "⚠️  Warning: Google Search API key or Search Engine ID not set."
+  echo "   Web search capabilities will be disabled."
+  echo "   Export GOOGLE_SEARCH_API_KEY and GOOGLE_SEARCH_ENGINE_ID to enable web search."
+  echo ""
+fi
+
+# Check for MCP API key
+if [ -z "$MCP_API_KEY" ]; then
+  echo "⚠️  Warning: MCP_API_KEY environment variable is not set."
+  echo "   Knowledge Graph capabilities will be disabled."
+  echo "   Export MCP_API_KEY to enable Knowledge Graph functionality."
+  echo ""
+fi
+
+# Check for Google Application Credentials
+if [ -z "$GOOGLE_APPLICATION_CREDENTIALS" ]; then
+  echo "⚠️  Warning: GOOGLE_APPLICATION_CREDENTIALS environment variable is not set."
+  echo "   This is required for Vertex AI services including Vector Search."
+  echo "   Export GOOGLE_APPLICATION_CREDENTIALS=./secrets/service-account-key.json"
+  echo ""
+fi
+
 # Start the ADK web server
 echo "Starting ADK web server..."
 echo "The web interface will be available at http://localhost:8000"

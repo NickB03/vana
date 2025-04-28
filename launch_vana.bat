@@ -45,6 +45,30 @@ if exist knowledge_docs (
     echo.
 )
 
+REM Check for Google Search API key
+if "%GOOGLE_SEARCH_API_KEY%"=="" (
+    echo Warning: Google Search API key not set.
+    echo Web search capabilities will be disabled.
+    echo Set GOOGLE_SEARCH_API_KEY and GOOGLE_SEARCH_ENGINE_ID to enable web search.
+    echo.
+)
+
+REM Check for MCP API key
+if "%MCP_API_KEY%"=="" (
+    echo Warning: MCP_API_KEY environment variable is not set.
+    echo Knowledge Graph capabilities will be disabled.
+    echo Set MCP_API_KEY to enable Knowledge Graph functionality.
+    echo.
+)
+
+REM Check for Google Application Credentials
+if "%GOOGLE_APPLICATION_CREDENTIALS%"=="" (
+    echo Warning: GOOGLE_APPLICATION_CREDENTIALS environment variable is not set.
+    echo This is required for Vertex AI services including Vector Search.
+    echo Set GOOGLE_APPLICATION_CREDENTIALS=.\secrets\service-account-key.json
+    echo.
+)
+
 REM Start the ADK web server
 echo Starting ADK web server...
 echo The web interface will be available at http://localhost:8000

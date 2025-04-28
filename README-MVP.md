@@ -11,6 +11,11 @@ VANA (Versatile Agent Network Architecture) is an intelligent agent system built
   - Vector Search via Vertex AI for semantic search
   - Knowledge Graph via MCP for structured knowledge
   - Hybrid Search combining both approaches
+  - Web Search for recent information
+- **Document Processing**:
+  - Semantic chunking for structure-aware document processing
+  - Hierarchical section extraction
+  - Context-preserving chunk overlap
 - **External Tool Integration**: Access to specialized tools through external MCP server
 - **Google ADK Foundation**: Code-first agent definition with modular tool framework
 
@@ -95,9 +100,17 @@ VANA (Versatile Agent Network Architecture) is an intelligent agent system built
    # Edit .env file with your configuration
    ```
 
-5. Set the MCP API key:
+5. Set required API keys:
    ```bash
-   export MCP_API_KEY=your_api_key
+   # For Knowledge Graph
+   export MCP_API_KEY=your_mcp_api_key
+
+   # For Web Search
+   export GOOGLE_SEARCH_API_KEY=your_google_search_api_key
+   export GOOGLE_SEARCH_ENGINE_ID=your_search_engine_id
+
+   # For Vector Search
+   export GOOGLE_APPLICATION_CREDENTIALS=./secrets/service-account-key.json
    ```
 
 ### Running the Agent
@@ -145,6 +158,14 @@ Combine both Vector Search and Knowledge Graph for comprehensive results:
 
 ```
 !hybrid_search How does VANA work?
+```
+
+### Web Search
+
+Search the web for recent information beyond the agent's training data:
+
+```
+!web_search What is the latest version of Google's ADK?
 ```
 
 For a complete list of Knowledge Graph commands, see [docs/knowledge-graph-commands.md](docs/knowledge-graph-commands.md).
@@ -199,8 +220,15 @@ python scripts/test_mcp_connection.py
   - `hybrid_search.py` - Combined Vector Search and Knowledge Graph
   - `knowledge_graph/` - Knowledge Graph client
   - `vector_search/` - Vector Search client
+  - `web_search.py` - Web search using Google Custom Search API
+  - `document_processing/` - Document processing tools
+    - `semantic_chunker.py` - Structure-aware document chunking
 - `scripts/` - Utility scripts
 - `examples/` - Example demonstrations
+- `tests/` - Test and evaluation scripts
+  - `test_web_search.py` - Test web search functionality
+  - `test_semantic_chunking.py` - Test document chunking
+  - `evaluate_retrieval.py` - Evaluate retrieval quality
 - `docs/` - Documentation
 
 ## Architecture Choices
@@ -222,12 +250,16 @@ The hybrid search capability combines semantic search with structured knowledge 
 1. Enhance Knowledge Graph integration with more sophisticated entity linking
 2. Implement user feedback mechanism for result quality
 3. Add additional domain-specific tools
-4. Develop evaluation framework for agent performance
-5. Prepare for multi-agent expansion in next phase
+4. Expand web search capabilities with multi-source integration
+5. Enhance document processing with multi-modal support
+6. Develop comprehensive evaluation framework for agent performance
+7. Prepare for multi-agent expansion in next phase
 
 ## Resources
 
 - [Google ADK Documentation](https://cloud.google.com/generative-ai-app-builder/docs/agent-development-kit/get-started)
 - [Vertex AI Vector Search](https://cloud.google.com/vertex-ai/docs/vector-search/overview)
+- [Google Custom Search API](https://developers.google.com/custom-search/v1/overview)
 - [MCP Documentation](https://mcp.community.augment.co/docs)
 - [VANA Architecture Guide](docs/vana-architecture-guide.md)
+- [VANA System Capabilities](docs/vana-system-capabilities.md)
