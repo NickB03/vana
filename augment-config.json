@@ -3,7 +3,7 @@
   "knowledgeGraph": {
     "provider": "mcp",
     "config": {
-      "serverUrl": "PLACEHOLDER_MCP_SERVER_URL",
+      "serverUrl": "https://knowledge-graph-default.modelcontextprotocol.com",
       "namespace": "vana-project",
       "apiKey": "${MCP_API_KEY}"
     }
@@ -16,7 +16,7 @@
       "knowledge_graph": {
         "enabled": true,
         "config": {
-          "server_url": "${MCP_SERVER_URL}",
+          "server_url": "https://knowledge-graph-default.modelcontextprotocol.com",
           "namespace": "${MCP_NAMESPACE}",
           "api_key": "${MCP_API_KEY}"
         }
