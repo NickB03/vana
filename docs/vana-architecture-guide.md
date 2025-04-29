@@ -279,7 +279,7 @@ The system implements graceful degradation at multiple levels:
 ### Appendix C: Knowledge Commands Reference
 
 | Command | Purpose | Example |
-|---------|---------|---------|
+|---------|---------|----------|
 | `!vector_search` | Search Vector Search | `!vector_search What is VANA?` |
 | `!kg_query` | Query Knowledge Graph | `!kg_query project VANA` |
 | `!hybrid_search` | Search Vector Search and Knowledge Graph | `!hybrid_search How does VANA work?` |
@@ -290,7 +290,7 @@ The system implements graceful degradation at multiple levels:
 ### Appendix D: Testing Commands Reference
 
 | Command | Purpose | Example |
-|---------|---------|---------|
+|---------|---------|----------|
 | `./scripts/run_vana_tests.sh` | Run predefined test cases | `./scripts/run_vana_tests.sh` |
 | `./scripts/run_vana_tests.sh --autonomous` | Run autonomous testing | `./scripts/run_vana_tests.sh --autonomous --max-tests 15` |
 | `./scripts/run_vana_tests.sh --interactive` | Run interactive testing | `./scripts/run_vana_tests.sh --interactive` |
