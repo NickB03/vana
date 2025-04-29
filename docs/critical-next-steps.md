@@ -1,0 +1,194 @@
+# Critical Next Steps for Project VANA
+
+## 🚨 High Priority: Remove Mock Implementations
+
+The current implementation includes several mock components that were added as temporary solutions. These need to be replaced with proper implementations:
+
+### 1. Vector Search Mock Implementation
+
+**Current Status:**
+- Using mock implementation in `adk-setup/vana/tools/rag_tools.py` due to permission errors
+- Permission errors include:
+  - `aiplatform.indexEndpoints.get` permission denied
+  - `aiplatform.indexes.list` permission denied
+  - `aiplatform.indexEndpoints.list` permission denied
+
+**Required Actions:**
+- Update service account permissions in GCP:
+  ```bash
+  gcloud projects add-iam-policy-binding analystai-454200 \
+    --member="serviceAccount:YOUR_SERVICE_ACCOUNT_EMAIL" \
+    --role="roles/aiplatform.user"
+  ```
+- Verify service account key file is correct and accessible
+- Update environment variables with correct endpoint information:
+  ```
+  VECTOR_SEARCH_ENDPOINT_ID=projects/960076421399/locations/us-central1/indexEndpoints/5085685481161621504
+  DEPLOYED_INDEX_ID=vanasharedindex
+  ```
+- Remove mock implementation once real implementation is working
+
+### 2. Web Search Mock Implementation
+
+**Current Status:**
+- Using mock implementation for web search
+- Google Custom Search API not properly configured
+
+**Required Actions:**
+- Verify Google Custom Search API configuration
+- Ensure API key and Custom Search Engine ID are correct in `.env` file:
+  ```
+  GOOGLE_SEARCH_API_KEY=your_google_search_api_key
+  GOOGLE_SEARCH_ENGINE_ID=your_search_engine_id
+  ```
+- Add proper error handling for web search failures
+- Remove mock implementation once real implementation is working
+
+### 3. Knowledge Graph Mock Data
+
+**Current Status:**
+- Some mock data may be present in Knowledge Graph queries
+
+**Required Actions:**
+- Verify MCP server connection is working properly
+- Ensure Knowledge Graph is populated with accurate data
+- Remove any hardcoded mock responses
+
+## 🔧 System Improvements
+
+### 1. Prevent Agent Hallucinations
+
+**Current Status:**
+- When search functionality fails, agents sometimes generate plausible-sounding but incorrect information
+
+**Required Actions:**
+- Update system prompt to explicitly instruct agents to:
+  - Clearly state when information is unavailable
+  - Never make up information when search fails
+  - Provide confidence indicators for responses
+- Implement better error handling in search tools to clearly indicate when searches fail
+- Add explicit "I don't know" responses when appropriate
+
+### 2. Enhance Error Handling
+
+**Current Status:**
+- Basic error handling in place, but not comprehensive
+
+**Required Actions:**
+- Add more detailed error messages
+- Implement better logging of what's being searched for and what's being returned
+- Create a centralized error handling mechanism
+- Add retry logic for transient failures
+
+### 3. Improve Mock Implementations (Short-term)
+
+While working to remove mock implementations, enhance the existing ones:
+
+**Required Actions:**
+- Add more comprehensive mock data
+- Clearly indicate when mock data is being used
+- Add configurable "failure modes" for testing
+- Document all mock implementations for easier removal
+
+## 📊 Testing and Validation
+
+### 1. Comprehensive Testing
+
+**Required Actions:**
+- Run the autonomous testing framework to identify issues
+- Create specific test cases for Vector Search and Web Search
+- Test with and without mock implementations to ensure smooth transition
+- Document all identified issues
+
+### 2. Environment Validation
+
+**Required Actions:**
+- Run the environment validation script to identify configuration issues
+- Verify all required environment variables are set correctly
+- Test connection to all external services
+- Document any configuration issues
+
+## 📝 Documentation Updates
+
+### 1. Update Technical Documentation
+
+**Required Actions:**
+- Document the process of removing mock implementations
+- Update architecture documentation to reflect real implementations
+- Create troubleshooting guides for common issues
+- Update environment setup guide with correct permissions
+
+### 2. Create Migration Plan
+
+**Required Actions:**
+- Document step-by-step process for migrating from mock to real implementations
+- Include rollback procedures in case of issues
+- Create timeline for migration
+- Identify dependencies and potential blockers
+
+## 🗓️ Timeline and Prioritization
+
+1. **Immediate (1-2 days):**
+   - Fix Vector Search permissions
+   - Configure Web Search API correctly
+   - Run comprehensive tests to identify issues
+
+2. **Short-term (3-7 days):**
+   - Remove mock implementations one by one
+   - Update system prompt to prevent hallucinations
+   - Enhance error handling
+
+3. **Medium-term (1-2 weeks):**
+   - Complete all documentation updates
+   - Implement comprehensive monitoring
+   - Conduct thorough testing of all components
+
+## 🔄 Continuous Improvement
+
+After removing mock implementations, focus on:
+
+1. **Performance Optimization:**
+   - Optimize search algorithms
+   - Implement caching for common queries
+   - Reduce API usage where possible
+
+2. **Feature Enhancement:**
+   - Improve document processing with semantic chunking
+   - Enhance Knowledge Graph with better entity extraction
+   - Implement user feedback collection
+
+3. **Production Hardening:**
+   - Add proper API key restrictions
+   - Implement monitoring and alerting
+   - Set up automated testing in CI/CD pipeline
+
+## 🧪 Testing Strategy
+
+1. **Before Removing Mocks:**
+   - Run baseline tests with mock implementations
+   - Document current behavior and performance
+
+2. **During Migration:**
+   - Test each component individually after removing mock
+   - Implement feature flags to easily switch between mock and real implementations
+   - Run regression tests after each change
+
+3. **After Migration:**
+   - Run comprehensive tests with all real implementations
+   - Compare results with baseline tests
+   - Document improvements and any remaining issues
+
+## 🚀 Success Criteria
+
+The migration from mock to real implementations will be considered successful when:
+
+1. All mock implementations are removed
+2. All tests pass with real implementations
+3. Performance meets or exceeds baseline
+4. No agent hallucinations occur
+5. Error handling is comprehensive and user-friendly
+6. Documentation is complete and accurate
+
+## 📋 Tracking Progress
+
+Create a tracking issue in GitHub to monitor progress on these critical next steps, with subtasks for each component and regular updates on status.
