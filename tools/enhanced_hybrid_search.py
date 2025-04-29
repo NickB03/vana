@@ -334,3 +334,20 @@ class EnhancedHybridSearch(HybridSearch):
             logger.error(error_msg)
 
         return results
+
+# Module-level functions for easier use
+def search_and_format(query: str, top_k: int = 5, include_web: bool = True) -> str:
+    """Search and format results in one step
+
+    Args:
+        query: The search query
+        top_k: Maximum number of results to return
+        include_web: Whether to include web search results
+
+    Returns:
+        Formatted string with search results
+    """
+    hybrid_search = EnhancedHybridSearch()
+    results = hybrid_search.search(query, top_k=top_k, include_web=include_web)
+    formatted = hybrid_search.format_results(results)
+    return formatted
