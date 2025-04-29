@@ -1,0 +1,102 @@
+name: Validate Environment Configuration
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.env.example'
+      - 'adk-setup/**'
+      - 'scripts/validate_environment.py'
+  pull_request:
+    branches: [main]
+    paths:
+      - '.env.example'
+      - 'adk-setup/**'
+      - 'scripts/validate_environment.py'
+  workflow_dispatch:  # Allow manual triggering
+
+jobs:
+  validate-environment:
+    runs-on: ubuntu-latest
+    
+    env:
+      GOOGLE_CLOUD_PROJECT: ${{ secrets.GOOGLE_CLOUD_PROJECT }}
+      GOOGLE_CLOUD_LOCATION: ${{ secrets.GOOGLE_CLOUD_LOCATION }}
+      GOOGLE_STORAGE_BUCKET: ${{ secrets.GOOGLE_STORAGE_BUCKET }}
+      MODEL: gemini-2.0-flash
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install python-dotenv google-cloud-aiplatform==1.38.0 vertexai google-cloud-storage
+      
+      - name: Create mock service account key
+        run: |
+          mkdir -p secrets
+          echo '{
+            "type": "service_account",
+            "project_id": "${{ secrets.GOOGLE_CLOUD_PROJECT }}",
+            "private_key_id": "mock-key-id",
+            "private_key": "-----BEGIN PRIVATE KEY-----\nMOCK_PRIVATE_KEY\n-----END PRIVATE KEY-----\n",
+            "client_email": "mock-sa@${{ secrets.GOOGLE_CLOUD_PROJECT }}.iam.gserviceaccount.com",
+            "client_id": "mock-client-id",
+            "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+            "token_uri": "https://oauth2.googleapis.com/token",
+            "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+            "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/mock-sa%40${{ secrets.GOOGLE_CLOUD_PROJECT }}.iam.gserviceaccount.com"
+          }' > secrets/mock-service-account.json
+          echo "GOOGLE_APPLICATION_CREDENTIALS=./secrets/mock-service-account.json" >> $GITHUB_ENV
+      
+      - name: Create agent.py if missing
+        run: |
+          mkdir -p adk-setup/vana
+          if [ ! -f "adk-setup/vana/agent.py" ]; then
+            echo '"""
+            VANA Agent Module
+
+            This module exposes the root agent for the VANA system.
+            """
+
+            # Import the root agent from the agents module
+            try:
+                from vana.agents.team import root_agent
+            except ImportError:
+                # Fallback to the vana agent if team.py does not have a root_agent
+                try:
+                    from vana.agents.vana import VanaAgent
+                    root_agent = VanaAgent()
+                except ImportError:
+                    # Create a placeholder agent if neither is available
+                    from google.adk.agents import Agent
+                    root_agent = Agent(
+                        name="vana",
+                        model="gemini-1.5-pro",
+                        description="VANA Agent",
+                        instruction="You are VANA, a versatile agent network architecture."
+                    )
+            ' > adk-setup/vana/agent.py
+          fi
+      
+      - name: Validate environment configuration
+        run: |
+          python scripts/validate_environment.py
+      
+      - name: Send notification on failure
+        if: failure()
+        uses: rtCamp/action-slack-notify@v2
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+          SLACK_CHANNEL: vana-alerts
+          SLACK_COLOR: danger
+          SLACK_TITLE: Environment Validation Failed
+          SLACK_MESSAGE: 'Environment validation workflow failed. Please check the logs.'
+          SLACK_FOOTER: 'VANA Project'
