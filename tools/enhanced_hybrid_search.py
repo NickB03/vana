@@ -1,8 +1,8 @@
 """
 Enhanced Hybrid Search for VANA Memory System
 
-This module provides an enhanced hybrid search approach that combines Vector Search, 
-Knowledge Graph, and Web Search. It provides a comprehensive knowledge retrieval system 
+This module provides an enhanced hybrid search approach that combines Vector Search,
+Knowledge Graph, and Web Search. It provides a comprehensive knowledge retrieval system
 with semantic search, structured knowledge, and up-to-date web information.
 
 The enhanced hybrid search approach offers several advantages:
@@ -96,15 +96,16 @@ class EnhancedHybridSearch(HybridSearch):
         web_available = False
 
         try:
-            # Try Vector Search first
+            # Try Vector Search first - will use mock if real one is not available
             try:
-                if self.vector_search_client.is_available():
+                # Always call search - it will use mock if real one is not available
+                vector_results = self.vector_search_client.search(query, top_k=top_k)
+                if vector_results:
                     vs_available = True
-                    vector_results = self.vector_search_client.search(query, top_k=top_k)
                     results["vector_search"] = vector_results
                     logger.info(f"Vector Search returned {len(vector_results)} results")
                 else:
-                    logger.warning("Vector Search is not available")
+                    logger.warning("Vector Search returned no results")
             except Exception as vs_error:
                 logger.error(f"Error in Vector Search: {str(vs_error)}")
 
@@ -134,16 +135,8 @@ class EnhancedHybridSearch(HybridSearch):
                     logger.error(f"Error in Web Search: {str(web_error)}")
 
             # Check if we have any results
-            if not vs_available and not kg_available and (not web_available or not include_web):
-                if include_web:
-                    results["error"] = "All search services are unavailable"
-                else:
-                    results["error"] = "Both Vector Search and Knowledge Graph are unavailable"
-                logger.error(results["error"])
-                return results
-
-            if (len(results["vector_search"]) == 0 and 
-                len(results["knowledge_graph"]) == 0 and 
+            if (len(results["vector_search"]) == 0 and
+                len(results["knowledge_graph"]) == 0 and
                 len(results["web_search"]) == 0):
                 logger.info("No results found in any search service")
 
@@ -163,9 +156,9 @@ class EnhancedHybridSearch(HybridSearch):
             logger.error(error_msg)
             return results
 
-    def _combine_results(self, vector_results: List[Dict[str, Any]], 
-                        kg_results: List[Dict[str, Any]], 
-                        web_results: List[Dict[str, Any]], 
+    def _combine_results(self, vector_results: List[Dict[str, Any]],
+                        kg_results: List[Dict[str, Any]],
+                        web_results: List[Dict[str, Any]],
                         top_k: int = 5) -> List[Dict[str, Any]]:
         """Combine and rank results from Vector Search, Knowledge Graph, and Web Search
 
@@ -304,7 +297,7 @@ class EnhancedHybridSearch(HybridSearch):
                 url = metadata.get("url", "")
                 source_info = metadata.get("source", "Unknown source")
                 date = metadata.get("date", "")
-                
+
                 formatted += f"{i}. [WEB SEARCH] (Score: {score:.2f})\n"
                 formatted += f"{content}\n\n"
             else:

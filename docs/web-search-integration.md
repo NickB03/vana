@@ -21,7 +21,7 @@ The web search integration consists of the following components:
 
 ### Web Search Client
 
-The `WebSearchClient` class in `tools/web_search.py` provides the interface to the Google Custom Search API:
+The `WebSearchClient` class in `tools/web_search.py` provides the interface to the Google Custom Search API. The implementation now uses hardcoded API credentials to ensure reliability:
 
 ```python
 class WebSearchClient:

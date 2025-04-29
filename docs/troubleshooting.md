@@ -95,11 +95,12 @@ This guide provides solutions for common issues with the Vector Search integrati
 2. Query is too specific or unrelated to indexed content
 3. Deployed index ID is incorrect
 4. Index is not properly deployed
+5. Permission issues with Vector Search
 
 **Solutions:**
 1. Verify index has content:
    ```bash
-   python verify_vector_search.py
+   python scripts/verify_vector_search.py
    ```
 
 2. Try a more general query:
@@ -116,6 +117,16 @@ This guide provides solutions for common issues with the Vector Search integrati
 4. Verify index deployment:
    ```bash
    python check_deployment.py
+   ```
+
+5. Test with mock implementation:
+   ```bash
+   python scripts/test_mock_vector_search.py "your query"
+   ```
+
+6. Check if the system is using the mock implementation:
+   ```bash
+   python scripts/test_vector_search.py --force-mock "your query"
    ```
 
 ### Poor search results quality

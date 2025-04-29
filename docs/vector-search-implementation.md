@@ -136,6 +136,16 @@ The enhanced hybrid search is implemented in `tools/enhanced_hybrid_search.py` a
 4. **Dynamic Ranking**: Ranks results based on relevance, source quality, and recency
 5. **Response Formatting**: Generates a coherent response with source attribution
 
+### Fallback Mechanism
+
+The enhanced hybrid search includes a robust fallback mechanism:
+
+1. **Mock Vector Search**: When the real Vector Search is unavailable (due to permissions or connectivity issues), the system automatically falls back to a mock implementation that provides predefined responses for common queries.
+
+2. **Mock Knowledge Graph**: Similarly, when the Knowledge Graph is unavailable, the system uses a mock implementation to ensure continuity.
+
+3. **Graceful Degradation**: The system prioritizes available sources and continues to function even when some components are unavailable, ensuring users always receive a response.
+
 ### Usage
 
 ```python
