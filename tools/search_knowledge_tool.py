@@ -36,8 +36,8 @@ LOCATION = os.getenv("GOOGLE_CLOUD_LOCATION")
 INDEX_NAME = os.getenv("VECTOR_SEARCH_INDEX_NAME", "vana-shared-index")
 DEPLOYED_INDEX_ID = os.getenv("DEPLOYED_INDEX_ID", "vanasharedindex")
 
-# Known endpoint resource name from verification
-ENDPOINT_RESOURCE_NAME = "projects/960076421399/locations/us-central1/indexEndpoints/5085685481161621504"
+# Get endpoint resource name from environment variable
+ENDPOINT_RESOURCE_NAME = os.getenv("VECTOR_SEARCH_ENDPOINT_ID")
 
 def generate_embedding(text):
     """Generate an embedding for a text using Vertex AI."""

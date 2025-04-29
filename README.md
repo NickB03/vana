@@ -50,32 +50,33 @@ VANA is a sophisticated multi-agent system built using Google's Agent Developmen
 
 ## 🔍 Overview
 
-VANA (Versatile Agent Network Architecture) is a code-first implementation of a multi-agent system using Google's Agent Development Kit. The system features a hierarchical agent structure with Ben as the coordinator and specialist agents for specific tasks, all sharing knowledge through Vector Search.
+VANA (Versatile Agent Network Architecture) is a code-first implementation of a multi-agent system using Google's Agent Development Kit. The system features a primary agent (Vana) with specialist sub-agents, leveraging Vertex AI Vector Search, Knowledge Graph, and Web Search for comprehensive knowledge retrieval.
 
 This project demonstrates how to build, configure, and deploy a team of specialized AI agents that can collaborate to solve complex problems, with each agent having specific responsibilities and capabilities.
 
 ## ✨ Features
 
-- **Hierarchical Agent Structure**: 6 specialized AI agents led by Ben (Project Lead)
+- **Primary Agent with Specialists**: Vana as the lead agent with 5 specialist sub-agents
 - **Shared Knowledge Base**: Vector storage via Vertex AI Vector Search
 - **Persistent Memory**: MCP Knowledge Graph for long-term memory across sessions
+- **Web Search Integration**: Google Custom Search API integration for up-to-date information
+- **Enhanced Hybrid Search**: Combined search across Vector Search, Knowledge Graph, and Web
 - **Native Multi-Agent Support**: Built-in delegation through ADK
+- **Comprehensive Testing Framework**: Juno as autonomous tester with learning capabilities
 - **Development UI**: Built-in developer UI for testing
 - **Cloud Deployment**: Seamless deployment to Vertex AI Agent Engine
-- **Chat History Integration**: Import past Claude conversations into the Knowledge Graph
+- **Chat History Integration**: Import past conversations into the Knowledge Graph
 - **Enhanced Document Processing**: PDF support, semantic chunking, and metadata enrichment
 - **Advanced Entity Extraction**: NLP-based entity and relationship extraction
 - **Comprehensive Evaluation Framework**: Metrics for precision, recall, F1 score, and NDCG
-- **Web Search Integration**: Google Custom Search API integration for up-to-date information
-- **Enhanced Hybrid Search**: Combined search across Vector Search, Knowledge Graph, and Web
 - **Optimized Search Algorithms**: Query classification, improved relevance calculation, and result diversity
 
 ## 🏗️ Architecture
 
-VANA follows a hierarchical architecture with a coordinator agent (Ben) delegating tasks to specialist agents:
+VANA follows an architecture with a primary agent (Vana) delegating tasks to specialist agents:
 
 ```
-                    [Ben - Coordinator]
+                    [Vana - Primary Agent]
                     /        |        \
          ┌─────────┐   ┌─────────┐   ┌─────────┐
          │  Rhea   │   │   Max   │   │  Sage   │
@@ -83,13 +84,13 @@ VANA follows a hierarchical architecture with a coordinator agent (Ben) delegati
          └─────────┘   └─────────┘   └─────────┘
          ┌─────────┐   ┌─────────┐
          │   Kai   │   │  Juno   │
-         │(Edge Cases)│   │(Story)│
+         │(Edge Cases)│   │(Test Specialist)│
          └─────────┘   └─────────┘
 ```
 
-All agents share access to a common Vector Search index for knowledge retrieval, enabling consistent information access across the agent team.
+All agents share access to common knowledge sources including Vector Search, Knowledge Graph, and Web Search, enabling comprehensive information access across the agent team.
 
-For detailed architecture information, see [vana-adk-architecture.md](vana-adk-architecture.md).
+For detailed architecture information, see [docs/vana-architecture-guide.md](docs/vana-architecture-guide.md).
 
 ## 📋 Prerequisites
 
@@ -201,14 +202,14 @@ adk run vana.agents.team
 
 VANA features a team of specialized agents:
 
-- **Ben (Coordinator)**: Project Lead & DevOps Strategist
+- **Vana (Primary Agent)**: Lead Developer, Architect, and Strategist for Project Vana
 - **Rhea**: Meta-Architect of Agent Intelligence
 - **Max**: Interaction Engineer
 - **Sage**: Platform Automator
 - **Kai**: Edge Case Hunter
-- **Juno**: Story Engineer
+- **Juno**: Test Specialist
 
-Each agent has specific tools and capabilities designed for their role.
+Each agent has specific tools and capabilities designed for their role. Vana can delegate tasks to specialist agents based on their expertise, and specialist agents can communicate with each other to collaborate on complex tasks.
 
 ## 🔍 Vector Search Integration
 
@@ -244,12 +245,47 @@ VANA uses Vertex AI Vector Search for knowledge retrieval:
 
 6. The system requires a service account with Vertex AI Admin permissions
 
+## 🧪 Testing Framework
+
+VANA includes a comprehensive testing framework that allows Juno to act as a human tester:
+
+1. **Testing Modes**:
+   - **Structured Testing**: Run predefined test cases with expected results
+   - **Autonomous Testing**: Juno decides what to test and adapts based on previous results
+   - **Interactive Testing**: Manually ask questions to Vana
+
+2. **Key Features**:
+   - **Learning from Previous Results**: Juno analyzes past test runs to focus on problem areas
+   - **Comprehensive Coverage**: Tests all capabilities including Vector Search, Knowledge Graph, and Web Search
+   - **Detailed Reporting**: Generates comprehensive test reports with actionable insights
+
+3. **Components**:
+   - `scripts/test_vana_agent.py`: Direct test runner
+   - `scripts/juno_test_agent.py`: Agent-based test runner for structured testing
+   - `scripts/juno_autonomous_tester.py`: Autonomous Juno agent for dynamic testing
+   - `scripts/vana_test_cases.json`: Collection of predefined test cases
+   - `scripts/run_vana_tests.sh`: Bash script to run tests in any mode
+
+4. **Usage**:
+   ```bash
+   # Run predefined test cases
+   ./scripts/run_vana_tests.sh
+
+   # Run in autonomous mode
+   ./scripts/run_vana_tests.sh --autonomous
+
+   # Run in interactive mode
+   ./scripts/run_vana_tests.sh --interactive
+   ```
+
+For detailed information on the testing framework, see [scripts/README-TESTING.md](scripts/README-TESTING.md).
+
 ## 🔄 n8n MCP Integration
 
 VANA integrates with n8n and the Model Context Protocol (MCP) for enhanced memory management:
 
 1. **n8n MCP Server**:
-   - Allows Ben (Claude) to directly configure n8n workflows for memory management
+   - Allows Vana to directly configure n8n workflows for memory management
    - Provides standardized command handling through MCP
    - Enables persistent memory across sessions
 
@@ -661,18 +697,31 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 For detailed documentation on specific aspects of the VANA project, please refer to the following guides:
 
+### Core Documentation
+- [Project Status](docs/project-status.md) - Current status and recent updates
+- [VANA Architecture Guide](docs/vana-architecture-guide.md) - Comprehensive architecture overview
 - [Environment Setup Guide](docs/environment-setup.md) - How to set up environment variables and manage credentials
-- [n8n MCP Server Setup](docs/n8n-mcp-server-setup.md) - How to set up and configure the n8n MCP server
-- [Enhanced Memory Operations](docs/enhanced-memory-operations.md) - Advanced memory capabilities including filtering, tagging, and analytics
-- [Knowledge Graph Integration](docs/knowledge-graph-integration.md) - How to set up and use the MCP Knowledge Graph with Claude chat history
-- [Launch Configuration](docs/launch-configuration.md) - How to configure and launch the VANA environment with MCP Knowledge Graph
+- [Launch Configuration](docs/launch-configuration.md) - How to configure and launch the VANA environment
+
+### Knowledge Management
 - [Vertex AI Transition](docs/vertex-ai-transition.md) - Guide to transitioning from Ragie.ai to Vertex AI Vector Search
-- [Document Processing Strategy](docs/document-processing-strategy.md) - Comprehensive document processing pipeline with PDF support and metadata enrichment
-- [Enhanced Knowledge Graph](docs/enhanced-knowledge-graph.md) - Advanced entity extraction, relationship inference, and document processing
-- [VANA Command Reference](docs/vana-command-reference.md) - Complete reference for all VANA commands and tools
-- [Web Search Configuration](docs/web-search-configuration.md) - How to set up and configure Google Custom Search API for web search
-- [Web Search Integration](docs/web-search-integration.md) - Implementation details for integrating web search into VANA
+- [Knowledge Graph Integration](docs/knowledge-graph-integration.md) - How to set up and use the MCP Knowledge Graph
+- [Enhanced Knowledge Graph](docs/enhanced-knowledge-graph.md) - Advanced entity extraction and relationship inference
+- [Document Processing Strategy](docs/document-processing-strategy.md) - Comprehensive document processing pipeline
+
+### Search Capabilities
+- [Web Search Configuration](docs/web-search-configuration.md) - How to set up Google Custom Search API
+- [Web Search Integration](docs/web-search-integration.md) - Implementation details for web search
 - [Optimized Search Guide](docs/optimized-search-guide.md) - Guide to the optimized hybrid search implementation
 - [Enhanced Knowledge Evaluation](docs/enhanced-knowledge-evaluation.md) - Framework for evaluating knowledge base quality
+
+### Memory and MCP
+- [n8n MCP Server Setup](docs/n8n-mcp-server-setup.md) - How to set up and configure the n8n MCP server
+- [Enhanced Memory Operations](docs/enhanced-memory-operations.md) - Advanced memory capabilities
+- [VANA Command Reference](docs/vana-command-reference.md) - Complete reference for all VANA commands and tools
+
+### Testing Framework
+- [Testing Framework Guide](scripts/README-TESTING.md) - Comprehensive guide to the testing framework
+- [Autonomous Testing](docs/autonomous-testing.md) - Guide to using Juno as an autonomous tester
 
 Developed with ❤️ using Google's Agent Development Kit

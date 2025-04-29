@@ -261,7 +261,7 @@ The system implements graceful degradation at multiple levels:
 ### Appendix A: ADK Resource Types
 
 | Component | Purpose | Key Features |
-|-----------|---------|------------|
+|-----------|---------|--------------|
 | Agent | Agent definition | Instructions, tools, sub-agents |
 | Tool | Agent capabilities | @tool decorator, type hints |
 | Runner | Execution engine | Stream handling, state management |
