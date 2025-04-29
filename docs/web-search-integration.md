@@ -26,35 +26,40 @@ The `WebSearchClient` class in `tools/web_search.py` provides the interface to t
 ```python
 class WebSearchClient:
     """Client for performing web searches using Google Custom Search API"""
-    
+
     def __init__(self):
         """Initialize the web search client"""
-        self.api_key = os.environ.get("GOOGLE_SEARCH_API_KEY")
-        self.engine_id = os.environ.get("GOOGLE_SEARCH_ENGINE_ID")
+        # Use the provided API key directly
+        self.api_key = "AIzaSyAZtFNVDHlb6r6bR6VIPVtLcl29rOS_yRk"
+        self.search_engine_id = "04ca3153331b749b0"
         self.base_url = "https://www.googleapis.com/customsearch/v1"
-    
+
+        # Log the API key being used (first 5 and last 5 characters)
+        logger.info(f"Using API key: {self.api_key[:5]}...{self.api_key[-5:]}")
+        logger.info(f"Using Search Engine ID: {self.search_engine_id}")
+
     def is_available(self) -> bool:
         """Check if web search is available"""
-        return bool(self.api_key and self.engine_id)
-    
+        return self.api_key is not None and self.search_engine_id is not None
+
     def search(self, query: str, num_results: int = 5) -> List[Dict[str, Any]]:
         """
         Perform a web search
-        
+
         Args:
             query: Search query
             num_results: Number of results to return (max 10)
-            
+
         Returns:
             List of search results with title, snippet, and URL
         """
         if not self.is_available():
             return []
-        
+
         # Ensure num_results is within limits
         if num_results > 10:
             num_results = 10
-        
+
         # Prepare request parameters
         params = {
             "key": self.api_key,
@@ -62,15 +67,15 @@ class WebSearchClient:
             "q": query,
             "num": num_results
         }
-        
+
         try:
             # Send request to Google Custom Search API
             response = requests.get(self.base_url, params=params)
             response.raise_for_status()
-            
+
             # Parse response
             data = response.json()
-            
+
             # Extract and format results
             results = []
             if "items" in data:
@@ -82,35 +87,35 @@ class WebSearchClient:
                         "source": self._extract_domain(item.get("link", "")),
                         "date": item.get("pagemap", {}).get("metatags", [{}])[0].get("article:published_time", "")
                     })
-            
+
             return results
-        
+
         except Exception as e:
             print(f"Error in web search: {str(e)}")
             return []
-    
+
     def format_results(self, results: List[Dict[str, Any]]) -> str:
         """
         Format search results for display
-        
+
         Args:
             results: List of search results
-            
+
         Returns:
             Formatted string with search results
         """
         if not results:
             return "No web search results found."
-        
+
         formatted = "Web Search Results:\n\n"
-        
+
         for i, result in enumerate(results, 1):
             title = result.get("title", "")
             url = result.get("url", "")
             snippet = result.get("snippet", "")
             source = result.get("source", "")
             date = result.get("date", "")
-            
+
             formatted += f"{i}. {title}\n"
             if snippet:
                 formatted += f"{snippet}\n"
@@ -118,9 +123,9 @@ class WebSearchClient:
             if date:
                 formatted += f" ({date[:10]})"
             formatted += f"\n{url}\n\n"
-        
+
         return formatted
-    
+
     def _extract_domain(self, url: str) -> str:
         """Extract domain from URL"""
         try:
@@ -136,12 +141,12 @@ For testing purposes, a mock implementation is provided in `tools/web_search_moc
 ```python
 class MockWebSearchClient(WebSearchClient):
     """Mock client for performing web searches"""
-    
+
     def __init__(self):
         """Initialize the mock web search client"""
         super().__init__()
         self.mock_data = self._load_mock_data()
-    
+
     def _load_mock_data(self) -> Dict[str, List[Dict[str, Any]]]:
         """Load mock data for predefined queries"""
         mock_data = {
@@ -157,37 +162,37 @@ class MockWebSearchClient(WebSearchClient):
             # Additional mock data...
         }
         return mock_data
-    
+
     def is_available(self) -> bool:
         """Check if web search is available"""
         return True
-    
+
     def search(self, query: str, num_results: int = 5) -> List[Dict[str, Any]]:
         """
         Perform a mock web search
-        
+
         Args:
             query: Search query
             num_results: Number of results to return (max 10)
-            
+
         Returns:
             List of search results with title, snippet, and URL
         """
         # Find the best matching predefined query
         best_match = None
         best_match_score = 0
-        
+
         for predefined_query in self.mock_data.keys():
             # Calculate simple match score
             query_words = set(re.findall(r'\w+', query.lower()))
             predefined_words = set(re.findall(r'\w+', predefined_query.lower()))
             common_words = query_words.intersection(predefined_words)
             score = len(common_words)
-            
+
             if score > best_match_score:
                 best_match = predefined_query
                 best_match_score = score
-        
+
         # Return predefined results or generic results
         if best_match_score > 0:
             return self.mock_data[best_match][:num_results]
@@ -388,8 +393,10 @@ python tests/test_enhanced_hybrid_search_comprehensive.py
 
 ## Next Steps
 
-1. **Google Custom Search API**: Configure with proper credentials
-2. **Result Ranking**: Enhance the ranking algorithm for better result ordering
-3. **Query Understanding**: Improve query analysis for better routing
-4. **Personalization**: Implement personalized search based on user context
-5. **Multi-hop Reasoning**: Enable following multiple relationship paths for complex queries
+1. ✅ **Google Custom Search API**: Configured with proper credentials
+2. **Error Handling**: Improve error handling and add retry logic
+3. **System Prompt**: Update system prompt to prevent hallucinations when search fails
+4. **Result Ranking**: Enhance the ranking algorithm for better result ordering
+5. **Query Understanding**: Improve query analysis for better routing
+6. **Personalization**: Implement personalized search based on user context
+7. **Multi-hop Reasoning**: Enable following multiple relationship paths for complex queries

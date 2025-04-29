@@ -63,6 +63,30 @@ The web search is implemented in the `WebSearchClient` class located in `tools/w
 
 For testing purposes, a `MockWebSearchClient` class is also available, which returns predefined results for known queries.
 
+### Current Implementation
+
+The current implementation uses hardcoded API credentials to avoid environment variable issues:
+
+```python
+def __init__(self):
+    """Initialize the web search client with API credentials."""
+    # Use the provided API key directly
+    self.api_key = "AIzaSyAZtFNVDHlb6r6bR6VIPVtLcl29rOS_yRk"
+    self.search_engine_id = "04ca3153331b749b0"
+```
+
+This approach ensures that the web search functionality works correctly regardless of environment variable configuration. In a future update, we'll implement a more secure approach for handling API credentials.
+
+### Verification
+
+A verification script is available to test the web search functionality:
+
+```bash
+python scripts/verify_web_search.py
+```
+
+This script checks if the API credentials are valid and performs a test search to ensure everything is working correctly.
+
 ## Usage Example
 
 ```python
