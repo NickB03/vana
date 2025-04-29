@@ -110,6 +110,25 @@ The project includes a comprehensive testing framework:
 
 ## 🔭 Next Steps for Project Evolution
 
+### Critical Next Steps
+
+See the detailed [Critical Next Steps](critical-next-steps.md) document for a comprehensive plan to:
+
+1. **Remove Mock Implementations**
+   - Replace Vector Search mock with real implementation
+   - Configure Web Search API correctly
+   - Verify Knowledge Graph connections
+
+2. **Prevent Agent Hallucinations**
+   - Update system prompts
+   - Improve error handling
+   - Add explicit uncertainty indicators
+
+3. **Enhance Error Handling and Testing**
+   - Add comprehensive error handling
+   - Run autonomous testing to identify issues
+   - Document all identified issues
+
 ### Immediate Priorities (Next Sprint)
 
 1. **Fix Vector Search Permissions**
@@ -117,17 +136,12 @@ The project includes a comprehensive testing framework:
    - Verify service account key file is correct and accessible
    - Update environment variables with correct endpoint information
 
-2. **Enhance Mock Implementation**
-   - Add more comprehensive mock data
-   - Clearly indicate when mock data is being used
-   - Improve error handling and logging
-
-3. **Implement Proper Web Search**
+2. **Implement Proper Web Search**
    - Verify Google Custom Search API configuration
    - Ensure API key and Custom Search Engine ID are correct
    - Add proper error handling for web search failures
 
-4. **Update System Prompt**
+3. **Update System Prompt**
    - Add explicit instructions to prevent hallucinations
    - Instruct agents to clearly state when information is unavailable
    - Add confidence indicators for responses
