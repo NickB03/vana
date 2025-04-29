@@ -33,7 +33,7 @@ PROJECT_ID = os.getenv("GOOGLE_CLOUD_PROJECT")
 LOCATION = os.getenv("GOOGLE_CLOUD_LOCATION")
 INDEX_NAME = os.getenv("VECTOR_SEARCH_INDEX_NAME", "vana-shared-index")
 DEPLOYED_INDEX_ID = os.getenv("DEPLOYED_INDEX_ID", "vanasharedindex")
-ENDPOINT_RESOURCE_NAME = "projects/960076421399/locations/us-central1/indexEndpoints/5085685481161621504"
+ENDPOINT_RESOURCE_NAME = os.getenv("VECTOR_SEARCH_ENDPOINT_ID")
 
 def parse_arguments():
     """Parse command line arguments."""
