@@ -40,7 +40,7 @@ To gain complete understanding of the project and prepare for implementing nativ
 ## Implementation Plan: Native ADK Memory
 
 ### Overview
-This plan outlines the steps to implement Google ADK's native memory capabilities using `VertexAiRagMemoryService` while maintaining compatibility with existing functionality.
+This plan outlines the steps to implement Google ADK's native memory capabilities using `VertexAiRagMemoryService` while maintaining compatibility with existing functionality. Based on the latest ADK documentation (as of May 2025), we'll integrate the ADK's session-based memory system with VANA's existing architecture.
 
 ### Phase 1: Setup and Research
 
@@ -51,12 +51,17 @@ This plan outlines the steps to implement Google ADK's native memory capabilitie
 
 2. **Install Required Dependencies**
    ```bash
-   pip install google-adk[vertexai]
+   pip install google-adk[vertexai]==0.5.0
    ```
 
 3. **Configure Vertex AI RAG Corpus**
-   - Follow the [ADK documentation](https://google.github.io/adk-docs/context/#managing-session-state) to set up a RAG Corpus
-   - Add the RAG Corpus resource name to environment variables
+   - Follow the [ADK Documentation: Memory](https://google.github.io/adk-docs/sessions/memory/) to set up a RAG Corpus
+   - Add the RAG Corpus resource name to environment variables:
+     ```
+     RAG_CORPUS_RESOURCE_NAME=projects/analystai-454200/locations/us-central1/ragCorpora/vana-memory-corpus
+     SIMILARITY_TOP_K=5
+     VECTOR_DISTANCE_THRESHOLD=0.7
+     ```
 
 ### Phase 2: Implement Native ADK Memory Service
 
@@ -112,7 +117,7 @@ This plan outlines the steps to implement Google ADK's native memory capabilitie
 
 ### 1. ADK Memory Service Implementation
 
-Based on the [ADK documentation](https://google.github.io/adk-docs/context/#managing-session-state), implement the following in `/adk-setup/vana/memory/adk_memory_service.py`:
+Based on the latest [ADK Memory documentation](https://google.github.io/adk-docs/sessions/memory/), implement the following in `/adk-setup/vana/memory/adk_memory_service.py`:
 
 ```python
 from google.adk.memory import VertexAiRagMemoryService
@@ -123,13 +128,13 @@ logger = logging.getLogger(__name__)
 
 class ADKMemoryService:
     """Wrapper for ADK's VertexAiRagMemoryService"""
-    
+
     def __init__(self):
         """Initialize the ADK Memory Service"""
         self.rag_corpus = os.environ.get("RAG_CORPUS_RESOURCE_NAME")
         self.similarity_top_k = int(os.environ.get("SIMILARITY_TOP_K", "5"))
         self.vector_distance_threshold = float(os.environ.get("VECTOR_DISTANCE_THRESHOLD", "0.7"))
-        
+
         if not self.rag_corpus:
             logger.warning("RAG_CORPUS_RESOURCE_NAME not set. ADK Memory Service will not be available.")
             self.memory_service = None
@@ -144,17 +149,17 @@ class ADKMemoryService:
             except Exception as e:
                 logger.error(f"Error initializing ADK Memory Service: {e}")
                 self.memory_service = None
-    
+
     def is_available(self) -> bool:
         """Check if the ADK Memory Service is available"""
         return self.memory_service is not None
-    
+
     def add_session_to_memory(self, session) -> bool:
         """Add a session to memory"""
         if not self.is_available():
             logger.warning("ADK Memory Service not available. Session not added to memory.")
             return False
-        
+
         try:
             self.memory_service.add_session_to_memory(session)
             logger.info(f"Session added to memory: {session.session_id}")
@@ -162,13 +167,13 @@ class ADKMemoryService:
         except Exception as e:
             logger.error(f"Error adding session to memory: {e}")
             return False
-    
+
     async def search_memory(self, app_name: str, user_id: str, query: str):
         """Search memory for relevant information"""
         if not self.is_available():
             logger.warning("ADK Memory Service not available. Memory search failed.")
             return None
-        
+
         try:
             results = await self.memory_service.search_memory(app_name, user_id, query)
             logger.info(f"Memory search completed for query: {query}")
@@ -191,13 +196,13 @@ logger = logging.getLogger(__name__)
 
 class SessionManager:
     """Manager for ADK Sessions"""
-    
+
     def __init__(self):
         """Initialize the Session Manager"""
         self.app_name = os.environ.get("APP_NAME", "vana")
         self.session_service = InMemorySessionService()
         logger.info(f"Session Manager initialized for app: {self.app_name}")
-    
+
     def create_session(self, user_id: str, session_id: str = None) -> Session:
         """Create a new session"""
         session = self.session_service.create_session(
@@ -207,7 +212,7 @@ class SessionManager:
         )
         logger.info(f"Created session: {session.session_id} for user: {user_id}")
         return session
-    
+
     def get_session(self, user_id: str, session_id: str) -> Session:
         """Get an existing session"""
         try:
@@ -220,7 +225,7 @@ class SessionManager:
         except Exception as e:
             logger.error(f"Error getting session {session_id} for user {user_id}: {e}")
             return None
-    
+
     def update_session_state(self, session: Session, key: str, value) -> bool:
         """Update session state"""
         try:
@@ -229,7 +234,7 @@ class SessionManager:
         except Exception as e:
             logger.error(f"Error updating session state: {e}")
             return False
-    
+
     def get_session_state(self, session: Session, key: str, default=None):
         """Get session state value"""
         try:
@@ -258,31 +263,31 @@ session_manager = SessionManager()
 async def search_adk_memory(user_id: str, query: str, top_k: int = 5) -> str:
     """
     Search ADK memory for relevant information
-    
+
     Args:
         user_id: User ID
         query: Search query
         top_k: Maximum number of results to return
-        
+
     Returns:
         Formatted string with search results
     """
     try:
         app_name = session_manager.app_name
         results = await memory_service.search_memory(app_name, user_id, query)
-        
+
         if not results or not results.memory_results:
             return "No relevant information found in memory."
-        
+
         # Format results
         formatted = "Relevant information from memory:\n\n"
         for i, result in enumerate(results.memory_results[:top_k], 1):
             formatted += f"Memory {i}:\n"
-            
+
             # Add session information if available
             if result.session:
                 formatted += f"  From session: {result.session.session_id}\n"
-            
+
             # Add events
             if result.events:
                 for event in result.events:
@@ -290,9 +295,9 @@ async def search_adk_memory(user_id: str, query: str, top_k: int = 5) -> str:
                         for part in event.content.parts:
                             if part.text:
                                 formatted += f"  {event.author}: {part.text[:200]}...\n"
-            
+
             formatted += "\n"
-        
+
         return formatted
     except Exception as e:
         logger.error(f"Error searching ADK memory: {e}")
@@ -301,12 +306,12 @@ async def search_adk_memory(user_id: str, query: str, top_k: int = 5) -> str:
 def store_memory(user_id: str, session_id: str, content: str) -> str:
     """
     Store information in ADK memory
-    
+
     Args:
         user_id: User ID
         session_id: Session ID
         content: Content to store
-        
+
     Returns:
         Status message
     """
@@ -315,14 +320,14 @@ def store_memory(user_id: str, session_id: str, content: str) -> str:
         session = session_manager.get_session(user_id, session_id)
         if not session:
             session = session_manager.create_session(user_id, session_id)
-        
+
         # Add content to session state
         key = f"memory_{len(session.state) + 1}"
         session_manager.update_session_state(session, key, content)
-        
+
         # Add session to memory
         success = memory_service.add_session_to_memory(session)
-        
+
         if success:
             return f"Information stored in memory successfully."
         else:
@@ -346,38 +351,38 @@ from vana.tools.adk_memory_tools import search_adk_memory_tool, store_memory_too
 
 class VanaAgent(agent_lib.LlmAgent):
     # ... existing code ...
-    
+
     # Add new tools
     @tool_lib.tool("adk_memory_search")
     async def adk_memory_search(self, query: str, top_k: int = 5) -> str:
         """
         Search ADK memory for relevant information.
-        
+
         Args:
             query: The search query
             top_k: Maximum number of results to return (default: 5)
-            
+
         Returns:
             Formatted string with search results
         """
         try:
             # Get user ID from context
             user_id = self.context.get("user_id", "default_user")
-            
+
             logger.info(f"Searching ADK memory for: {query}")
             return await search_adk_memory_tool(user_id, query, top_k)
         except Exception as e:
             logger.error(f"Error in adk_memory_search: {str(e)}")
             return f"Error searching ADK memory: {str(e)}"
-    
+
     @tool_lib.tool("adk_memory_store")
     def adk_memory_store(self, content: str) -> str:
         """
         Store information in ADK memory.
-        
+
         Args:
             content: Information to store
-            
+
         Returns:
             Confirmation message
         """
@@ -385,7 +390,7 @@ class VanaAgent(agent_lib.LlmAgent):
             # Get user ID and session ID from context
             user_id = self.context.get("user_id", "default_user")
             session_id = self.context.get("session_id", "default_session")
-            
+
             logger.info(f"Storing information in ADK memory")
             return store_memory_tool(user_id, session_id, content)
         except Exception as e:
@@ -399,25 +404,38 @@ class VanaAgent(agent_lib.LlmAgent):
    - Test the new memory implementation with various scenarios
    - Compare performance with the existing implementation
    - Ensure backward compatibility with existing memory commands
+   - Create a benchmark script to compare ADK memory with custom MCP memory
 
 2. **Documentation**
    - Update documentation to reflect the new memory implementation
    - Create user guides for the new memory commands
    - Document the migration process for existing users
+   - Update the memory-implementation-comparison.md document with findings
 
 3. **Deployment**
    - Create a pull request for the feature branch
    - Address any feedback from code review
    - Merge the feature branch into main
+   - Update environment variables in deployment configurations
 
 4. **Monitoring**
    - Set up monitoring for the new memory implementation
    - Track usage and performance metrics
    - Gather user feedback for further improvements
+   - Create dashboards for memory performance
+
+5. **Consider MCP Toolbox Integration**
+   - Evaluate whether [MCP Toolbox for Databases](https://googleapis.github.io/genai-toolbox/) could be useful
+   - The toolbox provides standardized ways to connect agents to databases
+   - Could potentially simplify database access for memory storage
+   - Supports various database types and has built-in connection pooling
 
 ## Resources
 
-- [ADK Documentation: Managing Session State](https://google.github.io/adk-docs/context/#managing-session-state)
-- [ADK Documentation: Memory](https://google.github.io/adk-docs/context/#memory)
+- [ADK Documentation: Sessions & Memory](https://google.github.io/adk-docs/sessions/)
+- [ADK Documentation: Memory](https://google.github.io/adk-docs/sessions/memory/)
+- [ADK Documentation: Session](https://google.github.io/adk-docs/sessions/session/)
+- [ADK Documentation: State](https://google.github.io/adk-docs/sessions/state/)
 - [ADK Documentation: Context](https://google.github.io/adk-docs/context/)
 - [Vertex AI RAG Documentation](https://cloud.google.com/vertex-ai/docs/generative-ai/rag/overview)
+- [MCP Toolbox for Databases](https://googleapis.github.io/genai-toolbox/getting-started/introduction/)
