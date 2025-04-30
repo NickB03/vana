@@ -16,7 +16,13 @@ from google.generativeai.adk import tool as tool_lib
 # Import orchestration components
 from vana.orchestration.task_router import TaskRouter
 from vana.orchestration.result_synthesizer import ResultSynthesizer
-from vana.context.context_manager import ContextManager
+from vana.context import ConversationContextManager
+from vana.adk_integration import (
+    ADKSessionAdapter,
+    ADKToolAdapter,
+    ADKStateManager,
+    ADKEventHandler
+)
 from tools.hybrid_search import HybridSearch
 from tools.enhanced_hybrid_search import EnhancedHybridSearch
 from tools.knowledge_graph.knowledge_graph_manager import KnowledgeGraphManager
@@ -77,7 +83,17 @@ class VanaAgent(agent_lib.LlmAgent):
         # Initialize orchestration components
         self.task_router = TaskRouter()
         self.result_synthesizer = ResultSynthesizer()
-        self.context_manager = ContextManager()
+
+        # Initialize context management and ADK integration
+        self.context_manager = ConversationContextManager()
+        self.session_adapter = ADKSessionAdapter(self.context_manager)
+        self.tool_adapter = ADKToolAdapter()
+        self.state_manager = ADKStateManager(self.session_adapter, self.context_manager)
+        self.event_handler = ADKEventHandler(
+            self.session_adapter,
+            self.state_manager,
+            self.context_manager
+        )
 
         # Initialize agent state
         self.current_context = None
@@ -96,18 +112,28 @@ class VanaAgent(agent_lib.LlmAgent):
         logger.info(f"Task '{task}' routed to agent '{agent_id}' with confidence {confidence:.2f}")
         return agent_id
 
-    def create_context(self, user_id: str, session_id: str) -> Dict[str, Any]:
+    def create_context(self, user_id: str, session_id: str, scope: str = None) -> Dict[str, Any]:
         """
         Create a new context for a conversation.
 
         Args:
             user_id: User ID
             session_id: Session ID
+            scope: Context scope (session, user, or global)
 
         Returns:
             Context object
         """
-        self.current_context = self.context_manager.create_context(user_id, session_id)
+        # Create session in ADK if available
+        session_info = self.session_adapter.create_session(user_id, session_id)
+
+        # Get context ID
+        context_id = session_info["vana_context_id"]
+
+        # Get the context
+        self.current_context = self.context_manager.get_conversation_context(context_id)
+
+        # Return serialized context
         return self.current_context.serialize()
 
     def synthesize_results(self, results: List[Dict[str, Any]]) -> str:
@@ -122,6 +148,166 @@ class VanaAgent(agent_lib.LlmAgent):
         """
         synthesized = self.result_synthesizer.synthesize(results)
         return self.result_synthesizer.format(synthesized)
+
+    def process_message(self, user_id: str, session_id: str, message: str) -> str:
+        """
+        Process a user message with context management.
+
+        Args:
+            user_id: User ID
+            session_id: Session ID
+            message: User message
+
+        Returns:
+            Assistant response
+        """
+        # Get or create context
+        if not self.current_context:
+            self.create_context(user_id, session_id)
+
+        # Add message to context
+        self.event_handler.handle_message_received(
+            context_id=self.current_context.id,
+            message=message
+        )
+
+        # Process message
+        try:
+            # Check if message is a command
+            if message.startswith("!"):
+                # Handle command
+                response = self.handle_command(message)
+            else:
+                # Generate response
+                response = self.generate_response(message)
+
+            # Add response to context
+            self.event_handler.handle_message_sent(
+                context_id=self.current_context.id,
+                message=response
+            )
+
+            # Sync state
+            self.state_manager.sync_state(self.current_context.id)
+
+            return response
+        except Exception as e:
+            logger.error(f"Error processing message: {e}")
+            error_response = f"Error processing message: {str(e)}"
+
+            # Log error in context
+            self.event_handler.handle_error(
+                context_id=self.current_context.id,
+                error_message=str(e),
+                error_type="message_processing_error"
+            )
+
+            return error_response
+
+    def handle_command(self, command: str) -> str:
+        """
+        Handle a command message.
+
+        Args:
+            command: Command message
+
+        Returns:
+            Command response
+        """
+        # Extract command name and arguments
+        parts = command.split()
+        cmd_name = parts[0][1:]  # Remove ! prefix
+        args = parts[1:]
+
+        # Handle different commands
+        if cmd_name == "vector_search" and hasattr(self, "search_knowledge_tool"):
+            query = " ".join(args)
+            return self.search_knowledge_tool(query)
+        elif cmd_name == "kg_query" and hasattr(self, "kg_query_tool"):
+            if len(args) >= 2:
+                entity_type = args[0]
+                query = " ".join(args[1:])
+                return self.kg_query_tool(entity_type, query)
+            else:
+                return "Usage: !kg_query [entity_type] [query]"
+        elif cmd_name == "hybrid_search" and hasattr(self, "hybrid_search_tool"):
+            query = " ".join(args)
+            return self.hybrid_search_tool(query)
+        elif cmd_name == "enhanced_search" and hasattr(self, "enhanced_search_tool"):
+            query = " ".join(args)
+            return self.enhanced_search_tool(query)
+        elif cmd_name == "web_search" and hasattr(self, "web_search_tool"):
+            query = " ".join(args)
+            return self.web_search_tool(query)
+        elif cmd_name == "memory_search" and hasattr(self, "memory_search"):
+            query = " ".join(args)
+            return self.memory_search(query)
+        else:
+            return f"Unknown command: {cmd_name}"
+
+    def generate_response(self, message: str) -> str:
+        """
+        Generate a response to a user message.
+
+        Args:
+            message: User message
+
+        Returns:
+            Assistant response
+        """
+        try:
+            # Get relevant memory
+            if self.current_context:
+                relevant_memory = self.context_manager.fetch_relevant_memory(
+                    query=message,
+                    user_id=self.current_context.user_id,
+                    top_k=3
+                )
+
+                # Get relevant contexts
+                relevant_contexts = self.context_manager.get_relevant_contexts(
+                    query=message,
+                    user_id=self.current_context.user_id,
+                    top_k=2
+                )
+
+                # Summarize relevant contexts
+                context_summaries = []
+                for context in relevant_contexts:
+                    if context.id != self.current_context.id:  # Skip current context
+                        summary = self.context_manager.summarize_context(context)
+                        if summary:
+                            context_summaries.append(summary)
+
+                # Add relevant information to prompt
+                prompt = message
+                if relevant_memory:
+                    memory_text = "\n\nRelevant memory:\n" + "\n".join(
+                        [f"- {item.get('content', '')}" for item in relevant_memory]
+                    )
+                    prompt += memory_text
+
+                if context_summaries:
+                    context_text = "\n\nRelevant context:\n" + "\n".join(
+                        [f"- {summary}" for summary in context_summaries]
+                    )
+                    prompt += context_text
+            else:
+                prompt = message
+
+            # Generate response using ADK
+            response = super().generate_content(prompt)
+
+            # Extract text from response
+            if hasattr(response, "text"):
+                return response.text
+            elif hasattr(response, "parts"):
+                return "".join([part.text for part in response.parts])
+            else:
+                return str(response)
+        except Exception as e:
+            logger.error(f"Error generating response: {e}")
+            return f"Error generating response: {str(e)}"
 
     system_prompt = """
     # Project Vana — Lead Developer Role (Vana Protocol)

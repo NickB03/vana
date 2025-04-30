@@ -17,6 +17,8 @@ VANA is a sophisticated multi-agent system built using Google's Agent Developmen
 - [Configuration](#-configuration)
 - [Usage](#-usage)
 - [Agent Team](#-agent-team)
+- [Context Management](#-context-management)
+- [ADK Integration](#-adk-integration)
 - [Vector Search Integration](#-vector-search-integration)
 - [MCP Integration](#-mcp-integration)
 - [Knowledge Graph Integration](#-knowledge-graph-integration)
@@ -30,6 +32,8 @@ VANA is a sophisticated multi-agent system built using Google's Agent Developmen
 - [License](#-license)
 - [Additional Resources](#-additional-resources)
 - [Documentation](#-documentation)
+  - [Context Management Architecture](docs/context-management-architecture.md)
+  - [ADK Integration Guide](docs/adk-integration-guide.md)
   - [Environment Setup](docs/environment-setup.md)
   - [n8n MCP Server Setup](docs/n8n-mcp-server-setup.md)
   - [Enhanced Memory Operations](docs/enhanced-memory-operations.md)
@@ -61,6 +65,8 @@ This project demonstrates how to build, configure, and deploy a team of speciali
 ## ✨ Features
 
 - **Primary Agent with Specialists**: Vana as the lead agent with 5 specialist sub-agents
+- **Sophisticated Context Management**: Context scoping, memory integration, and context summarization
+- **Seamless ADK Integration**: Session management, tool registration, state synchronization, and event handling
 - **Shared Knowledge Base**: Vector storage via Vertex AI Vector Search
 - **Persistent Memory with Delta Updates**: Efficient MCP Knowledge Graph for long-term memory across sessions
 - **Cross-Device State Persistence**: Agent Engine Sessions for consistent user experience
@@ -215,6 +221,72 @@ VANA features a team of specialized agents:
 - **Juno**: Test Specialist
 
 Each agent has specific tools and capabilities designed for their role. Vana can delegate tasks to specialist agents based on their expertise, and specialist agents can communicate with each other to collaborate on complex tasks.
+
+## 🧠 Context Management
+
+VANA implements a sophisticated context management system for maintaining conversation state:
+
+1. **Conversation Context Manager**:
+   - Manages conversation contexts with different scopes (session, user, global)
+   - Provides persistent storage of conversation history
+   - Enables context-aware responses based on conversation history
+   - Integrates with memory systems for long-term knowledge
+   - Implements context summarization for specialist agents
+
+2. **Key Features**:
+   - **Context Scoping**: Session-specific, user-specific, or global contexts
+   - **Message History**: Tracking of user and assistant messages
+   - **Entity Tracking**: Extraction and storage of entities from conversations
+   - **Relevance Scoring**: Determining context relevance to queries
+   - **Context Summarization**: Generating concise summaries for specialist agents
+   - **Memory Integration**: Fetching relevant memory based on context
+
+3. **Implementation**:
+   - `adk-setup/vana/context/conversation_context_manager.py` - Main implementation
+   - `adk-setup/vana/context/context_manager.py` - Base context management
+   - `tests/context/test_conversation_context_manager.py` - Comprehensive tests
+
+4. **Benefits**:
+   - Improved conversation coherence across interactions
+   - Personalized responses based on user history
+   - Efficient information sharing between agents
+   - Reduced redundancy in conversations
+   - Enhanced reasoning through historical context
+
+For detailed information on the context management architecture, see [Context Management Architecture](docs/context-management-architecture.md).
+
+## 🔌 ADK Integration
+
+VANA integrates seamlessly with Google's Agent Development Kit (ADK):
+
+1. **Components**:
+   - **ADKSessionAdapter**: Bridges VANA contexts and ADK sessions
+   - **ADKToolAdapter**: Exposes VANA specialist agents as ADK tools
+   - **ADKStateManager**: Synchronizes state between VANA and ADK
+   - **ADKEventHandler**: Processes ADK events within the VANA ecosystem
+
+2. **Key Features**:
+   - **Session Management**: Mapping between VANA contexts and ADK sessions
+   - **Tool Registration**: Exposing specialist agents and functions as ADK tools
+   - **State Synchronization**: Keeping state consistent across both systems
+   - **Event Handling**: Processing ADK events with appropriate actions
+   - **Graceful Fallbacks**: Operating when ADK is not available
+
+3. **Implementation**:
+   - `adk-setup/vana/adk_integration/adk_session_adapter.py` - Session management
+   - `adk-setup/vana/adk_integration/adk_tool_adapter.py` - Tool registration
+   - `adk-setup/vana/adk_integration/adk_state_manager.py` - State synchronization
+   - `adk-setup/vana/adk_integration/adk_event_handler.py` - Event processing
+   - `tests/adk_integration/` - Comprehensive tests for all components
+
+4. **Benefits**:
+   - Seamless integration with Google's ADK
+   - Consistent state across both systems
+   - Tool-based specialist integration
+   - Event-driven architecture
+   - Robust error handling and fallbacks
+
+For detailed information on the ADK integration, see [ADK Integration Guide](docs/adk-integration-guide.md).
 
 ## 🔍 Vector Search Integration
 
