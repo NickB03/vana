@@ -41,6 +41,11 @@ from vana.tools.feedback_tools import (
     store_general_feedback_tool,
     get_feedback_summary_tool
 )
+from vana.tools.persistent_memory_tools import (
+    search_persistent_memory_tool,
+    store_entity_tool,
+    create_relationship_tool
+)
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -109,11 +114,14 @@ class VanaAgent(agent_lib.LlmAgent):
     - !hybrid_search [query] - Combined search of Vector Search and Knowledge Graph
     - !enhanced_search [query] - Combined search of Vector Search, Knowledge Graph, and Web Search
     - !web_search [query] - Search the web for recent information
+    - !memory_search [query] - Search the persistent memory system
 
     Knowledge Storage:
     - !kg_store [entity] [type] [observation] - Store information in the Knowledge Graph
     - !kg_relate [entity1] [relation] [entity2] - Create relationships between entities
     - !kg_context - Show the current Knowledge Graph context
+    - !memory_store [entity] [type] [observation1, observation2, ...] - Store entity in persistent memory
+    - !memory_relate [entity1] [relation] [entity2] - Create relationship in persistent memory
 
     Document Processing:
     - !process_document [file_path] - Process a document with entity extraction
@@ -515,6 +523,65 @@ class VanaAgent(agent_lib.LlmAgent):
         except Exception as e:
             logger.error(f"Error in kg_feedback: {str(e)}")
             return f"Error storing feedback: {str(e)}"
+
+    @tool_lib.tool("memory_search")
+    async def memory_search(self, query: str, top_k: int = 5) -> str:
+        """
+        Search the persistent memory system for relevant information.
+
+        Args:
+            query: The search query
+            top_k: Maximum number of results to return (default: 5)
+
+        Returns:
+            Formatted string with search results
+        """
+        try:
+            logger.info(f"Searching persistent memory for: {query}")
+            return await search_persistent_memory_tool(query, top_k)
+        except Exception as e:
+            logger.error(f"Error in memory_search: {str(e)}")
+            return f"Error searching persistent memory: {str(e)}"
+
+    @tool_lib.tool("memory_store")
+    def memory_store(self, entity_name: str, entity_type: str, observations: List[str]) -> str:
+        """
+        Store an entity in the persistent memory system.
+
+        Args:
+            entity_name: Name of the entity
+            entity_type: Type of the entity
+            observations: List of observations about the entity
+
+        Returns:
+            Confirmation message
+        """
+        try:
+            logger.info(f"Storing entity in persistent memory: {entity_name} ({entity_type})")
+            return store_entity_tool(entity_name, entity_type, observations)
+        except Exception as e:
+            logger.error(f"Error in memory_store: {str(e)}")
+            return f"Error storing entity in persistent memory: {str(e)}"
+
+    @tool_lib.tool("memory_relate")
+    def memory_relate(self, from_entity: str, relationship: str, to_entity: str) -> str:
+        """
+        Create a relationship between entities in the persistent memory system.
+
+        Args:
+            from_entity: Name of the source entity
+            relationship: Type of relationship
+            to_entity: Name of the target entity
+
+        Returns:
+            Confirmation message
+        """
+        try:
+            logger.info(f"Creating relationship in persistent memory: {from_entity} {relationship} {to_entity}")
+            return create_relationship_tool(from_entity, relationship, to_entity)
+        except Exception as e:
+            logger.error(f"Error in memory_relate: {str(e)}")
+            return f"Error creating relationship in persistent memory: {str(e)}"
 
     @tool_lib.tool("kg_analyze_feedback")
     def kg_analyze_feedback(self, entity_type: str = "*") -> str:

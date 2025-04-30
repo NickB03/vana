@@ -58,7 +58,8 @@ This project demonstrates how to build, configure, and deploy a team of speciali
 
 - **Primary Agent with Specialists**: Vana as the lead agent with 5 specialist sub-agents
 - **Shared Knowledge Base**: Vector storage via Vertex AI Vector Search
-- **Persistent Memory**: MCP Knowledge Graph for long-term memory across sessions
+- **Persistent Memory with Delta Updates**: Efficient MCP Knowledge Graph for long-term memory across sessions
+- **Cross-Device State Persistence**: Agent Engine Sessions for consistent user experience
 - **Web Search Integration**: Google Custom Search API integration for up-to-date information
 - **Enhanced Hybrid Search**: Combined search across Vector Search, Knowledge Graph, and Web
 - **Native Multi-Agent Support**: Built-in delegation through ADK
@@ -741,6 +742,7 @@ For detailed documentation on specific aspects of the VANA project, please refer
 ### Memory and MCP
 - [n8n MCP Server Setup](docs/n8n-mcp-server-setup.md) - How to set up and configure the n8n MCP server
 - [Enhanced Memory Operations](docs/enhanced-memory-operations.md) - Advanced memory capabilities
+- [Persistent Memory Implementation](docs/persistent-memory-implementation.md) - Delta-based updates for efficient memory synchronization
 - [VANA Command Reference](docs/vana-command-reference.md) - Complete reference for all VANA commands and tools
 
 ### Testing Framework
