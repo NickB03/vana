@@ -6,8 +6,15 @@ import time
 from typing import Dict, List, Any, Optional, Tuple
 from datetime import datetime
 
+# Import security components
+from tools.security import CredentialManager
+from tools.security import AuditLogger
+from tools.security import AccessControlManager, Role, Operation, require_permission
+from tools.resilience import circuit_breaker, CircuitBreakerOpenError
+
 # Import environment configuration
 try:
+    # Try to import from the project structure
     from config.environment import EnvironmentConfig
 except ImportError:
     # Fallback if config module is not available
@@ -35,13 +42,27 @@ class MCPMemoryClient:
             namespace: MCP namespace (optional, defaults to environment configuration)
             api_key: MCP API key (optional, defaults to environment configuration)
         """
-        # Get configuration from environment if not provided
-        mcp_config = EnvironmentConfig.get_mcp_config()
+        # Initialize security components
+        self.credential_manager = CredentialManager()
+        self.access_control = AccessControlManager()
+        self.audit_logger = AuditLogger()
 
-        self.endpoint = endpoint or mcp_config["endpoint"]
-        self.namespace = namespace or mcp_config["namespace"]
-        api_key_to_use = api_key or mcp_config["api_key"]
+        # Set role for access control
+        self.role = Role.AGENT
 
+        # Get secure credentials
+        if not endpoint or not namespace or not api_key:
+            mcp_credentials = self.credential_manager.get_mcp_credentials()
+
+            self.endpoint = endpoint or mcp_credentials["endpoint"]
+            self.namespace = namespace or mcp_credentials["namespace"]
+            api_key_to_use = api_key or mcp_credentials["api_key"]
+        else:
+            self.endpoint = endpoint
+            self.namespace = namespace
+            api_key_to_use = api_key
+
+        # Set up headers with secure credentials
         self.headers = {
             "Content-Type": "application/json",
             "Authorization": f"Bearer {api_key_to_use}"
@@ -87,6 +108,8 @@ class MCPMemoryClient:
             self.last_connection_check = current_time
             return False
 
+    @circuit_breaker("mcp_store_entity", failure_threshold=3, reset_timeout=60.0)
+    @require_permission(Operation.STORE_ENTITY, entity_type_arg="entity_type")
     def store_entity(self, entity_name: str, entity_type: str,
                      observations: List[str]) -> Dict[str, Any]:
         """
@@ -100,15 +123,56 @@ class MCPMemoryClient:
         Returns:
             Dict containing operation result
         """
-        payload = {
-            "operation": "store",
-            "entityName": entity_name,
-            "entityType": entity_type,
-            "observations": observations
-        }
+        try:
+            # Create payload
+            payload = {
+                "operation": "store",
+                "entityName": entity_name,
+                "entityType": entity_type,
+                "observations": observations
+            }
 
-        return self._make_request(payload)
+            # Make the request
+            result = self._make_request(payload)
 
+            # Audit log the operation
+            self.audit_logger.log_event(
+                event_type="modification",
+                user_id=f"agent:{self.role.value}",
+                operation="store_entity",
+                resource_type="entity",
+                resource_id=result.get("entity", {}).get("id", "unknown"),
+                details={
+                    "entity_name": entity_name,
+                    "entity_type": entity_type,
+                    "observation_count": len(observations)
+                },
+                status="success" if result.get("success", False) else "failure"
+            )
+
+            return result
+        except Exception as e:
+            # Log the error
+            logger.error(f"Error storing entity {entity_name}: {str(e)}")
+
+            # Audit log the failure
+            self.audit_logger.log_event(
+                event_type="modification",
+                user_id=f"agent:{self.role.value}",
+                operation="store_entity",
+                resource_type="entity",
+                details={
+                    "entity_name": entity_name,
+                    "entity_type": entity_type,
+                    "error": str(e)
+                },
+                status="error"
+            )
+
+            return {"error": str(e), "success": False}
+
+    @circuit_breaker("mcp_retrieve_entity", failure_threshold=3, reset_timeout=60.0)
+    @require_permission(Operation.RETRIEVE_ENTITY)
     def retrieve_entity(self, entity_name: str) -> Dict[str, Any]:
         """
         Retrieve an entity from the knowledge graph.
@@ -119,12 +183,46 @@ class MCPMemoryClient:
         Returns:
             Dict containing the entity data or error
         """
-        payload = {
-            "operation": "retrieve",
-            "entityName": entity_name
-        }
+        try:
+            # Create payload
+            payload = {
+                "operation": "retrieve",
+                "entityName": entity_name
+            }
 
-        return self._make_request(payload)
+            # Make the request
+            result = self._make_request(payload)
+
+            # Audit log the operation
+            self.audit_logger.log_event(
+                event_type="access",
+                user_id=f"agent:{self.role.value}",
+                operation="retrieve_entity",
+                resource_type="entity",
+                resource_id=result.get("entity", {}).get("id", "unknown"),
+                details={"entity_name": entity_name},
+                status="success" if "entity" in result else "failure"
+            )
+
+            return result
+        except Exception as e:
+            # Log the error
+            logger.error(f"Error retrieving entity {entity_name}: {str(e)}")
+
+            # Audit log the failure
+            self.audit_logger.log_event(
+                event_type="access",
+                user_id=f"agent:{self.role.value}",
+                operation="retrieve_entity",
+                resource_type="entity",
+                details={
+                    "entity_name": entity_name,
+                    "error": str(e)
+                },
+                status="error"
+            )
+
+            return {"error": str(e), "success": False}
 
     def create_relationship(self, from_entity: str, relationship: str,
                           to_entity: str) -> Dict[str, Any]:
@@ -236,6 +334,7 @@ class MCPMemoryClient:
         """Get current ISO format timestamp."""
         return datetime.now().isoformat()
 
+    @circuit_breaker("mcp_request", failure_threshold=5, reset_timeout=60.0)
     def _make_request(self, payload: Dict[str, Any]) -> Dict[str, Any]:
         """
         Make a request to the MCP server.
@@ -252,29 +351,58 @@ class MCPMemoryClient:
 
         url = f"{self.endpoint}/{self.namespace}/memory"
 
+        # Create a correlation ID for tracking this request
+        correlation_id = f"mcp-{time.time()}-{hash(str(payload))}"
+
+        # Log the request (excluding sensitive data)
+        safe_payload = payload.copy()
+        if "api_key" in safe_payload:
+            safe_payload["api_key"] = "***"
+
+        logger.debug(f"Making request to MCP server: {url} (correlation_id: {correlation_id})")
+
         try:
+            # Make the request with timeout
             response = requests.post(url, headers=self.headers,
                                   json=payload, timeout=10)
 
             if response.status_code == 200:
+                # Log success
+                logger.debug(f"Request successful (correlation_id: {correlation_id})")
                 return response.json()
             else:
+                # Log error
                 error_msg = f"MCP server returned status code {response.status_code}"
-                logger.error(f"{error_msg}: {response.text}")
-                return {"error": error_msg, "success": False}
+                logger.error(f"{error_msg}: {response.text} (correlation_id: {correlation_id})")
+
+                # Record failure for circuit breaker
+                raise Exception(error_msg)
 
         except requests.exceptions.Timeout:
+            # Handle timeout
             error_msg = "Request to MCP server timed out"
-            logger.error(error_msg)
-            return {"error": error_msg, "success": False}
+            logger.error(f"{error_msg} (correlation_id: {correlation_id})")
 
-        except requests.exceptions.ConnectionError:
-            error_msg = "Connection error when connecting to MCP server"
-            logger.error(error_msg)
+            # Record failure for circuit breaker
+            raise CircuitBreakerOpenError(error_msg)
+
+        except requests.exceptions.ConnectionError as e:
+            # Handle connection error
+            error_msg = f"Connection error when connecting to MCP server: {str(e)}"
+            logger.error(f"{error_msg} (correlation_id: {correlation_id})")
             self.is_available = False
-            return {"error": error_msg, "success": False}
+
+            # Record failure for circuit breaker
+            raise CircuitBreakerOpenError(error_msg)
+
+        except CircuitBreakerOpenError:
+            # Re-raise circuit breaker errors
+            raise
 
         except Exception as e:
+            # Handle other errors
             error_msg = f"Error making request to MCP server: {str(e)}"
-            logger.error(error_msg)
+            logger.error(f"{error_msg} (correlation_id: {correlation_id})")
+
+            # Return error response
             return {"error": error_msg, "success": False}

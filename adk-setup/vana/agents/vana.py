@@ -12,6 +12,11 @@ from typing import List, Dict, Any, Optional
 from google.generativeai.adk import base_agent
 from google.generativeai.adk import agent as agent_lib
 from google.generativeai.adk import tool as tool_lib
+
+# Import orchestration components
+from vana.orchestration.task_router import TaskRouter
+from vana.orchestration.result_synthesizer import ResultSynthesizer
+from vana.context.context_manager import ContextManager
 from tools.hybrid_search import HybridSearch
 from tools.enhanced_hybrid_search import EnhancedHybridSearch
 from tools.knowledge_graph.knowledge_graph_manager import KnowledgeGraphManager
@@ -64,6 +69,59 @@ class VanaAgent(agent_lib.LlmAgent):
 
     name = "vana"
     model = "gemini-1.5-pro"
+
+    def __init__(self):
+        """Initialize the Vana agent."""
+        super().__init__()
+
+        # Initialize orchestration components
+        self.task_router = TaskRouter()
+        self.result_synthesizer = ResultSynthesizer()
+        self.context_manager = ContextManager()
+
+        # Initialize agent state
+        self.current_context = None
+
+    def determine_agent(self, task: str) -> str:
+        """
+        Determine which agent should handle a task.
+
+        Args:
+            task: Task description
+
+        Returns:
+            Agent ID
+        """
+        agent_id, confidence = self.task_router.route_task(task)
+        logger.info(f"Task '{task}' routed to agent '{agent_id}' with confidence {confidence:.2f}")
+        return agent_id
+
+    def create_context(self, user_id: str, session_id: str) -> Dict[str, Any]:
+        """
+        Create a new context for a conversation.
+
+        Args:
+            user_id: User ID
+            session_id: Session ID
+
+        Returns:
+            Context object
+        """
+        self.current_context = self.context_manager.create_context(user_id, session_id)
+        return self.current_context.serialize()
+
+    def synthesize_results(self, results: List[Dict[str, Any]]) -> str:
+        """
+        Synthesize results from multiple agents.
+
+        Args:
+            results: List of results from agents
+
+        Returns:
+            Synthesized result
+        """
+        synthesized = self.result_synthesizer.synthesize(results)
+        return self.result_synthesizer.format(synthesized)
 
     system_prompt = """
     # Project Vana — Lead Developer Role (Vana Protocol)

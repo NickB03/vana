@@ -1,0 +1,30 @@
+version: '3'
+services:
+  mcp-kg-server:
+    image: ghcr.io/context7/mcp-kg-server:latest  # Verify this image exists
+    ports:
+      - "5000:5000"
+    environment:
+      - MCP_SERVER_PORT=5000
+      - MCP_ADMIN_KEY=local_dev_key
+      - MCP_STORAGE_TYPE=sqlite
+      - MCP_SQLITE_PATH=/data/kg.db
+    volumes:
+      - ./kg-data:/data
+    restart: unless-stopped
+    
+  n8n:
+    image: n8nio/n8n:latest
+    ports:
+      - "5678:5678"
+    environment:
+      - N8N_HOST=localhost
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=http
+      - N8N_USER_MANAGEMENT_DISABLED=true
+      - N8N_BASIC_AUTH_ACTIVE=false
+      - WEBHOOK_URL=http://localhost:5678
+    volumes:
+      - ./n8n-data:/home/node/.n8n
+    depends_on:
+      - mcp-kg-server

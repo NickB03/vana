@@ -45,6 +45,10 @@ VANA is a sophisticated multi-agent system built using Google's Agent Developmen
   - [Enhanced Knowledge Evaluation](docs/enhanced-knowledge-evaluation.md)
   - [Feedback Collection System](docs/feedback-collection-system.md)
   - [Automated Knowledge Base Maintenance](docs/automated-knowledge-base-maintenance.md)
+  - [Security Components](docs/security-components.md)
+  - [Security Integration Guide](docs/security-integration-guide.md)
+  - [Agent Orchestration Model](docs/agent-orchestration-model.md)
+  - [Monitoring Dashboard](docs/monitoring-dashboard.md)
   - [Project Status](docs/project-status.md)
   - [Auggie Next Steps](docs/auggie-next-steps.md)
 
@@ -494,6 +498,166 @@ VANA includes a comprehensive feedback collection system for search results:
    - Flask API for feedback collection
    - Client library for programmatic feedback submission
    - Command-line interface for manual feedback submission
+
+## 🔒 Security Components
+
+VANA implements robust security components for protecting sensitive operations:
+
+1. **Credential Management**:
+   - Secure storage and retrieval of sensitive credentials
+   - Encryption of sensitive values
+   - Credential caching for performance
+   - Masking of sensitive information in logs
+
+2. **Access Control**:
+   - Role-based permissions (Guest, User, Agent, Admin)
+   - Operation-level access control
+   - Entity type restrictions
+   - Decorator for securing functions
+
+3. **Audit Logging**:
+   - Tamper-evident logs with hash chaining
+   - Filtering of sensitive information
+   - Comprehensive metadata
+   - Log integrity verification
+
+4. **Circuit Breakers**:
+   - Protection against cascading failures
+   - Automatic circuit opening on failures
+   - Half-open state for testing recovery
+   - Configurable thresholds and timeouts
+
+5. **Structured Logging**:
+   - Standardized logging across components
+   - Log level configuration
+   - Context-aware logging
+   - Performance monitoring
+
+6. **Health Checks**:
+   - Component status monitoring
+   - Dependency health verification
+   - Automatic recovery mechanisms
+   - Alert generation for critical issues
+
+7. **Integration with Memory System**:
+   - Secure MCP client with credential management
+   - Access control for memory operations
+   - Audit logging for sensitive operations
+   - Circuit breaker protection for external services
+
+8. **Local Development Environment**:
+   - Docker-based local MCP server
+   - Environment configuration system
+   - Test scripts for security verification
+   - Documentation for security best practices
+
+For detailed information on security components, see [Security Integration Guide](docs/security-integration-guide.md).
+
+## 🔄 Agent Orchestration Model
+
+VANA implements a lead agent architecture with Vana as the orchestrator for all operations:
+
+1. **Task Routing**:
+   - Automatic routing of tasks to the most appropriate agent
+   - Keyword-based scoring for agent selection
+   - Confidence scoring for routing decisions
+   - Fallback to Vana for uncertain tasks
+
+2. **Context Passing**:
+   - Shared context between agents for consistent conversation state
+   - Context serialization and deserialization
+   - Context persistence across sessions
+   - Context caching for performance
+
+3. **Result Synthesis**:
+   - Combining outputs from multiple agents
+   - Result ranking by confidence
+   - Source attribution for transparency
+   - Formatting for presentation
+
+4. **Agent Specialties**:
+   - **Rhea (Meta-Architect)**: Architecture, design, structure, framework
+   - **Max (Interaction Engineer)**: Interface, UI, UX, user experience
+   - **Sage (Platform Automator)**: Automation, CI, CD, pipeline, workflow
+   - **Kai (Edge Case Hunter)**: Edge case, error, exception, bug, issue
+   - **Juno (Test Specialist)**: Test, testing, unit test, integration test
+
+5. **Integration with ADK**:
+   - Native integration with Google ADK
+   - Delegation through sub-agents
+   - Tool-based specialist integration
+   - Seamless conversation flow
+
+6. **Testing Framework**:
+   - Comprehensive test suite for orchestration components
+   - Task routing validation
+   - Context passing verification
+   - Result synthesis testing
+
+7. **Development Tools**:
+   - Task simulation for testing
+   - Context inspection for debugging
+   - Performance monitoring for optimization
+   - Logging for troubleshooting
+
+For detailed information on the agent orchestration model, see [Agent Orchestration Model](docs/agent-orchestration-model.md).
+
+## 📊 Monitoring Dashboard
+
+VANA implements a comprehensive monitoring dashboard for system visibility and alerting:
+
+1. **Health Checks**:
+   - Component-level health monitoring
+   - Overall system health status
+   - Automatic health check scheduling
+   - Health check history tracking
+   - Customizable health check thresholds
+
+2. **Metrics Collection**:
+   - Performance metrics for all components
+   - System resource utilization tracking
+   - Request and response metrics
+   - Error rate and latency monitoring
+   - Historical metrics for trend analysis
+
+3. **Alerting System**:
+   - Multi-level alert severity (Info, Warning, Error, Critical)
+   - Alert lifecycle management
+   - Alert notification channels
+   - Alert history and tracking
+   - Alert aggregation and correlation
+
+4. **Visualization**:
+   - Real-time system health visualization
+   - Performance metrics dashboards
+   - Historical trend analysis
+   - Component relationship mapping
+   - Alert and incident visualization
+
+5. **Integration**:
+   - Memory system component monitoring
+   - Agent performance tracking
+   - Security component integration
+   - External service health checks
+   - API endpoint for dashboard access
+
+6. **Historical Data**:
+   - Long-term performance tracking
+   - Capacity planning metrics
+   - Trend analysis for optimization
+   - Incident correlation with metrics
+   - Performance regression detection
+
+7. **Testing Tools**:
+   - Dashboard component testing
+   - Simulated component failures
+   - Alert generation and resolution testing
+   - Performance benchmark testing
+   - Load and stress testing
+
+For detailed information on the monitoring dashboard, see [Monitoring Dashboard](docs/monitoring-dashboard.md).
+
+## 📊 Feedback Collection (continued)
 
 2. **Features**:
    - Overall rating for search results (1-5)
