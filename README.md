@@ -18,7 +18,7 @@ VANA is a sophisticated multi-agent system built using Google's Agent Developmen
 - [Usage](#-usage)
 - [Agent Team](#-agent-team)
 - [Vector Search Integration](#-vector-search-integration)
-- [n8n MCP Integration](#-n8n-mcp-integration)
+- [MCP Integration](#-mcp-integration)
 - [Knowledge Graph Integration](#-knowledge-graph-integration)
 - [Enhanced Hybrid Search](#-enhanced-hybrid-search)
 - [Web Search Integration](#-web-search-integration)
@@ -292,30 +292,37 @@ VANA includes a comprehensive testing framework that allows Juno to act as a hum
 
 For detailed information on the testing framework, see [scripts/README-TESTING.md](scripts/README-TESTING.md).
 
-## 🔄 n8n MCP Integration
+## 🔄 MCP Integration
 
-VANA integrates with n8n and the Model Context Protocol (MCP) for enhanced memory management:
+VANA integrates with the Model Context Protocol (MCP) for enhanced memory management:
 
-1. **n8n MCP Server**:
-   - Allows Vana to directly configure n8n workflows for memory management
+1. **MCP Memory Server**:
+   - Community-hosted MCP server for Knowledge Graph integration
    - Provides standardized command handling through MCP
    - Enables persistent memory across sessions
+   - Supports delta-based updates for efficient synchronization
 
 2. **Memory Commands**:
+   - `!memory_search [query]` - Search the persistent memory system
+   - `!memory_store [entity] [type] [observation1, observation2, ...]` - Store entity in persistent memory
+   - `!memory_relate [entity1] [relation] [entity2]` - Create relationship in persistent memory
    - `!memory_on` - Start buffering new chat turns
    - `!memory_off` - Stop buffering, discard uncommitted memory
    - `!rag` - Save buffered memory permanently into vector store
 
 3. **Setup and Configuration**:
-   - The `mcp-servers/n8n-mcp` directory contains the MCP server code
-   - The `launch_vana_with_mcp.sh` script starts the VANA environment with the MCP server
-   - See [n8n-mcp-server-setup.md](docs/n8n-mcp-server-setup.md) for detailed setup instructions
+   - Uses community-hosted MCP server by default
+   - Configuration stored in environment variables
+   - See [Persistent Memory Implementation](docs/persistent-memory-implementation.md) for detailed information
+   - See [n8n-mcp-server-setup.md](docs/n8n-mcp-server-setup.md) for self-hosting options
 
 4. **Benefits**:
-   - Workflow orchestration for memory operations
-   - Standardized command handling
-   - Persistent memory across sessions
-   - Integration with Ragie.ai for vector storage
+   - Efficient delta-based synchronization
+   - Cross-device state persistence
+   - Performance optimization with caching
+   - Entity importance scoring
+   - Integration with Agent Engine
+   - Hybrid search combining Vector Search and Knowledge Graph
 
 5. **Requirements**:
    - Node.js (v18.17.0, v20, or v22 recommended)
@@ -336,6 +343,7 @@ VANA integrates with a hosted MCP Knowledge Graph for persistent memory and know
    - Stores structured knowledge as entities and relationships
    - Enables agents to build and query a knowledge base over time
    - Complements Vector Search with structured knowledge representation
+   - Implements delta-based updates for efficient synchronization
 
 2. **Key Features**:
    - Entity and relationship storage
@@ -343,6 +351,9 @@ VANA integrates with a hosted MCP Knowledge Graph for persistent memory and know
    - Metadata and property management
    - Historical conversation tracking
    - Hybrid search combining Knowledge Graph and Vector Search
+   - Efficient delta-based synchronization
+   - Cross-device state persistence
+   - Performance optimization with caching
 
 3. **Enhanced Entity Extraction**:
    - NLP-based entity extraction using spaCy
@@ -740,9 +751,9 @@ For detailed documentation on specific aspects of the VANA project, please refer
 - [Enhanced Knowledge Evaluation](docs/enhanced-knowledge-evaluation.md) - Framework for evaluating knowledge base quality
 
 ### Memory and MCP
+- [Persistent Memory Implementation](docs/persistent-memory-implementation.md) - Delta-based updates for efficient memory synchronization
 - [n8n MCP Server Setup](docs/n8n-mcp-server-setup.md) - How to set up and configure the n8n MCP server
 - [Enhanced Memory Operations](docs/enhanced-memory-operations.md) - Advanced memory capabilities
-- [Persistent Memory Implementation](docs/persistent-memory-implementation.md) - Delta-based updates for efficient memory synchronization
 - [VANA Command Reference](docs/vana-command-reference.md) - Complete reference for all VANA commands and tools
 
 ### Testing Framework
