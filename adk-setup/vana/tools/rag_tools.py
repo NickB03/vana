@@ -42,7 +42,15 @@ def generate_embedding(text: str) -> List[float]:
         # Generate embedding
         embedding = model.get_embeddings([text])[0]
 
-        return embedding.values
+        # Explicitly convert values to float to avoid type errors
+        embedding_values = [float(value) for value in embedding.values]
+
+        # Log the first few values for debugging
+        logger.info(f"Generated embedding with {len(embedding_values)} dimensions")
+        logger.info(f"First 5 values: {embedding_values[:5]}")
+        logger.info(f"Value types: {[type(v) for v in embedding_values[:5]]}")
+
+        return embedding_values
     except Exception as e:
         logger.error(f"Error generating embedding: {str(e)}")
         raise
@@ -218,16 +226,41 @@ def search_knowledge(query: str, top_k: int = 5) -> str:
             # Generate embedding for the query
             query_embedding = generate_embedding(query)
 
+            # Validate embedding format
+            if not query_embedding or not all(isinstance(value, float) for value in query_embedding):
+                logger.warning("Invalid embedding format, ensuring all values are float")
+                if query_embedding:
+                    query_embedding = [float(value) for value in query_embedding]
+                else:
+                    raise ValueError("Failed to generate valid embedding")
+
             # Get the Vector Search endpoint
             endpoint, deployed_index_id = get_vector_search_endpoint()
 
             if endpoint and deployed_index_id:
                 logger.info(f"Searching index with deployed_index_id: {deployed_index_id}")
-                response = endpoint.find_neighbors(
-                    deployed_index_id=deployed_index_id,
-                    queries=[query_embedding],
-                    num_neighbors=top_k
-                )
+                logger.info(f"Query embedding dimensions: {len(query_embedding)}")
+
+                # Ensure the endpoint is properly initialized
+                try:
+                    response = endpoint.find_neighbors(
+                        deployed_index_id=deployed_index_id,
+                        queries=[query_embedding],
+                        num_neighbors=top_k
+                    )
+                except Exception as e:
+                    logger.error(f"Error in find_neighbors: {str(e)}")
+                    # Try alternative API if available
+                    try:
+                        logger.info("Trying alternative match API")
+                        response = endpoint.match(
+                            deployed_index_id=deployed_index_id,
+                            queries=[{"datapoint": query_embedding}],
+                            num_neighbors=top_k
+                        )
+                    except Exception as alt_e:
+                        logger.error(f"Alternative API also failed: {str(alt_e)}")
+                        raise
 
                 # Format and return results
                 return format_search_results(response)

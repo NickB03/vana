@@ -136,6 +136,51 @@ The enhanced hybrid search is implemented in `tools/enhanced_hybrid_search.py` a
 4. **Dynamic Ranking**: Ranks results based on relevance, source quality, and recency
 5. **Response Formatting**: Generates a coherent response with source attribution
 
+### Vector Search Implementation Details
+
+The Vector Search component has been updated with the following improvements:
+
+1. **Explicit Type Conversion**: All embedding values are explicitly converted to float to prevent the "must be real number, not str" error:
+   ```python
+   # Convert embedding values to float
+   embedding_values = [float(value) for value in embedding.values]
+   ```
+
+2. **Validation**: Added validation to ensure all embedding values are proper float types:
+   ```python
+   if not all(isinstance(value, float) for value in query_embedding):
+       query_embedding = [float(value) for value in query_embedding]
+   ```
+
+3. **Enhanced Error Handling**: Added more detailed error logging and fallback mechanisms:
+   ```python
+   try:
+       response = endpoint.find_neighbors(
+           deployed_index_id=deployed_index_id,
+           queries=[query_embedding],
+           num_neighbors=top_k
+       )
+   except Exception as e:
+       logger.error(f"Error in find_neighbors: {str(e)}")
+       # Try alternative API if available
+       try:
+           response = endpoint.match(
+               deployed_index_id=deployed_index_id,
+               queries=[{"datapoint": query_embedding}],
+               num_neighbors=top_k
+           )
+       except Exception as alt_e:
+           logger.error(f"Alternative API also failed: {str(alt_e)}")
+           raise
+   ```
+
+4. **Detailed Logging**: Added detailed logging to track embedding dimensions and value types:
+   ```python
+   logger.info(f"Generated embedding with {len(embedding_values)} dimensions")
+   logger.info(f"First 5 values: {embedding_values[:5]}")
+   logger.info(f"Value types: {[type(v) for v in embedding_values[:5]]}")
+   ```
+
 ### Fallback Mechanism
 
 The enhanced hybrid search includes a robust fallback mechanism:

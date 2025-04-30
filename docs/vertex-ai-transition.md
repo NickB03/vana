@@ -213,19 +213,52 @@ DEPLOYED_INDEX_ID=your_deployed_index_id
                json={"instances": [{"content": text}]}
            )
 
-           return response.json()["predictions"][0]["embeddings"]
+           # Get the embedding values
+           embedding_data = response.json()["predictions"][0]["embeddings"]
+
+           # Extract values if in dictionary format
+           if isinstance(embedding_data, dict) and "values" in embedding_data:
+               embedding_values = embedding_data["values"]
+           else:
+               embedding_values = embedding_data
+
+           # Ensure all values are float
+           if isinstance(embedding_values, list) and embedding_values:
+               # Convert all values to float
+               embedding_values = [float(value) for value in embedding_values]
+               return embedding_values
+           else:
+               raise ValueError(f"Invalid embedding format: {type(embedding_values)}")
 
        def search(self, query, top_k=5):
            """Search for relevant content"""
            # Generate embedding for the query
            query_embedding = self.generate_embedding(query)
 
-           # Search the index
-           response = self.index_endpoint.match(
-               deployed_index_id=self.deployed_index_id,
-               queries=[{"datapoint": query_embedding}],
-               num_neighbors=top_k
-           )
+           # Validate embedding format
+           if not query_embedding or not all(isinstance(value, float) for value in query_embedding):
+               print("Invalid embedding format, ensuring all values are float")
+               if query_embedding:
+                   query_embedding = [float(value) for value in query_embedding]
+               else:
+                   raise ValueError("Failed to generate valid embedding")
+
+           # Try find_neighbors API first
+           try:
+               # Search the index using find_neighbors
+               response = self.index_endpoint.find_neighbors(
+                   deployed_index_id=self.deployed_index_id,
+                   queries=[query_embedding],
+                   num_neighbors=top_k
+               )
+           except Exception as e:
+               print(f"Error in find_neighbors: {e}")
+               # Fall back to match API
+               response = self.index_endpoint.match(
+                   deployed_index_id=self.deployed_index_id,
+                   queries=[{"datapoint": query_embedding}],
+                   num_neighbors=top_k
+               )
 
            # Format results
            results = []

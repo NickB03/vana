@@ -228,6 +228,7 @@ VANA uses Vertex AI Vector Search for knowledge retrieval:
 
 3. Agents use the `search_knowledge_tool` to query the shared knowledge base:
    - Queries are converted to embeddings using the same model
+   - Embedding values are explicitly converted to float to prevent type errors
    - The Vector Search index finds semantically similar documents
    - Results are returned with metadata including source and content
 
@@ -235,15 +236,25 @@ VANA uses Vertex AI Vector Search for knowledge retrieval:
    - The `check_operation.py` script monitors long-running operations
    - The `check_deployment.py` script verifies index deployment status
    - The `test_vector_search.py` script tests search functionality
+   - The `test_vector_search_fix.py` script verifies embedding type conversion
 
 5. Current status:
    - Vector Search index has been created and configured
    - Knowledge documents have been embedded and uploaded
    - Index update operation has completed successfully
-   - Query functionality has been fixed based on GCP engineer recommendations
-   - The system is now fully functional
+   - Query functionality has been fixed with explicit type conversion for embeddings
+   - Enhanced error handling and validation have been implemented
+   - The system is now fully functional with proper type handling
 
 6. The system requires a service account with Vertex AI Admin permissions
+
+7. Recent fixes:
+   - Fixed the "must be real number, not str" error by implementing explicit type conversion
+   - Added validation to ensure all embedding values are proper float types
+   - Enhanced error handling with fallback to alternative API methods
+   - Added detailed logging to track embedding dimensions and value types
+   - Created test scripts to verify Vector Search functionality
+   - See [Vector Search Fixes](docs/vector-search-fixes.md) for details
 
 ## 🧪 Testing Framework
 
@@ -679,19 +690,30 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 - **Vertex AI Vector Search Integration (April 2025):**
   - The `google-cloud-aiplatform` library must be pinned to version `1.38.0` for compatibility with the current codebase.
   - All code interacting with Vector Search endpoints must use the endpoint resource name string (not an object) and the correct deployed index ID.
+  - Embedding values must be explicitly converted to float to prevent the "must be real number, not str" error:
+    ```python
+    # Explicitly convert embedding values to float
+    embedding_values = [float(value) for value in embedding.values]
+    ```
   - Example usage:
     ```python
     endpoint_resource_name = "projects/960076421399/locations/us-central1/indexEndpoints/5085685481161621504"
     deployed_index_id = "vanasharedindex"
     endpoint = aiplatform.MatchingEngineIndexEndpoint(index_endpoint_name=endpoint_resource_name)
+
+    # Ensure embedding is a list of floats
+    if not all(isinstance(value, float) for value in embedding):
+        embedding = [float(value) for value in embedding]
+
     results = endpoint.find_neighbors(
         deployed_index_id=deployed_index_id,
         queries=[embedding],
         num_neighbors=5
     )
     ```
-  - See `test_vector_search.py` and `adk-setup/vana/tools/rag_tools.py` for working reference implementations.
+  - See `test_vector_search.py`, `test_vector_search_fix.py`, and `adk-setup/vana/tools/rag_tools.py` for working reference implementations.
   - If you see errors like `'str' object has no attribute 'resource_name'` or `'MatchingEngineIndexEndpoint' object has no attribute '_public_match_client'`, check your library version and endpoint usage.
+  - If you see errors like `must be real number, not str`, ensure all embedding values are explicitly converted to float.
 
 ## 📚 Documentation
 
@@ -699,6 +721,7 @@ For detailed documentation on specific aspects of the VANA project, please refer
 
 ### Core Documentation
 - [Project Status](docs/project-status.md) - Current status and recent updates
+- [Vector Search Fixes](docs/vector-search-fixes.md) - Details on the Vector Search integration fixes
 - [VANA Architecture Guide](docs/vana-architecture-guide.md) - Comprehensive architecture overview
 - [Environment Setup Guide](docs/environment-setup.md) - How to set up environment variables and manage credentials
 - [Launch Configuration](docs/launch-configuration.md) - How to configure and launch the VANA environment

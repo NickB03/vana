@@ -90,11 +90,21 @@ class VectorSearchClient:
             # Get the embedding values
             embedding_data = response.json()["predictions"][0]["embeddings"]
 
-            # Convert embedding values to float if they are strings
+            # Extract values if in dictionary format
             if isinstance(embedding_data, dict) and "values" in embedding_data:
-                return embedding_data["values"]
+                embedding_values = embedding_data["values"]
+            else:
+                embedding_values = embedding_data
 
-            return embedding_data
+            # Ensure all values are float
+            if isinstance(embedding_values, list) and embedding_values:
+                # Convert all values to float
+                embedding_values = [float(value) for value in embedding_values]
+                logger.info(f"Generated embedding with {len(embedding_values)} dimensions")
+                return embedding_values
+            else:
+                logger.error(f"Invalid embedding format: {type(embedding_values)}")
+                return self._use_mock_embedding(text)
         except Exception as e:
             logger.error(f"Error generating embedding: {e}")
             return self._use_mock_embedding(text)
