@@ -29,7 +29,7 @@ open_url() {
 # ASCII Art VANA Logo
 echo "======================================================"
 echo "
-██╗   ██╗ █████╗ ███╗   ██╗ █████╗ 
+██╗   ██╗ █████╗ ███╗   ██╗ █████╗
 ██║   ██║██╔══██╗████╗  ██║██╔══██╗
 ██║   ██║███████║██╔██╗ ██║███████║
 ╚██╗ ██╔╝██╔══██║██║╚██╗██║██╔══██║
@@ -85,7 +85,8 @@ fi
 # Check Python path
 echo "🔄 Setting up Python path..."
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
-export PYTHONPATH="$SCRIPT_DIR:$PYTHONPATH"
+export PYTHONPATH="$SCRIPT_DIR:$SCRIPT_DIR/adk-setup:$PYTHONPATH"
+echo "   PYTHONPATH set to: $PYTHONPATH"
 
 # Launch ADK web UI
 echo "🚀 Starting VANA agent with ADK web UI..."
@@ -116,6 +117,12 @@ echo "  - !vector_search {query} - Search vector database"
 echo "  - !kg_query {entity_type} {query} - Query Knowledge Graph"
 echo "  - !hybrid_search {query} - Search both systems"
 echo "  - !kg_store {entity} {type} {observation} - Store in Knowledge Graph"
+echo ""
+echo "Persistent Memory commands:"
+echo "  - !remember {fact} - Store a fact in persistent memory"
+echo "  - !recall {query} - Recall information from persistent memory"
+echo "  - !forget {entity} - Remove an entity from persistent memory"
+echo "  - !list_memories - List all memories stored in the system"
 echo ""
 echo "Press Ctrl+C to stop the agent."
 echo ""
