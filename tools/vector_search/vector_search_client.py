@@ -49,10 +49,14 @@ class VectorSearchClient:
             return False
 
         try:
-            # Simple test query with a zero vector
+            # Create a simple test vector with the correct dimensions (768)
+            # Use a list of floats instead of generating an embedding
+            test_vector = [0.0] * 768
+
+            # Simple test query with the test vector
             self.index_endpoint.match(
                 deployed_index_id=self.deployed_index_id,
-                queries=[{"datapoint": [0.0] * 768}],
+                queries=[{"datapoint": test_vector}],
                 num_neighbors=1
             )
             logger.info("Vector Search is available")
@@ -83,7 +87,14 @@ class VectorSearchClient:
             )
             response.raise_for_status()
 
-            return response.json()["predictions"][0]["embeddings"]
+            # Get the embedding values
+            embedding_data = response.json()["predictions"][0]["embeddings"]
+
+            # Convert embedding values to float if they are strings
+            if isinstance(embedding_data, dict) and "values" in embedding_data:
+                return embedding_data["values"]
+
+            return embedding_data
         except Exception as e:
             logger.error(f"Error generating embedding: {e}")
             return self._use_mock_embedding(text)
@@ -124,6 +135,14 @@ class VectorSearchClient:
             if not query_embedding:
                 logger.error("Failed to generate embedding for query")
                 return self._use_mock_search(query, top_k)
+
+            # Ensure embedding is a list of floats
+            if isinstance(query_embedding, dict) and "values" in query_embedding:
+                query_embedding = query_embedding["values"]
+
+            # Convert all values to float if they're strings
+            if isinstance(query_embedding, list) and query_embedding and isinstance(query_embedding[0], str):
+                query_embedding = [float(x) for x in query_embedding]
 
             # Search the index
             response = self.index_endpoint.match(
@@ -180,6 +199,14 @@ class VectorSearchClient:
             if not embedding:
                 logger.error("Failed to generate embedding for content")
                 return self._use_mock_upload(content, metadata)
+
+            # Ensure embedding is a list of floats
+            if isinstance(embedding, dict) and "values" in embedding:
+                embedding = embedding["values"]
+
+            # Convert all values to float if they're strings
+            if isinstance(embedding, list) and embedding and isinstance(embedding[0], str):
+                embedding = [float(x) for x in embedding]
 
             # Create datapoint
             datapoint = {
@@ -239,6 +266,14 @@ class VectorSearchClient:
                 if not embedding:
                     logger.error(f"Failed to generate embedding for content: {content[:50]}...")
                     continue
+
+                # Ensure embedding is a list of floats
+                if isinstance(embedding, dict) and "values" in embedding:
+                    embedding = embedding["values"]
+
+                # Convert all values to float if they're strings
+                if isinstance(embedding, list) and embedding and isinstance(embedding[0], str):
+                    embedding = [float(x) for x in embedding]
 
                 # Create datapoint
                 datapoint = {
