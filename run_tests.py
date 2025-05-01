@@ -12,29 +12,33 @@ def run_tests_with_coverage():
     """Run all tests with coverage."""
     # Start coverage
     cov = coverage.Coverage(
-        source=["adk-setup/vana/context", "adk-setup/vana/adk_integration"],
+        source=[
+            "adk-setup/vana/context",
+            "adk-setup/vana/adk_integration",
+            "adk-setup/vana/orchestration"
+        ],
         omit=["*/__init__.py", "*/tests/*"]
     )
     cov.start()
-    
+
     # Discover and run tests
     loader = unittest.TestLoader()
     tests = loader.discover("tests")
     test_runner = unittest.TextTestRunner(verbosity=2)
     result = test_runner.run(tests)
-    
+
     # Stop coverage
     cov.stop()
     cov.save()
-    
+
     # Print coverage report
     print("\nCoverage Report:")
     cov.report()
-    
+
     # Generate HTML report
     cov.html_report(directory="coverage_html")
     print(f"\nHTML coverage report generated in: {os.path.abspath('coverage_html')}")
-    
+
     # Return test result
     return result.wasSuccessful()
 
