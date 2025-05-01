@@ -24,6 +24,8 @@
 - [Knowledge Graph Commands](guides/knowledge-graph-commands.md)
 - [Vector Search Usage](guides/vector-search-usage.md)
 - [Web Search Configuration](guides/web-search-configuration.md)
+- [Dashboard Guide](guides/dashboard-guide.md)
+- [End-to-End Testing Guide](guides/e2e-testing-guide.md)
 - [Troubleshooting Guide](guides/troubleshooting-guide.md)
 
 ## Integrations
@@ -37,6 +39,7 @@
 - [Roadmap](project/roadmap.md)
 - [Sprint 1 Implementation](project/sprints/sprint-1.md)
 - [Sprint 2 Implementation](project/sprints/sprint-2.md)
+- [Sprint 3 Implementation](project/sprints/sprint-3.md)
 
 ## API Documentation
 - [API Reference](api/index.md)
