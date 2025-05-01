@@ -7,15 +7,12 @@ This module provides functions for loading and managing dashboard configuration.
 import os
 import json
 import logging
-from pathlib import Path
-
-logger = logging.getLogger(__name__)
 
 # Default configuration
 DEFAULT_CONFIG = {
     "dashboard": {
         "title": "VANA Dashboard",
-        "refresh_interval": 60,  # seconds
+        "refresh_interval": 30,
         "theme": "light",
         "debug": False
     },
@@ -29,7 +26,7 @@ DEFAULT_CONFIG = {
     "visualization": {
         "chart_height": 400,
         "chart_width": 800,
-        "color_scheme": "viridis",
+        "color_scheme": "blues",
         "animation": True
     },
     "alerts": {
@@ -37,132 +34,115 @@ DEFAULT_CONFIG = {
         "cpu_threshold": 80,
         "memory_threshold": 80,
         "disk_threshold": 80,
-        "error_rate_threshold": 0.05
+        "error_rate_threshold": 5
     }
 }
 
-def get_config_path():
-    """
-    Get the path to the configuration file.
-    
-    Returns:
-        Path: Path to the configuration file.
-    """
-    # Check for config file in the dashboard directory
-    dashboard_dir = Path(__file__).parent.parent
-    config_path = dashboard_dir / "config.json"
-    
-    # If not found, check for config file in the parent directory
-    if not config_path.exists():
-        config_path = dashboard_dir.parent / "config.json"
-    
-    # If still not found, use the default config path
-    if not config_path.exists():
-        config_path = dashboard_dir / "config.json"
-    
-    return config_path
-
-def load_config():
-    """
-    Load configuration from file or use default configuration.
-    
-    Returns:
-        dict: Configuration dictionary.
-    """
-    config_path = get_config_path()
-    
-    # If config file exists, load it
-    if config_path.exists():
+def load_config(config_path=None):
+    """Load configuration from file or use defaults."""
+    if config_path and os.path.exists(config_path):
         try:
             with open(config_path, 'r') as f:
                 config = json.load(f)
-            logger.info(f"Loaded configuration from {config_path}")
-            return config
+                logging.info(f"Loaded configuration from {config_path}")
+                return config
         except Exception as e:
-            logger.error(f"Error loading configuration from {config_path}: {e}")
-            logger.info("Using default configuration")
+            logging.error(f"Error loading configuration: {e}")
             return DEFAULT_CONFIG
-    
-    # If config file doesn't exist, use default configuration
-    logger.info(f"Configuration file {config_path} not found. Using default configuration")
-    return DEFAULT_CONFIG
+    else:
+        default_path = os.path.join(os.path.dirname(__file__), '../config/config.json')
+        if os.path.exists(default_path):
+            try:
+                with open(default_path, 'r') as f:
+                    config = json.load(f)
+                    logging.info(f"Loaded configuration from {default_path}")
+                    return config
+            except Exception as e:
+                logging.error(f"Error loading configuration: {e}")
 
-def save_config(config):
+        logging.info("Using default configuration")
+        return DEFAULT_CONFIG
+
+def save_config(config, config_path=None):
     """
     Save configuration to file.
-    
+
     Args:
         config (dict): Configuration dictionary.
-    
+        config_path (str): Path to save the configuration file.
+
     Returns:
         bool: True if successful, False otherwise.
     """
-    config_path = get_config_path()
-    
+    if not config_path:
+        config_path = os.path.join(os.path.dirname(__file__), '../config/config.json')
+
+    # Create directory if it doesn't exist
+    os.makedirs(os.path.dirname(config_path), exist_ok=True)
+
     try:
         with open(config_path, 'w') as f:
             json.dump(config, f, indent=4)
-        logger.info(f"Saved configuration to {config_path}")
+        logging.info(f"Saved configuration to {config_path}")
         return True
     except Exception as e:
-        logger.error(f"Error saving configuration to {config_path}: {e}")
+        logging.error(f"Error saving configuration to {config_path}: {e}")
         return False
 
 def get_config_value(key, default=None):
     """
     Get a configuration value by key.
-    
+
     Args:
         key (str): Configuration key (dot notation for nested keys).
         default: Default value to return if key is not found.
-    
+
     Returns:
         Value of the configuration key or default if not found.
     """
     config = load_config()
-    
+
     # Split key by dots to navigate nested dictionaries
     keys = key.split('.')
     value = config
-    
+
     # Navigate through the nested dictionaries
     for k in keys:
         if isinstance(value, dict) and k in value:
             value = value[k]
         else:
             return default
-    
+
     return value
 
 def set_config_value(key, value):
     """
     Set a configuration value by key.
-    
+
     Args:
         key (str): Configuration key (dot notation for nested keys).
         value: Value to set.
-    
+
     Returns:
         bool: True if successful, False otherwise.
     """
     config = load_config()
-    
+
     # Split key by dots to navigate nested dictionaries
     keys = key.split('.')
-    
+
     # Navigate through the nested dictionaries
     current = config
     for i, k in enumerate(keys[:-1]):
         if k not in current:
             current[k] = {}
         current = current[k]
-    
+
     # Set the value
     current[keys[-1]] = value
-    
+
     # Save the updated configuration
     return save_config(config)
 
-# Create default configuration file if it doesn't exist
-if not get_config_path().exists():
-    save_config(DEFAULT_CONFIG)
+# Global configuration object
+CONFIG = load_config()
