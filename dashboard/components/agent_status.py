@@ -7,201 +7,231 @@ This module provides components for displaying agent status and performance.
 import streamlit as st
 import pandas as pd
 import plotly.express as px
+import plotly.graph_objects as go
+from datetime import datetime
+import altair as alt
 import logging
 
-from dashboard.api import agent_api
+from dashboard.api.agent_api import get_agent_statuses, get_agent_activity
+from dashboard.utils.data_formatter import format_timestamp
 
 logger = logging.getLogger(__name__)
 
 def display_agent_status():
-    """
-    Display agent status visualization.
-    """
-    # Get agent data
-    agents = agent_api.get_agent_status()
+    """Display agent status visualization component."""
+    # Fetch agent data
+    agent_data = get_agent_statuses()
 
-    # Create agent status cards
-    st.subheader("Agent Status")
+    # Agent status cards
+    st.subheader("Agent Status Overview")
 
-    # Create columns for agent cards
+    # Create columns for agent status cards - 3 per row
     cols = st.columns(3)
 
-    # Display agent cards
-    for i, agent in enumerate(agents):
-        with cols[i % 3]:
-            # Create card with colored border based on status
-            status_color = {
-                "active": "green",
-                "idle": "orange",
-                "error": "red"
-            }.get(agent["status"], "gray")
+    # Display agent status cards
+    for i, agent in enumerate(agent_data):
+        col_index = i % 3
+        with cols[col_index]:
+            # Determine card color based on status
+            card_color = {
+                "Active": "green",
+                "Idle": "blue",
+                "Busy": "orange",
+                "Error": "red",
+                "Offline": "gray"
+            }.get(agent["status"], "blue")
 
+            # Create card with colored header
             st.markdown(
                 f"""
-                <div style="padding: 10px; border-left: 5px solid {status_color}; background-color: #f0f0f0;">
-                <h3>{agent["name"]}</h3>
-                <p><strong>Role:</strong> {agent["role"]}</p>
-                <p><strong>Status:</strong> {agent["status"]}</p>
-                <p><strong>Tasks:</strong> {agent["tasks_completed"]}</p>
-                <p><strong>Success Rate:</strong> {agent["success_rate"]:.0%}</p>
+                <div style="
+                    border-radius: 5px;
+                    background-color: white;
+                    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+                    margin-bottom: 20px;
+                ">
+                    <div style="
+                        background-color: {card_color};
+                        color: white;
+                        padding: 10px;
+                        border-radius: 5px 5px 0 0;
+                        font-weight: bold;
+                    ">
+                        {agent["name"]} - {agent["status"]}
+                    </div>
+                    <div style="padding: 15px;">
+                        <p><b>Response Time:</b> {agent["response_time_ms"]} ms</p>
+                        <p><b>Requests Handled:</b> {agent["requests_handled"]}</p>
+                        <p><b>Error Rate:</b> {agent["error_rate"] * 100:.2f}%</p>
+                        <p><b>Last Active:</b> {format_timestamp(agent["last_active"])}</p>
+                    </div>
                 </div>
                 """,
                 unsafe_allow_html=True
             )
-            st.write("")  # Add some space between cards
 
-    # Display agent performance metrics
-    st.subheader("Agent Performance")
+    # Agent performance metrics
+    st.subheader("Agent Performance Metrics")
 
-    # Get agent performance data
-    time_range = st.selectbox(
-        "Time Range",
-        ["hour", "day", "week", "month"],
-        index=1,
-        key="agent_performance_time_range"
-    )
-
-    performance_data = agent_api.get_agent_performance(time_range=time_range)
-
-    # Create a DataFrame for response times
-    response_times_data = []
-    for agent_id, data in performance_data.items():
-        for i, timestamp in enumerate(data["timestamps"]):
-            response_times_data.append({
-                "Agent": agent_id.capitalize(),
-                "Timestamp": timestamp,
-                "Response Time (s)": data["response_times"][i]
-            })
-
-    df_response = pd.DataFrame(response_times_data)
-
-    # Create response time chart
-    fig_response = px.line(
-        df_response,
-        x="Timestamp",
-        y="Response Time (s)",
-        color="Agent",
-        title="Agent Response Times"
-    )
-    st.plotly_chart(fig_response, use_container_width=True)
-
-    # Display agent activity
-    st.subheader("Recent Agent Activity")
-
-    # Get agent activity data
-    activity_data = agent_api.get_agent_activity(time_range=time_range)
-
-    # Create a DataFrame for the activity table
-    df_activity = pd.DataFrame([
+    # Create DataFrame for performance metrics
+    metrics_df = pd.DataFrame([
         {
-            "Timestamp": activity["timestamp"],
-            "Agent": activity["agent_id"].capitalize(),
-            "Activity Type": activity["type"].replace("_", " ").title(),
-            "Details": activity["details"]
+            "Agent": agent["name"],
+            "Response Time (ms)": agent["response_time_ms"],
+            "Error Rate (%)": agent["error_rate"] * 100,
+            "CPU Usage (%)": agent["cpu_usage"],
+            "Memory Usage (MB)": agent["memory_usage_mb"]
         }
-        for activity in activity_data[:10]  # Show only the 10 most recent activities
+        for agent in agent_data
     ])
 
-    # Display the activity table
-    st.dataframe(df_activity, use_container_width=True)
+    # Create tabs for different performance metrics
+    tabs = st.tabs(["Response Time", "Error Rate", "Resource Usage"])
 
-def display_agent_details(agent_id):
-    """
-    Display detailed information for a specific agent.
+    with tabs[0]:
+        # Response time bar chart
+        fig = px.bar(
+            metrics_df,
+            x="Agent",
+            y="Response Time (ms)",
+            color="Agent",
+            title="Agent Response Times"
+        )
+        st.plotly_chart(fig, use_container_width=True)
 
-    Args:
-        agent_id (str): ID of the agent to display details for.
+    with tabs[1]:
+        # Error rate bar chart
+        fig = px.bar(
+            metrics_df,
+            x="Agent",
+            y="Error Rate (%)",
+            color="Agent",
+            title="Agent Error Rates"
+        )
+        st.plotly_chart(fig, use_container_width=True)
 
-    Returns:
-        None: Displays the component directly using Streamlit.
-    """
-    st.subheader(f"Agent Details: {agent_id.capitalize()}")
+    with tabs[2]:
+        # Resource usage grouped bar chart
+        fig = go.Figure()
 
-    try:
-        # Get agent status data
-        agents = agent_api.get_agent_status()
-        agent = next((a for a in agents if a["id"] == agent_id), None)
+        # Add CPU usage bars
+        fig.add_trace(go.Bar(
+            x=metrics_df["Agent"],
+            y=metrics_df["CPU Usage (%)"],
+            name="CPU Usage (%)",
+            marker_color="indianred"
+        ))
 
-        if not agent:
-            st.error(f"Agent {agent_id} not found")
-            return
+        # Add Memory usage bars
+        fig.add_trace(go.Bar(
+            x=metrics_df["Agent"],
+            y=metrics_df["Memory Usage (MB)"],
+            name="Memory Usage (MB)",
+            marker_color="lightsalmon"
+        ))
 
-        # Display agent details
-        st.markdown(f"### {agent['name']}")
-
-        # Create status indicator
-        status_color = {
-            "active": "green",
-            "idle": "orange",
-            "error": "red"
-        }.get(agent["status"], "gray")
-
-        st.markdown(
-            f"""
-            <div style="padding: 5px; border-left: 5px solid {status_color}; background-color: #f0f0f0;">
-            <p><strong>Status:</strong> {agent["status"]}</p>
-            </div>
-            """,
-            unsafe_allow_html=True
+        # Update layout
+        fig.update_layout(
+            title="Agent Resource Usage",
+            xaxis_title="Agent",
+            yaxis_title="Usage",
+            barmode="group"
         )
 
-        st.markdown(f"**Role:** {agent['role']}")
-        st.markdown(f"**Uptime:** {agent['uptime']} hours")
-        st.markdown(f"**Tasks Completed:** {agent['tasks_completed']}")
-        st.markdown(f"**Success Rate:** {agent['success_rate']:.0%}")
-        st.markdown(f"**Response Time:** {agent['response_time']:.2f} seconds")
+        st.plotly_chart(fig, use_container_width=True)
 
-        # Display agent performance metrics
-        st.markdown("### Performance Metrics")
+    # Agent historical activity
+    st.subheader("Agent Historical Activity")
 
-        # Get agent performance data
-        time_range = st.selectbox(
-            "Time Range",
-            ["hour", "day", "week", "month"],
-            index=1,
-            key="agent_details_time_range"
-        )
+    # Agent selection for historical data
+    selected_agent = st.selectbox("Select Agent", [agent["name"] for agent in agent_data])
 
-        performance_data = agent_api.get_agent_performance(agent_id=agent_id, time_range=time_range)
+    # Time period selection
+    time_period = st.radio("Time Period", ["Last 24 Hours", "Last Week"], horizontal=True)
+    hours = 24 if time_period == "Last 24 Hours" else 168
 
-        # Create a DataFrame for response times
-        response_times_data = []
-        for i, timestamp in enumerate(performance_data["timestamps"]):
-            response_times_data.append({
-                "Timestamp": timestamp,
-                "Response Time (s)": performance_data["response_times"][i]
-            })
+    # Fetch historical data
+    historical_data = get_agent_activity(selected_agent, hours)
 
-        df_response = pd.DataFrame(response_times_data)
+    # Create DataFrame from historical data
+    if historical_data and "activity" in historical_data:
+        history_df = pd.DataFrame(historical_data["activity"])
 
-        # Create response time chart
-        fig_response = px.line(
-            df_response,
-            x="Timestamp",
-            y="Response Time (s)",
-            title="Response Time"
-        )
-        st.plotly_chart(fig_response, use_container_width=True)
+        # Convert timestamp strings to datetime objects
+        history_df["timestamp"] = pd.to_datetime(history_df["timestamp"])
 
-        # Display agent activity
-        st.markdown("### Recent Activities")
+        # Create tabs for different metrics
+        hist_tabs = st.tabs(["Requests", "Response Time", "Error Rate", "Resource Usage"])
 
-        # Get agent activity data
-        activity_data = agent_api.get_agent_activity(agent_id=agent_id, time_range=time_range)
+        with hist_tabs[0]:
+            # Requests line chart
+            chart = alt.Chart(history_df).mark_line().encode(
+                x=alt.X('timestamp:T', title='Time'),
+                y=alt.Y('requests:Q', title='Number of Requests'),
+                tooltip=['timestamp:T', 'requests:Q']
+            ).properties(
+                title=f"{selected_agent} - Request Volume",
+                height=300
+            ).interactive()
 
-        # Create a DataFrame for the activity table
-        df_activity = pd.DataFrame([
-            {
-                "Timestamp": activity["timestamp"],
-                "Activity Type": activity["type"].replace("_", " ").title(),
-                "Details": activity["details"]
-            }
-            for activity in activity_data[:10]  # Show only the 10 most recent activities
-        ])
+            st.altair_chart(chart, use_container_width=True)
 
-        # Display the activity table
-        st.dataframe(df_activity, use_container_width=True)
+        with hist_tabs[1]:
+            # Response time line chart
+            chart = alt.Chart(history_df).mark_line().encode(
+                x=alt.X('timestamp:T', title='Time'),
+                y=alt.Y('response_time_ms:Q', title='Response Time (ms)'),
+                tooltip=['timestamp:T', 'response_time_ms:Q']
+            ).properties(
+                title=f"{selected_agent} - Response Time",
+                height=300
+            ).interactive()
 
-    except Exception as e:
-        logger.error(f"Error displaying agent details: {e}")
-        st.error(f"Error displaying agent details: {e}")
+            st.altair_chart(chart, use_container_width=True)
+
+        with hist_tabs[2]:
+            # Error rate line chart
+            history_df["error_rate_percent"] = history_df["error_rate"] * 100
+
+            chart = alt.Chart(history_df).mark_line().encode(
+                x=alt.X('timestamp:T', title='Time'),
+                y=alt.Y('error_rate_percent:Q', title='Error Rate (%)'),
+                tooltip=['timestamp:T', 'error_rate_percent:Q']
+            ).properties(
+                title=f"{selected_agent} - Error Rate",
+                height=300
+            ).interactive()
+
+            st.altair_chart(chart, use_container_width=True)
+
+        with hist_tabs[3]:
+            # Create dual y-axis chart for CPU and memory usage
+            base = alt.Chart(history_df).encode(
+                x=alt.X('timestamp:T', title='Time')
+            ).properties(
+                title=f"{selected_agent} - Resource Usage",
+                height=300
+            )
+
+            # CPU usage line
+            cpu_line = base.mark_line(color='red').encode(
+                y=alt.Y('cpu_usage:Q', title='CPU Usage (%)'),
+                tooltip=['timestamp:T', 'cpu_usage:Q']
+            )
+
+            # Memory usage line
+            memory_line = base.mark_line(color='blue').encode(
+                y=alt.Y('memory_usage_mb:Q', title='Memory Usage (MB)'),
+                tooltip=['timestamp:T', 'memory_usage_mb:Q']
+            )
+
+            # Combine both lines
+            chart = alt.layer(cpu_line, memory_line).resolve_scale(
+                y='independent'
+            ).interactive()
+
+            st.altair_chart(chart, use_container_width=True)
+    else:
+        st.error(f"No historical data available for {selected_agent}")
+
+
