@@ -1,116 +1,99 @@
-# VANA Dashboard
+# VANA Dashboard Backend
 
-The VANA Dashboard provides a comprehensive monitoring and visualization interface for the VANA agent system. It allows users to monitor agent status, memory usage, system health, and task execution in real-time.
+This README documents the backend infrastructure for the VANA Dashboard, including alerting, health monitoring, testing, and CI/CD integration.
 
-## Features
+---
 
-- **Agent Status**: Monitor the status and performance of all VANA agents
-- **Memory Usage**: Track memory usage across Vector Search, Knowledge Graph, and Local Cache
-- **System Health**: Monitor system health metrics including CPU, memory, and disk usage
-- **Task Execution**: Track task execution metrics and view task details
-- **Settings**: Configure dashboard settings
+## Directory Structure
 
-## Installation
+- `alerting/alert_manager.py` — Backend alerting system (alert creation, storage, management, notification stub)
+- `monitoring/health_check.py` — Health check system with alert integration (generates alerts for WARNING/ERROR states)
+- `api/server.py` — Flask API server exposing `/api/alerts` and `/api/health` endpoints
+- `testing/data_generator.py` — Dedicated data generators for agent, memory, system, and task APIs (scenario-based mock data)
+- `testing/run_dashboard_tests.py` — Test runner script (runs scenarios, measures performance, outputs structured reports)
 
-1. Install the required dependencies:
+---
+
+## API Endpoints
+
+### Alerts
+
+- `GET /api/alerts` — List all active alerts
+- `POST /api/alerts/acknowledge` — Acknowledge an alert by ID (`{"alert_id": "..."}`)
+- `POST /api/alerts/clear` — Clear an alert by ID (`{"alert_id": "..."}`)
+
+### Health
+
+- `GET /api/health` — Get current health status for all registered components
 
 ```bash
 pip install -r requirements.txt
 ```
 
-2. Configure the dashboard by editing the `dashboard/config/config.json` file.
+---
 
-## Usage
+## Alerting & Monitoring
 
-To start the dashboard:
+- Alerts are generated automatically for any health check WARNING or ERROR.
+- Alerts are stored in `dashboard/alerting/alerts.json` and can be acknowledged or cleared via API.
+- Health checks are extensible and can be registered for any system component.
 
 ```bash
-streamlit run dashboard/app.py
+python api/server.py
 ```
 
-This will start the dashboard on http://localhost:8501 by default.
+---
 
 ## Testing
 
-To run the dashboard tests:
+- Scenario-based data generators support edge cases and stress tests.
+- Test runner (`run_dashboard_tests.py`) executes scenarios and saves structured reports in `dashboard/testing/reports/`.
+- Scenarios include: `default`, `high_load`, `degraded_services`, `error_spike`.
 
 ```bash
-./run_dashboard_tests.sh
+python testing/run_dashboard_tests.py
 ```
 
-This will start the dashboard, run the tests, and stop the dashboard when the tests are complete.
+---
 
-## Configuration
+## CI/CD
 
-The dashboard can be configured by editing the `dashboard/config/config.json` file. The following configuration options are available:
+- `.github/workflows/ci.yml` — Runs lint, tests, and uploads test reports on push/PR to `sprint3`.
+- `.github/workflows/deploy.yml` — Placeholder for automated deployment steps (to be customized for your environment).
 
-- **dashboard**: General dashboard settings
-  - **title**: Dashboard title
-  - **refresh_interval**: Data refresh interval in seconds
-  - **theme**: Dashboard theme (light or dark)
-  - **debug**: Enable debug mode
+---
 
-- **data_sources**: Data source settings
-  - **use_mock_data**: Use mock data instead of real data
-  - **memory_api_url**: URL for memory API
-  - **agent_api_url**: URL for agent API
-  - **system_api_url**: URL for system API
-  - **task_api_url**: URL for task API
+## Getting Started
 
-- **visualization**: Visualization settings
-  - **chart_height**: Default chart height
-  - **chart_width**: Default chart width
-  - **color_scheme**: Color scheme for charts (blues, greens, reds, etc.)
-  - **animation**: Enable chart animations
+1. **Install dependencies** (ensure Python 3.9+ and Flask are installed):
 
-- **alerts**: Alert settings
-  - **enabled**: Enable alerts
-  - **cpu_threshold**: CPU usage threshold for alerts (percentage)
-  - **memory_threshold**: Memory usage threshold for alerts (percentage)
-  - **disk_threshold**: Disk usage threshold for alerts (percentage)
-  - **error_rate_threshold**: Error rate threshold for alerts (percentage)
+   ```
+   pip install flask
+   ```
 
-## Architecture
+2. **Run the API server**:
 
-The dashboard is built using the following components:
+   ```
+   python api/server.py
+   ```
 
-- **API**: Modules for retrieving data from various VANA components
-  - `memory_api.py`: API client for memory data
-  - `agent_api.py`: API client for agent data
-  - `system_api.py`: API client for system data
-  - `task_api.py`: API client for task data
+3. **Run dashboard tests**:
 
-- **Components**: UI components for displaying data
-  - `agent_status.py`: Components for displaying agent status
-  - `memory_usage.py`: Components for displaying memory usage
-  - `system_health.py`: Components for displaying system health
-  - `task_execution.py`: Components for displaying task execution
+   ```
+   python testing/run_dashboard_tests.py
+   ```
 
-- **Utils**: Utility functions for data formatting and visualization
-  - `config.py`: Configuration utilities
-  - `data_formatter.py`: Data formatting utilities
-  - `visualization_helpers.py`: Visualization helper functions
+---
 
-- **Pages**: Streamlit pages for the dashboard
-  - `Home.py`: Home page
-  - `Agent_Status.py`: Agent status page
-  - `Memory_Usage.py`: Memory usage page
-  - `System_Health.py`: System health page
-  - `Task_Execution.py`: Task execution page
-  - `Settings.py`: Settings page
+## Next Steps
 
-## Development
+- Integrate API endpoints with the dashboard frontend for real-time alert and health status display.
+- Implement real notification delivery (email/SMS) in `AlertManager`.
+- Expand test coverage and reporting.
+- Customize deployment workflow for your environment.
 
-To add a new visualization component:
+---
 
-1. Create a new module in the `components` directory
-2. Implement the component using Streamlit
-3. Add the component to the appropriate page in the `pages` directory
-4. Update the `components/__init__.py` file to export the component
+## License
 
-To add a new data source:
-
-1. Create a new module in the `api` directory
-2. Implement the API client for the data source
-3. Update the `api/__init__.py` file to export the API client
-4. Use the API client in the appropriate component
+MIT License

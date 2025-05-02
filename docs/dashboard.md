@@ -1,171 +1,138 @@
 # VANA Dashboard
 
-The VANA Dashboard provides a comprehensive visualization and monitoring interface for the VANA agent system. It allows users to monitor agent status, memory usage, system health, and task execution in real-time.
+The VANA Dashboard provides a modern, full-stack monitoring and visualization interface for the VANA agent system. It enables real-time monitoring of agent status, memory usage, system health, task execution, and alerting, with a clear separation between backend and frontend.
 
-## Overview
+---
 
-The dashboard is built using Streamlit and provides the following main components:
+## Architecture Overview
 
-1. **Agent Status**: Monitor the status and performance of all agents in the system
-2. **Memory Usage**: Track memory usage across vector search, knowledge graph, and cache components
-3. **System Health**: Monitor system resources, service status, and alerts
-4. **Task Execution**: Track task execution, performance, and agent workload
+- **Backend:** Flask API server (`dashboard/api/server.py`) exposes REST endpoints for alerts, health, and system data. It integrates with modular alerting (`dashboard/alerting/alert_manager.py`), health checks (`dashboard/monitoring/health_check.py`), and scenario-based testing (`dashboard/testing/`).
+- **Frontend:** React application (`dashboard/frontend/`) provides a user-friendly web interface for real-time dashboard visualization and interaction.
+- **Data Flow:** The React frontend communicates with the Flask backend via REST API endpoints.
+
+---
+
+## Directory Structure
+
+```
+dashboard/
+  api/
+    server.py
+    ...
+  alerting/
+    alert_manager.py
+  monitoring/
+    health_check.py
+  testing/
+    data_generator.py
+    run_dashboard_tests.py
+  frontend/
+    package.json
+    public/
+    src/
+      App.js
+      index.js
+      components/
+        Alerts.js
+        HealthStatus.js
+  README.md
+  requirements.txt
+```
+
+---
 
 ## Getting Started
 
 ### Prerequisites
 
-- Python 3.8+
-- Required packages (see `dashboard/requirements.txt`)
+- Python 3.9+
+- Node.js 18+ and npm
 
-### Installation
+### Backend Setup
 
-1. Install the required packages:
+1. Install Python dependencies:
+   ```bash
+   pip install -r dashboard/requirements.txt
+   ```
+2. Start the Flask API server:
+   ```bash
+   python dashboard/api/server.py
+   ```
+   The API will run on `http://localhost:5050` by default.
 
-```bash
-pip install -r dashboard/requirements.txt
-```
+### Frontend Setup
 
-2. Run the dashboard:
+1. Install frontend dependencies:
+   ```bash
+   cd dashboard/frontend
+   npm install
+   ```
+2. Start the React development server:
+   ```bash
+   npm start
+   ```
+   The frontend will run on `http://localhost:3000` and proxy API requests to the backend.
 
-```bash
-./run_dashboard.sh
-```
+---
 
-Or manually:
+## API Endpoints
 
-```bash
-cd dashboard
-streamlit run app.py
-```
+- `GET /api/alerts` — List all active alerts
+- `POST /api/alerts/acknowledge` — Acknowledge an alert by ID (`{"alert_id": "..."}`)
+- `POST /api/alerts/clear` — Clear an alert by ID (`{"alert_id": "..."}`)
+- `GET /api/alerts/history` — Get recent alert history
+- `GET /api/health` — Get current health status for all registered components
 
-## Components
+See [monitoring-dashboard.md](monitoring-dashboard.md) for detailed API and data model documentation.
 
-### Agent Status
+---
 
-The Agent Status component provides real-time monitoring of all agents in the VANA system. It includes:
+## Alerting & Monitoring
 
-- **Agent Status Cards**: Quick overview of each agent's status, response time, and activity
-- **Performance Metrics**: Charts showing response times, error rates, and resource usage
-- **Historical Activity**: Time-series data showing agent performance over time
+- Alerts are generated automatically for any health check WARNING or ERROR.
+- Alerts are stored in `dashboard/alerting/alerts.json` and can be acknowledged or cleared via API.
+- Health checks are extensible and can be registered for any system component.
+- The backend supports scenario-based data generation and test execution.
 
-### Memory Usage
+---
 
-The Memory Usage component tracks the usage and performance of the memory system, including:
+## Frontend
 
-- **Memory Overview**: Summary of vector search, knowledge graph, and cache usage
-- **Component Details**: Detailed metrics for each memory component
-- **Historical Metrics**: Time-series data showing memory usage over time
-- **Recent Queries**: List of recent memory queries with performance metrics
+- Built with React (`dashboard/frontend/`).
+- Components:
+  - `HealthStatus`: Displays system health and component status.
+  - `Alerts`: Displays active alerts and allows acknowledgment/clearing.
+- Communicates with backend via REST API.
+- To build for production:
+  ```bash
+  npm run build
+  ```
 
-### System Health
-
-The System Health component monitors the overall health of the VANA system, including:
-
-- **Resource Usage**: CPU, memory, disk, and network usage metrics
-- **Service Status**: Status of all services in the system
-- **System Alerts**: Recent alerts and warnings
-- **Historical Performance**: Time-series data showing system performance over time
-
-### Task Execution
-
-The Task Execution component tracks the execution of tasks in the VANA system, including:
-
-- **Task Summary**: Overview of task execution metrics
-- **Task Timeline**: Gantt chart showing task execution over time
-- **Task Distribution**: Charts showing task distribution by type and status
-- **Agent Performance**: Metrics showing agent workload and performance
-- **Recent Tasks**: List of recent tasks with details
-
-## Data Sources
-
-The dashboard currently uses mock data generators for development purposes. In production, it will connect to the following data sources:
-
-- **Agent API**: Real-time agent status and performance data
-- **Memory API**: Memory usage and performance metrics
-- **System API**: System health and resource usage metrics
-- **Task API**: Task execution and performance data
-
-## Configuration
-
-The dashboard can be configured using environment variables:
-
-- `DASHBOARD_PORT`: Port to run the dashboard on (default: 8501)
-- `DASHBOARD_HOST`: Host to run the dashboard on (default: localhost)
-- `DASHBOARD_THEME`: Dashboard theme (default: light)
-- `DASHBOARD_TITLE`: Dashboard title (default: VANA Dashboard)
-
-## Development
-
-### Adding New Components
-
-To add a new component to the dashboard:
-
-1. Create a new file in `dashboard/components/` with your component code
-2. Add the component to `dashboard/app.py`
-3. Update the navigation in `dashboard/app.py`
-
-### Creating Mock Data
-
-To create mock data for development:
-
-1. Create a new file in `dashboard/api/` with your mock data generator
-2. Use realistic data patterns and randomization for testing
-3. Include proper error handling and logging
+---
 
 ## Testing
 
-The dashboard includes unit tests for all components. To run the tests:
+- Scenario-based data generators support edge cases and stress tests (`dashboard/testing/data_generator.py`).
+- Test runner (`dashboard/testing/run_dashboard_tests.py`) executes scenarios and saves structured reports in `dashboard/testing/reports/`.
+- Scenarios include: `default`, `high_load`, `degraded_services`, `error_spike`.
 
-```bash
-cd dashboard
-pytest
-```
+---
 
-## Deployment
+## Development
 
-The dashboard can be deployed using Docker:
+- To add a new backend API or component, create a new module in the appropriate subdirectory and register it in the Flask server.
+- To add a new frontend component, add it to `dashboard/frontend/src/components/` and update `App.js` as needed.
 
-```bash
-docker build -t vana-dashboard .
-docker run -p 8501:8501 vana-dashboard
-```
-
-## Future Enhancements
-
-Planned enhancements for the dashboard include:
-
-- **User Authentication**: Add user authentication and role-based access control
-- **Alerting System**: Add alerting capabilities for critical events
-- **Custom Dashboards**: Allow users to create custom dashboards
-- **Mobile Support**: Optimize the dashboard for mobile devices
-- **Real-time Updates**: Add WebSocket support for real-time updates
+---
 
 ## Troubleshooting
 
-### Common Issues
+- If the dashboard does not load, ensure both backend and frontend servers are running.
+- For API errors, check backend logs and ensure all dependencies are installed.
+- For frontend issues, check the browser console and ensure the React app is running.
 
-- **Dashboard not loading**: Check that all required packages are installed
-- **Charts not displaying**: Check browser console for JavaScript errors
-- **Data not updating**: Check API connectivity and refresh rate
-
-### Logging
-
-The dashboard logs to `dashboard.log` by default. To change the log level:
-
-```bash
-export DASHBOARD_LOG_LEVEL=DEBUG
-```
-
-## Contributing
-
-Contributions to the dashboard are welcome! Please follow these guidelines:
-
-1. Create a new branch for your changes
-2. Add tests for new features
-3. Update documentation
-4. Submit a pull request
+---
 
 ## License
 
-The VANA Dashboard is licensed under the MIT License.
+MIT License
