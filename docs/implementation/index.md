@@ -9,6 +9,7 @@ This section contains implementation documentation for the VANA system, describi
 - [ADK Implementation](adk-implementation.md)
 - [Memory Implementation](memory-implementation.md)
 - [Vector Search](vector-search.md)
+- [Vector Search Client](vector-search-client.md)
 - [Knowledge Graph](knowledge-graph.md)
 - [Web Search](web-search.md)
 - [Document Processing](document-processing.md)

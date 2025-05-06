@@ -5,10 +5,9 @@ This module provides a mock implementation of the Vector Search client
 for testing purposes when the real Vector Search is not available.
 """
 
-import os
 import logging
 import re
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -16,12 +15,12 @@ logger = logging.getLogger(__name__)
 
 class MockVectorSearchClient:
     """Mock client for Vector Search"""
-    
+
     def __init__(self):
         """Initialize the mock Vector Search client"""
         logger.info("Initializing Mock Vector Search Client")
         self.mock_data = self._load_mock_data()
-    
+
     def _load_mock_data(self) -> Dict[str, List[Dict[str, Any]]]:
         """Load mock data for predefined queries"""
         mock_data = {
@@ -177,76 +176,155 @@ class MockVectorSearchClient:
             ]
         }
         return mock_data
-    
+
     def is_available(self) -> bool:
         """Check if Vector Search is available"""
         return True
-    
-    def generate_embedding(self, text: str) -> List[float]:
+
+    def generate_embedding(self, _text: str) -> List[float]:
         """Generate a mock embedding for text"""
         # Return a mock embedding of 768 dimensions
+        logger.info(f"Mock: Generating embedding for '{_text[:30]}...'")
         return [0.1] * 768
-    
+
     def search(self, query: str, top_k: int = 5) -> List[Dict[str, Any]]:
         """
         Search for relevant information using mock data
-        
+
         Args:
             query: The search query
             top_k: Maximum number of results to return
-            
+
         Returns:
             List of search results
         """
         logger.info(f"Mock Vector Search for: {query}")
-        
+
         # Find the best matching predefined query
         best_match = None
         best_match_score = 0
-        
+
         for predefined_query in self.mock_data.keys():
             # Calculate simple match score (number of words in common)
             query_words = set(re.findall(r'\w+', query.lower()))
             predefined_words = set(re.findall(r'\w+', predefined_query.lower()))
             common_words = query_words.intersection(predefined_words)
             score = len(common_words)
-            
+
             if score > best_match_score:
                 best_match = predefined_query
                 best_match_score = score
-        
+
         # If no good match, return default results
         if best_match_score == 0:
             logger.info(f"No predefined results for query: {query}")
             return self.mock_data["default"][:top_k]
-        
+
         # Return predefined results for the best matching query
         logger.info(f"Found predefined results for query similar to: {best_match}")
         return self.mock_data[best_match][:top_k]
-    
+
     def upload_embedding(self, content: str, metadata: Dict[str, Any] = None) -> bool:
         """
         Upload content with embedding to Vector Search (mock)
-        
+
         Args:
             content: The content to upload
             metadata: Metadata for the content
-            
+
         Returns:
             True if successful, False otherwise
         """
-        logger.info(f"Mock upload embedding for content: {content[:50]}...")
+        logger.info(f"Mock upload embedding for content: {content[:50]}... with metadata: {metadata}")
         return True
-    
+
     def batch_upload_embeddings(self, items: List[Dict[str, Any]]) -> bool:
         """
         Upload multiple items with embeddings to Vector Search (mock)
-        
+
         Args:
             items: List of items to upload
-            
+
         Returns:
             True if successful, False otherwise
         """
         logger.info(f"Mock batch upload embeddings for {len(items)} items")
         return True
+
+    def search_vector_store(self, query_embedding: List[float], top_k: int = 5) -> List[Dict[str, Any]]:
+        """
+        Search the vector store with a query embedding (mock)
+
+        Args:
+            query_embedding: The embedding to search with
+            top_k: Maximum number of results to return
+
+        Returns:
+            List of search results
+        """
+        logger.info(f"Mock vector store search with embedding of length {len(query_embedding)}")
+
+        # Return default results since we can't match embeddings in the mock
+        results = self.mock_data["default"][:top_k]
+
+        # Add IDs to results if not present
+        for i, result in enumerate(results):
+            if "id" not in result:
+                result["id"] = f"mock-{i}"
+
+        return results
+
+    def search_knowledge(self, query: str, top_k: int = 5) -> List[Dict[str, Any]]:
+        """
+        Search for knowledge using the vector store (mock)
+
+        Args:
+            query: The query text
+            top_k: Maximum number of results to return
+
+        Returns:
+            List of knowledge results
+        """
+        logger.info(f"Mock knowledge search for: {query}")
+
+        # Get mock search results
+        search_results = self.search(query, top_k)
+
+        # Format as knowledge results
+        knowledge_results = []
+        for i, result in enumerate(search_results):
+            # Extract content and metadata
+            content = result.get("content", "")
+            metadata = result.get("metadata", {})
+            source = metadata.get("source", "unknown")
+
+            # Create formatted result
+            knowledge_result = {
+                "id": result.get("id", f"mock-knowledge-{i}"),
+                "score": float(result.get("score", 0.8)),
+                "content": content,
+                "source": source,
+                "metadata": metadata,
+                "vector_source": True  # Indicate this came from vector search
+            }
+            knowledge_results.append(knowledge_result)
+
+        return knowledge_results
+
+    def get_health_status(self) -> Dict[str, Any]:
+        """
+        Get the health status of the Vector Search client (mock)
+
+        Returns:
+            Health status information
+        """
+        return {
+            "status": "mock",
+            "message": "Using mock implementation",
+            "details": {
+                "initialized": True,
+                "using_mock": True,
+                "mock_data_categories": list(self.mock_data.keys()),
+                "mock_data_size": sum(len(items) for items in self.mock_data.values())
+            }
+        }

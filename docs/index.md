@@ -12,6 +12,7 @@
 - [ADK Implementation](implementation/adk-implementation.md)
 - [Memory Implementation](implementation/memory-implementation.md)
 - [Vector Search](implementation/vector-search.md)
+- [Vector Search Client](implementation/vector-search-client.md)
 - [Knowledge Graph](implementation/knowledge-graph.md)
 - [Web Search](implementation/web-search.md)
 - [Document Processing](implementation/document-processing.md)
