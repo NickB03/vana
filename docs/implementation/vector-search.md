@@ -218,6 +218,80 @@ The web search component uses the Google Custom Search API to retrieve up-to-dat
 
 For testing purposes, a mock implementation is provided in `tools/web_search_mock.py`.
 
+## Health Monitoring System
+
+The Vector Search Health Monitoring System provides comprehensive monitoring, alerting, and visualization for the Vector Search integration. It ensures the reliability and performance of the Vector Search system through proactive detection and resolution of issues.
+
+### Components
+
+1. **Vector Search Health Checker** (`tools/vector_search/health_checker.py`)
+   - Performs comprehensive health checks on Vector Search
+   - Monitors environment configuration, authentication, embedding generation, and search functionality
+   - Generates actionable recommendations for issues
+   - Tracks historical health data and trends
+
+2. **Circuit Breaker** (`tools/monitoring/circuit_breaker.py`)
+   - Prevents cascading failures in the monitoring system
+   - Manages failure thresholds and recovery timeouts
+   - Provides fallback mechanisms for degraded operation
+
+3. **Scheduled Monitoring** (`scripts/scheduled_vector_search_monitor.py`)
+   - Runs health checks on a configurable schedule
+   - Implements adaptive monitoring intervals based on system health
+   - Stores historical health data with configurable retention policies
+   - Generates alerts for critical issues
+
+4. **Dashboard Integration** (`dashboard/monitoring/vector_search_monitor.py`)
+   - Provides a web interface for monitoring Vector Search health
+   - Visualizes health status, metrics, and trends
+   - Displays actionable recommendations
+   - Secures access with role-based authentication
+
+### Health Checks
+
+The health checker performs the following checks:
+
+1. **Environment Check**
+   - Verifies required environment variables are set
+   - Checks for missing configuration
+
+2. **Authentication Check**
+   - Verifies authentication with Google Cloud
+   - Checks service account permissions
+
+3. **Embedding Check**
+   - Tests embedding generation functionality
+   - Verifies embedding dimensions and format
+   - Detects mock implementations
+
+4. **Search Check**
+   - Tests search functionality
+   - Verifies result format and quality
+   - Measures response time
+
+### Usage
+
+```python
+from tools.vector_search.health_checker import VectorSearchHealthChecker
+
+# Create health checker
+checker = VectorSearchHealthChecker()
+
+# Run health check
+result = checker.check_health()
+print(f"Health status: {result['status']}")
+
+# Get recommendations
+recommendations = checker.get_recommendations(result)
+for rec in recommendations:
+    print(f"[{rec['priority']}] {rec['title']}: {rec['action']}")
+
+# Generate report
+report = checker.generate_report()
+```
+
+For more details, see the [Vector Search Health Monitoring](../implementation/vector-search-health-monitoring.md) documentation.
+
 ## Future Enhancements
 
 1. **Multi-modal Embeddings**: Extend to handle image and code content
@@ -226,3 +300,5 @@ For testing purposes, a mock implementation is provided in `tools/web_search_moc
 4. **Cross-lingual Retrieval**: Implement using multilingual embedding models
 5. **Query Understanding**: Improve query analysis for better routing
 6. **Multi-hop Reasoning**: Enable following multiple relationship paths for complex queries
+7. **Advanced Health Monitoring**: Implement predictive maintenance and anomaly detection
+8. **Multi-Environment Support**: Monitor multiple Vector Search environments

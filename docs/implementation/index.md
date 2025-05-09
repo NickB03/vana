@@ -10,6 +10,8 @@ This section contains implementation documentation for the VANA system, describi
 - [Memory Implementation](memory-implementation.md)
 - [Vector Search](vector-search.md)
 - [Vector Search Client](vector-search-client.md)
+- [Vector Search Health Checker](vector-search-health-checker.md)
+- [Vector Search Health Monitoring](vector-search-health-monitoring.md)
 - [Knowledge Graph](knowledge-graph.md)
 - [Web Search](web-search.md)
 - [Document Processing](document-processing.md)
@@ -24,6 +26,8 @@ The implementation documentation provides detailed information about the code st
 - **ADK Implementation**: Implementation details for ADK integration
 - **Memory Implementation**: Implementation of the persistent memory system
 - **Vector Search**: Implementation of Vertex AI Vector Search integration
+- **Vector Search Health Checker**: Implementation of the Vector Search health checking system
+- **Vector Search Health Monitoring**: Implementation of the comprehensive monitoring system
 - **Knowledge Graph**: Implementation of Knowledge Graph integration
 - **Web Search**: Implementation of Google Custom Search API integration
 - **Document Processing**: Implementation of document processing pipeline
