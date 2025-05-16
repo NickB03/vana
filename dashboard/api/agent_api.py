@@ -7,218 +7,131 @@ This module provides functions to retrieve agent status and performance data fro
 import os
 import sys
 import logging
-from datetime import datetime, timedelta
 import random
+import datetime
 
 # Add the parent directory to the path so we can import our modules
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 logger = logging.getLogger(__name__)
 
-def get_agent_status():
+def get_agent_statuses():
     """
-    Returns actual agent status data or falls back to mock data.
-
-    Returns:
-        dict: Agent status data.
+    Retrieve status information for all agents in the system.
+    Returns mock data for development purposes.
     """
     try:
-        # Try to fetch from actual API endpoint
-        # For now, return mock data as fallback
-        return generate_mock_agent_status()
+        # In real implementation, this would call an actual API endpoint
+        # For now, returning realistic mock data
+        return generate_mock_agent_data()
     except Exception as e:
-        logging.error(f"Error fetching agent status: {e}")
-        return generate_mock_agent_status()
+        logging.error(f"Error fetching agent status data: {e}")
+        # Still return mock data as fallback to ensure UI works
+        return generate_mock_agent_data()
 
-def generate_mock_agent_status():
-    """
-    Generate realistic mock agent status data.
+def generate_mock_agent_data():
+    """Generate realistic mock agent status data."""
+    # List of agent names
+    agent_names = ["Vana", "Rhea", "Max", "Sage", "Kai", "Juno"]
 
-    Returns:
-        dict: Mock agent status data.
-    """
-    # Define agents with their roles
-    agents = [
-        {
-            "id": "vana",
-            "name": "Vana",
-            "role": "Lead Agent",
-            "status": "active",
-            "description": "Primary orchestration agent"
-        },
-        {
-            "id": "rhea",
-            "name": "Rhea",
-            "role": "Research Specialist",
-            "status": "active",
-            "description": "Specialized in research and information retrieval"
-        },
-        {
-            "id": "max",
-            "name": "Max",
-            "role": "Memory Specialist",
-            "status": "active",
-            "description": "Specialized in memory management and retrieval"
-        },
-        {
-            "id": "sage",
-            "name": "Sage",
-            "role": "Knowledge Specialist",
-            "status": "idle",
-            "description": "Specialized in knowledge graph operations"
-        },
-        {
-            "id": "kai",
-            "name": "Kai",
-            "role": "Task Specialist",
-            "status": "active",
-            "description": "Specialized in task planning and execution"
-        },
-        {
-            "id": "juno",
-            "name": "Juno",
-            "role": "Testing Specialist",
-            "status": "idle",
-            "description": "Specialized in system testing and validation"
+    # Status options
+    status_options = ["Active", "Idle", "Busy", "Error", "Offline"]
+    status_weights = [0.6, 0.2, 0.1, 0.05, 0.05]  # Probability weights
+
+    # Generate realistic timestamp within the last hour
+    current_time = datetime.datetime.now()
+
+    # Generate data for each agent
+    agents_data = []
+    for agent in agent_names:
+        # Generate a realistic last active time within the last hour
+        minutes_ago = random.randint(0, 60)
+        last_active = current_time - datetime.timedelta(minutes=minutes_ago)
+
+        # Random status weighted towards "Active"
+        status = random.choices(status_options, status_weights)[0]
+
+        # Generate realistic metrics
+        response_time_ms = round(random.uniform(50, 500), 1)
+        requests_handled = random.randint(10, 1000)
+        error_rate = round(random.uniform(0, 0.05), 3)
+
+        # Standard capabilities for each agent based on their role
+        capabilities = {
+            "Vana": ["Task Delegation", "Context Management", "Memory Integration"],
+            "Rhea": ["Architecture Planning", "System Design", "Component Integration"],
+            "Max": ["User Interface", "Command Parsing", "Response Formatting"],
+            "Sage": ["Platform Integration", "API Management", "Service Orchestration"],
+            "Kai": ["Edge Case Handling", "Error Recovery", "Fallback Management"],
+            "Juno": ["System Testing", "Quality Assurance", "Performance Monitoring"]
         }
-    ]
 
-    # Add some random metrics
-    for agent in agents:
-        agent["uptime"] = random.randint(1, 24)
-        agent["tasks_completed"] = random.randint(10, 100)
-        agent["success_rate"] = random.uniform(0.8, 1.0)
-        agent["response_time"] = random.uniform(0.5, 2.0)
-        agent["last_active"] = (datetime.now() - timedelta(minutes=random.randint(0, 60))).isoformat()
+        # Construct agent data object
+        agent_data = {
+            "name": agent,
+            "status": status,
+            "last_active": last_active.isoformat(),
+            "response_time_ms": response_time_ms,
+            "requests_handled": requests_handled,
+            "error_rate": error_rate,
+            "capabilities": capabilities.get(agent, []),
+            "cpu_usage": round(random.uniform(5, 95), 1),
+            "memory_usage_mb": random.randint(50, 500)
+        }
 
-    return agents
+        agents_data.append(agent_data)
 
-def get_agent_performance(agent_id=None, time_range="day"):
+    return agents_data
+
+def get_agent_activity(agent_name, hours=24):
     """
-    Get performance metrics for the specified agent.
-
-    Args:
-        agent_id (str): ID of the agent to get metrics for. If None, get metrics for all agents.
-        time_range (str): Time range for the data ("hour", "day", "week", "month").
-
-    Returns:
-        dict: Agent performance metrics.
+    Get historical activity data for a specific agent.
+    Returns mock data for development purposes.
     """
     try:
-        # Try to fetch from actual API endpoint
-        # For now, return mock data as fallback
-        return generate_mock_agent_performance(agent_id, time_range)
+        # In real implementation, this would call an actual API endpoint
+        return generate_mock_agent_activity(agent_name, hours)
     except Exception as e:
-        logging.error(f"Error fetching agent performance: {e}")
-        return generate_mock_agent_performance(agent_id, time_range)
+        logging.error(f"Error fetching agent activity data: {e}")
+        return generate_mock_agent_activity(agent_name, hours)
 
-def generate_mock_agent_performance(agent_id=None, time_range="day"):
-    """
-    Generate mock agent performance data.
+def generate_mock_agent_activity(agent_name, hours=24):
+    """Generate realistic mock historical data for an agent."""
+    current_time = datetime.datetime.now()
+    activity_data = []
 
-    Args:
-        agent_id (str): ID of the agent to get metrics for. If None, get metrics for all agents.
-        time_range (str): Time range for the data ("hour", "day", "week", "month").
+    # Generate data points for each hour
+    for hour in range(hours, 0, -1):
+        timestamp = current_time - datetime.timedelta(hours=hour)
 
-    Returns:
-        dict: Mock agent performance data.
-    """
-    now = datetime.now()
-    data_points = {
-        "hour": 60,
-        "day": 24,
-        "week": 7,
-        "month": 30
-    }.get(time_range, 24)
+        # Generate realistic metrics with some random variation
+        requests = random.randint(5, 100)
+        response_time = round(random.uniform(50, 500), 1)
+        error_rate = round(random.uniform(0, 0.1), 3)
+        cpu_usage = round(random.uniform(5, 95), 1)
+        memory_usage = random.randint(50, 500)
 
-    time_delta = {
-        "hour": timedelta(minutes=1),
-        "day": timedelta(hours=1),
-        "week": timedelta(days=1),
-        "month": timedelta(days=1)
-    }.get(time_range, timedelta(hours=1))
+        # Add some realistic patterns - busier during work hours
+        hour_of_day = timestamp.hour
+        if 9 <= hour_of_day <= 17:  # 9 AM to 5 PM
+            requests *= 1.5
+            cpu_usage *= 1.2
+            memory_usage *= 1.2
 
-    timestamps = [(now - time_delta * i).isoformat() for i in range(data_points)]
-    timestamps.reverse()
-
-    # Generate mock data with some randomness
-    response_times = [random.uniform(0.5, 2.0) for _ in range(data_points)]
-    success_rates = [random.uniform(0.8, 1.0) for _ in range(data_points)]
-    task_counts = [random.randint(1, 10) for _ in range(data_points)]
-
-    # If agent_id is specified, return data for that agent only
-    if agent_id:
-        return {
-            "agent_id": agent_id,
-            "timestamps": timestamps,
-            "response_times": response_times,
-            "success_rates": success_rates,
-            "task_counts": task_counts
+        data_point = {
+            "timestamp": timestamp.isoformat(),
+            "requests": int(requests),
+            "response_time_ms": response_time,
+            "error_rate": error_rate,
+            "cpu_usage": cpu_usage,
+            "memory_usage_mb": memory_usage
         }
 
-    # Otherwise, return data for all agents
-    agents = ["vana", "rhea", "max", "sage", "kai", "juno"]
+        activity_data.append(data_point)
+
     return {
-        agent: {
-            "timestamps": timestamps,
-            "response_times": [random.uniform(0.5, 2.0) for _ in range(data_points)],
-            "success_rates": [random.uniform(0.8, 1.0) for _ in range(data_points)],
-            "task_counts": [random.randint(1, 10) for _ in range(data_points)]
-        } for agent in agents
+        "agent_name": agent_name,
+        "activity": activity_data
     }
 
-def get_agent_activity(agent_id=None, time_range="day"):
-    """
-    Get activity timeline for the specified agent.
 
-    Args:
-        agent_id (str): ID of the agent to get activity for. If None, get activity for all agents.
-        time_range (str): Time range for the data ("hour", "day", "week", "month").
-
-    Returns:
-        dict: Agent activity timeline.
-    """
-    try:
-        # Try to fetch from actual API endpoint
-        # For now, return mock data as fallback
-        return generate_mock_agent_activity(agent_id, time_range)
-    except Exception as e:
-        logging.error(f"Error fetching agent activity: {e}")
-        return generate_mock_agent_activity(agent_id, time_range)
-
-def generate_mock_agent_activity(agent_id=None, time_range="day"):
-    """
-    Generate mock agent activity timeline.
-
-    Args:
-        agent_id (str): ID of the agent to get activity for. If None, get activity for all agents.
-        time_range (str): Time range for the data ("hour", "day", "week", "month").
-
-    Returns:
-        list: Mock agent activity data.
-    """
-    now = datetime.now()
-
-    # Define activity types
-    activity_types = ["task_start", "task_complete", "message_sent", "message_received", "tool_called"]
-
-    # Generate random activities
-    activities = []
-    for _ in range(random.randint(10, 30)):
-        timestamp = now - timedelta(minutes=random.randint(0, 60 * 24))
-        activity = {
-            "timestamp": timestamp.isoformat(),
-            "type": random.choice(activity_types),
-            "agent_id": agent_id or random.choice(["vana", "rhea", "max", "sage", "kai", "juno"]),
-            "details": f"Activity details {random.randint(1, 1000)}"
-        }
-        activities.append(activity)
-
-    # Sort by timestamp
-    activities.sort(key=lambda x: x["timestamp"])
-
-    # If agent_id is specified, filter activities for that agent
-    if agent_id:
-        activities = [a for a in activities if a["agent_id"] == agent_id]
-
-    return activities

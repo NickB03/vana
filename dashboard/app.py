@@ -48,6 +48,12 @@ def main():
         ["Agent Status", "Memory Usage", "System Health", "Task Execution"]
     )
 
+    # Add version information
+    st.sidebar.markdown("---")
+    st.sidebar.markdown("### VANA Dashboard")
+    st.sidebar.markdown("Version: 1.0.0")
+    st.sidebar.markdown("Build: " + datetime.now().strftime("%Y%m%d"))
+
     # Display timestamp
     st.sidebar.markdown(f"**Last updated:** {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
 

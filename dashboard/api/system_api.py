@@ -7,8 +7,10 @@ This module provides functions to retrieve system health and performance data fr
 import os
 import sys
 import logging
-from datetime import datetime, timedelta
 import random
+import datetime
+import platform
+
 # Try to import psutil, but don't fail if it's not available
 try:
     import psutil
@@ -70,195 +72,288 @@ def generate_mock_service_status():
 
 def get_system_health():
     """
-    Returns actual system health data or falls back to mock data.
-
-    Returns:
-        dict: System health data.
+    Retrieve system health data.
+    Returns real data if possible, falls back to mock data for development.
     """
-    if PSUTIL_AVAILABLE:
-        try:
-            # Try to get actual system health data
-            cpu_percent = psutil.cpu_percent(interval=0.1)
-            memory = psutil.virtual_memory()
-            disk = psutil.disk_usage('/')
-
-            return {
-                "cpu": {
-                    "usage_percent": cpu_percent,
-                    "core_count": psutil.cpu_count(),
-                    "status": "normal" if cpu_percent < 80 else "high"
-                },
-                "memory": {
-                    "total_gb": round(memory.total / (1024**3), 2),
-                    "used_gb": round(memory.used / (1024**3), 2),
-                    "usage_percent": memory.percent,
-                    "status": "normal" if memory.percent < 80 else "high"
-                },
-                "disk": {
-                    "total_gb": round(disk.total / (1024**3), 2),
-                    "used_gb": round(disk.used / (1024**3), 2),
-                    "usage_percent": disk.percent,
-                    "status": "normal" if disk.percent < 80 else "high"
-                },
-                "services": get_service_status()
-            }
-        except Exception as e:
-            logging.error(f"Error fetching system health data: {e}")
-            return generate_mock_system_health()
-    else:
+    try:
+        # Try to get real system metrics
+        return get_real_system_health()
+    except Exception as e:
+        logging.error(f"Error getting real system health: {e}")
+        # Fall back to mock data
         return generate_mock_system_health()
 
-def generate_mock_system_health():
-    """
-    Generate realistic mock system health data.
+def get_real_system_health():
+    """Get real system health metrics using psutil."""
+    if not PSUTIL_AVAILABLE:
+        raise ImportError("psutil not available")
 
-    Returns:
-        dict: Mock system health data.
-    """
+    # Get CPU usage
+    cpu_percent = psutil.cpu_percent(interval=1)
+    cpu_count = psutil.cpu_count()
+
+    # Get memory usage
+    memory = psutil.virtual_memory()
+
+    # Get disk usage
+    disk = psutil.disk_usage('/')
+
+    # Get network stats (as counters, not rates)
+    net = psutil.net_io_counters()
+
+    # Get system information
+    system_info = {
+        "os": platform.system(),
+        "version": platform.version(),
+        "architecture": platform.architecture()[0],
+        "processor": platform.processor(),
+        "hostname": platform.node(),
+        "uptime": datetime.datetime.now() - datetime.datetime.fromtimestamp(psutil.boot_time())
+    }
+
     return {
+        "timestamp": datetime.datetime.now().isoformat(),
         "cpu": {
-            "usage_percent": random.uniform(20, 70),
-            "core_count": 8,
-            "status": "normal"
+            "usage_percent": cpu_percent,
+            "count": cpu_count,
+            "load_avg": psutil.getloadavg() if hasattr(psutil, 'getloadavg') else [0, 0, 0]
         },
         "memory": {
-            "total_gb": 16.0,
-            "used_gb": random.uniform(4, 12),
-            "usage_percent": random.uniform(25, 75),
-            "status": "normal"
+            "total_mb": memory.total / (1024 * 1024),
+            "available_mb": memory.available / (1024 * 1024),
+            "used_mb": memory.used / (1024 * 1024),
+            "percent": memory.percent
         },
         "disk": {
-            "total_gb": 512.0,
-            "used_gb": random.uniform(100, 400),
-            "usage_percent": random.uniform(20, 80),
-            "status": "normal"
+            "total_gb": disk.total / (1024**3),
+            "free_gb": disk.free / (1024**3),
+            "used_gb": disk.used / (1024**3),
+            "percent": disk.percent
         },
-        "services": get_service_status()
+        "network": {
+            "bytes_sent": net.bytes_sent,
+            "bytes_recv": net.bytes_recv,
+            "packets_sent": net.packets_sent,
+            "packets_recv": net.packets_recv,
+            "err_in": net.errin,
+            "err_out": net.errout,
+            "drop_in": net.dropin,
+            "drop_out": net.dropout
+        },
+        "system_info": system_info
     }
 
-def get_system_performance(time_range="day"):
-    """
-    Get system performance metrics over time.
+def generate_mock_system_health():
+    """Generate realistic mock system health data."""
+    # Create timestamp
+    timestamp = datetime.datetime.now()
 
-    Args:
-        time_range (str): Time range for the data ("hour", "day", "week", "month").
+    # CPU metrics
+    cpu_count = 8
+    cpu_percent = random.uniform(20, 80)
 
-    Returns:
-        dict: System performance metrics over time.
-    """
-    try:
-        # Try to fetch from actual API endpoint
-        # For now, return mock data as fallback
-        return generate_mock_system_performance(time_range)
-    except Exception as e:
-        logging.error(f"Error fetching system performance: {e}")
-        return generate_mock_system_performance(time_range)
+    # Memory metrics
+    memory_total = 16 * 1024  # 16 GB in MB
+    memory_percent = random.uniform(40, 85)
+    memory_used = memory_total * (memory_percent / 100)
+    memory_available = memory_total - memory_used
 
-def generate_mock_system_performance(time_range="day"):
-    """
-    Generate mock system performance data over time.
+    # Disk metrics
+    disk_total = 512  # 512 GB
+    disk_percent = random.uniform(30, 70)
+    disk_used = disk_total * (disk_percent / 100)
+    disk_free = disk_total - disk_used
 
-    Args:
-        time_range (str): Time range for the data ("hour", "day", "week", "month").
+    # Network metrics
+    bytes_sent = random.randint(1000000, 5000000)
+    bytes_recv = random.randint(5000000, 20000000)
+    packets_sent = random.randint(10000, 50000)
+    packets_recv = random.randint(50000, 200000)
 
-    Returns:
-        dict: Mock system performance data.
-    """
-    now = datetime.now()
-    data_points = {
-        "hour": 60,
-        "day": 24,
-        "week": 7,
-        "month": 30
-    }.get(time_range, 24)
-
-    time_delta = {
-        "hour": timedelta(minutes=1),
-        "day": timedelta(hours=1),
-        "week": timedelta(days=1),
-        "month": timedelta(days=1)
-    }.get(time_range, timedelta(hours=1))
-
-    timestamps = [(now - time_delta * i).isoformat() for i in range(data_points)]
-    timestamps.reverse()
-
-    # Generate mock data with some randomness but a general trend
-    cpu_usage = [random.uniform(10, 90) for _ in range(data_points)]
-    memory_usage = [random.uniform(20, 80) for _ in range(data_points)]
-    disk_usage = [random.uniform(10, 70) for _ in range(data_points)]
-    network_in = [random.randint(1000, 10000) for _ in range(data_points)]
-    network_out = [random.randint(1000, 10000) for _ in range(data_points)]
+    # System info
+    system_info = {
+        "os": "Linux",
+        "version": "Ubuntu 22.04 LTS",
+        "architecture": "64-bit",
+        "processor": "Intel(R) Core(TM) i7-10700K CPU @ 3.80GHz",
+        "hostname": "vana-server",
+        "uptime": datetime.timedelta(days=random.randint(1, 30),
+                                     hours=random.randint(0, 23),
+                                     minutes=random.randint(0, 59))
+    }
 
     return {
-        "timestamps": timestamps,
-        "cpu_usage": cpu_usage,
-        "memory_usage": memory_usage,
-        "disk_usage": disk_usage,
-        "network_in": network_in,
-        "network_out": network_out
+        "timestamp": timestamp.isoformat(),
+        "cpu": {
+            "usage_percent": cpu_percent,
+            "count": cpu_count,
+            "load_avg": [round(random.uniform(0, 4), 2) for _ in range(3)]
+        },
+        "memory": {
+            "total_mb": memory_total,
+            "available_mb": memory_available,
+            "used_mb": memory_used,
+            "percent": memory_percent
+        },
+        "disk": {
+            "total_gb": disk_total,
+            "free_gb": disk_free,
+            "used_gb": disk_used,
+            "percent": disk_percent
+        },
+        "network": {
+            "bytes_sent": bytes_sent,
+            "bytes_recv": bytes_recv,
+            "packets_sent": packets_sent,
+            "packets_recv": packets_recv,
+            "err_in": random.randint(0, 10),
+            "err_out": random.randint(0, 5),
+            "drop_in": random.randint(0, 20),
+            "drop_out": random.randint(0, 10)
+        },
+        "system_info": system_info
     }
 
-def get_error_logs(time_range="day", limit=100):
+def get_system_health_history(hours=24):
     """
-    Get error logs from the system.
-
-    Args:
-        time_range (str): Time range for the data ("hour", "day", "week", "month").
-        limit (int): Maximum number of logs to return.
-
-    Returns:
-        list: List of error log dictionaries.
+    Get historical system health data.
+    Returns mock data for development purposes.
     """
     try:
-        # Try to fetch from actual API endpoint
-        # For now, return mock data as fallback
-        return generate_mock_error_logs(time_range, limit)
+        return generate_mock_system_health_history(hours)
     except Exception as e:
-        logging.error(f"Error fetching error logs: {e}")
-        return generate_mock_error_logs(time_range, limit)
+        logging.error(f"Error fetching system health history: {e}")
+        return generate_mock_system_health_history(hours)
 
-def generate_mock_error_logs(time_range="day", limit=100):
-    """
-    Generate mock error log data.
+def generate_mock_system_health_history(hours=24):
+    """Generate realistic mock historical system health data."""
+    current_time = datetime.datetime.now()
+    history = []
 
-    Args:
-        time_range (str): Time range for the data ("hour", "day", "week", "month").
-        limit (int): Maximum number of logs to return.
+    # Starting values
+    cpu_base = 40
+    memory_base = 60
+    disk_base = 50
+    network_send_base = 2000000  # 2 MB
+    network_recv_base = 8000000  # 8 MB
 
-    Returns:
-        list: Mock error log data.
-    """
-    now = datetime.now()
+    # Generate data points for each hour
+    for hour in range(hours, 0, -1):
+        timestamp = current_time - datetime.timedelta(hours=hour)
 
-    # Define error types
-    error_types = [
-        "ConnectionError", "TimeoutError", "ValueError", "KeyError",
-        "ImportError", "RuntimeError", "PermissionError"
-    ]
+        # Add time-of-day pattern - higher usage during business hours
+        hour_of_day = timestamp.hour
+        time_factor = 1.0
+        if 9 <= hour_of_day <= 17:  # 9 AM to 5 PM
+            time_factor = 1.3
+        elif 18 <= hour_of_day <= 21:  # 6 PM to 9 PM
+            time_factor = 1.1
+        elif 0 <= hour_of_day <= 5:  # Midnight to 5 AM
+            time_factor = 0.7
 
-    # Define components
-    components = [
-        "vana-api", "vector-search", "knowledge-graph", "mcp-server",
-        "n8n", "web-search", "memory-manager", "task-planner"
-    ]
+        # Add some random variation
+        cpu_percent = min(95, max(5, cpu_base * time_factor + random.uniform(-15, 15)))
+        memory_percent = min(95, max(30, memory_base * time_factor + random.uniform(-10, 10)))
+        disk_percent = min(90, max(40, disk_base + random.uniform(-2, 2)))  # Disk usage changes slowly
 
-    # Generate random error logs
-    logs = []
-    for _ in range(min(limit, random.randint(5, 30))):
-        timestamp = now - timedelta(minutes=random.randint(0, 60 * 24))
-        error_type = random.choice(error_types)
-        component = random.choice(components)
+        # Network traffic with time pattern
+        network_send = network_send_base * time_factor * random.uniform(0.8, 1.2)
+        network_recv = network_recv_base * time_factor * random.uniform(0.8, 1.2)
 
-        log = {
+        # Create data point
+        data_point = {
             "timestamp": timestamp.isoformat(),
-            "level": "ERROR",
-            "component": component,
-            "message": f"{error_type}: Error in {component} component",
-            "details": f"Error details for {error_type} in {component}"
+            "cpu_percent": cpu_percent,
+            "memory_percent": memory_percent,
+            "disk_percent": disk_percent,
+            "network_send_bytes": network_send,
+            "network_recv_bytes": network_recv
         }
-        logs.append(log)
 
-    # Sort by timestamp (newest first)
-    logs.sort(key=lambda x: x["timestamp"], reverse=True)
+        history.append(data_point)
 
-    return logs
+    return history
+
+def get_system_alerts(limit=10):
+    """
+    Get recent system alerts.
+    Returns mock data for development purposes.
+    """
+    try:
+        return generate_mock_system_alerts(limit)
+    except Exception as e:
+        logging.error(f"Error fetching system alerts: {e}")
+        return generate_mock_system_alerts(limit)
+
+def generate_mock_system_alerts(limit=10):
+    """Generate realistic mock system alerts."""
+    current_time = datetime.datetime.now()
+
+    # Alert templates
+    alert_templates = [
+        {"type": "cpu", "level": "warning", "message": "CPU usage above {threshold}% for {duration} minutes"},
+        {"type": "cpu", "level": "critical", "message": "CPU usage critically high at {value}%"},
+        {"type": "memory", "level": "warning", "message": "Memory usage above {threshold}% for {duration} minutes"},
+        {"type": "memory", "level": "critical", "message": "Memory usage critically high at {value}%"},
+        {"type": "disk", "level": "warning", "message": "Disk usage above {threshold}%"},
+        {"type": "disk", "level": "critical", "message": "Disk space critically low ({free_gb} GB free)"},
+        {"type": "network", "level": "warning", "message": "Network packet loss detected ({loss_rate}%)"},
+        {"type": "system", "level": "info", "message": "System updated to version {version}"},
+        {"type": "system", "level": "warning", "message": "System restart required for updates"},
+        {"type": "application", "level": "error", "message": "Application crashed: {error_message}"}
+    ]
+
+    # Generate alerts
+    alerts = []
+    for i in range(limit):
+        minutes_ago = random.randint(5, 60 * 24)  # Within last 24 hours
+        timestamp = current_time - datetime.timedelta(minutes=minutes_ago)
+
+        # Select alert template
+        template = random.choice(alert_templates)
+        alert_type = template["type"]
+        level = template["level"]
+        message_template = template["message"]
+
+        # Fill in template values
+        message_params = {}
+        if "threshold" in message_template:
+            message_params["threshold"] = random.randint(80, 95)
+        if "duration" in message_template:
+            message_params["duration"] = random.randint(5, 30)
+        if "value" in message_template:
+            message_params["value"] = random.randint(90, 99)
+        if "free_gb" in message_template:
+            message_params["free_gb"] = random.randint(1, 10)
+        if "loss_rate" in message_template:
+            message_params["loss_rate"] = random.uniform(1, 5)
+        if "version" in message_template:
+            message_params["version"] = f"1.{random.randint(0, 9)}.{random.randint(0, 99)}"
+        if "error_message" in message_template:
+            error_messages = [
+                "OutOfMemoryError",
+                "NullPointerException",
+                "DatabaseConnectionError",
+                "Segmentation fault",
+                "Timeout waiting for response"
+            ]
+            message_params["error_message"] = random.choice(error_messages)
+
+        message = message_template.format(**message_params)
+
+        # Create alert object
+        alert = {
+            "id": f"alert-{i+1}",
+            "timestamp": timestamp.isoformat(),
+            "type": alert_type,
+            "level": level,
+            "message": message,
+            "acknowledged": random.random() > 0.3  # 70% are acknowledged
+        }
+
+        alerts.append(alert)
+
+    # Sort by timestamp (most recent first)
+    alerts.sort(key=lambda a: a["timestamp"], reverse=True)
+
+    return alerts
