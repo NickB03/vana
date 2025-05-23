@@ -1,7 +1,10 @@
 # Python
 __pycache__/
+**/__pycache__/
 *.py[cod]
+**/*.py[cod]
 *$py.class
+**/*$py.class
 *.so
 .Python
 build/
@@ -20,6 +23,7 @@ wheels/
 .installed.cfg
 *.egg
 .pytest_cache/
+**/.pytest_cache/
 htmlcov/
 .coverage
 .coverage.*
@@ -28,6 +32,7 @@ htmlcov/
 .env
 .env.*
 !.env.example
+!config/templates/.env.*
 .venv
 .venv/
 env/
@@ -35,6 +40,12 @@ venv/
 ENV/
 env.bak/
 venv.bak/
+**/bin/
+**/lib/
+**/lib64/
+**/include/
+**/pyvenv.cfg
+**/.Python
 
 # Large files
 *.tar.gz
@@ -89,7 +100,6 @@ yarn-error.log*
 .env.development.local
 .env.test.local
 .env.production.local
-.env
 .env.memory
 .env.n8n.example
 google-cloud-cli-458.0.0-darwin-x86_64.tar.gz
