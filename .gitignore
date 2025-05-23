@@ -112,6 +112,14 @@ node_modules/
 tmp/
 temp/
 
+# Generated files
+*.generated.*
+*_generated.*
+generated/
+
+# Archive files (old versions, backups)
+archive/
+
 # Git internal files
 .git/FETCH_HEAD
 .git/index
