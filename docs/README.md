@@ -14,44 +14,46 @@ This directory contains the reorganized documentation for the VANA project. The 
   - Class and function descriptions
   - Configuration options
 
-- **guides/**: User and developer guides
+- **guides/**: User and developer guides for setting up, configuring, and using Vana components.
   - Step-by-step instructions
   - Command references
   - Best practices
 
-- **integrations/**: External integrations
-  - n8n workflows
-  - MCP integration
-  - Vertex AI integration
-  - Agent Engine integration
+- **reference/**: Detailed technical reference material.
+  - API specifications (Flask API, Python classes/modules)
+  - Configuration variable lists
+  - CLI command usage
 
-- **project/**: Project management documentation
-  - Sprint status
-  - Roadmap
-  - Sprint implementation details
+- **integrations/**: Details on how Vana integrates with external services.
+  - MCP integration (for Knowledge Graph)
+  - Vertex AI integration (Vector Search, Embeddings, planned Document AI)
+  - Google Custom Search API
 
-- **api/**: API reference documentation
+- **project/**: Project management and overview documents.
+  - Roadmap (reflecting Phase 1 MVP and Phase 2 MAS)
+  - CHANGELOG
+
+- **api/**: (Consider merging into `reference/` or keeping for specific service API contracts)
   - API endpoints
   - Request/response formats
-  - Authentication
 
-- **troubleshooting/**: Common issues and solutions
-  - Troubleshooting guides
-  - FAQs
-  - Known issues
+- **troubleshooting/**: Common issues, FAQs, and solutions.
+
+- **archive/**: Contains documentation related to previous project versions, deprecated features, or outdated sprint plans.
 
 ## Navigation
 
 The documentation is designed to be navigable through the following entry points:
 
-- **[Main Index](index.md)**: The main entry point for all documentation
-- **[Architecture Index](architecture/index.md)**: Entry point for architecture documentation
-- **[Implementation Index](implementation/index.md)**: Entry point for implementation documentation
-- **[Guides Index](guides/index.md)**: Entry point for user and developer guides
-- **[Integrations Index](integrations/index.md)**: Entry point for integration documentation
-- **[Project Index](project/index.md)**: Entry point for project documentation
-- **[API Index](api/index.md)**: Entry point for API documentation
-- **[Troubleshooting Index](troubleshooting/index.md)**: Entry point for troubleshooting documentation
+- **[Main Index (Table of Contents)](index.md)**: The primary entry point for all documentation.
+- **[Architecture Index](architecture/index.md)**: Overview of system architecture.
+- **[Implementation Index](implementation/index.md)**: Details on specific component implementations.
+- **[Guides Index](guides/index.md)**: How-to guides for various tasks.
+- **[Reference Index](reference/index.md)**: Technical reference materials.
+- **[Integrations Index](integrations/index.md)**: Information on external service integrations.
+- **[Project Management Index](project/index.md)**: Project-level documents like roadmap and changelog.
+- **[Troubleshooting Index](troubleshooting/index.md)**: Solutions to common problems.
+- **[Archived Documentation Index](archive/index.md)**: Access to historical documentation.
 
 ## Maintenance Guidelines
 

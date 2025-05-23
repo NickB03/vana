@@ -1,6 +1,8 @@
-# Dashboard Customization
+# Dashboard Customization (Legacy Flask/Bootstrap/Chart.js)
 
-[Home](../index.md) > [Development](index.md) > Dashboard Customization
+[Home](../../index.md) > [Development](../development/index.md) > [Archive](index.md) > Dashboard Customization (Legacy)
+
+**Note: This document describes customizing a previous version of the VANA dashboard that was built using Flask, Bootstrap, and direct Chart.js integration in HTML templates. The current VANA dashboard uses a Streamlit frontend with a Flask API backend. For extending the current Streamlit dashboard, please refer to [Extending the VANA Monitoring Dashboard Guide](../../guides/extending-dashboard.md).**
 
 This document provides guidance on customizing the Vector Search Health Monitoring Dashboard, including adding new visualizations, modifying the layout, and styling the dashboard.
 

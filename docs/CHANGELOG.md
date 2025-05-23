@@ -16,6 +16,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Data retention policies for historical data
   - Detailed metrics and trend analysis
   - Actionable recommendations for issues
+- **Comprehensive Documentation Overhaul (Ongoing - 2025-05-17):**
+  - Review and update of all core Memory Bank files.
+  - Major updates and content creation for root `README.md`.
+  - Creation and population of numerous new documents in `docs/architecture/`, `docs/guides/`, and `docs/implementation/`.
+  - Review and update of existing documentation in `docs/` for accuracy and alignment with current VANA architecture.
+  - Reorganization and cleanup of the `docs/` directory structure.
 
 ## [1.2.0] - 2025-05-05
 

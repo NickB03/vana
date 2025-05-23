@@ -1,212 +1,117 @@
-# Vector Search Health Monitoring System
+# Vector Search Health Monitoring System Implementation
 
-The Vector Search Health Monitoring System provides comprehensive monitoring, alerting, and visualization for the Vector Search integration in VANA. This document outlines the components, setup, and usage of the monitoring system.
+[Home](../../index.md) > [Implementation](./index.md) > Vector Search Health Monitoring System
+
+This document provides an overview of the VANA Vector Search Health Monitoring System, detailing its constituent components, their setup, and how they are used to monitor the Google Cloud Vertex AI Vector Search integration.
+
+For a high-level architectural diagram, see [Vector Search Monitoring Architecture](../architecture/vector_search_monitoring.md).
 
 ## System Components
 
-The monitoring system consists of the following components:
+The monitoring system is comprised of several key VANA components working in concert:
 
-1. **Vector Search Health Checker** (`tools/vector_search/health_checker.py`)
-   - Core health checking functionality
-   - Performs comprehensive checks on Vector Search
-   - Generates actionable recommendations
+1.  **`VectorSearchHealthChecker` (`tools/vector_search/health_checker.py`)**
+    *   The core engine that performs a suite of diagnostic tests against the Vector Search service.
+    *   It uses the `VectorSearchClient` for actual interactions with Vertex AI.
+    *   Generates a structured health report including status, metrics, and potential recommendations.
+    *   Detailed in [Vector Search Health Checker Implementation](vector-search-health-checker.md).
 
-2. **Scheduled Health Monitor** (`scripts/scheduled_vector_search_monitor.py`)
-   - Runs health checks on a schedule
-   - Stores historical health data
-   - Generates alerts for critical issues
-   - Performs trend analysis
+2.  **`VectorSearchClient` (`tools/vector_search/vector_search_client.py`)**
+    *   The low-level client used by the `VectorSearchHealthChecker` to make calls to Vertex AI (e.g., perform sample queries, get index details).
+    *   Detailed in [Vector Search Client Implementation](vector-search-client.md).
 
-3. **Dashboard Integration** (`dashboard/monitoring/vector_search_monitor.py`)
-   - Provides integration with the monitoring dashboard
-   - Formats health data for visualization
-   - Manages historical data for trend analysis
+3.  **Scheduled Health Monitor Script (`scripts/scheduled_vector_search_monitor.py`)**
+    *   A Python script designed to run `VectorSearchHealthChecker` periodically (e.g., via `cron` or another scheduler).
+    *   Logs health reports.
+    *   Can be configured for basic alerting (e.g., logging errors, writing to alert files).
+    *   May store historical health data (depending on implementation) for trend analysis.
+    *   Setup detailed in the [Scheduled Tasks Guide](../guides/scheduled-tasks.md).
 
-4. **Dashboard UI** (`dashboard/templates/vector_search_health.html`)
-   - Visualizes health status and metrics
-   - Displays historical trends
-   - Shows actionable recommendations
+4.  **On-Demand Health Check Script (`scripts/test_vector_search_health.py`)**
+    *   A command-line tool that allows users to manually trigger health checks using `VectorSearchHealthChecker`.
+    *   Useful for ad-hoc diagnostics and troubleshooting.
+    *   Outputs results to the console or a specified report file.
 
-5. **Dashboard Routes** (`dashboard/routes/vector_search_routes.py`)
-   - Provides API endpoints for health data
-   - Renders the dashboard UI
+5.  **Monitoring Dashboard (Flask API Backend & Streamlit Frontend UI)**
+    *   **Flask API Backend (`dashboard/flask_app.py` and `dashboard/api/vector_search_routes.py`):**
+        *   Exposes API endpoints (e.g., `/api/vs/health`) that the Streamlit UI calls to get current or historical health data.
+        *   The API, in turn, may use `VectorSearchHealthChecker` to get live data or retrieve stored reports.
+        *   Detailed in [Dashboard Flask API Implementation](dashboard-flask-api.md).
+    *   **Streamlit Frontend UI (`dashboard/app.py` and `dashboard/frontend/pages/`):**
+        *   Provides a web-based visual interface.
+        *   Displays health status, metrics, historical trends, and recommendations.
+        *   Pulls data by making requests to the Flask API.
+        *   Detailed in [Dashboard Streamlit UI Implementation](dashboard-streamlit-ui.md).
 
 ## Setup and Configuration
 
-### Prerequisites
+Setting up the full monitoring system involves configuring each of its parts:
 
-- Python 3.7+
-- Flask (for dashboard)
-- Schedule (for scheduled monitoring)
-- Chart.js (included via CDN for dashboard)
+1.  **Prerequisites:**
+    *   Python 3.9+ installed.
+    *   All dependencies from `dashboard/requirements.txt` (and any other relevant `requirements.txt` files) installed within an active virtual environment. This includes Flask, Streamlit, google-cloud-aiplatform, etc.
+    *   See the [Installation Guide](../guides/installation-guide.md) for general VANA setup.
 
-### Installation
+2.  **Environment Variables (`.env` file):**
+    *   Crucial for all components that interact with GCP. Ensure the following are correctly set:
+        *   `GOOGLE_CLOUD_PROJECT`
+        *   `GOOGLE_CLOUD_LOCATION`
+        *   `VECTOR_SEARCH_ENDPOINT_ID`
+        *   `DEPLOYED_INDEX_ID`
+        *   `GOOGLE_APPLICATION_CREDENTIALS` (path to your service account key file)
+    *   Dashboard-specific configurations (e.g., `DASHBOARD_AUTH_ENABLED`, `DASHBOARD_SECRET_KEY`).
+    *   Logging configurations (e.g., `LOG_LEVEL`, `LOG_FILE_PATH`).
+    *   Refer to `config/environment.py` and `.env.example` for a comprehensive list.
 
-1. Ensure all required files are in place:
-   ```
-   tools/vector_search/health_checker.py
-   scripts/scheduled_vector_search_monitor.py
-   dashboard/monitoring/vector_search_monitor.py
-   dashboard/templates/vector_search_health.html
-   dashboard/routes/vector_search_routes.py
-   ```
+3.  **Component-Specific Setup:**
+    *   **`VectorSearchClient` and `VectorSearchHealthChecker`:** These are Python classes and are configured primarily via the environment variables loaded by `config.environment`. No separate setup beyond ensuring dependencies and `.env` are correct.
+    *   **Scheduled Monitor Script:** Requires setting up a system scheduler (like `cron` on Linux/macOS or Task Scheduler on Windows) to run `scripts/scheduled_vector_search_monitor.py` at desired intervals. See the [Scheduled Tasks Guide](../guides/scheduled-tasks.md).
+    *   **Dashboard:**
+        *   The Flask API backend needs to be running.
+        *   The Streamlit UI application needs to be running.
+        *   See the [Running the Dashboard Guide](../guides/running-dashboard.md).
 
-2. Install required Python packages:
-   ```bash
-   pip install flask schedule
-   ```
+## Usage Flow
 
-3. Configure environment variables for Vector Search:
-   ```
-   GOOGLE_CLOUD_PROJECT=your-project-id
-   GOOGLE_CLOUD_LOCATION=us-central1
-   VECTOR_SEARCH_ENDPOINT_ID=your-endpoint-id
-   DEPLOYED_INDEX_ID=vanasharedindex
-   GOOGLE_APPLICATION_CREDENTIALS=/path/to/service-account-key.json
-   ```
+1.  **Automated Monitoring:**
+    *   The `scheduled_vector_search_monitor.py` script is triggered by the system scheduler.
+    *   It instantiates `VectorSearchHealthChecker` and calls `perform_checks()`.
+    *   The health report is logged. If configured, alerts are generated for significant issues.
+    *   Historical data might be saved to a file or simple database (depending on the script's features).
 
-## Usage
+2.  **Manual Health Checks:**
+    *   A user runs `python scripts/test_vector_search_health.py` with desired options (e.g., `--mode detailed`).
+    *   The script uses `VectorSearchHealthChecker` to perform checks and prints the report to the console or a file.
 
-### Running Health Checks
+3.  **Dashboard Visualization:**
+    *   User accesses the Streamlit UI in a web browser.
+    *   The Streamlit page (e.g., for Vector Search health) makes an HTTP request to the Flask API (e.g., `/api/vs/health`).
+    *   The Flask API endpoint handler receives the request. It might:
+        *   Retrieve the latest stored health report.
+        *   Or, trigger a live health check by calling `VectorSearchHealthChecker.perform_checks()`.
+    *   The Flask API returns the health data as a JSON response.
+    *   The Streamlit UI receives the JSON data and renders it using charts, metrics, tables, etc.
 
-#### Basic Health Check
+## Health Check Details, Alerts, and Reports
 
-```bash
-python scripts/test_vector_search_health.py
-```
+*   **Health Check Details:** For specifics on what individual checks are performed by `VectorSearchHealthChecker` (e.g., environment, authentication, embedding, search checks), refer to its implementation document: [Vector Search Health Checker Implementation](vector-search-health-checker.md).
+*   **Interpreting Reports:** For guidance on understanding the health reports (overall status, metrics, recommendations), see [Interpreting Vector Search Health Reports Guide](../guides/vector-search-health-reports.md).
+*   **Alerts and Notifications:** The `scheduled_vector_search_monitor.py` script may implement basic alerting (e.g., logging errors). More advanced alerting (email, Slack) would require additional implementation or integration with external alerting systems.
+*   **Historical Data & Trend Analysis:** The system's capability for storing and analyzing historical data depends on the implementation of the scheduled monitor and the Flask API. Simple implementations might store reports as JSON files, while more advanced ones could use a time-series database. The dashboard would then query this data via the API for trend visualization.
 
-#### Detailed Health Check
+## Troubleshooting the Monitoring System
 
-```bash
-python scripts/test_vector_search_health.py --mode detailed --verbose
-```
+If issues arise with the monitoring system itself:
+1.  **Check Component Logs:** Examine logs from `flask_app.py`, `streamlit run dashboard/app.py`, and the output of `scheduled_vector_search_monitor.py` (or its cron log file). Refer to the [Interpreting VANA Logs Guide](../guides/interpreting-logs.md).
+2.  **Verify Configurations:** Double-check all relevant environment variables in `.env`.
+3.  **Test Components Individually:**
+    *   Run `scripts/test_vector_search_health.py` to see if the core checker works.
+    *   Test Flask API endpoints directly using `curl` or Postman.
+    *   Run the Streamlit app and check browser console for errors if UI issues occur.
+4.  **Permissions:** Ensure the GCP service account has the necessary permissions for Vertex AI operations.
+5.  **Dependencies:** Confirm all Python packages are correctly installed in the active virtual environment.
 
-#### Continuous Monitoring
-
-```bash
-python scripts/test_vector_search_health.py --mode monitor --interval 60 --count 0
-```
-
-### Scheduled Monitoring
-
-Start the scheduled monitoring service:
-
-```bash
-python scripts/scheduled_vector_search_monitor.py --interval 15 --alert-level error --alert-method both
-```
-
-Options:
-- `--interval`: Monitoring interval in minutes (default: 15)
-- `--no-store`: Don't store historical reports
-- `--alert-level`: Minimum level to trigger alerts (ok, warn, error, critical)
-- `--alert-method`: Alert method (log, file, both)
-- `--history-dir`: Directory to store historical reports
-- `--log-file`: Log file path
-
-### Dashboard
-
-To start the dashboard (assuming you have a Flask app set up):
-
-```python
-from flask import Flask
-from dashboard.routes.vector_search_routes import register_routes
-
-app = Flask(__name__)
-register_routes(app)
-
-if __name__ == '__main__':
-    app.run(debug=True)
-```
-
-Then access the dashboard at:
-- http://localhost:5000/vector-search/health
-
-API endpoints:
-- http://localhost:5000/vector-search/api/health
-- http://localhost:5000/vector-search/api/run-check
-
-## Health Check Details
-
-The health checker performs the following checks:
-
-1. **Environment Check**
-   - Verifies required environment variables are set
-   - Checks for missing configuration
-
-2. **Authentication Check**
-   - Verifies authentication with Google Cloud
-   - Checks service account permissions
-
-3. **Embedding Check**
-   - Tests embedding generation functionality
-   - Verifies embedding dimensions and format
-   - Detects mock implementations
-
-4. **Search Check**
-   - Tests search functionality
-   - Verifies result format and quality
-   - Measures response time
-
-## Alerts and Notifications
-
-The monitoring system can generate alerts based on health check results:
-
-- **Error Level**: Triggered when critical functionality is broken
-- **Warning Level**: Triggered when non-critical issues are detected
-- **Critical Level**: Triggered when multiple critical issues are detected
-
-Alert methods:
-- **Log**: Alerts are logged to the console/log file
-- **File**: Alerts are saved to the alerts directory
-- **Both**: Alerts are both logged and saved to files
-
-## Historical Data Analysis
-
-The monitoring system stores historical health data and provides analysis:
-
-- **Status Distribution**: Breakdown of health status over time
-- **Response Time Trends**: Changes in response time
-- **Success Rate Trends**: Changes in check success rate
-- **Health Percentage**: Percentage of "ok" status checks
-
-## Dashboard Features
-
-The dashboard provides the following features:
-
-- **Real-time Status**: Current health status of Vector Search
-- **Component Status**: Status of individual components
-- **Metrics Visualization**: Charts for response time and success rate
-- **Status Distribution**: Breakdown of status over time
-- **Recommendations**: Actionable recommendations for issues
-- **Trend Analysis**: Performance trends over time
-
-## Troubleshooting
-
-If you encounter issues with the monitoring system:
-
-1. **Check Environment Variables**
-   - Verify all required environment variables are set correctly
-   - Ensure the service account key file exists and is accessible
-
-2. **Check Permissions**
-   - Verify the service account has appropriate permissions
-   - Test authentication with `gcloud auth activate-service-account`
-
-3. **Check Vector Search Endpoint**
-   - Verify the endpoint exists and is accessible
-   - Check that the deployed index exists
-
-4. **Check Dashboard Integration**
-   - Verify Flask is installed and configured correctly
-   - Check that all template files are in the correct location
-
-## Integration with Other Systems
-
-The monitoring system can be integrated with other systems:
-
-- **Alerting Systems**: Use the alert files or API to trigger external alerts
-- **Monitoring Dashboards**: Use the API endpoints to integrate with existing dashboards
-- **CI/CD Pipelines**: Run health checks as part of deployment validation
+## Future Enhancements
 
 ## Future Enhancements
 

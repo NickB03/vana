@@ -9,6 +9,7 @@ Features:
 - Explicit type conversion for embeddings
 - Graceful fallback to mock implementation
 - Comprehensive health status reporting
+- Audit logging for security-sensitive operations
 """
 
 import os
@@ -21,6 +22,9 @@ from typing import List, Dict, Any, Optional
 from google.oauth2 import service_account
 import vertexai
 from vertexai.language_models import TextEmbeddingModel
+
+# Import audit logger
+from tools.vector_search.vector_search_audit import vector_search_audit_logger
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -379,21 +383,41 @@ class VectorSearchClient:
             logger.error(f"Error getting auth token: {str(e)}")
             return ""
 
-    def search(self, query: str, top_k: int = 5) -> List[Dict[str, Any]]:
+    def search(self, query: str, top_k: int = 5, user_id: str = "system") -> List[Dict[str, Any]]:
         """Search for relevant content using Vector Search
 
         Args:
             query: The search query
             top_k: Maximum number of results to return
+            user_id: ID of the user performing the search (for audit logging)
 
         Returns:
             A list of search results, each containing content, score, and metadata
         """
+        # Audit log the search attempt
+        audit_details = {"method": "search", "top_k": top_k}
+
         if self.using_mock:
+            # Log mock search
+            vector_search_audit_logger.log_search(
+                user_id=user_id,
+                query=query,
+                num_results=top_k,
+                status="success",
+                details={"using_mock": True, **audit_details}
+            )
             return self.mock_client.search(query, top_k)
 
         if not self._initialize():
             logger.error("Vector Search client not initialized")
+            # Log initialization failure
+            vector_search_audit_logger.log_search(
+                user_id=user_id,
+                query=query,
+                num_results=top_k,
+                status="failure",
+                details={"error": "Vector Search client not initialized", **audit_details}
+            )
             if self.auto_fallback:
                 logger.warning("Falling back to mock implementation for search")
                 return self.mock_client.search(query, top_k)
@@ -405,36 +429,83 @@ class VectorSearchClient:
 
             if not query_embedding:
                 logger.error("Failed to generate embedding for query")
+                # Log embedding generation failure
+                vector_search_audit_logger.log_search(
+                    user_id=user_id,
+                    query=query,
+                    num_results=top_k,
+                    status="failure",
+                    details={"error": "Failed to generate embedding for query", **audit_details}
+                )
                 if self.auto_fallback:
                     logger.warning("Falling back to mock implementation due to embedding generation failure")
                     return self.mock_client.search(query, top_k)
                 return []
 
             # Use the search_vector_store method with the generated embedding
-            return self.search_vector_store(query_embedding, top_k)
+            return self.search_vector_store(query_embedding, top_k, user_id=user_id, original_query=query)
 
         except Exception as e:
-            logger.error(f"Error searching Vector Search: {str(e)}")
+            error_message = str(e)
+            logger.error(f"Error searching Vector Search: {error_message}")
+            # Log search error
+            vector_search_audit_logger.log_search(
+                user_id=user_id,
+                query=query,
+                num_results=top_k,
+                status="failure",
+                details={"error": error_message, **audit_details}
+            )
             if self.auto_fallback:
                 logger.warning("Falling back to mock implementation due to unexpected error")
                 return self.mock_client.search(query, top_k)
             return []
 
-    def search_vector_store(self, query_embedding: List[float], top_k: int = 5) -> List[Dict[str, Any]]:
+    def search_vector_store(self, query_embedding: List[float], top_k: int = 5,
+                          user_id: str = "system", original_query: str = None) -> List[Dict[str, Any]]:
         """Search the vector store with a query embedding.
 
         Args:
             query_embedding: The embedding to search with.
             top_k: The number of results to return.
+            user_id: ID of the user performing the search (for audit logging)
+            original_query: The original text query if available (for audit logging)
 
         Returns:
             A list of search results, each containing 'content', 'score', 'metadata', and 'id'.
         """
+        # Audit log the vector store search attempt
+        audit_details = {
+            "method": "search_vector_store",
+            "top_k": top_k,
+            "embedding_length": len(query_embedding) if query_embedding else 0
+        }
+
+        # Add original query if available
+        if original_query:
+            audit_details["original_query"] = original_query
+
         if self.using_mock:
+            # Log mock search
+            vector_search_audit_logger.log_search(
+                user_id=user_id,
+                query=original_query or f"embedding_length_{len(query_embedding)}",
+                num_results=top_k,
+                status="success",
+                details={"using_mock": True, **audit_details}
+            )
             return self.mock_client.search_vector_store(query_embedding, top_k) if hasattr(self.mock_client, 'search_vector_store') else []
 
         if not self._initialize():
             logger.error("Vector Search client not initialized")
+            # Log initialization failure
+            vector_search_audit_logger.log_search(
+                user_id=user_id,
+                query=original_query or f"embedding_length_{len(query_embedding)}",
+                num_results=top_k,
+                status="failure",
+                details={"error": "Vector Search client not initialized", **audit_details}
+            )
             if self.auto_fallback:
                 logger.warning("Falling back to mock implementation for vector store search")
                 return self.mock_client.search_vector_store(query_embedding, top_k) if hasattr(self.mock_client, 'search_vector_store') else []
@@ -481,10 +552,39 @@ class VectorSearchClient:
 
                     search_time = time.time() - start_time
                     logger.info(f"Successfully retrieved {len(results)} results using high-level API in {search_time:.2f}s")
+
+                    # Log successful search
+                    vector_search_audit_logger.log_search(
+                        user_id=user_id,
+                        query=original_query or f"embedding_length_{len(query_embedding)}",
+                        num_results=len(results),
+                        status="success",
+                        details={
+                            "search_time_ms": search_time * 1000,
+                            "api": "high-level",
+                            **audit_details
+                        }
+                    )
+
                     return results
                 except Exception as high_level_error:
-                    logger.warning(f"High-level API search failed: {str(high_level_error)}")
+                    error_message = str(high_level_error)
+                    logger.warning(f"High-level API search failed: {error_message}")
                     logger.info("Trying low-level API search")
+
+                    # Log high-level API failure (not a complete failure yet, will try low-level API)
+                    vector_search_audit_logger.log_search(
+                        user_id=user_id,
+                        query=original_query or f"embedding_length_{len(query_embedding)}",
+                        num_results=top_k,
+                        status="degraded",
+                        details={
+                            "error": error_message,
+                            "api": "high-level",
+                            "fallback": "trying low-level API",
+                            **audit_details
+                        }
+                    )
             else:
                 logger.info("Using low-level API for search (no index_endpoint available)")
 
@@ -538,15 +638,59 @@ class VectorSearchClient:
 
                 search_time = time.time() - start_time
                 logger.info(f"Successfully retrieved {len(results)} results using low-level API in {search_time:.2f}s")
+
+                # Log successful search
+                vector_search_audit_logger.log_search(
+                    user_id=user_id,
+                    query=original_query or f"embedding_length_{len(query_embedding)}",
+                    num_results=len(results),
+                    status="success",
+                    details={
+                        "search_time_ms": search_time * 1000,
+                        "api": "low-level",
+                        **audit_details
+                    }
+                )
+
                 return results
             except Exception as low_level_error:
-                logger.error(f"Low-level API search failed: {str(low_level_error)}")
+                error_message = str(low_level_error)
+                logger.error(f"Low-level API search failed: {error_message}")
+
+                # Log low-level API failure
+                vector_search_audit_logger.log_search(
+                    user_id=user_id,
+                    query=original_query or f"embedding_length_{len(query_embedding)}",
+                    num_results=top_k,
+                    status="failure",
+                    details={
+                        "error": error_message,
+                        "api": "low-level",
+                        **audit_details
+                    }
+                )
+
                 if self.auto_fallback:
                     logger.warning("Falling back to mock implementation due to search failure")
                     return self.mock_client.search_vector_store(query_embedding, top_k) if hasattr(self.mock_client, 'search_vector_store') else []
                 return []
         except Exception as e:
-            logger.error(f"Error searching vector store: {str(e)}")
+            error_message = str(e)
+            logger.error(f"Error searching vector store: {error_message}")
+
+            # Log unexpected error
+            vector_search_audit_logger.log_search(
+                user_id=user_id,
+                query=original_query or f"embedding_length_{len(query_embedding)}",
+                num_results=top_k,
+                status="failure",
+                details={
+                    "error": error_message,
+                    "error_type": "unexpected",
+                    **audit_details
+                }
+            )
+
             if self.auto_fallback:
                 logger.warning("Falling back to mock implementation due to unexpected error")
                 return self.mock_client.search_vector_store(query_embedding, top_k) if hasattr(self.mock_client, 'search_vector_store') else []
@@ -791,21 +935,45 @@ class VectorSearchClient:
                 "recommendations": ["Check logs for detailed error information"]
             }
 
-    def upload_embedding(self, content: str, metadata: Dict[str, Any] = None) -> bool:
+    def upload_embedding(self, content: str, metadata: Dict[str, Any] = None, user_id: str = "system") -> bool:
         """Upload content with embedding to Vector Search
 
         Args:
             content: The content to upload
             metadata: Metadata for the content
+            user_id: ID of the user performing the upload (for audit logging)
 
         Returns:
             True if successful, False otherwise
         """
+        # Audit log the upload attempt
+        audit_details = {
+            "method": "upload_embedding",
+            "content_length": len(content) if content else 0,
+            "has_metadata": metadata is not None
+        }
+
         if self.using_mock:
+            # Log mock upload
+            vector_search_audit_logger.log_update(
+                user_id=user_id,
+                operation_type="upsert",
+                num_items=1,
+                status="success",
+                details={"using_mock": True, **audit_details}
+            )
             return self.mock_client.upload_embedding(content, metadata)
 
         if not self._initialize():
             logger.error("Vector Search client not initialized")
+            # Log initialization failure
+            vector_search_audit_logger.log_update(
+                user_id=user_id,
+                operation_type="upsert",
+                num_items=1,
+                status="failure",
+                details={"error": "Vector Search client not initialized", **audit_details}
+            )
             if self.auto_fallback:
                 logger.warning("Falling back to mock implementation for upload")
                 return self.mock_client.upload_embedding(content, metadata)
@@ -853,40 +1021,100 @@ class VectorSearchClient:
                         datapoints=[datapoint]
                     )
                     logger.info(f"Successfully uploaded content with ID {content_id}")
+
+                    # Log successful upload
+                    vector_search_audit_logger.log_update(
+                        user_id=user_id,
+                        operation_type="upsert",
+                        num_items=1,
+                        item_ids=[content_id],
+                        status="success",
+                        details={**audit_details}
+                    )
+
                     return True
                 else:
                     logger.warning("Index endpoint not initialized")
+                    # Log endpoint initialization failure
+                    vector_search_audit_logger.log_update(
+                        user_id=user_id,
+                        operation_type="upsert",
+                        num_items=1,
+                        status="failure",
+                        details={"error": "Index endpoint not initialized", **audit_details}
+                    )
                     if self.auto_fallback:
                         logger.warning("Falling back to mock implementation due to missing endpoint")
                         return self.mock_client.upload_embedding(content, metadata)
                     return False
             except Exception as e:
-                logger.error(f"Error uploading to Vector Search: {str(e)}")
+                error_message = str(e)
+                logger.error(f"Error uploading to Vector Search: {error_message}")
+                # Log upload error
+                vector_search_audit_logger.log_update(
+                    user_id=user_id,
+                    operation_type="upsert",
+                    num_items=1,
+                    status="failure",
+                    details={"error": error_message, "error_type": "upload", **audit_details}
+                )
                 if self.auto_fallback:
                     logger.warning("Falling back to mock implementation due to upload error")
                     return self.mock_client.upload_embedding(content, metadata)
                 return False
         except Exception as e:
-            logger.error(f"Error preparing content for upload: {str(e)}")
+            error_message = str(e)
+            logger.error(f"Error preparing content for upload: {error_message}")
+            # Log unexpected error
+            vector_search_audit_logger.log_update(
+                user_id=user_id,
+                operation_type="upsert",
+                num_items=1,
+                status="failure",
+                details={"error": error_message, "error_type": "unexpected", **audit_details}
+            )
             if self.auto_fallback:
                 logger.warning("Falling back to mock implementation due to unexpected error")
                 return self.mock_client.upload_embedding(content, metadata)
             return False
 
-    def batch_upload_embeddings(self, items: List[Dict[str, Any]]) -> bool:
+    def batch_upload_embeddings(self, items: List[Dict[str, Any]], user_id: str = "system") -> bool:
         """Upload multiple items with embeddings to Vector Search in batch
 
         Args:
             items: List of items to upload, each containing content, metadata, and optionally embedding
+            user_id: ID of the user performing the batch upload (for audit logging)
 
         Returns:
             True if successful, False otherwise
         """
+        # Audit log the batch upload attempt
+        audit_details = {
+            "method": "batch_upload_embeddings",
+            "num_items": len(items)
+        }
+
         if self.using_mock:
+            # Log mock batch upload
+            vector_search_audit_logger.log_update(
+                user_id=user_id,
+                operation_type="batch_upsert",
+                num_items=len(items),
+                status="success",
+                details={"using_mock": True, **audit_details}
+            )
             return self.mock_client.batch_upload_embeddings(items)
 
         if not self._initialize():
             logger.error("Vector Search client not initialized")
+            # Log initialization failure
+            vector_search_audit_logger.log_update(
+                user_id=user_id,
+                operation_type="batch_upsert",
+                num_items=len(items),
+                status="failure",
+                details={"error": "Vector Search client not initialized", **audit_details}
+            )
             if self.auto_fallback:
                 logger.warning("Falling back to mock implementation for batch upload")
                 return self.mock_client.batch_upload_embeddings(items)
@@ -948,21 +1176,63 @@ class VectorSearchClient:
                             datapoints=batch
                         )
                     logger.info(f"Successfully uploaded {len(datapoints)} items in batches of {batch_size}")
+
+                    # Log successful batch upload
+                    item_ids = [dp.get("id", "unknown") for dp in datapoints[:10]]  # Get first 10 IDs for logging
+                    vector_search_audit_logger.log_update(
+                        user_id=user_id,
+                        operation_type="batch_upsert",
+                        num_items=len(datapoints),
+                        item_ids=item_ids,
+                        status="success",
+                        details={
+                            "batch_size": batch_size,
+                            "num_batches": (len(datapoints) + batch_size - 1) // batch_size,
+                            **audit_details
+                        }
+                    )
+
                     return True
                 else:
                     logger.warning("Index endpoint not initialized")
+                    # Log endpoint initialization failure
+                    vector_search_audit_logger.log_update(
+                        user_id=user_id,
+                        operation_type="batch_upsert",
+                        num_items=len(datapoints),
+                        status="failure",
+                        details={"error": "Index endpoint not initialized", **audit_details}
+                    )
                     if self.auto_fallback:
                         logger.warning("Falling back to mock implementation due to missing endpoint")
                         return self.mock_client.batch_upload_embeddings(items)
                     return False
             except Exception as e:
-                logger.error(f"Error batch uploading to Vector Search: {str(e)}")
+                error_message = str(e)
+                logger.error(f"Error batch uploading to Vector Search: {error_message}")
+                # Log batch upload error
+                vector_search_audit_logger.log_update(
+                    user_id=user_id,
+                    operation_type="batch_upsert",
+                    num_items=len(datapoints) if datapoints else len(items),
+                    status="failure",
+                    details={"error": error_message, "error_type": "upload", **audit_details}
+                )
                 if self.auto_fallback:
                     logger.warning("Falling back to mock implementation due to batch upload error")
                     return self.mock_client.batch_upload_embeddings(items)
                 return False
         except Exception as e:
-            logger.error(f"Error preparing items for batch upload: {str(e)}")
+            error_message = str(e)
+            logger.error(f"Error preparing items for batch upload: {error_message}")
+            # Log unexpected error
+            vector_search_audit_logger.log_update(
+                user_id=user_id,
+                operation_type="batch_upsert",
+                num_items=len(items),
+                status="failure",
+                details={"error": error_message, "error_type": "unexpected", **audit_details}
+            )
             if self.auto_fallback:
                 logger.warning("Falling back to mock implementation due to unexpected error")
                 return self.mock_client.batch_upload_embeddings(items)

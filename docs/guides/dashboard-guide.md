@@ -1,123 +1,77 @@
-# VANA Dashboard Guide
+# VANA Monitoring Dashboard User Guide
 
-The VANA Dashboard provides visualization and monitoring capabilities for the VANA system. It displays memory usage, agent performance, system health, and task execution metrics.
+[Home](../../index.md) > [Guides](./index.md) > Monitoring Dashboard Guide
 
-## Features
+The VANA Monitoring Dashboard provides visualization and monitoring capabilities, primarily focused on the **Vector Search Health Monitoring System**. It is built with a Flask backend API and a Streamlit frontend UI.
 
-- **Agent Status**: Monitor the status and performance of all agents in the system
-- **Memory Usage**: Track memory usage across Vector Search, Knowledge Graph, and Local Cache
-- **System Health**: Monitor system health metrics including CPU, memory, and disk usage
-- **Task Execution**: Track task execution metrics and view task details
+## Core Purpose (Current Focus)
 
-## Installation
+The dashboard's main function in the current VANA system is to:
+-   Display the health status of the Google Vertex AI Vector Search integration.
+-   Show performance metrics related to Vector Search.
+-   Provide historical data and trends for Vector Search health.
+-   Offer actionable recommendations if issues are detected by the `VectorSearchHealthChecker`.
 
-1. Install the required dependencies:
+*Note: The Streamlit dashboard (`dashboard/app.py`) includes navigation links for other sections like "Agent Status," "Memory Usage," and "Task Execution." These appear to be remnants from a previous ADK-based agent system. Their functionality and data sources are likely outdated or non-operational in the current VANA architecture. The **"System Health" page (or similarly named page for Vector Search monitoring) is the primary, functional part of the dashboard relevant to the current system.** *
 
-```bash
-pip install -r dashboard/requirements.txt
-```
+## Prerequisites
 
-2. Configure the dashboard by editing `dashboard/config.json` (optional)
+-   Ensure VANA is installed and configured as per the [Installation Guide](installation-guide.md).
+-   The Flask backend API and the Streamlit application must both be running. See [Running the Dashboard](running-dashboard.md).
 
-## Usage
+## Installation & Setup
 
-Run the dashboard using the provided script:
+For detailed installation and setup instructions for VANA, including dependencies and environment configuration for the dashboard components, please refer to:
+-   [VANA Installation Guide](installation-guide.md)
+-   [Configuration Section in README.md](../../README.md#%EF%B8%8F-configuration)
 
-```bash
-./run_dashboard.sh
-```
+**Key Configuration Points for the Dashboard:**
+*   The **Flask API backend** (`dashboard/flask_app.py`) relies on environment variables in your project's root `.env` file (e.g., `DASHBOARD_SECRET_KEY`, `DASHBOARD_AUTH_ENABLED`, GCP settings for the health checker it uses).
+*   The **Streamlit frontend UI** (`dashboard/app.py`) communicates with this Flask API. Ensure any API endpoint URLs used by Streamlit components correctly point to your running Flask API (typically `http://localhost:5000/api/...`).
+*   The file `dashboard/config.json` appears to contain outdated configurations related to a previous system and should generally be disregarded for the current Vector Search monitoring functionality, which sources its data via the Flask API.
 
-Or run it directly with Streamlit:
+## Running the Dashboard
 
-```bash
-cd dashboard
-streamlit run app.py
-```
+To run the dashboard, both the Flask backend and the Streamlit frontend must be started. Detailed instructions are in the [Running the Dashboard Guide](running-dashboard.md).
 
-This will start the dashboard on http://localhost:8501 by default.
+**Quick Summary:**
+1.  **Start Flask API:** `python dashboard/flask_app.py` (usually on `http://127.0.0.1:5000`)
+2.  **Start Streamlit UI:** `streamlit run dashboard/app.py` (usually on `http://localhost:8501`)
 
-## Configuration
+## Using the Dashboard
 
-The dashboard can be configured by editing the `dashboard/config.json` file. The following configuration options are available:
+### Access and Authentication
+-   Open the URL provided by Streamlit (e.g., `http://localhost:8501`) in your web browser.
+-   If dashboard authentication is enabled (default via `DASHBOARD_AUTH_ENABLED` in `.env`), you will be prompted to log in. Credentials are typically managed in a JSON file specified by `DASHBOARD_CREDENTIALS_FILE` (see Flask API configuration).
 
-- **dashboard**: General dashboard settings
-  - **title**: Dashboard title
-  - **refresh_interval**: Data refresh interval in seconds
-  - **theme**: Dashboard theme (light or dark)
-  - **debug**: Enable debug mode
+### Key Pages & Interpretation (Focus on Vector Search Health)
 
-- **data_sources**: Data source settings
-  - **use_mock_data**: Use mock data instead of real data
-  - **memory_api_url**: URL for memory API
-  - **agent_api_url**: URL for agent API
-  - **system_api_url**: URL for system API
-  - **task_api_url**: URL for task API
+The primary functional page related to the current VANA system is typically titled **"System Health"** or similar, focusing on Vector Search monitoring.
 
-- **visualization**: Visualization settings
-  - **chart_height**: Default chart height
-  - **chart_width**: Default chart width
-  - **color_scheme**: Default color scheme
-  - **animation**: Enable chart animations
+*   **Vector Search Health Overview:**
+    *   **Current Status:** Displays an overall health status (e.g., HEALTHY, WARN, ERROR) of the Vector Search service, as determined by `VectorSearchHealthChecker`.
+    *   **Key Metrics:** May show recent query latency, success rates, or other relevant performance indicators.
+    *   For details on interpreting these statuses and metrics, see [Interpreting Vector Search Health Reports Guide](vector-search-health-reports.md).
+*   **Detailed Checks:** Often, a breakdown of individual checks performed by `VectorSearchHealthChecker` is available, showing the status of each (e.g., connectivity, sample query, index status).
+*   **Historical Performance (if implemented):**
+    *   Charts and graphs showing trends for metrics like query latency, error rates, or uptime over selected periods (e.g., last hour, last 24 hours). This data is fetched from the Flask API, which might store or compute it.
+*   **Actionable Recommendations:**
+    *   If the `VectorSearchHealthChecker` detects issues, the dashboard should display any actionable recommendations provided (e.g., "Verify GOOGLE_APPLICATION_CREDENTIALS path," "Index appears empty, consider uploading data").
+*   **Resource Usage (Host System):**
+    *   Some dashboard views might display CPU, memory, and disk usage. Note that this typically reflects the resource usage of the *machine running the VANA dashboard components*, not necessarily the Vertex AI service itself.
 
-- **alerts**: Alert settings
-  - **enabled**: Enable alerts
-  - **cpu_threshold**: CPU usage threshold for alerts
-  - **memory_threshold**: Memory usage threshold for alerts
-  - **disk_threshold**: Disk usage threshold for alerts
-  - **error_rate_threshold**: Error rate threshold for alerts
+*   **Other Pages (Agent Status, Memory Usage, Task Execution, etc.):**
+    *   As previously mentioned, these pages are likely **not functional or relevant** to the current VANA architecture. They may display mock data or attempt to connect to outdated/non-existent services. Focus on the Vector Search health monitoring sections.
 
-## Dashboard Pages
+## Development and Data Flow Notes
 
-### Agent Status
+*   **UI Components:** The Streamlit UI is built using Python scripts, often located in `dashboard/frontend/pages/` for multi-page apps, and may use reusable components from `dashboard/frontend/components/`.
+*   **Data Sourcing for Vector Search Health:**
+    1.  A Streamlit page (e.g., `dashboard/frontend/pages/vector_search_health_page.py`) contains Python code that uses the `requests` library to call API client functions (e.g., defined in `dashboard/frontend/utils/api_client.py`).
+    2.  These client functions make HTTP requests to specific endpoints on the **Flask API backend** (e.g., `/api/vs/health`).
+    3.  The Flask API route handlers (e.g., in `dashboard/api/vector_search_routes.py`) process these requests.
+    4.  The route handlers typically instantiate or use an existing instance of `tools.vector_search.health_checker.VectorSearchHealthChecker` to get the latest health data.
+    5.  The Flask API returns this data as a JSON response.
+    6.  The Streamlit page receives the JSON and uses Streamlit's functions (`st.metric`, `st.line_chart`, `st.dataframe`, etc.) to visualize it.
 
-The Agent Status page displays the status and performance of all agents in the system. It includes:
-
-- Agent status cards with key metrics
-- Performance charts for response time, success rate, and task count
-- Activity timeline showing agent activities over time
-- Recent activities table
-
-### Memory Usage
-
-The Memory Usage page displays memory usage metrics across different components. It includes:
-
-- Memory usage charts over time
-- Memory usage breakdown by component
-- Memory operation counts and breakdown
-- Cache metrics
-
-### System Health
-
-The System Health page displays system health metrics. It includes:
-
-- CPU, memory, and disk usage gauges
-- System performance charts over time
-- Service status cards
-- Error logs
-
-### Task Execution
-
-The Task Execution page displays task execution metrics. It includes:
-
-- Task summary metrics
-- Task status breakdown
-- Task execution timeline
-- Recent tasks table
-
-## Development
-
-### Adding a New Visualization Component
-
-To add a new visualization component:
-
-1. Create a new module in the `dashboard/components` directory
-2. Implement the component using Streamlit
-3. Add the component to the main application in `dashboard/app.py`
-
-### Adding a New Data Source
-
-To add a new data source:
-
-1. Create a new module in the `dashboard/api` directory
-2. Implement the API client for the data source
-3. Add the API client to the main application in `dashboard/app.py`
+For extending the dashboard, refer to the [Extending the VANA Monitoring Dashboard Guide](extending-dashboard.md).

@@ -7,18 +7,21 @@ Exposes alert and health check endpoints for frontend/UI integration.
 from flask import Flask, jsonify, request
 from dashboard.alerting.alert_manager import AlertManager
 from dashboard.monitoring.health_check import HealthCheck
+from dashboard.auth.dashboard_auth import requires_auth
 
 app = Flask(__name__)
 alert_manager = AlertManager()
 health_check = HealthCheck()
 
 @app.route("/api/alerts", methods=["GET"])
+@requires_auth(["admin", "viewer", "api"])
 def get_alerts():
     """Get all active alerts."""
     alerts = alert_manager.get_active_alerts()
     return jsonify({"alerts": alerts})
 
 @app.route("/api/alerts/acknowledge", methods=["POST"])
+@requires_auth(["admin", "api"])
 def acknowledge_alert():
     """Acknowledge an alert by ID."""
     data = request.get_json()
@@ -29,6 +32,7 @@ def acknowledge_alert():
     return jsonify({"success": success})
 
 @app.route("/api/alerts/clear", methods=["POST"])
+@requires_auth(["admin", "api"])
 def clear_alert():
     """Clear an alert by ID."""
     data = request.get_json()
@@ -39,6 +43,7 @@ def clear_alert():
     return jsonify({"success": success})
 
 @app.route("/api/alerts/history", methods=["GET"])
+@requires_auth(["admin", "viewer", "api"])
 def get_alert_history():
     """Get recent alert history (active, acknowledged, cleared)."""
     limit = int(request.args.get("limit", 100))
@@ -46,6 +51,7 @@ def get_alert_history():
     return jsonify({"alerts": alerts})
 
 @app.route("/api/health", methods=["GET"])
+@requires_auth(["admin", "viewer", "api"])
 def get_health():
     """Get current health status."""
     status = health_check.get_health_status()

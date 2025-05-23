@@ -71,7 +71,35 @@ class EnvironmentConfig:
         
         logger.info(f"Using Vector Search endpoint: {config['endpoint_id']}")
         
+        # Attempt to load GCP credentials if GOOGLE_APPLICATION_CREDENTIALS is set
+        gcp_creds_path = os.environ.get("GOOGLE_APPLICATION_CREDENTIALS")
+        if gcp_creds_path:
+            config["credentials_path"] = gcp_creds_path
+            logger.info(f"Using GCP credentials from: {gcp_creds_path}")
+            # Basic validation: check if file exists
+            if not os.path.exists(gcp_creds_path):
+                logger.error(f"GCP credentials file not found at: {gcp_creds_path}")
+            else:
+                # Further validation could be added here (e.g., JSON parsing, permission checks)
+                pass # Placeholder for more robust validation
+        else:
+            logger.warning("GOOGLE_APPLICATION_CREDENTIALS environment variable not set. Vector Search may require it.")
+
         return config
+
+    @staticmethod
+    def get_web_search_config():
+        """Get Web Search (Google Custom Search) configuration from environment"""
+        api_key = os.environ.get("GOOGLE_SEARCH_API_KEY", "")
+        engine_id = os.environ.get("GOOGLE_SEARCH_ENGINE_ID", "")
+
+        if not api_key or not engine_id:
+            logger.warning("GOOGLE_SEARCH_API_KEY or GOOGLE_SEARCH_ENGINE_ID not found in environment. WebSearchClient may not function.")
+        
+        return {
+            "api_key": api_key,
+            "search_engine_id": engine_id
+        }
     
     @staticmethod
     def get_data_dir():
@@ -101,3 +129,33 @@ class EnvironmentConfig:
             "entity_half_life_days": int(os.environ.get("ENTITY_HALF_LIFE_DAYS", "30")),
             "local_db_path": os.path.join(EnvironmentConfig.get_data_dir(), "memory_cache.db")
         }
+
+    @staticmethod
+    def get_gcp_credentials():
+        """Get GCP credentials, typically from GOOGLE_APPLICATION_CREDENTIALS environment variable."""
+        credentials_path = os.environ.get("GOOGLE_APPLICATION_CREDENTIALS")
+        if not credentials_path:
+            logger.warning("GOOGLE_APPLICATION_CREDENTIALS environment variable is not set.")
+            return None
+
+        if not os.path.exists(credentials_path):
+            logger.error(f"GCP credentials file specified by GOOGLE_APPLICATION_CREDENTIALS not found: {credentials_path}")
+            return None
+        
+        try:
+            import json
+            with open(credentials_path, 'r') as f:
+                credentials = json.load(f)
+            # Basic validation: check for essential keys
+            required_keys = ["type", "project_id", "private_key_id", "private_key", "client_email"]
+            if not all(key in credentials for key in required_keys):
+                logger.error(f"GCP credentials file {credentials_path} is missing one or more required keys.")
+                return None
+            logger.info(f"Successfully loaded GCP credentials from {credentials_path}")
+            return credentials
+        except json.JSONDecodeError:
+            logger.error(f"Error decoding JSON from GCP credentials file: {credentials_path}")
+            return None
+        except Exception as e:
+            logger.error(f"An unexpected error occurred while loading GCP credentials from {credentials_path}: {e}")
+            return None

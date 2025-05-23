@@ -1,220 +1,132 @@
 # VANA Implementation Roadmap
 
-## Overview
+## 1. Overview
 
-This document outlines the phased implementation plan for VANA, detailing the specific components, tools, and capabilities to be implemented in each phase. The roadmap prioritizes delivering core functionality early while setting the foundation for more advanced capabilities.
+This document outlines the high-level phased implementation plan for Project VANA, detailing the strategic goals and key capabilities for each phase. This roadmap is intended to guide development towards VANA's core mission.
 
-## Phase 1: Core Knowledge Foundation
+*For detailed current progress and active tasks, please refer to the `memory-bank/progress.md` and `memory-bank/activeContext.md` files.*
 
-**Goal**: Establish a functional agent with basic knowledge retrieval capabilities.
+## 2. Phase 1: Functional Single Agent Core & Foundational Services (MVP)
 
-### Components:
+**Goal**: Develop a single, highly capable AI agent that can effectively utilize all integrated Vana tools, supported by robust foundational services including Vector Search monitoring and effective document processing. (Aligned with `projectbrief.md`)
 
-1. **Agent Setup**
-   - Implement basic Vana agent using Gemini 2.5 Pro API
-   - Configure system prompt with knowledge tool instructions
-   - Implement ADK tool registration and handling
+### Key Capabilities & Components:
 
-2. **Vector Search Integration**
-   - ✅ Implement Vector Search client
-   - ✅ Create Vector Search index with Vertex AI
-   - Configure Document AI for initial parsing
-   - Implement basic chunking strategy (non-semantic)
-   - Develop document uploading and embedding generation
+1.  **Vana Agent Core:**
+    *   Develop the initial Vana single agent logic.
+    *   Integrate with core VANA tools.
+    *   Implement system prompt and basic interaction capabilities.
+2.  **Vector Search Subsystem:**
+    *   Implement `VectorSearchClient` for Vertex AI.
+    *   Set up and configure Vertex AI Vector Search index.
+    *   Develop and deploy the **Vector Search Health Monitoring System** (Flask API backend, Streamlit UI frontend, `VectorSearchHealthChecker`, scheduled monitor).
+3.  **Document Processing Pipeline:**
+    *   Implement `DocumentProcessor` (initially PyPDF2/Pytesseract, targeting Vertex AI Document AI).
+    *   Implement `SemanticChunker`.
+    *   Develop workflows for document ingestion, embedding generation (via `VectorSearchClient`), and indexing into Vector Search.
+4.  **Knowledge Graph Integration:**
+    *   Implement `KnowledgeGraphManager` for MCP server interaction.
+    *   Enable basic entity/relationship storage and retrieval.
+5.  **Hybrid Search Capability:**
+    *   Implement `EnhancedHybridSearch` to combine results from Vector Search, Knowledge Graph, and (later in Phase 1 or early Phase 2) Web Search.
+6.  **Web Search Integration (Initial):**
+    *   Implement `WebSearchClient` using Google Custom Search API.
+    *   Ensure basic web query functionality.
+7.  **Core Utilities:**
+    *   Establish configuration management (`config/environment.py`, `.env`).
+    *   Implement logging (`tools/logging/logger.py`).
+    *   Implement basic resilience patterns (e.g., Circuit Breaker for external calls).
+8.  **Foundational Documentation:**
+    *   Create core project documentation (README, architecture, key guides).
 
-3. **Knowledge Graph Integration**
-   - ✅ Set up MCP connection for Knowledge Graph
-   - ✅ Implement Knowledge Graph client
-   - ✅ Implement basic entity and relationship management
-   - Complete Knowledge Graph command implementation
+**Primary Deliverables for Phase 1:**
+*   A functional Vana single agent capable of using the core tools.
+*   Operational Vector Search Health Monitoring System.
+*   A working document processing pipeline (initial version).
+*   Functional integrations for Vector Search, Knowledge Graph, and basic Web Search.
+*   Operational Hybrid Search.
+*   Core project documentation.
 
-4. **Hybrid Search**
-   - ✅ Implement hybrid search combining Vector Search and Knowledge Graph
-   - ✅ Create result ranking and formatting
-   - Optimize query handling and result presentation
+## 3. Phase 2: Multi-Agent System (MAS) Foundation & Enhanced Capabilities
 
-5. **Core Tool Implementation**
-   - ✅ Complete knowledge tools for ADK agent
-   - Create launcher script for agent testing
-   - Implement basic logging and error handling
+**Goal**: Evolve the single agent core into a foundational Multi-Agent System (MAS), and enhance the capabilities of existing tools and services. (Aligned with `projectbrief.md`)
 
-**Deliverables**:
-- ✅ Functional Vana agent with knowledge tools
-- ✅ Vector Search and Knowledge Graph integration
-- ✅ Basic hybrid search capabilities
-- Initial document processing pipeline
-- Command-line interface for testing
+### Key Capabilities & Components:
 
-**Timeline**:
-- Estimated completion: 2 weeks
+1.  **MAS Architecture Development:**
+    *   Design and implement an agent orchestration layer.
+    *   Define communication protocols and mechanisms for inter-agent collaboration.
+    *   Develop initial specialized agent roles (e.g., data ingestion agent, query agent, KG management agent).
+2.  **Enhanced Document Processing:**
+    *   Fully integrate Vertex AI Document AI as the primary parsing method.
+    *   Improve semantic chunking strategies based on richer Document AI output.
+    *   Enhance metadata extraction and linking.
+3.  **Advanced Knowledge Graph Capabilities:**
+    *   Implement or integrate tools for automated entity extraction (NER) and relationship inference from processed documents or agent interactions, populating the KG.
+    *   Develop more sophisticated KG query and traversal capabilities for agents.
+4.  **Refined Web Search & Hybrid Search:**
+    *   Ensure robust and configurable `WebSearchClient` (using environment variables for credentials).
+    *   Improve ranking and result fusion in `EnhancedHybridSearch`.
+5.  **Agent Memory Enhancements (Conceptual):**
+    *   Explore and potentially implement dedicated short-term memory buffers or more sophisticated long-term memory strategies for agents, beyond direct KG usage.
+6.  **Testing & Evaluation Framework:**
+    *   Establish a comprehensive framework for evaluating retrieval quality (precision, recall, NDCG) and overall system performance.
+    *   Implement automated testing for core components and agent behaviors.
+7.  **User Interface (Basic):**
+    *   Potentially develop a simple web interface for interacting with the Vana agent(s) or testing specific tools, if not solely relying on the Monitoring Dashboard for UI.
 
-## Phase 2: Enhanced Knowledge & Search
+**Primary Deliverables for Phase 2:**
+*   A foundational MAS with basic agent collaboration.
+*   Vertex AI Document AI integrated into the document processing pipeline.
+*   Enhanced KG population and query capabilities.
+*   Improved Hybrid Search.
+*   A robust testing and evaluation framework.
 
-**Goal**: Improve knowledge retrieval quality and add web search capabilities.
+## 4. Phase 3: Advanced Agent Capabilities & Workflow Automation
 
-### Components:
+**Goal**: Equip agents with more advanced reasoning and task execution capabilities, and explore workflow automation for VANA processes.
 
-1. **Document Processing Enhancement**
-   - Implement semantic chunking strategy
-   - Add structure-aware document parsing
-   - Improve metadata generation and storage
-   - Optimize embedding generation process
+### Key Capabilities & Components:
 
-2. **Web Search Integration**
-   - Implement web search tool using Google Custom Search API
-   - Add result formatting and citation handling
-   - Implement caching for frequent queries
-   - Create search result integration with knowledge base
+1.  **Advanced Agent Reasoning:**
+    *   Implement planning capabilities (e.g., task decomposition).
+    *   Explore chain-of-thought or similar reasoning mechanisms.
+    *   Enhance error handling and self-correction for agents.
+2.  **Code Generation & Understanding Tools (If pursued):**
+    *   Develop or integrate tools for code generation, explanation, and basic validation, if this becomes a VANA focus.
+3.  **Workflow Automation (e.g., for Document Ingestion, KG Maintenance):**
+    *   Automate multi-step processes like document ingestion pipelines (GCS upload → Document AI parsing → Chunking → Embedding → Indexing → KG extraction).
+    *   Implement scheduled tasks for KG maintenance, data synchronization, etc.
+    *   *(Note: Previous mentions of n8n might be outdated; automation can be achieved with Python scripts, cron, Airflow, or cloud schedulers like GCP Cloud Scheduler).*
+4.  **External API Integration Framework:**
+    *   Develop a more standardized way for agents to interact with diverse external APIs, including robust authentication and error handling.
+5.  **Performance Optimization & Scaling:**
+    *   Optimize query latency across all search components.
+    *   Implement advanced caching strategies.
+    *   Ensure all components can scale to handle larger data volumes and more complex agent interactions.
 
-3. **Knowledge Graph Enhancements**
-   - Add automated entity extraction
-   - Implement relationship inference
-   - Create Knowledge Graph visualization
-   - Add entity expansion and traversal
+## 5. Phase 4: Enterprise Features & Continuous Improvement
 
-4. **User Interface Improvements**
-   - Create simple web interface for agent interaction
-   - Implement response formatting with citations
-   - Add knowledge tool visualization
-   - Create search result display
+**Goal**: Mature VANA into a system with enterprise-grade features, focusing on personalization, security, and continuous learning.
 
-5. **Testing & Evaluation Framework**
-   - Implement retrieval quality evaluation
-   - Create performance testing scripts
-   - Add monitoring for key metrics
-   - Develop user feedback mechanism
+### Key Capabilities & Components:
 
-**Deliverables**:
-- Enhanced document processing pipeline
-- Web search integration with citation support
-- Improved Knowledge Graph capabilities
-- Basic web interface for testing
-- Evaluation framework for quality assessment
+1.  **Personalization:**
+    *   Implement user profiles and preference storage (potentially using the KG).
+    *   Enable agents to provide personalized responses or adapt behavior based on user context.
+2.  **Advanced Security & Access Control:**
+    *   Implement Role-Based Access Control (RBAC) for VANA tools and agent capabilities.
+    *   Enhance audit logging for security and compliance.
+    *   Explore Single Sign-On (SSO) integration if VANA is to be used in an enterprise context.
+3.  **Continuous Learning & Improvement:**
+    *   Implement mechanisms for agents to learn from user feedback and interactions.
+    *   Develop analytics for system performance and knowledge base quality.
+    *   Automate testing and validation processes within a CI/CD pipeline.
+    *   Implement version control for knowledge base content or configurations.
 
-**Timeline**:
-- Estimated completion: 3 weeks after Phase 1
+This roadmap provides a strategic direction. Specific features and timelines within each phase will be subject to refinement based on ongoing development, priorities, and learnings.
 
-## Phase 3: Workflow Automation & Advanced Tools
-
-**Goal**: Add workflow automation and enhance capabilities beyond knowledge retrieval.
-
-### Components:
-
-1. **Code Generation Tools**
-   - Implement code generation capability
-   - Add language-specific helpers
-   - Create code explanation functionality
-   - Implement code testing and validation
-
-2. **Workflow Automation**
-   - Set up n8n for workflow orchestration
-   - Create document processing workflows
-   - Implement knowledge update automation
-   - Add scheduled maintenance tasks
-
-3. **Advanced Document Processing**
-   - Add support for complex document types
-   - Implement multi-modal content extraction
-   - Create document comparison tools
-   - Add document summarization capabilities
-
-4. **External API Integration**
-   - Implement API gateway for external services
-   - Add authentication and rate limiting
-   - Create API documentation
-   - Implement webhook support
-
-5. **Performance Optimization**
-   - Optimize retrieval latency
-   - Implement response caching
-   - Add batch processing for document updates
-   - Optimize resource utilization
-
-**Deliverables**:
-- Code generation and assistance tools
-- n8n workflow automations
-- Advanced document processing capabilities
-- External API integration
-- Performance optimizations
-
-**Timeline**:
-- Estimated completion: 4 weeks after Phase 2
-
-## Phase 4: Multi-agent & Advanced Capabilities
-
-**Goal**: Extend VANA to a multi-agent system with specialized capabilities.
-
-### Components:
-
-1. **Multi-agent Architecture**
-   - Implement agent orchestration
-   - Create specialized agent roles
-   - Add inter-agent communication
-   - Implement task delegation
-
-2. **Advanced Reasoning**
-   - Add chain-of-thought reasoning
-   - Implement planning capabilities
-   - Create problem decomposition tools
-   - Add verification mechanisms
-
-3. **Personalization**
-   - Implement user profiles
-   - Add preference learning
-   - Create personalized responses
-   - Implement context awareness
-
-4. **Enterprise Integration**
-   - Add SSO support
-   - Implement role-based access control
-   - Create audit logging
-   - Add compliance features
-
-5. **Continuous Improvement**
-   - Implement feedback incorporation
-   - Add performance analytics
-   - Create automated testing
-   - Implement version control for knowledge
-
-**Deliverables**:
-- Multi-agent orchestration system
-- Advanced reasoning capabilities
-- Personalization framework
-- Enterprise integration features
-- Continuous improvement mechanisms
-
-**Timeline**:
-- Estimated completion: 8 weeks after Phase 3
-
-## Current Status
-
-**Phase 1 Progress**: 100% Complete
-- ✅ Basic agent implementation
-- ✅ Vector Search client
-- ✅ Knowledge Graph client
-- ✅ Initial hybrid search implementation
-- ✅ Core knowledge tools
-- ✅ Document processing pipeline
-- ✅ MCP configuration and testing
-
-**Phase 2 Progress**: ~70% Complete
-- ✅ Document processing enhancement with semantic chunking
-- ✅ Web search integration with Google Custom Search API
-- ✅ Enhanced hybrid search with web integration
-- ✅ Knowledge Graph enhancements with entity extraction
-- ✅ User feedback mechanism
-- ✅ Comprehensive test suite
-- 🔄 Knowledge base expansion
-- 🔄 Web interface improvements
-
-**Next Steps**:
-1. Configure Google Custom Search API with proper credentials
-2. Expand knowledge base with more documents
-3. Enhance evaluation framework with more metrics
-4. Implement workflow automation with n8n
-5. Prepare for Phase 3 planning
-
-## Resource Requirements
+## 6. Resource Requirements
 
 ### Development Resources
 - Python developer with ADK experience

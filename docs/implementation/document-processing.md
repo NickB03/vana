@@ -1,6 +1,14 @@
-# Advanced Document Processing in VANA
+# Document Processing Implementation Details
+
+[Home](../index.md) > [Implementation](index.md) > Document Processing
 
 ## Overview
+
+VANA's document processing system, primarily implemented in `tools/document_processing/document_processor.py` and `tools/document_processing/semantic_chunker.py`, is designed to handle various document types and extract meaningful information for knowledge retrieval.
+
+> **Note on Current Implementation vs. Strategy:**
+> This document describes the **current, operational document processing capabilities** which utilize libraries like PyPDF2 for PDF handling and Pytesseract for OCR.
+> For the **longer-term strategic vision**, which includes Vertex AI Document AI as the primary parsing engine, please refer to the [Document Processing Strategy](../document-processing-strategy.md) document.
 
 VANA's document processing system is designed to handle various document types and extract meaningful information for knowledge retrieval. This document outlines the advanced features and techniques used in VANA's document processing pipeline.
 
@@ -119,10 +127,13 @@ VANA includes specialized PDF processing capabilities:
 4. **Image Extraction**: Extracting and processing images in PDFs
 5. **Metadata Extraction**: Extracting PDF metadata
 
-### PDF Processing Implementation
+### PDF Processing Implementation (Current: PyPDF2)
 
+The `DocumentProcessor` class currently uses the `PyPDF2` library for extracting text and metadata from PDF files. Image extraction and advanced table extraction from PDFs using this library are basic.
+
+Conceptual flow:
 ```python
-def process_pdf(pdf_path):
+def process_pdf(pdf_path): # Simplified conceptual representation
     """
     Process a PDF document
     

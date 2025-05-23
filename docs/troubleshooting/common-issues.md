@@ -1,256 +1,131 @@
-# Vector Search Troubleshooting Guide
+# Common Issues in VANA
 
-This guide provides solutions for common issues with the Vector Search integration in the VANA system.
+[Home](../index.md) > [Troubleshooting](index.md) > Common Issues
 
-## Table of Contents
+This guide provides solutions for common issues that may arise when setting up, configuring, or running the VANA system. For issues specific to a particular component, also refer to its dedicated troubleshooting guide or documentation.
 
-1. [Connection Issues](#connection-issues)
-2. [Embedding Generation Issues](#embedding-generation-issues)
-3. [Search Issues](#search-issues)
-4. [ADK Integration Issues](#adk-integration-issues)
-5. [Knowledge Sync Issues](#knowledge-sync-issues)
+## 1. Configuration and Environment Variable Issues
 
-## Connection Issues
+### Symptoms:
+-   Components fail to initialize (e.g., `VectorSearchClient`, `KnowledgeGraphManager`, `WebSearchClient`).
+-   Errors related to missing API keys, project IDs, or endpoint information.
+-   Authentication failures with external services (GCP, MCP Server).
+-   Application using unexpected default settings.
 
-### Cannot connect to Vector Search endpoint
+### Possible Causes:
+1.  `.env` file is missing, not in the project root, or not correctly named (`.env`).
+2.  Required environment variables are not defined in the `.env` file or system environment.
+3.  Incorrect values for environment variables (e.g., typos in API keys, wrong project ID).
+4.  Path to GCP service account key (`GOOGLE_APPLICATION_CREDENTIALS`) is incorrect or the file is not accessible.
+5.  `config/environment.py` is not loading variables as expected (e.g., issues with `python-dotenv` or path resolution).
 
-**Symptoms:**
-- Error message: "Failed to find Vector Search endpoint"
-- Error message: "Could not find Vector Search endpoint. Please check the configuration."
+### Solutions:
+1.  **Verify `.env` File:**
+    *   Ensure a `.env` file exists in the VANA project root directory.
+    *   Compare your `.env` file with `.env.example` to make sure all necessary variables are present.
+    *   Double-check the spelling of variable names and their values.
+2.  **Check Critical Paths:**
+    *   For `GOOGLE_APPLICATION_CREDENTIALS`, ensure it's an **absolute path** to your valid GCP service account JSON key file, and that the file is readable by the VANA process.
+3.  **Inspect Loaded Configuration (Debugging):**
+    *   Temporarily add print statements in `config/environment.py` or at the start of a script/tool to display the values of loaded environment variables to confirm they are what you expect.
+    *   Example: `print(f"GCP Project ID: {environment.GCP_PROJECT_ID}")`
+4.  **Refer to Guides:** Consult the [Installation Guide](../guides/installation-guide.md#5-configuring-environment-variables) and specific tool configuration guides (e.g., [Web Search Configuration](../guides/web-search-configuration.md)).
 
-**Possible Causes:**
-1. Incorrect environment variables
-2. Missing or invalid service account credentials
-3. Network connectivity issues
-4. Vector Search endpoint does not exist or is not accessible
+## 2. Python Dependency and Virtual Environment Issues
 
-**Solutions:**
-1. Verify environment variables:
-   ```bash
-   echo $GOOGLE_CLOUD_PROJECT
-   echo $GOOGLE_CLOUD_LOCATION
-   echo $VECTOR_SEARCH_INDEX_NAME
-   echo $DEPLOYED_INDEX_ID
-   echo $GOOGLE_APPLICATION_CREDENTIALS
-   ```
+### Symptoms:
+-   `ModuleNotFoundError` when trying to run a script or import a VANA tool.
+-   Errors indicating a missing Python package (e.g., `No module named 'google.cloud.aiplatform'`).
+-   Unexpected behavior due to incorrect package versions.
 
-2. Check service account credentials:
-   ```bash
-   gcloud auth activate-service-account --key-file=$GOOGLE_APPLICATION_CREDENTIALS
-   ```
+### Possible Causes:
+1.  Python virtual environment (`.venv/`) not created or not activated.
+2.  Dependencies not installed correctly or completely.
+3.  Using the system Python interpreter instead of the virtual environment's interpreter.
+4.  Conflicts between package versions.
 
-3. Verify network connectivity:
-   ```bash
-   curl -I https://aiplatform.googleapis.com
-   ```
+### Solutions:
+1.  **Activate Virtual Environment:** Always ensure your virtual environment is activated before running any VANA scripts or commands:
+    ```bash
+    source .venv/bin/activate  # macOS/Linux
+    # .venv\Scripts\activate  # Windows
+    ```
+    Your terminal prompt should indicate the active environment (e.g., `(.venv)`).
+2.  **Install/Reinstall Dependencies:**
+    *   Ensure `dashboard/requirements.txt` (and any other relevant `requirements.txt` files) are up-to-date.
+    *   Run `pip install -r dashboard/requirements.txt` (or other relevant requirements file).
+    *   Consider upgrading pip: `pip install --upgrade pip`.
+3.  **Check Python Interpreter:**
+    *   Verify which Python interpreter is being used: `which python` (macOS/Linux) or `where python` (Windows). It should point to the interpreter inside your `.venv` directory.
+4.  **Resolve Conflicts:** If version conflicts occur, you might need to adjust versions in `requirements.txt` or create a fresh virtual environment.
 
-4. Check if the Vector Search endpoint exists:
-   ```bash
-   gcloud ai index-endpoints list --region=$GOOGLE_CLOUD_LOCATION
-   ```
+## 3. GCP Service Account Permission Issues
 
-## Embedding Generation Issues
+### Symptoms:
+-   Errors from `VectorSearchClient` or other GCP-interacting tools like "PermissionDenied", "403 Forbidden", or messages indicating insufficient permissions for a specific GCP API (e.g., `aiplatform.indexEndpoints.get` denied).
+-   Failure to generate embeddings, query Vector Search, or access GCS buckets.
 
-### Cannot generate embeddings
+### Possible Causes:
+1.  The GCP service account specified by `GOOGLE_APPLICATION_CREDENTIALS` does not have the required IAM roles/permissions for the GCP services VANA uses (Vertex AI, Document AI, GCS, etc.).
+2.  The wrong service account key is being used.
+3.  The necessary GCP APIs (e.g., Vertex AI API, Document AI API) are not enabled for the GCP project.
 
-**Symptoms:**
-- Error message: "Error generating embedding"
-- Error message: "The text content is empty"
+### Solutions:
+1.  **Verify IAM Roles:**
+    *   In the Google Cloud Console, go to "IAM & Admin" > "IAM".
+    *   Find the service account VANA is using.
+    *   Ensure it has appropriate roles. Common roles needed might include:
+        *   "Vertex AI User" (for most Vertex AI operations).
+        *   "Storage Object Admin" or "Storage Object Viewer" (if VANA reads/writes to GCS).
+        *   "Document AI User" or "Document AI Editor" (for Document AI).
+        *   Specific permissions might be listed in error messages.
+2.  **Check Service Account Key:** Ensure the JSON key file pointed to by `GOOGLE_APPLICATION_CREDENTIALS` is correct and corresponds to the service account with the right permissions.
+3.  **Enable APIs:** In Google Cloud Console, go to "APIs & Services" > "Library" and ensure "Vertex AI API", "Document AI API", etc., are enabled for your project.
+4.  **Test Authentication (gcloud CLI):**
+    ```bash
+    gcloud auth activate-service-account --key-file=/path/to/your/keyfile.json
+    gcloud auth list # Verify the service account is active
+    # Try a gcloud command that requires similar permissions, e.g.:
+    # gcloud ai index-endpoints list --project=your-gcp-project-id --region=your-region
+    ```
 
-**Possible Causes:**
-1. Empty or invalid text input
-2. Missing or invalid service account credentials
-3. Vertex AI API not enabled
-4. Rate limiting or quota issues
+## 4. External Service Connectivity Issues (MCP Server, Google APIs)
 
-**Solutions:**
-1. Ensure text input is not empty:
-   ```python
-   if not text.strip():
-       return "Text input cannot be empty"
-   ```
+### Symptoms:
+-   Errors related to timeouts, connection refused, or DNS resolution when tools like `KnowledgeGraphManager` or `WebSearchClient` try to make API calls.
+-   Circuit breaker open exceptions.
 
-2. Check service account permissions:
-   ```bash
-   python check_permissions.py
-   ```
+### Possible Causes:
+1.  Network connectivity problems from the machine running VANA to the internet or the specific service endpoint.
+2.  Firewall blocking outgoing connections.
+3.  The external service itself is down or experiencing issues.
+4.  Incorrect endpoint URL configured in `.env` (e.g., for `MCP_ENDPOINT`).
+5.  Proxy server issues (if applicable in your network environment).
 
-3. Enable Vertex AI API:
-   ```bash
-   gcloud services enable aiplatform.googleapis.com
-   ```
+### Solutions:
+1.  **Check Basic Network Connectivity:**
+    *   Use `ping` or `curl` to test connectivity to the general internet and, if possible, the host of the service (e.g., `ping mcp.community.augment.co`).
+    *   `curl -I https://mcp.community.augment.co` (or other relevant endpoint).
+2.  **Verify Endpoint URLs:** Double-check `MCP_ENDPOINT` and other service URLs in your `.env` file.
+3.  **Check Service Status Pages:** Look for official status pages for Google Cloud services or the MCP community server if issues are suspected.
+4.  **Circuit Breaker Status:** If VANA uses circuit breakers, check logs for messages about breakers being open. The [Monitoring Dashboard](../guides/dashboard-guide.md) might also show this.
+5.  **Firewall/Proxy:** If in a corporate network, check for local firewall or proxy configurations that might be interfering.
 
-4. Check quota usage in Google Cloud Console
+## 5. Component Interaction Failures (e.g., Dashboard UI can't reach Flask API)
 
-## Search Issues
+### Symptoms:
+-   VANA Monitoring Dashboard UI shows errors like "Cannot connect to API" or fails to load data.
+-   One VANA tool fails when trying to use another VANA tool.
 
-### No search results returned
+### Possible Causes:
+1.  The required backend component (e.g., Flask API for the Streamlit UI) is not running.
+2.  Components are running on different hosts/ports than expected by the calling component.
+3.  CORS (Cross-Origin Resource Sharing) issues if frontend and backend are on different origins (less common for localhost development but possible).
 
-**Symptoms:**
-- Message: "No results found for query"
-- Empty results list
+### Solutions:
+1.  **Ensure All Components are Running:** For the dashboard, verify both `dashboard/flask_app.py` and `streamlit run dashboard/app.py` are running in separate terminals.
+2.  **Check Ports and Hosts:** Confirm the Flask API is running on the port Streamlit expects to call (usually `localhost:5000`).
+3.  **Inspect Browser Developer Console:** For UI issues, open your browser's developer console (usually F12) and check the "Console" and "Network" tabs for errors (e.g., failed API requests, JavaScript errors, CORS errors).
+4.  **Review Logs:** Check logs for both the calling component and the component being called for error messages.
 
-**Possible Causes:**
-1. Vector Search index is empty
-2. Query is too specific or unrelated to indexed content
-3. Deployed index ID is incorrect
-4. Index is not properly deployed
-5. Permission issues with Vector Search
-
-**Solutions:**
-1. Verify index has content:
-   ```bash
-   python scripts/verify_vector_search.py
-   ```
-
-2. Try a more general query:
-   ```bash
-   python tools/search_knowledge_tool.py
-   # Enter a more general query
-   ```
-
-3. Check deployed index ID:
-   ```bash
-   gcloud ai index-endpoints list-deployed-indexes $ENDPOINT_ID --region=$GOOGLE_CLOUD_LOCATION
-   ```
-
-4. Verify index deployment:
-   ```bash
-   python check_deployment.py
-   ```
-
-5. Test with mock implementation:
-   ```bash
-   python scripts/test_mock_vector_search.py "your query"
-   ```
-
-6. Check if the system is using the mock implementation:
-   ```bash
-   python scripts/test_vector_search.py --force-mock "your query"
-   ```
-
-### Poor search results quality
-
-**Symptoms:**
-- Irrelevant search results
-- Low relevance scores
-
-**Possible Causes:**
-1. Insufficient or low-quality content in the index
-2. Query formulation issues
-3. Embedding model limitations
-
-**Solutions:**
-1. Add more high-quality content to the index:
-   ```bash
-   python populate_vector_search.py
-   ```
-
-2. Improve query formulation:
-   - Be more specific
-   - Use domain-specific terminology
-   - Include context in the query
-
-3. Consider using a different embedding model or fine-tuning
-
-## ADK Integration Issues
-
-### Cannot import google.adk module
-
-**Symptoms:**
-- Error message: "No module named 'google.adk'"
-- Import errors in agent code
-
-**Possible Causes:**
-1. Google ADK package not installed
-2. Incorrect Python environment
-3. Incompatible ADK version
-
-**Solutions:**
-1. Install the Google ADK package:
-   ```bash
-   pip install google-adk
-   ```
-
-2. Activate the correct Python environment:
-   ```bash
-   source .venv/bin/activate
-   ```
-
-3. Check for specific version requirements:
-   ```bash
-   pip install google-adk==<version>
-   ```
-
-4. Check if the ADK is installed correctly:
-   ```bash
-   pip show google-adk
-   ```
-
-### Agents cannot access Vector Search
-
-**Symptoms:**
-- Agents do not use knowledge from Vector Search
-- Error messages in agent logs
-
-**Possible Causes:**
-1. search_knowledge_tool not properly integrated
-2. Agent instructions do not include knowledge usage guidelines
-3. Vector Search integration issues
-
-**Solutions:**
-1. Verify search_knowledge_tool integration:
-   ```python
-   # Check if the tool is included in the agent's tools
-   print(agent.tools)
-   ```
-
-2. Update agent instructions to include knowledge usage guidelines
-
-3. Test Vector Search integration directly:
-   ```bash
-   python scripts/test_vector_search_direct.py
-   ```
-
-## Knowledge Sync Issues
-
-### Knowledge sync fails
-
-**Symptoms:**
-- Error messages in GitHub Actions logs
-- Knowledge base not updated
-
-**Possible Causes:**
-1. Missing or invalid GitHub secrets
-2. StreamUpdate not enabled on the index
-3. Service account permissions issues
-4. Rate limiting or quota issues
-
-**Solutions:**
-1. Verify GitHub secrets:
-   - GOOGLE_CLOUD_PROJECT
-   - GOOGLE_CLOUD_LOCATION
-   - GOOGLE_STORAGE_BUCKET
-   - GCP_SERVICE_ACCOUNT_KEY
-
-2. Check if StreamUpdate is enabled:
-   ```bash
-   gcloud ai indexes describe $INDEX_ID --region=$GOOGLE_CLOUD_LOCATION
-   ```
-
-3. Verify service account permissions:
-   ```bash
-   python check_permissions.py
-   ```
-
-4. Use batch updates instead of streaming updates:
-   - Export embeddings to Google Cloud Storage
-   - Update the index using the Google Cloud Console or API
-
-## Additional Resources
-
-- [Vector Search Verification Script](../verify_vector_search.py)
-- [Direct Vector Search Test Script](../scripts/test_vector_search_direct.py)
-- [Knowledge Sync Documentation](../scripts/github_sync/README.md)
-- [Google Cloud Vector Search Documentation](https://cloud.google.com/vertex-ai/docs/vector-search/overview)
-- [Vertex AI Embeddings Documentation](https://cloud.google.com/vertex-ai/docs/generative-ai/embeddings/get-text-embeddings)
+For more specific troubleshooting, refer to the documentation for the individual VANA component or tool you are having trouble with.

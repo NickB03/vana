@@ -1,301 +1,141 @@
-# VANA Architecture Guide
+# VANA System Architecture Overview
 
-## Overview
+[Home](../index.md) > [Architecture](index.md) > System Overview
 
-VANA (Versatile Agent Network Architecture) is an intelligent agent system built using Google's Agent Development Kit (ADK) that implements a code-first approach to agent definition. The system features a primary agent (Vana) with specialist sub-agents, leveraging Vertex AI Vector Search, Knowledge Graph, and Web Search for comprehensive knowledge retrieval.
+This document provides a high-level overview of the current VANA system architecture. VANA has evolved into a suite of AI-powered services designed for robust knowledge management, semantic search, and system health monitoring, supporting a conceptual single agent.
 
-## System Architecture
+## 1. Core Philosophy
 
-### Core Components
+The current VANA architecture emphasizes:
 
-1. **Agent System**
-   - **Vana (Primary Agent)**: Lead Developer, Architect, and Strategist for Project Vana
-   - **Specialist Agents**: Rhea (Meta-Architect), Max (Interface), Sage (Platform), Kai (Edge Cases), Juno (Test Specialist)
-   - **Google ADK**: Code-first agent definition with built-in tools
-   - **External Tools**: Access to specialized capabilities via MCP
+*   **Modularity:** Core functionalities are developed as distinct, reusable tools and services.
+*   **Observability:** Critical components, particularly Vertex AI Vector Search, are equipped with comprehensive health monitoring and visualization.
+*   **Service-Oriented Design (Internal):** Key components (e.g., Vector Search client, Document Processor, KG Manager) function as internal services.
+*   **API-Driven UI:** The primary user interface (Streamlit dashboard) interacts with a Flask-based API backend for data and control.
+*   **Configurability:** System behavior, endpoints, and credentials are managed through environment variables.
+*   **Foundation for Future Agents:** The current toolset and services are built to support a capable single agent (Phase 1 MVP), which will form the basis for a future multi-agent system (Phase 2).
 
-2. **Knowledge Management**
-   - **Vector Search**: Semantic search capabilities via Vertex AI Vector Search (with mock implementation fallback)
-   - **Knowledge Graph**: Structured knowledge representation with entities and relationships via Context7 MCP
-   - **Web Search**: Up-to-date information retrieval via Google Custom Search API (with mock implementation fallback)
-   - **Hybrid Search**: Combined approach leveraging Vector Search, Knowledge Graph, and Web Search
-   - **GitHub Knowledge Sync**: Automated pipeline to keep knowledge up-to-date
+## 2. High-Level Architecture Diagram
 
-3. **Integration Layer**
-   - **External MCP Server**: Community-hosted Model Context Protocol server (mcp.community.augment.co)
-   - **Knowledge Graph API**: Structured knowledge storage and retrieval
-   - **Vertex AI Services**: Managed AI platform for embeddings and search
-   - **Google Custom Search API**: Web search capabilities
+```mermaid
+graph TD
+    subgraph UserInterfaces
+        UI_Streamlit["Streamlit Frontend UI (dashboard/app.py)"]
+    end
 
-4. **Testing Framework**
-   - **Juno Autonomous Tester**: Agent-based testing with learning from previous results
-   - **Structured Testing**: Predefined test cases with expected results
-   - **Interactive Testing**: Manual testing interface
+    subgraph BackendServices
+        API_Flask["Flask API Backend (dashboard/flask_app.py)"]
+    end
 
-### Architecture Diagram
+    subgraph CoreToolsAndServices["Core Tools & Services (tools/)"]
+        VS_Client["VectorSearchClient"]
+        VS_HealthChecker["VectorSearchHealthChecker"]
+        DocProc["DocumentProcessor"]
+        KG_Manager["KnowledgeGraphManager (MCP)"]
+        HybridSearch["EnhancedHybridSearch"]
+        WebSearch["WebSearchClient"]
+        MonitoringUtils["Monitoring Utilities (Circuit Breaker, etc.)"]
+        SecurityUtils["Security Utilities"]
+        LoggingUtils["Logging Utilities"]
+    end
 
-```
-┌─────────────────────────────┐
-│                             │
-│    Google ADK Web UI        │
-│    (http://localhost:8000)  │
-│                             │
-└───────────────┬─────────────┘
-                │
-                ▼
-┌─────────────────────────────────────────────────┐
-│                                                 │
-│               Vana Agent                        │
-│     (Lead Developer & Project Strategist)       │
-│                                                 │
-└───┬───────────────┬───────────────┬─────────────┘
-    │               │               │
-    │ Delegation    │ Tool Calls    │ Testing
-    │               │               │
-    ▼               ▼               ▼
-┌──────────┐  ┌─────────────────────────┐  ┌─────────────┐
-│          │  │                         │  │             │
-│Specialist│  │    Knowledge Sources    │  │    Juno     │
-│ Agents   │  │                         │  │(Test Agent) │
-│          │  │                         │  │             │
-└──────────┘  └──────────┬──────────────┘  └──────┬──────┘
-                         │                        │
-                         ▼                        ▼
-┌────────────────────────────────────────┐  ┌────────────────┐
-│                                        │  │                │
-│  ┌──────────┐  ┌──────────┐  ┌───────┐ │  │ Test Framework │
-│  │          │  │          │  │       │ │  │                │
-│  │  Vector  │  │Knowledge │  │  Web  │ │  │ ┌────────────┐ │
-│  │  Search  │  │  Graph   │  │Search │ │  │ │Structured  │ │
-│  │          │  │          │  │       │ │  │ │Testing     │ │
-│  └────┬─────┘  └────┬─────┘  └───┬───┘ │  │ └────────────┘ │
-│       │             │            │     │  │                │
-│       │             │            │     │  │ ┌────────────┐ │
-│  ┌────▼─────────────▼────────────▼───┐ │  │ │Autonomous  │ │
-│  │                                   │ │  │ │Testing     │ │
-│  │        Enhanced Hybrid Search     │ │  │ └────────────┘ │
-│  │        (Combined Results)         │ │  │                │
-│  │                                   │ │  │ ┌────────────┐ │
-│  └───────────────────────────────────┘ │  │ │Interactive │ │
-│                                        │  │ │Testing     │ │
-└────────────────────────────────────────┘  │ └────────────┘ │
-                                            │                │
-                                            └────────────────┘
-```
+    subgraph ExternalServices
+        VertexAI["Google Vertex AI (Vector Search, Embeddings, Document AI [planned])"]
+        MCP_KG["MCP Knowledge Graph Server"]
+        GoogleSearchAPI["Google Custom Search API"]
+    end
 
-## Data Flow
+    subgraph DataAndConfig
+        EnvConfig["Configuration (.env, config/environment.py)"]
+        DataStorage["Data Storage (GCS [docs], Local Cache)"]
+    end
 
-### Agent Communication Flow
+    subgraph OperationalScripts["Operational Scripts (scripts/)"]
+        ScheduledMonitor["ScheduledVectorSearchMonitor"]
+        TestHealth["TestVectorSearchHealth"]
+    end
 
-1. User query → Vana Agent
-2. Vana analyzes the query and determines required knowledge or delegation
-3. Vana either:
-   - Calls appropriate tools (Vector Search, Knowledge Graph, Web Search, or Hybrid Search)
-   - Delegates to a specialist agent based on expertise
-4. External MCP server processes tool requests
-5. Vana synthesizes results and returns response to user
+    %% Conceptual Agent
+    AgentCore["Conceptual Vana Single Agent (Phase 1 MVP)"]
 
-### Agent Delegation Flow
+    %% Connections
+    UI_Streamlit --> API_Flask;
+    API_Flask --> VS_HealthChecker;
+    API_Flask --> MonitoringUtils;
+    
+    VS_HealthChecker --> VS_Client;
+    ScheduledMonitor --> VS_HealthChecker;
+    TestHealth --> VS_HealthChecker;
 
-1. User query → Vana Agent
-2. Vana determines a specialist agent is better suited for the task
-3. Vana calls `transfer_to_agent` or `coordinate_task` function
-4. Task is assigned to the appropriate specialist agent
-5. Specialist agent processes the task and returns results
-6. Results are presented to the user
+    AgentCore --> VS_Client;
+    AgentCore --> DocProc;
+    AgentCore --> KG_Manager;
+    AgentCore --> HybridSearch;
+    AgentCore --> WebSearch;
+    
+    HybridSearch --> VS_Client;
+    HybridSearch --> KG_Manager;
+    HybridSearch --> WebSearch;
 
-### Vector Search Flow
+    VS_Client --> VertexAI;
+    DocProc --> VertexAI; %% For planned Document AI
+    KG_Manager --> MCP_KG;
+    WebSearch --> GoogleSearchAPI;
 
-1. Agent receives query requiring external knowledge
-2. Agent calls `search_knowledge` tool
-3. Tool attempts to use Vertex AI Vector Search
-4. If permissions fail, falls back to mock implementation
-5. Results returned and incorporated into agent response
-
-### Knowledge Graph Flow
-
-1. Agent receives query requiring structured knowledge
-2. Agent calls `kg_query` or `hybrid_search` tool
-3. MCP server processes the request to Knowledge Graph
-4. Knowledge Graph finds relevant entities and relationships
-5. Results returned and incorporated into agent response
-
-### Web Search Flow
-
-1. Agent receives query requiring up-to-date information
-2. Agent calls `web_search` tool
-3. Tool attempts to use Google Custom Search API
-4. If API fails, falls back to mock implementation
-5. Results returned and incorporated into agent response
-
-### Enhanced Hybrid Search Flow
-
-1. Agent receives complex query requiring comprehensive knowledge
-2. Agent calls `enhanced_search` tool
-3. Tool queries Vector Search, Knowledge Graph, and Web Search in parallel
-4. Results from all sources are combined, ranked, and deduplicated
-5. Combined results returned to agent for comprehensive response
-
-### Testing Framework Flow
-
-1. Test runner initiates testing session
-2. Juno (Test Agent) is activated in one of three modes:
-   - Structured Testing: Executes predefined test cases
-   - Autonomous Testing: Designs and executes tests dynamically
-   - Interactive Testing: Facilitates manual testing
-3. Juno sends test queries to Vana
-4. Juno analyzes Vana's responses against expected results
-5. Juno generates test reports and insights
-6. For autonomous testing, Juno learns from previous test results to improve testing strategy
-
-## Technology Stack
-
-### Core Technologies
-
-- **Python 3.9+**: Primary development language
-- **Google ADK 0.5.0**: Agent development framework
-- **Vertex AI**: Managed AI platform services
-- **Gemini 2.0 Flash**: Primary LLM backend
-
-### GCP Services
-
-- **Vertex AI Agent Engine**: Production runtime for agents
-- **Vector Search**: Semantic search capabilities
-- **Cloud Storage**: Document and artifact storage
-- **IAM**: Identity and access management
-- **Google Custom Search API**: Web search capabilities
-
-### Integration Technologies
-
-- **MCP**: Model Context Protocol for agent communication
-- **External MCP Server**: Community-hosted MCP server (mcp.community.augment.co)
-- **Knowledge Graph API**: Structured knowledge representation
-- **Enhanced Hybrid Search**: Combined Vector Search, Knowledge Graph, and Web Search retrieval
-
-### Testing Technologies
-
-- **Juno Autonomous Tester**: Agent-based testing framework
-- **Test Runner**: Bash script for test execution
-- **Test Cases**: JSON-formatted test definitions
-- **Test Results**: JSON and Markdown reports
-
-## Deployment Architecture
-
-### Local Development
-
-```bash
-# Run ADK development UI
-adk web
-
-# Test Vana agent
-adk run vana.agents.vana
-
-# Run evaluations
-adk eval vana evaluation_set.json
-
-# Configure MCP connection
-export MCP_API_KEY=your_api_key
-export MCP_SERVER_URL=PLACEHOLDER_MCP_SERVER_URL
-export MCP_NAMESPACE=vana-project
+    CoreToolsAndServices --> EnvConfig;
+    CoreToolsAndServices --> LoggingUtils;
+    CoreToolsAndServices --> SecurityUtils;
+    DocProc --> DataStorage; %% For reading source documents
 ```
 
-### Production Deployment
+*(Note: This is a simplified Mermaid diagram. A more detailed visual diagram should be created and embedded as an image for better clarity and aesthetics.)*
 
-```bash
-# Deploy agent to Vertex AI Agent Engine
-python deploy.py
+## 3. Key Architectural Components
 
-# Configure production environment variables
-gcloud secrets create MCP_API_KEY --data-file=/path/to/mcp_api_key.txt
-gcloud secrets create VECTOR_SEARCH_ENDPOINT_ID --data-file=/path/to/endpoint_id.txt
-```
+### 3.1. Monitoring Dashboard
+*   **Flask API Backend (`dashboard/flask_app.py`):**
+    *   Serves RESTful APIs for health status, metrics, and potentially control operations.
+    *   Handles authentication and authorization for dashboard access.
+    *   Interfaces with monitoring tools (e.g., `VectorSearchHealthChecker`).
+*   **Streamlit Frontend UI (`dashboard/app.py`):**
+    *   Provides a web-based user interface for visualizing system health (especially Vector Search), performance metrics, historical trends, and alerts.
+    *   Consumes data from the Flask API backend.
 
-## Security Architecture
+### 3.2. Core Tools & Services (`tools/` directory)
+*   **Vector Search Integration (`tools/vector_search/`):**
+    *   `VectorSearchClient`: Manages all interactions with Google Vertex AI Vector Search (CRUD for embeddings, search operations).
+    *   `VectorSearchHealthChecker`: Performs comprehensive health diagnostics on the Vector Search service.
+*   **Document Processing (`tools/document_processing/`):**
+    *   `DocumentProcessor`: Handles parsing of various document formats (currently PyPDF2/Pytesseract).
+    *   `SemanticChunker`: Splits documents into meaningful chunks for embedding.
+    *   *Planned Enhancement:* Primary parsing using Vertex AI Document AI.
+*   **Knowledge Graph (`tools/knowledge_graph/`):**
+    *   `KnowledgeGraphManager`: Interacts with an MCP-compatible server for storing and querying structured knowledge (entities, relationships).
+*   **Web Search (`tools/web_search_client.py`):**
+    *   Client for Google Custom Search API to fetch real-time web information.
+*   **Hybrid Search (`tools/enhanced_hybrid_search.py`):**
+    *   Orchestrates queries across Vector Search, Knowledge Graph, and Web Search, combining results.
+*   **Supporting Utilities:**
+    *   `tools/monitoring/`: Includes resilience patterns like Circuit Breakers.
+    *   `tools/security/`: Modules for credential management, access control.
+    *   `tools/logging/`: Standardized logging facilities.
 
-### Authentication & Authorization
+### 3.3. Configuration System (`config/environment.py`)
+*   Manages loading of environment-specific settings (API keys, service endpoints, operational parameters) from `.env` files, allowing for different configurations for development, testing, and production.
 
-- **GCP IAM**: Service account permissions for GCP resources
-- **API Keys**: Secured in environment variables
-- **Webhook Authentication**: Basic auth for n8n webhooks
+### 3.4. Operational Scripts (`scripts/`)
+*   Includes scripts for automated tasks (e.g., `scheduled_vector_search_monitor.py`) and on-demand utilities/tests (e.g., `test_vector_search_health.py`).
 
-### Data Protection
+### 3.5. Conceptual Single Agent (Phase 1 MVP Goal)
+*   While not a fully implemented discrete software module yet, the Vana system is being built to support a single, intelligent agent. This agent will leverage the core tools and services (Vector Search, Document Processing, KG, Hybrid Search, etc.) to perform complex tasks and interact with users. The current tools are the building blocks for this agent's capabilities.
 
-- **Environment Variables**: Sensitive credentials stored in .env files
-- **Gitignore Rules**: Prevent committing sensitive files
-- **Encrypted Communication**: HTTPS for production deployments
+## 4. Data and Control Flow Highlights
+*   **Monitoring:** Scheduled scripts or API calls trigger the `VectorSearchHealthChecker`, which uses the `VectorSearchClient`. Results are exposed via the Flask API and visualized by the Streamlit UI.
+*   **Search:** The `EnhancedHybridSearch` tool acts as a primary entry point for complex queries, delegating to the respective clients for Vector Search, KG, and Web Search.
+*   **Document Ingestion (Conceptual):** Documents are processed by `DocumentProcessor`, chunked, embedded (via `VectorSearchClient`), and then indexed into Vector Search. Entities/relationships may be extracted by `KnowledgeGraphManager`.
 
-## Error Handling
+## 5. Evolution to Multi-Agent System (Phase 2 Vision)
+*   The robust suite of tools and the functional single agent (Phase 1) will serve as the foundation.
+*   Phase 2 will introduce an orchestration layer and specialized agents that utilize these established tools to collaborate on more complex tasks.
 
-### Graceful Degradation
-
-The system implements graceful degradation at multiple levels:
-
-1. **Hybrid Search**: Falls back to Vector Search if Knowledge Graph is unavailable
-2. **Vector Search**: Falls back to agent's built-in knowledge if search fails
-3. **Knowledge Graph**: Falls back to direct entity lookup if relationship queries fail
-
-### Error Recovery
-
-1. **Automatic Retries**: For transient failures in API calls
-2. **Logging**: Comprehensive logging for debugging
-3. **Monitoring**: Health checks and alerts for critical components
-
-## Monitoring & Observability
-
-### Built-in Monitoring
-
-- Agent Engine dashboard in Cloud Console
-- Cloud Logging for agent execution traces
-- Cloud Trace for performance monitoring
-
-### Custom Metrics
-
-- Agent response times
-- Tool usage patterns
-- Vector Search query performance
-- Knowledge Graph query success rates
-- Hybrid Search result quality
-
-## Appendices
-
-### Appendix A: ADK Resource Types
-
-| Component | Purpose | Key Features |
-|-----------|---------|--------------|
-| Agent | Agent definition | Instructions, tools, sub-agents |
-| Tool | Agent capabilities | @tool decorator, type hints |
-| Runner | Execution engine | Stream handling, state management |
-| Session | Conversation state | Memory, context preservation |
-
-### Appendix B: Development Workflow
-
-1. Define agents in Python code
-2. Implement tools with docstrings
-3. Test locally with `adk web`
-4. Run automated tests with Juno
-5. Evaluate with `adk eval`
-6. Deploy to Agent Engine
-
-### Appendix C: Knowledge Commands Reference
-
-| Command | Purpose | Example |
-|---------|---------|----------|
-| `!vector_search` | Search Vector Search | `!vector_search What is VANA?` |
-| `!kg_query` | Query Knowledge Graph | `!kg_query project VANA` |
-| `!hybrid_search` | Search Vector Search and Knowledge Graph | `!hybrid_search How does VANA work?` |
-| `!enhanced_search` | Search all knowledge sources | `!enhanced_search What's the latest on VANA?` |
-| `!web_search` | Search the web | `!web_search What is Google ADK?` |
-| `!kg_store` | Store entity in Knowledge Graph | `!kg_store VANA project "VANA is a system..."` |
-
-### Appendix D: Testing Commands Reference
-
-| Command | Purpose | Example |
-|---------|---------|----------|
-| `./scripts/run_vana_tests.sh` | Run predefined test cases | `./scripts/run_vana_tests.sh` |
-| `./scripts/run_vana_tests.sh --autonomous` | Run autonomous testing | `./scripts/run_vana_tests.sh --autonomous --max-tests 15` |
-| `./scripts/run_vana_tests.sh --interactive` | Run interactive testing | `./scripts/run_vana_tests.sh --interactive` |
-| `./scripts/run_vana_tests.sh --single-test` | Run a single test | `./scripts/run_vana_tests.sh --single-test TC002` |
-
-### Appendix E: Troubleshooting Guide
-
-See the [Troubleshooting Guide](troubleshooting/common-issues.md) for common issues and solutions.
+This overview will be expanded with more detailed diagrams and explanations for each sub-system in their respective documentation sections.

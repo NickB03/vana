@@ -1,38 +1,38 @@
-# Vector Search Implementation for VANA
+# VANA Vector Search Subsystem Implementation
+
+[Home](../../index.md) > [Implementation](./index.md) > Vector Search Subsystem
 
 ## Overview
 
-This document provides detailed specifications for implementing the Vector Search component of VANA using Vertex AI. The Vector Search component is critical for semantic knowledge retrieval and forms part of the hybrid search system that combines with the Knowledge Graph.
+This document provides an overview of the Vector Search subsystem within VANA, which leverages Google Cloud Vertex AI Vector Search. This subsystem is critical for semantic knowledge retrieval and is a core component of VANA's `EnhancedHybridSearch` capabilities. It encompasses model selection for embeddings, document chunking strategies, metadata schema, index configuration, and the overall data flow.
 
-## Model Selection
+For details on the client used to interact with Vertex AI, see [Vector Search Client Implementation](vector-search-client.md).
+For health monitoring aspects, see [Vector Search Health Monitoring System Implementation](vector-search-health-monitoring.md) and [Vector Search Health Checker Implementation](vector-search-health-checker.md).
 
-For VANA's MVP implementation, we will use Vertex AI's text embedding models:
+## Embedding Model Selection
 
-| Model | Dimensions | Context Window | Best Use Case |
-|-------|------------|----------------|--------------|
-| `text-embedding-004` | 1408 | 8192 tokens | Primary model - highest quality |
-| `textembedding-gecko@latest` | 768 | 3072 tokens | Fallback model |
+VANA primarily uses Google Vertex AI's text embedding models. As per `memory-bank/techContext.md`:
+*   **Primary Model:** `text-embedding-004` (or a similar latest generation model provided by Vertex AI). This model typically has **768 dimensions**.
+*   **Fallback/Alternative:** `textembedding-gecko@latest` (or specific versions like `textembedding-gecko@003`) can also be used, also typically providing **768 dimensions**.
 
-**Recommendation**: Use `text-embedding-004` as our primary embedding model for its superior quality and larger context window. The `textembedding-gecko` models can serve as fallbacks if needed for cost optimization.
+**Considerations:**
+*   The choice of model impacts embedding quality, dimensionality, context window size, and cost.
+*   The `VectorSearchClient` should be configurable or adaptable to use the chosen model specified in VANA's configuration (`config.environment`).
+*   The Vector Search index must be configured with dimensions matching the chosen embedding model (e.g., 768).
 
 ## Document Chunking Strategy
 
-To optimize retrieval quality with Vertex AI models, we'll implement a semantic chunking strategy:
+Effective document chunking is crucial for optimal retrieval quality. VANA's `DocumentProcessor` (using its `SemanticChunker`) aims to implement a robust strategy:
 
-### Chunk Sizing for text-embedding-004
-
-- **Primary chunk size**: 2048-4096 tokens
-- **Chunk overlap**: 256-512 tokens (approximately 10-15%)
-- **Section awareness**: Respect document structure (headings, sections)
-
-### Chunking Implementation
-
-The chunking process will:
-
-1. Preserve document hierarchy (sections, subsections)
-2. Maintain semantic boundaries (paragraphs, lists)
-3. Include heading context with each chunk
-4. Apply consistent metadata across related chunks
+*   **Chunk Sizing:**
+    *   Chunk sizes should be appropriate for the context window and typical query length relevant to the chosen embedding model. For models like `text-embedding-004` (with an 8192 token input limit for the model itself, not necessarily the chunk size for retrieval), chunks might range from a few hundred to potentially 1000-2000 tokens, depending on the content طبيعة and retrieval strategy.
+    *   The `SemanticChunker` in `tools/document_processing/semantic_chunker.py` handles this.
+*   **Chunk Overlap:**
+    *   A small overlap (e.g., 10-15% of chunk size, or 50-200 tokens) between consecutive chunks helps preserve context across chunk boundaries.
+*   **Semantic Awareness:**
+    *   The chunking process should strive to respect document structure (headings, sections, paragraphs) and maintain semantic boundaries where possible.
+    *   Including heading context or other structural metadata with each chunk can improve retrieval relevance.
+*   **Implementation:** These strategies are implemented within `tools/document_processing/document_processor.py` and `tools/document_processing/semantic_chunker.py`.
 
 ## Metadata Schema
 
@@ -51,254 +51,73 @@ For optimal filtering and retrieval, chunks will include this metadata:
 }
 ```
 
-## Vector Index Configuration
+## Vector Index Configuration (Vertex AI)
 
-The Vertex AI Vector Search index will be configured with:
+The Vertex AI Vector Search index should be configured considering:
+- **Dimensions**: **768** (to match models like `text-embedding-004` or `textembedding-gecko`).
+- **Distance Metric**: `DOT_PRODUCT_DISTANCE` or `COSINE_DISTANCE` are common for text embeddings. `SQUARED_EUCLIDEAN_DISTANCE` is another option. The choice depends on the embedding model's characteristics and normalization.
+- **Approximate Nearest Neighbor (ANN) Algorithm Configuration:**
+    - `approximateNeighborsCount`: Number of neighbors to search for (e.g., 10-150, depending on recall needs).
+    - `leafNodesToSearchPercent` (for tree-AH algorithm) or similar parameters: Controls the trade-off between search accuracy (recall) and latency.
+- **Sharding:** Vertex AI handles sharding automatically based on data size. The number of shards can impact update latency and query capacity.
+- **Index Update Method:** `BATCH_UPDATE` is generally preferred for efficiency when adding or updating many embeddings. Streaming updates are available for lower latency individual updates but may have higher costs or different performance characteristics.
+- **Filtering (Optional):** If metadata filtering is required (e.g., search within a specific `doc_type` or `source`), the index needs to be created with support for filtering, and datapoints must include `restricts` (for string tags) or `numeric_restricts`.
 
-- **Dimensions**: 1408 (matching text-embedding-004)
-- **Distance metric**: DOT_PRODUCT_DISTANCE
-- **Approximate neighbor count**: 150
-- **Sharding strategy**: SHARD_SIZE_MEDIUM (adjustable based on corpus size)
-- **Index update method**: BATCH_UPDATE for efficiency
+This configuration is done within the Google Cloud Console or via the `gcloud` CLI / Vertex AI SDK when creating the index and endpoint.
 
-## Deployment Flow
+## Data Flow for Ingestion and Search
 
-1. **Document Processing Pipeline**
-   - Parse documents with Document AI
-   - Apply semantic chunking
-   - Generate embeddings with text-embedding-004
-   - Store in Vector Search index
+1.  **Document Processing Pipeline (Ingestion):**
+    *   Documents are parsed by `DocumentProcessor` (currently PyPDF2/Pytesseract, planned: Vertex AI Document AI).
+    *   Text content is chunked by `SemanticChunker`.
+    *   Embeddings for each chunk are generated by `VectorSearchClient` using the configured Vertex AI embedding model.
+    *   Chunks (with their embeddings and metadata) are prepared in JSONL format and uploaded to GCS.
+    *   `VectorSearchClient` triggers a batch update on the Vertex AI Vector Search index using the GCS URI of the JSONL file.
+2.  **Search Implementation (Querying):**
+    *   A query text is received (e.g., by `EnhancedHybridSearch` or the Vana Agent).
+    *   `VectorSearchClient` generates an embedding for the query text.
+    *   `VectorSearchClient` sends this query embedding to the Vertex AI Vector Search endpoint to find nearest neighbors.
+    *   Metadata filters can be applied if supported and needed.
+    *   Results (neighbor IDs, distances/scores) are returned. These IDs typically correspond to `chunk_id`s.
+    *   The system then needs to retrieve the original chunk text and context associated with these IDs (this might involve a separate lookup if not returned directly by Vector Search or if only IDs are stored in the index's metadata).
+3.  **Hybrid Search Integration:**
+    *   `EnhancedHybridSearch` uses `VectorSearchClient` as one of its sources.
+    *   Vector Search results are combined with results from Knowledge Graph and Web Search.
+    *   A re-ranking algorithm is applied to the combined set to produce the final unified results.
 
-2. **Search Implementation**
-   - Generate query embeddings
-   - Perform vector similarity search
-   - Apply metadata filtering as needed
-   - Return formatted results with source context
+## Performance and Cost Considerations
 
-3. **Hybrid Integration**
-   - Combine Vector Search results with Knowledge Graph
-   - Apply re-ranking based on combined relevance
-   - Present unified results to the user
-
-## Integration with ADK
-
-The Vector Search component will be exposed through the ADK agent as:
-
-```python
-@tool_lib.tool("vector_search")
-def vector_search(self, query: str, top_k: int = 5) -> str:
-    """
-    Search for information in the knowledge base.
-
-    Args:
-        query: The search query
-        top_k: Maximum number of results to return (default: 5)
-
-    Returns:
-        Formatted string with search results
-    """
-```
-
-## Performance Considerations
-
-- **Batch updates**: Schedule regular batch updates rather than real-time updates
-- **Caching**: Implement response caching for frequent queries
-- **Monitoring**: Track latency, recall, and precision metrics
-- **Scaling**: Monitor index size and adjust sharding as the corpus grows
+- **Batch Updates:** Prefer batch updates for ingesting large volumes of data for cost and efficiency.
+- **Query Volume & QPS:** Monitor query volume and ensure the Vertex AI endpoint is scaled appropriately (this is often managed by Vertex AI, but pricing can be QPS-based).
+- **Embedding Generation Costs:** Embedding generation incurs costs per character/token. Optimize by embedding only necessary content.
+- **Index Storage Costs:** Storage costs depend on the number and dimensionality of embeddings.
+- **Monitoring:** Track query latency, recall, and precision. The VANA Monitoring Dashboard and `VectorSearchHealthChecker` assist with this.
+- **Scaling:** Vertex AI Vector Search is designed to scale, but understanding its limits and sharding behavior is important for very large corpora.
 
 ## Testing Strategy
 
-1. **Retrieval Quality Testing**
-   - Prepare test queries with known correct answers
-   - Measure precision@k and recall@k
-   - Compare against baseline keyword search
+1.  **Retrieval Quality Testing:**
+    *   Use a "golden dataset" of queries with known relevant document chunks.
+    *   Measure metrics like Mean Reciprocal Rank (MRR), Precision@k, Recall@k, NDCG.
+    *   Compare different chunking strategies or embedding models.
+2.  **Performance Testing:**
+    *   Measure end-to-end query latency (including embedding generation for the query).
+    *   Test with varying query loads and concurrent requests.
+    *   Evaluate performance as the index size grows.
 
-2. **Performance Testing**
-   - Measure latency at different query loads
-   - Test with incrementally growing corpus sizes
-   - Verify throughput under concurrent queries
+## Vector Search Client (`VectorSearchClient`) Summary
 
-## Enhanced Hybrid Search
-
-The enhanced hybrid search combines Vector Search, Knowledge Graph, and Web Search to provide the most comprehensive results. It leverages the strengths of each approach:
-
-- **Vector Search**: Provides semantic understanding and similarity-based retrieval
-- **Knowledge Graph**: Provides structured knowledge and explicit relationships
-- **Web Search**: Provides up-to-date information from the web
-
-### Implementation
-
-The enhanced hybrid search is implemented in `tools/enhanced_hybrid_search.py` and includes:
-
-1. **Query Processing**: Analyzes and processes the query
-2. **Parallel Search**: Sends the query to Vector Search, Knowledge Graph, and Web Search
-3. **Result Merging**: Combines results from all sources with deduplication
-4. **Dynamic Ranking**: Ranks results based on relevance, source quality, and recency
-5. **Response Formatting**: Generates a coherent response with source attribution
-
-### Vector Search Implementation Details
-
-The Vector Search component has been updated with the following improvements:
-
-1. **Explicit Type Conversion**: All embedding values are explicitly converted to float to prevent the "must be real number, not str" error:
-   ```python
-   # Convert embedding values to float
-   embedding_values = [float(value) for value in embedding.values]
-   ```
-
-2. **Validation**: Added validation to ensure all embedding values are proper float types:
-   ```python
-   if not all(isinstance(value, float) for value in query_embedding):
-       query_embedding = [float(value) for value in query_embedding]
-   ```
-
-3. **Enhanced Error Handling**: Added more detailed error logging and fallback mechanisms:
-   ```python
-   try:
-       response = endpoint.find_neighbors(
-           deployed_index_id=deployed_index_id,
-           queries=[query_embedding],
-           num_neighbors=top_k
-       )
-   except Exception as e:
-       logger.error(f"Error in find_neighbors: {str(e)}")
-       # Try alternative API if available
-       try:
-           response = endpoint.match(
-               deployed_index_id=deployed_index_id,
-               queries=[{"datapoint": query_embedding}],
-               num_neighbors=top_k
-           )
-       except Exception as alt_e:
-           logger.error(f"Alternative API also failed: {str(alt_e)}")
-           raise
-   ```
-
-4. **Detailed Logging**: Added detailed logging to track embedding dimensions and value types:
-   ```python
-   logger.info(f"Generated embedding with {len(embedding_values)} dimensions")
-   logger.info(f"First 5 values: {embedding_values[:5]}")
-   logger.info(f"Value types: {[type(v) for v in embedding_values[:5]]}")
-   ```
-
-### Fallback Mechanism
-
-The enhanced hybrid search includes a robust fallback mechanism:
-
-1. **Mock Vector Search**: When the real Vector Search is unavailable (due to permissions or connectivity issues), the system automatically falls back to a mock implementation that provides predefined responses for common queries.
-
-2. **Mock Knowledge Graph**: Similarly, when the Knowledge Graph is unavailable, the system uses a mock implementation to ensure continuity.
-
-3. **Graceful Degradation**: The system prioritizes available sources and continues to function even when some components are unavailable, ensuring users always receive a response.
-
-### Usage
-
-```python
-from tools.enhanced_hybrid_search import EnhancedHybridSearch
-
-# Initialize enhanced hybrid search
-hybrid_search = EnhancedHybridSearch()
-
-# Perform search with all sources
-results = hybrid_search.search("What is VANA?", top_k=5, include_web=True)
-
-# Format results
-formatted = hybrid_search.format_results(results)
-print(formatted)
-```
-
-### Web Search Integration
-
-The web search component uses the Google Custom Search API to retrieve up-to-date information from the web. It is implemented in `tools/web_search.py` and includes:
-
-1. **Query Processing**: Prepares the query for web search
-2. **API Request**: Sends the query to the Google Custom Search API
-3. **Result Processing**: Extracts relevant information from the API response
-4. **Result Formatting**: Formats the results for integration with hybrid search
-
-For testing purposes, a mock implementation is provided in `tools/web_search_mock.py`.
-
-## Health Monitoring System
-
-The Vector Search Health Monitoring System provides comprehensive monitoring, alerting, and visualization for the Vector Search integration. It ensures the reliability and performance of the Vector Search system through proactive detection and resolution of issues.
-
-### Components
-
-1. **Vector Search Health Checker** (`tools/vector_search/health_checker.py`)
-   - Performs comprehensive health checks on Vector Search
-   - Monitors environment configuration, authentication, embedding generation, and search functionality
-   - Generates actionable recommendations for issues
-   - Tracks historical health data and trends
-
-2. **Circuit Breaker** (`tools/monitoring/circuit_breaker.py`)
-   - Prevents cascading failures in the monitoring system
-   - Manages failure thresholds and recovery timeouts
-   - Provides fallback mechanisms for degraded operation
-
-3. **Scheduled Monitoring** (`scripts/scheduled_vector_search_monitor.py`)
-   - Runs health checks on a configurable schedule
-   - Implements adaptive monitoring intervals based on system health
-   - Stores historical health data with configurable retention policies
-   - Generates alerts for critical issues
-
-4. **Dashboard Integration** (`dashboard/monitoring/vector_search_monitor.py`)
-   - Provides a web interface for monitoring Vector Search health
-   - Visualizes health status, metrics, and trends
-   - Displays actionable recommendations
-   - Secures access with role-based authentication
-
-### Health Checks
-
-The health checker performs the following checks:
-
-1. **Environment Check**
-   - Verifies required environment variables are set
-   - Checks for missing configuration
-
-2. **Authentication Check**
-   - Verifies authentication with Google Cloud
-   - Checks service account permissions
-
-3. **Embedding Check**
-   - Tests embedding generation functionality
-   - Verifies embedding dimensions and format
-   - Detects mock implementations
-
-4. **Search Check**
-   - Tests search functionality
-   - Verifies result format and quality
-   - Measures response time
-
-### Usage
-
-```python
-from tools.vector_search.health_checker import VectorSearchHealthChecker
-
-# Create health checker
-checker = VectorSearchHealthChecker()
-
-# Run health check
-result = checker.check_health()
-print(f"Health status: {result['status']}")
-
-# Get recommendations
-recommendations = checker.get_recommendations(result)
-for rec in recommendations:
-    print(f"[{rec['priority']}] {rec['title']}: {rec['action']}")
-
-# Generate report
-report = checker.generate_report()
-```
-
-For more details, see the [Vector Search Health Monitoring](../implementation/vector-search-health-monitoring.md) documentation.
+The `tools/vector_search/vector_search_client.py` is the VANA component that directly interacts with the Vertex AI SDK. Key aspects include:
+*   **Initialization:** Configured with GCP project details, endpoint, and index IDs from `config.environment`.
+*   **Core Operations:** Provides Python methods for `generate_embeddings`, `find_neighbors`, and data management operations like `upsert_datapoints` (often via GCS) and `remove_datapoints`.
+*   **Error Handling & Resilience:** Implements try-except blocks for SDK calls and should integrate with VANA's circuit breaker patterns.
+*   **Logging:** Uses VANA's standard logger for operational and debug information.
+*   For full details, see [Vector Search Client Implementation](vector-search-client.md).
 
 ## Future Enhancements
 
-1. **Multi-modal Embeddings**: Extend to handle image and code content
-2. **Query Expansion**: Implement automatic query expansion techniques
-3. **Personalized Ranking**: Adjust ranking based on user context
-4. **Cross-lingual Retrieval**: Implement using multilingual embedding models
-5. **Query Understanding**: Improve query analysis for better routing
-6. **Multi-hop Reasoning**: Enable following multiple relationship paths for complex queries
-7. **Advanced Health Monitoring**: Implement predictive maintenance and anomaly detection
-8. **Multi-Environment Support**: Monitor multiple Vector Search environments
+1.  **Multi-modal Embeddings:** Extending to support image or other data types if VANA's scope expands.
+2.  **Advanced Filtering:** Leveraging more sophisticated filtering capabilities of Vertex AI Vector Search.
+3.  **Query Preprocessing:** Implementing techniques like query expansion or rephrasing before embedding generation.
+4.  **Dynamic Index Selection:** If multiple Vector Search indexes are used (e.g., for different content types or security levels), logic to select the appropriate index per query.
+5.  **Integration with Vertex AI Document AI:** Fully transitioning the document parsing stage to use Vertex AI Document AI for improved text extraction and layout understanding, which would feed better quality content into the embedding and chunking process.

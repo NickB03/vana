@@ -2,28 +2,42 @@
 
 [Home](../index.md) > Guides
 
-This section contains user and developer guides for the VANA system, providing step-by-step instructions for common tasks.
+This section provides practical, step-by-step guides for setting up, configuring, using, and operating various components of the VANA system.
 
 ## Contents
 
-- [Environment Setup](guides/environment-setup.md)
-- [ADK Integration Guide](guides/adk-integration-guide.md)
-- [Memory Commands](memory-commands.md)
-- [Knowledge Graph Commands](guides/knowledge-graph-commands.md)
-- [Vector Search Usage](vector-search-usage.md)
-- [Web Search Configuration](guides/web-search-configuration.md)
-- [Troubleshooting Guide](troubleshooting-guide.md)
+### I. Setup & Configuration
+-   **[Installation Guide](installation-guide.md)**: Step-by-step instructions for setting up the VANA project, including environment setup and dependencies.
+-   **[Configuring Web Search](web-search-configuration.md)**: How to set up API keys and engine IDs for Google Custom Search integration.
+    *   For general VANA configuration using `.env` files, see the Installation Guide and [Configuration System Implementation](../implementation/config-environment.md).
 
-## Overview
+### II. Using Core VANA Services & Tools
+-   **Monitoring Dashboard:**
+    -   [Running the VANA Monitoring Dashboard](running-dashboard.md): How to start the Flask API and Streamlit UI.
+    -   [VANA Monitoring Dashboard User Guide](dashboard-guide.md): Navigating and understanding the dashboard.
+    -   [Interpreting Vector Search Health Reports](vector-search-health-reports.md): Understanding the health status and metrics for Vector Search.
+    -   [API Security Guide](api-security.md): Authentication and authorization for API endpoints.
+-   **Vector Search:**
+    -   [VectorSearchClient Usage Guide](vector-search-client-usage.md): Programmatic interaction with Vertex AI Vector Search.
+-   **Document Processing:**
+    -   [DocumentProcessor Usage Guide](document-processor-usage.md): Using the tool for parsing documents and extracting text.
+    -   [Preparing Documents for Ingestion](preparing-documents-ingestion.md): Best practices for document preparation.
+-   **Knowledge Graph:**
+    -   [KnowledgeGraphManager Usage Guide](kg-manager-usage.md): Interacting with the MCP Knowledge Graph.
+    -   [Conceptual Knowledge Graph Commands](knowledge-graph-commands.md): High-level commands for KG operations (e.g., for agent use).
+-   **Hybrid Search:**
+    -   [EnhancedHybridSearch Usage Guide](hybrid-search-usage.md): Using the tool that combines multiple search sources.
+-   **Web Search:**
+    -   [WebSearchClient Usage Guide](web-search-usage.md): Programmatic interaction with Google Custom Search.
 
-The guides provide practical instructions for setting up, configuring, and using the VANA system. They are organized by topic and include step-by-step procedures, examples, and troubleshooting tips.
+### III. Operational Guides
+-   [Running Scheduled Tasks](scheduled-tasks.md): Setting up and managing automated tasks like the Vector Search health monitor.
+-   [Interpreting VANA Logs](interpreting-logs.md): Finding, reading, and understanding system logs.
 
-## Key Guides
+### IV. Development Guides
+-   **[VANA Development Overview](../development/index.md)**: Entry point for developer-specific documentation.
+-   [Adding a New Tool to VANA](adding-new-tool.md): Process and considerations for extending VANA with new tools.
+-   [Extending the VANA Monitoring Dashboard](extending-dashboard.md): How to add new views or functionalities to the dashboard.
+-   [Security Integration Guide](security-integration.md): Guidance on security principles and components in VANA.
 
-- **Environment Setup**: Instructions for setting up the development environment
-- **ADK Integration Guide**: Guide for integrating with Google's Agent Development Kit
-- **Memory Commands**: Reference for memory-related commands
-- **Knowledge Graph Commands**: Reference for Knowledge Graph commands
-- **Vector Search Usage**: Guide for using Vector Search
-- **Web Search Configuration**: Guide for configuring Web Search
-- **Troubleshooting Guide**: Solutions for common issues
+*This index provides links to key guides. For architectural details, see the [Architecture section](../architecture/index.md), and for implementation specifics, see the [Implementation section](../implementation/index.md).*
