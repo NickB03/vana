@@ -1,0 +1,98 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual Environment
+.env
+.venv
+.venv/
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Large files
+*.tar.gz
+*.zip
+*.rar
+*.7z
+
+# Secrets and credentials
+secrets/
+*.pem
+*.key
+*.p12
+*.json
+!package.json
+!package-lock.json
+!augment-config.json
+!.env.example
+!frontend/.env.example
+!adk-setup/.env.example
+!mcp-servers/n8n-mcp/.env.example
+.service-account.json
+*credentials*.json
+*credential*.json
+*service-account*.json
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Local development
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env
+google-cloud-cli-458.0.0-darwin-x86_64.tar.gz
+
+# n8n local installation
+n8n-local/
+node_modules/
+
+# Git internal files
+.git/FETCH_HEAD
+.git/index
+.git/info/refs
+.git/logs/
+.git/objects/
+.git/packed-refs
+.git/refs/
