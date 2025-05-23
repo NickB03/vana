@@ -1,0 +1,45 @@
+{
+  "version": "1.0",
+  "knowledgeGraph": {
+    "provider": "mcp",
+    "config": {
+      "serverUrl": "https://knowledge-graph-default.modelcontextprotocol.com",
+      "namespace": "vana-project",
+      "apiKey": "${MCP_API_KEY}"
+    }
+  },
+  "memory": {
+    "enabled": true,
+    "autoSave": true,
+    "autoLoad": true,
+    "providers": {
+      "knowledge_graph": {
+        "enabled": true,
+        "config": {
+          "server_url": "https://knowledge-graph-default.modelcontextprotocol.com",
+          "namespace": "${MCP_NAMESPACE}",
+          "api_key": "${MCP_API_KEY}"
+        }
+      },
+      "vector_search": {
+        "enabled": true,
+        "config": {
+          "project": "${GOOGLE_CLOUD_PROJECT}",
+          "location": "${GOOGLE_CLOUD_LOCATION}",
+          "endpoint_id": "${VECTOR_SEARCH_ENDPOINT_ID}",
+          "deployed_index_id": "${DEPLOYED_INDEX_ID}"
+        }
+      }
+    },
+    "settings": {
+      "default_provider": "hybrid",
+      "sync_interval": 3600
+    }
+  },
+  "chatHistory": {
+    "import": {
+      "enabled": true,
+      "sources": ["claude"]
+    }
+  }
+}

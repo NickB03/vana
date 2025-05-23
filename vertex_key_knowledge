@@ -1,0 +1,108 @@
+# Vertex AI - Tactical Knowledge for Vana Project
+
+---
+
+## Vertex AI Embeddings (Text)
+
+### Purpose
+- Provides text embeddings for semantic search, clustering, classification.
+- Used for building memory-augmented agents by turning text into vector representations.
+
+### Key Model: `textembedding-gecko`
+- Optimized for general-purpose text embedding tasks.
+- Embedding dimensionality: 768 dimensions.
+- Typical use cases:
+  - Document search
+  - FAQ retrieval
+  - Contextual matching
+- Supports batched input for efficient vectorization.
+
+### API Workflow
+- **Input**: Raw text (UTF-8)
+- **Output**: Dense vector (array of floats)
+- Embedding call typical structure:
+  1. Prepare JSON request body.
+  2. POST to Vertex endpoint with credentials.
+  3. Receive vector.
+
+```json
+{
+  "instances": [
+    {"content": "your text here"}
+  ]
+}
+```
+
+### Authentication
+- Uses Google IAM service accounts or OAuth tokens.
+- Service account JSON recommended for server-to-server operations.
+
+### Deployment Tips
+- Default quota: 1000 requests/day (can be increased manually).
+- Embedding latency: Low (~100ms typical).
+- Batching improves throughput significantly (up to 100 instances per call).
+
+### Relevance to Vana
+- Vectorize Vana project documents.
+- Populate external memory (e.g., Ragie today, Vertex Vector DB later).
+- Enable RAG retrieval using semantic search over embeddings.
+
+---
+
+## Vertex Vector Store (Optional Phase 2+)
+
+### Purpose
+- Store and search large-scale embeddings natively inside Vertex AI.
+- Supports millions of vectors.
+- Fully managed scaling and indexing.
+
+### Key Features
+- Approximate Nearest Neighbor (ANN) search.
+- Multiple distance metrics (cosine similarity, Euclidean, etc.).
+- Built-in versioning for vector datasets.
+- Hybrid metadata + semantic search capabilities.
+
+### Cost
+- Storage and search operations billed separately.
+- Free tier covers small-scale RAG use; scaling can be expensive if unmanaged.
+
+### Relevance to Vana
+- Ragie (temporary Phase 1 memory) can later be upgraded to Vertex native vector store.
+- Enables full control over memory without third-party dependencies.
+
+---
+
+## Vertex Agent Builder (Preview, Phase 3+)
+
+### Purpose
+- No-code/low-code builder for conversational or action-based agents.
+- Intents → Flows → Tools mapped declaratively.
+- Similar architecture to ADK but tightly coupled to Google Cloud.
+
+### Core Concepts
+- **Intents**: User goals or triggers.
+- **Flows**: Directed graphs defining how agent processes intents.
+- **Entities**: Structured data extracted from user input.
+- **Tools**: External APIs or functions invoked by agent steps.
+
+### Deployment Notes
+- Agent Builder integrates natively with Vertex AI models (including embeddings, LLMs).
+- Can export agents as API endpoints for custom app integration.
+- Useful for future production scaling but not necessary for Phase 1/2.
+
+### Relevance to Vana
+- Phase 1: Skip (not tactical yet).
+- Phase 2+: Possible migration target for operational agents if MCP architecture bottlenecks.
+
+---
+
+## Tactical Best Practices
+- **Use batching** when embedding large docs.
+- **Log embedding request IDs** for audit/debugging.
+- **Minimize input size** to avoid token overflow penalties.
+- **Secure service account keys tightly** (don't embed in client-side code).
+
+---
+
+# End of Tactical Extraction (Phase 1)
+

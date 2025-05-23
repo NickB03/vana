@@ -1,0 +1,22 @@
+version: '3'
+
+services:
+  mcp-server:
+    image: leonardsellem/n8n-mcp-server:latest
+    container_name: vana-mcp-server
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    environment:
+      - MCP_SERVER_PORT=5000
+      - MCP_NAMESPACE=vana-dev
+      - MCP_API_KEY=local_dev_key
+      - NODE_ENV=development
+    volumes:
+      - ./data:/app/data
+    networks:
+      - vana-network
+
+networks:
+  vana-network:
+    driver: bridge

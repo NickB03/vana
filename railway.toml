@@ -1,0 +1,17 @@
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "docker/images/n8n/Dockerfile"
+
+[deploy]
+startCommand = "n8n start"
+healthcheckPath = "/healthz"
+healthcheckTimeout = 300
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 10
+
+[variables]
+N8N_VERSION = "1.31.0"
+N8N_BASIC_AUTH_ACTIVE = "true"
+N8N_PROTOCOL = "https"
+NODE_ENV = "production"
+GENERIC_TIMEZONE = "UTC"
