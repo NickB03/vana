@@ -11,7 +11,13 @@ This section provides practical, step-by-step guides for setting up, configuring
 -   **[Configuring Web Search](web-search-configuration.md)**: How to set up API keys and engine IDs for Google Custom Search integration.
     *   For general VANA configuration using `.env` files, see the Installation Guide and [Configuration System Implementation](../implementation/config-environment.md).
 
-### II. Using Core VANA Services & Tools
+### II. Using the VANA Agent
+-   **[Agent Usage Guide](agent-usage.md)**: Overview of the VANA agent and its capabilities.
+-   **[Agent CLI Guide](agent-cli-guide.md)**: Using the command-line interface for the VANA agent.
+-   **[Agent Demo Guide](agent-demo.md)**: Running and understanding the VANA agent demo.
+-   **[Agent Tool Usage Guide](agent-tool-usage.md)**: Using the various tools available in the VANA agent.
+
+### III. Using Core VANA Services & Tools
 -   **Monitoring Dashboard:**
     -   [Running the VANA Monitoring Dashboard](running-dashboard.md): How to start the Flask API and Streamlit UI.
     -   [VANA Monitoring Dashboard User Guide](dashboard-guide.md): Navigating and understanding the dashboard.
@@ -30,11 +36,11 @@ This section provides practical, step-by-step guides for setting up, configuring
 -   **Web Search:**
     -   [WebSearchClient Usage Guide](web-search-usage.md): Programmatic interaction with Google Custom Search.
 
-### III. Operational Guides
+### IV. Operational Guides
 -   [Running Scheduled Tasks](scheduled-tasks.md): Setting up and managing automated tasks like the Vector Search health monitor.
 -   [Interpreting VANA Logs](interpreting-logs.md): Finding, reading, and understanding system logs.
 
-### IV. Development Guides
+### V. Development Guides
 -   **[VANA Development Overview](../development/index.md)**: Entry point for developer-specific documentation.
 -   [Adding a New Tool to VANA](adding-new-tool.md): Process and considerations for extending VANA with new tools.
 -   [Extending the VANA Monitoring Dashboard](extending-dashboard.md): How to add new views or functionalities to the dashboard.

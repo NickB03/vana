@@ -32,8 +32,23 @@ Tools are modular components that provide specific functionality to the agent. E
 - **File System Tool**: Provides file operations such as reading, writing, and listing files
 - **Vector Search Tool**: Provides access to the Vertex AI Vector Search service for semantic search
 - **Web Search Tool**: Provides access to the Google Custom Search API for real-time web search
+- **Knowledge Graph Tool**: Provides access to the MCP-based Knowledge Graph for structured knowledge
 
-Additional tools will be added in future phases.
+### 2.4 Memory Components
+
+The agent core integrates with memory components to maintain context across conversations and access persistent knowledge:
+
+- **Short-Term Memory**: In-memory storage for recent interactions within a session
+- **Memory Bank**: Interface to the file-based memory bank for persistent knowledge
+- **Knowledge Graph**: Interface to the MCP-based Knowledge Graph for structured knowledge
+
+### 2.5 CLI Interface
+
+The agent core includes a command-line interface (CLI) for interacting with the agent. The CLI supports three modes of operation:
+
+- **Interactive Mode**: Allows you to have a conversation with the agent in the terminal
+- **Web UI Mode**: Launches the ADK web UI for a more visual interaction experience
+- **Single Message Mode**: Processes a single message and returns the response
 
 ## 3. Data Flow
 
@@ -50,13 +65,18 @@ The typical data flow through the agent core is as follows:
 
 ## 4. Session Management
 
-The agent core includes basic session management functionality:
+The agent core includes comprehensive session management functionality:
 
 - **Session Creation**: Creates a new session for a user
 - **Session Loading**: Loads an existing session
 - **Session State**: Maintains conversation history and other state within a session
+- **Memory Integration**: Integrates with short-term memory and memory bank components
 
-In the current implementation, session state is stored in memory. In a future phase, this will be extended to support persistent storage.
+The agent maintains session state through the following components:
+
+- **Conversation History**: Stores the conversation history for the current session
+- **Short-Term Memory**: Provides in-memory storage for recent interactions
+- **Memory Bank**: Provides access to persistent knowledge across sessions
 
 ## 5. Tool Integration
 
@@ -91,25 +111,88 @@ The Vector Search tool provides access to the Vertex AI Vector Search service fo
 
 The Web Search tool provides access to the Google Custom Search API for real-time web search. It includes methods for searching the web and formatting the results.
 
-## 6. Error Handling
+### 5.5 Knowledge Graph Tool
+
+The Knowledge Graph tool provides access to the MCP-based Knowledge Graph for storing and retrieving structured knowledge. It includes methods for querying the Knowledge Graph, storing information, storing relationships, and extracting entities from text.
+
+## 6. Memory Architecture
+
+The agent core integrates with memory components to maintain context across conversations and access persistent knowledge:
+
+### 6.1 Short-Term Memory
+
+The Short-Term Memory component provides in-memory storage for recent interactions within a session. It supports:
+
+- Adding interactions with role, content, and metadata
+- Retrieving all or recent interactions
+- Filtering interactions by role
+- Searching for interactions containing specific text
+- Summarizing interactions
+- Clearing the memory buffer
+- Getting statistics about the memory buffer
+
+### 6.2 Memory Bank
+
+The Memory Bank component provides an interface to the file-based memory bank for persistent knowledge. It supports:
+
+- Reading memory bank files
+- Updating memory bank files
+- Listing all memory bank files
+- Extracting sections from memory bank files
+- Updating sections in memory bank files
+
+### 6.3 Knowledge Graph
+
+The Knowledge Graph component provides an interface to the MCP-based Knowledge Graph for structured knowledge. It supports:
+
+- Querying the Knowledge Graph for entities
+- Storing information in the Knowledge Graph
+- Storing relationships between entities
+- Extracting entities from text
+
+## 7. CLI Architecture
+
+The agent core includes a command-line interface (CLI) for interacting with the agent. The CLI architecture consists of:
+
+### 7.1 VanaCLI Class
+
+The `VanaCLI` class provides methods for:
+
+- Creating and configuring the agent
+- Starting a session
+- Processing messages
+- Running in interactive mode
+- Launching the web UI
+
+### 7.2 Command-Line Interface
+
+The CLI provides a command-line interface for interacting with the agent. It uses the `argparse` module to parse command-line arguments and supports three modes of operation:
+
+- **Interactive Mode**: Allows you to have a conversation with the agent in the terminal
+- **Web UI Mode**: Launches the ADK web UI for a more visual interaction experience
+- **Single Message Mode**: Processes a single message and returns the response
+
+## 8. Error Handling
 
 The agent core includes robust error handling:
 
 - **Tool Errors**: Errors during tool execution are caught and reported
 - **Task Parsing Errors**: Errors during task parsing are handled gracefully
 - **Session Errors**: Errors during session management are reported
+- **Memory Errors**: Errors during memory operations are handled gracefully
+- **CLI Errors**: Errors during CLI operations are caught and reported
 
 All errors are logged and included in the response to the user, ensuring transparency and facilitating debugging.
 
-## 7. Future Extensions
+## 9. Future Extensions
 
 The agent core is designed to be extensible, with several planned enhancements:
 
 - **LLM Integration**: Integration with large language models for more sophisticated response generation
-- **Memory Integration**: Integration with the VANA memory system for persistent state
 - **Advanced Tool Integration**: Support for more sophisticated tools, including those that require authentication or have side effects
 - **Multi-Turn Conversations**: Support for multi-turn conversations with context preservation
 - **Structured Output**: Support for structured output formats (e.g., JSON, Markdown)
+- **Enhanced Memory Integration**: More sophisticated memory retrieval mechanisms based on relevance to the current context
 
 ## 8. Code Structure
 

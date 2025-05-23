@@ -8,10 +8,14 @@ Welcome to the VANA project documentation. This site provides comprehensive info
 - **[Configuration Guide](guides/web-search-configuration.md)** (General configuration is in Installation Guide and README; this specific link might need to be a more general config guide or part of Installation)
     *   For `.env` details, see [Configuration System Implementation](implementation/config-environment.md).
 - **[Running the Dashboard](guides/running-dashboard.md)**
+- **[Using the VANA Agent](guides/agent-usage.md)**
+    * [Agent CLI Guide](guides/agent-cli-guide.md)
+    * [Agent Demo Guide](guides/agent-demo.md)
 
 ## II. System Architecture
 - **[Overall Architecture](architecture/index.md)**
     - [System Overview](architecture/overview.md)
+    - [Agent Core Architecture](architecture/agent-core.md)
     - [Vector Search Monitoring System Architecture](architecture/vector_search_monitoring.md)
     - [Knowledge Graph Integration Architecture](architecture/knowledge_graph_integration.md)
     - [Hybrid Search Architecture](architecture/hybrid_search.md)
@@ -21,6 +25,11 @@ Welcome to the VANA project documentation. This site provides comprehensive info
 
 ## III. User & Developer Guides
 - **[All Guides](guides/index.md)**
+- **Agent Guides:**
+    - [Agent Usage Guide](guides/agent-usage.md)
+    - [Agent CLI Guide](guides/agent-cli-guide.md)
+    - [Agent Demo Guide](guides/agent-demo.md)
+    - [Agent Tool Usage Guide](guides/agent-tool-usage.md)
 - **Monitoring Dashboard:**
     - [VANA Monitoring Dashboard User Guide](guides/dashboard-guide.md)
     - [Interpreting Vector Search Health Reports](guides/vector-search-health-reports.md)
@@ -43,6 +52,11 @@ Welcome to the VANA project documentation. This site provides comprehensive info
 
 ## IV. Implementation Details
 - **[All Implementation Docs](implementation/index.md)**
+- **Agent Components:**
+    - [Agent Core Implementation](implementation/agent-core.md)
+    - [Agent Memory Implementation](implementation/agent-memory.md)
+    - [Agent CLI Implementation](implementation/agent-cli.md)
+    - [Agent Logging System Implementation](implementation/agent-logging.md)
 - **Core Tools:**
     - [VectorSearchClient Implementation](implementation/vector-search-client.md)
     - [VectorSearchHealthChecker Implementation](implementation/vector-search-health-checker.md)
@@ -50,7 +64,6 @@ Welcome to the VANA project documentation. This site provides comprehensive info
     - [KnowledgeGraphManager Implementation](implementation/kg-manager.md)
     - [EnhancedHybridSearch Implementation](implementation/enhanced-hybrid-search.md)
     - [WebSearchClient Implementation](implementation/web-search.md)
-    - [Current Memory Tools Implementation](implementation/current-memory-tools.md)
 - **Systems & Utilities:**
     - [Vector Search Subsystem Overview](implementation/vector-search.md)
     - [Vector Search Health Monitoring System Overview](implementation/vector-search-health-monitoring.md)
