@@ -1,0 +1,23 @@
+# Frontend Requirements for VANA Local Development
+
+# Streamlit Dashboard
+streamlit>=1.26.0
+streamlit-extras>=0.3.0
+streamlit-aggrid>=0.3.4
+streamlit-plotly-events>=0.0.6
+
+# Data Visualization
+plotly>=5.16.0
+matplotlib>=3.7.2
+seaborn>=0.12.2
+
+# Data Processing
+pandas>=2.0.0
+numpy>=1.24.0
+
+# API Interaction
+requests>=2.31.0
+
+# Utilities
+python-dotenv>=1.0.0
+pyyaml>=6.0.0
