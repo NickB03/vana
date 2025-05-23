@@ -1,0 +1,47 @@
+{
+  "doc_id": "doc_20250428062032",
+  "source": "test",
+  "title": "VANA Project Overview",
+  "metadata": {
+    "source": "test",
+    "title": "VANA Project Overview",
+    "keywords": [
+      "vana",
+      "knowledge",
+      "agent",
+      "capabilities",
+      "search",
+      "processing",
+      "google",
+      "development",
+      "kit",
+      "adk"
+    ],
+    "language": "english",
+    "word_count": 144,
+    "reading_time_minutes": 0.7,
+    "structure": {
+      "has_headings": true,
+      "has_lists": true,
+      "has_code_blocks": false,
+      "has_tables": false,
+      "section_count": 7,
+      "list_count": 8
+    }
+  },
+  "text": "# VANA Project Overview\n\nVANA (Versatile Agent Network Architecture) is an intelligent agent system that leverages Google's Agent Development Kit (ADK) to provide powerful knowledge retrieval capabilities.\n\n## Key Components\n\n### Vector Search\n\nVANA uses Vertex AI Vector Search for semantic search capabilities. This allows users to find information based on meaning rather than just keywords.\n\n### Knowledge Graph\n\nThe Knowledge Graph component provides structured representation of knowledge with entities and relationships. This enables more precise answers to complex queries.\n\n### Document Processing\n\nVANA includes advanced document processing capabilities:\n- Semantic chunking\n- Metadata extraction\n- PDF support\n- Multi-modal processing\n\n## Integration\n\nVANA integrates with:\n- Google Cloud Platform\n- Vertex AI\n- Agent Development Kit (ADK)\n- Model Context Protocol (MCP)\n\n## Use Cases\n\n1. Knowledge retrieval from documentation\n2. Answering complex queries\n3. Connecting information across sources\n4. Providing context-aware responses\n",
+  "chunks": [
+    {
+      "text": "# VANA Project Overview\n\nVANA (Versatile Agent Network Architecture) is an intelligent agent system that leverages Google's Agent Development Kit (ADK) to provide powerful knowledge retrieval capabilities.\n\n## Key Components\n\n### Vector Search\n\nVANA uses Vertex AI Vector Search for semantic search capabilities. This allows users to find information based on meaning rather than just keywords.\n\n### Knowledge Graph\n\nThe Knowledge Graph component provides structured representation of knowledge with entities and relationships. This enables more precise answers to complex queries.\n\n### Document Processing\n\nVANA includes advanced document processing capabilities:\n- Semantic chunking\n- Metadata extraction\n- PDF support\n- Multi-modal processing\n\n## Integration\n\nVANA integrates with:\n- Google Cloud Platform\n- Vertex AI\n- Agent Development Kit (ADK)\n- Model Context Protocol (MCP)\n\n## Use Cases\n\n1. Knowledge retrieval from documentation\n2. Answering complex queries\n3. Connecting information across sources\n4. Providing context-aware responses\n",
+      "metadata": {
+        "source": "test",
+        "doc_id": "doc_20250428062032",
+        "section_path": "",
+        "heading": "VANA Project Overview",
+        "token_count": 144,
+        "chunk_id": "doc_20250428062032_0"
+      }
+    }
+  ],
+  "images": []
+}

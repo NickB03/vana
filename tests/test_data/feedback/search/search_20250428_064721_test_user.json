@@ -1,0 +1,17 @@
+{
+  "timestamp": "2025-04-28T06:47:21.767468",
+  "user_id": "test_user",
+  "query": "What is VANA?",
+  "results": [
+    {
+      "content": "VANA is a Versatile Agent Network Architecture",
+      "score": 0.95
+    },
+    {
+      "content": "VANA uses Vector Search and Knowledge Graph",
+      "score": 0.85
+    }
+  ],
+  "rating": 4,
+  "comment": "Good results, but missing some details"
+}

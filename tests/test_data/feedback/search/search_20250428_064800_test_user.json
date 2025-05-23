@@ -1,0 +1,13 @@
+{
+  "timestamp": "2025-04-28T06:48:00.238376",
+  "user_id": "test_user",
+  "query": "Test query",
+  "results": [
+    {
+      "content": "Test result",
+      "score": 0.95
+    }
+  ],
+  "rating": 4,
+  "comment": "Test comment"
+}
