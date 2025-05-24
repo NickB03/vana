@@ -12,7 +12,7 @@ echo -e "${YELLOW}Setting up VANA frontend development environment...${NC}"
 # Create virtual environment if it doesn't exist
 if [ ! -d ".venv" ]; then
     echo -e "${YELLOW}Creating virtual environment...${NC}"
-    python -m venv .venv
+    python3 -m venv .venv
     if [ $? -ne 0 ]; then
         echo -e "${RED}Failed to create virtual environment. Please make sure python3 is installed.${NC}"
         exit 1
@@ -33,7 +33,7 @@ echo -e "${GREEN}Virtual environment activated.${NC}"
 
 # Install requirements
 echo -e "${YELLOW}Installing requirements...${NC}"
-pip install -r requirements.txt
+pip install -r $(dirname "$0")/requirements.txt
 if [ $? -ne 0 ]; then
     echo -e "${RED}Failed to install requirements.${NC}"
     exit 1
@@ -43,11 +43,28 @@ echo -e "${GREEN}Requirements installed successfully.${NC}"
 # Create .env file if it doesn't exist
 if [ ! -f ".env" ]; then
     echo -e "${YELLOW}Creating .env file...${NC}"
-    cp ../../.env.example .env
-    if [ $? -ne 0 ]; then
-        echo -e "${RED}Failed to create .env file. Please create it manually.${NC}"
+    # Check if .env.example exists in the project root
+    if [ -f "../../.env.example" ]; then
+        cp ../../.env.example .env
+        if [ $? -ne 0 ]; then
+            echo -e "${RED}Failed to copy .env.example. Creating a basic .env file.${NC}"
+            cat > .env << EOL
+# VANA Frontend Environment Variables
+FRONTEND_PORT=8501
+BACKEND_PORT=5000
+EOL
+        else
+            echo -e "${GREEN}.env file created from example. Please update it with your credentials.${NC}"
+        fi
     else
-        echo -e "${GREEN}.env file created. Please update it with your credentials.${NC}"
+        # Create a basic .env file
+        echo -e "${YELLOW}No .env.example found. Creating a basic .env file.${NC}"
+        cat > .env << EOL
+# VANA Frontend Environment Variables
+FRONTEND_PORT=8501
+BACKEND_PORT=5000
+EOL
+        echo -e "${GREEN}Basic .env file created. Please update it with your credentials.${NC}"
     fi
 else
     echo -e "${YELLOW}.env file already exists.${NC}"
