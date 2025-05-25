@@ -28,7 +28,7 @@
 *   **MCP (Model Context Protocol) Server:**
     *   Used for Knowledge Graph integration.
     *   Currently configured to potentially use a community-hosted server (`mcp.community.augment.co`) or a local development server.
-*   **Google Custom Search API:** Used by `WebSearchClient` for real-time web search.
+*   **Google Custom Search API:** Used by `WebSearchClient` for real-time web search (transitioning to Brave MCP).
 
 ## 4. Development & Operational Tools
 *   **Git & GitHub:** For version control and repository hosting.
