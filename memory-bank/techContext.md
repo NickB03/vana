@@ -18,6 +18,17 @@
 *   **Plotly & Altair:** Used by the Streamlit dashboard for creating charts and visualizations.
 *   **Pandas:** Used by the Streamlit dashboard for data manipulation before visualization.
 
+## 2.1. Tool Standardization Framework (NEW - Phase 4A)
+*   **Python Dataclasses:** Used for `StandardToolResponse`, `PerformanceMetrics`, and other structured data
+*   **Python Enums:** Used for `ToolErrorType` classification system
+*   **Python Type Hints:** Comprehensive typing throughout the standardization framework
+*   **Python Decorators:** `@standardized_tool_wrapper` for consistent tool execution monitoring
+*   **Threading:** Background resource monitoring for performance profiling
+*   **JSON:** Export/import of performance metrics and analytics data
+*   **Time & Statistics:** Performance timing and statistical analysis
+*   **Traceback:** Enhanced error reporting with full stack traces
+*   **Logging:** Structured logging with appropriate levels for different error types
+
 ## 3. Cloud Services & Platforms
 *   **Google Cloud Platform (GCP):**
     *   **Vertex AI:**

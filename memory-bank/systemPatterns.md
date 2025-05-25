@@ -27,10 +27,12 @@ VANA is architected as a comprehensive multi-agent system with a clean, consolid
         *   Memory Components (`agent/memory/`): Short-term memory, Memory Bank integration
         *   CLI Interface (`agent/cli.py`): Command line interface
     *   **Multi-Agent System (`vana_multi_agent/` - PRIMARY):**
-        *   5-agent architecture: Vana orchestrator + 4 specialist agents (Rhea, Max, Sage, Kai)
-        *   16 enhanced ADK-compatible tools
+        *   5-agent architecture: VANA orchestrator + 4 specialist agents (architecture_specialist, ui_specialist, devops_specialist, qa_specialist)
+        *   16 standardized tools with comprehensive monitoring framework
+        *   Enhanced PLAN/ACT mode switching and confidence-based routing
+        *   Tool standardization framework with performance analytics
         *   Agent coordination and task delegation system
-        *   Operational at localhost:8080 (according to memory bank)
+        *   Operational with all tests passing (4/4)
 
 *   **Monitoring & Dashboard (`dashboard/` directory - 19 items):**
     *   **Flask Backend API (`dashboard/flask_app.py`):** Health data, metrics, system control, authentication
@@ -58,7 +60,24 @@ VANA is architected as a comprehensive multi-agent system with a clean, consolid
     *   MCP server configurations and integrations
     *   Protocol implementations for external service communication
 
-## 2. Key Design Patterns & Principles
+## 2. Tool Standardization Framework (NEW - Phase 4A Complete)
+
+*   **Comprehensive Tool Standards:** All 16 tools now follow consistent interface patterns via `vana_multi_agent/core/tool_standards.py`
+*   **Standardized Response Format:** `StandardToolResponse` class ensures consistent outputs across all tools
+*   **Input Validation:** `InputValidator` class provides comprehensive parameter validation with security checks
+*   **Intelligent Error Handling:** `ErrorHandler` class with error classification and graceful degradation
+*   **Performance Monitoring:** `PerformanceMonitor` class tracks execution timing, usage analytics, and resource usage
+*   **Auto-Generated Documentation:** `ToolDocumentationGenerator` creates documentation from tool metadata
+*   **Usage Analytics:** `ToolAnalytics` tracks usage patterns and performance metrics
+
+### Standardized Tool Categories:
+*   **File System Tools (4):** read_file, write_file, list_directory, file_exists
+*   **Search Tools (3):** vector_search, web_search, search_knowledge
+*   **Knowledge Graph Tools (4):** kg_query, kg_store, kg_relationship, kg_extract_entities
+*   **System Tools (2):** echo, get_health_status
+*   **Coordination Tools (3):** coordinate_task, delegate_to_agent, get_agent_status
+
+## 3. Key Design Patterns & Principles
 
 *   **Modular Tool Design:** Core functionalities are encapsulated in specific classes/modules within the `tools/` directory, promoting separation of concerns and reusability.
 *   **Service-Oriented (Internal):** While not a distributed microservices architecture, components like the Vector Search client, KG manager, etc., act as internal services that can be called upon.
