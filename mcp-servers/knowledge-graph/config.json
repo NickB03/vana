@@ -1,0 +1,23 @@
+{
+  "server": {
+    "port": 3000,
+    "host": "0.0.0.0"
+  },
+  "storage": {
+    "type": "file",
+    "path": "./data/memory.json"
+  },
+  "auth": {
+    "enabled": true,
+    "username": "vana_mcp",
+    "password": "vana_mcp_password"
+  },
+  "logging": {
+    "level": "info",
+    "format": "json"
+  },
+  "cors": {
+    "enabled": true,
+    "origin": "*"
+  }
+}

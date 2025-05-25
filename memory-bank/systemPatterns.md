@@ -1,34 +1,62 @@
 # System Patterns & Architecture: VANA
 
-## 1. Overall Architecture (Current MVP Focus)
+## 1. Overall Architecture (Current Implementation Status)
 
-VANA is currently architected as a suite of interconnected Python tools and services, with a web-based dashboard for monitoring. The primary goal is to provide a robust foundation for a single, highly capable AI agent (Phase 1 MVP), which will then serve as the basis for a multi-agent system (Phase 2).
+VANA is architected as a comprehensive multi-agent system with complete file restoration and two primary implementation paths. The system includes a suite of interconnected Python tools and services, with monitoring dashboards and comprehensive testing frameworks. All core files have been successfully restored and the system is ready for validation and enhancement.
 
-**Key Architectural Components:**
+### Current Implementation Paths:
+- **Primary**: `vana_multi_agent/` - 5-agent system (most recent, May 25 15:49:41)
+- **Reference**: `vana_adk_clean/` - ADK integration implementation
+- **Foundation**: Complete core tools and services in `/tools/` and `/agent/` directories
 
-*   **Core Services (`tools/` directory):**
-    *   **Vector Search Service:**
-        *   Client (`tools/vector_search/vector_search_client.py`) for Vertex AI.
-        *   Health Checker (`tools/vector_search/health_checker.py`).
-    *   **Document Processing Service:**
-        *   Processor (`tools/document_processing/document_processor.py`) using PyPDF2/Pytesseract (target: Vertex AI Document AI).
-        *   Semantic Chunker (`tools/document_processing/semantic_chunker.py`).
-    *   **Knowledge Graph Service:**
-        *   Manager (`tools/knowledge_graph/knowledge_graph_manager.py`) for MCP-based KG.
-    *   **Web Search Service:**
-        *   Client (`tools/web_search_client.py`) for Google Custom Search.
-    *   **Hybrid Search Service:**
-        *   Engine (`tools/enhanced_hybrid_search.py`) combining Vector Search, KG, and Web Search.
-    *   **Supporting Services:** Security, Logging, Resilience, Feedback collection modules within `tools/`.
-*   **Monitoring System:**
-    *   **Flask Backend API (`dashboard/flask_app.py`):** Exposes endpoints for health data, metrics, and system control (e.g., triggering health checks). Handles authentication.
-    *   **Streamlit Frontend UI (`dashboard/app.py`):** Consumes the Flask API to provide visualizations of system health (especially Vector Search), metrics, and alerts.
-    *   **Scheduled Monitor (`scripts/scheduled_vector_search_monitor.py`):** Runs periodic health checks and can trigger alerts.
-*   **Configuration (`config/environment.py`):** Centralized management of settings via environment variables (`.env` file).
-*   **Single Agent Core (`agent/` directory):**
-    *   Core Agent (`agent/core.py`): Provides task execution, tool integration, and session management.
-    *   Task Parser (`agent/task_parser.py`): Parses user messages into structured tasks.
-    *   Tools (`agent/tools/`): Modular components that provide specific functionality to the agent.
+**Key Architectural Components (All Restored):**
+
+*   **Core Services (`tools/` directory - 32 items):**
+    *   **Vector Search Service:** Client, Health Checker, Circuit Breaker, Audit Logger
+    *   **Document Processing Service:** Processor, Semantic Chunker, Content Analyzer
+    *   **Knowledge Graph Service:** Manager, Entity Extractor, Relationship Mapper
+    *   **Web Search Service:** Client (transitioning from Google Custom Search to Brave MCP)
+    *   **Hybrid Search Service:** Enhanced engine combining Vector Search, KG, and Web Search
+    *   **Supporting Services:** Security, Logging, Resilience, Memory, Monitoring, Feedback modules
+
+*   **Agent Systems:**
+    *   **Single Agent Core (`agent/` directory - 12 items):**
+        *   Core Agent (`agent/core.py`): Task execution, tool integration, session management
+        *   Task Parser (`agent/task_parser.py`): Message parsing into structured tasks
+        *   Enhanced Tools (`agent/tools/` - 6 standardized tools): Echo, File System, Knowledge Graph, Vector Search, Web Search
+        *   Memory Components (`agent/memory/`): Short-term memory, Memory Bank integration
+        *   CLI Interface (`agent/cli.py`): Command line interface
+    *   **Multi-Agent System (`vana_multi_agent/` - PRIMARY):**
+        *   5-agent architecture: Vana orchestrator + 4 specialist agents (Rhea, Max, Sage, Kai)
+        *   16 enhanced ADK-compatible tools
+        *   Agent coordination and task delegation system
+        *   Operational at localhost:8080 (according to memory bank)
+
+*   **Monitoring & Dashboard (`dashboard/` directory - 19 items):**
+    *   **Flask Backend API (`dashboard/flask_app.py`):** Health data, metrics, system control, authentication
+    *   **Streamlit Frontend UI (`dashboard/app.py`):** System health visualizations, metrics, alerts
+    *   **Components:** Authentication, routing, monitoring, configuration management
+    *   **API Routes:** Secure endpoints for programmatic access
+
+*   **Configuration Management (`config/` directory - 7 items):**
+    *   Environment configuration (`config/environment.py`): Centralized settings via environment variables
+    *   Templates (`config/templates/`): Environment and credential templates
+    *   Systemd Services (`config/systemd/`): Production deployment configurations
+
+*   **Operational Scripts (`scripts/` directory - 86 items):**
+    *   Demo workflows, testing utilities, monitoring scripts
+    *   Environment configuration and setup scripts
+    *   Health check and maintenance utilities
+
+*   **Comprehensive Testing (`tests/` directory - 38 items):**
+    *   Unit tests (`tests/unit/`): Component-level testing
+    *   Integration tests (`tests/integration/`): System integration testing
+    *   End-to-end tests (`tests/e2e/`): Complete workflow testing
+    *   Performance tests (`tests/performance/`): Benchmarking and optimization
+
+*   **MCP Integration (`mcp-servers/` directory):**
+    *   MCP server configurations and integrations
+    *   Protocol implementations for external service communication
 
 ## 2. Key Design Patterns & Principles
 

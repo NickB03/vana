@@ -1,0 +1,52 @@
+{
+  "document_processing": {
+    "success": false,
+    "document": "doc-001",
+    "entities_extracted": 6,
+    "entities_stored": 0,
+    "relationships_extracted": 1,
+    "relationships_stored": 0
+  },
+  "entities": [
+    {
+      "name": "VANA",
+      "type": "project",
+      "observation": "\n        VANA is a multi-agent system that uses Vector Search and Knowledge Graph for knowledge retrieval.\n        ",
+      "confidence": 0.8
+    },
+    {
+      "name": "Vector Search",
+      "type": "technology",
+      "observation": "\n        VANA is a multi-agent system that uses Vector Search and Knowledge Graph for knowledge retrieval.\n        ",
+      "confidence": 0.8
+    },
+    {
+      "name": "Knowledge Graph",
+      "type": "technology",
+      "observation": "\n        VANA is a multi-agent system that uses Vector Search and Knowledge Graph for knowledge retrieval.\n        ",
+      "confidence": 0.8
+    },
+    {
+      "name": "Google",
+      "type": "organization",
+      "observation": "It is built on Google's Agent Development Kit (ADK) and integrates with Vertex AI.\n        ",
+      "confidence": 0.8
+    },
+    {
+      "name": "Agent Development Kit",
+      "type": "technology",
+      "observation": "It is built on Google's Agent Development Kit (ADK) and integrates with Vertex AI.\n        ",
+      "confidence": 0.8
+    },
+    {
+      "name": "Vertex AI",
+      "type": "technology",
+      "observation": "It is built on Google's Agent Development Kit (ADK) and integrates with Vertex AI.\n        ",
+      "confidence": 0.8
+    }
+  ],
+  "entity_linking": {
+    "success": false,
+    "reason": "No existing entities found"
+  }
+}

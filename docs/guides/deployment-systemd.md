@@ -31,11 +31,11 @@ After=network.target
 [Service]
 User=nick
 WorkingDirectory=/Users/nick/Development/vana
-ExecStart=/usr/bin/python3 /Users/nick/Development/vana/scripts/monitor_vector_search.py
+ExecStart=/usr/bin/python3 /Users/nick/Development/vana-enhanced/scripts/monitor_vector_search.py
 Restart=on-failure
 StandardOutput=journal
 StandardError=journal
-EnvironmentFile=/Users/nick/Development/vana/.env
+EnvironmentFile=/Users/nick/Development/vana-enhanced/.env
 
 [Install]
 WantedBy=multi-user.target
@@ -56,12 +56,12 @@ After=network.target vector-search-monitor.service
 
 [Service]
 User=nick
-WorkingDirectory=/Users/nick/Development/vana/dashboard
-ExecStart=/Users/nick/Development/vana/venv/bin/gunicorn -w 4 -b 0.0.0.0:8001 flask_app:app
+WorkingDirectory=/Users/nick/Development/vana-enhanced/dashboard
+ExecStart=/Users/nick/Development/vana-enhanced/venv/bin/gunicorn -w 4 -b 0.0.0.0:8001 flask_app:app
 Restart=on-failure
 StandardOutput=journal
 StandardError=journal
-EnvironmentFile=/Users/nick/Development/vana/.env
+EnvironmentFile=/Users/nick/Development/vana-enhanced/.env
 
 [Install]
 WantedBy=multi-user.target
@@ -81,12 +81,12 @@ After=network.target vector-search-dashboard.service
 
 [Service]
 User=nick
-WorkingDirectory=/Users/nick/Development/vana/dashboard
-ExecStart=/Users/nick/Development/vana/venv/bin/streamlit run streamlit_app.py --server.port 8501 --server.address 0.0.0.0
+WorkingDirectory=/Users/nick/Development/vana-enhanced/dashboard
+ExecStart=/Users/nick/Development/vana-enhanced/venv/bin/streamlit run streamlit_app.py --server.port 8501 --server.address 0.0.0.0
 Restart=on-failure
 StandardOutput=journal
 StandardError=journal
-EnvironmentFile=/Users/nick/Development/vana/.env
+EnvironmentFile=/Users/nick/Development/vana-enhanced/.env
 
 [Install]
 WantedBy=multi-user.target
@@ -102,9 +102,9 @@ WantedBy=multi-user.target
 1.  **Copy Service Files:**
     Copy the service files from `config/systemd/` to the systemd directory on your server (usually `/etc/systemd/system/`).
     ```bash
-    sudo cp /Users/nick/Development/vana/config/systemd/vector-search-monitor.service /etc/systemd/system/
-    sudo cp /Users/nick/Development/vana/config/systemd/vector-search-dashboard.service /etc/systemd/system/
-    sudo cp /Users/nick/Development/vana/config/systemd/vector-search-ui.service /etc/systemd/system/
+    sudo cp /Users/nick/Development/vana-enhanced/config/systemd/vector-search-monitor.service /etc/systemd/system/
+    sudo cp /Users/nick/Development/vana-enhanced/config/systemd/vector-search-dashboard.service /etc/systemd/system/
+    sudo cp /Users/nick/Development/vana-enhanced/config/systemd/vector-search-ui.service /etc/systemd/system/
     ```
     **Note:** Adjust the source paths if your project is located elsewhere.
 

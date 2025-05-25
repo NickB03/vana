@@ -90,7 +90,7 @@
 
 #### 3.1 Install MCP Dependencies:
 ```bash
-cd /Users/nick/Development/vana/vana_adk_clean
+cd /Users/nick/Development/vana-enhanced/vana_adk_clean
 pip install "mcp[cli]"
 ```
 
@@ -141,7 +141,7 @@ def get_library_docs(library_id: str, topic: str = None) -> str:
 
 ### 1. Fix Failed Tools Testing:
 ```bash
-cd /Users/nick/Development/vana/vana_adk_clean
+cd /Users/nick/Development/vana-enhanced/vana_adk_clean
 python3 -c "
 from vana_agent.agent import read_file_tool, kg_query_tool, kg_store_tool
 print('Testing read_file_tool:', read_file_tool('README.md'))

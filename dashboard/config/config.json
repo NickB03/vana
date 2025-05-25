@@ -1,0 +1,28 @@
+{
+    "dashboard": {
+        "title": "VANA Dashboard",
+        "refresh_interval": 30,
+        "theme": "light",
+        "debug": false
+    },
+    "data_sources": {
+        "use_mock_data": true,
+        "memory_api_url": "http://localhost:8000/api/memory",
+        "agent_api_url": "http://localhost:8000/api/agents",
+        "system_api_url": "http://localhost:8000/api/system",
+        "task_api_url": "http://localhost:8000/api/tasks"
+    },
+    "visualization": {
+        "chart_height": 400,
+        "chart_width": 800,
+        "color_scheme": "blues",
+        "animation": true
+    },
+    "alerts": {
+        "enabled": true,
+        "cpu_threshold": 80,
+        "memory_threshold": 80,
+        "disk_threshold": 80,
+        "error_rate_threshold": 5
+    }
+}

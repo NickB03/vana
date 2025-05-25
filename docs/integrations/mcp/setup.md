@@ -71,7 +71,7 @@ This file configures Claude to access the MCP server:
   "mcpServers": {
     "n8n": {
       "command": "node",
-      "args": ["/Users/nick/Development/vana/mcp-servers/n8n-mcp/build/index.js"],
+      "args": ["/Users/nick/Development/vana-enhanced/mcp-servers/n8n-mcp/build/index.js"],
       "env": {
         "N8N_API_URL": "http://localhost:5678/api/v1",
         "N8N_API_KEY": "your_n8n_api_key",
@@ -90,7 +90,7 @@ This file configures Claude to access the MCP server:
     },
     "kg": {
       "command": "node",
-      "args": ["/Users/nick/Development/vana/mcp-servers/knowledge-graph/build/index.js"],
+      "args": ["/Users/nick/Development/vana-enhanced/mcp-servers/knowledge-graph/build/index.js"],
       "env": {
         "MCP_API_KEY": "your_mcp_api_key",
         "MCP_SERVER_URL": "https://mcp.community.augment.co",

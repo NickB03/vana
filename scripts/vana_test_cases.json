@@ -1,0 +1,72 @@
+[
+  {
+    "id": "TC001",
+    "description": "Basic Agent Interaction Test",
+    "question": "Hello, who are you?",
+    "expected_keywords": ["Vana", "Project", "Lead Developer"],
+    "expected_sources": []
+  },
+  {
+    "id": "TC002",
+    "description": "Knowledge Retrieval Test - Vector Search",
+    "question": "What is the architecture of VANA?",
+    "expected_keywords": ["multi-agent", "hierarchical", "ADK", "Vector Search"],
+    "expected_sources": ["vana_overview.md", "vana_architecture.md"]
+  },
+  {
+    "id": "TC003",
+    "description": "Knowledge Retrieval Test - Knowledge Graph",
+    "question": "How are the different data sources in VANA connected?",
+    "expected_keywords": ["Knowledge Graph", "Vector Search", "relationships"],
+    "expected_sources": ["Knowledge Graph"]
+  },
+  {
+    "id": "TC004",
+    "description": "Knowledge Retrieval Test - Web Search",
+    "question": "What is the latest version of Google's Agent Development Kit?",
+    "expected_keywords": ["ADK", "version"],
+    "expected_sources": []
+  },
+  {
+    "id": "TC005",
+    "description": "Hybrid Search Test",
+    "question": "Explain how VANA's hybrid search works",
+    "expected_keywords": ["Vector Search", "Knowledge Graph", "Web Search", "combined"],
+    "expected_sources": ["hybrid_search"]
+  },
+  {
+    "id": "TC006",
+    "description": "Document Processing Test",
+    "question": "How does VANA process documents?",
+    "expected_keywords": ["semantic chunking", "entity extraction", "embedding"],
+    "expected_sources": ["document_processing"]
+  },
+  {
+    "id": "TC007",
+    "description": "Agent Capabilities Test",
+    "question": "What are the capabilities of the specialist agents in VANA?",
+    "expected_keywords": ["Rhea", "Max", "Sage", "Kai", "Juno"],
+    "expected_sources": ["agent_architecture"]
+  },
+  {
+    "id": "TC008",
+    "description": "Technical Implementation Test",
+    "question": "How is Vector Search implemented in VANA?",
+    "expected_keywords": ["Vertex AI", "embedding", "index"],
+    "expected_sources": ["vector_search"]
+  },
+  {
+    "id": "TC009",
+    "description": "Project Goals Test",
+    "question": "What are the main goals of Project VANA?",
+    "expected_keywords": ["multi-agent", "collaboration", "knowledge"],
+    "expected_sources": ["vana_project_overview"]
+  },
+  {
+    "id": "TC010",
+    "description": "Error Handling Test",
+    "question": "What happens if Vector Search is not available?",
+    "expected_keywords": ["fallback", "mock", "error"],
+    "expected_sources": []
+  }
+]

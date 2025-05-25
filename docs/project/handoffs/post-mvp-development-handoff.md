@@ -170,7 +170,7 @@ The VANA Single Agent Platform MVP has been successfully completed and is ready 
 
 1. **Test Local Development Environment**
    ```bash
-   cd /Users/nick/Development/vana/local_dev
+   cd /Users/nick/Development/vana-enhanced/local_dev
    bash run_simple_test.sh
    # Verify basic connectivity works
    # Then test full environment
