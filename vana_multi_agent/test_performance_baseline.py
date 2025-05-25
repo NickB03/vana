@@ -312,9 +312,9 @@ class TestPerformanceBaseline:
         for task in test_tasks:
             mode_decision = performance_profiler.profile_execution(
                 "mode_decision",
-                lambda t=task: mode_manager.determine_mode(t)
+                lambda t=task: mode_manager.should_plan_first(t)
             )
-            assert mode_decision in ["PLAN", "ACT"]
+            assert isinstance(mode_decision, bool)
 
     def test_performance_targets(self):
         """Validate that performance targets are being met."""

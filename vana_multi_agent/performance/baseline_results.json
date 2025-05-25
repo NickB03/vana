@@ -1,14 +1,14 @@
 {
-  "test_timestamp": 1748211507.73685,
+  "test_timestamp": 1748212627.129456,
   "tool_performance": {
     "echo": {
       "total_tests": 20,
       "success_count": 20,
       "success_rate": 100.0,
-      "avg_execution_time": 2.2935867309570313e-05,
-      "min_execution_time": 1.6689300537109375e-05,
-      "max_execution_time": 0.00010132789611816406,
-      "total_time": 0.00045871734619140625
+      "avg_execution_time": 1.9955635070800782e-05,
+      "min_execution_time": 1.7881393432617188e-05,
+      "max_execution_time": 4.220008850097656e-05,
+      "total_time": 0.0003991127014160156
     }
   },
   "system_metrics": {
@@ -19,7 +19,7 @@
         "echo": {
           "executions": 20,
           "success_rate": 100.0,
-          "avg_execution_time": 2.0945072174072264e-05
+          "avg_execution_time": 1.8441677093505858e-05
         }
       }
     },
@@ -30,13 +30,13 @@
         "echo": {
           "executions": 20,
           "success_rate": 1.0,
-          "avg_execution_time": 2.0945072174072264e-05
+          "avg_execution_time": 1.8441677093505858e-05
         }
       }
     },
     "resource_usage": {
       "estimated_memory_mb": 0.00022125244140625,
-      "test_duration_seconds": 0.0004940032958984375,
+      "test_duration_seconds": 0.0004267692565917969,
       "python_version": "3.9.6 (default, Mar 12 2025, 20:22:46) \n[Clang 17.0.0 (clang-1700.0.13.3)]"
     }
   },
@@ -52,14 +52,14 @@
       "echo_performance": {
         "avg_time_met": true,
         "success_rate_met": true,
-        "actual_avg_time": 2.2935867309570313e-05,
+        "actual_avg_time": 1.9955635070800782e-05,
         "actual_success_rate": 100.0
       },
       "system_performance": {
         "memory_target_met": true,
         "time_target_met": true,
         "actual_memory_mb": 0.00022125244140625,
-        "actual_test_time": 0.0004980564117431641
+        "actual_test_time": 0.0004298686981201172
       }
     }
   },
