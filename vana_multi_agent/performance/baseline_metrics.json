@@ -1,0 +1,39 @@
+{
+  "metrics": {
+    "echo": {
+      "component_name": "echo",
+      "execution_time": 1.5735626220703125e-05,
+      "memory_usage_mb": 0.0,
+      "cpu_usage_percent": 10.0,
+      "success_count": 10,
+      "error_count": 0,
+      "total_executions": 10,
+      "average_execution_time": 6.842613220214844e-06,
+      "min_execution_time": 2.86102294921875e-06,
+      "max_execution_time": 2.09808349609375e-05,
+      "success_rate": 100.0
+    },
+    "write_file": {
+      "component_name": "write_file",
+      "execution_time": 6.794929504394531e-05,
+      "memory_usage_mb": 0.0,
+      "cpu_usage_percent": 10.0,
+      "success_count": 1,
+      "error_count": 0,
+      "total_executions": 1,
+      "average_execution_time": 6.794929504394531e-05,
+      "min_execution_time": 6.794929504394531e-05,
+      "max_execution_time": 6.794929504394531e-05,
+      "success_rate": 100.0
+    }
+  },
+  "baseline_established": true,
+  "performance_targets": {
+    "tool_execution_time": 1.0,
+    "routing_time": 0.5,
+    "memory_usage_mb": 100.0,
+    "cpu_usage_percent": 50.0,
+    "success_rate": 95.0
+  },
+  "export_timestamp": 1748211353.0585
+}
