@@ -15,42 +15,118 @@ from typing import Optional, List, Dict
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 from agent.core import VanaAgent
-# from agent.memory.short_term import ShortTermMemory # Assuming VanaAgent handles this internally or it's configured during init
-# from agent.memory.memory_bank import MemoryBankManager # Assuming VanaAgent handles this internally or it's configured during init
-# from agent.cli import VanaCLI # For reference, not direct use here
+from agent.memory.short_term import ShortTermMemory
+from agent.memory.memory_bank import MemoryBankManager
+from config.environment import get_env_variable, load_environment_variables
+
+# Import all tools
+from agent.tools import echo
+from agent.tools import read_file
+from agent.tools import write_file
+from agent.tools import list_directory
+from agent.tools import file_exists
+from agent.tools import vector_search
+from agent.tools import search_knowledge
+from agent.tools import get_health_status
+from agent.tools import web_search
+from agent.tools import kg_query
+from agent.tools import kg_store
+from agent.tools import kg_relationship
+from agent.tools import kg_extract_entities
+
 
 # Import ADK components if needed for interaction details - to be determined
 # from adk.event_system import EventHistory # Example if ADK provides such a class
 
 logger = logging.getLogger(__name__)
+load_environment_variables() # Load from .env or system environment
 
 _agent_instance: Optional[VanaAgent] = None
+
+# In-memory store for interaction logs (replace with persistent store for production)
+# Structure: { "session_id_1": [event1, event2, ...], "session_id_2": [...] }
+_session_interaction_logs: Dict[str, List[Dict]] = {}
+
+
+# Recommendation: Refactor tool registration from VanaCLI into a shared utility.
+# For now, direct registration will be used as per the task prompt for this step.
+# def _register_standard_tools(agent: VanaAgent):
+#     """Helper function to register all standard tools for an agent."""
+#     agent.register_tool("echo", echo.echo)
+#     agent.register_tool("read_file", read_file.read_file)
+#     agent.register_tool("write_file", write_file.write_file)
+#     agent.register_tool("list_directory", list_directory.list_directory)
+#     agent.register_tool("file_exists", file_exists.file_exists)
+#     # Vector search tools
+#     agent.register_tool("vector_search", vector_search.vector_search)
+#     agent.register_tool("search_knowledge", search_knowledge.search_knowledge) # Meta tool
+#     # Health status
+#     agent.register_tool("get_health_status", get_health_status.get_health_status)
+#     # Web Search
+#     agent.register_tool("web_search", web_search.web_search)
+#     # Knowledge Graph tools
+#     agent.register_tool("kg_query", kg_query.kg_query)
+#     agent.register_tool("kg_store", kg_store.kg_store)
+#     agent.register_tool("kg_relationship", kg_relationship.kg_relationship)
+#     agent.register_tool("kg_extract_entities", kg_extract_entities.kg_extract_entities)
+#     logger.info("All standard tools registered for agent.")
+
 
 def get_vana_agent() -> VanaAgent:
     """
     Initializes and returns a singleton VanaAgent instance.
-    Configuration and tool registration should mirror VanaCLI.
+    Configuration and tool registration mirror VanaCLI.
     """
     global _agent_instance
     if _agent_instance is None:
-        # TODO: Load model name and other configurations from a config file (e.g., config/environment.py)
-        _agent_instance = VanaAgent(name="vana_web_ui", model="gemini-1.5-pro")
-        
-        # TODO: Tool Registration - This needs to be similar to VanaCLI._create_agent()
-        # This might involve refactoring tool registration logic from VanaCLI to a shared utility.
-        # Example:
-        # from agent.tools import echo, read_file # Import necessary tools
-        # tool_registry = ToolRegistry() # Assuming a ToolRegistry class
-        # tool_registry.register_tool("echo", echo.echo)
-        # tool_registry.register_tool("read_file", read_file.read_file)
-        # ... add other tools
-        # _agent_instance.set_tools(tool_registry.get_tools()) # Or similar method
+        try:
+            logger.info("Initializing VanaAgent for the web UI...")
+            
+            # Agent Configuration
+            agent_model = get_env_variable("AGENT_MODEL", "gemini-1.5-pro")
+            agent_name_web_ui = get_env_variable("AGENT_NAME_WEB_UI", "vana_web_ui")
+            # Add other necessary agent config parameters here if needed
+            # e.g., temperature = float(get_env_variable("AGENT_TEMPERATURE", "0.7"))
 
-        # TODO: Initialize memory components if not handled by VanaAgent constructor
-        # _agent_instance.short_term_memory = ShortTermMemory()
-        # _agent_instance.memory_bank = MemoryBankManager(config={"path": "memory_bank_data"}) # Example config
+            _agent_instance = VanaAgent(name=agent_name_web_ui, model=agent_model)
+            logger.info(f"VanaAgent '{_agent_instance.name}' instantiated with model '{_agent_instance.model}'.")
 
-        logger.info("VanaAgent instance created for web UI.")
+            # Tool Registration (Directly in get_vana_agent as per task, though refactoring is preferred)
+            logger.info("Registering tools for VanaAgent...")
+            _agent_instance.register_tool("echo", echo.echo)
+            _agent_instance.register_tool("read_file", read_file.read_file)
+            _agent_instance.register_tool("write_file", write_file.write_file)
+            _agent_instance.register_tool("list_directory", list_directory.list_directory)
+            _agent_instance.register_tool("file_exists", file_exists.file_exists)
+            _agent_instance.register_tool("vector_search", vector_search.vector_search)
+            _agent_instance.register_tool("search_knowledge", search_knowledge.search_knowledge) # Meta tool
+            _agent_instance.register_tool("get_health_status", get_health_status.get_health_status)
+            _agent_instance.register_tool("web_search", web_search.web_search)
+            _agent_instance.register_tool("kg_query", kg_query.kg_query)
+            _agent_instance.register_tool("kg_store", kg_store.kg_store)
+            _agent_instance.register_tool("kg_relationship", kg_relationship.kg_relationship)
+            _agent_instance.register_tool("kg_extract_entities", kg_extract_entities.kg_extract_entities)
+            logger.info("All standard tools registered for VanaAgent.")
+            
+            # Memory Component Initialization
+            logger.info("Initializing memory components for VanaAgent...")
+            _agent_instance.short_term_memory = ShortTermMemory()
+            # Assuming default MemoryBankManager constructor is sufficient.
+            # If MemoryBankManager requires configuration (e.g., path from env vars), load it here.
+            # Example: memory_bank_path = get_env_variable("MEMORY_BANK_PATH", "memory_bank_data")
+            # _agent_instance.memory_bank = MemoryBankManager(config={"path": memory_bank_path})
+            _agent_instance.memory_bank = MemoryBankManager() 
+            logger.info("Memory components initialized for VanaAgent.")
+
+            logger.info(f"VanaAgent '{_agent_instance.name}' successfully initialized with model '{agent_model}'.")
+
+        except Exception as e:
+            logger.exception("Failed to initialize VanaAgent.")
+            # Depending on desired behavior, could raise the error or return None/handle gracefully
+            # Re-raising the exception makes it clear to the caller that initialization failed
+            # and prevents the API from starting with a non-functional agent.
+            raise
+            
     return _agent_instance
 
 def process_chat_message(user_id: str, message: str, session_id: Optional[str] = None) -> Dict[str, str]:
@@ -59,67 +135,79 @@ def process_chat_message(user_id: str, message: str, session_id: Optional[str] =
     Creates a new session if session_id is not provided.
     """
     agent = get_vana_agent()
-    
-    if not session_id:
-        # TODO: VanaAgent needs a method like `create_session` or session handling needs to be clarified.
-        # Assuming agent.process_message can handle None session_id to create a new one,
-        # or a session is implicitly managed per user_id.
-        # For now, let's assume the agent's process_message can start a new session if session_id is missing,
-        # and the session_id is part of its response or can be retrieved.
-        # This part needs clarification based on VanaAgent's capabilities.
-        # A placeholder for session creation:
-        session_id = f"session_for_{user_id}_{random.randint(1000, 9999)}" # Placeholder
-        logger.info(f"New session created for user {user_id}: {session_id}")
 
-    # TODO: Confirm the exact method signature and return type of agent.process_message
-    # Assuming it returns a string response. If it returns a more complex object, adjust accordingly.
+    # Ensure agent is available (get_vana_agent should raise if it fails, but as a safeguard)
+    if not agent: 
+        logger.error("VanaAgent instance is not available. Cannot process chat message.")
+        # Return current session_id if available, or None if it was also None.
+        return {"error": "Agent not available", "session_id": session_id}
+
     try:
-        # This is a placeholder call. The actual VanaAgent might have a different method.
-        # It's also assumed that `process_message` can take a `session_id`
-        # and handles context for that session.
-        agent_response_text = agent.process_message(message, session_id=session_id)
-        
-        return {
-            "response": agent_response_text,
-            "session_id": session_id # Return the session_id used (new or existing)
-        }
+        active_session_id = session_id
+
+        # Session Management
+        if not active_session_id:
+            logger.info(f"No session_id provided for user_id '{user_id}'. Creating new session.")
+            # Assuming user_id is a valid identifier for the user making the request
+            # and agent.create_session(user_id=...) returns a new session_id string.
+            new_session_id = agent.create_session(user_id=user_id) 
+            if not new_session_id:
+                logger.error(f"Agent failed to create a new session for user_id '{user_id}'.")
+                return {"error": "Failed to create agent session", "session_id": None}
+            active_session_id = new_session_id
+            logger.info(f"New session '{active_session_id}' created for user_id '{user_id}'.")
+        else:
+            logger.info(f"Using existing session '{active_session_id}' for user_id '{user_id}'.")
+            # Optional: Add validation here if agent.is_session_valid(active_session_id) exists
+            # For now, assuming process_message will handle invalid/expired sessions.
+
+        # Process the message with the agent
+        # Assuming agent.process_message signature is:
+        # process_message(self, message_text: str, session_id: str) -> Tuple[str, List[Dict]]
+        agent_response_text, interaction_events = agent.process_message(
+            message_text=message, 
+            session_id=active_session_id
+        )
+
+        # Store Interaction Events
+        if active_session_id not in _session_interaction_logs:
+            _session_interaction_logs[active_session_id] = []
+        _session_interaction_logs[active_session_id].extend(interaction_events)
+        logger.debug(f"Stored {len(interaction_events)} interaction events for session '{active_session_id}'.")
+
+        return {"response": agent_response_text, "session_id": active_session_id}
+
     except Exception as e:
-        logger.error(f"Error processing chat message for session {session_id}: {e}")
-        # Fallback or error response
-        return {
-            "response": "Sorry, I encountered an error processing your message.",
-            "session_id": session_id,
-            "error": str(e)
-        }
+        logger.exception(f"Error processing chat message for session_id '{session_id}' and user_id '{user_id}': {e}")
+        # Return the original or newly created session_id even in case of error,
+        # so client can choose to retry with the same session or start a new one.
+        # If session_id was None and creation failed, active_session_id might still be None here.
+        current_sid_for_error = session_id if session_id else None # Fallback for very early errors
+        if 'active_session_id' in locals() and locals()['active_session_id']:
+             current_sid_for_error = locals()['active_session_id']
+        
+        return {"error": f"An error occurred: {str(e)}", "session_id": current_sid_for_error}
+
 
 def get_interaction_details(session_id: str, message_id: Optional[str] = None) -> List[Dict]:
     """
     Retrieves the history of tool calls, parameters, and outputs for a given session/message.
-    This is a placeholder and needs implementation based on how VanaAgent/ADK logs interactions.
     """
-    agent = get_vana_agent()
-    logger.info(f"Fetching interaction details for session_id: {session_id}, message_id: {message_id}")
+    # Ensure agent is initialized if needed for any session validation, though not directly used here yet
+    # get_vana_agent() 
 
-    # TODO: This is the most complex part and depends heavily on VanaAgent's internals or ADK integration.
-    # Option 1: If VanaAgent uses ADK and ADK events can be queried.
-    # E.g., event_history = agent.get_session_events(session_id)
-    # Then transform these events into the desired format.
+    if not session_id:
+        logger.warning("No session_id provided to get_interaction_details.")
+        return []
 
-    # Option 2: If VanaAgent has its own structured logging for interactions.
-    # E.g., interactions = agent.get_interaction_log(session_id, message_id)
+    # For now, message_id is ignored, and all logs for the session are returned.
+    # Future enhancement: Filter by message_id if events are tagged with it.
+    if message_id:
+        logger.info(f"Note: message_id parameter '{message_id}' is not yet used in get_interaction_details.")
 
-    # For now, returning mock data.
-    mock_interaction_data = [
-        {"type": "user_message", "text": "Can you read /tmp/test.txt for me?"},
-        {"type": "agent_thought", "thought": "I should use the read_file tool."},
-        {"type": "tool_call", "tool_name": "read_file", "parameters": {"path": "/tmp/test.txt"}, "output": "Content of /tmp/test.txt..."},
-        {"type": "agent_response", "text": "I have read the file. It says: Content of /tmp/test.txt..."}
-    ]
-    if message_id: # If a specific message_id is provided, filter or fetch for that.
-        return [mock_interaction_data[0]] # Just an example
-    
-    logger.warning(f"Returning MOCK interaction data for session {session_id}. Real implementation needed.")
-    return mock_interaction_data
+    session_logs = _session_interaction_logs.get(session_id, [])
+    logger.info(f"Retrieved {len(session_logs)} interaction events for session '{session_id}'.")
+    return session_logs
 
 
 def get_agent_statuses():

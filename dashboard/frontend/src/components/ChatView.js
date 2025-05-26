@@ -1,64 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import MessageList from './MessageList';
 import MessageInput from './MessageInput';
-import InteractionView from './InteractionView'; // Import the new component
-import './ChatView.css'; // We'll need to create this CSS file later
-
-// Mock API call for chat messages
-async function mockChatApiCall(payload) {
-    console.log('Chat API Call with payload:', payload);
-    return new Promise((resolve, reject) => {
-        setTimeout(() => {
-            if (payload.message.toLowerCase().includes("error")) {
-                reject(new Error("Mock API Error: Something went wrong."));
-                return;
-            }
-            const responses = [
-                "Hello there! How can I help you today?",
-                "I'm doing well, thanks for asking!",
-                "That's an interesting question. Let me think...",
-                "I'm sorry, I don't have an answer for that right now.",
-                "Processing your request..."
-            ];
-            const agentResponse = {
-                response: responses[Math.floor(Math.random() * responses.length)],
-                session_id: payload.session_id || `session_${Date.now()}`
-            };
-            resolve(agentResponse);
-        }, 1000);
-    });
-}
-
-// Mock API call for interaction logs
-async function mockInteractionLogApiCall(sessionId) {
-    console.log('Interaction Log API Call for session:', sessionId);
-    return new Promise((resolve, reject) => {
-        setTimeout(() => {
-            if (!sessionId) {
-                resolve({ interactions: [] }); // No session, no logs
-                return;
-            }
-            if (sessionId.includes("error_log")) {
-                 reject(new Error("Mock API Error: Failed to fetch interaction logs."));
-                 return;
-            }
-            const mockLogData = [
-                { id: 'log1', type: 'user_message', text: "What's the weather in London?" },
-                { id: 'log2', type: 'thought', text: "I need to use the weather tool for London." },
-                { 
-                  id: 'log3', 
-                  type: 'tool_call', 
-                  tool_name: 'get_weather', 
-                  parameters: { location: 'London, UK' }, 
-                  status: 'success', 
-                  output: '{ "temperature": "15°C", "condition": "Cloudy" }' 
-                },
-                { id: 'log4', type: 'agent_response', text: "The weather in London is 15°C and Cloudy." }
-            ];
-            resolve({ interactions: mockLogData });
-        }, 800);
-    });
-}
+import InteractionView from './InteractionView';
+import './ChatView.css';
 
 
 function ChatView() {
@@ -74,14 +18,20 @@ function ChatView() {
     const [isLogLoading, setIsLogLoading] = useState(false);
     const [logError, setLogError] = useState(null);
 
-    // Initial greeting
-    useEffect(() => {
-        setMessages([{ 
-            id: 'initial-greeting', 
-            text: 'Welcome to Vana Chat! How can I assist you today?', 
-            sender: 'agent' 
-        }]);
-    }, []);
+    // Placeholder for User ID - to be replaced by auth context in Task 3.1
+    const currentUserId = "placeholder_user"; 
+    // API Endpoints
+    const CHAT_API_ENDPOINT = "/api/agent/chat"; 
+    const INTERACTIONS_API_ENDPOINT_BASE = "/api/agent/interactions";
+
+    // Initial greeting useEffect - Commented out for now to focus on user-initiated messages.
+    // useEffect(() => {
+    //     setMessages([{ 
+    //         id: 'initial-greeting', 
+    //         text: 'Welcome to Vana Chat! How can I assist you today?', 
+    //         sender: 'agent' 
+    //     }]);
+    // }, []);
 
     const fetchInteractionLog = useCallback(async (sessionIdToFetch) => {
         if (!sessionIdToFetch) {
@@ -91,26 +41,27 @@ function ChatView() {
         setIsLogLoading(true);
         setLogError(null);
         try {
-            // const response = await fetch(`/api/agent/interactions?session_id=${sessionIdToFetch}`);
-            // if (!response.ok) {
-            //     const errorData = await response.json();
-            //     throw new Error(errorData.error || `API Error: ${response.status}`);
-            // }
-            // const data = await response.json();
-            // setInteractionLog(data.interactions || []);
-            
-            // Using mock API for now
-            const data = await mockInteractionLogApiCall(sessionIdToFetch);
-            setInteractionLog(data.interactions || []);
+            const response = await fetch(`${INTERACTIONS_API_ENDPOINT_BASE}?session_id=${sessionIdToFetch}`, {
+                // headers: { "Authorization": `Bearer ${authToken}` } // Add Auth later
+            });
+            const data = await response.json(); // Always try to parse JSON
 
+            if (!response.ok) {
+                throw new Error(data.error || `HTTP error! status: ${response.status}`);
+            }
+            if (data.error) { // Handle application-level errors from backend
+                 throw new Error(data.error);
+            }
+            // The backend returns { "interactions": [...], "session_id": "..." }
+            setInteractionLog(data.interactions || []);
         } catch (err) {
             console.error("Failed to fetch interaction log:", err);
-            setLogError(err.message);
-            setInteractionLog([]); // Clear logs on error
+            setLogError(err.message || "Failed to fetch interaction details.");
+            setInteractionLog([]); // Clear previous logs on error
         } finally {
             setIsLogLoading(false);
         }
-    }, []);
+    }, [INTERACTIONS_API_ENDPOINT_BASE /* Add other dependencies if endpoint changes */]);
 
     // Effect to fetch logs when tab changes to 'details' or session ID updates
     useEffect(() => {
@@ -133,30 +84,33 @@ function ChatView() {
         setError(null);
 
         try {
-            // const response = await fetch('/api/agent/chat', {
-            //     method: 'POST',
-            //     headers: { 'Content-Type': 'application/json' },
-            //     body: JSON.stringify({
-            //         message: inputText,
-            //         session_id: currentSessionId,
-            //         user_id: 'currentUser', // This would come from auth context
-            //     }),
-            // });
-            // if (!response.ok) {
-            //     const errorData = await response.json();
-            //     throw new Error(errorData.error || `API Error: ${response.status}`);
-            // }
-            // const data = await response.json();
-            
-            // Using mock API for now
-            const data = await mockChatApiCall({
-                message: inputText,
-                session_id: currentSessionId,
-                user_id: 'currentUser', // This would come from auth context
+            const response = await fetch(CHAT_API_ENDPOINT, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    // "Authorization": `Bearer ${authToken}` // Add this later with auth
+                },
+                body: JSON.stringify({
+                    message: inputText,
+                    session_id: currentSessionId,
+                    user_id: currentUserId, 
+                }),
             });
 
+            const data = await response.json(); // Always try to parse JSON, even for errors
+
+            if (!response.ok) {
+                // data.error should be populated by the backend for specific errors
+                throw new Error(data.error || `HTTP error! status: ${response.status}`);
+            }
+            
+            // Handle cases where backend might return a 2xx but with an application-level error
+            if (data.error) {
+                throw new Error(data.error);
+            }
+
             const agentMessage = {
-                id: `agent-${Date.now()}`,
+                id: `agent-${Date.now()}`, // Consider more robust ID generation if needed
                 text: data.response,
                 sender: 'agent',
             };
@@ -165,24 +119,25 @@ function ChatView() {
             const newSessionId = data.session_id;
             if (newSessionId && newSessionId !== currentSessionId) {
                 setCurrentSessionId(newSessionId);
-                // If the details tab is already active, fetch logs for the new session
+                // If the details tab is already active and a new session starts, fetch its logs
                 if (activeTab === 'details') {
                     fetchInteractionLog(newSessionId);
                 }
             }
 
         } catch (err) {
-            console.error("Failed to send message:", err.message);
-            setError(err.message);
+            console.error("Failed to send message:", err);
+            const errorMessage = err.message || "Failed to communicate with the agent.";
+            setError(errorMessage);
             setMessages(prevMessages => [...prevMessages, {
-                id: `error-${Date.now()}`,
-                text: `Error: ${err.message || 'Could not connect to agent.'}`,
+                id: `error-${Date.now()}`, // Consider more robust ID generation
+                text: `Error: ${errorMessage}`,
                 sender: 'system'
             }]);
         } finally {
             setIsLoading(false);
         }
-    }, [currentSessionId, activeTab, fetchInteractionLog]);
+    }, [currentSessionId, activeTab, fetchInteractionLog, CHAT_API_ENDPOINT, currentUserId]);
 
     const handleTabChange = (tabName) => {
         setActiveTab(tabName);
