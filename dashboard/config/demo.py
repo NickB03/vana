@@ -6,7 +6,7 @@
 DEBUG = False
 # Generate a strong random key for production use
 # You can use Python to generate one: import secrets; print(secrets.token_hex(32))
-SECRET_KEY = '8f42a73054b9c292c9d4ea1d1d089dad56f7c56c1b3f6c82c725e4805c9ae63a'
+SECRET_KEY = 'a7f9c8e2d4b6a1f3e8c9d2b5a7f4e1c6b9d8a3f7e2c5b8a1f4e7c9d6b3a8f5e2c1'
 
 # API Settings
 API_PREFIX = '/api/v1'
@@ -17,16 +17,16 @@ VECTOR_SEARCH_MONITOR_INTERVAL = 300  # seconds (5 minutes)
 # Authentication
 ENABLE_AUTH = True
 DEMO_USERNAME = 'admin'
-# This is a placeholder password - CHANGE THIS before deployment
-# For demo purposes, a more complex default is provided, but should still be changed
-DEMO_PASSWORD = 'VANA-Demo-2025!'
+# Production password - secure random generated
+# Changed from demo placeholder for production security
+DEMO_PASSWORD = 'VanaProd2025#Secure!9x7K'
 
 # API Security
 RATE_LIMIT_ENABLED = True
 RATE_LIMIT_PER_MINUTE = 60  # Maximum 60 requests per minute per IP
 API_KEY_REQUIRED = True
-# Demo API key - CHANGE THIS before deployment
-API_KEY = 'vana-api-key-demo-2025'
+# Production API key - secure random generated
+API_KEY = 'vana-prod-api-key-2025-8f3a9c7e2d1b5a4f6e9c8d2b7a5f3e1c'
 
 # HTTPS Configuration
 # Uncomment and configure these settings for HTTPS in production

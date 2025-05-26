@@ -17,11 +17,11 @@ DEFAULT_CONFIG = {
         "debug": False
     },
     "data_sources": {
-        "use_mock_data": True,
-        "memory_api_url": "http://localhost:8000/api/memory",
-        "agent_api_url": "http://localhost:8000/api/agents",
-        "system_api_url": "http://localhost:8000/api/system",
-        "task_api_url": "http://localhost:8000/api/tasks"
+        "use_mock_data": False,
+        "memory_api_url": os.environ.get("VANA_MEMORY_API_URL", "http://localhost:8000/api/memory"),
+        "agent_api_url": os.environ.get("VANA_AGENT_API_URL", "http://localhost:8000/api/agents"),
+        "system_api_url": os.environ.get("VANA_SYSTEM_API_URL", "http://localhost:8000/api/system"),
+        "task_api_url": os.environ.get("VANA_TASK_API_URL", "http://localhost:8000/api/tasks")
     },
     "visualization": {
         "chart_height": 400,

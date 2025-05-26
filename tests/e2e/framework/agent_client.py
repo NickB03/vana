@@ -23,7 +23,7 @@ class AgentClient:
         self.base_url = base_url or os.environ.get('VANA_API_URL', 'http://localhost:8000/api')
         self.timeout = timeout
         self.session = requests.Session()
-        self.use_mock = os.environ.get('VANA_USE_MOCK', 'true').lower() == 'true'
+        self.use_mock = os.environ.get('VANA_USE_MOCK', 'false').lower() == 'true'
         self.conversation_id = None
 
     def send_message(self, agent_id, message, session_id=None):

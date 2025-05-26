@@ -19,22 +19,9 @@ if project_root not in sys.path:
 
 try:
     from tools.knowledge_graph.knowledge_graph_manager import KnowledgeGraphManager
-except ImportError:
-    # Fallback for testing or when tools module is not available
-    class MockKnowledgeGraphManager:
-        def __init__(self):
-            pass
-        def is_available(self):
-            return True
-        def query(self, entity_type, query_text):
-            return {"entities": [{"name": f"Mock entity for {query_text}", "type": entity_type}]}
-        def store(self, entity_name, entity_type, observation):
-            return {"success": True}
-        def store_relationship(self, entity1, relationship, entity2):
-            return {"success": True}
-        def extract_entities(self, text):
-            return [{"name": "Mock Entity", "type": "PERSON"}]
-    KnowledgeGraphManager = MockKnowledgeGraphManager
+except ImportError as e:
+    # No fallback mock implementation in production
+    raise ImportError(f"Knowledge Graph manager not available: {e}. Ensure knowledge graph is properly configured.")
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)

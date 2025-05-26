@@ -53,6 +53,18 @@
 *   **Google ADK FunctionTool:** Integration wrapper for ADK compatibility
 *   **Task Management System:** Centralized task tracking with status monitoring and cleanup
 
+## 2.4. ADK Memory & Knowledge Systems (NEW - Migration to Native ADK)
+*   **Google ADK Memory Service:** VertexAiRagMemoryService for managed memory operations
+*   **Vertex AI RAG Corpus:** Native Google Cloud RAG infrastructure for knowledge storage
+*   **ADK Session Management:** Built-in SessionService with automatic state persistence
+*   **ADK Memory Tools:** Built-in `load_memory` tool for semantic search across stored conversations
+*   **Session State System:** Native `session.state` dictionary with scoped state management
+*   **Agent Communication:** `output_key` pattern for seamless data sharing between agents
+*   **ToolContext Integration:** `ToolContext.search_memory()` for tool-level memory access
+*   **Automatic Memory Population:** Session-to-memory conversion with `add_session_to_memory()`
+*   **Zero Configuration:** No custom MCP server deployment required
+*   **Managed Infrastructure:** Google Cloud managed services with 99.9% uptime
+
 ## 3. Cloud Services & Platforms
 *   **Google Cloud Platform (GCP):**
     *   **Vertex AI:**

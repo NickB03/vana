@@ -18,24 +18,12 @@ project_root = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
 if project_root not in sys.path:
     sys.path.insert(0, project_root)
 
-# Try to import the web search client, fall back to mock if not available
+# Import the web search client - no fallback to mock in production
 try:
     from tools.web_search_client import get_web_search_client
-except ImportError:
-    # Fallback mock implementation for development
-    def get_web_search_client(use_mock=True):
-        return MockWebSearchClient()
-
-    class MockWebSearchClient:
-        def search(self, query, num_results=5):
-            return [
-                {
-                    "title": f"Mock result for: {query}",
-                    "link": "https://example.com/mock",
-                    "snippet": f"This is a mock search result for the query '{query}'. Web search is being transitioned to Brave MCP.",
-                    "source": "web"
-                }
-            ]
+except ImportError as e:
+    # No fallback mock implementation in production
+    raise ImportError(f"Web search client not available: {e}. Ensure web search is properly configured.")
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -180,22 +168,4 @@ def search(query: str, num_results: int = 5) -> Union[List[Dict[str, Any]], Dict
         return result["results"]
     return result
 
-def search_mock(query: str, num_results: int = 5) -> List[Dict[str, Any]]:
-    """
-    Search the web using the mock implementation.
-    Useful for testing or when the real API is not available.
 
-    Args:
-        query: The search query
-        num_results: Number of results to return
-
-    Returns:
-        List of mock search results
-    """
-    tool = WebSearchTool(use_mock=True)
-    result = tool.search(query, num_results)
-
-    if result["success"]:
-        return result["results"]
-    # Even if there's an error, the mock should always return some results
-    return []
