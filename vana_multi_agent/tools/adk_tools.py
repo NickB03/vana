@@ -33,8 +33,9 @@ from vana_multi_agent.tools.standardized_kg_tools import (
 from vana_multi_agent.tools.standardized_system_tools import (
     standardized_echo, standardized_get_health_status,
     standardized_coordinate_task, standardized_delegate_to_agent,
-    standardized_get_agent_status
+    standardized_get_agent_status, standardized_transfer_to_agent
 )
+from vana_multi_agent.tools.agent_tools import AgentTool, create_agent_tool
 
 # File System Tools - Now using standardized framework
 def _read_file(file_path: str) -> str:
@@ -122,9 +123,14 @@ def _get_agent_status() -> str:
     """📊 Get enhanced status of all agents with PLAN/ACT capabilities."""
     return standardized_get_agent_status()
 
+def _transfer_to_agent(agent_name: str, context: str = "") -> str:
+    """🔄 Transfer conversation to specified agent (Google ADK Pattern)."""
+    return standardized_transfer_to_agent(agent_name, context)
+
 # Create FunctionTool instances
 adk_echo = FunctionTool(func=_echo)
 adk_get_health_status = FunctionTool(func=_get_health_status)
 adk_coordinate_task = FunctionTool(func=_coordinate_task)
 adk_delegate_to_agent = FunctionTool(func=_delegate_to_agent)
 adk_get_agent_status = FunctionTool(func=_get_agent_status)
+adk_transfer_to_agent = FunctionTool(func=_transfer_to_agent)

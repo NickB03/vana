@@ -221,3 +221,19 @@ def generate_mock_recent_queries(limit=10):
     queries.sort(key=lambda q: q["timestamp"], reverse=True)
 
     return queries
+
+# Create a simple API object for compatibility
+class MemoryAPI:
+    """Memory API class for dashboard integration."""
+
+    def get_usage(self):
+        return get_memory_usage()
+
+    def get_history(self, hours=24):
+        return get_memory_metrics_history(hours)
+
+    def get_recent_queries(self, limit=10):
+        return get_recent_queries(limit)
+
+# Create the API instance
+memory_api = MemoryAPI()

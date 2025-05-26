@@ -15,7 +15,14 @@ Enhanced with AI Agent Best Practices:
 """
 
 import os
+from dotenv import load_dotenv
+
+# Load environment variables before importing Google ADK
+load_dotenv()
+
+# Google ADK imports (installed in environment)
 from google.adk.agents import LlmAgent
+from google.adk.tools import FunctionTool
 
 # Import all ADK-compatible tools
 from vana_multi_agent.tools import (
@@ -32,8 +39,24 @@ from vana_multi_agent.tools import (
     adk_echo, adk_get_health_status,
 
     # Agent Coordination Tools
-    adk_coordinate_task, adk_delegate_to_agent, adk_get_agent_status
+    adk_coordinate_task, adk_delegate_to_agent, adk_get_agent_status, adk_transfer_to_agent
 )
+
+# Long Running Function Tools
+from vana_multi_agent.tools.adk_long_running_tools import (
+    adk_ask_for_approval, adk_process_large_dataset,
+    adk_generate_report, adk_check_task_status
+)
+
+# Third-Party Tools (Google ADK Pattern - Final Tool Type)
+from vana_multi_agent.tools.adk_third_party_tools import (
+    adk_execute_third_party_tool, adk_list_third_party_tools,
+    adk_register_langchain_tools, adk_register_crewai_tools,
+    adk_get_third_party_tool_info
+)
+
+# Import agent tools for Agents-as-Tools pattern
+from vana_multi_agent.tools.agent_tools import create_specialist_agent_tools
 
 # Import enhanced core components
 from vana_multi_agent.core.task_router import TaskRouter
@@ -53,6 +76,7 @@ architecture_specialist = LlmAgent(
     name="architecture_specialist",
     model=MODEL,
     description="🏗️ Architecture & Design Specialist",
+    output_key="architecture_analysis",  # Save results to session state
     instruction="""You are the Architecture Specialist, an expert in system design and technical architecture.
 
     ## PLAN/ACT Mode Integration:
@@ -72,6 +96,14 @@ architecture_specialist = LlmAgent(
     - Fallback strategies for design challenges
     - Collaborative planning with other specialists
     - Structured validation of architectural decisions
+
+    ## Google ADK State Sharing:
+    - Your analysis results are automatically saved to session state as 'architecture_analysis'
+    - You can reference previous work from other agents via session state keys:
+      * 'ui_design' - UI/UX specialist's design decisions
+      * 'devops_plan' - DevOps specialist's infrastructure plans
+      * 'qa_report' - QA specialist's testing strategies
+    - Always consider existing session state when making architectural decisions
 
     ## Task Approach:
     1. **Understanding**: Analyze architectural requirements and constraints
@@ -93,6 +125,7 @@ ui_specialist = LlmAgent(
     name="ui_specialist",
     model=MODEL,
     description="🎨 UI/UX & Interface Specialist",
+    output_key="ui_design",  # Save results to session state
     instruction="""You are the UI/UX Specialist, an expert in interface design and user experience optimization.
 
     ## PLAN/ACT Mode Integration:
@@ -112,6 +145,14 @@ ui_specialist = LlmAgent(
     - Fallback strategies for design challenges and technical constraints
     - Collaborative planning with architecture and DevOps specialists
     - Structured validation of user experience and interface effectiveness
+
+    ## Google ADK State Sharing:
+    - Your design results are automatically saved to session state as 'ui_design'
+    - You can reference previous work from other agents via session state keys:
+      * 'architecture_analysis' - Architecture specialist's system design decisions
+      * 'devops_plan' - DevOps specialist's infrastructure constraints
+      * 'qa_report' - QA specialist's testing requirements for UI
+    - Always align your designs with existing architectural and infrastructure decisions
 
     ## Task Approach:
     1. **Understanding**: Analyze user needs, requirements, and constraints
@@ -133,6 +174,7 @@ devops_specialist = LlmAgent(
     name="devops_specialist",
     model=MODEL,
     description="⚙️ DevOps & Infrastructure Specialist",
+    output_key="devops_plan",  # Save results to session state
     instruction="""You are the DevOps Specialist, an expert in infrastructure management and deployment automation.
 
     ## PLAN/ACT Mode Integration:
@@ -152,6 +194,14 @@ devops_specialist = LlmAgent(
     - Fallback strategies for deployment failures and system outages
     - Collaborative planning with architecture and QA specialists
     - Structured validation of infrastructure reliability and performance
+
+    ## Google ADK State Sharing:
+    - Your infrastructure plans are automatically saved to session state as 'devops_plan'
+    - You can reference previous work from other agents via session state keys:
+      * 'architecture_analysis' - Architecture specialist's system design requirements
+      * 'ui_design' - UI specialist's frontend infrastructure needs
+      * 'qa_report' - QA specialist's testing environment requirements
+    - Always align your infrastructure with existing architectural and UI requirements
 
     ## Task Approach:
     1. **Understanding**: Analyze infrastructure requirements and constraints
@@ -173,6 +223,7 @@ qa_specialist = LlmAgent(
     name="qa_specialist",
     model=MODEL,
     description="🧪 QA & Testing Specialist",
+    output_key="qa_report",  # Save results to session state
     instruction="""You are the QA Specialist, an expert in testing strategy and quality assurance.
 
     ## PLAN/ACT Mode Integration:
@@ -193,6 +244,14 @@ qa_specialist = LlmAgent(
     - Collaborative planning with all specialists for comprehensive quality assurance
     - Structured validation of system reliability, performance, and security
 
+    ## Google ADK State Sharing:
+    - Your testing reports are automatically saved to session state as 'qa_report'
+    - You can reference previous work from other agents via session state keys:
+      * 'architecture_analysis' - Architecture specialist's system design for testing scope
+      * 'ui_design' - UI specialist's interface components for UI testing
+      * 'devops_plan' - DevOps specialist's infrastructure for testing environments
+    - Always align your testing strategy with existing system architecture and deployment plans
+
     ## Task Approach:
     1. **Understanding**: Analyze quality requirements and risk factors
     2. **Planning**: Design comprehensive testing strategies and quality gates
@@ -208,6 +267,35 @@ qa_specialist = LlmAgent(
         adk_echo, adk_get_health_status
     ]
 )
+
+# Create Agents-as-Tools for Google ADK compliance
+specialist_agent_tools = create_specialist_agent_tools(
+    architecture_specialist, ui_specialist, devops_specialist, qa_specialist
+)
+
+# Create ADK FunctionTool wrappers for agent tools
+
+def _architecture_tool(context: str) -> str:
+    """🏗️ Architecture specialist tool for system design and architecture analysis."""
+    return specialist_agent_tools["architecture_tool"](context)
+
+def _ui_tool(context: str) -> str:
+    """🎨 UI/UX specialist tool for interface design and user experience."""
+    return specialist_agent_tools["ui_tool"](context)
+
+def _devops_tool(context: str) -> str:
+    """⚙️ DevOps specialist tool for infrastructure and deployment planning."""
+    return specialist_agent_tools["devops_tool"](context)
+
+def _qa_tool(context: str) -> str:
+    """🧪 QA specialist tool for testing strategy and quality assurance."""
+    return specialist_agent_tools["qa_tool"](context)
+
+# Create ADK FunctionTool instances
+adk_architecture_tool = FunctionTool(func=_architecture_tool)
+adk_ui_tool = FunctionTool(func=_ui_tool)
+adk_devops_tool = FunctionTool(func=_devops_tool)
+adk_qa_tool = FunctionTool(func=_qa_tool)
 
 # Orchestrator Agent (Root Agent) with Enhanced AI Agent Best Practices
 vana = LlmAgent(
@@ -228,19 +316,66 @@ vana = LlmAgent(
     - ⚙️ **DevOps Specialist**: Infrastructure, deployment, monitoring, security
     - 🧪 **QA Specialist**: Testing strategy, quality assurance, validation
 
+    ## Google ADK Agent Transfer Pattern:
+    Use the transfer_to_agent() function to delegate tasks to specialist agents:
+    - For system design tasks: transfer_to_agent(agent_name="architecture_specialist", context="design requirements")
+    - For UI/UX tasks: transfer_to_agent(agent_name="ui_specialist", context="interface requirements")
+    - For deployment tasks: transfer_to_agent(agent_name="devops_specialist", context="infrastructure needs")
+    - For testing tasks: transfer_to_agent(agent_name="qa_specialist", context="quality requirements")
+
+    ## Google ADK Agents-as-Tools Pattern:
+    You also have specialist agents available as tools for direct execution:
+    - architecture_tool: Direct access to architecture specialist capabilities
+    - ui_tool: Direct access to UI/UX specialist capabilities
+    - devops_tool: Direct access to DevOps specialist capabilities
+    - qa_tool: Direct access to QA specialist capabilities
+    Use these tools when you need immediate specialist analysis without full agent transfer.
+
+    ## Google ADK State Sharing Pattern:
+    Agents automatically save their results to session state for collaboration:
+    - 'architecture_analysis' - Architecture specialist's system design decisions
+    - 'ui_design' - UI specialist's interface and user experience plans
+    - 'devops_plan' - DevOps specialist's infrastructure and deployment strategies
+    - 'qa_report' - QA specialist's testing strategies and quality requirements
+
+    When coordinating multi-agent workflows, consider the state sharing flow:
+    1. Architecture analysis provides foundation for all other work
+    2. UI design builds on architectural decisions
+    3. DevOps planning considers both architecture and UI requirements
+    4. QA testing validates all previous work
+
+    ## Google ADK Long Running Function Tools:
+    For operations that take significant time or require approval workflows:
+    - ask_for_approval: Create approval requests for actions requiring authorization
+    - process_large_dataset: Process datasets with progress tracking and status updates
+    - generate_report: Generate comprehensive reports from multiple data sources
+    - check_task_status: Monitor progress of any long-running operation
+
+    These tools return task IDs for tracking. Always use check_task_status to monitor progress.
+
     ## Advanced Capabilities:
     - **Confidence-Based Routing**: Intelligently route tasks to specialists based on capability scores
     - **Fallback Strategies**: Multiple fallback options for error recovery and task completion
     - **Collaborative Planning**: Coordinate multi-agent collaboration for complex tasks
     - **Performance Tracking**: Learn from execution history to improve future routing decisions
 
-    ## Enhanced Tool Suite (16 Tools):
+    ## Google ADK Third-Party Tools (Final Tool Type):
+    For ecosystem integration with external tool libraries:
+    - execute_third_party_tool: Execute tools from LangChain, CrewAI, and other libraries
+    - list_third_party_tools: View all available third-party tools
+    - register_langchain_tools: Register example LangChain tools for use
+    - register_crewai_tools: Register example CrewAI tools for use
+    - get_third_party_tool_info: Get detailed information about specific third-party tools
+
+    ## Enhanced Tool Suite (30 Tools):
     - File system operations with security checks and validation
     - Vector search and knowledge retrieval with semantic understanding
     - Web search for current information and research
     - Knowledge graph for entity relationships and context
     - System health monitoring and performance tracking
     - Advanced agent coordination and intelligent delegation
+    - Long-running function tools for async operations and workflows
+    - Third-party tool integration for ecosystem connectivity
 
     ## Task Execution Methodology:
     1. **Analysis**: Assess task complexity, requirements, and optimal approach
@@ -274,7 +409,17 @@ vana = LlmAgent(
         adk_echo, adk_get_health_status,
 
         # Agent coordination tools
-        adk_coordinate_task, adk_delegate_to_agent, adk_get_agent_status
+        adk_coordinate_task, adk_delegate_to_agent, adk_get_agent_status, adk_transfer_to_agent,
+
+        # Long Running Function Tools (Google ADK Pattern)
+        adk_ask_for_approval, adk_process_large_dataset, adk_generate_report, adk_check_task_status,
+
+        # Agents-as-Tools (Google ADK Pattern)
+        adk_architecture_tool, adk_ui_tool, adk_devops_tool, adk_qa_tool,
+
+        # Third-Party Tools (Google ADK Pattern - Final Tool Type for 100% Compliance)
+        adk_execute_third_party_tool, adk_list_third_party_tools,
+        adk_register_langchain_tools, adk_register_crewai_tools, adk_get_third_party_tool_info
     ]
 )
 

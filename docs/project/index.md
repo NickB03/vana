@@ -12,6 +12,11 @@ This section contains documents related to the overall VANA project, including i
 *   **Implementation Plans:**
     - **[Vector Search Enhancement Implementation Plan](implementation-plans/vector-search-enhancement-plan.md):** Detailed plan for enhancing the Vector Search subsystem with integration testing, deployment configuration, and security enhancements.
 
+*   **Assessments:**
+    - **[Unified Web Interface Assessment](assessments/unified-web-interface-assessment.md):** Comprehensive assessment for creating a ChatGPT-style UI with advanced monitoring capabilities, integrating existing dashboards and authentication systems.
+    - **[Prebuilt Interface Research](assessments/prebuilt-interface-research.md):** Research on existing open-source solutions to accelerate development, including LibreChat, assistant-ui, and dashboard templates.
+    - **[Web UI Branch Comparison](assessments/web-ui-branch-comparison.md):** Comparative analysis of existing feat/web-ui-assessment branch implementation vs. current research recommendations, with hybrid approach strategy.
+
 *   **[Changelog](../../CHANGELOG.md):** (Located in `docs/CHANGELOG.md`)
     Tracks significant changes, new features, bug fixes, and version history for the VANA project. *(Note: The plan indicates this is in `docs/CHANGELOG.md`, please verify its location and ensure it's actively maintained).*
 

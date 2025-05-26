@@ -19,8 +19,24 @@ logger = logging.getLogger(__name__)
 
 def display_agent_status():
     """Display agent status visualization component."""
-    # Fetch agent data
+    # Force refresh button for debugging
+    if st.button("🔄 Refresh Agent Data", key="refresh_agents"):
+        if 'agent_data' in st.session_state:
+            del st.session_state.agent_data
+        st.rerun()
+
+    # Fetch fresh agent data
     agent_data = get_agent_statuses()
+
+    # Debug information
+    st.write("**Debug Info:**")
+    st.write(f"- Agent data type: {type(agent_data)}")
+    st.write(f"- Agent data length: {len(agent_data) if agent_data else 0}")
+    if agent_data and len(agent_data) > 0:
+        st.write(f"- First agent: {agent_data[0]}")
+        st.write(f"- Agent names: {[agent.get('name', 'NO_NAME') for agent in agent_data]}")
+
+    st.session_state.agent_data = agent_data
 
     # Agent status cards
     st.subheader("Agent Status Overview")
@@ -144,7 +160,12 @@ def display_agent_status():
     st.subheader("Agent Historical Activity")
 
     # Agent selection for historical data
-    selected_agent = st.selectbox("Select Agent", [agent["name"] for agent in agent_data])
+    if agent_data and len(agent_data) > 0:
+        agent_names = [agent["name"] for agent in agent_data]
+        selected_agent = st.selectbox("Select Agent", agent_names, key="agent_selector")
+    else:
+        st.error("No agent data available")
+        selected_agent = "vana"  # fallback
 
     # Time period selection
     time_period = st.radio("Time Period", ["Last 24 Hours", "Last Week"], horizontal=True)

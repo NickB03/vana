@@ -357,3 +357,19 @@ def generate_mock_system_alerts(limit=10):
     alerts.sort(key=lambda a: a["timestamp"], reverse=True)
 
     return alerts
+
+# Create a simple API object for compatibility
+class SystemAPI:
+    """System API class for dashboard integration."""
+
+    def get_health(self):
+        return get_system_health()
+
+    def get_health_history(self, hours=24):
+        return get_system_health_history(hours)
+
+    def get_alerts(self, limit=10):
+        return get_system_alerts(limit)
+
+# Create the API instance
+system_api = SystemAPI()

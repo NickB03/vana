@@ -90,8 +90,8 @@ def generate_mock_task_details(task_id=None):
     # Define task statuses
     task_statuses = ["completed", "failed", "pending", "in_progress"]
 
-    # Define agents
-    agents = ["vana", "rhea", "max", "sage", "kai", "juno"]
+    # Define agents - Updated to functional naming
+    agents = ["vana", "architecture_specialist", "ui_specialist", "devops_specialist", "qa_specialist"]
 
     # If task_id is specified, return details for that task only
     if task_id:
@@ -174,8 +174,8 @@ def generate_mock_task_timeline(time_range="day"):
     # Define task statuses
     task_statuses = ["completed", "failed"]
 
-    # Define agents
-    agents = ["vana", "rhea", "max", "sage", "kai", "juno"]
+    # Define agents - Updated to functional naming
+    agents = ["vana", "architecture_specialist", "ui_specialist", "devops_specialist", "qa_specialist"]
 
     # Generate random tasks
     tasks = []
@@ -199,3 +199,19 @@ def generate_mock_task_timeline(time_range="day"):
     tasks.sort(key=lambda x: x["start_time"])
 
     return tasks
+
+# Create a simple API object for compatibility
+class TaskAPI:
+    """Task API class for dashboard integration."""
+
+    def get_summary(self, time_range="day"):
+        return get_task_summary(time_range)
+
+    def get_details(self, task_id=None):
+        return get_task_details(task_id)
+
+    def get_timeline(self, time_range="day"):
+        return get_task_timeline(time_range)
+
+# Create the API instance
+task_api = TaskAPI()

@@ -31,8 +31,8 @@ def get_agent_statuses():
 
 def generate_mock_agent_data():
     """Generate realistic mock agent status data."""
-    # List of agent names
-    agent_names = ["Vana", "Rhea", "Max", "Sage", "Kai", "Juno"]
+    # List of agent names - Updated to functional naming
+    agent_names = ["vana", "architecture_specialist", "ui_specialist", "devops_specialist", "qa_specialist"]
 
     # Status options
     status_options = ["Active", "Idle", "Busy", "Error", "Offline"]
@@ -56,14 +56,13 @@ def generate_mock_agent_data():
         requests_handled = random.randint(10, 1000)
         error_rate = round(random.uniform(0, 0.05), 3)
 
-        # Standard capabilities for each agent based on their role
+        # Standard capabilities for each agent based on their role - Updated to functional roles
         capabilities = {
-            "Vana": ["Task Delegation", "Context Management", "Memory Integration"],
-            "Rhea": ["Architecture Planning", "System Design", "Component Integration"],
-            "Max": ["User Interface", "Command Parsing", "Response Formatting"],
-            "Sage": ["Platform Integration", "API Management", "Service Orchestration"],
-            "Kai": ["Edge Case Handling", "Error Recovery", "Fallback Management"],
-            "Juno": ["System Testing", "Quality Assurance", "Performance Monitoring"]
+            "vana": ["Task Orchestration", "Agent Coordination", "Context Management", "Memory Integration"],
+            "architecture_specialist": ["System Architecture", "Design Patterns", "Component Integration", "Scalability Planning"],
+            "ui_specialist": ["User Interface Design", "User Experience", "Frontend Development", "Responsive Design"],
+            "devops_specialist": ["Deployment Automation", "Infrastructure Management", "CI/CD Pipelines", "Monitoring"],
+            "qa_specialist": ["Quality Assurance", "Testing Strategies", "Error Detection", "Performance Validation"]
         }
 
         # Construct agent data object
@@ -133,5 +132,18 @@ def generate_mock_agent_activity(agent_name, hours=24):
         "agent_name": agent_name,
         "activity": activity_data
     }
+
+# Create a simple API object for compatibility
+class AgentAPI:
+    """Agent API class for dashboard integration."""
+
+    def get_statuses(self):
+        return get_agent_statuses()
+
+    def get_activity(self, agent_name, hours=24):
+        return get_agent_activity(agent_name, hours)
+
+# Create the API instance
+agent_api = AgentAPI()
 
 

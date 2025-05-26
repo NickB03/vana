@@ -12,8 +12,19 @@ ENV/
 env.bak/
 venv.bak/
 
+# Virtual Environments (comprehensive coverage)
+vana_env/
+*/venv/
+*/vana_env/
+*/.venv/
+.virtualenv/
+.conda/
+conda-meta/
+pyvenv.cfg
+
 # Environment & Secrets
 .env
+.env.*
 .env.local
 .env.development.local
 .env.test.local
@@ -21,6 +32,16 @@ venv.bak/
 secrets/
 *.key
 *.pem
+*.json
+service-account*.json
+*-sa.json
+*credentials*.json
+
+# Google Cloud & ADK specific
+.gcloud/
+.config/gcloud/
+application_default_credentials.json
+google-cloud-sdk/
 
 # Logs & Temporary
 *.log

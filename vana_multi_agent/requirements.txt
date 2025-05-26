@@ -1,9 +1,9 @@
 # VANA Multi-Agent System Dependencies
 
-# Google ADK and AI Platform
-google-cloud-aiplatform[adk,agent_engines]>=1.38.0
-google-adk>=0.5.0
-google-genai>=0.3.0
+# Google ADK and AI Platform (Updated to match official samples)
+google-cloud-aiplatform[adk,agent_engines]>=1.93.0
+google-adk>=1.0.0
+google-genai>=1.14.0
 
 # Core Dependencies
 python-dotenv>=1.0.0
