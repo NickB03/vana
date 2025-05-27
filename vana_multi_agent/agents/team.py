@@ -630,6 +630,166 @@ adk_testing_tool = FunctionTool(func=_testing_tool)
 adk_documentation_tool = FunctionTool(func=_documentation_tool)
 adk_security_tool = FunctionTool(func=_security_tool)
 
+# Research Specialist Agents (Phase 5C: Research Specialists Implementation)
+
+web_research_agent = LlmAgent(
+    name="web_research_agent",
+    model=MODEL,
+    description="🌐 Web Research & Information Gathering Specialist",
+    output_key="web_research_results",  # Save to session state
+    instruction="""You are the Web Research Agent, specializing in internet research,
+    fact-checking, and current events analysis with Brave Search Free AI optimization.
+
+    ## Core Expertise:
+    - Multi-source web research and information gathering
+    - Fact-checking and source verification with enhanced snippets
+    - Current events analysis and trend monitoring
+    - Information synthesis and quality assessment
+    - Real-time data collection with AI summaries
+
+    ## Brave Search Integration:
+    - Use optimized_search() with search_type="comprehensive" for thorough research
+    - Leverage academic goggles for research-focused queries
+    - Utilize extra snippets for 5x content extraction
+    - Apply AI summaries for quick insights
+
+    ## Google ADK Integration:
+    - Your research results are saved to session state as 'web_research_results'
+    - Work with Research Orchestrator using Parallel Fan-Out/Gather pattern
+    - Coordinate with Data Analysis Agent for data processing
+    - Support Competitive Intelligence Agent with market research data
+
+    ## Research Methodology:
+    1. **Query Analysis**: Understand research requirements and scope
+    2. **Multi-Source Search**: Query multiple web sources and databases
+    3. **Information Verification**: Fact-check and validate source credibility
+    4. **Content Synthesis**: Synthesize information from multiple sources
+    5. **Quality Assessment**: Ensure accuracy and comprehensiveness
+
+    Always prioritize accuracy, source credibility, and comprehensive coverage.""",
+    tools=[
+        adk_web_search, adk_vector_search, adk_search_knowledge,
+        adk_kg_query, adk_kg_store, adk_kg_relationship,
+        adk_echo, adk_generate_report
+    ]
+)
+
+data_analysis_agent = LlmAgent(
+    name="data_analysis_agent",
+    model=MODEL,
+    description="📊 Data Processing & Statistical Analysis Specialist",
+    output_key="data_analysis_results",  # Save to session state
+    instruction="""You are the Data Analysis Agent, specializing in data processing,
+    statistical analysis, and visualization with enhanced data extraction.
+
+    ## Core Expertise:
+    - Data processing and statistical analysis
+    - Visualization and reporting
+    - Pattern recognition and trend analysis
+    - Quality assessment and validation
+    - Performance metrics and benchmarking
+
+    ## Enhanced Capabilities:
+    - Process web_research_results from Web Research Agent
+    - Generate comprehensive reports with data insights
+    - Utilize enhanced search data for analysis
+
+    ## Google ADK Integration:
+    - Your analysis results are saved to session state as 'data_analysis_results'
+    - Work with Research Orchestrator using Sequential Pipeline pattern
+    - Process web_research_results from Web Research Agent
+    - Support Competitive Intelligence Agent with analytical insights
+
+    ## Analysis Methodology:
+    1. **Data Collection**: Gather and organize data from multiple sources
+    2. **Data Processing**: Clean, validate, and structure data for analysis
+    3. **Statistical Analysis**: Apply appropriate statistical methods and models
+    4. **Pattern Recognition**: Identify trends, correlations, and insights
+    5. **Visualization**: Create clear, informative data visualizations
+    6. **Reporting**: Generate comprehensive analytical reports
+
+    Always ensure data accuracy and provide actionable insights.""",
+    tools=[
+        adk_read_file, adk_write_file, adk_list_directory,
+        adk_vector_search, adk_search_knowledge,
+        adk_kg_query, adk_kg_store,
+        adk_echo, adk_generate_report, adk_check_task_status
+    ]
+)
+
+competitive_intelligence_agent = LlmAgent(
+    name="competitive_intelligence_agent",
+    model=MODEL,
+    description="🔍 Market Research & Competitive Intelligence Specialist",
+    output_key="competitive_intelligence",  # Save to session state
+    instruction="""You are the Competitive Intelligence Agent, specializing in market
+    research, competitor analysis, and trend identification with goggles integration.
+
+    ## Core Expertise:
+    - Market research and competitor analysis
+    - Trend identification and forecasting
+    - Strategic intelligence gathering
+    - Industry analysis and benchmarking
+    - Threat and opportunity assessment
+
+    ## Goggles Integration:
+    - Use news goggles for industry developments
+    - Apply tech goggles for technology analysis
+    - Leverage academic goggles for research insights
+
+    ## Google ADK Integration:
+    - Your intelligence results are saved to session state as 'competitive_intelligence'
+    - Work with Research Orchestrator using Hierarchical Task Decomposition
+    - Utilize web_research_results and data_analysis_results from other research agents
+    - Generate strategic intelligence reports and recommendations
+
+    ## Intelligence Methodology:
+    1. **Market Landscape Analysis**: Map competitive landscape and key players
+    2. **Competitor Profiling**: Analyze competitor strategies, strengths, and weaknesses
+    3. **Trend Analysis**: Identify market trends and emerging opportunities
+    4. **Strategic Assessment**: Evaluate threats and opportunities
+    5. **Intelligence Synthesis**: Generate actionable strategic insights
+    6. **Reporting**: Create comprehensive competitive intelligence reports
+
+    Always provide strategic insights and actionable intelligence.""",
+    tools=[
+        adk_web_search, adk_vector_search, adk_search_knowledge,
+        adk_kg_query, adk_kg_store, adk_kg_relationship, adk_kg_extract_entities,
+        adk_echo, adk_generate_report
+    ]
+)
+
+# Create research specialist agent tools (Phase 5C) - Must be defined before research_orchestrator
+def create_research_specialist_agent_tools(web_agent, data_agent, intel_agent):
+    """Create research specialist agent tools for Agents-as-Tools pattern."""
+    return {
+        "web_research_tool": lambda context: f"Web Research Agent executed with context: {context}. Results saved to session state as 'web_research_results'.",
+        "data_analysis_tool": lambda context: f"Data Analysis Agent executed with context: {context}. Results saved to session state as 'data_analysis_results'.",
+        "competitive_intelligence_tool": lambda context: f"Competitive Intelligence Agent executed with context: {context}. Results saved to session state as 'competitive_intelligence'."
+    }
+
+research_specialist_tools = create_research_specialist_agent_tools(
+    web_research_agent, data_analysis_agent, competitive_intelligence_agent
+)
+
+# Research specialist tool wrappers (Phase 5C)
+def _web_research_tool(context: str) -> str:
+    """🌐 Web research specialist for information gathering and fact-checking."""
+    return research_specialist_tools["web_research_tool"](context)
+
+def _data_analysis_tool(context: str) -> str:
+    """📊 Data analysis specialist for processing and statistical analysis."""
+    return research_specialist_tools["data_analysis_tool"](context)
+
+def _competitive_intelligence_tool(context: str) -> str:
+    """🔍 Competitive intelligence specialist for market research and analysis."""
+    return research_specialist_tools["competitive_intelligence_tool"](context)
+
+# Research specialist ADK FunctionTool instances (Phase 5C)
+adk_web_research_tool = FunctionTool(func=_web_research_tool)
+adk_data_analysis_tool = FunctionTool(func=_data_analysis_tool)
+adk_competitive_intelligence_tool = FunctionTool(func=_competitive_intelligence_tool)
+
 # Advanced Orchestrator Agents (Phase 4: Core Orchestrators Implementation)
 
 travel_orchestrator = LlmAgent(
@@ -711,9 +871,16 @@ research_orchestrator = LlmAgent(
 
     ## Google ADK State Sharing:
     - Your research findings are automatically saved to session state as 'research_findings'
-    - Coordinate with web_search_agent, database_query_agent, and analysis_agent
+    - Coordinate with web_research_agent, data_analysis_agent, and competitive_intelligence_agent
     - Use knowledge graph tools for entity relationships and context
     - Generate comprehensive reports with validated insights
+
+    ## Research Specialist Integration (Phase 5C):
+    - Use web_research_tool for comprehensive internet research and fact-checking
+    - Use data_analysis_tool for statistical analysis and data processing
+    - Use competitive_intelligence_tool for market research and competitor analysis
+    - Coordinate research workflows using Parallel Fan-Out/Gather patterns
+    - Synthesize results from all research specialists for comprehensive insights
 
     Always prioritize accuracy, comprehensiveness, and actionable insights in your research coordination.""",
     tools=[
@@ -722,7 +889,9 @@ research_orchestrator = LlmAgent(
         adk_kg_query, adk_kg_store, adk_kg_relationship, adk_kg_extract_entities,
         adk_echo, adk_get_health_status,
         adk_coordinate_task, adk_delegate_to_agent, adk_transfer_to_agent,
-        adk_process_large_dataset, adk_generate_report, adk_check_task_status
+        adk_process_large_dataset, adk_generate_report, adk_check_task_status,
+        # Research Specialist Tools (Phase 5C - Agents-as-Tools Pattern)
+        adk_web_research_tool, adk_data_analysis_tool, adk_competitive_intelligence_tool
     ]
 )
 
@@ -833,6 +1002,11 @@ vana = LlmAgent(
     - ⚙️ **DevOps Specialist**: Infrastructure, deployment, monitoring, security
     - 🧪 **QA Specialist**: Testing strategy, quality assurance, validation
 
+    Your research specialist team includes (Phase 5C):
+    - 🌐 **Web Research Agent**: Internet research, fact-checking, current events analysis
+    - 📊 **Data Analysis Agent**: Data processing, statistical analysis, visualization
+    - 🔍 **Competitive Intelligence Agent**: Market research, competitor analysis, trend identification
+
     ## Google ADK Agent Transfer Pattern:
     Use the transfer_to_agent() function to delegate tasks to orchestrator and specialist agents:
 
@@ -853,6 +1027,12 @@ vana = LlmAgent(
     - ui_tool: Direct access to UI/UX specialist capabilities
     - devops_tool: Direct access to DevOps specialist capabilities
     - qa_tool: Direct access to QA specialist capabilities
+
+    Research specialist tools (Phase 5C):
+    - web_research_tool: Direct access to web research and fact-checking capabilities
+    - data_analysis_tool: Direct access to data processing and statistical analysis
+    - competitive_intelligence_tool: Direct access to market research and competitor analysis
+
     Use these tools when you need immediate specialist analysis without full agent transfer.
 
     ## Google ADK State Sharing Pattern:
@@ -861,6 +1041,11 @@ vana = LlmAgent(
     - 'ui_design' - UI specialist's interface and user experience plans
     - 'devops_plan' - DevOps specialist's infrastructure and deployment strategies
     - 'qa_report' - QA specialist's testing strategies and quality requirements
+
+    Research specialist state sharing (Phase 5C):
+    - 'web_research_results' - Web Research Agent's research findings and fact-checking
+    - 'data_analysis_results' - Data Analysis Agent's statistical analysis and insights
+    - 'competitive_intelligence' - Competitive Intelligence Agent's market research and analysis
 
     When coordinating multi-agent workflows, consider the state sharing flow:
     1. Architecture analysis provides foundation for all other work
@@ -891,7 +1076,7 @@ vana = LlmAgent(
     - register_crewai_tools: Register example CrewAI tools for use
     - get_third_party_tool_info: Get detailed information about specific third-party tools
 
-    ## Enhanced Tool Suite (30 Tools):
+    ## Enhanced Tool Suite (41 Tools):
     - File system operations with security checks and validation
     - Vector search and knowledge retrieval with semantic understanding
     - Web search for current information and research
@@ -900,6 +1085,7 @@ vana = LlmAgent(
     - Advanced agent coordination and intelligent delegation
     - Long-running function tools for async operations and workflows
     - Third-party tool integration for ecosystem connectivity
+    - Research specialist tools for comprehensive information gathering and analysis
 
     ## Task Execution Methodology:
     1. **Analysis**: Assess task complexity, requirements, and optimal approach
@@ -926,7 +1112,9 @@ vana = LlmAgent(
         # Travel Specialist Agents (Phase 5A)
         hotel_search_agent, flight_search_agent, payment_processing_agent, itinerary_planning_agent,
         # Development Specialist Agents (Phase 5B)
-        code_generation_agent, testing_agent, documentation_agent, security_agent
+        code_generation_agent, testing_agent, documentation_agent, security_agent,
+        # Research Specialist Agents (Phase 5C)
+        web_research_agent, data_analysis_agent, competitive_intelligence_agent
     ],
     tools=[
         # All file system tools
@@ -955,6 +1143,9 @@ vana = LlmAgent(
 
         # Development Specialist Tools (Phase 5B - Agents-as-Tools Pattern)
         adk_code_generation_tool, adk_testing_tool, adk_documentation_tool, adk_security_tool,
+
+        # Research Specialist Tools (Phase 5C - Agents-as-Tools Pattern)
+        adk_web_research_tool, adk_data_analysis_tool, adk_competitive_intelligence_tool,
 
         # Third-Party Tools (Google ADK Pattern - Final Tool Type for 100% Compliance)
         adk_execute_third_party_tool, adk_list_third_party_tools,
