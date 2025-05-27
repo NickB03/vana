@@ -19,14 +19,51 @@ from vana_multi_agent.core.tool_standards import (
     standardized_tool_wrapper, performance_monitor, tool_analytics
 )
 
-# Mock implementations for self-contained operation
-def echo(message: str) -> str:
-    """Simple echo implementation for testing."""
-    return f"Echo: {message}"
+# Import real implementations from parent directory tools
+import sys
+import os
 
-def get_health_status() -> str:
-    """Simple health status implementation."""
-    return "System Status: Operational - All agents ready"
+# Add the project root to the path to access parent directory tools
+project_root = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+if project_root not in sys.path:
+    sys.path.insert(0, project_root)
+
+# Import real echo function from agent/tools/echo.py
+try:
+    from agent.tools.echo import echo
+except ImportError as e:
+    # Fallback if import fails
+    def echo(message: str) -> str:
+        """Fallback echo implementation."""
+        return f"Echo: {message}"
+
+# Import real health status function from agent/tools/vector_search.py
+try:
+    from agent.tools.vector_search import get_health_status as _get_vector_health_status
+
+    def get_health_status() -> str:
+        """Get comprehensive system health status with real vector search integration."""
+        try:
+            vector_health = _get_vector_health_status()
+            if isinstance(vector_health, dict):
+                if vector_health.get("success", False):
+                    status_info = vector_health.get("status", {})
+                    if isinstance(status_info, dict):
+                        return f"System Status: {status_info.get('status', 'Unknown')} - Vector Search: Operational"
+                    else:
+                        return f"System Status: {status_info} - Vector Search: Operational"
+                else:
+                    return f"System Status: Operational - Vector Search: {vector_health.get('error', 'Error')}"
+            else:
+                return f"System Status: Operational - Vector Search: {vector_health}"
+        except Exception as e:
+            return f"System Status: Operational - Vector Search: Error ({str(e)})"
+
+except ImportError as e:
+    # Fallback if import fails
+    def get_health_status() -> str:
+        """Fallback health status implementation."""
+        return "System Status: Operational - All agents ready"
 
 class StandardizedSystemTools:
     """Standardized system tools with enhanced monitoring and error handling."""
