@@ -1,28 +1,53 @@
-# Product Context: VANA
+# Product Context: VANA - Advanced Multi-Agent Orchestration Platform
 
-## 1. Problem Space
+## 1. Expanded Problem Space & Vision
 
-Modern AI applications, especially those involving agents or complex information retrieval, face several challenges:
+Modern AI applications face complex challenges that require sophisticated multi-agent coordination:
 
+*   **Task Complexity:** Real-world tasks like hotel booking, travel planning, and software development require coordination across multiple specialized domains and services.
+*   **Agent Specialization:** Single-agent systems struggle with diverse expertise requirements - a travel booking agent needs different capabilities than a code generation agent.
+*   **Orchestration Challenges:** Coordinating multiple agents, managing state sharing, and ensuring seamless handoffs between specialized agents is complex.
+*   **Domain Expertise:** Users need AI assistance across multiple domains (travel, development, research, business) with deep specialization in each area.
+*   **Workflow Integration:** Complex multi-step workflows require intelligent task decomposition, parallel execution, and result synthesis.
 *   **Reliability of Core Services:** Semantic search (like Vector Search) and other AI services can degrade in performance or experience outages. Monitoring their health is crucial for overall application stability.
 *   **Information Silos:** Knowledge often exists in various forms (unstructured documents, structured databases, web). Effectively consolidating and retrieving information from these diverse sources is complex.
 *   **Stale Information:** AI systems relying solely on static training data or internal knowledge bases can quickly become outdated. Access to real-time web information is often necessary.
 *   **Complexity of Tooling:** Integrating multiple AI tools (vector databases, knowledge graphs, document parsers, web search APIs) into a cohesive system requires significant effort.
 *   **Operational Overhead:** Setting up, configuring, and maintaining these interconnected services can be time-consuming.
 
-## 2. VANA's Solution & Value Proposition
+## 2. VANA's Advanced Multi-Agent Solution & Value Proposition
 
-VANA aims to address these challenges by providing a suite of well-integrated tools and services, with a current focus on ensuring a robust foundation for AI applications:
+VANA transforms from a foundational AI platform into a comprehensive multi-agent orchestration system capable of handling complex real-world tasks:
 
-*   **Proactive Health Monitoring:** The Vector Search Health Monitoring System provides visibility into the performance and reliability of Vertex AI Vector Search, enabling proactive issue detection and resolution. This ensures that a critical component of the AI stack is dependable.
-*   **Unified Knowledge Access:** Through its `EnhancedHybridSearch` capabilities, VANA offers a unified way to query across different knowledge sources (Vector Search, Knowledge Graph, Web Search), providing more comprehensive and relevant information.
-*   **Structured Document Ingestion:** The `DocumentProcessor` (currently PyPDF2/Pytesseract, targeting Vertex AI Document AI) allows for systematic processing of various document types, preparing them for ingestion into knowledge systems.
-*   **✅ Native ADK Memory Management:** Google ADK's VertexAiRagMemoryService is fully operational, providing managed knowledge storage and retrieval with 99.9% uptime, eliminating custom knowledge graph infrastructure while maintaining superior semantic search capabilities.
-*   **✅ Foundation for Intelligent Agents:** VANA provides a production-ready foundational layer with 5-agent multi-agent system, 30 standardized tools, and complete Google ADK integration for building advanced AI applications.
-*   **✅ Enterprise-Ready Operations:** Long Running Function Tools support approval workflows, data processing pipelines, and report generation with proper task management, progress tracking, and enterprise-scale operations.
-*   **✅ Google ADK Compliance:** 100% compliance with Google ADK tool types achieved, ensuring full compatibility with industry-standard agent development patterns and best practices.
-*   **✅ Cost Optimization:** $8,460-20,700/year cost savings achieved by eliminating custom MCP server hosting and infrastructure maintenance.
-*   **✅ Maintenance Reduction:** 70% reduction in maintenance overhead by replacing 2,000+ lines of custom knowledge graph code with Google-managed services.
+**🎯 MANUS-STYLE ORCHESTRATION CAPABILITIES**
+*   **Hotel Booking Orchestration:** "Find me a hotel near Times Square" → VANA → Hotel Search Agent → Hotel Booking Agent → Payment Agent → Memory Agent → Response
+*   **Travel Planning Orchestration:** "Plan a 5-day trip to Peru" → VANA → Travel Orchestrator → [Flight Search + Hotel Search + Activity] → Itinerary Planning → Payment → Memory → Response
+*   **Development Task Orchestration:** "Create a REST API with auth" → VANA → Development Orchestrator → [Code Generation + Testing + Security] → Integration → Deployment → Documentation → Response
+*   **Research Task Orchestration:** "Research market trends" → VANA → Research Orchestrator → [Web Research + Database Research + Analysis] → Report Generation → Memory → Response
+
+**🏗️ 20+ AGENT ECOSYSTEM ARCHITECTURE**
+*   **4 Core Orchestrator Agents:** Travel, Research, Development, Business orchestrators for complex workflows
+*   **11 Specialist Task Agents:** Hotel booking, flight search, payment, code generation, testing, documentation, security, performance, integration, deployment agents
+*   **3 Intelligence Agents:** Memory management, decision engine, learning agents for system optimization
+*   **2 Utility Agents:** Monitoring and coordination agents for system health and workflow optimization
+
+**🔧 GOOGLE ADK ORCHESTRATION PATTERNS**
+*   **Coordinator/Dispatcher Pattern:** Central orchestrator routing tasks to specialist agents based on capability assessment
+*   **Agents-as-Tools Pattern:** Specialist agents wrapped as tools for VANA orchestrator using AgentTool wrapper
+*   **Sequential Pipeline Pattern:** Multi-step workflows with state sharing via session.state for complex task execution
+*   **Parallel Fan-Out/Gather Pattern:** Concurrent task execution with result synthesis for efficiency optimization
+*   **Hierarchical Task Decomposition:** Complex tasks broken into manageable subtasks across agent hierarchy
+
+**✅ ESTABLISHED FOUNDATION CAPABILITIES**
+*   **Proactive Health Monitoring:** The Vector Search Health Monitoring System provides visibility into the performance and reliability of Vertex AI Vector Search, enabling proactive issue detection and resolution.
+*   **Unified Knowledge Access:** Through its `EnhancedHybridSearch` capabilities, VANA offers a unified way to query across different knowledge sources (Vector Search, Knowledge Graph, Web Search).
+*   **Structured Document Ingestion:** The `DocumentProcessor` allows for systematic processing of various document types, preparing them for ingestion into knowledge systems.
+*   **Native ADK Memory Management:** Google ADK's VertexAiRagMemoryService is fully operational, providing managed knowledge storage and retrieval with 99.9% uptime.
+*   **Foundation for Intelligent Agents:** VANA provides a production-ready foundational layer with 5-agent multi-agent system, 30 standardized tools, and complete Google ADK integration.
+*   **Enterprise-Ready Operations:** Long Running Function Tools support approval workflows, data processing pipelines, and report generation with proper task management.
+*   **Google ADK Compliance:** 100% compliance with Google ADK tool types achieved, ensuring full compatibility with industry-standard agent development patterns.
+*   **Cost Optimization:** $8,460-20,700/year cost savings achieved by eliminating custom MCP server hosting and infrastructure maintenance.
+*   **Maintenance Reduction:** 70% reduction in maintenance overhead by replacing 2,000+ lines of custom knowledge graph code with Google-managed services.
 
 ## 3. Target User Experience (Internal - Nick)
 
