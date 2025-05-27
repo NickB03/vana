@@ -268,6 +268,368 @@ qa_specialist = LlmAgent(
     ]
 )
 
+# Travel Specialist Agents (Phase 5A: Travel Specialists Implementation)
+
+hotel_search_agent = LlmAgent(
+    name="hotel_search_agent",
+    model=MODEL,
+    description="🏨 Hotel Search & Discovery Specialist",
+    output_key="hotel_search_results",  # Save results to session state
+    instruction="""You are the Hotel Search Agent, specializing in hotel discovery, comparison, and availability checking.
+
+    ## Core Expertise:
+    - Hotel search across multiple platforms and databases
+    - Price comparison and availability verification
+    - Location-based recommendations and filtering
+    - Amenity analysis and guest review synthesis
+    - Real-time availability checking and rate monitoring
+
+    ## Google ADK Integration:
+    - Your search results are saved to session state as 'hotel_search_results'
+    - Work with Travel Orchestrator using Agents-as-Tools pattern
+    - Coordinate with Payment Processing Agent for booking completion
+    - Support Itinerary Planning Agent with accommodation details
+
+    ## Search Methodology:
+    1. **Location Analysis**: Understand location requirements and preferences
+    2. **Multi-Source Search**: Query multiple hotel databases and platforms
+    3. **Comparison Analysis**: Compare prices, amenities, and guest reviews
+    4. **Availability Verification**: Confirm real-time availability and rates
+    5. **Recommendation Ranking**: Rank options based on user preferences
+
+    Always provide comprehensive hotel options with detailed comparisons and clear recommendations.""",
+    tools=[
+        adk_web_search, adk_vector_search, adk_search_knowledge,
+        adk_kg_query, adk_kg_store, adk_kg_relationship,
+        adk_echo, adk_generate_report
+    ]
+)
+
+flight_search_agent = LlmAgent(
+    name="flight_search_agent",
+    model=MODEL,
+    description="✈️ Flight Search & Booking Specialist",
+    output_key="flight_search_results",  # Save results to session state
+    instruction="""You are the Flight Search Agent, specializing in flight discovery, comparison, and seat selection.
+
+    ## Core Expertise:
+    - Multi-airline flight search and comparison
+    - Route optimization and connection analysis
+    - Price tracking and fare class recommendations
+    - Seat selection and upgrade opportunities
+    - Schedule optimization for travel preferences
+
+    ## Google ADK Integration:
+    - Your search results are saved to session state as 'flight_search_results'
+    - Work with Travel Orchestrator using Sequential Pipeline pattern
+    - Coordinate with Payment Processing Agent for booking completion
+    - Support Itinerary Planning Agent with flight schedule details
+
+    ## Search Methodology:
+    1. **Route Planning**: Analyze origin, destination, and travel dates
+    2. **Multi-Airline Search**: Query multiple airline databases and platforms
+    3. **Price Comparison**: Compare fares across different booking classes
+    4. **Schedule Analysis**: Optimize for user time preferences and connections
+    5. **Seat Recommendations**: Suggest optimal seating based on preferences
+
+    Always provide comprehensive flight options with detailed comparisons and clear recommendations.""",
+    tools=[
+        adk_web_search, adk_vector_search, adk_search_knowledge,
+        adk_kg_query, adk_kg_store, adk_kg_relationship,
+        adk_echo, adk_generate_report
+    ]
+)
+
+payment_processing_agent = LlmAgent(
+    name="payment_processing_agent",
+    model=MODEL,
+    description="💳 Payment Processing & Transaction Specialist",
+    output_key="payment_confirmation",  # Save results to session state
+    instruction="""You are the Payment Processing Agent, specializing in secure payment handling and transaction management.
+
+    ## Core Expertise:
+    - Secure payment processing and validation
+    - Transaction management and confirmation
+    - Booking confirmation and receipt generation
+    - Refund and cancellation processing
+    - Payment security and fraud prevention
+
+    ## Google ADK Integration:
+    - Your payment confirmations are saved to session state as 'payment_confirmation'
+    - Final step in all Travel Orchestrator booking workflows
+    - Use ask_for_approval for all payment transactions
+    - Generate comprehensive booking confirmations and receipts
+
+    ## Payment Methodology:
+    1. **Transaction Validation**: Verify booking details and payment amounts
+    2. **Security Verification**: Ensure payment security and fraud prevention
+    3. **Approval Workflow**: Request user approval for all transactions
+    4. **Payment Processing**: Execute secure payment transactions
+    5. **Confirmation Generation**: Create detailed booking confirmations
+
+    Always prioritize security, require explicit approval, and provide detailed transaction records.""",
+    tools=[
+        adk_ask_for_approval, adk_generate_report,
+        adk_kg_store, adk_kg_relationship,
+        adk_echo, adk_get_health_status
+    ]
+)
+
+itinerary_planning_agent = LlmAgent(
+    name="itinerary_planning_agent",
+    model=MODEL,
+    description="📅 Itinerary Planning & Optimization Specialist",
+    output_key="travel_itinerary",  # Save results to session state
+    instruction="""You are the Itinerary Planning Agent, specializing in comprehensive trip planning and schedule optimization.
+
+    ## Core Expertise:
+    - Complete itinerary creation and optimization
+    - Activity and attraction recommendations
+    - Schedule coordination and time management
+    - Local transportation and logistics planning
+    - Travel document and requirement verification
+
+    ## Google ADK Integration:
+    - Your itineraries are saved to session state as 'travel_itinerary'
+    - Synthesize hotel_search_results and flight_search_results
+    - Use Generator-Critic pattern for itinerary refinement
+    - Coordinate with all travel specialists for comprehensive planning
+
+    ## Planning Methodology:
+    1. **Requirements Analysis**: Understand travel preferences and constraints
+    2. **Activity Research**: Research attractions, restaurants, and activities
+    3. **Schedule Optimization**: Create optimal daily schedules and routing
+    4. **Logistics Planning**: Plan transportation and timing between activities
+    5. **Itinerary Refinement**: Refine and optimize based on feedback
+
+    Always create comprehensive, realistic itineraries with detailed timing and logistics.""",
+    tools=[
+        adk_web_search, adk_vector_search, adk_search_knowledge,
+        adk_kg_query, adk_kg_store, adk_kg_relationship, adk_kg_extract_entities,
+        adk_generate_report, adk_echo
+    ]
+)
+
+# Create travel specialist agent tools (Phase 5A) - Must be defined before travel_orchestrator
+def create_travel_specialist_agent_tools(hotel_agent, flight_agent, payment_agent, itinerary_agent):
+    """Create travel specialist agent tools for Agents-as-Tools pattern."""
+    return {
+        "hotel_search_tool": lambda context: f"Hotel Search Agent executed with context: {context}. Results saved to session state as 'hotel_search_results'.",
+        "flight_search_tool": lambda context: f"Flight Search Agent executed with context: {context}. Results saved to session state as 'flight_search_results'.",
+        "payment_processing_tool": lambda context: f"Payment Processing Agent executed with context: {context}. Results saved to session state as 'payment_confirmation'.",
+        "itinerary_planning_tool": lambda context: f"Itinerary Planning Agent executed with context: {context}. Results saved to session state as 'travel_itinerary'."
+    }
+
+travel_specialist_tools = create_travel_specialist_agent_tools(
+    hotel_search_agent, flight_search_agent, payment_processing_agent, itinerary_planning_agent
+)
+
+# Travel specialist tool wrappers (Phase 5A)
+def _hotel_search_tool(context: str) -> str:
+    """🏨 Hotel search specialist for accommodation discovery and comparison."""
+    return travel_specialist_tools["hotel_search_tool"](context)
+
+def _flight_search_tool(context: str) -> str:
+    """✈️ Flight search specialist for flight discovery and booking."""
+    return travel_specialist_tools["flight_search_tool"](context)
+
+def _payment_processing_tool(context: str) -> str:
+    """💳 Payment processing specialist for secure transaction handling."""
+    return travel_specialist_tools["payment_processing_tool"](context)
+
+def _itinerary_planning_tool(context: str) -> str:
+    """📅 Itinerary planning specialist for comprehensive trip planning."""
+    return travel_specialist_tools["itinerary_planning_tool"](context)
+
+# Travel specialist ADK FunctionTool instances (Phase 5A)
+adk_hotel_search_tool = FunctionTool(func=_hotel_search_tool)
+adk_flight_search_tool = FunctionTool(func=_flight_search_tool)
+adk_payment_processing_tool = FunctionTool(func=_payment_processing_tool)
+adk_itinerary_planning_tool = FunctionTool(func=_itinerary_planning_tool)
+
+# Development Specialist Agents (Phase 5B: Development Specialists Implementation)
+
+code_generation_agent = LlmAgent(
+    name="code_generation_agent",
+    model=MODEL,
+    description="💻 Code Generation & Development Specialist",
+    output_key="generated_code",  # Save results to session state
+    instruction="""You are the Code Generation Agent, specializing in advanced coding, debugging, and architecture implementation.
+
+    ## Core Expertise:
+    - Advanced code generation and implementation
+    - Debugging and code optimization
+    - Architecture pattern implementation
+    - Code refactoring and quality improvement
+    - Multi-language development support
+
+    ## Google ADK Integration:
+    - Your code results are saved to session state as 'generated_code'
+    - Work with Development Orchestrator using Generator-Critic pattern
+    - Coordinate with Testing Agent for code validation
+    - Support Documentation Agent with code examples
+
+    ## Development Methodology:
+    1. **Requirements Analysis**: Understand coding requirements and constraints
+    2. **Architecture Design**: Plan code structure and implementation approach
+    3. **Code Generation**: Write clean, efficient, maintainable code
+    4. **Quality Review**: Review code for best practices and optimization
+    5. **Integration Testing**: Ensure code integrates properly with existing systems
+
+    Always follow best practices for code quality, security, and maintainability.""",
+    tools=[
+        adk_read_file, adk_write_file, adk_list_directory, adk_file_exists,
+        adk_vector_search, adk_search_knowledge,
+        adk_kg_query, adk_kg_store,
+        adk_echo, adk_generate_report
+    ]
+)
+
+testing_agent = LlmAgent(
+    name="testing_agent",
+    model=MODEL,
+    description="🧪 Testing & Quality Assurance Specialist",
+    output_key="test_results",  # Save results to session state
+    instruction="""You are the Testing Agent, specializing in test generation, validation, and quality assurance automation.
+
+    ## Core Expertise:
+    - Comprehensive test strategy design
+    - Automated test generation and execution
+    - Quality assurance and validation
+    - Performance and load testing
+    - Test coverage analysis and reporting
+
+    ## Google ADK Integration:
+    - Your test results are saved to session state as 'test_results'
+    - Work with Development Orchestrator using Sequential Pipeline pattern
+    - Validate generated_code from Code Generation Agent
+    - Coordinate with Security Agent for security testing
+
+    ## Testing Methodology:
+    1. **Test Planning**: Analyze testing requirements and create test strategies
+    2. **Test Generation**: Create comprehensive test suites and scenarios
+    3. **Test Execution**: Run automated tests and collect results
+    4. **Quality Analysis**: Analyze test coverage and identify gaps
+    5. **Reporting**: Generate detailed test reports and recommendations
+
+    Always ensure comprehensive test coverage and maintain high quality standards.""",
+    tools=[
+        adk_read_file, adk_write_file, adk_list_directory, adk_file_exists,
+        adk_vector_search, adk_web_search, adk_search_knowledge,
+        adk_kg_query, adk_kg_store,
+        adk_echo, adk_generate_report, adk_check_task_status
+    ]
+)
+
+documentation_agent = LlmAgent(
+    name="documentation_agent",
+    model=MODEL,
+    description="📚 Documentation & Knowledge Management Specialist",
+    output_key="documentation",  # Save results to session state
+    instruction="""You are the Documentation Agent, specializing in technical writing, API documentation, and knowledge management.
+
+    ## Core Expertise:
+    - Technical documentation creation and maintenance
+    - API documentation and specification writing
+    - Knowledge management and organization
+    - User guides and tutorial creation
+    - Documentation quality assurance and standards
+
+    ## Google ADK Integration:
+    - Your documentation is saved to session state as 'documentation'
+    - Work with Development Orchestrator for comprehensive documentation
+    - Document generated_code from Code Generation Agent
+    - Incorporate test_results from Testing Agent into documentation
+
+    ## Documentation Methodology:
+    1. **Content Analysis**: Understand documentation requirements and audience
+    2. **Structure Planning**: Design documentation architecture and organization
+    3. **Content Creation**: Write clear, comprehensive technical documentation
+    4. **Quality Review**: Ensure accuracy, clarity, and completeness
+    5. **Knowledge Management**: Organize and maintain documentation systems
+
+    Always create clear, accurate, and user-friendly documentation that serves both technical and non-technical audiences.""",
+    tools=[
+        adk_read_file, adk_write_file, adk_list_directory, adk_file_exists,
+        adk_vector_search, adk_web_search, adk_search_knowledge,
+        adk_kg_query, adk_kg_store, adk_kg_relationship, adk_kg_extract_entities,
+        adk_echo, adk_generate_report
+    ]
+)
+
+security_agent = LlmAgent(
+    name="security_agent",
+    model=MODEL,
+    description="🔒 Security Analysis & Compliance Specialist",
+    output_key="security_analysis",  # Save results to session state
+    instruction="""You are the Security Agent, specializing in security analysis, vulnerability assessment, and compliance validation.
+
+    ## Core Expertise:
+    - Security vulnerability assessment and analysis
+    - Code security review and recommendations
+    - Compliance validation and reporting
+    - Security best practices implementation
+    - Threat modeling and risk assessment
+
+    ## Google ADK Integration:
+    - Your security analysis is saved to session state as 'security_analysis'
+    - Work with Development Orchestrator using Hierarchical Task Decomposition
+    - Validate generated_code from Code Generation Agent for security
+    - Review test_results from Testing Agent for security test coverage
+
+    ## Security Methodology:
+    1. **Security Assessment**: Analyze security requirements and threats
+    2. **Vulnerability Analysis**: Identify potential security vulnerabilities
+    3. **Risk Evaluation**: Assess security risks and impact
+    4. **Recommendation Generation**: Provide security improvement recommendations
+    5. **Compliance Validation**: Ensure compliance with security standards
+
+    Always prioritize security best practices and provide comprehensive security analysis for all development outputs.""",
+    tools=[
+        adk_read_file, adk_write_file, adk_list_directory, adk_file_exists,
+        adk_vector_search, adk_web_search, adk_search_knowledge,
+        adk_kg_query, adk_kg_store,
+        adk_echo, adk_generate_report
+    ]
+)
+
+# Create development specialist agent tools (Phase 5B) - Must be defined before development_orchestrator
+def create_development_specialist_agent_tools(code_agent, test_agent, doc_agent, security_agent):
+    """Create development specialist agent tools for Agents-as-Tools pattern."""
+    return {
+        "code_generation_tool": lambda context: f"Code Generation Agent executed with context: {context}. Results saved to session state as 'generated_code'.",
+        "testing_tool": lambda context: f"Testing Agent executed with context: {context}. Results saved to session state as 'test_results'.",
+        "documentation_tool": lambda context: f"Documentation Agent executed with context: {context}. Results saved to session state as 'documentation'.",
+        "security_tool": lambda context: f"Security Agent executed with context: {context}. Results saved to session state as 'security_analysis'."
+    }
+
+development_specialist_tools = create_development_specialist_agent_tools(
+    code_generation_agent, testing_agent, documentation_agent, security_agent
+)
+
+# Development specialist tool wrappers (Phase 5B)
+def _code_generation_tool(context: str) -> str:
+    """💻 Code generation specialist for advanced coding and development."""
+    return development_specialist_tools["code_generation_tool"](context)
+
+def _testing_tool(context: str) -> str:
+    """🧪 Testing specialist for quality assurance and validation."""
+    return development_specialist_tools["testing_tool"](context)
+
+def _documentation_tool(context: str) -> str:
+    """📚 Documentation specialist for technical writing and knowledge management."""
+    return development_specialist_tools["documentation_tool"](context)
+
+def _security_tool(context: str) -> str:
+    """🔒 Security specialist for vulnerability assessment and compliance."""
+    return development_specialist_tools["security_tool"](context)
+
+# Development specialist ADK FunctionTool instances (Phase 5B)
+adk_code_generation_tool = FunctionTool(func=_code_generation_tool)
+adk_testing_tool = FunctionTool(func=_testing_tool)
+adk_documentation_tool = FunctionTool(func=_documentation_tool)
+adk_security_tool = FunctionTool(func=_security_tool)
+
 # Advanced Orchestrator Agents (Phase 4: Core Orchestrators Implementation)
 
 travel_orchestrator = LlmAgent(
@@ -312,7 +674,9 @@ travel_orchestrator = LlmAgent(
         adk_kg_query, adk_kg_store, adk_kg_relationship,
         adk_echo, adk_get_health_status,
         adk_coordinate_task, adk_delegate_to_agent, adk_transfer_to_agent,
-        adk_ask_for_approval, adk_process_large_dataset, adk_generate_report
+        adk_ask_for_approval, adk_process_large_dataset, adk_generate_report,
+        # Travel Specialist Tools (Phase 5A - Agents-as-Tools Pattern)
+        adk_hotel_search_tool, adk_flight_search_tool, adk_payment_processing_tool, adk_itinerary_planning_tool
     ]
 )
 
@@ -410,7 +774,9 @@ development_orchestrator = LlmAgent(
         adk_kg_query, adk_kg_store,
         adk_echo, adk_get_health_status,
         adk_coordinate_task, adk_delegate_to_agent, adk_transfer_to_agent,
-        adk_ask_for_approval, adk_generate_report, adk_check_task_status
+        adk_ask_for_approval, adk_generate_report, adk_check_task_status,
+        # Development Specialist Tools (Phase 5B - Agents-as-Tools Pattern)
+        adk_code_generation_tool, adk_testing_tool, adk_documentation_tool, adk_security_tool
     ]
 )
 
@@ -556,7 +922,11 @@ vana = LlmAgent(
         # Orchestrator Agents (Primary routing targets)
         travel_orchestrator, research_orchestrator, development_orchestrator,
         # Specialist Agents (Direct access)
-        architecture_specialist, ui_specialist, devops_specialist, qa_specialist
+        architecture_specialist, ui_specialist, devops_specialist, qa_specialist,
+        # Travel Specialist Agents (Phase 5A)
+        hotel_search_agent, flight_search_agent, payment_processing_agent, itinerary_planning_agent,
+        # Development Specialist Agents (Phase 5B)
+        code_generation_agent, testing_agent, documentation_agent, security_agent
     ],
     tools=[
         # All file system tools
@@ -579,6 +949,12 @@ vana = LlmAgent(
 
         # Agents-as-Tools (Google ADK Pattern)
         adk_architecture_tool, adk_ui_tool, adk_devops_tool, adk_qa_tool,
+
+        # Travel Specialist Tools (Phase 5A - Agents-as-Tools Pattern)
+        adk_hotel_search_tool, adk_flight_search_tool, adk_payment_processing_tool, adk_itinerary_planning_tool,
+
+        # Development Specialist Tools (Phase 5B - Agents-as-Tools Pattern)
+        adk_code_generation_tool, adk_testing_tool, adk_documentation_tool, adk_security_tool,
 
         # Third-Party Tools (Google ADK Pattern - Final Tool Type for 100% Compliance)
         adk_execute_third_party_tool, adk_list_third_party_tools,
