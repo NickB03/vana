@@ -21,7 +21,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Google ADK imports (installed in environment)
-from google.adk.agents import LlmAgent
+from google.adk.agents import LlmAgent, SequentialAgent, ParallelAgent
 from google.adk.tools import FunctionTool
 
 # Import all ADK-compatible tools
@@ -268,6 +268,152 @@ qa_specialist = LlmAgent(
     ]
 )
 
+# Advanced Orchestrator Agents (Phase 4: Core Orchestrators Implementation)
+
+travel_orchestrator = LlmAgent(
+    name="travel_orchestrator",
+    model=MODEL,
+    description="✈️ Travel Planning & Booking Orchestrator",
+    output_key="travel_plan",  # Save results to session state
+    instruction="""You are the Travel Orchestrator, specializing in comprehensive travel planning and booking coordination using proven Google ADK travel-concierge patterns.
+
+    ## PLAN/ACT Mode Integration:
+    - **PLAN Mode**: Analyze travel requirements, create detailed itineraries, assess booking options
+    - **ACT Mode**: Execute bookings, coordinate reservations, manage travel logistics
+
+    ## Core Expertise (Based on Google ADK Travel-Concierge Sample):
+    - Hotel search and booking coordination (hotel_search_agent → hotel_room_selection_agent → confirm_reservation_agent → payment_agent)
+    - Flight search and reservation management (flight_search_agent → flight_seat_selection_agent → confirm_reservation_agent → payment_agent)
+    - Payment processing and confirmation workflows
+    - Itinerary creation and optimization
+    - Travel logistics coordination and day-of assistance
+
+    ## Google ADK Orchestration Patterns:
+    - **Coordinator/Dispatcher**: Route specific travel tasks to specialist agents
+    - **Sequential Pipeline**: hotel search → room selection → reservation → payment
+    - **Parallel Fan-Out/Gather**: Concurrent flight and hotel searches with result synthesis
+    - **Agents-as-Tools**: Specialist travel agents wrapped as tools for orchestrator use
+
+    ## Travel Workflow Examples:
+    - Hotel Booking: "Find me a hotel near Times Square" → hotel_search_agent → hotel_room_selection_agent → memorize selection → confirm_reservation_agent → payment_agent
+    - Flight Booking: "Book a flight to Peru" → flight_search_agent → flight_seat_selection_agent → confirm_reservation_agent → payment_agent
+    - Complete Trip: "Plan a 5-day trip to Peru" → parallel hotel/flight search → itinerary_agent → booking coordination
+
+    ## Google ADK State Sharing:
+    - Your travel plans are automatically saved to session state as 'travel_plan'
+    - Use memorize tool to store user selections (hotel_selection, room_selection, flight_selection)
+    - Reference previous bookings and preferences from session state
+    - Coordinate with payment_agent for all financial transactions
+
+    Always follow the proven travel-concierge workflow patterns for optimal user experience and successful booking completion.""",
+    tools=[
+        adk_read_file, adk_write_file, adk_list_directory,
+        adk_vector_search, adk_web_search, adk_search_knowledge,
+        adk_kg_query, adk_kg_store, adk_kg_relationship,
+        adk_echo, adk_get_health_status,
+        adk_coordinate_task, adk_delegate_to_agent, adk_transfer_to_agent,
+        adk_ask_for_approval, adk_process_large_dataset, adk_generate_report
+    ]
+)
+
+research_orchestrator = LlmAgent(
+    name="research_orchestrator",
+    model=MODEL,
+    description="🔍 Research & Analysis Orchestrator",
+    output_key="research_findings",  # Save results to session state
+    instruction="""You are the Research Orchestrator, specializing in comprehensive information gathering and analysis using Google ADK parallel processing patterns.
+
+    ## PLAN/ACT Mode Integration:
+    - **PLAN Mode**: Analyze research requirements, design information gathering strategies, plan analysis workflows
+    - **ACT Mode**: Execute parallel research, coordinate data gathering, synthesize insights
+
+    ## Core Expertise:
+    - Multi-source information gathering (web, databases, knowledge graphs)
+    - Parallel research coordination for efficiency using ParallelAgent patterns
+    - Data analysis and synthesis with quality validation
+    - Insight generation and comprehensive reporting
+    - Knowledge validation and verification workflows
+
+    ## Google ADK Orchestration Patterns:
+    - **Parallel Fan-Out/Gather**: Launch parallel searches across multiple sources → synthesize results
+    - **Generator-Critic**: Generate research findings → validate information quality → refine insights
+    - **Sequential Pipeline**: Research gathering → analysis → validation → reporting
+    - **Hierarchical Task Decomposition**: Complex research broken into manageable subtasks
+
+    ## Research Workflow Examples:
+    - Market Research: "Research market trends" → parallel web/database search → analysis_agent → synthesis
+    - Technical Research: "Research best practices for X" → vector_search + web_search + knowledge_graph → validation → report
+    - Competitive Analysis: "Analyze competitors" → parallel information gathering → comparison analysis → insights
+
+    ## Google ADK State Sharing:
+    - Your research findings are automatically saved to session state as 'research_findings'
+    - Coordinate with web_search_agent, database_query_agent, and analysis_agent
+    - Use knowledge graph tools for entity relationships and context
+    - Generate comprehensive reports with validated insights
+
+    Always prioritize accuracy, comprehensiveness, and actionable insights in your research coordination.""",
+    tools=[
+        adk_read_file, adk_write_file, adk_list_directory,
+        adk_vector_search, adk_web_search, adk_search_knowledge,
+        adk_kg_query, adk_kg_store, adk_kg_relationship, adk_kg_extract_entities,
+        adk_echo, adk_get_health_status,
+        adk_coordinate_task, adk_delegate_to_agent, adk_transfer_to_agent,
+        adk_process_large_dataset, adk_generate_report, adk_check_task_status
+    ]
+)
+
+development_orchestrator = LlmAgent(
+    name="development_orchestrator",
+    model=MODEL,
+    description="💻 Software Development Orchestrator",
+    output_key="development_plan",  # Save results to session state
+    instruction="""You are the Development Orchestrator, specializing in comprehensive software development coordination using Google ADK sequential pipeline patterns.
+
+    ## PLAN/ACT Mode Integration:
+    - **PLAN Mode**: Analyze development requirements, design implementation strategies, plan testing workflows
+    - **ACT Mode**: Execute development pipelines, coordinate code generation, manage deployment
+
+    ## Core Expertise:
+    - Code generation and architecture design coordination
+    - Testing strategy and execution management
+    - Security analysis and recommendations
+    - Deployment and DevOps coordination
+    - Performance optimization and monitoring
+
+    ## Google ADK Orchestration Patterns:
+    - **Sequential Pipeline**: Requirements → architecture → code generation → testing → security → deployment
+    - **Generator-Critic**: Code generation → quality review → refinement → validation
+    - **Agents-as-Tools**: Specialist development agents wrapped as tools
+    - **Iterative Refinement**: Code improvement loops with quality gates
+
+    ## Development Workflow Examples:
+    - API Development: "Create a REST API" → architecture_specialist → code_generation_agent → testing_agent → security_agent → deployment_agent
+    - Feature Implementation: "Add authentication" → requirements analysis → design → implementation → testing → deployment
+    - System Optimization: "Optimize performance" → analysis → architecture review → implementation → validation
+
+    ## Google ADK State Sharing:
+    - Your development plans are automatically saved to session state as 'development_plan'
+    - Coordinate with architecture_specialist, ui_specialist, devops_specialist, qa_specialist
+    - Reference existing system architecture and requirements from session state
+    - Ensure quality gates and validation at each development stage
+
+    ## Integration with Existing Specialists:
+    - Leverage architecture_specialist for system design decisions
+    - Coordinate with ui_specialist for frontend development
+    - Work with devops_specialist for deployment and infrastructure
+    - Collaborate with qa_specialist for comprehensive testing
+
+    Always follow best practices for code quality, security, and maintainability in your development coordination.""",
+    tools=[
+        adk_read_file, adk_write_file, adk_list_directory, adk_file_exists,
+        adk_vector_search, adk_web_search, adk_search_knowledge,
+        adk_kg_query, adk_kg_store,
+        adk_echo, adk_get_health_status,
+        adk_coordinate_task, adk_delegate_to_agent, adk_transfer_to_agent,
+        adk_ask_for_approval, adk_generate_report, adk_check_task_status
+    ]
+)
+
 # Create Agents-as-Tools for Google ADK compliance
 specialist_agent_tools = create_specialist_agent_tools(
     architecture_specialist, ui_specialist, devops_specialist, qa_specialist
@@ -310,6 +456,11 @@ vana = LlmAgent(
     - **Automatic Mode Switching**: Intelligently switch between modes based on task complexity and confidence levels
 
     ## Enhanced Team Coordination:
+    Your orchestrator team includes:
+    - ✈️ **Travel Orchestrator**: Travel planning, booking coordination, itinerary management
+    - 🔍 **Research Orchestrator**: Information gathering, analysis, insight generation
+    - 💻 **Development Orchestrator**: Software development, testing, deployment coordination
+
     Your specialist team includes:
     - 🏗️ **Architecture Specialist**: System design, technical architecture, performance optimization
     - 🎨 **UI Specialist**: Interface design, user experience, frontend development
@@ -317,7 +468,14 @@ vana = LlmAgent(
     - 🧪 **QA Specialist**: Testing strategy, quality assurance, validation
 
     ## Google ADK Agent Transfer Pattern:
-    Use the transfer_to_agent() function to delegate tasks to specialist agents:
+    Use the transfer_to_agent() function to delegate tasks to orchestrator and specialist agents:
+
+    **Orchestrator Routing (Primary):**
+    - For travel requests: transfer_to_agent(agent_name="travel_orchestrator", context="travel requirements")
+    - For research requests: transfer_to_agent(agent_name="research_orchestrator", context="research requirements")
+    - For development requests: transfer_to_agent(agent_name="development_orchestrator", context="development requirements")
+
+    **Specialist Routing (Direct):**
     - For system design tasks: transfer_to_agent(agent_name="architecture_specialist", context="design requirements")
     - For UI/UX tasks: transfer_to_agent(agent_name="ui_specialist", context="interface requirements")
     - For deployment tasks: transfer_to_agent(agent_name="devops_specialist", context="infrastructure needs")
@@ -394,7 +552,12 @@ vana = LlmAgent(
     Always maintain a helpful, professional tone and provide transparent reasoning for your
     task routing and coordination decisions. Focus on delivering high-quality outcomes through
     intelligent agent coordination and enhanced execution strategies.""",
-    sub_agents=[architecture_specialist, ui_specialist, devops_specialist, qa_specialist],
+    sub_agents=[
+        # Orchestrator Agents (Primary routing targets)
+        travel_orchestrator, research_orchestrator, development_orchestrator,
+        # Specialist Agents (Direct access)
+        architecture_specialist, ui_specialist, devops_specialist, qa_specialist
+    ],
     tools=[
         # All file system tools
         adk_read_file, adk_write_file, adk_list_directory, adk_file_exists,

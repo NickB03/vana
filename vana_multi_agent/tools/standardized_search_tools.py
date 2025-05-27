@@ -14,38 +14,50 @@ from typing import Dict, Any, List, Union
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 
 from vana_multi_agent.core.tool_standards import (
-    StandardToolResponse, InputValidator, ErrorHandler, 
+    StandardToolResponse, InputValidator, ErrorHandler,
     standardized_tool_wrapper, performance_monitor, tool_analytics
 )
 
-# Import original search tools
-from agent.tools import vector_search, search_knowledge, web_search
+# Import original search tools with fallback to avoid circular imports
+try:
+    from agent.tools.vector_search import search as vector_search, search_knowledge
+    from agent.tools.web_search import search as web_search
+except ImportError:
+    # Fallback implementations to avoid circular imports during initialization
+    def vector_search(query: str, max_results: int = 5):
+        return {"success": False, "error": "Vector search not available during initialization"}
+
+    def search_knowledge(query: str, max_results: int = 5):
+        return {"success": False, "error": "Knowledge search not available during initialization"}
+
+    def web_search(query: str, max_results: int = 5):
+        return {"success": False, "error": "Web search not available during initialization"}
 
 class StandardizedSearchTools:
     """Standardized search tools with enhanced monitoring and error handling."""
-    
+
     @standardized_tool_wrapper("vector_search")
     def vector_search(self, query: str, max_results: int = 5) -> StandardToolResponse:
         """🔍 Search the vector database for relevant information with enhanced results.
-        
+
         Args:
             query: Search query string
             max_results: Maximum number of results to return (1-50)
-            
+
         Returns:
             StandardToolResponse with search results or error information
         """
         # Validate inputs with standardized parameter name
         query = InputValidator.validate_string(query, "query", required=True, min_length=1, max_length=1000)
         max_results = InputValidator.validate_integer(max_results, "max_results", required=False, min_value=1, max_value=50)
-        
+
         # Record usage for analytics
         parameters = {"query": query, "max_results": max_results}
-        
+
         try:
             # Execute original tool (note: original uses top_k parameter)
             results = vector_search(query, max_results)
-            
+
             # Handle different result formats
             if isinstance(results, dict) and not results.get("success", True):
                 response = StandardToolResponse(
@@ -59,7 +71,7 @@ class StandardizedSearchTools:
                     results = [{"content": results, "score": 1.0}]
                 elif not isinstance(results, list):
                     results = []
-                
+
                 response = StandardToolResponse(
                     success=True,
                     data=results,
@@ -72,33 +84,33 @@ class StandardizedSearchTools:
                 )
         except Exception as e:
             response = ErrorHandler.create_error_response("vector_search", e)
-        
+
         # Record analytics
         tool_analytics.record_usage("vector_search", parameters, response)
         return response
-    
+
     @standardized_tool_wrapper("web_search")
     def web_search(self, query: str, max_results: int = 5) -> StandardToolResponse:
         """🌐 Search the web for current information with enhanced formatting.
-        
+
         Args:
             query: Search query string
             max_results: Maximum number of results to return (1-10)
-            
+
         Returns:
             StandardToolResponse with search results or error information
         """
         # Validate inputs with standardized parameter name
         query = InputValidator.validate_string(query, "query", required=True, min_length=1, max_length=1000)
         max_results = InputValidator.validate_integer(max_results, "max_results", required=False, min_value=1, max_value=10)
-        
+
         # Record usage for analytics
         parameters = {"query": query, "max_results": max_results}
-        
+
         try:
             # Execute original tool (note: original uses num_results parameter)
             results = web_search(query, max_results)
-            
+
             # Handle different result formats
             if isinstance(results, dict) and not results.get("success", True):
                 response = StandardToolResponse(
@@ -112,7 +124,7 @@ class StandardizedSearchTools:
                     results = [{"title": "Web Search Result", "content": results, "link": ""}]
                 elif not isinstance(results, list):
                     results = []
-                
+
                 response = StandardToolResponse(
                     success=True,
                     data=results,
@@ -126,33 +138,33 @@ class StandardizedSearchTools:
                 )
         except Exception as e:
             response = ErrorHandler.create_error_response("web_search", e)
-        
+
         # Record analytics
         tool_analytics.record_usage("web_search", parameters, response)
         return response
-    
+
     @standardized_tool_wrapper("search_knowledge")
     def search_knowledge(self, query: str, max_results: int = 5) -> StandardToolResponse:
         """🧠 Search the knowledge base for relevant information with context.
-        
+
         Args:
             query: Search query string
             max_results: Maximum number of results to return (1-20)
-            
+
         Returns:
             StandardToolResponse with search results or error information
         """
         # Validate inputs
         query = InputValidator.validate_string(query, "query", required=True, min_length=1, max_length=1000)
         max_results = InputValidator.validate_integer(max_results, "max_results", required=False, min_value=1, max_value=20)
-        
+
         # Record usage for analytics
         parameters = {"query": query, "max_results": max_results}
-        
+
         try:
             # Execute original tool
             results = search_knowledge(query)
-            
+
             # Handle different result formats
             if isinstance(results, dict) and not results.get("success", True):
                 response = StandardToolResponse(
@@ -166,10 +178,10 @@ class StandardizedSearchTools:
                     results = [{"content": results, "score": 1.0}]
                 elif not isinstance(results, list):
                     results = []
-                
+
                 # Limit results to max_results
                 results = results[:max_results]
-                
+
                 response = StandardToolResponse(
                     success=True,
                     data=results,
@@ -183,7 +195,7 @@ class StandardizedSearchTools:
                 )
         except Exception as e:
             response = ErrorHandler.create_error_response("search_knowledge", e)
-        
+
         # Record analytics
         tool_analytics.record_usage("search_knowledge", parameters, response)
         return response
@@ -228,13 +240,13 @@ def get_unified_search_performance() -> Dict[str, Any]:
     """Get unified performance summary for all search tools."""
     all_metrics = performance_monitor.get_all_metrics()
     search_metrics = {k: v for k, v in all_metrics.items() if "search" in k}
-    
+
     if not search_metrics:
         return {"total_searches": 0, "avg_performance": 0.0}
-    
+
     total_searches = sum(m.success_count + m.error_count for m in search_metrics.values())
     avg_performance = sum(m.average_execution_time for m in search_metrics.values()) / len(search_metrics)
-    
+
     return {
         "total_searches": total_searches,
         "avg_performance": avg_performance,

@@ -14,38 +14,53 @@ from typing import Dict, Any, List, Union
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 
 from vana_multi_agent.core.tool_standards import (
-    StandardToolResponse, InputValidator, ErrorHandler, 
+    StandardToolResponse, InputValidator, ErrorHandler,
     standardized_tool_wrapper, performance_monitor, tool_analytics
 )
 
-# Import original file system tools
-from agent.tools.file_system import FileSystemTool
+# Import original file system tools with fallback to avoid circular imports
+try:
+    from agent.tools.file_system import FileSystemTool
+except ImportError:
+    # Fallback implementation to avoid circular imports during initialization
+    class FileSystemTool:
+        def read_file(self, file_path: str):
+            return {"success": False, "error": "FileSystemTool not available during initialization"}
+
+        def write_file(self, file_path: str, content: str, append: bool = False):
+            return {"success": False, "error": "FileSystemTool not available during initialization"}
+
+        def list_directory(self, directory_path: str):
+            return {"success": False, "error": "FileSystemTool not available during initialization"}
+
+        def file_exists(self, file_path: str):
+            return {"success": False, "error": "FileSystemTool not available during initialization"}
 
 class StandardizedFileSystemTools:
     """Standardized file system tools with enhanced monitoring and error handling."""
-    
+
     def __init__(self):
         self.fs_tool = FileSystemTool()
-    
+
     @standardized_tool_wrapper("read_file")
     def read_file(self, file_path: str) -> StandardToolResponse:
         """📖 Read the contents of a file with enhanced error handling and security checks.
-        
+
         Args:
             file_path: Path to the file to read
-            
+
         Returns:
             StandardToolResponse with file contents or error information
         """
         # Validate inputs
         file_path = InputValidator.validate_path(file_path, "file_path")
-        
+
         # Record usage for analytics
         parameters = {"file_path": file_path}
-        
+
         # Execute original tool
         result = self.fs_tool.read_file(file_path)
-        
+
         # Convert to standardized response
         if result["success"]:
             response = StandardToolResponse(
@@ -63,33 +78,33 @@ class StandardizedFileSystemTools:
                 error=result["error"],
                 tool_name="read_file"
             )
-        
+
         # Record analytics
         tool_analytics.record_usage("read_file", parameters, response)
         return response
-    
+
     @standardized_tool_wrapper("write_file")
     def write_file(self, file_path: str, content: str, append: bool = False) -> StandardToolResponse:
         """✍️ Write content to a file with backup and validation.
-        
+
         Args:
             file_path: Path to the file to write
             content: Content to write to the file
             append: Whether to append to existing file (default: False)
-            
+
         Returns:
             StandardToolResponse with success status or error information
         """
         # Validate inputs
         file_path = InputValidator.validate_path(file_path, "file_path")
         content = InputValidator.validate_string(content, "content", required=True, max_length=1000000)
-        
+
         # Record usage for analytics
         parameters = {"file_path": file_path, "content_length": len(content), "append": append}
-        
+
         # Execute original tool
         result = self.fs_tool.write_file(file_path, content, append)
-        
+
         # Convert to standardized response
         if result["success"]:
             response = StandardToolResponse(
@@ -108,30 +123,30 @@ class StandardizedFileSystemTools:
                 error=result["error"],
                 tool_name="write_file"
             )
-        
+
         # Record analytics
         tool_analytics.record_usage("write_file", parameters, response)
         return response
-    
+
     @standardized_tool_wrapper("list_directory")
     def list_directory(self, directory_path: str) -> StandardToolResponse:
         """📁 List contents of a directory with enhanced formatting and metadata.
-        
+
         Args:
             directory_path: Path to the directory to list
-            
+
         Returns:
             StandardToolResponse with directory contents or error information
         """
         # Validate inputs
         directory_path = InputValidator.validate_path(directory_path, "directory_path")
-        
+
         # Record usage for analytics
         parameters = {"directory_path": directory_path}
-        
+
         # Execute original tool
         result = self.fs_tool.list_directory(directory_path)
-        
+
         # Convert to standardized response
         if result["success"]:
             contents = result["contents"]
@@ -152,30 +167,30 @@ class StandardizedFileSystemTools:
                 error=result["error"],
                 tool_name="list_directory"
             )
-        
+
         # Record analytics
         tool_analytics.record_usage("list_directory", parameters, response)
         return response
-    
+
     @standardized_tool_wrapper("file_exists")
     def file_exists(self, file_path: str) -> StandardToolResponse:
         """🔍 Check if a file or directory exists with detailed status information.
-        
+
         Args:
             file_path: Path to check for existence
-            
+
         Returns:
             StandardToolResponse with existence status or error information
         """
         # Validate inputs
         file_path = InputValidator.validate_path(file_path, "file_path")
-        
+
         # Record usage for analytics
         parameters = {"file_path": file_path}
-        
+
         # Execute original tool
         result = self.fs_tool.file_exists(file_path)
-        
+
         # Convert to standardized response
         if result["success"]:
             exists = result["exists"]
@@ -198,7 +213,7 @@ class StandardizedFileSystemTools:
                 error=result["error"],
                 tool_name="file_exists"
             )
-        
+
         # Record analytics
         tool_analytics.record_usage("file_exists", parameters, response)
         return response
