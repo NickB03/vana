@@ -913,6 +913,91 @@ adk_memory_management_tool = FunctionTool(func=_memory_management_tool)
 adk_decision_engine_tool = FunctionTool(func=_decision_engine_tool)
 adk_learning_systems_tool = FunctionTool(func=_learning_systems_tool)
 
+# Utility Agents (Phase 7: Utility Agents Implementation)
+
+monitoring_agent = LlmAgent(
+    name="monitoring_agent",
+    model=MODEL,
+    description="📊 System Monitoring & Performance Tracking Specialist",
+    output_key="monitoring_results",  # Save to session state
+    instruction="""You are the Monitoring Agent, specializing in system monitoring,
+    performance tracking, and health assessment across all VANA components.
+
+    ## Core Expertise:
+    - System health monitoring and performance tracking
+    - Resource utilization analysis and optimization recommendations
+    - Alert generation and incident response coordination
+    - Performance metrics collection and analysis
+    - System uptime and availability monitoring
+
+    ## Google ADK Integration:
+    - Your monitoring results are saved to session state as 'monitoring_results'
+    - Work with VANA for comprehensive system oversight
+    - Optimize monitoring across all agents
+    - Provide real-time system health insights
+
+    Always prioritize system stability, proactive monitoring, and actionable insights.""",
+    tools=[
+        adk_get_health_status, adk_check_task_status, adk_get_agent_status,
+        adk_generate_report, adk_echo,
+        adk_kg_query, adk_kg_store,
+        adk_read_file, adk_write_file, adk_list_directory
+    ]
+)
+
+coordination_agent = LlmAgent(
+    name="coordination_agent",
+    model=MODEL,
+    description="🎯 Agent Coordination & Workflow Management Specialist",
+    output_key="coordination_results",  # Save to session state
+    instruction="""You are the Coordination Agent, specializing in agent coordination,
+    workflow management, and task orchestration across the VANA ecosystem.
+
+    ## Core Expertise:
+    - Agent coordination and task routing optimization
+    - Workflow management and process orchestration
+    - Resource allocation and load balancing
+    - Inter-agent communication facilitation
+    - Task dependency management and scheduling
+
+    ## Google ADK Integration:
+    - Your coordination results are saved to session state as 'coordination_results'
+    - Work with VANA for optimal agent orchestration
+    - Coordinate with all agents for efficient task execution
+    - Optimize workflow efficiency across all domains
+
+    Always prioritize efficient coordination, optimal resource usage, and seamless workflows.""",
+    tools=[
+        adk_coordinate_task, adk_delegate_to_agent, adk_get_agent_status, adk_transfer_to_agent,
+        adk_check_task_status, adk_generate_report,
+        adk_kg_query, adk_kg_store,
+        adk_echo
+    ]
+)
+
+# Create utility agent tools (Phase 7) - Must be defined before VANA
+def create_utility_agent_tools(monitoring_agent, coordination_agent):
+    """Create utility agent tools for Agents-as-Tools pattern."""
+    return {
+        "monitoring_tool": lambda context: f"Monitoring Agent executed with context: {context}. Results saved to session state as 'monitoring_results'.",
+        "coordination_tool": lambda context: f"Coordination Agent executed with context: {context}. Results saved to session state as 'coordination_results'."
+    }
+
+utility_agent_tools = create_utility_agent_tools(monitoring_agent, coordination_agent)
+
+# Utility agent tool wrappers (Phase 7)
+def _monitoring_tool(context: str) -> str:
+    """📊 Monitoring specialist for system monitoring and performance tracking."""
+    return utility_agent_tools["monitoring_tool"](context)
+
+def _coordination_tool(context: str) -> str:
+    """🎯 Coordination specialist for agent coordination and workflow management."""
+    return utility_agent_tools["coordination_tool"](context)
+
+# Utility agent ADK FunctionTool instances (Phase 7)
+adk_monitoring_tool = FunctionTool(func=_monitoring_tool)
+adk_coordination_tool = FunctionTool(func=_coordination_tool)
+
 # Advanced Orchestrator Agents (Phase 4: Core Orchestrators Implementation)
 
 travel_orchestrator = LlmAgent(
@@ -1135,6 +1220,10 @@ vana = LlmAgent(
     - ⚡ **Decision Engine Agent**: Intelligent decision making, workflow optimization, agent coordination
     - 📈 **Learning Systems Agent**: Performance analysis, pattern recognition, system optimization
 
+    Your utility agent team includes (Phase 7):
+    - 📊 **Monitoring Agent**: System monitoring, performance tracking, health assessment
+    - 🎯 **Coordination Agent**: Agent coordination, workflow management, task orchestration
+
     ## Google ADK Agent Transfer Pattern:
     Use the transfer_to_agent() function to delegate tasks to orchestrator and specialist agents:
 
@@ -1166,6 +1255,10 @@ vana = LlmAgent(
     - decision_engine_tool: Direct access to intelligent decision making and workflow optimization
     - learning_systems_tool: Direct access to performance analysis and system optimization
 
+    Utility agent tools (Phase 7):
+    - monitoring_tool: Direct access to system monitoring and performance tracking capabilities
+    - coordination_tool: Direct access to agent coordination and workflow management
+
     Use these tools when you need immediate specialist analysis without full agent transfer.
 
     ## Google ADK State Sharing Pattern:
@@ -1184,6 +1277,10 @@ vana = LlmAgent(
     - 'memory_management_results' - Memory Management Agent's memory operations and knowledge curation
     - 'decision_engine_results' - Decision Engine Agent's decision making and workflow optimization
     - 'learning_systems_results' - Learning Systems Agent's performance analysis and optimization recommendations
+
+    Utility agent state sharing (Phase 7):
+    - 'monitoring_results' - Monitoring Agent's system health and performance data
+    - 'coordination_results' - Coordination Agent's workflow and coordination insights
 
     When coordinating multi-agent workflows, consider the state sharing flow:
     1. Architecture analysis provides foundation for all other work
@@ -1214,7 +1311,7 @@ vana = LlmAgent(
     - register_crewai_tools: Register example CrewAI tools for use
     - get_third_party_tool_info: Get detailed information about specific third-party tools
 
-    ## Enhanced Tool Suite (44 Tools):
+    ## Enhanced Tool Suite (46 Tools):
     - File system operations with security checks and validation
     - Vector search and knowledge retrieval with semantic understanding
     - Web search for current information and research
@@ -1225,6 +1322,7 @@ vana = LlmAgent(
     - Third-party tool integration for ecosystem connectivity
     - Research specialist tools for comprehensive information gathering and analysis
     - Intelligence agent tools for advanced memory management, decision making, and learning systems
+    - Utility agent tools for system monitoring and coordination optimization
 
     ## Task Execution Methodology:
     1. **Analysis**: Assess task complexity, requirements, and optimal approach
@@ -1255,7 +1353,9 @@ vana = LlmAgent(
         # Research Specialist Agents (Phase 5C)
         web_research_agent, data_analysis_agent, competitive_intelligence_agent,
         # Intelligence Agents (Phase 6)
-        memory_management_agent, decision_engine_agent, learning_systems_agent
+        memory_management_agent, decision_engine_agent, learning_systems_agent,
+        # Utility Agents (Phase 7)
+        monitoring_agent, coordination_agent
     ],
     tools=[
         # All file system tools
@@ -1290,6 +1390,9 @@ vana = LlmAgent(
 
         # Intelligence Agent Tools (Phase 6 - Agents-as-Tools Pattern)
         adk_memory_management_tool, adk_decision_engine_tool, adk_learning_systems_tool,
+
+        # Utility Agent Tools (Phase 7 - Agents-as-Tools Pattern)
+        adk_monitoring_tool, adk_coordination_tool,
 
         # Third-Party Tools (Google ADK Pattern - Final Tool Type for 100% Compliance)
         adk_execute_third_party_tool, adk_list_third_party_tools,
