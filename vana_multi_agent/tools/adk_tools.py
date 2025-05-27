@@ -18,24 +18,24 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 from google.adk.tools import FunctionTool
 
 # Import standardized VANA tools
-from vana_multi_agent.tools.standardized_file_tools import (
+from .standardized_file_tools import (
     standardized_read_file, standardized_write_file,
     standardized_list_directory, standardized_file_exists
 )
-from vana_multi_agent.tools.standardized_search_tools import (
+from .standardized_search_tools import (
     standardized_vector_search, standardized_web_search,
     standardized_search_knowledge
 )
-from vana_multi_agent.tools.standardized_kg_tools import (
+from .standardized_kg_tools import (
     standardized_kg_query, standardized_kg_store,
     standardized_kg_relationship, standardized_kg_extract_entities
 )
-from vana_multi_agent.tools.standardized_system_tools import (
+from .standardized_system_tools import (
     standardized_echo, standardized_get_health_status,
     standardized_coordinate_task, standardized_delegate_to_agent,
     standardized_get_agent_status, standardized_transfer_to_agent
 )
-from vana_multi_agent.tools.agent_tools import AgentTool, create_agent_tool
+from .agent_tools import AgentTool, create_agent_tool
 
 # File System Tools - Now using standardized framework
 def _read_file(file_path: str) -> str:

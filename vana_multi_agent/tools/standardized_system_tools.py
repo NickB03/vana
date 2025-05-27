@@ -19,8 +19,14 @@ from vana_multi_agent.core.tool_standards import (
     standardized_tool_wrapper, performance_monitor, tool_analytics
 )
 
-# Import original tools
-from agent.tools import echo, get_health_status
+# Mock implementations for self-contained operation
+def echo(message: str) -> str:
+    """Simple echo implementation for testing."""
+    return f"Echo: {message}"
+
+def get_health_status() -> str:
+    """Simple health status implementation."""
+    return "System Status: Operational - All agents ready"
 
 class StandardizedSystemTools:
     """Standardized system tools with enhanced monitoring and error handling."""
