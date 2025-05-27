@@ -5,7 +5,7 @@ This package provides ADK-compatible tools that integrate all the enhanced VANA 
 with Google ADK's tool system for use in the multi-agent architecture.
 """
 
-from vana_multi_agent.tools.adk_tools import (
+from .adk_tools import (
     # File System Tools
     adk_read_file,
     adk_write_file,
@@ -35,7 +35,7 @@ from vana_multi_agent.tools.adk_tools import (
 )
 
 # Long Running Function Tools
-from vana_multi_agent.tools.adk_long_running_tools import (
+from .adk_long_running_tools import (
     adk_ask_for_approval,
     adk_process_large_dataset,
     adk_generate_report,
@@ -43,7 +43,7 @@ from vana_multi_agent.tools.adk_long_running_tools import (
 )
 
 # Third-Party Tools (Google ADK Pattern - Final Tool Type)
-from vana_multi_agent.tools.adk_third_party_tools import (
+from .adk_third_party_tools import (
     adk_execute_third_party_tool,
     adk_list_third_party_tools,
     adk_register_langchain_tools,

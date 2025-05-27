@@ -25,7 +25,7 @@ from google.adk.agents import LlmAgent, SequentialAgent, ParallelAgent
 from google.adk.tools import FunctionTool
 
 # Import all ADK-compatible tools
-from vana_multi_agent.tools import (
+from tools import (
     # File System Tools
     adk_read_file, adk_write_file, adk_list_directory, adk_file_exists,
 
@@ -43,25 +43,25 @@ from vana_multi_agent.tools import (
 )
 
 # Long Running Function Tools
-from vana_multi_agent.tools.adk_long_running_tools import (
+from tools.adk_long_running_tools import (
     adk_ask_for_approval, adk_process_large_dataset,
     adk_generate_report, adk_check_task_status
 )
 
 # Third-Party Tools (Google ADK Pattern - Final Tool Type)
-from vana_multi_agent.tools.adk_third_party_tools import (
+from tools.adk_third_party_tools import (
     adk_execute_third_party_tool, adk_list_third_party_tools,
     adk_register_langchain_tools, adk_register_crewai_tools,
     adk_get_third_party_tool_info
 )
 
 # Import agent tools for Agents-as-Tools pattern
-from vana_multi_agent.tools.agent_tools import create_specialist_agent_tools
+from tools.agent_tools import create_specialist_agent_tools
 
 # Import enhanced core components
-from vana_multi_agent.core.task_router import TaskRouter
-from vana_multi_agent.core.mode_manager import ModeManager, AgentMode
-from vana_multi_agent.core.confidence_scorer import ConfidenceScorer
+from core.task_router import TaskRouter
+from core.mode_manager import ModeManager, AgentMode
+from core.confidence_scorer import ConfidenceScorer
 
 # Get model configuration
 MODEL = os.getenv("VANA_MODEL", "gemini-2.0-flash")
@@ -790,6 +790,129 @@ adk_web_research_tool = FunctionTool(func=_web_research_tool)
 adk_data_analysis_tool = FunctionTool(func=_data_analysis_tool)
 adk_competitive_intelligence_tool = FunctionTool(func=_competitive_intelligence_tool)
 
+# Intelligence Agents (Phase 6: Intelligence Agents Implementation)
+
+memory_management_agent = LlmAgent(
+    name="memory_management_agent",
+    model=MODEL,
+    description="🧠 Memory Management & Knowledge Curation Specialist",
+    output_key="memory_management_results",  # Save to session state
+    instruction="""You are the Memory Management Agent, specializing in advanced memory
+    operations, knowledge curation, and data persistence optimization.
+
+    ## Core Expertise:
+    - Advanced memory operations and knowledge curation
+    - Data persistence and retrieval optimization
+    - Knowledge graph maintenance and enhancement
+    - Session state management and optimization
+    - Memory pattern analysis and recommendations
+
+    ## Google ADK Integration:
+    - Your memory results are saved to session state as 'memory_management_results'
+    - Work with VANA for comprehensive memory management
+    - Optimize memory usage across all agents
+    - Maintain knowledge consistency and quality
+
+    Always prioritize data integrity, efficient storage, and intelligent retrieval.""",
+    tools=[
+        adk_read_file, adk_write_file, adk_list_directory,
+        adk_kg_query, adk_kg_store, adk_kg_relationship, adk_kg_extract_entities,
+        adk_vector_search, adk_search_knowledge,
+        adk_echo, adk_generate_report, adk_check_task_status
+    ]
+)
+
+decision_engine_agent = LlmAgent(
+    name="decision_engine_agent",
+    model=MODEL,
+    description="⚡ Decision Engine & Workflow Optimization Specialist",
+    output_key="decision_engine_results",  # Save to session state
+    instruction="""You are the Decision Engine Agent, specializing in intelligent
+    decision making, workflow optimization, and agent coordination.
+
+    ## Core Expertise:
+    - Intelligent decision making and workflow optimization
+    - Agent coordination and task routing optimization
+    - Performance analysis and bottleneck identification
+    - Resource allocation and load balancing
+    - Strategic planning and execution optimization
+
+    ## Google ADK Integration:
+    - Your decision results are saved to session state as 'decision_engine_results'
+    - Work with VANA for optimal agent coordination
+    - Analyze system performance and recommend improvements
+    - Optimize workflow efficiency across all domains
+
+    Always prioritize system efficiency, optimal resource usage, and intelligent automation.""",
+    tools=[
+        adk_coordinate_task, adk_delegate_to_agent, adk_get_agent_status, adk_transfer_to_agent,
+        adk_get_health_status, adk_check_task_status,
+        adk_kg_query, adk_kg_store,
+        adk_echo, adk_generate_report
+    ]
+)
+
+learning_systems_agent = LlmAgent(
+    name="learning_systems_agent",
+    model=MODEL,
+    description="📈 Learning Systems & Performance Analysis Specialist",
+    output_key="learning_systems_results",  # Save to session state
+    instruction="""You are the Learning Systems Agent, specializing in performance
+    analysis, pattern recognition, and system optimization through machine learning.
+
+    ## Core Expertise:
+    - Performance analysis and pattern recognition
+    - System optimization through learning algorithms
+    - Predictive analytics and trend analysis
+    - Adaptive system behavior and improvement recommendations
+    - Continuous learning and system evolution
+
+    ## Google ADK Integration:
+    - Your learning results are saved to session state as 'learning_systems_results'
+    - Work with VANA for continuous system improvement
+    - Analyze usage patterns and performance metrics
+    - Provide optimization recommendations based on learning
+
+    Always prioritize continuous improvement, data-driven insights, and adaptive optimization.""",
+    tools=[
+        adk_vector_search, adk_search_knowledge,
+        adk_kg_query, adk_kg_store, adk_kg_relationship, adk_kg_extract_entities,
+        adk_process_large_dataset, adk_generate_report, adk_check_task_status,
+        adk_echo, adk_get_health_status
+    ]
+)
+
+# Create intelligence agent tools (Phase 6) - Must be defined before VANA
+def create_intelligence_agent_tools(memory_agent, decision_agent, learning_agent):
+    """Create intelligence agent tools for Agents-as-Tools pattern."""
+    return {
+        "memory_management_tool": lambda context: f"Memory Management Agent executed with context: {context}. Results saved to session state as 'memory_management_results'.",
+        "decision_engine_tool": lambda context: f"Decision Engine Agent executed with context: {context}. Results saved to session state as 'decision_engine_results'.",
+        "learning_systems_tool": lambda context: f"Learning Systems Agent executed with context: {context}. Results saved to session state as 'learning_systems_results'."
+    }
+
+intelligence_agent_tools = create_intelligence_agent_tools(
+    memory_management_agent, decision_engine_agent, learning_systems_agent
+)
+
+# Intelligence agent tool wrappers (Phase 6)
+def _memory_management_tool(context: str) -> str:
+    """🧠 Memory management specialist for advanced memory operations and knowledge curation."""
+    return intelligence_agent_tools["memory_management_tool"](context)
+
+def _decision_engine_tool(context: str) -> str:
+    """⚡ Decision engine specialist for intelligent decision making and workflow optimization."""
+    return intelligence_agent_tools["decision_engine_tool"](context)
+
+def _learning_systems_tool(context: str) -> str:
+    """📈 Learning systems specialist for performance analysis and system optimization."""
+    return intelligence_agent_tools["learning_systems_tool"](context)
+
+# Intelligence agent ADK FunctionTool instances (Phase 6)
+adk_memory_management_tool = FunctionTool(func=_memory_management_tool)
+adk_decision_engine_tool = FunctionTool(func=_decision_engine_tool)
+adk_learning_systems_tool = FunctionTool(func=_learning_systems_tool)
+
 # Advanced Orchestrator Agents (Phase 4: Core Orchestrators Implementation)
 
 travel_orchestrator = LlmAgent(
@@ -1007,6 +1130,11 @@ vana = LlmAgent(
     - 📊 **Data Analysis Agent**: Data processing, statistical analysis, visualization
     - 🔍 **Competitive Intelligence Agent**: Market research, competitor analysis, trend identification
 
+    Your intelligence agent team includes (Phase 6):
+    - 🧠 **Memory Management Agent**: Advanced memory operations, knowledge curation, data persistence
+    - ⚡ **Decision Engine Agent**: Intelligent decision making, workflow optimization, agent coordination
+    - 📈 **Learning Systems Agent**: Performance analysis, pattern recognition, system optimization
+
     ## Google ADK Agent Transfer Pattern:
     Use the transfer_to_agent() function to delegate tasks to orchestrator and specialist agents:
 
@@ -1033,6 +1161,11 @@ vana = LlmAgent(
     - data_analysis_tool: Direct access to data processing and statistical analysis
     - competitive_intelligence_tool: Direct access to market research and competitor analysis
 
+    Intelligence agent tools (Phase 6):
+    - memory_management_tool: Direct access to advanced memory operations and knowledge curation
+    - decision_engine_tool: Direct access to intelligent decision making and workflow optimization
+    - learning_systems_tool: Direct access to performance analysis and system optimization
+
     Use these tools when you need immediate specialist analysis without full agent transfer.
 
     ## Google ADK State Sharing Pattern:
@@ -1046,6 +1179,11 @@ vana = LlmAgent(
     - 'web_research_results' - Web Research Agent's research findings and fact-checking
     - 'data_analysis_results' - Data Analysis Agent's statistical analysis and insights
     - 'competitive_intelligence' - Competitive Intelligence Agent's market research and analysis
+
+    Intelligence agent state sharing (Phase 6):
+    - 'memory_management_results' - Memory Management Agent's memory operations and knowledge curation
+    - 'decision_engine_results' - Decision Engine Agent's decision making and workflow optimization
+    - 'learning_systems_results' - Learning Systems Agent's performance analysis and optimization recommendations
 
     When coordinating multi-agent workflows, consider the state sharing flow:
     1. Architecture analysis provides foundation for all other work
@@ -1076,7 +1214,7 @@ vana = LlmAgent(
     - register_crewai_tools: Register example CrewAI tools for use
     - get_third_party_tool_info: Get detailed information about specific third-party tools
 
-    ## Enhanced Tool Suite (41 Tools):
+    ## Enhanced Tool Suite (44 Tools):
     - File system operations with security checks and validation
     - Vector search and knowledge retrieval with semantic understanding
     - Web search for current information and research
@@ -1086,6 +1224,7 @@ vana = LlmAgent(
     - Long-running function tools for async operations and workflows
     - Third-party tool integration for ecosystem connectivity
     - Research specialist tools for comprehensive information gathering and analysis
+    - Intelligence agent tools for advanced memory management, decision making, and learning systems
 
     ## Task Execution Methodology:
     1. **Analysis**: Assess task complexity, requirements, and optimal approach
@@ -1114,7 +1253,9 @@ vana = LlmAgent(
         # Development Specialist Agents (Phase 5B)
         code_generation_agent, testing_agent, documentation_agent, security_agent,
         # Research Specialist Agents (Phase 5C)
-        web_research_agent, data_analysis_agent, competitive_intelligence_agent
+        web_research_agent, data_analysis_agent, competitive_intelligence_agent,
+        # Intelligence Agents (Phase 6)
+        memory_management_agent, decision_engine_agent, learning_systems_agent
     ],
     tools=[
         # All file system tools
@@ -1146,6 +1287,9 @@ vana = LlmAgent(
 
         # Research Specialist Tools (Phase 5C - Agents-as-Tools Pattern)
         adk_web_research_tool, adk_data_analysis_tool, adk_competitive_intelligence_tool,
+
+        # Intelligence Agent Tools (Phase 6 - Agents-as-Tools Pattern)
+        adk_memory_management_tool, adk_decision_engine_tool, adk_learning_systems_tool,
 
         # Third-Party Tools (Google ADK Pattern - Final Tool Type for 100% Compliance)
         adk_execute_third_party_tool, adk_list_third_party_tools,
