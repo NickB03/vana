@@ -79,7 +79,12 @@
     *   Previously used for Knowledge Graph integration (REMOVED)
     *   Replaced with Google ADK native memory systems
     *   Custom MCP server dependencies eliminated
-*   **Google Custom Search API:** Used by `WebSearchClient` for real-time web search (transitioning to Brave MCP).
+*   **Brave Search API:** ✅ PRODUCTION - Free AI plan optimized for enhanced web search capabilities
+    *   **Free AI Plan Features:** Extra snippets (5x content), AI summaries, goggles, multi-type search
+    *   **Search Optimization:** 5 search types (comprehensive, fast, academic, recent, local)
+    *   **Goggles Integration:** Academic, tech, and news goggles for custom result ranking
+    *   **Performance:** 5x content extraction improvement, enhanced relevance, cost efficiency
+*   **Google Custom Search API:** ✅ DEPRECATED - Successfully migrated to Brave Search API
 
 ## 4. Development & Operational Tools
 *   **Git & GitHub:** For version control and repository hosting.
