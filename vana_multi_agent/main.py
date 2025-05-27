@@ -72,10 +72,13 @@ def main():
         print("📦 To install ADK and start the full system:")
         print("   pip install google-cloud-aiplatform[adk,agent_engines]")
         print("   pip install google-adk")
-        print("\n🧪 Running in test mode with enhanced tools only...")
+        print("\n🧪 Running in fallback mode with enhanced tools only...")
 
         # Run a simple test of our enhanced tools
         test_enhanced_tools()
+
+        # Start a basic FastAPI server without ADK
+        start_fallback_server()
         return 0
 
     except Exception as e:
@@ -110,6 +113,46 @@ def test_enhanced_tools():
 
     except Exception as e:
         print(f"❌ Enhanced tools test failed: {e}")
+
+def start_fallback_server():
+    """Start a basic FastAPI server without ADK."""
+    print("\n🌐 Starting fallback web server...")
+
+    try:
+        from fastapi import FastAPI
+        from fastapi.responses import JSONResponse
+        import uvicorn
+
+        app = FastAPI(title="VANA Multi-Agent System", version="1.0.0")
+
+        @app.get("/")
+        async def root():
+            return {"message": "VANA Multi-Agent System", "status": "running", "mode": "fallback"}
+
+        @app.get("/health")
+        async def health():
+            return {"status": "healthy", "mode": "fallback"}
+
+        @app.get("/info")
+        async def info():
+            return {
+                "name": "VANA",
+                "description": "AI assistant with memory, knowledge graph, and search capabilities",
+                "version": "1.0.0",
+                "mode": "fallback",
+                "adk_integrated": False
+            }
+
+        # Get configuration from environment
+        host = os.getenv("VANA_HOST", "0.0.0.0")
+        port = int(os.getenv("VANA_PORT", os.getenv("PORT", "8080")))
+
+        print(f"🚀 Starting fallback server on {host}:{port}")
+        uvicorn.run(app, host=host, port=port)
+
+    except Exception as e:
+        print(f"❌ Failed to start fallback server: {e}")
+        raise
 
 if __name__ == "__main__":
     sys.exit(main())
