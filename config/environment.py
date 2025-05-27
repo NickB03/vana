@@ -34,29 +34,26 @@ class EnvironmentConfig:
         return os.environ.get("VANA_ENV", "development") == "production"
 
     @staticmethod
-    def get_mcp_config():
-        """Get MCP configuration based on environment"""
-        if EnvironmentConfig.is_development():
-            # Use local server in development if available
-            if os.environ.get("USE_LOCAL_MCP", "true").lower() == "true":
-                logger.info("Using local MCP server for development")
-                return {
-                    "endpoint": "http://localhost:5000",
-                    "namespace": "vana-dev",
-                    "api_key": "local_dev_key"
-                }
+    def get_adk_memory_config():
+        """Get ADK Memory configuration based on environment"""
+        # ADK Memory Service Configuration
+        rag_corpus_resource_name = os.environ.get(
+            "RAG_CORPUS_RESOURCE_NAME",
+            "projects/analystai-454200/locations/us-central1/ragCorpora/vana-corpus"
+        )
 
-        # Default to configuration from environment variables
-        endpoint = os.environ.get("MCP_ENDPOINT", "https://mcp.community.augment.co")
-        namespace = os.environ.get("MCP_NAMESPACE", "vana-project")
-        api_key = os.environ.get("MCP_API_KEY", "")
+        similarity_top_k = int(os.environ.get("MEMORY_SIMILARITY_TOP_K", "5"))
+        vector_distance_threshold = float(os.environ.get("MEMORY_VECTOR_DISTANCE_THRESHOLD", "0.7"))
+        session_service_type = os.environ.get("SESSION_SERVICE_TYPE", "vertex_ai")
 
-        logger.info(f"Using MCP server at {endpoint}/{namespace}")
+        logger.info(f"Using ADK Memory with RAG Corpus: {rag_corpus_resource_name}")
+        logger.info(f"Memory similarity settings: top_k={similarity_top_k}, threshold={vector_distance_threshold}")
 
         return {
-            "endpoint": endpoint,
-            "namespace": namespace,
-            "api_key": api_key
+            "rag_corpus_resource_name": rag_corpus_resource_name,
+            "similarity_top_k": similarity_top_k,
+            "vector_distance_threshold": vector_distance_threshold,
+            "session_service_type": session_service_type
         }
 
     @staticmethod
@@ -121,13 +118,22 @@ class EnvironmentConfig:
 
     @staticmethod
     def get_memory_config():
-        """Get memory configuration based on environment"""
+        """Get ADK-compatible memory configuration based on environment"""
+        # ADK Memory configuration with backward compatibility for caching
         return {
-            "sync_interval": int(os.environ.get("MEMORY_SYNC_INTERVAL", "300")),
+            # ADK Memory Service settings
+            "rag_corpus_resource_name": os.environ.get(
+                "RAG_CORPUS_RESOURCE_NAME",
+                "projects/analystai-454200/locations/us-central1/ragCorpora/vana-corpus"
+            ),
+            "similarity_top_k": int(os.environ.get("MEMORY_SIMILARITY_TOP_K", "5")),
+            "vector_distance_threshold": float(os.environ.get("MEMORY_VECTOR_DISTANCE_THRESHOLD", "0.7")),
+            "session_service_type": os.environ.get("SESSION_SERVICE_TYPE", "vertex_ai"),
+
+            # Local caching settings (for performance optimization)
             "cache_size": int(os.environ.get("MEMORY_CACHE_SIZE", "1000")),
             "cache_ttl": int(os.environ.get("MEMORY_CACHE_TTL", "3600")),
-            "entity_half_life_days": int(os.environ.get("ENTITY_HALF_LIFE_DAYS", "30")),
-            "local_db_path": os.path.join(EnvironmentConfig.get_data_dir(), "memory_cache.db")
+            "local_db_path": os.path.join(EnvironmentConfig.get_data_dir(), "adk_memory_cache.db")
         }
 
     @staticmethod
@@ -205,3 +211,105 @@ class EnvironmentConfig:
         except Exception as e:
             logger.error(f"An unexpected error occurred while loading GCP credentials from {credentials_path}: {e}")
             return None
+
+    @staticmethod
+    def validate_adk_memory_config():
+        """Validate ADK Memory configuration and return validation results"""
+        validation_results = {
+            "valid": True,
+            "errors": [],
+            "warnings": [],
+            "config": {}
+        }
+
+        try:
+            config = EnvironmentConfig.get_adk_memory_config()
+            validation_results["config"] = config
+
+            # Validate RAG Corpus Resource Name format
+            rag_corpus = config.get("rag_corpus_resource_name", "")
+            if not rag_corpus.startswith("projects/"):
+                validation_results["errors"].append("RAG_CORPUS_RESOURCE_NAME must start with 'projects/'")
+                validation_results["valid"] = False
+
+            # Validate similarity settings
+            top_k = config.get("similarity_top_k", 0)
+            if top_k <= 0 or top_k > 100:
+                validation_results["errors"].append("MEMORY_SIMILARITY_TOP_K must be between 1 and 100")
+                validation_results["valid"] = False
+
+            threshold = config.get("vector_distance_threshold", 0)
+            if threshold < 0.0 or threshold > 1.0:
+                validation_results["errors"].append("MEMORY_VECTOR_DISTANCE_THRESHOLD must be between 0.0 and 1.0")
+                validation_results["valid"] = False
+
+            # Validate session service type
+            session_type = config.get("session_service_type", "")
+            valid_session_types = ["vertex_ai", "local", "memory"]
+            if session_type not in valid_session_types:
+                validation_results["warnings"].append(f"SESSION_SERVICE_TYPE '{session_type}' is not in recommended types: {valid_session_types}")
+
+            # Check for deprecated MCP variables
+            deprecated_vars = [
+                "MCP_ENDPOINT", "MCP_NAMESPACE", "MCP_API_KEY", "USE_LOCAL_MCP",
+                "KNOWLEDGE_GRAPH_API_KEY", "KNOWLEDGE_GRAPH_SERVER_URL", "KNOWLEDGE_GRAPH_NAMESPACE"
+            ]
+
+            found_deprecated = []
+            for var in deprecated_vars:
+                if os.environ.get(var):
+                    found_deprecated.append(var)
+
+            if found_deprecated:
+                validation_results["warnings"].append(f"Deprecated MCP variables found: {found_deprecated}. These should be removed.")
+
+            logger.info(f"ADK Memory configuration validation: {'PASSED' if validation_results['valid'] else 'FAILED'}")
+
+        except Exception as e:
+            validation_results["valid"] = False
+            validation_results["errors"].append(f"Configuration validation error: {str(e)}")
+            logger.error(f"ADK Memory configuration validation failed: {e}")
+
+        return validation_results
+
+    @staticmethod
+    def get_migration_status():
+        """Get the current migration status from MCP to ADK memory"""
+        status = {
+            "migration_phase": "complete",  # planning, in_progress, complete
+            "adk_memory_configured": False,
+            "mcp_variables_present": False,
+            "configuration_valid": False,
+            "recommendations": []
+        }
+
+        # Check if ADK memory is configured
+        try:
+            adk_config = EnvironmentConfig.get_adk_memory_config()
+            if adk_config.get("rag_corpus_resource_name"):
+                status["adk_memory_configured"] = True
+        except Exception:
+            status["recommendations"].append("Configure ADK memory variables in environment")
+
+        # Check for MCP variables
+        mcp_vars = ["MCP_ENDPOINT", "MCP_NAMESPACE", "MCP_API_KEY"]
+        if any(os.environ.get(var) for var in mcp_vars):
+            status["mcp_variables_present"] = True
+            status["recommendations"].append("Remove deprecated MCP variables from environment")
+
+        # Validate configuration
+        validation = EnvironmentConfig.validate_adk_memory_config()
+        status["configuration_valid"] = validation["valid"]
+
+        if not status["configuration_valid"]:
+            status["recommendations"].extend(validation["errors"])
+
+        # Determine migration phase
+        if status["adk_memory_configured"] and not status["mcp_variables_present"] and status["configuration_valid"]:
+            status["migration_phase"] = "complete"
+        elif status["adk_memory_configured"]:
+            status["migration_phase"] = "in_progress"
+        else:
+            status["migration_phase"] = "planning"
+
+        return status
