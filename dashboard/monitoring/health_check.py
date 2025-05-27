@@ -14,6 +14,14 @@ from typing import Dict, Any, List, Optional, Callable, Union
 
 from dashboard.alerting.alert_manager import AlertManager, AlertSeverity
 
+# Import ADK memory monitor
+try:
+    from dashboard.monitoring.adk_memory_monitor import adk_memory_monitor
+    ADK_MONITOR_AVAILABLE = True
+except ImportError:
+    ADK_MONITOR_AVAILABLE = False
+    logging.warning("ADK memory monitor not available")
+
 logger = logging.getLogger(__name__)
 
 class HealthStatus:
@@ -29,6 +37,10 @@ class HealthCheck:
         self.last_check_time = 0
         self.check_interval = 60
         self.alert_manager = AlertManager()
+
+        # Register ADK memory monitoring if available
+        if ADK_MONITOR_AVAILABLE:
+            self.register_component("adk_memory", self._check_adk_memory)
 
     def register_component(self, component_name: str, check_function: Callable[[], Dict[str, Any]]) -> None:
         self.component_checks[component_name] = check_function
@@ -108,3 +120,46 @@ class HealthCheck:
         if not self.last_check_results:
             return self.check_health()
         return self.last_check_results
+
+    def _check_adk_memory(self) -> Dict[str, Any]:
+        """Check ADK memory system health."""
+        if not ADK_MONITOR_AVAILABLE:
+            return {
+                "status": HealthStatus.UNKNOWN,
+                "message": "ADK memory monitor not available",
+                "timestamp": datetime.datetime.now().isoformat()
+            }
+
+        try:
+            health_result = adk_memory_monitor.check_health()
+
+            # Map ADK status to health check status
+            adk_status = health_result.get("status", "unknown")
+            if adk_status == "ok":
+                status = HealthStatus.OK
+            elif adk_status == "warning":
+                status = HealthStatus.WARNING
+            elif adk_status == "error":
+                status = HealthStatus.ERROR
+            else:
+                status = HealthStatus.UNKNOWN
+
+            return {
+                "status": status,
+                "message": health_result.get("message", "ADK memory check completed"),
+                "timestamp": health_result.get("timestamp", datetime.datetime.now().isoformat()),
+                "details": {
+                    "adk_available": health_result.get("adk_available", False),
+                    "metrics": health_result.get("metrics", {}),
+                    "cost_metrics": health_result.get("cost_metrics", {}),
+                    "issues": health_result.get("issues", [])
+                }
+            }
+
+        except Exception as e:
+            logger.error(f"Error checking ADK memory health: {e}")
+            return {
+                "status": HealthStatus.ERROR,
+                "message": f"ADK memory health check failed: {str(e)}",
+                "timestamp": datetime.datetime.now().isoformat()
+            }

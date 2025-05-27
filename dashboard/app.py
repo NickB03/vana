@@ -45,7 +45,7 @@ def main():
     st.sidebar.title("Navigation")
     page = st.sidebar.radio(
         "Select a page",
-        ["Agent Status", "Memory Usage", "System Health", "Task Execution"]
+        ["Agent Status", "Memory Usage", "ADK Memory", "System Health", "Task Execution"]
     )
 
     # Add version information
@@ -75,6 +75,14 @@ def main():
         except Exception as e:
             st.error(f"Error displaying memory usage: {e}")
             logger.exception("Error displaying memory usage")
+
+    elif page == "ADK Memory":
+        try:
+            from dashboard.components.adk_memory_dashboard import display_adk_memory_dashboard
+            display_adk_memory_dashboard()
+        except Exception as e:
+            st.error(f"Error displaying ADK memory dashboard: {e}")
+            logger.exception("Error displaying ADK memory dashboard")
 
     elif page == "System Health":
         st.header("System Health")
