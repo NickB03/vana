@@ -14,8 +14,10 @@ venv.bak/
 
 # Virtual Environments (comprehensive coverage)
 vana_env/
+test_env/
 */venv/
 */vana_env/
+*/test_env/
 */.venv/
 .virtualenv/
 .conda/
