@@ -27,11 +27,15 @@ try:
     )
 except ImportError:
     # Fallback tools
-    def adk_echo(message: str) -> str:
+    def _echo(message: str) -> str:
         return f"Echo: {message}"
-    
-    def adk_get_health_status() -> str:
+
+    def _get_health_status() -> str:
         return "System healthy"
+
+    # Create FunctionTool instances for fallback
+    adk_echo = FunctionTool(func=_echo)
+    adk_get_health_status = FunctionTool(func=_get_health_status)
 
 # Get model configuration
 MODEL = os.getenv("VANA_MODEL", "gemini-2.0-flash")

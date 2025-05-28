@@ -74,11 +74,15 @@ def _file_exists(file_path: str) -> str:
         logger.error(error_msg)
         return error_msg
 
-# Create FunctionTool instances
+# Create FunctionTool instances with explicit names
 adk_read_file = FunctionTool(func=_read_file)
+adk_read_file.name = "read_file"
 adk_write_file = FunctionTool(func=_write_file)
+adk_write_file.name = "write_file"
 adk_list_directory = FunctionTool(func=_list_directory)
+adk_list_directory.name = "list_directory"
 adk_file_exists = FunctionTool(func=_file_exists)
+adk_file_exists.name = "file_exists"
 
 # Search Tools - Self-contained production implementations
 def _vector_search(query: str, max_results: int = 5) -> str:
@@ -104,7 +108,9 @@ def _vector_search(query: str, max_results: int = 5) -> str:
 def _web_search(query: str, max_results: int = 5) -> str:
     """🌐 Search the web for current information with enhanced formatting."""
     try:
+        # Lazy import to avoid HTTP requests during module import
         import requests
+
         api_key = os.getenv('BRAVE_API_KEY')
         if not api_key:
             return json.dumps({"error": "Brave API key not configured"}, indent=2)
@@ -154,10 +160,13 @@ def _search_knowledge(query: str) -> str:
         logger.error(error_msg)
         return error_msg
 
-# Create FunctionTool instances
+# Create FunctionTool instances with explicit names
 adk_vector_search = FunctionTool(func=_vector_search)
+adk_vector_search.name = "vector_search"
 adk_web_search = FunctionTool(func=_web_search)
+adk_web_search.name = "web_search"
 adk_search_knowledge = FunctionTool(func=_search_knowledge)
+adk_search_knowledge.name = "search_knowledge"
 
 # Knowledge Graph Tools - Self-contained production implementations
 def _kg_query(entity_type: str, query_text: str) -> str:
@@ -239,11 +248,15 @@ def _kg_extract_entities(text: str) -> str:
         logger.error(error_msg)
         return error_msg
 
-# Create FunctionTool instances
+# Create FunctionTool instances with explicit names
 adk_kg_query = FunctionTool(func=_kg_query)
+adk_kg_query.name = "kg_query"
 adk_kg_store = FunctionTool(func=_kg_store)
+adk_kg_store.name = "kg_store"
 adk_kg_relationship = FunctionTool(func=_kg_relationship)
+adk_kg_relationship.name = "kg_relationship"
 adk_kg_extract_entities = FunctionTool(func=_kg_extract_entities)
+adk_kg_extract_entities.name = "kg_extract_entities"
 
 # System Tools - Self-contained production implementations
 def _echo(message: str) -> str:
@@ -367,10 +380,16 @@ def _transfer_to_agent(agent_name: str, context: str = "") -> str:
         logger.error(error_msg)
         return error_msg
 
-# Create FunctionTool instances
+# Create FunctionTool instances with explicit names
 adk_echo = FunctionTool(func=_echo)
+adk_echo.name = "echo"
 adk_get_health_status = FunctionTool(func=_get_health_status)
+adk_get_health_status.name = "get_health_status"
 adk_coordinate_task = FunctionTool(func=_coordinate_task)
+adk_coordinate_task.name = "coordinate_task"
 adk_delegate_to_agent = FunctionTool(func=_delegate_to_agent)
+adk_delegate_to_agent.name = "delegate_to_agent"
 adk_get_agent_status = FunctionTool(func=_get_agent_status)
+adk_get_agent_status.name = "get_agent_status"
 adk_transfer_to_agent = FunctionTool(func=_transfer_to_agent)
+adk_transfer_to_agent.name = "transfer_to_agent"

@@ -27,9 +27,11 @@ def get_system_info() -> str:
         "status": "operational"
     }
 
-# Create ADK FunctionTool instances
+# Create ADK FunctionTool instances with proper naming
 echo_function_tool = FunctionTool(func=echo_tool)
+echo_function_tool.__name__ = "echo_tool"
 system_info_tool = FunctionTool(func=get_system_info)
+system_info_tool.__name__ = "get_system_info"
 
 # Define the root agent
 root_agent = LlmAgent(
@@ -68,3 +70,6 @@ Always strive to provide the most helpful and accurate assistance possible.""",
         system_info_tool
     ]
 )
+
+# Export agent for ADK discovery
+agent = root_agent

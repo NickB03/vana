@@ -18,19 +18,14 @@ from google.adk.tools import FunctionTool
 import sys
 sys.path.append('..')
 
-try:
-    from tools.adk_tools import adk_echo, adk_get_health_status
-except ImportError:
-    # Fallback tools
-    def _echo(message: str) -> str:
-        return f"Echo: {message}"
+# Simple working tools - direct functions
+def echo(message: str) -> str:
+    """Echo a message back"""
+    return f"Echo: {message}"
 
-    def _get_health_status() -> str:
-        return "System healthy"
-
-    # Create fallback FunctionTool instances using CORRECT ADK pattern
-    adk_echo = FunctionTool(func=_echo)
-    adk_get_health_status = FunctionTool(func=_get_health_status)
+def get_health_status() -> str:
+    """Get system health status"""
+    return "System healthy"
 
 # Get model configuration
 MODEL = os.getenv("VANA_MODEL", "gemini-2.0-flash")
@@ -78,8 +73,8 @@ You serve as the primary orchestrator for a sophisticated multi-agent system. Yo
 
 Always strive to provide the most helpful and accurate assistance possible.""",
     tools=[
-        adk_echo,
-        adk_get_health_status
+        echo,
+        get_health_status
     ]
 )
 
