@@ -1,22 +1,27 @@
-# Multi-stage build for VANA Multi-Agent System
-# Stage 1: Build dependencies
+# Multi-stage build for VANA Multi-Agent System (Cloud Build Optimized)
+# Stage 1: Build dependencies with enhanced caching
 FROM python:3.11-slim AS builder
 
 WORKDIR /app
 
-# Copy requirements first for better caching
+# Copy requirements first for optimal Docker layer caching
 COPY requirements.txt .
 
-# Install build dependencies and Python packages
+# Install build dependencies and Python packages with optimizations
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends gcc python3-dev && \
-    pip install --no-cache-dir --upgrade pip && \
+    apt-get install -y --no-install-recommends \
+        gcc \
+        python3-dev \
+        git \
+        build-essential && \
+    pip install --no-cache-dir --upgrade pip setuptools wheel && \
     pip install --no-cache-dir -r requirements.txt && \
-    apt-get purge -y --auto-remove gcc python3-dev && \
+    # Clean up build dependencies to reduce image size
+    apt-get purge -y --auto-remove gcc python3-dev git build-essential && \
     apt-get clean && \
-    rm -rf /var/lib/apt/lists/*
+    rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
-# Stage 2: Runtime image
+# Stage 2: Optimized runtime image
 FROM python:3.11-slim
 
 WORKDIR /app
@@ -25,23 +30,36 @@ WORKDIR /app
 COPY --from=builder /usr/local/lib/python3.11/site-packages /usr/local/lib/python3.11/site-packages
 COPY --from=builder /usr/local/bin /usr/local/bin
 
-# Copy the vana_multi_agent directory contents
-COPY . .
+# Create non-root user for security
+RUN groupadd -r vana && useradd -r -g vana vana
 
-# Copy required parent directory dependencies
-COPY ../agent ./agent
-COPY ../tools ./tools
-COPY ../config ./config
+# Copy application code with proper ownership
+COPY --chown=vana:vana . .
 
-# Set environment variables
+# Create necessary directories with proper permissions
+RUN mkdir -p /app/logs /app/data && \
+    chown -R vana:vana /app/logs /app/data && \
+    chmod 755 /app/logs /app/data
+
+# Set environment variables for production (Cloud Run compatible)
 ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
     VANA_ENV=production \
     VANA_HOST=0.0.0.0 \
-    VANA_PORT=8080 \
+    GOOGLE_GENAI_USE_VERTEXAI=True \
+    LOG_LEVEL=INFO \
+    # Cloud Run will set PORT automatically, but provide fallback
     PORT=8080
 
-# Expose port for Cloud Run
+# Switch to non-root user
+USER vana
+
+# Expose port for Cloud Run (Cloud Run will override this)
 EXPOSE 8080
 
-# Run the application with Uvicorn
+# Health check for container monitoring
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD python -c "import requests; requests.get('http://localhost:${PORT:-8080}/health')" || exit 1
+
+# Run the application
 CMD ["python", "main.py"]
