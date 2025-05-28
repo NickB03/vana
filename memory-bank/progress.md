@@ -1,6 +1,28 @@
-# Progress: VANA Project Status & Production Deployment Implementation
+# Progress: VANA Project Status & Critical Agent Configuration Issues
 
-**Date:** 2025-01-28 (Updated - Production Deployment PARTIAL - ADK Integration Required)
+**Date:** 2025-01-28 (Updated - CRITICAL ISSUES IDENTIFIED - Agent Dropdown Broken)
+
+## 🚨 CRITICAL ISSUES BLOCKING PRODUCTION USE
+
+### **Agent Dropdown Functionality Completely Broken**
+- **Error**: `'FunctionTool' object has no attribute '__name__'` when selecting any agent
+- **Impact**: Production system deployed but completely unusable for agent interaction
+- **Root Cause**: Tool registration patterns incompatible with Google ADK requirements
+- **Status**: All 22 agents fail to load when selected from dropdown
+- **User Experience**: System appears to work but breaks immediately upon agent selection
+
+### **Immediate Fixes Required**
+1. **Tool Registration Pattern**: Fix FunctionTool creation and attribute assignment
+2. **Agent Import Issues**: Resolve import errors across all 22 agent files
+3. **Vector Search Configuration**: Fix file path resolution in production environment
+4. **Agent Discovery Cleanup**: Remove non-agent pollution from dropdown
+5. **Comprehensive Testing**: Validate all agents work end-to-end
+
+### **Technical Debt Identified**
+- **Tool Double-Wrapping**: Agents incorrectly wrapping already-wrapped FunctionTool objects
+- **Import Path Issues**: Inconsistent tool import patterns across agent files
+- **Configuration Mismatch**: Development vs production environment differences
+- **Testing Gaps**: Agent configuration testing insufficient to catch these issues
 
 ## ✅ CURRENT MILESTONE: Production Deployment COMPLETE - ADK Integration Successful
 

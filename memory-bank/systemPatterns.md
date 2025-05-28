@@ -1,5 +1,18 @@
 # System Patterns & Architecture: VANA
 
+## 🚨 CRITICAL CONFIGURATION ISSUES (2025-01-28)
+
+**Status**: Production system deployed but agent functionality broken
+**Issue**: Google ADK tool registration patterns causing agent dropdown failures
+**Impact**: All 22 agents fail to load when selected from dropdown
+**Error**: `'FunctionTool' object has no attribute '__name__'`
+
+### **Technical Debt Requiring Immediate Fix**
+- **Tool Registration**: FunctionTool objects missing required attributes
+- **Agent Imports**: Inconsistent tool import patterns across agent files
+- **Production Config**: Environment-specific configuration mismatches
+- **Testing Gaps**: Agent configuration validation insufficient
+
 ## 1. Overall Architecture (Current Implementation Status)
 
 VANA is architected as a comprehensive multi-agent system with a clean, consolidated codebase. The system includes a suite of interconnected Python tools and services, with monitoring dashboards and comprehensive testing frameworks. Repository cleanup has been completed, removing outdated implementations and focusing on the active multi-agent system.
