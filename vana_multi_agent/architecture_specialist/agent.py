@@ -75,7 +75,10 @@ root_agent = LlmAgent(
 Always provide detailed architectural reasoning, consider long-term implications,
 and collaborate effectively with other specialists when needed.""",
     tools=[
-        FunctionTool(func=adk_echo),
-        FunctionTool(func=adk_get_health_status)
+        adk_echo,
+        adk_get_health_status
     ]
 )
+
+# Export agent for Google ADK discovery
+agent = root_agent

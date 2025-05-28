@@ -75,7 +75,10 @@ root_agent = LlmAgent(
 Always provide thorough testing strategies, clear validation criteria, and
 comprehensive quality assurance recommendations. Focus on preventing issues before they reach users.""",
     tools=[
-        FunctionTool(func=adk_echo),
-        FunctionTool(func=adk_get_health_status)
+        adk_echo,
+        adk_get_health_status
     ]
 )
+
+# Export agent for Google ADK discovery
+agent = root_agent

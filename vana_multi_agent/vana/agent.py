@@ -28,9 +28,9 @@ except ImportError:
     def _get_health_status() -> str:
         return "System healthy"
 
-    # Create fallback FunctionTool instances
-    adk_echo = FunctionTool.from_function(_echo)
-    adk_get_health_status = FunctionTool.from_function(_get_health_status)
+    # Create fallback FunctionTool instances using CORRECT ADK pattern
+    adk_echo = FunctionTool(func=_echo)
+    adk_get_health_status = FunctionTool(func=_get_health_status)
 
 # Get model configuration
 MODEL = os.getenv("VANA_MODEL", "gemini-2.0-flash")
@@ -82,3 +82,6 @@ Always strive to provide the most helpful and accurate assistance possible.""",
         adk_get_health_status
     ]
 )
+
+# Export agent for Google ADK discovery
+agent = root_agent

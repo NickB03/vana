@@ -72,10 +72,12 @@ root_agent = LlmAgent(
 3. **Execution**: Implement automated, scalable infrastructure solutions
 4. **Validation**: Verify system reliability, security, and performance
 
-Always prioritize reliability, security, and scalability in your solutions.
-Provide clear deployment strategies, monitoring recommendations, and disaster recovery plans.""",
+Always prioritize security, reliability, and automation in all infrastructure decisions.""",
     tools=[
-        FunctionTool(func=adk_echo),
-        FunctionTool(func=adk_get_health_status)
+        adk_echo,
+        adk_get_health_status
     ]
 )
+
+# Export agent for Google ADK discovery
+agent = root_agent

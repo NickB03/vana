@@ -20,14 +20,29 @@ except ImportError:
             self.func = func
             self.name = func.__name__
 
-from vana_multi_agent.tools.long_running_tools import (
+from .long_running_tools import (
     LongRunningFunctionTool, create_long_running_tool, task_manager,
     ask_for_approval, process_large_dataset, generate_report,
     LongRunningTaskStatus
 )
-from vana_multi_agent.core.tool_standards import (
-    StandardToolResponse, InputValidator, performance_monitor
-)
+try:
+    from vana_multi_agent.core.tool_standards import (
+        StandardToolResponse, InputValidator, performance_monitor
+    )
+except ImportError:
+    # Fallback for development
+    class StandardToolResponse:
+        @staticmethod
+        def success(data):
+            return {"status": "success", "data": data}
+
+    class InputValidator:
+        @staticmethod
+        def validate_string(value, name, required=True, max_length=None):
+            return value
+
+    def performance_monitor(func):
+        return func
 
 # Configure logging
 logger = logging.getLogger(__name__)

@@ -21,10 +21,39 @@ from dataclasses import dataclass, field
 from enum import Enum
 import json
 
-from vana_multi_agent.core.tool_standards import (
-    StandardToolResponse, ToolErrorType, ErrorHandler,
-    performance_monitor, InputValidator
-)
+try:
+    from vana_multi_agent.core.tool_standards import (
+        StandardToolResponse, ToolErrorType, ErrorHandler,
+        performance_monitor, InputValidator
+    )
+except ImportError:
+    # Fallback for development
+    class StandardToolResponse:
+        @staticmethod
+        def success(data):
+            return {"status": "success", "data": data}
+
+    class ToolErrorType:
+        VALIDATION_ERROR = "validation_error"
+
+    class ErrorHandler:
+        @staticmethod
+        def handle_error(error_type, message):
+            return {"error": message}
+
+    class performance_monitor:
+        @staticmethod
+        def start_execution(name):
+            return time.time()
+
+        @staticmethod
+        def end_execution(name, start_time, success=True):
+            return time.time() - start_time
+
+    class InputValidator:
+        @staticmethod
+        def validate_string(value, name, required=True, max_length=None):
+            return value
 
 # Configure logging
 logger = logging.getLogger(__name__)

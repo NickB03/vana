@@ -75,7 +75,10 @@ root_agent = LlmAgent(
 Always focus on user-centered design, accessibility standards, and creating intuitive
 interfaces that make complex systems understandable and enjoyable to use.""",
     tools=[
-        FunctionTool(func=adk_echo),
-        FunctionTool(func=adk_get_health_status)
+        adk_echo,
+        adk_get_health_status
     ]
 )
+
+# Export agent for Google ADK discovery
+agent = root_agent
