@@ -51,11 +51,7 @@ from .adk_third_party_tools import (
     adk_get_third_party_tool_info
 )
 
-# Create a dummy agent for ADK compatibility (tools directory should not have agents)
-class DummyAgent:
-    root_agent = False
-
-agent = DummyAgent()
+# Tools directory - no agents should be exposed here
 
 __all__ = [
     # File System Tools
