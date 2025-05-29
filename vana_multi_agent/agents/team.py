@@ -32,9 +32,6 @@ from tools import (
     # Search Tools
     adk_vector_search, adk_web_search, adk_search_knowledge,
 
-    # Knowledge Graph Tools
-    adk_kg_query, adk_kg_store, adk_kg_relationship, adk_kg_extract_entities,
-
     # System Tools
     adk_echo, adk_get_health_status,
 
@@ -116,7 +113,6 @@ architecture_specialist = LlmAgent(
     tools=[
         adk_read_file, adk_write_file, adk_list_directory,
         adk_vector_search, adk_search_knowledge,
-        adk_kg_query, adk_kg_store,
         adk_echo, adk_get_health_status
     ]
 )
@@ -165,7 +161,6 @@ ui_specialist = LlmAgent(
     tools=[
         adk_read_file, adk_write_file, adk_list_directory,
         adk_web_search, adk_search_knowledge,
-        adk_kg_query, adk_kg_store,
         adk_echo, adk_get_health_status
     ]
 )
@@ -214,7 +209,6 @@ devops_specialist = LlmAgent(
     tools=[
         adk_read_file, adk_write_file, adk_list_directory,
         adk_vector_search, adk_web_search, adk_search_knowledge,
-        adk_kg_query, adk_kg_store,
         adk_echo, adk_get_health_status
     ]
 )
@@ -263,7 +257,6 @@ qa_specialist = LlmAgent(
     tools=[
         adk_read_file, adk_write_file, adk_list_directory,
         adk_vector_search, adk_web_search, adk_search_knowledge,
-        adk_kg_query, adk_kg_store,
         adk_echo, adk_get_health_status
     ]
 )
@@ -300,7 +293,6 @@ hotel_search_agent = LlmAgent(
     Always provide comprehensive hotel options with detailed comparisons and clear recommendations.""",
     tools=[
         adk_web_search, adk_vector_search, adk_search_knowledge,
-        adk_kg_query, adk_kg_store, adk_kg_relationship,
         adk_echo, adk_generate_report
     ]
 )
@@ -335,7 +327,6 @@ flight_search_agent = LlmAgent(
     Always provide comprehensive flight options with detailed comparisons and clear recommendations.""",
     tools=[
         adk_web_search, adk_vector_search, adk_search_knowledge,
-        adk_kg_query, adk_kg_store, adk_kg_relationship,
         adk_echo, adk_generate_report
     ]
 )
@@ -370,7 +361,6 @@ payment_processing_agent = LlmAgent(
     Always prioritize security, require explicit approval, and provide detailed transaction records.""",
     tools=[
         adk_ask_for_approval, adk_generate_report,
-        adk_kg_store, adk_kg_relationship,
         adk_echo, adk_get_health_status
     ]
 )
@@ -405,7 +395,6 @@ itinerary_planning_agent = LlmAgent(
     Always create comprehensive, realistic itineraries with detailed timing and logistics.""",
     tools=[
         adk_web_search, adk_vector_search, adk_search_knowledge,
-        adk_kg_query, adk_kg_store, adk_kg_relationship, adk_kg_extract_entities,
         adk_generate_report, adk_echo
     ]
 )
@@ -480,7 +469,6 @@ code_generation_agent = LlmAgent(
     tools=[
         adk_read_file, adk_write_file, adk_list_directory, adk_file_exists,
         adk_vector_search, adk_search_knowledge,
-        adk_kg_query, adk_kg_store,
         adk_echo, adk_generate_report
     ]
 )
@@ -516,7 +504,6 @@ testing_agent = LlmAgent(
     tools=[
         adk_read_file, adk_write_file, adk_list_directory, adk_file_exists,
         adk_vector_search, adk_web_search, adk_search_knowledge,
-        adk_kg_query, adk_kg_store,
         adk_echo, adk_generate_report, adk_check_task_status
     ]
 )
@@ -552,7 +539,6 @@ documentation_agent = LlmAgent(
     tools=[
         adk_read_file, adk_write_file, adk_list_directory, adk_file_exists,
         adk_vector_search, adk_web_search, adk_search_knowledge,
-        adk_kg_query, adk_kg_store, adk_kg_relationship, adk_kg_extract_entities,
         adk_echo, adk_generate_report
     ]
 )
@@ -588,7 +574,6 @@ security_agent = LlmAgent(
     tools=[
         adk_read_file, adk_write_file, adk_list_directory, adk_file_exists,
         adk_vector_search, adk_web_search, adk_search_knowledge,
-        adk_kg_query, adk_kg_store,
         adk_echo, adk_generate_report
     ]
 )
@@ -669,7 +654,6 @@ web_research_agent = LlmAgent(
     Always prioritize accuracy, source credibility, and comprehensive coverage.""",
     tools=[
         adk_web_search, adk_vector_search, adk_search_knowledge,
-        adk_kg_query, adk_kg_store, adk_kg_relationship,
         adk_echo, adk_generate_report
     ]
 )
@@ -712,7 +696,6 @@ data_analysis_agent = LlmAgent(
     tools=[
         adk_read_file, adk_write_file, adk_list_directory,
         adk_vector_search, adk_search_knowledge,
-        adk_kg_query, adk_kg_store,
         adk_echo, adk_generate_report, adk_check_task_status
     ]
 )
@@ -754,7 +737,6 @@ competitive_intelligence_agent = LlmAgent(
     Always provide strategic insights and actionable intelligence.""",
     tools=[
         adk_web_search, adk_vector_search, adk_search_knowledge,
-        adk_kg_query, adk_kg_store, adk_kg_relationship, adk_kg_extract_entities,
         adk_echo, adk_generate_report
     ]
 )
@@ -816,7 +798,6 @@ memory_management_agent = LlmAgent(
     Always prioritize data integrity, efficient storage, and intelligent retrieval.""",
     tools=[
         adk_read_file, adk_write_file, adk_list_directory,
-        adk_kg_query, adk_kg_store, adk_kg_relationship, adk_kg_extract_entities,
         adk_vector_search, adk_search_knowledge,
         adk_echo, adk_generate_report, adk_check_task_status
     ]
@@ -847,7 +828,6 @@ decision_engine_agent = LlmAgent(
     tools=[
         adk_coordinate_task, adk_delegate_to_agent, adk_get_agent_status, adk_transfer_to_agent,
         adk_get_health_status, adk_check_task_status,
-        adk_kg_query, adk_kg_store,
         adk_echo, adk_generate_report
     ]
 )
@@ -876,7 +856,6 @@ learning_systems_agent = LlmAgent(
     Always prioritize continuous improvement, data-driven insights, and adaptive optimization.""",
     tools=[
         adk_vector_search, adk_search_knowledge,
-        adk_kg_query, adk_kg_store, adk_kg_relationship, adk_kg_extract_entities,
         adk_process_large_dataset, adk_generate_report, adk_check_task_status,
         adk_echo, adk_get_health_status
     ]
@@ -940,7 +919,6 @@ monitoring_agent = LlmAgent(
     tools=[
         adk_get_health_status, adk_check_task_status, adk_get_agent_status,
         adk_generate_report, adk_echo,
-        adk_kg_query, adk_kg_store,
         adk_read_file, adk_write_file, adk_list_directory
     ]
 )
@@ -970,7 +948,6 @@ coordination_agent = LlmAgent(
     tools=[
         adk_coordinate_task, adk_delegate_to_agent, adk_get_agent_status, adk_transfer_to_agent,
         adk_check_task_status, adk_generate_report,
-        adk_kg_query, adk_kg_store,
         adk_echo
     ]
 )
@@ -1039,7 +1016,6 @@ travel_orchestrator = LlmAgent(
     tools=[
         adk_read_file, adk_write_file, adk_list_directory,
         adk_vector_search, adk_web_search, adk_search_knowledge,
-        adk_kg_query, adk_kg_store, adk_kg_relationship,
         adk_echo, adk_get_health_status,
         adk_coordinate_task, adk_delegate_to_agent, adk_transfer_to_agent,
         adk_ask_for_approval, adk_process_large_dataset, adk_generate_report,
@@ -1094,7 +1070,6 @@ research_orchestrator = LlmAgent(
     tools=[
         adk_read_file, adk_write_file, adk_list_directory,
         adk_vector_search, adk_web_search, adk_search_knowledge,
-        adk_kg_query, adk_kg_store, adk_kg_relationship, adk_kg_extract_entities,
         adk_echo, adk_get_health_status,
         adk_coordinate_task, adk_delegate_to_agent, adk_transfer_to_agent,
         adk_process_large_dataset, adk_generate_report, adk_check_task_status,
@@ -1148,7 +1123,6 @@ development_orchestrator = LlmAgent(
     tools=[
         adk_read_file, adk_write_file, adk_list_directory, adk_file_exists,
         adk_vector_search, adk_web_search, adk_search_knowledge,
-        adk_kg_query, adk_kg_store,
         adk_echo, adk_get_health_status,
         adk_coordinate_task, adk_delegate_to_agent, adk_transfer_to_agent,
         adk_ask_for_approval, adk_generate_report, adk_check_task_status,
@@ -1311,11 +1285,11 @@ vana = LlmAgent(
     - register_crewai_tools: Register example CrewAI tools for use
     - get_third_party_tool_info: Get detailed information about specific third-party tools
 
-    ## Enhanced Tool Suite (46 Tools):
+    ## Enhanced Tool Suite (42 Tools):
     - File system operations with security checks and validation
     - Vector search and knowledge retrieval with semantic understanding
     - Web search for current information and research
-    - Knowledge graph for entity relationships and context
+    - ADK native memory systems with Vertex AI RAG integration
     - System health monitoring and performance tracking
     - Advanced agent coordination and intelligent delegation
     - Long-running function tools for async operations and workflows
@@ -1364,8 +1338,7 @@ vana = LlmAgent(
         # All search tools
         adk_vector_search, adk_web_search, adk_search_knowledge,
 
-        # All knowledge graph tools
-        adk_kg_query, adk_kg_store, adk_kg_relationship, adk_kg_extract_entities,
+        # Knowledge graph tools removed - using ADK native memory systems only
 
         # System tools
         adk_echo, adk_get_health_status,

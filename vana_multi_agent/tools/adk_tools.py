@@ -168,95 +168,7 @@ adk_web_search.name = "web_search"
 adk_search_knowledge = FunctionTool(func=_search_knowledge)
 adk_search_knowledge.name = "search_knowledge"
 
-# Knowledge Graph Tools - Self-contained production implementations
-def _kg_query(entity_type: str, query_text: str) -> str:
-    """🕸️ Query the knowledge graph for entities and relationships."""
-    try:
-        logger.info(f"KG query: {entity_type} - {query_text}")
-        # Production placeholder - implement with actual knowledge graph
-        result = {
-            "entity_type": entity_type,
-            "query": query_text,
-            "entities": [
-                {"name": f"Entity related to {query_text}", "type": entity_type, "confidence": 0.89},
-                {"name": f"Another {entity_type} entity", "type": entity_type, "confidence": 0.76}
-            ],
-            "relationships": [
-                {"from": "entity1", "relation": "related_to", "to": "entity2"}
-            ],
-            "mode": "production"
-        }
-        return json.dumps(result, indent=2)
-    except Exception as e:
-        error_msg = f"KG query error: {str(e)}"
-        logger.error(error_msg)
-        return error_msg
-
-def _kg_store(entity_name: str, entity_type: str, properties: str = "") -> str:
-    """💾 Store an entity in the knowledge graph with properties."""
-    try:
-        logger.info(f"KG store: {entity_name} ({entity_type})")
-        result = {
-            "action": "store",
-            "entity_name": entity_name,
-            "entity_type": entity_type,
-            "properties": properties,
-            "status": "stored",
-            "mode": "production"
-        }
-        return json.dumps(result, indent=2)
-    except Exception as e:
-        error_msg = f"KG store error: {str(e)}"
-        logger.error(error_msg)
-        return error_msg
-
-def _kg_relationship(entity1: str, relationship: str, entity2: str) -> str:
-    """🔗 Create a relationship between two entities in the knowledge graph."""
-    try:
-        logger.info(f"KG relationship: {entity1} -> {relationship} -> {entity2}")
-        result = {
-            "action": "create_relationship",
-            "entity1": entity1,
-            "relationship": relationship,
-            "entity2": entity2,
-            "status": "created",
-            "mode": "production"
-        }
-        return json.dumps(result, indent=2)
-    except Exception as e:
-        error_msg = f"KG relationship error: {str(e)}"
-        logger.error(error_msg)
-        return error_msg
-
-def _kg_extract_entities(text: str) -> str:
-    """🎯 Extract entities from text using NLP and store in knowledge graph."""
-    try:
-        logger.info(f"KG entity extraction from: {text[:50]}...")
-        # Production placeholder - implement with actual NLP
-        result = {
-            "text": text[:100] + "..." if len(text) > 100 else text,
-            "extracted_entities": [
-                {"text": "sample entity", "type": "PERSON", "confidence": 0.92},
-                {"text": "another entity", "type": "ORGANIZATION", "confidence": 0.85}
-            ],
-            "total_entities": 2,
-            "mode": "production"
-        }
-        return json.dumps(result, indent=2)
-    except Exception as e:
-        error_msg = f"KG entity extraction error: {str(e)}"
-        logger.error(error_msg)
-        return error_msg
-
-# Create FunctionTool instances with explicit names
-adk_kg_query = FunctionTool(func=_kg_query)
-adk_kg_query.name = "kg_query"
-adk_kg_store = FunctionTool(func=_kg_store)
-adk_kg_store.name = "kg_store"
-adk_kg_relationship = FunctionTool(func=_kg_relationship)
-adk_kg_relationship.name = "kg_relationship"
-adk_kg_extract_entities = FunctionTool(func=_kg_extract_entities)
-adk_kg_extract_entities.name = "kg_extract_entities"
+# Knowledge Graph functionality removed - using ADK native memory systems only
 
 # System Tools - Self-contained production implementations
 def _echo(message: str) -> str:
@@ -285,10 +197,10 @@ def _get_health_status() -> str:
             "services": {
                 "adk": "operational",
                 "agents": "24 agents active",
-                "tools": "46 tools available",
+                "tools": "42 tools available",
                 "web_search": "brave api configured",
                 "vector_search": "production ready",
-                "knowledge_graph": "operational"
+                "adk_memory": "vertex ai rag enabled"
             },
             "environment": {
                 "google_cloud_project": os.getenv("GOOGLE_CLOUD_PROJECT", "not_set"),

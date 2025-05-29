@@ -17,12 +17,6 @@ from .adk_tools import (
     adk_web_search,
     adk_search_knowledge,
 
-    # Knowledge Graph Tools
-    adk_kg_query,
-    adk_kg_store,
-    adk_kg_relationship,
-    adk_kg_extract_entities,
-
     # System Tools
     adk_echo,
     adk_get_health_status,
@@ -64,12 +58,6 @@ __all__ = [
     "adk_vector_search",
     "adk_web_search",
     "adk_search_knowledge",
-
-    # Knowledge Graph Tools
-    "adk_kg_query",
-    "adk_kg_store",
-    "adk_kg_relationship",
-    "adk_kg_extract_entities",
 
     # System Tools
     "adk_echo",
