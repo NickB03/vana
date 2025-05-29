@@ -4,15 +4,15 @@ version = "1.0.0"
 description = "VANA Multi-Agent System with Google ADK"
 authors = ["Nick <nick@vana.com>"]
 readme = "README.md"
-packages = [{include = "vana_multi_agent", from = "."}]
+packages = [{include = "agents"}, {include = "vana"}]
 
 [tool.poetry.dependencies]
-python = ">=3.9,<3.9.7 || >3.9.7,<4.0"
+python = ">=3.13,<4.0"
 google-adk = {extras = ["vertexai"], version = ">=1.0.0"}
 python-dotenv = ">=1.0.0"
 requests = ">=2.31.0"
 Flask = ">=2.3.0"
-urllib3 = "<2.0.0"
+# urllib3 version constraint removed - let google-adk manage this
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.0.0"

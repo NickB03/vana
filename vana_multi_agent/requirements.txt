@@ -1,15 +1,15 @@
-# VANA Multi-Agent System Dependencies
+# VANA Multi-Agent System Dependencies - ADK Compatible
 
-# Google ADK and AI Platform (Updated to match official samples)
-google-cloud-aiplatform[adk,agent_engines]>=1.93.0
+# Google ADK and AI Platform (Matching official ADK samples)
 google-adk>=1.0.0
+google-cloud-aiplatform[adk,agent_engines]>=1.93.0
 google-genai>=1.14.0
 
-# Core Dependencies
+# Core Dependencies (ADK Compatible)
 python-dotenv>=1.0.0
-uvicorn>=0.24.0
-fastapi>=0.104.0
-pydantic>=2.5.0
+uvicorn>=0.34.0
+fastapi>=0.115.0
+pydantic>=2.7.0,<3.0.0
 
 # Enhanced Tool Dependencies
 requests>=2.31.0
