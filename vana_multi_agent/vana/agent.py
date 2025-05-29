@@ -1,11 +1,8 @@
 """
-VANA - Agent Discovery Redirect
+VANA Multi-Agent System - Main Agent
 
-This file redirects ADK discovery to the comprehensive VANA agent
-in ../agents/team.py instead of using a simple agent definition.
-
-This ensures the production system exposes all 46 tools and 22 agents
-instead of just 2 basic tools.
+This file contains the main VANA agent that integrates all specialist agents
+and tools for comprehensive task execution.
 """
 
 import sys
