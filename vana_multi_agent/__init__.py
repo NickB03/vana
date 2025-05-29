@@ -8,6 +8,9 @@ A comprehensive multi-agent AI system built with Google ADK, featuring:
 - Real-time monitoring and health dashboards
 """
 
+# Import the agent for ADK discovery
+from . import agent
+
 __version__ = "1.0.0"
 __author__ = "VANA Team"
 __description__ = "Multi-Agent AI System with Google ADK Integration"

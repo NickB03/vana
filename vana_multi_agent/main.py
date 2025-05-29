@@ -11,7 +11,10 @@ from fastapi import FastAPI
 from google.adk.cli.fast_api import get_fast_api_app
 
 # Get the directory where main.py is located
-AGENT_DIR = os.path.dirname(os.path.abspath(__file__))
+MAIN_DIR = os.path.dirname(os.path.abspath(__file__))
+
+# Set the agents directory - this should point to the directory containing agent folders
+AGENTS_DIR = MAIN_DIR  # The current directory contains all the agent folders
 
 # Use /tmp for SQLite database in Cloud Run (writable directory)
 SESSION_DB_URL = "sqlite:////tmp/sessions.db"
@@ -37,9 +40,10 @@ def main():
             print("🔄 Continuing with ADK initialization...")
 
         # Call the function to get the FastAPI app instance
-        # Ensure the agent directory name matches your agent folder
+        # Note: agents_dir parameter is required and should point to directory containing agents
+        print(f"🔍 Using agents directory: {AGENTS_DIR}")
         app: FastAPI = get_fast_api_app(
-            agent_dir=AGENT_DIR,
+            agents_dir=AGENTS_DIR,
             session_db_url=SESSION_DB_URL,
             allow_origins=ALLOWED_ORIGINS,
             web=SERVE_WEB_INTERFACE,
