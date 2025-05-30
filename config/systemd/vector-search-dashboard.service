@@ -1,0 +1,15 @@
+[Unit]
+Description=VANA Vector Search Dashboard API Service
+After=network.target vector-search-monitor.service
+
+[Service]
+User=nick
+WorkingDirectory=/Users/nick/Development/vana/dashboard
+ExecStart=/Users/nick/Development/vana/venv/bin/gunicorn -w 4 -b 0.0.0.0:8001 flask_app:app
+Restart=on-failure
+StandardOutput=journal
+StandardError=journal
+EnvironmentFile=/Users/nick/Development/vana/.env
+
+[Install]
+WantedBy=multi-user.target
