@@ -1,0 +1,21 @@
+{
+    "test_scenarios_path": "../scenarios",
+    "test_data_path": "../data",
+    "timeout": 300,
+    "retry_count": 3,
+    "retry_delay": 5,
+    "parallel": false,
+    "scenarios": [
+        "basic_conversation",
+        "memory_retrieval",
+        "dashboard_test"
+    ],
+    "agent_config": {
+        "base_url": "http://localhost:8000/api",
+        "timeout": 30
+    },
+    "dashboard_config": {
+        "base_url": "http://localhost:8501",
+        "timeout": 30
+    }
+}

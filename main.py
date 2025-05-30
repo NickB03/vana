@@ -14,8 +14,9 @@ from google.adk.cli.fast_api import get_fast_api_app
 AGENT_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "agents")
 print(f"Agent directory: {AGENT_DIR}")
 print(f"Directory exists: {os.path.exists(AGENT_DIR)}")
-print(f"Agent files in directory: {[f for f in os.listdir(AGENT_DIR) if f.endswith('.py') or f == '__init__.py']}")
-print(f"Directories in agent dir: {[d for d in os.listdir(AGENT_DIR) if os.path.isdir(os.path.join(AGENT_DIR, d)) and not d.startswith('.')]}")
+if os.path.exists(AGENT_DIR):
+    print(f"Agent files in directory: {[f for f in os.listdir(AGENT_DIR) if f.endswith('.py') or f == '__init__.py']}")
+    print(f"Directories in agent dir: {[d for d in os.listdir(AGENT_DIR) if os.path.isdir(os.path.join(AGENT_DIR, d)) and not d.startswith('.')]}")
 
 # Session database URL (SQLite for development)
 SESSION_DB_URL = "sqlite:///./sessions.db"
@@ -28,7 +29,7 @@ SERVE_WEB_INTERFACE = True
 
 # Create the FastAPI app using ADK
 app: FastAPI = get_fast_api_app(
-    agents_dir=AGENT_DIR,
+    agent_dir=AGENT_DIR,
     session_db_url=SESSION_DB_URL,
     allow_origins=ALLOWED_ORIGINS,
     web=SERVE_WEB_INTERFACE,

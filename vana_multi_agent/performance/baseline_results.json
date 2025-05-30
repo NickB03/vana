@@ -1,0 +1,67 @@
+{
+  "test_timestamp": 1748212627.129456,
+  "tool_performance": {
+    "echo": {
+      "total_tests": 20,
+      "success_count": 20,
+      "success_rate": 100.0,
+      "avg_execution_time": 1.9955635070800782e-05,
+      "min_execution_time": 1.7881393432617188e-05,
+      "max_execution_time": 4.220008850097656e-05,
+      "total_time": 0.0003991127014160156
+    }
+  },
+  "system_metrics": {
+    "performance_monitor": {
+      "tracked_tools": 1,
+      "total_executions": 20,
+      "tools": {
+        "echo": {
+          "executions": 20,
+          "success_rate": 100.0,
+          "avg_execution_time": 1.8441677093505858e-05
+        }
+      }
+    },
+    "analytics": {
+      "total_executions": 20,
+      "error_rate": 0.0,
+      "tools": {
+        "echo": {
+          "executions": 20,
+          "success_rate": 1.0,
+          "avg_execution_time": 1.8441677093505858e-05
+        }
+      }
+    },
+    "resource_usage": {
+      "estimated_memory_mb": 0.00022125244140625,
+      "test_duration_seconds": 0.0004267692565917969,
+      "python_version": "3.9.6 (default, Mar 12 2025, 20:22:46) \n[Clang 17.0.0 (clang-1700.0.13.3)]"
+    }
+  },
+  "baseline_established": true,
+  "performance_targets": {
+    "targets": {
+      "echo_avg_time_target": 0.1,
+      "echo_success_rate_target": 95.0,
+      "system_memory_target": 50.0,
+      "total_test_time_target": 30.0
+    },
+    "results": {
+      "echo_performance": {
+        "avg_time_met": true,
+        "success_rate_met": true,
+        "actual_avg_time": 1.9955635070800782e-05,
+        "actual_success_rate": 100.0
+      },
+      "system_performance": {
+        "memory_target_met": true,
+        "time_target_met": true,
+        "actual_memory_mb": 0.00022125244140625,
+        "actual_test_time": 0.0004298686981201172
+      }
+    }
+  },
+  "overall_performance_score": 100.0
+}
