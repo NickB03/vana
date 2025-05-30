@@ -29,7 +29,7 @@ SERVE_WEB_INTERFACE = True
 
 # Create the FastAPI app using ADK
 app: FastAPI = get_fast_api_app(
-    agent_dir=AGENT_DIR,
+    agents_dir=AGENT_DIR,
     session_db_url=SESSION_DB_URL,
     allow_origins=ALLOWED_ORIGINS,
     web=SERVE_WEB_INTERFACE,

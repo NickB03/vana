@@ -423,36 +423,64 @@ def _get_adk_tools():
     return _adk_tools
 
 # Export individual tools with lazy initialization
-def get_adk_architecture_tool():
-    """Get architecture tool with lazy initialization."""
-    return _get_adk_tools()['adk_architecture_tool']
+# Old functions removed - replaced with singleton pattern below
 
-def get_adk_ui_tool():
-    """Get UI tool with lazy initialization."""
-    return _get_adk_tools()['adk_ui_tool']
+# Singleton pattern to ensure tools are initialized only once and persist
+class _AgentToolsSingleton:
+    """Singleton class to manage agent tools initialization."""
+    _instance = None
+    _initialized = False
 
-def get_adk_devops_tool():
-    """Get DevOps tool with lazy initialization."""
-    return _get_adk_tools()['adk_devops_tool']
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+        return cls._instance
 
-def get_adk_qa_tool():
-    """Get QA tool with lazy initialization."""
-    return _get_adk_tools()['adk_qa_tool']
+    def __init__(self):
+        if not self._initialized:
+            self.adk_architecture_tool = None
+            self.adk_ui_tool = None
+            self.adk_devops_tool = None
+            self.adk_qa_tool = None
+            self._initialized = True
 
-# Initialize tools immediately when this function is called
+    def initialize_tools(self):
+        """Initialize all agent tools if not already initialized."""
+        if self.adk_architecture_tool is None:
+            tools = _get_adk_tools()
+            self.adk_architecture_tool = tools['adk_architecture_tool']
+            self.adk_ui_tool = tools['adk_ui_tool']
+            self.adk_devops_tool = tools['adk_devops_tool']
+            self.adk_qa_tool = tools['adk_qa_tool']
+
+# Global singleton instance
+_agent_tools = _AgentToolsSingleton()
+
 def initialize_agent_tools():
     """Public function to initialize agent tools when needed."""
-    global adk_architecture_tool, adk_ui_tool, adk_devops_tool, adk_qa_tool
+    _agent_tools.initialize_tools()
 
-    if adk_architecture_tool is None:
-        tools = _get_adk_tools()
-        adk_architecture_tool = tools['adk_architecture_tool']
-        adk_ui_tool = tools['adk_ui_tool']
-        adk_devops_tool = tools['adk_devops_tool']
-        adk_qa_tool = tools['adk_qa_tool']
+def _get_tool_or_initialize(tool_name):
+    """Get a tool, initializing if necessary."""
+    if getattr(_agent_tools, tool_name) is None:
+        _agent_tools.initialize_tools()
+    return getattr(_agent_tools, tool_name)
 
-# Create the actual tool instances - initially None, will be set by initialize_agent_tools()
-adk_architecture_tool = None
-adk_ui_tool = None
-adk_devops_tool = None
-adk_qa_tool = None
+# Create the actual tool instances using property-like functions that auto-initialize
+def get_adk_architecture_tool():
+    return _get_tool_or_initialize('adk_architecture_tool')
+
+def get_adk_ui_tool():
+    return _get_tool_or_initialize('adk_ui_tool')
+
+def get_adk_devops_tool():
+    return _get_tool_or_initialize('adk_devops_tool')
+
+def get_adk_qa_tool():
+    return _get_tool_or_initialize('adk_qa_tool')
+
+# For backward compatibility, create module-level variables that auto-initialize
+adk_architecture_tool = get_adk_architecture_tool()
+adk_ui_tool = get_adk_ui_tool()
+adk_devops_tool = get_adk_devops_tool()
+adk_qa_tool = get_adk_qa_tool()
