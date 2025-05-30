@@ -412,11 +412,47 @@ def _create_adk_agent_tools():
         'adk_qa_tool': qa_tool
     }
 
-# Create the ADK tools
-_adk_tools = _create_adk_agent_tools()
+# Lazy initialization to avoid import-time issues
+_adk_tools = None
 
-# Export individual tools
-adk_architecture_tool = _adk_tools['adk_architecture_tool']
-adk_ui_tool = _adk_tools['adk_ui_tool']
-adk_devops_tool = _adk_tools['adk_devops_tool']
-adk_qa_tool = _adk_tools['adk_qa_tool']
+def _get_adk_tools():
+    """Get ADK tools with lazy initialization."""
+    global _adk_tools
+    if _adk_tools is None:
+        _adk_tools = _create_adk_agent_tools()
+    return _adk_tools
+
+# Export individual tools with lazy initialization
+def get_adk_architecture_tool():
+    """Get architecture tool with lazy initialization."""
+    return _get_adk_tools()['adk_architecture_tool']
+
+def get_adk_ui_tool():
+    """Get UI tool with lazy initialization."""
+    return _get_adk_tools()['adk_ui_tool']
+
+def get_adk_devops_tool():
+    """Get DevOps tool with lazy initialization."""
+    return _get_adk_tools()['adk_devops_tool']
+
+def get_adk_qa_tool():
+    """Get QA tool with lazy initialization."""
+    return _get_adk_tools()['adk_qa_tool']
+
+# Initialize tools immediately when this function is called
+def initialize_agent_tools():
+    """Public function to initialize agent tools when needed."""
+    global adk_architecture_tool, adk_ui_tool, adk_devops_tool, adk_qa_tool
+
+    if adk_architecture_tool is None:
+        tools = _get_adk_tools()
+        adk_architecture_tool = tools['adk_architecture_tool']
+        adk_ui_tool = tools['adk_ui_tool']
+        adk_devops_tool = tools['adk_devops_tool']
+        adk_qa_tool = tools['adk_qa_tool']
+
+# Create the actual tool instances - initially None, will be set by initialize_agent_tools()
+adk_architecture_tool = None
+adk_ui_tool = None
+adk_devops_tool = None
+adk_qa_tool = None

@@ -27,5 +27,5 @@ root_agent = LlmAgent(
         adk_ask_for_approval, adk_generate_report
         # TODO Phase 4: Re-enable agent tools after fixing implementation issues:
         # adk_architecture_tool, adk_ui_tool, adk_devops_tool, adk_qa_tool
-    ]  # Phase 2: Working tools (14 total) - Agent tools deferred to Phase 4
+    ]  # Phase 2: Working tools (12 total) - Agent tools deferred to Phase 4
 )
