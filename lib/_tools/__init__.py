@@ -26,3 +26,14 @@ from .adk_mcp_tools import (
     adk_brave_search_mcp, adk_github_mcp_operations, adk_aws_lambda_mcp,
     adk_list_available_mcp_servers, adk_get_mcp_integration_status
 )
+
+# Phase 3: Fundamental MCP Tools - Time and Enhanced File System
+from .mcp_time_tools import (
+    adk_get_current_time, adk_convert_timezone, adk_calculate_date,
+    adk_format_datetime, adk_get_time_until, adk_list_timezones
+)
+
+from .mcp_filesystem_tools import (
+    adk_get_file_metadata, adk_batch_file_operations, adk_compress_files,
+    adk_extract_archive, adk_find_files, adk_sync_directories
+)

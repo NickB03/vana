@@ -447,13 +447,13 @@ def _itinerary_planning_tool(context: str) -> str:
 
 # Travel specialist ADK FunctionTool instances (Phase 5A)
 adk_hotel_search_tool = FunctionTool(func=_hotel_search_tool)
-adk_hotel_search_tool.name = "_hotel_search_tool"
+adk_hotel_search_tool.name = "hotel_search_tool"
 adk_flight_search_tool = FunctionTool(func=_flight_search_tool)
-adk_flight_search_tool.name = "_flight_search_tool"
+adk_flight_search_tool.name = "flight_search_tool"
 adk_payment_processing_tool = FunctionTool(func=_payment_processing_tool)
-adk_payment_processing_tool.name = "_payment_processing_tool"
+adk_payment_processing_tool.name = "payment_processing_tool"
 adk_itinerary_planning_tool = FunctionTool(func=_itinerary_planning_tool)
-adk_itinerary_planning_tool.name = "_itinerary_planning_tool"
+adk_itinerary_planning_tool.name = "itinerary_planning_tool"
 
 # Development Specialist Agents (Phase 5B: Development Specialists Implementation)
 
@@ -630,9 +630,13 @@ def _security_tool(context: str) -> str:
 
 # Development specialist ADK FunctionTool instances (Phase 5B)
 adk_code_generation_tool = FunctionTool(func=_code_generation_tool)
+adk_code_generation_tool.name = "code_generation_tool"
 adk_testing_tool = FunctionTool(func=_testing_tool)
+adk_testing_tool.name = "testing_tool"
 adk_documentation_tool = FunctionTool(func=_documentation_tool)
+adk_documentation_tool.name = "documentation_tool"
 adk_security_tool = FunctionTool(func=_security_tool)
+adk_security_tool.name = "security_tool"
 
 # Research Specialist Agents (Phase 5C: Research Specialists Implementation)
 
@@ -801,8 +805,11 @@ def _competitive_intelligence_tool(context: str) -> str:
 
 # Research specialist ADK FunctionTool instances (Phase 5C)
 adk_web_research_tool = FunctionTool(func=_web_research_tool)
+adk_web_research_tool.name = "web_research_tool"
 adk_data_analysis_tool = FunctionTool(func=_data_analysis_tool)
+adk_data_analysis_tool.name = "data_analysis_tool"
 adk_competitive_intelligence_tool = FunctionTool(func=_competitive_intelligence_tool)
+adk_competitive_intelligence_tool.name = "competitive_intelligence_tool"
 
 # Intelligence Agents (Phase 6: Intelligence Agents Implementation)
 
@@ -921,8 +928,11 @@ def _learning_systems_tool(context: str) -> str:
 
 # Intelligence agent ADK FunctionTool instances (Phase 6)
 adk_memory_management_tool = FunctionTool(func=_memory_management_tool)
+adk_memory_management_tool.name = "memory_management_tool"
 adk_decision_engine_tool = FunctionTool(func=_decision_engine_tool)
+adk_decision_engine_tool.name = "decision_engine_tool"
 adk_learning_systems_tool = FunctionTool(func=_learning_systems_tool)
+adk_learning_systems_tool.name = "learning_systems_tool"
 
 # Utility Agents (Phase 7: Utility Agents Implementation)
 
@@ -1005,7 +1015,9 @@ def _coordination_tool(context: str) -> str:
 
 # Utility agent ADK FunctionTool instances (Phase 7)
 adk_monitoring_tool = FunctionTool(func=_monitoring_tool)
+adk_monitoring_tool.name = "monitoring_tool"
 adk_coordination_tool = FunctionTool(func=_coordination_tool)
+adk_coordination_tool.name = "coordination_tool"
 
 # Advanced Orchestrator Agents (Phase 4: Core Orchestrators Implementation)
 
@@ -1248,9 +1260,13 @@ def _qa_tool(context: str) -> str:
 
 # Create ADK FunctionTool instances
 adk_architecture_tool = FunctionTool(func=_architecture_tool)
+adk_architecture_tool.name = "architecture_tool"
 adk_ui_tool = FunctionTool(func=_ui_tool)
+adk_ui_tool.name = "ui_tool"
 adk_devops_tool = FunctionTool(func=_devops_tool)
+adk_devops_tool.name = "devops_tool"
 adk_qa_tool = FunctionTool(func=_qa_tool)
+adk_qa_tool.name = "qa_tool"
 
 # Orchestrator Agent (Root Agent) with Enhanced AI Agent Best Practices
 vana = LlmAgent(
