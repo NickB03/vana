@@ -32,6 +32,26 @@ if os.path.exists(AGENT_DIR):
     print(f"Agent files in directory: {[f for f in os.listdir(AGENT_DIR) if f.endswith('.py') or f == '__init__.py']}")
     print(f"Directories in agent dir: {[d for d in os.listdir(AGENT_DIR) if os.path.isdir(os.path.join(AGENT_DIR, d)) and not d.startswith('.')]}")
 
+    # Check if vana agent can be imported
+    import sys
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    try:
+        import vana
+        print(f"✅ Root level vana module imported successfully: {vana}")
+        print(f"✅ Root level vana.agent: {vana.agent}")
+    except Exception as e:
+        print(f"❌ Failed to import root level vana module: {e}")
+
+    try:
+        from agents.vana import agent
+        print(f"✅ agents.vana.agent imported successfully: {agent}")
+    except Exception as e:
+        print(f"❌ Failed to import agents.vana.agent: {e}")
+
+    # Check current working directory and Python path
+    print(f"Current working directory: {os.getcwd()}")
+    print(f"Python path: {sys.path[:5]}")  # First 5 entries
+
 # Session database URL (SQLite for development)
 # Use /tmp for Cloud Run compatibility (writable filesystem)
 SESSION_DB_URL = "sqlite:////tmp/sessions.db"
