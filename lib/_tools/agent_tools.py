@@ -392,18 +392,18 @@ def _create_adk_agent_tools():
         """🧪 QA specialist tool for testing strategy and quality assurance."""
         return f"Quality Assurance Strategy for: {context}\n\n## Testing Framework:\n- Unit tests with high coverage (>90%)\n- Integration tests for API endpoints\n- End-to-end tests for critical user flows\n- Performance and load testing\n\n## Quality Gates:\n- Automated testing in CI/CD pipeline\n- Code quality analysis (SonarQube)\n- Security vulnerability scanning\n- Accessibility testing automation"
 
-    # Create tools with proper naming (using underscore prefix to match LLM expectations)
+    # Create tools with proper naming (NO underscore prefix - fixed regression)
     arch_tool = FunctionTool(func=architecture_tool_func)
-    arch_tool.name = "_architecture_tool"
+    arch_tool.name = "architecture_tool"
 
     ui_tool = FunctionTool(func=ui_tool_func)
-    ui_tool.name = "_ui_tool"
+    ui_tool.name = "ui_tool"
 
     devops_tool = FunctionTool(func=devops_tool_func)
-    devops_tool.name = "_devops_tool"
+    devops_tool.name = "devops_tool"
 
     qa_tool = FunctionTool(func=qa_tool_func)
-    qa_tool.name = "_qa_tool"
+    qa_tool.name = "qa_tool"
 
     return {
         'adk_architecture_tool': arch_tool,
