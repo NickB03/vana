@@ -117,6 +117,24 @@
     *   **Performance Tests:** Benchmarking and optimization validation
     *   **End-to-End Tests:** Complete workflow testing
 
+## 7.1. Automated Browser Testing Framework (✅ OPERATIONAL - Phase 1 Complete)
+*   **MCP Puppeteer Server:** ✅ Browser automation server configured in Augment Code
+*   **Puppeteer Tools Available:**
+    *   `puppeteer_navigate` - Navigate to URLs
+    *   `puppeteer_screenshot` - Capture screenshots for validation
+    *   `puppeteer_fill` - Fill form fields (textarea for chat interface)
+    *   `puppeteer_click` - Click elements
+    *   `puppeteer_evaluate` - Execute JavaScript for advanced interactions
+    *   `puppeteer_hover` - Hover over elements
+*   **Browser Test Frameworks:**
+    *   `tests/automated/browser/vana-echo-test.js` - JavaScript browser test framework
+    *   `tests/automated/browser/vana_browser_tester.py` - Python browser automation wrapper
+    *   `scripts/juno_remote_tester.py` - Enhanced Juno framework for remote testing
+*   **Test Configuration:** `tests/automated/tool-tests/vana-tool-suite.json` - 32 test cases across 9 test suites
+*   **Live Testing Results:** ✅ Echo function validated through browser automation
+*   **Performance Baseline:** Sub-5 second response times established
+*   **Service Integration:** Google ADK Dev UI at https://vana-qqugqgsbcq-uc.a.run.app
+
 ## 8. Noteworthy Deprecated/Archived Technologies (for historical context)
 *   **Ragie.ai:** Previously used for vector search before transitioning to Vertex AI.
 *   **CrewAI:** Mentioned as explored but abandoned.
