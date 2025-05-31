@@ -105,7 +105,7 @@ def _vector_search(query: str, max_results: int = 5) -> str:
         logger.error(error_msg)
         return error_msg
 
-def _web_search(query: str, max_results: int = 5) -> str:
+def web_search(query: str, max_results: int = 5) -> str:
     """🌐 Search the web for current information with enhanced formatting."""
     try:
         # Lazy import to avoid HTTP requests during module import
@@ -163,7 +163,7 @@ def _search_knowledge(query: str) -> str:
 # Create FunctionTool instances with explicit names (NO underscore prefix - standardized naming)
 adk_vector_search = FunctionTool(func=_vector_search)
 adk_vector_search.name = "vector_search"
-adk_web_search = FunctionTool(func=_web_search)
+adk_web_search = FunctionTool(func=web_search)
 adk_web_search.name = "web_search"
 adk_search_knowledge = FunctionTool(func=_search_knowledge)
 adk_search_knowledge.name = "search_knowledge"

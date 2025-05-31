@@ -48,22 +48,21 @@ from lib._tools.adk_long_running_tools import (
     adk_ask_for_approval, adk_process_large_dataset,
     adk_generate_report, adk_check_task_status
 )
-# 
-# # Third-Party Tools (Google ADK Pattern - Final Tool Type)
-# from lib._tools.adk_third_party_tools import (
-#     adk_execute_third_party_tool, adk_list_third_party_tools,
-#     adk_register_langchain_tools, adk_register_crewai_tools,
-#     adk_get_third_party_tool_info
-# )
-# 
+
+# Third-Party Tools (Google ADK Pattern - Final Tool Type)
+from lib._tools.adk_third_party_tools import (
+    adk_execute_third_party_tool, adk_list_third_party_tools,
+    adk_register_langchain_tools, adk_register_crewai_tools,
+    adk_get_third_party_tool_info
+)
+
 # Import agent tools for Agents-as-Tools pattern
 from lib._tools.agent_tools import create_specialist_agent_tools
-# 
-# # Import enhanced core components
+
+# Import enhanced core components
 from lib._shared_libraries.task_router import TaskRouter
 from lib._shared_libraries.mode_manager import ModeManager, AgentMode
 from lib._shared_libraries.confidence_scorer import ConfidenceScorer
-from lib._shared_libraries.adk_memory_service import get_adk_memory_service
 
 # Get model configuration
 MODEL = os.getenv("VANA_MODEL", "gemini-2.0-flash")
@@ -72,41 +71,6 @@ MODEL = os.getenv("VANA_MODEL", "gemini-2.0-flash")
 task_router = TaskRouter()
 mode_manager = ModeManager()
 confidence_scorer = ConfidenceScorer()
-
-# Initialize ADK memory service
-adk_memory_service = get_adk_memory_service()
-
-# Create load_memory tool for persistent memory access
-def load_memory(query: str) -> str:
-    """🧠 Load relevant information from persistent memory using semantic search."""
-    try:
-        import asyncio
-        # Run async search in sync context
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        try:
-            results = loop.run_until_complete(adk_memory_service.search_memory(query, top_k=5))
-        finally:
-            loop.close()
-
-        if not results:
-            return f"No relevant information found in memory for query: {query}"
-
-        # Format results for agent consumption
-        formatted_results = []
-        for result in results:
-            content = result.get("content", "")
-            score = result.get("score", 0.0)
-            formatted_results.append(f"[Score: {score:.2f}] {content}")
-
-        return f"Memory search results for '{query}':\n" + "\n".join(formatted_results)
-
-    except Exception as e:
-        return f"Error accessing memory: {str(e)}"
-
-# Create ADK FunctionTool for load_memory
-adk_load_memory = FunctionTool(func=load_memory)
-adk_load_memory.name = "load_memory"
 
 # Specialist Agents with Enhanced AI Agent Best Practices
 architecture_specialist = LlmAgent(
@@ -454,31 +418,31 @@ travel_specialist_tools = create_travel_specialist_agent_tools(
 )
 
 # Travel specialist tool wrappers (Phase 5A)
-def hotel_search_tool(context: str) -> str:
+def _hotel_search_tool(context: str) -> str:
     """🏨 Hotel search specialist for accommodation discovery and comparison."""
     return travel_specialist_tools["hotel_search_tool"](context)
 
-def flight_search_tool(context: str) -> str:
+def _flight_search_tool(context: str) -> str:
     """✈️ Flight search specialist for flight discovery and booking."""
     return travel_specialist_tools["flight_search_tool"](context)
 
-def payment_processing_tool(context: str) -> str:
+def _payment_processing_tool(context: str) -> str:
     """💳 Payment processing specialist for secure transaction handling."""
     return travel_specialist_tools["payment_processing_tool"](context)
 
-def itinerary_planning_tool(context: str) -> str:
+def _itinerary_planning_tool(context: str) -> str:
     """📅 Itinerary planning specialist for comprehensive trip planning."""
     return travel_specialist_tools["itinerary_planning_tool"](context)
 
 # Travel specialist ADK FunctionTool instances (Phase 5A)
-adk_hotel_search_tool = FunctionTool(func=hotel_search_tool)
-adk_hotel_search_tool.name = "hotel_search_tool"
-adk_flight_search_tool = FunctionTool(func=flight_search_tool)
-adk_flight_search_tool.name = "flight_search_tool"
-adk_payment_processing_tool = FunctionTool(func=payment_processing_tool)
-adk_payment_processing_tool.name = "payment_processing_tool"
-adk_itinerary_planning_tool = FunctionTool(func=itinerary_planning_tool)
-adk_itinerary_planning_tool.name = "itinerary_planning_tool"
+adk_hotel_search_tool = FunctionTool(func=_hotel_search_tool)
+adk_hotel_search_tool.name = "_hotel_search_tool"
+adk_flight_search_tool = FunctionTool(func=_flight_search_tool)
+adk_flight_search_tool.name = "_flight_search_tool"
+adk_payment_processing_tool = FunctionTool(func=_payment_processing_tool)
+adk_payment_processing_tool.name = "_payment_processing_tool"
+adk_itinerary_planning_tool = FunctionTool(func=_itinerary_planning_tool)
+adk_itinerary_planning_tool.name = "_itinerary_planning_tool"
 
 # Development Specialist Agents (Phase 5B: Development Specialists Implementation)
 
@@ -637,31 +601,27 @@ development_specialist_tools = create_development_specialist_agent_tools(
 )
 
 # Development specialist tool wrappers (Phase 5B)
-def code_generation_tool(context: str) -> str:
+def _code_generation_tool(context: str) -> str:
     """💻 Code generation specialist for advanced coding and development."""
     return development_specialist_tools["code_generation_tool"](context)
 
-def testing_tool(context: str) -> str:
+def _testing_tool(context: str) -> str:
     """🧪 Testing specialist for quality assurance and validation."""
     return development_specialist_tools["testing_tool"](context)
 
-def documentation_tool(context: str) -> str:
+def _documentation_tool(context: str) -> str:
     """📚 Documentation specialist for technical writing and knowledge management."""
     return development_specialist_tools["documentation_tool"](context)
 
-def security_tool(context: str) -> str:
+def _security_tool(context: str) -> str:
     """🔒 Security specialist for vulnerability assessment and compliance."""
     return development_specialist_tools["security_tool"](context)
 
 # Development specialist ADK FunctionTool instances (Phase 5B)
-adk_code_generation_tool = FunctionTool(func=code_generation_tool)
-adk_code_generation_tool.name = "code_generation_tool"
-adk_testing_tool = FunctionTool(func=testing_tool)
-adk_testing_tool.name = "testing_tool"
-adk_documentation_tool = FunctionTool(func=documentation_tool)
-adk_documentation_tool.name = "documentation_tool"
-adk_security_tool = FunctionTool(func=security_tool)
-adk_security_tool.name = "security_tool"
+adk_code_generation_tool = FunctionTool(func=_code_generation_tool)
+adk_testing_tool = FunctionTool(func=_testing_tool)
+adk_documentation_tool = FunctionTool(func=_documentation_tool)
+adk_security_tool = FunctionTool(func=_security_tool)
 
 # Research Specialist Agents (Phase 5C: Research Specialists Implementation)
 
@@ -803,25 +763,22 @@ research_specialist_tools = create_research_specialist_agent_tools(
 )
 
 # Research specialist tool wrappers (Phase 5C)
-def web_research_tool(context: str) -> str:
+def _web_research_tool(context: str) -> str:
     """🌐 Web research specialist for information gathering and fact-checking."""
     return research_specialist_tools["web_research_tool"](context)
 
-def data_analysis_tool(context: str) -> str:
+def _data_analysis_tool(context: str) -> str:
     """📊 Data analysis specialist for processing and statistical analysis."""
     return research_specialist_tools["data_analysis_tool"](context)
 
-def competitive_intelligence_tool(context: str) -> str:
+def _competitive_intelligence_tool(context: str) -> str:
     """🔍 Competitive intelligence specialist for market research and analysis."""
     return research_specialist_tools["competitive_intelligence_tool"](context)
 
 # Research specialist ADK FunctionTool instances (Phase 5C)
-adk_web_research_tool = FunctionTool(func=web_research_tool)
-adk_web_research_tool.name = "web_research_tool"
-adk_data_analysis_tool = FunctionTool(func=data_analysis_tool)
-adk_data_analysis_tool.name = "data_analysis_tool"
-adk_competitive_intelligence_tool = FunctionTool(func=competitive_intelligence_tool)
-adk_competitive_intelligence_tool.name = "competitive_intelligence_tool"
+adk_web_research_tool = FunctionTool(func=_web_research_tool)
+adk_data_analysis_tool = FunctionTool(func=_data_analysis_tool)
+adk_competitive_intelligence_tool = FunctionTool(func=_competitive_intelligence_tool)
 
 # Intelligence Agents (Phase 6: Intelligence Agents Implementation)
 
@@ -926,25 +883,22 @@ intelligence_agent_tools = create_intelligence_agent_tools(
 )
 
 # Intelligence agent tool wrappers (Phase 6)
-def memory_management_tool(context: str) -> str:
+def _memory_management_tool(context: str) -> str:
     """🧠 Memory management specialist for advanced memory operations and knowledge curation."""
     return intelligence_agent_tools["memory_management_tool"](context)
 
-def decision_engine_tool(context: str) -> str:
+def _decision_engine_tool(context: str) -> str:
     """⚡ Decision engine specialist for intelligent decision making and workflow optimization."""
     return intelligence_agent_tools["decision_engine_tool"](context)
 
-def learning_systems_tool(context: str) -> str:
+def _learning_systems_tool(context: str) -> str:
     """📈 Learning systems specialist for performance analysis and system optimization."""
     return intelligence_agent_tools["learning_systems_tool"](context)
 
 # Intelligence agent ADK FunctionTool instances (Phase 6)
-adk_memory_management_tool = FunctionTool(func=memory_management_tool)
-adk_memory_management_tool.name = "memory_management_tool"
-adk_decision_engine_tool = FunctionTool(func=decision_engine_tool)
-adk_decision_engine_tool.name = "decision_engine_tool"
-adk_learning_systems_tool = FunctionTool(func=learning_systems_tool)
-adk_learning_systems_tool.name = "learning_systems_tool"
+adk_memory_management_tool = FunctionTool(func=_memory_management_tool)
+adk_decision_engine_tool = FunctionTool(func=_decision_engine_tool)
+adk_learning_systems_tool = FunctionTool(func=_learning_systems_tool)
 
 # Utility Agents (Phase 7: Utility Agents Implementation)
 
@@ -1017,19 +971,17 @@ def create_utility_agent_tools(monitoring_agent, coordination_agent):
 utility_agent_tools = create_utility_agent_tools(monitoring_agent, coordination_agent)
 
 # Utility agent tool wrappers (Phase 7)
-def monitoring_tool(context: str) -> str:
+def _monitoring_tool(context: str) -> str:
     """📊 Monitoring specialist for system monitoring and performance tracking."""
     return utility_agent_tools["monitoring_tool"](context)
 
-def coordination_tool(context: str) -> str:
+def _coordination_tool(context: str) -> str:
     """🎯 Coordination specialist for agent coordination and workflow management."""
     return utility_agent_tools["coordination_tool"](context)
 
 # Utility agent ADK FunctionTool instances (Phase 7)
-adk_monitoring_tool = FunctionTool(func=monitoring_tool)
-adk_monitoring_tool.name = "monitoring_tool"
-adk_coordination_tool = FunctionTool(func=coordination_tool)
-adk_coordination_tool.name = "coordination_tool"
+adk_monitoring_tool = FunctionTool(func=_monitoring_tool)
+adk_coordination_tool = FunctionTool(func=_coordination_tool)
 
 # Advanced Orchestrator Agents (Phase 4: Core Orchestrators Implementation)
 
@@ -1194,31 +1146,27 @@ specialist_agent_tools = create_specialist_agent_tools(
 
 # Create ADK FunctionTool wrappers for agent tools
 
-def architecture_tool(context: str) -> str:
+def _architecture_tool(context: str) -> str:
     """🏗️ Architecture specialist tool for system design and architecture analysis."""
     return specialist_agent_tools["architecture_tool"](context)
 
-def ui_tool(context: str) -> str:
+def _ui_tool(context: str) -> str:
     """🎨 UI/UX specialist tool for interface design and user experience."""
     return specialist_agent_tools["ui_tool"](context)
 
-def devops_tool(context: str) -> str:
+def _devops_tool(context: str) -> str:
     """⚙️ DevOps specialist tool for infrastructure and deployment planning."""
     return specialist_agent_tools["devops_tool"](context)
 
-def qa_tool(context: str) -> str:
+def _qa_tool(context: str) -> str:
     """🧪 QA specialist tool for testing strategy and quality assurance."""
     return specialist_agent_tools["qa_tool"](context)
 
 # Create ADK FunctionTool instances
-adk_architecture_tool = FunctionTool(func=architecture_tool)
-adk_architecture_tool.name = "architecture_tool"
-adk_ui_tool = FunctionTool(func=ui_tool)
-adk_ui_tool.name = "ui_tool"
-adk_devops_tool = FunctionTool(func=devops_tool)
-adk_devops_tool.name = "devops_tool"
-adk_qa_tool = FunctionTool(func=qa_tool)
-adk_qa_tool.name = "qa_tool"
+adk_architecture_tool = FunctionTool(func=_architecture_tool)
+adk_ui_tool = FunctionTool(func=_ui_tool)
+adk_devops_tool = FunctionTool(func=_devops_tool)
+adk_qa_tool = FunctionTool(func=_qa_tool)
 
 # Orchestrator Agent (Root Agent) with Enhanced AI Agent Best Practices
 vana = LlmAgent(
@@ -1227,26 +1175,10 @@ vana = LlmAgent(
     description="🎯 VANA Orchestrator - Enhanced Multi-Agent AI Assistant with PLAN/ACT Capabilities",
     instruction="""You are VANA, the intelligent orchestrator of an enhanced multi-agent AI system with advanced PLAN/ACT capabilities.
 
-    ## 🚨 CRITICAL BEHAVIORAL DIRECTIVE: ALWAYS TRY TOOLS FIRST
-    **BEFORE explaining limitations or saying "I cannot", ALWAYS attempt to use available tools.**
-
-    **Tool-First Examples:**
-    - Weather queries → Use web_search tool to get current weather data
-    - News requests → Use web_search tool to find current events
-    - Information needs → Use vector_search, web_search, or search_knowledge tools
-    - File operations → Use read_file, write_file, list_directory tools
-    - System status → Use get_health_status, monitoring_tool
-    - Research tasks → Use research specialist tools or web_research_tool
-
-    **NEVER say "I cannot check weather" - USE web_search tool instead!**
-    **NEVER say "I cannot access current information" - USE available search tools!**
-    **ALWAYS attempt tool usage before explaining any limitations!**
-
     ## PLAN/ACT Mode Integration:
     - **PLAN Mode**: Analyze complex tasks, create detailed execution plans, assess resource requirements
     - **ACT Mode**: Execute plans with intelligent delegation, monitor progress, ensure quality outcomes
     - **Automatic Mode Switching**: Intelligently switch between modes based on task complexity and confidence levels
-    - **Tool-First Approach**: In both modes, ALWAYS try tools before explaining limitations
 
     ## Enhanced Team Coordination:
     Your orchestrator team includes:
@@ -1361,8 +1293,7 @@ vana = LlmAgent(
     - register_crewai_tools: Register example CrewAI tools for use
     - get_third_party_tool_info: Get detailed information about specific third-party tools
 
-    ## Enhanced Tool Suite (46+ Tools):
-    - **Memory Tools**: load_memory for persistent cross-session context retrieval
+    ## Enhanced Tool Suite (42 Tools):
     - File system operations with security checks and validation
     - Vector search and knowledge retrieval with semantic understanding
     - Web search for current information and research
@@ -1375,46 +1306,19 @@ vana = LlmAgent(
     - Intelligence agent tools for advanced memory management, decision making, and learning systems
     - Utility agent tools for system monitoring and coordination optimization
 
-    ## 🧠 MEMORY INTEGRATION: USE PERSISTENT MEMORY PROACTIVELY
-    **ALWAYS consider using load_memory tool for:**
-    - User preferences and past interactions
-    - Previous project context and decisions
-    - Historical conversation patterns
-    - Learned user behaviors and preferences
-    - Cross-session continuity and context
-
-    **Example**: Before answering questions, use load_memory to check for relevant past context!
-
     ## Task Execution Methodology:
     1. **Analysis**: Assess task complexity, requirements, and optimal approach
-    2. **Tool Consideration**: ALWAYS evaluate which tools can help before explaining limitations
-    3. **Planning**: Create detailed execution plans for complex tasks (PLAN mode)
-    4. **Routing**: Use confidence scoring to select optimal specialist agents
-    5. **Execution**: Coordinate task execution with monitoring and validation (ACT mode)
-    6. **Validation**: Ensure quality outcomes and learn from execution results
-
-    ## 🚨 CRITICAL: PROACTIVE TOOL USAGE PATTERNS
-    **For ANY user request, follow this decision tree:**
-    1. Can web_search help? → Use it for weather, news, current information
-    2. Can vector_search help? → Use it for knowledge retrieval
-    3. Can file tools help? → Use them for file operations
-    4. Can specialist tools help? → Use research, analysis, or coordination tools
-    5. Can agent delegation help? → Transfer to appropriate specialist
-    6. Only AFTER trying tools → Explain any remaining limitations
-
-    **REMEMBER: Your primary job is to USE TOOLS, not explain why you can't help!**
+    2. **Planning**: Create detailed execution plans for complex tasks (PLAN mode)
+    3. **Routing**: Use confidence scoring to select optimal specialist agents
+    4. **Execution**: Coordinate task execution with monitoring and validation (ACT mode)
+    5. **Validation**: Ensure quality outcomes and learn from execution results
 
     ## Intelligent Decision Making:
-    - **Tool-First Approach**: ALWAYS try available tools before explaining limitations
     - Automatically determine when planning is required vs. direct execution
     - Route tasks to specialists based on confidence scores and capability matching
     - Implement fallback strategies when primary approaches fail
     - Coordinate multi-agent collaboration for complex, cross-domain tasks
     - Provide clear reasoning for all delegation and coordination decisions
-
-    ## 🚨 FINAL REMINDER: ALWAYS TRY TOOLS FIRST
-    **Before saying "I cannot" or "I don't have access to", ALWAYS attempt to use your available tools.**
-    **You have 46+ tools available - USE THEM PROACTIVELY!**
 
     Always maintain a helpful, professional tone and provide transparent reasoning for your
     task routing and coordination decisions. Focus on delivering high-quality outcomes through
@@ -1436,9 +1340,6 @@ vana = LlmAgent(
         monitoring_agent, coordination_agent
     ],
     tools=[
-        # Memory tools for persistent context
-        adk_load_memory,
-
         # All file system tools
         adk_read_file, adk_write_file, adk_list_directory, adk_file_exists,
 
@@ -1472,10 +1373,11 @@ vana = LlmAgent(
         adk_memory_management_tool, adk_decision_engine_tool, adk_learning_systems_tool,
 
         # Utility Agent Tools (Phase 7 - Agents-as-Tools Pattern)
-        adk_monitoring_tool, adk_coordination_tool
+        adk_monitoring_tool, adk_coordination_tool,
 
         # Third-Party Tools (Google ADK Pattern - Final Tool Type for 100% Compliance)
-        # Note: Third-party tools will be added in future phases as needed
+        adk_execute_third_party_tool, adk_list_third_party_tools,
+        adk_register_langchain_tools, adk_register_crewai_tools, adk_get_third_party_tool_info
     ]
 )
 

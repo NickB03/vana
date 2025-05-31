@@ -359,17 +359,17 @@ def get_all_third_party_tools():
     """
     return _registered_langchain_tools + _registered_crewai_tools
 
-# Create ADK FunctionTool wrappers with proper naming
+# Create ADK FunctionTool wrappers with proper naming (ADK compliant - no underscores)
 adk_execute_third_party_tool = FunctionTool(func=_execute_third_party_tool)
-adk_execute_third_party_tool.name = "_execute_third_party_tool"
+adk_execute_third_party_tool.name = "execute_third_party_tool"
 adk_list_third_party_tools = FunctionTool(func=_list_third_party_tools)
-adk_list_third_party_tools.name = "_list_third_party_tools"
+adk_list_third_party_tools.name = "list_third_party_tools"
 adk_register_langchain_tools = FunctionTool(func=_register_langchain_tools)
-adk_register_langchain_tools.name = "_register_langchain_tools"
+adk_register_langchain_tools.name = "register_langchain_tools"
 adk_register_crewai_tools = FunctionTool(func=_register_crewai_tools)
-adk_register_crewai_tools.name = "_register_crewai_tools"
+adk_register_crewai_tools.name = "register_crewai_tools"
 adk_get_third_party_tool_info = FunctionTool(func=_get_third_party_tool_info)
-adk_get_third_party_tool_info.name = "_get_third_party_tool_info"
+adk_get_third_party_tool_info.name = "get_third_party_tool_info"
 
 # Export all ADK tools
 __all__ = [
