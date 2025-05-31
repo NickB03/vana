@@ -1,9 +1,41 @@
 
-# Progress: VANA Project Status & Critical Tools Issue
+# Progress: VANA Project Status & Automated Testing Implementation
 
-**Date:** 2025-05-30 (DIRECTORY CONFLICT RESOLVED - SYSTEM OPERATIONAL)
+**Date:** 2025-05-30 (CRITICAL REGRESSION IDENTIFIED - AGENT TOOLS BROKEN)
 
-## ✅ CRITICAL DIRECTORY CONFLICT RESOLVED
+## 🚨 CRITICAL REGRESSION: AGENT TOOLS NOT WORKING
+
+### **🚨 CRITICAL FINDINGS FROM AUTOMATED TESTING**
+- **Status**: ✅ MCP Puppeteer testing operational - REVEALED CRITICAL ISSUES
+- **Service URL**: https://vana-qqugqgsbcq-uc.a.run.app
+- **Testing Framework**: ✅ Comprehensive automated testing infrastructure working
+- **Base Tools**: ✅ Working (8/9 tools confirmed operational)
+- **Agent Tools**: ❌ BROKEN - "devops tool not found" error confirmed
+- **Critical Issue**: Agent-as-tools functionality completely broken
+
+### **✅ AUTOMATED TESTING ACHIEVEMENTS**
+- **MCP Puppeteer Server**: ✅ Installed and configured in Augment Code
+- **Browser Automation**: ✅ Navigation, form filling, submission, response capture
+- **Test Framework**: ✅ JavaScript and Python test frameworks created
+- **Juno Enhancement**: ✅ Remote testing capabilities added to existing framework
+- **Tool Test Suite**: ✅ 32 test cases defined across 9 test suites for all 16 tools
+- **Performance Baseline**: ✅ Sub-5 second response times established
+
+### **📋 FILES CREATED IN PHASE 1**
+- `tests/automated/browser/vana-echo-test.js` - JavaScript browser test framework
+- `tests/automated/browser/vana_browser_tester.py` - Python browser automation wrapper
+- `scripts/juno_remote_tester.py` - Enhanced Juno framework for remote testing
+- `tests/automated/tool-tests/vana-tool-suite.json` - Comprehensive tool test configurations
+- `UPDATED_USER_GUIDELINES.md` - Enhanced system prompt with testing requirements
+
+### **🧪 LIVE TEST RESULTS**
+- **Test 1**: "echo automated test from puppeteer" ✅ SUCCESS
+- **Test 2**: "echo Phase 1 automated testing complete!" ✅ SUCCESS
+- **Response Format**: Proper JSON with status "echoed" ✅ VALIDATED
+- **UI Integration**: Google ADK Dev UI interaction ✅ WORKING
+- **Performance**: Response time < 5 seconds ✅ BASELINE ESTABLISHED
+
+## ✅ PREVIOUS: CRITICAL DIRECTORY CONFLICT RESOLVED
 
 ### **Problem**: Agent loads but doesn't respond - directory conflict between `/agent/` and `/agents/`
 **Status**: ✅ RESOLVED - Directory conflict eliminated and clean system deployed
