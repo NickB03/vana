@@ -26,7 +26,7 @@ load_dotenv()
 
 # Google ADK imports (installed in environment)
 from google.adk.agents import LlmAgent, SequentialAgent, ParallelAgent
-from google.adk.tools import FunctionTool
+from google.adk.tools import FunctionTool, load_memory
 
 # Import all ADK-compatible tools
 from lib._tools import (
@@ -58,6 +58,17 @@ from lib._tools.adk_third_party_tools import (
 
 # Import agent tools for Agents-as-Tools pattern
 from lib._tools.agent_tools import create_specialist_agent_tools
+
+# Import new MCP tools (Phase 3 Fundamental MCPs)
+from lib._tools.mcp_time_tools import (
+    adk_get_current_time, adk_convert_timezone, adk_calculate_date,
+    adk_format_datetime, adk_get_time_until, adk_list_timezones
+)
+
+from lib._tools.mcp_filesystem_tools import (
+    adk_get_file_metadata, adk_batch_file_operations, adk_compress_files,
+    adk_extract_archive, adk_find_files, adk_sync_directories
+)
 
 # Import enhanced core components
 from lib._shared_libraries.task_router import TaskRouter
@@ -1415,7 +1426,16 @@ vana = LlmAgent(
         # All search tools
         adk_vector_search, adk_web_search, adk_search_knowledge,
 
-        # Knowledge graph tools removed - using ADK native memory systems only
+        # ADK native memory tool for direct memory access
+        load_memory,
+
+        # Phase 3 Fundamental MCP Tools - Time Operations
+        adk_get_current_time, adk_convert_timezone, adk_calculate_date,
+        adk_format_datetime, adk_get_time_until, adk_list_timezones,
+
+        # Phase 3 Fundamental MCP Tools - Enhanced File System
+        adk_get_file_metadata, adk_batch_file_operations, adk_compress_files,
+        adk_extract_archive, adk_find_files, adk_sync_directories,
 
         # System tools
         adk_echo, adk_get_health_status,
