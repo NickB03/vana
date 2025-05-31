@@ -299,15 +299,15 @@ def _check_task_status(task_id: str) -> str:
         logger.error(f"Error checking task status: {e}")
         return f"❌ Error checking task status: {str(e)}"
 
-# Create ADK FunctionTool instances with proper naming
+# Create ADK FunctionTool instances with proper naming (using underscore prefix to match LLM expectations)
 adk_ask_for_approval = FunctionTool(func=_ask_for_approval)
-adk_ask_for_approval.name = "ask_for_approval"
+adk_ask_for_approval.name = "_ask_for_approval"
 adk_process_large_dataset = FunctionTool(func=_process_large_dataset)
-adk_process_large_dataset.name = "process_large_dataset"
+adk_process_large_dataset.name = "_process_large_dataset"
 adk_generate_report = FunctionTool(func=_generate_report)
-adk_generate_report.name = "generate_report"
+adk_generate_report.name = "_generate_report"
 adk_check_task_status = FunctionTool(func=_check_task_status)
-adk_check_task_status.name = "check_task_status"
+adk_check_task_status.name = "_check_task_status"
 
 # Export all long-running tools
 __all__ = [
