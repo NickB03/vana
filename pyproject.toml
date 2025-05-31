@@ -1,10 +1,10 @@
 [tool.poetry]
-name = "vana-multi-agent"
+name = "vana"
 version = "1.0.0"
-description = "VANA Multi-Agent System with Google ADK"
+description = "VANA AI Assistant with Google ADK"
 authors = ["Nick <nick@vana.com>"]
 readme = "README.md"
-packages = [{include = "agents"}, {include = "vana"}]
+packages = [{include = "agents"}, {include = "lib"}, {include = "tools"}]
 
 [tool.poetry.dependencies]
 python = ">=3.13,<4.0"
@@ -26,4 +26,4 @@ requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.poetry.scripts]
-vana = "vana_multi_agent.main:main"
+vana = "main:main"

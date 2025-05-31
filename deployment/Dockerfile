@@ -1,33 +1,38 @@
-# Multi-stage build for VANA Multi-Agent System (Cloud Build Optimized)
-# Stage 1: Build dependencies with enhanced caching
-FROM python:3.11-slim AS builder
+# Multi-stage build for VANA Agent System (Cloud Build Optimized)
+# Stage 1: Build dependencies with Poetry and Python 3.13
+FROM python:3.13-slim AS builder
 
 WORKDIR /app
 
-# Copy requirements first for optimal Docker layer caching
-COPY requirements.txt .
+# Install Poetry
+RUN pip install --no-cache-dir poetry==1.8.3
 
-# Install build dependencies and Python packages with optimizations
+# Copy Poetry configuration files
+COPY pyproject.toml poetry.lock* ./
+
+# Configure Poetry: Don't create virtual env, install to system
+RUN poetry config virtualenvs.create false
+
+# Install build dependencies and Python packages with Poetry
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
         gcc \
         python3-dev \
         git \
         build-essential && \
-    pip install --no-cache-dir --upgrade pip setuptools wheel && \
-    pip install --no-cache-dir -r requirements.txt && \
+    poetry install --only=main --no-dev && \
     # Clean up build dependencies to reduce image size
     apt-get purge -y --auto-remove gcc python3-dev git build-essential && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 # Stage 2: Optimized runtime image
-FROM python:3.11-slim
+FROM python:3.13-slim
 
 WORKDIR /app
 
 # Copy installed packages from builder stage
-COPY --from=builder /usr/local/lib/python3.11/site-packages /usr/local/lib/python3.11/site-packages
+COPY --from=builder /usr/local/lib/python3.13/site-packages /usr/local/lib/python3.13/site-packages
 COPY --from=builder /usr/local/bin /usr/local/bin
 
 # Create non-root user for security

@@ -1,22 +1,24 @@
-# VANA Multi-Agent System - Google Cloud Build Configuration
-# Optimized for fast AMD64 native compilation and Cloud Run deployment
+# VANA Agent System - Google Cloud Build Configuration
+# Optimized for Python 3.13, Poetry, and correct agent structure
 
 steps:
   # Build the Docker image using Cloud Build's native AMD64 environment
   - name: 'gcr.io/cloud-builders/docker'
     args:
       - 'build'
+      - '-f'
+      - 'deployment/Dockerfile'
       - '-t'
-      - 'gcr.io/${PROJECT_ID}/vana-multi-agent:latest'
+      - 'gcr.io/${PROJECT_ID}/vana:latest'
       - '--cache-from'
-      - 'gcr.io/${PROJECT_ID}/vana-multi-agent:latest'
+      - 'gcr.io/${PROJECT_ID}/vana:latest'
       - '.'
 
   # Push the image to Google Container Registry
   - name: 'gcr.io/cloud-builders/docker'
     args:
       - 'push'
-      - 'gcr.io/${PROJECT_ID}/vana-multi-agent:latest'
+      - 'gcr.io/${PROJECT_ID}/vana:latest'
 
   # Deploy to Cloud Run with comprehensive configuration
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
@@ -24,9 +26,9 @@ steps:
     args:
       - 'run'
       - 'deploy'
-      - 'vana-multi-agent'
+      - 'vana'
       - '--image'
-      - 'gcr.io/${PROJECT_ID}/vana-multi-agent:latest'
+      - 'gcr.io/${PROJECT_ID}/vana:latest'
       - '--platform'
       - 'managed'
       - '--region'
@@ -47,7 +49,7 @@ steps:
 
 # Images to be pushed to registry
 images:
-  - 'gcr.io/${PROJECT_ID}/vana-multi-agent:latest'
+  - 'gcr.io/${PROJECT_ID}/vana:latest'
 
 # Build options for optimization
 options:

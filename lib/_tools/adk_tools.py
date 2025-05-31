@@ -171,7 +171,7 @@ adk_search_knowledge.name = "search_knowledge"
 # Knowledge Graph functionality removed - using ADK native memory systems only
 
 # System Tools - Self-contained production implementations
-def _echo(message: str) -> str:
+def echo(message: str) -> str:
     """📢 Echo a message back with enhanced formatting for testing."""
     try:
         logger.info(f"Echo: {message}")
@@ -293,7 +293,7 @@ def _transfer_to_agent(agent_name: str, context: str = "") -> str:
         return error_msg
 
 # Create FunctionTool instances with explicit names
-adk_echo = FunctionTool(func=_echo)
+adk_echo = FunctionTool(func=echo)
 adk_echo.name = "echo"
 adk_get_health_status = FunctionTool(func=_get_health_status)
 adk_get_health_status.name = "get_health_status"

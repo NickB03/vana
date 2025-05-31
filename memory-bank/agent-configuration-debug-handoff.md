@@ -61,16 +61,19 @@ Error: 'FunctionTool' object has no attribute '__name__'
 
 ### **Key Files to Debug**
 ```
-vana_multi_agent/
-├── tools/
-│   ├── adk_tools.py                    # Core tool definitions (FIXED)
-│   ├── adk_long_running_tools.py       # Long running tools (FIXED)
-│   ├── adk_third_party_tools.py        # Third party tools (FIXED)
-│   └── __init__.py                     # Tool exports (CLEANED)
-├── vana/agent.py                       # Main agent (NEEDS REVIEW)
-├── qa_specialist/agent.py              # QA agent (NEEDS REVIEW)
-├── hotel_search_agent/agent.py         # Example specialist (NEEDS REVIEW)
-└── [18 other agent files]              # All need systematic review
+/agents/vana/
+├── team.py                             # Main VANA agent (WORKING)
+├── agent.py                            # Agent entry point (WORKING)
+└── __init__.py                         # Module initialization
+
+/lib/_tools/
+├── adk_tools.py                        # Core tool definitions (FIXED)
+└── __init__.py                         # Tool exports (CLEANED)
+
+/deployment/
+├── Dockerfile                          # Production build (WORKING)
+├── cloudbuild.yaml                     # Cloud Build config (WORKING)
+└── deploy.sh                           # Deployment script (WORKING)
 ```
 
 ### **Fixes Already Applied**

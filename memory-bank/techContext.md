@@ -161,11 +161,11 @@
 *   **Authentication**: Service account configured but not properly attached to Cloud Run
 
 ### Deployment Files
-*   `vana_multi_agent/Dockerfile` - Multi-stage production build (working with Python 3.13)
-*   `vana_multi_agent/cloudbuild.yaml` - Google Cloud Build configuration (working with updated dependencies)
-*   `vana_multi_agent/deploy.sh` - Automated deployment script (working with compatibility fixes)
-*   `vana_multi_agent/requirements.txt` - Python dependencies (updated with ADK-compatible versions)
-*   `vana_multi_agent/pyproject.toml` - Poetry configuration (updated for Python 3.13 compatibility)
+*   `deployment/Dockerfile` - Multi-stage production build (working with Python 3.13)
+*   `deployment/cloudbuild.yaml` - Google Cloud Build configuration (working with updated dependencies)
+*   `deployment/deploy.sh` - Automated deployment script (working with compatibility fixes)
+*   `requirements.txt` - Python dependencies (updated with ADK-compatible versions)
+*   `pyproject.toml` - Poetry configuration (updated for Python 3.13 compatibility)
 
 ### Deployment Issues Status - ✅ ALL RESOLVED
 *   ✅ Cross-platform Docker build performance (ARM64→AMD64) - Fixed with Google Cloud Build

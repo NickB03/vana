@@ -90,7 +90,7 @@ ERROR: No such file or directory: '/Users/nick/Development/vana-enhanced/vana_mu
 
 **Actions Required**:
 1. Execute Cloud Build deployment: `./deploy.sh`
-2. Test ADK integration: `curl https://vana-multi-agent-960076421399.us-central1.run.app/info`
+2. Test ADK integration: `curl https://vana-multi-agent-qqugqgsbcq-uc.a.run.app/info`
 3. Verify response shows `"adk_integrated": true`
 4. Test agent endpoints to confirm 22 agents operational
 
@@ -99,10 +99,10 @@ ERROR: No such file or directory: '/Users/nick/Development/vana-enhanced/vana_mu
 ## 📋 TECHNICAL REFERENCE
 
 ### **Current File Locations**
-- **Requirements**: `vana_multi_agent/requirements.txt`
-- **Cloud Build Config**: `vana_multi_agent/cloudbuild.yaml`
-- **Application Code**: `vana_multi_agent/main.py`
-- **Deployment Script**: `vana_multi_agent/deploy.sh`
+- **Requirements**: `requirements.txt` (root level)
+- **Cloud Build Config**: `deployment/cloudbuild.yaml`
+- **Application Code**: `main.py` (root level)
+- **Deployment Script**: `deployment/deploy.sh`
 - **Service Account**: `vana-vector-search-sa@analystai-454200.iam.gserviceaccount.com`
 
 ### **Google ADK Production Patterns (from Context7)**

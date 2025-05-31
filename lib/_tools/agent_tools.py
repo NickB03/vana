@@ -394,16 +394,16 @@ def _create_adk_agent_tools():
 
     # Create tools with proper naming
     arch_tool = FunctionTool(func=architecture_tool_func)
-    arch_tool.name = "_architecture_tool"
+    arch_tool.name = "architecture_tool"
 
     ui_tool = FunctionTool(func=ui_tool_func)
-    ui_tool.name = "_ui_tool"
+    ui_tool.name = "ui_tool"
 
     devops_tool = FunctionTool(func=devops_tool_func)
-    devops_tool.name = "_devops_tool"
+    devops_tool.name = "devops_tool"
 
     qa_tool = FunctionTool(func=qa_tool_func)
-    qa_tool.name = "_qa_tool"
+    qa_tool.name = "qa_tool"
 
     return {
         'adk_architecture_tool': arch_tool,
