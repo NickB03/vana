@@ -160,13 +160,13 @@ def _search_knowledge(query: str) -> str:
         logger.error(error_msg)
         return error_msg
 
-# Create FunctionTool instances with explicit names (using underscore prefix to match LLM expectations)
+# Create FunctionTool instances with explicit names (NO underscore prefix - standardized naming)
 adk_vector_search = FunctionTool(func=_vector_search)
-adk_vector_search.name = "_vector_search"
+adk_vector_search.name = "vector_search"
 adk_web_search = FunctionTool(func=_web_search)
-adk_web_search.name = "_web_search"
+adk_web_search.name = "web_search"
 adk_search_knowledge = FunctionTool(func=_search_knowledge)
-adk_search_knowledge.name = "_search_knowledge"
+adk_search_knowledge.name = "search_knowledge"
 
 # Knowledge Graph functionality removed - using ADK native memory systems only
 
@@ -292,16 +292,16 @@ def _transfer_to_agent(agent_name: str, context: str = "") -> str:
         logger.error(error_msg)
         return error_msg
 
-# Create FunctionTool instances with explicit names
+# Create FunctionTool instances with explicit names (NO underscore prefix - standardized naming)
 adk_echo = FunctionTool(func=echo)
 adk_echo.name = "echo"
 adk_get_health_status = FunctionTool(func=_get_health_status)
-adk_get_health_status.name = "_get_health_status"
+adk_get_health_status.name = "get_health_status"
 adk_coordinate_task = FunctionTool(func=_coordinate_task)
-adk_coordinate_task.name = "_coordinate_task"
+adk_coordinate_task.name = "coordinate_task"
 adk_delegate_to_agent = FunctionTool(func=_delegate_to_agent)
-adk_delegate_to_agent.name = "_delegate_to_agent"
+adk_delegate_to_agent.name = "delegate_to_agent"
 adk_get_agent_status = FunctionTool(func=_get_agent_status)
-adk_get_agent_status.name = "_get_agent_status"
+adk_get_agent_status.name = "get_agent_status"
 adk_transfer_to_agent = FunctionTool(func=_transfer_to_agent)
-adk_transfer_to_agent.name = "_transfer_to_agent"
+adk_transfer_to_agent.name = "transfer_to_agent"
