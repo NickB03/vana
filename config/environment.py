@@ -36,9 +36,13 @@ class EnvironmentConfig:
     @staticmethod
     def get_adk_memory_config():
         """Get ADK Memory configuration based on environment"""
-        # ADK Memory Service Configuration
-        rag_corpus_resource_name = os.environ.get(
-            "RAG_CORPUS_RESOURCE_NAME",
+        # ADK Memory Service Configuration with VANA_RAG_CORPUS_ID priority
+        # Priority 1: VANA_RAG_CORPUS_ID (new VANA-specific variable)
+        # Priority 2: RAG_CORPUS_RESOURCE_NAME (backward compatibility)
+        # Priority 3: Default value
+        rag_corpus_resource_name = (
+            os.environ.get("VANA_RAG_CORPUS_ID") or
+            os.environ.get("RAG_CORPUS_RESOURCE_NAME") or
             "projects/analystai-454200/locations/us-central1/ragCorpora/vana-corpus"
         )
 
@@ -119,11 +123,12 @@ class EnvironmentConfig:
     @staticmethod
     def get_memory_config():
         """Get ADK-compatible memory configuration based on environment"""
-        # ADK Memory configuration with backward compatibility for caching
+        # ADK Memory configuration with VANA_RAG_CORPUS_ID priority and backward compatibility for caching
         return {
-            # ADK Memory Service settings
-            "rag_corpus_resource_name": os.environ.get(
-                "RAG_CORPUS_RESOURCE_NAME",
+            # ADK Memory Service settings with priority hierarchy
+            "rag_corpus_resource_name": (
+                os.environ.get("VANA_RAG_CORPUS_ID") or
+                os.environ.get("RAG_CORPUS_RESOURCE_NAME") or
                 "projects/analystai-454200/locations/us-central1/ragCorpora/vana-corpus"
             ),
             "similarity_top_k": int(os.environ.get("MEMORY_SIMILARITY_TOP_K", "5")),
