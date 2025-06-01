@@ -184,7 +184,7 @@ def compress_files(file_paths: str, archive_path: str, compression_type: str = "
     except Exception as e:
         return f"Error compressing files: {str(e)}"
 
-def extract_archive(archive_path: str, extract_to: str = None) -> str:
+def extract_archive(archive_path: str, extract_to: Optional[str] = None) -> str:
     """
     Extract files from an archive.
     
