@@ -95,9 +95,33 @@
 - **User Experience**: Dramatically improved - actual results instead of limitations
 
 ## 🎉 PHASE 2 COGNITIVE ENHANCEMENT: COMPLETE SUCCESS & VALIDATED
-**Date**: 2025-05-31
+**Date**: 2025-05-31 (UPDATED: 2025-06-01 - CRITICAL FIXES DEPLOYED)
 **Status**: ✅ COGNITIVE ENHANCEMENT COMPLETELY SUCCESSFUL - VALIDATED WITH PUPPETEER
 **Achievement**: Comprehensive cognitive enhancement patterns applied to ALL agents and validated in production
+
+### 🚨 CRITICAL FIXES DEPLOYED (2025-06-01)
+**Status**: ✅ ALL CRITICAL ISSUES RESOLVED - SERVICE FULLY OPERATIONAL
+
+#### ✅ RESOLVED: Module Import Error
+- **Issue**: "Module vana not found during import attempts" + missing pytz dependency
+- **Root Cause**: Missing pytz and python-dateutil dependencies for MCP time tools
+- **Solution**: Added pytz>=2023.3 and python-dateutil>=2.8.2 to pyproject.toml
+- **Status**: RESOLVED - Service fully operational
+- **Verification**: Health endpoint responding, module imports successful
+
+#### ✅ RESOLVED: Type Annotation Error
+- **Issue**: "Default value None of parameter extract_to: str = None is not compatible"
+- **Location**: lib/_tools/mcp_filesystem_tools.py extract_archive function
+- **Solution**: Changed extract_to: str = None to extract_to: Optional[str] = None
+- **Status**: RESOLVED - Type annotations now correct
+- **Verification**: No more type annotation errors in logs
+
+#### ✅ VALIDATED: Cognitive Enhancement Working
+- **Test Query**: "What's the weather like in San Francisco today?"
+- **Result**: ✅ Agent immediately used web_search tool proactively
+- **Response**: Provided comprehensive weather data (90s to 105 degrees)
+- **Behavioral Change**: From conservative responses to proactive tool usage
+- **Validation Method**: Puppeteer automated testing confirmed success
 
 ### **🔍 ROOT CAUSE ANALYSIS**
 **Problem**: User chat log showed cognitive enhancements were incomplete:
