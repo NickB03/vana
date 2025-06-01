@@ -1,21 +1,23 @@
 """
 ADK-Compliant MCP Tools Integration
-Phase 6A: Core MCP Tools for VANA Agent Team
+Phase 3: True MCP Implementation with SSE Transport
 
 This module provides Google ADK-compliant MCP tool integrations following
-the official ADK patterns for MCP server connectivity via SSE and HTTP.
+the official MCP protocol with Server-Sent Events (SSE) transport for
+Cloud Run compatibility.
 
-Based on ADK samples:
-- mcp_sse_agent
-- mcp_streamablehttp_agent  
-- filesystem_server integration patterns
+MCP Server Implementation:
+- True MCP protocol compliance via /mcp/sse and /mcp/messages endpoints
+- JSON-RPC 2.0 message format
+- SSE transport for real-time communication
+- Cloud Run compatible architecture
 """
 
 import os
 import json
 import logging
-import subprocess
-from typing import Dict, List, Optional, Any, Union
+import requests
+from typing import Dict, Optional, Any
 from google.adk.tools import FunctionTool
 
 logger = logging.getLogger(__name__)
