@@ -8,11 +8,14 @@ Automatically detects environment and configures authentication appropriately.
 import os
 import uvicorn
 import logging
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from google.adk.cli.fast_api import get_fast_api_app
 
 # Import our smart environment detection
 from lib.environment import setup_environment
+
+# Import MCP server components
+from lib.mcp_server.sse_transport import MCPSSETransport
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -70,11 +73,25 @@ app: FastAPI = get_fast_api_app(
     web=SERVE_WEB_INTERFACE,
 )
 
+# Initialize MCP SSE Transport
+mcp_transport = MCPSSETransport(None)  # Server will be initialized later
+
+# Add MCP endpoints
+@app.get("/mcp/sse")
+async def mcp_sse_endpoint(request: Request):
+    """MCP Server-Sent Events endpoint"""
+    return await mcp_transport.handle_sse_connection(request)
+
+@app.post("/mcp/messages")
+async def mcp_messages_endpoint(request: Request):
+    """MCP messages endpoint for JSON-RPC communication"""
+    return await mcp_transport.handle_message_post(request)
+
 # Add custom routes if needed
 @app.get("/health")
 async def health_check():
     """Health check endpoint."""
-    return {"status": "healthy", "agent": "vana"}
+    return {"status": "healthy", "agent": "vana", "mcp_enabled": True}
 
 @app.get("/info")
 async def agent_info():
@@ -83,7 +100,12 @@ async def agent_info():
         "name": "VANA",
         "description": "AI assistant with memory, knowledge graph, and search capabilities",
         "version": "1.0.0",
-        "adk_integrated": True
+        "adk_integrated": True,
+        "mcp_server": True,
+        "mcp_endpoints": {
+            "sse": "/mcp/sse",
+            "messages": "/mcp/messages"
+        }
     }
 
 if __name__ == "__main__":
