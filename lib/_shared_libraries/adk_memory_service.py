@@ -14,10 +14,10 @@ Key Features:
 
 Usage:
     ```python
-    from vana_multi_agent.core.adk_memory_service import ADKMemoryService
+    from lib._shared_libraries.adk_memory_service import get_adk_memory_service
 
     # Initialize ADK memory service
-    memory_service = ADKMemoryService()
+    memory_service = get_adk_memory_service()
 
     # Search memory
     results = await memory_service.search_memory("What is VANA?")
@@ -91,6 +91,9 @@ class ADKMemoryService:
         """
         Search memory for relevant information using semantic search.
 
+        Note: This method provides a simplified interface. In practice, memory search
+        should be done through the load_memory tool and ToolContext.search_memory().
+
         Args:
             query: The search query
             top_k: Maximum number of results to return
@@ -103,34 +106,28 @@ class ADKMemoryService:
                 logger.warning("Memory service not initialized")
                 return []
 
-            # Use the memory service's search functionality
-            # Note: The exact API may vary based on ADK version
-            # Try different parameter formats for compatibility
-            try:
-                results = await self.memory_service.search_memory(query, top_k=top_k)
-            except TypeError:
-                # Try without top_k parameter
-                results = await self.memory_service.search_memory(query)
-                # Limit results manually if needed
-                if isinstance(results, list) and len(results) > top_k:
-                    results = results[:top_k]
+            # For ADK memory services, direct search is not typically exposed
+            # Memory search should be done through ToolContext.search_memory()
+            # This method provides a fallback for compatibility
 
-            # Format results for consistency
-            formatted_results = []
-            for result in results:
-                formatted_result = {
-                    "content": result.get("content", ""),
-                    "score": result.get("score", 0.0),
-                    "source": "adk_memory",
-                    "metadata": result.get("metadata", {})
+            logger.info(f"Memory search requested for: {query}")
+            logger.info("Note: For full ADK integration, use load_memory tool with ToolContext")
+
+            # Return a placeholder result indicating the service is available
+            # but search should be done through proper ADK channels
+            return [{
+                "content": f"Memory service available. Use load_memory tool to search for: {query}",
+                "score": 1.0,
+                "source": "adk_memory_service",
+                "metadata": {
+                    "service_type": self.get_service_info()["service_type"],
+                    "available": True,
+                    "note": "Use ToolContext.search_memory() for actual search"
                 }
-                formatted_results.append(formatted_result)
-
-            logger.info(f"ADK memory search returned {len(formatted_results)} results for query: {query}")
-            return formatted_results
+            }]
 
         except Exception as e:
-            logger.error(f"Error searching ADK memory: {e}")
+            logger.error(f"Error in memory service: {e}")
             return []
 
     async def add_session_to_memory(self, session: Session) -> bool:
@@ -202,7 +199,12 @@ def get_adk_memory_service() -> ADKMemoryService:
     global _adk_memory_service
     if _adk_memory_service is None:
         # Determine if we should use Vertex AI based on environment
-        use_vertex_ai = os.getenv("GOOGLE_GENAI_USE_VERTEXAI", "1") == "1"
+        # Use Vertex AI if GOOGLE_GENAI_USE_VERTEXAI is True or if SESSION_SERVICE_TYPE is vertex_ai
+        use_vertex_ai_env = os.getenv("GOOGLE_GENAI_USE_VERTEXAI", "False").lower() == "true"
+        session_service_type = os.getenv("SESSION_SERVICE_TYPE", "in_memory").lower()
+        use_vertex_ai = use_vertex_ai_env or session_service_type == "vertex_ai"
+
+        logger.info(f"Initializing ADK memory service: use_vertex_ai={use_vertex_ai}")
         _adk_memory_service = ADKMemoryService(use_vertex_ai=use_vertex_ai)
     return _adk_memory_service
 

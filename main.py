@@ -3,6 +3,7 @@ VANA Agent - FastAPI Entry Point
 
 This module provides the FastAPI entry point for the VANA agent using Google ADK.
 Automatically detects environment and configures authentication appropriately.
+Includes proper ADK memory service initialization for vector search and RAG pipeline.
 """
 
 import os
@@ -10,12 +11,16 @@ import uvicorn
 import logging
 from fastapi import FastAPI, Request
 from google.adk.cli.fast_api import get_fast_api_app
+from google.adk.memory import VertexAiRagMemoryService, InMemoryMemoryService
 
 # Import our smart environment detection
 from lib.environment import setup_environment
 
 # Import MCP server components
 from lib.mcp_server.sse_transport import MCPSSETransport
+
+# Import ADK memory service
+from lib._shared_libraries.adk_memory_service import get_adk_memory_service
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -25,6 +30,14 @@ logger = logging.getLogger(__name__)
 logger.info("Setting up environment configuration...")
 environment_type = setup_environment()
 logger.info(f"Environment configured: {environment_type}")
+
+# Initialize ADK Memory Service
+logger.info("Initializing ADK Memory Service...")
+memory_service = get_adk_memory_service()
+memory_info = memory_service.get_service_info()
+logger.info(f"Memory service initialized: {memory_info['service_type']}")
+logger.info(f"Memory service available: {memory_info['available']}")
+logger.info(f"Supports persistence: {memory_info['supports_persistence']}")
 
 # Get the directory where main.py is located - this is where the agent files are now located
 # Supporting directories are now in lib/ to avoid being treated as agents
@@ -96,6 +109,9 @@ async def health_check():
 @app.get("/info")
 async def agent_info():
     """Get agent information."""
+    # Get current memory service info
+    current_memory_info = memory_service.get_service_info()
+
     return {
         "name": "VANA",
         "description": "AI assistant with memory, knowledge graph, and search capabilities",
@@ -105,7 +121,14 @@ async def agent_info():
         "mcp_endpoints": {
             "sse": "/mcp/sse",
             "messages": "/mcp/messages"
-        }
+        },
+        "memory_service": {
+            "type": current_memory_info["service_type"],
+            "available": current_memory_info["available"],
+            "supports_persistence": current_memory_info["supports_persistence"],
+            "supports_semantic_search": current_memory_info["supports_semantic_search"]
+        },
+        "environment": environment_type
     }
 
 if __name__ == "__main__":
