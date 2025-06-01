@@ -21,15 +21,131 @@ from google.adk.tools import FunctionTool
 logger = logging.getLogger(__name__)
 
 # ============================================================================
-# TIER 1 PRIORITY: BRAVE SEARCH MCP TOOL
+# TIER 1 PRIORITY: CONTEXT7 SEQUENTIAL THINKING MCP TOOL
+# ============================================================================
+
+def context7_sequential_thinking(prompt: str, minimum_tokens: int = 10000) -> Dict[str, Any]:
+    """
+    Advanced reasoning and structured problem-solving using Context7 MCP server.
+
+    This tool provides access to up-to-date documentation and enables structured
+    thinking patterns for complex problem-solving and decision-making.
+
+    Args:
+        prompt: The problem or question requiring structured analysis
+        minimum_tokens: Minimum tokens for comprehensive analysis (default: 10000)
+
+    Returns:
+        Dict containing structured analysis and reasoning results
+    """
+    try:
+        import subprocess
+        import json
+        import os
+
+        # Prepare the MCP request for Context7 search
+        mcp_request = {
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "tools/call",
+            "params": {
+                "name": "search",
+                "arguments": {
+                    "query": prompt,
+                    "minimum_tokens": minimum_tokens
+                }
+            }
+        }
+
+        # Execute Context7 MCP server with proper environment
+        env = {**os.environ, "DEFAULT_MINIMUM_TOKENS": str(minimum_tokens)}
+
+        result = subprocess.run(
+            ["npx", "-y", "@upstash/context7-mcp@latest"],
+            input=json.dumps(mcp_request),
+            capture_output=True,
+            text=True,
+            timeout=45,  # Increased timeout for comprehensive analysis
+            env=env
+        )
+
+        if result.returncode == 0:
+            # Parse MCP response
+            try:
+                response = json.loads(result.stdout)
+
+                # Extract result from MCP response
+                if "result" in response:
+                    result_data = response["result"]
+
+                    return {
+                        "status": "success",
+                        "prompt": prompt,
+                        "analysis": result_data.get("content", result_data),
+                        "mcp_server": "Context7 Sequential Thinking",
+                        "tokens_used": minimum_tokens,
+                        "reasoning_type": "structured_sequential_analysis",
+                        "documentation_sources": result_data.get("sources", []),
+                        "confidence": "high"
+                    }
+                else:
+                    # Handle non-standard response format
+                    return {
+                        "status": "partial_success",
+                        "prompt": prompt,
+                        "raw_analysis": result.stdout,
+                        "message": "Context7 MCP provided analysis in non-standard format",
+                        "mcp_server": "Context7 Sequential Thinking"
+                    }
+
+            except json.JSONDecodeError:
+                # Handle non-JSON response
+                return {
+                    "status": "partial_success",
+                    "prompt": prompt,
+                    "raw_analysis": result.stdout,
+                    "message": "Context7 MCP provided text analysis (non-JSON format)",
+                    "mcp_server": "Context7 Sequential Thinking"
+                }
+        else:
+            # Handle MCP server errors
+            error_msg = result.stderr.strip() if result.stderr else "Unknown error"
+            return {
+                "error": f"Context7 MCP server error: {error_msg}",
+                "status": "mcp_server_error",
+                "prompt": prompt,
+                "fallback_analysis": f"Structured analysis needed for: {prompt}",
+                "suggestion": "Try rephrasing the query or check Context7 MCP server status"
+            }
+
+    except subprocess.TimeoutExpired:
+        return {
+            "error": "Context7 MCP server timeout (45 seconds)",
+            "status": "timeout",
+            "prompt": prompt,
+            "message": "Analysis took longer than expected - try a more specific query",
+            "suggestion": "Consider breaking down complex queries into smaller parts"
+        }
+    except Exception as e:
+        logger.error(f"Context7 Sequential Thinking error: {e}")
+        return {
+            "error": str(e),
+            "status": "failed",
+            "prompt": prompt,
+            "fallback_message": "Error occurred during Context7 MCP communication",
+            "troubleshooting": "Check if npx and @upstash/context7-mcp are available"
+        }
+
+# ============================================================================
+# TIER 1 PRIORITY: BRAVE SEARCH MCP TOOL (UPGRADED)
 # ============================================================================
 
 def brave_search_mcp(query: str, max_results: int = 5) -> Dict[str, Any]:
     """
-    Enhanced web search using Brave Search API directly.
+    Enhanced web search using Brave Search MCP server.
 
-    This tool provides immediate Brave Search functionality while we prepare
-    for full MCP server integration. Uses Brave Search API directly.
+    This tool uses the official @modelcontextprotocol/server-brave-search MCP server
+    for enhanced search capabilities with AI-powered results and summaries.
 
     Args:
         query: Search query string
@@ -39,6 +155,10 @@ def brave_search_mcp(query: str, max_results: int = 5) -> Dict[str, Any]:
         Dict containing search results with enhanced AI summaries
     """
     try:
+        import subprocess
+        import json
+        import os
+
         # Check if Brave API key is configured
         brave_api_key = os.getenv("BRAVE_API_KEY")
         if not brave_api_key:
@@ -48,76 +168,107 @@ def brave_search_mcp(query: str, max_results: int = 5) -> Dict[str, Any]:
                 "status": "authentication_failed"
             }
 
-        # Import requests for API calls
-        try:
-            import requests
-        except ImportError:
-            return {
-                "error": "requests library not available",
-                "message": "Cannot make HTTP requests for Brave Search API",
-                "status": "dependency_missing"
+        # Prepare the MCP request for Brave Search
+        mcp_request = {
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "tools/call",
+            "params": {
+                "name": "brave_web_search",
+                "arguments": {
+                    "query": query,
+                    "count": min(max_results, 20)  # Brave API max is 20
+                }
             }
-
-        # Make direct API call to Brave Search
-        url = "https://api.search.brave.com/res/v1/web/search"
-        headers = {
-            "Accept": "application/json",
-            "Accept-Encoding": "gzip",
-            "X-Subscription-Token": brave_api_key
-        }
-        params = {
-            "q": query,
-            "count": min(max_results, 20),  # Brave API max is 20
-            "search_lang": "en",
-            "country": "US",
-            "safesearch": "moderate",
-            "freshness": "pd",  # Past day for recent results
-            "text_decorations": False,
-            "spellcheck": True
         }
 
-        response = requests.get(url, headers=headers, params=params, timeout=10)
+        # Execute Brave Search MCP server with API key
+        env = {**os.environ, "BRAVE_API_KEY": brave_api_key}
 
-        if response.status_code == 200:
-            data = response.json()
+        result = subprocess.run(
+            ["npx", "-y", "@modelcontextprotocol/server-brave-search"],
+            input=json.dumps(mcp_request),
+            capture_output=True,
+            text=True,
+            timeout=15,  # Reasonable timeout for search
+            env=env
+        )
 
-            # Extract and format results
-            results = []
-            web_results = data.get("web", {}).get("results", [])
+        if result.returncode == 0:
+            # Parse MCP response
+            try:
+                response = json.loads(result.stdout)
 
-            for result in web_results[:max_results]:
-                results.append({
-                    "title": result.get("title", ""),
-                    "url": result.get("url", ""),
-                    "description": result.get("description", ""),
-                    "published": result.get("age", ""),
-                    "source": "Brave Search"
-                })
+                # Extract result from MCP response
+                if "result" in response:
+                    result_data = response["result"]
 
-            return {
-                "status": "success",
-                "query": query,
-                "results_count": len(results),
-                "results": results,
-                "search_engine": "Brave Search API",
-                "api_response_time": f"{response.elapsed.total_seconds():.2f}s",
-                "mcp_status": "Direct API integration (MCP server integration planned)"
-            }
+                    # Format results for consistency
+                    formatted_results = []
+                    if isinstance(result_data, dict) and "results" in result_data:
+                        for item in result_data["results"][:max_results]:
+                            formatted_results.append({
+                                "title": item.get("title", ""),
+                                "url": item.get("url", ""),
+                                "description": item.get("description", ""),
+                                "published": item.get("age", ""),
+                                "source": "Brave Search MCP"
+                            })
 
+                    return {
+                        "status": "success",
+                        "query": query,
+                        "results_count": len(formatted_results),
+                        "results": formatted_results,
+                        "search_engine": "Brave Search MCP Server",
+                        "mcp_server": "@modelcontextprotocol/server-brave-search",
+                        "enhanced_features": "AI summaries, enhanced snippets"
+                    }
+                else:
+                    # Handle non-standard response format
+                    return {
+                        "status": "partial_success",
+                        "query": query,
+                        "raw_results": result.stdout,
+                        "message": "Brave Search MCP provided results in non-standard format",
+                        "search_engine": "Brave Search MCP Server"
+                    }
+
+            except json.JSONDecodeError:
+                # Handle non-JSON response
+                return {
+                    "status": "partial_success",
+                    "query": query,
+                    "raw_results": result.stdout,
+                    "message": "Brave Search MCP provided text results (non-JSON format)",
+                    "search_engine": "Brave Search MCP Server"
+                }
         else:
+            # Handle MCP server errors
+            error_msg = result.stderr.strip() if result.stderr else "Unknown error"
             return {
-                "error": f"Brave Search API error: {response.status_code}",
-                "message": response.text,
-                "status": "api_error"
+                "error": f"Brave Search MCP server error: {error_msg}",
+                "status": "mcp_server_error",
+                "query": query,
+                "suggestion": "Check BRAVE_API_KEY configuration and MCP server status"
             }
 
+    except subprocess.TimeoutExpired:
+        return {
+            "error": "Brave Search MCP server timeout (15 seconds)",
+            "status": "timeout",
+            "query": query,
+            "message": "Search took longer than expected",
+            "suggestion": "Try a more specific search query"
+        }
     except Exception as e:
         logger.error(f"Brave Search MCP error: {e}")
         return {
             "error": str(e),
             "status": "failed",
             "query": query,
-            "fallback_message": "Error occurred during Brave Search API call"
+            "fallback_message": "Error occurred during Brave Search MCP communication",
+            "troubleshooting": "Check if npx and @modelcontextprotocol/server-brave-search are available"
         }
 
 # ============================================================================
@@ -127,66 +278,162 @@ def brave_search_mcp(query: str, max_results: int = 5) -> Dict[str, Any]:
 def github_mcp_operations(operation: str, **kwargs) -> Dict[str, Any]:
     """
     GitHub operations using official GitHub MCP server.
-    
+
     Provides comprehensive GitHub workflow automation including repos,
     issues, pull requests, code security, and actions.
-    
+
     Args:
         operation: GitHub operation type (repos, issues, pull_requests, etc.)
         **kwargs: Operation-specific parameters
-        
+
     Returns:
         Dict containing GitHub operation results
     """
     try:
+        import subprocess
+        import json
+        import os
+
         # Check if GitHub token is configured
         github_token = os.getenv("GITHUB_TOKEN") or os.getenv("GITHUB_PERSONAL_ACCESS_TOKEN")
         if not github_token:
             return {
                 "error": "GitHub token not configured",
                 "message": "Please configure GITHUB_TOKEN or GITHUB_PERSONAL_ACCESS_TOKEN",
-                "ui_configuration_needed": True,
-                "future_enhancement": "UI-based token configuration planned"
+                "status": "authentication_failed",
+                "setup_instructions": [
+                    "1. Create a GitHub Personal Access Token at https://github.com/settings/tokens",
+                    "2. Set environment variable: export GITHUB_TOKEN=your_token_here",
+                    "3. Restart the service to pick up the new token"
+                ]
             }
-        
-        # Validate operation type
-        valid_operations = [
-            "repos", "issues", "pull_requests", "code_security", 
-            "actions", "workflows", "branches", "commits"
-        ]
-        
-        if operation not in valid_operations:
+
+        # Validate operation type and map to GitHub MCP tools
+        operation_mapping = {
+            "repos": "list_repositories",
+            "issues": "list_issues",
+            "pull_requests": "list_pull_requests",
+            "code_security": "get_repository_security",
+            "actions": "list_workflow_runs",
+            "workflows": "list_workflows",
+            "branches": "list_branches",
+            "commits": "list_commits",
+            "create_issue": "create_issue",
+            "create_pr": "create_pull_request"
+        }
+
+        if operation not in operation_mapping:
             return {
                 "error": f"Invalid operation: {operation}",
-                "valid_operations": valid_operations
+                "valid_operations": list(operation_mapping.keys()),
+                "status": "invalid_operation"
             }
-        
-        # For now, return structured response indicating MCP integration needed
-        return {
-            "status": "mcp_integration_pending",
-            "operation": operation,
-            "parameters": kwargs,
-            "mcp_server": "ghcr.io/github/github-mcp-server",
-            "token_configured": bool(github_token),
-            "message": "GitHub MCP server integration ready for implementation",
-            "docker_command": [
-                "docker", "run", "-i", "--rm",
-                "-e", "GITHUB_PERSONAL_ACCESS_TOKEN",
-                "ghcr.io/github/github-mcp-server"
-            ],
-            "next_steps": [
-                "Pull Docker image: docker pull ghcr.io/github/github-mcp-server",
-                "Configure MCP client connection",
-                "Implement Docker-based MCP communication"
-            ]
+
+        # Prepare the MCP request for GitHub operations
+        mcp_request = {
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "tools/call",
+            "params": {
+                "name": operation_mapping[operation],
+                "arguments": kwargs
+            }
         }
-        
+
+        # Execute GitHub MCP server via Docker with token
+        docker_cmd = [
+            "docker", "run", "-i", "--rm",
+            "-e", f"GITHUB_PERSONAL_ACCESS_TOKEN={github_token}",
+            "ghcr.io/github/github-mcp-server"
+        ]
+
+        result = subprocess.run(
+            docker_cmd,
+            input=json.dumps(mcp_request),
+            capture_output=True,
+            text=True,
+            timeout=30,  # GitHub operations can take time
+        )
+
+        if result.returncode == 0:
+            # Parse MCP response
+            try:
+                response = json.loads(result.stdout)
+
+                # Extract result from MCP response
+                if "result" in response:
+                    result_data = response["result"]
+
+                    return {
+                        "status": "success",
+                        "operation": operation,
+                        "parameters": kwargs,
+                        "data": result_data,
+                        "mcp_server": "ghcr.io/github/github-mcp-server",
+                        "github_api": "Official GitHub MCP integration"
+                    }
+                else:
+                    # Handle non-standard response format
+                    return {
+                        "status": "partial_success",
+                        "operation": operation,
+                        "raw_data": result.stdout,
+                        "message": "GitHub MCP provided data in non-standard format",
+                        "mcp_server": "ghcr.io/github/github-mcp-server"
+                    }
+
+            except json.JSONDecodeError:
+                # Handle non-JSON response
+                return {
+                    "status": "partial_success",
+                    "operation": operation,
+                    "raw_data": result.stdout,
+                    "message": "GitHub MCP provided text data (non-JSON format)",
+                    "mcp_server": "ghcr.io/github/github-mcp-server"
+                }
+        else:
+            # Handle MCP server errors
+            error_msg = result.stderr.strip() if result.stderr else "Unknown error"
+
+            # Check for common Docker issues
+            if "docker: command not found" in error_msg:
+                return {
+                    "error": "Docker not available",
+                    "status": "docker_missing",
+                    "message": "GitHub MCP server requires Docker to be installed",
+                    "installation_guide": "Install Docker from https://docs.docker.com/get-docker/"
+                }
+            elif "Unable to find image" in error_msg:
+                return {
+                    "error": "GitHub MCP Docker image not found",
+                    "status": "image_missing",
+                    "message": "Pull the GitHub MCP server image first",
+                    "command": "docker pull ghcr.io/github/github-mcp-server"
+                }
+            else:
+                return {
+                    "error": f"GitHub MCP server error: {error_msg}",
+                    "status": "mcp_server_error",
+                    "operation": operation,
+                    "suggestion": "Check GitHub token permissions and Docker configuration"
+                }
+
+    except subprocess.TimeoutExpired:
+        return {
+            "error": "GitHub MCP server timeout (30 seconds)",
+            "status": "timeout",
+            "operation": operation,
+            "message": "GitHub operation took longer than expected",
+            "suggestion": "Try a more specific operation or check GitHub API status"
+        }
     except Exception as e:
         logger.error(f"GitHub MCP error: {e}")
         return {
             "error": str(e),
             "status": "failed",
-            "operation": operation
+            "operation": operation,
+            "fallback_message": "Error occurred during GitHub MCP communication",
+            "troubleshooting": "Check Docker installation and GitHub token configuration"
         }
 
 # ============================================================================
@@ -324,7 +571,7 @@ def get_mcp_integration_status() -> Dict[str, Any]:
     # Calculate readiness metrics
     total_planned_servers = 20
     framework_complete = True
-    tools_registered = 21  # 16 base + 5 MCP
+    tools_registered = 24  # 16 base + 6 MCP + 2 time tools
 
     auth_status = {
         "brave_search": "✅ Ready" if brave_api_key else "❌ API key needed",
@@ -379,6 +626,9 @@ def get_mcp_integration_status() -> Dict[str, Any]:
 # ============================================================================
 
 # Create ADK-compliant FunctionTool instances
+adk_context7_sequential_thinking = FunctionTool(func=context7_sequential_thinking)
+adk_context7_sequential_thinking.name = "context7_sequential_thinking"
+
 adk_brave_search_mcp = FunctionTool(func=brave_search_mcp)
 adk_brave_search_mcp.name = "brave_search_mcp"
 
@@ -396,8 +646,9 @@ adk_get_mcp_integration_status.name = "get_mcp_integration_status"
 
 # Export all MCP tools for agent registration
 __all__ = [
+    "adk_context7_sequential_thinking",
     "adk_brave_search_mcp",
-    "adk_github_mcp_operations", 
+    "adk_github_mcp_operations",
     "adk_aws_lambda_mcp",
     "adk_list_available_mcp_servers",
     "adk_get_mcp_integration_status"

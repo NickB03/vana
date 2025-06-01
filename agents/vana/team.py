@@ -70,6 +70,12 @@ from lib._tools.mcp_filesystem_tools import (
     adk_extract_archive, adk_find_files, adk_sync_directories
 )
 
+# Import Phase 3 Priority MCP Tools (Context7, Brave Search, GitHub)
+from lib._tools.adk_mcp_tools import (
+    adk_context7_sequential_thinking, adk_brave_search_mcp, adk_github_mcp_operations,
+    adk_list_available_mcp_servers, adk_get_mcp_integration_status
+)
+
 # Import enhanced core components
 from lib._shared_libraries.task_router import TaskRouter
 from lib._shared_libraries.mode_manager import ModeManager, AgentMode
@@ -1479,6 +1485,10 @@ vana = LlmAgent(
         # Phase 3 Fundamental MCP Tools - Enhanced File System
         adk_get_file_metadata, adk_batch_file_operations, adk_compress_files,
         adk_extract_archive, adk_find_files, adk_sync_directories,
+
+        # Phase 3 Priority MCP Tools - Context7, Brave Search, GitHub
+        adk_context7_sequential_thinking, adk_brave_search_mcp, adk_github_mcp_operations,
+        adk_list_available_mcp_servers, adk_get_mcp_integration_status,
 
         # System tools
         adk_echo, adk_get_health_status,
