@@ -170,7 +170,7 @@ def web_search(query: str, max_results: int = 5) -> str:
         logger.error(error_msg)
         return json.dumps({"error": error_msg}, indent=2)
 
-def _search_knowledge(query: str) -> str:
+def search_knowledge(query: str) -> str:
     """🧠 Search the knowledge base using ADK Memory Service with RAG pipeline."""
     try:
         logger.info(f"Knowledge search query: {query}")
@@ -251,7 +251,7 @@ adk_vector_search = FunctionTool(func=_vector_search)
 adk_vector_search.name = "vector_search"
 adk_web_search = FunctionTool(func=web_search)
 adk_web_search.name = "web_search"
-adk_search_knowledge = FunctionTool(func=_search_knowledge)
+adk_search_knowledge = FunctionTool(func=search_knowledge)
 adk_search_knowledge.name = "search_knowledge"
 
 # Knowledge Graph functionality removed - using ADK native memory systems only
