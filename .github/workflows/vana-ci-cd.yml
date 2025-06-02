@@ -1,0 +1,297 @@
+name: VANA CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop, feat/* ]
+  pull_request:
+    branches: [ main, develop ]
+
+env:
+  PYTHON_VERSION: "3.13"
+  PROJECT_ID: "960076421399"
+  SERVICE_NAME: "vana"
+  REGION: "us-central1"
+
+jobs:
+  # VANA-Specific Quality Checks (HIGHEST PRIORITY)
+  vana-quality-check:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+
+    - name: Install Poetry
+      uses: snok/install-poetry@v1
+      with:
+        version: latest
+        virtualenvs-create: true
+        virtualenvs-in-project: true
+
+    - name: Install dependencies
+      run: poetry install --no-interaction
+
+    - name: VANA Directory Structure Check
+      run: python scripts/lint/check_directory_structure.py
+
+    - name: VANA Naming Convention Check
+      run: |
+        find lib/_tools -name "*.py" -exec python scripts/lint/check_vana_naming.py {} + || exit 1
+        find agents -name "*.py" -exec python scripts/lint/check_vana_naming.py {} + || exit 1
+
+    - name: VANA Tool Registration Check
+      run: |
+        find lib/_tools -name "*.py" -exec python scripts/lint/check_tool_registration.py {} + || exit 1
+        find agents -name "*.py" -exec python scripts/lint/check_tool_registration.py {} + || exit 1
+
+    - name: Check for pip usage (Poetry only)
+      run: |
+        if grep -r "pip install\|pip3 install" --include="*.py" --include="*.sh" --include="*.yml" --include="*.yaml" .; then
+          echo "❌ Found pip usage! Use 'poetry add' instead"
+          exit 1
+        fi
+
+    - name: Check for hardcoded paths
+      run: |
+        if grep -r "/Users/nick/\|C:\\\\Users\\\\\|/home/nick/" --include="*.py" --include="*.sh" --include="*.yml" --include="*.yaml" .; then
+          echo "❌ Found hardcoded paths! Use relative paths or environment variables"
+          exit 1
+        fi
+
+    - name: Validate ADK Tool Imports
+      run: |
+        poetry run python -c "
+        try:
+            from agents.vana.team import root_agent
+            print(f'✅ Agent loaded successfully with {len(root_agent.tools)} tools')
+
+            # Check for underscore naming issues
+            naming_errors = []
+            for tool in root_agent.tools:
+                if hasattr(tool, 'name') and tool.name.startswith('_'):
+                    naming_errors.append(f'Tool with underscore name: {tool.name}')
+
+            if naming_errors:
+                print('❌ Tool naming violations found:')
+                for error in naming_errors:
+                    print(f'  {error}')
+                exit(1)
+            else:
+                print('✅ All tool names follow VANA conventions')
+        except Exception as e:
+            print(f'❌ Agent import failed: {e}')
+            exit(1)
+        "
+
+  # Standard Quality Checks
+  standard-quality-check:
+    runs-on: ubuntu-latest
+    needs: vana-quality-check
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+
+    - name: Install Poetry
+      uses: snok/install-poetry@v1
+
+    - name: Load cached venv
+      id: cached-poetry-dependencies
+      uses: actions/cache@v3
+      with:
+        path: .venv
+        key: venv-${{ runner.os }}-${{ env.PYTHON_VERSION }}-${{ hashFiles('**/poetry.lock') }}
+
+    - name: Install dependencies
+      if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
+      run: poetry install --no-interaction
+
+    - name: Run Ruff Linting
+      run: poetry run ruff check . --output-format=github
+
+    - name: Run Ruff Formatting Check
+      run: poetry run ruff format --check .
+
+    - name: Run Type Checking
+      run: poetry run mypy . --ignore-missing-imports
+      continue-on-error: true  # Non-blocking for now
+
+    - name: Run Security Scan
+      run: poetry run bandit -r . -f json -o bandit-report.json
+      continue-on-error: true
+
+    - name: Upload Security Report
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: security-report
+        path: bandit-report.json
+
+  # VANA-Specific Integration Testing
+  vana-integration-test:
+    runs-on: ubuntu-latest
+    needs: [vana-quality-check, standard-quality-check]
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+
+    - name: Install Poetry
+      uses: snok/install-poetry@v1
+
+    - name: Install dependencies
+      run: poetry install
+
+    - name: Test Agent Discovery
+      run: |
+        poetry run python -c "
+        import sys
+        from pathlib import Path
+
+        # Test agent discovery
+        agents_dir = Path('agents')
+        if not agents_dir.exists():
+            print('❌ /agents/ directory not found')
+            sys.exit(1)
+
+        vana_dir = agents_dir / 'vana'
+        if not vana_dir.exists():
+            print('❌ /agents/vana/ directory not found')
+            sys.exit(1)
+
+        # Test agent import
+        try:
+            from agents.vana.team import root_agent
+            print(f'✅ VANA agent discovered with {len(root_agent.tools)} tools')
+        except Exception as e:
+            print(f'❌ Agent import failed: {e}')
+            sys.exit(1)
+        "
+
+    - name: Test Tool Registration Patterns
+      run: |
+        poetry run python -c "
+        from agents.vana.team import root_agent
+
+        # Validate tool naming patterns
+        naming_errors = []
+        for tool in root_agent.tools:
+            if hasattr(tool, 'name'):
+                if tool.name.startswith('_'):
+                    naming_errors.append(f'Tool {tool.name} has leading underscore')
+
+        if naming_errors:
+            print('❌ Tool naming violations found:')
+            for error in naming_errors:
+                print(f'  {error}')
+            exit(1)
+        else:
+            print('✅ All tools follow proper naming conventions')
+        "
+
+    - name: Test Environment Configuration
+      run: |
+        poetry run python -c "
+        import os
+        from lib.environment import get_environment_config
+
+        # Test environment detection
+        config = get_environment_config()
+        print(f'✅ Environment config loaded: {config.get(\"environment\", \"unknown\")}')
+        "
+
+  # Build and Deploy (only on main branch)
+  deploy:
+    runs-on: ubuntu-latest
+    needs: [vana-quality-check, standard-quality-check, vana-integration-test]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Authenticate to Google Cloud
+      uses: google-github-actions/auth@v2
+      with:
+        credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+    - name: Set up Cloud SDK
+      uses: google-github-actions/setup-gcloud@v2
+
+    - name: Pre-deployment VANA Validation
+      run: |
+        echo "🔍 Running final VANA-specific checks before deployment..."
+
+        # Check Poetry lock file is up to date
+        if [ -f poetry.lock ]; then
+          echo "✅ Poetry lock file exists"
+        else
+          echo "❌ Poetry lock file missing"
+          exit 1
+        fi
+
+        # Validate pyproject.toml
+        if grep -q "python.*3\.13" pyproject.toml; then
+          echo "✅ Python 3.13 specified in pyproject.toml"
+        else
+          echo "❌ Python 3.13 not specified in pyproject.toml"
+          exit 1
+        fi
+
+    - name: Configure Docker
+      run: gcloud auth configure-docker
+
+    - name: Build Docker Image with Quality Validation
+      run: |
+        docker build \
+          --build-arg VALIDATE_QUALITY=true \
+          -t gcr.io/${{ env.PROJECT_ID }}/${{ env.SERVICE_NAME }}:${{ github.sha }} \
+          -t gcr.io/${{ env.PROJECT_ID }}/${{ env.SERVICE_NAME }}:latest \
+          .
+
+    - name: Push Docker Image
+      run: |
+        docker push gcr.io/${{ env.PROJECT_ID }}/${{ env.SERVICE_NAME }}:${{ github.sha }}
+        docker push gcr.io/${{ env.PROJECT_ID }}/${{ env.SERVICE_NAME }}:latest
+
+    - name: Deploy to Cloud Run with VANA Configuration
+      run: |
+        gcloud run deploy ${{ env.SERVICE_NAME }} \
+          --image gcr.io/${{ env.PROJECT_ID }}/${{ env.SERVICE_NAME }}:${{ github.sha }} \
+          --platform managed \
+          --region ${{ env.REGION }} \
+          --allow-unauthenticated \
+          --memory 2Gi \
+          --cpu 2 \
+          --max-instances 10 \
+          --set-env-vars GOOGLE_GENAI_USE_VERTEXAI=True \
+          --set-env-vars VANA_ENVIRONMENT=production \
+          --timeout 3600
+
+    - name: Post-Deployment VANA Validation
+      run: |
+        echo "🧪 Running post-deployment VANA validation..."
+
+        # Get service URL
+        SERVICE_URL=$(gcloud run services describe ${{ env.SERVICE_NAME }} \
+          --region ${{ env.REGION }} \
+          --format 'value(status.url)')
+
+        echo "Service URL: $SERVICE_URL"
+
+        # Health check
+        if curl -f "$SERVICE_URL/health"; then
+          echo "✅ Health check passed"
+        else
+          echo "❌ Health check failed"
+          exit 1
+        fi
+
+        echo "🎉 VANA deployment validation completed successfully!"

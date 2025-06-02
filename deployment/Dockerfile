@@ -1,4 +1,4 @@
-# Multi-stage build for VANA Agent System (Cloud Build Optimized)
+# Multi-stage build for VANA Agent System with Quality Validation
 # Stage 1: Build dependencies with Poetry and Python 3.13
 FROM python:3.13-slim AS builder
 
@@ -19,12 +19,41 @@ RUN apt-get update && \
         gcc \
         python3-dev \
         git \
-        build-essential && \
+        build-essential \
+        curl && \
     poetry install --only=main --no-dev && \
     # Clean up build dependencies to reduce image size
     apt-get purge -y --auto-remove gcc python3-dev git build-essential && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+
+# Copy source code for validation
+COPY . .
+
+# VANA-SPECIFIC QUALITY VALIDATION STAGE
+ARG VALIDATE_QUALITY=false
+RUN if [ "$VALIDATE_QUALITY" = "true" ]; then \
+    echo "🔍 Running VANA quality validation during build..."; \
+    \
+    # Install dev dependencies for validation
+    poetry install --with dev; \
+    \
+    # Run VANA-specific checks
+    echo "Checking directory structure..."; \
+    python scripts/lint/check_directory_structure.py || exit 1; \
+    \
+    echo "Checking naming conventions..."; \
+    find lib/_tools -name "*.py" -exec python scripts/lint/check_vana_naming.py {} + || exit 1; \
+    find agents -name "*.py" -exec python scripts/lint/check_vana_naming.py {} + || exit 1; \
+    \
+    echo "Checking tool registration..."; \
+    find lib/_tools -name "*.py" -exec python scripts/lint/check_tool_registration.py {} + || exit 1; \
+    \
+    echo "Testing agent import..."; \
+    python -c "from agents.vana.team import root_agent; print(f'✅ Agent loaded with {len(root_agent.tools)} tools')" || exit 1; \
+    \
+    echo "✅ All VANA quality checks passed"; \
+    fi
 
 # Stage 2: Optimized runtime image
 FROM python:3.13-slim

@@ -1,0 +1,147 @@
+name: PR Quality Gate
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  quality-gate:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # Full history for better analysis
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: "3.13"
+
+    - name: Install Poetry
+      uses: snok/install-poetry@v1
+
+    - name: Install dependencies
+      run: poetry install
+
+    - name: Get changed files
+      id: changed-files
+      run: |
+        # Get changed Python files
+        CHANGED_FILES=$(git diff --name-only origin/main...HEAD | grep '\.py$' || true)
+        echo "changed_files=$CHANGED_FILES" >> $GITHUB_OUTPUT
+        echo "Changed Python files: $CHANGED_FILES"
+
+    - name: Run VANA Quality Checks on Changed Files
+      run: |
+        CHANGED_FILES="${{ steps.changed-files.outputs.changed_files }}"
+
+        if [ -n "$CHANGED_FILES" ]; then
+          echo "🔍 Checking changed files for VANA violations..."
+
+          # Check each changed file
+          for file in $CHANGED_FILES; do
+            if [[ "$file" == *"tools"* ]] || [[ "$file" == *"agents"* ]]; then
+              echo "Checking $file..."
+
+              # VANA naming check
+              python scripts/lint/check_vana_naming.py "$file" || exit 1
+
+              # VANA tool registration check
+              python scripts/lint/check_tool_registration.py "$file" || exit 1
+            fi
+          done
+
+          # Run Ruff on changed files
+          echo "Running Ruff on changed files..."
+          poetry run ruff check $CHANGED_FILES || exit 1
+          poetry run ruff format --check $CHANGED_FILES || exit 1
+
+          # Run mypy on changed files
+          echo "Running mypy on changed files..."
+          poetry run mypy $CHANGED_FILES --ignore-missing-imports || echo "Type checking issues found (non-blocking)"
+
+        else
+          echo "No Python files changed"
+        fi
+
+    - name: Run VANA Directory Structure Check
+      run: python scripts/lint/check_directory_structure.py
+
+    - name: Check for pip usage in PR
+      run: |
+        if git diff origin/main...HEAD | grep -E "^\+.*pip install|^\+.*pip3 install"; then
+          echo "❌ PR introduces pip usage! Use 'poetry add' instead"
+          exit 1
+        fi
+
+    - name: Check for hardcoded paths in PR
+      run: |
+        if git diff origin/main...HEAD | grep -E "^\+.*/Users/nick/|^\+.*C:\\\\Users\\\\|^\+.*/home/nick/"; then
+          echo "❌ PR introduces hardcoded paths! Use relative paths or environment variables"
+          exit 1
+        fi
+
+    - name: Validate Agent Import (if agent files changed)
+      run: |
+        CHANGED_FILES="${{ steps.changed-files.outputs.changed_files }}"
+
+        if echo "$CHANGED_FILES" | grep -q "agents/"; then
+          echo "Agent files changed, validating import..."
+          poetry run python -c "
+          try:
+              from agents.vana.team import root_agent
+              print(f'✅ Agent import successful with {len(root_agent.tools)} tools')
+          except Exception as e:
+              print(f'❌ Agent import failed: {e}')
+              exit(1)
+          "
+        fi
+
+    - name: Comment PR with Results
+      uses: actions/github-script@v6
+      if: failure()
+      with:
+        script: |
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: `❌ **VANA Quality Gate Failed**
+
+            Your PR has quality issues that need to be fixed before merging:
+
+            **Common VANA Issues:**
+            - Tool names with leading underscores (e.g., \`_vector_search\` → \`vector_search\`)
+            - Using \`pip install\` instead of \`poetry add\`
+            - Hardcoded paths (use relative paths or environment variables)
+            - Directory structure violations
+
+            **Next Steps:**
+            1. Fix the issues shown in the CI logs above
+            2. Run \`poetry run ruff check . --fix\` locally
+            3. Run \`python scripts/lint/check_vana_naming.py lib/_tools/*.py\` locally
+            4. Push your fixes
+
+            See the [VANA Memory Bank](./memory-bank/) for detailed conventions.`
+          })
+
+    - name: Comment PR with Success
+      uses: actions/github-script@v6
+      if: success()
+      with:
+        script: |
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: `✅ **VANA Quality Gate Passed**
+
+            Your PR meets all VANA quality standards:
+            - ✅ No underscore naming violations
+            - ✅ Poetry-only dependency management
+            - ✅ No hardcoded paths
+            - ✅ Proper directory structure
+            - ✅ Code formatting and linting passed
+
+            Ready for review! 🚀`
+          })
