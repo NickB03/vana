@@ -18,7 +18,9 @@ from unittest.mock import MagicMock
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
 
 # Import the orchestration components
-sys.path.append("/Users/nick/Development/vana")
+sys.path.append(
+    os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+)
 # Note: These imports are commented out as the modules don't exist yet
 # from vana.orchestration.task_planner import TaskPlanner
 # from vana.orchestration.parallel_executor import ParallelExecutor
