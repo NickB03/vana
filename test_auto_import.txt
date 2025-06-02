@@ -1,0 +1,1 @@
+This is a test document for automatic RAG import functionality. It contains sample content to verify that the Cloud Function correctly processes new files uploaded to the GCS bucket and imports them into the Vertex AI RAG corpus.

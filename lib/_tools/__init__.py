@@ -21,9 +21,9 @@ from .agent_tools import (
     adk_architecture_tool, adk_ui_tool, adk_devops_tool, adk_qa_tool
 )
 
-# Phase 6A: MCP Tools Integration - ADK-compliant MCP server tools
+# Phase 6A: MCP Tools Integration - ADK-compliant MCP server tools (aws_lambda_mcp removed per user request)
 from .adk_mcp_tools import (
-    adk_context7_sequential_thinking, adk_brave_search_mcp, adk_github_mcp_operations, adk_aws_lambda_mcp,
+    adk_context7_sequential_thinking, adk_brave_search_mcp, adk_github_mcp_operations,
     adk_list_available_mcp_servers, adk_get_mcp_integration_status
 )
 

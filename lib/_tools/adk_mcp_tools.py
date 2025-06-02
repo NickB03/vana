@@ -513,62 +513,10 @@ def github_mcp_operations(operation: str, **kwargs) -> Dict[str, Any]:
         }
 
 # ============================================================================
-# TIER 2 PRIORITY: AWS LAMBDA MCP TOOL
+# AWS LAMBDA MCP TOOL REMOVED PER USER REQUEST
 # ============================================================================
-
-def aws_lambda_mcp(action: str, function_name: Optional[str] = None, **kwargs) -> Dict[str, Any]:
-    """
-    AWS Lambda management using AWS Labs MCP server.
-    
-    Provides Lambda function management, execution, and monitoring
-    using the official awslabs.lambda-mcp-server.
-    
-    Args:
-        action: Lambda action (list, invoke, create, update, delete)
-        function_name: Lambda function name (required for most actions)
-        **kwargs: Action-specific parameters
-        
-    Returns:
-        Dict containing Lambda operation results
-    """
-    try:
-        # Check AWS configuration
-        aws_profile = os.getenv("AWS_PROFILE", "default")
-        aws_region = os.getenv("AWS_REGION", "us-central1")
-        
-        # Validate action
-        valid_actions = ["list", "invoke", "create", "update", "delete", "get_info"]
-        if action not in valid_actions:
-            return {
-                "error": f"Invalid action: {action}",
-                "valid_actions": valid_actions
-            }
-        
-        # For now, return structured response indicating MCP integration needed
-        return {
-            "status": "mcp_integration_pending",
-            "action": action,
-            "function_name": function_name,
-            "parameters": kwargs,
-            "mcp_server": "awslabs.lambda-mcp-server",
-            "aws_profile": aws_profile,
-            "aws_region": aws_region,
-            "message": "AWS Lambda MCP server integration ready for implementation",
-            "uvx_command": ["uvx", "awslabs.lambda-mcp-server@latest"],
-            "next_steps": [
-                "Install via uvx (auto-installs on first run)",
-                "Configure AWS credentials",
-                "Implement uvx-based MCP communication"
-            ]
-        }
-        
-    except Exception as e:
-        logger.error(f"AWS Lambda MCP error: {e}")
-        return {
-            "error": str(e),
-            "status": "failed",
-            "action": action
-        }
+# Note: aws_lambda_mcp tool has been removed from the system per user request
+# to optimize MCP tools implementation and achieve >90% success rate.
 
 # ============================================================================
 # MCP SERVER MANAGEMENT UTILITIES
@@ -597,12 +545,6 @@ def list_available_mcp_servers() -> Dict[str, Any]:
             }
         },
         "tier_2_priority": {
-            "aws_lambda": {
-                "package": "awslabs.lambda-mcp-server",
-                "type": "uvx",
-                "status": "ready",  # Uses existing AWS credentials
-                "description": "AWS Lambda function management"
-            },
             "notion": {
                 "package": "@notionhq/notion-mcp-server",
                 "type": "npm_global",
@@ -642,17 +584,14 @@ def get_mcp_integration_status() -> Dict[str, Any]:
     # Check authentication status for each MCP server
     brave_api_key = os.getenv("BRAVE_API_KEY")
     github_token = os.getenv("GITHUB_TOKEN") or os.getenv("GITHUB_PERSONAL_ACCESS_TOKEN")
-    aws_profile = os.getenv("AWS_PROFILE", "default")
 
     # Calculate readiness metrics
-    total_planned_servers = 20
     framework_complete = True
-    tools_registered = 24  # 16 base + 6 MCP + 2 time tools
+    tools_registered = 23  # 16 base + 5 MCP + 2 time tools (aws_lambda_mcp removed)
 
     auth_status = {
         "brave_search": "✅ Ready" if brave_api_key else "❌ API key needed",
         "github": "✅ Ready" if github_token else "❌ Token needed",
-        "aws_lambda": "✅ Ready (using existing credentials)",
         "notion": "❌ API token needed",
         "mongodb": "❌ Connection string needed"
     }
@@ -663,14 +602,14 @@ def get_mcp_integration_status() -> Dict[str, Any]:
         "phase": "6A - MCP Tools Integration Framework",
         "status": "✅ Framework Complete - Ready for Server Communication",
         "framework_status": "✅ Complete" if framework_complete else "🔄 In Progress",
-        "tools_registered": f"{tools_registered} total tools (16 base + 5 MCP)",
+        "tools_registered": f"{tools_registered} total tools (16 base + 5 MCP + 2 time)",
         "authentication_status": auth_status,
-        "readiness_score": f"{ready_count}/5 MCP servers ready",
+        "readiness_score": f"{ready_count}/4 MCP servers ready (aws_lambda removed)",
         "adk_compliance": "✅ Following official Google ADK MCP patterns",
         "implementation_progress": {
             "phase_6a_framework": "✅ Complete",
             "tool_registration": "✅ Complete",
-            "authentication_setup": f"{ready_count}/5 ready",
+            "authentication_setup": f"{ready_count}/4 ready (aws_lambda removed)",
             "server_communication": "🔄 Next step",
             "testing_validation": "✅ Puppeteer validated"
         },
@@ -711,21 +650,17 @@ adk_brave_search_mcp.name = "brave_search_mcp"
 adk_github_mcp_operations = FunctionTool(func=github_mcp_operations)
 adk_github_mcp_operations.name = "github_mcp_operations"
 
-adk_aws_lambda_mcp = FunctionTool(func=aws_lambda_mcp)
-adk_aws_lambda_mcp.name = "aws_lambda_mcp"
-
 adk_list_available_mcp_servers = FunctionTool(func=list_available_mcp_servers)
 adk_list_available_mcp_servers.name = "list_available_mcp_servers"
 
 adk_get_mcp_integration_status = FunctionTool(func=get_mcp_integration_status)
 adk_get_mcp_integration_status.name = "get_mcp_integration_status"
 
-# Export all MCP tools for agent registration
+# Export all MCP tools for agent registration (aws_lambda_mcp removed per user request)
 __all__ = [
     "adk_context7_sequential_thinking",
     "adk_brave_search_mcp",
     "adk_github_mcp_operations",
-    "adk_aws_lambda_mcp",
     "adk_list_available_mcp_servers",
     "adk_get_mcp_integration_status"
 ]
