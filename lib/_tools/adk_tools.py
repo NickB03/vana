@@ -85,7 +85,7 @@ adk_file_exists = FunctionTool(func=_file_exists)
 adk_file_exists.name = "file_exists"
 
 # Search Tools - Real production implementations with ADK integration
-def _vector_search(query: str, max_results: int = 5) -> str:
+def vector_search(query: str, max_results: int = 5) -> str:
     """🔍 Search the vector database for relevant information using Vertex AI Vector Search."""
     try:
         logger.info(f"Vector search query: {query}")
@@ -247,7 +247,7 @@ def search_knowledge(query: str) -> str:
         return json.dumps(result, indent=2)
 
 # Create FunctionTool instances with explicit names (NO underscore prefix - standardized naming)
-adk_vector_search = FunctionTool(func=_vector_search)
+adk_vector_search = FunctionTool(func=vector_search)
 adk_vector_search.name = "vector_search"
 adk_web_search = FunctionTool(func=web_search)
 adk_web_search.name = "web_search"
