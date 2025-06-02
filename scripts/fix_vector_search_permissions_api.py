@@ -10,15 +10,13 @@ Usage:
     python scripts/fix_vector_search_permissions_api.py
 """
 
-import os
-import sys
+import argparse
 import json
 import logging
-import argparse
+import os
+import sys
+
 from dotenv import load_dotenv
-from google.cloud import aiplatform
-from google.oauth2 import service_account
-from google.cloud import resourcemanager_v3
 
 # Configure logging
 logging.basicConfig(
@@ -26,10 +24,11 @@ logging.basicConfig(
     format="%(asctime)s [%(levelname)s] %(message)s",
     handlers=[
         logging.FileHandler("vector_search_permissions.log"),
-        logging.StreamHandler()
-    ]
+        logging.StreamHandler(),
+    ],
 )
 logger = logging.getLogger(__name__)
+
 
 def load_environment_variables():
     """Load environment variables."""
@@ -39,24 +38,31 @@ def load_environment_variables():
     env_vars = {
         "GOOGLE_CLOUD_PROJECT": os.environ.get("GOOGLE_CLOUD_PROJECT"),
         "GOOGLE_CLOUD_LOCATION": os.environ.get("GOOGLE_CLOUD_LOCATION"),
-        "GOOGLE_APPLICATION_CREDENTIALS": os.environ.get("GOOGLE_APPLICATION_CREDENTIALS"),
-        "VECTOR_SEARCH_ENDPOINT_ID": os.environ.get("VECTOR_SEARCH_ENDPOINT_ID")
+        "GOOGLE_APPLICATION_CREDENTIALS": os.environ.get(
+            "GOOGLE_APPLICATION_CREDENTIALS"
+        ),
+        "VECTOR_SEARCH_ENDPOINT_ID": os.environ.get("VECTOR_SEARCH_ENDPOINT_ID"),
     }
 
     # Check for missing variables
     missing_vars = [var for var, value in env_vars.items() if not value]
     if missing_vars:
-        logger.error(f"❌ Missing required environment variables: {', '.join(missing_vars)}")
+        logger.error(
+            f"❌ Missing required environment variables: {', '.join(missing_vars)}"
+        )
         logger.error("Please set these variables in your .env file or environment.")
         return None
 
     logger.info("✅ All required environment variables are set.")
     return env_vars
 
+
 def get_service_account_email():
     """Get the service account email from the credentials file or use the known one."""
     # Use the known service account email from the IAM console
-    known_service_account = "vana-vector-search-sa@analystai-454200.iam.gserviceaccount.com"
+    known_service_account = (
+        "vana-vector-search-sa@analystai-454200.iam.gserviceaccount.com"
+    )
 
     # Try to get from credentials file first
     credentials_path = os.environ.get("GOOGLE_APPLICATION_CREDENTIALS")
@@ -66,7 +72,7 @@ def get_service_account_email():
         return known_service_account
 
     try:
-        with open(credentials_path, "r") as f:
+        with open(credentials_path) as f:
             credentials = json.load(f)
 
         if "client_email" not in credentials:
@@ -75,18 +81,25 @@ def get_service_account_email():
             return known_service_account
 
         service_account_email = credentials["client_email"]
-        logger.info(f"✅ Service account email from credentials: {service_account_email}")
+        logger.info(
+            f"✅ Service account email from credentials: {service_account_email}"
+        )
 
         # Check if the service account from credentials matches the known one
         if service_account_email != known_service_account:
-            logger.warning(f"⚠️ Service account in credentials ({service_account_email}) does not match the known service account ({known_service_account})")
-            logger.info(f"Using service account from credentials: {service_account_email}")
+            logger.warning(
+                f"⚠️ Service account in credentials ({service_account_email}) does not match the known service account ({known_service_account})"
+            )
+            logger.info(
+                f"Using service account from credentials: {service_account_email}"
+            )
 
         return service_account_email
     except Exception as e:
         logger.warning(f"⚠️ Error reading credentials file: {e}")
         logger.info(f"Using known service account email: {known_service_account}")
         return known_service_account
+
 
 def create_mock_vector_search_client():
     """Create a mock Vector Search client for testing."""
@@ -106,14 +119,13 @@ def create_mock_vector_search_client():
                 {
                     "content": "This is a mock result for Vector Search.",
                     "score": 0.95,
-                    "metadata": {
-                        "source": "mock_vector_search"
-                    }
+                    "metadata": {"source": "mock_vector_search"},
                 }
             ]
 
     # Return the mock client
     return MockVectorSearchClient()
+
 
 def update_vector_search_client():
     """Update the Vector Search client to use hardcoded credentials."""
@@ -124,7 +136,7 @@ def update_vector_search_client():
 
     try:
         # Read the current file
-        with open(client_path, "r") as f:
+        with open(client_path) as f:
             content = f.read()
 
         # Check if the file already has the hardcoded credentials
@@ -136,7 +148,7 @@ def update_vector_search_client():
         new_content = content.replace(
             "def __init__(self):",
             """def __init__(self):
-        """
+        """,
         )
 
         # Write the updated file
@@ -149,10 +161,17 @@ def update_vector_search_client():
         logger.error(f"❌ Error updating Vector Search client: {e}")
         return False
 
+
 def main():
     """Main function."""
-    parser = argparse.ArgumentParser(description="Fix Vector Search Permissions for VANA")
-    parser.add_argument("--mock", action="store_true", help="Use mock implementation instead of fixing permissions")
+    parser = argparse.ArgumentParser(
+        description="Fix Vector Search Permissions for VANA"
+    )
+    parser.add_argument(
+        "--mock",
+        action="store_true",
+        help="Use mock implementation instead of fixing permissions",
+    )
     args = parser.parse_args()
 
     # Load environment variables
@@ -171,7 +190,8 @@ def main():
         # Create a test script to verify the mock implementation
         test_script_path = "scripts/test_mock_vector_search.py"
         with open(test_script_path, "w") as f:
-            f.write("""#!/usr/bin/env python3
+            f.write(
+                """#!/usr/bin/env python3
 \"\"\"
 Test Mock Vector Search Implementation
 
@@ -216,17 +236,20 @@ def main():
 
 if __name__ == "__main__":
     sys.exit(main())
-""")
+"""
+            )
 
         # Make the test script executable
         os.chmod(test_script_path, 0o755)
 
         logger.info(f"✅ Created test script: {test_script_path}")
-        logger.info(f"Run the test script to verify the mock implementation:")
+        logger.info("Run the test script to verify the mock implementation:")
         logger.info(f"python {test_script_path}")
     else:
         logger.info("Since we can't use gcloud directly, we'll need to:")
-        logger.info("1. Go to the Google Cloud Console: https://console.cloud.google.com/")
+        logger.info(
+            "1. Go to the Google Cloud Console: https://console.cloud.google.com/"
+        )
         logger.info("2. Navigate to IAM & Admin > IAM")
         logger.info("3. Find the service account: " + service_account_email)
         logger.info("4. Add the following roles:")
@@ -239,6 +262,7 @@ if __name__ == "__main__":
 
     logger.info("✅ Done.")
     return 0
+
 
 if __name__ == "__main__":
     sys.exit(main())

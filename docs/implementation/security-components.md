@@ -136,7 +136,7 @@ class SecureMemoryManager:
         self.audit_logger = audit_logger
         self.logger = logger
         self.role = Role.AGENT
-    
+
     @require_permission(Operation.STORE_ENTITY, entity_type_arg="entity_type")
     def store_entity(self, entity_name, entity_type, observations):
         # Log operation
@@ -145,11 +145,11 @@ class SecureMemoryManager:
             status="in_progress",
             details={"entity_name": entity_name, "entity_type": entity_type}
         )
-        
+
         try:
             # Store entity
             result = self.memory_manager.store_entity(entity_name, entity_type, observations)
-            
+
             # Audit log
             audit_logger.log_event(
                 event_type="modification",
@@ -160,14 +160,14 @@ class SecureMemoryManager:
                 details={"entity_name": entity_name, "entity_type": entity_type},
                 status="success"
             )
-            
+
             # Log success
             logger.log_memory_operation(
                 operation="store_entity",
                 status="success",
                 details={"entity_name": entity_name, "entity_type": entity_type}
             )
-            
+
             return result
         except Exception as e:
             # Log failure
@@ -176,7 +176,7 @@ class SecureMemoryManager:
                 status="failure",
                 details={"entity_name": entity_name, "entity_type": entity_type, "error": str(e)}
             )
-            
+
             # Audit log
             audit_logger.log_event(
                 event_type="error",
@@ -186,7 +186,7 @@ class SecureMemoryManager:
                 details={"entity_name": entity_name, "entity_type": entity_type, "error": str(e)},
                 status="failure"
             )
-            
+
             raise
 ```
 

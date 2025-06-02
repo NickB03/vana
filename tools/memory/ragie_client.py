@@ -1,13 +1,15 @@
-import requests
 import os
-from typing import List, Dict, Any, Optional
+from typing import Any, Optional
+
+import requests
+
 
 def query_memory(
     prompt: str,
     top_k: int = 5,
     api_key: Optional[str] = None,
-    debug: bool = True  # Add debug parameter
-) -> List[Dict[Any, Any]]:
+    debug: bool = True,  # Add debug parameter
+) -> list[dict[Any, Any]]:
     """
     Query the Ragie.ai knowledge base for relevant information.
 
@@ -21,30 +23,24 @@ def query_memory(
         List of matching document chunks with their relevance scores
     """
     # Get API key from parameters or environment variables
-    key = api_key or os.environ.get('RAGIE_API_KEY')
+    key = api_key or os.environ.get("RAGIE_API_KEY")
     if not key:
-        raise ValueError("No Ragie API key provided. Set RAGIE_API_KEY environment variable or pass as parameter.")
+        raise ValueError(
+            "No Ragie API key provided. Set RAGIE_API_KEY environment variable or pass as parameter."
+        )
 
-    headers = {
-        "Authorization": f"Bearer {key}",
-        "Content-Type": "application/json"
-    }
+    headers = {"Authorization": f"Bearer {key}", "Content-Type": "application/json"}
 
-    payload = {
-        "query": prompt,
-        "top_k": top_k
-    }
+    payload = {"query": prompt, "top_k": top_k}
 
     if debug:
         print(f"\n[DEBUG] Querying Ragie API with prompt: {prompt}")
-        print(f"[DEBUG] API endpoint: https://api.ragie.ai/retrievals")
+        print("[DEBUG] API endpoint: https://api.ragie.ai/retrievals")
         print(f"[DEBUG] Payload: {payload}")
 
     try:
         response = requests.post(
-            "https://api.ragie.ai/retrievals",
-            json=payload,
-            headers=headers
+            "https://api.ragie.ai/retrievals", json=payload, headers=headers
         )
         response.raise_for_status()
 
@@ -61,7 +57,8 @@ def query_memory(
         print(f"Error querying memory: {e}")
         return []
 
-def format_memory_results(results: List[Dict[Any, Any]], debug: bool = True) -> str:
+
+def format_memory_results(results: list[dict[Any, Any]], debug: bool = True) -> str:
     """
     Format memory results into a readable string.
 

@@ -24,15 +24,15 @@ def generate_embedding(text: str) -> List[float]:
 
         # Generate embedding
         embedding = model.get_embeddings([text])[0]
-        
+
         # Explicitly convert values to float to avoid type errors
         embedding_values = [float(value) for value in embedding.values]
-        
+
         # Log the first few values for debugging
         logger.info(f"Generated embedding with {len(embedding_values)} dimensions")
         logger.info(f"First 5 values: {embedding_values[:5]}")
         logger.info(f"Value types: {[type(v) for v in embedding_values[:5]]}")
-        
+
         return embedding_values
     except Exception as e:
         logger.error(f"Error generating embedding: {str(e)}")
@@ -90,7 +90,7 @@ if isinstance(embedding_data, dict) and "values" in embedding_data:
     embedding_values = embedding_data["values"]
 else:
     embedding_values = embedding_data
-    
+
 # Ensure all values are float
 if isinstance(embedding_values, list) and embedding_values:
     # Convert all values to float

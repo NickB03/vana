@@ -217,7 +217,7 @@ Before any task:
 ## NO SERIOUSLY, DO NOT SKIP STEPS
 If you try to implement everything at once:
 - IT WILL FAIL
-- YOU WILL WASTE TIME  
+- YOU WILL WASTE TIME
 - THE HUMAN WILL GET ANGRY
 
 **Follow the process. Test everything. Document results. Success is guaranteed.**

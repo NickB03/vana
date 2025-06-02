@@ -8,11 +8,12 @@ This module tests the ADKToolAdapter class, including:
 - Specialized context parsers
 """
 
-import unittest
 import json
+import unittest
 from unittest.mock import MagicMock, patch
 
 from vana.adk_integration import ADKToolAdapter
+
 
 # Mock ADK classes
 class MockTool:
@@ -21,11 +22,13 @@ class MockTool:
         self.description = description
         self.func = func
 
+
 class MockFunctionTool:
     def __init__(self, name, description, func):
         self.name = name
         self.description = description
         self.func = func
+
 
 class TestADKToolAdapter(unittest.TestCase):
     """Test cases for the ADKToolAdapter class."""
@@ -33,12 +36,14 @@ class TestADKToolAdapter(unittest.TestCase):
     def setUp(self):
         """Set up test environment."""
         # Mock ADK availability
-        patcher = patch('vana.adk_integration.adk_tool_adapter.ADK_AVAILABLE', True)
+        patcher = patch("vana.adk_integration.adk_tool_adapter.ADK_AVAILABLE", True)
         self.addCleanup(patcher.stop)
         patcher.start()
 
         # Mock FunctionTool
-        patcher2 = patch('vana.adk_integration.adk_tool_adapter.FunctionTool', MockFunctionTool)
+        patcher2 = patch(
+            "vana.adk_integration.adk_tool_adapter.FunctionTool", MockFunctionTool
+        )
         self.addCleanup(patcher2.stop)
         patcher2.start()
 
@@ -54,8 +59,7 @@ class TestADKToolAdapter(unittest.TestCase):
 
         # Register specialist
         result = self.tool_adapter.register_specialist_as_tool(
-            specialist_name="test_specialist",
-            specialist_obj=specialist
+            specialist_name="test_specialist", specialist_obj=specialist
         )
 
         # Check result
@@ -63,8 +67,12 @@ class TestADKToolAdapter(unittest.TestCase):
 
         # Check that tool was registered
         self.assertIn("test_specialist", self.tool_adapter.tools)
-        self.assertEqual(self.tool_adapter.tools["test_specialist"].name, "test_specialist")
-        self.assertEqual(self.tool_adapter.tools["test_specialist"].description, "Test specialist")
+        self.assertEqual(
+            self.tool_adapter.tools["test_specialist"].name, "test_specialist"
+        )
+        self.assertEqual(
+            self.tool_adapter.tools["test_specialist"].description, "Test specialist"
+        )
 
         # Check that specialist was stored
         self.assertIn("test_specialist", self.tool_adapter.specialists)
@@ -81,7 +89,7 @@ class TestADKToolAdapter(unittest.TestCase):
             specialist_name="test_specialist",
             specialist_obj=specialist,
             tool_name="custom_tool_name",
-            description="Custom description"
+            description="Custom description",
         )
 
         # Check result
@@ -89,8 +97,13 @@ class TestADKToolAdapter(unittest.TestCase):
 
         # Check that tool was registered with custom name and description
         self.assertIn("custom_tool_name", self.tool_adapter.tools)
-        self.assertEqual(self.tool_adapter.tools["custom_tool_name"].name, "custom_tool_name")
-        self.assertEqual(self.tool_adapter.tools["custom_tool_name"].description, "Custom description")
+        self.assertEqual(
+            self.tool_adapter.tools["custom_tool_name"].name, "custom_tool_name"
+        )
+        self.assertEqual(
+            self.tool_adapter.tools["custom_tool_name"].description,
+            "Custom description",
+        )
 
     def test_register_specialist_with_generate_content(self):
         """Test registering a specialist that uses generate_content instead of run."""
@@ -104,8 +117,7 @@ class TestADKToolAdapter(unittest.TestCase):
 
         # Register specialist
         result = self.tool_adapter.register_specialist_as_tool(
-            specialist_name="test_specialist",
-            specialist_obj=specialist
+            specialist_name="test_specialist", specialist_obj=specialist
         )
 
         # Check result
@@ -122,6 +134,7 @@ class TestADKToolAdapter(unittest.TestCase):
 
     def test_register_function_as_tool(self):
         """Test registering a function as a tool."""
+
         # Create test function
         def test_function(arg1, arg2=None):
             """Test function docstring."""
@@ -136,10 +149,14 @@ class TestADKToolAdapter(unittest.TestCase):
         # Check that tool was registered
         self.assertIn("test_function", self.tool_adapter.tools)
         self.assertEqual(self.tool_adapter.tools["test_function"].name, "test_function")
-        self.assertEqual(self.tool_adapter.tools["test_function"].description, "Test function docstring.")
+        self.assertEqual(
+            self.tool_adapter.tools["test_function"].description,
+            "Test function docstring.",
+        )
 
     def test_register_function_with_custom_name_and_description(self):
         """Test registering a function with a custom name and description."""
+
         # Create test function
         def test_function(arg1, arg2=None):
             return f"Result: {arg1}, {arg2}"
@@ -148,7 +165,7 @@ class TestADKToolAdapter(unittest.TestCase):
         result = self.tool_adapter.register_function_as_tool(
             func=test_function,
             tool_name="custom_tool_name",
-            description="Custom description"
+            description="Custom description",
         )
 
         # Check result
@@ -156,11 +173,17 @@ class TestADKToolAdapter(unittest.TestCase):
 
         # Check that tool was registered with custom name and description
         self.assertIn("custom_tool_name", self.tool_adapter.tools)
-        self.assertEqual(self.tool_adapter.tools["custom_tool_name"].name, "custom_tool_name")
-        self.assertEqual(self.tool_adapter.tools["custom_tool_name"].description, "Custom description")
+        self.assertEqual(
+            self.tool_adapter.tools["custom_tool_name"].name, "custom_tool_name"
+        )
+        self.assertEqual(
+            self.tool_adapter.tools["custom_tool_name"].description,
+            "Custom description",
+        )
 
     def test_get_tool(self):
         """Test getting a tool by name."""
+
         # Create test function
         def test_function(arg1, arg2=None):
             return f"Result: {arg1}, {arg2}"
@@ -177,6 +200,7 @@ class TestADKToolAdapter(unittest.TestCase):
 
     def test_get_all_tools(self):
         """Test getting all tools."""
+
         # Create test functions
         def test_function1(arg1):
             return f"Result 1: {arg1}"
@@ -199,6 +223,7 @@ class TestADKToolAdapter(unittest.TestCase):
 
     def test_execute_tool(self):
         """Test executing a tool."""
+
         # Create test function
         def test_function(arg1, arg2=None):
             return f"Result: {arg1}, {arg2}"
@@ -207,7 +232,9 @@ class TestADKToolAdapter(unittest.TestCase):
         self.tool_adapter.register_function_as_tool(test_function)
 
         # Execute tool
-        result = self.tool_adapter.execute_tool("test_function", "value1", arg2="value2")
+        result = self.tool_adapter.execute_tool(
+            "test_function", "value1", arg2="value2"
+        )
 
         # Check result
         self.assertEqual(result, "Result: value1, value2")
@@ -222,18 +249,28 @@ class TestADKToolAdapter(unittest.TestCase):
 
     def test_tool_decorator(self):
         """Test the tool decorator."""
+
         # Create decorated function
-        @self.tool_adapter.tool_decorator(name="decorated_tool", description="Decorated tool description")
+        @self.tool_adapter.tool_decorator(
+            name="decorated_tool", description="Decorated tool description"
+        )
         def decorated_function(arg1, arg2=None):
             return f"Decorated result: {arg1}, {arg2}"
 
         # Check that tool was registered
         self.assertIn("decorated_tool", self.tool_adapter.tools)
-        self.assertEqual(self.tool_adapter.tools["decorated_tool"].name, "decorated_tool")
-        self.assertEqual(self.tool_adapter.tools["decorated_tool"].description, "Decorated tool description")
+        self.assertEqual(
+            self.tool_adapter.tools["decorated_tool"].name, "decorated_tool"
+        )
+        self.assertEqual(
+            self.tool_adapter.tools["decorated_tool"].description,
+            "Decorated tool description",
+        )
 
         # Execute tool
-        result = self.tool_adapter.execute_tool("decorated_tool", "value1", arg2="value2")
+        result = self.tool_adapter.execute_tool(
+            "decorated_tool", "value1", arg2="value2"
+        )
 
         # Check result
         self.assertEqual(result, "Decorated result: value1, value2")
@@ -241,7 +278,7 @@ class TestADKToolAdapter(unittest.TestCase):
     def test_fallback_when_adk_not_available(self):
         """Test fallback behavior when ADK is not available."""
         # Create tool adapter with ADK not available
-        with patch('vana.adk_integration.adk_tool_adapter.ADK_AVAILABLE', False):
+        with patch("vana.adk_integration.adk_tool_adapter.ADK_AVAILABLE", False):
             fallback_adapter = ADKToolAdapter()
 
         # Check that ADK is not available
@@ -275,7 +312,7 @@ class TestADKToolAdapter(unittest.TestCase):
             agent_type=ADKToolAdapter.AGENT_TYPE_ARCHITECT,
             input_format=ADKToolAdapter.INPUT_FORMAT_JSON,
             output_format=ADKToolAdapter.OUTPUT_FORMAT_JSON,
-            capabilities={"custom_capability": "test"}
+            capabilities={"custom_capability": "test"},
         )
 
         # Check result
@@ -283,17 +320,26 @@ class TestADKToolAdapter(unittest.TestCase):
 
         # Check that capabilities were registered
         self.assertIn("test_specialist", self.tool_adapter.capabilities)
-        self.assertEqual(self.tool_adapter.capabilities["test_specialist"]["type"],
-                        ADKToolAdapter.AGENT_TYPE_ARCHITECT)
-        self.assertEqual(self.tool_adapter.capabilities["test_specialist"]["input_format"],
-                        ADKToolAdapter.INPUT_FORMAT_JSON)
-        self.assertEqual(self.tool_adapter.capabilities["test_specialist"]["output_format"],
-                        ADKToolAdapter.OUTPUT_FORMAT_JSON)
-        self.assertEqual(self.tool_adapter.capabilities["test_specialist"]["custom_capability"],
-                        "test")
+        self.assertEqual(
+            self.tool_adapter.capabilities["test_specialist"]["type"],
+            ADKToolAdapter.AGENT_TYPE_ARCHITECT,
+        )
+        self.assertEqual(
+            self.tool_adapter.capabilities["test_specialist"]["input_format"],
+            ADKToolAdapter.INPUT_FORMAT_JSON,
+        )
+        self.assertEqual(
+            self.tool_adapter.capabilities["test_specialist"]["output_format"],
+            ADKToolAdapter.OUTPUT_FORMAT_JSON,
+        )
+        self.assertEqual(
+            self.tool_adapter.capabilities["test_specialist"]["custom_capability"],
+            "test",
+        )
 
     def test_register_function_with_capabilities(self):
         """Test registering a function with capabilities."""
+
         # Create test function
         def test_function(arg1, arg2=None):
             """Test function docstring."""
@@ -304,7 +350,7 @@ class TestADKToolAdapter(unittest.TestCase):
             func=test_function,
             input_format=ADKToolAdapter.INPUT_FORMAT_STRUCTURED,
             output_format=ADKToolAdapter.OUTPUT_FORMAT_STRUCTURED,
-            capabilities={"custom_capability": "test"}
+            capabilities={"custom_capability": "test"},
         )
 
         # Check result
@@ -312,50 +358,68 @@ class TestADKToolAdapter(unittest.TestCase):
 
         # Check that capabilities were registered
         self.assertIn("test_function", self.tool_adapter.capabilities)
-        self.assertEqual(self.tool_adapter.capabilities["test_function"]["input_format"],
-                        ADKToolAdapter.INPUT_FORMAT_STRUCTURED)
-        self.assertEqual(self.tool_adapter.capabilities["test_function"]["output_format"],
-                        ADKToolAdapter.OUTPUT_FORMAT_STRUCTURED)
-        self.assertEqual(self.tool_adapter.capabilities["test_function"]["custom_capability"],
-                        "test")
+        self.assertEqual(
+            self.tool_adapter.capabilities["test_function"]["input_format"],
+            ADKToolAdapter.INPUT_FORMAT_STRUCTURED,
+        )
+        self.assertEqual(
+            self.tool_adapter.capabilities["test_function"]["output_format"],
+            ADKToolAdapter.OUTPUT_FORMAT_STRUCTURED,
+        )
+        self.assertEqual(
+            self.tool_adapter.capabilities["test_function"]["custom_capability"], "test"
+        )
 
     def test_tool_decorator_with_capabilities(self):
         """Test the tool decorator with capabilities."""
+
         # Create decorated function
         @self.tool_adapter.tool_decorator(
             name="decorated_tool",
             description="Decorated tool description",
             input_format=ADKToolAdapter.INPUT_FORMAT_JSON,
             output_format=ADKToolAdapter.OUTPUT_FORMAT_JSON,
-            capabilities={"custom_capability": "test"}
+            capabilities={"custom_capability": "test"},
         )
         def decorated_function(arg1, arg2=None):
             return f"Decorated result: {arg1}, {arg2}"
 
         # Check that capabilities were registered
         self.assertIn("decorated_tool", self.tool_adapter.capabilities)
-        self.assertEqual(self.tool_adapter.capabilities["decorated_tool"]["input_format"],
-                        ADKToolAdapter.INPUT_FORMAT_JSON)
-        self.assertEqual(self.tool_adapter.capabilities["decorated_tool"]["output_format"],
-                        ADKToolAdapter.OUTPUT_FORMAT_JSON)
-        self.assertEqual(self.tool_adapter.capabilities["decorated_tool"]["custom_capability"],
-                        "test")
+        self.assertEqual(
+            self.tool_adapter.capabilities["decorated_tool"]["input_format"],
+            ADKToolAdapter.INPUT_FORMAT_JSON,
+        )
+        self.assertEqual(
+            self.tool_adapter.capabilities["decorated_tool"]["output_format"],
+            ADKToolAdapter.OUTPUT_FORMAT_JSON,
+        )
+        self.assertEqual(
+            self.tool_adapter.capabilities["decorated_tool"]["custom_capability"],
+            "test",
+        )
 
     def test_format_input(self):
         """Test formatting input."""
         # Test text format
-        result = self.tool_adapter._format_input("test query", ADKToolAdapter.INPUT_FORMAT_TEXT)
+        result = self.tool_adapter._format_input(
+            "test query", ADKToolAdapter.INPUT_FORMAT_TEXT
+        )
         self.assertEqual(result, "test query")
 
         # Test JSON format
-        result = self.tool_adapter._format_input("test query", ADKToolAdapter.INPUT_FORMAT_JSON)
+        result = self.tool_adapter._format_input(
+            "test query", ADKToolAdapter.INPUT_FORMAT_JSON
+        )
         # Parse the result to check it's valid JSON
         parsed = json.loads(result)
         self.assertEqual(parsed["query"], "test query")
         self.assertIn("context", parsed)
 
         # Test structured format
-        result = self.tool_adapter._format_input("test query", ADKToolAdapter.INPUT_FORMAT_STRUCTURED)
+        result = self.tool_adapter._format_input(
+            "test query", ADKToolAdapter.INPUT_FORMAT_STRUCTURED
+        )
         self.assertIsInstance(result, dict)
         self.assertEqual(result["query"], "test query")
         self.assertIn("context", result)
@@ -363,17 +427,23 @@ class TestADKToolAdapter(unittest.TestCase):
     def test_format_output(self):
         """Test formatting output."""
         # Test text format
-        result = self.tool_adapter._format_output("test output", ADKToolAdapter.OUTPUT_FORMAT_TEXT)
+        result = self.tool_adapter._format_output(
+            "test output", ADKToolAdapter.OUTPUT_FORMAT_TEXT
+        )
         self.assertEqual(result, "test output")
 
         # Test JSON format
-        result = self.tool_adapter._format_output({"key": "value"}, ADKToolAdapter.OUTPUT_FORMAT_JSON)
+        result = self.tool_adapter._format_output(
+            {"key": "value"}, ADKToolAdapter.OUTPUT_FORMAT_JSON
+        )
         # Parse the result to check it's valid JSON
         parsed = json.loads(result)
         self.assertEqual(parsed["key"], "value")
 
         # Test structured format
-        result = self.tool_adapter._format_output("test output", ADKToolAdapter.OUTPUT_FORMAT_STRUCTURED)
+        result = self.tool_adapter._format_output(
+            "test output", ADKToolAdapter.OUTPUT_FORMAT_STRUCTURED
+        )
         self.assertIsInstance(result, dict)
         self.assertEqual(result["content"], "test output")
 
@@ -383,7 +453,7 @@ class TestADKToolAdapter(unittest.TestCase):
         context = self.tool_adapter._parse_context_for_agent(
             "test query",
             ADKToolAdapter.AGENT_TYPE_ARCHITECT,
-            design_patterns=["singleton", "factory"]
+            design_patterns=["singleton", "factory"],
         )
         self.assertEqual(context["query"], "test query")
         self.assertEqual(context["agent_type"], ADKToolAdapter.AGENT_TYPE_ARCHITECT)
@@ -393,7 +463,7 @@ class TestADKToolAdapter(unittest.TestCase):
         context = self.tool_adapter._parse_context_for_agent(
             "test query",
             ADKToolAdapter.AGENT_TYPE_INTERACTION,
-            user_preferences={"theme": "dark"}
+            user_preferences={"theme": "dark"},
         )
         self.assertEqual(context["query"], "test query")
         self.assertEqual(context["agent_type"], ADKToolAdapter.AGENT_TYPE_INTERACTION)
@@ -409,7 +479,7 @@ class TestADKToolAdapter(unittest.TestCase):
         self.tool_adapter.register_specialist_as_tool(
             specialist_name="test_specialist",
             specialist_obj=specialist,
-            capabilities={"custom_capability": "test"}
+            capabilities={"custom_capability": "test"},
         )
 
         # Get capabilities
@@ -429,15 +499,14 @@ class TestADKToolAdapter(unittest.TestCase):
         self.tool_adapter.register_specialist_as_tool(
             specialist_name="test_specialist",
             specialist_obj=specialist,
-            capabilities={"specialist_capability": "test"}
+            capabilities={"specialist_capability": "test"},
         )
 
         def test_function(arg):
             return f"Result: {arg}"
 
         self.tool_adapter.register_function_as_tool(
-            func=test_function,
-            capabilities={"function_capability": "test"}
+            func=test_function, capabilities={"function_capability": "test"}
         )
 
         # Get all capabilities
@@ -446,7 +515,9 @@ class TestADKToolAdapter(unittest.TestCase):
         # Check capabilities
         self.assertIn("test_specialist", capabilities)
         self.assertIn("test_function", capabilities)
-        self.assertEqual(capabilities["test_specialist"]["specialist_capability"], "test")
+        self.assertEqual(
+            capabilities["test_specialist"]["specialist_capability"], "test"
+        )
         self.assertEqual(capabilities["test_function"]["function_capability"], "test")
 
     def test_advertise_capabilities(self):
@@ -460,7 +531,7 @@ class TestADKToolAdapter(unittest.TestCase):
             specialist_name="test_specialist",
             specialist_obj=specialist,
             agent_type=ADKToolAdapter.AGENT_TYPE_ARCHITECT,
-            capabilities={"specialist_capability": "test"}
+            capabilities={"specialist_capability": "test"},
         )
 
         def test_function(arg):
@@ -471,7 +542,7 @@ class TestADKToolAdapter(unittest.TestCase):
             func=test_function,
             input_format=ADKToolAdapter.INPUT_FORMAT_JSON,
             output_format=ADKToolAdapter.OUTPUT_FORMAT_JSON,
-            capabilities={"function_capability": "test"}
+            capabilities={"function_capability": "test"},
         )
 
         # Get advertisement
@@ -494,7 +565,7 @@ class TestADKToolAdapter(unittest.TestCase):
         self.tool_adapter.register_specialist_as_tool(
             specialist_name="architect_specialist",
             specialist_obj=specialist1,
-            agent_type=ADKToolAdapter.AGENT_TYPE_ARCHITECT
+            agent_type=ADKToolAdapter.AGENT_TYPE_ARCHITECT,
         )
 
         specialist2 = MagicMock()
@@ -504,7 +575,7 @@ class TestADKToolAdapter(unittest.TestCase):
         self.tool_adapter.register_specialist_as_tool(
             specialist_name="interaction_specialist",
             specialist_obj=specialist2,
-            agent_type=ADKToolAdapter.AGENT_TYPE_INTERACTION
+            agent_type=ADKToolAdapter.AGENT_TYPE_INTERACTION,
         )
 
         # Get capabilities by type
@@ -527,7 +598,7 @@ class TestADKToolAdapter(unittest.TestCase):
             specialist_name="json_specialist",
             specialist_obj=specialist1,
             input_format=ADKToolAdapter.INPUT_FORMAT_JSON,
-            output_format=ADKToolAdapter.OUTPUT_FORMAT_JSON
+            output_format=ADKToolAdapter.OUTPUT_FORMAT_JSON,
         )
 
         specialist2 = MagicMock()
@@ -538,13 +609,13 @@ class TestADKToolAdapter(unittest.TestCase):
             specialist_name="text_specialist",
             specialist_obj=specialist2,
             input_format=ADKToolAdapter.INPUT_FORMAT_TEXT,
-            output_format=ADKToolAdapter.OUTPUT_FORMAT_TEXT
+            output_format=ADKToolAdapter.OUTPUT_FORMAT_TEXT,
         )
 
         # Get capabilities by format
         json_capabilities = self.tool_adapter.get_capabilities_by_format(
             input_format=ADKToolAdapter.INPUT_FORMAT_JSON,
-            output_format=ADKToolAdapter.OUTPUT_FORMAT_JSON
+            output_format=ADKToolAdapter.OUTPUT_FORMAT_JSON,
         )
 
         # Check capabilities

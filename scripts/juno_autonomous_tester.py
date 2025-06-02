@@ -9,44 +9,52 @@ This script implements a fully autonomous Juno agent that can:
 4. Conduct a complete test session with minimal human intervention
 """
 
-import os
-import sys
+import argparse
 import json
 import logging
-import argparse
-from datetime import datetime
+import os
+import sys
 import time
-from typing import Dict, List, Any, Optional
+from datetime import datetime
+from typing import Any
 
 # Add the project root to the path so we can import our modules
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 try:
-    from google.adk.run import Runner
     from google.adk.agents import Agent
+    from google.adk.run import Runner
+
     from vana.agent import root_agent
 except ImportError:
-    print("Error: Unable to import ADK modules. Make sure you're in the correct virtual environment.")
+    print(
+        "Error: Unable to import ADK modules. Make sure you're in the correct virtual environment."
+    )
     sys.exit(1)
 
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.FileHandler("juno_autonomous_test.log"),
-        logging.StreamHandler()
-    ]
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    handlers=[logging.FileHandler("juno_autonomous_test.log"), logging.StreamHandler()],
 )
 logger = logging.getLogger(__name__)
+
 
 class JunoAutonomousTester:
     """Juno Autonomous Tester for testing Vana"""
 
-    def __init__(self, test_plan_file: str = None, max_tests: int = 10, previous_results_dir: str = "test_results"):
+    def __init__(
+        self,
+        test_plan_file: str = None,
+        max_tests: int = 10,
+        previous_results_dir: str = "test_results",
+    ):
         """Initialize the Juno autonomous tester"""
         # Load previous test results
-        previous_results_summary = self._load_previous_test_results(previous_results_dir)
+        previous_results_summary = self._load_previous_test_results(
+            previous_results_dir
+        )
 
         # Create Juno agent with knowledge of previous test results
         self.juno = Agent(
@@ -90,7 +98,7 @@ class JunoAutonomousTester:
             3. Would benefit from different types of questions
 
             Document any improvements or regressions you observe compared to previous test results.
-            """
+            """,
         )
 
         # Create a runner for Juno
@@ -117,26 +125,30 @@ class JunoAutonomousTester:
             return "No previous test results found."
 
         # Find all JSON files in the results directory
-        result_files = [f for f in os.listdir(results_dir) if f.endswith('.json')]
+        result_files = [f for f in os.listdir(results_dir) if f.endswith(".json")]
         if not result_files:
             logger.info(f"No test result files found in {results_dir}")
             return "No previous test results found."
 
         # Sort by modification time (newest first)
-        result_files.sort(key=lambda f: os.path.getmtime(os.path.join(results_dir, f)), reverse=True)
+        result_files.sort(
+            key=lambda f: os.path.getmtime(os.path.join(results_dir, f)), reverse=True
+        )
 
         # Load the most recent results (up to 3 files)
         recent_results = []
         for file_name in result_files[:3]:
             try:
-                with open(os.path.join(results_dir, file_name), 'r') as f:
+                with open(os.path.join(results_dir, file_name)) as f:
                     result_data = json.load(f)
-                    recent_results.append({
-                        "file": file_name,
-                        "timestamp": result_data.get("timestamp", "Unknown"),
-                        "results": result_data.get("test_results", []),
-                        "summary": result_data.get("summary", {})
-                    })
+                    recent_results.append(
+                        {
+                            "file": file_name,
+                            "timestamp": result_data.get("timestamp", "Unknown"),
+                            "results": result_data.get("test_results", []),
+                            "summary": result_data.get("summary", {}),
+                        }
+                    )
             except Exception as e:
                 logger.warning(f"Error loading test results from {file_name}: {str(e)}")
 
@@ -164,10 +176,16 @@ class JunoAutonomousTester:
             # Add details of individual tests
             if test_results:
                 summary += "- Test details:\n"
-                for test in test_results[:5]:  # Limit to first 5 tests to avoid context overflow
+                for test in test_results[
+                    :5
+                ]:  # Limit to first 5 tests to avoid context overflow
                     test_id = test.get("id", "Unknown")
                     status = test.get("status", "Unknown")
-                    question = test.get("question", "")[:50] + "..." if len(test.get("question", "")) > 50 else test.get("question", "")
+                    question = (
+                        test.get("question", "")[:50] + "..."
+                        if len(test.get("question", "")) > 50
+                        else test.get("question", "")
+                    )
                     summary += f"  - {test_id}: {status} - {question}\n"
 
                 if len(test_results) > 5:
@@ -181,7 +199,11 @@ class JunoAutonomousTester:
         # Identify common failures
         all_failures = []
         for result in recent_results:
-            failures = [test for test in result.get("results", []) if test.get("status") == "FAIL"]
+            failures = [
+                test
+                for test in result.get("results", [])
+                if test.get("status") == "FAIL"
+            ]
             all_failures.extend(failures)
 
         if all_failures:
@@ -218,14 +240,14 @@ class JunoAutonomousTester:
     def load_test_plan(self, file_path: str) -> None:
         """Load a test plan from a JSON file"""
         try:
-            with open(file_path, 'r') as f:
+            with open(file_path) as f:
                 self.test_plan = json.load(f)
             logger.info(f"Loaded test plan from {file_path}")
         except Exception as e:
             logger.error(f"Error loading test plan: {str(e)}")
             sys.exit(1)
 
-    def generate_test_plan(self) -> Dict[str, Any]:
+    def generate_test_plan(self) -> dict[str, Any]:
         """Have Juno generate a test plan"""
         logger.info("Generating test plan...")
 
@@ -262,14 +284,14 @@ class JunoAutonomousTester:
                         {
                             "id": "VS-001",
                             "question": "What is the architecture of VANA?",
-                            "success_criteria": "Response includes information about multi-agent structure and cites relevant sources"
+                            "success_criteria": "Response includes information about multi-agent structure and cites relevant sources",
                         },
                         {
                             "id": "VS-002",
                             "question": "Explain how Vector Search is implemented in VANA",
-                            "success_criteria": "Response includes technical details about Vertex AI Vector Search implementation"
-                        }
-                    ]
+                            "success_criteria": "Response includes technical details about Vertex AI Vector Search implementation",
+                        },
+                    ],
                 },
                 {
                     "name": "Knowledge Graph",
@@ -277,14 +299,14 @@ class JunoAutonomousTester:
                         {
                             "id": "KG-001",
                             "question": "How are entities and relationships represented in VANA's Knowledge Graph?",
-                            "success_criteria": "Response explains entity-relationship model and cites Knowledge Graph as a source"
+                            "success_criteria": "Response explains entity-relationship model and cites Knowledge Graph as a source",
                         },
                         {
                             "id": "KG-002",
                             "question": "What is the relationship between Vector Search and Knowledge Graph in VANA?",
-                            "success_criteria": "Response explains how these components work together"
-                        }
-                    ]
+                            "success_criteria": "Response explains how these components work together",
+                        },
+                    ],
                 },
                 {
                     "name": "Web Search",
@@ -292,14 +314,14 @@ class JunoAutonomousTester:
                         {
                             "id": "WS-001",
                             "question": "What is the latest version of Google's Agent Development Kit?",
-                            "success_criteria": "Response includes up-to-date information that would not be in the local knowledge base"
+                            "success_criteria": "Response includes up-to-date information that would not be in the local knowledge base",
                         },
                         {
                             "id": "WS-002",
                             "question": "What are the recent developments in large language models?",
-                            "success_criteria": "Response includes recent information about LLMs"
-                        }
-                    ]
+                            "success_criteria": "Response includes recent information about LLMs",
+                        },
+                    ],
                 },
                 {
                     "name": "Hybrid Search",
@@ -307,14 +329,14 @@ class JunoAutonomousTester:
                         {
                             "id": "HS-001",
                             "question": "Explain how VANA's hybrid search works and its advantages",
-                            "success_criteria": "Response explains the combination of Vector Search, Knowledge Graph, and Web Search"
+                            "success_criteria": "Response explains the combination of Vector Search, Knowledge Graph, and Web Search",
                         },
                         {
                             "id": "HS-002",
                             "question": "How does VANA decide which knowledge source to use for a query?",
-                            "success_criteria": "Response explains the decision-making process for knowledge source selection"
-                        }
-                    ]
+                            "success_criteria": "Response explains the decision-making process for knowledge source selection",
+                        },
+                    ],
                 },
                 {
                     "name": "Document Processing",
@@ -322,23 +344,23 @@ class JunoAutonomousTester:
                         {
                             "id": "DP-001",
                             "question": "How does VANA process and chunk documents for knowledge retrieval?",
-                            "success_criteria": "Response explains semantic chunking and document processing pipeline"
+                            "success_criteria": "Response explains semantic chunking and document processing pipeline",
                         },
                         {
                             "id": "DP-002",
                             "question": "How does VANA extract entities from documents?",
-                            "success_criteria": "Response explains entity extraction process"
-                        }
-                    ]
-                }
-            ]
+                            "success_criteria": "Response explains entity extraction process",
+                        },
+                    ],
+                },
+            ],
         }
 
         self.test_plan = test_plan
         logger.info("Test plan generated")
         return test_plan
 
-    def run_autonomous_test_session(self) -> List[Dict[str, Any]]:
+    def run_autonomous_test_session(self) -> list[dict[str, Any]]:
         """Run a complete autonomous test session"""
         logger.info("Starting autonomous test session...")
 
@@ -377,23 +399,14 @@ class JunoAutonomousTester:
                 "timestamp": datetime.now().isoformat(),
                 "question": question,
                 "vana_response": vana_response,
-                "juno_analysis": analysis
+                "juno_analysis": analysis,
             }
             self.test_results.append(test_result)
 
             # Update conversation history
-            self.conversation_history.append({
-                "role": "juno",
-                "content": next_test
-            })
-            self.conversation_history.append({
-                "role": "vana",
-                "content": vana_response
-            })
-            self.conversation_history.append({
-                "role": "juno",
-                "content": analysis
-            })
+            self.conversation_history.append({"role": "juno", "content": next_test})
+            self.conversation_history.append({"role": "vana", "content": vana_response})
+            self.conversation_history.append({"role": "juno", "content": analysis})
 
             test_count += 1
 
@@ -433,20 +446,16 @@ class JunoAutonomousTester:
         response = self.juno_runner.run(prompt)
         logger.info(f"Juno initialized: {response.text[:100]}...")
 
-        self.conversation_history.append({
-            "role": "system",
-            "content": prompt
-        })
-        self.conversation_history.append({
-            "role": "juno",
-            "content": response.text
-        })
+        self.conversation_history.append({"role": "system", "content": prompt})
+        self.conversation_history.append({"role": "juno", "content": response.text})
 
     def _get_next_test(self) -> str:
         """Have Juno decide on the next test"""
         # Construct a prompt that includes the conversation history
         history_text = ""
-        for message in self.conversation_history[-6:]:  # Include only the last 6 messages to avoid context limits
+        for message in self.conversation_history[
+            -6:
+        ]:  # Include only the last 6 messages to avoid context limits
             role = message["role"]
             content = message["content"]
             history_text += f"\n{role.upper()}: {content}\n"
@@ -567,27 +576,49 @@ class JunoAutonomousTester:
         os.makedirs("test_results", exist_ok=True)
 
         with open(results_file, "w") as f:
-            json.dump({
-                "test_plan": self.test_plan,
-                "test_results": self.test_results,
-                "conversation_history": self.conversation_history,
-                "timestamp": datetime.now().isoformat()
-            }, f, indent=2)
+            json.dump(
+                {
+                    "test_plan": self.test_plan,
+                    "test_results": self.test_results,
+                    "conversation_history": self.conversation_history,
+                    "timestamp": datetime.now().isoformat(),
+                },
+                f,
+                indent=2,
+            )
 
         logger.info(f"Test results saved to {results_file}")
+
 
 def main():
     """Main function"""
     parser = argparse.ArgumentParser(description="Juno Autonomous Tester for Vana")
-    parser.add_argument("--test-plan", "-t", type=str, help="Path to test plan JSON file")
-    parser.add_argument("--max-tests", "-m", type=int, default=10,
-                        help="Maximum number of tests to run")
-    parser.add_argument("--output", "-o", type=str, default="test_results",
-                        help="Path to output directory for test results")
-    parser.add_argument("--previous-results", "-p", type=str, default="test_results",
-                        help="Path to directory containing previous test results")
-    parser.add_argument("--ignore-previous", "-i", action="store_true",
-                        help="Ignore previous test results")
+    parser.add_argument(
+        "--test-plan", "-t", type=str, help="Path to test plan JSON file"
+    )
+    parser.add_argument(
+        "--max-tests", "-m", type=int, default=10, help="Maximum number of tests to run"
+    )
+    parser.add_argument(
+        "--output",
+        "-o",
+        type=str,
+        default="test_results",
+        help="Path to output directory for test results",
+    )
+    parser.add_argument(
+        "--previous-results",
+        "-p",
+        type=str,
+        default="test_results",
+        help="Path to directory containing previous test results",
+    )
+    parser.add_argument(
+        "--ignore-previous",
+        "-i",
+        action="store_true",
+        help="Ignore previous test results",
+    )
 
     args = parser.parse_args()
 
@@ -602,11 +633,14 @@ def main():
     juno = JunoAutonomousTester(
         test_plan_file=args.test_plan,
         max_tests=args.max_tests,
-        previous_results_dir=previous_results_dir
+        previous_results_dir=previous_results_dir,
     )
     juno.run_autonomous_test_session()
 
-    print(f"\nAutonomous testing session completed. Results saved to {output_dir} directory.")
+    print(
+        f"\nAutonomous testing session completed. Results saved to {output_dir} directory."
+    )
+
 
 if __name__ == "__main__":
     main()

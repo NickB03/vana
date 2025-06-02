@@ -13,11 +13,10 @@ MCP Server Implementation:
 - Cloud Run compatible architecture
 """
 
-import os
-import json
 import logging
-import requests
-from typing import Dict, Optional, Any
+import os
+from typing import Any
+
 from google.adk.tools import FunctionTool
 
 logger = logging.getLogger(__name__)
@@ -26,7 +25,10 @@ logger = logging.getLogger(__name__)
 # TIER 1 PRIORITY: CONTEXT7 SEQUENTIAL THINKING MCP TOOL
 # ============================================================================
 
-def context7_sequential_thinking(prompt: str, minimum_tokens: int = 10000) -> Dict[str, Any]:
+
+def context7_sequential_thinking(
+    prompt: str, minimum_tokens: int = 10000
+) -> dict[str, Any]:
     """
     Advanced reasoning and structured problem-solving using sequential thinking patterns.
 
@@ -48,19 +50,24 @@ def context7_sequential_thinking(prompt: str, minimum_tokens: int = 10000) -> Di
             "sequential_steps": [],
             "considerations": [],
             "synthesis": "",
-            "recommendations": []
+            "recommendations": [],
         }
 
         # Break down the prompt into analyzable components
         if "benefits" in prompt.lower() and "challenges" in prompt.lower():
-            analysis_framework["key_components"] = ["Benefits Analysis", "Challenges Analysis", "Trade-offs", "Implementation Considerations"]
+            analysis_framework["key_components"] = [
+                "Benefits Analysis",
+                "Challenges Analysis",
+                "Trade-offs",
+                "Implementation Considerations",
+            ]
 
             analysis_framework["sequential_steps"] = [
                 "1. Identify and categorize primary benefits",
                 "2. Analyze potential challenges and risks",
                 "3. Evaluate trade-offs between benefits and challenges",
                 "4. Consider implementation strategies",
-                "5. Synthesize findings into actionable insights"
+                "5. Synthesize findings into actionable insights",
             ]
 
             # Structured analysis for MCP servers (based on prompt context)
@@ -70,7 +77,7 @@ def context7_sequential_thinking(prompt: str, minimum_tokens: int = 10000) -> Di
                     "Scalability: Performance under load and resource management",
                     "Security: Authentication, authorization, and data protection",
                     "Maintenance: Long-term support and update mechanisms",
-                    "Ecosystem: Community support and available implementations"
+                    "Ecosystem: Community support and available implementations",
                 ]
 
                 analysis_framework["synthesis"] = """
@@ -98,18 +105,23 @@ def context7_sequential_thinking(prompt: str, minimum_tokens: int = 10000) -> Di
                     "Implement comprehensive monitoring and logging",
                     "Design fallback mechanisms for critical operations",
                     "Establish clear versioning and update strategies",
-                    "Build internal expertise through pilot projects"
+                    "Build internal expertise through pilot projects",
                 ]
 
         elif "implementation" in prompt.lower() and "patterns" in prompt.lower():
-            analysis_framework["key_components"] = ["Pattern Analysis", "Best Practices", "Common Pitfalls", "Success Factors"]
+            analysis_framework["key_components"] = [
+                "Pattern Analysis",
+                "Best Practices",
+                "Common Pitfalls",
+                "Success Factors",
+            ]
 
             analysis_framework["sequential_steps"] = [
                 "1. Identify established implementation patterns",
                 "2. Analyze pattern effectiveness and applicability",
                 "3. Document best practices and guidelines",
                 "4. Highlight common pitfalls and mitigation strategies",
-                "5. Synthesize into actionable implementation framework"
+                "5. Synthesize into actionable implementation framework",
             ]
 
             if "mcp" in prompt.lower():
@@ -142,7 +154,7 @@ def context7_sequential_thinking(prompt: str, minimum_tokens: int = 10000) -> Di
                 "2. Identify key variables and constraints",
                 "3. Analyze relationships and dependencies",
                 "4. Generate potential solutions or approaches",
-                "5. Evaluate options and synthesize recommendations"
+                "5. Evaluate options and synthesize recommendations",
             ]
 
             analysis_framework["synthesis"] = f"""
@@ -161,7 +173,7 @@ def context7_sequential_thinking(prompt: str, minimum_tokens: int = 10000) -> Di
             "framework": "Context7 Sequential Thinking",
             "tokens_used": minimum_tokens,
             "confidence": "high",
-            "methodology": "Systematic decomposition and structured reasoning"
+            "methodology": "Systematic decomposition and structured reasoning",
         }
 
     except Exception as e:
@@ -171,14 +183,16 @@ def context7_sequential_thinking(prompt: str, minimum_tokens: int = 10000) -> Di
             "status": "failed",
             "prompt": prompt,
             "fallback_message": "Error occurred during structured analysis",
-            "framework": "Context7 Sequential Thinking"
+            "framework": "Context7 Sequential Thinking",
         }
+
 
 # ============================================================================
 # TIER 1 PRIORITY: BRAVE SEARCH MCP TOOL (UPGRADED)
 # ============================================================================
 
-def brave_search_mcp(query: str, max_results: int = 5) -> Dict[str, Any]:
+
+def brave_search_mcp(query: str, max_results: int = 5) -> dict[str, Any]:
     """
     Enhanced web search using Brave Search API with MCP-style interface.
 
@@ -203,8 +217,8 @@ def brave_search_mcp(query: str, max_results: int = 5) -> Dict[str, Any]:
                 "setup_instructions": [
                     "1. Get API key from https://api.search.brave.com/",
                     "2. Set environment variable: BRAVE_API_KEY=your_key_here",
-                    "3. Restart the service to pick up the new key"
-                ]
+                    "3. Restart the service to pick up the new key",
+                ],
             }
 
         # Import requests for API calls
@@ -214,7 +228,7 @@ def brave_search_mcp(query: str, max_results: int = 5) -> Dict[str, Any]:
             return {
                 "error": "requests library not available",
                 "message": "Cannot make HTTP requests for Brave Search API",
-                "status": "dependency_missing"
+                "status": "dependency_missing",
             }
 
         # Make direct API call to Brave Search with enhanced parameters
@@ -222,7 +236,7 @@ def brave_search_mcp(query: str, max_results: int = 5) -> Dict[str, Any]:
         headers = {
             "Accept": "application/json",
             "Accept-Encoding": "gzip",
-            "X-Subscription-Token": brave_api_key
+            "X-Subscription-Token": brave_api_key,
         }
         params = {
             "q": query,
@@ -233,7 +247,7 @@ def brave_search_mcp(query: str, max_results: int = 5) -> Dict[str, Any]:
             "freshness": "pd",  # Past day for recent results
             "text_decorations": False,
             "spellcheck": True,
-            "result_filter": "web"  # Focus on web results
+            "result_filter": "web",  # Focus on web results
         }
 
         response = requests.get(url, headers=headers, params=params, timeout=12)
@@ -246,21 +260,37 @@ def brave_search_mcp(query: str, max_results: int = 5) -> Dict[str, Any]:
             web_results = data.get("web", {}).get("results", [])
 
             for result in web_results[:max_results]:
-                results.append({
-                    "title": result.get("title", ""),
-                    "url": result.get("url", ""),
-                    "description": result.get("description", ""),
-                    "published": result.get("age", ""),
-                    "source": "Brave Search Enhanced",
-                    "relevance_score": result.get("profile", {}).get("score", 0),
-                    "language": result.get("language", "en")
-                })
+                results.append(
+                    {
+                        "title": result.get("title", ""),
+                        "url": result.get("url", ""),
+                        "description": result.get("description", ""),
+                        "published": result.get("age", ""),
+                        "source": "Brave Search Enhanced",
+                        "relevance_score": result.get("profile", {}).get("score", 0),
+                        "language": result.get("language", "en"),
+                    }
+                )
 
             # Add query analysis and insights
             query_insights = {
-                "query_type": "informational" if any(word in query.lower() for word in ["what", "how", "why", "when", "where"]) else "navigational",
-                "complexity": "high" if len(query.split()) > 5 else "medium" if len(query.split()) > 2 else "simple",
-                "domain_focus": "technical" if any(word in query.lower() for word in ["api", "code", "programming", "server", "mcp"]) else "general"
+                "query_type": "informational"
+                if any(
+                    word in query.lower()
+                    for word in ["what", "how", "why", "when", "where"]
+                )
+                else "navigational",
+                "complexity": "high"
+                if len(query.split()) > 5
+                else "medium"
+                if len(query.split()) > 2
+                else "simple",
+                "domain_focus": "technical"
+                if any(
+                    word in query.lower()
+                    for word in ["api", "code", "programming", "server", "mcp"]
+                )
+                else "general",
             }
 
             return {
@@ -276,8 +306,8 @@ def brave_search_mcp(query: str, max_results: int = 5) -> Dict[str, Any]:
                     "Relevance scoring",
                     "Language detection",
                     "Query analysis",
-                    "Structured metadata"
-                ]
+                    "Structured metadata",
+                ],
             }
 
         elif response.status_code == 429:
@@ -285,13 +315,15 @@ def brave_search_mcp(query: str, max_results: int = 5) -> Dict[str, Any]:
                 "error": "Brave Search API rate limit exceeded",
                 "status": "rate_limited",
                 "message": "Too many requests - please wait before trying again",
-                "retry_after": response.headers.get("Retry-After", "60") + " seconds"
+                "retry_after": response.headers.get("Retry-After", "60") + " seconds",
             }
         else:
             return {
                 "error": f"Brave Search API error: {response.status_code}",
-                "message": response.text[:200] if response.text else "Unknown API error",
-                "status": "api_error"
+                "message": response.text[:200]
+                if response.text
+                else "Unknown API error",
+                "status": "api_error",
             }
 
     except requests.exceptions.Timeout:
@@ -300,7 +332,7 @@ def brave_search_mcp(query: str, max_results: int = 5) -> Dict[str, Any]:
             "status": "timeout",
             "query": query,
             "message": "Search request took too long",
-            "suggestion": "Try a more specific search query"
+            "suggestion": "Try a more specific search query",
         }
     except Exception as e:
         logger.error(f"Brave Search Enhanced error: {e}")
@@ -309,14 +341,16 @@ def brave_search_mcp(query: str, max_results: int = 5) -> Dict[str, Any]:
             "status": "failed",
             "query": query,
             "fallback_message": "Error occurred during Brave Search API call",
-            "troubleshooting": "Check BRAVE_API_KEY configuration and network connectivity"
+            "troubleshooting": "Check BRAVE_API_KEY configuration and network connectivity",
         }
+
 
 # ============================================================================
 # TIER 1 PRIORITY: GITHUB MCP TOOL
 # ============================================================================
 
-def github_mcp_operations(operation: str, **kwargs) -> Dict[str, Any]:
+
+def github_mcp_operations(operation: str, **kwargs) -> dict[str, Any]:
     """
     GitHub operations using GitHub API with MCP-style interface.
 
@@ -332,7 +366,9 @@ def github_mcp_operations(operation: str, **kwargs) -> Dict[str, Any]:
     """
     try:
         # Check if GitHub token is configured
-        github_token = os.getenv("GITHUB_TOKEN") or os.getenv("GITHUB_PERSONAL_ACCESS_TOKEN")
+        github_token = os.getenv("GITHUB_TOKEN") or os.getenv(
+            "GITHUB_PERSONAL_ACCESS_TOKEN"
+        )
         if not github_token:
             return {
                 "error": "GitHub token not configured",
@@ -341,8 +377,8 @@ def github_mcp_operations(operation: str, **kwargs) -> Dict[str, Any]:
                 "setup_instructions": [
                     "1. Create a GitHub Personal Access Token at https://github.com/settings/tokens",
                     "2. Set environment variable: export GITHUB_TOKEN=your_token_here",
-                    "3. Restart the service to pick up the new token"
-                ]
+                    "3. Restart the service to pick up the new token",
+                ],
             }
 
         # Import requests for API calls
@@ -352,19 +388,52 @@ def github_mcp_operations(operation: str, **kwargs) -> Dict[str, Any]:
             return {
                 "error": "requests library not available",
                 "message": "Cannot make HTTP requests for GitHub API",
-                "status": "dependency_missing"
+                "status": "dependency_missing",
             }
 
         # Validate operation type and map to GitHub API endpoints
         operation_mapping = {
-            "repos": {"method": "GET", "endpoint": "/user/repos", "description": "List user repositories"},
-            "issues": {"method": "GET", "endpoint": "/issues", "description": "List user issues"},
-            "pull_requests": {"method": "GET", "endpoint": "/search/issues", "query": "type:pr author:@me", "description": "List user pull requests"},
-            "user_info": {"method": "GET", "endpoint": "/user", "description": "Get authenticated user info"},
-            "repo_info": {"method": "GET", "endpoint": "/repos/{owner}/{repo}", "description": "Get repository information"},
-            "repo_issues": {"method": "GET", "endpoint": "/repos/{owner}/{repo}/issues", "description": "List repository issues"},
-            "repo_prs": {"method": "GET", "endpoint": "/repos/{owner}/{repo}/pulls", "description": "List repository pull requests"},
-            "create_issue": {"method": "POST", "endpoint": "/repos/{owner}/{repo}/issues", "description": "Create new issue"}
+            "repos": {
+                "method": "GET",
+                "endpoint": "/user/repos",
+                "description": "List user repositories",
+            },
+            "issues": {
+                "method": "GET",
+                "endpoint": "/issues",
+                "description": "List user issues",
+            },
+            "pull_requests": {
+                "method": "GET",
+                "endpoint": "/search/issues",
+                "query": "type:pr author:@me",
+                "description": "List user pull requests",
+            },
+            "user_info": {
+                "method": "GET",
+                "endpoint": "/user",
+                "description": "Get authenticated user info",
+            },
+            "repo_info": {
+                "method": "GET",
+                "endpoint": "/repos/{owner}/{repo}",
+                "description": "Get repository information",
+            },
+            "repo_issues": {
+                "method": "GET",
+                "endpoint": "/repos/{owner}/{repo}/issues",
+                "description": "List repository issues",
+            },
+            "repo_prs": {
+                "method": "GET",
+                "endpoint": "/repos/{owner}/{repo}/pulls",
+                "description": "List repository pull requests",
+            },
+            "create_issue": {
+                "method": "POST",
+                "endpoint": "/repos/{owner}/{repo}/issues",
+                "description": "Create new issue",
+            },
         }
 
         if operation not in operation_mapping:
@@ -372,7 +441,9 @@ def github_mcp_operations(operation: str, **kwargs) -> Dict[str, Any]:
                 "error": f"Invalid operation: {operation}",
                 "valid_operations": list(operation_mapping.keys()),
                 "status": "invalid_operation",
-                "available_operations": {k: v["description"] for k, v in operation_mapping.items()}
+                "available_operations": {
+                    k: v["description"] for k, v in operation_mapping.items()
+                },
             }
 
         # Prepare GitHub API request
@@ -380,7 +451,7 @@ def github_mcp_operations(operation: str, **kwargs) -> Dict[str, Any]:
         headers = {
             "Authorization": f"token {github_token}",
             "Accept": "application/vnd.github.v3+json",
-            "User-Agent": "VANA-Agent/1.0"
+            "User-Agent": "VANA-Agent/1.0",
         }
 
         op_config = operation_mapping[operation]
@@ -395,7 +466,7 @@ def github_mcp_operations(operation: str, **kwargs) -> Dict[str, Any]:
                     "error": "Missing required parameters",
                     "required": ["owner", "repo"],
                     "provided": list(kwargs.keys()),
-                    "status": "missing_parameters"
+                    "status": "missing_parameters",
                 }
             endpoint = endpoint.format(owner=owner, repo=repo)
 
@@ -419,7 +490,7 @@ def github_mcp_operations(operation: str, **kwargs) -> Dict[str, Any]:
         else:
             return {
                 "error": f"Unsupported HTTP method: {op_config['method']}",
-                "status": "method_not_supported"
+                "status": "method_not_supported",
             }
 
         if response.status_code in [200, 201]:
@@ -436,7 +507,7 @@ def github_mcp_operations(operation: str, **kwargs) -> Dict[str, Any]:
                         "language": repo.get("language"),
                         "stars": repo.get("stargazers_count"),
                         "forks": repo.get("forks_count"),
-                        "updated": repo.get("updated_at")
+                        "updated": repo.get("updated_at"),
                     }
                     for repo in (data if isinstance(data, list) else [data])
                 ]
@@ -448,7 +519,9 @@ def github_mcp_operations(operation: str, **kwargs) -> Dict[str, Any]:
                         "state": issue.get("state"),
                         "author": issue.get("user", {}).get("login"),
                         "created": issue.get("created_at"),
-                        "labels": [label.get("name") for label in issue.get("labels", [])]
+                        "labels": [
+                            label.get("name") for label in issue.get("labels", [])
+                        ],
                     }
                     for issue in (data if isinstance(data, list) else [data])
                 ]
@@ -464,7 +537,7 @@ def github_mcp_operations(operation: str, **kwargs) -> Dict[str, Any]:
                 "mcp_interface": "GitHub API with MCP-style structuring",
                 "api_response_time": f"{response.elapsed.total_seconds():.2f}s",
                 "rate_limit_remaining": response.headers.get("X-RateLimit-Remaining"),
-                "rate_limit_reset": response.headers.get("X-RateLimit-Reset")
+                "rate_limit_reset": response.headers.get("X-RateLimit-Reset"),
             }
 
         elif response.status_code == 401:
@@ -472,26 +545,28 @@ def github_mcp_operations(operation: str, **kwargs) -> Dict[str, Any]:
                 "error": "GitHub authentication failed",
                 "status": "authentication_failed",
                 "message": "Invalid or expired GitHub token",
-                "suggestion": "Check your GitHub token permissions and expiration"
+                "suggestion": "Check your GitHub token permissions and expiration",
             }
         elif response.status_code == 403:
             return {
                 "error": "GitHub API rate limit exceeded",
                 "status": "rate_limited",
                 "message": "Too many requests to GitHub API",
-                "rate_limit_reset": response.headers.get("X-RateLimit-Reset")
+                "rate_limit_reset": response.headers.get("X-RateLimit-Reset"),
             }
         elif response.status_code == 404:
             return {
                 "error": "GitHub resource not found",
                 "status": "not_found",
-                "message": "Repository, user, or resource does not exist or is not accessible"
+                "message": "Repository, user, or resource does not exist or is not accessible",
             }
         else:
             return {
                 "error": f"GitHub API error: {response.status_code}",
-                "message": response.text[:200] if response.text else "Unknown API error",
-                "status": "api_error"
+                "message": response.text[:200]
+                if response.text
+                else "Unknown API error",
+                "status": "api_error",
             }
 
     except requests.exceptions.Timeout:
@@ -500,7 +575,7 @@ def github_mcp_operations(operation: str, **kwargs) -> Dict[str, Any]:
             "status": "timeout",
             "operation": operation,
             "message": "GitHub API request took too long",
-            "suggestion": "Try again or check GitHub API status"
+            "suggestion": "Try again or check GitHub API status",
         }
     except Exception as e:
         logger.error(f"GitHub MCP error: {e}")
@@ -509,8 +584,9 @@ def github_mcp_operations(operation: str, **kwargs) -> Dict[str, Any]:
             "status": "failed",
             "operation": operation,
             "fallback_message": "Error occurred during GitHub API communication",
-            "troubleshooting": "Check GitHub token configuration and network connectivity"
+            "troubleshooting": "Check GitHub token configuration and network connectivity",
         }
+
 
 # ============================================================================
 # AWS LAMBDA MCP TOOL REMOVED PER USER REQUEST
@@ -522,10 +598,11 @@ def github_mcp_operations(operation: str, **kwargs) -> Dict[str, Any]:
 # MCP SERVER MANAGEMENT UTILITIES
 # ============================================================================
 
-def list_available_mcp_servers() -> Dict[str, Any]:
+
+def list_available_mcp_servers() -> dict[str, Any]:
     """
     List all available MCP servers configured for VANA.
-    
+
     Returns:
         Dict containing available MCP servers and their status
     """
@@ -535,43 +612,45 @@ def list_available_mcp_servers() -> Dict[str, Any]:
                 "package": "@modelcontextprotocol/server-brave-search",
                 "type": "npm_global",
                 "status": "ready" if os.getenv("BRAVE_API_KEY") else "needs_api_key",
-                "description": "Enhanced web search with AI-powered results"
+                "description": "Enhanced web search with AI-powered results",
             },
             "github": {
                 "package": "ghcr.io/github/github-mcp-server",
                 "type": "docker",
                 "status": "ready" if os.getenv("GITHUB_TOKEN") else "needs_token",
-                "description": "Complete GitHub workflow automation"
-            }
+                "description": "Complete GitHub workflow automation",
+            },
         },
         "tier_2_priority": {
             "notion": {
                 "package": "@notionhq/notion-mcp-server",
                 "type": "npm_global",
                 "status": "needs_api_token",
-                "description": "Knowledge management and documentation"
+                "description": "Knowledge management and documentation",
             },
             "mongodb": {
                 "package": "@mongodb-js/mongodb-mcp-server",
                 "type": "npm_global",
                 "status": "needs_connection_string",
-                "description": "Database operations and management"
-            }
-        }
+                "description": "Database operations and management",
+            },
+        },
     }
-    
+
     return {
         "available_servers": servers,
         "total_servers": sum(len(tier.keys()) for tier in servers.values()),
         "ready_servers": sum(
-            1 for tier in servers.values() 
-            for server in tier.values() 
+            1
+            for tier in servers.values()
+            for server in tier.values()
             if server["status"] == "ready"
         ),
-        "implementation_status": "Phase 6A in progress"
+        "implementation_status": "Phase 6A in progress",
     }
 
-def get_mcp_integration_status() -> Dict[str, Any]:
+
+def get_mcp_integration_status() -> dict[str, Any]:
     """
     Get current MCP integration status for VANA agent.
 
@@ -583,7 +662,9 @@ def get_mcp_integration_status() -> Dict[str, Any]:
     """
     # Check authentication status for each MCP server
     brave_api_key = os.getenv("BRAVE_API_KEY")
-    github_token = os.getenv("GITHUB_TOKEN") or os.getenv("GITHUB_PERSONAL_ACCESS_TOKEN")
+    github_token = os.getenv("GITHUB_TOKEN") or os.getenv(
+        "GITHUB_PERSONAL_ACCESS_TOKEN"
+    )
 
     # Calculate readiness metrics
     framework_complete = True
@@ -593,7 +674,7 @@ def get_mcp_integration_status() -> Dict[str, Any]:
         "brave_search": "✅ Ready" if brave_api_key else "❌ API key needed",
         "github": "✅ Ready" if github_token else "❌ Token needed",
         "notion": "❌ API token needed",
-        "mongodb": "❌ Connection string needed"
+        "mongodb": "❌ Connection string needed",
     }
 
     ready_count = sum(1 for status in auth_status.values() if "✅" in status)
@@ -611,30 +692,31 @@ def get_mcp_integration_status() -> Dict[str, Any]:
             "tool_registration": "✅ Complete",
             "authentication_setup": f"{ready_count}/4 ready (aws_lambda removed)",
             "server_communication": "🔄 Next step",
-            "testing_validation": "✅ Puppeteer validated"
+            "testing_validation": "✅ Puppeteer validated",
         },
         "next_implementation_steps": [
             "1. Implement actual MCP server communication (SSE/HTTP)",
             "2. Test Brave Search MCP with real API calls",
             "3. Configure GitHub token for GitHub MCP operations",
             "4. Deploy Phase 6A changes to Cloud Run",
-            "5. Begin Phase 6B with Tier 2 MCP tools"
+            "5. Begin Phase 6B with Tier 2 MCP tools",
         ],
         "technical_details": {
             "patterns_implemented": [
                 "ADK-compliant FunctionTool wrappers",
                 "Environment-based authentication",
                 "Structured error handling",
-                "Tool orchestration framework"
+                "Tool orchestration framework",
             ],
             "reference_samples": [
                 "mcp_sse_agent (Server-Sent Events)",
                 "mcp_streamablehttp_agent (HTTP streaming)",
-                "filesystem_server.py (Local servers)"
-            ]
+                "filesystem_server.py (Local servers)",
+            ],
         },
-        "confidence_level": "9/10 - Framework complete, ready for server communication"
+        "confidence_level": "9/10 - Framework complete, ready for server communication",
     }
+
 
 # ============================================================================
 # ADK FUNCTION TOOL WRAPPERS
@@ -662,5 +744,5 @@ __all__ = [
     "adk_brave_search_mcp",
     "adk_github_mcp_operations",
     "adk_list_available_mcp_servers",
-    "adk_get_mcp_integration_status"
+    "adk_get_mcp_integration_status",
 ]

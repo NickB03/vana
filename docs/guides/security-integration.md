@@ -37,7 +37,7 @@ from config import environment
 
 class SomeToolClient:
     def __init__(self):
-        self.api_key = environment.SOME_API_KEY 
+        self.api_key = environment.SOME_API_KEY
         # self.service_endpoint = environment.SOME_SERVICE_ENDPOINT
         # Further initialization using these credentials
         pass
@@ -69,7 +69,7 @@ VANA's logging system (`tools/logging/logger.py`) should be used to record secur
 # audit_style_logger = get_logger("vana.audit") # Potentially a dedicated logger name
 
 # audit_style_logger.info(
-#     "Sensitive operation performed.", 
+#     "Sensitive operation performed.",
 #     extra={"user_id": "agent_007", "operation": "update_critical_config", "details": {"config_key": "X"}}
 # )
 ```
@@ -104,14 +104,14 @@ Security practices are applied when VANA components, like the `KnowledgeGraphMan
     # from tools.logging.logger import get_logger
     # logger = get_logger(__name__) # Ensure logger is defined
     # mcp_circuit_breaker = CircuitBreaker(name="mcp_server_calls", ...) # Initialize appropriately
-    
+
     # def make_mcp_request(self, method, endpoint_path, data):
     #     try:
     #         return mcp_circuit_breaker.execute(self._actual_http_request, method, endpoint_path, data)
     #     except CircuitBreakerOpenException:
     #         logger.warning("MCP circuit breaker is open. Request not sent.")
     #         # Handle appropriately, e.g., return None or raise a VANA-specific error
-    #         return None 
+    #         return None
     ```
 *   **Audit Logging of KG Operations:** Significant operations on the Knowledge Graph (e.g., creating, updating, deleting critical entities or relationships) should be logged using VANA's standard logging system with sufficient detail for auditing.
 *   **Access Control (Future):** If the MCP server or `KnowledgeGraphManager` supports finer-grained access control (e.g., different API keys for read vs. write, or user/agent-based permissions), these would be configured and enforced. Currently, access is primarily controlled by the single `MCP_API_KEY`.

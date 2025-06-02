@@ -6,7 +6,7 @@ This directory contains environment configuration templates for different deploy
 
 ### Core Environment Templates
 - **`.env.development`** - Development environment with ADK memory configuration
-- **`.env.production`** - Production environment with optimized ADK memory settings  
+- **`.env.production`** - Production environment with optimized ADK memory settings
 - **`.env.test`** - Test environment with mock services and ADK memory testing
 - **`.env.adk-memory`** - ADK-specific memory configuration reference
 
@@ -26,7 +26,7 @@ nano .env
 
 ### For Production
 ```bash
-# Copy production template  
+# Copy production template
 cp config/templates/.env.production .env
 
 # Update with production credentials and settings
@@ -120,7 +120,7 @@ load_dotenv()
 
 required_vars = [
     'GOOGLE_CLOUD_PROJECT',
-    'GOOGLE_CLOUD_LOCATION', 
+    'GOOGLE_CLOUD_LOCATION',
     'GOOGLE_APPLICATION_CREDENTIALS',
     'RAG_CORPUS_RESOURCE_NAME',
     'MEMORY_SIMILARITY_TOP_K',
@@ -147,7 +147,7 @@ else:
 - Enable debug logging for troubleshooting
 - Allow mock services for offline development
 
-### Production Environment  
+### Production Environment
 - Use production service account with minimal required permissions
 - Disable debug logging and development features
 - Enable comprehensive monitoring and alerting

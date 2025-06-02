@@ -6,41 +6,38 @@ This script performs comprehensive testing of the Knowledge Base expansion and e
 including document processing, entity extraction, and evaluation metrics.
 """
 
-import os
-import sys
 import json
 import logging
-import unittest
-import tempfile
+import os
 import shutil
-from typing import Dict, Any, List
+import sys
+import tempfile
+import unittest
 
 # Add the project root to the Python path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # Import the necessary modules
-from scripts.expand_knowledge_base import process_directory
 from scripts.evaluate_knowledge_base import (
+    calculate_f1_score,
+    calculate_ndcg,
     calculate_precision,
     calculate_recall,
-    calculate_f1_score,
     calculate_relevance_scores,
-    calculate_ndcg,
-    evaluate_vector_search,
+    evaluate_hybrid_search,
     evaluate_knowledge_graph,
-    evaluate_hybrid_search
+    evaluate_vector_search,
 )
+from scripts.expand_knowledge_base import process_directory
 
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(message)s",
-    handlers=[
-        logging.FileHandler("knowledge_base_test.log"),
-        logging.StreamHandler()
-    ]
+    handlers=[logging.FileHandler("knowledge_base_test.log"), logging.StreamHandler()],
 )
 logger = logging.getLogger(__name__)
+
 
 class TestKnowledgeBase(unittest.TestCase):
     """Comprehensive test for Knowledge Base expansion and evaluation"""
@@ -57,16 +54,20 @@ class TestKnowledgeBase(unittest.TestCase):
         self.test_queries = [
             {
                 "query": "What is VANA?",
-                "expected_keywords": ["Versatile Agent Network Architecture", "intelligent", "agent"],
+                "expected_keywords": [
+                    "Versatile Agent Network Architecture",
+                    "intelligent",
+                    "agent",
+                ],
                 "category": "general",
-                "difficulty": "easy"
+                "difficulty": "easy",
             },
             {
                 "query": "How does Vector Search work?",
                 "expected_keywords": ["embedding", "semantic", "similarity"],
                 "category": "technology",
-                "difficulty": "medium"
-            }
+                "difficulty": "medium",
+            },
         ]
 
         # Create test queries file
@@ -84,7 +85,8 @@ class TestKnowledgeBase(unittest.TestCase):
         # Create VANA document
         vana_doc = os.path.join(self.test_dir, "vana.md")
         with open(vana_doc, "w") as f:
-            f.write("""# VANA: Versatile Agent Network Architecture
+            f.write(
+                """# VANA: Versatile Agent Network Architecture
 
 VANA is an intelligent agent system that leverages Google's Agent Development Kit (ADK)
 to provide powerful knowledge retrieval capabilities. It combines semantic search through
@@ -96,12 +98,14 @@ Vector Search with structured knowledge representation through a Knowledge Graph
 - Knowledge Graph
 - Document Processing
 - Hybrid Search
-""")
+"""
+            )
 
         # Create Vector Search document
         vs_doc = os.path.join(self.test_dir, "vector_search.md")
         with open(vs_doc, "w") as f:
-            f.write("""# Vector Search
+            f.write(
+                """# Vector Search
 
 Vector Search is a semantic search technology that enables finding information based on
 meaning rather than exact keyword matching. It uses vector embeddings to represent documents
@@ -114,7 +118,8 @@ distance between vectors.
 2. Indexing
 3. Similarity Search
 4. Ranking
-""")
+"""
+            )
 
     def test_process_directory(self):
         """Test processing directory"""
@@ -126,7 +131,7 @@ distance between vectors.
             file_types=["md"],
             recursive=False,
             add_to_vector_search=True,
-            add_to_knowledge_graph=True
+            add_to_knowledge_graph=True,
         )
 
         # Verify processing
@@ -143,7 +148,7 @@ distance between vectors.
         # Test data
         results = [
             {"content": "VANA is a Versatile Agent Network Architecture."},
-            {"content": "Vector Search uses embeddings for semantic search."}
+            {"content": "Vector Search uses embeddings for semantic search."},
         ]
         expected_keywords = ["VANA", "Versatile", "Agent"]
 
@@ -253,7 +258,7 @@ distance between vectors.
                 file_types=["md"],
                 recursive=False,
                 add_to_vector_search=True,
-                add_to_knowledge_graph=True
+                add_to_knowledge_graph=True,
             )
 
             # Verify processing
@@ -269,18 +274,25 @@ distance between vectors.
             hs_result = evaluate_hybrid_search(self.test_queries, top_k=3)
 
             # Check if any evaluation succeeded
-            if (vs_result.get("success", False) or
-                kg_result.get("success", False) or
-                hs_result.get("success", False)):
+            if (
+                vs_result.get("success", False)
+                or kg_result.get("success", False)
+                or hs_result.get("success", False)
+            ):
                 self.assertTrue(True)
             else:
-                logger.warning("No evaluation succeeded, but this is expected in test environment without actual services")
+                logger.warning(
+                    "No evaluation succeeded, but this is expected in test environment without actual services"
+                )
                 self.assertTrue(True)  # Pass the test anyway
 
-            logger.info("End-to-end knowledge base expansion and evaluation test passed")
+            logger.info(
+                "End-to-end knowledge base expansion and evaluation test passed"
+            )
         except Exception as e:
             logger.error(f"End-to-end test failed: {str(e)}")
             raise
+
 
 def run_tests():
     """Run all tests"""
@@ -299,6 +311,7 @@ def run_tests():
 
     # Return success status
     return len(result.errors) == 0 and len(result.failures) == 0
+
 
 if __name__ == "__main__":
     success = run_tests()

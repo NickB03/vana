@@ -19,7 +19,7 @@ graph TD
 
     subgraph VanaSystem["Vana System"]
         ConfigModule["Configuration Module (config/environment.py)\n- Loads .env\n- Provides typed access to settings"]
-        
+
         subgraph ConfigConsumers["Configuration Consumers (Various Vana Components)"]
             direction LR
             CoreTools["Core Tools (tools/)"]
@@ -31,7 +31,7 @@ graph TD
     %% Connections
     DotEnvFile -- "Primary source for" --> ConfigModule;
     SystemEnvVars -- "Can override/supplement" --> ConfigModule;
-    
+
     ConfigModule -- "Provides settings to" --> CoreTools;
     ConfigModule -- "Provides settings to" --> DashboardApp;
     ConfigModule -- "Provides settings to" --> OperationalScripts;

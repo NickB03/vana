@@ -204,7 +204,7 @@ chunks = chunker.chunk_document(document)
 for chunk in chunks:
     # Extract entities from chunk
     entities = kg_manager.extract_entities(chunk["text"])
-    
+
     # Store entities
     for entity in entities:
         kg_manager.store(
@@ -212,7 +212,7 @@ for chunk in chunks:
             entity_type=entity["type"],
             observation=entity.get("observation", "")
         )
-        
+
         # Link chunk to entity
         kg_manager.store_relationship(
             entity1=f"Chunk-{chunk['metadata']['chunk_id']}",

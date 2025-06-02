@@ -11,15 +11,11 @@ Google ADK Compliance:
 - Consistent naming with adk_ prefix
 """
 
-from google.adk.tools import FunctionTool
-from typing import Dict, Any, Optional
-import json
-import time
-
 
 # =============================================================================
 # RESEARCH SPECIALIST TOOLS (Phase 5C)
 # =============================================================================
+
 
 def web_research_tool_func(context: str) -> str:
     """🌐 Web research specialist tool for comprehensive internet research and fact-checking."""
@@ -113,6 +109,7 @@ def competitive_intelligence_tool_func(context: str) -> str:
 # INTELLIGENCE AGENT TOOLS (Phase 6)
 # =============================================================================
 
+
 def memory_management_tool_func(context: str) -> str:
     """🧠 Memory management specialist tool for advanced memory operations and knowledge curation."""
     return f"""🧠 Memory Management Analysis for: {context}
@@ -204,6 +201,7 @@ def learning_systems_tool_func(context: str) -> str:
 # UTILITY AGENT TOOLS (Phase 7)
 # =============================================================================
 
+
 def monitoring_tool_func(context: str) -> str:
     """📊 System monitoring specialist tool for performance tracking and health assessment."""
     return f"""📊 System Monitoring Report for: {context}
@@ -265,6 +263,7 @@ def coordination_tool_func(context: str) -> str:
 # =============================================================================
 # TRAVEL SPECIALIST TOOLS (Phase 5A)
 # =============================================================================
+
 
 def hotel_search_tool_func(context: str) -> str:
     """🏨 Hotel search specialist tool for accommodation discovery and booking assistance."""

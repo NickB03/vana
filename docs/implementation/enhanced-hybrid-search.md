@@ -32,7 +32,7 @@ class EnhancedHybridSearch:
         """
         Initializes the EnhancedHybridSearch engine and its underlying clients.
         Configuration for clients is typically loaded from environment variables.
-        
+
         Args:
             config_options (dict, optional): Additional configuration for hybrid search behavior
                                              (e.g., source weights, ranking strategy).
@@ -40,10 +40,10 @@ class EnhancedHybridSearch:
         self.vs_client = VectorSearchClient()
         self.kg_manager = KnowledgeGraphManager()
         self.web_search_client = WebSearchClient()
-        
+
         self.config = self._load_hybrid_search_config(config_options)
         # self.reranker = ReRanker(strategy=self.config.get('ranking_strategy'))
-        
+
         # Logger setup
         # self.logger = get_logger(__name__)
 
@@ -85,7 +85,7 @@ class EnhancedHybridSearch:
         vs_results = self._search_vector_store(query_text, **kwargs)
         kg_results = self._search_knowledge_graph(query_text, **kwargs)
         web_results = self._search_web(query_text, **kwargs)
-        
+
         # self.logger.debug(f"VS results: {len(vs_results)}, KG results: {len(kg_results)}, Web results: {len(web_results)}")
 
         # 3. Result Aggregation and Normalization
@@ -95,19 +95,19 @@ class EnhancedHybridSearch:
             "web_search": web_results
         }
         normalized_results = self._normalize_results(all_raw_results)
-        
+
         # 4. Deduplication (Optional)
         # unique_results = self._deduplicate_results(normalized_results)
 
         # 5. Ranking and Re-ranking
-        # ranked_results = self.reranker.rank(unique_results or normalized_results, 
-        #                                     query_text=query_text, 
+        # ranked_results = self.reranker.rank(unique_results or normalized_results,
+        #                                     query_text=query_text,
         #                                     weights=self.config['source_weights'])
         ranked_results = self._simple_rank_and_merge(normalized_results, query_text) # Placeholder for actual ranking
 
         # 6. Format final output and limit to num_results
         final_results = self._format_output(ranked_results[:num_results])
-        
+
         # self.logger.info(f"Returning {len(final_results)} hybrid search results.")
         return final_results
 
@@ -117,7 +117,7 @@ class EnhancedHybridSearch:
             if not query_embedding:
                 # self.logger.warning("Could not generate query embedding for Vector Search.")
                 return []
-            
+
             results = self.vs_client.find_neighbors(
                 query_embedding=query_embedding,
                 num_neighbors=kwargs.get("vs_num_neighbors", self.config['max_results_per_source']),
@@ -159,10 +159,10 @@ class EnhancedHybridSearch:
                 # 'res' is already assumed to be in a somewhat standard format by _format_xx_results
                 # This step ensures a common top-level structure if needed, e.g., adding source explicitly
                 if isinstance(res, dict): # Ensure it's a dict
-                    res['source'] = source 
+                    res['source'] = source
                     normalized.append(res)
         return normalized
-        
+
     def _format_vs_results(self, vs_api_response):
         """Formats raw Vector Search API response into a standard result item list."""
         items = []
@@ -215,7 +215,7 @@ class EnhancedHybridSearch:
         # This needs to be much more intelligent, e.g., using RRF, source weights.
         # For now, just interleave or sort by a generic score if available.
         # self.logger.debug(f"Ranking {len(normalized_results)} normalized results.")
-        
+
         # Apply source weights to scores if scores exist and are comparable
         for res in normalized_results:
             if 'score' in res and res['source'] in self.config['source_weights']:

@@ -55,7 +55,7 @@ def get_logger(name: str = 'vana_app', logger_level: str = None):
         return _loggers[name]
 
     logger = logging.getLogger(name)
-    
+
     # Determine effective log level
     effective_level_str = (logger_level or LOG_LEVEL).upper()
     level = getattr(logging, effective_level_str, logging.INFO)
@@ -86,11 +86,11 @@ def get_logger(name: str = 'vana_app', logger_level: str = None):
             # Fallback to console logging if file handler fails
             logger.error(f"Failed to initialize file logger at {LOG_FILE_PATH}: {e}", exc_info=True)
             # Potentially remove console_handler and re-add to avoid duplicate console messages if error occurs late
-            
+
     # Do not propagate to root logger if we are configuring handlers here,
     # unless root logger is also configured and this is intended.
-    logger.propagate = False 
-    
+    logger.propagate = False
+
     _loggers[name] = logger
     return logger
 
@@ -160,7 +160,7 @@ class VectorSearchClient:
     def __init__(self):
         logger.info("Initializing VectorSearchClient...")
         # ...
-    
+
     def find_neighbors(self, query_embedding, num_neighbors):
         logger.debug(f"Finding {num_neighbors} neighbors for query embedding (first 5 dims): {query_embedding[:5]}")
         try:

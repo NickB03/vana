@@ -45,12 +45,12 @@ Update the `health_dashboard` function in `dashboard/routes/vector_search_routes
 @requires_auth(['admin', 'viewer'])
 def health_dashboard():
     # ... existing code ...
-    
+
     # Add data for new visualization
     template_data['custom_data'] = [1, 2, 3, 4, 5]
-    
+
     # ... existing code ...
-    
+
     return render_template('vector_search_health.html', **template_data)
 ```
 
@@ -172,7 +172,7 @@ You can modify the layout by rearranging the rows and columns:
                     <h2 class="display-4 text-center" id="overall-status">{{ status }}</h2>
                 </div>
             </div>
-            
+
             <!-- Key Metrics -->
             <div class="card metric-card mb-4">
                 <div class="card-body">
@@ -184,7 +184,7 @@ You can modify the layout by rearranging the rows and columns:
                     </ul>
                 </div>
             </div>
-            
+
             <!-- Recommendations -->
             <div class="card metric-card">
                 <div class="card-body">
@@ -200,7 +200,7 @@ You can modify the layout by rearranging the rows and columns:
                 </div>
             </div>
         </div>
-        
+
         <!-- Right Column -->
         <div class="col-md-8">
             <!-- Component Status -->
@@ -229,7 +229,7 @@ You can modify the layout by rearranging the rows and columns:
                     </div>
                 </div>
             </div>
-            
+
             <!-- Charts -->
             <div class="card metric-card">
                 <div class="card-body">
@@ -344,7 +344,7 @@ You can modify the CSS to customize the appearance of the dashboard:
         --light-color: #ecf0f1;
         --dark-color: #2c3e50;
     }
-    
+
     /* Status colors */
     .status-ok {
         background-color: var(--secondary-color);
@@ -367,7 +367,7 @@ You can modify the CSS to customize the appearance of the dashboard:
         background-color: var(--light-color);
         color: var(--dark-color);
     }
-    
+
     /* Card styling */
     .metric-card {
         border-radius: 15px;
@@ -390,7 +390,7 @@ You can modify the CSS to customize the appearance of the dashboard:
         border-bottom: 2px solid var(--primary-color);
         padding-bottom: 10px;
     }
-    
+
     /* Trend indicators */
     .trend-improving {
         color: var(--secondary-color);
@@ -403,7 +403,7 @@ You can modify the CSS to customize the appearance of the dashboard:
     .trend-stable {
         color: var(--dark-color);
     }
-    
+
     /* Header styling */
     .dashboard-header {
         background-color: var(--dark-color);
@@ -418,14 +418,14 @@ You can modify the CSS to customize the appearance of the dashboard:
     .dashboard-header p {
         color: rgba(255, 255, 255, 0.8);
     }
-    
+
     /* Chart container */
     .chart-container {
         position: relative;
         height: 350px;
         margin-bottom: 30px;
     }
-    
+
     /* Table styling */
     .table {
         border-collapse: separate;
@@ -444,7 +444,7 @@ You can modify the CSS to customize the appearance of the dashboard:
         padding: 15px;
         vertical-align: middle;
     }
-    
+
     /* Badge styling */
     .badge {
         padding: 8px 12px;

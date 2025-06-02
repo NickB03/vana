@@ -8,23 +8,23 @@ This module tests the team coordination system components, including:
 - Fallback Manager
 """
 
-import unittest
-from unittest.mock import MagicMock, patch
-import time
-
-import sys
 import os
+import sys
+import time
+import unittest
+from unittest.mock import MagicMock
 
 # Add the project directory to the Python path
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
 
 # Import the orchestration components
-sys.path.append('/Users/nick/Development/vana')
+sys.path.append("/Users/nick/Development/vana")
 # Note: These imports are commented out as the modules don't exist yet
 # from vana.orchestration.task_planner import TaskPlanner
 # from vana.orchestration.parallel_executor import ParallelExecutor
 # from vana.orchestration.result_validator import ResultValidator
 # from vana.orchestration.fallback_manager import FallbackManager
+
 
 # Mock classes for testing
 class TaskPlanner:
@@ -34,8 +34,18 @@ class TaskPlanner:
     def decompose_task(self, task):
         if "design" in task.lower():
             return [
-                {"id": "task1", "description": "Analyze requirements", "type": "analysis", "dependencies": []},
-                {"id": "task2", "description": "Create architecture", "type": "design", "dependencies": ["task1"]}
+                {
+                    "id": "task1",
+                    "description": "Analyze requirements",
+                    "type": "analysis",
+                    "dependencies": [],
+                },
+                {
+                    "id": "task2",
+                    "description": "Create architecture",
+                    "type": "design",
+                    "dependencies": ["task1"],
+                },
             ]
         return [{"description": task, "type": "simple", "dependencies": []}]
 
@@ -58,19 +68,28 @@ class TaskPlanner:
                 assignments.setdefault("rhea", []).append(task)
         return assignments
 
+
 class ParallelExecutor:
     def __init__(self, max_workers=2, timeout=1):
         self.max_workers = max_workers
         self.timeout = timeout
         self.running_tasks = {}
         # Mock executor with submit method
-        self.executor = type('MockExecutor', (), {
-            'submit': lambda self, func, *args: type('MockFuture', (), {'cancel': lambda: True})()
-        })()
+        self.executor = type(
+            "MockExecutor",
+            (),
+            {
+                "submit": lambda self, func, *args: type(
+                    "MockFuture", (), {"cancel": lambda: True}
+                )()
+            },
+        )()
 
     def execute_task(self, task, specialist_func):
         try:
-            result = specialist_func(task["description"], context=task.get("context", {}))
+            result = specialist_func(
+                task["description"], context=task.get("context", {})
+            )
             return {"success": True, "result": result, "task_id": task["id"]}
         except Exception as e:
             return {"success": False, "error": str(e), "task_id": task["id"]}
@@ -82,7 +101,9 @@ class ParallelExecutor:
         success_count = 0
         error_count = 0
         for task in execution_plan:
-            specialist = specialist_map.get("rhea", lambda x, **kwargs: "default result")
+            specialist = specialist_map.get(
+                "rhea", lambda x, **kwargs: "default result"
+            )
             result = self.execute_task(task, specialist)
             if result["success"]:
                 success_count += 1
@@ -94,7 +115,9 @@ class ParallelExecutor:
         success_count = 0
         error_count = 0
         for specialist, tasks in assignments.items():
-            specialist_func = specialist_map.get(specialist, lambda x, **kwargs: "default result")
+            specialist_func = specialist_map.get(
+                specialist, lambda x, **kwargs: "default result"
+            )
             for task in tasks:
                 result = self.execute_task(task, specialist_func)
                 if result["success"]:
@@ -112,6 +135,7 @@ class ParallelExecutor:
     def shutdown(self):
         pass
 
+
 class ResultValidator:
     def __init__(self, validation_rules=None):
         self.validation_rules = validation_rules or {}
@@ -125,11 +149,15 @@ class ResultValidator:
 
         for field in required_fields:
             if field not in result:
-                return {"success": False, "validation_error": f"Missing required fields: {field}"}
+                return {
+                    "success": False,
+                    "validation_error": f"Missing required fields: {field}",
+                }
 
         if task_type == "design" and rules.get("format") == "json":
             try:
                 import json
+
                 json.loads(result.get("result", "{}"))
             except:
                 return {"success": False, "validation_error": "Invalid format"}
@@ -142,18 +170,22 @@ class ResultValidator:
         return {"success": True, "validated": True, "confidence": confidence}
 
     def validate_results(self, results, task_types):
-        return [self.validate_result(result, task_types.get(result["task_id"])) for result in results]
+        return [
+            self.validate_result(result, task_types.get(result["task_id"]))
+            for result in results
+        ]
 
     def combine_results(self, results, combination_method="weighted"):
         return {
             "success": True,
             "combined": True,
             "combination_method": combination_method,
-            "source_count": len(results)
+            "source_count": len(results),
         }
 
     def has_failures(self, results):
         return any(not result.get("success", True) for result in results)
+
 
 class FallbackManager:
     def __init__(self, max_retries=2, base_delay=0.1):
@@ -168,9 +200,17 @@ class FallbackManager:
 
         if retry and retry_count < self.max_retries:
             try:
-                new_result = specialist_func(result.get("task_description", ""), context=result.get("context", {}))
+                new_result = specialist_func(
+                    result.get("task_description", ""),
+                    context=result.get("context", {}),
+                )
                 self.retry_counts[task_id] = retry_count + 1
-                return {"success": True, "result": new_result, "task_id": task_id, "retry_count": retry_count + 1}
+                return {
+                    "success": True,
+                    "result": new_result,
+                    "task_id": task_id,
+                    "retry_count": retry_count + 1,
+                }
             except:
                 self.retry_counts[task_id] = retry_count + 1
                 return self.handle_failure(result, specialist_func, retry)
@@ -180,7 +220,7 @@ class FallbackManager:
     def create_fallback_plan(self, task, error):
         return [
             {"description": f"Simplified: {task}", "is_fallback": True},
-            {"description": f"Alternative approach for: {task}", "is_fallback": True}
+            {"description": f"Alternative approach for: {task}", "is_fallback": True},
         ]
 
     def register_fallback_specialist(self, primary, fallback):
@@ -192,6 +232,7 @@ class FallbackManager:
     def reset_retry_count(self, task_id):
         if task_id in self.retry_counts:
             del self.retry_counts[task_id]
+
 
 class TestTaskPlanner(unittest.TestCase):
     """Tests for the TaskPlanner class."""
@@ -232,7 +273,7 @@ class TestTaskPlanner(unittest.TestCase):
         subtasks = [
             {"id": "task1", "dependencies": []},
             {"id": "task2", "dependencies": ["task1"]},
-            {"id": "task3", "dependencies": ["task2"]}
+            {"id": "task3", "dependencies": ["task2"]},
         ]
 
         dependencies = self.planner.identify_dependencies(subtasks)
@@ -247,7 +288,7 @@ class TestTaskPlanner(unittest.TestCase):
         subtasks = [
             {"id": "task3", "dependencies": ["task2"]},
             {"id": "task1", "dependencies": []},
-            {"id": "task2", "dependencies": ["task1"]}
+            {"id": "task2", "dependencies": ["task1"]},
         ]
 
         execution_plan = self.planner.create_execution_plan(subtasks)
@@ -261,8 +302,12 @@ class TestTaskPlanner(unittest.TestCase):
         """Test assigning subtasks to specialists."""
         subtasks = [
             {"id": "task1", "description": "Design architecture", "type": "design"},
-            {"id": "task2", "description": "Write documentation", "type": "documentation"},
-            {"id": "task3", "description": "Test system", "type": "testing"}
+            {
+                "id": "task2",
+                "description": "Write documentation",
+                "type": "documentation",
+            },
+            {"id": "task3", "description": "Test system", "type": "testing"},
         ]
 
         assignments = self.planner.assign_subtasks(subtasks)
@@ -279,6 +324,7 @@ class TestTaskPlanner(unittest.TestCase):
         self.assertIn("juno", assignments)  # documentation task
         self.assertIn("kai", assignments)  # testing task
 
+
 class TestParallelExecutor(unittest.TestCase):
     """Tests for the ParallelExecutor class."""
 
@@ -291,7 +337,7 @@ class TestParallelExecutor(unittest.TestCase):
         self.specialist2 = MagicMock(return_value="Specialist 2 result")
         self.specialist_map = {
             "specialist1": self.specialist1,
-            "specialist2": self.specialist2
+            "specialist2": self.specialist2,
         }
 
     def tearDown(self):
@@ -300,11 +346,7 @@ class TestParallelExecutor(unittest.TestCase):
 
     def test_execute_task(self):
         """Test executing a single task."""
-        task = {
-            "id": "task1",
-            "description": "Test task",
-            "context": {"key": "value"}
-        }
+        task = {"id": "task1", "description": "Test task", "context": {"key": "value"}}
 
         result = self.executor.execute_task(task, self.specialist1)
 
@@ -318,10 +360,7 @@ class TestParallelExecutor(unittest.TestCase):
 
     def test_execute_task_error(self):
         """Test executing a task that raises an error."""
-        task = {
-            "id": "task1",
-            "description": "Test task"
-        }
+        task = {"id": "task1", "description": "Test task"}
 
         # Make the specialist function raise an error
         self.specialist1.side_effect = ValueError("Test error")
@@ -337,7 +376,7 @@ class TestParallelExecutor(unittest.TestCase):
         """Test executing multiple tasks in parallel."""
         tasks = [
             {"id": "task1", "description": "Test task 1"},
-            {"id": "task2", "description": "Test task 2"}
+            {"id": "task2", "description": "Test task 2"},
         ]
 
         results = self.executor.execute_tasks(tasks, self.specialist1)
@@ -352,15 +391,25 @@ class TestParallelExecutor(unittest.TestCase):
         """Test executing a plan with dependencies."""
         execution_plan = [
             {"id": "task1", "description": "Test task 1", "type": "design"},
-            {"id": "task2", "description": "Test task 2", "type": "documentation", "dependencies": ["task1"]},
-            {"id": "task3", "description": "Test task 3", "type": "testing", "dependencies": ["task2"]}
+            {
+                "id": "task2",
+                "description": "Test task 2",
+                "type": "documentation",
+                "dependencies": ["task1"],
+            },
+            {
+                "id": "task3",
+                "description": "Test task 3",
+                "type": "testing",
+                "dependencies": ["task2"],
+            },
         ]
 
         specialist_map = {
             "rhea": self.specialist1,
             "juno": self.specialist2,
             "kai": self.specialist1,
-            "vana": self.specialist2
+            "vana": self.specialist2,
         }
 
         result = self.executor.execute_plan(execution_plan, specialist_map)
@@ -372,12 +421,8 @@ class TestParallelExecutor(unittest.TestCase):
     def test_execute_assignments(self):
         """Test executing assignments for multiple specialists."""
         assignments = {
-            "specialist1": [
-                {"id": "task1", "description": "Test task 1"}
-            ],
-            "specialist2": [
-                {"id": "task2", "description": "Test task 2"}
-            ]
+            "specialist1": [{"id": "task1", "description": "Test task 1"}],
+            "specialist2": [{"id": "task2", "description": "Test task 2"}],
         }
 
         result = self.executor.execute_assignments(assignments, self.specialist_map)
@@ -392,6 +437,7 @@ class TestParallelExecutor(unittest.TestCase):
 
     def test_cancel_task(self):
         """Test cancelling a running task."""
+
         # Create a long-running task
         def long_running_task(*args, **kwargs):
             time.sleep(10)
@@ -401,7 +447,9 @@ class TestParallelExecutor(unittest.TestCase):
 
         # Submit the task
         task = {"id": "long_task", "description": "Long-running task"}
-        future = self.executor.executor.submit(self.executor.execute_task, task, self.specialist1)
+        future = self.executor.executor.submit(
+            self.executor.execute_task, task, self.specialist1
+        )
         self.executor.running_tasks["long_task"] = future
 
         # Cancel the task
@@ -410,6 +458,7 @@ class TestParallelExecutor(unittest.TestCase):
         # Check that the task was cancelled
         self.assertTrue(cancelled)
         self.assertNotIn("long_task", self.executor.running_tasks)
+
 
 class TestResultValidator(unittest.TestCase):
     """Tests for the ResultValidator class."""
@@ -420,13 +469,13 @@ class TestResultValidator(unittest.TestCase):
             "design": {
                 "required_fields": ["result"],
                 "format": "json",
-                "min_confidence": 0.6
+                "min_confidence": 0.6,
             },
             "documentation": {
                 "required_fields": ["result"],
                 "format": "text",
-                "min_length": 100
-            }
+                "min_length": 100,
+            },
         }
         self.validator = ResultValidator(validation_rules=validation_rules)
 
@@ -436,7 +485,7 @@ class TestResultValidator(unittest.TestCase):
             "task_id": "task1",
             "result": '{"key": "value"}',
             "success": True,
-            "confidence": 0.8
+            "confidence": 0.8,
         }
 
         validated = self.validator.validate_result(result, task_type="design")
@@ -448,11 +497,7 @@ class TestResultValidator(unittest.TestCase):
 
     def test_validate_result_missing_field(self):
         """Test validating a result with missing required fields."""
-        result = {
-            "task_id": "task1",
-            "success": True,
-            "confidence": 0.8
-        }
+        result = {"task_id": "task1", "success": True, "confidence": 0.8}
 
         validated = self.validator.validate_result(result, task_type="design")
 
@@ -467,7 +512,7 @@ class TestResultValidator(unittest.TestCase):
             "task_id": "task1",
             "result": "Not JSON",
             "success": True,
-            "confidence": 0.8
+            "confidence": 0.8,
         }
 
         validated = self.validator.validate_result(result, task_type="design")
@@ -484,20 +529,17 @@ class TestResultValidator(unittest.TestCase):
                 "task_id": "task1",
                 "result": '{"key": "value"}',
                 "success": True,
-                "confidence": 0.8
+                "confidence": 0.8,
             },
             {
                 "task_id": "task2",
                 "result": "Text result",
                 "success": True,
-                "confidence": 0.7
-            }
+                "confidence": 0.7,
+            },
         ]
 
-        task_types = {
-            "task1": "design",
-            "task2": "documentation"
-        }
+        task_types = {"task1": "design", "task2": "documentation"}
 
         validated = self.validator.validate_results(results, task_types)
 
@@ -511,17 +553,19 @@ class TestResultValidator(unittest.TestCase):
                 "task_id": "task1",
                 "result": "Result 1",
                 "success": True,
-                "confidence": 0.8
+                "confidence": 0.8,
             },
             {
                 "task_id": "task2",
                 "result": "Result 2",
                 "success": True,
-                "confidence": 0.6
-            }
+                "confidence": 0.6,
+            },
         ]
 
-        combined = self.validator.combine_results(results, combination_method="weighted")
+        combined = self.validator.combine_results(
+            results, combination_method="weighted"
+        )
 
         # Check that results are combined correctly
         self.assertTrue(combined["success"])
@@ -532,16 +576,8 @@ class TestResultValidator(unittest.TestCase):
     def test_has_failures(self):
         """Test checking for failed results."""
         results = [
-            {
-                "task_id": "task1",
-                "result": "Result 1",
-                "success": True
-            },
-            {
-                "task_id": "task2",
-                "result": "Result 2",
-                "success": False
-            }
+            {"task_id": "task1", "result": "Result 1", "success": True},
+            {"task_id": "task2", "result": "Result 2", "success": False},
         ]
 
         has_failures = self.validator.has_failures(results)
@@ -551,22 +587,15 @@ class TestResultValidator(unittest.TestCase):
 
         # Check with no failures
         results = [
-            {
-                "task_id": "task1",
-                "result": "Result 1",
-                "success": True
-            },
-            {
-                "task_id": "task2",
-                "result": "Result 2",
-                "success": True
-            }
+            {"task_id": "task1", "result": "Result 1", "success": True},
+            {"task_id": "task2", "result": "Result 2", "success": True},
         ]
 
         has_failures = self.validator.has_failures(results)
 
         # Check that no failures are detected
         self.assertFalse(has_failures)
+
 
 class TestFallbackManager(unittest.TestCase):
     """Tests for the FallbackManager class."""
@@ -579,7 +608,7 @@ class TestFallbackManager(unittest.TestCase):
         self.specialist = MagicMock()
         self.specialist.side_effect = [
             ValueError("First error"),  # First call fails
-            "Retry success"             # Second call succeeds
+            "Retry success",  # Second call succeeds
         ]
 
     def test_handle_failure_retry_success(self):
@@ -589,7 +618,7 @@ class TestFallbackManager(unittest.TestCase):
             "error": "Test error",
             "success": False,
             "task_description": "Test task",
-            "context": {}
+            "context": {},
         }
 
         new_result = self.fallback_manager.handle_failure(result, self.specialist)
@@ -609,7 +638,7 @@ class TestFallbackManager(unittest.TestCase):
             "error": "Test error",
             "success": False,
             "task_description": "Test task",
-            "context": {}
+            "context": {},
         }
 
         # First retry
@@ -627,13 +656,11 @@ class TestFallbackManager(unittest.TestCase):
 
     def test_handle_failure_no_retry(self):
         """Test handling a failure without retry."""
-        result = {
-            "task_id": "task1",
-            "error": "Test error",
-            "success": False
-        }
+        result = {"task_id": "task1", "error": "Test error", "success": False}
 
-        new_result = self.fallback_manager.handle_failure(result, self.specialist, retry=False)
+        new_result = self.fallback_manager.handle_failure(
+            result, self.specialist, retry=False
+        )
 
         # Check that fallback was applied immediately
         self.assertIn("fallback_applied", new_result)
@@ -655,7 +682,9 @@ class TestFallbackManager(unittest.TestCase):
         self.fallback_manager.register_fallback_specialist("primary", "fallback")
 
         # Check that fallback specialist is registered
-        self.assertEqual(self.fallback_manager.get_fallback_specialist("primary"), "fallback")
+        self.assertEqual(
+            self.fallback_manager.get_fallback_specialist("primary"), "fallback"
+        )
 
     def test_reset_retry_count(self):
         """Test resetting retry count."""
@@ -667,6 +696,7 @@ class TestFallbackManager(unittest.TestCase):
 
         # Check that retry count is reset
         self.assertNotIn("task1", self.fallback_manager.retry_counts)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -49,7 +49,7 @@ if kg_manager:
         "VANA is a suite of AI services.",
         "Focuses on knowledge management and vector search monitoring."
     ]
-    
+
     try:
         response = kg_manager.add_entity(
             name=entity_name,
@@ -83,7 +83,7 @@ if kg_manager:
     from_entity = "ProjectVana"
     to_entity = "VertexAI"
     relation_type = "usesService" # Example: ProjectVana usesService VertexAI
-    
+
     try:
         response = kg_manager.add_relation(
             from_entity=from_entity,
@@ -128,16 +128,16 @@ The `KnowledgeGraphManager` might offer various ways to query the graph:
 if kg_manager:
     # Example: A conceptual query method (actual method may differ)
     # This might search for entities of a certain type or with certain observations.
-    query_params = {"entity_type": "SoftwareProject"} 
+    query_params = {"entity_type": "SoftwareProject"}
     # Or query_params = {"observation_contains": "monitoring"}
-    
+
     try:
         # The actual query method name and parameters will depend on the implementation.
         # e.g., kg_manager.query_entities(params=query_params)
         # e.g., kg_manager.search_graph(search_term="VANA")
-        
+
         # For this example, let's assume a generic search method if it exists:
-        # search_results = kg_manager.search_nodes(query="VANA") 
+        # search_results = kg_manager.search_nodes(query="VANA")
         # print(f"\nSearch results for 'VANA': {search_results}")
 
         print("\nQuerying KG (conceptual):")
@@ -165,7 +165,7 @@ if kg_manager:
         #     observation=new_observation
         # )
         # print(f"\nUpdate Entity Response for '{entity_to_update}': {response}")
-        
+
         print(f"\nUpdating entity '{entity_to_update}' (conceptual):")
         print("  Functionality depends on the specific implementation of KnowledgeGraphManager.")
     except Exception as e:

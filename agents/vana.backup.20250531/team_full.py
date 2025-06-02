@@ -15,54 +15,62 @@ Enhanced with AI Agent Best Practices:
 """
 
 import os
-from dotenv import load_dotenv
 
 # Add project root to Python path for absolute imports
 import sys
+
+from dotenv import load_dotenv
+
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
 
 # Load environment variables before importing Google ADK
 load_dotenv()
 
 # Google ADK imports (installed in environment)
-from google.adk.agents import LlmAgent, SequentialAgent, ParallelAgent
+from google.adk.agents import LlmAgent
 from google.adk.tools import FunctionTool
-
-# Import all ADK-compatible tools
-from lib._tools import (
-    # File System Tools
-    adk_read_file, adk_write_file, adk_list_directory, adk_file_exists,
-
-    # Search Tools
-    adk_vector_search, adk_web_search, adk_search_knowledge,
-
-    # System Tools
-    adk_echo, adk_get_health_status,
-
-    # Agent Coordination Tools
-    adk_coordinate_task, adk_delegate_to_agent, adk_get_agent_status, adk_transfer_to_agent
-)
+from lib._shared_libraries.confidence_scorer import ConfidenceScorer
+from lib._shared_libraries.mode_manager import ModeManager
 
 # Long Running Function Tools
 # from lib._tools.adk_long_running_tools import (
 #     adk_ask_for_approval, adk_process_large_dataset,
 #     adk_generate_report, adk_check_task_status
 # )
-# 
+#
 # # Third-Party Tools (Google ADK Pattern - Final Tool Type)
 # from lib._tools.adk_third_party_tools import (
 #     adk_execute_third_party_tool, adk_list_third_party_tools,
 #     adk_register_langchain_tools, adk_register_crewai_tools,
 #     adk_get_third_party_tool_info
 # )
-# 
+#
 # # Import agent tools for Agents-as-Tools pattern
 # from lib._tools.agent_tools import create_specialist_agent_tools
-# 
+#
 # # Import enhanced core components
 from lib._shared_libraries.task_router import TaskRouter
-from lib._shared_libraries.mode_manager import ModeManager, AgentMode
-from lib._shared_libraries.confidence_scorer import ConfidenceScorer
+
+# Import all ADK-compatible tools
+from lib._tools import (
+    # Agent Coordination Tools
+    adk_coordinate_task,
+    adk_delegate_to_agent,
+    # System Tools
+    adk_echo,
+    adk_file_exists,
+    adk_get_agent_status,
+    adk_get_health_status,
+    adk_list_directory,
+    # File System Tools
+    adk_read_file,
+    adk_search_knowledge,
+    adk_transfer_to_agent,
+    # Search Tools
+    adk_vector_search,
+    adk_web_search,
+    adk_write_file,
+)
 
 # Get model configuration
 MODEL = os.getenv("VANA_MODEL", "gemini-2.0-flash")
@@ -115,10 +123,14 @@ architecture_specialist = LlmAgent(
     Always provide detailed architectural reasoning, consider long-term implications,
     and collaborate effectively with other specialists when needed.""",
     tools=[
-        adk_read_file, adk_write_file, adk_list_directory,
-        adk_vector_search, adk_search_knowledge,
-        adk_echo, adk_get_health_status
-    ]
+        adk_read_file,
+        adk_write_file,
+        adk_list_directory,
+        adk_vector_search,
+        adk_search_knowledge,
+        adk_echo,
+        adk_get_health_status,
+    ],
 )
 
 ui_specialist = LlmAgent(
@@ -163,10 +175,14 @@ ui_specialist = LlmAgent(
     Always focus on user-centered design, accessibility standards, and creating intuitive
     interfaces that make complex systems understandable and enjoyable to use.""",
     tools=[
-        adk_read_file, adk_write_file, adk_list_directory,
-        adk_web_search, adk_search_knowledge,
-        adk_echo, adk_get_health_status
-    ]
+        adk_read_file,
+        adk_write_file,
+        adk_list_directory,
+        adk_web_search,
+        adk_search_knowledge,
+        adk_echo,
+        adk_get_health_status,
+    ],
 )
 
 devops_specialist = LlmAgent(
@@ -211,10 +227,15 @@ devops_specialist = LlmAgent(
     Always prioritize reliability, security, and scalability in your solutions.
     Provide clear deployment strategies, monitoring recommendations, and disaster recovery plans.""",
     tools=[
-        adk_read_file, adk_write_file, adk_list_directory,
-        adk_vector_search, adk_web_search, adk_search_knowledge,
-        adk_echo, adk_get_health_status
-    ]
+        adk_read_file,
+        adk_write_file,
+        adk_list_directory,
+        adk_vector_search,
+        adk_web_search,
+        adk_search_knowledge,
+        adk_echo,
+        adk_get_health_status,
+    ],
 )
 
 qa_specialist = LlmAgent(
@@ -259,10 +280,15 @@ qa_specialist = LlmAgent(
     Always provide thorough testing strategies, clear validation criteria, and
     comprehensive quality assurance recommendations. Focus on preventing issues before they reach users.""",
     tools=[
-        adk_read_file, adk_write_file, adk_list_directory,
-        adk_vector_search, adk_web_search, adk_search_knowledge,
-        adk_echo, adk_get_health_status
-    ]
+        adk_read_file,
+        adk_write_file,
+        adk_list_directory,
+        adk_vector_search,
+        adk_web_search,
+        adk_search_knowledge,
+        adk_echo,
+        adk_get_health_status,
+    ],
 )
 
 # Travel Specialist Agents (Phase 5A: Travel Specialists Implementation)
@@ -296,9 +322,12 @@ hotel_search_agent = LlmAgent(
 
     Always provide comprehensive hotel options with detailed comparisons and clear recommendations.""",
     tools=[
-        adk_web_search, adk_vector_search, adk_search_knowledge,
-        adk_echo, adk_generate_report
-    ]
+        adk_web_search,
+        adk_vector_search,
+        adk_search_knowledge,
+        adk_echo,
+        adk_generate_report,
+    ],
 )
 
 flight_search_agent = LlmAgent(
@@ -330,9 +359,12 @@ flight_search_agent = LlmAgent(
 
     Always provide comprehensive flight options with detailed comparisons and clear recommendations.""",
     tools=[
-        adk_web_search, adk_vector_search, adk_search_knowledge,
-        adk_echo, adk_generate_report
-    ]
+        adk_web_search,
+        adk_vector_search,
+        adk_search_knowledge,
+        adk_echo,
+        adk_generate_report,
+    ],
 )
 
 payment_processing_agent = LlmAgent(
@@ -363,10 +395,7 @@ payment_processing_agent = LlmAgent(
     5. **Confirmation Generation**: Create detailed booking confirmations
 
     Always prioritize security, require explicit approval, and provide detailed transaction records.""",
-    tools=[
-        adk_ask_for_approval, adk_generate_report,
-        adk_echo, adk_get_health_status
-    ]
+    tools=[adk_ask_for_approval, adk_generate_report, adk_echo, adk_get_health_status],
 )
 
 itinerary_planning_agent = LlmAgent(
@@ -398,41 +427,56 @@ itinerary_planning_agent = LlmAgent(
 
     Always create comprehensive, realistic itineraries with detailed timing and logistics.""",
     tools=[
-        adk_web_search, adk_vector_search, adk_search_knowledge,
-        adk_generate_report, adk_echo
-    ]
+        adk_web_search,
+        adk_vector_search,
+        adk_search_knowledge,
+        adk_generate_report,
+        adk_echo,
+    ],
 )
 
+
 # Create travel specialist agent tools (Phase 5A) - Must be defined before travel_orchestrator
-def create_travel_specialist_agent_tools(hotel_agent, flight_agent, payment_agent, itinerary_agent):
+def create_travel_specialist_agent_tools(
+    hotel_agent, flight_agent, payment_agent, itinerary_agent
+):
     """Create travel specialist agent tools for Agents-as-Tools pattern."""
     return {
         "hotel_search_tool": lambda context: f"Hotel Search Agent executed with context: {context}. Results saved to session state as 'hotel_search_results'.",
         "flight_search_tool": lambda context: f"Flight Search Agent executed with context: {context}. Results saved to session state as 'flight_search_results'.",
         "payment_processing_tool": lambda context: f"Payment Processing Agent executed with context: {context}. Results saved to session state as 'payment_confirmation'.",
-        "itinerary_planning_tool": lambda context: f"Itinerary Planning Agent executed with context: {context}. Results saved to session state as 'travel_itinerary'."
+        "itinerary_planning_tool": lambda context: f"Itinerary Planning Agent executed with context: {context}. Results saved to session state as 'travel_itinerary'.",
     }
 
+
 travel_specialist_tools = create_travel_specialist_agent_tools(
-    hotel_search_agent, flight_search_agent, payment_processing_agent, itinerary_planning_agent
+    hotel_search_agent,
+    flight_search_agent,
+    payment_processing_agent,
+    itinerary_planning_agent,
 )
+
 
 # Travel specialist tool wrappers (Phase 5A)
 def _hotel_search_tool(context: str) -> str:
     """🏨 Hotel search specialist for accommodation discovery and comparison."""
     return travel_specialist_tools["hotel_search_tool"](context)
 
+
 def _flight_search_tool(context: str) -> str:
     """✈️ Flight search specialist for flight discovery and booking."""
     return travel_specialist_tools["flight_search_tool"](context)
+
 
 def _payment_processing_tool(context: str) -> str:
     """💳 Payment processing specialist for secure transaction handling."""
     return travel_specialist_tools["payment_processing_tool"](context)
 
+
 def _itinerary_planning_tool(context: str) -> str:
     """📅 Itinerary planning specialist for comprehensive trip planning."""
     return travel_specialist_tools["itinerary_planning_tool"](context)
+
 
 # Travel specialist ADK FunctionTool instances (Phase 5A)
 adk_hotel_search_tool = FunctionTool(func=_hotel_search_tool)
@@ -475,10 +519,15 @@ code_generation_agent = LlmAgent(
 
     Always follow best practices for code quality, security, and maintainability.""",
     tools=[
-        adk_read_file, adk_write_file, adk_list_directory, adk_file_exists,
-        adk_vector_search, adk_search_knowledge,
-        adk_echo, adk_generate_report
-    ]
+        adk_read_file,
+        adk_write_file,
+        adk_list_directory,
+        adk_file_exists,
+        adk_vector_search,
+        adk_search_knowledge,
+        adk_echo,
+        adk_generate_report,
+    ],
 )
 
 testing_agent = LlmAgent(
@@ -510,10 +559,17 @@ testing_agent = LlmAgent(
 
     Always ensure comprehensive test coverage and maintain high quality standards.""",
     tools=[
-        adk_read_file, adk_write_file, adk_list_directory, adk_file_exists,
-        adk_vector_search, adk_web_search, adk_search_knowledge,
-        adk_echo, adk_generate_report, adk_check_task_status
-    ]
+        adk_read_file,
+        adk_write_file,
+        adk_list_directory,
+        adk_file_exists,
+        adk_vector_search,
+        adk_web_search,
+        adk_search_knowledge,
+        adk_echo,
+        adk_generate_report,
+        adk_check_task_status,
+    ],
 )
 
 documentation_agent = LlmAgent(
@@ -545,10 +601,16 @@ documentation_agent = LlmAgent(
 
     Always create clear, accurate, and user-friendly documentation that serves both technical and non-technical audiences.""",
     tools=[
-        adk_read_file, adk_write_file, adk_list_directory, adk_file_exists,
-        adk_vector_search, adk_web_search, adk_search_knowledge,
-        adk_echo, adk_generate_report
-    ]
+        adk_read_file,
+        adk_write_file,
+        adk_list_directory,
+        adk_file_exists,
+        adk_vector_search,
+        adk_web_search,
+        adk_search_knowledge,
+        adk_echo,
+        adk_generate_report,
+    ],
 )
 
 security_agent = LlmAgent(
@@ -580,42 +642,57 @@ security_agent = LlmAgent(
 
     Always prioritize security best practices and provide comprehensive security analysis for all development outputs.""",
     tools=[
-        adk_read_file, adk_write_file, adk_list_directory, adk_file_exists,
-        adk_vector_search, adk_web_search, adk_search_knowledge,
-        adk_echo, adk_generate_report
-    ]
+        adk_read_file,
+        adk_write_file,
+        adk_list_directory,
+        adk_file_exists,
+        adk_vector_search,
+        adk_web_search,
+        adk_search_knowledge,
+        adk_echo,
+        adk_generate_report,
+    ],
 )
 
+
 # Create development specialist agent tools (Phase 5B) - Must be defined before development_orchestrator
-def create_development_specialist_agent_tools(code_agent, test_agent, doc_agent, security_agent):
+def create_development_specialist_agent_tools(
+    code_agent, test_agent, doc_agent, security_agent
+):
     """Create development specialist agent tools for Agents-as-Tools pattern."""
     return {
         "code_generation_tool": lambda context: f"Code Generation Agent executed with context: {context}. Results saved to session state as 'generated_code'.",
         "testing_tool": lambda context: f"Testing Agent executed with context: {context}. Results saved to session state as 'test_results'.",
         "documentation_tool": lambda context: f"Documentation Agent executed with context: {context}. Results saved to session state as 'documentation'.",
-        "security_tool": lambda context: f"Security Agent executed with context: {context}. Results saved to session state as 'security_analysis'."
+        "security_tool": lambda context: f"Security Agent executed with context: {context}. Results saved to session state as 'security_analysis'.",
     }
+
 
 development_specialist_tools = create_development_specialist_agent_tools(
     code_generation_agent, testing_agent, documentation_agent, security_agent
 )
+
 
 # Development specialist tool wrappers (Phase 5B)
 def _code_generation_tool(context: str) -> str:
     """💻 Code generation specialist for advanced coding and development."""
     return development_specialist_tools["code_generation_tool"](context)
 
+
 def _testing_tool(context: str) -> str:
     """🧪 Testing specialist for quality assurance and validation."""
     return development_specialist_tools["testing_tool"](context)
+
 
 def _documentation_tool(context: str) -> str:
     """📚 Documentation specialist for technical writing and knowledge management."""
     return development_specialist_tools["documentation_tool"](context)
 
+
 def _security_tool(context: str) -> str:
     """🔒 Security specialist for vulnerability assessment and compliance."""
     return development_specialist_tools["security_tool"](context)
+
 
 # Development specialist ADK FunctionTool instances (Phase 5B)
 adk_code_generation_tool = FunctionTool(func=_code_generation_tool)
@@ -661,9 +738,12 @@ web_research_agent = LlmAgent(
 
     Always prioritize accuracy, source credibility, and comprehensive coverage.""",
     tools=[
-        adk_web_search, adk_vector_search, adk_search_knowledge,
-        adk_echo, adk_generate_report
-    ]
+        adk_web_search,
+        adk_vector_search,
+        adk_search_knowledge,
+        adk_echo,
+        adk_generate_report,
+    ],
 )
 
 data_analysis_agent = LlmAgent(
@@ -702,10 +782,15 @@ data_analysis_agent = LlmAgent(
 
     Always ensure data accuracy and provide actionable insights.""",
     tools=[
-        adk_read_file, adk_write_file, adk_list_directory,
-        adk_vector_search, adk_search_knowledge,
-        adk_echo, adk_generate_report, adk_check_task_status
-    ]
+        adk_read_file,
+        adk_write_file,
+        adk_list_directory,
+        adk_vector_search,
+        adk_search_knowledge,
+        adk_echo,
+        adk_generate_report,
+        adk_check_task_status,
+    ],
 )
 
 competitive_intelligence_agent = LlmAgent(
@@ -744,10 +829,14 @@ competitive_intelligence_agent = LlmAgent(
 
     Always provide strategic insights and actionable intelligence.""",
     tools=[
-        adk_web_search, adk_vector_search, adk_search_knowledge,
-        adk_echo, adk_generate_report
-    ]
+        adk_web_search,
+        adk_vector_search,
+        adk_search_knowledge,
+        adk_echo,
+        adk_generate_report,
+    ],
 )
+
 
 # Create research specialist agent tools (Phase 5C) - Must be defined before research_orchestrator
 def create_research_specialist_agent_tools(web_agent, data_agent, intel_agent):
@@ -755,25 +844,30 @@ def create_research_specialist_agent_tools(web_agent, data_agent, intel_agent):
     return {
         "web_research_tool": lambda context: f"Web Research Agent executed with context: {context}. Results saved to session state as 'web_research_results'.",
         "data_analysis_tool": lambda context: f"Data Analysis Agent executed with context: {context}. Results saved to session state as 'data_analysis_results'.",
-        "competitive_intelligence_tool": lambda context: f"Competitive Intelligence Agent executed with context: {context}. Results saved to session state as 'competitive_intelligence'."
+        "competitive_intelligence_tool": lambda context: f"Competitive Intelligence Agent executed with context: {context}. Results saved to session state as 'competitive_intelligence'.",
     }
+
 
 research_specialist_tools = create_research_specialist_agent_tools(
     web_research_agent, data_analysis_agent, competitive_intelligence_agent
 )
+
 
 # Research specialist tool wrappers (Phase 5C)
 def _web_research_tool(context: str) -> str:
     """🌐 Web research specialist for information gathering and fact-checking."""
     return research_specialist_tools["web_research_tool"](context)
 
+
 def _data_analysis_tool(context: str) -> str:
     """📊 Data analysis specialist for processing and statistical analysis."""
     return research_specialist_tools["data_analysis_tool"](context)
 
+
 def _competitive_intelligence_tool(context: str) -> str:
     """🔍 Competitive intelligence specialist for market research and analysis."""
     return research_specialist_tools["competitive_intelligence_tool"](context)
+
 
 # Research specialist ADK FunctionTool instances (Phase 5C)
 adk_web_research_tool = FunctionTool(func=_web_research_tool)
@@ -805,10 +899,15 @@ memory_management_agent = LlmAgent(
 
     Always prioritize data integrity, efficient storage, and intelligent retrieval.""",
     tools=[
-        adk_read_file, adk_write_file, adk_list_directory,
-        adk_vector_search, adk_search_knowledge,
-        adk_echo, adk_generate_report, adk_check_task_status
-    ]
+        adk_read_file,
+        adk_write_file,
+        adk_list_directory,
+        adk_vector_search,
+        adk_search_knowledge,
+        adk_echo,
+        adk_generate_report,
+        adk_check_task_status,
+    ],
 )
 
 decision_engine_agent = LlmAgent(
@@ -834,10 +933,15 @@ decision_engine_agent = LlmAgent(
 
     Always prioritize system efficiency, optimal resource usage, and intelligent automation.""",
     tools=[
-        adk_coordinate_task, adk_delegate_to_agent, adk_get_agent_status, adk_transfer_to_agent,
-        adk_get_health_status, adk_check_task_status,
-        adk_echo, adk_generate_report
-    ]
+        adk_coordinate_task,
+        adk_delegate_to_agent,
+        adk_get_agent_status,
+        adk_transfer_to_agent,
+        adk_get_health_status,
+        adk_check_task_status,
+        adk_echo,
+        adk_generate_report,
+    ],
 )
 
 learning_systems_agent = LlmAgent(
@@ -863,11 +967,16 @@ learning_systems_agent = LlmAgent(
 
     Always prioritize continuous improvement, data-driven insights, and adaptive optimization.""",
     tools=[
-        adk_vector_search, adk_search_knowledge,
-        adk_process_large_dataset, adk_generate_report, adk_check_task_status,
-        adk_echo, adk_get_health_status
-    ]
+        adk_vector_search,
+        adk_search_knowledge,
+        adk_process_large_dataset,
+        adk_generate_report,
+        adk_check_task_status,
+        adk_echo,
+        adk_get_health_status,
+    ],
 )
+
 
 # Create intelligence agent tools (Phase 6) - Must be defined before VANA
 def create_intelligence_agent_tools(memory_agent, decision_agent, learning_agent):
@@ -875,25 +984,30 @@ def create_intelligence_agent_tools(memory_agent, decision_agent, learning_agent
     return {
         "memory_management_tool": lambda context: f"Memory Management Agent executed with context: {context}. Results saved to session state as 'memory_management_results'.",
         "decision_engine_tool": lambda context: f"Decision Engine Agent executed with context: {context}. Results saved to session state as 'decision_engine_results'.",
-        "learning_systems_tool": lambda context: f"Learning Systems Agent executed with context: {context}. Results saved to session state as 'learning_systems_results'."
+        "learning_systems_tool": lambda context: f"Learning Systems Agent executed with context: {context}. Results saved to session state as 'learning_systems_results'.",
     }
+
 
 intelligence_agent_tools = create_intelligence_agent_tools(
     memory_management_agent, decision_engine_agent, learning_systems_agent
 )
+
 
 # Intelligence agent tool wrappers (Phase 6)
 def _memory_management_tool(context: str) -> str:
     """🧠 Memory management specialist for advanced memory operations and knowledge curation."""
     return intelligence_agent_tools["memory_management_tool"](context)
 
+
 def _decision_engine_tool(context: str) -> str:
     """⚡ Decision engine specialist for intelligent decision making and workflow optimization."""
     return intelligence_agent_tools["decision_engine_tool"](context)
 
+
 def _learning_systems_tool(context: str) -> str:
     """📈 Learning systems specialist for performance analysis and system optimization."""
     return intelligence_agent_tools["learning_systems_tool"](context)
+
 
 # Intelligence agent ADK FunctionTool instances (Phase 6)
 adk_memory_management_tool = FunctionTool(func=_memory_management_tool)
@@ -925,10 +1039,15 @@ monitoring_agent = LlmAgent(
 
     Always prioritize system stability, proactive monitoring, and actionable insights.""",
     tools=[
-        adk_get_health_status, adk_check_task_status, adk_get_agent_status,
-        adk_generate_report, adk_echo,
-        adk_read_file, adk_write_file, adk_list_directory
-    ]
+        adk_get_health_status,
+        adk_check_task_status,
+        adk_get_agent_status,
+        adk_generate_report,
+        adk_echo,
+        adk_read_file,
+        adk_write_file,
+        adk_list_directory,
+    ],
 )
 
 coordination_agent = LlmAgent(
@@ -954,30 +1073,39 @@ coordination_agent = LlmAgent(
 
     Always prioritize efficient coordination, optimal resource usage, and seamless workflows.""",
     tools=[
-        adk_coordinate_task, adk_delegate_to_agent, adk_get_agent_status, adk_transfer_to_agent,
-        adk_check_task_status, adk_generate_report,
-        adk_echo
-    ]
+        adk_coordinate_task,
+        adk_delegate_to_agent,
+        adk_get_agent_status,
+        adk_transfer_to_agent,
+        adk_check_task_status,
+        adk_generate_report,
+        adk_echo,
+    ],
 )
+
 
 # Create utility agent tools (Phase 7) - Must be defined before VANA
 def create_utility_agent_tools(monitoring_agent, coordination_agent):
     """Create utility agent tools for Agents-as-Tools pattern."""
     return {
         "monitoring_tool": lambda context: f"Monitoring Agent executed with context: {context}. Results saved to session state as 'monitoring_results'.",
-        "coordination_tool": lambda context: f"Coordination Agent executed with context: {context}. Results saved to session state as 'coordination_results'."
+        "coordination_tool": lambda context: f"Coordination Agent executed with context: {context}. Results saved to session state as 'coordination_results'.",
     }
 
+
 utility_agent_tools = create_utility_agent_tools(monitoring_agent, coordination_agent)
+
 
 # Utility agent tool wrappers (Phase 7)
 def _monitoring_tool(context: str) -> str:
     """📊 Monitoring specialist for system monitoring and performance tracking."""
     return utility_agent_tools["monitoring_tool"](context)
 
+
 def _coordination_tool(context: str) -> str:
     """🎯 Coordination specialist for agent coordination and workflow management."""
     return utility_agent_tools["coordination_tool"](context)
+
 
 # Utility agent ADK FunctionTool instances (Phase 7)
 adk_monitoring_tool = FunctionTool(func=_monitoring_tool)
@@ -1022,14 +1150,26 @@ travel_orchestrator = LlmAgent(
 
     Always follow the proven travel-concierge workflow patterns for optimal user experience and successful booking completion.""",
     tools=[
-        adk_read_file, adk_write_file, adk_list_directory,
-        adk_vector_search, adk_web_search, adk_search_knowledge,
-        adk_echo, adk_get_health_status,
-        adk_coordinate_task, adk_delegate_to_agent, adk_transfer_to_agent,
-        adk_ask_for_approval, adk_process_large_dataset, adk_generate_report,
+        adk_read_file,
+        adk_write_file,
+        adk_list_directory,
+        adk_vector_search,
+        adk_web_search,
+        adk_search_knowledge,
+        adk_echo,
+        adk_get_health_status,
+        adk_coordinate_task,
+        adk_delegate_to_agent,
+        adk_transfer_to_agent,
+        adk_ask_for_approval,
+        adk_process_large_dataset,
+        adk_generate_report,
         # Travel Specialist Tools (Phase 5A - Agents-as-Tools Pattern)
-        adk_hotel_search_tool, adk_flight_search_tool, adk_payment_processing_tool, adk_itinerary_planning_tool
-    ]
+        adk_hotel_search_tool,
+        adk_flight_search_tool,
+        adk_payment_processing_tool,
+        adk_itinerary_planning_tool,
+    ],
 )
 
 research_orchestrator = LlmAgent(
@@ -1076,14 +1216,25 @@ research_orchestrator = LlmAgent(
 
     Always prioritize accuracy, comprehensiveness, and actionable insights in your research coordination.""",
     tools=[
-        adk_read_file, adk_write_file, adk_list_directory,
-        adk_vector_search, adk_web_search, adk_search_knowledge,
-        adk_echo, adk_get_health_status,
-        adk_coordinate_task, adk_delegate_to_agent, adk_transfer_to_agent,
-        adk_process_large_dataset, adk_generate_report, adk_check_task_status,
+        adk_read_file,
+        adk_write_file,
+        adk_list_directory,
+        adk_vector_search,
+        adk_web_search,
+        adk_search_knowledge,
+        adk_echo,
+        adk_get_health_status,
+        adk_coordinate_task,
+        adk_delegate_to_agent,
+        adk_transfer_to_agent,
+        adk_process_large_dataset,
+        adk_generate_report,
+        adk_check_task_status,
         # Research Specialist Tools (Phase 5C - Agents-as-Tools Pattern)
-        adk_web_research_tool, adk_data_analysis_tool, adk_competitive_intelligence_tool
-    ]
+        adk_web_research_tool,
+        adk_data_analysis_tool,
+        adk_competitive_intelligence_tool,
+    ],
 )
 
 development_orchestrator = LlmAgent(
@@ -1129,14 +1280,27 @@ development_orchestrator = LlmAgent(
 
     Always follow best practices for code quality, security, and maintainability in your development coordination.""",
     tools=[
-        adk_read_file, adk_write_file, adk_list_directory, adk_file_exists,
-        adk_vector_search, adk_web_search, adk_search_knowledge,
-        adk_echo, adk_get_health_status,
-        adk_coordinate_task, adk_delegate_to_agent, adk_transfer_to_agent,
-        adk_ask_for_approval, adk_generate_report, adk_check_task_status,
+        adk_read_file,
+        adk_write_file,
+        adk_list_directory,
+        adk_file_exists,
+        adk_vector_search,
+        adk_web_search,
+        adk_search_knowledge,
+        adk_echo,
+        adk_get_health_status,
+        adk_coordinate_task,
+        adk_delegate_to_agent,
+        adk_transfer_to_agent,
+        adk_ask_for_approval,
+        adk_generate_report,
+        adk_check_task_status,
         # Development Specialist Tools (Phase 5B - Agents-as-Tools Pattern)
-        adk_code_generation_tool, adk_testing_tool, adk_documentation_tool, adk_security_tool
-    ]
+        adk_code_generation_tool,
+        adk_testing_tool,
+        adk_documentation_tool,
+        adk_security_tool,
+    ],
 )
 
 # Create Agents-as-Tools for Google ADK compliance
@@ -1146,21 +1310,26 @@ specialist_agent_tools = create_specialist_agent_tools(
 
 # Create ADK FunctionTool wrappers for agent tools
 
+
 def _architecture_tool(context: str) -> str:
     """🏗️ Architecture specialist tool for system design and architecture analysis."""
     return specialist_agent_tools["architecture_tool"](context)
+
 
 def _ui_tool(context: str) -> str:
     """🎨 UI/UX specialist tool for interface design and user experience."""
     return specialist_agent_tools["ui_tool"](context)
 
+
 def _devops_tool(context: str) -> str:
     """⚙️ DevOps specialist tool for infrastructure and deployment planning."""
     return specialist_agent_tools["devops_tool"](context)
 
+
 def _qa_tool(context: str) -> str:
     """🧪 QA specialist tool for testing strategy and quality assurance."""
     return specialist_agent_tools["qa_tool"](context)
+
 
 # Create ADK FunctionTool instances
 adk_architecture_tool = FunctionTool(func=_architecture_tool)
@@ -1325,60 +1494,93 @@ vana = LlmAgent(
     intelligent agent coordination and enhanced execution strategies.""",
     sub_agents=[
         # Orchestrator Agents (Primary routing targets)
-        travel_orchestrator, research_orchestrator, development_orchestrator,
+        travel_orchestrator,
+        research_orchestrator,
+        development_orchestrator,
         # Specialist Agents (Direct access)
-        architecture_specialist, ui_specialist, devops_specialist, qa_specialist,
+        architecture_specialist,
+        ui_specialist,
+        devops_specialist,
+        qa_specialist,
         # Travel Specialist Agents (Phase 5A)
-        hotel_search_agent, flight_search_agent, payment_processing_agent, itinerary_planning_agent,
+        hotel_search_agent,
+        flight_search_agent,
+        payment_processing_agent,
+        itinerary_planning_agent,
         # Development Specialist Agents (Phase 5B)
-        code_generation_agent, testing_agent, documentation_agent, security_agent,
+        code_generation_agent,
+        testing_agent,
+        documentation_agent,
+        security_agent,
         # Research Specialist Agents (Phase 5C)
-        web_research_agent, data_analysis_agent, competitive_intelligence_agent,
+        web_research_agent,
+        data_analysis_agent,
+        competitive_intelligence_agent,
         # Intelligence Agents (Phase 6)
-        memory_management_agent, decision_engine_agent, learning_systems_agent,
+        memory_management_agent,
+        decision_engine_agent,
+        learning_systems_agent,
         # Utility Agents (Phase 7)
-        monitoring_agent, coordination_agent
+        monitoring_agent,
+        coordination_agent,
     ],
     tools=[
         # All file system tools
-        adk_read_file, adk_write_file, adk_list_directory, adk_file_exists,
-
+        adk_read_file,
+        adk_write_file,
+        adk_list_directory,
+        adk_file_exists,
         # All search tools
-        adk_vector_search, adk_web_search, adk_search_knowledge,
-
+        adk_vector_search,
+        adk_web_search,
+        adk_search_knowledge,
         # Knowledge graph tools removed - using ADK native memory systems only
-
         # System tools
-        adk_echo, adk_get_health_status,
-
+        adk_echo,
+        adk_get_health_status,
         # Agent coordination tools
-        adk_coordinate_task, adk_delegate_to_agent, adk_get_agent_status, adk_transfer_to_agent,
-
+        adk_coordinate_task,
+        adk_delegate_to_agent,
+        adk_get_agent_status,
+        adk_transfer_to_agent,
         # Long Running Function Tools (Google ADK Pattern)
-        adk_ask_for_approval, adk_process_large_dataset, adk_generate_report, adk_check_task_status,
-
+        adk_ask_for_approval,
+        adk_process_large_dataset,
+        adk_generate_report,
+        adk_check_task_status,
         # Agents-as-Tools (Google ADK Pattern)
-        adk_architecture_tool, adk_ui_tool, adk_devops_tool, adk_qa_tool,
-
+        adk_architecture_tool,
+        adk_ui_tool,
+        adk_devops_tool,
+        adk_qa_tool,
         # Travel Specialist Tools (Phase 5A - Agents-as-Tools Pattern)
-        adk_hotel_search_tool, adk_flight_search_tool, adk_payment_processing_tool, adk_itinerary_planning_tool,
-
+        adk_hotel_search_tool,
+        adk_flight_search_tool,
+        adk_payment_processing_tool,
+        adk_itinerary_planning_tool,
         # Development Specialist Tools (Phase 5B - Agents-as-Tools Pattern)
-        adk_code_generation_tool, adk_testing_tool, adk_documentation_tool, adk_security_tool,
-
+        adk_code_generation_tool,
+        adk_testing_tool,
+        adk_documentation_tool,
+        adk_security_tool,
         # Research Specialist Tools (Phase 5C - Agents-as-Tools Pattern)
-        adk_web_research_tool, adk_data_analysis_tool, adk_competitive_intelligence_tool,
-
+        adk_web_research_tool,
+        adk_data_analysis_tool,
+        adk_competitive_intelligence_tool,
         # Intelligence Agent Tools (Phase 6 - Agents-as-Tools Pattern)
-        adk_memory_management_tool, adk_decision_engine_tool, adk_learning_systems_tool,
-
+        adk_memory_management_tool,
+        adk_decision_engine_tool,
+        adk_learning_systems_tool,
         # Utility Agent Tools (Phase 7 - Agents-as-Tools Pattern)
-        adk_monitoring_tool, adk_coordination_tool,
-
+        adk_monitoring_tool,
+        adk_coordination_tool,
         # Third-Party Tools (Google ADK Pattern - Final Tool Type for 100% Compliance)
-        adk_execute_third_party_tool, adk_list_third_party_tools,
-        adk_register_langchain_tools, adk_register_crewai_tools, adk_get_third_party_tool_info
-    ]
+        adk_execute_third_party_tool,
+        adk_list_third_party_tools,
+        adk_register_langchain_tools,
+        adk_register_crewai_tools,
+        adk_get_third_party_tool_info,
+    ],
 )
 
 # Export the root agent for ADK
@@ -1387,12 +1589,29 @@ agent = vana  # Google ADK expects agent_module.agent.root_agent
 
 # Export all agents for reorganization
 __all__ = [
-    'root_agent', 'vana',
-    'travel_orchestrator', 'research_orchestrator', 'development_orchestrator',
-    'architecture_specialist', 'ui_specialist', 'devops_specialist', 'qa_specialist',
-    'hotel_search_agent', 'flight_search_agent', 'payment_processing_agent', 'itinerary_planning_agent',
-    'code_generation_agent', 'testing_agent', 'documentation_agent', 'security_agent',
-    'web_research_agent', 'data_analysis_agent', 'competitive_intelligence_agent',
-    'memory_management_agent', 'decision_engine_agent', 'learning_systems_agent',
-    'monitoring_agent', 'coordination_agent'
+    "root_agent",
+    "vana",
+    "travel_orchestrator",
+    "research_orchestrator",
+    "development_orchestrator",
+    "architecture_specialist",
+    "ui_specialist",
+    "devops_specialist",
+    "qa_specialist",
+    "hotel_search_agent",
+    "flight_search_agent",
+    "payment_processing_agent",
+    "itinerary_planning_agent",
+    "code_generation_agent",
+    "testing_agent",
+    "documentation_agent",
+    "security_agent",
+    "web_research_agent",
+    "data_analysis_agent",
+    "competitive_intelligence_agent",
+    "memory_management_agent",
+    "decision_engine_agent",
+    "learning_systems_agent",
+    "monitoring_agent",
+    "coordination_agent",
 ]

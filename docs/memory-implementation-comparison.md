@@ -45,13 +45,13 @@ VANA's persistent memory system consists of several key components:
    ```python
    class PersistentMemory:
        """Persistent Memory Integration for VANA"""
-       
+
        async def search_memory(self, query: str, top_k: int = 5) -> str:
            """Search the persistent memory for relevant information"""
-           
+
        def store_entity(self, entity_name: str, entity_type: str, observations: List[str]) -> str:
            """Store an entity in the persistent memory"""
-           
+
        def create_relationship(self, from_entity: str, relationship: str, to_entity: str) -> str:
            """Create a relationship between entities in the persistent memory"""
    ```

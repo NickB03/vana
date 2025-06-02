@@ -327,7 +327,7 @@ class MonitoringClient:
         self.base_url = base_url
         self.session = requests.Session()
         self.token = self._get_token(username, password)
-        
+
     def _get_token(self, username, password):
         response = self.session.post(
             f"{self.base_url}/auth/token",
@@ -335,7 +335,7 @@ class MonitoringClient:
         )
         response.raise_for_status()
         return response.json()["token"]
-        
+
     def get_health(self, days=7):
         response = self.session.get(
             f"{self.base_url}/vector-search/api/health",
@@ -344,7 +344,7 @@ class MonitoringClient:
         )
         response.raise_for_status()
         return response.json()
-        
+
     def run_health_check(self):
         response = self.session.get(
             f"{self.base_url}/vector-search/api/run-check",

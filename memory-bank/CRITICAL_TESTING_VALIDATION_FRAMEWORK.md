@@ -33,35 +33,35 @@
 async function realPuppeteerTest(testMessage) {
     // Navigate to actual service
     await puppeteer_navigate({ url: "https://vana-qqugqgsbcq-uc.a.run.app" });
-    
+
     // Wait for page load
     await page.waitForSelector('textarea', { timeout: 10000 });
-    
+
     // Fill actual form
-    await puppeteer_fill({ 
-        selector: 'textarea', 
-        value: testMessage 
+    await puppeteer_fill({
+        selector: 'textarea',
+        value: testMessage
     });
-    
+
     // Submit with real interaction
-    await puppeteer_evaluate({ 
+    await puppeteer_evaluate({
         script: `
             const textarea = document.querySelector('textarea');
             const event = new KeyboardEvent('keydown', { key: 'Enter' });
             textarea.dispatchEvent(event);
         `
     });
-    
+
     // Wait for actual response
     await page.waitForFunction(() => {
         return document.querySelector('.response-container')?.textContent?.length > 0;
     }, { timeout: 30000 });
-    
+
     // Capture actual response
     const response = await puppeteer_evaluate({
         script: `document.querySelector('.response-container').textContent`
     });
-    
+
     return response;
 }
 ```
@@ -72,20 +72,20 @@ async function realPuppeteerTest(testMessage) {
 ```python
 def validate_real_response(response, test_type):
     """Strict validation to detect mock vs real responses"""
-    
+
     # Check for mock indicators
     mock_indicators = [
         "mock", "fallback", "simulation", "test data",
         "placeholder", "demo", "sample"
     ]
-    
+
     if any(indicator in response.lower() for indicator in mock_indicators):
         return {
             "valid": False,
             "reason": "Mock data detected in response",
             "mock_indicators_found": [i for i in mock_indicators if i in response.lower()]
         }
-    
+
     # Test-specific validation
     if test_type == "vector_search":
         return validate_vector_search_response(response)
@@ -93,38 +93,38 @@ def validate_real_response(response, test_type):
         return validate_echo_response(response)
     elif test_type == "web_search":
         return validate_web_search_response(response)
-    
+
     return {"valid": False, "reason": "Unknown test type"}
 
 def validate_vector_search_response(response):
     """Validate vector search returns real data"""
-    
+
     # Check for real vector search indicators
     real_indicators = [
         "semantic similarity", "vector embedding", "corpus",
         "relevance score", "document chunk"
     ]
-    
+
     # Check for mock/fallback indicators
     fallback_indicators = [
         "fallback knowledge", "mock vector", "no memories found",
         "score of 0.75", "mock_vector_result"
     ]
-    
+
     if any(indicator in response.lower() for indicator in fallback_indicators):
         return {
             "valid": False,
             "reason": "Vector search returning fallback/mock data",
             "evidence": "Detected fallback indicators in response"
         }
-    
+
     if not any(indicator in response.lower() for indicator in real_indicators):
         return {
             "valid": False,
             "reason": "No real vector search indicators found",
             "evidence": "Missing semantic search evidence"
         }
-    
+
     return {"valid": True, "reason": "Real vector search response detected"}
 ```
 
@@ -140,15 +140,15 @@ class RobustTestValidator:
             self.validate_functionality_evidence,
             self.validate_performance_metrics
         ]
-    
+
     def validate_test_result(self, test_result):
         """Run all validation layers"""
         validation_results = []
-        
+
         for validator in self.validation_layers:
             result = validator(test_result)
             validation_results.append(result)
-            
+
             # Fail fast on critical issues
             if not result["valid"] and result.get("critical", False):
                 return {
@@ -156,20 +156,20 @@ class RobustTestValidator:
                     "critical_failure": result,
                     "all_results": validation_results
                 }
-        
+
         # All layers must pass
         overall_valid = all(r["valid"] for r in validation_results)
-        
+
         return {
             "overall_valid": overall_valid,
             "validation_layers": validation_results,
             "confidence_score": self.calculate_confidence(validation_results)
         }
-    
+
     def validate_response_structure(self, test_result):
         """Validate response has expected structure"""
         response = test_result.get("response", "")
-        
+
         if not response or len(response.strip()) == 0:
             return {
                 "valid": False,
@@ -177,13 +177,13 @@ class RobustTestValidator:
                 "reason": "Empty or missing response",
                 "layer": "structure"
             }
-        
+
         return {"valid": True, "layer": "structure"}
-    
+
     def validate_content_authenticity(self, test_result):
         """Validate content is real, not mock"""
         response = test_result.get("response", "")
-        
+
         # Check for mock patterns
         mock_patterns = [
             r"mock.*result.*\d+",
@@ -191,7 +191,7 @@ class RobustTestValidator:
             r"test.*data.*placeholder",
             r"simulation.*response"
         ]
-        
+
         for pattern in mock_patterns:
             if re.search(pattern, response, re.IGNORECASE):
                 return {
@@ -200,7 +200,7 @@ class RobustTestValidator:
                     "reason": f"Mock pattern detected: {pattern}",
                     "layer": "authenticity"
                 }
-        
+
         return {"valid": True, "layer": "authenticity"}
 ```
 

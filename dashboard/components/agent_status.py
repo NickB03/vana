@@ -4,24 +4,24 @@ Agent Status Component for VANA Dashboard.
 This module provides components for displaying agent status and performance.
 """
 
-import streamlit as st
+import logging
+
+import altair as alt
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
-from datetime import datetime
-import altair as alt
-import logging
-
-from dashboard.api.agent_api import get_agent_statuses, get_agent_activity
+import streamlit as st
+from dashboard.api.agent_api import get_agent_activity, get_agent_statuses
 from dashboard.utils.data_formatter import format_timestamp
 
 logger = logging.getLogger(__name__)
+
 
 def display_agent_status():
     """Display agent status visualization component."""
     # Force refresh button for debugging
     if st.button("🔄 Refresh Agent Data", key="refresh_agents"):
-        if 'agent_data' in st.session_state:
+        if "agent_data" in st.session_state:
             del st.session_state.agent_data
         st.rerun()
 
@@ -34,7 +34,9 @@ def display_agent_status():
     st.write(f"- Agent data length: {len(agent_data) if agent_data else 0}")
     if agent_data and len(agent_data) > 0:
         st.write(f"- First agent: {agent_data[0]}")
-        st.write(f"- Agent names: {[agent.get('name', 'NO_NAME') for agent in agent_data]}")
+        st.write(
+            f"- Agent names: {[agent.get('name', 'NO_NAME') for agent in agent_data]}"
+        )
 
     st.session_state.agent_data = agent_data
 
@@ -54,7 +56,7 @@ def display_agent_status():
                 "Idle": "blue",
                 "Busy": "orange",
                 "Error": "red",
-                "Offline": "gray"
+                "Offline": "gray",
             }.get(agent["status"], "blue")
 
             # Create card with colored header
@@ -83,23 +85,25 @@ def display_agent_status():
                     </div>
                 </div>
                 """,
-                unsafe_allow_html=True
+                unsafe_allow_html=True,
             )
 
     # Agent performance metrics
     st.subheader("Agent Performance Metrics")
 
     # Create DataFrame for performance metrics
-    metrics_df = pd.DataFrame([
-        {
-            "Agent": agent["name"],
-            "Response Time (ms)": agent["response_time_ms"],
-            "Error Rate (%)": agent["error_rate"] * 100,
-            "CPU Usage (%)": agent["cpu_usage"],
-            "Memory Usage (MB)": agent["memory_usage_mb"]
-        }
-        for agent in agent_data
-    ])
+    metrics_df = pd.DataFrame(
+        [
+            {
+                "Agent": agent["name"],
+                "Response Time (ms)": agent["response_time_ms"],
+                "Error Rate (%)": agent["error_rate"] * 100,
+                "CPU Usage (%)": agent["cpu_usage"],
+                "Memory Usage (MB)": agent["memory_usage_mb"],
+            }
+            for agent in agent_data
+        ]
+    )
 
     # Create tabs for different performance metrics
     tabs = st.tabs(["Response Time", "Error Rate", "Resource Usage"])
@@ -111,7 +115,7 @@ def display_agent_status():
             x="Agent",
             y="Response Time (ms)",
             color="Agent",
-            title="Agent Response Times"
+            title="Agent Response Times",
         )
         st.plotly_chart(fig, use_container_width=True)
 
@@ -122,7 +126,7 @@ def display_agent_status():
             x="Agent",
             y="Error Rate (%)",
             color="Agent",
-            title="Agent Error Rates"
+            title="Agent Error Rates",
         )
         st.plotly_chart(fig, use_container_width=True)
 
@@ -131,27 +135,31 @@ def display_agent_status():
         fig = go.Figure()
 
         # Add CPU usage bars
-        fig.add_trace(go.Bar(
-            x=metrics_df["Agent"],
-            y=metrics_df["CPU Usage (%)"],
-            name="CPU Usage (%)",
-            marker_color="indianred"
-        ))
+        fig.add_trace(
+            go.Bar(
+                x=metrics_df["Agent"],
+                y=metrics_df["CPU Usage (%)"],
+                name="CPU Usage (%)",
+                marker_color="indianred",
+            )
+        )
 
         # Add Memory usage bars
-        fig.add_trace(go.Bar(
-            x=metrics_df["Agent"],
-            y=metrics_df["Memory Usage (MB)"],
-            name="Memory Usage (MB)",
-            marker_color="lightsalmon"
-        ))
+        fig.add_trace(
+            go.Bar(
+                x=metrics_df["Agent"],
+                y=metrics_df["Memory Usage (MB)"],
+                name="Memory Usage (MB)",
+                marker_color="lightsalmon",
+            )
+        )
 
         # Update layout
         fig.update_layout(
             title="Agent Resource Usage",
             xaxis_title="Agent",
             yaxis_title="Usage",
-            barmode="group"
+            barmode="group",
         )
 
         st.plotly_chart(fig, use_container_width=True)
@@ -168,7 +176,9 @@ def display_agent_status():
         selected_agent = "vana"  # fallback
 
     # Time period selection
-    time_period = st.radio("Time Period", ["Last 24 Hours", "Last Week"], horizontal=True)
+    time_period = st.radio(
+        "Time Period", ["Last 24 Hours", "Last Week"], horizontal=True
+    )
     hours = 24 if time_period == "Last 24 Hours" else 168
 
     # Fetch historical data
@@ -182,31 +192,39 @@ def display_agent_status():
         history_df["timestamp"] = pd.to_datetime(history_df["timestamp"])
 
         # Create tabs for different metrics
-        hist_tabs = st.tabs(["Requests", "Response Time", "Error Rate", "Resource Usage"])
+        hist_tabs = st.tabs(
+            ["Requests", "Response Time", "Error Rate", "Resource Usage"]
+        )
 
         with hist_tabs[0]:
             # Requests line chart
-            chart = alt.Chart(history_df).mark_line().encode(
-                x=alt.X('timestamp:T', title='Time'),
-                y=alt.Y('requests:Q', title='Number of Requests'),
-                tooltip=['timestamp:T', 'requests:Q']
-            ).properties(
-                title=f"{selected_agent} - Request Volume",
-                height=300
-            ).interactive()
+            chart = (
+                alt.Chart(history_df)
+                .mark_line()
+                .encode(
+                    x=alt.X("timestamp:T", title="Time"),
+                    y=alt.Y("requests:Q", title="Number of Requests"),
+                    tooltip=["timestamp:T", "requests:Q"],
+                )
+                .properties(title=f"{selected_agent} - Request Volume", height=300)
+                .interactive()
+            )
 
             st.altair_chart(chart, use_container_width=True)
 
         with hist_tabs[1]:
             # Response time line chart
-            chart = alt.Chart(history_df).mark_line().encode(
-                x=alt.X('timestamp:T', title='Time'),
-                y=alt.Y('response_time_ms:Q', title='Response Time (ms)'),
-                tooltip=['timestamp:T', 'response_time_ms:Q']
-            ).properties(
-                title=f"{selected_agent} - Response Time",
-                height=300
-            ).interactive()
+            chart = (
+                alt.Chart(history_df)
+                .mark_line()
+                .encode(
+                    x=alt.X("timestamp:T", title="Time"),
+                    y=alt.Y("response_time_ms:Q", title="Response Time (ms)"),
+                    tooltip=["timestamp:T", "response_time_ms:Q"],
+                )
+                .properties(title=f"{selected_agent} - Response Time", height=300)
+                .interactive()
+            )
 
             st.altair_chart(chart, use_container_width=True)
 
@@ -214,45 +232,47 @@ def display_agent_status():
             # Error rate line chart
             history_df["error_rate_percent"] = history_df["error_rate"] * 100
 
-            chart = alt.Chart(history_df).mark_line().encode(
-                x=alt.X('timestamp:T', title='Time'),
-                y=alt.Y('error_rate_percent:Q', title='Error Rate (%)'),
-                tooltip=['timestamp:T', 'error_rate_percent:Q']
-            ).properties(
-                title=f"{selected_agent} - Error Rate",
-                height=300
-            ).interactive()
+            chart = (
+                alt.Chart(history_df)
+                .mark_line()
+                .encode(
+                    x=alt.X("timestamp:T", title="Time"),
+                    y=alt.Y("error_rate_percent:Q", title="Error Rate (%)"),
+                    tooltip=["timestamp:T", "error_rate_percent:Q"],
+                )
+                .properties(title=f"{selected_agent} - Error Rate", height=300)
+                .interactive()
+            )
 
             st.altair_chart(chart, use_container_width=True)
 
         with hist_tabs[3]:
             # Create dual y-axis chart for CPU and memory usage
-            base = alt.Chart(history_df).encode(
-                x=alt.X('timestamp:T', title='Time')
-            ).properties(
-                title=f"{selected_agent} - Resource Usage",
-                height=300
+            base = (
+                alt.Chart(history_df)
+                .encode(x=alt.X("timestamp:T", title="Time"))
+                .properties(title=f"{selected_agent} - Resource Usage", height=300)
             )
 
             # CPU usage line
-            cpu_line = base.mark_line(color='red').encode(
-                y=alt.Y('cpu_usage:Q', title='CPU Usage (%)'),
-                tooltip=['timestamp:T', 'cpu_usage:Q']
+            cpu_line = base.mark_line(color="red").encode(
+                y=alt.Y("cpu_usage:Q", title="CPU Usage (%)"),
+                tooltip=["timestamp:T", "cpu_usage:Q"],
             )
 
             # Memory usage line
-            memory_line = base.mark_line(color='blue').encode(
-                y=alt.Y('memory_usage_mb:Q', title='Memory Usage (MB)'),
-                tooltip=['timestamp:T', 'memory_usage_mb:Q']
+            memory_line = base.mark_line(color="blue").encode(
+                y=alt.Y("memory_usage_mb:Q", title="Memory Usage (MB)"),
+                tooltip=["timestamp:T", "memory_usage_mb:Q"],
             )
 
             # Combine both lines
-            chart = alt.layer(cpu_line, memory_line).resolve_scale(
-                y='independent'
-            ).interactive()
+            chart = (
+                alt.layer(cpu_line, memory_line)
+                .resolve_scale(y="independent")
+                .interactive()
+            )
 
             st.altair_chart(chart, use_container_width=True)
     else:
         st.error(f"No historical data available for {selected_agent}")
-
-

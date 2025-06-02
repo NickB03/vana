@@ -7,11 +7,11 @@ result formatting.
 """
 
 import logging
-from typing import Dict, Any, Optional, List, Union
+import os
 
 # Import the Web Search client
 import sys
-import os
+from typing import Any, Union
 
 # Add the project root to the path
 project_root = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
@@ -23,11 +23,14 @@ try:
     from tools.web_search_client import get_web_search_client
 except ImportError as e:
     # No fallback mock implementation in production
-    raise ImportError(f"Web search client not available: {e}. Ensure web search is properly configured.")
+    raise ImportError(
+        f"Web search client not available: {e}. Ensure web search is properly configured."
+    )
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
 
 class WebSearchTool:
     """
@@ -48,7 +51,7 @@ class WebSearchTool:
         self.use_mock = use_mock
         logger.info(f"Initialized WebSearchTool with use_mock={use_mock}")
 
-    def search(self, query: str, num_results: int = 5) -> Dict[str, Any]:
+    def search(self, query: str, num_results: int = 5) -> dict[str, Any]:
         """
         Search the web using Google Custom Search API.
 
@@ -64,13 +67,13 @@ class WebSearchTool:
             if not query or not isinstance(query, str):
                 return {
                     "success": False,
-                    "error": "Invalid query: must be a non-empty string"
+                    "error": "Invalid query: must be a non-empty string",
                 }
 
             if not isinstance(num_results, int) or num_results < 1:
                 return {
                     "success": False,
-                    "error": "Invalid num_results: must be a positive integer"
+                    "error": "Invalid num_results: must be a positive integer",
                 }
 
             # Perform search
@@ -82,7 +85,7 @@ class WebSearchTool:
                 return {
                     "success": False,
                     "error": response["error"],
-                    "details": response.get("details", "")
+                    "details": response.get("details", ""),
                 }
 
             # Extract and format results
@@ -96,26 +99,22 @@ class WebSearchTool:
                         "title": item.get("title", ""),
                         "link": item.get("link", ""),
                         "snippet": item.get("snippet", ""),
-                        "source": "web"
+                        "source": "web",
                     }
                     formatted_results.append(formatted_result)
             elif isinstance(response, list):
                 # Mock client response
                 formatted_results = response
 
-            logger.info(f"Successfully searched web for '{query}' with {len(formatted_results)} results")
-            return {
-                "success": True,
-                "results": formatted_results
-            }
+            logger.info(
+                f"Successfully searched web for '{query}' with {len(formatted_results)} results"
+            )
+            return {"success": True, "results": formatted_results}
         except Exception as e:
             logger.error(f"Error searching web: {str(e)}")
-            return {
-                "success": False,
-                "error": f"Error searching web: {str(e)}"
-            }
+            return {"success": False, "error": f"Error searching web: {str(e)}"}
 
-    def get_metadata(self) -> Dict[str, Any]:
+    def get_metadata(self) -> dict[str, Any]:
         """
         Get metadata about the tool.
 
@@ -134,23 +133,25 @@ class WebSearchTool:
                             "name": "query",
                             "type": "string",
                             "description": "The search query",
-                            "required": True
+                            "required": True,
                         },
                         {
                             "name": "num_results",
                             "type": "integer",
                             "description": "Number of results to return (max 10)",
                             "required": False,
-                            "default": 5
-                        }
-                    ]
+                            "default": 5,
+                        },
+                    ],
                 }
-            ]
+            ],
         }
 
 
 # Function wrapper for the tool
-def search(query: str, num_results: int = 5) -> Union[List[Dict[str, Any]], Dict[str, Any]]:
+def search(
+    query: str, num_results: int = 5
+) -> Union[list[dict[str, Any]], dict[str, Any]]:
     """
     Search the web using Google Custom Search API.
 
@@ -167,5 +168,3 @@ def search(query: str, num_results: int = 5) -> Union[List[Dict[str, Any]], Dict
     if result["success"]:
         return result["results"]
     return result
-
-

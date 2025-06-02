@@ -1,8 +1,8 @@
 # VANA Behavior Improvements: Tool Utilization & Problem-Solving
 
-**Date:** 2025-05-30  
-**Issue Identified:** VANA not leveraging available tools effectively  
-**Example:** Weather request - said "cannot fulfill" instead of using web search tool  
+**Date:** 2025-05-30
+**Issue Identified:** VANA not leveraging available tools effectively
+**Example:** Weather request - said "cannot fulfill" instead of using web search tool
 
 ## 🚨 CURRENT PROBLEM
 

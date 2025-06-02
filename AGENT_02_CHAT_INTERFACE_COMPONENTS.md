@@ -131,7 +131,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ className }) => {
     <div className={`flex flex-col h-full ${className}`}>
       {/* Agent Status Bar */}
       <AgentStatus />
-      
+
       {/* Chat Messages */}
       <div className="flex-1 overflow-hidden">
         <Thread
@@ -143,7 +143,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ className }) => {
           className="h-full"
         />
       </div>
-      
+
       {/* Chat Input */}
       <ChatInput />
     </div>
@@ -178,7 +178,7 @@ interface ChatMessageProps {
 
 export const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
   const isUser = message.role === 'user';
-  
+
   return (
     <MessagePrimitive.Root
       className={cn(
@@ -193,7 +193,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
           {isUser ? "U" : message.agent?.charAt(0).toUpperCase() || "V"}
         </AvatarFallback>
       </Avatar>
-      
+
       {/* Message Content */}
       <div className={cn("flex-1 space-y-2", isUser && "text-right")}>
         {/* Header */}
@@ -207,12 +207,12 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
             {new Date(message.timestamp).toLocaleTimeString()}
           </span>
         </div>
-        
+
         {/* Message Text */}
         <MessagePrimitive.Content className="prose prose-sm max-w-none dark:prose-invert">
           {message.content}
         </MessagePrimitive.Content>
-        
+
         {/* Tool Executions */}
         {message.tools && message.tools.length > 0 && (
           <div className="space-y-2">
@@ -268,7 +268,7 @@ export const ChatInput: React.FC = () => {
           >
             <Paperclip className="h-4 w-4" />
           </Button>
-          
+
           {/* Text Input */}
           <div className="flex-1 relative">
             <Textarea
@@ -279,7 +279,7 @@ export const ChatInput: React.FC = () => {
               className="min-h-[44px] max-h-32 resize-none pr-12"
               rows={1}
             />
-            
+
             {/* Character Count */}
             {message.length > 0 && (
               <div className="absolute bottom-2 right-2 text-xs text-muted-foreground">
@@ -287,7 +287,7 @@ export const ChatInput: React.FC = () => {
               </div>
             )}
           </div>
-          
+
           {/* Voice/Send Button */}
           <Button
             type={message.trim() ? "submit" : "button"}
@@ -371,7 +371,7 @@ export const AgentStatus: React.FC<AgentStatusProps> = ({
             <span>{getStatusText()}</span>
           </div>
         </div>
-        
+
         {progress !== undefined && (
           <div className="flex items-center gap-2">
             <Progress value={progress} className="w-20 h-2" />
@@ -456,7 +456,7 @@ export const ToolExecution: React.FC<ToolExecutionProps> = ({ tool }) => {
             </div>
           </CardHeader>
         </CollapsibleTrigger>
-        
+
         <CollapsibleContent>
           <CardContent className="pt-0 p-3">
             {tool.input && (
@@ -467,7 +467,7 @@ export const ToolExecution: React.FC<ToolExecutionProps> = ({ tool }) => {
                 </pre>
               </div>
             )}
-            
+
             {tool.output && (
               <div className="mb-3">
                 <h4 className="text-xs font-medium text-muted-foreground mb-1">Output:</h4>
@@ -476,7 +476,7 @@ export const ToolExecution: React.FC<ToolExecutionProps> = ({ tool }) => {
                 </pre>
               </div>
             )}
-            
+
             {tool.error && (
               <div>
                 <h4 className="text-xs font-medium text-red-600 mb-1">Error:</h4>

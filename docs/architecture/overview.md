@@ -62,7 +62,7 @@ graph TD
     UI_Streamlit --> API_Flask;
     API_Flask --> VS_HealthChecker;
     API_Flask --> MonitoringUtils;
-    
+
     VS_HealthChecker --> VS_Client;
     ScheduledMonitor --> VS_HealthChecker;
     TestHealth --> VS_HealthChecker;
@@ -72,7 +72,7 @@ graph TD
     AgentCore --> KG_Manager;
     AgentCore --> HybridSearch;
     AgentCore --> WebSearch;
-    
+
     HybridSearch --> VS_Client;
     HybridSearch --> KG_Manager;
     HybridSearch --> WebSearch;

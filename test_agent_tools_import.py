@@ -4,34 +4,36 @@ Test script to safely check agent tools imports without affecting the running se
 """
 
 import sys
-import traceback
 import time
+import traceback
+
 
 def test_import(module_path, item_name):
     """Test importing a specific item from a module."""
     print(f"\n🔍 Testing import: {item_name} from {module_path}")
     start_time = time.time()
-    
+
     try:
         # Import the module
         module = __import__(module_path, fromlist=[item_name])
-        
+
         # Get the specific item
         item = getattr(module, item_name)
-        
+
         elapsed = time.time() - start_time
         print(f"✅ SUCCESS: {item_name} imported in {elapsed:.2f}s")
         print(f"   Type: {type(item)}")
         print(f"   Name: {getattr(item, 'name', 'No name attribute')}")
         return True
-        
+
     except Exception as e:
         elapsed = time.time() - start_time
         print(f"❌ FAILED: {item_name} failed to import in {elapsed:.2f}s")
         print(f"   Error: {str(e)}")
-        print(f"   Traceback:")
+        print("   Traceback:")
         traceback.print_exc()
         return False
+
 
 def test_initialization():
     """Test the initialization of agent tools."""
@@ -39,7 +41,7 @@ def test_initialization():
     print("=" * 50)
 
     try:
-        from lib._tools.agent_tools import initialize_agent_tools, adk_architecture_tool
+        from lib._tools.agent_tools import adk_architecture_tool, initialize_agent_tools
 
         print("✅ Import successful")
         print(f"   Tool before init: {type(adk_architecture_tool)}")
@@ -63,6 +65,7 @@ def test_initialization():
         print(f"❌ Initialization failed: {str(e)}")
         traceback.print_exc()
         return False
+
 
 def main():
     """Test agent tools imports and initialization."""
@@ -93,7 +96,9 @@ def main():
         print(f"{status} {tool_name}")
 
     all_imports_passed = all(results.values())
-    print(f"\n🎯 Import Result: {'✅ ALL PASSED' if all_imports_passed else '❌ SOME FAILED'}")
+    print(
+        f"\n🎯 Import Result: {'✅ ALL PASSED' if all_imports_passed else '❌ SOME FAILED'}"
+    )
 
     # Test initialization if imports passed
     init_passed = False
@@ -101,9 +106,12 @@ def main():
         init_passed = test_initialization()
 
     overall_success = all_imports_passed and init_passed
-    print(f"\n🏆 FINAL RESULT: {'✅ ALL TESTS PASSED' if overall_success else '❌ SOME TESTS FAILED'}")
+    print(
+        f"\n🏆 FINAL RESULT: {'✅ ALL TESTS PASSED' if overall_success else '❌ SOME TESTS FAILED'}"
+    )
 
     return overall_success
+
 
 if __name__ == "__main__":
     success = main()

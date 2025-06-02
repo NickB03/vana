@@ -37,12 +37,12 @@ The primary method is typically `search` or `perform_search`.
 ```python
 if web_search_client:
     query = "latest advancements in AI"
-    
+
     try:
         # The search method might take parameters like num_results to control
         # how many search results to return.
         search_results = web_search_client.search(query_text=query, num_results=5)
-        
+
         print(f"\nWeb Search Results for: '{query}':")
         if search_results and search_results.get('items'): # Google CSE API returns results in 'items'
             for i, item in enumerate(search_results['items']):
@@ -54,7 +54,7 @@ if web_search_client:
              print(f"  Raw results: {search_results}") # Print raw if structure is unexpected
         else:
             print("  No results found or an error occurred.")
-            
+
     except Exception as e:
         print(f"Error during web search for '{query}': {e}")
 

@@ -4,12 +4,14 @@ Data formatting utilities for VANA Dashboard.
 This module provides functions for formatting data for visualization.
 """
 
-import pandas as pd
-import numpy as np
-from datetime import datetime, timedelta
 import logging
+from datetime import datetime
+
+import numpy as np
+import pandas as pd
 
 logger = logging.getLogger(__name__)
+
 
 def format_timestamps(data, timestamp_key="timestamps"):
     """
@@ -33,14 +35,22 @@ def format_timestamps(data, timestamp_key="timestamps"):
         timestamps = [datetime.fromisoformat(ts) for ts in data[timestamp_key]]
 
         # Format timestamps for display
-        formatted_data[timestamp_key] = [ts.strftime("%Y-%m-%d %H:%M:%S") for ts in timestamps]
+        formatted_data[timestamp_key] = [
+            ts.strftime("%Y-%m-%d %H:%M:%S") for ts in timestamps
+        ]
 
         # Add a shorter format for charts
-        formatted_data["short_timestamps"] = [ts.strftime("%H:%M") if ts.date() == datetime.now().date() else ts.strftime("%m-%d %H:%M") for ts in timestamps]
+        formatted_data["short_timestamps"] = [
+            ts.strftime("%H:%M")
+            if ts.date() == datetime.now().date()
+            else ts.strftime("%m-%d %H:%M")
+            for ts in timestamps
+        ]
     except Exception as e:
         logger.error(f"Error formatting timestamps: {e}")
 
     return formatted_data
+
 
 def create_dataframe(data, timestamp_key="timestamps"):
     """
@@ -63,7 +73,11 @@ def create_dataframe(data, timestamp_key="timestamps"):
 
         # Add all other keys except 'short_timestamps'
         for key in data:
-            if key != timestamp_key and key != "short_timestamps" and len(data[key]) == len(data[timestamp_key]):
+            if (
+                key != timestamp_key
+                and key != "short_timestamps"
+                and len(data[key]) == len(data[timestamp_key])
+            ):
                 df_dict[key] = data[key]
 
         # Create DataFrame
@@ -77,6 +91,7 @@ def create_dataframe(data, timestamp_key="timestamps"):
         logger.error(f"Error creating DataFrame: {e}")
         return pd.DataFrame()
 
+
 def calculate_statistics(data):
     """
     Calculate statistics for numerical data.
@@ -88,13 +103,7 @@ def calculate_statistics(data):
         dict: Dictionary of statistics.
     """
     if not data:
-        return {
-            "min": 0,
-            "max": 0,
-            "mean": 0,
-            "median": 0,
-            "std": 0
-        }
+        return {"min": 0, "max": 0, "mean": 0, "median": 0, "std": 0}
 
     try:
         return {
@@ -102,17 +111,12 @@ def calculate_statistics(data):
             "max": max(data),
             "mean": sum(data) / len(data),
             "median": sorted(data)[len(data) // 2],
-            "std": np.std(data) if len(data) > 1 else 0
+            "std": np.std(data) if len(data) > 1 else 0,
         }
     except Exception as e:
         logger.error(f"Error calculating statistics: {e}")
-        return {
-            "min": 0,
-            "max": 0,
-            "mean": 0,
-            "median": 0,
-            "std": 0
-        }
+        return {"min": 0, "max": 0, "mean": 0, "median": 0, "std": 0}
+
 
 def format_bytes(bytes_value):
     """
@@ -126,12 +130,13 @@ def format_bytes(bytes_value):
     """
     if bytes_value < 1024:
         return f"{bytes_value} B"
-    elif bytes_value < 1024 ** 2:
+    elif bytes_value < 1024**2:
         return f"{bytes_value / 1024:.2f} KB"
-    elif bytes_value < 1024 ** 3:
+    elif bytes_value < 1024**3:
         return f"{bytes_value / (1024 ** 2):.2f} MB"
     else:
         return f"{bytes_value / (1024 ** 3):.2f} GB"
+
 
 def format_duration(seconds):
     """
@@ -160,6 +165,7 @@ def format_duration(seconds):
         remaining_seconds = remaining_seconds % 60
         return f"{int(hours)}h {int(minutes)}m {int(remaining_seconds)}s"
 
+
 def format_percentage(value, decimal_places=2):
     """
     Format a value as a percentage.
@@ -172,6 +178,7 @@ def format_percentage(value, decimal_places=2):
         str: Formatted percentage.
     """
     return f"{value * 100:.{decimal_places}f}%"
+
 
 def format_time_ago(timestamp_str):
     """
@@ -208,11 +215,12 @@ def format_time_ago(timestamp_str):
         logger.error(f"Error formatting time ago: {e}")
         return timestamp_str
 
+
 def format_timestamp(timestamp_str):
     """Format an ISO timestamp string to a human-readable string."""
     try:
         # Parse ISO format timestamp
-        dt = datetime.fromisoformat(timestamp_str.replace('Z', '+00:00'))
+        dt = datetime.fromisoformat(timestamp_str.replace("Z", "+00:00"))
 
         # Convert to local timezone
         local_tz = datetime.now().astimezone().tzinfo
@@ -240,6 +248,7 @@ def format_timestamp(timestamp_str):
         # If formatting fails, return the original string
         logger.error(f"Error formatting timestamp: {e}")
         return timestamp_str
+
 
 def format_percentage(value):
     """Format a decimal value as a percentage string."""

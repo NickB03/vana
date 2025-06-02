@@ -69,7 +69,7 @@ export const MonitoringDashboard: React.FC<MonitoringDashboardProps> = ({
           )}
         </div>
       </div>
-      
+
       <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
         <TabsList className="grid w-full grid-cols-4 m-4">
           <TabsTrigger value="activity" className="flex items-center gap-2">
@@ -89,7 +89,7 @@ export const MonitoringDashboard: React.FC<MonitoringDashboardProps> = ({
             <span className="hidden sm:inline">Analytics</span>
           </TabsTrigger>
         </TabsList>
-        
+
         <div className="flex-1 overflow-hidden">
           <TabsContent value="activity" className="h-full m-0">
             <AgentActivityPanel />
@@ -223,7 +223,7 @@ export const AgentActivityPanel: React.FC = () => {
           Real-time status of all agents
         </p>
       </div>
-      
+
       <ScrollArea className="flex-1">
         <div className="space-y-4">
           {agents.map((agent) => (
@@ -239,7 +239,7 @@ export const AgentActivityPanel: React.FC = () => {
                   </Badge>
                 </div>
               </CardHeader>
-              
+
               <CardContent className="space-y-3">
                 {agent.currentTask && (
                   <div>
@@ -250,7 +250,7 @@ export const AgentActivityPanel: React.FC = () => {
                     )}
                   </div>
                 )}
-                
+
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div className="flex items-center gap-2">
                     <Clock className="h-4 w-4 text-muted-foreground" />
@@ -261,9 +261,9 @@ export const AgentActivityPanel: React.FC = () => {
                     <span>Tools: {agent.toolsUsed}</span>
                   </div>
                 </div>
-                
+
                 <Separator />
-                
+
                 <div className="flex justify-between text-xs text-muted-foreground">
                   <span>Tasks: {agent.tasksCompleted}</span>
                   <span>Last: {formatDistanceToNow(agent.lastActivity)} ago</span>
@@ -349,7 +349,7 @@ export const PerformancePanel: React.FC = () => {
           Real-time system performance
         </p>
       </div>
-      
+
       {/* Key Metrics Cards */}
       <div className="grid grid-cols-2 gap-4">
         <Card>
@@ -368,7 +368,7 @@ export const PerformancePanel: React.FC = () => {
             </div>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
@@ -385,7 +385,7 @@ export const PerformancePanel: React.FC = () => {
             </div>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
@@ -402,7 +402,7 @@ export const PerformancePanel: React.FC = () => {
             </div>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
@@ -420,7 +420,7 @@ export const PerformancePanel: React.FC = () => {
           </CardContent>
         </Card>
       </div>
-      
+
       {/* Performance Chart */}
       <Card className="flex-1">
         <CardHeader>
@@ -430,19 +430,19 @@ export const PerformancePanel: React.FC = () => {
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={metrics}>
               <CartesianGrid strokeDasharray="3 3" />
-              <XAxis 
-                dataKey="timestamp" 
+              <XAxis
+                dataKey="timestamp"
                 tickFormatter={(value) => new Date(value).toLocaleTimeString()}
               />
               <YAxis />
-              <Tooltip 
+              <Tooltip
                 labelFormatter={(value) => new Date(value).toLocaleString()}
                 formatter={(value: number) => [`${value}ms`, 'Response Time']}
               />
-              <Line 
-                type="monotone" 
-                dataKey="responseTime" 
-                stroke="#8884d8" 
+              <Line
+                type="monotone"
+                dataKey="responseTime"
+                stroke="#8884d8"
                 strokeWidth={2}
                 dot={false}
               />
@@ -569,16 +569,16 @@ export const HealthStatusPanel: React.FC = () => {
             Overall health score: {health.score}/100
           </p>
         </div>
-        <Button 
-          variant="outline" 
-          size="icon" 
+        <Button
+          variant="outline"
+          size="icon"
           onClick={handleRefresh}
           disabled={refreshing}
         >
           <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
         </Button>
       </div>
-      
+
       {/* Overall Status */}
       <Card>
         <CardContent className="p-4">
@@ -596,7 +596,7 @@ export const HealthStatusPanel: React.FC = () => {
           </p>
         </CardContent>
       </Card>
-      
+
       {/* Component Health Checks */}
       <Card className="flex-1">
         <CardHeader>

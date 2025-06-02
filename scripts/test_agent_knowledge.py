@@ -6,13 +6,13 @@ This script tests agents' ability to retrieve knowledge from Vector Search.
 It works with both ADK agents and the fallback mechanism.
 """
 
-import os
-import sys
+import argparse
 import json
 import logging
-import argparse
+import os
+import sys
 import time
-from pathlib import Path
+
 from dotenv import load_dotenv
 
 # Add the project root to the Python path
@@ -25,10 +25,7 @@ from tools.adk_wrapper import adk
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(message)s",
-    handlers=[
-        logging.FileHandler("agent_knowledge_test.log"),
-        logging.StreamHandler()
-    ]
+    handlers=[logging.FileHandler("agent_knowledge_test.log"), logging.StreamHandler()],
 )
 logger = logging.getLogger(__name__)
 
@@ -39,6 +36,7 @@ load_dotenv()
 PROJECT_ID = os.getenv("GOOGLE_CLOUD_PROJECT")
 LOCATION = os.getenv("GOOGLE_CLOUD_LOCATION")
 
+
 def parse_arguments():
     """Parse command line arguments."""
     parser = argparse.ArgumentParser(description="Test agent knowledge retrieval")
@@ -48,6 +46,7 @@ def parse_arguments():
     parser.add_argument("--queries-file", help="JSON file with test queries")
     return parser.parse_args()
 
+
 def setup_logging(verbose=False):
     """Set up logging with appropriate level based on verbose flag."""
     level = logging.DEBUG if verbose else logging.INFO
@@ -56,36 +55,51 @@ def setup_logging(verbose=False):
         format="%(asctime)s [%(levelname)s] %(message)s",
         handlers=[
             logging.FileHandler("agent_knowledge_test.log"),
-            logging.StreamHandler()
-        ]
+            logging.StreamHandler(),
+        ],
     )
     return logging.getLogger(__name__)
+
 
 def get_test_queries():
     """Get a list of test queries covering different knowledge areas."""
     return [
         {"query": "What is the architecture of VANA?", "category": "architecture"},
-        {"query": "How does Vector Search integration work?", "category": "vector_search"},
+        {
+            "query": "How does Vector Search integration work?",
+            "category": "vector_search",
+        },
         {"query": "What are the agent roles in the VANA system?", "category": "agents"},
-        {"query": "How do I troubleshoot Vector Search issues?", "category": "troubleshooting"},
+        {
+            "query": "How do I troubleshoot Vector Search issues?",
+            "category": "troubleshooting",
+        },
         {"query": "How do agents delegate tasks?", "category": "delegation"},
         {"query": "What is the current project status?", "category": "status"},
-        {"query": "How do I update the Vector Search index?", "category": "maintenance"},
+        {
+            "query": "How do I update the Vector Search index?",
+            "category": "maintenance",
+        },
         {"query": "What tools are available to VANA agents?", "category": "tools"},
         {"query": "How is the GitHub sync implemented?", "category": "github"},
-        {"query": "What are the known issues with ADK integration?", "category": "issues"}
+        {
+            "query": "What are the known issues with ADK integration?",
+            "category": "issues",
+        },
     ]
+
 
 def load_queries_from_file(file_path):
     """Load test queries from a JSON file."""
     try:
-        with open(file_path, 'r') as f:
+        with open(file_path) as f:
             queries = json.load(f)
         logger.info(f"Loaded {len(queries)} queries from {file_path}")
         return queries
     except Exception as e:
         logger.error(f"Error loading queries from {file_path}: {str(e)}")
         return get_test_queries()
+
 
 def create_test_agent(agent_name):
     """Create an agent for testing."""
@@ -96,14 +110,17 @@ def create_test_agent(agent_name):
     try:
         # Try to import the search knowledge tool
         from scripts.test_vector_search_direct import search_knowledge
+
         search_tool = {
-            'name': 'search_knowledge',
-            'description': 'Search the knowledge base for information',
-            'function': search_knowledge
+            "name": "search_knowledge",
+            "description": "Search the knowledge base for information",
+            "function": search_knowledge,
         }
         logger.info("Using direct Vector Search as the search tool")
     except ImportError as e:
-        logger.warning(f"Could not import search_knowledge, agent will have no tools: {str(e)}")
+        logger.warning(
+            f"Could not import search_knowledge, agent will have no tools: {str(e)}"
+        )
 
     # Create the agent using the ADK wrapper with search tool
     tools = [search_tool] if search_tool else None
@@ -111,10 +128,11 @@ def create_test_agent(agent_name):
         name=agent_name,
         description=f"{agent_name} is a helpful AI assistant for the VANA project.",
         instructions=f"You are {agent_name}, a helpful AI assistant. Use the knowledge base to answer questions about the VANA project.",
-        tools=tools
+        tools=tools,
     )
 
     return agent
+
 
 def test_agent_knowledge(agent, queries):
     """Test the agent's ability to retrieve knowledge from Vector Search."""
@@ -124,7 +142,9 @@ def test_agent_knowledge(agent, queries):
         query = query_data["query"]
         category = query_data.get("category", "general")
 
-        logger.info(f"Testing query {i+1}/{len(queries)}: '{query}' (Category: {category})")
+        logger.info(
+            f"Testing query {i+1}/{len(queries)}: '{query}' (Category: {category})"
+        )
 
         try:
             # Record the start time
@@ -138,14 +158,28 @@ def test_agent_knowledge(agent, queries):
             response_time = end_time - start_time
 
             # Extract the response text
-            if hasattr(response, 'text'):
+            if hasattr(response, "text"):
                 response_text = response.text
             else:
                 response_text = str(response)
 
             # Simple relevance check (can be improved)
             query_terms = set(query.lower().split())
-            stop_words = {'the', 'is', 'are', 'and', 'or', 'in', 'of', 'to', 'a', 'an', 'how', 'what', 'why'}
+            stop_words = {
+                "the",
+                "is",
+                "are",
+                "and",
+                "or",
+                "in",
+                "of",
+                "to",
+                "a",
+                "an",
+                "how",
+                "what",
+                "why",
+            }
             query_terms = query_terms - stop_words
 
             # Count how many query terms appear in the response
@@ -168,10 +202,12 @@ def test_agent_knowledge(agent, queries):
                 "response_time": response_time,
                 "relevance_score": relevance_score,
                 "relevant": relevant,
-                "success": True
+                "success": True,
             }
 
-            logger.info(f"Response relevance: {relevance_score:.2f} ({'✅ Relevant' if relevant else '❌ Not relevant'})")
+            logger.info(
+                f"Response relevance: {relevance_score:.2f} ({'✅ Relevant' if relevant else '❌ Not relevant'})"
+            )
             logger.info(f"Response time: {response_time:.2f}s")
 
         except Exception as e:
@@ -183,12 +219,13 @@ def test_agent_knowledge(agent, queries):
                 "relevance_score": 0.0,
                 "relevant": False,
                 "success": False,
-                "error": str(e)
+                "error": str(e),
             }
 
         results.append(result)
 
     return results
+
 
 def main():
     """Main function."""
@@ -201,7 +238,11 @@ def main():
     logger.info("Starting agent knowledge retrieval test")
 
     # Get test queries
-    queries = load_queries_from_file(args.queries_file) if args.queries_file else get_test_queries()
+    queries = (
+        load_queries_from_file(args.queries_file)
+        if args.queries_file
+        else get_test_queries()
+    )
 
     # Create the agent
     agent = create_test_agent(args.agent)
@@ -239,7 +280,7 @@ def main():
         "success_rate": success_rate,
         "categories": categories,
         "adk_available": adk.is_available(),
-        "results": results
+        "results": results,
     }
 
     # Print summary
@@ -248,19 +289,22 @@ def main():
     logger.info(f"Success rate: {success_rate:.1f}% ({success_count}/{len(results)})")
     logger.info("Category breakdown:")
     for category, counts in categories.items():
-        logger.info(f"  {category}: {counts['rate']:.1f}% ({counts['success']}/{counts['total']})")
+        logger.info(
+            f"  {category}: {counts['rate']:.1f}% ({counts['success']}/{counts['total']})"
+        )
 
     # Save results to file
     if args.output:
         try:
             os.makedirs(os.path.dirname(args.output), exist_ok=True)
-            with open(args.output, 'w') as f:
+            with open(args.output, "w") as f:
                 json.dump(summary, f, indent=2)
             logger.info(f"Results saved to {args.output}")
         except Exception as e:
             logger.error(f"Error saving results: {str(e)}")
 
     return 0 if success_rate >= 70 else 1
+
 
 if __name__ == "__main__":
     main()

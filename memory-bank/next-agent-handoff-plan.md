@@ -64,7 +64,7 @@
    git checkout main
    git pull origin main
    git checkout -b feat/agent-intelligence-enhancement
-   
+
    # Backup current configurations
    cp -r agents/vana agents/vana.backup.$(date +%Y%m%d)
    cp -r lib/_tools lib/_tools.backup.$(date +%Y%m%d)

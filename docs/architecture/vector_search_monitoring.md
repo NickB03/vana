@@ -40,7 +40,7 @@ graph TD
     subgraph ExternalServices["External Services"]
         VertexAI_VS["Vertex AI Vector Search"]
     end
-    
+
     subgraph Configuration
         EnvConfig["Configuration (.env, config/environment.py)"]
     end
@@ -48,13 +48,13 @@ graph TD
     %% Connections
     User --> UI_Streamlit;
     UI_Streamlit -- "HTTP API Calls" --> API_Flask;
-    
+
     API_Flask -- "Initiates Checks / Fetches Data via" --> VS_HealthChecker;
     API_Flask -- "Reads" --> EnvConfig;
 
     ScheduledMonitor -- "Triggers" --> VS_HealthChecker;
     ManualTrigger -- "Triggers" --> VS_HealthChecker;
-    
+
     VS_HealthChecker -- "Uses" --> VS_Client;
     VS_HealthChecker -- "Reads" --> EnvConfig;
     VS_Client -- "Interacts with" --> VertexAI_VS;

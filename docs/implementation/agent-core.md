@@ -28,25 +28,25 @@ The `VanaAgent` class is the main class for the agent core. It provides methods 
 def __init__(self, name: str = "vana", model: str = None):
     """
     Initialize the VANA agent.
-    
+
     Args:
         name: Name of the agent
         model: LLM model to use (if None, uses environment variable or default)
     """
     self.name = name
     self.model = model or os.environ.get("VANA_MODEL", "gemini-1.5-pro")
-    
+
     # Initialize task parser
     self.task_parser = TaskParser()
-    
+
     # Initialize tools registry
     self.tools = {}
-    
+
     # Initialize state
     self.conversation_history = []
     self.current_session_id = None
     self.current_user_id = None
-    
+
     logger.info(f"Initialized {self.name} agent with model {self.model}")
 ```
 
@@ -56,7 +56,7 @@ The constructor initializes the agent with a name, model, task parser, tools reg
 def register_tool(self, tool_name: str, tool_function: Callable, description: str = None):
     """
     Register a tool with the agent.
-    
+
     Args:
         tool_name: Name of the tool
         tool_function: Function that implements the tool
@@ -75,10 +75,10 @@ The `register_tool` method registers a tool with the agent, making it available 
 def create_session(self, user_id: str) -> str:
     """
     Create a new session for a user.
-    
+
     Args:
         user_id: User identifier
-        
+
     Returns:
         Session ID
     """
@@ -86,7 +86,7 @@ def create_session(self, user_id: str) -> str:
     self.current_session_id = session_id
     self.current_user_id = user_id
     self.conversation_history = []
-    
+
     logger.info(f"Created session {session_id} for user {user_id}")
     return session_id
 ```
@@ -97,11 +97,11 @@ The `create_session` method creates a new session for a user, generating a uniqu
 def load_session(self, session_id: str, user_id: str) -> bool:
     """
     Load an existing session.
-    
+
     Args:
         session_id: Session identifier
         user_id: User identifier
-        
+
     Returns:
         True if session was loaded successfully, False otherwise
     """
@@ -109,11 +109,11 @@ def load_session(self, session_id: str, user_id: str) -> bool:
     # For now, we just set the current session ID and user ID
     self.current_session_id = session_id
     self.current_user_id = user_id
-    
+
     # Mock implementation - in a real system, we would load conversation history
     # from a database or other persistent storage
     self.conversation_history = []
-    
+
     logger.info(f"Loaded session {session_id} for user {user_id}")
     return True
 ```
@@ -124,12 +124,12 @@ The `load_session` method loads an existing session, setting the current session
 def process_message(self, message: str, session_id: str = None, user_id: str = None) -> str:
     """
     Process a user message and generate a response.
-    
+
     Args:
         message: User message
         session_id: Session identifier (optional if already set)
         user_id: User identifier (optional if already set)
-        
+
     Returns:
         Agent response
     """
@@ -151,14 +151,14 @@ def process_message(self, message: str, session_id: str = None, user_id: str = N
             session_id = self.create_session(user_id)
         else:
             raise ValueError("Either session_id or user_id must be provided")
-    
+
     # Add user message to conversation history
     self.conversation_history.append({
         "role": "user",
         "content": message,
         "timestamp": datetime.now().isoformat()
     })
-    
+
     # Process message
     try:
         # Check if message is a tool command
@@ -167,23 +167,23 @@ def process_message(self, message: str, session_id: str = None, user_id: str = N
         else:
             # Parse task
             task_info = self.task_parser.parse(message)
-            
+
             # Generate response based on task
             response = self._generate_response(message, task_info)
-        
+
         # Add response to conversation history
         self.conversation_history.append({
             "role": "assistant",
             "content": response,
             "timestamp": datetime.now().isoformat()
         })
-        
+
         return response
-    
+
     except Exception as e:
         error_message = f"Error processing message: {str(e)}"
         logger.error(error_message)
-        
+
         # Add error to conversation history
         self.conversation_history.append({
             "role": "assistant",
@@ -191,7 +191,7 @@ def process_message(self, message: str, session_id: str = None, user_id: str = N
             "timestamp": datetime.now().isoformat(),
             "error": True
         })
-        
+
         return error_message
 ```
 
@@ -201,10 +201,10 @@ The `process_message` method processes a user message and generates a response. 
 def _handle_tool_command(self, command: str) -> str:
     """
     Handle a tool command.
-    
+
     Args:
         command: Tool command (starting with !)
-        
+
     Returns:
         Tool response
     """
@@ -212,11 +212,11 @@ def _handle_tool_command(self, command: str) -> str:
     parts = command[1:].split(maxsplit=1)
     tool_name = parts[0]
     args = parts[1] if len(parts) > 1 else ""
-    
+
     # Check if tool exists
     if tool_name not in self.tools:
         return f"Unknown tool: {tool_name}. Available tools: {', '.join(self.tools.keys())}"
-    
+
     # Execute tool
     try:
         tool = self.tools[tool_name]["function"]
@@ -233,11 +233,11 @@ The `_handle_tool_command` method handles tool commands, parsing the command, ch
 def _generate_response(self, message: str, task_info: Dict[str, Any]) -> str:
     """
     Generate a response to a user message.
-    
+
     Args:
         message: User message
         task_info: Task information from parser
-        
+
     Returns:
         Generated response
     """
@@ -253,7 +253,7 @@ The `_generate_response` method generates a response to a user message based on 
 def get_available_tools(self) -> List[Dict[str, str]]:
     """
     Get a list of available tools.
-    
+
     Returns:
         List of tool information dictionaries
     """
@@ -269,7 +269,7 @@ The `get_available_tools` method returns a list of available tools with their na
 def get_conversation_history(self) -> List[Dict[str, Any]]:
     """
     Get the conversation history for the current session.
-    
+
     Returns:
         List of message dictionaries
     """
@@ -286,21 +286,21 @@ The `TaskParser` class is responsible for parsing user messages into structured 
 class TaskParser:
     """
     Task parser for the VANA agent.
-    
+
     This class is responsible for parsing user messages into structured tasks.
     """
-    
+
     def __init__(self):
         """Initialize the task parser."""
         pass
-    
+
     def parse(self, message: str) -> Dict[str, Any]:
         """
         Parse a user message into a structured task.
-        
+
         Args:
             message: User message
-            
+
         Returns:
             Task information dictionary
         """
@@ -359,7 +359,7 @@ try:
 except Exception as e:
     error_message = f"Error processing message: {str(e)}"
     logger.error(error_message)
-    
+
     # Add error to conversation history
     self.conversation_history.append({
         "role": "assistant",
@@ -367,7 +367,7 @@ except Exception as e:
         "timestamp": datetime.now().isoformat(),
         "error": True
     })
-    
+
     return error_message
 ```
 

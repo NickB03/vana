@@ -3,11 +3,10 @@
 Test script for the entity extractor
 """
 
-import os
-import sys
 import json
 import logging
-from typing import Dict, Any, List
+import os
+import sys
 
 # Add parent directory to path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -18,6 +17,7 @@ from tools.knowledge_graph.entity_extractor import EntityExtractor
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
 
 def test_entity_extractor():
     """Test the entity extractor"""
@@ -40,7 +40,9 @@ def test_entity_extractor():
     # Print extracted entities
     logger.info(f"Extracted {len(entities)} entities:")
     for entity in entities:
-        logger.info(f"  {entity['name']} ({entity['type']}): confidence={entity['confidence']}")
+        logger.info(
+            f"  {entity['name']} ({entity['type']}): confidence={entity['confidence']}"
+        )
 
     # Extract relationships
     logger.info("Extracting relationships from test text...")
@@ -49,21 +51,23 @@ def test_entity_extractor():
     # Print extracted relationships
     logger.info(f"Extracted {len(relationships)} relationships:")
     for rel in relationships:
-        logger.info(f"  {rel['entity1']} {rel['relationship']} {rel['entity2']}: confidence={rel['confidence']}")
+        logger.info(
+            f"  {rel['entity1']} {rel['relationship']} {rel['entity2']}: confidence={rel['confidence']}"
+        )
 
     # Save extracted entities and relationships to output file
     output_file = os.path.join("tests", "test_data", "extracted_entities.json")
     try:
         with open(output_file, "w") as f:
-            json.dump({
-                "entities": entities,
-                "relationships": relationships
-            }, f, indent=2)
+            json.dump(
+                {"entities": entities, "relationships": relationships}, f, indent=2
+            )
         logger.info(f"Saved extracted entities and relationships to {output_file}")
     except Exception as e:
         logger.error(f"Error saving extracted entities: {str(e)}")
 
     return len(entities) > 0
+
 
 def main():
     """Main function"""
@@ -81,6 +85,7 @@ def main():
     else:
         logger.error("Entity extractor test failed.")
         return 1
+
 
 if __name__ == "__main__":
     sys.exit(main())

@@ -5,30 +5,28 @@ This script tests the embedding generation and vector search functionality
 to ensure proper type handling.
 """
 
+import argparse
+import logging
 import os
 import sys
-import logging
-import argparse
-from typing import List, Dict, Any, Optional
+from typing import Optional
 
 # Add the parent directory to the path to import modules
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(message)s",
-    handlers=[
-        logging.StreamHandler()
-    ]
+    handlers=[logging.StreamHandler()],
 )
 logger = logging.getLogger(__name__)
 
 # Import after path setup
 try:
     # Try different import paths
-    import sys
     import os
+    import sys
 
     # Add possible paths to sys.path
     current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -37,7 +35,7 @@ try:
     possible_paths = [
         os.path.join(parent_dir, "adk-setup"),
         os.path.join(parent_dir, "adk_setup"),
-        parent_dir
+        parent_dir,
     ]
 
     for path in possible_paths:
@@ -47,6 +45,7 @@ try:
     # Try imports
     try:
         from vana.tools.rag_tools import generate_embedding, get_vector_search_endpoint
+
         logger.info("Imported from vana.tools.rag_tools")
     except ImportError:
         try:
@@ -55,7 +54,7 @@ try:
             # Try to find the module file
             module_paths = [
                 os.path.join(parent_dir, "adk-setup", "vana", "tools", "rag_tools.py"),
-                os.path.join(parent_dir, "vana", "tools", "rag_tools.py")
+                os.path.join(parent_dir, "vana", "tools", "rag_tools.py"),
             ]
 
             module_path = None
@@ -83,7 +82,8 @@ except Exception as e:
     logger.error(f"Error setting up imports: {e}")
     sys.exit(1)
 
-def test_embedding_generation(text: str) -> Optional[List[float]]:
+
+def test_embedding_generation(text: str) -> Optional[list[float]]:
     """Test embedding generation with explicit type checking."""
     try:
         logger.info(f"Generating embedding for: '{text}'")
@@ -99,7 +99,9 @@ def test_embedding_generation(text: str) -> Optional[List[float]]:
             logger.warning("Embedding contains non-float values, converting...")
             embedding = [float(value) for value in embedding]
 
-        logger.info(f"Successfully generated embedding with {len(embedding)} dimensions")
+        logger.info(
+            f"Successfully generated embedding with {len(embedding)} dimensions"
+        )
         logger.info(f"First 5 values: {embedding[:5]}")
         logger.info(f"Value types: {[type(v) for v in embedding[:5]]}")
 
@@ -107,10 +109,12 @@ def test_embedding_generation(text: str) -> Optional[List[float]]:
     except Exception as e:
         logger.error(f"Error testing embedding generation: {e}")
         import traceback
+
         logger.error(traceback.format_exc())
         return None
 
-def test_vector_search(query_embedding: List[float], top_k: int = 5) -> bool:
+
+def test_vector_search(query_embedding: list[float], top_k: int = 5) -> bool:
     """Test vector search with the generated embedding."""
     try:
         logger.info("Testing Vector Search...")
@@ -131,11 +135,13 @@ def test_vector_search(query_embedding: List[float], top_k: int = 5) -> bool:
             response = endpoint.find_neighbors(
                 deployed_index_id=deployed_index_id,
                 queries=[query_embedding],
-                num_neighbors=top_k
+                num_neighbors=top_k,
             )
 
             if response and len(response) > 0 and len(response[0]) > 0:
-                logger.info(f"✅ find_neighbors API successful! Found {len(response[0])} results")
+                logger.info(
+                    f"✅ find_neighbors API successful! Found {len(response[0])} results"
+                )
                 return True
             else:
                 logger.warning("find_neighbors API returned empty results")
@@ -148,11 +154,13 @@ def test_vector_search(query_embedding: List[float], top_k: int = 5) -> bool:
             response = endpoint.match(
                 deployed_index_id=deployed_index_id,
                 queries=[{"datapoint": query_embedding}],
-                num_neighbors=top_k
+                num_neighbors=top_k,
             )
 
             if response and len(response) > 0:
-                logger.info(f"✅ match API successful! Found {len(response[0])} results")
+                logger.info(
+                    f"✅ match API successful! Found {len(response[0])} results"
+                )
                 return True
             else:
                 logger.warning("match API returned empty results")
@@ -163,14 +171,20 @@ def test_vector_search(query_embedding: List[float], top_k: int = 5) -> bool:
     except Exception as e:
         logger.error(f"Error testing Vector Search: {e}")
         import traceback
+
         logger.error(traceback.format_exc())
         return False
+
 
 def main() -> int:
     """Main function to run the test."""
     parser = argparse.ArgumentParser(description="Test Vector Search functionality")
-    parser.add_argument("--query", type=str, default="Tell me about VANA's vector search implementation",
-                        help="Query to test with")
+    parser.add_argument(
+        "--query",
+        type=str,
+        default="Tell me about VANA's vector search implementation",
+        help="Query to test with",
+    )
     args = parser.parse_args()
 
     logger.info("Starting Vector Search test with explicit type conversion")
@@ -192,6 +206,7 @@ def main() -> int:
     logger.info("✅ Vector Search test passed")
     logger.info("All tests completed successfully!")
     return 0
+
 
 if __name__ == "__main__":
     sys.exit(main())

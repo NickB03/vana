@@ -13,18 +13,18 @@ Options:
     --file-types EXTENSIONS  Comma-separated list of file extensions to process (default: .py,.md,.txt)
 """
 
-import os
-import glob
-import uuid
-import json
-import time
 import argparse
+import glob
+import json
 import logging
-from typing import List, Dict, Tuple
-from dotenv import load_dotenv
+import os
+import time
+import uuid
+
 import vertexai
-from vertexai.language_models import TextEmbeddingModel
+from dotenv import load_dotenv
 from google.cloud import aiplatform
+from vertexai.language_models import TextEmbeddingModel
 
 # Set up logging
 logging.basicConfig(
@@ -32,8 +32,8 @@ logging.basicConfig(
     format="%(asctime)s [%(levelname)s] %(message)s",
     handlers=[
         logging.FileHandler("github_knowledge_sync.log"),
-        logging.StreamHandler()
-    ]
+        logging.StreamHandler(),
+    ],
 )
 logger = logging.getLogger(__name__)
 
@@ -57,27 +57,54 @@ DEFAULT_EXCLUDE_DIRS = [
     "env",
     "build",
     "dist",
-    "secrets"
+    "secrets",
 ]
+
 
 def parse_arguments():
     """Parse command line arguments."""
-    parser = argparse.ArgumentParser(description="Sync GitHub repository content with Vector Search")
+    parser = argparse.ArgumentParser(
+        description="Sync GitHub repository content with Vector Search"
+    )
     parser.add_argument("--repo-path", default=".", help="Path to the repository root")
-    parser.add_argument("--file-types", default=".py,.md,.txt", help="Comma-separated list of file extensions to process")
-    parser.add_argument("--exclude-dirs", default=",".join(DEFAULT_EXCLUDE_DIRS),
-                        help="Comma-separated list of directories to exclude")
-    parser.add_argument("--max-files", type=int, default=1000, help="Maximum number of files to process")
-    parser.add_argument("--chunk-size", type=int, default=1000, help="Maximum size of text chunks in characters")
-    parser.add_argument("--chunk-overlap", type=int, default=100, help="Overlap between chunks in characters")
+    parser.add_argument(
+        "--file-types",
+        default=".py,.md,.txt",
+        help="Comma-separated list of file extensions to process",
+    )
+    parser.add_argument(
+        "--exclude-dirs",
+        default=",".join(DEFAULT_EXCLUDE_DIRS),
+        help="Comma-separated list of directories to exclude",
+    )
+    parser.add_argument(
+        "--max-files", type=int, default=1000, help="Maximum number of files to process"
+    )
+    parser.add_argument(
+        "--chunk-size",
+        type=int,
+        default=1000,
+        help="Maximum size of text chunks in characters",
+    )
+    parser.add_argument(
+        "--chunk-overlap",
+        type=int,
+        default=100,
+        help="Overlap between chunks in characters",
+    )
     return parser.parse_args()
 
-def get_repository_files(repo_path: str, file_types: List[str], exclude_dirs: List[str], max_files: int) -> List[str]:
+
+def get_repository_files(
+    repo_path: str, file_types: list[str], exclude_dirs: list[str], max_files: int
+) -> list[str]:
     """Get all files of specified types from the repository."""
     all_files = []
 
     # Convert exclude_dirs to absolute paths
-    exclude_dirs_abs = [os.path.abspath(os.path.join(repo_path, d)) for d in exclude_dirs]
+    exclude_dirs_abs = [
+        os.path.abspath(os.path.join(repo_path, d)) for d in exclude_dirs
+    ]
 
     for file_type in file_types:
         pattern = os.path.join(repo_path, f"**/*{file_type}")
@@ -87,7 +114,9 @@ def get_repository_files(repo_path: str, file_types: List[str], exclude_dirs: Li
         filtered_files = []
         for file in files:
             file_abs = os.path.abspath(file)
-            if not any(file_abs.startswith(exclude_dir) for exclude_dir in exclude_dirs_abs):
+            if not any(
+                file_abs.startswith(exclude_dir) for exclude_dir in exclude_dirs_abs
+            ):
                 filtered_files.append(file)
 
         all_files.extend(filtered_files)
@@ -99,15 +128,16 @@ def get_repository_files(repo_path: str, file_types: List[str], exclude_dirs: Li
 
     return all_files
 
+
 def read_file_content(file_path: str) -> str:
     """Read the content of a file."""
     try:
-        with open(file_path, "r", encoding="utf-8") as f:
+        with open(file_path, encoding="utf-8") as f:
             return f.read()
     except UnicodeDecodeError:
         # Try with latin-1 encoding if utf-8 fails
         try:
-            with open(file_path, "r", encoding="latin-1") as f:
+            with open(file_path, encoding="latin-1") as f:
                 return f.read()
         except Exception as e:
             logger.warning(f"Could not read file {file_path}: {str(e)}")
@@ -116,7 +146,10 @@ def read_file_content(file_path: str) -> str:
         logger.warning(f"Could not read file {file_path}: {str(e)}")
         return ""
 
-def chunk_text(text: str, file_path: str, chunk_size: int, chunk_overlap: int) -> List[Dict[str, str]]:
+
+def chunk_text(
+    text: str, file_path: str, chunk_size: int, chunk_overlap: int
+) -> list[dict[str, str]]:
     """Split text into chunks with metadata."""
     if not text.strip():
         return []
@@ -124,20 +157,23 @@ def chunk_text(text: str, file_path: str, chunk_size: int, chunk_overlap: int) -
     # Simple chunking by size with overlap
     chunks = []
     for i in range(0, len(text), chunk_size - chunk_overlap):
-        chunk_text = text[i:i + chunk_size]
+        chunk_text = text[i : i + chunk_size]
         if chunk_text.strip():
             # Create a chunk with metadata
             chunk = {
                 "text": chunk_text,
                 "source": file_path,
                 "start_char": i,
-                "end_char": min(i + chunk_size, len(text))
+                "end_char": min(i + chunk_size, len(text)),
             }
             chunks.append(chunk)
 
     return chunks
 
-def generate_embeddings(chunks: List[Dict[str, str]]) -> List[Tuple[Dict[str, str], List[float]]]:
+
+def generate_embeddings(
+    chunks: list[dict[str, str]],
+) -> list[tuple[dict[str, str], list[float]]]:
     """Generate embeddings for text chunks."""
     # Initialize Vertex AI
     vertexai.init(project=PROJECT_ID, location=LOCATION)
@@ -153,16 +189,18 @@ def generate_embeddings(chunks: List[Dict[str, str]]) -> List[Tuple[Dict[str, st
     all_embeddings = []
 
     for i in range(0, len(texts), batch_size):
-        batch_texts = texts[i:i+batch_size]
-        batch_chunks = chunks[i:i+batch_size]
+        batch_texts = texts[i : i + batch_size]
+        batch_chunks = chunks[i : i + batch_size]
 
-        logger.info(f"Generating embeddings for batch {i//batch_size + 1}/{(len(texts)-1)//batch_size + 1}...")
+        logger.info(
+            f"Generating embeddings for batch {i//batch_size + 1}/{(len(texts)-1)//batch_size + 1}..."
+        )
 
         try:
             batch_embeddings = model.get_embeddings(batch_texts)
 
             # Pair chunks with their embeddings
-            for chunk, embedding in zip(batch_chunks, batch_embeddings):
+            for chunk, embedding in zip(batch_chunks, batch_embeddings, strict=False):
                 all_embeddings.append((chunk, embedding.values))
         except Exception as e:
             logger.error(f"Error generating embeddings for batch: {str(e)}")
@@ -170,7 +208,11 @@ def generate_embeddings(chunks: List[Dict[str, str]]) -> List[Tuple[Dict[str, st
 
     return all_embeddings
 
-def export_embeddings_to_file(chunk_embeddings: List[Tuple[Dict[str, str], List[float]]], output_file: str = "embeddings.json") -> str:
+
+def export_embeddings_to_file(
+    chunk_embeddings: list[tuple[dict[str, str], list[float]]],
+    output_file: str = "embeddings.json",
+) -> str:
     """Export embeddings to a JSON file for batch updates.
 
     Args:
@@ -193,12 +235,16 @@ def export_embeddings_to_file(chunk_embeddings: List[Tuple[Dict[str, str], List[
                     "source": chunk["source"],
                     "start_char": str(chunk["start_char"]),
                     "end_char": str(chunk["end_char"]),
-                    "text": chunk["text"][:1000] + "..." if len(chunk["text"]) > 1000 else chunk["text"]
-                }
+                    "text": chunk["text"][:1000] + "..."
+                    if len(chunk["text"]) > 1000
+                    else chunk["text"],
+                },
             }
 
             # Log the chunk information
-            logger.info(f"Processing chunk from {chunk['source']} ({chunk['start_char']}-{chunk['end_char']})")
+            logger.info(
+                f"Processing chunk from {chunk['source']} ({chunk['start_char']}-{chunk['end_char']})"
+            )
             embeddings_data.append(datapoint)
 
         # Write the embeddings to a file
@@ -212,7 +258,10 @@ def export_embeddings_to_file(chunk_embeddings: List[Tuple[Dict[str, str], List[
         logger.error(f"Error exporting embeddings to file: {str(e)}")
         raise
 
-def update_vector_search(chunk_embeddings: List[Tuple[Dict[str, str], List[float]]]) -> bool:
+
+def update_vector_search(
+    chunk_embeddings: list[tuple[dict[str, str], list[float]]],
+) -> bool:
     """Update the Vector Search index with new embeddings.
 
     This function tries two approaches:
@@ -243,13 +292,12 @@ def update_vector_search(chunk_embeddings: List[Tuple[Dict[str, str], List[float
     datapoints = []
     for chunk, embedding in chunk_embeddings:
         # Create a simple datapoint with just datapoint_id and feature_vector
-        datapoint = {
-            "datapoint_id": str(uuid.uuid4()),
-            "feature_vector": embedding
-        }
+        datapoint = {"datapoint_id": str(uuid.uuid4()), "feature_vector": embedding}
 
         # Store the chunk information in a separate log for reference
-        logger.info(f"Processing chunk from {chunk['source']} ({chunk['start_char']}-{chunk['end_char']})")
+        logger.info(
+            f"Processing chunk from {chunk['source']} ({chunk['start_char']}-{chunk['end_char']})"
+        )
 
         datapoints.append(datapoint)
 
@@ -260,20 +308,28 @@ def update_vector_search(chunk_embeddings: List[Tuple[Dict[str, str], List[float
             test_batch = datapoints[:1]
             logger.info("Testing index update capability with a single datapoint...")
             index.upsert_datapoints(datapoints=test_batch)
-            logger.info("✅ Index supports direct updates. Proceeding with full upload.")
+            logger.info(
+                "✅ Index supports direct updates. Proceeding with full upload."
+            )
 
             # If we get here, the index supports direct updates
             batch_size = 100
             for i in range(0, len(datapoints), batch_size):
-                batch = datapoints[i:i+batch_size]
-                logger.info(f"Uploading batch {i//batch_size + 1}/{(len(datapoints)-1)//batch_size + 1}...")
+                batch = datapoints[i : i + batch_size]
+                logger.info(
+                    f"Uploading batch {i//batch_size + 1}/{(len(datapoints)-1)//batch_size + 1}..."
+                )
                 index.upsert_datapoints(datapoints=batch)
 
-            logger.info(f"Successfully uploaded {len(datapoints)} chunks to Vector Search")
+            logger.info(
+                f"Successfully uploaded {len(datapoints)} chunks to Vector Search"
+            )
             return True
     except Exception as e:
         if "StreamUpdate is not enabled" in str(e):
-            logger.warning("⚠️ This index does not support direct updates (StreamUpdate is not enabled)")
+            logger.warning(
+                "⚠️ This index does not support direct updates (StreamUpdate is not enabled)"
+            )
             logger.info("Falling back to batch update approach...")
         else:
             logger.error(f"Error uploading to Vector Search: {str(e)}")
@@ -288,7 +344,9 @@ def update_vector_search(chunk_embeddings: List[Tuple[Dict[str, str], List[float
 
         logger.info("Embeddings exported successfully for batch update")
         logger.info("To update the index, run:")
-        logger.info(f"python scripts/batch_update_index.py --embeddings-file {output_file} --wait")
+        logger.info(
+            f"python scripts/batch_update_index.py --embeddings-file {output_file} --wait"
+        )
 
         # For GitHub Actions, we'll consider this a success
         # The actual update will be done by a separate workflow or manually
@@ -296,6 +354,7 @@ def update_vector_search(chunk_embeddings: List[Tuple[Dict[str, str], List[float
     except Exception as e:
         logger.error(f"Error exporting embeddings for batch update: {str(e)}")
         return False
+
 
 def main():
     """Main function."""
@@ -340,6 +399,7 @@ def main():
         logger.info("✅ GitHub knowledge sync completed successfully")
     else:
         logger.error("❌ GitHub knowledge sync completed with errors")
+
 
 if __name__ == "__main__":
     main()

@@ -4,12 +4,11 @@ Test script for the WorkflowInterface class.
 This script tests the WorkflowInterface class with both n8n available and not available.
 """
 
-import os
-import unittest
-from unittest.mock import patch, MagicMock
-import json
-import sys
 import logging
+import os
+import sys
+import unittest
+from unittest.mock import MagicMock, patch
 
 # Add the parent directory to the path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -20,6 +19,7 @@ try:
 except ImportError:
     from vana.workflows import WorkflowInterface
 
+
 class TestWorkflowInterface(unittest.TestCase):
     """Test the WorkflowInterface class."""
 
@@ -29,16 +29,19 @@ class TestWorkflowInterface(unittest.TestCase):
         logging.basicConfig(level=logging.INFO)
 
         # Create a mock environment
-        self.env_patcher = patch.dict(os.environ, {
-            "N8N_WEBHOOK_URL": "",
-            "N8N_WEBHOOK_USERNAME": "",
-            "N8N_WEBHOOK_PASSWORD": "",
-            "MEMORY_CACHE_SIZE": "1000",
-            "MEMORY_CACHE_TTL": "3600",
-            "ENTITY_HALF_LIFE_DAYS": "30",
-            "VECTOR_SEARCH_WEIGHT": "0.7",
-            "KNOWLEDGE_GRAPH_WEIGHT": "0.3"
-        })
+        self.env_patcher = patch.dict(
+            os.environ,
+            {
+                "N8N_WEBHOOK_URL": "",
+                "N8N_WEBHOOK_USERNAME": "",
+                "N8N_WEBHOOK_PASSWORD": "",
+                "MEMORY_CACHE_SIZE": "1000",
+                "MEMORY_CACHE_TTL": "3600",
+                "ENTITY_HALF_LIFE_DAYS": "30",
+                "VECTOR_SEARCH_WEIGHT": "0.7",
+                "KNOWLEDGE_GRAPH_WEIGHT": "0.3",
+            },
+        )
         self.env_patcher.start()
 
     def tearDown(self):
@@ -92,7 +95,7 @@ class TestWorkflowInterface(unittest.TestCase):
         mock_memory_manager.return_value = mock_memory_manager_instance
         mock_memory_manager_instance.save_buffer.return_value = {
             "success": True,
-            "message": "Memory saved successfully"
+            "message": "Memory saved successfully",
         }
 
         # Create the workflow interface
@@ -101,16 +104,18 @@ class TestWorkflowInterface(unittest.TestCase):
         # Call the method
         buffer = [
             {"role": "user", "content": "How do I implement memory in VANA?"},
-            {"role": "assistant", "content": "You can use the memory management system..."}
+            {
+                "role": "assistant",
+                "content": "You can use the memory management system...",
+            },
         ]
         tags = ["memory", "vana"]
         result = workflow_interface.trigger_memory_save(buffer, tags)
 
         # Check the result
-        self.assertEqual(result, {
-            "success": True,
-            "message": "Memory saved successfully"
-        })
+        self.assertEqual(
+            result, {"success": True, "message": "Memory saved successfully"}
+        )
 
         # Check that the memory manager was called
         mock_memory_manager_instance.save_buffer.assert_called_once_with(buffer, tags)
@@ -130,7 +135,7 @@ class TestWorkflowInterface(unittest.TestCase):
         mock_post_response.status_code = 200
         mock_post_response.json.return_value = {
             "success": True,
-            "message": "Memory saved successfully"
+            "message": "Memory saved successfully",
         }
         mock_post.return_value = mock_post_response
 
@@ -140,28 +145,26 @@ class TestWorkflowInterface(unittest.TestCase):
         # Call the method
         buffer = [
             {"role": "user", "content": "How do I implement memory in VANA?"},
-            {"role": "assistant", "content": "You can use the memory management system..."}
+            {
+                "role": "assistant",
+                "content": "You can use the memory management system...",
+            },
         ]
         tags = ["memory", "vana"]
         result = workflow_interface.trigger_memory_save(buffer, tags)
 
         # Check the result
-        self.assertEqual(result, {
-            "success": True,
-            "message": "Memory saved successfully"
-        })
+        self.assertEqual(
+            result, {"success": True, "message": "Memory saved successfully"}
+        )
 
         # Check that the request was made
         mock_post.assert_called_once_with(
             "http://localhost:5678/webhook/save-memory",
-            json={
-                "buffer": buffer,
-                "tags": tags,
-                "memory_on": True
-            },
+            json={"buffer": buffer, "tags": tags, "memory_on": True},
             headers={"Content-Type": "application/json"},
             auth=None,
-            timeout=30
+            timeout=30,
         )
 
     @patch.dict(os.environ, {"N8N_WEBHOOK_URL": "http://localhost:5678"})
@@ -183,27 +186,24 @@ class TestWorkflowInterface(unittest.TestCase):
         # Call the method
         buffer = [
             {"role": "user", "content": "How do I implement memory in VANA?"},
-            {"role": "assistant", "content": "You can use the memory management system..."}
+            {
+                "role": "assistant",
+                "content": "You can use the memory management system...",
+            },
         ]
         tags = ["memory", "vana"]
         result = workflow_interface.trigger_memory_save(buffer, tags)
 
         # Check the result
-        self.assertEqual(result, {
-            "error": "Connection error"
-        })
+        self.assertEqual(result, {"error": "Connection error"})
 
         # Check that the request was made
         mock_post.assert_called_once_with(
             "http://localhost:5678/webhook/save-memory",
-            json={
-                "buffer": buffer,
-                "tags": tags,
-                "memory_on": True
-            },
+            json={"buffer": buffer, "tags": tags, "memory_on": True},
             headers={"Content-Type": "application/json"},
             auth=None,
-            timeout=30
+            timeout=30,
         )
 
     @patch("vana.memory.MemoryManager")
@@ -214,7 +214,7 @@ class TestWorkflowInterface(unittest.TestCase):
         mock_memory_manager.return_value = mock_memory_manager_instance
         mock_memory_manager_instance.sync_memory.return_value = {
             "success": True,
-            "message": "Memory synced successfully"
+            "message": "Memory synced successfully",
         }
 
         # Create the workflow interface
@@ -226,13 +226,14 @@ class TestWorkflowInterface(unittest.TestCase):
         result = workflow_interface.trigger_memory_sync(user_id, session_id)
 
         # Check the result
-        self.assertEqual(result, {
-            "success": True,
-            "message": "Memory synced successfully"
-        })
+        self.assertEqual(
+            result, {"success": True, "message": "Memory synced successfully"}
+        )
 
         # Check that the memory manager was called
-        mock_memory_manager_instance.sync_memory.assert_called_once_with(user_id, session_id)
+        mock_memory_manager_instance.sync_memory.assert_called_once_with(
+            user_id, session_id
+        )
 
     @patch("vana.knowledge_graph.KnowledgeGraphManager")
     def test_trigger_knowledge_graph_sync_direct(self, mock_kg_manager):
@@ -242,7 +243,7 @@ class TestWorkflowInterface(unittest.TestCase):
         mock_kg_manager.return_value = mock_kg_manager_instance
         mock_kg_manager_instance.sync_entities.return_value = {
             "success": True,
-            "message": "Entities synced successfully"
+            "message": "Entities synced successfully",
         }
 
         # Create the workflow interface
@@ -253,16 +254,15 @@ class TestWorkflowInterface(unittest.TestCase):
             {
                 "name": "VANA",
                 "type": "project",
-                "observation": "VANA is a multi-agent system using Google ADK."
+                "observation": "VANA is a multi-agent system using Google ADK.",
             }
         ]
         result = workflow_interface.trigger_knowledge_graph_sync(entities)
 
         # Check the result
-        self.assertEqual(result, {
-            "success": True,
-            "message": "Entities synced successfully"
-        })
+        self.assertEqual(
+            result, {"success": True, "message": "Entities synced successfully"}
+        )
 
         # Check that the knowledge graph manager was called
         mock_kg_manager_instance.sync_entities.assert_called_once_with(entities)
@@ -275,7 +275,7 @@ class TestWorkflowInterface(unittest.TestCase):
         mock_document_processor.return_value = mock_document_processor_instance
         mock_document_processor_instance.process.return_value = {
             "success": True,
-            "message": "Document processed successfully"
+            "message": "Document processed successfully",
         }
 
         # Create the workflow interface
@@ -283,21 +283,19 @@ class TestWorkflowInterface(unittest.TestCase):
 
         # Call the method
         document_path = "/path/to/document.txt"
-        options = {
-            "chunk_size": 1000,
-            "chunk_overlap": 200,
-            "extract_entities": True
-        }
+        options = {"chunk_size": 1000, "chunk_overlap": 200, "extract_entities": True}
         result = workflow_interface.trigger_document_processing(document_path, options)
 
         # Check the result
-        self.assertEqual(result, {
-            "success": True,
-            "message": "Document processed successfully"
-        })
+        self.assertEqual(
+            result, {"success": True, "message": "Document processed successfully"}
+        )
 
         # Check that the document processor was called
-        mock_document_processor_instance.process.assert_called_once_with(document_path, options)
+        mock_document_processor_instance.process.assert_called_once_with(
+            document_path, options
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

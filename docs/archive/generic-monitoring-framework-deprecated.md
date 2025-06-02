@@ -301,10 +301,10 @@ def check_mcp_server():
                     "last_error": mcp_client.last_error
                 }
             }
-        
+
         # Check if the MCP server is responding
         response = mcp_client.ping()
-        
+
         if response.get("success", False):
             return {
                 "status": HealthStatus.OK,
@@ -369,7 +369,7 @@ def collect_mcp_server_metrics():
     try:
         # Get metrics from MCP server
         metrics = mcp_client.get_metrics()
-        
+
         return {
             "timestamp": datetime.now().isoformat(),
             "request_count": metrics.get("request_count", 0),
@@ -441,7 +441,7 @@ def handle_component_error(alert):
         subject=f"VANA Alert: {alert['message']}",
         body=f"Component: {alert['component']}\nSeverity: {alert['severity']}\nMessage: {alert['message']}\nDetails: {alert['details']}"
     )
-    
+
     # Send Slack notification
     send_slack_message(
         channel="#vana-alerts",

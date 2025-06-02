@@ -131,7 +131,7 @@ from agent.core import VanaAgent
 # Create a custom tool class
 class CalculatorTool:
     """A simple calculator tool."""
-    
+
     def execute(self, expression):
         """Evaluate a mathematical expression."""
         try:
@@ -139,7 +139,7 @@ class CalculatorTool:
             return f"Result: {result}"
         except Exception as e:
             return f"Error: {str(e)}"
-    
+
     def get_metadata(self):
         """Get metadata about the tool."""
         return {
@@ -224,11 +224,11 @@ def weather_tool(location):
         # Make a request to a weather API
         response = requests.get(f"https://api.example.com/weather?location={location}")
         data = response.json()
-        
+
         # Extract and format the weather information
         temperature = data["temperature"]
         conditions = data["conditions"]
-        
+
         return f"Weather for {location}: {temperature}°C, {conditions}"
     except Exception as e:
         return f"Error getting weather: {str(e)}"

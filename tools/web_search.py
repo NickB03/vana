@@ -5,10 +5,10 @@ This module provides web search capabilities using Google Custom Search API.
 It enables VANA to retrieve recent information from the web with proper citation handling.
 """
 
-import os
 import json
 import logging
-from typing import List, Dict, Any
+from typing import Any
+
 import requests
 from dotenv import load_dotenv
 
@@ -18,6 +18,7 @@ load_dotenv()
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
 
 class WebSearchClient:
     """Client for performing web searches using Google Custom Search"""
@@ -37,7 +38,7 @@ class WebSearchClient:
         """Check if web search is available"""
         return self.api_key is not None and self.search_engine_id is not None
 
-    def search(self, query: str, num_results: int = 5) -> List[Dict[str, Any]]:
+    def search(self, query: str, num_results: int = 5) -> list[dict[str, Any]]:
         """
         Perform a web search using Google Custom Search
 
@@ -49,13 +50,17 @@ class WebSearchClient:
             List of search results with title, snippet, and URL
         """
         if not self.is_available():
-            logger.error("Web search not available - missing API key or Search Engine ID")
+            logger.error(
+                "Web search not available - missing API key or Search Engine ID"
+            )
             return []
 
         # Ensure num_results is within limits
         if num_results > 10:
             num_results = 10
-            logger.warning("Requested result count exceeded maximum (10), limiting to 10 results")
+            logger.warning(
+                "Requested result count exceeded maximum (10), limiting to 10 results"
+            )
 
         try:
             # Construct request parameters
@@ -66,7 +71,7 @@ class WebSearchClient:
                 "num": num_results,
                 "gl": "us",  # Geolocation - US results
                 "safe": "active",  # Safe search
-                "lr": "lang_en"  # English language results
+                "lr": "lang_en",  # English language results
             }
 
             # Make request
@@ -88,7 +93,9 @@ class WebSearchClient:
                     "url": item.get("link", ""),
                     "snippet": item.get("snippet", ""),
                     "source": item.get("displayLink", ""),
-                    "date": item.get("pagemap", {}).get("metatags", [{}])[0].get("article:published_time", "")
+                    "date": item.get("pagemap", {})
+                    .get("metatags", [{}])[0]
+                    .get("article:published_time", ""),
                 }
                 results.append(result)
 
@@ -105,7 +112,7 @@ class WebSearchClient:
             logger.error(f"Unexpected error in web search: {str(e)}")
             return []
 
-    def format_results(self, results: List[Dict[str, Any]]) -> str:
+    def format_results(self, results: list[dict[str, Any]]) -> str:
         """
         Format search results for display
 

@@ -29,7 +29,7 @@ echo '--- a/docs/test-addition.md
 +++ b/docs/test-addition.md
 @@ -1,3 +1,5 @@
  # Test Document - Addition
- 
+
 -This is a test document for knowledge base updates.
 +This is a test document for knowledge base updates using diff-based processing.
 +
@@ -40,7 +40,7 @@ echo '--- a/docs/test-removal.md
 +++ b/docs/test-removal.md
 @@ -1,5 +1,3 @@
  # Test Document - Removal
- 
+
 -This paragraph will be removed.
 -
  This paragraph will remain in the document.' > data/diffs/test-removal.diff
@@ -51,15 +51,15 @@ echo '--- a/docs/test-complex.md
 @@ -1,10 +1,12 @@
 -# Old Title
 +# New Title - Updated
- 
+
  This paragraph remains unchanged.
- 
+
 -This paragraph will be modified to contain new information.
 +This paragraph has been modified to contain updated information about the VANA project.
 +It now spans multiple lines and has more content.
- 
+
  This paragraph also remains unchanged.
- 
+
 -This will be removed.
 +This is a completely new paragraph with additional information.
 +It explains how the diff-based processing works.
@@ -75,7 +75,7 @@ python scripts/process_document_diffs.py --input-dir data/diffs --output-dir dat
 if [ -f "data/processed/diff_processing_result.json" ]; then
     echo -e "${GREEN}Test completed successfully!${NC}"
     echo "Results saved to data/processed/diff_processing_result.json"
-    
+
     # Show summary
     echo ""
     echo -e "${YELLOW}Processing Summary:${NC}"
@@ -84,21 +84,21 @@ import json
 try:
     with open("data/processed/diff_processing_result.json", "r") as f:
         result = json.load(f)
-    
+
     print(f"Total files processed: {result.get(\"total_files\", 0)}")
     print(f"Successfully processed: {result.get(\"successful\", 0)}")
     print(f"Failed: {result.get(\"failed\", 0)}")
     print(f"Total chunks processed: {result.get(\"total_chunks\", 0)}")
-    
+
     # Show detailed results
     print("\nDetailed Results:")
     for i, res in enumerate(result.get("results", [])):
         file_path = res.get("file_path", "unknown")
         chunks = res.get("chunks", 0)
         success = "✓" if res.get("success", False) else "✗"
-        
+
         print(f"{i+1}. {file_path} - {chunks} chunks [{success}]")
-        
+
         if "stats" in res:
             stats = res["stats"]
             print(f"   - Vector Search updates: {stats.get(\"vector_search_updates\", 0)}")

@@ -115,7 +115,7 @@ All required components have been implemented and tested successfully.
 
 ### Supported File Formats
 - **PDF Documents** (.pdf) - Up to 100MB
-- **Text Files** (.txt) - Up to 50MB  
+- **Text Files** (.txt) - Up to 50MB
 - **Markdown** (.md, .markdown) - Up to 50MB
 - **Microsoft Word** (.docx) - Up to 100MB
 - **PowerPoint** (.pptx) - Up to 200MB
@@ -220,7 +220,7 @@ function_tools = adk_tools.create_function_tools()
 
 # Tools available:
 # - process_document_tool
-# - process_batch_documents_tool  
+# - process_batch_documents_tool
 # - migrate_documents_tool
 # - validate_documents_tool
 # - get_processing_status_tool
@@ -242,7 +242,7 @@ lifecycle_manager.update_document_stage(doc_id, "processed")
 ### Environment Variables
 ```bash
 export GOOGLE_CLOUD_PROJECT="your-project-id"
-export GOOGLE_CLOUD_LOCATION="us-central1"  
+export GOOGLE_CLOUD_LOCATION="us-central1"
 export RAG_CORPUS_NAME="vana-documents"
 export GOOGLE_APPLICATION_CREDENTIALS="path/to/service-account.json"
 ```
@@ -251,7 +251,7 @@ export GOOGLE_APPLICATION_CREDENTIALS="path/to/service-account.json"
 ```python
 adk_processor = create_adk_processor(
     rag_corpus_name="my-corpus",
-    project_id="my-project", 
+    project_id="my-project",
     location="us-central1",
     max_file_size_mb=100,
     enable_batch_processing=True
@@ -320,7 +320,7 @@ The implementation gracefully handles missing dependencies:
 The ADK document processing pipeline has been successfully implemented with all required features:
 
 ✅ **Complete ADK document processing system**
-✅ **Migration utilities and scripts** 
+✅ **Migration utilities and scripts**
 ✅ **Integration components and APIs**
 ✅ **Comprehensive documentation**
 ✅ **Working examples and tests**

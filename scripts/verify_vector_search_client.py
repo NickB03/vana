@@ -6,9 +6,10 @@ This script tests the Vector Search client to verify that it can connect to
 the real Vector Search service and perform searches.
 """
 
+import logging
 import os
 import sys
-import logging
+
 from dotenv import load_dotenv
 
 # Add the project root to the Python path
@@ -21,11 +22,10 @@ from tools.vector_search.vector_search_client import VectorSearchClient
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(message)s",
-    handlers=[
-        logging.StreamHandler()
-    ]
+    handlers=[logging.StreamHandler()],
 )
 logger = logging.getLogger(__name__)
+
 
 def main():
     """Main function to verify Vector Search client."""
@@ -33,24 +33,33 @@ def main():
     load_dotenv()
 
     # Explicitly set the environment variable for the service account key file
-    os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "/Users/nick/Development/vana/secrets/vana-vector-search-sa.json"
+    os.environ[
+        "GOOGLE_APPLICATION_CREDENTIALS"
+    ] = "/Users/nick/Development/vana/secrets/vana-vector-search-sa.json"
 
     # Print environment variables for debugging
     logger.info(f"GOOGLE_CLOUD_PROJECT: {os.environ.get('GOOGLE_CLOUD_PROJECT')}")
     logger.info(f"GOOGLE_CLOUD_LOCATION: {os.environ.get('GOOGLE_CLOUD_LOCATION')}")
-    logger.info(f"VECTOR_SEARCH_ENDPOINT_ID: {os.environ.get('VECTOR_SEARCH_ENDPOINT_ID')}")
-    logger.info(f"DEPLOYED_INDEX_ID: {os.environ.get('DEPLOYED_INDEX_ID', 'vanasharedindex')}")
-    logger.info(f"GOOGLE_APPLICATION_CREDENTIALS: {os.environ.get('GOOGLE_APPLICATION_CREDENTIALS')}")
+    logger.info(
+        f"VECTOR_SEARCH_ENDPOINT_ID: {os.environ.get('VECTOR_SEARCH_ENDPOINT_ID')}"
+    )
+    logger.info(
+        f"DEPLOYED_INDEX_ID: {os.environ.get('DEPLOYED_INDEX_ID', 'vanasharedindex')}"
+    )
+    logger.info(
+        f"GOOGLE_APPLICATION_CREDENTIALS: {os.environ.get('GOOGLE_APPLICATION_CREDENTIALS')}"
+    )
 
     # Check if the service account key file exists
-    credentials_path = os.environ.get('GOOGLE_APPLICATION_CREDENTIALS')
+    credentials_path = os.environ.get("GOOGLE_APPLICATION_CREDENTIALS")
     if credentials_path and os.path.exists(credentials_path):
         logger.info(f"Service account key file exists: {credentials_path}")
 
         # Check the service account email in the key file
         try:
             import json
-            with open(credentials_path, 'r') as f:
+
+            with open(credentials_path) as f:
                 key_data = json.load(f)
                 logger.info(f"Service account email: {key_data.get('client_email')}")
         except Exception as e:
@@ -100,6 +109,7 @@ def main():
             logger.error("❌ Mock Vector Search is not working")
 
     return 0 if is_available else 1
+
 
 if __name__ == "__main__":
     sys.exit(main())

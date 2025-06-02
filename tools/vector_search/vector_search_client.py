@@ -12,23 +12,25 @@ Features:
 - Audit logging for security-sensitive operations
 """
 
-import os
-import uuid
-import time
 import logging
+import os
+import time
+import uuid
+from typing import Any, Optional
+
 import requests
-from google.cloud import aiplatform
-from typing import List, Dict, Any, Optional
-from google.oauth2 import service_account
 import vertexai
-from vertexai.language_models import TextEmbeddingModel
+from google.cloud import aiplatform
+from google.oauth2 import service_account
 
 # Import audit logger
 from tools.vector_search.vector_search_audit import vector_search_audit_logger
+from vertexai.language_models import TextEmbeddingModel
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
 
 class VectorSearchClient:
     """Client for interacting with Vertex AI Vector Search
@@ -50,7 +52,7 @@ class VectorSearchClient:
         deployed_index_id: Optional[str] = None,
         credentials_path: Optional[str] = None,
         use_mock: bool = False,
-        auto_fallback: bool = True
+        auto_fallback: bool = True,
     ):
         """Initialize the Vector Search client.
 
@@ -68,10 +70,16 @@ class VectorSearchClient:
 
         # Initialize configuration from arguments or environment variables
         self.project_id = project_id or os.environ.get("GOOGLE_CLOUD_PROJECT")
-        self.location = location or os.environ.get("GOOGLE_CLOUD_LOCATION", "us-central1")
+        self.location = location or os.environ.get(
+            "GOOGLE_CLOUD_LOCATION", "us-central1"
+        )
         self.endpoint_id = endpoint_id or os.environ.get("VECTOR_SEARCH_ENDPOINT_ID")
-        self.deployed_index_id = deployed_index_id or os.environ.get("DEPLOYED_INDEX_ID", "vanasharedindex")
-        self.credentials_path = credentials_path or os.environ.get("GOOGLE_APPLICATION_CREDENTIALS")
+        self.deployed_index_id = deployed_index_id or os.environ.get(
+            "DEPLOYED_INDEX_ID", "vanasharedindex"
+        )
+        self.credentials_path = credentials_path or os.environ.get(
+            "GOOGLE_APPLICATION_CREDENTIALS"
+        )
 
         # Track initialization status
         self.initialized = False
@@ -81,7 +89,7 @@ class VectorSearchClient:
         self.match_client = None
 
         # Log configuration
-        logger.info(f"Vector Search Client Configuration:")
+        logger.info("Vector Search Client Configuration:")
         logger.info(f"  Project ID: {self.project_id}")
         logger.info(f"  Location: {self.location}")
         logger.info(f"  Endpoint ID: {self.endpoint_id}")
@@ -96,6 +104,7 @@ class VectorSearchClient:
 
         # Initialize mock client for fallback
         from tools.vector_search.vector_search_mock import MockVectorSearchClient
+
         try:
             self.mock_client = MockVectorSearchClient()
             if self.use_mock:
@@ -104,7 +113,9 @@ class VectorSearchClient:
                 self.using_mock = True
         except ImportError:
             # If the mock client is not available, use a simple implementation
-            logger.warning("Mock Vector Search client not available, using simple implementation")
+            logger.warning(
+                "Mock Vector Search client not available, using simple implementation"
+            )
             self.mock_client = SimpleMockVectorSearchClient()
             if self.use_mock:
                 self.initialized = True
@@ -130,16 +141,22 @@ class VectorSearchClient:
 
         # Check if required configuration is available
         if not self.project_id:
-            logger.error("Project ID not provided. Set GOOGLE_CLOUD_PROJECT environment variable.")
+            logger.error(
+                "Project ID not provided. Set GOOGLE_CLOUD_PROJECT environment variable."
+            )
             if self.auto_fallback:
-                logger.warning("Falling back to mock implementation due to missing project ID")
+                logger.warning(
+                    "Falling back to mock implementation due to missing project ID"
+                )
                 self.initialized = True
                 self.using_mock = True
                 return True
             return False
 
         if not self.endpoint_id:
-            logger.warning("Endpoint ID not provided. Set VECTOR_SEARCH_ENDPOINT_ID environment variable.")
+            logger.warning(
+                "Endpoint ID not provided. Set VECTOR_SEARCH_ENDPOINT_ID environment variable."
+            )
             # Continue anyway, as we might be able to use the REST API
 
         try:
@@ -149,15 +166,19 @@ class VectorSearchClient:
             # Set up credentials if provided
             if self.credentials_path:
                 try:
-                    self.credentials = service_account.Credentials.from_service_account_file(
-                        self.credentials_path,
-                        scopes=["https://www.googleapis.com/auth/cloud-platform"]
+                    self.credentials = (
+                        service_account.Credentials.from_service_account_file(
+                            self.credentials_path,
+                            scopes=["https://www.googleapis.com/auth/cloud-platform"],
+                        )
                     )
                     logger.info(f"Loaded credentials from {self.credentials_path}")
                 except Exception as e:
                     logger.error(f"Error loading credentials: {e}")
                     if self.auto_fallback:
-                        logger.warning("Falling back to mock implementation due to credentials error")
+                        logger.warning(
+                            "Falling back to mock implementation due to credentials error"
+                        )
                         self.initialized = True
                         self.using_mock = True
                         return True
@@ -170,7 +191,7 @@ class VectorSearchClient:
                         index_endpoint_name=self.endpoint_id,
                         project=self.project_id,
                         location=self.location,
-                        credentials=self.credentials
+                        credentials=self.credentials,
                     )
                     logger.info(f"Initialized index endpoint {self.endpoint_id}")
                 except Exception as e:
@@ -180,8 +201,10 @@ class VectorSearchClient:
             # Initialize the match client for low-level API access
             try:
                 self.match_client = aiplatform.gapic.MatchServiceClient(
-                    client_options={"api_endpoint": f"{self.location}-aiplatform.googleapis.com"},
-                    credentials=self.credentials
+                    client_options={
+                        "api_endpoint": f"{self.location}-aiplatform.googleapis.com"
+                    },
+                    credentials=self.credentials,
                 )
                 logger.info("Initialized match client")
             except Exception as e:
@@ -196,7 +219,9 @@ class VectorSearchClient:
         except Exception as e:
             logger.error(f"Error initializing Vector Search client: {e}")
             if self.auto_fallback:
-                logger.warning("Falling back to mock implementation due to initialization error")
+                logger.warning(
+                    "Falling back to mock implementation due to initialization error"
+                )
                 self.initialized = True
                 self.using_mock = True
                 return True
@@ -224,7 +249,7 @@ class VectorSearchClient:
                 self.index_endpoint.match(
                     deployed_index_id=self.deployed_index_id,
                     queries=[{"datapoint": test_vector}],
-                    num_neighbors=1
+                    num_neighbors=1,
                 )
                 logger.info("Vector Search is available")
                 return True
@@ -235,7 +260,7 @@ class VectorSearchClient:
             logger.error(f"Vector Search is not available: {e}")
             return False
 
-    def generate_embedding(self, text: str) -> List[float]:
+    def generate_embedding(self, text: str) -> list[float]:
         """Generate embedding for text using Vertex AI text-embedding-004 model
 
         Args:
@@ -248,8 +273,12 @@ class VectorSearchClient:
         if not text or not isinstance(text, str):
             logger.error(f"Invalid input for embedding generation: {type(text)}")
             if self.auto_fallback:
-                logger.warning("Falling back to mock implementation due to invalid input")
-                return self.mock_client.generate_embedding("empty text" if not text else str(text))
+                logger.warning(
+                    "Falling back to mock implementation due to invalid input"
+                )
+                return self.mock_client.generate_embedding(
+                    "empty text" if not text else str(text)
+                )
             return []
 
         # Use mock if configured
@@ -261,7 +290,9 @@ class VectorSearchClient:
         if not self._initialize():
             logger.error("Vector Search client not initialized")
             if self.auto_fallback:
-                logger.warning("Falling back to mock implementation for embedding generation")
+                logger.warning(
+                    "Falling back to mock implementation for embedding generation"
+                )
                 return self.mock_client.generate_embedding(text)
             return []
 
@@ -280,29 +311,37 @@ class VectorSearchClient:
 
                 # Validate embedding dimensions
                 if len(embedding_values) != 768:
-                    logger.warning(f"Unexpected embedding dimensions: {len(embedding_values)}, expected 768")
+                    logger.warning(
+                        f"Unexpected embedding dimensions: {len(embedding_values)}, expected 768"
+                    )
 
                 # Log performance metrics
                 generation_time = time.time() - start_time
-                logger.info(f"Generated embedding with {len(embedding_values)} dimensions in {generation_time:.2f}s")
+                logger.info(
+                    f"Generated embedding with {len(embedding_values)} dimensions in {generation_time:.2f}s"
+                )
 
                 return embedding_values
             except Exception as e:
                 logger.error(f"Error using Vertex AI SDK for embedding: {str(e)}")
 
                 # Fall back to REST API approach
-                logger.info("Falling back to REST API approach for embedding generation")
+                logger.info(
+                    "Falling back to REST API approach for embedding generation"
+                )
                 return self._generate_embedding_rest_api(text)
         except Exception as e:
             logger.error(f"Error generating embedding: {str(e)}")
 
             if self.auto_fallback:
-                logger.warning("Falling back to mock implementation for embedding generation")
+                logger.warning(
+                    "Falling back to mock implementation for embedding generation"
+                )
                 return self.mock_client.generate_embedding(text)
 
             return []
 
-    def _generate_embedding_rest_api(self, text: str) -> List[float]:
+    def _generate_embedding_rest_api(self, text: str) -> list[float]:
         """Generate embedding using the REST API as a fallback"""
         if not self.project_id or not self.location:
             logger.warning("Project or location not set, using mock embedding")
@@ -319,7 +358,7 @@ class VectorSearchClient:
             response = requests.post(
                 endpoint,
                 headers={"Authorization": f"Bearer {auth_token}"},
-                json={"instances": [{"content": text}]}
+                json={"instances": [{"content": text}]},
             )
             response.raise_for_status()
 
@@ -336,7 +375,9 @@ class VectorSearchClient:
             if isinstance(embedding_values, list) and embedding_values:
                 # Convert all values to float
                 embedding_values = [float(value) for value in embedding_values]
-                logger.info(f"Generated embedding with {len(embedding_values)} dimensions via REST API")
+                logger.info(
+                    f"Generated embedding with {len(embedding_values)} dimensions via REST API"
+                )
                 return embedding_values
             else:
                 logger.error(f"Invalid embedding format: {type(embedding_values)}")
@@ -361,7 +402,7 @@ class VectorSearchClient:
             elif self.credentials_path:
                 credentials = service_account.Credentials.from_service_account_file(
                     self.credentials_path,
-                    scopes=["https://www.googleapis.com/auth/cloud-platform"]
+                    scopes=["https://www.googleapis.com/auth/cloud-platform"],
                 )
             # Fall back to environment variable
             else:
@@ -372,7 +413,7 @@ class VectorSearchClient:
 
                 credentials = service_account.Credentials.from_service_account_file(
                     credentials_path,
-                    scopes=["https://www.googleapis.com/auth/cloud-platform"]
+                    scopes=["https://www.googleapis.com/auth/cloud-platform"],
                 )
 
             # Refresh the credentials to get a valid token
@@ -383,7 +424,9 @@ class VectorSearchClient:
             logger.error(f"Error getting auth token: {str(e)}")
             return ""
 
-    def search(self, query: str, top_k: int = 5, user_id: str = "system") -> List[Dict[str, Any]]:
+    def search(
+        self, query: str, top_k: int = 5, user_id: str = "system"
+    ) -> list[dict[str, Any]]:
         """Search for relevant content using Vector Search
 
         Args:
@@ -404,7 +447,7 @@ class VectorSearchClient:
                 query=query,
                 num_results=top_k,
                 status="success",
-                details={"using_mock": True, **audit_details}
+                details={"using_mock": True, **audit_details},
             )
             return self.mock_client.search(query, top_k)
 
@@ -416,7 +459,10 @@ class VectorSearchClient:
                 query=query,
                 num_results=top_k,
                 status="failure",
-                details={"error": "Vector Search client not initialized", **audit_details}
+                details={
+                    "error": "Vector Search client not initialized",
+                    **audit_details,
+                },
             )
             if self.auto_fallback:
                 logger.warning("Falling back to mock implementation for search")
@@ -435,15 +481,22 @@ class VectorSearchClient:
                     query=query,
                     num_results=top_k,
                     status="failure",
-                    details={"error": "Failed to generate embedding for query", **audit_details}
+                    details={
+                        "error": "Failed to generate embedding for query",
+                        **audit_details,
+                    },
                 )
                 if self.auto_fallback:
-                    logger.warning("Falling back to mock implementation due to embedding generation failure")
+                    logger.warning(
+                        "Falling back to mock implementation due to embedding generation failure"
+                    )
                     return self.mock_client.search(query, top_k)
                 return []
 
             # Use the search_vector_store method with the generated embedding
-            return self.search_vector_store(query_embedding, top_k, user_id=user_id, original_query=query)
+            return self.search_vector_store(
+                query_embedding, top_k, user_id=user_id, original_query=query
+            )
 
         except Exception as e:
             error_message = str(e)
@@ -454,15 +507,22 @@ class VectorSearchClient:
                 query=query,
                 num_results=top_k,
                 status="failure",
-                details={"error": error_message, **audit_details}
+                details={"error": error_message, **audit_details},
             )
             if self.auto_fallback:
-                logger.warning("Falling back to mock implementation due to unexpected error")
+                logger.warning(
+                    "Falling back to mock implementation due to unexpected error"
+                )
                 return self.mock_client.search(query, top_k)
             return []
 
-    def search_vector_store(self, query_embedding: List[float], top_k: int = 5,
-                          user_id: str = "system", original_query: str = None) -> List[Dict[str, Any]]:
+    def search_vector_store(
+        self,
+        query_embedding: list[float],
+        top_k: int = 5,
+        user_id: str = "system",
+        original_query: str = None,
+    ) -> list[dict[str, Any]]:
         """Search the vector store with a query embedding.
 
         Args:
@@ -478,7 +538,7 @@ class VectorSearchClient:
         audit_details = {
             "method": "search_vector_store",
             "top_k": top_k,
-            "embedding_length": len(query_embedding) if query_embedding else 0
+            "embedding_length": len(query_embedding) if query_embedding else 0,
         }
 
         # Add original query if available
@@ -492,9 +552,13 @@ class VectorSearchClient:
                 query=original_query or f"embedding_length_{len(query_embedding)}",
                 num_results=top_k,
                 status="success",
-                details={"using_mock": True, **audit_details}
+                details={"using_mock": True, **audit_details},
             )
-            return self.mock_client.search_vector_store(query_embedding, top_k) if hasattr(self.mock_client, 'search_vector_store') else []
+            return (
+                self.mock_client.search_vector_store(query_embedding, top_k)
+                if hasattr(self.mock_client, "search_vector_store")
+                else []
+            )
 
         if not self._initialize():
             logger.error("Vector Search client not initialized")
@@ -504,25 +568,48 @@ class VectorSearchClient:
                 query=original_query or f"embedding_length_{len(query_embedding)}",
                 num_results=top_k,
                 status="failure",
-                details={"error": "Vector Search client not initialized", **audit_details}
+                details={
+                    "error": "Vector Search client not initialized",
+                    **audit_details,
+                },
             )
             if self.auto_fallback:
-                logger.warning("Falling back to mock implementation for vector store search")
-                return self.mock_client.search_vector_store(query_embedding, top_k) if hasattr(self.mock_client, 'search_vector_store') else []
+                logger.warning(
+                    "Falling back to mock implementation for vector store search"
+                )
+                return (
+                    self.mock_client.search_vector_store(query_embedding, top_k)
+                    if hasattr(self.mock_client, "search_vector_store")
+                    else []
+                )
             return []
 
         try:
             # Validate embedding format
-            if not query_embedding or not all(isinstance(value, float) for value in query_embedding):
-                logger.warning("Invalid embedding format, ensuring all values are float")
+            if not query_embedding or not all(
+                isinstance(value, float) for value in query_embedding
+            ):
+                logger.warning(
+                    "Invalid embedding format, ensuring all values are float"
+                )
                 if query_embedding:
                     try:
                         query_embedding = [float(value) for value in query_embedding]
                     except (ValueError, TypeError) as e:
-                        logger.error(f"Failed to convert embedding values to float: {str(e)}")
+                        logger.error(
+                            f"Failed to convert embedding values to float: {str(e)}"
+                        )
                         if self.auto_fallback:
-                            logger.warning("Falling back to mock implementation due to embedding format error")
-                            return self.mock_client.search_vector_store(query_embedding, top_k) if hasattr(self.mock_client, 'search_vector_store') else []
+                            logger.warning(
+                                "Falling back to mock implementation due to embedding format error"
+                            )
+                            return (
+                                self.mock_client.search_vector_store(
+                                    query_embedding, top_k
+                                )
+                                if hasattr(self.mock_client, "search_vector_store")
+                                else []
+                            )
                         return []
                 else:
                     logger.error("Empty embedding provided")
@@ -532,38 +619,43 @@ class VectorSearchClient:
             start_time = time.time()
 
             # Try to search using the high-level API first if index_endpoint is available
-            if hasattr(self, 'index_endpoint') and self.index_endpoint:
+            if hasattr(self, "index_endpoint") and self.index_endpoint:
                 try:
                     response = self.index_endpoint.match(
                         deployed_index_id=self.deployed_index_id,
                         queries=[{"datapoint": query_embedding}],
-                        num_neighbors=top_k
+                        num_neighbors=top_k,
                     )
 
                     # Format results
                     results = []
                     for match in response[0]:
-                        results.append({
-                            "content": match.document,
-                            "score": float(match.distance),
-                            "metadata": match.restricts,
-                            "id": getattr(match, "id", "unknown")
-                        })
+                        results.append(
+                            {
+                                "content": match.document,
+                                "score": float(match.distance),
+                                "metadata": match.restricts,
+                                "id": getattr(match, "id", "unknown"),
+                            }
+                        )
 
                     search_time = time.time() - start_time
-                    logger.info(f"Successfully retrieved {len(results)} results using high-level API in {search_time:.2f}s")
+                    logger.info(
+                        f"Successfully retrieved {len(results)} results using high-level API in {search_time:.2f}s"
+                    )
 
                     # Log successful search
                     vector_search_audit_logger.log_search(
                         user_id=user_id,
-                        query=original_query or f"embedding_length_{len(query_embedding)}",
+                        query=original_query
+                        or f"embedding_length_{len(query_embedding)}",
                         num_results=len(results),
                         status="success",
                         details={
                             "search_time_ms": search_time * 1000,
                             "api": "high-level",
-                            **audit_details
-                        }
+                            **audit_details,
+                        },
                     )
 
                     return results
@@ -575,26 +667,35 @@ class VectorSearchClient:
                     # Log high-level API failure (not a complete failure yet, will try low-level API)
                     vector_search_audit_logger.log_search(
                         user_id=user_id,
-                        query=original_query or f"embedding_length_{len(query_embedding)}",
+                        query=original_query
+                        or f"embedding_length_{len(query_embedding)}",
                         num_results=top_k,
                         status="degraded",
                         details={
                             "error": error_message,
                             "api": "high-level",
                             "fallback": "trying low-level API",
-                            **audit_details
-                        }
+                            **audit_details,
+                        },
                     )
             else:
-                logger.info("Using low-level API for search (no index_endpoint available)")
+                logger.info(
+                    "Using low-level API for search (no index_endpoint available)"
+                )
 
             # Fall back to low-level API using match_client
             try:
                 if not self.match_client:
                     logger.error("Match client not initialized")
                     if self.auto_fallback:
-                        logger.warning("Falling back to mock implementation due to missing match client")
-                        return self.mock_client.search_vector_store(query_embedding, top_k) if hasattr(self.mock_client, 'search_vector_store') else []
+                        logger.warning(
+                            "Falling back to mock implementation due to missing match client"
+                        )
+                        return (
+                            self.mock_client.search_vector_store(query_embedding, top_k)
+                            if hasattr(self.mock_client, "search_vector_store")
+                            else []
+                        )
                     return []
 
                 # Create the endpoint path
@@ -610,7 +711,7 @@ class VectorSearchClient:
                                 feature_vector=query_embedding
                             )
                         )
-                    ]
+                    ],
                 )
 
                 # Send the request
@@ -624,20 +725,26 @@ class VectorSearchClient:
                             "content": getattr(neighbor.datapoint, "document", ""),
                             "score": float(neighbor.distance),
                             "metadata": {},
-                            "id": getattr(neighbor.datapoint, "datapoint_id", "unknown")
+                            "id": getattr(
+                                neighbor.datapoint, "datapoint_id", "unknown"
+                            ),
                         }
 
                         # Extract metadata from the neighbor
                         try:
                             for attr in neighbor.datapoint.restricts:
-                                result["metadata"][attr.namespace + "." + attr.name] = attr.value
+                                result["metadata"][
+                                    attr.namespace + "." + attr.name
+                                ] = attr.value
                         except AttributeError:
                             pass
 
                         results.append(result)
 
                 search_time = time.time() - start_time
-                logger.info(f"Successfully retrieved {len(results)} results using low-level API in {search_time:.2f}s")
+                logger.info(
+                    f"Successfully retrieved {len(results)} results using low-level API in {search_time:.2f}s"
+                )
 
                 # Log successful search
                 vector_search_audit_logger.log_search(
@@ -648,8 +755,8 @@ class VectorSearchClient:
                     details={
                         "search_time_ms": search_time * 1000,
                         "api": "low-level",
-                        **audit_details
-                    }
+                        **audit_details,
+                    },
                 )
 
                 return results
@@ -666,13 +773,19 @@ class VectorSearchClient:
                     details={
                         "error": error_message,
                         "api": "low-level",
-                        **audit_details
-                    }
+                        **audit_details,
+                    },
                 )
 
                 if self.auto_fallback:
-                    logger.warning("Falling back to mock implementation due to search failure")
-                    return self.mock_client.search_vector_store(query_embedding, top_k) if hasattr(self.mock_client, 'search_vector_store') else []
+                    logger.warning(
+                        "Falling back to mock implementation due to search failure"
+                    )
+                    return (
+                        self.mock_client.search_vector_store(query_embedding, top_k)
+                        if hasattr(self.mock_client, "search_vector_store")
+                        else []
+                    )
                 return []
         except Exception as e:
             error_message = str(e)
@@ -687,16 +800,22 @@ class VectorSearchClient:
                 details={
                     "error": error_message,
                     "error_type": "unexpected",
-                    **audit_details
-                }
+                    **audit_details,
+                },
             )
 
             if self.auto_fallback:
-                logger.warning("Falling back to mock implementation due to unexpected error")
-                return self.mock_client.search_vector_store(query_embedding, top_k) if hasattr(self.mock_client, 'search_vector_store') else []
+                logger.warning(
+                    "Falling back to mock implementation due to unexpected error"
+                )
+                return (
+                    self.mock_client.search_vector_store(query_embedding, top_k)
+                    if hasattr(self.mock_client, "search_vector_store")
+                    else []
+                )
             return []
 
-    def search_knowledge(self, query: str, top_k: int = 5) -> List[Dict[str, Any]]:
+    def search_knowledge(self, query: str, top_k: int = 5) -> list[dict[str, Any]]:
         """Search for knowledge using the vector store with enhanced validation.
 
         This is a convenience method that generates an embedding for the query
@@ -717,13 +836,23 @@ class VectorSearchClient:
 
         if self.using_mock:
             logger.info(f"Using mock implementation for knowledge search: '{query}'")
-            return self.mock_client.search_knowledge(query, top_k) if hasattr(self.mock_client, 'search_knowledge') else []
+            return (
+                self.mock_client.search_knowledge(query, top_k)
+                if hasattr(self.mock_client, "search_knowledge")
+                else []
+            )
 
         if not self._initialize():
             logger.error("Vector Search client not initialized")
             if self.auto_fallback:
-                logger.warning("Falling back to mock implementation for knowledge search")
-                return self.mock_client.search_knowledge(query, top_k) if hasattr(self.mock_client, 'search_knowledge') else []
+                logger.warning(
+                    "Falling back to mock implementation for knowledge search"
+                )
+                return (
+                    self.mock_client.search_knowledge(query, top_k)
+                    if hasattr(self.mock_client, "search_knowledge")
+                    else []
+                )
             return []
 
         try:
@@ -736,13 +865,21 @@ class VectorSearchClient:
             if not embedding:
                 logger.error("Failed to generate embedding for knowledge query")
                 if self.auto_fallback:
-                    logger.warning("Falling back to mock implementation due to embedding generation failure")
-                    return self.mock_client.search_knowledge(query, top_k) if hasattr(self.mock_client, 'search_knowledge') else []
+                    logger.warning(
+                        "Falling back to mock implementation due to embedding generation failure"
+                    )
+                    return (
+                        self.mock_client.search_knowledge(query, top_k)
+                        if hasattr(self.mock_client, "search_knowledge")
+                        else []
+                    )
                 return []
 
             # Validate embedding dimensions
             if len(embedding) != 768:
-                logger.warning(f"Unexpected embedding dimensions: {len(embedding)}, expected 768")
+                logger.warning(
+                    f"Unexpected embedding dimensions: {len(embedding)}, expected 768"
+                )
 
             # Search the vector store
             results = self.search_vector_store(embedding, top_k)
@@ -764,25 +901,33 @@ class VectorSearchClient:
                     "content": content,
                     "source": source,
                     "metadata": metadata,
-                    "vector_source": True  # Indicate this came from vector search
+                    "vector_source": True,  # Indicate this came from vector search
                 }
                 formatted_results.append(formatted_result)
 
             # Log performance metrics
             total_time = time.time() - start_time
-            logger.info(f"Knowledge search for '{query[:50]}...' returned {len(formatted_results)} results in {total_time:.2f}s")
+            logger.info(
+                f"Knowledge search for '{query[:50]}...' returned {len(formatted_results)} results in {total_time:.2f}s"
+            )
 
             return formatted_results
         except Exception as e:
             logger.error(f"Error in search_knowledge: {str(e)}")
 
             if self.auto_fallback:
-                logger.warning("Falling back to mock implementation for knowledge search")
-                return self.mock_client.search_knowledge(query, top_k) if hasattr(self.mock_client, 'search_knowledge') else []
+                logger.warning(
+                    "Falling back to mock implementation for knowledge search"
+                )
+                return (
+                    self.mock_client.search_knowledge(query, top_k)
+                    if hasattr(self.mock_client, "search_knowledge")
+                    else []
+                )
 
             return []
 
-    def get_health_status(self) -> Dict[str, Any]:
+    def get_health_status(self) -> dict[str, Any]:
         """Get the health status of the Vector Search client.
 
         This method performs a comprehensive health check of the Vector Search client,
@@ -808,8 +953,8 @@ class VectorSearchClient:
                     "location": self.location,
                     "endpoint_id": self.endpoint_id,
                     "deployed_index_id": self.deployed_index_id,
-                    "credentials_path": self.credentials_path
-                }
+                    "credentials_path": self.credentials_path,
+                },
             }
 
         # Check if client is initialized
@@ -824,13 +969,13 @@ class VectorSearchClient:
                     "location": self.location,
                     "endpoint_id": self.endpoint_id,
                     "deployed_index_id": self.deployed_index_id,
-                    "credentials_path": self.credentials_path
+                    "credentials_path": self.credentials_path,
                 },
                 "recommendations": [
                     "Check that all required environment variables are set",
                     "Verify that the service account key file exists and is accessible",
-                    "Ensure the service account has the necessary permissions"
-                ]
+                    "Ensure the service account has the necessary permissions",
+                ],
             }
 
         try:
@@ -844,7 +989,7 @@ class VectorSearchClient:
                 "location": self.location,
                 "endpoint_id": self.endpoint_id,
                 "deployed_index_id": self.deployed_index_id,
-                "credentials_path": self.credentials_path
+                "credentials_path": self.credentials_path,
             }
             metrics = {}
             recommendations = []
@@ -864,7 +1009,9 @@ class VectorSearchClient:
                     status = "error"
                     message = "Failed to generate embedding"
                     details["embedding_test"] = "failed"
-                    recommendations.append("Check embedding model access and permissions")
+                    recommendations.append(
+                        "Check embedding model access and permissions"
+                    )
             except Exception as e:
                 status = "error"
                 message = f"Error generating embedding: {str(e)}"
@@ -875,7 +1022,7 @@ class VectorSearchClient:
                     "status": status,
                     "message": message,
                     "details": details,
-                    "recommendations": recommendations
+                    "recommendations": recommendations,
                 }
 
             # Test vector search
@@ -893,19 +1040,25 @@ class VectorSearchClient:
                         # If no results found, mark as degraded
                         if len(results) == 0:
                             status = "degraded"
-                            message = "Vector Search is operational but returned no results"
+                            message = (
+                                "Vector Search is operational but returned no results"
+                            )
                             recommendations.append("Check if the index contains data")
                     else:
                         status = "error"
                         message = "Failed to search vector store"
                         details["search_test"] = "failed"
-                        recommendations.append("Check Vector Search endpoint and permissions")
+                        recommendations.append(
+                            "Check Vector Search endpoint and permissions"
+                        )
                 except Exception as e:
                     status = "error"
                     message = f"Error searching vector store: {str(e)}"
                     details["search_test"] = "error"
                     details["search_error"] = str(e)
-                    recommendations.append("Check Vector Search endpoint and permissions")
+                    recommendations.append(
+                        "Check Vector Search endpoint and permissions"
+                    )
 
             # Add metrics to the response
             details["metrics"] = metrics
@@ -916,7 +1069,7 @@ class VectorSearchClient:
                 "message": message,
                 "details": details,
                 "metrics": metrics,
-                "recommendations": recommendations if status != "healthy" else []
+                "recommendations": recommendations if status != "healthy" else [],
             }
         except Exception as e:
             return {
@@ -930,12 +1083,14 @@ class VectorSearchClient:
                     "endpoint_id": self.endpoint_id,
                     "deployed_index_id": self.deployed_index_id,
                     "credentials_path": self.credentials_path,
-                    "error": str(e)
+                    "error": str(e),
                 },
-                "recommendations": ["Check logs for detailed error information"]
+                "recommendations": ["Check logs for detailed error information"],
             }
 
-    def upload_embedding(self, content: str, metadata: Dict[str, Any] = None, user_id: str = "system") -> bool:
+    def upload_embedding(
+        self, content: str, metadata: dict[str, Any] = None, user_id: str = "system"
+    ) -> bool:
         """Upload content with embedding to Vector Search
 
         Args:
@@ -950,7 +1105,7 @@ class VectorSearchClient:
         audit_details = {
             "method": "upload_embedding",
             "content_length": len(content) if content else 0,
-            "has_metadata": metadata is not None
+            "has_metadata": metadata is not None,
         }
 
         if self.using_mock:
@@ -960,7 +1115,7 @@ class VectorSearchClient:
                 operation_type="upsert",
                 num_items=1,
                 status="success",
-                details={"using_mock": True, **audit_details}
+                details={"using_mock": True, **audit_details},
             )
             return self.mock_client.upload_embedding(content, metadata)
 
@@ -972,7 +1127,10 @@ class VectorSearchClient:
                 operation_type="upsert",
                 num_items=1,
                 status="failure",
-                details={"error": "Vector Search client not initialized", **audit_details}
+                details={
+                    "error": "Vector Search client not initialized",
+                    **audit_details,
+                },
             )
             if self.auto_fallback:
                 logger.warning("Falling back to mock implementation for upload")
@@ -986,19 +1144,27 @@ class VectorSearchClient:
             if not embedding:
                 logger.error("Failed to generate embedding for content")
                 if self.auto_fallback:
-                    logger.warning("Falling back to mock implementation due to embedding generation failure")
+                    logger.warning(
+                        "Falling back to mock implementation due to embedding generation failure"
+                    )
                     return self.mock_client.upload_embedding(content, metadata)
                 return False
 
             # Validate embedding format
             if not all(isinstance(value, float) for value in embedding):
-                logger.warning("Invalid embedding format, ensuring all values are float")
+                logger.warning(
+                    "Invalid embedding format, ensuring all values are float"
+                )
                 try:
                     embedding = [float(value) for value in embedding]
                 except (ValueError, TypeError) as e:
-                    logger.error(f"Failed to convert embedding values to float: {str(e)}")
+                    logger.error(
+                        f"Failed to convert embedding values to float: {str(e)}"
+                    )
                     if self.auto_fallback:
-                        logger.warning("Falling back to mock implementation due to embedding format error")
+                        logger.warning(
+                            "Falling back to mock implementation due to embedding format error"
+                        )
                         return self.mock_client.upload_embedding(content, metadata)
                     return False
 
@@ -1010,15 +1176,14 @@ class VectorSearchClient:
                 "id": content_id,
                 "feature_vector": embedding,
                 "restricts": metadata or {},
-                "document": content
+                "document": content,
             }
 
             # Try to upload using the high-level API
             try:
                 if self.index_endpoint:
                     self.index_endpoint.upsert_datapoints(
-                        deployed_index_id=self.deployed_index_id,
-                        datapoints=[datapoint]
+                        deployed_index_id=self.deployed_index_id, datapoints=[datapoint]
                     )
                     logger.info(f"Successfully uploaded content with ID {content_id}")
 
@@ -1029,7 +1194,7 @@ class VectorSearchClient:
                         num_items=1,
                         item_ids=[content_id],
                         status="success",
-                        details={**audit_details}
+                        details={**audit_details},
                     )
 
                     return True
@@ -1041,10 +1206,15 @@ class VectorSearchClient:
                         operation_type="upsert",
                         num_items=1,
                         status="failure",
-                        details={"error": "Index endpoint not initialized", **audit_details}
+                        details={
+                            "error": "Index endpoint not initialized",
+                            **audit_details,
+                        },
                     )
                     if self.auto_fallback:
-                        logger.warning("Falling back to mock implementation due to missing endpoint")
+                        logger.warning(
+                            "Falling back to mock implementation due to missing endpoint"
+                        )
                         return self.mock_client.upload_embedding(content, metadata)
                     return False
             except Exception as e:
@@ -1056,10 +1226,16 @@ class VectorSearchClient:
                     operation_type="upsert",
                     num_items=1,
                     status="failure",
-                    details={"error": error_message, "error_type": "upload", **audit_details}
+                    details={
+                        "error": error_message,
+                        "error_type": "upload",
+                        **audit_details,
+                    },
                 )
                 if self.auto_fallback:
-                    logger.warning("Falling back to mock implementation due to upload error")
+                    logger.warning(
+                        "Falling back to mock implementation due to upload error"
+                    )
                     return self.mock_client.upload_embedding(content, metadata)
                 return False
         except Exception as e:
@@ -1071,14 +1247,22 @@ class VectorSearchClient:
                 operation_type="upsert",
                 num_items=1,
                 status="failure",
-                details={"error": error_message, "error_type": "unexpected", **audit_details}
+                details={
+                    "error": error_message,
+                    "error_type": "unexpected",
+                    **audit_details,
+                },
             )
             if self.auto_fallback:
-                logger.warning("Falling back to mock implementation due to unexpected error")
+                logger.warning(
+                    "Falling back to mock implementation due to unexpected error"
+                )
                 return self.mock_client.upload_embedding(content, metadata)
             return False
 
-    def batch_upload_embeddings(self, items: List[Dict[str, Any]], user_id: str = "system") -> bool:
+    def batch_upload_embeddings(
+        self, items: list[dict[str, Any]], user_id: str = "system"
+    ) -> bool:
         """Upload multiple items with embeddings to Vector Search in batch
 
         Args:
@@ -1089,10 +1273,7 @@ class VectorSearchClient:
             True if successful, False otherwise
         """
         # Audit log the batch upload attempt
-        audit_details = {
-            "method": "batch_upload_embeddings",
-            "num_items": len(items)
-        }
+        audit_details = {"method": "batch_upload_embeddings", "num_items": len(items)}
 
         if self.using_mock:
             # Log mock batch upload
@@ -1101,7 +1282,7 @@ class VectorSearchClient:
                 operation_type="batch_upsert",
                 num_items=len(items),
                 status="success",
-                details={"using_mock": True, **audit_details}
+                details={"using_mock": True, **audit_details},
             )
             return self.mock_client.batch_upload_embeddings(items)
 
@@ -1113,7 +1294,10 @@ class VectorSearchClient:
                 operation_type="batch_upsert",
                 num_items=len(items),
                 status="failure",
-                details={"error": "Vector Search client not initialized", **audit_details}
+                details={
+                    "error": "Vector Search client not initialized",
+                    **audit_details,
+                },
             )
             if self.auto_fallback:
                 logger.warning("Falling back to mock implementation for batch upload")
@@ -1132,16 +1316,22 @@ class VectorSearchClient:
                 if not embedding:
                     embedding = self.generate_embedding(content)
                     if not embedding:
-                        logger.error(f"Failed to generate embedding for content: {content[:50]}...")
+                        logger.error(
+                            f"Failed to generate embedding for content: {content[:50]}..."
+                        )
                         continue
 
                 # Validate embedding format
                 if not all(isinstance(value, float) for value in embedding):
-                    logger.warning(f"Invalid embedding format for content: {content[:50]}...")
+                    logger.warning(
+                        f"Invalid embedding format for content: {content[:50]}..."
+                    )
                     try:
                         embedding = [float(value) for value in embedding]
                     except (ValueError, TypeError) as e:
-                        logger.error(f"Failed to convert embedding values to float: {str(e)}")
+                        logger.error(
+                            f"Failed to convert embedding values to float: {str(e)}"
+                        )
                         continue
 
                 # Create a unique ID for the content
@@ -1152,7 +1342,7 @@ class VectorSearchClient:
                     "id": content_id,
                     "feature_vector": embedding,
                     "restricts": metadata,
-                    "document": content
+                    "document": content,
                 }
 
                 datapoints.append(datapoint)
@@ -1160,7 +1350,9 @@ class VectorSearchClient:
             if not datapoints:
                 logger.error("No valid datapoints to upload")
                 if self.auto_fallback:
-                    logger.warning("Falling back to mock implementation due to no valid datapoints")
+                    logger.warning(
+                        "Falling back to mock implementation due to no valid datapoints"
+                    )
                     return self.mock_client.batch_upload_embeddings(items)
                 return False
 
@@ -1170,15 +1362,18 @@ class VectorSearchClient:
                     # Upload to Vector Search in batches of 100
                     batch_size = 100
                     for i in range(0, len(datapoints), batch_size):
-                        batch = datapoints[i:i+batch_size]
+                        batch = datapoints[i : i + batch_size]
                         self.index_endpoint.upsert_datapoints(
-                            deployed_index_id=self.deployed_index_id,
-                            datapoints=batch
+                            deployed_index_id=self.deployed_index_id, datapoints=batch
                         )
-                    logger.info(f"Successfully uploaded {len(datapoints)} items in batches of {batch_size}")
+                    logger.info(
+                        f"Successfully uploaded {len(datapoints)} items in batches of {batch_size}"
+                    )
 
                     # Log successful batch upload
-                    item_ids = [dp.get("id", "unknown") for dp in datapoints[:10]]  # Get first 10 IDs for logging
+                    item_ids = [
+                        dp.get("id", "unknown") for dp in datapoints[:10]
+                    ]  # Get first 10 IDs for logging
                     vector_search_audit_logger.log_update(
                         user_id=user_id,
                         operation_type="batch_upsert",
@@ -1187,9 +1382,10 @@ class VectorSearchClient:
                         status="success",
                         details={
                             "batch_size": batch_size,
-                            "num_batches": (len(datapoints) + batch_size - 1) // batch_size,
-                            **audit_details
-                        }
+                            "num_batches": (len(datapoints) + batch_size - 1)
+                            // batch_size,
+                            **audit_details,
+                        },
                     )
 
                     return True
@@ -1201,10 +1397,15 @@ class VectorSearchClient:
                         operation_type="batch_upsert",
                         num_items=len(datapoints),
                         status="failure",
-                        details={"error": "Index endpoint not initialized", **audit_details}
+                        details={
+                            "error": "Index endpoint not initialized",
+                            **audit_details,
+                        },
                     )
                     if self.auto_fallback:
-                        logger.warning("Falling back to mock implementation due to missing endpoint")
+                        logger.warning(
+                            "Falling back to mock implementation due to missing endpoint"
+                        )
                         return self.mock_client.batch_upload_embeddings(items)
                     return False
             except Exception as e:
@@ -1216,10 +1417,16 @@ class VectorSearchClient:
                     operation_type="batch_upsert",
                     num_items=len(datapoints) if datapoints else len(items),
                     status="failure",
-                    details={"error": error_message, "error_type": "upload", **audit_details}
+                    details={
+                        "error": error_message,
+                        "error_type": "upload",
+                        **audit_details,
+                    },
                 )
                 if self.auto_fallback:
-                    logger.warning("Falling back to mock implementation due to batch upload error")
+                    logger.warning(
+                        "Falling back to mock implementation due to batch upload error"
+                    )
                     return self.mock_client.batch_upload_embeddings(items)
                 return False
         except Exception as e:
@@ -1231,10 +1438,16 @@ class VectorSearchClient:
                 operation_type="batch_upsert",
                 num_items=len(items),
                 status="failure",
-                details={"error": error_message, "error_type": "unexpected", **audit_details}
+                details={
+                    "error": error_message,
+                    "error_type": "unexpected",
+                    **audit_details,
+                },
             )
             if self.auto_fallback:
-                logger.warning("Falling back to mock implementation due to unexpected error")
+                logger.warning(
+                    "Falling back to mock implementation due to unexpected error"
+                )
                 return self.mock_client.batch_upload_embeddings(items)
             return False
 
@@ -1246,7 +1459,7 @@ class SimpleMockVectorSearchClient:
         """Initialize the simple mock client"""
         logger.info("Initializing Simple Mock Vector Search Client")
 
-    def generate_embedding(self, text: str) -> List[float]:
+    def generate_embedding(self, text: str) -> list[float]:
         """Mock embedding generation
 
         Args:
@@ -1257,11 +1470,12 @@ class SimpleMockVectorSearchClient:
         """
         logger.info(f"Mock: Generating embedding for '{text[:30]}...'")
         import random
+
         # Generate a deterministic but unique embedding based on the text
         random.seed(hash(text) % 10000)
         return [random.uniform(-1, 1) for _ in range(768)]
 
-    def search(self, query: str, top_k: int = 5) -> List[Dict[str, Any]]:
+    def search(self, query: str, top_k: int = 5) -> list[dict[str, Any]]:
         """Mock search function
 
         Args:
@@ -1276,16 +1490,20 @@ class SimpleMockVectorSearchClient:
         # Generate mock results
         results = []
         for i in range(min(top_k, 3)):  # Return at most 3 results
-            results.append({
-                "id": f"mock-id-{i}",
-                "score": 0.9 - (i * 0.1),
-                "content": f"Mock content for query '{query}' (result {i+1})",
-                "metadata": {"source": f"mock-source-{i}"}
-            })
+            results.append(
+                {
+                    "id": f"mock-id-{i}",
+                    "score": 0.9 - (i * 0.1),
+                    "content": f"Mock content for query '{query}' (result {i+1})",
+                    "metadata": {"source": f"mock-source-{i}"},
+                }
+            )
 
         return results
 
-    def search_vector_store(self, query_embedding: List[float], top_k: int = 5) -> List[Dict[str, Any]]:
+    def search_vector_store(
+        self, query_embedding: list[float], top_k: int = 5
+    ) -> list[dict[str, Any]]:
         """Mock vector store search
 
         Args:
@@ -1295,21 +1513,25 @@ class SimpleMockVectorSearchClient:
         Returns:
             A list of mock search results
         """
-        logger.info(f"Mock: Searching vector store with embedding of length {len(query_embedding)}")
+        logger.info(
+            f"Mock: Searching vector store with embedding of length {len(query_embedding)}"
+        )
 
         # Generate mock results
         results = []
         for i in range(min(top_k, 3)):  # Return at most 3 results
-            results.append({
-                "id": f"mock-id-{i}",
-                "score": 0.9 - (i * 0.1),
-                "content": f"Mock content for vector search (result {i+1})",
-                "metadata": {"source": f"mock-source-{i}"}
-            })
+            results.append(
+                {
+                    "id": f"mock-id-{i}",
+                    "score": 0.9 - (i * 0.1),
+                    "content": f"Mock content for vector search (result {i+1})",
+                    "metadata": {"source": f"mock-source-{i}"},
+                }
+            )
 
         return results
 
-    def search_knowledge(self, query: str, top_k: int = 5) -> List[Dict[str, Any]]:
+    def search_knowledge(self, query: str, top_k: int = 5) -> list[dict[str, Any]]:
         """Mock knowledge search
 
         Args:
@@ -1324,18 +1546,20 @@ class SimpleMockVectorSearchClient:
         # Generate mock results
         results = []
         for i in range(min(top_k, 3)):  # Return at most 3 results
-            results.append({
-                "id": f"mock-id-{i}",
-                "score": 0.9 - (i * 0.1),
-                "content": f"Mock knowledge content for query '{query}' (result {i+1})",
-                "source": f"mock-source-{i}",
-                "metadata": {"source": f"mock-source-{i}"},
-                "vector_source": False  # Indicate this is from mock
-            })
+            results.append(
+                {
+                    "id": f"mock-id-{i}",
+                    "score": 0.9 - (i * 0.1),
+                    "content": f"Mock knowledge content for query '{query}' (result {i+1})",
+                    "source": f"mock-source-{i}",
+                    "metadata": {"source": f"mock-source-{i}"},
+                    "vector_source": False,  # Indicate this is from mock
+                }
+            )
 
         return results
 
-    def upload_embedding(self, content: str, metadata: Dict[str, Any] = None) -> bool:
+    def upload_embedding(self, content: str, metadata: dict[str, Any] = None) -> bool:
         """Mock upload function
 
         Args:
@@ -1348,7 +1572,7 @@ class SimpleMockVectorSearchClient:
         logger.info(f"Mock: Uploading content '{content[:30]}...'")
         return True
 
-    def batch_upload_embeddings(self, items: List[Dict[str, Any]]) -> bool:
+    def batch_upload_embeddings(self, items: list[dict[str, Any]]) -> bool:
         """Mock batch upload function
 
         Args:
@@ -1368,7 +1592,7 @@ class SimpleMockVectorSearchClient:
         """
         return True
 
-    def get_health_status(self) -> Dict[str, Any]:
+    def get_health_status(self) -> dict[str, Any]:
         """Get mock health status
 
         Returns:
@@ -1377,8 +1601,5 @@ class SimpleMockVectorSearchClient:
         return {
             "status": "mock",
             "message": "Using mock implementation",
-            "details": {
-                "initialized": True,
-                "using_mock": True
-            }
+            "details": {"initialized": True, "using_mock": True},
         }

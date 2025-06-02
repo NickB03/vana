@@ -83,7 +83,7 @@ Blueprints define a collection of routes for a specific feature area.
     health_checker = VectorSearchHealthChecker() # Initialize once or use a factory
 
     @vector_search_bp.route('/health', methods=['GET'])
-    @token_required 
+    @token_required
     def get_vector_search_health():
         try:
             # health_status = get_vs_summary() # Fetch pre-calculated summary
@@ -102,7 +102,7 @@ Blueprints define a collection of routes for a specific feature area.
         # latency_data = fetch_latency_timeseries_from_source()
         latency_data = {"average_ms": 50, "p95_ms": 150} # Placeholder
         return jsonify(latency_data), 200
-    
+
     # Other routes for historical data, specific checks, etc.
     ```
 *   **Route Definitions:** Use decorators like `@blueprint_name.route('/path', methods=['GET', 'POST'])`.

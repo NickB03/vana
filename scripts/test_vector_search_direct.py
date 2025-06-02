@@ -6,13 +6,14 @@ This script tests the Vector Search integration directly without relying on ADK 
 It sends queries to Vector Search and verifies that relevant information is retrieved.
 """
 
-import os
-import logging
 import argparse
-from dotenv import load_dotenv
+import logging
+import os
+
 import vertexai
-from vertexai.language_models import TextEmbeddingModel
+from dotenv import load_dotenv
 from google.cloud import aiplatform
+from vertexai.language_models import TextEmbeddingModel
 
 # Set up logging
 logging.basicConfig(
@@ -20,8 +21,8 @@ logging.basicConfig(
     format="%(asctime)s [%(levelname)s] %(message)s",
     handlers=[
         logging.FileHandler("vector_search_direct_test.log"),
-        logging.StreamHandler()
-    ]
+        logging.StreamHandler(),
+    ],
 )
 logger = logging.getLogger(__name__)
 
@@ -35,16 +36,27 @@ INDEX_NAME = os.getenv("VECTOR_SEARCH_INDEX_NAME", "vana-shared-index")
 DEPLOYED_INDEX_ID = os.getenv("DEPLOYED_INDEX_ID", "vanasharedindex")
 ENDPOINT_RESOURCE_NAME = os.getenv("VECTOR_SEARCH_ENDPOINT_ID")
 
+
 def parse_arguments():
     """Parse command line arguments."""
-    parser = argparse.ArgumentParser(description="Direct test for Vector Search integration")
+    parser = argparse.ArgumentParser(
+        description="Direct test for Vector Search integration"
+    )
     parser.add_argument("--verbose", action="store_true", help="Enable verbose output")
-    parser.add_argument("--query", default="What is the architecture of VANA agents?",
-                        help="Query to test (default: 'What is the architecture of VANA agents?')")
+    parser.add_argument(
+        "--query",
+        default="What is the architecture of VANA agents?",
+        help="Query to test (default: 'What is the architecture of VANA agents?')",
+    )
     parser.add_argument("--output", help="Output file for detailed results")
-    parser.add_argument("--timing", action="store_true", help="Show timing information for each step")
-    parser.add_argument("--metadata", action="store_true", help="Show detailed metadata for each result")
+    parser.add_argument(
+        "--timing", action="store_true", help="Show timing information for each step"
+    )
+    parser.add_argument(
+        "--metadata", action="store_true", help="Show detailed metadata for each result"
+    )
     return parser.parse_args()
+
 
 def setup_logging(verbose=False):
     """Set up logging with appropriate level based on verbose flag."""
@@ -54,15 +66,17 @@ def setup_logging(verbose=False):
         format="%(asctime)s [%(levelname)s] %(message)s",
         handlers=[
             logging.FileHandler("vector_search_direct_test.log"),
-            logging.StreamHandler()
-        ]
+            logging.StreamHandler(),
+        ],
     )
     return logging.getLogger(__name__)
+
 
 def generate_embedding(text, show_timing=False):
     """Generate an embedding for a text using Vertex AI."""
     try:
         import time
+
         start_time = time.time()
 
         # Initialize Vertex AI
@@ -79,10 +93,12 @@ def generate_embedding(text, show_timing=False):
 
         # Log timing information if requested
         if show_timing:
-            logger.info(f"Embedding generation timing:")
+            logger.info("Embedding generation timing:")
             logger.info(f"  - Initialization: {(init_time - start_time):.2f}s")
             logger.info(f"  - Model loading: {(model_load_time - init_time):.2f}s")
-            logger.info(f"  - Embedding generation: {(embedding_time - model_load_time):.2f}s")
+            logger.info(
+                f"  - Embedding generation: {(embedding_time - model_load_time):.2f}s"
+            )
             logger.info(f"  - Total time: {(embedding_time - start_time):.2f}s")
             logger.info(f"  - Embedding dimensions: {len(embedding.values)}")
 
@@ -90,6 +106,7 @@ def generate_embedding(text, show_timing=False):
     except Exception as e:
         logger.error(f"Error generating embedding: {str(e)}")
         raise
+
 
 def get_vector_search_endpoint():
     """Get the Vector Search endpoint using the verified approach."""
@@ -121,7 +138,7 @@ def get_vector_search_endpoint():
                 logger.info(f"Found index: {index.display_name} (ID: {index.name})")
 
                 # Get endpoint from index
-                if hasattr(index, 'deployed_indexes') and index.deployed_indexes:
+                if hasattr(index, "deployed_indexes") and index.deployed_indexes:
                     deployed_index = index.deployed_indexes[0]
                     endpoint_resource_name = deployed_index.index_endpoint
                     deployed_index_id = deployed_index.deployed_index_id
@@ -145,7 +162,9 @@ def get_vector_search_endpoint():
 
             if endpoints:
                 endpoint = endpoints[0]
-                logger.info(f"Found endpoint: {endpoint.display_name} ({endpoint.name})")
+                logger.info(
+                    f"Found endpoint: {endpoint.display_name} ({endpoint.name})"
+                )
 
                 # Use the known deployed index ID
                 logger.info(f"Using deployed index ID: {DEPLOYED_INDEX_ID}")
@@ -161,10 +180,12 @@ def get_vector_search_endpoint():
         logger.error(f"Error getting Vector Search endpoint: {str(e)}")
         return None, None
 
+
 def search_knowledge(query, top_k=5, show_timing=False, show_metadata=False):
     """Search the knowledge base for information related to the query."""
     try:
         import time
+
         start_time = time.time()
 
         logger.info(f"Searching knowledge base for: '{query}'")
@@ -178,7 +199,9 @@ def search_knowledge(query, top_k=5, show_timing=False, show_metadata=False):
         endpoint_time = time.time()
 
         if not endpoint or not deployed_index_id:
-            return "Could not find Vector Search endpoint. Please check the configuration."
+            return (
+                "Could not find Vector Search endpoint. Please check the configuration."
+            )
 
         # Search the index
         try:
@@ -186,15 +209,19 @@ def search_knowledge(query, top_k=5, show_timing=False, show_metadata=False):
             response = endpoint.find_neighbors(
                 deployed_index_id=deployed_index_id,
                 queries=[query_embedding],
-                num_neighbors=top_k
+                num_neighbors=top_k,
             )
             search_time = time.time()
 
             # Log timing information if requested
             if show_timing:
-                logger.info(f"Search timing:")
-                logger.info(f"  - Embedding generation: {(embedding_time - start_time):.2f}s")
-                logger.info(f"  - Endpoint retrieval: {(endpoint_time - embedding_time):.2f}s")
+                logger.info("Search timing:")
+                logger.info(
+                    f"  - Embedding generation: {(embedding_time - start_time):.2f}s"
+                )
+                logger.info(
+                    f"  - Endpoint retrieval: {(endpoint_time - embedding_time):.2f}s"
+                )
                 logger.info(f"  - Vector search: {(search_time - endpoint_time):.2f}s")
                 logger.info(f"  - Total time: {(search_time - start_time):.2f}s")
 
@@ -204,7 +231,9 @@ def search_knowledge(query, top_k=5, show_timing=False, show_metadata=False):
                 logger.info(f"Found {len(results)} results")
 
                 # Format the results
-                formatted_results = f"Found {len(results)} results for query: '{query}'\n\n"
+                formatted_results = (
+                    f"Found {len(results)} results for query: '{query}'\n\n"
+                )
 
                 for i, result in enumerate(results):
                     formatted_results += f"Result {i+1}:\n"
@@ -213,7 +242,9 @@ def search_knowledge(query, top_k=5, show_timing=False, show_metadata=False):
                     # Extract metadata if available
                     if hasattr(result, "metadata") and result.metadata:
                         if "source" in result.metadata:
-                            formatted_results += f"  Source: {result.metadata['source']}\n"
+                            formatted_results += (
+                                f"  Source: {result.metadata['source']}\n"
+                            )
 
                         if "text" in result.metadata:
                             # Truncate long text
@@ -250,6 +281,7 @@ def search_knowledge(query, top_k=5, show_timing=False, show_metadata=False):
         logger.error(f"Error in search_knowledge: {str(e)}")
         return f"Error in search_knowledge: {str(e)}"
 
+
 def main():
     """Main function."""
     args = parse_arguments()
@@ -269,7 +301,7 @@ def main():
             "How does Vector Search integration work in this project?",
             "Tell me about the agent hierarchy in VANA",
             "What tools are available to the agents?",
-            "How is knowledge shared between agents?"
+            "How is knowledge shared between agents?",
         ]
 
     # Test each query
@@ -281,7 +313,9 @@ def main():
 
         try:
             # Search the knowledge base
-            result = search_knowledge(query, show_timing=args.timing, show_metadata=args.metadata)
+            result = search_knowledge(
+                query, show_timing=args.timing, show_metadata=args.metadata
+            )
             results[query] = result
 
             # Log the result
@@ -293,7 +327,9 @@ def main():
                 logger.warning(f"⚠️ No relevant information found for query: '{query}'")
                 success = False
             else:
-                logger.info(f"✅ Successfully retrieved information for query: '{query}'")
+                logger.info(
+                    f"✅ Successfully retrieved information for query: '{query}'"
+                )
 
         except Exception as e:
             logger.error(f"❌ Error testing query: '{query}': {str(e)}")
@@ -303,23 +339,27 @@ def main():
     # Save results to file if requested
     if args.output:
         import json
-        with open(args.output, 'w') as f:
+
+        with open(args.output, "w") as f:
             json.dump(results, f, indent=2)
         logger.info(f"Results saved to {args.output}")
 
     # Print summary
-    logger.info("\n" + "="*50)
+    logger.info("\n" + "=" * 50)
     logger.info("VECTOR SEARCH DIRECT TEST SUMMARY")
-    logger.info("="*50)
+    logger.info("=" * 50)
 
     if success:
         logger.info("🎉 SUCCESS: Vector Search integration is working correctly")
     else:
-        logger.info("⚠️ PARTIAL SUCCESS: Vector Search integration is working but some queries failed")
+        logger.info(
+            "⚠️ PARTIAL SUCCESS: Vector Search integration is working but some queries failed"
+        )
 
-    logger.info("="*50)
+    logger.info("=" * 50)
 
     return 0 if success else 1
+
 
 if __name__ == "__main__":
     exit_code = main()

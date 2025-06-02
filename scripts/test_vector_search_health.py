@@ -6,11 +6,11 @@ This script demonstrates how to use the Vector Search Health Checker
 to monitor the health of the Vector Search integration.
 """
 
-import os
-import sys
-import logging
 import argparse
 import json
+import logging
+import os
+import sys
 import time
 from datetime import datetime
 
@@ -21,11 +21,10 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(message)s",
-    handlers=[
-        logging.StreamHandler()
-    ]
+    handlers=[logging.StreamHandler()],
 )
 logger = logging.getLogger(__name__)
+
 
 def display_results(result, checker, args):
     """
@@ -43,7 +42,7 @@ def display_results(result, checker, args):
         "warn": "\033[93m",  # Yellow
         "error": "\033[91m",  # Red
         "critical": "\033[91;1m",  # Bold Red
-        "unknown": "\033[94m"  # Blue
+        "unknown": "\033[94m",  # Blue
     }.get(status, "\033[0m")
     reset_color = "\033[0m"
 
@@ -54,7 +53,13 @@ def display_results(result, checker, args):
         logger.info("Detailed check results:")
         for check_name, check_result in result.get("checks", {}).items():
             check_status = check_result.get("status", "unknown")
-            status_emoji = "✅" if check_status == "ok" else "⚠️" if check_status == "warn" else "❌"
+            status_emoji = (
+                "✅"
+                if check_status == "ok"
+                else "⚠️"
+                if check_status == "warn"
+                else "❌"
+            )
             logger.info(f"{status_emoji} {check_name}: {check_status}")
 
             if "details" in check_result:
@@ -69,7 +74,9 @@ def display_results(result, checker, args):
         logger.info("Recommendations:")
         for i, rec in enumerate(recommendations, 1):
             priority = rec.get("priority", "medium")
-            priority_marker = "🔴" if priority == "high" else "🟠" if priority == "medium" else "🟡"
+            priority_marker = (
+                "🔴" if priority == "high" else "🟠" if priority == "medium" else "🟡"
+            )
             logger.info(f"{priority_marker} {rec.get('title')}: {rec.get('action')}")
     else:
         logger.info("No recommendations - Vector Search is healthy!")
@@ -83,6 +90,7 @@ def display_results(result, checker, args):
     # Output in JSON format if requested
     if args.output_format == "json":
         print(json.dumps(result, indent=2))
+
 
 def run_detailed_check(checker, args):
     """
@@ -110,8 +118,17 @@ def run_detailed_check(checker, args):
     if "trends" in report and report["trends"]:
         logger.info("Performance trends:")
         for metric_name, trend_data in report["trends"].items():
-            trend_symbol = "↗️" if trend_data.get("trend") == "improving" else "↘️" if trend_data.get("trend") == "degrading" else "➡️"
-            logger.info(f"  {trend_symbol} {metric_name}: {trend_data.get('trend')} ({trend_data.get('previous')} → {trend_data.get('current')})")
+            trend_symbol = (
+                "↗️"
+                if trend_data.get("trend") == "improving"
+                else "↘️"
+                if trend_data.get("trend") == "degrading"
+                else "➡️"
+            )
+            logger.info(
+                f"  {trend_symbol} {metric_name}: {trend_data.get('trend')} ({trend_data.get('previous')} → {trend_data.get('current')})"
+            )
+
 
 def run_monitor_mode(checker, args):
     """
@@ -155,24 +172,51 @@ def run_monitor_mode(checker, args):
     checker.save_report_to_file(args.report_file)
     logger.info(f"Final report saved to {args.report_file}")
 
+
 def main():
     """Main function."""
     parser = argparse.ArgumentParser(description="Test Vector Search Health Checker")
-    parser.add_argument("--report-file", type=str,
-                        default=f"vector_search_health_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json",
-                        help="Path to save the health report")
-    parser.add_argument("--verbose", action="store_true",
-                        help="Enable verbose output with detailed check results")
-    parser.add_argument("--mode", choices=["basic", "detailed", "monitor"], default="basic",
-                        help="Test mode: basic (quick check), detailed (comprehensive), or monitor (continuous)")
-    parser.add_argument("--interval", type=int, default=300,
-                        help="Interval in seconds between checks when using monitor mode")
-    parser.add_argument("--count", type=int, default=1,
-                        help="Number of checks to perform (unlimited if 0)")
-    parser.add_argument("--client", choices=["auto", "basic", "enhanced", "mock"], default="auto",
-                        help="Vector Search client to use")
-    parser.add_argument("--output-format", choices=["text", "json"], default="text",
-                        help="Output format for results")
+    parser.add_argument(
+        "--report-file",
+        type=str,
+        default=f"vector_search_health_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json",
+        help="Path to save the health report",
+    )
+    parser.add_argument(
+        "--verbose",
+        action="store_true",
+        help="Enable verbose output with detailed check results",
+    )
+    parser.add_argument(
+        "--mode",
+        choices=["basic", "detailed", "monitor"],
+        default="basic",
+        help="Test mode: basic (quick check), detailed (comprehensive), or monitor (continuous)",
+    )
+    parser.add_argument(
+        "--interval",
+        type=int,
+        default=300,
+        help="Interval in seconds between checks when using monitor mode",
+    )
+    parser.add_argument(
+        "--count",
+        type=int,
+        default=1,
+        help="Number of checks to perform (unlimited if 0)",
+    )
+    parser.add_argument(
+        "--client",
+        choices=["auto", "basic", "enhanced", "mock"],
+        default="auto",
+        help="Vector Search client to use",
+    )
+    parser.add_argument(
+        "--output-format",
+        choices=["text", "json"],
+        default="text",
+        help="Output format for results",
+    )
     args = parser.parse_args()
 
     # Import the Vector Search Health Checker
@@ -184,12 +228,17 @@ def main():
         logger.info(f"Initializing {args.client} Vector Search client...")
         if args.client == "basic":
             from tools.vector_search.vector_search_client import VectorSearchClient
+
             vector_search_client = VectorSearchClient()
         elif args.client == "enhanced":
-            from tools.vector_search.enhanced_vector_search_client import EnhancedVectorSearchClient
+            from tools.vector_search.enhanced_vector_search_client import (
+                EnhancedVectorSearchClient,
+            )
+
             vector_search_client = EnhancedVectorSearchClient()
         elif args.client == "mock":
             from tools.vector_search.vector_search_mock import MockVectorSearchClient
+
             vector_search_client = MockVectorSearchClient()
 
     # Create the health checker
@@ -216,10 +265,12 @@ def main():
     except Exception as e:
         logger.error(f"Error during health check: {e}")
         import traceback
+
         logger.debug(traceback.format_exc())
         return 1
 
     return 0
+
 
 if __name__ == "__main__":
     sys.exit(main())

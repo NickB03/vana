@@ -31,7 +31,7 @@ graph TD
     AgentCore -- "Uses for KG ops" --> KG_Manager;
     HybridSearch -- "Queries for KG results" --> KG_Manager;
     DocProc -- "Potentially sends extracted entities/relations to" --> KG_Manager;
-    
+
     KG_Manager -- "HTTP API Calls (MCP)" --> MCP_Server;
     KG_Manager -- "Reads" --> EnvConfig;
 

@@ -29,10 +29,10 @@ from pathlib import Path
 
 # Determine project root and load .env file
 # This assumes .env is in the parent directory of config/ (i.e., project root)
-BASE_DIR = Path(__file__).resolve().parent.parent 
+BASE_DIR = Path(__file__).resolve().parent.parent
 # For .env in project root:
-# For .env in config/ (less common): # DOTENV_PATH = BASE_DIR / '.env' 
-DOTENV_PATH = BASE_DIR / '.env' 
+# For .env in config/ (less common): # DOTENV_PATH = BASE_DIR / '.env'
+DOTENV_PATH = BASE_DIR / '.env'
 
 if os.path.exists(DOTENV_PATH):
     load_dotenv(dotenv_path=DOTENV_PATH, override=True)
@@ -61,7 +61,7 @@ def get_env_variable(var_name, default=None, var_type=str):
             return default # Or raise error
     if var_type == list and isinstance(value, str):
         return [item.strip() for item in value.split(',')]
-    
+
     # For other types or if value is already correct type
     if value is not None:
         try:
@@ -69,7 +69,7 @@ def get_env_variable(var_name, default=None, var_type=str):
         except (TypeError, ValueError):
             print(f"Warning: Could not convert {var_name}='{value}' to {var_type}. Using default: {default}")
             return default
-            
+
     return default # If value was None and default was provided
 
 # --- VANA Environment ---

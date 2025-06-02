@@ -5,11 +5,12 @@ This is the main Streamlit application for the VANA dashboard.
 It provides visualization for memory usage, agent performance, system health, and alerting.
 """
 
-import streamlit as st
+import logging
 import os
 import sys
-import logging
 from datetime import datetime
+
+import streamlit as st
 
 # Add the parent directory to the path so we can import our modules
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -19,11 +20,11 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     handlers=[
         logging.StreamHandler(),
-        logging.FileHandler(os.path.join(os.path.dirname(__file__), 'dashboard.log'))
-    ]
+        logging.FileHandler(os.path.join(os.path.dirname(__file__), "dashboard.log")),
+    ],
 )
 logger = logging.getLogger(__name__)
 
@@ -32,8 +33,9 @@ st.set_page_config(
     page_title="VANA Dashboard",
     page_icon="🧠",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="expanded",
 )
+
 
 def main():
     """Main function to run the dashboard application."""
@@ -45,7 +47,13 @@ def main():
     st.sidebar.title("Navigation")
     page = st.sidebar.radio(
         "Select a page",
-        ["Agent Status", "Memory Usage", "ADK Memory", "System Health", "Task Execution"]
+        [
+            "Agent Status",
+            "Memory Usage",
+            "ADK Memory",
+            "System Health",
+            "Task Execution",
+        ],
     )
 
     # Add version information
@@ -55,13 +63,16 @@ def main():
     st.sidebar.markdown("Build: " + datetime.now().strftime("%Y%m%d"))
 
     # Display timestamp
-    st.sidebar.markdown(f"**Last updated:** {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    st.sidebar.markdown(
+        f"**Last updated:** {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
+    )
 
     # Display selected page
     if page == "Agent Status":
         st.header("Agent Status")
         try:
             from dashboard.components.agent_status import display_agent_status
+
             display_agent_status()
         except Exception as e:
             st.error(f"Error displaying agent status: {e}")
@@ -71,6 +82,7 @@ def main():
         st.header("Memory Usage")
         try:
             from dashboard.components.memory_usage import display_memory_usage
+
             display_memory_usage()
         except Exception as e:
             st.error(f"Error displaying memory usage: {e}")
@@ -78,7 +90,10 @@ def main():
 
     elif page == "ADK Memory":
         try:
-            from dashboard.components.adk_memory_dashboard import display_adk_memory_dashboard
+            from dashboard.components.adk_memory_dashboard import (
+                display_adk_memory_dashboard,
+            )
+
             display_adk_memory_dashboard()
         except Exception as e:
             st.error(f"Error displaying ADK memory dashboard: {e}")
@@ -88,6 +103,7 @@ def main():
         st.header("System Health")
         try:
             from dashboard.components.system_health import display_system_health
+
             display_system_health()
         except Exception as e:
             st.error(f"Error displaying system health: {e}")
@@ -97,10 +113,12 @@ def main():
         st.header("Task Execution")
         try:
             from dashboard.components.task_execution import display_task_execution
+
             display_task_execution()
         except Exception as e:
             st.error(f"Error displaying task execution: {e}")
             logger.exception("Error displaying task execution")
+
 
 if __name__ == "__main__":
     try:

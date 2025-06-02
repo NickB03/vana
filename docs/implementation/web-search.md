@@ -38,14 +38,14 @@ class WebSearchClient:
     def __init__(self):
         self.api_key = environment.GOOGLE_SEARCH_API_KEY
         self.search_engine_id = environment.GOOGLE_SEARCH_ENGINE_ID
-        
+
         if not self.api_key or not self.search_engine_id:
             # logger.error("Google Search API key or Search Engine ID is not configured.")
             self.available = False
             # raise ValueError("Google Search API key or Search Engine ID missing.")
         else:
             self.available = True
-        
+
         # Initialize circuit breaker for this client
         # self.cb_google_search = CircuitBreaker(name="google_search_api", ...)
 
@@ -59,7 +59,7 @@ class WebSearchClient:
             **kwargs: Additional parameters for the Google CSE API (e.g., siteRestrict).
 
         Returns:
-            dict: A dictionary containing a list of 'items' (search results) 
+            dict: A dictionary containing a list of 'items' (search results)
                   or an 'error' message.
         """
         if not self.available:
@@ -78,7 +78,7 @@ class WebSearchClient:
             # response = self.cb_google_search.execute(requests.get, self.BASE_URL, params=params)
             response = requests.get(self.BASE_URL, params=params) # Direct call
             response.raise_for_status()  # Raises HTTPError for bad responses (4XX, 5XX)
-            
+
             data = response.json()
             # Standardize output slightly if needed, or return raw items
             # Example standardization:
@@ -129,7 +129,7 @@ For testing components that use `WebSearchClient` (like `EnhancedHybridSearch`) 
 #     def __init__(self, predefined_results=None):
 #         self.available = True
 #         self.predefined_results = predefined_results or {}
-# 
+#
 #     def search(self, query_text: str, num_results: int = 5, **kwargs) -> dict:
 #         if query_text.lower() in self.predefined_results:
 #             return {"items": self.predefined_results[query_text.lower()][:num_results]}

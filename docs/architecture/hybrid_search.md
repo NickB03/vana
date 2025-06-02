@@ -15,7 +15,7 @@ graph TD
     subgraph VanaSystem["Vana System"]
         AgentCore["Conceptual Vana Single Agent"]
         HybridSearch["EnhancedHybridSearch (tools/enhanced_hybrid_search.py)"]
-        
+
         subgraph DataSourcesClients["Data Source Clients"]
             VS_Client["VectorSearchClient (tools/vector_search/vector_search_client.py)"]
             KG_Manager["KnowledgeGraphManager (tools/knowledge_graph/knowledge_graph_manager.py)"]
@@ -35,7 +35,7 @@ graph TD
 
     %% Connections
     AgentCore -- "Initiates search via" --> HybridSearch;
-    
+
     HybridSearch -- "Queries" --> VS_Client;
     HybridSearch -- "Queries" --> KG_Manager;
     HybridSearch -- "Queries" --> WebSearchClient;
@@ -44,7 +44,7 @@ graph TD
     VS_Client -- "Interacts with" --> VertexAI_VS;
     KG_Manager -- "Interacts with" --> MCP_KG_Server;
     WebSearchClient -- "Interacts with" --> GoogleSearchAPI;
-    
+
     VS_Client -- "Reads" --> EnvConfig;
     KG_Manager -- "Reads" --> EnvConfig;
     WebSearchClient -- "Reads" --> EnvConfig;

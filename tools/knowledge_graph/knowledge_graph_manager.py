@@ -12,15 +12,17 @@ The Knowledge Graph Manager provides:
 4. Relationship inference
 """
 
-import os
-import requests
 import logging
-from typing import Dict, List, Any, Optional, Union
+import os
+from typing import Any
+
+import requests
 from tools.knowledge_graph.entity_extractor import EntityExtractor
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
 
 class KnowledgeGraphManager:
     """Client for interacting with MCP Knowledge Graph"""
@@ -40,7 +42,7 @@ class KnowledgeGraphManager:
         try:
             response = requests.get(
                 f"{self.server_url}/api/kg/ping",
-                headers={"Authorization": f"Bearer {self.api_key}"}
+                headers={"Authorization": f"Bearer {self.api_key}"},
             )
             response.raise_for_status()
             return True
@@ -48,7 +50,7 @@ class KnowledgeGraphManager:
             print(f"Knowledge Graph is not available: {e}")
             return False
 
-    def query(self, entity_type: str, query_text: str) -> Dict[str, Any]:
+    def query(self, entity_type: str, query_text: str) -> dict[str, Any]:
         """Query the Knowledge Graph for entities"""
         if not self.is_available():
             print("Knowledge Graph is not available")
@@ -60,9 +62,9 @@ class KnowledgeGraphManager:
                 params={
                     "namespace": self.namespace,
                     "entity_type": entity_type,
-                    "query": query_text
+                    "query": query_text,
                 },
-                headers={"Authorization": f"Bearer {self.api_key}"}
+                headers={"Authorization": f"Bearer {self.api_key}"},
             )
             response.raise_for_status()
             return response.json()
@@ -70,7 +72,9 @@ class KnowledgeGraphManager:
             print(f"Error querying Knowledge Graph: {e}")
             return {"entities": []}
 
-    def store(self, entity_name: str, entity_type: str, observation: str) -> Dict[str, Any]:
+    def store(
+        self, entity_name: str, entity_type: str, observation: str
+    ) -> dict[str, Any]:
         """Store information in the Knowledge Graph"""
         if not self.is_available():
             print("Knowledge Graph is not available")
@@ -81,13 +85,15 @@ class KnowledgeGraphManager:
                 f"{self.server_url}/api/kg/store",
                 json={
                     "namespace": self.namespace,
-                    "entities": [{
-                        "name": entity_name,
-                        "type": entity_type,
-                        "observation": observation
-                    }]
+                    "entities": [
+                        {
+                            "name": entity_name,
+                            "type": entity_type,
+                            "observation": observation,
+                        }
+                    ],
                 },
-                headers={"Authorization": f"Bearer {self.api_key}"}
+                headers={"Authorization": f"Bearer {self.api_key}"},
             )
             response.raise_for_status()
             return response.json()
@@ -95,7 +101,7 @@ class KnowledgeGraphManager:
             print(f"Error storing in Knowledge Graph: {e}")
             return {"success": False}
 
-    def get_context(self) -> Dict[str, Any]:
+    def get_context(self) -> dict[str, Any]:
         """Get the current Knowledge Graph context"""
         if not self.is_available():
             print("Knowledge Graph is not available")
@@ -105,7 +111,7 @@ class KnowledgeGraphManager:
             response = requests.get(
                 f"{self.server_url}/api/kg/context",
                 params={"namespace": self.namespace},
-                headers={"Authorization": f"Bearer {self.api_key}"}
+                headers={"Authorization": f"Bearer {self.api_key}"},
             )
             response.raise_for_status()
             return response.json()
@@ -113,7 +119,7 @@ class KnowledgeGraphManager:
             print(f"Error getting Knowledge Graph context: {e}")
             return {"context": {}}
 
-    def query_related(self, entity_name: str, relationship_type: str) -> Dict[str, Any]:
+    def query_related(self, entity_name: str, relationship_type: str) -> dict[str, Any]:
         """Query for entities related to a specific entity"""
         if not self.is_available():
             print("Knowledge Graph is not available")
@@ -125,9 +131,9 @@ class KnowledgeGraphManager:
                 params={
                     "namespace": self.namespace,
                     "entity": entity_name,
-                    "relationship": relationship_type
+                    "relationship": relationship_type,
                 },
-                headers={"Authorization": f"Bearer {self.api_key}"}
+                headers={"Authorization": f"Bearer {self.api_key}"},
             )
             response.raise_for_status()
             return response.json()
@@ -135,7 +141,9 @@ class KnowledgeGraphManager:
             print(f"Error querying related entities: {e}")
             return {"entities": []}
 
-    def store_relationship(self, entity1: str, relationship: str, entity2: str) -> Dict[str, Any]:
+    def store_relationship(
+        self, entity1: str, relationship: str, entity2: str
+    ) -> dict[str, Any]:
         """Store a relationship between two entities"""
         if not self.is_available():
             print("Knowledge Graph is not available")
@@ -148,9 +156,9 @@ class KnowledgeGraphManager:
                     "namespace": self.namespace,
                     "entity1": entity1,
                     "relationship": relationship,
-                    "entity2": entity2
+                    "entity2": entity2,
                 },
-                headers={"Authorization": f"Bearer {self.api_key}"}
+                headers={"Authorization": f"Bearer {self.api_key}"},
             )
             response.raise_for_status()
             return response.json()
@@ -158,7 +166,7 @@ class KnowledgeGraphManager:
             print(f"Error storing relationship: {e}")
             return {"success": False}
 
-    def delete(self, entity_name: str) -> Dict[str, Any]:
+    def delete(self, entity_name: str) -> dict[str, Any]:
         """Delete an entity from the Knowledge Graph"""
         if not self.is_available():
             print("Knowledge Graph is not available")
@@ -167,11 +175,8 @@ class KnowledgeGraphManager:
         try:
             response = requests.delete(
                 f"{self.server_url}/api/kg/entity",
-                params={
-                    "namespace": self.namespace,
-                    "entity": entity_name
-                },
-                headers={"Authorization": f"Bearer {self.api_key}"}
+                params={"namespace": self.namespace, "entity": entity_name},
+                headers={"Authorization": f"Bearer {self.api_key}"},
             )
             response.raise_for_status()
             return response.json()
@@ -179,7 +184,7 @@ class KnowledgeGraphManager:
             print(f"Error deleting entity: {e}")
             return {"success": False}
 
-    def extract_entities(self, text: str) -> List[Dict[str, Any]]:
+    def extract_entities(self, text: str) -> list[dict[str, Any]]:
         """
         Extract entities from text using advanced entity extraction
 
@@ -213,11 +218,8 @@ class KnowledgeGraphManager:
             logger.info("Extracting entities using MCP Knowledge Graph")
             response = requests.post(
                 f"{self.server_url}/api/kg/extract",
-                json={
-                    "namespace": self.namespace,
-                    "text": text
-                },
-                headers={"Authorization": f"Bearer {self.api_key}"}
+                json={"namespace": self.namespace, "text": text},
+                headers={"Authorization": f"Bearer {self.api_key}"},
             )
             response.raise_for_status()
             entities = response.json().get("entities", [])
@@ -227,7 +229,7 @@ class KnowledgeGraphManager:
             logger.error(f"Error extracting entities from MCP: {str(e)}")
             return []
 
-    def extract_and_store_entities(self, text: str) -> Dict[str, Any]:
+    def extract_and_store_entities(self, text: str) -> dict[str, Any]:
         """
         Extract entities from text and store them in the Knowledge Graph
 
@@ -255,7 +257,7 @@ class KnowledgeGraphManager:
                 result = self.store(
                     entity_name=entity["name"],
                     entity_type=entity["type"],
-                    observation=entity["observation"]
+                    observation=entity["observation"],
                 )
 
                 if result.get("success", False):
@@ -266,10 +268,10 @@ class KnowledgeGraphManager:
         return {
             "success": stored_count > 0,
             "entities_extracted": len(entities),
-            "entities_stored": stored_count
+            "entities_stored": stored_count,
         }
 
-    def extract_and_store_relationships(self, text: str) -> Dict[str, Any]:
+    def extract_and_store_relationships(self, text: str) -> dict[str, Any]:
         """
         Extract relationships from text and store them in the Knowledge Graph
 
@@ -298,7 +300,7 @@ class KnowledgeGraphManager:
                     result = self.store_relationship(
                         entity1=rel["entity1"],
                         relationship=rel["relationship"],
-                        entity2=rel["entity2"]
+                        entity2=rel["entity2"],
                     )
 
                     if result.get("success", False):
@@ -309,13 +311,15 @@ class KnowledgeGraphManager:
             return {
                 "success": stored_count > 0,
                 "relationships_extracted": len(relationships),
-                "relationships_stored": stored_count
+                "relationships_stored": stored_count,
             }
         except Exception as e:
             logger.error(f"Error in relationship extraction: {str(e)}")
             return {"success": False, "reason": str(e)}
 
-    def link_entities(self, text: str, existing_entities: List[Dict[str, Any]] = None) -> Dict[str, Any]:
+    def link_entities(
+        self, text: str, existing_entities: list[dict[str, Any]] = None
+    ) -> dict[str, Any]:
         """
         Link entities in text to existing entities in the Knowledge Graph
 
@@ -343,13 +347,24 @@ class KnowledgeGraphManager:
             try:
                 # Query all entity types
                 existing_entities = []
-                for entity_type in ["*", "person", "organization", "location", "technology", "project", "concept"]:
+                for entity_type in [
+                    "*",
+                    "person",
+                    "organization",
+                    "location",
+                    "technology",
+                    "project",
+                    "concept",
+                ]:
                     result = self.query(entity_type, "")
                     if "entities" in result:
                         existing_entities.extend(result["entities"])
             except Exception as e:
                 logger.error(f"Error querying existing entities: {str(e)}")
-                return {"success": False, "reason": f"Error querying existing entities: {str(e)}"}
+                return {
+                    "success": False,
+                    "reason": f"Error querying existing entities: {str(e)}",
+                }
 
         if not existing_entities:
             logger.warning("No existing entities found for linking")
@@ -360,7 +375,8 @@ class KnowledgeGraphManager:
         for extracted in extracted_entities:
             # Look for exact matches first
             exact_matches = [
-                existing for existing in existing_entities
+                existing
+                for existing in existing_entities
                 if existing["name"].lower() == extracted["name"].lower()
             ]
 
@@ -369,10 +385,13 @@ class KnowledgeGraphManager:
             if not exact_matches:
                 # Check for entities that are contained within each other
                 partial_matches = [
-                    existing for existing in existing_entities
-                    if (existing["name"].lower() in extracted["name"].lower() or
-                        extracted["name"].lower() in existing["name"].lower()) and
-                    existing["type"] == extracted["type"]
+                    existing
+                    for existing in existing_entities
+                    if (
+                        existing["name"].lower() in extracted["name"].lower()
+                        or extracted["name"].lower() in existing["name"].lower()
+                    )
+                    and existing["type"] == extracted["type"]
                 ]
 
             if exact_matches:
@@ -381,31 +400,37 @@ class KnowledgeGraphManager:
                     try:
                         # Enrich the existing entity with new information
                         enriched_observation = self._merge_observations(
-                            match.get('observation', ''),
-                            extracted.get('observation', '')
+                            match.get("observation", ""),
+                            extracted.get("observation", ""),
                         )
 
                         updated = self.store(
                             entity_name=match["name"],
                             entity_type=match["type"],
-                            observation=enriched_observation
+                            observation=enriched_observation,
                         )
 
                         if updated.get("success", False):
-                            linked_entities.append({
-                                "extracted": extracted["name"],
-                                "linked_to": match["name"],
-                                "type": match["type"],
-                                "action": "updated",
-                                "confidence": 1.0  # Exact match
-                            })
+                            linked_entities.append(
+                                {
+                                    "extracted": extracted["name"],
+                                    "linked_to": match["name"],
+                                    "type": match["type"],
+                                    "action": "updated",
+                                    "confidence": 1.0,  # Exact match
+                                }
+                            )
                     except Exception as e:
                         logger.error(f"Error updating entity during linking: {str(e)}")
 
             elif partial_matches:
                 # Handle partial matches - link to the most similar entity
-                best_match = max(partial_matches,
-                                key=lambda x: self._calculate_similarity(x["name"], extracted["name"]))
+                best_match = max(
+                    partial_matches,
+                    key=lambda x: self._calculate_similarity(
+                        x["name"], extracted["name"]
+                    ),
+                )
 
                 try:
                     # Create a relationship between the entities
@@ -419,25 +444,29 @@ class KnowledgeGraphManager:
                     rel_result = self.store_relationship(
                         entity1=extracted["name"],
                         relationship=relationship,
-                        entity2=best_match["name"]
+                        entity2=best_match["name"],
                     )
 
                     # Also store the new entity
                     created = self.store(
                         entity_name=extracted["name"],
                         entity_type=extracted["type"],
-                        observation=extracted.get("observation", "")
+                        observation=extracted.get("observation", ""),
                     )
 
-                    if created.get("success", False) and rel_result.get("success", False):
-                        linked_entities.append({
-                            "extracted": extracted["name"],
-                            "linked_to": best_match["name"],
-                            "type": extracted["type"],
-                            "action": "linked",
-                            "relationship": relationship,
-                            "confidence": 0.8  # Partial match
-                        })
+                    if created.get("success", False) and rel_result.get(
+                        "success", False
+                    ):
+                        linked_entities.append(
+                            {
+                                "extracted": extracted["name"],
+                                "linked_to": best_match["name"],
+                                "type": extracted["type"],
+                                "action": "linked",
+                                "relationship": relationship,
+                                "confidence": 0.8,  # Partial match
+                            }
+                        )
                 except Exception as e:
                     logger.error(f"Error linking entity with partial match: {str(e)}")
 
@@ -447,17 +476,19 @@ class KnowledgeGraphManager:
                     created = self.store(
                         entity_name=extracted["name"],
                         entity_type=extracted["type"],
-                        observation=extracted.get("observation", "")
+                        observation=extracted.get("observation", ""),
                     )
 
                     if created.get("success", False):
-                        linked_entities.append({
-                            "extracted": extracted["name"],
-                            "linked_to": None,
-                            "type": extracted["type"],
-                            "action": "created",
-                            "confidence": 1.0  # New entity
-                        })
+                        linked_entities.append(
+                            {
+                                "extracted": extracted["name"],
+                                "linked_to": None,
+                                "type": extracted["type"],
+                                "action": "created",
+                                "confidence": 1.0,  # New entity
+                            }
+                        )
                 except Exception as e:
                     logger.error(f"Error creating entity during linking: {str(e)}")
 
@@ -465,7 +496,7 @@ class KnowledgeGraphManager:
             "success": len(linked_entities) > 0,
             "entities_extracted": len(extracted_entities),
             "entities_linked": len(linked_entities),
-            "linked_entities": linked_entities
+            "linked_entities": linked_entities,
         }
 
     def _merge_observations(self, obs1: str, obs2: str) -> str:
@@ -485,8 +516,8 @@ class KnowledgeGraphManager:
             return obs1
 
         # Split into sentences
-        sentences1 = [s.strip() for s in obs1.split('.') if s.strip()]
-        sentences2 = [s.strip() for s in obs2.split('.') if s.strip()]
+        sentences1 = [s.strip() for s in obs1.split(".") if s.strip()]
+        sentences2 = [s.strip() for s in obs2.split(".") if s.strip()]
 
         # Remove duplicates
         unique_sentences = list(sentences1)
@@ -495,7 +526,7 @@ class KnowledgeGraphManager:
                 unique_sentences.append(s2)
 
         # Join sentences
-        return '. '.join(unique_sentences) + '.'
+        return ". ".join(unique_sentences) + "."
 
     def _is_similar_sentence(self, s1: str, s2: str) -> bool:
         """Check if two sentences are similar"""
@@ -527,7 +558,7 @@ class KnowledgeGraphManager:
 
         return intersection / union
 
-    def process_document(self, document: Dict[str, Any]) -> Dict[str, Any]:
+    def process_document(self, document: dict[str, Any]) -> dict[str, Any]:
         """
         Process a document to extract entities, relationships, and enrich the Knowledge Graph
 
@@ -554,7 +585,9 @@ class KnowledgeGraphManager:
 
         # Extract relationships
         relationships = self.entity_extractor.extract_relationships(text)
-        logger.info(f"Extracted {len(relationships)} relationships from document {doc_id}")
+        logger.info(
+            f"Extracted {len(relationships)} relationships from document {doc_id}"
+        )
 
         # Store document as an entity
         doc_entity_name = title or f"Document-{doc_id}"
@@ -564,7 +597,7 @@ class KnowledgeGraphManager:
         doc_entity_result = self.store(
             entity_name=doc_entity_name,
             entity_type=doc_entity_type,
-            observation=doc_observation
+            observation=doc_observation,
         )
 
         # Store entities
@@ -574,7 +607,7 @@ class KnowledgeGraphManager:
                 result = self.store(
                     entity_name=entity["name"],
                     entity_type=entity["type"],
-                    observation=entity.get("observation", "")
+                    observation=entity.get("observation", ""),
                 )
 
                 if result.get("success", False):
@@ -584,7 +617,7 @@ class KnowledgeGraphManager:
                     self.store_relationship(
                         entity1=doc_entity_name,
                         relationship="contains",
-                        entity2=entity["name"]
+                        entity2=entity["name"],
                     )
             except Exception as e:
                 logger.error(f"Error storing entity {entity['name']}: {str(e)}")
@@ -596,11 +629,13 @@ class KnowledgeGraphManager:
                 result = self.store_relationship(
                     entity1=rel["entity1"],
                     relationship=rel["relationship"],
-                    entity2=rel["entity2"]
+                    entity2=rel["entity2"],
                 )
 
                 if result.get("success", False):
-                    stored_relationships.append(f"{rel['entity1']} {rel['relationship']} {rel['entity2']}")
+                    stored_relationships.append(
+                        f"{rel['entity1']} {rel['relationship']} {rel['entity2']}"
+                    )
             except Exception as e:
                 logger.error(f"Error storing relationship: {str(e)}")
 
@@ -610,10 +645,10 @@ class KnowledgeGraphManager:
             "entities_extracted": len(entities),
             "entities_stored": len(stored_entities),
             "relationships_extracted": len(relationships),
-            "relationships_stored": len(stored_relationships)
+            "relationships_stored": len(stored_relationships),
         }
 
-    def infer_relationships(self, entity_name: str) -> Dict[str, Any]:
+    def infer_relationships(self, entity_name: str) -> dict[str, Any]:
         """
         Infer potential relationships for an entity based on existing Knowledge Graph data
 
@@ -624,7 +659,9 @@ class KnowledgeGraphManager:
             Dictionary with inferred relationships
         """
         if not self.is_available():
-            logger.warning("Knowledge Graph is not available for relationship inference")
+            logger.warning(
+                "Knowledge Graph is not available for relationship inference"
+            )
             return {"success": False, "reason": "Knowledge Graph not available"}
 
         # Get entity information
@@ -637,7 +674,9 @@ class KnowledgeGraphManager:
                 return {"success": False, "reason": "Entity not found"}
 
             # Find the matching entity
-            entity = next((e for e in entities if e["name"].lower() == entity_name.lower()), None)
+            entity = next(
+                (e for e in entities if e["name"].lower() == entity_name.lower()), None
+            )
 
             if not entity:
                 logger.warning(f"Entity {entity_name} not found in Knowledge Graph")
@@ -653,8 +692,11 @@ class KnowledgeGraphManager:
 
             # Filter out the current entity and already related entities
             related_names = [r["name"] for r in related_entities]
-            same_type_entities = [e for e in same_type_entities
-                                if e["name"] != entity_name and e["name"] not in related_names]
+            same_type_entities = [
+                e
+                for e in same_type_entities
+                if e["name"] != entity_name and e["name"] not in related_names
+            ]
 
             # Infer relationships based on common patterns
             inferred_relationships = []
@@ -668,14 +710,19 @@ class KnowledgeGraphManager:
                 for project in projects:
                     if project["name"] not in related_names:
                         # Check if project observation mentions the technology
-                        if entity_name.lower() in project.get("observation", "").lower():
-                            inferred_relationships.append({
-                                "entity1": project["name"],
-                                "relationship": "uses",
-                                "entity2": entity_name,
-                                "confidence": 0.7,
-                                "reason": f"Project {project['name']} mentions {entity_name} in its description"
-                            })
+                        if (
+                            entity_name.lower()
+                            in project.get("observation", "").lower()
+                        ):
+                            inferred_relationships.append(
+                                {
+                                    "entity1": project["name"],
+                                    "relationship": "uses",
+                                    "entity2": entity_name,
+                                    "confidence": 0.7,
+                                    "reason": f"Project {project['name']} mentions {entity_name} in its description",
+                                }
+                            )
 
             elif entity["type"] == "project":
                 # Projects might use technologies
@@ -685,14 +732,19 @@ class KnowledgeGraphManager:
                 for tech in technologies:
                     if tech["name"] not in related_names:
                         # Check if project observation mentions the technology
-                        if tech["name"].lower() in entity.get("observation", "").lower():
-                            inferred_relationships.append({
-                                "entity1": entity_name,
-                                "relationship": "uses",
-                                "entity2": tech["name"],
-                                "confidence": 0.7,
-                                "reason": f"Project {entity_name} mentions {tech['name']} in its description"
-                            })
+                        if (
+                            tech["name"].lower()
+                            in entity.get("observation", "").lower()
+                        ):
+                            inferred_relationships.append(
+                                {
+                                    "entity1": entity_name,
+                                    "relationship": "uses",
+                                    "entity2": tech["name"],
+                                    "confidence": 0.7,
+                                    "reason": f"Project {entity_name} mentions {tech['name']} in its description",
+                                }
+                            )
 
             # 2. Infer relationships based on co-occurrence in documents
             docs_result = self.query("document", "")
@@ -713,15 +765,20 @@ class KnowledgeGraphManager:
                 doc_entities = doc_entities_result.get("entities", [])
 
                 for doc_entity in doc_entities:
-                    if doc_entity["name"] != entity_name and doc_entity["name"] not in related_names:
+                    if (
+                        doc_entity["name"] != entity_name
+                        and doc_entity["name"] not in related_names
+                    ):
                         # Infer relationship based on co-occurrence
-                        inferred_relationships.append({
-                            "entity1": entity_name,
-                            "relationship": "related_to",
-                            "entity2": doc_entity["name"],
-                            "confidence": 0.6,
-                            "reason": f"Both entities appear in document {doc['name']}"
-                        })
+                        inferred_relationships.append(
+                            {
+                                "entity1": entity_name,
+                                "relationship": "related_to",
+                                "entity2": doc_entity["name"],
+                                "confidence": 0.6,
+                                "reason": f"Both entities appear in document {doc['name']}",
+                            }
+                        )
 
             # Store inferred relationships if requested
             stored_count = 0
@@ -731,7 +788,7 @@ class KnowledgeGraphManager:
                         result = self.store_relationship(
                             entity1=rel["entity1"],
                             relationship=rel["relationship"],
-                            entity2=rel["entity2"]
+                            entity2=rel["entity2"],
                         )
 
                         if result.get("success", False):
@@ -743,7 +800,7 @@ class KnowledgeGraphManager:
                 "success": True,
                 "entity": entity_name,
                 "inferred_relationships": inferred_relationships,
-                "stored_relationships": stored_count
+                "stored_relationships": stored_count,
             }
 
         except Exception as e:

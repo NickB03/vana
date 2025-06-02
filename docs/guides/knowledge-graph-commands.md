@@ -107,14 +107,14 @@ The following `!`-prefixed commands illustrate how one might interact with the K
 *   **Underlying Logic:** This is a more complex query. It would involve recursively calling `KnowledgeGraphManager.get_entity()` or a specialized graph traversal method if available via `KnowledgeGraphManager` or the MCP server.
 *   **Example:**
     ```
-    !kg_expand VANA 1 
+    !kg_expand VANA 1
     ```
 *   **Conceptual Response:**
     ```
     Expansion for "VANA" (depth 1):
     - VANA [uses] VectorSearchClient
     - VANA [uses] KnowledgeGraphManager
-    - EnhancedHybridSearch [partOf] VANA 
+    - EnhancedHybridSearch [partOf] VANA
     ```
 
 ### Hybrid Search Command (Conceptual)

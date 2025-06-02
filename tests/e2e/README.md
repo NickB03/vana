@@ -57,19 +57,19 @@ class MyTestCase(TestCase):
             name="my_test",
             description="My test scenario"
         )
-    
+
     def setup(self):
         # Set up the test case
         pass
-    
+
     def _run(self):
         # Run the test case
         self.step("step1", "Step 1 description")
         self.execute_step(self.some_function)
-        
+
         self.step("step2", "Step 2 description")
         self.execute_step(self.some_other_function)
-    
+
     def teardown(self):
         # Clean up after the test case
         pass

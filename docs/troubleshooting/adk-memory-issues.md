@@ -306,7 +306,7 @@ def cached_query(query_text):
     query_hash = get_query_hash(query_text)
     if query_hash in query_cache:
         return query_cache[query_hash]
-    
+
     result = memory_service.search_memory(query_text)
     query_cache[query_hash] = result
     return result
@@ -377,10 +377,10 @@ import pstats
 def profile_memory_operation():
     profiler = cProfile.Profile()
     profiler.enable()
-    
+
     # Perform memory operation
     result = memory_service.search_memory("test query")
-    
+
     profiler.disable()
     stats = pstats.Stats(profiler)
     stats.sort_stats('cumulative')
@@ -395,15 +395,15 @@ import gc
 
 def detect_memory_leaks():
     tracemalloc.start()
-    
+
     # Perform operations
     for i in range(100):
         memory_service.search_memory(f"test query {i}")
-    
+
     current, peak = tracemalloc.get_traced_memory()
     print(f"Current memory usage: {current / 1024 / 1024:.1f} MB")
     print(f"Peak memory usage: {peak / 1024 / 1024:.1f} MB")
-    
+
     tracemalloc.stop()
     gc.collect()  # Force garbage collection
 ```
@@ -491,20 +491,20 @@ import datetime
 def backup_memory_state():
     timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
     backup_file = f"adk_memory_backup_{timestamp}.json"
-    
+
     # Get current metrics
     metrics = adk_memory_api.get_metrics()
-    
+
     with open(backup_file, 'w') as f:
         json.dump(metrics, f, indent=2)
-    
+
     print(f"Backup saved to {backup_file}")
 
 # Restore from backup
 def restore_memory_state(backup_file):
     with open(backup_file, 'r') as f:
         backup_data = json.load(f)
-    
+
     # Restore configuration
     # ... implementation depends on backup format
 ```
@@ -524,7 +524,7 @@ def restore_memory_state(backup_file):
 def predict_capacity_needs():
     # Analyze growth trends
     history = adk_memory_api.get_history(hours=24*7)  # 7 days
-    
+
     # Calculate growth rate
     # Predict future needs
     # Recommend scaling actions

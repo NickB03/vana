@@ -423,11 +423,11 @@ from vana.adk_integration import (
 
 class EnhancedVanaAgent(VanaAgent):
     """Enhanced VANA agent with ADK integration."""
-    
+
     def __init__(self):
         """Initialize the enhanced VANA agent."""
         super().__init__()
-        
+
         # Create ADK integration components
         self.session_adapter = ADKSessionAdapter(self.context_manager)
         self.tool_adapter = ADKToolAdapter()
@@ -437,14 +437,14 @@ class EnhancedVanaAgent(VanaAgent):
             self.state_manager,
             self.context_manager
         )
-        
+
         # Register specialist agents as tools
         for name, agent in self.specialists.items():
             self.tool_adapter.register_specialist_as_tool(
                 specialist_name=name,
                 specialist_obj=agent
             )
-            
+
     def process_message(self, user_id, session_id, message):
         """Process a user message."""
         # Get or create context
@@ -454,25 +454,25 @@ class EnhancedVanaAgent(VanaAgent):
                 session_id=session_id
             )
             self.current_context_id = session_info["vana_context_id"]
-        
+
         # Add message to context
         self.event_handler.handle_message_received(
             context_id=self.current_context_id,
             message=message
         )
-        
+
         # Process message with existing logic
         response = super().process_message(user_id, session_id, message)
-        
+
         # Add response to context
         self.event_handler.handle_message_sent(
             context_id=self.current_context_id,
             message=response
         )
-        
+
         # Sync state
         self.state_manager.sync_state(self.current_context_id)
-        
+
         return response
 ```
 
@@ -569,7 +569,7 @@ def initialize_tools():
     # Register specialist agents
     for name, agent in specialists.items():
         tool_adapter.register_specialist_as_tool(name, agent)
-    
+
     # Register functions
     for func in tool_functions:
         tool_adapter.register_function_as_tool(func)

@@ -15,15 +15,16 @@ Optional arguments:
     --dry-run               Run without storing data in the Knowledge Graph
 """
 
-import os
-import sys
-import json
 import argparse
-import requests
+import json
 import logging
+import os
 import re
+import sys
 from datetime import datetime
-from typing import Dict, List, Any
+from typing import Any
+
+import requests
 from dotenv import load_dotenv
 
 # Load environment variables
@@ -33,14 +34,20 @@ load_dotenv()
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(levelname)s - %(message)s",
-    datefmt="%Y-%m-%d %H:%M:%S"
+    datefmt="%Y-%m-%d %H:%M:%S",
 )
 logger = logging.getLogger(__name__)
+
 
 class KnowledgeGraphClient:
     """Client for interacting with MCP Knowledge Graph"""
 
-    def __init__(self, api_key: str, server_url: str = "PLACEHOLDER_MCP_SERVER_URL", namespace: str = "vana-project"):
+    def __init__(
+        self,
+        api_key: str,
+        server_url: str = "PLACEHOLDER_MCP_SERVER_URL",
+        namespace: str = "vana-project",
+    ):
         """Initialize the Knowledge Graph client"""
         self.api_key = api_key
         self.server_url = server_url
@@ -51,7 +58,7 @@ class KnowledgeGraphClient:
         try:
             response = requests.get(
                 f"{self.server_url}/api/kg/ping",
-                headers={"Authorization": f"Bearer {self.api_key}"}
+                headers={"Authorization": f"Bearer {self.api_key}"},
             )
             response.raise_for_status()
             return True
@@ -59,20 +66,24 @@ class KnowledgeGraphClient:
             logger.error(f"Knowledge Graph is not available: {e}")
             return False
 
-    def store_entity(self, entity_name: str, entity_type: str, observation: str) -> Dict[str, Any]:
+    def store_entity(
+        self, entity_name: str, entity_type: str, observation: str
+    ) -> dict[str, Any]:
         """Store an entity in the Knowledge Graph"""
         try:
             response = requests.post(
                 f"{self.server_url}/api/kg/store",
                 json={
                     "namespace": self.namespace,
-                    "entities": [{
-                        "name": entity_name,
-                        "type": entity_type,
-                        "observation": observation
-                    }]
+                    "entities": [
+                        {
+                            "name": entity_name,
+                            "type": entity_type,
+                            "observation": observation,
+                        }
+                    ],
                 },
-                headers={"Authorization": f"Bearer {self.api_key}"}
+                headers={"Authorization": f"Bearer {self.api_key}"},
             )
             response.raise_for_status()
             return response.json()
@@ -80,7 +91,9 @@ class KnowledgeGraphClient:
             logger.error(f"Error storing entity: {e}")
             return {"success": False, "error": str(e)}
 
-    def store_relationship(self, entity1: str, relationship: str, entity2: str) -> Dict[str, Any]:
+    def store_relationship(
+        self, entity1: str, relationship: str, entity2: str
+    ) -> dict[str, Any]:
         """Store a relationship between two entities"""
         try:
             response = requests.post(
@@ -89,9 +102,9 @@ class KnowledgeGraphClient:
                     "namespace": self.namespace,
                     "entity1": entity1,
                     "relationship": relationship,
-                    "entity2": entity2
+                    "entity2": entity2,
                 },
-                headers={"Authorization": f"Bearer {self.api_key}"}
+                headers={"Authorization": f"Bearer {self.api_key}"},
             )
             response.raise_for_status()
             return response.json()
@@ -99,16 +112,13 @@ class KnowledgeGraphClient:
             logger.error(f"Error storing relationship: {e}")
             return {"success": False, "error": str(e)}
 
-    def extract_entities(self, text: str) -> List[Dict[str, Any]]:
+    def extract_entities(self, text: str) -> list[dict[str, Any]]:
         """Extract entities from text using the Knowledge Graph API"""
         try:
             response = requests.post(
                 f"{self.server_url}/api/kg/extract",
-                json={
-                    "namespace": self.namespace,
-                    "text": text
-                },
-                headers={"Authorization": f"Bearer {self.api_key}"}
+                json={"namespace": self.namespace, "text": text},
+                headers={"Authorization": f"Bearer {self.api_key}"},
             )
             response.raise_for_status()
             return response.json().get("entities", [])
@@ -116,10 +126,16 @@ class KnowledgeGraphClient:
             logger.error(f"Error extracting entities: {e}")
             return []
 
+
 class ClaudeHistoryImporter:
     """Import Claude chat history to MCP Knowledge Graph"""
 
-    def __init__(self, kg_client: KnowledgeGraphClient, verbose: bool = False, dry_run: bool = False):
+    def __init__(
+        self,
+        kg_client: KnowledgeGraphClient,
+        verbose: bool = False,
+        dry_run: bool = False,
+    ):
         """Initialize the importer"""
         self.kg_client = kg_client
         self.verbose = verbose
@@ -129,14 +145,17 @@ class ClaudeHistoryImporter:
         self.relationship_count = 0
 
         # Patterns for entity extraction
-        self.project_pattern = re.compile(r'project\s+([A-Za-z0-9_-]+)', re.IGNORECASE)
-        self.technology_pattern = re.compile(r'(Python|JavaScript|TypeScript|React|Node\.js|Docker|Kubernetes|GCP|AWS|Azure|Vector Search|Knowledge Graph|ADK|n8n|MCP)', re.IGNORECASE)
-        self.agent_pattern = re.compile(r'(Ben|Rhea|Max|Sage|Kai|Juno)', re.IGNORECASE)
+        self.project_pattern = re.compile(r"project\s+([A-Za-z0-9_-]+)", re.IGNORECASE)
+        self.technology_pattern = re.compile(
+            r"(Python|JavaScript|TypeScript|React|Node\.js|Docker|Kubernetes|GCP|AWS|Azure|Vector Search|Knowledge Graph|ADK|n8n|MCP)",
+            re.IGNORECASE,
+        )
+        self.agent_pattern = re.compile(r"(Ben|Rhea|Max|Sage|Kai|Juno)", re.IGNORECASE)
 
-    def load_chat_history(self, file_path: str) -> List[Dict[str, Any]]:
+    def load_chat_history(self, file_path: str) -> list[dict[str, Any]]:
         """Load chat history from a JSON file"""
         try:
-            with open(file_path, 'r', encoding='utf-8') as f:
+            with open(file_path, encoding="utf-8") as f:
                 data = json.load(f)
 
             # Handle different JSON formats
@@ -156,7 +175,7 @@ class ClaudeHistoryImporter:
             logger.error(f"Error loading chat history: {e}")
             return []
 
-    def extract_entities_from_message(self, message: str) -> List[Dict[str, Any]]:
+    def extract_entities_from_message(self, message: str) -> list[dict[str, Any]]:
         """Extract entities from a message"""
         # Use the Knowledge Graph API to extract entities
         api_entities = self.kg_client.extract_entities(message)
@@ -170,34 +189,33 @@ class ClaudeHistoryImporter:
         # Extract projects
         for match in self.project_pattern.finditer(message):
             project_name = match.group(1)
-            entities.append({
-                "name": project_name,
-                "type": "project",
-                "observation": message
-            })
+            entities.append(
+                {"name": project_name, "type": "project", "observation": message}
+            )
 
         # Extract technologies
         for match in self.technology_pattern.finditer(message):
             tech_name = match.group(1)
-            entities.append({
-                "name": tech_name,
-                "type": "technology",
-                "observation": message
-            })
+            entities.append(
+                {"name": tech_name, "type": "technology", "observation": message}
+            )
 
         # Extract agents
         for match in self.agent_pattern.finditer(message):
             agent_name = match.group(1)
-            entities.append({
-                "name": agent_name,
-                "type": "agent",
-                "observation": message
-            })
+            entities.append(
+                {"name": agent_name, "type": "agent", "observation": message}
+            )
 
         # Simple entity extraction based on capitalized words
         words = message.split()
         for i, word in enumerate(words):
-            if word and word[0].isupper() and len(word) > 1 and word.lower() not in ["i", "i'm", "i'll", "i've", "i'd"]:
+            if (
+                word
+                and word[0].isupper()
+                and len(word) > 1
+                and word.lower() not in ["i", "i'm", "i'll", "i've", "i'd"]
+            ):
                 # Check if it's part of a multi-word entity
                 entity_name = word
                 j = i + 1
@@ -211,22 +229,30 @@ class ClaudeHistoryImporter:
 
                 # Determine entity type based on context
                 entity_type = "concept"
-                if "project" in message.lower() and entity_name.lower() in message.lower():
+                if (
+                    "project" in message.lower()
+                    and entity_name.lower() in message.lower()
+                ):
                     entity_type = "project"
-                elif "tool" in message.lower() and entity_name.lower() in message.lower():
+                elif (
+                    "tool" in message.lower() and entity_name.lower() in message.lower()
+                ):
                     entity_type = "tool"
-                elif "agent" in message.lower() and entity_name.lower() in message.lower():
+                elif (
+                    "agent" in message.lower()
+                    and entity_name.lower() in message.lower()
+                ):
                     entity_type = "agent"
 
-                entities.append({
-                    "name": entity_name,
-                    "type": entity_type,
-                    "observation": message
-                })
+                entities.append(
+                    {"name": entity_name, "type": entity_type, "observation": message}
+                )
 
         return entities
 
-    def extract_relationships(self, entities: List[Dict[str, Any]], message: str) -> List[Dict[str, Any]]:
+    def extract_relationships(
+        self, entities: list[dict[str, Any]], message: str
+    ) -> list[dict[str, Any]]:
         """Extract relationships between entities"""
         relationships = []
 
@@ -240,7 +266,10 @@ class ClaudeHistoryImporter:
         for project in projects:
             for tech in technologies:
                 # Check if they appear close to each other in the message
-                if project["name"].lower() in message.lower() and tech["name"].lower() in message.lower():
+                if (
+                    project["name"].lower() in message.lower()
+                    and tech["name"].lower() in message.lower()
+                ):
                     # Determine relationship type based on context
                     relationship = "uses"
                     if "contains" in message.lower():
@@ -248,28 +277,37 @@ class ClaudeHistoryImporter:
                     elif "requires" in message.lower():
                         relationship = "requires"
 
-                    relationships.append({
-                        "entity1": project["name"],
-                        "relationship": relationship,
-                        "entity2": tech["name"]
-                    })
+                    relationships.append(
+                        {
+                            "entity1": project["name"],
+                            "relationship": relationship,
+                            "entity2": tech["name"],
+                        }
+                    )
 
         # Create relationships between agents and concepts
         for agent in agents:
             for concept in concepts:
-                if agent["name"].lower() in message.lower() and concept["name"].lower() in message.lower():
-                    relationships.append({
-                        "entity1": agent["name"],
-                        "relationship": "knows_about",
-                        "entity2": concept["name"]
-                    })
+                if (
+                    agent["name"].lower() in message.lower()
+                    and concept["name"].lower() in message.lower()
+                ):
+                    relationships.append(
+                        {
+                            "entity1": agent["name"],
+                            "relationship": "knows_about",
+                            "entity2": concept["name"],
+                        }
+                    )
 
         return relationships
 
-    def process_conversation(self, conversation: Dict[str, Any]) -> None:
+    def process_conversation(self, conversation: dict[str, Any]) -> None:
         """Process a single conversation"""
         # Extract conversation metadata
-        conversation_id = conversation.get("id", f"conversation_{self.conversation_count}")
+        conversation_id = conversation.get(
+            "id", f"conversation_{self.conversation_count}"
+        )
         title = conversation.get("title", "Untitled Conversation")
         timestamp = conversation.get("created_at", datetime.now().isoformat())
 
@@ -280,7 +318,7 @@ class ClaudeHistoryImporter:
             self.kg_client.store_entity(
                 entity_name=title,
                 entity_type="conversation",
-                observation=f"Claude conversation from {timestamp}"
+                observation=f"Claude conversation from {timestamp}",
             )
             self.entity_count += 1
 
@@ -318,14 +356,12 @@ class ClaudeHistoryImporter:
                     self.kg_client.store_entity(
                         entity_name=entity["name"],
                         entity_type=entity["type"],
-                        observation=entity["observation"]
+                        observation=entity["observation"],
                     )
 
                     # Link entity to conversation
                     self.kg_client.store_relationship(
-                        entity1=title,
-                        relationship="contains",
-                        entity2=entity["name"]
+                        entity1=title, relationship="contains", entity2=entity["name"]
                     )
 
                     self.entity_count += 1
@@ -335,13 +371,15 @@ class ClaudeHistoryImporter:
 
             for relationship in relationships:
                 if self.verbose:
-                    logger.info(f"Found relationship: {relationship['entity1']} {relationship['relationship']} {relationship['entity2']}")
+                    logger.info(
+                        f"Found relationship: {relationship['entity1']} {relationship['relationship']} {relationship['entity2']}"
+                    )
 
                 if not self.dry_run:
                     self.kg_client.store_relationship(
                         entity1=relationship["entity1"],
                         relationship=relationship["relationship"],
-                        entity2=relationship["entity2"]
+                        entity2=relationship["entity2"],
                     )
 
                     self.relationship_count += 1
@@ -354,7 +392,9 @@ class ClaudeHistoryImporter:
 
         # Check if Knowledge Graph is available
         if not self.kg_client.is_available():
-            logger.error("Knowledge Graph is not available. Please check your API key and server URL.")
+            logger.error(
+                "Knowledge Graph is not available. Please check your API key and server URL."
+            )
             return
 
         # Load chat history
@@ -370,17 +410,30 @@ class ClaudeHistoryImporter:
         for conversation in conversations:
             self.process_conversation(conversation)
 
-        logger.info(f"Import completed: {self.conversation_count} conversations, {self.entity_count} entities, {self.relationship_count} relationships")
+        logger.info(
+            f"Import completed: {self.conversation_count} conversations, {self.entity_count} entities, {self.relationship_count} relationships"
+        )
+
 
 def main():
     """Main function"""
-    parser = argparse.ArgumentParser(description="Import Claude chat history to MCP Knowledge Graph")
-    parser.add_argument("--input", required=True, help="Path to the chat history JSON file")
+    parser = argparse.ArgumentParser(
+        description="Import Claude chat history to MCP Knowledge Graph"
+    )
+    parser.add_argument(
+        "--input", required=True, help="Path to the chat history JSON file"
+    )
     parser.add_argument("--api-key", help="MCP API key")
-    parser.add_argument("--server-url", default="PLACEHOLDER_MCP_SERVER_URL", help="MCP server URL")
+    parser.add_argument(
+        "--server-url", default="PLACEHOLDER_MCP_SERVER_URL", help="MCP server URL"
+    )
     parser.add_argument("--namespace", default="vana-project", help="MCP namespace")
     parser.add_argument("--verbose", action="store_true", help="Enable verbose output")
-    parser.add_argument("--dry-run", action="store_true", help="Run without storing data in the Knowledge Graph")
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Run without storing data in the Knowledge Graph",
+    )
 
     args = parser.parse_args()
 
@@ -388,25 +441,24 @@ def main():
     api_key = args.api_key or os.environ.get("MCP_API_KEY")
 
     if not api_key:
-        logger.error("MCP API key is required. Please provide it with --api-key or set the MCP_API_KEY environment variable.")
+        logger.error(
+            "MCP API key is required. Please provide it with --api-key or set the MCP_API_KEY environment variable."
+        )
         sys.exit(1)
 
     # Initialize Knowledge Graph client
     kg_client = KnowledgeGraphClient(
-        api_key=api_key,
-        server_url=args.server_url,
-        namespace=args.namespace
+        api_key=api_key, server_url=args.server_url, namespace=args.namespace
     )
 
     # Initialize importer
     importer = ClaudeHistoryImporter(
-        kg_client=kg_client,
-        verbose=args.verbose,
-        dry_run=args.dry_run
+        kg_client=kg_client, verbose=args.verbose, dry_run=args.dry_run
     )
 
     # Import chat history
     importer.import_history(args.input)
+
 
 if __name__ == "__main__":
     main()

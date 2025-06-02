@@ -154,11 +154,11 @@ The system implements data retention policies to manage historical data:
    def cleanup_old_data(history_dir, retention_days=30):
        # Calculate cutoff time
        cutoff_time = time.time() - (retention_days * 24 * 60 * 60)
-       
+
        # Find and delete files older than cutoff
-       old_files = [f for f in Path(history_dir).glob("*.json") 
+       old_files = [f for f in Path(history_dir).glob("*.json")
                    if f.stat().st_mtime < cutoff_time]
-       
+
        # Delete old files
        for file_path in old_files:
            file_path.unlink()

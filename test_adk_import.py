@@ -6,22 +6,20 @@ This script tests Google ADK imports in isolation to identify the exact point of
 """
 
 import os
-import sys
 import time
 from pathlib import Path
+
 
 def test_basic_imports():
     """Test basic Python imports."""
     print("🔍 Testing basic imports...")
     try:
-        import logging
-        import json
-        from dotenv import load_dotenv
         print("✅ Basic imports successful")
         return True
     except Exception as e:
         print(f"❌ Basic imports failed: {e}")
         return False
+
 
 def test_environment_setup():
     """Test environment variable setup."""
@@ -31,6 +29,7 @@ def test_environment_setup():
     env_path = Path("vana_multi_agent/.env")
     if env_path.exists():
         from dotenv import load_dotenv
+
         load_dotenv(env_path)
         print(f"✅ Loaded .env from {env_path}")
     else:
@@ -40,6 +39,7 @@ def test_environment_setup():
         for alt_path in alt_paths:
             if Path(alt_path).exists():
                 from dotenv import load_dotenv
+
                 load_dotenv(alt_path)
                 print(f"✅ Loaded .env from alternative path: {alt_path}")
                 break
@@ -52,7 +52,7 @@ def test_environment_setup():
         "GOOGLE_CLOUD_PROJECT",
         "GOOGLE_CLOUD_LOCATION",
         "GOOGLE_GENAI_USE_VERTEXAI",
-        "GOOGLE_APPLICATION_CREDENTIALS"
+        "GOOGLE_APPLICATION_CREDENTIALS",
     ]
 
     missing_vars = []
@@ -75,7 +75,7 @@ def test_environment_setup():
         possible_paths = [
             Path(creds_path),
             Path("vana_multi_agent") / creds_path,
-            Path("vana_multi_agent/secrets/vana-vector-search-sa.json")
+            Path("vana_multi_agent/secrets/vana-vector-search-sa.json"),
         ]
 
         for full_path in possible_paths:
@@ -83,12 +83,13 @@ def test_environment_setup():
                 print(f"✅ Service account file exists: {full_path}")
                 break
         else:
-            print(f"❌ Service account file not found. Tried paths:")
+            print("❌ Service account file not found. Tried paths:")
             for path in possible_paths:
                 print(f"   - {path}")
             return False
 
     return True
+
 
 def test_google_cloud_auth():
     """Test Google Cloud authentication."""
@@ -99,7 +100,7 @@ def test_google_cloud_auth():
 
         print("Attempting to get default credentials...")
         credentials, project = default()
-        print(f"✅ Authentication successful")
+        print("✅ Authentication successful")
         print(f"✅ Project: {project}")
         print(f"✅ Credentials type: {type(credentials).__name__}")
         return True
@@ -110,6 +111,7 @@ def test_google_cloud_auth():
     except Exception as e:
         print(f"❌ Unexpected authentication error: {e}")
         return False
+
 
 def test_google_adk_imports():
     """Test Google ADK imports step by step."""
@@ -131,7 +133,9 @@ def test_google_adk_imports():
             start_time = time.time()
             exec(f"import {module_name}")
             end_time = time.time()
-            print(f"  ✅ {description} imported successfully ({end_time - start_time:.2f}s)")
+            print(
+                f"  ✅ {description} imported successfully ({end_time - start_time:.2f}s)"
+            )
         except ImportError as e:
             print(f"  ❌ {description} import failed: {e}")
             return False
@@ -140,6 +144,7 @@ def test_google_adk_imports():
             return False
 
     return True
+
 
 def test_adk_functionality():
     """Test basic ADK functionality."""
@@ -164,6 +169,7 @@ def test_adk_functionality():
     except Exception as e:
         print(f"❌ ADK functionality test failed: {e}")
         return False
+
 
 def main():
     """Run all tests."""
@@ -219,6 +225,7 @@ def main():
         if not results.get("Google ADK Imports", True):
             print("- Check if google-adk is installed: pip install google-adk")
             print("- Verify network connectivity to Google services")
+
 
 if __name__ == "__main__":
     main()

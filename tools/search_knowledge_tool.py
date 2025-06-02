@@ -9,21 +9,19 @@ for similar documents.
 This implementation uses the verified approach from verify_vector_search.py.
 """
 
-import os
 import logging
+import os
+
 import vertexai
-from vertexai.language_models import TextEmbeddingModel
-from google.cloud import aiplatform
 from dotenv import load_dotenv
+from google.cloud import aiplatform
+from vertexai.language_models import TextEmbeddingModel
 
 # Set up logging
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(message)s",
-    handlers=[
-        logging.FileHandler("search_knowledge.log"),
-        logging.StreamHandler()
-    ]
+    handlers=[logging.FileHandler("search_knowledge.log"), logging.StreamHandler()],
 )
 logger = logging.getLogger(__name__)
 
@@ -38,6 +36,7 @@ DEPLOYED_INDEX_ID = os.getenv("DEPLOYED_INDEX_ID", "vanasharedindex")
 
 # Get endpoint resource name from environment variable
 ENDPOINT_RESOURCE_NAME = os.getenv("VECTOR_SEARCH_ENDPOINT_ID")
+
 
 def generate_embedding(text):
     """Generate an embedding for a text using Vertex AI."""
@@ -55,6 +54,7 @@ def generate_embedding(text):
     except Exception as e:
         logger.error(f"Error generating embedding: {str(e)}")
         raise
+
 
 def get_vector_search_endpoint():
     """Get the Vector Search endpoint using the verified approach."""
@@ -86,7 +86,7 @@ def get_vector_search_endpoint():
                 logger.info(f"Found index: {index.display_name} (ID: {index.name})")
 
                 # Get endpoint from index
-                if hasattr(index, 'deployed_indexes') and index.deployed_indexes:
+                if hasattr(index, "deployed_indexes") and index.deployed_indexes:
                     deployed_index = index.deployed_indexes[0]
                     endpoint_resource_name = deployed_index.index_endpoint
                     deployed_index_id = deployed_index.deployed_index_id
@@ -110,7 +110,9 @@ def get_vector_search_endpoint():
 
             if endpoints:
                 endpoint = endpoints[0]
-                logger.info(f"Found endpoint: {endpoint.display_name} ({endpoint.name})")
+                logger.info(
+                    f"Found endpoint: {endpoint.display_name} ({endpoint.name})"
+                )
 
                 # Use the known deployed index ID
                 logger.info(f"Using deployed index ID: {DEPLOYED_INDEX_ID}")
@@ -125,6 +127,7 @@ def get_vector_search_endpoint():
     except Exception as e:
         logger.error(f"Error getting Vector Search endpoint: {str(e)}")
         return None, None
+
 
 def search_knowledge_tool(query, top_k=5):
     """
@@ -147,7 +150,9 @@ def search_knowledge_tool(query, top_k=5):
         endpoint, deployed_index_id = get_vector_search_endpoint()
 
         if not endpoint or not deployed_index_id:
-            return "Could not find Vector Search endpoint. Please check the configuration."
+            return (
+                "Could not find Vector Search endpoint. Please check the configuration."
+            )
 
         # Search the index
         try:
@@ -155,7 +160,7 @@ def search_knowledge_tool(query, top_k=5):
             response = endpoint.find_neighbors(
                 deployed_index_id=deployed_index_id,
                 queries=[query_embedding],
-                num_neighbors=top_k
+                num_neighbors=top_k,
             )
 
             # Process the results
@@ -164,7 +169,9 @@ def search_knowledge_tool(query, top_k=5):
                 logger.info(f"Found {len(results)} results")
 
                 # Format the results
-                formatted_results = f"Found {len(results)} results for query: '{query}'\n\n"
+                formatted_results = (
+                    f"Found {len(results)} results for query: '{query}'\n\n"
+                )
 
                 for i, result in enumerate(results):
                     formatted_results += f"Result {i+1}:\n"
@@ -173,7 +180,9 @@ def search_knowledge_tool(query, top_k=5):
                     # Extract metadata if available
                     if hasattr(result, "metadata") and result.metadata:
                         if "source" in result.metadata:
-                            formatted_results += f"  Source: {result.metadata['source']}\n"
+                            formatted_results += (
+                                f"  Source: {result.metadata['source']}\n"
+                            )
 
                         if "text" in result.metadata:
                             # Truncate long text
@@ -195,6 +204,7 @@ def search_knowledge_tool(query, top_k=5):
     except Exception as e:
         logger.error(f"Error in search_knowledge_tool: {str(e)}")
         return f"Error in search_knowledge_tool: {str(e)}"
+
 
 # Test the tool if run directly
 if __name__ == "__main__":

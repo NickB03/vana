@@ -11,39 +11,43 @@ Based on Google ADK documentation:
 - Seamless integration with existing tool framework
 """
 
-import logging
-import importlib
 import inspect
-from typing import Dict, Any, List, Optional, Callable, Union, Type
-from dataclasses import dataclass
+import logging
 from abc import ABC, abstractmethod
+from collections.abc import Callable
+from dataclasses import dataclass
 from enum import Enum
+from typing import Any, Optional
 
 from vana_multi_agent.core.tool_standards import (
-    StandardToolResponse, ToolErrorType, ErrorHandler,
-    performance_monitor, InputValidator
+    performance_monitor,
 )
 
 # Configure logging
 logger = logging.getLogger(__name__)
 
+
 class ThirdPartyToolType(Enum):
     """Types of third-party tool libraries supported."""
+
     LANGCHAIN = "langchain"
     CREWAI = "crewai"
     LLAMAINDEX = "llamaindex"
     GENERIC = "generic"
 
+
 @dataclass
 class ThirdPartyToolInfo:
     """Information about a third-party tool."""
+
     name: str
     description: str
     tool_type: ThirdPartyToolType
     original_tool: Any
-    adapter: 'ThirdPartyToolAdapter'
-    parameters: Dict[str, Any]
-    metadata: Dict[str, Any]
+    adapter: "ThirdPartyToolAdapter"
+    parameters: dict[str, Any]
+    metadata: dict[str, Any]
+
 
 class ThirdPartyToolAdapter(ABC):
     """
@@ -61,13 +65,13 @@ class ThirdPartyToolAdapter(ABC):
             tool_type: Type of third-party tool library
         """
         self.tool_type = tool_type
-        self.discovered_tools: Dict[str, ThirdPartyToolInfo] = {}
-        self.registered_tools: Dict[str, Callable] = {}
+        self.discovered_tools: dict[str, ThirdPartyToolInfo] = {}
+        self.registered_tools: dict[str, Callable] = {}
 
         logger.info(f"Initialized {tool_type.value} adapter")
 
     @abstractmethod
-    def discover_tools(self, source: Any) -> List[ThirdPartyToolInfo]:
+    def discover_tools(self, source: Any) -> list[ThirdPartyToolInfo]:
         """
         Discover available tools from the third-party library.
 
@@ -118,7 +122,9 @@ class ThirdPartyToolAdapter(ABC):
         try:
             # Validate the tool
             if not self.validate_tool(tool_info.original_tool):
-                raise ValueError(f"Tool {tool_info.name} is not compatible with {self.tool_type.value} adapter")
+                raise ValueError(
+                    f"Tool {tool_info.name} is not compatible with {self.tool_type.value} adapter"
+                )
 
             # Adapt the tool
             adapted_tool = self.adapt_tool(tool_info)
@@ -147,7 +153,7 @@ class ThirdPartyToolAdapter(ABC):
         """
         return self.registered_tools.get(tool_id)
 
-    def list_tools(self) -> List[ThirdPartyToolInfo]:
+    def list_tools(self) -> list[ThirdPartyToolInfo]:
         """
         List all discovered tools.
 
@@ -168,6 +174,7 @@ class ThirdPartyToolAdapter(ABC):
         """
         return self.discovered_tools.get(tool_id)
 
+
 class GenericThirdPartyAdapter(ThirdPartyToolAdapter):
     """
     Generic adapter for third-party tools that don't have specific adapters.
@@ -180,7 +187,7 @@ class GenericThirdPartyAdapter(ThirdPartyToolAdapter):
         """Initialize the generic adapter."""
         super().__init__(ThirdPartyToolType.GENERIC)
 
-    def discover_tools(self, source: Any) -> List[ThirdPartyToolInfo]:
+    def discover_tools(self, source: Any) -> list[ThirdPartyToolInfo]:
         """
         Discover tools from a generic source.
 
@@ -194,7 +201,7 @@ class GenericThirdPartyAdapter(ThirdPartyToolAdapter):
 
         try:
             # Try to discover tools from common patterns
-            if hasattr(source, '__dict__'):
+            if hasattr(source, "__dict__"):
                 for name, obj in source.__dict__.items():
                     if self._is_tool_like(obj):
                         tool_info = self._create_tool_info(name, obj)
@@ -202,10 +209,12 @@ class GenericThirdPartyAdapter(ThirdPartyToolAdapter):
                             tools.append(tool_info)
 
             # Try to discover from lists/iterables
-            elif hasattr(source, '__iter__'):
+            elif hasattr(source, "__iter__"):
                 for i, obj in enumerate(source):
                     if self._is_tool_like(obj):
-                        name = getattr(obj, 'name', getattr(obj, '__name__', f"tool_{i}"))
+                        name = getattr(
+                            obj, "name", getattr(obj, "__name__", f"tool_{i}")
+                        )
                         tool_info = self._create_tool_info(name, obj)
                         if tool_info:
                             tools.append(tool_info)
@@ -242,15 +251,15 @@ class GenericThirdPartyAdapter(ThirdPartyToolAdapter):
                     result = original_tool(*args, **kwargs)
 
                 # Pattern 2: Has run method
-                elif hasattr(original_tool, 'run'):
+                elif hasattr(original_tool, "run"):
                     result = original_tool.run(*args, **kwargs)
 
                 # Pattern 3: Has invoke method
-                elif hasattr(original_tool, 'invoke'):
+                elif hasattr(original_tool, "invoke"):
                     result = original_tool.invoke(*args, **kwargs)
 
                 # Pattern 4: Has call method
-                elif hasattr(original_tool, '__call__'):
+                elif callable(original_tool):
                     result = original_tool(*args, **kwargs)
 
                 else:
@@ -264,11 +273,15 @@ class GenericThirdPartyAdapter(ThirdPartyToolAdapter):
                 else:
                     result_str = str(result)
 
-                performance_monitor.end_execution(tool_info.name, start_time, success=True)
+                performance_monitor.end_execution(
+                    tool_info.name, start_time, success=True
+                )
                 return result_str
 
             except Exception as e:
-                performance_monitor.end_execution(tool_info.name, start_time, success=False)
+                performance_monitor.end_execution(
+                    tool_info.name, start_time, success=False
+                )
                 logger.error(f"Error executing generic tool {tool_info.name}: {e}")
                 return f"❌ Error executing tool: {str(e)}"
 
@@ -304,13 +317,13 @@ class GenericThirdPartyAdapter(ThirdPartyToolAdapter):
         if callable(obj):
             return True
 
-        if hasattr(obj, 'run') and callable(getattr(obj, 'run')):
+        if hasattr(obj, "run") and callable(obj.run):
             return True
 
-        if hasattr(obj, 'invoke') and callable(getattr(obj, 'invoke')):
+        if hasattr(obj, "invoke") and callable(obj.invoke):
             return True
 
-        if hasattr(obj, '__call__'):
+        if callable(obj):
             return True
 
         return False
@@ -329,18 +342,20 @@ class GenericThirdPartyAdapter(ThirdPartyToolAdapter):
         try:
             # Get description from various sources
             description = (
-                getattr(tool, 'description', None) or
-                getattr(tool, '__doc__', None) or
-                f"Generic third-party tool: {name}"
+                getattr(tool, "description", None)
+                or getattr(tool, "__doc__", None)
+                or f"Generic third-party tool: {name}"
             )
 
             # Get parameters if available
             parameters = {}
-            if hasattr(tool, 'args_schema'):
-                parameters = getattr(tool, 'args_schema', {})
+            if hasattr(tool, "args_schema"):
+                parameters = getattr(tool, "args_schema", {})
             elif callable(tool):
                 sig = inspect.signature(tool)
-                parameters = {param.name: param.annotation for param in sig.parameters.values()}
+                parameters = {
+                    param.name: param.annotation for param in sig.parameters.values()
+                }
 
             return ThirdPartyToolInfo(
                 name=name,
@@ -350,16 +365,17 @@ class GenericThirdPartyAdapter(ThirdPartyToolAdapter):
                 adapter=self,
                 parameters=parameters,
                 metadata={
-                    'source_type': type(tool).__name__,
-                    'has_run': hasattr(tool, 'run'),
-                    'has_invoke': hasattr(tool, 'invoke'),
-                    'is_callable': callable(tool)
-                }
+                    "source_type": type(tool).__name__,
+                    "has_run": hasattr(tool, "run"),
+                    "has_invoke": hasattr(tool, "invoke"),
+                    "is_callable": callable(tool),
+                },
             )
 
         except Exception as e:
             logger.error(f"Error creating tool info for {name}: {e}")
             return None
+
 
 class ThirdPartyToolRegistry:
     """
@@ -368,8 +384,8 @@ class ThirdPartyToolRegistry:
 
     def __init__(self):
         """Initialize the registry."""
-        self.adapters: Dict[ThirdPartyToolType, ThirdPartyToolAdapter] = {}
-        self.all_tools: Dict[str, ThirdPartyToolInfo] = {}
+        self.adapters: dict[ThirdPartyToolType, ThirdPartyToolAdapter] = {}
+        self.all_tools: dict[str, ThirdPartyToolInfo] = {}
 
         # Register the generic adapter by default
         self.register_adapter(GenericThirdPartyAdapter())
@@ -386,8 +402,9 @@ class ThirdPartyToolRegistry:
         self.adapters[adapter.tool_type] = adapter
         logger.info(f"Registered adapter for {adapter.tool_type.value}")
 
-    def discover_tools_from_source(self, source: Any,
-                                  tool_type: Optional[ThirdPartyToolType] = None) -> List[str]:
+    def discover_tools_from_source(
+        self, source: Any, tool_type: Optional[ThirdPartyToolType] = None
+    ) -> list[str]:
         """
         Discover and register tools from a source.
 
@@ -425,12 +442,18 @@ class ThirdPartyToolRegistry:
                             self.all_tools[tool_id] = tool_info
                             registered_ids.append(tool_id)
                         except Exception as e:
-                            logger.error(f"Failed to register tool {tool_info.name}: {e}")
+                            logger.error(
+                                f"Failed to register tool {tool_info.name}: {e}"
+                            )
 
                 except Exception as e:
-                    logger.debug(f"Adapter {adapter.tool_type.value} could not process source: {e}")
+                    logger.debug(
+                        f"Adapter {adapter.tool_type.value} could not process source: {e}"
+                    )
 
-        logger.info(f"Discovered and registered {len(registered_ids)} tools from source")
+        logger.info(
+            f"Discovered and registered {len(registered_ids)} tools from source"
+        )
         return registered_ids
 
     def get_tool(self, tool_id: str) -> Optional[Callable]:
@@ -448,7 +471,7 @@ class ThirdPartyToolRegistry:
             return tool_info.adapter.get_tool(tool_id)
         return None
 
-    def list_all_tools(self) -> List[ThirdPartyToolInfo]:
+    def list_all_tools(self) -> list[ThirdPartyToolInfo]:
         """
         List all registered tools.
 
@@ -457,7 +480,9 @@ class ThirdPartyToolRegistry:
         """
         return list(self.all_tools.values())
 
-    def get_tools_by_type(self, tool_type: ThirdPartyToolType) -> List[ThirdPartyToolInfo]:
+    def get_tools_by_type(
+        self, tool_type: ThirdPartyToolType
+    ) -> list[ThirdPartyToolInfo]:
         """
         Get tools by type.
 
@@ -469,15 +494,16 @@ class ThirdPartyToolRegistry:
         """
         return [tool for tool in self.all_tools.values() if tool.tool_type == tool_type]
 
+
 # Global registry instance
 third_party_registry = ThirdPartyToolRegistry()
 
 # Export key classes and functions
 __all__ = [
-    'ThirdPartyToolType',
-    'ThirdPartyToolInfo',
-    'ThirdPartyToolAdapter',
-    'GenericThirdPartyAdapter',
-    'ThirdPartyToolRegistry',
-    'third_party_registry'
+    "ThirdPartyToolType",
+    "ThirdPartyToolInfo",
+    "ThirdPartyToolAdapter",
+    "GenericThirdPartyAdapter",
+    "ThirdPartyToolRegistry",
+    "third_party_registry",
 ]

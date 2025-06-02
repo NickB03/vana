@@ -24,10 +24,10 @@ The optimized hybrid search is implemented in `tools/enhanced_hybrid_search_opti
 def classify_query(self, query: str) -> Dict[str, float]:
     """
     Classify query to determine optimal source weights
-    
+
     Args:
         query: Search query
-        
+
     Returns:
         Source weights for the query
     """
@@ -38,16 +38,16 @@ def classify_query(self, query: str) -> Dict[str, float]:
         "feature": ["feature", "capability", "function", "support", "handle"],
         # Additional categories...
     }
-    
+
     # Normalize query
     normalized_query = query.lower()
-    
+
     # Score each category
     category_scores = {}
     for category, keywords in category_keywords.items():
         score = sum(1 for keyword in keywords if keyword in normalized_query)
         category_scores[category] = score
-    
+
     # Get the highest scoring category
     if category_scores:
         max_score = max(category_scores.values())
@@ -55,7 +55,7 @@ def classify_query(self, query: str) -> Dict[str, float]:
             best_categories = [c for c, s in category_scores.items() if s == max_score]
             best_category = best_categories[0]  # Take the first if multiple match
             return self.category_weights.get(best_category, self.default_category_weights)
-    
+
     # Default weights if no category matches
     return self.default_category_weights
 ```
@@ -66,42 +66,42 @@ def classify_query(self, query: str) -> Dict[str, float]:
 def calculate_relevance_optimized(self, result: Dict[str, Any], query: str) -> float:
     """
     Calculate relevance score with optimized algorithm
-    
+
     Args:
         result: Search result
         query: Search query
-        
+
     Returns:
         Relevance score (0-1)
     """
     content = result.get("content", "").lower()
     query_terms = query.lower().split()
-    
+
     # Calculate term frequency
     term_count = 0
     for term in query_terms:
         if term in content:
             term_count += 1
-    
+
     # Calculate term frequency score
     if len(query_terms) > 0:
         term_frequency = term_count / len(query_terms)
     else:
         term_frequency = 0
-    
+
     # Calculate exact phrase match
     exact_match = 1.0 if query.lower() in content else 0.0
-    
+
     # Calculate proximity score
     proximity_score = self.calculate_proximity_score(content, query_terms)
-    
+
     # Calculate metadata match
     metadata = result.get("metadata", {})
     metadata_match = 0.0
-    
+
     if "title" in metadata and any(term in metadata["title"].lower() for term in query_terms):
         metadata_match += 0.3
-    
+
     # Combine scores with weights
     relevance = (
         0.4 * term_frequency +
@@ -109,7 +109,7 @@ def calculate_relevance_optimized(self, result: Dict[str, Any], query: str) -> f
         0.2 * proximity_score +
         0.1 * metadata_match
     )
-    
+
     return min(relevance, 1.0)  # Cap at 1.0
 ```
 

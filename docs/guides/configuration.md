@@ -125,7 +125,7 @@ ADK_SESSION_SERVICE_TYPE=database
    gcloud projects add-iam-policy-binding analystai-454200 \
      --member="serviceAccount:vana-adk-memory@analystai-454200.iam.gserviceaccount.com" \
      --role="roles/aiplatform.user"
-   
+
    # RAG Corpus permissions
    gcloud projects add-iam-policy-binding analystai-454200 \
      --member="serviceAccount:vana-adk-memory@analystai-454200.iam.gserviceaccount.com" \
@@ -167,24 +167,24 @@ def validate_configuration():
     """Validate VANA configuration."""
     errors = []
     warnings = []
-    
+
     # Required environment variables
     required_vars = [
         "GOOGLE_CLOUD_PROJECT",
-        "GOOGLE_CLOUD_LOCATION", 
+        "GOOGLE_CLOUD_LOCATION",
         "GOOGLE_APPLICATION_CREDENTIALS",
         "ADK_RAG_CORPUS"
     ]
-    
+
     for var in required_vars:
         if not os.getenv(var):
             errors.append(f"Missing required environment variable: {var}")
-    
+
     # Validate service account file
     creds_path = os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
     if creds_path and not Path(creds_path).exists():
         errors.append(f"Service account file not found: {creds_path}")
-    
+
     # Validate numeric configurations
     try:
         top_k = int(os.getenv("ADK_SIMILARITY_TOP_K", "5"))
@@ -192,28 +192,28 @@ def validate_configuration():
             warnings.append(f"ADK_SIMILARITY_TOP_K should be between 1-20, got {top_k}")
     except ValueError:
         errors.append("ADK_SIMILARITY_TOP_K must be a valid integer")
-    
+
     try:
         threshold = float(os.getenv("ADK_VECTOR_DISTANCE_THRESHOLD", "0.7"))
         if threshold < 0.0 or threshold > 1.0:
             warnings.append(f"ADK_VECTOR_DISTANCE_THRESHOLD should be between 0.0-1.0, got {threshold}")
     except ValueError:
         errors.append("ADK_VECTOR_DISTANCE_THRESHOLD must be a valid float")
-    
+
     # Report results
     if errors:
         print("❌ Configuration Errors:")
         for error in errors:
             print(f"  - {error}")
-    
+
     if warnings:
         print("⚠️  Configuration Warnings:")
         for warning in warnings:
             print(f"  - {warning}")
-    
+
     if not errors and not warnings:
         print("✅ Configuration is valid!")
-    
+
     return len(errors) == 0
 
 if __name__ == "__main__":
@@ -239,15 +239,15 @@ def test_adk_memory():
             similarity_top_k=int(os.getenv("ADK_SIMILARITY_TOP_K", "5")),
             vector_distance_threshold=float(os.getenv("ADK_VECTOR_DISTANCE_THRESHOLD", "0.7"))
         )
-        
+
         print("✅ ADK Memory Service initialized successfully")
-        
+
         # Test search functionality
         results = memory_service.search_memory("test query")
         print(f"✅ Memory search completed, found {len(results)} results")
-        
+
         return True
-        
+
     except Exception as e:
         print(f"❌ ADK Memory Service test failed: {e}")
         return False

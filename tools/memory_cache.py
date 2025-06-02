@@ -1,10 +1,11 @@
-import time
 import logging
-from typing import Dict, Any, Optional, List, Set, Tuple
+import time
 from collections import defaultdict
+from typing import Any, Optional
 
 # Set up logging
 logger = logging.getLogger(__name__)
+
 
 class MemoryCache:
     """
@@ -79,7 +80,7 @@ class MemoryCache:
         key = self.name_index[name]
         return self.get(key)
 
-    def get_by_type(self, entity_type: str, limit: int = 10) -> List[Any]:
+    def get_by_type(self, entity_type: str, limit: int = 10) -> list[Any]:
         """
         Get items from the cache by entity type.
 
@@ -103,8 +104,9 @@ class MemoryCache:
 
         return results
 
-    def search(self, query: str, entity_type: Optional[str] = None,
-              limit: int = 10) -> List[Any]:
+    def search(
+        self, query: str, entity_type: Optional[str] = None, limit: int = 10
+    ) -> list[Any]:
         """
         Search for items in the cache.
 
@@ -117,7 +119,11 @@ class MemoryCache:
             List of matching cached values
         """
         results = []
-        keys_to_search = self.type_index.get(entity_type, self.cache.keys()) if entity_type else self.cache.keys()
+        keys_to_search = (
+            self.type_index.get(entity_type, self.cache.keys())
+            if entity_type
+            else self.cache.keys()
+        )
 
         for key in keys_to_search:
             if key in self.cache:
@@ -127,8 +133,9 @@ class MemoryCache:
                     entity_name = value.get("name", "")
                     observations = value.get("observations", [])
 
-                    if (query.lower() in entity_name.lower() or
-                        any(query.lower() in obs.lower() for obs in observations)):
+                    if query.lower() in entity_name.lower() or any(
+                        query.lower() in obs.lower() for obs in observations
+                    ):
                         results.append(value)
                         if len(results) >= limit:
                             break
@@ -196,7 +203,7 @@ class MemoryCache:
         self.name_index.clear()
         logger.info("Cache cleared")
 
-    def get_stats(self) -> Dict[str, Any]:
+    def get_stats(self) -> dict[str, Any]:
         """
         Get cache statistics.
 
@@ -214,7 +221,7 @@ class MemoryCache:
             "miss_count": self.miss_count,
             "hit_ratio": hit_ratio,
             "eviction_count": self.eviction_count,
-            "type_counts": {t: len(keys) for t, keys in self.type_index.items()}
+            "type_counts": {t: len(keys) for t, keys in self.type_index.items()},
         }
 
     def _evict_oldest(self) -> None:

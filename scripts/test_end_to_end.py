@@ -9,39 +9,38 @@ This script tests the entire VANA agent system end-to-end, including:
 4. Cross-agent communication
 """
 
+import argparse
+import logging
 import os
 import sys
-import logging
-import argparse
-import time
-from dotenv import load_dotenv
+
 import vertexai
+from dotenv import load_dotenv
 from google.cloud import aiplatform
 
 # Add the adk-setup directory to the Python path
 current_dir = os.path.dirname(os.path.abspath(__file__))
 parent_dir = os.path.dirname(current_dir)
-adk_setup_dir = os.path.join(parent_dir, 'adk-setup')
+adk_setup_dir = os.path.join(parent_dir, "adk-setup")
 sys.path.insert(0, adk_setup_dir)
 
 # Import agent definitions
 try:
-    from vana.agents.team import ben, rhea, max, sage, kai, juno, root_agent
+    from vana.agents.team import ben, juno, kai, max, rhea, root_agent, sage
 except ImportError as e:
     print(f"Error importing agent definitions: {str(e)}")
     print(f"Python path: {sys.path}")
     print(f"Looking for: {os.path.join(adk_setup_dir, 'vana', 'agents', 'team.py')}")
-    print(f"File exists: {os.path.exists(os.path.join(adk_setup_dir, 'vana', 'agents', 'team.py'))}")
+    print(
+        f"File exists: {os.path.exists(os.path.join(adk_setup_dir, 'vana', 'agents', 'team.py'))}"
+    )
     sys.exit(1)
 
 # Set up logging
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(message)s",
-    handlers=[
-        logging.FileHandler("end_to_end_test.log"),
-        logging.StreamHandler()
-    ]
+    handlers=[logging.FileHandler("end_to_end_test.log"), logging.StreamHandler()],
 )
 logger = logging.getLogger(__name__)
 
@@ -52,13 +51,21 @@ load_dotenv()
 PROJECT_ID = os.getenv("GOOGLE_CLOUD_PROJECT")
 LOCATION = os.getenv("GOOGLE_CLOUD_LOCATION")
 
+
 def parse_arguments():
     """Parse command line arguments."""
-    parser = argparse.ArgumentParser(description="End-to-end test for VANA agent system")
+    parser = argparse.ArgumentParser(
+        description="End-to-end test for VANA agent system"
+    )
     parser.add_argument("--verbose", action="store_true", help="Enable verbose output")
-    parser.add_argument("--test-type", choices=["knowledge", "delegation", "all"],
-                        default="all", help="Type of test to run (default: all)")
+    parser.add_argument(
+        "--test-type",
+        choices=["knowledge", "delegation", "all"],
+        default="all",
+        help="Type of test to run (default: all)",
+    )
     return parser.parse_args()
+
 
 def setup_logging(verbose=False):
     """Set up logging with appropriate level based on verbose flag."""
@@ -66,12 +73,10 @@ def setup_logging(verbose=False):
     logging.basicConfig(
         level=level,
         format="%(asctime)s [%(levelname)s] %(message)s",
-        handlers=[
-            logging.FileHandler("end_to_end_test.log"),
-            logging.StreamHandler()
-        ]
+        handlers=[logging.FileHandler("end_to_end_test.log"), logging.StreamHandler()],
     )
     return logging.getLogger(__name__)
+
 
 def test_knowledge_retrieval():
     """Test knowledge retrieval from Vector Search."""
@@ -80,7 +85,7 @@ def test_knowledge_retrieval():
     # Queries that should trigger knowledge retrieval
     queries = [
         "What is the architecture of VANA agents?",
-        "How does Vector Search integration work in this project?"
+        "How does Vector Search integration work in this project?",
     ]
 
     success = True
@@ -92,14 +97,19 @@ def test_knowledge_retrieval():
             response = ben.generate_content(query)
 
             # Log the response
-            logger.info(f"Response from Ben:")
+            logger.info("Response from Ben:")
             logger.info(response.text)
 
             # Check if the response contains knowledge base information
-            if "knowledge base" in response.text.lower() or "vector search" in response.text.lower():
-                logger.info(f"✅ Successfully retrieved information from the knowledge base")
+            if (
+                "knowledge base" in response.text.lower()
+                or "vector search" in response.text.lower()
+            ):
+                logger.info(
+                    "✅ Successfully retrieved information from the knowledge base"
+                )
             else:
-                logger.warning(f"⚠️ May not have used the knowledge base in the response")
+                logger.warning("⚠️ May not have used the knowledge base in the response")
                 success = False
 
         except Exception as e:
@@ -107,6 +117,7 @@ def test_knowledge_retrieval():
             success = False
 
     return success
+
 
 def test_agent_delegation():
     """Test delegation from Ben to specialist agents."""
@@ -118,7 +129,7 @@ def test_agent_delegation():
         "Create a user interface for visualizing agent decisions",  # Should delegate to Max
         "Set up a self-healing infrastructure for our platform",  # Should delegate to Sage
         "Identify potential edge cases in our agent system",  # Should delegate to Kai
-        "Create documentation for our agent system"  # Should delegate to Juno
+        "Create documentation for our agent system",  # Should delegate to Juno
     ]
 
     success = True
@@ -130,15 +141,25 @@ def test_agent_delegation():
             response = ben.generate_content(query)
 
             # Log the response
-            logger.info(f"Response from Ben:")
+            logger.info("Response from Ben:")
             logger.info(response.text)
 
             # Check if the response mentions delegation or specialist agents
-            delegation_terms = ["delegate", "specialist", "rhea", "max", "sage", "kai", "juno"]
+            delegation_terms = [
+                "delegate",
+                "specialist",
+                "rhea",
+                "max",
+                "sage",
+                "kai",
+                "juno",
+            ]
             if any(term in response.text.lower() for term in delegation_terms):
-                logger.info(f"✅ Ben successfully mentioned delegation or specialist agents")
+                logger.info(
+                    "✅ Ben successfully mentioned delegation or specialist agents"
+                )
             else:
-                logger.warning(f"⚠️ Ben may not have delegated the task")
+                logger.warning("⚠️ Ben may not have delegated the task")
                 success = False
 
         except Exception as e:
@@ -146,6 +167,7 @@ def test_agent_delegation():
             success = False
 
     return success
+
 
 def run_end_to_end_test(test_type="all"):
     """Run the end-to-end test."""
@@ -167,17 +189,21 @@ def run_end_to_end_test(test_type="all"):
             delegation_success = test_agent_delegation()
 
         # Print summary
-        logger.info("\n" + "="*50)
+        logger.info("\n" + "=" * 50)
         logger.info("END-TO-END TEST SUMMARY")
-        logger.info("="*50)
+        logger.info("=" * 50)
 
         if test_type in ["knowledge", "all"]:
-            logger.info(f"Knowledge Retrieval: {'✅ PASSED' if knowledge_success else '❌ FAILED'}")
+            logger.info(
+                f"Knowledge Retrieval: {'✅ PASSED' if knowledge_success else '❌ FAILED'}"
+            )
 
         if test_type in ["delegation", "all"]:
-            logger.info(f"Agent Delegation: {'✅ PASSED' if delegation_success else '❌ FAILED'}")
+            logger.info(
+                f"Agent Delegation: {'✅ PASSED' if delegation_success else '❌ FAILED'}"
+            )
 
-        logger.info("="*50)
+        logger.info("=" * 50)
 
         # Overall assessment
         if test_type == "all":
@@ -198,13 +224,14 @@ def run_end_to_end_test(test_type="all"):
             else:
                 logger.info("❌ FAILURE: Agent delegation test failed")
 
-        logger.info("="*50)
+        logger.info("=" * 50)
 
         return knowledge_success and delegation_success
 
     except Exception as e:
         logger.error(f"❌ Error running end-to-end test: {str(e)}")
         return False
+
 
 def main():
     """Main function."""
@@ -219,6 +246,7 @@ def main():
 
     # Return exit code based on success
     return 0 if success else 1
+
 
 if __name__ == "__main__":
     exit_code = main()

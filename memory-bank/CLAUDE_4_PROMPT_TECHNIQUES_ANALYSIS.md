@@ -1,8 +1,8 @@
 # 🧠 CLAUDE 4 SYSTEM PROMPT TECHNIQUES - COMPREHENSIVE ANALYSIS
 
-**Date:** 2025-05-30  
-**Source:** Simon Willison's analysis of Claude 4 system prompts  
-**Purpose:** Extract actionable prompt engineering techniques for VANA optimization  
+**Date:** 2025-05-30
+**Source:** Simon Willison's analysis of Claude 4 system prompts
+**Purpose:** Extract actionable prompt engineering techniques for VANA optimization
 
 ## 🔑 KEY TECHNIQUE CATEGORIES
 
@@ -95,7 +95,7 @@ Complex queries using terms like "deep dive," "comprehensive," "analyze," "evalu
 #### **Specific Tool Call Examples**
 ```
 * reviews for [recent product]? (iPhone 15 reviews?) - 2-3 tool calls
-* compare [metrics] from multiple sources - 3-5 tool calls  
+* compare [metrics] from multiple sources - 3-5 tool calls
 * prediction on [current event/decision]? - 5 tool calls + 1 web_fetch
 * research [complex topic] - 10+ tool calls: multiple web_search and web_fetch
 * Create an [executive-level report] - 15-20 tool calls across both internal tools and web tools

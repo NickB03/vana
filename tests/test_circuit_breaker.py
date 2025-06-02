@@ -8,18 +8,19 @@ import os
 import sys
 import time
 import unittest
-from unittest.mock import patch, MagicMock, call
+from unittest.mock import MagicMock
 
 # Add the project root to the Python path
 sys.path.insert(0, os.path.abspath(os.path.dirname(os.path.dirname(__file__))))
 
 from tools.resilience.circuit_breaker import (
     CircuitBreaker,
-    CircuitState,
     CircuitBreakerOpenError,
     CircuitBreakerRegistry,
-    circuit_breaker
+    CircuitState,
+    circuit_breaker,
 )
+
 
 class TestCircuitBreaker(unittest.TestCase):
     """Test cases for the Circuit Breaker."""
@@ -30,7 +31,7 @@ class TestCircuitBreaker(unittest.TestCase):
             name="test_circuit",
             failure_threshold=3,
             reset_timeout=1.0,
-            half_open_max_calls=2
+            half_open_max_calls=2,
         )
 
     def test_initial_state(self):
@@ -194,9 +195,7 @@ class TestCircuitBreaker(unittest.TestCase):
 
         # Verify listener was called
         mock_listener.assert_called_with(
-            "test_circuit",
-            CircuitState.CLOSED,
-            CircuitState.OPEN
+            "test_circuit", CircuitState.CLOSED, CircuitState.OPEN
         )
 
         # Reset the circuit
@@ -205,13 +204,12 @@ class TestCircuitBreaker(unittest.TestCase):
 
         # Verify listener was called
         mock_listener.assert_called_with(
-            "test_circuit",
-            CircuitState.OPEN,
-            CircuitState.CLOSED
+            "test_circuit", CircuitState.OPEN, CircuitState.CLOSED
         )
 
     def test_decorator(self):
         """Test circuit breaker as a decorator."""
+
         # Create a test function
         @self.circuit_breaker
         def test_function():
@@ -383,9 +381,7 @@ class TestCircuitBreakerRegistry(unittest.TestCase):
 
         # Verify listener was called
         mock_listener.assert_called_with(
-            "test_circuit",
-            CircuitState.CLOSED,
-            CircuitState.OPEN
+            "test_circuit", CircuitState.CLOSED, CircuitState.OPEN
         )
 
 
@@ -394,6 +390,7 @@ class TestCircuitBreakerDecorator(unittest.TestCase):
 
     def test_decorator(self):
         """Test circuit_breaker decorator."""
+
         # Create a test function
         @circuit_breaker("test_decorator")
         def test_function():
@@ -405,12 +402,14 @@ class TestCircuitBreakerDecorator(unittest.TestCase):
 
         # Get the circuit breaker from the registry
         from tools.resilience.circuit_breaker import registry
+
         cb = registry.get("test_decorator")
 
         # Verify circuit breaker was created
         self.assertIsNotNone(cb)
         self.assertEqual(cb.name, "test_decorator")
         self.assertEqual(cb.state, CircuitState.CLOSED)
+
 
 if __name__ == "__main__":
     unittest.main()

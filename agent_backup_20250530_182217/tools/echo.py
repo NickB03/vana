@@ -5,11 +5,12 @@ This module provides a simple echo tool for testing the VANA agent's tool integr
 """
 
 import logging
-from typing import Dict, Any, Optional
+from typing import Any
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
 
 class EchoTool:
     """
@@ -43,7 +44,7 @@ class EchoTool:
         logger.info(f"EchoTool executed with input: '{text}'")
         return response
 
-    def get_metadata(self) -> Dict[str, Any]:
+    def get_metadata(self) -> dict[str, Any]:
         """
         Get metadata about the tool.
 
@@ -58,13 +59,10 @@ class EchoTool:
                     "name": "text",
                     "type": "string",
                     "description": "Text to echo",
-                    "required": True
+                    "required": True,
                 }
             ],
-            "returns": {
-                "type": "string",
-                "description": "Echo response"
-            }
+            "returns": {"type": "string", "description": "Echo response"},
         }
 
 

@@ -6,13 +6,13 @@ This script tests if knowledge about agent delegation and specialization
 is correctly retrieved from Vector Search.
 """
 
-import os
-import sys
+import argparse
 import json
 import logging
-import argparse
+import os
+import sys
 import time
-from pathlib import Path
+
 from dotenv import load_dotenv
 
 # Add the project root to the Python path
@@ -23,8 +23,7 @@ from scripts.test_vector_search_direct import search_knowledge
 
 # Set up logging
 logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s [%(levelname)s] %(message)s"
+    level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s"
 )
 logger = logging.getLogger(__name__)
 
@@ -38,8 +37,9 @@ AGENTS = {
     "Max": ["interaction", "interface", "user experience"],
     "Sage": ["platform", "automation", "infrastructure"],
     "Kai": ["edge cases", "debugging", "testing"],
-    "Juno": ["story", "narrative", "content"]
+    "Juno": ["story", "narrative", "content"],
 }
+
 
 def parse_arguments():
     """Parse command line arguments."""
@@ -49,71 +49,74 @@ def parse_arguments():
     parser.add_argument("--scenarios-file", help="JSON file with delegation scenarios")
     return parser.parse_args()
 
+
 def get_delegation_scenarios():
     """Get a list of scenarios for testing agent delegation knowledge."""
     return [
         {
             "query": "Who handles architecture design in VANA?",
             "expected_agent": "Rhea",
-            "category": "agent_role"
+            "category": "agent_role",
         },
         {
             "query": "Which agent is responsible for user interface?",
             "expected_agent": "Max",
-            "category": "agent_role"
+            "category": "agent_role",
         },
         {
             "query": "Who leads the VANA project?",
             "expected_agent": "Ben",
-            "category": "agent_role"
+            "category": "agent_role",
         },
         {
             "query": "Which agent manages infrastructure?",
             "expected_agent": "Sage",
-            "category": "agent_role"
+            "category": "agent_role",
         },
         {
             "query": "Who handles edge cases and testing?",
             "expected_agent": "Kai",
-            "category": "agent_role"
+            "category": "agent_role",
         },
         {
             "query": "Which agent is the story engineer?",
             "expected_agent": "Juno",
-            "category": "agent_role"
+            "category": "agent_role",
         },
         {
             "query": "How do agents collaborate in VANA?",
             "expected_agent": "Ben",  # Coordinator would know about collaboration
-            "category": "collaboration"
+            "category": "collaboration",
         },
         {
             "query": "What is the agent hierarchy in VANA?",
             "expected_agent": "Ben",  # Coordinator would know about hierarchy
-            "category": "hierarchy"
+            "category": "hierarchy",
         },
         {
             "query": "How does task delegation work in VANA?",
             "expected_agent": "Ben",  # Coordinator handles delegation
-            "category": "delegation"
+            "category": "delegation",
         },
         {
             "query": "What specializations do VANA agents have?",
             "expected_agent": None,  # All agents should be mentioned
-            "category": "specialization"
-        }
+            "category": "specialization",
+        },
     ]
+
 
 def load_scenarios_from_file(file_path):
     """Load delegation scenarios from a JSON file."""
     try:
-        with open(file_path, 'r') as f:
+        with open(file_path) as f:
             scenarios = json.load(f)
         logger.info(f"Loaded {len(scenarios)} scenarios from {file_path}")
         return scenarios
     except Exception as e:
         logger.error(f"Error loading scenarios from {file_path}: {str(e)}")
         return get_delegation_scenarios()
+
 
 def agent_mentioned_in_text(agent_name, text):
     """Check if an agent is mentioned in text, including their specialties."""
@@ -128,6 +131,7 @@ def agent_mentioned_in_text(agent_name, text):
 
     return False
 
+
 def test_agent_delegation(scenarios):
     """Test if the knowledge base contains correct agent delegation information."""
     results = []
@@ -137,7 +141,9 @@ def test_agent_delegation(scenarios):
         expected_agent = scenario["expected_agent"]
         category = scenario.get("category", "unknown")
 
-        logger.info(f"Testing scenario {i+1}/{len(scenarios)}: '{query}' (Expected: {expected_agent}, Category: {category})")
+        logger.info(
+            f"Testing scenario {i+1}/{len(scenarios)}: '{query}' (Expected: {expected_agent}, Category: {category})"
+        )
 
         try:
             # Record the start time
@@ -156,9 +162,17 @@ def test_agent_delegation(scenarios):
                 logger.info(f"Expected agent {expected_agent} mentioned: {success}")
             else:
                 # For scenarios where all agents should be mentioned
-                mentioned_agents = [agent for agent in AGENTS.keys() if agent_mentioned_in_text(agent, response)]
-                success = len(mentioned_agents) >= 3  # At least 3 agents should be mentioned
-                logger.info(f"Agents mentioned: {mentioned_agents} ({len(mentioned_agents)}/{len(AGENTS)})")
+                mentioned_agents = [
+                    agent
+                    for agent in AGENTS.keys()
+                    if agent_mentioned_in_text(agent, response)
+                ]
+                success = (
+                    len(mentioned_agents) >= 3
+                )  # At least 3 agents should be mentioned
+                logger.info(
+                    f"Agents mentioned: {mentioned_agents} ({len(mentioned_agents)}/{len(AGENTS)})"
+                )
 
             result = {
                 "query": query,
@@ -166,7 +180,7 @@ def test_agent_delegation(scenarios):
                 "category": category,
                 "response": response,
                 "response_time": response_time,
-                "success": success
+                "success": success,
             }
 
             if expected_agent is None:
@@ -182,12 +196,13 @@ def test_agent_delegation(scenarios):
                 "category": category,
                 "response": "",
                 "success": False,
-                "error": str(e)
+                "error": str(e),
             }
 
         results.append(result)
 
     return results
+
 
 def main():
     """Main function."""
@@ -200,7 +215,11 @@ def main():
     logger.info("Starting agent delegation test")
 
     # Get delegation scenarios
-    scenarios = load_scenarios_from_file(args.scenarios_file) if args.scenarios_file else get_delegation_scenarios()
+    scenarios = (
+        load_scenarios_from_file(args.scenarios_file)
+        if args.scenarios_file
+        else get_delegation_scenarios()
+    )
 
     # Test agent delegation
     results = test_agent_delegation(scenarios)
@@ -233,7 +252,7 @@ def main():
         "success_count": success_count,
         "success_rate": success_rate,
         "categories": categories,
-        "results": results
+        "results": results,
     }
 
     # Print summary
@@ -241,19 +260,22 @@ def main():
     logger.info(f"Success rate: {success_rate:.1f}% ({success_count}/{len(results)})")
     logger.info("Category breakdown:")
     for category, counts in categories.items():
-        logger.info(f"  {category}: {counts['rate']:.1f}% ({counts['success']}/{counts['total']})")
+        logger.info(
+            f"  {category}: {counts['rate']:.1f}% ({counts['success']}/{counts['total']})"
+        )
 
     # Save results to file
     if args.output:
         try:
             os.makedirs(os.path.dirname(args.output), exist_ok=True)
-            with open(args.output, 'w') as f:
+            with open(args.output, "w") as f:
                 json.dump(summary, f, indent=2)
             logger.info(f"Results saved to {args.output}")
         except Exception as e:
             logger.error(f"Error saving results: {str(e)}")
 
     return 0 if success_rate >= 70 else 1
+
 
 if __name__ == "__main__":
     sys.exit(main())

@@ -6,10 +6,9 @@ This module tests the health check functionality.
 
 import os
 import sys
-import json
 import time
 import unittest
-from unittest.mock import patch, MagicMock, AsyncMock
+from unittest.mock import AsyncMock, MagicMock, patch
 
 # Add the project root to the Python path
 sys.path.insert(0, os.path.abspath(os.path.dirname(os.path.dirname(__file__))))
@@ -18,8 +17,9 @@ from tools.monitoring.health_check import (
     HealthCheck,
     HealthStatus,
     MemorySystemHealthCheck,
-    register_memory_system_health_checks
+    register_memory_system_health_checks,
 )
+
 
 class TestHealthCheck(unittest.TestCase):
     """Test cases for the Health Check system."""
@@ -38,19 +38,31 @@ class TestHealthCheck(unittest.TestCase):
 
         # Verify the component is registered
         self.assertIn("test_component", self.health_check.component_checks)
-        self.assertEqual(self.health_check.component_checks["test_component"], mock_check)
+        self.assertEqual(
+            self.health_check.component_checks["test_component"], mock_check
+        )
 
     def test_check_health(self):
         """Test checking health of all components."""
         # Register mock components
         self.health_check.register_component(
             "component1",
-            MagicMock(return_value={"status": HealthStatus.OK, "message": "Component 1 is healthy"})
+            MagicMock(
+                return_value={
+                    "status": HealthStatus.OK,
+                    "message": "Component 1 is healthy",
+                }
+            ),
         )
 
         self.health_check.register_component(
             "component2",
-            MagicMock(return_value={"status": HealthStatus.WARNING, "message": "Component 2 has a warning"})
+            MagicMock(
+                return_value={
+                    "status": HealthStatus.WARNING,
+                    "message": "Component 2 has a warning",
+                }
+            ),
         )
 
         # Check health
@@ -62,12 +74,16 @@ class TestHealthCheck(unittest.TestCase):
         self.assertIn("components", result)
         self.assertEqual(len(result["components"]), 2)
         self.assertEqual(result["components"]["component1"]["status"], HealthStatus.OK)
-        self.assertEqual(result["components"]["component2"]["status"], HealthStatus.WARNING)
+        self.assertEqual(
+            result["components"]["component2"]["status"], HealthStatus.WARNING
+        )
 
     def test_check_component(self):
         """Test checking health of a specific component."""
         # Register a mock component
-        mock_check = MagicMock(return_value={"status": HealthStatus.OK, "message": "Component is healthy"})
+        mock_check = MagicMock(
+            return_value={"status": HealthStatus.OK, "message": "Component is healthy"}
+        )
         self.health_check.register_component("test_component", mock_check)
 
         # Check component health
@@ -131,8 +147,7 @@ class TestHealthCheck(unittest.TestCase):
         """Test error handling in component health checks."""
         # Register a component that raises an exception
         self.health_check.register_component(
-            "error_component",
-            MagicMock(side_effect=Exception("Test error"))
+            "error_component", MagicMock(side_effect=Exception("Test error"))
         )
 
         # Check health
@@ -140,7 +155,9 @@ class TestHealthCheck(unittest.TestCase):
 
         # Verify result
         self.assertEqual(result["status"], HealthStatus.ERROR)
-        self.assertEqual(result["components"]["error_component"]["status"], HealthStatus.ERROR)
+        self.assertEqual(
+            result["components"]["error_component"]["status"], HealthStatus.ERROR
+        )
         self.assertIn("Test error", result["components"]["error_component"]["message"])
 
 
@@ -226,8 +243,8 @@ class TestMemorySystemHealthCheck(unittest.TestCase):
         self.assertEqual(result["status"], HealthStatus.WARNING)
         self.assertIn("hasn't synced", result["message"])
 
-    @patch('asyncio.run')
-    @patch('asyncio.wait_for')
+    @patch("asyncio.run")
+    @patch("asyncio.wait_for")
     def test_check_hybrid_search(self, mock_wait_for, mock_run):
         """Test checking hybrid search health."""
         # Create a mock hybrid search
@@ -238,7 +255,7 @@ class TestMemorySystemHealthCheck(unittest.TestCase):
         # Set up the mock to return a successful result
         mock_wait_for.return_value = {
             "results": [{"content": "Test result"}],
-            "sources": {"vector_search": 1, "knowledge_graph": 1}
+            "sources": {"vector_search": 1, "knowledge_graph": 1},
         }
         mock_run.side_effect = lambda x: x
 
@@ -259,6 +276,7 @@ class TestMemorySystemHealthCheck(unittest.TestCase):
 
         # Test when search times out
         import asyncio
+
         mock_wait_for.side_effect = asyncio.TimeoutError()
 
         result = MemorySystemHealthCheck.check_hybrid_search(mock_hybrid_search)
@@ -291,12 +309,14 @@ class TestRegisterHealthChecks(unittest.TestCase):
 
         # Verify component names
         component_names = [
-            call_args[0][0] for call_args in mock_health_check.register_component.call_args_list
+            call_args[0][0]
+            for call_args in mock_health_check.register_component.call_args_list
         ]
         self.assertIn("mcp_server", component_names)
         self.assertIn("memory_manager", component_names)
         self.assertIn("vector_search", component_names)
         self.assertIn("hybrid_search", component_names)
+
 
 if __name__ == "__main__":
     unittest.main()

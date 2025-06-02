@@ -118,15 +118,15 @@ Regardless of the chosen option, a consistent workflow interface should be imple
 ```python
 class WorkflowInterface:
     """Interface for workflow management, with or without n8n."""
-    
+
     def __init__(self):
         """Initialize workflow interface."""
         self.n8n_url = os.environ.get("N8N_WEBHOOK_URL", "")
         self.n8n_available = self._check_n8n_available() if self.n8n_url else False
-        
+
         if not self.n8n_available:
             logger.info("n8n not available. Using direct implementation for workflows.")
-    
+
     def _check_n8n_available(self) -> bool:
         """Check if n8n is available."""
         try:
@@ -135,7 +135,7 @@ class WorkflowInterface:
         except Exception as e:
             logger.warning(f"n8n not available: {e}")
             return False
-    
+
     def trigger_document_processing(self, document_path: str, options: Dict[str, Any] = None) -> Dict[str, Any]:
         """Trigger document processing workflow."""
         if self.n8n_available:
@@ -148,7 +148,7 @@ class WorkflowInterface:
             # Direct implementation
             from tools.document_processing import process_document
             return process_document(document_path, options)
-    
+
     def trigger_knowledge_update(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """Trigger knowledge update workflow."""
         if self.n8n_available:
@@ -158,19 +158,19 @@ class WorkflowInterface:
             # Direct implementation
             from tools.knowledge_update import update_knowledge
             return update_knowledge(data)
-    
+
     def _trigger_n8n_workflow(self, workflow_name: str, data: Dict[str, Any]) -> Dict[str, Any]:
         """Trigger n8n workflow via webhook."""
         try:
             webhook_url = f"{self.n8n_url}/webhook/{workflow_name}"
-            
+
             response = requests.post(
                 webhook_url,
                 json=data,
                 headers={"Content-Type": "application/json"},
                 timeout=30
             )
-            
+
             if response.status_code == 200:
                 return response.json()
             else:

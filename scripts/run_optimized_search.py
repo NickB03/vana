@@ -11,12 +11,12 @@ Usage:
     python scripts/run_optimized_search.py --query "What are the latest ADK features?" --include-web --count 10
 """
 
+import argparse
+import json
 import os
 import sys
-import argparse
 import time
-import json
-from typing import List, Dict, Any
+from typing import Any
 
 # Add project root to path
 sys.path.insert(0, os.path.abspath(os.path.dirname(os.path.dirname(__file__))))
@@ -33,34 +33,58 @@ except ImportError as e:
 
 def parse_arguments():
     """Parse command line arguments."""
-    parser = argparse.ArgumentParser(description="Run VANA optimized search with optional web integration")
+    parser = argparse.ArgumentParser(
+        description="Run VANA optimized search with optional web integration"
+    )
     parser.add_argument("--query", "-q", type=str, required=True, help="Search query")
-    parser.add_argument("--include-web", action="store_true", help="Include web search results")
-    parser.add_argument("--no-web", action="store_true", help="Exclude web search results")
-    parser.add_argument("--count", "-c", type=int, default=5, help="Number of results to return")
-    parser.add_argument("--mock", action="store_true", help="Use mock web search client instead of real API")
-    parser.add_argument("--verbose", "-v", action="store_true", help="Print verbose output")
-    parser.add_argument("--compare", action="store_true", help="Compare with basic hybrid search")
+    parser.add_argument(
+        "--include-web", action="store_true", help="Include web search results"
+    )
+    parser.add_argument(
+        "--no-web", action="store_true", help="Exclude web search results"
+    )
+    parser.add_argument(
+        "--count", "-c", type=int, default=5, help="Number of results to return"
+    )
+    parser.add_argument(
+        "--mock",
+        action="store_true",
+        help="Use mock web search client instead of real API",
+    )
+    parser.add_argument(
+        "--verbose", "-v", action="store_true", help="Print verbose output"
+    )
+    parser.add_argument(
+        "--compare", action="store_true", help="Compare with basic hybrid search"
+    )
     return parser.parse_args()
 
 
-def format_results(results: List[Dict[str, Any]], include_metadata: bool = False) -> str:
+def format_results(
+    results: list[dict[str, Any]], include_metadata: bool = False
+) -> str:
     """Format search results for display."""
     formatted = ""
     for i, result in enumerate(results):
         formatted += f"{i+1}. {result['title']}\n"
         formatted += f"   Source: {result['source']}\n"
-        if 'link' in result:
+        if "link" in result:
             formatted += f"   URL: {result['link']}\n"
-        if 'snippet' in result:
+        if "snippet" in result:
             formatted += f"   Snippet: {result['snippet']}\n"
-        if include_metadata and 'metadata' in result:
+        if include_metadata and "metadata" in result:
             formatted += f"   Metadata: {json.dumps(result['metadata'], indent=2)}\n"
         formatted += "\n"
     return formatted
 
 
-def run_optimized_search(query: str, include_web: bool = False, result_count: int = 5, use_mock: bool = False, verbose: bool = False):
+def run_optimized_search(
+    query: str,
+    include_web: bool = False,
+    result_count: int = 5,
+    use_mock: bool = False,
+    verbose: bool = False,
+):
     """Run optimized hybrid search with optional web integration."""
     print(f"Running optimized search for query: '{query}'")
     print(f"Include web results: {include_web}")
@@ -83,18 +107,22 @@ def run_optimized_search(query: str, include_web: bool = False, result_count: in
     end_time = time.time()
 
     # Print results
-    print(f"\nFound {len(results['combined'])} results in {end_time - start_time:.2f} seconds:\n")
-    print(format_results(results['combined'], include_metadata=verbose))
+    print(
+        f"\nFound {len(results['combined'])} results in {end_time - start_time:.2f} seconds:\n"
+    )
+    print(format_results(results["combined"], include_metadata=verbose))
 
     # Print source distribution if verbose
     if verbose:
         sources = {}
-        for result in results['combined']:
+        for result in results["combined"]:
             source = result["source"]
             sources[source] = sources.get(source, 0) + 1
         print("Source distribution:")
         for source, count in sources.items():
-            print(f"  {source}: {count} results ({count/len(results['combined'])*100:.1f}%)")
+            print(
+                f"  {source}: {count} results ({count/len(results['combined'])*100:.1f}%)"
+            )
 
 
 def main():
@@ -110,7 +138,7 @@ def main():
         include_web=include_web,
         result_count=args.count,
         use_mock=args.mock,
-        verbose=args.verbose
+        verbose=args.verbose,
     )
 
     # Implement comparison with basic hybrid search if needed

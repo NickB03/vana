@@ -34,13 +34,13 @@ The `VectorSearchAuditLogger` class provides specialized methods for logging dif
 def __init__(self, log_dir: str = "logs/audit/vector_search"):
     """
     Initialize the Vector Search Audit Logger.
-    
+
     Args:
         log_dir: Directory for audit logs (default: logs/audit/vector_search)
     """
     # Create log directory if it doesn't exist
     os.makedirs(log_dir, exist_ok=True)
-    
+
     # Create audit logger
     self.audit_logger = AuditLogger(
         log_dir=log_dir,
@@ -55,7 +55,7 @@ def __init__(self, log_dir: str = "logs/audit/vector_search"):
 1. **Search Operations**
 
 ```python
-def log_search(self, user_id: str, query: str, num_results: int, 
+def log_search(self, user_id: str, query: str, num_results: int,
               metadata_filter: Optional[Dict[str, Any]] = None,
               status: str = "success", details: Optional[Dict[str, Any]] = None) -> bool:
 ```
@@ -72,7 +72,7 @@ This method logs Vector Search operations, capturing:
 
 ```python
 def log_update(self, user_id: str, operation_type: str, num_items: int,
-              item_ids: Optional[List[str]] = None, 
+              item_ids: Optional[List[str]] = None,
               status: str = "success", details: Optional[Dict[str, Any]] = None) -> bool:
 ```
 
@@ -87,7 +87,7 @@ This method logs Vector Search update operations, capturing:
 3. **Configuration Changes**
 
 ```python
-def log_config_change(self, user_id: str, config_type: str, 
+def log_config_change(self, user_id: str, config_type: str,
                      old_value: Optional[Any] = None, new_value: Optional[Any] = None,
                      status: str = "success", details: Optional[Dict[str, Any]] = None) -> bool:
 ```
@@ -102,7 +102,7 @@ This method logs Vector Search configuration changes, capturing:
 4. **Access Events**
 
 ```python
-def log_access(self, user_id: str, access_type: str, 
+def log_access(self, user_id: str, access_type: str,
               resource_id: Optional[str] = None,
               status: str = "success", details: Optional[Dict[str, Any]] = None) -> bool:
 ```
@@ -124,7 +124,7 @@ The `VectorSearchClient` class has been enhanced to use the audit logger for all
 def search(self, query: str, top_k: int = 5, user_id: str = "system") -> List[Dict[str, Any]]:
     # Audit log the search attempt
     audit_details = {"method": "search", "top_k": top_k}
-    
+
     # Log search events at various points in the method
     vector_search_audit_logger.log_search(
         user_id=user_id,
@@ -146,7 +146,7 @@ def search_vector_store(self, query_embedding: List[float], top_k: int = 5,
         "top_k": top_k,
         "embedding_length": len(query_embedding) if query_embedding else 0
     }
-    
+
     # Log search events at various points in the method
     vector_search_audit_logger.log_search(
         user_id=user_id,
@@ -167,7 +167,7 @@ def upload_embedding(self, content: str, metadata: Dict[str, Any] = None, user_i
         "content_length": len(content) if content else 0,
         "has_metadata": metadata is not None
     }
-    
+
     # Log upload events at various points in the method
     vector_search_audit_logger.log_update(
         user_id=user_id,
@@ -187,7 +187,7 @@ def batch_upload_embeddings(self, items: List[Dict[str, Any]], user_id: str = "s
         "method": "batch_upload_embeddings",
         "num_items": len(items)
     }
-    
+
     # Log batch upload events at various points in the method
     vector_search_audit_logger.log_update(
         user_id=user_id,
@@ -254,7 +254,7 @@ def find_failed_searches(log_dir="logs/audit/vector_search"):
             for line in f:
                 try:
                     log_entry = json.loads(line)
-                    if (log_entry.get("event_type") == "search" and 
+                    if (log_entry.get("event_type") == "search" and
                         log_entry.get("status") == "failure"):
                         failed_searches.append(log_entry)
                 except json.JSONDecodeError:

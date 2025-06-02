@@ -5,17 +5,17 @@ This module provides secure audit logging for sensitive operations in the VANA p
 It creates tamper-evident logs with proper metadata and security information.
 """
 
-import os
-import json
-import time
-import uuid
-import logging
-import hashlib
 import datetime
-from typing import Dict, Any, Optional, List, Union
+import hashlib
+import json
+import logging
+import os
+import uuid
+from typing import Any, Optional
 
 # Set up logging
 logger = logging.getLogger(__name__)
+
 
 class AuditLogger:
     """
@@ -34,8 +34,7 @@ class AuditLogger:
         """
         # Set log directory
         self.log_dir = log_dir or os.path.join(
-            os.environ.get("VANA_DATA_DIR", "."),
-            "audit_logs"
+            os.environ.get("VANA_DATA_DIR", "."), "audit_logs"
         )
 
         # Create log directory if it doesn't exist
@@ -73,7 +72,7 @@ class AuditLogger:
             return ""
 
         try:
-            with open(log_file, "r") as f:
+            with open(log_file) as f:
                 # Read the last line
                 lines = f.readlines()
                 if not lines:
@@ -90,7 +89,7 @@ class AuditLogger:
             logger.error(f"Error reading last log hash: {str(e)}")
             return ""
 
-    def _compute_log_hash(self, log_data: Dict[str, Any]) -> str:
+    def _compute_log_hash(self, log_data: dict[str, Any]) -> str:
         """
         Compute a hash for a log entry.
 
@@ -109,10 +108,16 @@ class AuditLogger:
         # Compute hash
         return hashlib.sha256(combined.encode("utf-8")).hexdigest()
 
-    def log_event(self, event_type: str, user_id: str, operation: str,
-                resource_type: str, resource_id: Optional[str] = None,
-                details: Optional[Dict[str, Any]] = None,
-                status: str = "success") -> bool:
+    def log_event(
+        self,
+        event_type: str,
+        user_id: str,
+        operation: str,
+        resource_type: str,
+        resource_id: Optional[str] = None,
+        details: Optional[dict[str, Any]] = None,
+        status: str = "success",
+    ) -> bool:
         """
         Log an audit event.
 
@@ -140,7 +145,7 @@ class AuditLogger:
                 "user_id": user_id,
                 "operation": operation,
                 "resource_type": resource_type,
-                "status": status
+                "status": status,
             }
 
             # Add optional fields
@@ -156,7 +161,7 @@ class AuditLogger:
             log_data["source"] = {
                 "ip": os.environ.get("REMOTE_ADDR", "unknown"),
                 "user_agent": os.environ.get("HTTP_USER_AGENT", "unknown"),
-                "hostname": os.environ.get("HOSTNAME", "unknown")
+                "hostname": os.environ.get("HOSTNAME", "unknown"),
             }
 
             # Compute hash for tamper evidence
@@ -169,13 +174,15 @@ class AuditLogger:
             with open(self.current_log_file, "a") as f:
                 f.write(json.dumps(log_data) + "\n")
 
-            logger.debug(f"Audit log entry created: {event_type} {operation} on {resource_type}")
+            logger.debug(
+                f"Audit log entry created: {event_type} {operation} on {resource_type}"
+            )
             return True
         except Exception as e:
             logger.error(f"Error creating audit log: {str(e)}")
             return False
 
-    def _filter_sensitive_data(self, data: Dict[str, Any]) -> Dict[str, Any]:
+    def _filter_sensitive_data(self, data: dict[str, Any]) -> dict[str, Any]:
         """
         Filter sensitive data from log details.
 
@@ -190,8 +197,15 @@ class AuditLogger:
 
         # List of sensitive field names
         sensitive_fields = [
-            "password", "api_key", "token", "secret", "credential",
-            "auth", "key", "private", "certificate"
+            "password",
+            "api_key",
+            "token",
+            "secret",
+            "credential",
+            "auth",
+            "key",
+            "private",
+            "certificate",
         ]
 
         # Filter sensitive fields
@@ -211,13 +225,16 @@ class AuditLogger:
 
         return filtered
 
-    def get_audit_logs(self, start_time: Optional[str] = None,
-                     end_time: Optional[str] = None,
-                     event_types: Optional[List[str]] = None,
-                     user_id: Optional[str] = None,
-                     resource_type: Optional[str] = None,
-                     operation: Optional[str] = None,
-                     limit: int = 100) -> List[Dict[str, Any]]:
+    def get_audit_logs(
+        self,
+        start_time: Optional[str] = None,
+        end_time: Optional[str] = None,
+        event_types: Optional[list[str]] = None,
+        user_id: Optional[str] = None,
+        resource_type: Optional[str] = None,
+        operation: Optional[str] = None,
+        limit: int = 100,
+    ) -> list[dict[str, Any]]:
         """
         Get audit logs with filtering.
 
@@ -253,7 +270,7 @@ class AuditLogger:
                 if not os.path.exists(log_file):
                     continue
 
-                with open(log_file, "r") as f:
+                with open(log_file) as f:
                     for line in f:
                         line = line.strip()
                         if not line:
@@ -270,7 +287,7 @@ class AuditLogger:
                                 event_types,
                                 user_id,
                                 resource_type,
-                                operation
+                                operation,
                             ):
                                 continue
 
@@ -291,8 +308,11 @@ class AuditLogger:
             logger.error(f"Error retrieving audit logs: {str(e)}")
             return []
 
-    def _get_log_files_for_time_range(self, start_datetime: Optional[datetime.datetime],
-                                    end_datetime: Optional[datetime.datetime]) -> List[str]:
+    def _get_log_files_for_time_range(
+        self,
+        start_datetime: Optional[datetime.datetime],
+        end_datetime: Optional[datetime.datetime],
+    ) -> list[str]:
         """
         Get log files for a time range.
 
@@ -328,10 +348,14 @@ class AuditLogger:
                     file_date = datetime.datetime.strptime(date_str, "%Y-%m-%d")
 
                     # Check if file is in range
-                    if start_datetime and file_date < start_datetime.replace(hour=0, minute=0, second=0, microsecond=0):
+                    if start_datetime and file_date < start_datetime.replace(
+                        hour=0, minute=0, second=0, microsecond=0
+                    ):
                         continue
 
-                    if end_datetime and file_date > end_datetime.replace(hour=0, minute=0, second=0, microsecond=0):
+                    if end_datetime and file_date > end_datetime.replace(
+                        hour=0, minute=0, second=0, microsecond=0
+                    ):
                         continue
 
                     filtered_files.append(log_file)
@@ -343,13 +367,16 @@ class AuditLogger:
 
         return log_files
 
-    def _matches_filters(self, log_entry: Dict[str, Any],
-                       start_datetime: Optional[datetime.datetime],
-                       end_datetime: Optional[datetime.datetime],
-                       event_types: Optional[List[str]],
-                       user_id: Optional[str],
-                       resource_type: Optional[str],
-                       operation: Optional[str]) -> bool:
+    def _matches_filters(
+        self,
+        log_entry: dict[str, Any],
+        start_datetime: Optional[datetime.datetime],
+        end_datetime: Optional[datetime.datetime],
+        event_types: Optional[list[str]],
+        user_id: Optional[str],
+        resource_type: Optional[str],
+        operation: Optional[str],
+    ) -> bool:
         """
         Check if a log entry matches the filters.
 
@@ -396,7 +423,7 @@ class AuditLogger:
 
         return True
 
-    def verify_log_integrity(self) -> Dict[str, Any]:
+    def verify_log_integrity(self) -> dict[str, Any]:
         """
         Verify the integrity of audit logs.
 
@@ -407,7 +434,7 @@ class AuditLogger:
             "verified": True,
             "errors": [],
             "files_checked": 0,
-            "entries_checked": 0
+            "entries_checked": 0,
         }
 
         try:
@@ -429,7 +456,7 @@ class AuditLogger:
 
                 previous_hash = ""
 
-                with open(log_file, "r") as f:
+                with open(log_file) as f:
                     for line_num, line in enumerate(f, 1):
                         line = line.strip()
                         if not line:
@@ -450,28 +477,34 @@ class AuditLogger:
                             # Compute the expected hash
                             log_str = json.dumps(verification_entry, sort_keys=True)
                             combined = f"{previous_hash}:{log_str}"
-                            expected_hash = hashlib.sha256(combined.encode("utf-8")).hexdigest()
+                            expected_hash = hashlib.sha256(
+                                combined.encode("utf-8")
+                            ).hexdigest()
 
                             # Compare hashes
                             if log_hash != expected_hash:
                                 results["verified"] = False
-                                results["errors"].append({
-                                    "file": log_file,
-                                    "line": line_num,
-                                    "error": "Hash mismatch",
-                                    "expected": expected_hash,
-                                    "actual": log_hash
-                                })
+                                results["errors"].append(
+                                    {
+                                        "file": log_file,
+                                        "line": line_num,
+                                        "error": "Hash mismatch",
+                                        "expected": expected_hash,
+                                        "actual": log_hash,
+                                    }
+                                )
 
                             # Update previous hash
                             previous_hash = log_hash
                         except json.JSONDecodeError:
                             results["verified"] = False
-                            results["errors"].append({
-                                "file": log_file,
-                                "line": line_num,
-                                "error": "Invalid JSON"
-                            })
+                            results["errors"].append(
+                                {
+                                    "file": log_file,
+                                    "line": line_num,
+                                    "error": "Invalid JSON",
+                                }
+                            )
 
             return results
         except Exception as e:
@@ -480,5 +513,5 @@ class AuditLogger:
                 "verified": False,
                 "errors": [{"error": str(e)}],
                 "files_checked": results["files_checked"],
-                "entries_checked": results["entries_checked"]
+                "entries_checked": results["entries_checked"],
             }

@@ -110,11 +110,11 @@ Once the necessary data is available via the Flask API (or if you are just modif
         if data:
             st.metric(label="Status", value=data.get("status", "N/A").upper())
             st.metric(label="Key Metric", value=data.get("metric", 0))
-            
+
             # Example: Display raw data
             st.subheader("Raw Data")
             st.json(data)
-            
+
             # Example: Create a chart if data is suitable
             # if 'historical_data' in data:
             #     df = pd.DataFrame(data['historical_data'])

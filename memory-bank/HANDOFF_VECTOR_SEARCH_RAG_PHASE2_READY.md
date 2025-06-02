@@ -255,7 +255,7 @@ gsutil mb -l $REGION gs://$BUCKET
 ## 📋 VALIDATION CHECKLIST COMPLETED
 
 - ✅ Service health check passes
-- ✅ Agent selection works in ADK interface  
+- ✅ Agent selection works in ADK interface
 - ✅ search_knowledge tool executes without "not found" error
 - ✅ Tool returns actual search results (not error messages)
 - ✅ VANA_RAG_CORPUS_ID environment variable is being used

@@ -36,10 +36,10 @@ graph TD
     AgentCore -- "Uses" --> KG_Manager;
     HybridSearch -- "Queries via" --> KG_Manager;
     DocProc -- "Provides data to Agent, which uses" --> KG_Manager;
-    
+
     KG_Manager -- "Uses" --> MCP_Client;
     KG_Manager -- "Reads" --> EnvConfig;
-    
+
     MCP_Client -- "HTTP API Calls" --> MCP_Server;
     MCP_Client -- "Reads" --> EnvConfig;
 ```
@@ -52,7 +52,7 @@ graph TD
 # tools/knowledge_graph/knowledge_graph_manager.py (Conceptual Structure)
 from config import environment
 # Assuming an MCPClient class exists, e.g., from tools.mcp_memory_client
-# from tools.mcp_memory_client import MCPMemoryClient 
+# from tools.mcp_memory_client import MCPMemoryClient
 # from tools.logging.logger import get_logger
 # from tools.resilience import CircuitBreaker, CircuitBreakerOpenException # For resilience
 
@@ -67,13 +67,13 @@ class KnowledgeGraphManager:
         # self.mcp_endpoint = environment.MCP_ENDPOINT
         # self.mcp_namespace = environment.MCP_NAMESPACE
         # self.mcp_api_key = environment.MCP_API_KEY
-        
+
         # self.mcp_client = MCPMemoryClient(
         #     endpoint=self.mcp_endpoint,
         #     namespace=self.mcp_namespace,
         #     api_key=self.mcp_api_key
         # )
-        
+
         # Example: Circuit breaker for MCP calls
         # self.cb_mcp = CircuitBreaker(name="mcp_kg_calls", failure_threshold=3, recovery_timeout_seconds=60)
 
@@ -84,12 +84,12 @@ class KnowledgeGraphManager:
     def add_entity(self, name: str, entity_type: str, observations: list = None):
         """
         Adds a new entity to the Knowledge Graph.
-        
+
         Args:
             name (str): The unique name/ID of the entity.
             entity_type (str): The type of the entity (e.g., "Person", "Project").
             observations (list, optional): A list of textual observations about the entity.
-            
+
         Returns:
             dict or None: Response from MCP server or None on failure.
         """
@@ -189,7 +189,7 @@ class KnowledgeGraphManager:
         #     logger.error(f"Error getting relations: {e}", exc_info=True)
         #     return None
         pass # Placeholder
-        
+
     def delete_relation(self, from_entity: str, to_entity: str, relation_type: str):
         """
         Deletes a specific relationship.

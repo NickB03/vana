@@ -16,14 +16,28 @@ OPTIMIZATION TECHNIQUES APPLIED:
 
 from google.adk.agents import LlmAgent
 from lib._tools import (
-    adk_echo, adk_read_file, adk_write_file, adk_list_directory, adk_file_exists,
-    adk_vector_search, adk_web_search, adk_search_knowledge,
-    adk_get_health_status, adk_coordinate_task,
-    adk_ask_for_approval, adk_generate_report,
-    adk_architecture_tool, adk_ui_tool, adk_devops_tool, adk_qa_tool,
+    adk_architecture_tool,
+    adk_ask_for_approval,
+    adk_aws_lambda_mcp,
     # Phase 6A: MCP Tools Integration
-    adk_brave_search_mcp, adk_github_mcp_operations, adk_aws_lambda_mcp,
-    adk_list_available_mcp_servers, adk_get_mcp_integration_status
+    adk_brave_search_mcp,
+    adk_coordinate_task,
+    adk_devops_tool,
+    adk_echo,
+    adk_file_exists,
+    adk_generate_report,
+    adk_get_health_status,
+    adk_get_mcp_integration_status,
+    adk_github_mcp_operations,
+    adk_list_available_mcp_servers,
+    adk_list_directory,
+    adk_qa_tool,
+    adk_read_file,
+    adk_search_knowledge,
+    adk_ui_tool,
+    adk_vector_search,
+    adk_web_search,
+    adk_write_file,
 )
 
 # Create VANA agent with ALL tools including agent tools
@@ -92,13 +106,27 @@ CRITICAL REMINDERS:
 - Scale tool usage intelligently - complex queries require multiple tool calls
 - Chain tools logically for comprehensive analysis and validation""",
     tools=[
-        adk_echo, adk_read_file, adk_write_file, adk_list_directory, adk_file_exists,
-        adk_vector_search, adk_web_search, adk_search_knowledge,
-        adk_get_health_status, adk_coordinate_task,
-        adk_ask_for_approval, adk_generate_report,
-        adk_architecture_tool, adk_ui_tool, adk_devops_tool, adk_qa_tool,
+        adk_echo,
+        adk_read_file,
+        adk_write_file,
+        adk_list_directory,
+        adk_file_exists,
+        adk_vector_search,
+        adk_web_search,
+        adk_search_knowledge,
+        adk_get_health_status,
+        adk_coordinate_task,
+        adk_ask_for_approval,
+        adk_generate_report,
+        adk_architecture_tool,
+        adk_ui_tool,
+        adk_devops_tool,
+        adk_qa_tool,
         # Phase 6A: MCP Tools Integration (5 new tools)
-        adk_brave_search_mcp, adk_github_mcp_operations, adk_aws_lambda_mcp,
-        adk_list_available_mcp_servers, adk_get_mcp_integration_status
-    ]  # Phase 6A: 21 tools operational (16 base + 5 MCP tools)
+        adk_brave_search_mcp,
+        adk_github_mcp_operations,
+        adk_aws_lambda_mcp,
+        adk_list_available_mcp_servers,
+        adk_get_mcp_integration_status,
+    ],  # Phase 6A: 21 tools operational (16 base + 5 MCP tools)
 )

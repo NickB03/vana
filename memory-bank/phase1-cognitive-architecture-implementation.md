@@ -74,7 +74,7 @@ def assess_task_complexity(user_input):
         'complex': ['plan', 'coordinate', 'integrate', 'optimize'],
         'multi_step': ['and', 'then', 'after', 'before', 'while']
     }
-    
+
     # Analyze input for complexity markers
     # Return complexity level and recommended tool count
 ```

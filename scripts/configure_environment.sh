@@ -121,34 +121,34 @@ if [[ "$INTERACTIVE" == true ]]; then
         if [[ -n "$GOOGLE_CLOUD_PROJECT" ]]; then
             sed -i.bak "s/^GOOGLE_CLOUD_PROJECT=.*/GOOGLE_CLOUD_PROJECT=$GOOGLE_CLOUD_PROJECT/" "$OUTPUT_FILE"
         fi
-        
+
         echo -e "${BLUE}Google Cloud Location:${NC}"
         read -p "GOOGLE_CLOUD_LOCATION=" GOOGLE_CLOUD_LOCATION
         if [[ -n "$GOOGLE_CLOUD_LOCATION" ]]; then
             sed -i.bak "s/^GOOGLE_CLOUD_LOCATION=.*/GOOGLE_CLOUD_LOCATION=$GOOGLE_CLOUD_LOCATION/" "$OUTPUT_FILE"
         fi
-        
+
         echo -e "${BLUE}Path to service account key file:${NC}"
         read -p "GOOGLE_APPLICATION_CREDENTIALS=" GOOGLE_APPLICATION_CREDENTIALS
         if [[ -n "$GOOGLE_APPLICATION_CREDENTIALS" ]]; then
             sed -i.bak "s|^GOOGLE_APPLICATION_CREDENTIALS=.*|GOOGLE_APPLICATION_CREDENTIALS=$GOOGLE_APPLICATION_CREDENTIALS|" "$OUTPUT_FILE"
         fi
-        
+
         echo -e "${BLUE}Vector Search Endpoint ID:${NC}"
         read -p "VECTOR_SEARCH_ENDPOINT_ID=" VECTOR_SEARCH_ENDPOINT_ID
         if [[ -n "$VECTOR_SEARCH_ENDPOINT_ID" ]]; then
             sed -i.bak "s/^VECTOR_SEARCH_ENDPOINT_ID=.*/VECTOR_SEARCH_ENDPOINT_ID=$VECTOR_SEARCH_ENDPOINT_ID/" "$OUTPUT_FILE"
-            
+
             # Also update the endpoint name if project ID is set
             if [[ -n "$GOOGLE_CLOUD_PROJECT" && -n "$GOOGLE_CLOUD_LOCATION" ]]; then
                 ENDPOINT_NAME="projects/$GOOGLE_CLOUD_PROJECT/locations/$GOOGLE_CLOUD_LOCATION/indexEndpoints/$VECTOR_SEARCH_ENDPOINT_ID"
                 sed -i.bak "s|^VECTOR_SEARCH_ENDPOINT_NAME=.*|VECTOR_SEARCH_ENDPOINT_NAME=$ENDPOINT_NAME|" "$OUTPUT_FILE"
             fi
         fi
-        
+
         # Clean up backup file
         rm -f "$OUTPUT_FILE.bak"
-        
+
         echo -e "${GREEN}Configuration customized successfully.${NC}"
     fi
 fi

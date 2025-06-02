@@ -71,22 +71,22 @@ class DashboardAuth:
         enable_audit: bool = True
     ):
         # Initialize authentication manager
-        
+
     def authenticate(self, username: str, password: str) -> bool:
         # Authenticate user with username and password
-        
+
     def generate_token(self, username: str) -> str:
         # Generate authentication token
-        
+
     def validate_token(self, token: str) -> Optional[Dict[str, Any]]:
         # Validate authentication token
-        
+
     def revoke_token(self, token: str) -> bool:
         # Revoke authentication token
-        
+
     def has_role(self, username: str, role: str) -> bool:
         # Check if user has a specific role
-        
+
     def change_password(self, username: str, new_password: str) -> bool:
         # Change user's password
 ```
@@ -99,7 +99,7 @@ The `requires_auth` decorator provides a convenient way to secure routes:
 def requires_auth(roles: Optional[List[str]] = None):
     """
     Decorator for routes that require authentication
-    
+
     Args:
         roles: List of required roles (if None, any authenticated user is allowed)
     """
@@ -107,27 +107,27 @@ def requires_auth(roles: Optional[List[str]] = None):
         @functools.wraps(f)
         def decorated(*args, **kwargs):
             auth = current_app.config.get('AUTH_MANAGER')
-            
+
             # Check if authentication is enabled
             if not auth:
                 return f(*args, **kwargs)
-            
+
             # Check if user is authenticated
             token = session.get('auth_token')
             if not token:
                 return redirect(url_for('auth.login', next=request.url))
-            
+
             # Validate token
             token_data = auth.validate_token(token)
             if not token_data:
                 return redirect(url_for('auth.login', next=request.url))
-            
+
             # Check roles if specified
             if roles:
                 user_roles = token_data.get('roles', [])
                 if not any(role in user_roles for role in roles):
                     return Response('Unauthorized', 403)
-            
+
             # Authentication successful
             return f(*args, **kwargs)
         return decorated

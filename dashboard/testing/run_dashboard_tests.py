@@ -4,13 +4,15 @@ VANA Dashboard Test Runner
 Runs test scenarios using data generators, measures performance, and outputs structured reports.
 """
 
-import time
 import json
 import os
+import time
+
 from dashboard.testing.data_generator import generate_scenario
 
 REPORTS_DIR = os.environ.get("VANA_TEST_REPORTS_DIR", "dashboard/testing/reports")
 os.makedirs(REPORTS_DIR, exist_ok=True)
+
 
 def run_test_scenario(scenario: str):
     print(f"Running test scenario: {scenario}")
@@ -27,11 +29,12 @@ def run_test_scenario(scenario: str):
             "num_agents": len(data["agents"]),
             "num_memory_components": len(data["memory"]),
             "system_status": data["system"]["services"],
-            "num_tasks": len(data["tasks"])
+            "num_tasks": len(data["tasks"]),
         },
-        "status": "success"
+        "status": "success",
     }
     return result
+
 
 def save_report(result: dict):
     timestamp = int(time.time())
@@ -40,6 +43,7 @@ def save_report(result: dict):
     with open(path, "w") as f:
         json.dump(result, f, indent=2)
     print(f"Saved test report: {path}")
+
 
 def test_api_endpoints():
     """
@@ -60,20 +64,23 @@ def test_api_endpoints():
                     message=f"API endpoint {ep} returned status {resp.status_code}",
                     severity="warning",
                     source="test_api_endpoints",
-                    details={"endpoint": ep, "status_code": resp.status_code}
+                    details={"endpoint": ep, "status_code": resp.status_code},
                 )
         except Exception as e:
             alert_manager.log_external_alert(
                 message=f"API endpoint {ep} failed: {e}",
                 severity="critical",
                 source="test_api_endpoints",
-                details={"endpoint": ep, "error": str(e)}
+                details={"endpoint": ep, "error": str(e)},
             )
+
+
 def main():
     scenarios = ["default", "high_load", "degraded_services", "error_spike"]
     for scenario in scenarios:
         result = run_test_scenario(scenario)
         save_report(result)
+
 
 if __name__ == "__main__":
     main()

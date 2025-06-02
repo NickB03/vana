@@ -4,19 +4,18 @@ Test Structured Logger
 This module tests the structured logger functionality.
 """
 
-import os
-import sys
-import json
-import shutil
-import unittest
-import tempfile
 import logging
-from unittest.mock import patch, MagicMock
+import os
+import shutil
+import sys
+import tempfile
+import unittest
 
 # Add the project root to the Python path
 sys.path.insert(0, os.path.abspath(os.path.dirname(os.path.dirname(__file__))))
 
-from tools.logging.structured_logger import StructuredLogger, JsonLogHandler
+from tools.logging.structured_logger import JsonLogHandler, StructuredLogger
+
 
 class TestStructuredLogger(unittest.TestCase):
     """Test cases for the Structured Logger."""
@@ -50,7 +49,9 @@ class TestStructuredLogger(unittest.TestCase):
         self.assertEqual(self.logger.logger.level, logging.INFO)
 
         # Verify JSON handler
-        json_handlers = [h for h in self.logger.logger.handlers if isinstance(h, JsonLogHandler)]
+        json_handlers = [
+            h for h in self.logger.logger.handlers if isinstance(h, JsonLogHandler)
+        ]
         self.assertEqual(len(json_handlers), 1)
 
         # Skip file path verification as it's not reliable in this environment
@@ -98,7 +99,7 @@ class TestStructuredLogger(unittest.TestCase):
             level=logging.INFO,
             message="Test message",
             operation="test_operation",
-            extra={"key": "value"}
+            extra={"key": "value"},
         )
 
         # Verify log data
@@ -140,18 +141,19 @@ class TestStructuredLogger(unittest.TestCase):
         self.logger.log_memory_operation(
             operation="store_entity",
             status="success",
-            details={"entity_name": "test_entity"}
+            details={"entity_name": "test_entity"},
         )
 
         self.logger.log_memory_operation(
             operation="retrieve_entity",
             status="failure",
-            details={"entity_name": "missing_entity", "error": "Entity not found"}
+            details={"entity_name": "missing_entity", "error": "Entity not found"},
         )
 
         # Verify that the structured logger is working
         # by checking that it didn't raise any exceptions
         self.assertIsNotNone(self.logger.correlation_id)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -81,13 +81,13 @@ Each `.py` file in the `pages/` directory typically represents a distinct view o
     import pandas as pd
     import plotly.express as px
     # Assuming api_client.py has functions to call Flask API
-    from dashboard.frontend.utils.api_client import fetch_vector_search_health, fetch_vs_latency_metrics 
+    from dashboard.frontend.utils.api_client import fetch_vector_search_health, fetch_vs_latency_metrics
     # Assuming auth_utils.py handles login checks and token management for API calls
     # from dashboard.frontend.utils.auth_utils import ensure_authenticated, get_auth_headers
 
     # Page specific configuration
     st.set_page_config(page_title="Vector Search Health", layout="wide")
-    
+
     # if not ensure_authenticated(): # Redirect or stop if not logged in
     #    st.stop()
 
@@ -107,7 +107,7 @@ Each `.py` file in the `pages/` directory typically represents a distinct view o
             st.error(f"Overall Status: {overall_status}")
         else:
             st.warning(f"Overall Status: {overall_status}")
-        
+
         # Display detailed checks
         # st.dataframe(pd.DataFrame(health_data.get("checks", [])))
     else:
@@ -118,7 +118,7 @@ Each `.py` file in the `pages/` directory typically represents a distinct view o
         col1, col2 = st.columns(2)
         col1.metric("Average Latency (ms)", latency_data.get("average_ms", "N/A"))
         col2.metric("P95 Latency (ms)", latency_data.get("p95_ms", "N/A"))
-        
+
         # Example: Plot historical latency if available in latency_data
         # if "history" in latency_data:
         #     df_latency = pd.DataFrame(latency_data["history"])
@@ -126,7 +126,7 @@ Each `.py` file in the `pages/` directory typically represents a distinct view o
         #     st.plotly_chart(fig, use_container_width=True)
     else:
         st.warning("Could not retrieve latency metrics.")
-        
+
     # Add more UI elements, charts, tables as needed
     ```
 *   **Data Fetching:** Pages call functions (e.g., from `dashboard/frontend/utils/api_client.py`) that use the `requests` library to query the Flask API backend.

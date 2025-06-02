@@ -10,11 +10,11 @@ Usage:
     python scripts/verify_vector_search.py
 """
 
+import argparse
+import logging
 import os
 import sys
-import logging
-import argparse
-from typing import Dict, Any, List, Optional
+
 from dotenv import load_dotenv
 
 # Add project root to path
@@ -32,7 +32,8 @@ except ImportError:
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-def load_environment_variables() -> Dict[str, str]:
+
+def load_environment_variables() -> dict[str, str]:
     """Load environment variables required for Vector Search."""
     # Load environment variables from .env file
     load_dotenv()
@@ -42,7 +43,7 @@ def load_environment_variables() -> Dict[str, str]:
         "GOOGLE_CLOUD_LOCATION": os.environ.get("GOOGLE_CLOUD_LOCATION", "us-central1"),
         "VECTOR_SEARCH_INDEX_ID": os.environ.get("VECTOR_SEARCH_INDEX_ID"),
         "VECTOR_SEARCH_ENDPOINT_ID": os.environ.get("VECTOR_SEARCH_ENDPOINT_ID"),
-        "DEPLOYED_INDEX_ID": os.environ.get("DEPLOYED_INDEX_ID", "vanasharedindex")
+        "DEPLOYED_INDEX_ID": os.environ.get("DEPLOYED_INDEX_ID", "vanasharedindex"),
     }
 
     # Check for missing variables
@@ -53,17 +54,20 @@ def load_environment_variables() -> Dict[str, str]:
 
     return env_vars
 
-def verify_index(env_vars: Dict[str, str]) -> bool:
+
+def verify_index(env_vars: dict[str, str]) -> bool:
     """Verify that the Vector Search index exists and is accessible."""
     try:
         # Initialize Vertex AI
         aiplatform.init(
             project=env_vars["GOOGLE_CLOUD_PROJECT"],
-            location=env_vars["GOOGLE_CLOUD_LOCATION"]
+            location=env_vars["GOOGLE_CLOUD_LOCATION"],
         )
 
         # Get the index
-        index = aiplatform.MatchingEngineIndex(index_name=env_vars["VECTOR_SEARCH_INDEX_ID"])
+        index = aiplatform.MatchingEngineIndex(
+            index_name=env_vars["VECTOR_SEARCH_INDEX_ID"]
+        )
 
         # Print index information
         logger.info(f"✅ Vector Search Index: {index.display_name}")
@@ -76,13 +80,14 @@ def verify_index(env_vars: Dict[str, str]) -> bool:
         logger.error(f"❌ Error accessing Vector Search index: {e}")
         return False
 
-def verify_endpoint(env_vars: Dict[str, str]) -> bool:
+
+def verify_endpoint(env_vars: dict[str, str]) -> bool:
     """Verify that the Vector Search endpoint exists and is accessible."""
     try:
         # Initialize Vertex AI
         aiplatform.init(
             project=env_vars["GOOGLE_CLOUD_PROJECT"],
-            location=env_vars["GOOGLE_CLOUD_LOCATION"]
+            location=env_vars["GOOGLE_CLOUD_LOCATION"],
         )
 
         # Get the endpoint
@@ -105,14 +110,17 @@ def verify_endpoint(env_vars: Dict[str, str]) -> bool:
                 deployed_index_found = True
 
         if not deployed_index_found:
-            logger.warning(f"⚠️ Deployed index ID '{env_vars['DEPLOYED_INDEX_ID']}' not found on endpoint.")
+            logger.warning(
+                f"⚠️ Deployed index ID '{env_vars['DEPLOYED_INDEX_ID']}' not found on endpoint."
+            )
 
         return True
     except Exception as e:
         logger.error(f"❌ Error accessing Vector Search endpoint: {e}")
         return False
 
-def test_search(env_vars: Dict[str, str], query: str = "VANA", top_k: int = 3) -> bool:
+
+def test_search(env_vars: dict[str, str], query: str = "VANA", top_k: int = 3) -> bool:
     """Perform a test search to verify that Vector Search is working correctly."""
     try:
         # Import vector search client
@@ -147,11 +155,16 @@ def test_search(env_vars: Dict[str, str], query: str = "VANA", top_k: int = 3) -
         logger.error(f"❌ Error performing test search: {e}")
         return False
 
+
 def main():
     """Main function."""
     parser = argparse.ArgumentParser(description="Verify Vector Search Index for VANA")
-    parser.add_argument("--query", type=str, default="VANA", help="Test query to use for verification")
-    parser.add_argument("--top-k", type=int, default=3, help="Number of results to retrieve")
+    parser.add_argument(
+        "--query", type=str, default="VANA", help="Test query to use for verification"
+    )
+    parser.add_argument(
+        "--top-k", type=int, default=3, help="Number of results to retrieve"
+    )
     args = parser.parse_args()
 
     # Load environment variables
@@ -184,6 +197,7 @@ def main():
     else:
         logger.error("❌ Vector Search verification failed!")
         return 1
+
 
 if __name__ == "__main__":
     sys.exit(main())

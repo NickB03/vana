@@ -18,15 +18,16 @@ Options:
     --log-file FILE       Log file path
 """
 
+import argparse
+import json
+import logging
 import os
 import sys
 import time
-import logging
-import argparse
-import json
-import schedule
 from datetime import datetime
 from pathlib import Path
+
+import schedule
 
 # Add the project root to the Python path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -35,11 +36,10 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(message)s",
-    handlers=[
-        logging.StreamHandler()
-    ]
+    handlers=[logging.StreamHandler()],
 )
 logger = logging.getLogger(__name__)
+
 
 def setup_logging(log_file=None):
     """
@@ -60,10 +60,17 @@ def setup_logging(log_file=None):
     logging.basicConfig(
         level=logging.INFO,
         format="%(asctime)s [%(levelname)s] %(message)s",
-        handlers=handlers
+        handlers=handlers,
     )
 
-def run_health_check(store_history=True, history_dir="health_history", alert_level="error", alert_method="log", degraded_mode=False):
+
+def run_health_check(
+    store_history=True,
+    history_dir="health_history",
+    alert_level="error",
+    alert_method="log",
+    degraded_mode=False,
+):
     """
     Run health check and store results if needed
 
@@ -77,14 +84,14 @@ def run_health_check(store_history=True, history_dir="health_history", alert_lev
     Returns:
         Health check result
     """
-    from tools.vector_search.health_checker import VectorSearchHealthChecker
     from tools.monitoring.circuit_breaker import CircuitBreaker, CircuitOpenError
+    from tools.vector_search.health_checker import VectorSearchHealthChecker
 
     # Create circuit breaker for health check
     health_check_cb = CircuitBreaker(
         failure_threshold=3,
         recovery_timeout=300,  # 5 minutes
-        name="vector-search-health-check"
+        name="vector-search-health-check",
     )
 
     # Fallback function for degraded mode
@@ -98,14 +105,16 @@ def run_health_check(store_history=True, history_dir="health_history", alert_lev
             "checks": {
                 "environment": {
                     "status": "unknown",
-                    "details": {"message": "Running in degraded mode"}
+                    "details": {"message": "Running in degraded mode"},
                 }
             },
             "metrics": {},
-            "issues": [{
-                "severity": "warn",
-                "message": "Health check running in degraded mode due to previous failures"
-            }]
+            "issues": [
+                {
+                    "severity": "warn",
+                    "message": "Health check running in degraded mode due to previous failures",
+                }
+            ],
         }
 
         # Try to check environment variables at minimum
@@ -123,10 +132,12 @@ def run_health_check(store_history=True, history_dir="health_history", alert_lev
         except Exception as e:
             logger.error(f"Error in degraded health check: {e}")
             result["status"] = "error"
-            result["issues"].append({
-                "severity": "error",
-                "message": f"Error in degraded health check: {str(e)}"
-            })
+            result["issues"].append(
+                {
+                    "severity": "error",
+                    "message": f"Error in degraded health check: {str(e)}",
+                }
+            )
 
         return result, None  # No checker object in degraded mode
 
@@ -167,7 +178,7 @@ def run_health_check(store_history=True, history_dir="health_history", alert_lev
 
                 # Save directly if no checker is available
                 if checker is None:
-                    with open(filename, 'w') as f:
+                    with open(filename, "w") as f:
                         json.dump(result, f, indent=2)
                 else:
                     checker.save_report_to_file(str(filename))
@@ -177,13 +188,7 @@ def run_health_check(store_history=True, history_dir="health_history", alert_lev
                 logger.error(f"Failed to save health report: {e}")
 
         # Check if alert should be triggered
-        alert_levels = {
-            "ok": 0,
-            "warn": 1,
-            "error": 2,
-            "critical": 3,
-            "unknown": 4
-        }
+        alert_levels = {"ok": 0, "warn": 1, "error": 2, "critical": 3, "unknown": 4}
 
         if alert_levels.get(status, 0) >= alert_levels.get(alert_level, 0):
             trigger_alert(result, checker, alert_method)
@@ -199,16 +204,19 @@ def run_health_check(store_history=True, history_dir="health_history", alert_lev
             "status": "error",
             "checks": {},
             "metrics": {},
-            "issues": [{
-                "severity": "error",
-                "message": f"Unexpected error in health check: {str(e)}"
-            }]
+            "issues": [
+                {
+                    "severity": "error",
+                    "message": f"Unexpected error in health check: {str(e)}",
+                }
+            ],
         }
 
         # Trigger alert for the error
         trigger_alert(error_result, None, alert_method)
 
         return error_result
+
 
 def trigger_alert(result, checker, alert_method="log"):
     """
@@ -230,7 +238,9 @@ def trigger_alert(result, checker, alert_method="log"):
     if issues:
         alert_message += "\nIssues:\n"
         for i, issue in enumerate(issues, 1):
-            alert_message += f"{i}. [{issue.get('severity', 'unknown')}] {issue.get('message')}\n"
+            alert_message += (
+                f"{i}. [{issue.get('severity', 'unknown')}] {issue.get('message')}\n"
+            )
 
     # Get recommendations if checker is available
     if checker is not None:
@@ -258,7 +268,10 @@ def trigger_alert(result, checker, alert_method="log"):
             alerts_dir = Path("alerts")
             alerts_dir.mkdir(exist_ok=True)
 
-            alert_file = alerts_dir / f"vector_search_alert_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
+            alert_file = (
+                alerts_dir
+                / f"vector_search_alert_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
+            )
 
             with open(alert_file, "w") as f:
                 f.write(alert_message)
@@ -273,6 +286,7 @@ def trigger_alert(result, checker, alert_method="log"):
             # Still try to log the alert if file saving fails
             if alert_method != "log":
                 logger.warning(alert_message)
+
 
 def analyze_history(history_dir="health_history", days=7):
     """
@@ -316,7 +330,7 @@ def analyze_history(history_dir="health_history", days=7):
 
     for file_path in recent_files:
         try:
-            with open(file_path, "r") as f:
+            with open(file_path) as f:
                 data = json.load(f)
 
                 # Count statuses
@@ -333,50 +347,82 @@ def analyze_history(history_dir="health_history", days=7):
             logger.error(f"Error processing history file {file_path}: {e}")
 
     # Calculate averages
-    avg_response_time = sum(response_times) / len(response_times) if response_times else 0
+    avg_response_time = (
+        sum(response_times) / len(response_times) if response_times else 0
+    )
     avg_success_rate = sum(success_rates) / len(success_rates) if success_rates else 0
 
     # Create analysis result
     analysis = {
         "total_checks": len(recent_files),
         "status_counts": status_counts,
-        "health_percentage": (status_counts.get("ok", 0) / len(recent_files)) * 100 if recent_files else 0,
+        "health_percentage": (status_counts.get("ok", 0) / len(recent_files)) * 100
+        if recent_files
+        else 0,
         "avg_response_time": avg_response_time,
         "avg_success_rate": avg_success_rate,
         "analyzed_days": days,
-        "timestamp": datetime.now().isoformat()
+        "timestamp": datetime.now().isoformat(),
     }
 
     return analysis
 
+
 def main():
     """Main function"""
-    parser = argparse.ArgumentParser(description="Scheduled Vector Search Health Monitoring")
-    parser.add_argument("--interval", type=int, default=15,
-                        help="Monitoring interval in minutes")
-    parser.add_argument("--no-store", action="store_true",
-                        help="Don't store historical reports")
-    parser.add_argument("--alert-level", choices=["ok", "warn", "error", "critical"], default="error",
-                        help="Minimum level to trigger alerts")
-    parser.add_argument("--alert-method", choices=["log", "file", "both"], default="log",
-                        help="Alert method")
-    parser.add_argument("--history-dir", type=str, default="health_history",
-                        help="Directory to store historical reports")
-    parser.add_argument("--log-file", type=str, default=None,
-                        help="Log file path")
-    parser.add_argument("--degraded-mode", action="store_true",
-                        help="Start in degraded mode (limited functionality)")
-    parser.add_argument("--adaptive-interval", action="store_true",
-                        help="Use adaptive monitoring intervals based on system health")
-    parser.add_argument("--retention-days", type=int, default=30,
-                        help="Number of days to retain historical data")
+    parser = argparse.ArgumentParser(
+        description="Scheduled Vector Search Health Monitoring"
+    )
+    parser.add_argument(
+        "--interval", type=int, default=15, help="Monitoring interval in minutes"
+    )
+    parser.add_argument(
+        "--no-store", action="store_true", help="Don't store historical reports"
+    )
+    parser.add_argument(
+        "--alert-level",
+        choices=["ok", "warn", "error", "critical"],
+        default="error",
+        help="Minimum level to trigger alerts",
+    )
+    parser.add_argument(
+        "--alert-method",
+        choices=["log", "file", "both"],
+        default="log",
+        help="Alert method",
+    )
+    parser.add_argument(
+        "--history-dir",
+        type=str,
+        default="health_history",
+        help="Directory to store historical reports",
+    )
+    parser.add_argument("--log-file", type=str, default=None, help="Log file path")
+    parser.add_argument(
+        "--degraded-mode",
+        action="store_true",
+        help="Start in degraded mode (limited functionality)",
+    )
+    parser.add_argument(
+        "--adaptive-interval",
+        action="store_true",
+        help="Use adaptive monitoring intervals based on system health",
+    )
+    parser.add_argument(
+        "--retention-days",
+        type=int,
+        default=30,
+        help="Number of days to retain historical data",
+    )
     args = parser.parse_args()
 
     # Set up logging
     setup_logging(args.log_file)
 
     # Run initial health check
-    logger.info(f"Starting Vector Search health monitoring (interval: {args.interval} minutes)")
+    logger.info(
+        f"Starting Vector Search health monitoring (interval: {args.interval} minutes)"
+    )
 
     # Track consecutive failures for adaptive monitoring
     consecutive_failures = 0
@@ -388,7 +434,7 @@ def main():
         history_dir=args.history_dir,
         alert_level=args.alert_level,
         alert_method=args.alert_method,
-        degraded_mode=args.degraded_mode
+        degraded_mode=args.degraded_mode,
     )
 
     # Update failure count based on result
@@ -410,7 +456,7 @@ def main():
             history_dir=args.history_dir,
             alert_level=args.alert_level,
             alert_method=args.alert_method,
-            degraded_mode=use_degraded_mode
+            degraded_mode=use_degraded_mode,
         )
 
         # Update failure count based on result
@@ -425,7 +471,9 @@ def main():
                 # Increase frequency for repeated failures (minimum 1 minute)
                 new_interval = max(1, current_interval // 2)
                 if new_interval != current_interval:
-                    logger.warning(f"Adjusting monitoring interval due to failures: {current_interval} -> {new_interval} minutes")
+                    logger.warning(
+                        f"Adjusting monitoring interval due to failures: {current_interval} -> {new_interval} minutes"
+                    )
                     current_interval = new_interval
 
                     # Reschedule with new interval
@@ -437,7 +485,9 @@ def main():
                 # Gradually return to normal interval
                 new_interval = min(args.interval, current_interval * 2)
                 if new_interval != current_interval:
-                    logger.info(f"Adjusting monitoring interval back toward normal: {current_interval} -> {new_interval} minutes")
+                    logger.info(
+                        f"Adjusting monitoring interval back toward normal: {current_interval} -> {new_interval} minutes"
+                    )
                     current_interval = new_interval
 
                     # Reschedule with new interval
@@ -449,7 +499,9 @@ def main():
         return result
 
     # Schedule the health check
-    schedule.every(current_interval).minutes.do(scheduled_health_check).tag("health_check")
+    schedule.every(current_interval).minutes.do(scheduled_health_check).tag(
+        "health_check"
+    )
 
     # Schedule daily analysis
     schedule.every().day.at("00:00").do(
@@ -470,6 +522,7 @@ def main():
     except KeyboardInterrupt:
         logger.info("Health monitoring stopped by user")
 
+
 def cleanup_old_data(history_dir="health_history", retention_days=30):
     """
     Clean up old health check data
@@ -481,7 +534,9 @@ def cleanup_old_data(history_dir="health_history", retention_days=30):
     Returns:
         Number of files deleted
     """
-    logger.info(f"Running data retention cleanup (keeping {retention_days} days of data)...")
+    logger.info(
+        f"Running data retention cleanup (keeping {retention_days} days of data)..."
+    )
 
     try:
         history_path = Path(history_dir)
@@ -494,8 +549,11 @@ def cleanup_old_data(history_dir="health_history", retention_days=30):
         cutoff_time = time.time() - (retention_days * 24 * 60 * 60)
 
         # Find files older than cutoff
-        old_files = [f for f in history_path.glob("vector_search_health_*.json")
-                    if f.stat().st_mtime < cutoff_time]
+        old_files = [
+            f
+            for f in history_path.glob("vector_search_health_*.json")
+            if f.stat().st_mtime < cutoff_time
+        ]
 
         # Delete old files
         deleted_count = 0
@@ -511,8 +569,11 @@ def cleanup_old_data(history_dir="health_history", retention_days=30):
         # Also clean up old analysis files
         analysis_path = Path("analysis")
         if analysis_path.exists():
-            old_analysis_files = [f for f in analysis_path.glob("vector_search_analysis_*.json")
-                                if f.stat().st_mtime < cutoff_time]
+            old_analysis_files = [
+                f
+                for f in analysis_path.glob("vector_search_analysis_*.json")
+                if f.stat().st_mtime < cutoff_time
+            ]
 
             analysis_deleted = 0
             for file_path in old_analysis_files:
@@ -530,6 +591,7 @@ def cleanup_old_data(history_dir="health_history", retention_days=30):
         logger.error(f"Error during data cleanup: {e}")
         return 0
 
+
 def analyze_and_report_history(history_dir="health_history"):
     """Analyze and report on historical health data"""
     logger.info("Running daily health history analysis...")
@@ -541,7 +603,10 @@ def analyze_and_report_history(history_dir="health_history"):
         analysis_dir = Path("analysis")
         analysis_dir.mkdir(exist_ok=True)
 
-        filename = analysis_dir / f"vector_search_analysis_{datetime.now().strftime('%Y%m%d')}.json"
+        filename = (
+            analysis_dir
+            / f"vector_search_analysis_{datetime.now().strftime('%Y%m%d')}.json"
+        )
 
         with open(filename, "w") as f:
             json.dump(analysis, f, indent=2)
@@ -549,7 +614,7 @@ def analyze_and_report_history(history_dir="health_history"):
         logger.info(f"Health history analysis saved to {filename}")
 
         # Log summary
-        logger.info(f"Health history analysis summary:")
+        logger.info("Health history analysis summary:")
         logger.info(f"Total checks: {analysis['total_checks']}")
         logger.info(f"Health percentage: {analysis['health_percentage']:.2f}%")
         logger.info(f"Average response time: {analysis['avg_response_time']:.3f}s")
@@ -560,6 +625,7 @@ def analyze_and_report_history(history_dir="health_history"):
             logger.info(f"Status '{status}': {count} occurrences")
 
     return True
+
 
 if __name__ == "__main__":
     main()

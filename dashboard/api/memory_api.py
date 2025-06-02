@@ -4,16 +4,19 @@ Memory API for VANA Dashboard
 This module provides functions to retrieve memory usage data from the VANA system.
 """
 
-import os
-import sys
-import logging
-import random
 import datetime
+import logging
+import os
+import random
+import sys
 
 # Add the parent directory to the path so we can import our modules
-sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+sys.path.append(
+    os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+)
 
 logger = logging.getLogger(__name__)
+
 
 def get_memory_usage():
     """
@@ -27,6 +30,7 @@ def get_memory_usage():
         logging.error(f"Error fetching memory usage data: {e}")
         return generate_mock_memory_data()
 
+
 def generate_mock_memory_data():
     """Generate realistic mock memory usage data."""
     # Generate vector search data
@@ -37,7 +41,7 @@ def generate_mock_memory_data():
         "average_latency_ms": round(random.uniform(50, 200), 1),
         "index_type": "HNSW",
         "dimensions": 1536,
-        "cache_hit_rate": round(random.uniform(0.6, 0.9), 2)
+        "cache_hit_rate": round(random.uniform(0.6, 0.9), 2),
     }
 
     # Generate knowledge graph data
@@ -48,7 +52,13 @@ def generate_mock_memory_data():
         "query_count_24h": random.randint(50, 1000),
         "average_latency_ms": round(random.uniform(30, 150), 1),
         "entity_types": ["Person", "Organization", "Concept", "Document", "Event"],
-        "relationship_types": ["KNOWS", "PART_OF", "RELATES_TO", "CREATED_BY", "MENTIONS"]
+        "relationship_types": [
+            "KNOWS",
+            "PART_OF",
+            "RELATES_TO",
+            "CREATED_BY",
+            "MENTIONS",
+        ],
     }
 
     # Generate cache data
@@ -58,7 +68,7 @@ def generate_mock_memory_data():
         "size_mb": round(random.uniform(10, 100), 1),
         "evictions_24h": random.randint(10, 200),
         "max_size_mb": 200,
-        "average_access_time_ms": round(random.uniform(1, 10), 1)
+        "average_access_time_ms": round(random.uniform(1, 10), 1),
     }
 
     # Generate hybrid search data
@@ -66,15 +76,16 @@ def generate_mock_memory_data():
         "query_count_24h": random.randint(50, 500),
         "average_latency_ms": round(random.uniform(100, 300), 1),
         "vector_contribution": round(random.uniform(0.3, 0.7), 2),
-        "graph_contribution": round(random.uniform(0.3, 0.7), 2)
+        "graph_contribution": round(random.uniform(0.3, 0.7), 2),
     }
 
     return {
         "vector_search": vector_search,
         "knowledge_graph": knowledge_graph,
         "cache": cache,
-        "hybrid_search": hybrid_search
+        "hybrid_search": hybrid_search,
     }
+
 
 def get_memory_metrics_history(hours=24):
     """
@@ -86,6 +97,7 @@ def get_memory_metrics_history(hours=24):
     except Exception as e:
         logging.error(f"Error fetching memory history data: {e}")
         return generate_mock_memory_history(hours)
+
 
 def generate_mock_memory_history(hours=24):
     """Generate realistic mock historical memory data."""
@@ -127,25 +139,26 @@ def generate_mock_memory_history(hours=24):
                 "size_mb": round(vector_size, 1),
                 "total_entries": int(vector_entries),
                 "query_count": random.randint(5, 100),
-                "latency_ms": round(random.uniform(50, 200), 1)
+                "latency_ms": round(random.uniform(50, 200), 1),
             },
             "knowledge_graph": {
                 "size_mb": round(graph_size, 1),
                 "entity_count": int(graph_entities),
                 "relationship_count": int(graph_relationships),
                 "query_count": random.randint(3, 50),
-                "latency_ms": round(random.uniform(30, 150), 1)
+                "latency_ms": round(random.uniform(30, 150), 1),
             },
             "cache": {
                 "size_mb": round(cache_size, 1),
                 "entries": random.randint(100, 1000),
-                "hit_rate": round(random.uniform(0.5, 0.95), 2)
-            }
+                "hit_rate": round(random.uniform(0.5, 0.95), 2),
+            },
         }
 
         history.append(data_point)
 
     return history
+
 
 def get_recent_queries(limit=10):
     """
@@ -158,6 +171,7 @@ def get_recent_queries(limit=10):
         logging.error(f"Error fetching recent queries data: {e}")
         return generate_mock_recent_queries(limit)
 
+
 def generate_mock_recent_queries(limit=10):
     """Generate realistic mock recent query data."""
     current_time = datetime.datetime.now()
@@ -168,7 +182,7 @@ def generate_mock_recent_queries(limit=10):
         "What do we know about {topic}?",
         "Retrieve context related to {topic}",
         "Get details on {topic}",
-        "Find entities related to {topic}"
+        "Find entities related to {topic}",
     ]
 
     # Possible topics
@@ -183,7 +197,7 @@ def generate_mock_recent_queries(limit=10):
         "ADK integration",
         "specialist agents",
         "team coordination",
-        "workflow automation"
+        "workflow automation",
     ]
 
     # Generate queries
@@ -212,7 +226,7 @@ def generate_mock_recent_queries(limit=10):
             "search_type": search_type,
             "result_count": result_count,
             "duration_ms": duration_ms,
-            "successful": random.random() > 0.1  # 90% success rate
+            "successful": random.random() > 0.1,  # 90% success rate
         }
 
         queries.append(query)
@@ -221,6 +235,7 @@ def generate_mock_recent_queries(limit=10):
     queries.sort(key=lambda q: q["timestamp"], reverse=True)
 
     return queries
+
 
 # Create a simple API object for compatibility
 class MemoryAPI:
@@ -234,6 +249,7 @@ class MemoryAPI:
 
     def get_recent_queries(self, limit=10):
         return get_recent_queries(limit)
+
 
 # Create the API instance
 memory_api = MemoryAPI()

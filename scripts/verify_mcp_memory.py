@@ -13,11 +13,12 @@ Usage:
     python scripts/verify_mcp_memory.py
 """
 
+import asyncio
+import logging
 import os
 import sys
-import logging
-import asyncio
 from datetime import datetime
+
 from dotenv import load_dotenv
 
 # Add the project root to the Python path
@@ -27,24 +28,26 @@ sys.path.insert(0, os.path.abspath(os.path.dirname(os.path.dirname(__file__))))
 load_dotenv()
 
 # Import the memory components
+from tools.hybrid_search_delta import HybridSearchDelta
 from tools.mcp_memory_client import MCPMemoryClient
 from tools.mcp_memory_client_mock import MockMCPMemoryClient
 from tools.memory_manager import MemoryManager
-from tools.hybrid_search_delta import HybridSearchDelta
 
 # Define MCP Memory Server configuration for testing
 MCP_MEMORY_SERVER = {
     "endpoint": os.environ.get("MCP_ENDPOINT", "https://mcp.community.augment.co"),
     "namespace": os.environ.get("MCP_NAMESPACE", "vana-project"),
-    "api_key": os.environ.get("MCP_API_KEY", "test_api_key")  # Use a test key if not set
+    "api_key": os.environ.get(
+        "MCP_API_KEY", "test_api_key"
+    ),  # Use a test key if not set
 }
 
 # Configure logging
 logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s [%(levelname)s] %(message)s"
+    level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s"
 )
 logger = logging.getLogger(__name__)
+
 
 async def main():
     """Main function to verify MCP Memory integration."""
@@ -61,19 +64,21 @@ async def main():
         logger.info("Using mock implementation for testing")
 
     # Initialize MCP Memory Client
-    logger.info(f"Initializing MCP Memory Client with endpoint: {MCP_MEMORY_SERVER['endpoint']}")
+    logger.info(
+        f"Initializing MCP Memory Client with endpoint: {MCP_MEMORY_SERVER['endpoint']}"
+    )
 
     if use_mock:
         mcp_client = MockMCPMemoryClient(
             endpoint=MCP_MEMORY_SERVER["endpoint"],
             namespace=MCP_MEMORY_SERVER["namespace"],
-            api_key=MCP_MEMORY_SERVER["api_key"]
+            api_key=MCP_MEMORY_SERVER["api_key"],
         )
     else:
         mcp_client = MCPMemoryClient(
             endpoint=MCP_MEMORY_SERVER["endpoint"],
             namespace=MCP_MEMORY_SERVER["namespace"],
-            api_key=MCP_MEMORY_SERVER["api_key"]
+            api_key=MCP_MEMORY_SERVER["api_key"],
         )
 
     # Test storing an entity
@@ -84,8 +89,8 @@ async def main():
         entity_type="TestType",
         observations=[
             "This is a test entity created by the verification script",
-            f"Created at {datetime.now().isoformat()}"
-        ]
+            f"Created at {datetime.now().isoformat()}",
+        ],
     )
 
     if "error" in store_result:
@@ -112,7 +117,9 @@ async def main():
         logger.error("Failed to initialize Memory Manager")
         return False
 
-    logger.info(f"Memory Manager initialized with {len(memory_manager.local_cache)} entities")
+    logger.info(
+        f"Memory Manager initialized with {len(memory_manager.local_cache)} entities"
+    )
 
     # Test delta sync
     logger.info("Testing delta sync")
@@ -131,9 +138,15 @@ async def main():
     logger.info(f"Performing hybrid search for query: '{search_query}'")
     search_result = await hybrid_search.search(search_query)
 
-    logger.info(f"Hybrid search returned {len(search_result.get('results', []))} results")
-    logger.info(f"Vector Search: {search_result.get('sources', {}).get('vector_search', 0)} results")
-    logger.info(f"Knowledge Graph: {search_result.get('sources', {}).get('knowledge_graph', 0)} results")
+    logger.info(
+        f"Hybrid search returned {len(search_result.get('results', []))} results"
+    )
+    logger.info(
+        f"Vector Search: {search_result.get('sources', {}).get('vector_search', 0)} results"
+    )
+    logger.info(
+        f"Knowledge Graph: {search_result.get('sources', {}).get('knowledge_graph', 0)} results"
+    )
 
     # Format and display results
     formatted_results = hybrid_search.format_results(search_result)
@@ -141,6 +154,7 @@ async def main():
 
     logger.info("MCP Memory verification completed successfully")
     return True
+
 
 if __name__ == "__main__":
     success = asyncio.run(main())

@@ -6,32 +6,25 @@ This module implements a proper MCP server using the official MCP SDK
 with Server-Sent Events (SSE) transport for Cloud Run compatibility.
 """
 
-import os
 import json
 import logging
-import asyncio
-from typing import Dict, List, Optional, Any
-from fastapi import FastAPI, Request, Response
-from fastapi.responses import StreamingResponse
-from starlette.applications import Starlette
-from starlette.routing import Route
-from starlette.responses import JSONResponse
+from typing import Any, Optional
 
 # MCP SDK imports
 try:
+    import mcp.types as types
     from mcp.server import Server
     from mcp.server.sse import SseServerTransport
     from mcp.types import (
-        Tool, 
-        Resource, 
-        Prompt,
-        TextContent,
         CallToolResult,
-        ListToolsResult,
         GetPromptResult,
-        ReadResourceResult
+        ListToolsResult,
+        Prompt,
+        ReadResourceResult,
+        Resource,
+        TextContent,
+        Tool,
     )
-    import mcp.types as types
 except ImportError as e:
     logging.error(f"MCP SDK not available: {e}")
     # Fallback for development
@@ -40,41 +33,42 @@ except ImportError as e:
 
 logger = logging.getLogger(__name__)
 
+
 class VANAMCPServer:
     """VANA MCP Server with Cloud Run SSE Transport"""
-    
+
     def __init__(self):
         self.server = None
         self.transport = None
         self.tools_registry = {}
         self.resources_registry = {}
         self.prompts_registry = {}
-        
+
     async def initialize_server(self):
         """Initialize the MCP server with tools and capabilities"""
         if not Server:
             raise RuntimeError("MCP SDK not available")
-            
+
         # Create MCP server instance
         self.server = Server("vana-mcp-server")
-        
+
         # Register tools
         await self._register_tools()
-        
-        # Register resources  
+
+        # Register resources
         await self._register_resources()
-        
+
         # Register prompts
         await self._register_prompts()
-        
+
         logger.info("VANA MCP Server initialized with tools, resources, and prompts")
-        
+
     async def _register_tools(self):
         """Register MCP tools"""
-        
+
         # Context7 Sequential Thinking Tool
         @self.server.list_tools()
-        async def list_tools() -> List[Tool]:
+        async def list_tools() -> list[Tool]:
             return [
                 Tool(
                     name="context7_sequential_thinking",
@@ -84,16 +78,16 @@ class VANAMCPServer:
                         "properties": {
                             "prompt": {
                                 "type": "string",
-                                "description": "The problem or question requiring structured analysis"
+                                "description": "The problem or question requiring structured analysis",
                             },
                             "minimum_tokens": {
-                                "type": "integer", 
+                                "type": "integer",
                                 "description": "Minimum tokens for comprehensive analysis",
-                                "default": 10000
-                            }
+                                "default": 10000,
+                            },
                         },
-                        "required": ["prompt"]
-                    }
+                        "required": ["prompt"],
+                    },
                 ),
                 Tool(
                     name="brave_search_mcp",
@@ -103,19 +97,19 @@ class VANAMCPServer:
                         "properties": {
                             "query": {
                                 "type": "string",
-                                "description": "Search query string"
+                                "description": "Search query string",
                             },
                             "max_results": {
                                 "type": "integer",
                                 "description": "Maximum number of results to return",
-                                "default": 5
-                            }
+                                "default": 5,
+                            },
                         },
-                        "required": ["query"]
-                    }
+                        "required": ["query"],
+                    },
                 ),
                 Tool(
-                    name="github_mcp_operations", 
+                    name="github_mcp_operations",
                     description="GitHub operations using GitHub API with MCP interface",
                     inputSchema={
                         "type": "object",
@@ -123,24 +117,30 @@ class VANAMCPServer:
                             "operation": {
                                 "type": "string",
                                 "description": "GitHub operation type",
-                                "enum": ["repos", "user_info", "issues", "pull_requests", "create_issue"]
+                                "enum": [
+                                    "repos",
+                                    "user_info",
+                                    "issues",
+                                    "pull_requests",
+                                    "create_issue",
+                                ],
                             },
                             "owner": {
                                 "type": "string",
-                                "description": "Repository owner (for repo operations)"
+                                "description": "Repository owner (for repo operations)",
                             },
                             "repo": {
-                                "type": "string", 
-                                "description": "Repository name (for repo operations)"
-                            }
+                                "type": "string",
+                                "description": "Repository name (for repo operations)",
+                            },
                         },
-                        "required": ["operation"]
-                    }
-                )
+                        "required": ["operation"],
+                    },
+                ),
             ]
-            
+
         @self.server.call_tool()
-        async def call_tool(name: str, arguments: Dict[str, Any]) -> CallToolResult:
+        async def call_tool(name: str, arguments: dict[str, Any]) -> CallToolResult:
             """Handle tool calls"""
             try:
                 if name == "context7_sequential_thinking":
@@ -151,98 +151,104 @@ class VANAMCPServer:
                     result = await self._handle_github_tool(arguments)
                 else:
                     return CallToolResult(
-                        content=[TextContent(type="text", text=f"Unknown tool: {name}")],
-                        isError=True
+                        content=[
+                            TextContent(type="text", text=f"Unknown tool: {name}")
+                        ],
+                        isError=True,
                     )
-                    
+
                 return CallToolResult(
-                    content=[TextContent(type="text", text=json.dumps(result, indent=2))],
-                    isError=False
+                    content=[
+                        TextContent(type="text", text=json.dumps(result, indent=2))
+                    ],
+                    isError=False,
                 )
-                
+
             except Exception as e:
                 logger.error(f"Tool call error for {name}: {e}")
                 return CallToolResult(
                     content=[TextContent(type="text", text=f"Tool error: {str(e)}")],
-                    isError=True
+                    isError=True,
                 )
-    
-    async def _handle_context7_tool(self, arguments: Dict[str, Any]) -> Dict[str, Any]:
+
+    async def _handle_context7_tool(self, arguments: dict[str, Any]) -> dict[str, Any]:
         """Handle Context7 sequential thinking tool"""
         prompt = arguments.get("prompt", "")
         minimum_tokens = arguments.get("minimum_tokens", 10000)
-        
+
         # Import the actual implementation
         from lib._tools.adk_mcp_tools import context7_sequential_thinking
-        
+
         # Call the implementation
         result = context7_sequential_thinking(prompt, minimum_tokens)
-        
+
         return {
             "tool": "context7_sequential_thinking",
             "status": "success",
             "result": result,
             "mcp_server": "vana-mcp-server",
-            "transport": "sse"
+            "transport": "sse",
         }
-    
-    async def _handle_brave_search_tool(self, arguments: Dict[str, Any]) -> Dict[str, Any]:
+
+    async def _handle_brave_search_tool(
+        self, arguments: dict[str, Any]
+    ) -> dict[str, Any]:
         """Handle Brave Search MCP tool"""
         query = arguments.get("query", "")
         max_results = arguments.get("max_results", 5)
-        
+
         # Import the actual implementation
         from lib._tools.adk_mcp_tools import brave_search_mcp
-        
+
         # Call the implementation
         result = brave_search_mcp(query, max_results)
-        
+
         return {
-            "tool": "brave_search_mcp", 
+            "tool": "brave_search_mcp",
             "status": "success",
             "result": result,
             "mcp_server": "vana-mcp-server",
-            "transport": "sse"
+            "transport": "sse",
         }
-    
-    async def _handle_github_tool(self, arguments: Dict[str, Any]) -> Dict[str, Any]:
+
+    async def _handle_github_tool(self, arguments: dict[str, Any]) -> dict[str, Any]:
         """Handle GitHub MCP operations tool"""
         operation = arguments.get("operation", "")
-        
+
         # Import the actual implementation
         from lib._tools.adk_mcp_tools import github_mcp_operations
-        
+
         # Call the implementation with all arguments
         result = github_mcp_operations(operation, **arguments)
-        
+
         return {
             "tool": "github_mcp_operations",
-            "status": "success", 
+            "status": "success",
             "result": result,
             "mcp_server": "vana-mcp-server",
-            "transport": "sse"
+            "transport": "sse",
         }
-    
+
     async def _register_resources(self):
         """Register MCP resources"""
-        
+
         @self.server.list_resources()
-        async def list_resources() -> List[Resource]:
+        async def list_resources() -> list[Resource]:
             return [
                 Resource(
                     uri="vana://status",
                     name="VANA Server Status",
                     description="Current status and capabilities of VANA MCP server",
-                    mimeType="application/json"
+                    mimeType="application/json",
                 ),
                 Resource(
                     uri="vana://tools",
                     name="Available Tools",
-                    description="List of available MCP tools and their capabilities", 
-                    mimeType="application/json"
-                )
+                    description="List of available MCP tools and their capabilities",
+                    mimeType="application/json",
+                ),
             ]
-            
+
         @self.server.read_resource()
         async def read_resource(uri: str) -> ReadResourceResult:
             """Handle resource reads"""
@@ -254,14 +260,14 @@ class VANAMCPServer:
                     "tools_count": 3,
                     "resources_count": 2,
                     "status": "operational",
-                    "cloud_platform": "Google Cloud Run"
+                    "cloud_platform": "Google Cloud Run",
                 }
                 return ReadResourceResult(
                     contents=[
                         types.TextResourceContents(
                             uri=uri,
                             mimeType="application/json",
-                            text=json.dumps(status, indent=2)
+                            text=json.dumps(status, indent=2),
                         )
                     ]
                 )
@@ -271,39 +277,39 @@ class VANAMCPServer:
                         {
                             "name": "context7_sequential_thinking",
                             "description": "Advanced reasoning and structured problem-solving",
-                            "category": "reasoning"
+                            "category": "reasoning",
                         },
                         {
-                            "name": "brave_search_mcp", 
+                            "name": "brave_search_mcp",
                             "description": "Enhanced web search using Brave Search API",
-                            "category": "search"
+                            "category": "search",
                         },
                         {
                             "name": "github_mcp_operations",
                             "description": "GitHub operations and workflow automation",
-                            "category": "development"
-                        }
+                            "category": "development",
+                        },
                     ],
                     "total_tools": 3,
-                    "mcp_compliant": True
+                    "mcp_compliant": True,
                 }
                 return ReadResourceResult(
                     contents=[
                         types.TextResourceContents(
                             uri=uri,
-                            mimeType="application/json", 
-                            text=json.dumps(tools_info, indent=2)
+                            mimeType="application/json",
+                            text=json.dumps(tools_info, indent=2),
                         )
                     ]
                 )
             else:
                 raise ValueError(f"Unknown resource: {uri}")
-    
+
     async def _register_prompts(self):
         """Register MCP prompts"""
-        
+
         @self.server.list_prompts()
-        async def list_prompts() -> List[Prompt]:
+        async def list_prompts() -> list[Prompt]:
             return [
                 Prompt(
                     name="vana_analysis",
@@ -312,24 +318,26 @@ class VANAMCPServer:
                         types.PromptArgument(
                             name="topic",
                             description="Topic or problem to analyze",
-                            required=True
+                            required=True,
                         ),
                         types.PromptArgument(
                             name="depth",
                             description="Analysis depth (basic, detailed, comprehensive)",
-                            required=False
-                        )
-                    ]
+                            required=False,
+                        ),
+                    ],
                 )
             ]
-            
+
         @self.server.get_prompt()
-        async def get_prompt(name: str, arguments: Optional[Dict[str, str]] = None) -> GetPromptResult:
+        async def get_prompt(
+            name: str, arguments: Optional[dict[str, str]] = None
+        ) -> GetPromptResult:
             """Handle prompt requests"""
             if name == "vana_analysis":
                 topic = arguments.get("topic", "") if arguments else ""
                 depth = arguments.get("depth", "detailed") if arguments else "detailed"
-                
+
                 prompt_text = f"""
 Analyze the following topic using structured reasoning: {topic}
 
@@ -344,20 +352,18 @@ Please provide:
 
 Use the Context7 sequential thinking framework for comprehensive analysis.
 """
-                
+
                 return GetPromptResult(
                     messages=[
                         types.PromptMessage(
                             role="user",
-                            content=types.TextContent(
-                                type="text",
-                                text=prompt_text
-                            )
+                            content=types.TextContent(type="text", text=prompt_text),
                         )
                     ]
                 )
             else:
                 raise ValueError(f"Unknown prompt: {name}")
+
 
 # Global server instance
 vana_mcp_server = VANAMCPServer()

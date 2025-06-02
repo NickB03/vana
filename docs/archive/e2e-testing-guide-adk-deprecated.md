@@ -105,11 +105,11 @@ class MyTestCase(TestCase):
         )
         self.agent_client = None
         self.session_id = None
-    
+
     def setup(self):
         self.agent_client = AgentClient()
         self.session_id = self.agent_client.create_session()
-    
+
     def _run(self):
         # Step 1: Send a message to the agent
         self.step("step1", "Send a message to the agent")
@@ -119,11 +119,11 @@ class MyTestCase(TestCase):
             "Hello, how are you?",
             self.session_id
         )
-        
+
         # Wait for the agent's response
         agent_response = self.agent_client.wait_for_agent_response("vana", self.session_id)
         self.assert_true(agent_response is not None, "Agent did not respond")
-    
+
     def teardown(self):
         if self.session_id:
             self.agent_client.end_session(self.session_id)

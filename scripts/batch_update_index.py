@@ -10,26 +10,21 @@ This script updates the Vector Search index using the batch update approach:
 Use this script when the index doesn't support StreamUpdate.
 """
 
+import argparse
+import json
+import logging
 import os
 import time
-import json
 import uuid
-import logging
-import argparse
-from typing import List, Dict, Any
+
 from dotenv import load_dotenv
-import vertexai
-from google.cloud import aiplatform
-from google.cloud import storage
+from google.cloud import aiplatform, storage
 
 # Set up logging
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(message)s",
-    handlers=[
-        logging.FileHandler("batch_update_index.log"),
-        logging.StreamHandler()
-    ]
+    handlers=[logging.FileHandler("batch_update_index.log"), logging.StreamHandler()],
 )
 logger = logging.getLogger(__name__)
 
@@ -43,14 +38,29 @@ BUCKET_NAME = os.getenv("GOOGLE_STORAGE_BUCKET")
 INDEX_NAME = os.getenv("VECTOR_SEARCH_INDEX_NAME", "vana-shared-index")
 INDEX_ID = os.getenv("INDEX_ID", "4167591072945405952")  # From project_handoff.md
 
+
 def parse_arguments():
     """Parse command line arguments."""
     parser = argparse.ArgumentParser(description="Batch update Vector Search index")
-    parser.add_argument("--embeddings-file", required=True, help="Path to the embeddings file")
-    parser.add_argument("--gcs-directory", default="embeddings", help="Directory in GCS bucket to store embeddings")
-    parser.add_argument("--wait", action="store_true", help="Wait for the update operation to complete")
-    parser.add_argument("--timeout", type=int, default=3600, help="Timeout in seconds for the update operation")
+    parser.add_argument(
+        "--embeddings-file", required=True, help="Path to the embeddings file"
+    )
+    parser.add_argument(
+        "--gcs-directory",
+        default="embeddings",
+        help="Directory in GCS bucket to store embeddings",
+    )
+    parser.add_argument(
+        "--wait", action="store_true", help="Wait for the update operation to complete"
+    )
+    parser.add_argument(
+        "--timeout",
+        type=int,
+        default=3600,
+        help="Timeout in seconds for the update operation",
+    )
     return parser.parse_args()
+
 
 def upload_to_gcs(local_file: str, gcs_directory: str) -> str:
     """Upload a file to Google Cloud Storage.
@@ -86,6 +96,7 @@ def upload_to_gcs(local_file: str, gcs_directory: str) -> str:
         logger.error(f"Error uploading to GCS: {str(e)}")
         raise
 
+
 def create_update_operation(index_id: str, gcs_uri: str):
     """Create an update operation for the Vector Search index.
 
@@ -106,8 +117,7 @@ def create_update_operation(index_id: str, gcs_uri: str):
 
         # Create the update operation
         operation = index.update_embeddings(
-            contents_delta_uri=gcs_uri,
-            is_complete_overwrite=False
+            contents_delta_uri=gcs_uri, is_complete_overwrite=False
         )
 
         logger.info(f"Created update operation: {operation.operation.name}")
@@ -115,6 +125,7 @@ def create_update_operation(index_id: str, gcs_uri: str):
     except Exception as e:
         logger.error(f"Error creating update operation: {str(e)}")
         raise
+
 
 def monitor_operation(operation, timeout: int = 3600) -> bool:
     """Monitor an operation until completion.
@@ -146,11 +157,14 @@ def monitor_operation(operation, timeout: int = 3600) -> bool:
             logger.error(f"Operation failed: {operation.error.message}")
             return False
 
-        logger.info(f"Operation completed successfully in {time.time() - start_time:.1f} seconds")
+        logger.info(
+            f"Operation completed successfully in {time.time() - start_time:.1f} seconds"
+        )
         return True
     except Exception as e:
         logger.error(f"Error monitoring operation: {str(e)}")
         return False
+
 
 def prepare_embeddings_file(embeddings_file: str) -> str:
     """Prepare the embeddings file for upload to GCS.
@@ -165,12 +179,15 @@ def prepare_embeddings_file(embeddings_file: str) -> str:
     """
     try:
         # Read the embeddings file
-        with open(embeddings_file, "r") as f:
+        with open(embeddings_file) as f:
             embeddings_data = json.load(f)
 
         # Check if the file is already in the correct format
-        if isinstance(embeddings_data, list) and all(isinstance(item, dict) and "id" in item and "embedding" in item for item in embeddings_data):
-            logger.info(f"Embeddings file is already in the correct format")
+        if isinstance(embeddings_data, list) and all(
+            isinstance(item, dict) and "id" in item and "embedding" in item
+            for item in embeddings_data
+        ):
+            logger.info("Embeddings file is already in the correct format")
             return embeddings_file
 
         # Convert to the correct format if needed
@@ -198,6 +215,7 @@ def prepare_embeddings_file(embeddings_file: str) -> str:
         logger.error(f"Error preparing embeddings file: {str(e)}")
         raise
 
+
 def main():
     """Main function."""
     args = parse_arguments()
@@ -223,12 +241,15 @@ def main():
                 logger.error("Batch update failed")
                 return 1
         else:
-            logger.info(f"Batch update operation started. Check the operation status manually.")
+            logger.info(
+                "Batch update operation started. Check the operation status manually."
+            )
 
         return 0
     except Exception as e:
         logger.error(f"Error in batch update: {str(e)}")
         return 1
+
 
 if __name__ == "__main__":
     exit_code = main()

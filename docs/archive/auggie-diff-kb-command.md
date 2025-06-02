@@ -7,7 +7,7 @@ Implement a diff-based knowledge base update system by:
 
 1. Creating a new script called `scripts/process_document_diffs.py` that:
    - Extracts meaningful diffs from Git history
-   - Processes only changed portions of documents 
+   - Processes only changed portions of documents
    - Updates Vector Search and Knowledge Graph with proper version tracking
    - Handles added, modified, and deleted content appropriately
 
@@ -25,7 +25,7 @@ Implement a diff-based knowledge base update system by:
 Use the implementation details from the `docs/diff-based-kb-implementation-guide.md` as your reference.
 Start by creating the `process_document_diffs.py` script, then update the GitHub workflow file.
 
-Test the implementation by creating a simple test diff and processing it locally 
+Test the implementation by creating a simple test diff and processing it locally
 to verify that it works as expected before committing the changes.
 ```
 

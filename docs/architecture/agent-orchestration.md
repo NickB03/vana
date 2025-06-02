@@ -193,23 +193,23 @@ The `VanaAgent` class has been updated to use the orchestration components:
 class VanaAgent(agent_lib.LlmAgent):
     def __init__(self):
         super().__init__()
-        
+
         # Initialize orchestration components
         self.task_router = TaskRouter()
         self.result_synthesizer = ResultSynthesizer()
         self.context_manager = ContextManager()
-        
+
         # Initialize agent state
         self.current_context = None
-    
+
     def determine_agent(self, task: str) -> str:
         agent_id, confidence = self.task_router.route_task(task)
         return agent_id
-    
+
     def create_context(self, user_id: str, session_id: str) -> Dict[str, Any]:
         self.current_context = self.context_manager.create_context(user_id, session_id)
         return self.current_context.serialize()
-    
+
     def synthesize_results(self, results: List[Dict[str, Any]]) -> str:
         synthesized = self.result_synthesizer.synthesize(results)
         return self.result_synthesizer.format(synthesized)
@@ -226,43 +226,43 @@ class AgentTeam:
         self.task_router = TaskRouter()
         self.result_synthesizer = ResultSynthesizer()
         self.context_manager = ContextManager()
-        
+
         # Initialize agents
         self._initialize_agents()
-        
+
         # Initialize agent state
         self.current_context = None
-    
+
     def route_task(self, task: str) -> str:
         agent_id, confidence = self.task_router.route_task(task)
         return agent_id
-    
+
     def get_agent(self, agent_id: str) -> Optional[Agent]:
         return self.agents.get(agent_id)
-    
+
     def create_context(self, user_id: str, session_id: str) -> Dict[str, Any]:
         self.current_context = self.context_manager.create_context(user_id, session_id)
         return self.current_context.serialize()
-    
+
     def synthesize_results(self, results: List[Dict[str, Any]]) -> str:
         synthesized = self.result_synthesizer.synthesize(results)
         return self.result_synthesizer.format(synthesized)
-    
+
     def delegate_task(self, task: str, context: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         # Route task to appropriate agent
         agent_id = self.route_task(task)
         agent = self.get_agent(agent_id)
-        
+
         # Execute task
         response = agent.generate_content(task)
-        
+
         # Format result
         result = {
             "agent": agent_id,
             "content": response.text,
             "confidence": 0.9
         }
-        
+
         return result
 ```
 

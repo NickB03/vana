@@ -3,65 +3,65 @@
 
 steps:
   # Build the Docker image using Cloud Build's native AMD64 environment
-  - name: 'gcr.io/cloud-builders/docker'
+  - name: "gcr.io/cloud-builders/docker"
     args:
-      - 'build'
-      - '-f'
-      - 'deployment/Dockerfile'
-      - '-t'
-      - 'gcr.io/${PROJECT_ID}/vana:latest'
-      - '--cache-from'
-      - 'gcr.io/${PROJECT_ID}/vana:latest'
-      - '.'
+      - "build"
+      - "-f"
+      - "deployment/Dockerfile"
+      - "-t"
+      - "gcr.io/${PROJECT_ID}/vana:latest"
+      - "--cache-from"
+      - "gcr.io/${PROJECT_ID}/vana:latest"
+      - "."
 
   # Push the image to Google Container Registry
-  - name: 'gcr.io/cloud-builders/docker'
+  - name: "gcr.io/cloud-builders/docker"
     args:
-      - 'push'
-      - 'gcr.io/${PROJECT_ID}/vana:latest'
+      - "push"
+      - "gcr.io/${PROJECT_ID}/vana:latest"
 
   # Deploy to Cloud Run with comprehensive configuration
-  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
-    entrypoint: 'gcloud'
+  - name: "gcr.io/google.com/cloudsdktool/cloud-sdk"
+    entrypoint: "gcloud"
     args:
-      - 'run'
-      - 'deploy'
-      - 'vana'
-      - '--image'
-      - 'gcr.io/${PROJECT_ID}/vana:latest'
-      - '--platform'
-      - 'managed'
-      - '--region'
-      - 'us-central1'
-      - '--allow-unauthenticated'
-      - '--memory'
-      - '2Gi'
-      - '--cpu'
-      - '2'
-      - '--min-instances'
-      - '0'
-      - '--max-instances'
-      - '10'
-      - '--service-account'
-      - 'vana-vector-search-sa@${PROJECT_ID}.iam.gserviceaccount.com'
-      - '--set-env-vars'
-      - 'GOOGLE_CLOUD_PROJECT=${PROJECT_ID},GOOGLE_CLOUD_PROJECT_NUMBER=960076421399,GOOGLE_CLOUD_LOCATION=us-central1,GOOGLE_CLOUD_REGION=us-central1,GOOGLE_GENAI_USE_VERTEXAI=True,VANA_MODEL=gemini-2.0-flash,VANA_ENV=production,VANA_HOST=0.0.0.0,VANA_PORT=8080,LOG_LEVEL=INFO,DASHBOARD_ENABLED=true,USE_LOCAL_MCP=false,VANA_USE_MOCK=false,VECTOR_SEARCH_INDEX_NAME=vana-shared-index,VECTOR_SEARCH_INDEX_ID=vana-shared-index,VECTOR_SEARCH_DIMENSIONS=768,VECTOR_SEARCH_ENDPOINT_ID=projects/960076421399/locations/us-central1/indexEndpoints/5085685481161621504,DEPLOYED_INDEX_ID=vanasharedindex,BRAVE_API_KEY=BSA6fMCYrfJC5seE-AVsWrKjpOFk6Nm'
+      - "run"
+      - "deploy"
+      - "vana"
+      - "--image"
+      - "gcr.io/${PROJECT_ID}/vana:latest"
+      - "--platform"
+      - "managed"
+      - "--region"
+      - "us-central1"
+      - "--allow-unauthenticated"
+      - "--memory"
+      - "2Gi"
+      - "--cpu"
+      - "2"
+      - "--min-instances"
+      - "0"
+      - "--max-instances"
+      - "10"
+      - "--service-account"
+      - "vana-vector-search-sa@${PROJECT_ID}.iam.gserviceaccount.com"
+      - "--set-env-vars"
+      - "GOOGLE_CLOUD_PROJECT=${PROJECT_ID},GOOGLE_CLOUD_PROJECT_NUMBER=960076421399,GOOGLE_CLOUD_LOCATION=us-central1,GOOGLE_CLOUD_REGION=us-central1,GOOGLE_GENAI_USE_VERTEXAI=True,VANA_MODEL=gemini-2.0-flash,VANA_ENV=production,VANA_HOST=0.0.0.0,VANA_PORT=8080,LOG_LEVEL=INFO,DASHBOARD_ENABLED=true,USE_LOCAL_MCP=false,VANA_USE_MOCK=false,VECTOR_SEARCH_INDEX_NAME=vana-shared-index,VECTOR_SEARCH_INDEX_ID=vana-shared-index,VECTOR_SEARCH_DIMENSIONS=768,VECTOR_SEARCH_ENDPOINT_ID=projects/960076421399/locations/us-central1/indexEndpoints/5085685481161621504,DEPLOYED_INDEX_ID=vanasharedindex,BRAVE_API_KEY=BSA6fMCYrfJC5seE-AVsWrKjpOFk6Nm"
 
 # Images to be pushed to registry
 images:
-  - 'gcr.io/${PROJECT_ID}/vana:latest'
+  - "gcr.io/${PROJECT_ID}/vana:latest"
 
 # Build options for optimization
 options:
   # Use high-performance machine type for faster builds
-  machineType: 'E2_HIGHCPU_8'
+  machineType: "E2_HIGHCPU_8"
   # Enable Docker layer caching for faster subsequent builds
   env:
-    - 'DOCKER_BUILDKIT=1'
+    - "DOCKER_BUILDKIT=1"
   # Increase disk size for large dependencies
   diskSizeGb: 100
   # Use substitution for dynamic values
-  substitution_option: 'ALLOW_LOOSE'
+  substitution_option: "ALLOW_LOOSE"
 
 # Timeout for the entire build process (increased to handle Cloud Run deployment)
-timeout: '900s'
+timeout: "900s"

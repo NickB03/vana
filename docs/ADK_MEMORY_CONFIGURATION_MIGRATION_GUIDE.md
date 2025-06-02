@@ -1,8 +1,8 @@
 # ADK Memory Configuration Migration Guide
 
-**Date:** 2025-01-27  
-**Version:** 1.0  
-**Migration Phase:** Configuration Updates  
+**Date:** 2025-01-27
+**Version:** 1.0
+**Migration Phase:** Configuration Updates
 
 ## 📋 Overview
 
@@ -58,7 +58,7 @@ MEMORY_CACHE_TTL="3600"
 ```bash
 # ❌ DEPRECATED - Remove these variables
 # MCP_ENDPOINT
-# MCP_NAMESPACE  
+# MCP_NAMESPACE
 # MCP_API_KEY
 # USE_LOCAL_MCP
 # KNOWLEDGE_GRAPH_API_KEY
@@ -111,11 +111,11 @@ MEMORY_CACHE_TTL="3600"
 1. **Test Configuration Loading**:
    ```python
    from config.environment import EnvironmentConfig
-   
+
    # Test ADK memory configuration
    adk_config = EnvironmentConfig.get_adk_memory_config()
    print("ADK Memory Config:", adk_config)
-   
+
    # Test updated memory configuration
    memory_config = EnvironmentConfig.get_memory_config()
    print("Memory Config:", memory_config)
@@ -127,14 +127,14 @@ MEMORY_CACHE_TTL="3600"
    import os
    from dotenv import load_dotenv
    load_dotenv()
-   
+
    required_vars = [
        'RAG_CORPUS_RESOURCE_NAME',
-       'MEMORY_SIMILARITY_TOP_K', 
+       'MEMORY_SIMILARITY_TOP_K',
        'MEMORY_VECTOR_DISTANCE_THRESHOLD',
        'SESSION_SERVICE_TYPE'
    ]
-   
+
    for var in required_vars:
        value = os.environ.get(var)
        print(f'{var}: {value if value else \"NOT SET\"}')"
@@ -288,7 +288,7 @@ gcloud config list
 After completing configuration migration:
 
 1. **Phase 1**: ADK Memory Integration (1-2 weeks)
-2. **Phase 2**: Session State Enhancement (1 week)  
+2. **Phase 2**: Session State Enhancement (1 week)
 3. **Phase 3**: Legacy System Removal (1 week)
 
 Refer to `HANDOFF_ADK_MEMORY_MIGRATION.md` for detailed implementation phases.

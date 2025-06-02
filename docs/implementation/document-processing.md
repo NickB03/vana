@@ -42,13 +42,13 @@ VANA employs several chunking strategies:
 def chunk_document(document, strategy="semantic", chunk_size=1000, overlap=200):
     """
     Chunk a document using the specified strategy
-    
+
     Args:
         document: Document to chunk
         strategy: Chunking strategy (semantic, structure, fixed)
         chunk_size: Target chunk size in characters
         overlap: Overlap between chunks in characters
-        
+
     Returns:
         List of document chunks
     """
@@ -77,10 +77,10 @@ VANA integrates with OCR technologies to extract text from images:
 def process_image(image_path):
     """
     Process an image using OCR
-    
+
     Args:
         image_path: Path to the image
-        
+
     Returns:
         Extracted text
     """
@@ -136,28 +136,28 @@ Conceptual flow:
 def process_pdf(pdf_path): # Simplified conceptual representation
     """
     Process a PDF document
-    
+
     Args:
         pdf_path: Path to the PDF document
-        
+
     Returns:
         Processed document with text, structure, and metadata
     """
     # Extract text
     text = extract_text_from_pdf(pdf_path)
-    
+
     # Extract structure
     structure = extract_structure_from_pdf(pdf_path)
-    
+
     # Extract metadata
     metadata = extract_metadata_from_pdf(pdf_path)
-    
+
     # Extract tables
     tables = extract_tables_from_pdf(pdf_path)
-    
+
     # Extract images
     images = extract_images_from_pdf(pdf_path)
-    
+
     return {
         "text": text,
         "structure": structure,

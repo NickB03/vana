@@ -105,13 +105,13 @@ client = VectorSearchClient(
 if client.is_available():
     # Generate embedding
     embedding = client.generate_embedding("Your text here")
-    
+
     # Search for similar content
     results = client.search("Your query here", top_k=5)
-    
+
     # Upload content with embedding
     client.upload_embedding("Your content here", metadata={"source": "example"})
-    
+
     # Batch upload multiple items
     items = [
         {"content": "Item 1", "metadata": {"source": "example1"}},

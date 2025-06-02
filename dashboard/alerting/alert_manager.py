@@ -5,24 +5,27 @@ This module provides a backend alerting system for the VANA project.
 It supports alert creation, storage, retrieval, and notification stubs.
 """
 
-import os
-import json
-import threading
 import datetime
-from typing import List, Dict, Optional, Any
+import json
+import os
+import threading
+from typing import Any, Optional
 
 ALERTS_FILE = os.environ.get("VANA_ALERTS_FILE", "dashboard/alerting/alerts.json")
 ALERTS_LOCK = threading.Lock()
+
 
 class AlertStatus:
     ACTIVE = "active"
     ACKNOWLEDGED = "acknowledged"
     CLEARED = "cleared"
 
+
 class AlertSeverity:
     INFO = "info"
     WARNING = "warning"
     CRITICAL = "critical"
+
 
 class AlertManager:
     def __init__(self, alerts_file: str = ALERTS_FILE):
@@ -34,17 +37,23 @@ class AlertManager:
             with open(self.alerts_file, "w") as f:
                 json.dump([], f)
 
-    def _load_alerts(self) -> List[Dict[str, Any]]:
+    def _load_alerts(self) -> list[dict[str, Any]]:
         with ALERTS_LOCK:
-            with open(self.alerts_file, "r") as f:
+            with open(self.alerts_file) as f:
                 return json.load(f)
 
-    def _save_alerts(self, alerts: List[Dict[str, Any]]):
+    def _save_alerts(self, alerts: list[dict[str, Any]]):
         with ALERTS_LOCK:
             with open(self.alerts_file, "w") as f:
                 json.dump(alerts, f, indent=2)
 
-    def create_alert(self, message: str, severity: str = AlertSeverity.INFO, source: str = "system", details: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    def create_alert(
+        self,
+        message: str,
+        severity: str = AlertSeverity.INFO,
+        source: str = "system",
+        details: Optional[dict[str, Any]] = None,
+    ) -> dict[str, Any]:
         alert = {
             "id": f"alert_{int(datetime.datetime.now().timestamp() * 1000)}",
             "timestamp": datetime.datetime.now().isoformat(),
@@ -52,7 +61,7 @@ class AlertManager:
             "severity": severity,
             "status": AlertStatus.ACTIVE,
             "source": source,
-            "details": details or {}
+            "details": details or {},
         }
         alerts = self._load_alerts()
         alerts.append(alert)
@@ -61,7 +70,7 @@ class AlertManager:
         self._notify(alert)
         return alert
 
-    def _notify(self, alert: Dict[str, Any]):
+    def _notify(self, alert: dict[str, Any]):
         """
         Send notification for critical alerts via email.
         Configured via environment variables:
@@ -74,14 +83,20 @@ class AlertManager:
         if alert.get("severity") != AlertSeverity.CRITICAL:
             return  # Only notify for critical alerts by default
 
-    def get_alert_history(self, limit: int = 100) -> List[Dict[str, Any]]:
+    def get_alert_history(self, limit: int = 100) -> list[dict[str, Any]]:
         """
         Return the most recent alerts (active, acknowledged, cleared).
         """
         alerts = self._load_alerts()
         return sorted(alerts, key=lambda a: a["timestamp"], reverse=True)[:limit]
 
-    def log_external_alert(self, message: str, severity: str, source: str, details: Optional[Dict[str, Any]] = None):
+    def log_external_alert(
+        self,
+        message: str,
+        severity: str,
+        source: str,
+        details: Optional[dict[str, Any]] = None,
+    ):
         """
         Log an alert from an external source (e.g., security, audit, test).
         """
@@ -120,7 +135,7 @@ class AlertManager:
             # Log but do not raise
             print(f"Failed to send alert email: {e}")
 
-    def get_active_alerts(self) -> List[Dict[str, Any]]:
+    def get_active_alerts(self) -> list[dict[str, Any]]:
         alerts = self._load_alerts()
         return [a for a in alerts if a["status"] == AlertStatus.ACTIVE]
 
@@ -146,13 +161,18 @@ class AlertManager:
             self._save_alerts(alerts)
         return updated
 
-    def _notify(self, alert: Dict[str, Any]):
+    def _notify(self, alert: dict[str, Any]):
         # Stub for notification (email, SMS, etc.)
         # To be implemented: send email/SMS based on severity and config
         pass
 
+
 # Example usage:
 if __name__ == "__main__":
     am = AlertManager()
-    am.create_alert("Test alert: system health degraded", severity=AlertSeverity.WARNING, source="health_check")
+    am.create_alert(
+        "Test alert: system health degraded",
+        severity=AlertSeverity.WARNING,
+        source="health_check",
+    )
     print("Active alerts:", am.get_active_alerts())

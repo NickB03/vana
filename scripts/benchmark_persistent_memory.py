@@ -13,13 +13,14 @@ Usage:
     python scripts/benchmark_persistent_memory.py
 """
 
+import asyncio
+import logging
 import os
+import statistics
 import sys
 import time
-import logging
-import asyncio
-import statistics
 from datetime import datetime
+
 from dotenv import load_dotenv
 
 # Add the project root to the Python path
@@ -29,16 +30,15 @@ sys.path.insert(0, os.path.abspath(os.path.dirname(os.path.dirname(__file__))))
 load_dotenv()
 
 # Import the memory components
-from tools.mcp_memory_client_mock import MockMCPMemoryClient
-from tools.memory_manager import MemoryManager
-from tools.hybrid_search_delta import HybridSearchDelta
-from tools.memory_cache import MemoryCache
 from tools.entity_scorer import EntityScorer
+from tools.hybrid_search_delta import HybridSearchDelta
+from tools.mcp_memory_client_mock import MockMCPMemoryClient
+from tools.memory_cache import MemoryCache
+from tools.memory_manager import MemoryManager
 
 # Configure logging
 logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s [%(levelname)s] %(message)s"
+    level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s"
 )
 logger = logging.getLogger(__name__)
 
@@ -50,8 +50,8 @@ TEST_ENTITIES = [
         "observations": [
             "VANA is a versatile agent network architecture",
             "VANA uses Vector Search, Knowledge Graph, and Web Search for knowledge retrieval",
-            "VANA has a primary agent named Vana with specialist sub-agents"
-        ]
+            "VANA has a primary agent named Vana with specialist sub-agents",
+        ],
     },
     {
         "name": "Vector Search",
@@ -59,8 +59,8 @@ TEST_ENTITIES = [
         "observations": [
             "Vector Search is a semantic search technology",
             "Vector Search uses embeddings to find similar content",
-            "Vector Search is implemented using Vertex AI"
-        ]
+            "Vector Search is implemented using Vertex AI",
+        ],
     },
     {
         "name": "Knowledge Graph",
@@ -68,8 +68,8 @@ TEST_ENTITIES = [
         "observations": [
             "Knowledge Graph is a structured knowledge representation",
             "Knowledge Graph stores entities and relationships",
-            "Knowledge Graph is implemented using MCP"
-        ]
+            "Knowledge Graph is implemented using MCP",
+        ],
     },
     {
         "name": "Web Search",
@@ -77,8 +77,8 @@ TEST_ENTITIES = [
         "observations": [
             "Web Search retrieves up-to-date information from the internet",
             "Web Search is implemented using Google Custom Search API",
-            "Web Search complements Vector Search and Knowledge Graph"
-        ]
+            "Web Search complements Vector Search and Knowledge Graph",
+        ],
     },
     {
         "name": "Persistent Memory",
@@ -86,9 +86,9 @@ TEST_ENTITIES = [
         "observations": [
             "Persistent Memory allows VANA to maintain context across sessions",
             "Persistent Memory uses delta-based updates for efficiency",
-            "Persistent Memory combines Vector Search and Knowledge Graph"
-        ]
-    }
+            "Persistent Memory combines Vector Search and Knowledge Graph",
+        ],
+    },
 ]
 
 TEST_RELATIONSHIPS = [
@@ -97,7 +97,11 @@ TEST_RELATIONSHIPS = [
     {"from": "Project VANA", "relationship": "uses", "to": "Web Search"},
     {"from": "Project VANA", "relationship": "uses", "to": "Persistent Memory"},
     {"from": "Persistent Memory", "relationship": "integrates", "to": "Vector Search"},
-    {"from": "Persistent Memory", "relationship": "integrates", "to": "Knowledge Graph"}
+    {
+        "from": "Persistent Memory",
+        "relationship": "integrates",
+        "to": "Knowledge Graph",
+    },
 ]
 
 TEST_QUERIES = [
@@ -110,8 +114,9 @@ TEST_QUERIES = [
     "How does Persistent Memory integrate with Knowledge Graph?",
     "What technologies does VANA use?",
     "What is the architecture of VANA?",
-    "How does VANA maintain context across sessions?"
+    "How does VANA maintain context across sessions?",
 ]
+
 
 def measure_time(func, *args, **kwargs):
     """Measure the execution time of a function"""
@@ -120,12 +125,14 @@ def measure_time(func, *args, **kwargs):
     end_time = time.time()
     return result, end_time - start_time
 
+
 async def measure_time_async(func, *args, **kwargs):
     """Measure the execution time of an async function"""
     start_time = time.time()
     result = await func(*args, **kwargs)
     end_time = time.time()
     return result, end_time - start_time
+
 
 def benchmark_initialization():
     """Benchmark the initialization of the memory manager"""
@@ -135,16 +142,15 @@ def benchmark_initialization():
     client = MockMCPMemoryClient(
         endpoint="https://mcp.community.augment.co",
         namespace="vana-project",
-        api_key="test_api_key"
+        api_key="test_api_key",
     )
 
     # Measure initialization time
-    _, init_time = measure_time(
-        lambda: MemoryManager(client).initialize()
-    )
+    _, init_time = measure_time(lambda: MemoryManager(client).initialize())
 
     logger.info(f"Initialization time: {init_time:.4f} seconds")
     return init_time
+
 
 def benchmark_entity_storage(client):
     """Benchmark entity storage"""
@@ -154,10 +160,7 @@ def benchmark_entity_storage(client):
     storage_times = []
     for entity in TEST_ENTITIES:
         _, storage_time = measure_time(
-            client.store_entity,
-            entity["name"],
-            entity["type"],
-            entity["observations"]
+            client.store_entity, entity["name"], entity["type"], entity["observations"]
         )
         storage_times.append(storage_time)
 
@@ -172,6 +175,7 @@ def benchmark_entity_storage(client):
 
     return avg_time, min_time, max_time
 
+
 def benchmark_relationship_creation(client):
     """Benchmark relationship creation"""
     logger.info("Benchmarking relationship creation...")
@@ -180,10 +184,7 @@ def benchmark_relationship_creation(client):
     relationship_times = []
     for rel in TEST_RELATIONSHIPS:
         _, rel_time = measure_time(
-            client.create_relationship,
-            rel["from"],
-            rel["relationship"],
-            rel["to"]
+            client.create_relationship, rel["from"], rel["relationship"], rel["to"]
         )
         relationship_times.append(rel_time)
 
@@ -198,6 +199,7 @@ def benchmark_relationship_creation(client):
 
     return avg_time, min_time, max_time
 
+
 def benchmark_delta_sync(memory_manager):
     """Benchmark delta synchronization"""
     logger.info("Benchmarking delta synchronization...")
@@ -208,6 +210,7 @@ def benchmark_delta_sync(memory_manager):
     logger.info(f"Delta sync time: {sync_time:.4f} seconds")
     return sync_time
 
+
 async def benchmark_hybrid_search(hybrid_search):
     """Benchmark hybrid search"""
     logger.info("Benchmarking hybrid search...")
@@ -215,10 +218,7 @@ async def benchmark_hybrid_search(hybrid_search):
     # Perform hybrid search for test queries
     search_times = []
     for query in TEST_QUERIES:
-        _, search_time = await measure_time_async(
-            hybrid_search.search,
-            query
-        )
+        _, search_time = await measure_time_async(hybrid_search.search, query)
         search_times.append(search_time)
 
     # Calculate statistics
@@ -231,6 +231,7 @@ async def benchmark_hybrid_search(hybrid_search):
     logger.info(f"Hybrid search time (max): {max_time:.4f} seconds")
 
     return avg_time, min_time, max_time
+
 
 def benchmark_memory_cache():
     """Benchmark memory cache operations"""
@@ -263,6 +264,7 @@ def benchmark_memory_cache():
 
     return avg_set_time, avg_get_time
 
+
 def benchmark_entity_scoring():
     """Benchmark entity scoring"""
     logger.info("Benchmarking entity scoring...")
@@ -277,6 +279,7 @@ def benchmark_entity_scoring():
         days_ago = i % 30
         # Use timedelta to properly handle date arithmetic
         from datetime import timedelta
+
         timestamp = (datetime.now() - timedelta(days=days_ago)).isoformat()
 
         entity = {
@@ -285,7 +288,7 @@ def benchmark_entity_scoring():
             "type": "TestType",
             "createdAt": timestamp,
             "updatedAt": timestamp,
-            "accessCount": i % 10
+            "accessCount": i % 10,
         }
         test_entities.append(entity)
 
@@ -302,6 +305,7 @@ def benchmark_entity_scoring():
 
     return avg_score_time
 
+
 async def main():
     """Main function to run benchmarks"""
     logger.info("Starting persistent memory benchmarks")
@@ -313,7 +317,7 @@ async def main():
     client = MockMCPMemoryClient(
         endpoint="https://mcp.community.augment.co",
         namespace="vana-project",
-        api_key="test_api_key"
+        api_key="test_api_key",
     )
 
     memory_manager = MemoryManager(client)
@@ -333,7 +337,9 @@ async def main():
     logger.info("\nBenchmark Summary:")
     logger.info(f"Initialization time: {init_time:.4f} seconds")
     logger.info(f"Entity storage time (avg): {entity_times[0]:.4f} seconds")
-    logger.info(f"Relationship creation time (avg): {relationship_times[0]:.4f} seconds")
+    logger.info(
+        f"Relationship creation time (avg): {relationship_times[0]:.4f} seconds"
+    )
     logger.info(f"Delta sync time: {sync_time:.4f} seconds")
     logger.info(f"Hybrid search time (avg): {search_times[0]:.4f} seconds")
     logger.info(f"Cache set time (avg): {cache_times[0]:.6f} seconds")
@@ -342,6 +348,7 @@ async def main():
 
     logger.info("Persistent memory benchmarks completed")
     return True
+
 
 if __name__ == "__main__":
     success = asyncio.run(main())

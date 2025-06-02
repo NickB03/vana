@@ -18,7 +18,8 @@ Usage:
 """
 
 import logging
-from typing import List, Dict, Any
+from typing import Any
+
 from tools.brave_search_client import get_brave_search_client
 
 logger = logging.getLogger(__name__)
@@ -33,11 +34,13 @@ class WebSearchClient:
         self.available = self.brave_client.is_available()
 
         if not self.available:
-            logger.error("WebSearchClient: BRAVE_API_KEY is not configured. Web search will not be available.")
+            logger.error(
+                "WebSearchClient: BRAVE_API_KEY is not configured. Web search will not be available."
+            )
         else:
             logger.info("WebSearchClient initialized successfully with Brave Search.")
 
-    def search(self, query: str, num_results: int = 5, **kwargs) -> Dict[str, Any]:
+    def search(self, query: str, num_results: int = 5, **kwargs) -> dict[str, Any]:
         """
         Search the web using Brave Search API.
 
@@ -51,8 +54,13 @@ class WebSearchClient:
             or an 'error' message and 'details'.
         """
         if not self.available:
-            logger.warning("WebSearchClient not available due to missing configuration. Returning empty result.")
-            return {"error": "Web search client not available or not configured.", "items": []}
+            logger.warning(
+                "WebSearchClient not available due to missing configuration. Returning empty result."
+            )
+            return {
+                "error": "Web search client not available or not configured.",
+                "items": [],
+            }
 
         try:
             # Use Brave Search client to get results
@@ -68,15 +76,21 @@ class WebSearchClient:
                     "displayLink": result.get("source", ""),
                     "pagemap": {
                         "metatags": [{"article:published_time": result.get("date", "")}]
-                    }
+                    },
                 }
                 items.append(item)
 
             return {"items": items}
 
         except Exception as e:
-            logger.error(f"Unexpected error during web search for '{query}': {e}", exc_info=True)
-            return {"error": "An unexpected error occurred during web search.", "details": str(e), "items": []}
+            logger.error(
+                f"Unexpected error during web search for '{query}': {e}", exc_info=True
+            )
+            return {
+                "error": "An unexpected error occurred during web search.",
+                "details": str(e),
+                "items": [],
+            }
 
 
 class MockWebSearchClient:
@@ -87,7 +101,7 @@ class MockWebSearchClient:
         self.brave_client = get_brave_search_client(use_mock=True)
         self.available = True
 
-    def search(self, query: str, num_results: int = 5, **kwargs) -> Dict[str, Any]:
+    def search(self, query: str, num_results: int = 5, **kwargs) -> dict[str, Any]:
         """Return mock search results in Google Custom Search format for compatibility."""
         try:
             # Get mock results from Brave Search client
@@ -103,7 +117,7 @@ class MockWebSearchClient:
                     "displayLink": result.get("source", ""),
                     "pagemap": {
                         "metatags": [{"article:published_time": result.get("date", "")}]
-                    }
+                    },
                 }
                 items.append(item)
 

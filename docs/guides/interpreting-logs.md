@@ -53,7 +53,7 @@ While the exact format can vary, a structured log entry (e.g., in JSON) might lo
   "query_text_sample": "latest AI trends",
   "num_results": 5,
   "duration_ms": 150,
-  "request_id": "xyz789" 
+  "request_id": "xyz789"
 }
 ```
 

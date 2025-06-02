@@ -5,10 +5,9 @@ Test Semantic Chunking for VANA
 This script tests the semantic chunking functionality for document processing.
 """
 
+import logging
 import os
 import sys
-import logging
-from pprint import pprint
 
 # Add the project root to the Python path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -20,15 +19,16 @@ from tools.document_processing.semantic_chunker import SemanticChunker
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+
 def test_semantic_chunking():
     """Test the semantic chunking functionality"""
     # Initialize the semantic chunker
     chunker = SemanticChunker(
         target_chunk_size=1000,  # Smaller for testing
         min_chunk_size=200,
-        overlap_size=100
+        overlap_size=100,
     )
-    
+
     # Create a test document
     test_document = {
         "doc_id": "test-doc-001",
@@ -94,22 +94,22 @@ Solutions to these challenges include:
 Semantic chunking is a powerful technique for document processing in knowledge retrieval systems.
 By preserving the semantic structure of documents, it enables more accurate and contextually
 relevant retrieval of information.
-        """
+        """,
     }
-    
+
     # Extract sections
     logger.info("Extracting sections from test document...")
     sections = chunker.extract_sections(test_document)
-    
+
     logger.info(f"Found {len(sections)} sections:")
     for i, section in enumerate(sections, 1):
         logger.info(f"{i}. {section.get('heading')} (Path: {section.get('path')})")
         logger.info(f"   Text length: {len(section.get('text'))}")
-    
+
     # Chunk the document
     logger.info("\nChunking the document...")
     chunks = chunker.chunk_document(test_document)
-    
+
     logger.info(f"Created {len(chunks)} chunks:")
     for i, chunk in enumerate(chunks, 1):
         logger.info(f"{i}. Chunk {chunk.get('metadata', {}).get('chunk_id')}")
@@ -119,21 +119,23 @@ relevant retrieval of information.
         logger.info(f"   Text length: {len(chunk.get('text'))}")
         logger.info(f"   First 100 chars: {chunk.get('text')[:100]}...")
         logger.info("")
-    
+
     return True
+
 
 def main():
     """Main function"""
     logger.info("Testing Semantic Chunking for VANA")
-    
+
     success = test_semantic_chunking()
-    
+
     if success:
         logger.info("Semantic chunking test completed successfully!")
         return 0
     else:
         logger.error("Semantic chunking test failed.")
         return 1
+
 
 if __name__ == "__main__":
     sys.exit(main())

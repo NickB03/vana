@@ -680,7 +680,7 @@
 # Changes
 # Check component health
 # Check health
-# check https://mozilla.github.io/pdf.js/getting_started/#download 
+# check https://mozilla.github.io/pdf.js/getting_started/#download
 # Check if ADK is available
 # Check permissions
 # Check Railway n8n configuration
@@ -976,7 +976,7 @@
 # Expand Knowledge Base
 # expand-template
 # expand-tilde [![NPM version](https://img.shields.io/npm/v/expand-tilde.svg?style=flat)](https://www.npmjs.com/package/expand-tilde) [![NPM downloads](https://img.shields.io/npm/dm/expand-tilde.svg?style=flat)](https://npmjs.org/package/expand-tilde) [![Linux Build Status](https://img.shields.io/travis/jonschlinkert/expand-tilde.svg?style=flat&label=Travis)](https://travis-ci.org/jonschlinkert/expand-tilde)
-# experimental OAS 3.1 in alpha (contributions welcome - see branch `oas-3.1` and pr-882 
+# experimental OAS 3.1 in alpha (contributions welcome - see branch `oas-3.1` and pr-882
 # Export index data to Cloud Storage
 # export LANGCHAIN_ENDPOINT=https://api.smith.langchain.com # or your own server
 # export LANGCHAIN_PROJECT="My Project Name" #  Optional: "default" is used if not set
@@ -993,7 +993,7 @@
 # fast-glob
 # fast-unique-numbers
 # fast-uri
-# fastest-levenshtein :rocket: 
+# fastest-levenshtein :rocket:
 # fastq
 # Features
 # fecha [![Build Status](https://travis-ci.org/taylorhakes/fecha.svg?branch=master)](https://travis-ci.org/taylorhakes/fecha)
@@ -1092,7 +1092,7 @@
 # get-system-fonts
 # Getting Started
 # Getting the environment from the trained agent
-# Git Flow 
+# Git Flow
 # GitHub Knowledge Sync
 # GitHub RAG Integration Workflow
 # GitHub-CI Status
@@ -1838,7 +1838,7 @@
 # Submit feedback
 # Summary
 # Support
-# Support & Sponsorship  
+# Support & Sponsorship
 # supports-color
 # supports-color [![Build Status](https://travis-ci.org/chalk/supports-color.svg?branch=master)](https://travis-ci.org/chalk/supports-color)
 # Swagger UI Dist
@@ -1858,7 +1858,7 @@
 # Team Coordination System
 # Tedious (node implementation of TDS)
 # Tedious Benchmarks
-# teeny-request 
+# teeny-request
 # tensor([[1.0000, 0.6660, 0.1046],
 # Test Document
 # Test individual agents

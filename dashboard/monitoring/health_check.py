@@ -5,18 +5,18 @@ This module provides health check functionality for the VANA memory system,
 and integrates with the AlertManager to generate alerts on WARNING/ERROR.
 """
 
-import os
-import time
-import json
-import logging
 import datetime
-from typing import Dict, Any, List, Optional, Callable, Union
+import logging
+import time
+from collections.abc import Callable
+from typing import Any
 
 from dashboard.alerting.alert_manager import AlertManager, AlertSeverity
 
 # Import ADK memory monitor
 try:
     from dashboard.monitoring.adk_memory_monitor import adk_memory_monitor
+
     ADK_MONITOR_AVAILABLE = True
 except ImportError:
     ADK_MONITOR_AVAILABLE = False
@@ -24,11 +24,13 @@ except ImportError:
 
 logger = logging.getLogger(__name__)
 
+
 class HealthStatus:
     OK = "ok"
     WARNING = "warning"
     ERROR = "error"
     UNKNOWN = "unknown"
+
 
 class HealthCheck:
     def __init__(self):
@@ -42,11 +44,13 @@ class HealthCheck:
         if ADK_MONITOR_AVAILABLE:
             self.register_component("adk_memory", self._check_adk_memory)
 
-    def register_component(self, component_name: str, check_function: Callable[[], Dict[str, Any]]) -> None:
+    def register_component(
+        self, component_name: str, check_function: Callable[[], dict[str, Any]]
+    ) -> None:
         self.component_checks[component_name] = check_function
         logger.info(f"Registered health check for component: {component_name}")
 
-    def check_health(self, force: bool = False) -> Dict[str, Any]:
+    def check_health(self, force: bool = False) -> dict[str, Any]:
         current_time = time.time()
         if not force and current_time - self.last_check_time < self.check_interval:
             return self.last_check_results
@@ -62,72 +66,89 @@ class HealthCheck:
                 if component_status == HealthStatus.ERROR:
                     overall_status = HealthStatus.ERROR
                     self._alert(component_name, result, AlertSeverity.CRITICAL)
-                elif component_status == HealthStatus.WARNING and overall_status != HealthStatus.ERROR:
+                elif (
+                    component_status == HealthStatus.WARNING
+                    and overall_status != HealthStatus.ERROR
+                ):
                     overall_status = HealthStatus.WARNING
                     self._alert(component_name, result, AlertSeverity.WARNING)
             except Exception as e:
-                logger.error(f"Error checking health for component {component_name}: {str(e)}")
+                logger.error(
+                    f"Error checking health for component {component_name}: {str(e)}"
+                )
                 component_results[component_name] = {
                     "status": HealthStatus.ERROR,
                     "message": f"Error checking health: {str(e)}",
-                    "timestamp": datetime.datetime.now().isoformat()
+                    "timestamp": datetime.datetime.now().isoformat(),
                 }
                 overall_status = HealthStatus.ERROR
-                self._alert(component_name, component_results[component_name], AlertSeverity.CRITICAL)
+                self._alert(
+                    component_name,
+                    component_results[component_name],
+                    AlertSeverity.CRITICAL,
+                )
 
         results = {
             "status": overall_status,
             "timestamp": datetime.datetime.now().isoformat(),
-            "components": component_results
+            "components": component_results,
         }
         self.last_check_results = results
         self.last_check_time = current_time
         return results
 
-    def _alert(self, component_name: str, result: Dict[str, Any], severity: str):
+    def _alert(self, component_name: str, result: dict[str, Any], severity: str):
         message = f"Health check {severity.upper()} for {component_name}: {result.get('message', '')}"
         self.alert_manager.create_alert(
             message=message,
             severity=severity,
             source=f"health_check.{component_name}",
-            details=result
+            details=result,
         )
 
-    def check_component(self, component_name: str) -> Dict[str, Any]:
+    def check_component(self, component_name: str) -> dict[str, Any]:
         if component_name not in self.component_checks:
             return {
                 "status": HealthStatus.UNKNOWN,
                 "message": f"Component {component_name} not registered",
-                "timestamp": datetime.datetime.now().isoformat()
+                "timestamp": datetime.datetime.now().isoformat(),
             }
         try:
             check_function = self.component_checks[component_name]
             result = check_function()
             if result.get("status") in [HealthStatus.ERROR, HealthStatus.WARNING]:
-                self._alert(component_name, result, AlertSeverity.CRITICAL if result["status"] == HealthStatus.ERROR else AlertSeverity.WARNING)
+                self._alert(
+                    component_name,
+                    result,
+                    AlertSeverity.CRITICAL
+                    if result["status"] == HealthStatus.ERROR
+                    else AlertSeverity.WARNING,
+                )
             return result
         except Exception as e:
-            logger.error(f"Error checking health for component {component_name}: {str(e)}")
+            logger.error(
+                f"Error checking health for component {component_name}: {str(e)}"
+            )
             error_result = {
                 "status": HealthStatus.ERROR,
                 "message": f"Error checking health: {str(e)}",
-                "timestamp": datetime.datetime.now().isoformat()
+                "timestamp": datetime.datetime.now().isoformat(),
             }
             self._alert(component_name, error_result, AlertSeverity.CRITICAL)
             return error_result
 
-    def get_health_status(self) -> Dict[str, Any]:
+    def get_health_status(self) -> dict[str, Any]:
         if not self.last_check_results:
             return self.check_health()
         return self.last_check_results
 
-    def _check_adk_memory(self) -> Dict[str, Any]:
+    def _check_adk_memory(self) -> dict[str, Any]:
         """Check ADK memory system health."""
         if not ADK_MONITOR_AVAILABLE:
             return {
                 "status": HealthStatus.UNKNOWN,
                 "message": "ADK memory monitor not available",
-                "timestamp": datetime.datetime.now().isoformat()
+                "timestamp": datetime.datetime.now().isoformat(),
             }
 
         try:
@@ -147,13 +168,15 @@ class HealthCheck:
             return {
                 "status": status,
                 "message": health_result.get("message", "ADK memory check completed"),
-                "timestamp": health_result.get("timestamp", datetime.datetime.now().isoformat()),
+                "timestamp": health_result.get(
+                    "timestamp", datetime.datetime.now().isoformat()
+                ),
                 "details": {
                     "adk_available": health_result.get("adk_available", False),
                     "metrics": health_result.get("metrics", {}),
                     "cost_metrics": health_result.get("cost_metrics", {}),
-                    "issues": health_result.get("issues", [])
-                }
+                    "issues": health_result.get("issues", []),
+                },
             }
 
         except Exception as e:
@@ -161,5 +184,5 @@ class HealthCheck:
             return {
                 "status": HealthStatus.ERROR,
                 "message": f"ADK memory health check failed: {str(e)}",
-                "timestamp": datetime.datetime.now().isoformat()
+                "timestamp": datetime.datetime.now().isoformat(),
             }

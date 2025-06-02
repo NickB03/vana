@@ -126,7 +126,7 @@ load_memory,  # ADK native memory tool for direct memory access
 
 #### **3.2 Image Generation MCP**
 - **Purpose**: AI image generation and editing
-- **Options**: 
+- **Options**:
   - **Free**: Hugging Face Diffusers (Stable Diffusion)
   - **Paid**: DALL-E 3, Midjourney API
 - **Integration**: Hugging Face Transformers or OpenAI API

@@ -42,22 +42,22 @@ The constructor initializes the CLI interface by creating an agent and setting u
 def _create_agent(self) -> VanaAgent:
     """
     Create and configure the VANA agent.
-    
+
     Returns:
         Configured VanaAgent instance
     """
     # Create agent
     agent = VanaAgent(name="vana", model="gemini-1.5-pro")
-    
+
     # Add memory components
     agent.short_term_memory = ShortTermMemory()
     agent.memory_bank = MemoryBankManager()
-    
+
     # Register tools
     agent.register_tool("echo", echo)
     agent.register_tool("read_file", read_file)
     # ... other tools ...
-    
+
     return agent
 ```
 
@@ -67,7 +67,7 @@ The `_create_agent` method creates and configures the agent with memory componen
 def start_session(self) -> str:
     """
     Start a new session.
-    
+
     Returns:
         Session ID
     """
@@ -82,18 +82,18 @@ The `start_session` method creates a new session for the agent.
 def process_message(self, message: str) -> str:
     """
     Process a message with the agent.
-    
+
     Args:
         message: User message
-        
+
     Returns:
         Agent response
     """
     if not self.session_id:
         self.start_session()
-    
+
     response = self.agent.process_message(message, session_id=self.session_id)
-    
+
     return response
 ```
 
@@ -104,24 +104,24 @@ def interactive_mode(self):
     """Run the CLI in interactive mode."""
     print("VANA Agent CLI - Interactive Mode")
     print("Type 'exit' or 'quit' to exit, 'help' for help")
-    
+
     self.start_session()
-    
+
     while True:
         try:
             user_input = input("\nYou: ")
-            
+
             if user_input.lower() in ["exit", "quit"]:
                 print("Exiting VANA Agent CLI")
                 break
-            
+
             if user_input.lower() == "help":
                 self._print_help()
                 continue
-            
+
             response = self.process_message(user_input)
             print(f"\nVANA: {response}")
-            
+
         except KeyboardInterrupt:
             print("\nExiting VANA Agent CLI")
             break
@@ -135,7 +135,7 @@ The `interactive_mode` method runs the CLI in interactive mode, allowing the use
 def launch_web_ui(self, port: int = 8080):
     """
     Launch the ADK web UI.
-    
+
     Args:
         port: Port to run the web UI on
     """
@@ -143,7 +143,7 @@ def launch_web_ui(self, port: int = 8080):
         # Get the current directory
         current_dir = os.path.dirname(os.path.abspath(__file__))
         project_root = os.path.abspath(os.path.join(current_dir, ".."))
-        
+
         # Run the ADK web command
         print(f"Launching ADK web UI on port {port}...")
         subprocess.run(["adk", "web", "--port", str(port)], cwd=project_root)
@@ -164,26 +164,26 @@ The CLI provides a command-line interface for interacting with the agent. It use
 def parse_args():
     """
     Parse command-line arguments.
-    
+
     Returns:
         Parsed arguments
     """
     parser = argparse.ArgumentParser(description="VANA Agent CLI")
-    
+
     # Add subparsers for different modes
     subparsers = parser.add_subparsers(dest="mode", help="Mode to run the CLI in")
-    
+
     # Interactive mode
     interactive_parser = subparsers.add_parser("interactive", help="Run in interactive mode")
-    
+
     # Web UI mode
     web_parser = subparsers.add_parser("web", help="Launch the ADK web UI")
     web_parser.add_argument("--port", type=int, default=8080, help="Port to run the web UI on")
-    
+
     # Single message mode
     message_parser = subparsers.add_parser("message", help="Process a single message")
     message_parser.add_argument("message", help="Message to process")
-    
+
     return parser.parse_args()
 ```
 
@@ -194,7 +194,7 @@ def main():
     """Main entry point for the CLI."""
     args = parse_args()
     cli = VanaCLI()
-    
+
     if args.mode == "interactive":
         cli.interactive_mode()
     elif args.mode == "web":
@@ -216,7 +216,7 @@ The CLI integrates with the agent's tools by registering them with the agent. Th
 ```python
 def _create_agent(self) -> VanaAgent:
     # ... other code ...
-    
+
     # Register tools
     agent.register_tool("echo", echo)
     agent.register_tool("read_file", read_file)
@@ -231,7 +231,7 @@ def _create_agent(self) -> VanaAgent:
     agent.register_tool("kg_store", kg_store)
     agent.register_tool("kg_relationship", kg_relationship)
     agent.register_tool("kg_extract_entities", kg_extract_entities)
-    
+
     return agent
 ```
 
@@ -244,13 +244,13 @@ The CLI integrates with the agent's memory components by adding them to the agen
 ```python
 def _create_agent(self) -> VanaAgent:
     # ... other code ...
-    
+
     # Add memory components
     agent.short_term_memory = ShortTermMemory()
     agent.memory_bank = MemoryBankManager()
-    
+
     # ... other code ...
-    
+
     return agent
 ```
 
@@ -263,7 +263,7 @@ The CLI includes comprehensive error handling to ensure a smooth user experience
 ```python
 def interactive_mode(self):
     # ... other code ...
-    
+
     while True:
         try:
             # ... other code ...

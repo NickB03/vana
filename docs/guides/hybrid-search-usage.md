@@ -39,19 +39,19 @@ The primary method is usually `search` or `perform_search`.
 ```python
 if hybrid_search_engine:
     query = "What are the key architectural patterns in Project VANA?"
-    
+
     try:
         # The search method might take parameters to control aspects like:
         # - Number of results from each source
         # - Weights for different sources in ranking
         # - Timeout settings
-        
+
         # Example: A simple search call
         # results = hybrid_search_engine.search(query_text=query, num_results=10)
-        
+
         # For this conceptual example, let's assume a basic search method:
         results = hybrid_search_engine.search(query) # Or query_text=query
-        
+
         print(f"\nHybrid Search Results for: '{query}':")
         if results:
             for i, result in enumerate(results):
@@ -65,7 +65,7 @@ if hybrid_search_engine:
                     print(f"    URL: {result.get('url')}")
         else:
             print("  No results found or an error occurred.")
-            
+
     except Exception as e:
         print(f"Error during hybrid search for '{query}': {e}")
 ```

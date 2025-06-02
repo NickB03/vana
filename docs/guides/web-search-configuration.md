@@ -84,7 +84,7 @@ Once the `WebSearchClient` is updated to use environment variables:
     ```python
     # Conceptual test
     from tools.web_search_client import WebSearchClient
-    
+
     try:
         client = WebSearchClient()
         if client.available:

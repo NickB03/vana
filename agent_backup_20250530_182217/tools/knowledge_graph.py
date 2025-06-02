@@ -7,10 +7,9 @@ It allows querying and updating the knowledge graph with appropriate error handl
 """
 
 import logging
-from typing import Dict, List, Any, Optional, Union
-
-import sys
 import os
+import sys
+from typing import Any, Union
 
 # Add the project root to the path
 project_root = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
@@ -21,11 +20,14 @@ try:
     from tools.knowledge_graph.knowledge_graph_manager import KnowledgeGraphManager
 except ImportError as e:
     # No fallback mock implementation in production
-    raise ImportError(f"Knowledge Graph manager not available: {e}. Ensure knowledge graph is properly configured.")
+    raise ImportError(
+        f"Knowledge Graph manager not available: {e}. Ensure knowledge graph is properly configured."
+    )
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
 
 class KnowledgeGraphTool:
     """
@@ -51,7 +53,7 @@ class KnowledgeGraphTool:
         """
         return self.kg_manager.is_available()
 
-    def query(self, entity_type: str, query_text: str) -> Dict[str, Any]:
+    def query(self, entity_type: str, query_text: str) -> dict[str, Any]:
         """
         Query the Knowledge Graph for entities.
 
@@ -67,21 +69,18 @@ class KnowledgeGraphTool:
             if not entity_type or not isinstance(entity_type, str):
                 return {
                     "success": False,
-                    "error": "Invalid entity_type: must be a non-empty string"
+                    "error": "Invalid entity_type: must be a non-empty string",
                 }
 
             if not query_text or not isinstance(query_text, str):
                 return {
                     "success": False,
-                    "error": "Invalid query_text: must be a non-empty string"
+                    "error": "Invalid query_text: must be a non-empty string",
                 }
 
             # Check if Knowledge Graph is available
             if not self.is_available():
-                return {
-                    "success": False,
-                    "error": "Knowledge Graph is not available"
-                }
+                return {"success": False, "error": "Knowledge Graph is not available"}
 
             # Perform query
             result = self.kg_manager.query(entity_type, query_text)
@@ -89,27 +88,25 @@ class KnowledgeGraphTool:
             # Check for error in result
             if "error" in result:
                 logger.error(f"Error querying Knowledge Graph: {result['error']}")
-                return {
-                    "success": False,
-                    "error": result["error"]
-                }
+                return {"success": False, "error": result["error"]}
 
             # Extract entities
             entities = result.get("entities", [])
 
-            logger.info(f"Successfully queried Knowledge Graph for '{query_text}' with {len(entities)} results")
-            return {
-                "success": True,
-                "entities": entities
-            }
+            logger.info(
+                f"Successfully queried Knowledge Graph for '{query_text}' with {len(entities)} results"
+            )
+            return {"success": True, "entities": entities}
         except Exception as e:
             logger.error(f"Error querying Knowledge Graph: {str(e)}")
             return {
                 "success": False,
-                "error": f"Error querying Knowledge Graph: {str(e)}"
+                "error": f"Error querying Knowledge Graph: {str(e)}",
             }
 
-    def store(self, entity_name: str, entity_type: str, observation: str) -> Dict[str, Any]:
+    def store(
+        self, entity_name: str, entity_type: str, observation: str
+    ) -> dict[str, Any]:
         """
         Store information in the Knowledge Graph.
 
@@ -126,53 +123,49 @@ class KnowledgeGraphTool:
             if not entity_name or not isinstance(entity_name, str):
                 return {
                     "success": False,
-                    "error": "Invalid entity_name: must be a non-empty string"
+                    "error": "Invalid entity_name: must be a non-empty string",
                 }
 
             if not entity_type or not isinstance(entity_type, str):
                 return {
                     "success": False,
-                    "error": "Invalid entity_type: must be a non-empty string"
+                    "error": "Invalid entity_type: must be a non-empty string",
                 }
 
             if not observation or not isinstance(observation, str):
                 return {
                     "success": False,
-                    "error": "Invalid observation: must be a non-empty string"
+                    "error": "Invalid observation: must be a non-empty string",
                 }
 
             # Check if Knowledge Graph is available
             if not self.is_available():
-                return {
-                    "success": False,
-                    "error": "Knowledge Graph is not available"
-                }
+                return {"success": False, "error": "Knowledge Graph is not available"}
 
             # Store information
             result = self.kg_manager.store(entity_name, entity_type, observation)
 
             # Check for error in result
             if not result.get("success", False):
-                logger.error(f"Error storing in Knowledge Graph: {result.get('error', 'Unknown error')}")
-                return {
-                    "success": False,
-                    "error": result.get("error", "Unknown error")
-                }
+                logger.error(
+                    f"Error storing in Knowledge Graph: {result.get('error', 'Unknown error')}"
+                )
+                return {"success": False, "error": result.get("error", "Unknown error")}
 
-            logger.info(f"Successfully stored entity '{entity_name}' in Knowledge Graph")
-            return {
-                "success": True,
-                "entity": entity_name,
-                "type": entity_type
-            }
+            logger.info(
+                f"Successfully stored entity '{entity_name}' in Knowledge Graph"
+            )
+            return {"success": True, "entity": entity_name, "type": entity_type}
         except Exception as e:
             logger.error(f"Error storing in Knowledge Graph: {str(e)}")
             return {
                 "success": False,
-                "error": f"Error storing in Knowledge Graph: {str(e)}"
+                "error": f"Error storing in Knowledge Graph: {str(e)}",
             }
 
-    def store_relationship(self, entity1: str, relationship: str, entity2: str) -> Dict[str, Any]:
+    def store_relationship(
+        self, entity1: str, relationship: str, entity2: str
+    ) -> dict[str, Any]:
         """
         Store a relationship between two entities in the Knowledge Graph.
 
@@ -189,54 +182,52 @@ class KnowledgeGraphTool:
             if not entity1 or not isinstance(entity1, str):
                 return {
                     "success": False,
-                    "error": "Invalid entity1: must be a non-empty string"
+                    "error": "Invalid entity1: must be a non-empty string",
                 }
 
             if not relationship or not isinstance(relationship, str):
                 return {
                     "success": False,
-                    "error": "Invalid relationship: must be a non-empty string"
+                    "error": "Invalid relationship: must be a non-empty string",
                 }
 
             if not entity2 or not isinstance(entity2, str):
                 return {
                     "success": False,
-                    "error": "Invalid entity2: must be a non-empty string"
+                    "error": "Invalid entity2: must be a non-empty string",
                 }
 
             # Check if Knowledge Graph is available
             if not self.is_available():
-                return {
-                    "success": False,
-                    "error": "Knowledge Graph is not available"
-                }
+                return {"success": False, "error": "Knowledge Graph is not available"}
 
             # Store relationship
             result = self.kg_manager.store_relationship(entity1, relationship, entity2)
 
             # Check for error in result
             if not result.get("success", False):
-                logger.error(f"Error storing relationship in Knowledge Graph: {result.get('error', 'Unknown error')}")
-                return {
-                    "success": False,
-                    "error": result.get("error", "Unknown error")
-                }
+                logger.error(
+                    f"Error storing relationship in Knowledge Graph: {result.get('error', 'Unknown error')}"
+                )
+                return {"success": False, "error": result.get("error", "Unknown error")}
 
-            logger.info(f"Successfully stored relationship '{entity1} {relationship} {entity2}' in Knowledge Graph")
+            logger.info(
+                f"Successfully stored relationship '{entity1} {relationship} {entity2}' in Knowledge Graph"
+            )
             return {
                 "success": True,
                 "entity1": entity1,
                 "relationship": relationship,
-                "entity2": entity2
+                "entity2": entity2,
             }
         except Exception as e:
             logger.error(f"Error storing relationship in Knowledge Graph: {str(e)}")
             return {
                 "success": False,
-                "error": f"Error storing relationship in Knowledge Graph: {str(e)}"
+                "error": f"Error storing relationship in Knowledge Graph: {str(e)}",
             }
 
-    def extract_entities(self, text: str) -> Dict[str, Any]:
+    def extract_entities(self, text: str) -> dict[str, Any]:
         """
         Extract entities from text.
 
@@ -251,25 +242,19 @@ class KnowledgeGraphTool:
             if not text or not isinstance(text, str):
                 return {
                     "success": False,
-                    "error": "Invalid text: must be a non-empty string"
+                    "error": "Invalid text: must be a non-empty string",
                 }
 
             # Extract entities
             entities = self.kg_manager.extract_entities(text)
 
             logger.info(f"Successfully extracted {len(entities)} entities from text")
-            return {
-                "success": True,
-                "entities": entities
-            }
+            return {"success": True, "entities": entities}
         except Exception as e:
             logger.error(f"Error extracting entities: {str(e)}")
-            return {
-                "success": False,
-                "error": f"Error extracting entities: {str(e)}"
-            }
+            return {"success": False, "error": f"Error extracting entities: {str(e)}"}
 
-    def get_metadata(self) -> Dict[str, Any]:
+    def get_metadata(self) -> dict[str, Any]:
         """
         Get metadata about the tool.
 
@@ -288,15 +273,15 @@ class KnowledgeGraphTool:
                             "name": "entity_type",
                             "type": "string",
                             "description": "Type of entity to query for",
-                            "required": True
+                            "required": True,
                         },
                         {
                             "name": "query_text",
                             "type": "string",
                             "description": "Query text",
-                            "required": True
-                        }
-                    ]
+                            "required": True,
+                        },
+                    ],
                 },
                 {
                     "name": "store",
@@ -306,21 +291,21 @@ class KnowledgeGraphTool:
                             "name": "entity_name",
                             "type": "string",
                             "description": "Name of the entity",
-                            "required": True
+                            "required": True,
                         },
                         {
                             "name": "entity_type",
                             "type": "string",
                             "description": "Type of the entity",
-                            "required": True
+                            "required": True,
                         },
                         {
                             "name": "observation",
                             "type": "string",
                             "description": "Observation about the entity",
-                            "required": True
-                        }
-                    ]
+                            "required": True,
+                        },
+                    ],
                 },
                 {
                     "name": "store_relationship",
@@ -330,28 +315,30 @@ class KnowledgeGraphTool:
                             "name": "entity1",
                             "type": "string",
                             "description": "First entity",
-                            "required": True
+                            "required": True,
                         },
                         {
                             "name": "relationship",
                             "type": "string",
                             "description": "Relationship type",
-                            "required": True
+                            "required": True,
                         },
                         {
                             "name": "entity2",
                             "type": "string",
                             "description": "Second entity",
-                            "required": True
-                        }
-                    ]
-                }
-            ]
+                            "required": True,
+                        },
+                    ],
+                },
+            ],
         }
 
 
 # Function wrappers for the tool
-def query(entity_type: str, query_text: str) -> Union[List[Dict[str, Any]], Dict[str, Any]]:
+def query(
+    entity_type: str, query_text: str
+) -> Union[list[dict[str, Any]], dict[str, Any]]:
     """
     Query the Knowledge Graph for entities.
 
@@ -369,7 +356,8 @@ def query(entity_type: str, query_text: str) -> Union[List[Dict[str, Any]], Dict
         return result["entities"]
     return result
 
-def store(entity_name: str, entity_type: str, observation: str) -> Dict[str, Any]:
+
+def store(entity_name: str, entity_type: str, observation: str) -> dict[str, Any]:
     """
     Store information in the Knowledge Graph.
 
@@ -384,7 +372,8 @@ def store(entity_name: str, entity_type: str, observation: str) -> Dict[str, Any
     tool = KnowledgeGraphTool()
     return tool.store(entity_name, entity_type, observation)
 
-def store_relationship(entity1: str, relationship: str, entity2: str) -> Dict[str, Any]:
+
+def store_relationship(entity1: str, relationship: str, entity2: str) -> dict[str, Any]:
     """
     Store a relationship between two entities in the Knowledge Graph.
 
@@ -399,7 +388,8 @@ def store_relationship(entity1: str, relationship: str, entity2: str) -> Dict[st
     tool = KnowledgeGraphTool()
     return tool.store_relationship(entity1, relationship, entity2)
 
-def extract_entities(text: str) -> Union[List[Dict[str, Any]], Dict[str, Any]]:
+
+def extract_entities(text: str) -> Union[list[dict[str, Any]], dict[str, Any]]:
     """
     Extract entities from text.
 

@@ -39,7 +39,7 @@ def __init__(
 ):
     """
     Initialize the logger.
-    
+
     Args:
         name: Logger name
         level: Log level (debug, info, warning, error, critical)
@@ -59,12 +59,12 @@ def _add_console_handler(self):
     """Add a console handler to the logger."""
     console_handler = logging.StreamHandler(sys.stdout)
     console_handler.setLevel(self.level)
-    
+
     if self.structured:
         formatter = logging.Formatter('%(message)s')
     else:
         formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-    
+
     console_handler.setFormatter(formatter)
     self.logger.addHandler(console_handler)
 ```
@@ -76,10 +76,10 @@ def _add_file_handler(self):
     """Add a file handler to the logger."""
     # Create log directory if it doesn't exist
     os.makedirs(self.log_dir, exist_ok=True)
-    
+
     # Create log file path
     log_file = os.path.join(self.log_dir, f"{self.name}.log")
-    
+
     # Create rotating file handler
     file_handler = logging.handlers.RotatingFileHandler(
         log_file,
@@ -87,12 +87,12 @@ def _add_file_handler(self):
         backupCount=self.backup_count
     )
     file_handler.setLevel(self.level)
-    
+
     if self.structured:
         formatter = logging.Formatter('%(message)s')
     else:
         formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-    
+
     file_handler.setFormatter(formatter)
     self.logger.addHandler(file_handler)
 ```
@@ -103,12 +103,12 @@ The `_add_file_handler` method adds a file handler to the logger for outputting 
 def _format_structured(self, level: str, message: str, **kwargs) -> str:
     """
     Format a structured log message.
-    
+
     Args:
         level: Log level
         message: Log message
         **kwargs: Additional log data
-        
+
     Returns:
         Formatted log message
     """
@@ -118,11 +118,11 @@ def _format_structured(self, level: str, message: str, **kwargs) -> str:
         "name": self.name,
         "message": message
     }
-    
+
     # Add additional data
     if kwargs:
         log_data["data"] = kwargs
-    
+
     return json.dumps(log_data)
 ```
 
@@ -132,7 +132,7 @@ The `_format_structured` method formats a log message as a JSON string for struc
 def debug(self, message: str, **kwargs):
     """
     Log a debug message.
-    
+
     Args:
         message: Log message
         **kwargs: Additional log data
@@ -141,7 +141,7 @@ def debug(self, message: str, **kwargs):
         message = self._format_structured("debug", message, **kwargs)
     elif kwargs:
         message = f"{message} - {json.dumps(kwargs)}"
-    
+
     self.logger.debug(message)
 ```
 
@@ -151,7 +151,7 @@ The `debug` method logs a message at the debug level. Similar methods exist for 
 def log_tool_call(self, tool_name: str, args: Dict[str, Any], result: Any):
     """
     Log a tool call.
-    
+
     Args:
         tool_name: Name of the tool
         args: Tool arguments
@@ -171,7 +171,7 @@ The `log_tool_call` method logs a tool call with the tool name, arguments, and r
 def log_session_start(self, session_id: str, user_id: str):
     """
     Log a session start.
-    
+
     Args:
         session_id: Session ID
         user_id: User ID
@@ -190,7 +190,7 @@ The `log_session_start` method logs a session start event with the session ID an
 def log_session_end(self, session_id: str, user_id: str):
     """
     Log a session end.
-    
+
     Args:
         session_id: Session ID
         user_id: User ID
@@ -209,7 +209,7 @@ The `log_session_end` method logs a session end event with the session ID and us
 def log_message(self, session_id: str, user_id: str, role: str, content: str):
     """
     Log a message.
-    
+
     Args:
         session_id: Session ID
         user_id: User ID
@@ -240,11 +240,11 @@ default_logger = VanaLogger()
 def get_logger(name: str = "vana", **kwargs) -> VanaLogger:
     """
     Get a logger with the specified name and configuration.
-    
+
     Args:
         name: Logger name
         **kwargs: Logger configuration
-        
+
     Returns:
         Configured logger
     """
@@ -253,7 +253,7 @@ def get_logger(name: str = "vana", **kwargs) -> VanaLogger:
 def set_default_logger(logger: VanaLogger):
     """
     Set the default logger.
-    
+
     Args:
         logger: Logger to set as default
     """
@@ -263,7 +263,7 @@ def set_default_logger(logger: VanaLogger):
 def debug(message: str, **kwargs):
     """
     Log a debug message with the default logger.
-    
+
     Args:
         message: Log message
         **kwargs: Additional log data
@@ -307,11 +307,11 @@ def _format_structured(self, level: str, message: str, **kwargs) -> str:
         "name": self.name,
         "message": message
     }
-    
+
     # Add additional data
     if kwargs:
         log_data["data"] = kwargs
-    
+
     return json.dumps(log_data)
 ```
 
@@ -322,7 +322,7 @@ The logging system can be used in several ways:
 1. **Using the default logger**:
    ```python
    from agent.logging import debug, info, warning, error, critical
-   
+
    debug("Debug message")
    info("Info message")
    warning("Warning message")
@@ -333,7 +333,7 @@ The logging system can be used in several ways:
 2. **Creating a custom logger**:
    ```python
    from agent.logging import get_logger
-   
+
    logger = get_logger("custom_logger", level="debug", structured=True)
    logger.debug("Debug message")
    logger.info("Info message with data", key="value")
@@ -342,7 +342,7 @@ The logging system can be used in several ways:
 3. **Setting the default logger**:
    ```python
    from agent.logging import get_logger, set_default_logger, info
-   
+
    custom_logger = get_logger("custom_logger", level="debug")
    set_default_logger(custom_logger)
    info("This will use the custom logger")

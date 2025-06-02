@@ -6,24 +6,29 @@ This module provides both in-memory and persistent caching for embeddings to imp
 performance and reduce API calls to embedding services.
 """
 
-import os
-import json
-import hashlib
-import logging
-import time
 import functools
-from typing import Dict, List, Any, Optional, Union, Callable
+import hashlib
+import json
+import logging
+import os
+import time
+from collections.abc import Callable
 from pathlib import Path
+from typing import Any, Optional
 
 # Set up logging
-logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s"
+)
 logger = logging.getLogger(__name__)
 
 # Simple in-memory cache
 _embedding_cache = {}
 
+
 def cache_embedding(func):
     """Decorator to cache embeddings in memory."""
+
     @functools.wraps(func)
     def wrapper(text, *args, **kwargs):
         # Use the text as the cache key
@@ -39,7 +44,9 @@ def cache_embedding(func):
         logger.debug(f"Cache miss for embedding: {text[:30]}...")
 
         return result
+
     return wrapper
+
 
 def clear_cache():
     """Clear the in-memory embedding cache."""
@@ -81,7 +88,9 @@ class EmbeddingCache:
 
         logger.info(f"Initialized persistent embedding cache at {self.cache_dir}")
 
-    def get(self, text: str, model: str = "text-embedding-004") -> Optional[List[float]]:
+    def get(
+        self, text: str, model: str = "text-embedding-004"
+    ) -> Optional[list[float]]:
         """
         Get embedding for text from cache.
 
@@ -105,7 +114,7 @@ class EmbeddingCache:
                     return None
 
                 # Load embedding from cache
-                with open(cache_file, 'r') as f:
+                with open(cache_file) as f:
                     cache_data = json.load(f)
 
                 self.hit_count += 1
@@ -119,7 +128,9 @@ class EmbeddingCache:
             self.miss_count += 1
             return None
 
-    def set(self, text: str, embedding: List[float], model: str = "text-embedding-004") -> None:
+    def set(
+        self, text: str, embedding: list[float], model: str = "text-embedding-004"
+    ) -> None:
         """
         Store embedding in cache.
 
@@ -137,10 +148,10 @@ class EmbeddingCache:
                 "text": text,
                 "model": model,
                 "embedding": embedding,
-                "timestamp": time.time()
+                "timestamp": time.time(),
             }
 
-            with open(cache_file, 'w') as f:
+            with open(cache_file, "w") as f:
                 json.dump(cache_data, f)
 
             logger.debug(f"Cached embedding: {cache_key}")
@@ -163,7 +174,10 @@ class EmbeddingCache:
             for cache_file in Path(self.cache_dir).glob("*.json"):
                 if older_than_days is not None:
                     # Only clear entries older than specified days
-                    if time.time() - os.path.getmtime(cache_file) < older_than_days * 24 * 60 * 60:
+                    if (
+                        time.time() - os.path.getmtime(cache_file)
+                        < older_than_days * 24 * 60 * 60
+                    ):
                         continue
 
                 os.remove(cache_file)
@@ -175,7 +189,7 @@ class EmbeddingCache:
             logger.error(f"Error clearing cache: {e}")
             return cleared_count
 
-    def get_stats(self) -> Dict[str, Any]:
+    def get_stats(self) -> dict[str, Any]:
         """
         Get cache statistics.
 
@@ -200,14 +214,14 @@ class EmbeddingCache:
                 "hit_count": self.hit_count,
                 "miss_count": self.miss_count,
                 "hit_ratio": hit_ratio,
-                "ttl_days": self.ttl_seconds / (24 * 60 * 60)
+                "ttl_days": self.ttl_seconds / (24 * 60 * 60),
             }
         except Exception as e:
             logger.error(f"Error getting cache stats: {e}")
             return {
                 "error": str(e),
                 "hit_count": self.hit_count,
-                "miss_count": self.miss_count
+                "miss_count": self.miss_count,
             }
 
     def _generate_cache_key(self, text: str, model: str) -> str:
@@ -235,6 +249,7 @@ class EmbeddingCache:
         Returns:
             Decorator function
         """
+
         def decorator(func):
             @functools.wraps(func)
             def wrapper(text, *args, **kwargs):
@@ -253,5 +268,7 @@ class EmbeddingCache:
                 self.set(text, result, actual_model)
 
                 return result
+
             return wrapper
+
         return decorator

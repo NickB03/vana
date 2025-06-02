@@ -73,10 +73,10 @@ The implementation should:
        if [[ "${{ github.event_name }}" == "push" ]]; then
          # Get list of changed files in docs and knowledge directories
          CHANGED_FILES=$(git diff --name-only ${{ github.event.before }} ${{ github.event.after }} | grep -E '^(docs|knowledge)/')
-         
+
          # Create a directory for diffs
          mkdir -p data/diffs
-         
+
          # Extract diffs for each changed file
          for file in $CHANGED_FILES; do
            git diff ${{ github.event.before }} ${{ github.event.after }} -- "$file" > "data/diffs/$(basename "$file").diff"
@@ -85,12 +85,12 @@ The implementation should:
          # For scheduled or manual runs, process all files
          CHANGED_FILES=$(find docs knowledge -type f -name "*.md" -o -name "*.txt" -o -name "*.pdf")
        fi
-       
+
        # Save to output
        echo "files<<EOF" >> $GITHUB_OUTPUT
        echo "$CHANGED_FILES" >> $GITHUB_OUTPUT
        echo "EOF" >> $GITHUB_OUTPUT
-       
+
        # Count files
        FILE_COUNT=$(echo "$CHANGED_FILES" | wc -l)
        echo "count=$FILE_COUNT" >> $GITHUB_OUTPUT

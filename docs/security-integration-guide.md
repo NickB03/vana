@@ -146,20 +146,20 @@ class SecureMCPMemoryClient:
         self.credential_manager = CredentialManager()
         self.access_control = AccessControlManager()
         self.audit_logger = AuditLogger()
-        
+
         # Set role for access control
         self.role = Role.AGENT
-        
+
         # Get secure credentials
         mcp_credentials = self.credential_manager.get_mcp_credentials()
-        
+
         # Initialize MCP client
         self.mcp_client = MCPMemoryClient(
             endpoint=mcp_credentials["endpoint"],
             namespace=mcp_credentials["namespace"],
             api_key=mcp_credentials["api_key"]
         )
-    
+
     @circuit_breaker("store_entity", failure_threshold=3, reset_timeout=60.0)
     @require_permission(Operation.STORE_ENTITY, entity_type_arg="entity_type")
     def store_entity(self, entity_name, entity_type, observations):
@@ -182,19 +182,19 @@ class SecureMemoryManager:
         self.credential_manager = CredentialManager()
         self.access_control = AccessControlManager()
         self.audit_logger = AuditLogger()
-        
+
         # Set role for access control
         self.role = Role.AGENT
-        
+
         # Initialize memory manager
         self.mcp_client = mcp_client
         self.local_cache = {}
-        
+
         # Get configuration
         memory_config = self.credential_manager.get_memory_config()
         self.sync_interval = memory_config["sync_interval"]
         self.local_db_path = memory_config["local_db_path"]
-    
+
     @circuit_breaker("initialize", failure_threshold=3, reset_timeout=60.0)
     def initialize(self):
         # Implementation with audit logging

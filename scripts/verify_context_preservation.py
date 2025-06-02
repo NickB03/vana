@@ -6,34 +6,36 @@ This script demonstrates the context preservation capabilities of the VANA syste
 by simulating a conversation with context-dependent follow-up questions.
 """
 
+import logging
 import os
 import sys
-import logging
 from datetime import datetime
 
 # Add the project root to the Python path
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 try:
-    from adk_setup.vana.context import ConversationContextManager
     from adk_setup.vana.adk_integration import (
+        ADKEventHandler,
         ADKSessionAdapter,
-        ADKToolAdapter,
         ADKStateManager,
-        ADKEventHandler
+        ADKToolAdapter,
     )
     from adk_setup.vana.agents.vana import VanaAgent
+    from adk_setup.vana.context import ConversationContextManager
 except ImportError:
-    print("Error: Unable to import VANA modules. Make sure the project is properly installed.")
+    print(
+        "Error: Unable to import VANA modules. Make sure the project is properly installed."
+    )
     print("Try running: pip install -e .")
     sys.exit(1)
 
 # Set up logging
 logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
+
 
 def setup_agent():
     """
@@ -68,6 +70,7 @@ def setup_agent():
         logger.error(f"Error setting up agent: {e}")
         sys.exit(1)
 
+
 def run_conversation(agent):
     """
     Run a simulated conversation to test context preservation.
@@ -78,7 +81,9 @@ def run_conversation(agent):
     user_id = f"test_user_{datetime.now().strftime('%Y%m%d%H%M%S')}"
     session_id = f"test_session_{datetime.now().strftime('%Y%m%d%H%M%S')}"
 
-    logger.info(f"Starting conversation with user_id={user_id}, session_id={session_id}")
+    logger.info(
+        f"Starting conversation with user_id={user_id}, session_id={session_id}"
+    )
 
     # First interaction
     message1 = "My favorite color is blue."
@@ -112,10 +117,10 @@ def run_conversation(agent):
 
     # Verify context preservation
     context_preserved = (
-        "blue" in response3.lower() and
-        "pizza" in response4.lower() and
-        "blue" in response5.lower() and
-        "pizza" in response5.lower()
+        "blue" in response3.lower()
+        and "pizza" in response4.lower()
+        and "blue" in response5.lower()
+        and "pizza" in response5.lower()
     )
 
     if context_preserved:
@@ -124,6 +129,7 @@ def run_conversation(agent):
     else:
         logger.error("❌ Context preservation test FAILED")
         return False
+
 
 def main():
     """Main function."""
@@ -141,6 +147,7 @@ def main():
     except Exception as e:
         logger.error(f"Error during verification: {e}")
         sys.exit(1)
+
 
 if __name__ == "__main__":
     main()

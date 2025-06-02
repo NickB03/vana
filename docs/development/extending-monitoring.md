@@ -40,19 +40,19 @@ The `VectorSearchHealthChecker` class in `tools/vector_search/health_checker.py`
 class VectorSearchHealthChecker:
     def __init__(self, vector_search_client=None, history_size=10):
         # Initialize the health checker
-        
+
     def check_health(self) -> Dict[str, Any]:
         # Perform health check
-        
+
     def _check_environment(self) -> Dict[str, Any]:
         # Check environment variables
-        
+
     def _check_authentication(self, client) -> Dict[str, Any]:
         # Check authentication status
-        
+
     def _check_embedding(self, client) -> Dict[str, Any]:
         # Check embedding generation
-        
+
     def _check_search(self, client) -> Dict[str, Any]:
         # Check search functionality
 ```
@@ -65,10 +65,10 @@ To add a new health check, create a new method in the `VectorSearchHealthChecker
 def _check_custom_feature(self, client) -> Dict[str, Any]:
     """
     Check custom feature functionality
-    
+
     Args:
         client: Vector Search client instance
-        
+
     Returns:
         Dictionary with check results
     """
@@ -77,7 +77,7 @@ def _check_custom_feature(self, client) -> Dict[str, Any]:
         start_time = time.time()
         result = client.custom_feature()
         duration = time.time() - start_time
-        
+
         # Analyze the result
         if result:
             return {
@@ -109,7 +109,7 @@ Update the `check_health` method to include your new check:
 ```python
 def check_health(self) -> Dict[str, Any]:
     # ... existing code ...
-    
+
     # Implement specific checks
     result["checks"] = {
         "environment": self._check_environment(),
@@ -118,7 +118,7 @@ def check_health(self) -> Dict[str, Any]:
         "search": self._check_search(client),
         "custom_feature": self._check_custom_feature(client)  # Add your new check
     }
-    
+
     # ... existing code ...
 ```
 
@@ -129,7 +129,7 @@ Update the `get_recommendations` method to include recommendations for your new 
 ```python
 def get_recommendations(self, health_result: Dict[str, Any]) -> List[Dict[str, Any]]:
     # ... existing code ...
-    
+
     # Check custom feature
     custom_check = checks.get("custom_feature", {})
     if custom_check.get("status") != "ok":
@@ -139,7 +139,7 @@ def get_recommendations(self, health_result: Dict[str, Any]) -> List[Dict[str, A
             "title": "Custom feature not working",
             "action": "Check the custom feature configuration and permissions."
         })
-    
+
     # ... existing code ...
 ```
 
@@ -152,10 +152,10 @@ Collect the new metric in your check method:
 ```python
 def _check_custom_feature(self, client) -> Dict[str, Any]:
     # ... existing code ...
-    
+
     # Collect custom metric
     custom_metric = result.get("metric", 0)
-    
+
     return {
         "status": "ok",
         "details": {
@@ -172,17 +172,17 @@ Update the `check_health` method to include your new metric:
 ```python
 def check_health(self) -> Dict[str, Any]:
     # ... existing code ...
-    
+
     # Calculate metrics
     duration = time.time() - start_time
     custom_metric = result["checks"].get("custom_feature", {}).get("details", {}).get("custom_metric", 0)
-    
+
     result["metrics"] = {
         "response_time": duration,
         "success_rate": self._calculate_success_rate(result["checks"]),
         "custom_metric": custom_metric  # Add your new metric
     }
-    
+
     # ... existing code ...
 ```
 
@@ -193,17 +193,17 @@ Update the `_calculate_trends` method in the dashboard integration:
 ```python
 def _calculate_trends(self) -> Dict[str, Any]:
     # ... existing code ...
-    
+
     # Extract metrics over time
     custom_metrics = [check.get("metrics", {}).get("custom_metric", 0) for check in self.history_cache]
-    
+
     # Calculate trends
     trends["custom_metric"] = {
         "current": custom_metrics[0] if custom_metrics else 0,
         "previous": custom_metrics[1] if len(custom_metrics) > 1 else 0,
         "trend": "improving" if custom_metrics[0] > custom_metrics[1] else "degrading" if custom_metrics[0] < custom_metrics[1] else "stable" if len(custom_metrics) > 1 else "unknown"
     }
-    
+
     # ... existing code ...
 ```
 
@@ -268,7 +268,7 @@ Update the `get_dashboard_metrics` method in `dashboard/monitoring/vector_search
 ```python
 def get_dashboard_metrics(self) -> Dict[str, Any]:
     # ... existing code ...
-    
+
     # Extract metrics from last check
     metrics = {
         "status": self.last_check_result.get("status", "unknown"),
@@ -280,7 +280,7 @@ def get_dashboard_metrics(self) -> Dict[str, Any]:
         "issues_count": len(self.last_check_result.get("issues", [])),
         "history_count": len(self.history_cache)
     }
-    
+
     # ... existing code ...
 ```
 
@@ -291,18 +291,18 @@ Update the `get_historical_data` method:
 ```python
 def get_historical_data(self, days: int = 7) -> Dict[str, Any]:
     # ... existing code ...
-    
+
     # Extract metrics over time
     timestamps = []
     response_times = []
     success_rates = []
     custom_metrics = []  # Add your new metric
-    
+
     for entry in filtered_history:
         try:
             timestamp = datetime.fromisoformat(entry.get("timestamp", ""))
             timestamps.append(timestamp.isoformat())
-            
+
             metrics = entry.get("metrics", {})
             response_times.append(metrics.get("response_time", 0))
             success_rates.append(metrics.get("success_rate", 0))
@@ -310,7 +310,7 @@ def get_historical_data(self, days: int = 7) -> Dict[str, Any]:
         except (ValueError, TypeError):
             # Skip entries with invalid timestamps
             continue
-    
+
     # Create historical data
     historical_data = {
         "days": days,
@@ -322,7 +322,7 @@ def get_historical_data(self, days: int = 7) -> Dict[str, Any]:
         "custom_metrics": custom_metrics,  # Add your new metric
         "health_percentage": (status_counts.get("ok", 0) / len(filtered_history)) * 100 if filtered_history else 0
     }
-    
+
     # ... existing code ...
 ```
 
@@ -393,14 +393,14 @@ class MyIntegration:
     def __init__(self, api_key: str, base_url: str):
         self.api_key = api_key
         self.base_url = base_url
-        
+
     def send_alert(self, alert_data: Dict[str, Any]) -> bool:
         """
         Send an alert to the external system
-        
+
         Args:
             alert_data: Alert data
-            
+
         Returns:
             True if successful, False otherwise
         """
@@ -425,7 +425,7 @@ Update the `trigger_alert` function in `scripts/scheduled_vector_search_monitor.
 ```python
 def trigger_alert(result, checker, alert_method="log", integrations=None):
     # ... existing code ...
-    
+
     # Send alert to external integrations
     if integrations:
         for integration in integrations:
@@ -447,7 +447,7 @@ Update the `main` function to initialize your integration:
 ```python
 def main():
     # ... existing code ...
-    
+
     # Initialize integrations
     integrations = []
     if os.environ.get("MY_INTEGRATION_API_KEY") and os.environ.get("MY_INTEGRATION_BASE_URL"):
@@ -456,9 +456,9 @@ def main():
             api_key=os.environ.get("MY_INTEGRATION_API_KEY"),
             base_url=os.environ.get("MY_INTEGRATION_BASE_URL")
         ))
-    
+
     # ... existing code ...
-    
+
     # Run health check
     result = run_health_check(
         store_history=not args.no_store,
@@ -468,7 +468,7 @@ def main():
         degraded_mode=args.degraded_mode,
         integrations=integrations  # Pass integrations
     )
-    
+
     # ... existing code ...
 ```
 
@@ -490,28 +490,28 @@ class TestCustomCheck(unittest.TestCase):
         # Create mock client
         mock_client = MagicMock()
         mock_client.custom_feature.return_value = {"metric": 42}
-        
+
         # Create health checker
         checker = VectorSearchHealthChecker(vector_search_client=mock_client)
-        
+
         # Call the check method
         result = checker._check_custom_feature(mock_client)
-        
+
         # Verify the result
         self.assertEqual(result["status"], "ok")
         self.assertEqual(result["details"]["custom_metric"], 42)
-        
+
     def test_check_custom_feature_error(self):
         # Create mock client
         mock_client = MagicMock()
         mock_client.custom_feature.side_effect = Exception("Test error")
-        
+
         # Create health checker
         checker = VectorSearchHealthChecker(vector_search_client=mock_client)
-        
+
         # Call the check method
         result = checker._check_custom_feature(mock_client)
-        
+
         # Verify the result
         self.assertEqual(result["status"], "error")
         self.assertEqual(result["error"], "Test error")
@@ -535,32 +535,32 @@ class TestIntegration(unittest.TestCase):
         # Set up test environment
         os.environ["MY_INTEGRATION_API_KEY"] = "test-api-key"
         os.environ["MY_INTEGRATION_BASE_URL"] = "http://localhost:8080"
-        
+
         # Create health checker
         self.checker = VectorSearchHealthChecker()
-        
+
         # Create integration
         self.integration = MyIntegration(
             api_key=os.environ["MY_INTEGRATION_API_KEY"],
             base_url=os.environ["MY_INTEGRATION_BASE_URL"]
         )
-    
+
     def test_integration(self):
         # Run health check
         result = self.checker.check_health()
-        
+
         # Send alert to integration
         with unittest.mock.patch("requests.post") as mock_post:
             mock_post.return_value.status_code = 200
             mock_post.return_value.json.return_value = {"id": "test-alert-id"}
-            
+
             success = self.integration.send_alert({
                 "status": result["status"],
                 "timestamp": time.time(),
                 "message": "Test alert",
                 "details": result
             })
-            
+
             self.assertTrue(success)
             mock_post.assert_called_once()
 ```

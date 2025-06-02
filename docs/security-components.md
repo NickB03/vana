@@ -71,7 +71,7 @@ class MemoryClient:
     def __init__(self):
         self.access_control = AccessControlManager()
         self.role = Role.AGENT
-    
+
     @require_permission(Operation.STORE_ENTITY, entity_type_arg="entity_type")
     def store_entity(self, entity_name, entity_type, observations):
         # Implementation
@@ -259,38 +259,38 @@ class SecureMemoryClient:
         self.audit_logger = AuditLogger()
         self.logger = StructuredLogger("memory_client")
         self.health_check = HealthCheck()
-        
+
         # Set role
         self.role = Role.AGENT
-        
+
         # Get credentials
         mcp_credentials = self.credential_manager.get_mcp_credentials()
-        
+
         # Initialize MCP client
         self.mcp_client = MCPMemoryClient(
             endpoint=mcp_credentials["endpoint"],
             namespace=mcp_credentials["namespace"],
             api_key=mcp_credentials["api_key"]
         )
-        
+
         # Register health checks
         self.health_check.register_component(
             "mcp_server",
             lambda: MemorySystemHealthCheck.check_mcp_server(self.mcp_client)
         )
-    
+
     @circuit_breaker("store_entity", failure_threshold=3, reset_timeout=60.0)
     def store_entity(self, entity_name, entity_type, observations):
         # Set correlation ID for tracking
         correlation_id = self.logger.set_correlation_id()
-        
+
         # Add context information
         self.logger.add_context("entity_name", entity_name)
         self.logger.add_context("entity_type", entity_type)
-        
+
         # Log operation start
         self.logger.info(f"Storing entity: {entity_name}", operation="store_entity")
-        
+
         try:
             # Check authorization
             if not self.access_control.authorize(self.role, "store_entity", entity_type):
@@ -304,10 +304,10 @@ class SecureMemoryClient:
                     status="failure"
                 )
                 return {"error": "Access denied", "success": False}
-            
+
             # Store entity
             result = self.mcp_client.store_entity(entity_name, entity_type, observations)
-            
+
             # Log result
             if "error" in result:
                 self.logger.error(f"Failed to store entity: {result['error']}", operation="store_entity")
@@ -315,7 +315,7 @@ class SecureMemoryClient:
             else:
                 self.logger.info(f"Entity stored successfully", operation="store_entity")
                 status = "success"
-            
+
             # Audit log
             self.audit_logger.log_event(
                 event_type="modification",
@@ -326,7 +326,7 @@ class SecureMemoryClient:
                 details={"entity_name": entity_name, "entity_type": entity_type},
                 status=status
             )
-            
+
             return result
         except Exception as e:
             self.logger.error(f"Error storing entity: {str(e)}", operation="store_entity", exc_info=True)

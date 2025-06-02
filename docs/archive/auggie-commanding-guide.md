@@ -37,7 +37,7 @@ Instead of asking for everything at once, break tasks into manageable steps:
 
 **✅ Effective:**
 1. "Let's implement a knowledge graph storage system."
-2. "Now let's create the vector search integration." 
+2. "Now let's create the vector search integration."
 3. "Let's connect this to Vertex AI."
 4. "Finally, expose these capabilities through a REST API."
 
@@ -66,7 +66,7 @@ Be explicit about implementation details, patterns, and conventions:
 Leverage Auggie's checkpoint system to manage complex changes:
 
 1. Instruct Auggie to create explicit checkpoints at logical steps
-2. Review changes at each checkpoint 
+2. Review changes at each checkpoint
 3. If necessary, revert to a specific checkpoint and redirect
 
 Example: "Create a checkpoint after setting up the basic structure, before implementing the API methods."

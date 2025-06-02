@@ -45,7 +45,7 @@ class SocketManager:
             'monitoring': set(),
             'admin': set()
         }
-        
+
     def init_app(self, app):
         self.socketio = SocketIO(
             app,
@@ -55,23 +55,23 @@ class SocketManager:
             engineio_logger=True
         )
         self._register_handlers()
-        
+
     def _register_handlers(self):
         @self.socketio.on('connect')
         def handle_connect(auth):
             # Handle client connection with authentication
             pass
-            
+
         @self.socketio.on('disconnect')
         def handle_disconnect():
             # Handle client disconnection
             pass
-            
+
         @self.socketio.on('join_room')
         def handle_join_room(data):
             # Handle room joining for different data streams
             pass
-            
+
         @self.socketio.on('chat_message')
         def handle_chat_message(data):
             # Handle incoming chat messages
@@ -110,18 +110,18 @@ class EventType(Enum):
     CHAT_MESSAGE = "chat_message"
     CHAT_RESPONSE = "chat_response"
     TYPING_INDICATOR = "typing_indicator"
-    
+
     # Agent Events
     AGENT_STARTED = "agent_started"
     AGENT_COMPLETED = "agent_completed"
     TOOL_EXECUTED = "tool_executed"
     AGENT_HANDOFF = "agent_handoff"
-    
+
     # System Events
     HEALTH_UPDATE = "health_update"
     PERFORMANCE_UPDATE = "performance_update"
     ALERT_CREATED = "alert_created"
-    
+
     # Connection Events
     USER_JOINED = "user_joined"
     USER_LEFT = "user_left"
@@ -142,7 +142,7 @@ Create `dashboard/websocket/broadcaster.py`:
 class EventBroadcaster:
     def __init__(self, socket_manager):
         self.socket_manager = socket_manager
-        
+
     def broadcast_chat_message(self, message: str, user_id: str, session_id: str):
         """Broadcast chat message to all clients in session."""
         event = SocketEvent(
@@ -157,7 +157,7 @@ class EventBroadcaster:
             room="chat"
         )
         self._emit_to_room("chat", event)
-        
+
     def broadcast_agent_activity(self, agent_name: str, activity: str, details: Dict[str, Any]):
         """Broadcast agent activity to monitoring clients."""
         event = SocketEvent(
@@ -171,7 +171,7 @@ class EventBroadcaster:
             room="monitoring"
         )
         self._emit_to_room("monitoring", event)
-        
+
     def _emit_to_room(self, room: str, event: SocketEvent):
         """Emit event to specific room."""
         self.socket_manager.socketio.emit(
@@ -190,11 +190,11 @@ def authenticate_socket_connection(auth_data):
     """Authenticate WebSocket connection using existing auth system."""
     if not auth_data:
         return False
-        
+
     token = auth_data.get('token')
     if not token:
         return False
-        
+
     auth = DashboardAuth()
     token_data = auth.validate_token(token)
     return token_data is not None
@@ -211,10 +211,10 @@ def test_websocket_connection():
     """Test WebSocket connection establishment."""
     socket_manager = SocketManager()
     socket_manager.init_app(app)
-    
+
     # Test connection logic
     assert socket_manager.socketio is not None
-    
+
 def test_event_broadcasting():
     """Test event broadcasting functionality."""
     # Test event emission and room management

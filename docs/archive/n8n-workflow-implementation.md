@@ -47,19 +47,19 @@ The `WorkflowInterface` class provides a consistent API for workflow operations:
 ```python
 class WorkflowInterface:
     """Interface for workflow management, with or without n8n."""
-    
+
     def __init__(self):
         """Initialize workflow interface."""
         self.n8n_url = os.environ.get("N8N_WEBHOOK_URL", "")
         self.n8n_username = os.environ.get("N8N_WEBHOOK_USERNAME", "")
         self.n8n_password = os.environ.get("N8N_WEBHOOK_PASSWORD", "")
         self.n8n_available = self._check_n8n_available() if self.n8n_url else False
-        
+
         if not self.n8n_available:
             logger.info("n8n not available. Using direct implementation for workflows.")
         else:
             logger.info(f"n8n available at {self.n8n_url}. Using n8n for workflows.")
-    
+
     def _check_n8n_available(self) -> bool:
         """Check if n8n is available."""
         try:
@@ -68,7 +68,7 @@ class WorkflowInterface:
         except Exception as e:
             logger.warning(f"n8n not available: {e}")
             return False
-    
+
     def trigger_memory_save(self, buffer: List[Dict[str, str]], tags: Optional[List[str]] = None) -> Dict[str, Any]:
         """Trigger memory save workflow."""
         if self.n8n_available:
@@ -83,19 +83,19 @@ class WorkflowInterface:
             from vana.memory import MemoryManager
             memory_manager = MemoryManager()
             return memory_manager.save_buffer(buffer, tags)
-    
+
     # Additional methods for other workflows...
-    
+
     def _trigger_n8n_workflow(self, workflow_name: str, data: Dict[str, Any]) -> Dict[str, Any]:
         """Trigger n8n workflow via webhook."""
         try:
             webhook_url = f"{self.n8n_url}/webhook/{workflow_name}"
-            
+
             # Use basic auth if credentials are provided
             auth = None
             if self.n8n_username and self.n8n_password:
                 auth = (self.n8n_username, self.n8n_password)
-            
+
             response = requests.post(
                 webhook_url,
                 json=data,
@@ -103,7 +103,7 @@ class WorkflowInterface:
                 auth=auth,
                 timeout=30
             )
-            
+
             if response.status_code == 200:
                 return response.json()
             else:
@@ -136,7 +136,7 @@ The `MemoryManager` class provides memory management functionality:
 ```python
 class MemoryManager:
     """Memory Manager for VANA."""
-    
+
     def __init__(self):
         """Initialize Memory Manager."""
         self.memory_cache = {}
@@ -145,7 +145,7 @@ class MemoryManager:
         self.entity_half_life_days = int(os.environ.get("ENTITY_HALF_LIFE_DAYS", "30"))
         self.vector_search_weight = float(os.environ.get("VECTOR_SEARCH_WEIGHT", "0.7"))
         self.knowledge_graph_weight = float(os.environ.get("KNOWLEDGE_GRAPH_WEIGHT", "0.3"))
-        
+
         # Initialize Vector Search client
         try:
             from vana.vector_search import VectorSearchClient
@@ -153,7 +153,7 @@ class MemoryManager:
         except Exception as e:
             logger.warning(f"Failed to initialize Vector Search client: {e}")
             self.vector_search_client = None
-        
+
         # Initialize Knowledge Graph client
         try:
             from vana.knowledge_graph import KnowledgeGraphClient
@@ -161,15 +161,15 @@ class MemoryManager:
         except Exception as e:
             logger.warning(f"Failed to initialize Knowledge Graph client: {e}")
             self.kg_client = None
-    
+
     def save_buffer(self, buffer: List[Dict[str, str]], tags: Optional[List[str]] = None) -> Dict[str, Any]:
         """Save buffer to memory."""
         # Implementation...
-    
+
     def sync_memory(self, user_id: str, session_id: str) -> Dict[str, Any]:
         """Sync memory for user and session."""
         # Implementation...
-    
+
     def search_memory(self, query: str, user_id: Optional[str] = None, top_k: int = 5) -> Dict[str, Any]:
         """Search memory for query."""
         # Implementation...
@@ -182,7 +182,7 @@ The `KnowledgeGraphManager` class provides knowledge graph management functional
 ```python
 class KnowledgeGraphManager:
     """Knowledge Graph Manager for VANA."""
-    
+
     def __init__(self):
         """Initialize Knowledge Graph Manager."""
         try:
@@ -190,11 +190,11 @@ class KnowledgeGraphManager:
         except Exception as e:
             logger.warning(f"Failed to initialize Knowledge Graph client: {e}")
             self.kg_client = None
-    
+
     def sync_entities(self, entities: List[Dict[str, Any]]) -> Dict[str, Any]:
         """Sync entities with Knowledge Graph."""
         # Implementation...
-    
+
     def query_knowledge_graph(self, query: str, entity_type: Optional[str] = None, top_k: int = 5) -> Dict[str, Any]:
         """Query Knowledge Graph."""
         # Implementation...
@@ -207,7 +207,7 @@ The `DocumentProcessor` class provides document processing functionality:
 ```python
 class DocumentProcessor:
     """Document Processor for VANA."""
-    
+
     def __init__(self):
         """Initialize Document Processor."""
         # Initialize Vector Search client
@@ -217,7 +217,7 @@ class DocumentProcessor:
         except Exception as e:
             logger.warning(f"Failed to initialize Vector Search client: {e}")
             self.vector_search_client = None
-        
+
         # Initialize Knowledge Graph client
         try:
             from vana.knowledge_graph import KnowledgeGraphClient
@@ -225,7 +225,7 @@ class DocumentProcessor:
         except Exception as e:
             logger.warning(f"Failed to initialize Knowledge Graph client: {e}")
             self.kg_client = None
-    
+
     def process(self, document_path: str, options: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         """Process document."""
         # Implementation...
@@ -309,32 +309,32 @@ from vana.workflows import WorkflowInterface
 
 class VanaAgent:
     """VANA Agent with workflow integration."""
-    
+
     def __init__(self):
         """Initialize VANA Agent."""
         self.workflow_interface = WorkflowInterface()
         # Other initialization...
-    
+
     def process_message(self, user_id: str, session_id: str, message: str) -> str:
         """Process a message from the user."""
         # Process message...
-        
+
         # Check for memory commands
         if message.startswith("!rag"):
             # Extract tags if provided
             tags = []
             if " tag " in message:
                 tags = message.split(" tag ")[1].split()
-            
+
             # Save buffer to memory
             result = self.workflow_interface.trigger_memory_save(self.buffer, tags)
-            
+
             # Return result
             if result.get("success", False):
                 return f"Memory saved successfully. Tagged with: {', '.join(tags)}" if tags else "Memory saved successfully."
             else:
                 return f"Failed to save memory: {result.get('error', 'Unknown error')}"
-        
+
         # Other processing...
 ```
 
@@ -355,15 +355,15 @@ def _trigger_n8n_workflow(self, workflow_name: str, data: Dict[str, Any]) -> Dic
     """Trigger n8n workflow via webhook."""
     try:
         webhook_url = f"{self.n8n_url}/webhook/{workflow_name}"
-        
+
         # Use basic auth if credentials are provided
         auth = None
         if self.n8n_username and self.n8n_password:
             auth = (self.n8n_username, self.n8n_password)
-        
+
         # Log request (without sensitive information)
         logger.info(f"Triggering n8n workflow: {workflow_name}")
-        
+
         response = requests.post(
             webhook_url,
             json=data,
@@ -371,7 +371,7 @@ def _trigger_n8n_workflow(self, workflow_name: str, data: Dict[str, Any]) -> Dic
             auth=auth,
             timeout=30
         )
-        
+
         if response.status_code == 200:
             return response.json()
         else:
@@ -400,7 +400,7 @@ Example monitoring integration:
 def trigger_memory_save(self, buffer: List[Dict[str, str]], tags: Optional[List[str]] = None) -> Dict[str, Any]:
     """Trigger memory save workflow."""
     start_time = time.time()
-    
+
     try:
         if self.n8n_available:
             # Use n8n webhook
@@ -414,18 +414,18 @@ def trigger_memory_save(self, buffer: List[Dict[str, str]], tags: Optional[List[
             from vana.memory import MemoryManager
             memory_manager = MemoryManager()
             result = memory_manager.save_buffer(buffer, tags)
-        
+
         # Log result
         execution_time = time.time() - start_time
         logger.info(f"Memory save completed in {execution_time:.2f}s with result: {result.get('success', False)}")
-        
+
         return result
     except Exception as e:
         # Log error
         execution_time = time.time() - start_time
         error_msg = f"Memory save failed in {execution_time:.2f}s with error: {e}"
         logger.error(error_msg)
-        
+
         return {
             "success": False,
             "error": str(e)
@@ -451,14 +451,14 @@ def test_workflow_interface_init():
     with patch.dict(os.environ, {"N8N_WEBHOOK_URL": ""}):
         workflow_interface = WorkflowInterface()
         assert not workflow_interface.n8n_available
-    
+
     # Test with n8n available
     with patch.dict(os.environ, {"N8N_WEBHOOK_URL": "http://localhost:5678"}):
         with patch("requests.get") as mock_get:
             mock_get.return_value.status_code = 200
             workflow_interface = WorkflowInterface()
             assert workflow_interface.n8n_available
-    
+
     # Test with n8n not responding
     with patch.dict(os.environ, {"N8N_WEBHOOK_URL": "http://localhost:5678"}):
         with patch("requests.get") as mock_get:

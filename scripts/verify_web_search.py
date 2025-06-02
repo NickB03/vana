@@ -9,13 +9,11 @@ Usage:
     python scripts/verify_web_search.py
 """
 
-import os
-import sys
-import json
-import logging
 import argparse
+import logging
+import sys
+
 import requests
-from typing import Dict, List, Any
 from dotenv import load_dotenv
 
 # Configure logging
@@ -24,12 +22,13 @@ logging.basicConfig(
     format="%(asctime)s [%(levelname)s] %(message)s",
     handlers=[
         logging.FileHandler("web_search_verification.log"),
-        logging.StreamHandler()
-    ]
+        logging.StreamHandler(),
+    ],
 )
 logger = logging.getLogger(__name__)
 
-def load_environment_variables() -> Dict[str, str]:
+
+def load_environment_variables() -> dict[str, str]:
     """Load and validate environment variables."""
     # Load environment variables
     load_dotenv()
@@ -41,16 +40,19 @@ def load_environment_variables() -> Dict[str, str]:
     # Required environment variables
     env_vars = {
         "GOOGLE_SEARCH_API_KEY": api_key,
-        "GOOGLE_SEARCH_ENGINE_ID": search_engine_id
+        "GOOGLE_SEARCH_ENGINE_ID": search_engine_id,
     }
 
     # Print the values for debugging
-    logger.info(f"GOOGLE_SEARCH_API_KEY: {env_vars['GOOGLE_SEARCH_API_KEY'][:5]}...{env_vars['GOOGLE_SEARCH_API_KEY'][-5:]}")
+    logger.info(
+        f"GOOGLE_SEARCH_API_KEY: {env_vars['GOOGLE_SEARCH_API_KEY'][:5]}...{env_vars['GOOGLE_SEARCH_API_KEY'][-5:]}"
+    )
     logger.info(f"GOOGLE_SEARCH_ENGINE_ID: {env_vars['GOOGLE_SEARCH_ENGINE_ID']}")
 
     return env_vars
 
-def verify_api_credentials(env_vars: Dict[str, str]) -> bool:
+
+def verify_api_credentials(env_vars: dict[str, str]) -> bool:
     """Verify that the API credentials are valid."""
     if not all(env_vars.values()):
         return False
@@ -60,12 +62,7 @@ def verify_api_credentials(env_vars: Dict[str, str]) -> bool:
 
     # Test API with a simple query
     url = "https://www.googleapis.com/customsearch/v1"
-    params = {
-        "key": api_key,
-        "cx": search_engine_id,
-        "q": "test",
-        "num": 1
-    }
+    params = {"key": api_key, "cx": search_engine_id, "q": "test", "num": 1}
 
     try:
         logger.info("Testing API credentials with a simple query...")
@@ -78,13 +75,17 @@ def verify_api_credentials(env_vars: Dict[str, str]) -> bool:
             logger.info("✅ API credentials are valid and working.")
             return True
         else:
-            logger.warning("⚠️ API credentials are valid but no search results were returned.")
+            logger.warning(
+                "⚠️ API credentials are valid but no search results were returned."
+            )
             return True
     except requests.exceptions.HTTPError as e:
         if e.response.status_code == 403:
             logger.error(f"❌ API key is invalid or has insufficient permissions: {e}")
         elif e.response.status_code == 400:
-            logger.error(f"❌ Invalid request parameters (possibly invalid Search Engine ID): {e}")
+            logger.error(
+                f"❌ Invalid request parameters (possibly invalid Search Engine ID): {e}"
+            )
         else:
             logger.error(f"❌ HTTP error during API verification: {e}")
         return False
@@ -92,7 +93,10 @@ def verify_api_credentials(env_vars: Dict[str, str]) -> bool:
         logger.error(f"❌ Error verifying API credentials: {e}")
         return False
 
-def test_search(env_vars: Dict[str, str], query: str = "VANA", num_results: int = 3) -> bool:
+
+def test_search(
+    env_vars: dict[str, str], query: str = "VANA", num_results: int = 3
+) -> bool:
     """Perform a test search to verify that Web Search is working correctly."""
     if not all(env_vars.values()):
         return False
@@ -101,12 +105,7 @@ def test_search(env_vars: Dict[str, str], query: str = "VANA", num_results: int 
     search_engine_id = env_vars["GOOGLE_SEARCH_ENGINE_ID"]
 
     url = "https://www.googleapis.com/customsearch/v1"
-    params = {
-        "key": api_key,
-        "cx": search_engine_id,
-        "q": query,
-        "num": num_results
-    }
+    params = {"key": api_key, "cx": search_engine_id, "q": query, "num": num_results}
 
     try:
         logger.info(f"Performing test search with query: '{query}'")
@@ -130,11 +129,16 @@ def test_search(env_vars: Dict[str, str], query: str = "VANA", num_results: int 
         logger.error(f"❌ Error performing test search: {e}")
         return False
 
+
 def main():
     """Main function."""
     parser = argparse.ArgumentParser(description="Verify Web Search API for VANA")
-    parser.add_argument("--query", type=str, default="VANA", help="Test query to use for verification")
-    parser.add_argument("--num-results", type=int, default=3, help="Number of results to retrieve")
+    parser.add_argument(
+        "--query", type=str, default="VANA", help="Test query to use for verification"
+    )
+    parser.add_argument(
+        "--num-results", type=int, default=3, help="Number of results to retrieve"
+    )
     args = parser.parse_args()
 
     # Load environment variables
@@ -159,8 +163,11 @@ def main():
         logger.info("✅ Web Search API is properly configured and working.")
         return 0
     else:
-        logger.error("❌ Web Search API verification failed. Please check the logs for details.")
+        logger.error(
+            "❌ Web Search API verification failed. Please check the logs for details."
+        )
         return 1
+
 
 if __name__ == "__main__":
     sys.exit(main())

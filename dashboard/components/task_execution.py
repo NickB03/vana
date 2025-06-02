@@ -5,18 +5,18 @@ This module provides comprehensive components for displaying task execution metr
 timelines, agent performance, and detailed task information.
 """
 
-import streamlit as st
+import logging
+from datetime import datetime
+
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
-import altair as alt
-from datetime import datetime, timedelta
-import logging
-
+import streamlit as st
 from dashboard.api import task_api
-from dashboard.utils.data_formatter import format_timestamp, format_percentage
+from dashboard.utils.data_formatter import format_percentage, format_timestamp
 
 logger = logging.getLogger(__name__)
+
 
 def display_task_execution():
     """
@@ -27,7 +27,7 @@ def display_task_execution():
         "Time Range",
         ["hour", "day", "week", "month"],
         index=1,
-        key="task_execution_time_range"
+        key="task_execution_time_range",
     )
 
     # Get task data
@@ -42,78 +42,75 @@ def display_task_execution():
     col1, col2, col3, col4 = st.columns(4)
 
     with col1:
-        st.metric(
-            "Total Tasks",
-            f"{task_summary['total_tasks']}",
-            f"{time_range}"
-        )
+        st.metric("Total Tasks", f"{task_summary['total_tasks']}", f"{time_range}")
 
     with col2:
         st.metric(
             "Completed",
             f"{task_summary['completed_tasks']}",
-            f"{format_percentage(task_summary['completed_tasks'] / task_summary['total_tasks'])}"
+            f"{format_percentage(task_summary['completed_tasks'] / task_summary['total_tasks'])}",
         )
 
     with col3:
         st.metric(
             "Failed",
             f"{task_summary['failed_tasks']}",
-            f"{format_percentage(task_summary['failed_tasks'] / task_summary['total_tasks'])}"
+            f"{format_percentage(task_summary['failed_tasks'] / task_summary['total_tasks'])}",
         )
 
     with col4:
         st.metric(
             "Pending",
             f"{task_summary['pending_tasks']}",
-            f"{format_percentage(task_summary['pending_tasks'] / task_summary['total_tasks'])}"
+            f"{format_percentage(task_summary['pending_tasks'] / task_summary['total_tasks'])}",
         )
 
     # Create second row of metrics
     col1, col2, col3 = st.columns(3)
 
     with col1:
-        st.metric(
-            "Average Duration",
-            f"{task_summary['average_duration']:.2f}s"
-        )
+        st.metric("Average Duration", f"{task_summary['average_duration']:.2f}s")
 
     with col2:
         # Task Success Rate Gauge
-        fig = go.Figure(go.Indicator(
-            mode="gauge+number",
-            value=task_summary["success_rate"] * 100,
-            title={"text": "Success Rate"},
-            domain={"x": [0, 1], "y": [0, 1]},
-            gauge={
-                "axis": {"range": [0, 100]},
-                "bar": {"color": "green"},
-                "steps": [
-                    {"range": [0, 60], "color": "red"},
-                    {"range": [60, 80], "color": "orange"},
-                    {"range": [80, 100], "color": "lightgreen"}
-                ],
-                "threshold": {
-                    "line": {"color": "black", "width": 4},
-                    "thickness": 0.75,
-                    "value": task_summary["success_rate"] * 100
-                }
-            }
-        ))
+        fig = go.Figure(
+            go.Indicator(
+                mode="gauge+number",
+                value=task_summary["success_rate"] * 100,
+                title={"text": "Success Rate"},
+                domain={"x": [0, 1], "y": [0, 1]},
+                gauge={
+                    "axis": {"range": [0, 100]},
+                    "bar": {"color": "green"},
+                    "steps": [
+                        {"range": [0, 60], "color": "red"},
+                        {"range": [60, 80], "color": "orange"},
+                        {"range": [80, 100], "color": "lightgreen"},
+                    ],
+                    "threshold": {
+                        "line": {"color": "black", "width": 4},
+                        "thickness": 0.75,
+                        "value": task_summary["success_rate"] * 100,
+                    },
+                },
+            )
+        )
 
         fig.update_layout(height=200, margin=dict(l=20, r=20, t=30, b=20))
         st.plotly_chart(fig, use_container_width=True)
 
     with col3:
         # Task Status Breakdown
-        status_data = pd.DataFrame({
-            "Status": ["Completed", "Failed", "Pending"],
-            "Count": [
-                task_summary["completed_tasks"],
-                task_summary["failed_tasks"],
-                task_summary["pending_tasks"]
-            ]
-        })
+        status_data = pd.DataFrame(
+            {
+                "Status": ["Completed", "Failed", "Pending"],
+                "Count": [
+                    task_summary["completed_tasks"],
+                    task_summary["failed_tasks"],
+                    task_summary["pending_tasks"],
+                ],
+            }
+        )
 
         fig = px.pie(
             status_data,
@@ -124,9 +121,9 @@ def display_task_execution():
             color_discrete_map={
                 "Completed": "green",
                 "Failed": "red",
-                "Pending": "orange"
+                "Pending": "orange",
             },
-            hole=0.4
+            hole=0.4,
         )
 
         fig.update_layout(height=200, margin=dict(l=20, r=20, t=30, b=20))
@@ -141,15 +138,21 @@ def display_task_execution():
     # Create DataFrame for timeline
     timeline_data = []
     for task in task_timeline:
-        timeline_data.append({
-            "Task ID": task["id"],
-            "Type": task["type"].replace("_", " ").title(),
-            "Status": task["status"].capitalize(),
-            "Agent": task["agent"].capitalize(),
-            "Start Time": datetime.fromisoformat(task["start_time"].replace("Z", "+00:00")),
-            "End Time": datetime.fromisoformat(task["end_time"].replace("Z", "+00:00")),
-            "Duration": task["duration"]
-        })
+        timeline_data.append(
+            {
+                "Task ID": task["id"],
+                "Type": task["type"].replace("_", " ").title(),
+                "Status": task["status"].capitalize(),
+                "Agent": task["agent"].capitalize(),
+                "Start Time": datetime.fromisoformat(
+                    task["start_time"].replace("Z", "+00:00")
+                ),
+                "End Time": datetime.fromisoformat(
+                    task["end_time"].replace("Z", "+00:00")
+                ),
+                "Duration": task["duration"],
+            }
+        )
 
     df_timeline = pd.DataFrame(timeline_data)
 
@@ -157,7 +160,9 @@ def display_task_execution():
         # Enhanced Gantt chart
         if not df_timeline.empty:
             # Add task type to the task ID for better labeling
-            df_timeline["Task Label"] = df_timeline["Task ID"] + " (" + df_timeline["Type"] + ")"
+            df_timeline["Task Label"] = (
+                df_timeline["Task ID"] + " (" + df_timeline["Type"] + ")"
+            )
 
             fig = px.timeline(
                 df_timeline,
@@ -166,17 +171,14 @@ def display_task_execution():
                 y="Task Label",
                 color="Status",
                 hover_data=["Type", "Agent", "Duration"],
-                color_discrete_map={
-                    "Completed": "green",
-                    "Failed": "red"
-                }
+                color_discrete_map={"Completed": "green", "Failed": "red"},
             )
 
             fig.update_layout(
                 title="Task Execution Timeline",
                 xaxis_title="Time",
                 yaxis_title="Task",
-                height=500
+                height=500,
             )
 
             # Add agent information as text annotations
@@ -187,7 +189,7 @@ def display_task_execution():
                     text=f"Agent: {task.Agent}",
                     showarrow=False,
                     xshift=10,
-                    align="left"
+                    align="left",
                 )
 
             st.plotly_chart(fig, use_container_width=True)
@@ -208,14 +210,16 @@ def display_task_execution():
                     task_type_counts,
                     values="Count",
                     names="Task Type",
-                    title="Task Type Distribution"
+                    title="Task Type Distribution",
                 )
 
                 st.plotly_chart(fig, use_container_width=True)
 
             with col2:
                 # Task duration by type
-                task_duration_by_type = df_timeline.groupby("Type")["Duration"].mean().reset_index()
+                task_duration_by_type = (
+                    df_timeline.groupby("Type")["Duration"].mean().reset_index()
+                )
                 task_duration_by_type.columns = ["Task Type", "Average Duration (s)"]
 
                 fig = px.bar(
@@ -223,29 +227,37 @@ def display_task_execution():
                     x="Task Type",
                     y="Average Duration (s)",
                     title="Average Task Duration by Type",
-                    color="Task Type"
+                    color="Task Type",
                 )
 
                 st.plotly_chart(fig, use_container_width=True)
 
             # Task status by type
-            task_status_by_type = pd.crosstab(df_timeline["Type"], df_timeline["Status"])
+            task_status_by_type = pd.crosstab(
+                df_timeline["Type"], df_timeline["Status"]
+            )
 
             # Calculate success rate by type
             if "Completed" in task_status_by_type.columns:
                 task_status_by_type["Total"] = task_status_by_type.sum(axis=1)
-                task_status_by_type["Success Rate"] = task_status_by_type["Completed"] / task_status_by_type["Total"]
+                task_status_by_type["Success Rate"] = (
+                    task_status_by_type["Completed"] / task_status_by_type["Total"]
+                )
 
                 # Create success rate chart
-                success_rate_by_type = task_status_by_type.reset_index()[["Type", "Success Rate"]]
-                success_rate_by_type["Success Rate"] = success_rate_by_type["Success Rate"] * 100
+                success_rate_by_type = task_status_by_type.reset_index()[
+                    ["Type", "Success Rate"]
+                ]
+                success_rate_by_type["Success Rate"] = (
+                    success_rate_by_type["Success Rate"] * 100
+                )
 
                 fig = px.bar(
                     success_rate_by_type,
                     x="Type",
                     y="Success Rate",
                     title="Success Rate by Task Type (%)",
-                    color="Type"
+                    color="Type",
                 )
 
                 fig.update_layout(yaxis_range=[0, 100])
@@ -268,14 +280,16 @@ def display_task_execution():
                     x="Agent",
                     y="Task Count",
                     title="Tasks Handled by Agent",
-                    color="Agent"
+                    color="Agent",
                 )
 
                 st.plotly_chart(fig, use_container_width=True)
 
             with col2:
                 # Average duration by agent
-                agent_duration = df_timeline.groupby("Agent")["Duration"].mean().reset_index()
+                agent_duration = (
+                    df_timeline.groupby("Agent")["Duration"].mean().reset_index()
+                )
                 agent_duration.columns = ["Agent", "Average Duration (s)"]
 
                 fig = px.bar(
@@ -283,15 +297,17 @@ def display_task_execution():
                     x="Agent",
                     y="Average Duration (s)",
                     title="Average Task Duration by Agent",
-                    color="Agent"
+                    color="Agent",
                 )
 
                 st.plotly_chart(fig, use_container_width=True)
 
             # Success rate by agent
-            agent_success = df_timeline.groupby("Agent")["Status"].apply(
-                lambda x: (x == "Completed").mean()
-            ).reset_index()
+            agent_success = (
+                df_timeline.groupby("Agent")["Status"]
+                .apply(lambda x: (x == "Completed").mean())
+                .reset_index()
+            )
             agent_success.columns = ["Agent", "Success Rate"]
             agent_success["Success Rate"] = agent_success["Success Rate"] * 100
 
@@ -300,7 +316,7 @@ def display_task_execution():
                 x="Agent",
                 y="Success Rate",
                 title="Success Rate by Agent (%)",
-                color="Agent"
+                color="Agent",
             )
 
             fig.update_layout(yaxis_range=[0, 100])
@@ -310,13 +326,13 @@ def display_task_execution():
             agent_task_types = pd.crosstab(df_timeline["Agent"], df_timeline["Type"])
 
             # Convert to percentage
-            agent_task_types_pct = agent_task_types.div(agent_task_types.sum(axis=1), axis=0) * 100
+            agent_task_types_pct = (
+                agent_task_types.div(agent_task_types.sum(axis=1), axis=0) * 100
+            )
 
             # Melt for plotting
             agent_task_types_melt = agent_task_types_pct.reset_index().melt(
-                id_vars=["Agent"],
-                var_name="Task Type",
-                value_name="Percentage"
+                id_vars=["Agent"], var_name="Task Type", value_name="Percentage"
             )
 
             fig = px.bar(
@@ -325,7 +341,7 @@ def display_task_execution():
                 y="Percentage",
                 color="Task Type",
                 title="Task Type Distribution by Agent (%)",
-                barmode="stack"
+                barmode="stack",
             )
 
             st.plotly_chart(fig, use_container_width=True)
@@ -336,18 +352,20 @@ def display_task_execution():
     st.subheader("Recent Tasks")
 
     # Create DataFrame for task details
-    df_tasks = pd.DataFrame([
-        {
-            "Task ID": task["id"],
-            "Type": task["type"].replace("_", " ").title(),
-            "Status": task["status"].capitalize(),
-            "Created At": format_timestamp(task["created_at"]),
-            "Duration (s)": f"{task['duration']:.2f}",
-            "Agent": task["agent"].capitalize(),
-            "Error": task["details"]["error"] if task["details"]["error"] else ""
-        }
-        for task in task_details
-    ])
+    df_tasks = pd.DataFrame(
+        [
+            {
+                "Task ID": task["id"],
+                "Type": task["type"].replace("_", " ").title(),
+                "Status": task["status"].capitalize(),
+                "Created At": format_timestamp(task["created_at"]),
+                "Duration (s)": f"{task['duration']:.2f}",
+                "Agent": task["agent"].capitalize(),
+                "Error": task["details"]["error"] if task["details"]["error"] else "",
+            }
+            for task in task_details
+        ]
+    )
 
     # Style the DataFrame based on status
     def color_status(val):
@@ -370,8 +388,7 @@ def display_task_execution():
         with st.expander("View Task Details"):
             # Select a task to view details
             selected_task_id = st.selectbox(
-                "Select a task to view details",
-                options=df_tasks["Task ID"].tolist()
+                "Select a task to view details", options=df_tasks["Task ID"].tolist()
             )
 
             if selected_task_id:
@@ -404,6 +421,7 @@ def display_task_execution():
     else:
         st.info("No recent tasks available")
 
+
 def display_task_details(task_id):
     """
     Display detailed information for a specific task.
@@ -431,7 +449,7 @@ def display_task_details(task_id):
         "completed": "green",
         "failed": "red",
         "pending": "orange",
-        "in_progress": "blue"
+        "in_progress": "blue",
     }.get(task["status"], "gray")
 
     st.markdown(
@@ -440,7 +458,7 @@ def display_task_details(task_id):
         <p><strong>Status:</strong> {task["status"].capitalize()}</p>
         </div>
         """,
-        unsafe_allow_html=True
+        unsafe_allow_html=True,
     )
 
     # Format timestamps
@@ -454,18 +472,19 @@ def display_task_details(task_id):
 
     # Display task input and output
     st.markdown("### Task Input")
-    st.code(task['details']['input'])
+    st.code(task["details"]["input"])
 
     st.markdown("### Task Output")
-    if task['details']['output']:
-        st.code(task['details']['output'])
+    if task["details"]["output"]:
+        st.code(task["details"]["output"])
     else:
         st.info("No output available")
 
     # Display task error if any
-    if task['details']['error']:
+    if task["details"]["error"]:
         st.markdown("### Task Error")
-        st.error(task['details']['error'])
+        st.error(task["details"]["error"])
+
 
 def display_task_type_details(task_type):
     """
@@ -513,16 +532,18 @@ def display_task_type_details(task_type):
     st.markdown("### Task List")
 
     # Create DataFrame for task details
-    df_tasks = pd.DataFrame([
-        {
-            "Task ID": task["id"],
-            "Status": task["status"].capitalize(),
-            "Created At": task["created_at"],
-            "Duration (s)": task["duration"],
-            "Agent": task["agent"].capitalize()
-        }
-        for task in tasks_of_type
-    ])
+    df_tasks = pd.DataFrame(
+        [
+            {
+                "Task ID": task["id"],
+                "Status": task["status"].capitalize(),
+                "Created At": task["created_at"],
+                "Duration (s)": task["duration"],
+                "Agent": task["agent"].capitalize(),
+            }
+            for task in tasks_of_type
+        ]
+    )
 
     # Display task details table
     st.dataframe(df_tasks, use_container_width=True)

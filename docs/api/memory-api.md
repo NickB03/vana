@@ -23,7 +23,7 @@ class VertexAiRagMemoryService:
         vector_distance_threshold: float = 0.7
     ):
         """Initialize the ADK memory service.
-        
+
         Args:
             rag_corpus: RAG Corpus resource name
             similarity_top_k: Number of similar results to return
@@ -38,10 +38,10 @@ class VertexAiRagMemoryService:
 ```python
 def add_session_to_memory(self, session: Session) -> None:
     """Add a session to memory for future retrieval.
-    
+
     Args:
         session: The session object to add to memory
-        
+
     Raises:
         MemoryServiceError: If session cannot be added to memory
     """
@@ -51,18 +51,18 @@ def add_session_to_memory(self, session: Session) -> None:
 
 ```python
 def search_memory(
-    self, 
-    query: str, 
+    self,
+    query: str,
     top_k: Optional[int] = None,
     threshold: Optional[float] = None
 ) -> List[MemoryResult]:
     """Search memory for relevant information.
-    
+
     Args:
         query: Search query string
         top_k: Number of results to return (overrides default)
         threshold: Similarity threshold (overrides default)
-        
+
     Returns:
         List of MemoryResult objects containing relevant information
     """
@@ -145,7 +145,7 @@ def my_custom_tool(query: str, tool_context: ToolContext) -> str:
     """Custom tool with memory access."""
     # Search memory using tool context
     memory_results = tool_context.search_memory(query)
-    
+
     # Process results
     if memory_results:
         return f"Found: {memory_results[0].content}"
@@ -163,12 +163,12 @@ def search_memory(
     similarity_threshold: float = 0.7
 ) -> List[MemoryResult]:
     """Search memory from within a tool.
-    
+
     Args:
         query: Search query string
         max_results: Maximum number of results to return
         similarity_threshold: Minimum similarity score
-        
+
     Returns:
         List of MemoryResult objects
     """
@@ -407,7 +407,7 @@ def analyze_with_memory(topic: str, tool_context: ToolContext) -> str:
     """Analyze a topic using memory context."""
     # Search for relevant background information
     memory_results = tool_context.search_memory(f"background information about {topic}")
-    
+
     # Combine with current analysis
     background = "\n".join([r.content for r in memory_results[:3]])
     return f"Analysis of {topic} with background: {background}"

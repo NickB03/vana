@@ -180,7 +180,7 @@ def search_knowledge(query: str, tool_context: ToolContext) -> str:
     """Search knowledge base for relevant information."""
     # Search memory using tool context
     memory_results = tool_context.search_memory(query)
-    
+
     # Process and format results
     if memory_results:
         return f"Found relevant information: {memory_results}"
@@ -263,7 +263,7 @@ def test_agent_memory_integration():
         tools=[load_memory],
         instruction="Test agent with memory access"
     )
-    
+
     # Test agent can access memory
     response = agent.run("Search for information about previous conversations")
     assert response is not None

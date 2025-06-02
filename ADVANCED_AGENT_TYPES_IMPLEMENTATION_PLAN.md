@@ -12,14 +12,14 @@
 - **Sub-agents**: Travel, Research, Development, Business orchestrators
 - **Tools**: All 30 existing tools + orchestrator coordination tools
 
-#### 2. **Travel Orchestrator** 
+#### 2. **Travel Orchestrator**
 - **Role**: Travel planning and booking coordination
 - **Pattern**: Travel-concierge style orchestration
 - **Sub-agents**: Hotel, Flight, Payment, Itinerary agents
 - **Example**: "Plan a 5-day trip to Peru" → coordinates hotel_search_agent → flight_search_agent → payment_agent
 
 #### 3. **Research Orchestrator**
-- **Role**: Information gathering and analysis coordination  
+- **Role**: Information gathering and analysis coordination
 - **Pattern**: Parallel Fan-Out/Gather for concurrent research
 - **Sub-agents**: Web Search, Database Query, Analysis agents
 - **Example**: "Research market trends" → parallel web/database search → synthesis
@@ -35,7 +35,7 @@
 
 #### **Travel Specialists (4)**
 5. **Hotel Search Agent** - Find and compare hotels
-6. **Flight Search Agent** - Find and compare flights  
+6. **Flight Search Agent** - Find and compare flights
 7. **Payment Agent** - Process bookings and payments
 8. **Itinerary Agent** - Create detailed travel itineraries
 
@@ -58,7 +58,7 @@
 - **Pattern**: Generator-Critic for memory quality
 - **Function**: Optimize knowledge graph usage and state management
 
-#### 17. **Decision Engine Agent**  
+#### 17. **Decision Engine Agent**
 - **Role**: Complex decision making and reasoning
 - **Pattern**: Iterative Refinement with quality checks
 - **Function**: Multi-criteria decision analysis
@@ -98,11 +98,11 @@ coordinator = LlmAgent(
 ```python
 # Travel Orchestrator coordinating hotel booking
 travel_orchestrator = LlmAgent(
-    name="TravelOrchestrator", 
+    name="TravelOrchestrator",
     instruction="Coordinate travel bookings using specialist agents",
     tools=[
         AgentTool(agent=hotel_search_agent),
-        AgentTool(agent=flight_search_agent), 
+        AgentTool(agent=flight_search_agent),
         AgentTool(agent=payment_agent),
         AgentTool(agent=itinerary_agent)
     ]
@@ -128,7 +128,7 @@ research_parallel = ParallelAgent(
     sub_agents=[web_search_agent, database_query_agent]
 )
 research_workflow = SequentialAgent(
-    name="ResearchWorkflow", 
+    name="ResearchWorkflow",
     sub_agents=[research_parallel, analysis_agent]  # Parallel gather → synthesis
 )
 ```
@@ -142,7 +142,7 @@ memory_generator = LlmAgent(
     output_key="memory_draft"
 )
 memory_critic = LlmAgent(
-    name="MemoryCritic", 
+    name="MemoryCritic",
     instruction="Validate memory quality from state['memory_draft']",
     output_key="memory_status"
 )
@@ -159,7 +159,7 @@ memory_pipeline = SequentialAgent(
 - Create Travel Orchestrator based on travel-concierge pattern
 - Add Development and Research Orchestrators
 
-### **Phase 5: Specialist Agents (Priority 2)**  
+### **Phase 5: Specialist Agents (Priority 2)**
 - Implement Travel Specialists (Hotel, Flight, Payment, Itinerary)
 - Add Development Specialists (Code Gen, Testing, Security, Deploy)
 - Create Research Specialists (Web Search, Database, Analysis)

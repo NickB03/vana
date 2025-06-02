@@ -193,13 +193,13 @@ agent.short_term_memory = ShortTermMemory()
 def process_message(self, message, user_id):
     # Add user message to memory
     self.short_term_memory.add("user", message)
-    
+
     # Process message and generate response
     response = self._generate_response(message, user_id)
-    
+
     # Add assistant response to memory
     self.short_term_memory.add("assistant", response)
-    
+
     return response
 ```
 
@@ -240,14 +240,14 @@ agent.register_tool("kg_extract_entities", kg_extract_entities)
 def process_message(self, message, user_id):
     # Extract entities from message
     entities = kg_extract_entities(message)
-    
+
     # Store entities in Knowledge Graph
     for entity in entities:
         kg_store(entity["name"], entity["type"], entity["observation"])
-    
+
     # Process message and generate response
     response = self._generate_response(message, user_id)
-    
+
     return response
 ```
 
@@ -268,10 +268,10 @@ agent.register_tool("search_knowledge", search_knowledge)
 def process_message(self, message, user_id):
     # Search for relevant information
     results = vector_search(message)
-    
+
     # Process message and generate response
     response = self._generate_response(message, user_id, results)
-    
+
     return response
 ```
 

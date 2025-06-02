@@ -6,9 +6,10 @@ This script tests the match method of the MatchingEngineIndexEndpoint class
 using numpy float32 arrays.
 """
 
+import logging
 import os
 import sys
-import logging
+
 import numpy as np
 from dotenv import load_dotenv
 from google.cloud import aiplatform
@@ -17,11 +18,10 @@ from google.cloud import aiplatform
 logging.basicConfig(
     level=logging.DEBUG,
     format="%(asctime)s [%(levelname)s] %(name)s:%(lineno)d - %(message)s",
-    handlers=[
-        logging.StreamHandler()
-    ]
+    handlers=[logging.StreamHandler()],
 )
 logger = logging.getLogger(__name__)
+
 
 def main():
     """Main function to test the match method with float32."""
@@ -35,9 +35,15 @@ def main():
     # Print environment variables for debugging
     logger.info(f"GOOGLE_CLOUD_PROJECT: {os.environ.get('GOOGLE_CLOUD_PROJECT')}")
     logger.info(f"GOOGLE_CLOUD_LOCATION: {os.environ.get('GOOGLE_CLOUD_LOCATION')}")
-    logger.info(f"VECTOR_SEARCH_ENDPOINT_ID: {os.environ.get('VECTOR_SEARCH_ENDPOINT_ID')}")
-    logger.info(f"DEPLOYED_INDEX_ID: {os.environ.get('DEPLOYED_INDEX_ID', 'vanasharedindex')}")
-    logger.info(f"GOOGLE_APPLICATION_CREDENTIALS: {os.environ.get('GOOGLE_APPLICATION_CREDENTIALS')}")
+    logger.info(
+        f"VECTOR_SEARCH_ENDPOINT_ID: {os.environ.get('VECTOR_SEARCH_ENDPOINT_ID')}"
+    )
+    logger.info(
+        f"DEPLOYED_INDEX_ID: {os.environ.get('DEPLOYED_INDEX_ID', 'vanasharedindex')}"
+    )
+    logger.info(
+        f"GOOGLE_APPLICATION_CREDENTIALS: {os.environ.get('GOOGLE_APPLICATION_CREDENTIALS')}"
+    )
 
     # Initialize Vertex AI
     project = os.environ.get("GOOGLE_CLOUD_PROJECT")
@@ -49,7 +55,9 @@ def main():
     aiplatform.init(project=project, location=location)
 
     # Use the correct endpoint ID
-    endpoint_id = "projects/960076421399/locations/us-central1/indexEndpoints/5085685481161621504"
+    endpoint_id = (
+        "projects/960076421399/locations/us-central1/indexEndpoints/5085685481161621504"
+    )
     logger.info(f"Getting index endpoint: {endpoint_id}")
     index_endpoint = aiplatform.MatchingEngineIndexEndpoint(endpoint_id)
 
@@ -65,13 +73,14 @@ def main():
         response = index_endpoint.match(
             deployed_index_id=deployed_index_id,
             queries=[{"datapoint": test_vector}],
-            num_neighbors=1
+            num_neighbors=1,
         )
         logger.info(f"Match response: {response}")
         return 0
     except Exception as e:
         logger.error(f"Error testing match method: {e}")
         return 1
+
 
 if __name__ == "__main__":
     sys.exit(main())
