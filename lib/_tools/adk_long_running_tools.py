@@ -49,7 +49,7 @@ logger = logging.getLogger(__name__)
 
 # Standardized Long-Running Tool Wrappers
 
-def _ask_for_approval(purpose: str, amount: float, approver: str = "System Administrator") -> str:
+def ask_for_approval(purpose: str, amount: float, approver: str = "System Administrator") -> str:
     """
     🎫 Request approval for an action requiring authorization.
 
@@ -116,7 +116,7 @@ Use `check_task_status("{task_id}")` to monitor progress."""
         logger.error(f"Error in approval request: {e}")
         return f"❌ Error creating approval request: {str(e)}"
 
-def _process_large_dataset(dataset_name: str, operation: str = "analyze") -> str:
+def process_large_dataset(dataset_name: str, operation: str = "analyze") -> str:
     """
     📊 Process a large dataset with progress tracking.
 
@@ -172,7 +172,7 @@ Use `check_task_status("{task_id}")` to monitor progress."""
         logger.error(f"Error starting dataset processing: {e}")
         return f"❌ Error starting dataset processing: {str(e)}"
 
-def _generate_report(report_type: str, data_sources: str = "default") -> str:
+def generate_report(report_type: str, data_sources: str = "default") -> str:
     """
     📄 Generate a comprehensive report from specified data sources.
 
@@ -235,7 +235,7 @@ Use `check_task_status("{task_id}")` to monitor progress."""
         logger.error(f"Error starting report generation: {e}")
         return f"❌ Error starting report generation: {str(e)}"
 
-def _check_task_status(task_id: str) -> str:
+def check_task_status(task_id: str) -> str:
     """
     🔍 Check the status of a long-running task.
 
@@ -300,13 +300,13 @@ def _check_task_status(task_id: str) -> str:
         return f"❌ Error checking task status: {str(e)}"
 
 # Create ADK FunctionTool instances with proper naming (NO underscore prefix - standardized naming)
-adk_ask_for_approval = FunctionTool(func=_ask_for_approval)
+adk_ask_for_approval = FunctionTool(func=ask_for_approval)
 adk_ask_for_approval.name = "ask_for_approval"
-adk_process_large_dataset = FunctionTool(func=_process_large_dataset)
+adk_process_large_dataset = FunctionTool(func=process_large_dataset)
 adk_process_large_dataset.name = "process_large_dataset"
-adk_generate_report = FunctionTool(func=_generate_report)
+adk_generate_report = FunctionTool(func=generate_report)
 adk_generate_report.name = "generate_report"
-adk_check_task_status = FunctionTool(func=_check_task_status)
+adk_check_task_status = FunctionTool(func=check_task_status)
 adk_check_task_status.name = "check_task_status"
 
 # Export all long-running tools

@@ -8,7 +8,7 @@ for production deployment without external dependencies.
 import os
 import json
 import logging
-from typing import Dict, Any, List, Optional
+# Removed unused imports - keeping imports minimal
 
 from google.adk.tools import FunctionTool
 
@@ -17,7 +17,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # File System Tools - Self-contained production implementations
-def _read_file(file_path: str) -> str:
+def read_file(file_path: str) -> str:
     """📖 Read the contents of a file with enhanced error handling and security checks."""
     try:
         with open(file_path, 'r', encoding='utf-8') as f:
@@ -29,7 +29,7 @@ def _read_file(file_path: str) -> str:
         logger.error(error_msg)
         return error_msg
 
-def _write_file(file_path: str, content: str) -> str:
+def write_file(file_path: str, content: str) -> str:
     """✍️ Write content to a file with backup and validation."""
     try:
         os.makedirs(os.path.dirname(file_path), exist_ok=True)
@@ -42,7 +42,7 @@ def _write_file(file_path: str, content: str) -> str:
         logger.error(error_msg)
         return error_msg
 
-def _list_directory(directory_path: str) -> str:
+def list_directory(directory_path: str) -> str:
     """📁 List contents of a directory with enhanced formatting and metadata."""
     try:
         items = os.listdir(directory_path)
@@ -58,7 +58,7 @@ def _list_directory(directory_path: str) -> str:
         logger.error(error_msg)
         return error_msg
 
-def _file_exists(file_path: str) -> str:
+def file_exists(file_path: str) -> str:
     """🔍 Check if a file or directory exists with detailed status information."""
     try:
         exists = os.path.exists(file_path)
@@ -75,13 +75,13 @@ def _file_exists(file_path: str) -> str:
         return error_msg
 
 # Create FunctionTool instances with explicit names
-adk_read_file = FunctionTool(func=_read_file)
+adk_read_file = FunctionTool(func=read_file)
 adk_read_file.name = "read_file"
-adk_write_file = FunctionTool(func=_write_file)
+adk_write_file = FunctionTool(func=write_file)
 adk_write_file.name = "write_file"
-adk_list_directory = FunctionTool(func=_list_directory)
+adk_list_directory = FunctionTool(func=list_directory)
 adk_list_directory.name = "list_directory"
-adk_file_exists = FunctionTool(func=_file_exists)
+adk_file_exists = FunctionTool(func=file_exists)
 adk_file_exists.name = "file_exists"
 
 # Search Tools - Real production implementations with ADK integration
@@ -273,7 +273,7 @@ def echo(message: str) -> str:
         logger.error(error_msg)
         return error_msg
 
-def _get_health_status() -> str:
+def get_health_status() -> str:
     """💚 Get comprehensive system health status with detailed metrics."""
     try:
         # Get real memory service status
@@ -321,7 +321,7 @@ def _get_health_status() -> str:
         return error_msg
 
 # Enhanced Agent Coordination Tools - Self-contained production implementations
-def _coordinate_task(task_description: str, assigned_agent: str = "") -> str:
+def coordinate_task(task_description: str, assigned_agent: str = "") -> str:
     """🎯 Coordinate task assignment with enhanced PLAN/ACT routing."""
     try:
         logger.info(f"Coordinating task: {task_description}")
@@ -339,7 +339,7 @@ def _coordinate_task(task_description: str, assigned_agent: str = "") -> str:
         logger.error(error_msg)
         return error_msg
 
-def _delegate_to_agent(agent_name: str, task: str, context: str = "") -> str:
+def delegate_to_agent(agent_name: str, task: str, context: str = "") -> str:
     """🤝 Delegate task with confidence-based agent selection."""
     try:
         logger.info(f"Delegating to {agent_name}: {task}")
@@ -357,7 +357,7 @@ def _delegate_to_agent(agent_name: str, task: str, context: str = "") -> str:
         logger.error(error_msg)
         return error_msg
 
-def _get_agent_status() -> str:
+def get_agent_status() -> str:
     """📊 Get enhanced status of all agents with PLAN/ACT capabilities."""
     try:
         result = {
@@ -380,7 +380,7 @@ def _get_agent_status() -> str:
         logger.error(error_msg)
         return error_msg
 
-def _transfer_to_agent(agent_name: str, context: str = "") -> str:
+def transfer_to_agent(agent_name: str, context: str = "") -> str:
     """🔄 Transfer conversation to specified agent (Google ADK Pattern)."""
     try:
         logger.info(f"Transferring to {agent_name}")
@@ -401,13 +401,13 @@ def _transfer_to_agent(agent_name: str, context: str = "") -> str:
 # Create FunctionTool instances with explicit names (NO underscore prefix - standardized naming)
 adk_echo = FunctionTool(func=echo)
 adk_echo.name = "echo"
-adk_get_health_status = FunctionTool(func=_get_health_status)
+adk_get_health_status = FunctionTool(func=get_health_status)
 adk_get_health_status.name = "get_health_status"
-adk_coordinate_task = FunctionTool(func=_coordinate_task)
+adk_coordinate_task = FunctionTool(func=coordinate_task)
 adk_coordinate_task.name = "coordinate_task"
-adk_delegate_to_agent = FunctionTool(func=_delegate_to_agent)
+adk_delegate_to_agent = FunctionTool(func=delegate_to_agent)
 adk_delegate_to_agent.name = "delegate_to_agent"
-adk_get_agent_status = FunctionTool(func=_get_agent_status)
+adk_get_agent_status = FunctionTool(func=get_agent_status)
 adk_get_agent_status.name = "get_agent_status"
-adk_transfer_to_agent = FunctionTool(func=_transfer_to_agent)
+adk_transfer_to_agent = FunctionTool(func=transfer_to_agent)
 adk_transfer_to_agent.name = "transfer_to_agent"

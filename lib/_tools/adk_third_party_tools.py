@@ -54,7 +54,7 @@ logger = logging.getLogger(__name__)
 _registered_langchain_tools = []
 _registered_crewai_tools = []
 
-def _execute_third_party_tool(tool_id: str, *args, **kwargs) -> str:
+def execute_third_party_tool(tool_id: str, *args, **kwargs) -> str:
     """
     Execute a registered third-party tool using Google ADK patterns.
 
@@ -105,7 +105,7 @@ def _execute_third_party_tool(tool_id: str, *args, **kwargs) -> str:
         logger.error(f"Error executing third-party tool {tool_id}: {e}")
         return f"❌ Error executing tool '{tool_id}': {str(e)}"
 
-def _list_third_party_tools() -> str:
+def list_third_party_tools() -> str:
     """
     List all registered third-party tools using Google ADK patterns.
 
@@ -147,7 +147,7 @@ def _list_third_party_tools() -> str:
         logger.error(f"Error listing third-party tools: {e}")
         return f"❌ Error listing tools: {str(e)}"
 
-def _register_langchain_tools() -> str:
+def register_langchain_tools() -> str:
     """
     Register example LangChain tools using Google ADK LangchainTool wrapper.
 
@@ -202,7 +202,7 @@ def _register_langchain_tools() -> str:
         logger.error(f"Error registering LangChain tools: {e}")
         return f"❌ Error registering LangChain tools: {str(e)}"
 
-def _register_crewai_tools() -> str:
+def register_crewai_tools() -> str:
     """
     Register example CrewAI tools using Google ADK CrewaiTool wrapper.
 
@@ -272,7 +272,7 @@ def _register_crewai_tools() -> str:
         logger.error(f"Error registering CrewAI tools: {e}")
         return f"❌ Error registering CrewAI tools: {str(e)}"
 
-def _get_third_party_tool_info(tool_id: str) -> str:
+def get_third_party_tool_info(tool_id: str) -> str:
     """
     Get detailed information about a specific third-party tool using Google ADK patterns.
 
@@ -360,15 +360,15 @@ def get_all_third_party_tools():
     return _registered_langchain_tools + _registered_crewai_tools
 
 # Create ADK FunctionTool wrappers with proper naming (ADK compliant - no underscores)
-adk_execute_third_party_tool = FunctionTool(func=_execute_third_party_tool)
+adk_execute_third_party_tool = FunctionTool(func=execute_third_party_tool)
 adk_execute_third_party_tool.name = "execute_third_party_tool"
-adk_list_third_party_tools = FunctionTool(func=_list_third_party_tools)
+adk_list_third_party_tools = FunctionTool(func=list_third_party_tools)
 adk_list_third_party_tools.name = "list_third_party_tools"
-adk_register_langchain_tools = FunctionTool(func=_register_langchain_tools)
+adk_register_langchain_tools = FunctionTool(func=register_langchain_tools)
 adk_register_langchain_tools.name = "register_langchain_tools"
-adk_register_crewai_tools = FunctionTool(func=_register_crewai_tools)
+adk_register_crewai_tools = FunctionTool(func=register_crewai_tools)
 adk_register_crewai_tools.name = "register_crewai_tools"
-adk_get_third_party_tool_info = FunctionTool(func=_get_third_party_tool_info)
+adk_get_third_party_tool_info = FunctionTool(func=get_third_party_tool_info)
 adk_get_third_party_tool_info.name = "get_third_party_tool_info"
 
 # Export all ADK tools
