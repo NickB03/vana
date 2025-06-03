@@ -1,15 +1,83 @@
 
-# 🎯 CRITICAL HANDOFF: POST-RECOVERY DEVELOPMENT PRIORITIES
+# 🎯 CRITICAL HANDOFF: AGENT-AS-TOOL ORCHESTRATION TESTING & ADK COMPLIANCE
 
-**Date:** 2025-06-03 (POST-CRITICAL RECOVERY - DEVELOPMENT RESUMPTION)
+**Date:** 2025-06-03 (AGENT-AS-TOOL IMPLEMENTATION COMPLETE - REQUIRES VALIDATION)
+**Previous Agent:** Implemented agent-as-tool orchestration pattern
+**Next Agent:** MUST validate implementation and ensure ADK multi-agent compliance
 
-## 🎉 MISSION STATUS: CRITICAL RECOVERY COMPLETE - READY FOR STRATEGIC DEVELOPMENT
+## 🚨 CRITICAL HANDOFF STATUS: AGENT-AS-TOOL IMPLEMENTATION COMPLETE
 
-**Status:** ✅ COMPLETE RECOVERY SUCCESS - BOTH LOCAL AND PRODUCTION OPERATIONAL
-**Achievement:** Poetry environment + production deployment fully restored
-**Service:** https://vana-qqugqgsbcq-uc.a.run.app (FULLY OPERATIONAL - 60 tools working)
-**Handoff:** Strategic development plan with proper deployment safeguards
-**Next:** Next agent to implement P1 & P2 using sequential thinking and Context7 research
+**Status:** ✅ AGENT-AS-TOOL ORCHESTRATION IMPLEMENTED & DEPLOYED (Commit e3d3a15)
+**Service:** https://vana-960076421399.us-central1.run.app (DEPLOYED - REQUIRES TESTING)
+**Test Interface:** https://vana-qqugqgsbcq-uc.a.run.app (Google ADK Dev UI)
+**Critical Change:** VANA now prioritizes agent tools over transfer_to_agent
+**Deployment:** Successfully deployed to production
+**URGENT:** Next agent MUST validate new behavior and ensure ADK compliance
+
+## 🎯 IMMEDIATE TASKS FOR NEXT AGENT (P1 PRIORITY)
+
+### **1. COMPREHENSIVE AGENT-AS-TOOL VALIDATION (CRITICAL)**
+**Status:** 🚨 URGENT - Previous agent claimed success but validation required
+**Test URL:** https://vana-qqugqgsbcq-uc.a.run.app
+**Expected Behavior:** VANA uses agent tools instead of transfer_to_agent
+
+**🚨 CRITICAL ISSUE DISCOVERED:** Underscore naming violations still present
+- System calling `_hotel_search_tool` and `_flight_search_tool` (with underscores)
+- This will cause "Function not found in tools_dict" errors
+- **MUST BE FIXED** before validation can succeed
+
+**CRITICAL VALIDATION PLAN:**
+
+#### **Phase 0: URGENT UNDERSCORE NAMING FIX (BLOCKING)**
+**Priority:** P0 - Must complete before any validation
+**Issue:** System calling `_hotel_search_tool`, `_flight_search_tool` with underscores
+**Required Actions:**
+1. Audit ALL tool function names for underscore prefixes
+2. Fix function definitions to remove underscores
+3. Update FunctionTool registrations to match
+4. Deploy fixes to production
+5. Verify no "Function not found in tools_dict" errors
+
+#### **Phase 1: Puppeteer Testing Framework Setup**
+1. Navigate to https://vana-qqugqgsbcq-uc.a.run.app
+2. Select VANA agent from dropdown
+3. Establish baseline functionality test
+
+#### **Phase 2: Agent-as-Tool Behavior Validation**
+**Test Cases (Must Execute All):**
+```
+Test 1: "Design a microservices architecture for an e-commerce platform"
+Expected: Uses architecture_tool() - NOT transfer_to_agent()
+Validation: Look for tool execution, NOT agent transfer
+
+Test 2: "Create a modern dashboard UI with dark mode support"
+Expected: Uses ui_tool() - NOT transfer_to_agent()
+Validation: Look for tool execution, NOT agent transfer
+
+Test 3: "Plan deployment strategy for a Node.js application"
+Expected: Uses devops_tool() - NOT transfer_to_agent()
+Validation: Look for tool execution, NOT agent transfer
+
+Test 4: "Create comprehensive testing strategy for API endpoints"
+Expected: Uses qa_tool() - NOT transfer_to_agent()
+Validation: Look for tool execution, NOT agent transfer
+```
+
+#### **Phase 3: Response Quality Validation**
+- Verify agent tools return meaningful specialist analysis
+- Confirm VANA remains main interface (no user transfers)
+- Validate session state sharing between tools
+
+### **2. ADK MULTI-AGENT TEAM COMPLIANCE AUDIT (CRITICAL)**
+**Reference:** https://google.github.io/adk-docs/tutorials/agent-team/
+**Focus:** Step 3 - Building an Agent Team + Agents-as-Tools Pattern
+
+**ADK Compliance Checklist:**
+- ✅ Agent Hierarchy: Root agent (VANA) with sub_agents properly defined
+- ❓ **Agents-as-Tools Pattern**: Verify FunctionTool wrapping follows ADK best practices
+- ❓ **Session State Sharing**: Validate state keys (architecture_analysis, ui_design, etc.)
+- ❓ **Tool Integration**: Ensure agent tools work as documented in ADK patterns
+- ❓ **Orchestration Logic**: Confirm PRIMARY directive prioritizes agent tools over transfers
 
 ## 🎯 MCP TOOLS COMPREHENSIVE VALIDATION RESULTS
 

@@ -435,30 +435,30 @@ travel_specialist_tools = create_travel_specialist_agent_tools(
 )
 
 # Travel specialist tool wrappers (Phase 5A)
-def _hotel_search_tool(context: str) -> str:
+def hotel_search_tool(context: str) -> str:
     """🏨 Hotel search specialist for accommodation discovery and comparison."""
     return travel_specialist_tools["hotel_search_tool"](context)
 
-def _flight_search_tool(context: str) -> str:
+def flight_search_tool(context: str) -> str:
     """✈️ Flight search specialist for flight discovery and booking."""
     return travel_specialist_tools["flight_search_tool"](context)
 
-def _payment_processing_tool(context: str) -> str:
+def payment_processing_tool(context: str) -> str:
     """💳 Payment processing specialist for secure transaction handling."""
     return travel_specialist_tools["payment_processing_tool"](context)
 
-def _itinerary_planning_tool(context: str) -> str:
+def itinerary_planning_tool(context: str) -> str:
     """📅 Itinerary planning specialist for comprehensive trip planning."""
     return travel_specialist_tools["itinerary_planning_tool"](context)
 
 # Travel specialist ADK FunctionTool instances (Phase 5A)
-adk_hotel_search_tool = FunctionTool(func=_hotel_search_tool)
+adk_hotel_search_tool = FunctionTool(func=hotel_search_tool)
 adk_hotel_search_tool.name = "hotel_search_tool"
-adk_flight_search_tool = FunctionTool(func=_flight_search_tool)
+adk_flight_search_tool = FunctionTool(func=flight_search_tool)
 adk_flight_search_tool.name = "flight_search_tool"
-adk_payment_processing_tool = FunctionTool(func=_payment_processing_tool)
+adk_payment_processing_tool = FunctionTool(func=payment_processing_tool)
 adk_payment_processing_tool.name = "payment_processing_tool"
-adk_itinerary_planning_tool = FunctionTool(func=_itinerary_planning_tool)
+adk_itinerary_planning_tool = FunctionTool(func=itinerary_planning_tool)
 adk_itinerary_planning_tool.name = "itinerary_planning_tool"
 
 # Development Specialist Agents (Phase 5B: Development Specialists Implementation)
@@ -618,30 +618,30 @@ development_specialist_tools = create_development_specialist_agent_tools(
 )
 
 # Development specialist tool wrappers (Phase 5B)
-def _code_generation_tool(context: str) -> str:
+def code_generation_tool(context: str) -> str:
     """💻 Code generation specialist for advanced coding and development."""
     return development_specialist_tools["code_generation_tool"](context)
 
-def _testing_tool(context: str) -> str:
+def testing_tool(context: str) -> str:
     """🧪 Testing specialist for quality assurance and validation."""
     return development_specialist_tools["testing_tool"](context)
 
-def _documentation_tool(context: str) -> str:
+def documentation_tool(context: str) -> str:
     """📚 Documentation specialist for technical writing and knowledge management."""
     return development_specialist_tools["documentation_tool"](context)
 
-def _security_tool(context: str) -> str:
+def security_tool(context: str) -> str:
     """🔒 Security specialist for vulnerability assessment and compliance."""
     return development_specialist_tools["security_tool"](context)
 
 # Development specialist ADK FunctionTool instances (Phase 5B)
-adk_code_generation_tool = FunctionTool(func=_code_generation_tool)
+adk_code_generation_tool = FunctionTool(func=code_generation_tool)
 adk_code_generation_tool.name = "code_generation_tool"
-adk_testing_tool = FunctionTool(func=_testing_tool)
+adk_testing_tool = FunctionTool(func=testing_tool)
 adk_testing_tool.name = "testing_tool"
-adk_documentation_tool = FunctionTool(func=_documentation_tool)
+adk_documentation_tool = FunctionTool(func=documentation_tool)
 adk_documentation_tool.name = "documentation_tool"
-adk_security_tool = FunctionTool(func=_security_tool)
+adk_security_tool = FunctionTool(func=security_tool)
 adk_security_tool.name = "security_tool"
 
 # Research Specialist Agents (Phase 5C: Research Specialists Implementation)
@@ -797,24 +797,24 @@ research_specialist_tools = create_research_specialist_agent_tools(
 )
 
 # Research specialist tool wrappers (Phase 5C)
-def _web_research_tool(context: str) -> str:
+def web_research_tool(context: str) -> str:
     """🌐 Web research specialist for information gathering and fact-checking."""
     return research_specialist_tools["web_research_tool"](context)
 
-def _data_analysis_tool(context: str) -> str:
+def data_analysis_tool(context: str) -> str:
     """📊 Data analysis specialist for processing and statistical analysis."""
     return research_specialist_tools["data_analysis_tool"](context)
 
-def _competitive_intelligence_tool(context: str) -> str:
+def competitive_intelligence_tool(context: str) -> str:
     """🔍 Competitive intelligence specialist for market research and analysis."""
     return research_specialist_tools["competitive_intelligence_tool"](context)
 
 # Research specialist ADK FunctionTool instances (Phase 5C)
-adk_web_research_tool = FunctionTool(func=_web_research_tool)
+adk_web_research_tool = FunctionTool(func=web_research_tool)
 adk_web_research_tool.name = "web_research_tool"
-adk_data_analysis_tool = FunctionTool(func=_data_analysis_tool)
+adk_data_analysis_tool = FunctionTool(func=data_analysis_tool)
 adk_data_analysis_tool.name = "data_analysis_tool"
-adk_competitive_intelligence_tool = FunctionTool(func=_competitive_intelligence_tool)
+adk_competitive_intelligence_tool = FunctionTool(func=competitive_intelligence_tool)
 adk_competitive_intelligence_tool.name = "competitive_intelligence_tool"
 
 # Intelligence Agents (Phase 6: Intelligence Agents Implementation)
@@ -920,24 +920,24 @@ intelligence_agent_tools = create_intelligence_agent_tools(
 )
 
 # Intelligence agent tool wrappers (Phase 6)
-def _memory_management_tool(context: str) -> str:
+def memory_management_tool(context: str) -> str:
     """🧠 Memory management specialist for advanced memory operations and knowledge curation."""
     return intelligence_agent_tools["memory_management_tool"](context)
 
-def _decision_engine_tool(context: str) -> str:
+def decision_engine_tool(context: str) -> str:
     """⚡ Decision engine specialist for intelligent decision making and workflow optimization."""
     return intelligence_agent_tools["decision_engine_tool"](context)
 
-def _learning_systems_tool(context: str) -> str:
+def learning_systems_tool(context: str) -> str:
     """📈 Learning systems specialist for performance analysis and system optimization."""
     return intelligence_agent_tools["learning_systems_tool"](context)
 
 # Intelligence agent ADK FunctionTool instances (Phase 6)
-adk_memory_management_tool = FunctionTool(func=_memory_management_tool)
+adk_memory_management_tool = FunctionTool(func=memory_management_tool)
 adk_memory_management_tool.name = "memory_management_tool"
-adk_decision_engine_tool = FunctionTool(func=_decision_engine_tool)
+adk_decision_engine_tool = FunctionTool(func=decision_engine_tool)
 adk_decision_engine_tool.name = "decision_engine_tool"
-adk_learning_systems_tool = FunctionTool(func=_learning_systems_tool)
+adk_learning_systems_tool = FunctionTool(func=learning_systems_tool)
 adk_learning_systems_tool.name = "learning_systems_tool"
 
 # Utility Agents (Phase 7: Utility Agents Implementation)
@@ -1011,18 +1011,18 @@ def create_utility_agent_tools(monitoring_agent, coordination_agent):
 utility_agent_tools = create_utility_agent_tools(monitoring_agent, coordination_agent)
 
 # Utility agent tool wrappers (Phase 7)
-def _monitoring_tool(context: str) -> str:
+def monitoring_tool(context: str) -> str:
     """📊 Monitoring specialist for system monitoring and performance tracking."""
     return utility_agent_tools["monitoring_tool"](context)
 
-def _coordination_tool(context: str) -> str:
+def coordination_tool(context: str) -> str:
     """🎯 Coordination specialist for agent coordination and workflow management."""
     return utility_agent_tools["coordination_tool"](context)
 
 # Utility agent ADK FunctionTool instances (Phase 7)
-adk_monitoring_tool = FunctionTool(func=_monitoring_tool)
+adk_monitoring_tool = FunctionTool(func=monitoring_tool)
 adk_monitoring_tool.name = "monitoring_tool"
-adk_coordination_tool = FunctionTool(func=_coordination_tool)
+adk_coordination_tool = FunctionTool(func=coordination_tool)
 adk_coordination_tool.name = "coordination_tool"
 
 # Advanced Orchestrator Agents (Phase 4: Core Orchestrators Implementation)
@@ -1248,30 +1248,30 @@ specialist_agent_tools = create_specialist_agent_tools(
 
 # Create ADK FunctionTool wrappers for agent tools
 
-def _architecture_tool(context: str) -> str:
+def architecture_tool(context: str) -> str:
     """🏗️ Architecture specialist tool for system design and architecture analysis."""
     return specialist_agent_tools["architecture_tool"](context)
 
-def _ui_tool(context: str) -> str:
+def ui_tool(context: str) -> str:
     """🎨 UI/UX specialist tool for interface design and user experience."""
     return specialist_agent_tools["ui_tool"](context)
 
-def _devops_tool(context: str) -> str:
+def devops_tool(context: str) -> str:
     """⚙️ DevOps specialist tool for infrastructure and deployment planning."""
     return specialist_agent_tools["devops_tool"](context)
 
-def _qa_tool(context: str) -> str:
+def qa_tool(context: str) -> str:
     """🧪 QA specialist tool for testing strategy and quality assurance."""
     return specialist_agent_tools["qa_tool"](context)
 
 # Create ADK FunctionTool instances
-adk_architecture_tool = FunctionTool(func=_architecture_tool)
+adk_architecture_tool = FunctionTool(func=architecture_tool)
 adk_architecture_tool.name = "architecture_tool"
-adk_ui_tool = FunctionTool(func=_ui_tool)
+adk_ui_tool = FunctionTool(func=ui_tool)
 adk_ui_tool.name = "ui_tool"
-adk_devops_tool = FunctionTool(func=_devops_tool)
+adk_devops_tool = FunctionTool(func=devops_tool)
 adk_devops_tool.name = "devops_tool"
-adk_qa_tool = FunctionTool(func=_qa_tool)
+adk_qa_tool = FunctionTool(func=qa_tool)
 adk_qa_tool.name = "qa_tool"
 
 # Orchestrator Agent (Root Agent) with Enhanced AI Agent Best Practices
