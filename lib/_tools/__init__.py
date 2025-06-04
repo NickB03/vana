@@ -11,11 +11,11 @@ from .adk_long_running_tools import (
     adk_ask_for_approval, adk_process_large_dataset,
     adk_generate_report, adk_check_task_status
 )
-# from .adk_third_party_tools import (
-#     adk_execute_third_party_tool, adk_list_third_party_tools,
-#     adk_register_langchain_tools, adk_register_crewai_tools,
-#     adk_get_third_party_tool_info
-# )
+from .adk_third_party_tools import (
+    adk_execute_third_party_tool, adk_list_third_party_tools,
+    adk_register_langchain_tools, adk_register_crewai_tools,
+    adk_get_third_party_tool_info
+)
 # Agent tools - Re-enabled with singleton pattern fix
 from .agent_tools import (
     adk_architecture_tool, adk_ui_tool, adk_devops_tool, adk_qa_tool
