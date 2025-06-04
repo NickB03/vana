@@ -1352,11 +1352,12 @@ vana = LlmAgent(
     - monitoring_tool: Direct access to system monitoring and performance tracking
     - coordination_tool: Direct access to agent coordination and workflow management
 
-    ## 🔄 SECONDARY OPTION: Agent Transfer Pattern
-    **ONLY use transfer_to_agent() when user explicitly requests to "talk to" or "switch to" a specific agent:**
-    - For explicit agent requests: transfer_to_agent(agent_name="specialist_name", context="user request")
+    ## 🔄 SECONDARY OPTION: Agent Transfer Pattern (Google ADK Automatic)
+    **Google ADK automatically provides transfer_to_agent() when user explicitly requests to "talk to" or "switch to" a specific agent:**
+    - For explicit agent requests: The LLM will automatically generate transfer_to_agent(agent_name="specialist_name")
     - For complex multi-step workflows requiring extended specialist interaction
     - When user wants direct conversation with a specific specialist
+    - Note: ADK framework handles transfers automatically - no custom tool needed
 
     Research specialist tools (Phase 5C):
     - web_research_tool: Direct access to web research and fact-checking capabilities
@@ -1496,7 +1497,7 @@ vana = LlmAgent(
         adk_echo, adk_get_health_status,
 
         # Agent coordination tools
-        adk_coordinate_task, adk_delegate_to_agent, adk_get_agent_status, adk_transfer_to_agent,
+        adk_coordinate_task, adk_delegate_to_agent, adk_get_agent_status,
 
         # Long Running Function Tools (Google ADK Pattern)
         adk_ask_for_approval, adk_process_large_dataset, adk_generate_report, adk_check_task_status,
