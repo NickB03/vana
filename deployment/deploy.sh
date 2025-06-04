@@ -7,7 +7,7 @@ set -e  # Exit on error
 PROJECT_ID="analystai-454200"
 PROJECT_NUMBER="960076421399"
 REGION="us-central1"
-SERVICE_NAME="vana"
+SERVICE_NAME="${1:-vana}"  # Allow service name as first argument, default to "vana"
 
 # Print banner
 echo "🚀 VANA Agent System - Cloud Run Deployment (Python 3.13 + Poetry)"
