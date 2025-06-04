@@ -30,15 +30,51 @@ def read_file(file_path: str) -> str:
         return error_msg
 
 def write_file(file_path: str, content: str) -> str:
-    """✍️ Write content to a file with backup and validation."""
+    """✍️ Write content to a file with enhanced validation and error handling."""
     try:
-        os.makedirs(os.path.dirname(file_path), exist_ok=True)
-        with open(file_path, 'w', encoding='utf-8') as f:
-            f.write(content)
-        logger.info(f"Successfully wrote to file: {file_path}")
-        return f"Successfully wrote {len(content)} characters to {file_path}"
+        # Validate inputs
+        if not file_path or file_path.strip() == "":
+            return "❌ Error: File path cannot be empty"
+
+        if content is None:
+            content = ""
+
+        # Normalize path
+        file_path = os.path.normpath(file_path.strip())
+
+        # Check if path is absolute or relative
+        if not os.path.isabs(file_path):
+            # For relative paths, ensure we're in a safe directory
+            current_dir = os.getcwd()
+            file_path = os.path.join(current_dir, file_path)
+
+        # Validate directory creation
+        directory = os.path.dirname(file_path)
+        if directory and not os.path.exists(directory):
+            try:
+                os.makedirs(directory, exist_ok=True)
+                logger.info(f"Created directory: {directory}")
+            except PermissionError:
+                return f"❌ Permission denied: Cannot create directory {directory}"
+            except OSError as e:
+                return f"❌ Error creating directory {directory}: {str(e)}"
+
+        # Write file with proper error handling
+        try:
+            with open(file_path, 'w', encoding='utf-8') as f:
+                f.write(content)
+            logger.info(f"Successfully wrote to file: {file_path}")
+            return f"✅ Successfully wrote {len(content)} characters to {file_path}"
+
+        except PermissionError:
+            return f"❌ Permission denied: Cannot write to {file_path}"
+        except OSError as e:
+            return f"❌ OS error writing to {file_path}: {str(e)}"
+        except UnicodeEncodeError as e:
+            return f"❌ Encoding error writing to {file_path}: {str(e)}"
+
     except Exception as e:
-        error_msg = f"Error writing file {file_path}: {str(e)}"
+        error_msg = f"❌ Unexpected error writing file {file_path}: {str(e)}"
         logger.error(error_msg)
         return error_msg
 

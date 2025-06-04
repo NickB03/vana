@@ -31,13 +31,9 @@ logger.info("Setting up environment configuration...")
 environment_type = setup_environment()
 logger.info(f"Environment configured: {environment_type}")
 
-# Initialize ADK Memory Service
-logger.info("Initializing ADK Memory Service...")
-memory_service = get_adk_memory_service()
-memory_info = memory_service.get_service_info()
-logger.info(f"Memory service initialized: {memory_info['service_type']}")
-logger.info(f"Memory service available: {memory_info['available']}")
-logger.info(f"Supports persistence: {memory_info['supports_persistence']}")
+# Initialize lazy initialization manager (prevents import hanging)
+from lib._shared_libraries.lazy_initialization import lazy_manager
+logger.info("Lazy initialization manager ready - services will initialize on first use")
 
 # Get the directory where main.py is located - this is where the agent files are now located
 # Supporting directories are now in lib/ to avoid being treated as agents
@@ -109,7 +105,9 @@ async def health_check():
 @app.get("/info")
 async def agent_info():
     """Get agent information."""
-    # Get current memory service info
+    # Get current memory service info (lazy initialization)
+    from lib._shared_libraries.lazy_initialization import get_adk_memory_service
+    memory_service = get_adk_memory_service()
     current_memory_info = memory_service.get_service_info()
 
     return {

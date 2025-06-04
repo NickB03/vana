@@ -420,36 +420,30 @@ itinerary_planning_agent = LlmAgent(
     ]
 )
 
-# Create travel specialist agent tools (Phase 5A) - Must be defined before travel_orchestrator
-def create_travel_specialist_agent_tools(hotel_agent, flight_agent, payment_agent, itinerary_agent):
-    """Create travel specialist agent tools for Agents-as-Tools pattern."""
-    return {
-        "hotel_search_tool": lambda context: f"Hotel Search Agent executed with context: {context}. Results saved to session state as 'hotel_search_results'.",
-        "flight_search_tool": lambda context: f"Flight Search Agent executed with context: {context}. Results saved to session state as 'flight_search_results'.",
-        "payment_processing_tool": lambda context: f"Payment Processing Agent executed with context: {context}. Results saved to session state as 'payment_confirmation'.",
-        "itinerary_planning_tool": lambda context: f"Itinerary Planning Agent executed with context: {context}. Results saved to session state as 'travel_itinerary'."
-    }
-
-travel_specialist_tools = create_travel_specialist_agent_tools(
-    hotel_search_agent, flight_search_agent, payment_processing_agent, itinerary_planning_agent
+# Import fixed travel specialist tools (Phase 5A) - Proper task-based implementation
+from lib._tools.fixed_specialist_tools import (
+    hotel_search_tool as fixed_hotel_search_tool,
+    flight_search_tool as fixed_flight_search_tool,
+    payment_processing_tool as fixed_payment_processing_tool,
+    itinerary_planning_tool as fixed_itinerary_planning_tool
 )
 
-# Travel specialist tool wrappers (Phase 5A)
+# Travel specialist tool wrappers (Phase 5A) - Using fixed implementations
 def hotel_search_tool(context: str) -> str:
     """🏨 Hotel search specialist for accommodation discovery and comparison."""
-    return travel_specialist_tools["hotel_search_tool"](context)
+    return fixed_hotel_search_tool(context)
 
 def flight_search_tool(context: str) -> str:
     """✈️ Flight search specialist for flight discovery and booking."""
-    return travel_specialist_tools["flight_search_tool"](context)
+    return fixed_flight_search_tool(context)
 
 def payment_processing_tool(context: str) -> str:
     """💳 Payment processing specialist for secure transaction handling."""
-    return travel_specialist_tools["payment_processing_tool"](context)
+    return fixed_payment_processing_tool(context)
 
 def itinerary_planning_tool(context: str) -> str:
     """📅 Itinerary planning specialist for comprehensive trip planning."""
-    return travel_specialist_tools["itinerary_planning_tool"](context)
+    return fixed_itinerary_planning_tool(context)
 
 # Travel specialist ADK FunctionTool instances (Phase 5A)
 adk_hotel_search_tool = FunctionTool(func=hotel_search_tool)
@@ -603,36 +597,30 @@ security_agent = LlmAgent(
     ]
 )
 
-# Create development specialist agent tools (Phase 5B) - Must be defined before development_orchestrator
-def create_development_specialist_agent_tools(code_agent, test_agent, doc_agent, security_agent):
-    """Create development specialist agent tools for Agents-as-Tools pattern."""
-    return {
-        "code_generation_tool": lambda context: f"Code Generation Agent executed with context: {context}. Results saved to session state as 'generated_code'.",
-        "testing_tool": lambda context: f"Testing Agent executed with context: {context}. Results saved to session state as 'test_results'.",
-        "documentation_tool": lambda context: f"Documentation Agent executed with context: {context}. Results saved to session state as 'documentation'.",
-        "security_tool": lambda context: f"Security Agent executed with context: {context}. Results saved to session state as 'security_analysis'."
-    }
-
-development_specialist_tools = create_development_specialist_agent_tools(
-    code_generation_agent, testing_agent, documentation_agent, security_agent
+# Import fixed development specialist tools (Phase 5B) - Proper task-based implementation
+from lib._tools.fixed_specialist_tools import (
+    code_generation_tool as fixed_code_generation_tool,
+    testing_tool as fixed_testing_tool,
+    documentation_tool as fixed_documentation_tool,
+    security_tool as fixed_security_tool
 )
 
-# Development specialist tool wrappers (Phase 5B)
+# Development specialist tool wrappers (Phase 5B) - Using fixed implementations
 def code_generation_tool(context: str) -> str:
     """💻 Code generation specialist for advanced coding and development."""
-    return development_specialist_tools["code_generation_tool"](context)
+    return fixed_code_generation_tool(context)
 
 def testing_tool(context: str) -> str:
     """🧪 Testing specialist for quality assurance and validation."""
-    return development_specialist_tools["testing_tool"](context)
+    return fixed_testing_tool(context)
 
 def documentation_tool(context: str) -> str:
     """📚 Documentation specialist for technical writing and knowledge management."""
-    return development_specialist_tools["documentation_tool"](context)
+    return fixed_documentation_tool(context)
 
 def security_tool(context: str) -> str:
     """🔒 Security specialist for vulnerability assessment and compliance."""
-    return development_specialist_tools["security_tool"](context)
+    return fixed_security_tool(context)
 
 # Development specialist ADK FunctionTool instances (Phase 5B)
 adk_code_generation_tool = FunctionTool(func=code_generation_tool)
@@ -783,31 +771,25 @@ competitive_intelligence_agent = LlmAgent(
     ]
 )
 
-# Create research specialist agent tools (Phase 5C) - Must be defined before research_orchestrator
-def create_research_specialist_agent_tools(web_agent, data_agent, intel_agent):
-    """Create research specialist agent tools for Agents-as-Tools pattern."""
-    return {
-        "web_research_tool": lambda context: f"Web Research Agent executed with context: {context}. Results saved to session state as 'web_research_results'.",
-        "data_analysis_tool": lambda context: f"Data Analysis Agent executed with context: {context}. Results saved to session state as 'data_analysis_results'.",
-        "competitive_intelligence_tool": lambda context: f"Competitive Intelligence Agent executed with context: {context}. Results saved to session state as 'competitive_intelligence'."
-    }
-
-research_specialist_tools = create_research_specialist_agent_tools(
-    web_research_agent, data_analysis_agent, competitive_intelligence_agent
+# Import fixed specialist tools (Phase 5C) - Proper task-based implementation
+from lib._tools.fixed_specialist_tools import (
+    web_research_tool as fixed_web_research_tool,
+    data_analysis_tool as fixed_data_analysis_tool,
+    competitive_intelligence_tool as fixed_competitive_intelligence_tool
 )
 
-# Research specialist tool wrappers (Phase 5C)
+# Research specialist tool wrappers (Phase 5C) - Using fixed implementations
 def web_research_tool(context: str) -> str:
     """🌐 Web research specialist for information gathering and fact-checking."""
-    return research_specialist_tools["web_research_tool"](context)
+    return fixed_web_research_tool(context)
 
 def data_analysis_tool(context: str) -> str:
     """📊 Data analysis specialist for processing and statistical analysis."""
-    return research_specialist_tools["data_analysis_tool"](context)
+    return fixed_data_analysis_tool(context)
 
 def competitive_intelligence_tool(context: str) -> str:
     """🔍 Competitive intelligence specialist for market research and analysis."""
-    return research_specialist_tools["competitive_intelligence_tool"](context)
+    return fixed_competitive_intelligence_tool(context)
 
 # Research specialist ADK FunctionTool instances (Phase 5C)
 adk_web_research_tool = FunctionTool(func=web_research_tool)
@@ -906,31 +888,25 @@ learning_systems_agent = LlmAgent(
     ]
 )
 
-# Create intelligence agent tools (Phase 6) - Must be defined before VANA
-def create_intelligence_agent_tools(memory_agent, decision_agent, learning_agent):
-    """Create intelligence agent tools for Agents-as-Tools pattern."""
-    return {
-        "memory_management_tool": lambda context: f"Memory Management Agent executed with context: {context}. Results saved to session state as 'memory_management_results'.",
-        "decision_engine_tool": lambda context: f"Decision Engine Agent executed with context: {context}. Results saved to session state as 'decision_engine_results'.",
-        "learning_systems_tool": lambda context: f"Learning Systems Agent executed with context: {context}. Results saved to session state as 'learning_systems_results'."
-    }
-
-intelligence_agent_tools = create_intelligence_agent_tools(
-    memory_management_agent, decision_engine_agent, learning_systems_agent
+# Import fixed intelligence agent tools (Phase 6) - Proper task-based implementation
+from lib._tools.fixed_specialist_tools import (
+    memory_management_tool as fixed_memory_management_tool,
+    decision_engine_tool as fixed_decision_engine_tool,
+    learning_systems_tool as fixed_learning_systems_tool
 )
 
-# Intelligence agent tool wrappers (Phase 6)
+# Intelligence agent tool wrappers (Phase 6) - Using fixed implementations
 def memory_management_tool(context: str) -> str:
     """🧠 Memory management specialist for advanced memory operations and knowledge curation."""
-    return intelligence_agent_tools["memory_management_tool"](context)
+    return fixed_memory_management_tool(context)
 
 def decision_engine_tool(context: str) -> str:
     """⚡ Decision engine specialist for intelligent decision making and workflow optimization."""
-    return intelligence_agent_tools["decision_engine_tool"](context)
+    return fixed_decision_engine_tool(context)
 
 def learning_systems_tool(context: str) -> str:
     """📈 Learning systems specialist for performance analysis and system optimization."""
-    return intelligence_agent_tools["learning_systems_tool"](context)
+    return fixed_learning_systems_tool(context)
 
 # Intelligence agent ADK FunctionTool instances (Phase 6)
 adk_memory_management_tool = FunctionTool(func=memory_management_tool)
@@ -1000,24 +976,20 @@ coordination_agent = LlmAgent(
     ]
 )
 
-# Create utility agent tools (Phase 7) - Must be defined before VANA
-def create_utility_agent_tools(monitoring_agent, coordination_agent):
-    """Create utility agent tools for Agents-as-Tools pattern."""
-    return {
-        "monitoring_tool": lambda context: f"Monitoring Agent executed with context: {context}. Results saved to session state as 'monitoring_results'.",
-        "coordination_tool": lambda context: f"Coordination Agent executed with context: {context}. Results saved to session state as 'coordination_results'."
-    }
+# Import fixed utility agent tools (Phase 7) - Proper task-based implementation
+from lib._tools.fixed_specialist_tools import (
+    monitoring_tool as fixed_monitoring_tool,
+    coordination_tool as fixed_coordination_tool
+)
 
-utility_agent_tools = create_utility_agent_tools(monitoring_agent, coordination_agent)
-
-# Utility agent tool wrappers (Phase 7)
+# Utility agent tool wrappers (Phase 7) - Using fixed implementations
 def monitoring_tool(context: str) -> str:
     """📊 Monitoring specialist for system monitoring and performance tracking."""
-    return utility_agent_tools["monitoring_tool"](context)
+    return fixed_monitoring_tool(context)
 
 def coordination_tool(context: str) -> str:
     """🎯 Coordination specialist for agent coordination and workflow management."""
-    return utility_agent_tools["coordination_tool"](context)
+    return fixed_coordination_tool(context)
 
 # Utility agent ADK FunctionTool instances (Phase 7)
 adk_monitoring_tool = FunctionTool(func=monitoring_tool)
