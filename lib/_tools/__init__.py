@@ -3,7 +3,7 @@ from .adk_tools import (
     adk_read_file, adk_write_file, adk_list_directory, adk_file_exists,
     adk_vector_search, adk_web_search, adk_search_knowledge,
     adk_echo, adk_get_health_status,
-    adk_coordinate_task, adk_delegate_to_agent, adk_get_agent_status, adk_transfer_to_agent
+    adk_coordinate_task, adk_delegate_to_agent, adk_get_agent_status
 )
 
 # Long running tools - Re-enabled after fixing tool standards imports
