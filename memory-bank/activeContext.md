@@ -53,16 +53,25 @@
 - ❌ **Chat Endpoint:** Completely non-functional (timeouts)
 - ✅ **Health Endpoint:** Returns healthy status (misleading)
 
-### **Critical Research Areas for Next Agent**
-1. **Google ADK Documentation:** How should agents be structured for discovery?
-2. **Root Agent Pattern:** What is the correct way to expose root_agent?
-3. **Module Structure:** Does `/app/agents/vana/` need specific files or structure?
-4. **Agent Registration:** How does ADK discover and load agents?
+### **🚨 CRITICAL INSIGHT FROM CODEX ANALYSIS**
+**Root Cause Identified:** Required Google ADK modules are missing in the environment, preventing imports from `google.adk`
 
-### **DO NOT PROCEED WITHOUT RESEARCH**
-- Use Context7 to research Google ADK agent structure requirements FIRST
-- Do not make changes based on assumptions
-- The previous working system had proper agent discovery - need to understand what changed
+**Codex Solution Summary:**
+1. **Export root_agent at package level** so Google ADK can discover the main agent correctly
+2. **Missing ADK modules** in environment preventing proper imports
+3. **Need to research ADK root agent discovery** mechanism
+
+### **Critical Research Areas for Next Agent**
+1. **Google ADK Installation:** Verify `google.adk` modules are properly installed in environment
+2. **Package-Level Export:** How to export root_agent at package level for ADK discovery
+3. **Import Dependencies:** Check if ADK dependencies are missing from pyproject.toml
+4. **Agent Registration:** Understand ADK's agent discovery and import mechanism
+
+### **IMMEDIATE ACTION PLAN**
+1. **Check Dependencies:** Verify google-adk package and dependencies in pyproject.toml
+2. **Package Structure:** Export root_agent at package level in `/app/agents/vana/__init__.py`
+3. **Import Validation:** Test that `from google.adk` imports work in environment
+4. **ADK Discovery:** Research official ADK agent discovery patterns
 
 **🚨 CRITICAL ISSUE DISCOVERED:** Underscore naming violations still present
 - System calling `_hotel_search_tool` and `_flight_search_tool` (with underscores)
