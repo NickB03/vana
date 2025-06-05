@@ -420,30 +420,34 @@ itinerary_planning_agent = LlmAgent(
     ]
 )
 
-# Import fixed travel specialist tools (Phase 5A) - Proper task-based implementation
-from lib._tools.fixed_specialist_tools import (
-    hotel_search_tool as fixed_hotel_search_tool,
-    flight_search_tool as fixed_flight_search_tool,
-    payment_processing_tool as fixed_payment_processing_tool,
-    itinerary_planning_tool as fixed_itinerary_planning_tool
+# Import ORCHESTRATED specialist tools (CRITICAL FIX) - Proper Google ADK agent-as-tools pattern
+from lib._tools.orchestrated_specialist_tools import (
+    hotel_search_tool as orchestrated_hotel_search_tool,
+    flight_search_tool as orchestrated_flight_search_tool,
+    itinerary_planning_tool as orchestrated_itinerary_planning_tool,
+    code_generation_tool as orchestrated_code_generation_tool,
+    testing_tool as orchestrated_testing_tool,
+    competitive_intelligence_tool as orchestrated_competitive_intelligence_tool
 )
 
-# Travel specialist tool wrappers (Phase 5A) - Using fixed implementations
+# Travel specialist tool wrappers (CRITICAL FIX) - Using orchestrated implementations
 def hotel_search_tool(context: str) -> str:
     """🏨 Hotel search specialist for accommodation discovery and comparison."""
-    return fixed_hotel_search_tool(context)
+    return orchestrated_hotel_search_tool(context)
 
 def flight_search_tool(context: str) -> str:
     """✈️ Flight search specialist for flight discovery and booking."""
-    return fixed_flight_search_tool(context)
+    return orchestrated_flight_search_tool(context)
 
 def payment_processing_tool(context: str) -> str:
     """💳 Payment processing specialist for secure transaction handling."""
+    # Keep original for payment security - no task ID exposure needed
+    from lib._tools.fixed_specialist_tools import payment_processing_tool as fixed_payment_processing_tool
     return fixed_payment_processing_tool(context)
 
 def itinerary_planning_tool(context: str) -> str:
     """📅 Itinerary planning specialist for comprehensive trip planning."""
-    return fixed_itinerary_planning_tool(context)
+    return orchestrated_itinerary_planning_tool(context)
 
 # Travel specialist ADK FunctionTool instances (Phase 5A)
 adk_hotel_search_tool = FunctionTool(func=hotel_search_tool)
@@ -1409,7 +1413,11 @@ vana = LlmAgent(
     - generate_report: Generate comprehensive reports from multiple data sources
     - check_task_status: Monitor progress of any long-running operation
 
-    These tools return task IDs for tracking. Always use check_task_status to monitor progress.
+    CRITICAL ORCHESTRATION PATTERN:
+    - Handle all task management INTERNALLY - never expose task IDs to users
+    - Take OWNERSHIP of all responses - say "I found hotels" NOT "hotel agent found hotels"
+    - Use agent-as-tools pattern for coordination, not transfer_to_agent
+    - Provide direct, helpful responses without revealing internal task tracking
 
     ## Advanced Capabilities:
     - **Confidence-Based Routing**: Intelligently route tasks to specialists based on capability scores
