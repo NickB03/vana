@@ -40,7 +40,7 @@ from lib._tools import (
     adk_echo, adk_get_health_status,
 
     # Agent Coordination Tools
-    adk_coordinate_task, adk_delegate_to_agent, adk_get_agent_status, adk_transfer_to_agent
+    adk_coordinate_task, adk_delegate_to_agent, adk_get_agent_status
 )
 
 # Long Running Function Tools
@@ -853,7 +853,7 @@ decision_engine_agent = LlmAgent(
 
     Always prioritize system efficiency, optimal resource usage, and intelligent automation.""",
     tools=[
-        adk_coordinate_task, adk_delegate_to_agent, adk_get_agent_status, adk_transfer_to_agent,
+        adk_coordinate_task, adk_delegate_to_agent, adk_get_agent_status,
         adk_get_health_status, adk_check_task_status,
         adk_echo, adk_generate_report
     ]
@@ -970,7 +970,7 @@ coordination_agent = LlmAgent(
 
     Always prioritize efficient coordination, optimal resource usage, and seamless workflows.""",
     tools=[
-        adk_coordinate_task, adk_delegate_to_agent, adk_get_agent_status, adk_transfer_to_agent,
+        adk_coordinate_task, adk_delegate_to_agent, adk_get_agent_status,
         adk_check_task_status, adk_generate_report,
         adk_echo
     ]
@@ -1062,7 +1062,7 @@ travel_orchestrator = LlmAgent(
         adk_read_file, adk_write_file, adk_list_directory,
         adk_vector_search, adk_web_search, adk_search_knowledge,
         adk_echo, adk_get_health_status,
-        adk_coordinate_task, adk_delegate_to_agent, adk_transfer_to_agent,
+        adk_coordinate_task, adk_delegate_to_agent,
         adk_ask_for_approval, adk_process_large_dataset, adk_generate_report,
         # Travel Specialist Tools (Phase 5A - Agents-as-Tools Pattern)
         adk_hotel_search_tool, adk_flight_search_tool, adk_payment_processing_tool, adk_itinerary_planning_tool
@@ -1139,7 +1139,7 @@ research_orchestrator = LlmAgent(
         adk_read_file, adk_write_file, adk_list_directory,
         adk_vector_search, adk_web_search, adk_search_knowledge,
         adk_echo, adk_get_health_status,
-        adk_coordinate_task, adk_delegate_to_agent, adk_transfer_to_agent,
+        adk_coordinate_task, adk_delegate_to_agent,
         adk_process_large_dataset, adk_generate_report, adk_check_task_status,
         # Research Specialist Tools (Phase 5C - Agents-as-Tools Pattern)
         adk_web_research_tool, adk_data_analysis_tool, adk_competitive_intelligence_tool
@@ -1206,7 +1206,7 @@ development_orchestrator = LlmAgent(
         adk_read_file, adk_write_file, adk_list_directory, adk_file_exists,
         adk_vector_search, adk_web_search, adk_search_knowledge,
         adk_echo, adk_get_health_status,
-        adk_coordinate_task, adk_delegate_to_agent, adk_transfer_to_agent,
+        adk_coordinate_task, adk_delegate_to_agent,
         adk_ask_for_approval, adk_generate_report, adk_check_task_status,
         # Development Specialist Tools (Phase 5B - Agents-as-Tools Pattern)
         adk_code_generation_tool, adk_testing_tool, adk_documentation_tool, adk_security_tool
