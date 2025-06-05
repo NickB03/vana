@@ -46,7 +46,7 @@ VANA is an enterprise-grade multi-agent AI system designed for complex task orch
 ### ✨ Key Features
 
 - **🤖 24-Agent Ecosystem** - Specialized agents for travel, development, research, and system intelligence
-- **🛠️ 42 Standardized Tools** - Comprehensive toolkit for file operations, search, coordination, and more
+- **🛠️ 59 Standardized Tools** - Comprehensive toolkit for file operations, search, coordination, and more
 - **🔍 Advanced Search** - Vector search, web search, and hybrid search capabilities
 - **☁️ Cloud-Native** - Deployed on Google Cloud Run with auto-scaling and 99.9% uptime
 - **📊 Real-Time Monitoring** - Comprehensive health monitoring and performance dashboards
@@ -141,7 +141,7 @@ VANA features a sophisticated 24-agent ecosystem organized in a hierarchical str
 
 ## 🛠️ Tools & Capabilities
 
-VANA provides 42 standardized tools across multiple categories:
+VANA provides 59 standardized tools across multiple categories:
 
 ### 📁 File System Tools (4)
 - `read_file` - Secure file reading with validation
@@ -178,6 +178,29 @@ VANA provides 42 standardized tools across multiple categories:
 
 ### 🎯 Agent-as-Tools (20)
 All specialist agents available as tools for seamless orchestration
+
+### 🕐 Time Operations (6)
+- `get_current_time` - Current time with timezone support
+- `convert_timezone` - Timezone conversion utilities
+- `calculate_date` - Date calculations and formatting
+- `format_datetime` - Advanced datetime formatting
+- `get_time_until` - Time duration calculations
+- `list_timezones` - Available timezone listing
+
+### 📁 Enhanced File Operations (6)
+- `get_file_metadata` - Detailed file information
+- `batch_file_operations` - Bulk file processing
+- `compress_files` - File compression utilities
+- `extract_archive` - Archive extraction
+- `find_files` - Advanced file search
+- `sync_directories` - Directory synchronization
+
+### 🔗 MCP Integrations (5)
+- `context7_sequential_thinking` - Advanced reasoning capabilities
+- `brave_search_mcp` - Enhanced web search integration
+- `github_mcp_operations` - GitHub API operations
+- `list_available_mcp_servers` - MCP server discovery
+- `get_mcp_integration_status` - Integration health monitoring
 
 ## 📚 Documentation
 

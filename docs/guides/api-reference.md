@@ -69,8 +69,8 @@ System health and status information.
     "failed": 0
   },
   "tools": {
-    "total": 42,
-    "available": 42,
+    "total": 59,
+    "available": 59,
     "errors": 0
   },
   "performance": {
@@ -322,6 +322,122 @@ Check status of a long-running task.
 
 **Parameters:**
 - `task_id` (string, required): Task identifier
+
+### MCP Time Tools
+
+#### get_current_time
+Get current time with timezone support.
+
+**Parameters:**
+- `timezone` (string, optional): Target timezone (default: UTC)
+
+#### convert_timezone
+Convert datetime between timezones.
+
+**Parameters:**
+- `datetime_str` (string, required): Source datetime
+- `from_tz` (string, required): Source timezone
+- `to_tz` (string, required): Target timezone
+
+#### calculate_date
+Perform date calculations.
+
+**Parameters:**
+- `base_date` (string, required): Base date
+- `operation` (string, required): Calculation operation
+
+#### format_datetime
+Format datetime strings.
+
+**Parameters:**
+- `datetime_str` (string, required): Datetime to format
+- `format_str` (string, required): Format specification
+
+#### get_time_until
+Calculate time until target datetime.
+
+**Parameters:**
+- `target_datetime` (string, required): Target datetime
+
+#### list_timezones
+List available timezones.
+
+**Parameters:**
+- `region` (string, optional): Filter by region
+
+### MCP Filesystem Tools
+
+#### get_file_metadata
+Get detailed file information.
+
+**Parameters:**
+- `file_path` (string, required): Path to file
+
+#### batch_file_operations
+Perform bulk file operations.
+
+**Parameters:**
+- `operations` (array, required): List of operations
+
+#### compress_files
+Compress files into archive.
+
+**Parameters:**
+- `file_list` (array, required): Files to compress
+- `archive_name` (string, required): Archive filename
+
+#### extract_archive
+Extract files from archive.
+
+**Parameters:**
+- `archive_path` (string, required): Archive to extract
+- `destination` (string, required): Extraction destination
+
+#### find_files
+Advanced file search.
+
+**Parameters:**
+- `search_pattern` (string, required): Search pattern
+- `directory` (string, required): Search directory
+
+#### sync_directories
+Synchronize directories.
+
+**Parameters:**
+- `source` (string, required): Source directory
+- `destination` (string, required): Destination directory
+
+### MCP Core Integration
+
+#### context7_sequential_thinking
+Advanced reasoning capabilities.
+
+**Parameters:**
+- `problem` (string, required): Problem to analyze
+
+#### brave_search_mcp
+Enhanced web search.
+
+**Parameters:**
+- `query` (string, required): Search query
+- `options` (object, optional): Search options
+
+#### github_mcp_operations
+GitHub API operations.
+
+**Parameters:**
+- `operation` (string, required): GitHub operation
+- `params` (object, required): Operation parameters
+
+#### list_available_mcp_servers
+List MCP servers.
+
+**Parameters:** None
+
+#### get_mcp_integration_status
+Get MCP integration status.
+
+**Parameters:** None
 
 ### Agent-as-Tools
 
