@@ -1,131 +1,542 @@
-# Common Issues in VANA
+# 🚨 Troubleshooting Guide
 
-[Home](../index.md) > [Troubleshooting](index.md) > Common Issues
+This guide helps you diagnose and resolve common issues with VANA.
 
-This guide provides solutions for common issues that may arise when setting up, configuring, or running the VANA system. For issues specific to a particular component, also refer to its dedicated troubleshooting guide or documentation.
+## 🔍 Quick Diagnostics
 
-## 1. Configuration and Environment Variable Issues
+### System Health Check
+```bash
+# Check overall system health
+curl https://vana-qqugqgsbcq-uc.a.run.app/api/health
 
-### Symptoms:
--   Components fail to initialize (e.g., `VectorSearchClient`, `KnowledgeGraphManager`, `WebSearchClient`).
--   Errors related to missing API keys, project IDs, or endpoint information.
--   Authentication failures with external services (GCP, MCP Server).
--   Application using unexpected default settings.
+# Local development health check
+curl http://localhost:8080/api/health
+```
 
-### Possible Causes:
-1.  `.env` file is missing, not in the project root, or not correctly named (`.env`).
-2.  Required environment variables are not defined in the `.env` file or system environment.
-3.  Incorrect values for environment variables (e.g., typos in API keys, wrong project ID).
-4.  Path to GCP service account key (`GOOGLE_APPLICATION_CREDENTIALS`) is incorrect or the file is not accessible.
-5.  `config/environment.py` is not loading variables as expected (e.g., issues with `python-dotenv` or path resolution).
+### Log Analysis
+```bash
+# View recent logs (local)
+tail -f logs/vana.log
 
-### Solutions:
-1.  **Verify `.env` File:**
-    *   Ensure a `.env` file exists in the VANA project root directory.
-    *   Compare your `.env` file with `.env.example` to make sure all necessary variables are present.
-    *   Double-check the spelling of variable names and their values.
-2.  **Check Critical Paths:**
-    *   For `GOOGLE_APPLICATION_CREDENTIALS`, ensure it's an **absolute path** to your valid GCP service account JSON key file, and that the file is readable by the VANA process.
-3.  **Inspect Loaded Configuration (Debugging):**
-    *   Temporarily add print statements in `config/environment.py` or at the start of a script/tool to display the values of loaded environment variables to confirm they are what you expect.
-    *   Example: `print(f"GCP Project ID: {environment.GCP_PROJECT_ID}")`
-4.  **Refer to Guides:** Consult the [Installation Guide](../guides/installation-guide.md#5-configuring-environment-variables) and specific tool configuration guides (e.g., [Web Search Configuration](../guides/web-search-configuration.md)).
+# View Cloud Run logs
+gcloud logs read "resource.type=cloud_run_revision AND resource.labels.service_name=vana" --limit=50
+```
 
-## 2. Python Dependency and Virtual Environment Issues
+### Performance Metrics
+```bash
+# Check system performance
+curl https://vana-qqugqgsbcq-uc.a.run.app/api/metrics
 
-### Symptoms:
--   `ModuleNotFoundError` when trying to run a script or import a VANA tool.
--   Errors indicating a missing Python package (e.g., `No module named 'google.cloud.aiplatform'`).
--   Unexpected behavior due to incorrect package versions.
+# Agent-specific status
+curl https://vana-qqugqgsbcq-uc.a.run.app/api/agents
+```
 
-### Possible Causes:
-1.  Python virtual environment (`.venv/`) not created or not activated.
-2.  Dependencies not installed correctly or completely.
-3.  Using the system Python interpreter instead of the virtual environment's interpreter.
-4.  Conflicts between package versions.
+## 🚫 Common Issues
 
-### Solutions:
-1.  **Activate Virtual Environment:** Always ensure your virtual environment is activated before running any VANA scripts or commands:
-    ```bash
-    source .venv/bin/activate  # macOS/Linux
-    # .venv\Scripts\activate  # Windows
-    ```
-    Your terminal prompt should indicate the active environment (e.g., `(.venv)`).
-2.  **Install/Reinstall Dependencies:**
-    *   Ensure `dashboard/requirements.txt` (and any other relevant `requirements.txt` files) are up-to-date.
-    *   Run `pip install -r dashboard/requirements.txt` (or other relevant requirements file).
-    *   Consider upgrading pip: `pip install --upgrade pip`.
-3.  **Check Python Interpreter:**
-    *   Verify which Python interpreter is being used: `which python` (macOS/Linux) or `where python` (Windows). It should point to the interpreter inside your `.venv` directory.
-4.  **Resolve Conflicts:** If version conflicts occur, you might need to adjust versions in `requirements.txt` or create a fresh virtual environment.
+### 1. VANA Won't Start
 
-## 3. GCP Service Account Permission Issues
+#### Symptoms
+- Service fails to start
+- Import errors in logs
+- Port binding failures
 
-### Symptoms:
--   Errors from `VectorSearchClient` or other GCP-interacting tools like "PermissionDenied", "403 Forbidden", or messages indicating insufficient permissions for a specific GCP API (e.g., `aiplatform.indexEndpoints.get` denied).
--   Failure to generate embeddings, query Vector Search, or access GCS buckets.
+#### Diagnosis
+```bash
+# Check Python environment
+python --version
+poetry --version
 
-### Possible Causes:
-1.  The GCP service account specified by `GOOGLE_APPLICATION_CREDENTIALS` does not have the required IAM roles/permissions for the GCP services VANA uses (Vertex AI, Document AI, GCS, etc.).
-2.  The wrong service account key is being used.
-3.  The necessary GCP APIs (e.g., Vertex AI API, Document AI API) are not enabled for the GCP project.
+# Verify dependencies
+poetry install --dry-run
 
-### Solutions:
-1.  **Verify IAM Roles:**
-    *   In the Google Cloud Console, go to "IAM & Admin" > "IAM".
-    *   Find the service account VANA is using.
-    *   Ensure it has appropriate roles. Common roles needed might include:
-        *   "Vertex AI User" (for most Vertex AI operations).
-        *   "Storage Object Admin" or "Storage Object Viewer" (if VANA reads/writes to GCS).
-        *   "Document AI User" or "Document AI Editor" (for Document AI).
-        *   Specific permissions might be listed in error messages.
-2.  **Check Service Account Key:** Ensure the JSON key file pointed to by `GOOGLE_APPLICATION_CREDENTIALS` is correct and corresponds to the service account with the right permissions.
-3.  **Enable APIs:** In Google Cloud Console, go to "APIs & Services" > "Library" and ensure "Vertex AI API", "Document AI API", etc., are enabled for your project.
-4.  **Test Authentication (gcloud CLI):**
-    ```bash
-    gcloud auth activate-service-account --key-file=/path/to/your/keyfile.json
-    gcloud auth list # Verify the service account is active
-    # Try a gcloud command that requires similar permissions, e.g.:
-    # gcloud ai index-endpoints list --project=your-gcp-project-id --region=your-region
-    ```
+# Check port availability
+lsof -i :8080
+```
 
-## 4. External Service Connectivity Issues (MCP Server, Google APIs)
+#### Solutions
 
-### Symptoms:
--   Errors related to timeouts, connection refused, or DNS resolution when tools like `KnowledgeGraphManager` or `WebSearchClient` try to make API calls.
--   Circuit breaker open exceptions.
+**Poetry Environment Issues:**
+```bash
+# Clear Poetry cache
+poetry cache clear pypi --all
 
-### Possible Causes:
-1.  Network connectivity problems from the machine running VANA to the internet or the specific service endpoint.
-2.  Firewall blocking outgoing connections.
-3.  The external service itself is down or experiencing issues.
-4.  Incorrect endpoint URL configured in `.env` (e.g., for `MCP_ENDPOINT`).
-5.  Proxy server issues (if applicable in your network environment).
+# Recreate virtual environment
+poetry env remove python
+poetry install
 
-### Solutions:
-1.  **Check Basic Network Connectivity:**
-    *   Use `ping` or `curl` to test connectivity to the general internet and, if possible, the host of the service (e.g., `ping mcp.community.augment.co`).
-    *   `curl -I https://mcp.community.augment.co` (or other relevant endpoint).
-2.  **Verify Endpoint URLs:** Double-check `MCP_ENDPOINT` and other service URLs in your `.env` file.
-3.  **Check Service Status Pages:** Look for official status pages for Google Cloud services or the MCP community server if issues are suspected.
-4.  **Circuit Breaker Status:** If VANA uses circuit breakers, check logs for messages about breakers being open. The [Monitoring Dashboard](../guides/dashboard-guide.md) might also show this.
-5.  **Firewall/Proxy:** If in a corporate network, check for local firewall or proxy configurations that might be interfering.
+# Use specific Python version
+poetry env use python3.11
+```
 
-## 5. Component Interaction Failures (e.g., Dashboard UI can't reach Flask API)
+**Import Errors:**
+```bash
+# Check Python path
+python -c "import sys; print(sys.path)"
 
-### Symptoms:
--   VANA Monitoring Dashboard UI shows errors like "Cannot connect to API" or fails to load data.
--   One VANA tool fails when trying to use another VANA tool.
+# Verify package installation
+poetry show
 
-### Possible Causes:
-1.  The required backend component (e.g., Flask API for the Streamlit UI) is not running.
-2.  Components are running on different hosts/ports than expected by the calling component.
-3.  CORS (Cross-Origin Resource Sharing) issues if frontend and backend are on different origins (less common for localhost development but possible).
+# Reinstall problematic packages
+poetry remove package-name
+poetry add package-name
+```
 
-### Solutions:
-1.  **Ensure All Components are Running:** For the dashboard, verify both `dashboard/flask_app.py` and `streamlit run dashboard/app.py` are running in separate terminals.
-2.  **Check Ports and Hosts:** Confirm the Flask API is running on the port Streamlit expects to call (usually `localhost:5000`).
-3.  **Inspect Browser Developer Console:** For UI issues, open your browser's developer console (usually F12) and check the "Console" and "Network" tabs for errors (e.g., failed API requests, JavaScript errors, CORS errors).
-4.  **Review Logs:** Check logs for both the calling component and the component being called for error messages.
+**Port Conflicts:**
+```bash
+# Kill process using port 8080
+sudo lsof -ti:8080 | xargs kill -9
 
-For more specific troubleshooting, refer to the documentation for the individual VANA component or tool you are having trouble with.
+# Use different port
+export PORT=8081
+python main.py
+```
+
+### 2. Authentication Failures
+
+#### Symptoms
+- 401 Unauthorized errors
+- Google Cloud authentication issues
+- API key validation failures
+
+#### Diagnosis
+```bash
+# Check Google Cloud authentication
+gcloud auth list
+gcloud auth application-default print-access-token
+
+# Verify service account
+gcloud iam service-accounts list
+
+# Check API key configuration
+grep -E "(API_KEY|TOKEN)" .env.local
+```
+
+#### Solutions
+
+**Google Cloud Authentication:**
+```bash
+# Re-authenticate
+gcloud auth application-default login
+
+# Set project
+gcloud config set project YOUR_PROJECT_ID
+
+# Verify permissions
+gcloud projects get-iam-policy YOUR_PROJECT_ID
+```
+
+**Service Account Issues:**
+```bash
+# Create new service account key
+gcloud iam service-accounts keys create key.json \
+    --iam-account=vana-service@YOUR_PROJECT_ID.iam.gserviceaccount.com
+
+# Update environment variable
+export GOOGLE_APPLICATION_CREDENTIALS=./key.json
+```
+
+**API Key Problems:**
+```bash
+# Verify API key format
+echo $BRAVE_SEARCH_API_KEY | wc -c
+
+# Test API key
+curl -H "X-Subscription-Token: $BRAVE_SEARCH_API_KEY" \
+     "https://api.search.brave.com/res/v1/web/search?q=test"
+```
+
+### 3. Performance Issues
+
+#### Symptoms
+- Slow response times
+- High memory usage
+- Timeout errors
+
+#### Diagnosis
+```bash
+# Monitor resource usage
+top -p $(pgrep -f "python main.py")
+
+# Check memory usage
+ps aux | grep python
+
+# Monitor network connections
+netstat -an | grep :8080
+```
+
+#### Solutions
+
+**Memory Optimization:**
+```bash
+# Increase memory limit (Cloud Run)
+gcloud run services update vana \
+    --memory=4Gi \
+    --region=us-central1
+
+# Clear cache
+rm -rf cache/*
+python -c "import gc; gc.collect()"
+```
+
+**Performance Tuning:**
+```bash
+# Adjust concurrency settings
+export MAX_CONCURRENT_TASKS=20
+export CACHE_TTL=1800
+
+# Enable performance monitoring
+export ENABLE_METRICS=true
+export LOG_LEVEL=WARNING
+```
+
+**Timeout Configuration:**
+```bash
+# Increase timeout limits
+export REQUEST_TIMEOUT=600
+export TOOL_TIMEOUT=300
+
+# Configure Cloud Run timeout
+gcloud run services update vana \
+    --timeout=900 \
+    --region=us-central1
+```
+
+### 4. Agent Communication Failures
+
+#### Symptoms
+- Agent not responding
+- Tool execution failures
+- Coordination errors
+
+#### Diagnosis
+```bash
+# Check agent status
+curl http://localhost:8080/api/agents
+
+# Test specific agent
+curl -X POST http://localhost:8080/api/tools/echo \
+     -H "Content-Type: application/json" \
+     -d '{"parameters": {"message": "test"}}'
+
+# Check agent logs
+grep "agent_name" logs/agents.log
+```
+
+#### Solutions
+
+**Agent Registration Issues:**
+```bash
+# Verify agent configuration
+python -c "
+from agents.vana.agent import VanaAgent
+agent = VanaAgent()
+print('Agent tools:', agent.tools)
+"
+
+# Restart agent system
+python scripts/restart_agents.py
+```
+
+**Tool Registration Problems:**
+```bash
+# Check tool imports
+python -c "
+from lib._tools import get_all_tools
+tools = get_all_tools()
+print(f'Loaded {len(tools)} tools')
+"
+
+# Verify tool functions
+python scripts/validate_tools.py
+```
+
+### 5. Vector Search Issues
+
+#### Symptoms
+- Search returning no results
+- Embedding failures
+- Index connection errors
+
+#### Diagnosis
+```bash
+# Test vector search connection
+python -c "
+from lib.vector_search.client import VectorSearchClient
+client = VectorSearchClient()
+print('Connection status:', client.health_check())
+"
+
+# Check index status
+gcloud ai indexes list --region=us-central1
+
+# Verify endpoint deployment
+gcloud ai index-endpoints list --region=us-central1
+```
+
+#### Solutions
+
+**Connection Issues:**
+```bash
+# Verify endpoint configuration
+export VECTOR_SEARCH_ENDPOINT=your-endpoint-id
+export VECTOR_SEARCH_INDEX=your-index-id
+
+# Test connectivity
+python scripts/test_vector_search.py
+```
+
+**Index Problems:**
+```bash
+# Rebuild vector index
+python scripts/rebuild_vector_index.py
+
+# Check index health
+python scripts/vector_search_health_check.py
+```
+
+### 6. API Rate Limiting
+
+#### Symptoms
+- 429 Too Many Requests errors
+- API quota exceeded messages
+- Slow API responses
+
+#### Diagnosis
+```bash
+# Check API usage
+gcloud logging read "protoPayload.methodName=search" --limit=100
+
+# Monitor rate limits
+curl -H "X-Subscription-Token: $BRAVE_SEARCH_API_KEY" \
+     "https://api.search.brave.com/res/v1/web/search?q=test" -I
+```
+
+#### Solutions
+
+**Rate Limit Configuration:**
+```bash
+# Adjust rate limits
+export BRAVE_SEARCH_RATE_LIMIT=50
+export VERTEX_AI_RATE_LIMIT=30
+
+# Implement backoff strategy
+export ENABLE_EXPONENTIAL_BACKOFF=true
+export MAX_RETRY_ATTEMPTS=3
+```
+
+**API Quota Management:**
+```bash
+# Monitor quotas
+gcloud logging read "protoPayload.authenticationInfo.principalEmail" --limit=50
+
+# Request quota increase
+# Visit Google Cloud Console > IAM & Admin > Quotas
+```
+
+## 🔧 Advanced Troubleshooting
+
+### Debug Mode
+
+#### Enable Debug Logging
+```bash
+# Local development
+export DEBUG=true
+export LOG_LEVEL=DEBUG
+python main.py
+
+# Production (temporary)
+gcloud run services update vana \
+    --set-env-vars="LOG_LEVEL=DEBUG" \
+    --region=us-central1
+```
+
+#### Verbose Tool Execution
+```bash
+# Enable tool debugging
+export TOOL_DEBUG=true
+export TRACE_TOOL_EXECUTION=true
+
+# Monitor tool performance
+tail -f logs/tools.log | grep "execution_time"
+```
+
+### Network Diagnostics
+
+#### Connectivity Tests
+```bash
+# Test external API connectivity
+curl -I https://api.search.brave.com/res/v1/web/search
+curl -I https://aiplatform.googleapis.com
+
+# Check DNS resolution
+nslookup vana-qqugqgsbcq-uc.a.run.app
+
+# Test internal connectivity
+curl http://localhost:8080/api/health
+```
+
+#### Firewall and Security
+```bash
+# Check Cloud Run ingress settings
+gcloud run services describe vana --region=us-central1
+
+# Verify IAM permissions
+gcloud projects get-iam-policy YOUR_PROJECT_ID \
+    --flatten="bindings[].members" \
+    --filter="bindings.members:vana-service@*"
+```
+
+### Database and Storage Issues
+
+#### Vector Search Diagnostics
+```bash
+# Test vector search health
+python scripts/comprehensive_vector_search_test.py
+
+# Check index statistics
+gcloud ai indexes describe INDEX_ID --region=us-central1
+
+# Verify embeddings
+python scripts/test_embeddings.py
+```
+
+#### Cache Issues
+```bash
+# Clear all caches
+rm -rf cache/*
+redis-cli FLUSHALL  # if using Redis
+
+# Test cache connectivity
+python -c "
+from lib.caching import CacheManager
+cache = CacheManager()
+print('Cache status:', cache.health_check())
+"
+```
+
+## 📊 Monitoring and Alerting
+
+### Set Up Monitoring
+
+#### Cloud Monitoring Alerts
+```bash
+# Create error rate alert
+gcloud alpha monitoring policies create \
+    --policy-from-file=monitoring/high-error-rate.yaml
+
+# Create latency alert
+gcloud alpha monitoring policies create \
+    --policy-from-file=monitoring/high-latency.yaml
+```
+
+#### Custom Metrics
+```bash
+# Enable custom metrics
+export ENABLE_CUSTOM_METRICS=true
+
+# Monitor specific operations
+python scripts/setup_custom_metrics.py
+```
+
+### Log Analysis
+
+#### Structured Logging
+```bash
+# Search for specific errors
+gcloud logs read 'jsonPayload.level="ERROR"' --limit=50
+
+# Filter by component
+gcloud logs read 'jsonPayload.component="vector_search"' --limit=20
+
+# Time-based filtering
+gcloud logs read 'timestamp>="2024-01-15T10:00:00Z"' --limit=100
+```
+
+#### Error Patterns
+```bash
+# Common error patterns
+grep -E "(ERROR|CRITICAL|FATAL)" logs/vana.log | tail -20
+
+# Tool-specific errors
+grep "tool_execution_failed" logs/tools.log
+
+# Agent communication errors
+grep "agent_communication_error" logs/agents.log
+```
+
+## 🆘 Emergency Procedures
+
+### Service Recovery
+
+#### Quick Restart
+```bash
+# Local development
+pkill -f "python main.py"
+python main.py
+
+# Cloud Run
+gcloud run services update vana \
+    --set-env-vars="RESTART_TIMESTAMP=$(date +%s)" \
+    --region=us-central1
+```
+
+#### Rollback Deployment
+```bash
+# Rollback to previous version
+gcloud run services update vana \
+    --image=gcr.io/PROJECT_ID/vana:previous-version \
+    --region=us-central1
+
+# Check deployment history
+gcloud run revisions list --service=vana --region=us-central1
+```
+
+### Data Recovery
+
+#### Backup and Restore
+```bash
+# Backup vector index
+python scripts/backup_vector_index.py
+
+# Restore from backup
+python scripts/restore_vector_index.py --backup-date=2024-01-15
+```
+
+#### Cache Rebuild
+```bash
+# Rebuild all caches
+python scripts/rebuild_caches.py
+
+# Warm up critical caches
+python scripts/warmup_caches.py
+```
+
+## 📞 Getting Help
+
+### Support Channels
+
+1. **GitHub Issues**: [Create an issue](https://github.com/NickB03/vana/issues)
+2. **Documentation**: Check relevant guides and references
+3. **Logs**: Always include relevant log snippets
+4. **System Info**: Provide environment and configuration details
+
+### Information to Include
+
+When reporting issues, include:
+- **Error messages** - Complete error text and stack traces
+- **Environment** - Local vs production, OS, Python version
+- **Configuration** - Relevant environment variables (redact secrets)
+- **Steps to reproduce** - Detailed reproduction steps
+- **Expected vs actual behavior** - What should happen vs what happens
+- **Logs** - Relevant log entries with timestamps
+
+### Emergency Contacts
+
+For critical production issues:
+- **Escalation**: Create urgent GitHub issue with "CRITICAL" label
+- **Monitoring**: Check Cloud Monitoring dashboards
+- **Status**: Monitor service health at `/api/health`
+
+---
+
+**🔧 Still having issues?** Create a detailed issue on [GitHub](https://github.com/NickB03/vana/issues) with logs and reproduction steps.

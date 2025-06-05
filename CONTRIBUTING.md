@@ -1,87 +1,238 @@
-# Contributing to VANA
+# 🤝 Contributing to VANA
 
-First off, thank you for considering contributing to VANA! Your help is appreciated.
+Thank you for your interest in contributing to VANA! This guide will help you get started with contributing to our multi-agent AI system.
 
-This document provides guidelines for contributing to the project. Please read it carefully to ensure a smooth collaboration process.
+## 🎯 Ways to Contribute
 
-## Table of Contents
+### 🐛 Bug Reports
+- Report bugs through [GitHub Issues](https://github.com/NickB03/vana/issues)
+- Include detailed reproduction steps
+- Provide system information and logs
 
-- [Code of Conduct](#code-of-conduct)
-- [How Can I Contribute?](#how-can-i-contribute)
-  - [Reporting Bugs](#reporting-bugs)
-  - [Suggesting Enhancements](#suggesting-enhancements)
-  - [Pull Requests](#pull-requests)
-- [Development Setup](#development-setup)
-- [Coding Standards](#coding-standards)
-- [Testing](#testing)
-- [Documentation](#documentation)
-- [Pull Request Process](#pull-request-process)
-- [Git Commit Messages](#git-commit-messages)
+### ✨ Feature Requests
+- Suggest new features or improvements
+- Describe the use case and expected behavior
+- Consider implementation complexity
 
-## Code of Conduct
+### 📝 Documentation
+- Improve existing documentation
+- Add examples and tutorials
+- Fix typos and clarify instructions
 
-This project and everyone participating in it is governed by a [Code of Conduct](CODE_OF_CONDUCT.md) (to be created). By participating, you are expected to uphold this code.
+### 💻 Code Contributions
+- Fix bugs and implement features
+- Add new agents or tools
+- Improve performance and reliability
 
-## How Can I Contribute?
+### 🧪 Testing
+- Write unit and integration tests
+- Test new features and bug fixes
+- Improve test coverage
 
-### Reporting Bugs
+## 🚀 Getting Started
 
--   Ensure the bug was not already reported by searching on GitHub under [Issues](https://github.com/NickB03/vana/issues).
--   If you're unable to find an open issue addressing the problem, [open a new one](https://github.com/NickB03/vana/issues/new). Be sure to include a **title and clear description**, as much relevant information as possible, and a **code sample or an executable test case** demonstrating the expected behavior that is not occurring.
+### 1. Fork and Clone
 
-### Suggesting Enhancements
+```bash
+# Fork the repository on GitHub
+# Then clone your fork
+git clone https://github.com/YOUR_USERNAME/vana.git
+cd vana
 
--   Open a new issue to discuss your enhancement idea. Clearly describe the proposed enhancement, its potential benefits, and any implementation ideas.
--   This allows for discussion and feedback before significant development work begins.
+# Add upstream remote
+git remote add upstream https://github.com/NickB03/vana.git
+```
 
-### Pull Requests
+### 2. Set Up Development Environment
 
--   Pull requests are the primary way to contribute code, documentation, or other changes.
--   Ensure your PR addresses an existing issue or a discussed enhancement.
--   Follow the [Pull Request Process](#pull-request-process) detailed below.
+```bash
+# Install dependencies
+poetry install
 
-## Development Setup
+# Install pre-commit hooks
+pre-commit install
 
-Please refer to the main [README.md](./README.md) for instructions on setting up your development environment, including prerequisites, installation, and configuration.
+# Copy environment template
+cp .env.local.example .env.local
+# Edit .env.local with your configuration
+```
 
-## Coding Standards
+### 3. Create a Branch
 
-(To be defined. This section will include guidelines on code style, formatting, linting tools (e.g., Black, Flake8, Pylint), and any project-specific conventions.)
+```bash
+# Create a feature branch
+git checkout -b feature/your-feature-name
 
--   **Python:** Follow PEP 8 guidelines.
--   **Docstrings:** Use clear and comprehensive docstrings for all modules, classes, functions, and methods (e.g., Google style or NumPy style).
--   **Type Hinting:** Use Python type hints for function signatures and variables where appropriate.
+# Or a bug fix branch
+git checkout -b fix/issue-number-description
+```
+
+## 📋 Development Guidelines
+
+### Code Style
+
+#### Python Standards
+- Follow [PEP 8](https://pep8.org/) style guide
+- Use [Black](https://black.readthedocs.io/) for code formatting
+- Use [Ruff](https://docs.astral.sh/ruff/) for linting
+- Add type hints for all functions
+
+### Testing Requirements
+
+#### Unit Tests
+```python
+import pytest
+from unittest.mock import Mock, patch
+from agents.example.agent import ExampleAgent
+
+class TestExampleAgent:
+    """Test suite for ExampleAgent."""
+
+    @pytest.fixture
+    def agent(self):
+        """Create agent instance for testing."""
+        config = {"test_mode": True}
+        return ExampleAgent(config)
+
+    def test_process_request_success(self, agent):
+        """Test successful request processing."""
+        message = "test message"
+        result = agent.process_request(message)
+
+        assert result["success"] is True
+        assert "data" in result
+        assert result["message"] == "Task completed successfully"
+```
+
+## 🧪 Testing Guidelines
+
+### Running Tests
+
+```bash
+# Run all tests
+poetry run pytest
+
+# Run specific test file
+poetry run pytest tests/unit/test_agent.py
+
+# Run with coverage
+poetry run pytest --cov=agents --cov=lib --cov=tools
+
+# Run integration tests
+poetry run pytest tests/integration/
+
+# Run with verbose output
+poetry run pytest -v
+```
+
+### Test Categories
+
+#### Unit Tests
+- Test individual functions and methods
+- Mock external dependencies
+- Fast execution (< 1 second per test)
+- Located in `tests/unit/`
+
+#### Integration Tests
+- Test component interactions
+- Use real services when possible
+- Moderate execution time (< 30 seconds per test)
+- Located in `tests/integration/`
+
+#### End-to-End Tests
+- Test complete workflows
+- Use production-like environment
+- Longer execution time (< 5 minutes per test)
+- Located in `tests/e2e/`
+
+## 📝 Pull Request Process
+
+### 1. Prepare Your Changes
+
+```bash
+# Ensure your branch is up to date
+git fetch upstream
+git rebase upstream/main
+
+# Run tests and linting
+poetry run pytest
+poetry run black .
+poetry run ruff check .
+
+# Run pre-commit hooks
+pre-commit run --all-files
+```
+
+### 2. Create Pull Request
+
+#### PR Title Format
+- `feat: add new agent for travel booking`
+- `fix: resolve vector search timeout issue`
+- `docs: update API reference documentation`
+- `test: add integration tests for file operations`
+
+#### PR Description Template
+```markdown
+## Description
+Brief description of the changes made.
+
+## Type of Change
+- [ ] Bug fix (non-breaking change which fixes an issue)
+- [ ] New feature (non-breaking change which adds functionality)
+- [ ] Breaking change (fix or feature that would cause existing functionality to not work as expected)
+- [ ] Documentation update
 
 ## Testing
+- [ ] Unit tests pass
+- [ ] Integration tests pass
+- [ ] Manual testing completed
 
-(To be defined. This section will detail the project's testing strategy.)
+## Checklist
+- [ ] Code follows style guidelines
+- [ ] Self-review completed
+- [ ] Documentation updated
+- [ ] Tests added/updated
+- [ ] No breaking changes (or breaking changes documented)
 
--   New features should include unit tests.
--   Bug fixes should ideally include a test case that demonstrates the bug and verifies the fix.
--   Ensure all tests pass before submitting a pull request (`scripts/run_tests.sh` or similar).
+## Related Issues
+Fixes #123
+Related to #456
+```
 
-## Documentation
+## 🎯 Best Practices
 
-**Up-to-date documentation is critical for VANA.**
+### Performance
+- Profile code for performance bottlenecks
+- Use caching for expensive operations
+- Implement proper error handling
+- Monitor resource usage
 
--   If you are adding a new feature, ensure you also add corresponding documentation (e.g., in `docs/implementation/`, `docs/guides/`, or `docs/reference/`).
--   If you are changing existing functionality, update the relevant documentation to reflect the changes.
--   For user-facing changes, ensure the `README.md` or relevant user guides are updated.
--   API changes must be documented in `docs/api/`.
--   **Documentation changes should be part of the same pull request as the code changes.**
+### Security
+- Validate all inputs
+- Use secure authentication methods
+- Protect sensitive data
+- Follow security best practices
 
-## Pull Request Process
+### Maintainability
+- Write clear, self-documenting code
+- Use meaningful variable names
+- Keep functions small and focused
+- Maintain consistent code style
 
-1.  Ensure any install or build dependencies are removed before the end of the layer when doing a build.
-2.  Update the `README.md` and other relevant documentation with details of changes to the interface, this includes new environment variables, exposed ports, useful file locations and container parameters.
-3.  Increase the version numbers in any examples files and the `README.md` to the new version that this Pull Request would represent. The versioning scheme we use is [SemVer](http://semver.org/).
-4.  You may merge the Pull Request in once you have the sign-off of other developers, or if you do not have permission to do that, you may request the second reviewer to merge it for you.
+## 📞 Getting Help
 
-## Git Commit Messages
+### Community Support
+- **GitHub Discussions**: Ask questions and share ideas
+- **Issues**: Report bugs and request features
+- **Documentation**: Check existing guides and references
 
--   Use clear and descriptive commit messages.
--   Start with an imperative verb (e.g., "Add feature", "Fix bug", "Update documentation").
--   Reference relevant issue numbers if applicable (e.g., "Fix #123: Handle null input").
--   Keep commit messages concise but informative.
+### Development Questions
+- **Architecture**: Review system design documents
+- **Implementation**: Check existing code examples
+- **Testing**: Follow established test patterns
 
-Thank you for contributing to VANA!
+---
+
+**Thank you for contributing to VANA!** 🎉
+
+Your contributions help make VANA a better multi-agent AI system for everyone.
