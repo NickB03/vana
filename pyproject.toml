@@ -20,6 +20,7 @@ mcp = {version = ">=1.2.0", extras = ["cli"]}
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.0.0"
 pytest-asyncio = "^0.21.0"
+pre-commit = "^4.2.0"
 
 [tool.poetry.group.deployment.dependencies]
 google-cloud-build = "^3.0.0"

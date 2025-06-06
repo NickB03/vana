@@ -217,13 +217,28 @@ Comprehensive documentation is available in the `/docs` directory:
 
 ## 🚀 Deployment
 
+VANA uses a multi-environment deployment strategy with separate production and development services:
+
 ### ☁️ Production (Google Cloud Run)
 ```bash
-# Deploy to production
-./deployment/deploy.sh production
+# Deploy to production (2 vCPU, 2 GiB memory)
+./deployment/deploy-prod.sh
 ```
 
-**Live Service:** [https://vana-qqugqgsbcq-uc.a.run.app](https://vana-qqugqgsbcq-uc.a.run.app)
+**Production Service:** [https://vana-qqugqgsbcq-uc.a.run.app](https://vana-qqugqgsbcq-uc.a.run.app)
+
+### 🧪 Development (Google Cloud Run)
+```bash
+# Deploy to development (1 vCPU, 1 GiB memory)
+./deployment/deploy-dev.sh
+```
+
+**Development Service:** [https://vana-dev-960076421399.us-central1.run.app](https://vana-dev-960076421399.us-central1.run.app)
+
+### 📋 Deployment Strategy
+- **vana-prod**: Production service with optimized resources and strict validation
+- **vana-dev**: Development service for testing and validation before production
+- **Automated Testing**: All changes must pass validation in vana-dev before vana-prod deployment
 
 ### 🏠 Local Development
 ```bash
@@ -323,6 +338,87 @@ We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) f
 - Documentation improvements
 - Performance optimizations
 - Bug fixes and testing
+
+## 🗺️ Development Roadmap
+
+### 🎯 Current Status: CI/CD Infrastructure Implementation (Phase 1)
+**Status**: ✅ **INFRASTRUCTURE READY** - All deployment scripts and configurations prepared
+**Next**: Complete vana-prod/vana-dev infrastructure and implement automated CI/CD pipeline
+
+### 📋 Phase 1: CI/CD Infrastructure (In Progress)
+**Timeline**: 2.5-3.5 hours
+**Priority**: HIGH - Modernize deployment strategy and automation
+
+#### ✅ **Completed Tasks**
+- **Infrastructure Preparation**: All deployment scripts and Cloud Build configurations ready
+- **Environment Strategy**: vana-prod (2 vCPU, 2 GiB) and vana-dev (1 vCPU, 1 GiB) architecture designed
+- **poetry.lock Strategy**: Current setup validated and documented
+
+#### 🔄 **In Progress Tasks**
+- **vana-prod Service Creation**: Deploy production service using prepared scripts
+- **vana-dev Testing**: Validate development environment deployment
+- **CI/CD Pipeline**: Implement GitHub Actions workflows for automated testing and deployment
+- **Documentation Updates**: Update deployment guides with new CI/CD strategy
+
+### 🎯 Phase 2: Web GUI with Authentication (Next Priority)
+**Timeline**: 2-3 weeks
+**Priority**: HIGH - User-facing interface for multi-agent platform
+
+#### **Planned Features**
+- **ChatGPT-style Interface**: Modern conversational UI for agent interactions
+- **Authentication System**: Secure user authentication and session management
+- **Agent Selection**: Interface for choosing and switching between specialized agents
+- **Task Monitoring**: Real-time status tracking for long-running operations
+- **History Management**: Conversation history and task result persistence
+
+### 🤖 Phase 3: Advanced Multi-Agent Architecture (Strategic Priority)
+**Timeline**: 3-4 weeks
+**Priority**: HIGH - Adopt industry-leading multi-agent patterns
+
+#### **Architecture Improvements**
+- **Agent S Framework Integration**: Implement compositional generalist-specialist patterns
+- **Hierarchical Agent Structure**: Enhanced orchestration with specialized grounding agents
+- **Dynamic Agent Coordination**: Intelligent task routing and agent collaboration
+- **Performance Optimization**: Reduce latency and improve agent response times
+
+#### **Research Sources**
+- **Agent S Framework**: [Compositional Generalist-Specialist Framework](https://github.com/simular-ai/agent-s)
+- **Multi-Agent Patterns**: Industry best practices from leading AI coding assistants
+- **Architecture Reference**: [YouTube: Advanced Multi-Agent Systems](https://www.youtube.com/watch?v=6M028-IVaDc)
+
+### 🎨 Phase 4: Prompt Engineering & Tool Optimization (Strategic Priority)
+**Timeline**: 2-3 weeks
+**Priority**: HIGH - Synthesize best practices from industry leaders
+
+#### **Prompt Enhancement Strategy**
+- **Industry Analysis**: Study prompting patterns from Cursor, Windsurf, Cline, Codex, and Roo Code
+- **Manus Integration**: Implement advanced reasoning patterns from Manus AI system
+- **Tool Use Optimization**: Enhance tool selection and orchestration logic
+- **Context Management**: Improve context window utilization and memory management
+
+#### **Research Sources**
+- **AI System Prompt Examples**: [GitHub Repository](https://github.com/NickB03/ai-system-prompt-examples)
+- **Cursor AI**: Advanced code completion and editing patterns
+- **Windsurf**: Multi-agent collaboration and task decomposition
+- **Cline**: Autonomous development workflow patterns
+- **Codex**: Code generation and debugging strategies
+
+### 🔧 Phase 5: System Integration & Optimization (Future)
+**Timeline**: 2-3 weeks
+**Priority**: MEDIUM - Performance and reliability improvements
+
+#### **Planned Improvements**
+- **Performance Monitoring**: Advanced metrics and alerting systems
+- **Error Recovery**: Robust error handling and automatic recovery mechanisms
+- **Scalability**: Auto-scaling and load balancing for high-traffic scenarios
+- **Security Hardening**: Enhanced security measures and compliance features
+
+### 📊 Success Metrics
+- **Phase 1**: Automated CI/CD pipeline with 95%+ deployment success rate
+- **Phase 2**: Functional web GUI with user authentication and session management
+- **Phase 3**: 50%+ improvement in agent coordination efficiency and response quality
+- **Phase 4**: 30%+ improvement in tool utilization and task completion rates
+- **Phase 5**: 99.9% uptime with sub-second response times for common operations
 
 ## 📄 License
 
