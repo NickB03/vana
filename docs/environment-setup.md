@@ -109,6 +109,20 @@ python scripts/verify_env.py
 
 This script will check that all required variables are set and have the correct format.
 
+## Google ADK Installation
+
+VANA relies on the `google-adk` package for agent orchestration. Install it with the Vertex AI extras enabled:
+
+```bash
+pip install "google-adk[vertexai]"
+```
+
+You can confirm the installation by running:
+
+```bash
+python -c "from google.adk.run import Runner; print('ADK installed')"
+```
+
 ## Recent Updates (April 2025)
 
 - Added `GOOGLE_SEARCH_API_KEY` and `GOOGLE_SEARCH_ENGINE_ID` for web search integration

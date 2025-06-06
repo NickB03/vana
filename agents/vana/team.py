@@ -906,6 +906,38 @@ learning_systems_agent = LlmAgent(
     ]
 )
 
+# === Sequential Memory Pipeline ===
+
+# Generator agent to create memory entries from the current conversation context
+memory_generator_agent = LlmAgent(
+    name="memory_generator_agent",
+    model=MODEL,
+    description="📝 Memory Generator",
+    output_key="memory_draft",
+    instruction="""Generate concise memory entries summarizing the current conversation context.
+
+Use state information when available and store your draft in session state as 'memory_draft'.""",
+    tools=[adk_echo, adk_write_file]
+)
+
+# Critic agent to validate and refine generated memory entries
+memory_critic_agent = LlmAgent(
+    name="memory_critic_agent",
+    model=MODEL,
+    description="🔎 Memory Critic",
+    output_key="memory_quality",
+    instruction="""Review the draft memory in state['memory_draft'] for quality and accuracy.
+
+Return feedback in session state as 'memory_quality'.""",
+    tools=[adk_echo]
+)
+
+# Sequential pipeline combining generator and critic
+memory_pipeline = SequentialAgent(
+    name="memory_pipeline",
+    sub_agents=[memory_generator_agent, memory_critic_agent]
+)
+
 # Create intelligence agent tools (Phase 6) - Must be defined before VANA
 def create_intelligence_agent_tools(memory_agent, decision_agent, learning_agent):
     """Create intelligence agent tools for Agents-as-Tools pattern."""
@@ -1566,5 +1598,6 @@ __all__ = [
     'code_generation_agent', 'testing_agent', 'documentation_agent', 'security_agent',
     'web_research_agent', 'data_analysis_agent', 'competitive_intelligence_agent',
     'memory_management_agent', 'decision_engine_agent', 'learning_systems_agent',
+    'memory_generator_agent', 'memory_critic_agent', 'memory_pipeline',
     'monitoring_agent', 'coordination_agent'
 ]
