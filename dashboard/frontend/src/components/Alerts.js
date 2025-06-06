@@ -7,7 +7,8 @@ function Alerts() {
   const fetchAlerts = async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/alerts");
+      const alertsUrl = process.env.REACT_APP_ALERTS_URL || "/api/alerts";
+      const res = await fetch(alertsUrl);
       const data = await res.json();
       setAlerts(data.alerts || []);
     } catch (e) {

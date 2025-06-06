@@ -7,7 +7,8 @@ function HealthStatus() {
   const fetchHealth = async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/health");
+      const healthUrl = process.env.REACT_APP_DASHBOARD_HEALTH_URL || "/api/health";
+      const res = await fetch(healthUrl);
       const data = await res.json();
       setStatus(data);
     } catch (e) {

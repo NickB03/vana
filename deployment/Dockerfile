@@ -1,6 +1,23 @@
-# Multi-stage build for VANA Agent System (Cloud Build Optimized)
-# Stage 1: Build dependencies with Poetry and Python 3.13
-FROM python:3.13-slim AS builder
+# Multi-stage build for VANA Agent System with React Frontend (Cloud Build Optimized)
+# Stage 1: Build React Frontend
+FROM node:18-slim AS frontend-builder
+
+WORKDIR /app/frontend
+
+# Copy entire dashboard directory to avoid path issues
+COPY dashboard/ /app/dashboard/
+
+# Change to frontend directory
+WORKDIR /app/dashboard/frontend
+
+# Install Node.js dependencies
+RUN npm ci --only=production
+
+# Build React application for production
+RUN npm run build
+
+# Stage 2: Build Python dependencies with Poetry
+FROM python:3.13-slim AS python-builder
 
 WORKDIR /app
 
@@ -26,14 +43,17 @@ RUN apt-get update && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
-# Stage 2: Optimized runtime image
+# Stage 3: Optimized runtime image
 FROM python:3.13-slim
 
 WORKDIR /app
 
-# Copy installed packages from builder stage
-COPY --from=builder /usr/local/lib/python3.13/site-packages /usr/local/lib/python3.13/site-packages
-COPY --from=builder /usr/local/bin /usr/local/bin
+# Copy installed Python packages from python-builder stage
+COPY --from=python-builder /usr/local/lib/python3.13/site-packages /usr/local/lib/python3.13/site-packages
+COPY --from=python-builder /usr/local/bin /usr/local/bin
+
+# Copy React build from frontend-builder stage
+COPY --from=frontend-builder /app/frontend/build /app/static
 
 # Create non-root user for security
 RUN groupadd -r vana && useradd -r -g vana vana
@@ -42,9 +62,9 @@ RUN groupadd -r vana && useradd -r -g vana vana
 COPY --chown=vana:vana . .
 
 # Create necessary directories with proper permissions
-RUN mkdir -p /app/logs /app/data && \
-    chown -R vana:vana /app/logs /app/data && \
-    chmod 755 /app/logs /app/data
+RUN mkdir -p /app/logs /app/data /app/static && \
+    chown -R vana:vana /app/logs /app/data /app/static && \
+    chmod 755 /app/logs /app/data /app/static
 
 # Set environment variables for production (Cloud Run compatible)
 ENV PYTHONUNBUFFERED=1 \
