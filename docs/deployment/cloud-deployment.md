@@ -191,7 +191,7 @@ gcloud run deploy vana \
     --set-env-vars="VERTEX_AI_LOCATION=${REGION}" \
     --set-env-vars="VECTOR_SEARCH_ENDPOINT=${ENDPOINT_ID}" \
     --set-env-vars="VECTOR_SEARCH_INDEX=${INDEX_ID}" \
-    --set-secrets="BRAVE_SEARCH_API_KEY=brave-api-key:latest" \
+    --set-secrets="BRAVE_SEARCH_API_KEY=brave-api-key:latest,OPENROUTER_API_KEY=openrouter-api-key:latest" \
     --memory=2Gi \
     --cpu=2 \
     --concurrency=100 \
@@ -258,8 +258,15 @@ METRICS_PORT=9090
 # Create secret for Brave Search API key
 echo -n "your-brave-api-key" | gcloud secrets create brave-api-key --data-file=-
 
+# Create secret for OpenRouter API key (optional, for external models)
+echo -n "your-openrouter-api-key" | gcloud secrets create openrouter-api-key --data-file=-
+
 # Grant access to service account
 gcloud secrets add-iam-policy-binding brave-api-key \
+    --member="serviceAccount:${SERVICE_ACCOUNT}" \
+    --role="roles/secretmanager.secretAccessor"
+
+gcloud secrets add-iam-policy-binding openrouter-api-key \
     --member="serviceAccount:${SERVICE_ACCOUNT}" \
     --role="roles/secretmanager.secretAccessor"
 ```

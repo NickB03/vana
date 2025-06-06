@@ -3,7 +3,7 @@
 [![Production Status](https://img.shields.io/badge/Status-Production-green)](https://vana-qqugqgsbcq-uc.a.run.app)
 [![Google ADK](https://img.shields.io/badge/Google%20ADK-100%25%20Compliant-blue)](https://google.github.io/adk-docs/)
 [![Cloud Run](https://img.shields.io/badge/Deployed%20on-Google%20Cloud%20Run-blue)](https://cloud.google.com/run)
-[![Python](https://img.shields.io/badge/Python-3.11+-blue)](https://python.org)
+[![Python](https://img.shields.io/badge/Python-3.13+-blue)](https://python.org)
 
 > **VANA** is a production-ready, multi-agent AI system built on Google's Agent Development Kit (ADK), featuring 24 specialized agents with 42 standardized tools for advanced knowledge management, semantic search, and intelligent task orchestration.
 
@@ -110,7 +110,7 @@ graph TB
 
 - **Orchestrator Layer** - Central coordination and task routing
 - **Agent Layer** - Specialized agents for domain-specific tasks
-- **Tool Layer** - 42 standardized tools with consistent interfaces
+- **Tool Layer** - 59 standardized tools with consistent interfaces
 - **Infrastructure Layer** - Google Cloud services and monitoring
 
 ## 🤖 Agent System
@@ -212,6 +212,7 @@ Comprehensive documentation is available in the `/docs` directory:
 - **[Developer Guide](docs/guides/developer-guide.md)** - Development setup and contribution guidelines
 - **[API Reference](docs/guides/api-reference.md)** - Complete API documentation
 - **[Deployment](docs/deployment/)** - Local and cloud deployment guides
+- **[Security Guide](docs/deployment/security-guide.md)** - Security best practices and API key management
 - **[Troubleshooting](docs/troubleshooting/)** - Common issues and solutions
 
 ## 🚀 Deployment
@@ -248,7 +249,7 @@ docker run -p 8080:8080 vana
 ## 🔧 Development
 
 ### 📋 Prerequisites
-- Python 3.11+
+- Python 3.13+
 - Poetry for dependency management
 - Google Cloud SDK
 - Docker (optional)

@@ -5,7 +5,7 @@ Complete installation guide for VANA Multi-Agent AI System.
 ## 📋 Prerequisites
 
 ### 🐍 Python Requirements
-- **Python 3.11+** (Python 3.13 recommended)
+- **Python 3.13+** (officially supported and recommended)
 - **Poetry** for dependency management
 - **Git** for version control
 
