@@ -28,8 +28,7 @@ load_dotenv()
 from google.adk.agents import LlmAgent, SequentialAgent, ParallelAgent
 from google.adk.tools import FunctionTool, load_memory
 
-# Import OpenRouter support for external model providers
-from lib.model_providers.adk_openrouter_wrapper import create_llm_agent, get_effective_model
+# Direct Google ADK model usage (no external providers needed for safe version)
 
 # Import all ADK-compatible tools
 from lib._tools import (
@@ -84,9 +83,8 @@ from lib._shared_libraries.task_router import TaskRouter
 from lib._shared_libraries.mode_manager import ModeManager, AgentMode
 from lib._shared_libraries.confidence_scorer import ConfidenceScorer
 
-# Get model configuration with OpenRouter support
+# Get model configuration (safe version uses Gemini directly)
 MODEL = os.getenv("VANA_MODEL", "gemini-2.0-flash")
-EFFECTIVE_MODEL = get_effective_model()
 
 # Initialize enhanced AI agent components
 task_router = TaskRouter()
@@ -1254,8 +1252,8 @@ adk_devops_tool.name = "devops_tool"
 adk_qa_tool = FunctionTool(func=qa_tool)
 adk_qa_tool.name = "qa_tool"
 
-# Orchestrator Agent (Root Agent) with Enhanced AI Agent Best Practices and OpenRouter Support
-vana = create_llm_agent(
+# Orchestrator Agent (Root Agent) with Enhanced AI Agent Best Practices
+vana = LlmAgent(
     name="vana",
     model=MODEL,
     description="🎯 VANA Orchestrator - Enhanced Multi-Agent AI Assistant with PLAN/ACT Capabilities",
