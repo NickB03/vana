@@ -7,17 +7,13 @@ execute in sequence with state sharing between them.
 """
 
 import sys
-import os
-
-# Add the vana_multi_agent directory to the path
-sys.path.append(os.path.join(os.path.dirname(__file__), 'vana_multi_agent'))
 
 def test_sequential_agent_creation():
     """Test creating a Sequential Agent with mock agents."""
     print("🧪 Testing Sequential Agent creation...")
     
     try:
-        from vana_multi_agent.agents.sequential_agent import SequentialAgent
+        from google.adk.agents import SequentialAgent
         
         # Create mock agents
         class MockAgent:
@@ -59,7 +55,7 @@ def test_sequential_execution():
     print("\n🔄 Testing sequential execution...")
     
     try:
-        from vana_multi_agent.agents.sequential_agent import SequentialAgent
+        from google.adk.agents import SequentialAgent
         
         # Create mock agents
         class MockAgent:
@@ -111,8 +107,8 @@ def test_sequential_with_real_agents():
     print("\n🤖 Testing sequential execution with real agents...")
     
     try:
-        from vana_multi_agent.agents.sequential_agent import SequentialAgent
-        from vana_multi_agent.agents.team import (
+        from google.adk.agents import SequentialAgent
+        from agents.vana.team_full import (
             architecture_specialist, ui_specialist, devops_specialist
         )
         
@@ -166,7 +162,7 @@ def test_error_handling():
     print("\n⚠️ Testing error handling...")
     
     try:
-        from vana_multi_agent.agents.sequential_agent import SequentialAgent
+        from google.adk.agents import SequentialAgent
         
         # Test 1: Empty sub_agents list
         print("\n1. Testing empty sub_agents validation...")

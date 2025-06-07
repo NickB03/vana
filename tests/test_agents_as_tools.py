@@ -7,21 +7,18 @@ specialist agents are wrapped as tools that can be used by other agents.
 """
 
 import sys
-import os
 
-# Add the vana_multi_agent directory to the path
-sys.path.append(os.path.join(os.path.dirname(__file__), 'vana_multi_agent'))
 
 def test_agent_tool_creation():
     """Test creating AgentTool instances from specialist agents."""
     print("🧪 Testing AgentTool creation...")
     
     try:
-        from vana_multi_agent.agents.team import (
-            architecture_specialist, ui_specialist, 
+        from agents.vana.team_full import (
+            architecture_specialist, ui_specialist,
             devops_specialist, qa_specialist
         )
-        from vana_multi_agent.tools.agent_tools import create_agent_tool
+        from lib._tools.agent_tools import create_agent_tool
         
         # Test 1: Create individual agent tools
         print("\n1. Creating individual agent tools...")
@@ -53,11 +50,11 @@ def test_specialist_agent_tools_factory():
     print("\n🏭 Testing specialist agent tools factory...")
     
     try:
-        from vana_multi_agent.agents.team import (
-            architecture_specialist, ui_specialist, 
+        from agents.vana.team_full import (
+            architecture_specialist, ui_specialist,
             devops_specialist, qa_specialist
         )
-        from vana_multi_agent.tools.agent_tools import create_specialist_agent_tools
+        from lib._tools.agent_tools import create_specialist_agent_tools
         
         # Test factory function
         print("\n1. Creating all specialist agent tools via factory...")
@@ -87,8 +84,8 @@ def test_agent_tool_execution():
     print("\n🔄 Testing agent tool execution...")
     
     try:
-        from vana_multi_agent.tools.agent_tools import create_agent_tool
-        from vana_multi_agent.agents.team import architecture_specialist
+        from lib._tools.agent_tools import create_agent_tool
+        from agents.vana.team_full import architecture_specialist
         
         # Create agent tool
         arch_tool = create_agent_tool(architecture_specialist, name="test_execution_tool")
@@ -121,7 +118,7 @@ def test_adk_integration():
     print("\n🔧 Testing ADK FunctionTool integration...")
     
     try:
-        from vana_multi_agent.agents.team import (
+        from agents.vana.team_full import (
             adk_architecture_tool, adk_ui_tool, adk_devops_tool, adk_qa_tool
         )
         
@@ -164,7 +161,7 @@ def test_vana_orchestrator_tools():
     print("\n🤖 Testing vana orchestrator agent tools...")
     
     try:
-        from vana_multi_agent.agents.team import vana
+        from agents.vana.team_full import vana
         
         # Test 1: Check tool availability
         print("\n1. Checking vana orchestrator tools...")

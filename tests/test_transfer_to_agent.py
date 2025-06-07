@@ -6,17 +6,13 @@ This script tests the critical Google ADK pattern implementation.
 """
 
 import sys
-import os
-
-# Add the vana_multi_agent directory to the path
-sys.path.append(os.path.join(os.path.dirname(__file__), 'vana_multi_agent'))
 
 def test_transfer_to_agent_function():
     """Test the transfer_to_agent function directly."""
     print("🧪 Testing transfer_to_agent() function...")
     
     try:
-        from vana_multi_agent.tools.standardized_system_tools import standardized_transfer_to_agent
+        from lib._tools.standardized_system_tools import standardized_transfer_to_agent
         
         # Test 1: Valid agent transfer
         print("\n1. Testing valid agent transfer...")
@@ -45,7 +41,7 @@ def test_adk_tool_integration():
     print("\n🔧 Testing ADK tool integration...")
     
     try:
-        from vana_multi_agent.tools.adk_tools import adk_transfer_to_agent
+        from lib._tools.adk_tools import adk_transfer_to_agent
         
         # Test ADK wrapper
         print("Testing ADK FunctionTool wrapper...")
@@ -64,7 +60,7 @@ def test_agent_tool_availability():
     print("\n🤖 Testing agent tool availability...")
     
     try:
-        from vana_multi_agent.agents.team import vana
+        from agents.vana.team_full import vana
         
         # Check if transfer_to_agent is in vana's tools
         tool_names = [tool.func.__name__ for tool in vana.tools if hasattr(tool, 'func')]

@@ -47,9 +47,9 @@ class VanaFunctionalTester:
             if python_version.major != 3 or python_version.minor < 9:
                 raise Exception(f"Python version {python_version} not supported")
             
-            # Check if we're in Poetry environment
-            if 'vana-vCvkDMga-py3.13' not in sys.executable:
-                raise Exception("Not running in Poetry environment")
+            # Check if we're in a Poetry environment (legacy name check removed)
+            if 'py3' not in sys.executable:
+                raise Exception("Not running in expected Python environment")
             
             return {
                 "python_version": f"{python_version.major}.{python_version.minor}.{python_version.micro}",
@@ -84,7 +84,7 @@ class VanaFunctionalTester:
         """Test agent loading and initialization"""
         def _test():
             sys.path.append('.')
-            from agents.vana.team import root_agent
+            from agents.vana.team_full import root_agent
             
             # Store agent for later tests
             self.agent = root_agent

@@ -50,8 +50,8 @@ def test_agent_imports():
     sys.path.append('.')
 
     # Step 1: Import the module
-    print("  Step 1: Importing agents.vana.team module...")
-    from agents.vana import team
+    print("  Step 1: Importing agents.vana.team_full module...")
+    from agents.vana import team_full as team
     print("  Step 1: ✅ Module imported")
 
     # Step 2: Access root_agent
