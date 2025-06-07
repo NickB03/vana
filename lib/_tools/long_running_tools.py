@@ -22,7 +22,7 @@ from enum import Enum
 import json
 
 try:
-    from vana_multi_agent.core.tool_standards import (
+    from lib._shared_libraries.tool_standards import (
         StandardToolResponse, ToolErrorType, ErrorHandler,
         performance_monitor, InputValidator
     )

@@ -62,7 +62,7 @@ export VECTOR_DISTANCE_THRESHOLD=0.7
 pytest tests/adk_memory/ -v
 
 # With coverage
-pytest tests/adk_memory/ --cov=vana_multi_agent.memory --cov-report=html
+pytest tests/adk_memory/ --cov=lib._shared_libraries.adk_memory_service --cov-report=html
 ```
 
 #### Run Specific Test Categories

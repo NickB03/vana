@@ -12,7 +12,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 # Load environment variables
-env_path = Path("vana_multi_agent/.env")
+env_path = Path(".env")
 if env_path.exists():
     load_dotenv(env_path)
 
