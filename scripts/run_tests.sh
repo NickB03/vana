@@ -19,26 +19,17 @@ echo "Log file: $TEST_LOG"
 echo "==================================================="
 
 # Run tests
-echo "Running tests..."
+echo "Running tests with pytest..."
 
-# Run basic tests
-echo "Running basic tests..."
-python tests/test_web_search_mock.py
-python tests/test_enhanced_hybrid_search.py
-python tests/test_feedback_manager.py
-
-# Run comprehensive tests
-echo "Running comprehensive tests..."
-python tests/test_suite.py
-python tests/test_enhanced_hybrid_search_comprehensive.py
-python tests/test_knowledge_base_comprehensive.py
+# Execute the full test suite with pytest
+poetry run pytest -vv | tee "$TEST_LOG"
+EXIT_STATUS=${PIPESTATUS[0]}
 
 # Check if tests were successful
-if [ $? -eq 0 ]; then
+if [ $EXIT_STATUS -eq 0 ]; then
     echo "All tests completed successfully."
 else
     echo "Some tests failed. Check the log file for details."
-    exit 1
 fi
 
 # Print summary
@@ -50,3 +41,4 @@ echo "Log file: $TEST_LOG"
 echo "==================================================="
 
 echo "Done."
+exit $EXIT_STATUS
