@@ -114,7 +114,7 @@ def test_adk_web_search_tool():
     print("\n🧪 Testing ADK Web Search Tool...")
 
     try:
-        from vana_multi_agent.tools.adk_tools import adk_web_search
+        from lib._tools.adk_tools import adk_web_search
 
         # Test web search tool
         print("\n🔍 Testing ADK Web Search Tool:")

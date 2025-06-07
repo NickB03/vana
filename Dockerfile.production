@@ -5,7 +5,7 @@ FROM python:3.11-slim AS builder
 WORKDIR /app
 
 # Copy requirements first for better caching
-COPY vana_multi_agent/requirements.txt .
+COPY requirements.txt .
 
 # Install build dependencies and Python packages
 RUN apt-get update && \
@@ -25,11 +25,9 @@ WORKDIR /app
 COPY --from=builder /usr/local/lib/python3.11/site-packages /usr/local/lib/python3.11/site-packages
 COPY --from=builder /usr/local/bin /usr/local/bin
 
-# Copy the vana_multi_agent directory contents
-COPY vana_multi_agent/ .
-
-# Copy required parent directory dependencies
-COPY agent/ ./agent/
+# Copy application source
+COPY agents/ ./agents/
+COPY lib/ ./lib/
 COPY tools/ ./tools/
 COPY config/ ./config/
 
