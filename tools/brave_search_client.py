@@ -18,11 +18,10 @@ from typing import List, Dict, Any, Optional
 import requests
 from dotenv import load_dotenv
 
-# Load environment variables from multiple possible locations
+# Load environment variables from project root only
 current_dir = os.path.dirname(os.path.abspath(__file__))
 project_root = os.path.dirname(current_dir)
 
-load_dotenv()  # Load from current directory
 load_dotenv(os.path.join(project_root, ".env"))  # Load from project root
 
 # Configure logging
