@@ -16,5 +16,4 @@ python-dotenv>=1.0.0
 pytesseract>=0.3.10 # For OCR in DocumentProcessor
 requests>=2.31.0
 schedule>=1.1.0 # For scheduled tasks script
-seaborn>=0.12.2
 streamlit>=1.30.0
