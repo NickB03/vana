@@ -2,13 +2,11 @@
 # Stage 1: Build React Frontend
 FROM node:18-slim AS frontend-builder
 
-WORKDIR /app/frontend
+# Build the React dashboard in its original location
+WORKDIR /app/dashboard/frontend
 
 # Copy entire dashboard directory to avoid path issues
 COPY dashboard/ /app/dashboard/
-
-# Change to frontend directory
-WORKDIR /app/dashboard/frontend
 
 # Install Node.js dependencies
 RUN npm ci --only=production
@@ -53,7 +51,7 @@ COPY --from=python-builder /usr/local/lib/python3.13/site-packages /usr/local/li
 COPY --from=python-builder /usr/local/bin /usr/local/bin
 
 # Copy React build from frontend-builder stage
-COPY --from=frontend-builder /app/frontend/build /app/static
+COPY --from=frontend-builder /app/dashboard/frontend/build /app/static
 
 # Create non-root user for security
 RUN groupadd -r vana && useradd -r -g vana vana
