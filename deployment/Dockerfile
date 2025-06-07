@@ -11,7 +11,7 @@ COPY dashboard/ /app/dashboard/
 WORKDIR /app/dashboard/frontend
 
 # Install Node.js dependencies
-RUN npm ci --only=production
+RUN npm install --production
 
 # Build React application for production
 RUN npm run build
@@ -53,7 +53,7 @@ COPY --from=python-builder /usr/local/lib/python3.13/site-packages /usr/local/li
 COPY --from=python-builder /usr/local/bin /usr/local/bin
 
 # Copy React build from frontend-builder stage
-COPY --from=frontend-builder /app/frontend/build /app/static
+COPY --from=frontend-builder /app/dashboard/frontend/build /app/static
 
 # Create non-root user for security
 RUN groupadd -r vana && useradd -r -g vana vana
