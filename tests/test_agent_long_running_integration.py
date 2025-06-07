@@ -11,7 +11,7 @@ from unittest.mock import patch, MagicMock
 def test_agent_has_long_running_tools():
     """Test that the vana agent has all long-running tools available."""
     try:
-        from vana_multi_agent.agents.team import vana
+        from agents.vana.team import vana
         
         # Get tool names from the agent
         tool_names = [tool.func.__name__ if hasattr(tool, 'func') else str(tool) for tool in vana.tools]
@@ -36,7 +36,7 @@ def test_agent_has_long_running_tools():
 def test_long_running_tools_import():
     """Test that long-running tools can be imported correctly."""
     try:
-        from vana_multi_agent.tools.adk_long_running_tools import (
+        from lib._tools.adk_long_running_tools import (
             adk_ask_for_approval,
             adk_process_large_dataset,
             adk_generate_report,
@@ -61,7 +61,7 @@ def test_long_running_tools_import():
 def test_long_running_tool_execution():
     """Test that long-running tools can be executed."""
     try:
-        from vana_multi_agent.tools.adk_long_running_tools import _ask_for_approval
+        from lib._tools.adk_long_running_tools import _ask_for_approval
         
         # Test approval tool execution
         result = _ask_for_approval("Test approval", 500, "Test Manager")
@@ -78,10 +78,11 @@ def test_long_running_tool_execution():
 def test_task_status_checking():
     """Test task status checking functionality."""
     try:
-        from vana_multi_agent.tools.adk_long_running_tools import (
-            _ask_for_approval, _check_task_status
+        from lib._tools.adk_long_running_tools import (
+            _ask_for_approval,
+            _check_task_status,
         )
-        from vana_multi_agent.tools.long_running_tools import task_manager
+        from lib._tools.long_running_tools import task_manager
         
         # Create a task through approval tool
         result = _ask_for_approval("Test status check", 300, "Manager")
@@ -108,7 +109,7 @@ def test_task_status_checking():
 def test_agent_tool_count():
     """Test that the agent has the expected number of tools."""
     try:
-        from vana_multi_agent.agents.team import vana
+        from agents.vana.team import vana
         
         # Count tools by category
         tool_names = [tool.func.__name__ if hasattr(tool, 'func') else str(tool) for tool in vana.tools]
@@ -150,8 +151,9 @@ def test_agent_tool_count():
 def test_task_manager_functionality():
     """Test that the task manager is working correctly."""
     try:
-        from vana_multi_agent.tools.long_running_tools import (
-            task_manager, LongRunningTaskStatus
+        from lib._tools.long_running_tools import (
+            task_manager,
+            LongRunningTaskStatus,
         )
         
         # Create a test task
