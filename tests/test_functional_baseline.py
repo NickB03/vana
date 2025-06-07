@@ -44,8 +44,9 @@ class VanaFunctionalTester:
             
             # Check Python version
             python_version = sys.version_info
-            if python_version.major != 3 or python_version.minor < 9:
-                raise Exception(f"Python version {python_version} not supported")
+            assert python_version >= (3, 13), (
+                f"Python version {python_version} not supported"
+            )
             
             # Check if we're in Poetry environment
             if 'vana-vCvkDMga-py3.13' not in sys.executable:
