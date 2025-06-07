@@ -9,7 +9,7 @@ WORKDIR /app/dashboard/frontend
 COPY dashboard/ /app/dashboard/
 
 # Install Node.js dependencies
-RUN npm ci --only=production
+RUN npm install --production
 
 # Build React application for production
 RUN npm run build
