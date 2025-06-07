@@ -14,7 +14,7 @@
 git clone https://github.com/NickB03/vana.git
 cd vana
 
-# Install dependencies
+# Install dependencies for the backend and dashboard
 poetry install
 
 # Configure environment
@@ -227,7 +227,7 @@ Comprehensive documentation is available in the `/docs` directory:
 
 ### 🏠 Local Development
 ```bash
-# Install dependencies
+# Install dependencies for the backend and dashboard
 poetry install
 
 # Configure environment
@@ -260,7 +260,7 @@ docker run -p 8080:8080 vana
 git clone https://github.com/NickB03/vana.git
 cd vana
 
-# Install dependencies
+# Install dependencies for the backend and dashboard
 poetry install
 
 # Setup pre-commit hooks
