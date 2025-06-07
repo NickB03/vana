@@ -4,6 +4,7 @@ import Chat from "./components/Chat";
 import Alerts from "./components/Alerts";
 import HealthStatus from "./components/HealthStatus";
 import AgentSidebar from "./components/AgentSidebar";
+import EnhancedDashboard from "./components/dashboard/EnhancedDashboard";
 import "./App.css";
 
 function App() {
@@ -252,19 +253,7 @@ function App() {
             />
           )}
           {currentView === "dashboard" && (
-            <div style={{
-              background: "rgba(255, 255, 255, 0.9)",
-              backdropFilter: "blur(10px)",
-              margin: "1rem",
-              borderRadius: "20px",
-              overflow: "hidden",
-              boxShadow: "0 10px 40px rgba(0,0,0,0.1)",
-              padding: "2rem"
-            }}>
-              <h1>VANA Dashboard</h1>
-              <HealthStatus />
-              <Alerts />
-            </div>
+            <EnhancedDashboard />
           )}
         </div>
       </div>
