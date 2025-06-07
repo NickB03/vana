@@ -206,3 +206,31 @@ async def get_user_profile(current_user: Dict = Depends(get_current_user)):
 async def logout():
     """Logout endpoint (token invalidation would happen here)"""
     return {"success": True, "message": "Logged out successfully"}
+
+
+# Additional simple API endpoints for the Next.js WebUI
+
+@router.get("/agents")
+async def list_agents():
+    """Return a list of available agents with brief descriptions."""
+    try:
+        # For demo purposes this is static, could come from ADK registry
+        agents = [
+            {"name": "vana", "description": "Default assistant"},
+            {"name": "ui", "description": "UI specialist"},
+            {"name": "architect", "description": "System architect"},
+        ]
+        return agents
+    except Exception as e:
+        logger.error(f"Agent list error: {e}")
+        raise HTTPException(status_code=500, detail="Could not fetch agents")
+
+
+@router.get("/sessions")
+async def list_sessions():
+    """Return placeholder chat sessions for the demo."""
+    try:
+        return [{"id": "demo", "created": datetime.utcnow().isoformat()}]
+    except Exception as e:
+        logger.error(f"Session list error: {e}")
+        raise HTTPException(status_code=500, detail="Could not fetch sessions")

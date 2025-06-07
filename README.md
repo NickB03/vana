@@ -23,6 +23,13 @@ cp .env.local.example .env.local
 
 # Run locally
 python main.py
+# Start the Next.js web UI
+cd webui && npm install && npm run dev
+# Start the Next.js web UI
+cd webui && npm install && npm run dev
+
+# Start the Next.js web UI
+cd webui && npm install && npm run dev
 ```
 
 **🌐 Production Service:** [https://vana-qqugqgsbcq-uc.a.run.app](https://vana-qqugqgsbcq-uc.a.run.app)
@@ -235,6 +242,8 @@ cp .env.local.example .env.local
 
 # Run development server
 python main.py
+# Start the Next.js web UI
+cd webui && npm install && npm run dev
 ```
 
 ### 🐳 Docker
