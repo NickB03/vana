@@ -27,7 +27,8 @@ This README documents the backend infrastructure for the VANA Dashboard, includi
 - `GET /api/health` — Get current health status for all registered components
 
 ```bash
-pip install -r requirements.txt
+# Install all backend and dashboard dependencies
+poetry install
 ```
 
 ---
@@ -65,10 +66,10 @@ python testing/run_dashboard_tests.py
 
 ## Getting Started
 
-1. **Install dependencies** (ensure Python 3.9+ and Flask are installed):
+1. **Install dependencies** using Poetry:
 
    ```
-   pip install flask
+   poetry install
    ```
 
 2. **Run the API server**:
