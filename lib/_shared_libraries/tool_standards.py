@@ -350,7 +350,7 @@ class ToolDocumentationGenerator:
         params_str = ", ".join(example_params)
         return f"""
 # Example usage:
-from vana_multi_agent.tools import {tool_name}
+from lib._tools import {tool_name}
 
 result = {tool_name}({params_str})
 if result.success:
