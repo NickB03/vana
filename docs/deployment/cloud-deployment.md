@@ -1,6 +1,6 @@
 # ☁️ Cloud Deployment Guide
 
-This guide covers deploying VANA to Google Cloud Run for production use.
+This guide covers deploying VANA to Google Cloud Run for production use, including multi-environment setup with development and production environments.
 
 ## 🎯 Overview
 
@@ -181,9 +181,11 @@ gcloud builds submit --config cloudbuild.yaml
 ```
 
 #### Deploy to Cloud Run
+
+##### Production Deployment (vana-prod)
 ```bash
-# Deploy VANA to Cloud Run
-gcloud run deploy vana \
+# Deploy VANA to production
+gcloud run deploy vana-prod \
     --image gcr.io/$PROJECT_ID/vana:latest \
     --service-account=$SERVICE_ACCOUNT \
     --set-env-vars="GOOGLE_CLOUD_PROJECT=${PROJECT_ID}" \
@@ -191,6 +193,7 @@ gcloud run deploy vana \
     --set-env-vars="VERTEX_AI_LOCATION=${REGION}" \
     --set-env-vars="VECTOR_SEARCH_ENDPOINT=${ENDPOINT_ID}" \
     --set-env-vars="VECTOR_SEARCH_INDEX=${INDEX_ID}" \
+    --set-env-vars="ENVIRONMENT=production" \
     --set-secrets="BRAVE_SEARCH_API_KEY=brave-api-key:latest,OPENROUTER_API_KEY=openrouter-api-key:latest" \
     --memory=2Gi \
     --cpu=2 \
@@ -200,6 +203,36 @@ gcloud run deploy vana \
     --port=8080 \
     --allow-unauthenticated \
     --region=$REGION
+```
+
+##### Development Deployment (vana-dev)
+```bash
+# Deploy VANA to development
+gcloud run deploy vana-dev \
+    --image gcr.io/$PROJECT_ID/vana:latest \
+    --service-account=$SERVICE_ACCOUNT \
+    --set-env-vars="GOOGLE_CLOUD_PROJECT=${PROJECT_ID}" \
+    --set-env-vars="GOOGLE_CLOUD_LOCATION=${REGION}" \
+    --set-env-vars="VERTEX_AI_LOCATION=${REGION}" \
+    --set-env-vars="VECTOR_SEARCH_ENDPOINT=${ENDPOINT_ID}" \
+    --set-env-vars="VECTOR_SEARCH_INDEX=${INDEX_ID}" \
+    --set-env-vars="ENVIRONMENT=development" \
+    --set-secrets="BRAVE_SEARCH_API_KEY=brave-api-key:latest,OPENROUTER_API_KEY=openrouter-api-key:latest" \
+    --memory=1Gi \
+    --cpu=1 \
+    --concurrency=50 \
+    --max-instances=5 \
+    --timeout=300 \
+    --port=8080 \
+    --allow-unauthenticated \
+    --region=$REGION
+```
+
+##### Automated Deployment Scripts
+```bash
+# Use provided deployment scripts
+./deployment/deploy-prod.sh    # Deploy to production
+./deployment/deploy-dev.sh     # Deploy to development
 ```
 
 ### 6. Custom Domain Setup (Optional)

@@ -1,0 +1,255 @@
+{
+  "test_suites": {
+    "echo_function": {
+      "description": "Test the basic echo functionality",
+      "tests": [
+        {
+          "id": "ECHO-001",
+          "name": "Basic Echo Test",
+          "input": "echo hello world",
+          "expected_status": "echoed",
+          "expected_keywords": ["hello world"],
+          "timeout": 5000
+        },
+        {
+          "id": "ECHO-002",
+          "name": "Echo with Special Characters",
+          "input": "echo test@#$%^&*()",
+          "expected_status": "echoed",
+          "expected_keywords": ["test@#$%^&*()"],
+          "timeout": 5000
+        },
+        {
+          "id": "ECHO-003",
+          "name": "Echo with Numbers",
+          "input": "echo 12345 test numbers",
+          "expected_status": "echoed",
+          "expected_keywords": ["12345 test numbers"],
+          "timeout": 5000
+        },
+        {
+          "id": "ECHO-004",
+          "name": "Long Message Echo",
+          "input": "echo This is a longer message to test the echo function with extended content that spans multiple words",
+          "expected_status": "echoed",
+          "expected_keywords": ["longer message", "extended content"],
+          "timeout": 10000
+        }
+      ]
+    },
+    "file_operations": {
+      "description": "Test file system operations",
+      "tests": [
+        {
+          "id": "FILE-001",
+          "name": "List Files Test",
+          "input": "list files in current directory",
+          "expected_keywords": ["file", "directory", "list"],
+          "timeout": 10000
+        },
+        {
+          "id": "FILE-002",
+          "name": "Read File Test",
+          "input": "read the README file",
+          "expected_keywords": ["content", "file", "read"],
+          "timeout": 15000
+        },
+        {
+          "id": "FILE-003",
+          "name": "File Exists Check",
+          "input": "check if main.py exists",
+          "expected_keywords": ["exists", "main.py"],
+          "timeout": 5000
+        }
+      ]
+    },
+    "search_functions": {
+      "description": "Test search capabilities",
+      "tests": [
+        {
+          "id": "SEARCH-001",
+          "name": "Vector Search Test",
+          "input": "search for artificial intelligence",
+          "expected_keywords": ["search", "results", "artificial intelligence"],
+          "timeout": 15000
+        },
+        {
+          "id": "SEARCH-002",
+          "name": "Web Search Test",
+          "input": "web search for Python programming",
+          "expected_keywords": ["Python", "programming", "search"],
+          "timeout": 20000
+        },
+        {
+          "id": "SEARCH-003",
+          "name": "Knowledge Graph Search",
+          "input": "what is VANA agent system",
+          "expected_keywords": ["VANA", "agent", "system"],
+          "timeout": 15000
+        }
+      ]
+    },
+    "knowledge_graph": {
+      "description": "Test knowledge graph operations",
+      "tests": [
+        {
+          "id": "KG-001",
+          "name": "Knowledge Query Test",
+          "input": "what do you know about machine learning",
+          "expected_keywords": ["machine learning", "knowledge"],
+          "timeout": 15000
+        },
+        {
+          "id": "KG-002",
+          "name": "Entity Extraction Test",
+          "input": "extract entities from: John works at Google in California",
+          "expected_keywords": ["John", "Google", "California", "entities"],
+          "timeout": 10000
+        },
+        {
+          "id": "KG-003",
+          "name": "Relationship Query Test",
+          "input": "show relationships between AI and machine learning",
+          "expected_keywords": ["AI", "machine learning", "relationship"],
+          "timeout": 15000
+        }
+      ]
+    },
+    "system_tools": {
+      "description": "Test system and utility tools",
+      "tests": [
+        {
+          "id": "SYS-001",
+          "name": "Health Check Test",
+          "input": "check system health",
+          "expected_keywords": ["health", "status", "system"],
+          "timeout": 5000
+        },
+        {
+          "id": "SYS-002",
+          "name": "System Information Test",
+          "input": "show system information",
+          "expected_keywords": ["system", "information", "status"],
+          "timeout": 5000
+        }
+      ]
+    },
+    "coordination_tools": {
+      "description": "Test agent coordination capabilities",
+      "tests": [
+        {
+          "id": "COORD-001",
+          "name": "Task Coordination Test",
+          "input": "coordinate a simple task",
+          "expected_keywords": ["coordinate", "task"],
+          "timeout": 10000
+        },
+        {
+          "id": "COORD-002",
+          "name": "Agent Status Test",
+          "input": "check agent status",
+          "expected_keywords": ["agent", "status"],
+          "timeout": 5000
+        }
+      ]
+    },
+    "long_running_tools": {
+      "description": "Test long-running operations",
+      "tests": [
+        {
+          "id": "LR-001",
+          "name": "Process Large Dataset Test",
+          "input": "process a sample dataset",
+          "expected_keywords": ["process", "dataset"],
+          "timeout": 30000
+        },
+        {
+          "id": "LR-002",
+          "name": "Generate Report Test",
+          "input": "generate a test report",
+          "expected_keywords": ["generate", "report"],
+          "timeout": 20000
+        }
+      ]
+    },
+    "agent_tools": {
+      "description": "Test agent-specific tools",
+      "tests": [
+        {
+          "id": "AGENT-001",
+          "name": "Architecture Tool Test",
+          "input": "analyze system architecture",
+          "expected_keywords": ["architecture", "system"],
+          "timeout": 15000
+        },
+        {
+          "id": "AGENT-002",
+          "name": "UI Tool Test",
+          "input": "design a simple UI component",
+          "expected_keywords": ["UI", "component", "design"],
+          "timeout": 15000
+        },
+        {
+          "id": "AGENT-003",
+          "name": "DevOps Tool Test",
+          "input": "check deployment status",
+          "expected_keywords": ["deployment", "status", "devops"],
+          "timeout": 10000
+        },
+        {
+          "id": "AGENT-004",
+          "name": "QA Tool Test",
+          "input": "perform quality assurance check",
+          "expected_keywords": ["quality", "assurance", "check"],
+          "timeout": 15000
+        }
+      ]
+    },
+    "third_party_tools": {
+      "description": "Test third-party integrations",
+      "tests": [
+        {
+          "id": "3P-001",
+          "name": "List Third-Party Tools",
+          "input": "list available third-party tools",
+          "expected_keywords": ["third-party", "tools", "available"],
+          "timeout": 10000
+        },
+        {
+          "id": "3P-002",
+          "name": "Execute Third-Party Tool",
+          "input": "execute a third-party tool test",
+          "expected_keywords": ["execute", "third-party", "tool"],
+          "timeout": 15000
+        }
+      ]
+    }
+  },
+  "test_configuration": {
+    "default_timeout": 10000,
+    "retry_attempts": 3,
+    "retry_delay": 2000,
+    "parallel_execution": false,
+    "screenshot_on_failure": true,
+    "console_log_capture": true
+  },
+  "validation_rules": {
+    "response_time_threshold": 30000,
+    "success_criteria": {
+      "must_contain_keywords": true,
+      "must_have_response": true,
+      "no_error_messages": true
+    },
+    "failure_criteria": {
+      "timeout_exceeded": true,
+      "error_in_response": true,
+      "missing_expected_keywords": true
+    }
+  },
+  "reporting": {
+    "generate_html_report": true,
+    "include_screenshots": true,
+    "include_console_logs": true,
+    "save_raw_responses": true
+  }
+}

@@ -34,10 +34,14 @@ pyvenv.cfg
 secrets/
 *.key
 *.pem
-*.json
+# Specific JSON files to ignore (secrets and credentials)
 service-account*.json
 *-sa.json
 *credentials*.json
+google-service-account*.json
+firebase-adminsdk*.json
+gcp-*.json
+# Allow package.json, tsconfig.json, and other application JSON files
 
 # Google Cloud & ADK specific
 .gcloud/

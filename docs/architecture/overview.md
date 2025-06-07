@@ -12,11 +12,12 @@ VANA is built on a sophisticated multi-agent architecture that leverages Google'
 - **Utility Agents** ensure system health and coordination
 
 ### 2. **Tool Standardization**
-- **Consistent Interfaces** across all 42 tools
+- **Consistent Interfaces** across all 59+ tools
 - **Standardized Response Format** for predictable outputs
 - **Input Validation** with comprehensive security checks
 - **Performance Monitoring** for all tool executions
 - **Error Handling** with graceful degradation
+- **MCP Integration** for enhanced capabilities and extensibility
 
 ### 3. **Cloud-Native Design**
 - **Google Cloud Integration** with Vertex AI and Cloud Run
@@ -29,7 +30,9 @@ VANA is built on a sophisticated multi-agent architecture that leverages Google'
 ```mermaid
 graph TB
     subgraph "Client Layer"
-        WEB[Web Interface]
+        WUI[🎨 WebUI - React Frontend]
+        AUTH[🔐 Authentication System]
+        CHAT[💬 Real-time Chat]
         API[REST API]
         CLI[Command Line]
     end
@@ -87,6 +90,7 @@ graph TB
                 LR[⏳ Long Running]
                 TP[🔧 Third Party]
                 AT[🎯 Agent Tools]
+                MCP[🔗 MCP Tools]
             end
         end
 
@@ -110,9 +114,12 @@ graph TB
         BRAVE[🔍 Brave Search]
         LANG[🔗 LangChain]
         CREW[👥 CrewAI]
+        CTX7[🧠 Context7]
     end
 
-    WEB --> API
+    WUI --> AUTH
+    WUI --> CHAT
+    CHAT --> API
     CLI --> API
     API --> VANA
 
@@ -162,11 +169,14 @@ graph TB
     SEARCH --> BRAVE
     TP --> LANG
     TP --> CREW
+    MCP --> CTX7
+    MCP --> BRAVE
 ```
 
 ### 🔧 Core Components
 
+- **Client Layer** - WebUI with authentication, real-time chat, and API access
 - **Orchestrator Layer** - Central coordination and task routing
 - **Agent Layer** - Specialized agents for domain-specific tasks
-- **Tool Layer** - 42 standardized tools with consistent interfaces
+- **Tool Layer** - 59+ standardized tools with consistent interfaces and MCP integration
 - **Infrastructure Layer** - Google Cloud services and monitoring

@@ -1,0 +1,26 @@
+{
+  "mcpServers": {
+    "vana-remote": {
+      "command": "npx",
+      "args": [
+        "mcp-remote@latest",
+        "https://vana-qqugqgsbcq-uc.a.run.app/mcp/sse"
+      ],
+      "env": {
+        "BRAVE_API_KEY": "${BRAVE_API_KEY}",
+        "GITHUB_TOKEN": "${GITHUB_TOKEN}"
+      }
+    },
+    "vana-local-test": {
+      "command": "npx",
+      "args": [
+        "mcp-remote@latest", 
+        "http://localhost:8080/mcp/sse"
+      ],
+      "env": {
+        "BRAVE_API_KEY": "${BRAVE_API_KEY}",
+        "GITHUB_TOKEN": "${GITHUB_TOKEN}"
+      }
+    }
+  }
+}

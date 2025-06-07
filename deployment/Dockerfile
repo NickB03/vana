@@ -2,7 +2,7 @@
 # Stage 1: Build React Frontend
 FROM node:18-slim AS frontend-builder
 
-WORKDIR /app/frontend
+WORKDIR /app
 
 # Copy entire dashboard directory to avoid path issues
 COPY dashboard/ /app/dashboard/
@@ -53,7 +53,8 @@ COPY --from=python-builder /usr/local/lib/python3.13/site-packages /usr/local/li
 COPY --from=python-builder /usr/local/bin /usr/local/bin
 
 # Copy React build from frontend-builder stage
-COPY --from=frontend-builder /app/frontend/build /app/static
+COPY --from=frontend-builder /app/dashboard/frontend/build/static/ /app/static/
+COPY --from=frontend-builder /app/dashboard/frontend/build/index.html /app/static/
 
 # Create non-root user for security
 RUN groupadd -r vana && useradd -r -g vana vana
