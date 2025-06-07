@@ -290,7 +290,7 @@ def discover_crewai_tools() -> List[str]:
     Returns:
         List of registered tool IDs
     """
-    from vana_multi_agent.tools.third_party_tools import third_party_registry
+    from lib._tools.third_party_tools import third_party_registry
 
     # Register CrewAI adapter if not already registered
     if ThirdPartyToolType.CREWAI not in third_party_registry.adapters:
@@ -333,7 +333,7 @@ def create_example_crewai_tools() -> List[str]:
     Returns:
         List of registered tool IDs
     """
-    from vana_multi_agent.tools.third_party_tools import third_party_registry
+    from lib._tools.third_party_tools import third_party_registry
 
     # Register CrewAI adapter if not already registered
     if ThirdPartyToolType.CREWAI not in third_party_registry.adapters:
