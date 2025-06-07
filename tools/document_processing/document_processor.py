@@ -13,7 +13,8 @@ import os
 import re
 import logging
 import json
-from typing import List, Dict, Any, Optional, Union, BinaryIO
+import io
+from typing import List, Dict, Any, Optional, Union
 from datetime import datetime
 
 # Import semantic chunker
@@ -133,7 +134,7 @@ class DocumentProcessor:
             if file_path:
                 pdf_file = open(file_path, 'rb')
             else:
-                pdf_file = BinaryIO(content)
+                pdf_file = io.BytesIO(content)
             
             # Create PDF reader
             pdf_reader = PyPDF2.PdfReader(pdf_file)
