@@ -67,6 +67,8 @@ dist/
 # IDE & Editors
 .vscode/
 .idea/
+.claude/
+.roo/
 *.swp
 *.swo
 *~
