@@ -23,7 +23,6 @@ current_dir = os.path.dirname(os.path.abspath(__file__))
 project_root = os.path.dirname(current_dir)
 
 load_dotenv()  # Load from current directory
-load_dotenv(os.path.join(project_root, "vana_multi_agent", ".env"))  # Load from vana_multi_agent directory
 load_dotenv(os.path.join(project_root, ".env"))  # Load from project root
 
 # Configure logging

@@ -9,17 +9,18 @@ save their results to session state via output_key parameters.
 import sys
 import os
 
-# Add the vana_multi_agent directory to the path
-sys.path.append(os.path.join(os.path.dirname(__file__), 'vana_multi_agent'))
 
 def test_agent_output_key_configuration():
     """Test that all agents have proper output_key configuration."""
     print("🧪 Testing agent output_key configuration...")
     
     try:
-        from vana_multi_agent.agents.team import (
-            architecture_specialist, ui_specialist, 
-            devops_specialist, qa_specialist, vana
+        from agents.vana.team import (
+            architecture_specialist,
+            ui_specialist,
+            devops_specialist,
+            qa_specialist,
+            vana,
         )
         
         # Test 1: Check architecture specialist
@@ -73,9 +74,12 @@ def test_agent_instruction_updates():
     print("\n🔧 Testing agent instruction updates...")
     
     try:
-        from vana_multi_agent.agents.team import (
-            architecture_specialist, ui_specialist, 
-            devops_specialist, qa_specialist, vana
+        from agents.vana.team import (
+            architecture_specialist,
+            ui_specialist,
+            devops_specialist,
+            qa_specialist,
+            vana,
         )
         
         # Test 1: Check if instructions mention state sharing
