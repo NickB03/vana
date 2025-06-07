@@ -158,10 +158,6 @@ def mock_environment_variables():
         yield env_vars
 
 
-# Test Configuration
-pytest_plugins = ["pytest_asyncio"]
-
-
 # Mock patches for common ADK imports
 @pytest.fixture(autouse=True)
 def mock_adk_imports():
