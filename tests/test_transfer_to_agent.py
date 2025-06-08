@@ -8,6 +8,8 @@ This script tests the critical Google ADK pattern implementation.
 import sys
 import os
 
+# Add the project root to the path
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 def test_transfer_to_agent_function():
     """Test the transfer_to_agent function directly."""

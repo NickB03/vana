@@ -79,8 +79,7 @@ def test_task_status_checking():
     """Test task status checking functionality."""
     try:
         from lib._tools.adk_long_running_tools import (
-            _ask_for_approval,
-            _check_task_status,
+            _ask_for_approval, _check_task_status
         )
         from lib._tools.long_running_tools import task_manager
         
@@ -152,8 +151,7 @@ def test_task_manager_functionality():
     """Test that the task manager is working correctly."""
     try:
         from lib._tools.long_running_tools import (
-            task_manager,
-            LongRunningTaskStatus,
+            task_manager, LongRunningTaskStatus
         )
         
         # Create a test task

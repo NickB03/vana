@@ -12,7 +12,7 @@ import signal
 from pathlib import Path
 from dotenv import load_dotenv
 
-# Load environment variables from the project root
+# Load environment variables from project .env
 env_path = Path(".env")
 if env_path.exists():
     load_dotenv(env_path)

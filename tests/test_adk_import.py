@@ -72,7 +72,9 @@ def test_environment_setup():
     creds_path = os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
     if creds_path:
         # Try different path combinations
-        possible_paths = [Path(creds_path)]
+        possible_paths = [
+            Path(creds_path)
+        ]
 
         for full_path in possible_paths:
             if full_path.exists():
