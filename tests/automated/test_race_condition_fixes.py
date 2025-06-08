@@ -186,7 +186,9 @@ class TestPerformanceMonitorThreadSafety:
         for i in range(5):
             tool_name = f"tool_{i}"
             assert tool_name in all_metrics
-            assert all_metrics[tool_name].execution_count == 10
+            # Check total executions (success_count + error_count)
+            total_executions = all_metrics[tool_name].success_count + all_metrics[tool_name].error_count
+            assert total_executions == 10
 
 
 class TestADKMemoryLoggerThreadSafety:
@@ -201,7 +203,7 @@ class TestADKMemoryLoggerThreadSafety:
             try:
                 for i in range(iterations):
                     event = ADKSessionStateEvent(
-                        timestamp=time.time(),
+                        timestamp=str(time.time()),
                         event_type="update",
                         session_id=session_id,
                         user_id="test_user",
