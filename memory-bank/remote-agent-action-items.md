@@ -141,7 +141,7 @@ OBJECTIVE: Develop a complete testing framework for validating cognitive archite
 
 CONTEXT:
 - VANA uses Puppeteer for automated browser testing
-- Service deployed on Google Cloud Run: https://vana-qqugqgsbcq-uc.a.run.app
+- Service deployed on Google Cloud Run: https://vana-prod-960076421399.us-central1.run.app
 - Need to test ReAct framework, cognitive decision-making, and autonomous behavior
 - Current testing approach needs enhancement for intelligence validation
 

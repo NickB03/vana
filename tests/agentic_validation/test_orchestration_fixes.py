@@ -34,7 +34,7 @@ class OrchestrationTester:
     Implements rigorous validation beyond simple API response checking
     """
     
-    def __init__(self, service_url: str = "https://vana-qqugqgsbcq-uc.a.run.app"):
+    def __init__(self, service_url: str = "https://vana-prod-960076421399.us-central1.run.app"):
         self.service_url = service_url
         self.test_results = []
         

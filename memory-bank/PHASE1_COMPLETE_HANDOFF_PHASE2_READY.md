@@ -4,7 +4,7 @@
 **Status:** ✅ PHASE 1 COMPLETE - ReAct Cognitive Framework Successfully Implemented & Deployed
 **Next Phase:** Phase 2 - Cognitive Architecture Enhancement
 **Branch:** `feat/agent-intelligence-enhancement`
-**Service URL:** https://vana-qqugqgsbcq-uc.a.run.app (✅ OPERATIONAL WITH REACT FRAMEWORK)
+**Service URL:** https://vana-prod-960076421399.us-central1.run.app (✅ OPERATIONAL WITH REACT FRAMEWORK)
 **Health Status:** ✅ {"status":"healthy","agent":"vana"} - Confirmed operational
 
 ## 🎉 MAJOR ACHIEVEMENT: AUTONOMOUS COGNITIVE ARCHITECTURE ESTABLISHED
@@ -40,7 +40,7 @@
 **✅ System Status - VERIFIED OPERATIONAL**
 - **Deployment:** ✅ Successfully deployed to production (Build completed successfully)
 - **Health Check:** ✅ Confirmed operational - {"status":"healthy","agent":"vana"}
-- **Service URL:** ✅ https://vana-qqugqgsbcq-uc.a.run.app responding correctly
+- **Service URL:** ✅ https://vana-prod-960076421399.us-central1.run.app responding correctly
 - **Tool Integration:** ✅ 21 tools ready for intelligent orchestration
 - **Framework Status:** ✅ ReAct framework active and embedded in agent prompt
 - **Cognitive Architecture:** ✅ OBSERVE → THINK → ACT → EVALUATE → CONTINUE/CONCLUDE operational

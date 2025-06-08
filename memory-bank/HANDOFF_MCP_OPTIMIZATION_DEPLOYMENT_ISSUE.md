@@ -35,7 +35,7 @@
 ### **Problem Description**
 - Service deploys successfully to Cloud Run
 - Health endpoint returns "Internal Server Error" (500)
-- Service URL: https://vana-960076421399.us-central1.run.app
+- Service URL: https://vana-prod-960076421399.us-central1.run.app
 - Error appears to be FastAPI-related: "FastAPI.__call__() missing 1 required positional argument: 'send'"
 
 ### **Root Cause Analysis**
@@ -74,17 +74,17 @@ Once deployment issue is resolved, the next agent should:
 ### **1. Comprehensive MCP Tools Validation**
 ```bash
 # Test Core MCP Tools
-curl -X POST "https://vana-960076421399.us-central1.run.app/run" \
+curl -X POST "https://vana-prod-960076421399.us-central1.run.app/run" \
   -H "Content-Type: application/json" \
   -d '{"appName": "vana", "userId": "test-user", "sessionId": "SESSION_ID", "newMessage": {"parts": [{"text": "Use the list_available_mcp_servers tool"}], "role": "user"}, "streaming": false}'
 
 # Test Time Tools
-curl -X POST "https://vana-960076421399.us-central1.run.app/run" \
+curl -X POST "https://vana-prod-960076421399.us-central1.run.app/run" \
   -H "Content-Type: application/json" \
   -d '{"appName": "vana", "userId": "test-user", "sessionId": "SESSION_ID", "newMessage": {"parts": [{"text": "Use the get_current_time tool"}], "role": "user"}, "streaming": false}'
 
 # Test Filesystem Tools
-curl -X POST "https://vana-960076421399.us-central1.run.app/run" \
+curl -X POST "https://vana-prod-960076421399.us-central1.run.app/run" \
   -H "Content-Type: application/json" \
   -d '{"appName": "vana", "userId": "test-user", "sessionId": "SESSION_ID", "newMessage": {"parts": [{"text": "Use the compress_files tool with file_paths=[\"/tmp/test1.txt\"] and archive_path=\"/tmp/test.zip\""}], "role": "user"}, "streaming": false}'
 ```
@@ -104,7 +104,7 @@ curl -X POST "https://vana-960076421399.us-central1.run.app/run" \
 ## 📊 CURRENT SYSTEM STATE
 
 ### **Service Status**
-- **URL**: https://vana-960076421399.us-central1.run.app
+- **URL**: https://vana-prod-960076421399.us-central1.run.app
 - **Health**: 🚨 Internal Server Error (deployment issue)
 - **Last Working Version**: Previous deployment was functional
 

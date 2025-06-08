@@ -30,7 +30,7 @@
 ### 📊 TRANSFORMATION METRICS
 - **Before**: Conservative responses, no proactive tool usage
 - **After**: 100% tool-first behavior, comprehensive information delivery
-- **Service Status**: ✅ Fully operational at https://vana-qqugqgsbcq-uc.a.run.app
+- **Service Status**: ✅ Fully operational at https://vana-prod-960076421399.us-central1.run.app
 - **Cognitive Gap**: ✅ COMPLETELY RESOLVED
 
 ---

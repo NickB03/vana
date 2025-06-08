@@ -24,7 +24,7 @@ class RealPuppeteerValidator:
     and robust validation to prevent false positives.
     """
     
-    def __init__(self, service_url: str = "https://vana-qqugqgsbcq-uc.a.run.app"):
+    def __init__(self, service_url: str = "https://vana-prod-960076421399.us-central1.run.app"):
         self.service_url = service_url
         self.validator = RobustTestValidator()
         self.test_results = []

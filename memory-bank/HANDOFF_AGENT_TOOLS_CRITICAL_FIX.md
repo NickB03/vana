@@ -31,7 +31,7 @@ Agent-as-tools functionality is completely broken. During comprehensive automate
 - ✅ **Production Deployment**: Cloud Run service operational
 - ✅ **Automated Testing**: Puppeteer MCP integration working
 - ✅ **Tool Registration Fix**: Underscore prefix issue resolved for base tools
-- ✅ **Service Health**: https://vana-qqugqgsbcq-uc.a.run.app responding correctly
+- ✅ **Service Health**: https://vana-prod-960076421399.us-central1.run.app responding correctly
 
 ## ❌ WHAT'S BROKEN
 

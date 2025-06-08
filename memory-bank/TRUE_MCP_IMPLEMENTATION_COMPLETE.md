@@ -3,7 +3,7 @@
 **Date:** 2025-06-01  
 **Status:** ✅ SUCCESSFULLY COMPLETED  
 **Achievement:** Complete TRUE Model Context Protocol implementation with full compliance  
-**Service URL:** https://vana-qqugqgsbcq-uc.a.run.app  
+**Service URL:** https://vana-prod-960076421399.us-central1.run.app  
 
 ## 🚀 EXECUTIVE SUMMARY
 
@@ -62,21 +62,21 @@
 ### **Curl Testing Examples**
 ```bash
 # MCP Initialize - SUCCESS
-curl -X POST https://vana-qqugqgsbcq-uc.a.run.app/mcp/messages \
+curl -X POST https://vana-prod-960076421399.us-central1.run.app/mcp/messages \
   -H "Content-Type: application/json" \
   -d '{"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": {}}'
 
 Response: {"jsonrpc":"2.0","id":1,"result":{"protocolVersion":"2024-11-05"...}}
 
 # Tools List - SUCCESS  
-curl -X POST https://vana-qqugqgsbcq-uc.a.run.app/mcp/messages \
+curl -X POST https://vana-prod-960076421399.us-central1.run.app/mcp/messages \
   -H "Content-Type: application/json" \
   -d '{"jsonrpc": "2.0", "id": 2, "method": "tools/list", "params": {}}'
 
 Response: {"jsonrpc":"2.0","id":2,"result":{"tools":[{"name":"context7_sequential_thinking"...}]}}
 
 # Tool Call - SUCCESS
-curl -X POST https://vana-qqugqgsbcq-uc.a.run.app/mcp/messages \
+curl -X POST https://vana-prod-960076421399.us-central1.run.app/mcp/messages \
   -H "Content-Type: application/json" \
   -d '{"jsonrpc": "2.0", "id": 3, "method": "tools/call", "params": {"name": "brave_search_mcp", "arguments": {"query": "MCP testing", "max_results": 3}}}'
 
@@ -101,7 +101,7 @@ Response: {"jsonrpc":"2.0","id":3,"result":{"content":[{"type":"text","text":"{\
 ## 📊 SYSTEM STATUS
 
 ### **Production Environment**
-- **Service URL**: https://vana-qqugqgsbcq-uc.a.run.app
+- **Service URL**: https://vana-prod-960076421399.us-central1.run.app
 - **Health Status**: ✅ Operational
 - **MCP Status**: ✅ True MCP server running
 - **Tool Count**: 3 MCP tools + 16 base tools = 19+ total tools

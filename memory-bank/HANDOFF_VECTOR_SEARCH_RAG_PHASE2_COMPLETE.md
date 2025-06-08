@@ -11,13 +11,13 @@
 - **Vector Search Service**: ✅ IMPLEMENTED - Comprehensive VectorSearchService with Vertex AI integration
 - **Enhanced ADK Memory**: ✅ INTEGRATED - Vector search capabilities added to existing ADK memory service
 - **Hybrid Search**: ✅ OPERATIONAL - Keyword + semantic similarity search combination working
-- **Production Deployment**: ✅ SUCCESSFUL - All changes deployed to https://vana-qqugqgsbcq-uc.a.run.app
+- **Production Deployment**: ✅ SUCCESSFUL - All changes deployed to https://vana-prod-960076421399.us-central1.run.app
 - **Backward Compatibility**: ✅ MAINTAINED - All existing functionality preserved and enhanced
 - **Dependencies**: ✅ INSTALLED - google-cloud-aiplatform, tenacity, numpy added to production
 
 ### **🚨 CRITICAL VALIDATION FINDINGS - MOCK DATA DETECTED**
 **Testing Method:** Puppeteer automated browser testing via Google ADK Dev UI
-**Service URL:** https://vana-qqugqgsbcq-uc.a.run.app (Phase 2 Production)
+**Service URL:** https://vana-prod-960076421399.us-central1.run.app (Phase 2 Production)
 **Agent Tested:** VANA agent (selected from dropdown)
 
 **⚠️ CRITICAL DISCOVERY: PHASE 2 USING MOCK DATA**

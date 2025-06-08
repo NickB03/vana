@@ -43,7 +43,7 @@
 - **Session Persistence**: Ready for automatic session-to-memory conversion
 
 ### **📊 PRODUCTION DEPLOYMENT**
-- **Service URL**: https://vana-qqugqgsbcq-uc.a.run.app
+- **Service URL**: https://vana-prod-960076421399.us-central1.run.app
 - **Tool Count**: 46+ tools (added load_memory for persistent memory)
 - **Validation Method**: Puppeteer automated testing confirmed behavioral change
 - **Performance**: Sub-5 second response times maintained

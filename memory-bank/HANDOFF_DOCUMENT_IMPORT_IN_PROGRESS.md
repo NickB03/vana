@@ -11,7 +11,7 @@
 
 ### **✅ DEPLOYMENT SUCCESS**
 - **Service Deployed**: ✅ Updated configuration successfully deployed to Cloud Run
-- **Service URL**: https://vana-qqugqgsbcq-uc.a.run.app
+- **Service URL**: https://vana-prod-960076421399.us-central1.run.app
 - **Environment**: Real RAG corpus configuration active in production
 - **Build Time**: ~2.5 minutes (successful deployment)
 
