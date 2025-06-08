@@ -7,7 +7,6 @@ specialist agents are wrapped as tools that can be used by other agents.
 """
 
 import sys
-import os
 
 
 def test_agent_tool_creation():
@@ -16,10 +15,8 @@ def test_agent_tool_creation():
     
     try:
         from agents.vana.team import (
-            architecture_specialist,
-            ui_specialist,
-            devops_specialist,
-            qa_specialist,
+            architecture_specialist, ui_specialist,
+            devops_specialist, qa_specialist
         )
         from lib._tools.agent_tools import create_agent_tool
         
@@ -54,10 +51,8 @@ def test_specialist_agent_tools_factory():
     
     try:
         from agents.vana.team import (
-            architecture_specialist,
-            ui_specialist,
-            devops_specialist,
-            qa_specialist,
+            architecture_specialist, ui_specialist,
+            devops_specialist, qa_specialist
         )
         from lib._tools.agent_tools import create_specialist_agent_tools
         
@@ -124,10 +119,7 @@ def test_adk_integration():
     
     try:
         from agents.vana.team import (
-            adk_architecture_tool,
-            adk_ui_tool,
-            adk_devops_tool,
-            adk_qa_tool,
+            adk_architecture_tool, adk_ui_tool, adk_devops_tool, adk_qa_tool
         )
         
         # Test 1: Check ADK tool availability
@@ -175,7 +167,7 @@ def test_vana_orchestrator_tools():
         print("\n1. Checking vana orchestrator tools...")
         tool_names = [tool.func.__name__ for tool in vana.tools if hasattr(tool, 'func')]
         
-        expected_agent_tools = ["_architecture_tool", "_ui_tool", "_devops_tool", "_qa_tool"]
+        expected_agent_tools = ["architecture_tool", "ui_tool", "devops_tool", "qa_tool"]
         
         for expected_tool in expected_agent_tools:
             if expected_tool in tool_names:
