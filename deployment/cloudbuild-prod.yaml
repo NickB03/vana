@@ -20,6 +20,8 @@ steps:
       - '--platform'
       - 'managed'
       - '--allow-unauthenticated'
+      - '--service-account'
+      - 'vana-vector-search-sa@$PROJECT_ID.iam.gserviceaccount.com'
       - '--memory'
       - '2Gi'
       - '--cpu'
@@ -33,9 +35,7 @@ steps:
       - '--timeout'
       - '900'
       - '--set-env-vars'
-      - 'ENVIRONMENT=production'
-      - '--set-env-vars'
-      - 'GOOGLE_GENAI_USE_VERTEXAI=true'
+      - 'ENVIRONMENT=production,GOOGLE_GENAI_USE_VERTEXAI=true,GOOGLE_CLOUD_PROJECT=$PROJECT_ID,GOOGLE_CLOUD_LOCATION=us-central1'
 
 images:
   - 'gcr.io/$PROJECT_ID/vana-prod:$COMMIT_SHA'
