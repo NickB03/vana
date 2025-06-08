@@ -22,6 +22,7 @@ from dotenv import load_dotenv
 current_dir = os.path.dirname(os.path.abspath(__file__))
 project_root = os.path.dirname(current_dir)
 
+load_dotenv()  # Load from current directory
 load_dotenv(os.path.join(project_root, ".env"))  # Load from project root
 
 # Configure logging
