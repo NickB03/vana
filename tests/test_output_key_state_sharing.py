@@ -7,7 +7,6 @@ save their results to session state via output_key parameters.
 """
 
 import sys
-import os
 
 
 def test_agent_output_key_configuration():
