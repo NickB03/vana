@@ -30,6 +30,7 @@ Usage:
 import os
 import logging
 import re
+from datetime import datetime
 from typing import List, Dict, Any, Optional
 from google.adk.memory import VertexAiRagMemoryService, InMemoryMemoryService
 from google.adk.sessions import Session
@@ -225,6 +226,48 @@ class ADKMemoryService:
 
         except Exception as e:
             logger.error(f"Error adding session to ADK memory: {e}")
+            return False
+
+    async def add_knowledge_to_memory(self, content: str, metadata: Dict[str, Any]) -> bool:
+        """
+        Add knowledge content directly to memory for population purposes.
+
+        Args:
+            content: The knowledge content to add
+            metadata: Metadata about the content
+
+        Returns:
+            True if successful, False otherwise
+        """
+        try:
+            if not self.memory_service:
+                logger.warning("Memory service not initialized")
+                return False
+
+            # For InMemoryMemoryService, we can add content directly to the internal store
+            if hasattr(self.memory_service, '_memory_store'):
+                # Create a memory entry
+                memory_entry = {
+                    "content": content,
+                    "metadata": metadata,
+                    "timestamp": datetime.now().isoformat(),
+                    "id": f"knowledge_{len(self.memory_service._memory_store)}"
+                }
+
+                # Add to memory store
+                if not hasattr(self.memory_service, '_memory_store'):
+                    self.memory_service._memory_store = []
+
+                self.memory_service._memory_store.append(memory_entry)
+                logger.info(f"Added knowledge to memory: {metadata.get('type', 'unknown')}")
+                return True
+            else:
+                # For VertexAiRagMemoryService, we need to create a session
+                logger.info("Using session-based approach for VertexAI memory service")
+                return False
+
+        except Exception as e:
+            logger.error(f"Error adding knowledge to memory: {e}")
             return False
 
     def get_load_memory_tool(self):

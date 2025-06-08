@@ -207,80 +207,170 @@ def web_search(query: str, max_results: int = 5) -> str:
         return json.dumps({"error": error_msg}, indent=2)
 
 def search_knowledge(query: str) -> str:
-    """🧠 Search the knowledge base using ADK Memory Service with RAG pipeline."""
+    """🧠 Search the VANA knowledge base with file-based fallback."""
     try:
         logger.info(f"Knowledge search query: {query}")
 
-        # Import ADK memory service
-        from lib._shared_libraries.adk_memory_service import get_adk_memory_service
+        # First try ADK Memory Service
+        try:
+            from lib._shared_libraries.adk_memory_service import get_adk_memory_service
+            memory_service = get_adk_memory_service()
 
-        # Get memory service instance
-        memory_service = get_adk_memory_service()
+            if memory_service and memory_service.is_available():
+                import asyncio
 
-        if not memory_service.is_available():
-            logger.warning("ADK memory service not available, using fallback")
+                async def async_search():
+                    return await memory_service.search_memory(query, top_k=5)
+
+                try:
+                    loop = asyncio.get_event_loop()
+                except RuntimeError:
+                    loop = asyncio.new_event_loop()
+                    asyncio.set_event_loop(loop)
+
+                search_results = loop.run_until_complete(async_search())
+
+                # Check if we got real results (not fallback)
+                if search_results and len(search_results) > 0:
+                    has_real_content = any(
+                        "fallback" not in result.get("content", "").lower()
+                        for result in search_results
+                    )
+
+                    if has_real_content:
+                        formatted_results = []
+                        for result in search_results:
+                            formatted_results.append({
+                                "content": result.get("content", ""),
+                                "score": float(result.get("score", 0.0)),
+                                "metadata": result.get("metadata", {}),
+                                "source": result.get("source", "adk_memory")
+                            })
+
+                        result = {
+                            "query": query,
+                            "results": formatted_results,
+                            "total": len(formatted_results),
+                            "mode": "production",
+                            "service": "adk_memory_rag"
+                        }
+
+                        logger.info(f"ADK memory search completed: {len(formatted_results)} results")
+                        return json.dumps(result, indent=2)
+        except Exception as e:
+            logger.warning(f"ADK memory search failed: {e}")
+
+        # Fallback to file-based knowledge base
+        logger.info("Using file-based VANA knowledge base")
+
+        import os
+        from pathlib import Path
+
+        # Get knowledge base directory
+        project_root = Path(__file__).parent.parent.parent
+        knowledge_dir = project_root / "data" / "knowledge"
+
+        if not knowledge_dir.exists():
+            logger.warning(f"Knowledge base directory not found: {knowledge_dir}")
+            return _create_fallback_result(query, "Knowledge base not found")
+
+        # Search through knowledge files
+        search_results = []
+        query_lower = query.lower()
+
+        for md_file in knowledge_dir.glob("*.md"):
+            if md_file.name == "index.md":
+                continue
+
+            try:
+                with open(md_file, 'r', encoding='utf-8') as f:
+                    content = f.read()
+
+                # Simple text search with scoring
+                content_lower = content.lower()
+
+                # Calculate relevance score
+                score = 0.0
+                query_words = query_lower.split()
+
+                for word in query_words:
+                    if word in content_lower:
+                        score += content_lower.count(word) * 0.1
+
+                # Boost score for title matches
+                if any(word in md_file.stem.lower() for word in query_words):
+                    score += 0.5
+
+                if score > 0:
+                    # Extract relevant sections
+                    lines = content.split('\n')
+                    relevant_lines = []
+
+                    for i, line in enumerate(lines):
+                        if any(word in line.lower() for word in query_words):
+                            # Include context around matching lines
+                            start = max(0, i - 2)
+                            end = min(len(lines), i + 3)
+                            context = '\n'.join(lines[start:end])
+                            relevant_lines.append(context)
+
+                    if relevant_lines:
+                        content_excerpt = '\n\n'.join(relevant_lines[:3])  # Limit to 3 sections
+
+                        search_results.append({
+                            "content": content_excerpt,
+                            "score": min(score, 1.0),  # Cap at 1.0
+                            "metadata": {
+                                "file": md_file.name,
+                                "title": md_file.stem.replace('_', ' ').title(),
+                                "type": "vana_knowledge"
+                            },
+                            "source": "vana_knowledge_base"
+                        })
+
+            except Exception as e:
+                logger.warning(f"Error reading {md_file}: {e}")
+
+        # Sort by score and limit results
+        search_results.sort(key=lambda x: x["score"], reverse=True)
+        search_results = search_results[:5]
+
+        if search_results:
             result = {
                 "query": query,
-                "results": [
-                    {"content": f"Memory service unavailable for: {query}", "score": 0.5, "source": "fallback"}
-                ],
-                "total": 1,
-                "mode": "fallback",
-                "error": "Memory service not available"
+                "results": search_results,
+                "total": len(search_results),
+                "mode": "file_based",
+                "service": "vana_knowledge_base"
             }
+
+            logger.info(f"File-based knowledge search completed: {len(search_results)} results")
             return json.dumps(result, indent=2)
-
-        # Perform memory search using ADK RAG pipeline
-        import asyncio
-
-        # Create async wrapper for memory search
-        async def async_search():
-            return await memory_service.search_memory(query, top_k=5)
-
-        # Run async search
-        try:
-            loop = asyncio.get_event_loop()
-        except RuntimeError:
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
-
-        search_results = loop.run_until_complete(async_search())
-
-        # Format results for ADK compatibility
-        formatted_results = []
-        for result in search_results:
-            formatted_results.append({
-                "content": result.get("content", ""),
-                "score": float(result.get("score", 0.0)),
-                "metadata": result.get("metadata", {}),
-                "source": result.get("source", "adk_memory")
-            })
-
-        result = {
-            "query": query,
-            "results": formatted_results,
-            "total": len(formatted_results),
-            "mode": "production",
-            "service": "adk_memory_rag"
-        }
-
-        logger.info(f"Knowledge search completed: {len(formatted_results)} results")
-        return json.dumps(result, indent=2)
+        else:
+            logger.info("No relevant knowledge found in file-based search")
+            return _create_fallback_result(query, "No relevant knowledge found")
 
     except Exception as e:
-        # Fallback to mock results if memory search fails
-        logger.warning(f"Knowledge search failed, using fallback: {str(e)}")
-        result = {
-            "query": query,
-            "results": [
-                {"content": f"Fallback knowledge for: {query}", "score": 0.75, "source": "fallback"},
-                {"content": f"Related fallback knowledge: {query}", "score": 0.65, "source": "fallback"}
-            ],
-            "total": 2,
-            "mode": "fallback",
-            "error": str(e)
-        }
-        return json.dumps(result, indent=2)
+        logger.error(f"Knowledge search failed completely: {e}")
+        return _create_fallback_result(query, str(e))
+
+def _create_fallback_result(query: str, error_msg: str) -> str:
+    """Create a fallback result when knowledge search fails."""
+    result = {
+        "query": query,
+        "results": [
+            {
+                "content": f"I don't have specific information about '{query}' in my knowledge base. You might want to try a web search or ask for more general information about VANA capabilities.",
+                "score": 0.3,
+                "metadata": {"type": "fallback"},
+                "source": "fallback"
+            }
+        ],
+        "total": 1,
+        "mode": "fallback",
+        "error": error_msg
+    }
+    return json.dumps(result, indent=2)
 
 # Create FunctionTool instances with explicit names (NO underscore prefix - standardized naming)
 adk_vector_search = FunctionTool(func=vector_search)
