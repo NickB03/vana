@@ -18,7 +18,7 @@
 
 ### **TESTING METHODOLOGY**
 - **Method**: Browser automation using MCP Puppeteer
-- **Service**: https://vana-qqugqgsbcq-uc.a.run.app
+- **Service**: https://vana-prod-960076421399.us-central1.run.app
 - **Approach**: Systematic validation of each tool with keyword verification
 - **Documentation**: Screenshots captured for each test
 - **Validation**: Response quality and functionality confirmed

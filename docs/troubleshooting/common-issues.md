@@ -7,7 +7,7 @@ This guide helps you diagnose and resolve common issues with VANA.
 ### System Health Check
 ```bash
 # Check overall system health
-curl https://vana-qqugqgsbcq-uc.a.run.app/api/health
+curl https://vana-prod-960076421399.us-central1.run.app/api/health
 
 # Local development health check
 curl http://localhost:8080/api/health
@@ -25,10 +25,10 @@ gcloud logs read "resource.type=cloud_run_revision AND resource.labels.service_n
 ### Performance Metrics
 ```bash
 # Check system performance
-curl https://vana-qqugqgsbcq-uc.a.run.app/api/metrics
+curl https://vana-prod-960076421399.us-central1.run.app/api/metrics
 
 # Agent-specific status
-curl https://vana-qqugqgsbcq-uc.a.run.app/api/agents
+curl https://vana-prod-960076421399.us-central1.run.app/api/agents
 ```
 
 ## 🚫 Common Issues

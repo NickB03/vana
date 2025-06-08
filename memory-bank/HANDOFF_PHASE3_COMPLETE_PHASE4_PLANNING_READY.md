@@ -18,7 +18,7 @@
 3. ✅ **GitHub MCP Operations** - Full REST API integration ready
 
 **Deployment Status:**
-- ✅ **Production Deployed**: https://vana-qqugqgsbcq-uc.a.run.app
+- ✅ **Production Deployed**: https://vana-prod-960076421399.us-central1.run.app
 - ✅ **Puppeteer Validated**: Context7 and Brave Search tools confirmed working
 - ✅ **Tool Registration**: All 3 MCP tools properly imported and registered in VANA agent
 - ✅ **Error Handling**: Comprehensive authentication validation and fallback strategies
@@ -46,7 +46,7 @@
 
 ### **✅ Puppeteer Automated Testing Completed**
 
-**Test Environment**: https://vana-qqugqgsbcq-uc.a.run.app  
+**Test Environment**: https://vana-prod-960076421399.us-central1.run.app  
 **Testing Method**: MCP Puppeteer server automation  
 **Agent**: VANA selected and tested  
 
@@ -78,7 +78,7 @@
 
 **Build Details**:
 - **Build Time**: ~4-5 minutes
-- **Service URL**: https://vana-qqugqgsbcq-uc.a.run.app
+- **Service URL**: https://vana-prod-960076421399.us-central1.run.app
 - **Tool Count**: 24 total tools (16 base + 6 MCP + 2 time tools)
 - **Agent Count**: VANA agent with all MCP tools registered
 
@@ -118,7 +118,7 @@ Based on user preferences, consider implementing additional MCP tools:
 
 **Testing Framework**:
 - **MCP Puppeteer**: Configured and operational for automated testing
-- **Service URL**: https://vana-qqugqgsbcq-uc.a.run.app
+- **Service URL**: https://vana-prod-960076421399.us-central1.run.app
 - **Test Pattern**: Navigate → Select VANA → Fill textarea → Submit → Validate response
 
 ---

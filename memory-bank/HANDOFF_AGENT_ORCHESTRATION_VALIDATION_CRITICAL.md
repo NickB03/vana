@@ -40,7 +40,7 @@ System calling: "_flight_search_tool" (with underscore)
 **Prerequisite:** Phase 0 must be completed successfully
 
 #### **Setup Steps:**
-1. Navigate to https://vana-qqugqgsbcq-uc.a.run.app
+1. Navigate to https://vana-prod-960076421399.us-central1.run.app
 2. Select VANA agent from dropdown
 3. Establish baseline functionality test
 4. Verify no tool registration errors

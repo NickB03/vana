@@ -68,7 +68,7 @@ Applied model-agnostic prompt engineering techniques derived from Claude 4 resea
 **Result:** All 16 tools now have consistent naming and registration
 
 ### **🚀 DEPLOYMENT & VALIDATION SUCCESS**
-- ✅ **Cloud Run Deployment:** https://vana-qqugqgsbcq-uc.a.run.app
+- ✅ **Cloud Run Deployment:** https://vana-prod-960076421399.us-central1.run.app
 - ✅ **Puppeteer Testing:** Automated validation confirmed all fixes
 - ✅ **Error Resolution:** No more tool registration failures
 - ✅ **System Operational:** All 16 tools working with optimized prompts
@@ -150,7 +150,7 @@ Complete the enterprise-grade automation platform:
 ## 📊 CURRENT SYSTEM STATUS
 
 ### **✅ OPERATIONAL COMPONENTS**
-- **Service URL:** https://vana-qqugqgsbcq-uc.a.run.app
+- **Service URL:** https://vana-prod-960076421399.us-central1.run.app
 - **All 16 Tools:** Fully operational with consistent naming
 - **Agent Prompts:** Optimized with advanced techniques
 - **Cloud Run:** Successfully deployed and validated

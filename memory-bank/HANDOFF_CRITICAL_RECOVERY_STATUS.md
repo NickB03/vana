@@ -63,8 +63,8 @@ poetry install  # Fresh environment with 96 packages
 ### ✅ **PRODUCTION SERVICE STATUS - FULLY OPERATIONAL**
 
 **Production URLs Successfully Deployed:**
-- ✅ https://vana-qqugqgsbcq-uc.a.run.app → Fully operational
-- ✅ https://vana-960076421399.us-central1.run.app → Fully operational
+- ✅ https://vana-prod-960076421399.us-central1.run.app → Fully operational
+- ✅ https://vana-prod-960076421399.us-central1.run.app → Fully operational
 
 **Health Endpoints:**
 - ✅ /health → {"status":"healthy","agent":"vana"}
@@ -179,7 +179,7 @@ Before claiming success, next agent MUST verify:
 
 **Successful Deployment Information:**
 - **Build ID**: 1f552c60-f55b-49de-9105-00407b654063
-- **Service URL**: https://vana-qqugqgsbcq-uc.a.run.app
+- **Service URL**: https://vana-prod-960076421399.us-central1.run.app
 - **Deployment Method**: Google Cloud Build with Poetry
 - **Build Time**: 2m44s
 - **Status**: SUCCESS

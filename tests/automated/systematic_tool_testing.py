@@ -10,7 +10,7 @@ import time
 from typing import Dict, List, Any
 
 class VanaToolTester:
-    def __init__(self, base_url: str = "https://vana-qqugqgsbcq-uc.a.run.app"):
+    def __init__(self, base_url: str = "https://vana-prod-960076421399.us-central1.run.app"):
         self.base_url = base_url
         self.chat_endpoint = f"{base_url}/run"
         self.health_endpoint = f"{base_url}/health"

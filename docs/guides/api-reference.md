@@ -5,7 +5,7 @@ Complete reference for VANA's REST API, tools, and agent interfaces.
 ## 🌐 REST API Endpoints
 
 ### Base URL
-- **Production**: `https://vana-qqugqgsbcq-uc.a.run.app`
+- **Production**: `https://vana-prod-960076421399.us-central1.run.app`
 - **Local**: `http://localhost:8080`
 
 ### Authentication
@@ -14,7 +14,7 @@ VANA uses Google Cloud IAM for authentication in production and API key authenti
 ```bash
 # Production (using gcloud auth)
 curl -H "Authorization: Bearer $(gcloud auth print-access-token)" \
-     https://vana-qqugqgsbcq-uc.a.run.app/api/chat
+     https://vana-prod-960076421399.us-central1.run.app/api/chat
 
 # Local development
 curl -H "X-API-Key: your-api-key" \
@@ -533,7 +533,7 @@ class VanaClient:
         return response.json()
 
 # Usage
-client = VanaClient("https://vana-qqugqgsbcq-uc.a.run.app")
+client = VanaClient("https://vana-prod-960076421399.us-central1.run.app")
 result = client.chat("Hello VANA!")
 print(result['response'])
 ```
@@ -571,7 +571,7 @@ class VanaClient {
 }
 
 // Usage
-const client = new VanaClient('https://vana-qqugqgsbcq-uc.a.run.app');
+const client = new VanaClient('https://vana-prod-960076421399.us-central1.run.app');
 client.chat('Hello VANA!').then(result => {
     console.log(result.response);
 });

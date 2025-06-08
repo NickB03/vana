@@ -1,6 +1,6 @@
 # 🤖 VANA - Advanced Multi-Agent AI System
 
-[![Production Status](https://img.shields.io/badge/Status-Production-green)](https://vana-qqugqgsbcq-uc.a.run.app)
+[![Production Status](https://img.shields.io/badge/Status-Production-green)](https://vana-prod-960076421399.us-central1.run.app)
 [![Google ADK](https://img.shields.io/badge/Google%20ADK-100%25%20Compliant-blue)](https://google.github.io/adk-docs/)
 [![Cloud Run](https://img.shields.io/badge/Deployed%20on-Google%20Cloud%20Run-blue)](https://cloud.google.com/run)
 [![Python](https://img.shields.io/badge/Python-3.13+-blue)](https://python.org)
@@ -25,7 +25,7 @@ cp .env.local.example .env.local
 python main.py
 ```
 
-**🌐 Production Service:** [https://vana-qqugqgsbcq-uc.a.run.app](https://vana-qqugqgsbcq-uc.a.run.app)
+**🌐 Production Service:** [https://vana-prod-960076421399.us-central1.run.app](https://vana-prod-960076421399.us-central1.run.app)
 
 ## 📋 Table of Contents
 
@@ -223,7 +223,7 @@ Comprehensive documentation is available in the `/docs` directory:
 ./deployment/deploy.sh production
 ```
 
-**Live Service:** [https://vana-qqugqgsbcq-uc.a.run.app](https://vana-qqugqgsbcq-uc.a.run.app)
+**Live Service:** [https://vana-prod-960076421399.us-central1.run.app](https://vana-prod-960076421399.us-central1.run.app)
 
 ### 🏠 Local Development
 ```bash
@@ -339,7 +339,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ---
 
 **🔗 Links:**
-- [Production Service](https://vana-qqugqgsbcq-uc.a.run.app)
+- [Production Service](https://vana-prod-960076421399.us-central1.run.app)
 - [Documentation](docs/)
 - [API Reference](docs/guides/api-reference.md)
 - [Contributing](CONTRIBUTING.md)

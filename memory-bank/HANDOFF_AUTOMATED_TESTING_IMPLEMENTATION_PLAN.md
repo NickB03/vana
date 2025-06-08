@@ -8,7 +8,7 @@
 Implement comprehensive automated testing infrastructure using MCP Puppeteer and enhanced Juno framework to ensure VANA service reliability and performance.
 
 ## ✅ CURRENT STATUS
-- **Echo Function**: ✅ Verified working at https://vana-qqugqgsbcq-uc.a.run.app
+- **Echo Function**: ✅ Verified working at https://vana-prod-960076421399.us-central1.run.app
 - **Service Health**: ✅ Operational with all 16 tools
 - **Manual Testing**: ✅ Confirmed successful
 - **Repository**: ✅ Clean and ready for development
@@ -63,7 +63,7 @@ async function testVanaEchoFunction() {
   try {
     // Test the chat endpoint directly
     const response = await page.evaluate(async () => {
-      const result = await fetch('https://vana-qqugqgsbcq-uc.a.run.app/chat', {
+      const result = await fetch('https://vana-prod-960076421399.us-central1.run.app/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -100,7 +100,7 @@ async function testVanaEchoFunction() {
 **File:** `scripts/juno_remote_tester.py`
 ```python
 class JunoRemoteTester(JunoAutonomousTester):
-    def __init__(self, service_url="https://vana-qqugqgsbcq-uc.a.run.app"):
+    def __init__(self, service_url="https://vana-prod-960076421399.us-central1.run.app"):
         super().__init__()
         self.service_url = service_url
         self.browser_client = PuppeteerMCPClient()
