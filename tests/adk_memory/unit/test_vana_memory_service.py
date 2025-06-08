@@ -40,10 +40,10 @@ class TestVanaMemoryService:
     
     def test_initialization_with_valid_config(self, memory_service_config):
         """Test VanaMemoryService initialization with valid configuration."""
-        with patch('lib._shared_libraries.adk_memory_service.VertexAiRagMemoryService') as mock_vertex:
+        with patch('memory.vana_memory_service.VertexAiRagMemoryService') as mock_vertex:
             mock_vertex.return_value = MagicMock()
             
-            with patch('lib._shared_libraries.adk_memory_service.ADKMemoryService') as MockService:
+            with patch('memory.vana_memory_service.VanaMemoryService') as MockService:
                 mock_instance = MagicMock()
                 mock_instance.is_available.return_value = True
                 MockService.return_value = mock_instance

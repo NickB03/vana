@@ -7,7 +7,10 @@ specialist agents are wrapped as tools that can be used by other agents.
 """
 
 import sys
+import os
 
+# Add the project root to the path
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 def test_agent_tool_creation():
     """Test creating AgentTool instances from specialist agents."""
@@ -167,7 +170,7 @@ def test_vana_orchestrator_tools():
         print("\n1. Checking vana orchestrator tools...")
         tool_names = [tool.func.__name__ for tool in vana.tools if hasattr(tool, 'func')]
         
-        expected_agent_tools = ["architecture_tool", "ui_tool", "devops_tool", "qa_tool"]
+        expected_agent_tools = ["_architecture_tool", "_ui_tool", "_devops_tool", "_qa_tool"]
         
         for expected_tool in expected_agent_tools:
             if expected_tool in tool_names:

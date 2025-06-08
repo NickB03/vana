@@ -1,6 +1,6 @@
 # Multi-stage build for VANA Multi-Agent System
 # Stage 1: Build dependencies
-FROM python:3.11-slim AS builder
+FROM python:3.13-slim AS builder
 
 WORKDIR /app
 
@@ -17,19 +17,16 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists/*
 
 # Stage 2: Runtime image
-FROM python:3.11-slim
+FROM python:3.13-slim
 
 WORKDIR /app
 
 # Copy installed packages from builder stage
-COPY --from=builder /usr/local/lib/python3.11/site-packages /usr/local/lib/python3.11/site-packages
+COPY --from=builder /usr/local/lib/python3.13/site-packages /usr/local/lib/python3.13/site-packages
 COPY --from=builder /usr/local/bin /usr/local/bin
 
-# Copy application source
-COPY agents/ ./agents/
-COPY lib/ ./lib/
-COPY tools/ ./tools/
-COPY config/ ./config/
+# Copy application code
+COPY . .
 
 # Set environment variables
 ENV PYTHONUNBUFFERED=1 \

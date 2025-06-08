@@ -10,11 +10,8 @@ import pytest
 from unittest.mock import patch, MagicMock
 
 from lib._tools.third_party_tools import (
-    ThirdPartyToolRegistry,
-    ThirdPartyToolType,
-    ThirdPartyToolInfo,
-    GenericThirdPartyAdapter,
-    third_party_registry,
+    ThirdPartyToolRegistry, ThirdPartyToolType, ThirdPartyToolInfo,
+    GenericThirdPartyAdapter, third_party_registry
 )
 from lib._tools.langchain_adapter import LangChainToolAdapter
 from lib._tools.crewai_adapter import CrewAIToolAdapter

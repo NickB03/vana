@@ -23,11 +23,8 @@ import json
 
 try:
     from lib._shared_libraries.tool_standards import (
-        StandardToolResponse,
-        ToolErrorType,
-        ErrorHandler,
-        performance_monitor,
-        InputValidator,
+        StandardToolResponse, ToolErrorType, ErrorHandler,
+        performance_monitor, InputValidator
     )
 except ImportError:
     # Fallback for development

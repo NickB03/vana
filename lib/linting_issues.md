@@ -202,7 +202,7 @@ Impact: "Function _vector_search is not found in the tools_dict"
 Pattern: Using pip install instead of poetry add
 Impact: Dependency version mismatches, missing packages in production
 3. Directory Structure Violations
-Pattern: Creating /agent/ instead of /agents/, /vana_multi_agent/
+Pattern: Creating /agent/ instead of /agents/
 Impact: Import conflicts, agent discovery failures
 4. Tool Registration Mismatches
 Pattern: Function name ≠ tool name, wrong FunctionTool patterns
