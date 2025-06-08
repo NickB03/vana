@@ -12,8 +12,8 @@ import signal
 from pathlib import Path
 from dotenv import load_dotenv
 
-# Load environment variables from vana_multi_agent/.env
-env_path = Path("vana_multi_agent/.env")
+# Load environment variables from project .env
+env_path = Path(".env")
 if env_path.exists():
     load_dotenv(env_path)
     print(f"✅ Loaded environment from {env_path}")
