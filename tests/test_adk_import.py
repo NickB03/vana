@@ -28,7 +28,7 @@ def test_environment_setup():
     print("\n🔍 Testing environment setup...")
 
     # Load environment variables
-    env_path = Path("vana_multi_agent/.env")
+    env_path = Path(".env")
     if env_path.exists():
         from dotenv import load_dotenv
         load_dotenv(env_path)
@@ -36,7 +36,7 @@ def test_environment_setup():
     else:
         print(f"❌ .env file not found at {env_path}")
         # Try alternative paths
-        alt_paths = [".env", "vana_multi_agent/.env", "./vana_multi_agent/.env"]
+        alt_paths = [".env"]
         for alt_path in alt_paths:
             if Path(alt_path).exists():
                 from dotenv import load_dotenv
@@ -73,9 +73,7 @@ def test_environment_setup():
     if creds_path:
         # Try different path combinations
         possible_paths = [
-            Path(creds_path),
-            Path("vana_multi_agent") / creds_path,
-            Path("vana_multi_agent/secrets/vana-vector-search-sa.json")
+            Path(creds_path)
         ]
 
         for full_path in possible_paths:
