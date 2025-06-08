@@ -320,7 +320,7 @@ def discover_langchain_community_tools() -> List[str]:
     Returns:
         List of registered tool IDs
     """
-    from vana_multi_agent.tools.third_party_tools import third_party_registry
+    from lib._tools.third_party_tools import third_party_registry
 
     # Register LangChain adapter if not already registered
     if ThirdPartyToolType.LANGCHAIN not in third_party_registry.adapters:
@@ -366,7 +366,7 @@ def load_langchain_tools(tool_names: List[str]) -> List[str]:
     Returns:
         List of registered tool IDs
     """
-    from vana_multi_agent.tools.third_party_tools import third_party_registry
+    from lib._tools.third_party_tools import third_party_registry
 
     # Register LangChain adapter if not already registered
     if ThirdPartyToolType.LANGCHAIN not in third_party_registry.adapters:
@@ -400,7 +400,7 @@ def create_example_langchain_tools() -> List[str]:
     Returns:
         List of registered tool IDs
     """
-    from vana_multi_agent.tools.third_party_tools import third_party_registry
+    from lib._tools.third_party_tools import third_party_registry
 
     # Register LangChain adapter if not already registered
     if ThirdPartyToolType.LANGCHAIN not in third_party_registry.adapters:

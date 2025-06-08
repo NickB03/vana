@@ -9,12 +9,12 @@ and ADK compatibility.
 import pytest
 from unittest.mock import patch, MagicMock
 
-from vana_multi_agent.tools.third_party_tools import (
+from lib._tools.third_party_tools import (
     ThirdPartyToolRegistry, ThirdPartyToolType, ThirdPartyToolInfo,
     GenericThirdPartyAdapter, third_party_registry
 )
-from vana_multi_agent.tools.langchain_adapter import LangChainToolAdapter
-from vana_multi_agent.tools.crewai_adapter import CrewAIToolAdapter
+from lib._tools.langchain_adapter import LangChainToolAdapter
+from lib._tools.crewai_adapter import CrewAIToolAdapter
 
 class TestThirdPartyToolRegistry:
     """Test the third-party tool registry functionality."""
@@ -164,7 +164,7 @@ class TestLangChainAdapter:
         """Test adapter initialization."""
         assert self.adapter.tool_type == ThirdPartyToolType.LANGCHAIN
     
-    @patch('vana_multi_agent.tools.langchain_adapter.importlib.import_module')
+    @patch('lib._tools.langchain_adapter.importlib.import_module')
     def test_langchain_availability_check(self, mock_import):
         """Test LangChain availability checking."""
         # Test when LangChain is available
@@ -206,7 +206,7 @@ class TestADKIntegration:
     def test_adk_third_party_tools_import(self):
         """Test that ADK third-party tools can be imported."""
         try:
-            from vana_multi_agent.tools.adk_third_party_tools import (
+            from lib._tools.adk_third_party_tools import (
                 adk_execute_third_party_tool,
                 adk_list_third_party_tools,
                 adk_register_langchain_tools,
@@ -233,7 +233,7 @@ class TestADKIntegration:
     def test_agent_has_third_party_tools(self):
         """Test that the vana agent has third-party tools available."""
         try:
-            from vana_multi_agent.agents.team import vana
+            from agents.vana.team import vana
             
             # Get tool names from the agent
             tool_names = [tool.func.__name__ if hasattr(tool, 'func') else str(tool) for tool in vana.tools]
@@ -261,14 +261,14 @@ class TestToolExecution:
     
     def test_execute_nonexistent_tool(self):
         """Test executing a tool that doesn't exist."""
-        from vana_multi_agent.tools.adk_third_party_tools import _execute_third_party_tool
+        from lib._tools.adk_third_party_tools import _execute_third_party_tool
         
         result = _execute_third_party_tool("nonexistent_tool", "test")
         assert "not found" in result.lower()
     
     def test_list_third_party_tools_empty(self):
         """Test listing tools when none are registered."""
-        from vana_multi_agent.tools.adk_third_party_tools import _list_third_party_tools
+        from lib._tools.adk_third_party_tools import _list_third_party_tools
         
         # Clear registry for test
         original_tools = third_party_registry.all_tools.copy()

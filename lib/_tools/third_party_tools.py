@@ -19,7 +19,7 @@ from dataclasses import dataclass
 from abc import ABC, abstractmethod
 from enum import Enum
 
-from vana_multi_agent.core.tool_standards import (
+from lib._shared_libraries.tool_standards import (
     StandardToolResponse, ToolErrorType, ErrorHandler,
     performance_monitor, InputValidator
 )

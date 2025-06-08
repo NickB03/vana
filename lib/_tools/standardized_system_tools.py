@@ -173,7 +173,7 @@ class StandardizedCoordinationTools:
 
         try:
             # Import here to avoid circular imports
-            from vana_multi_agent.core.task_router import TaskRouter
+            from lib._shared_libraries.task_router import TaskRouter
             router = TaskRouter()
 
             # Get intelligent routing decision
@@ -245,7 +245,7 @@ class StandardizedCoordinationTools:
 
         try:
             # Import here to avoid circular imports
-            from vana_multi_agent.core.confidence_scorer import ConfidenceScorer
+            from lib._shared_libraries.confidence_scorer import ConfidenceScorer
             scorer = ConfidenceScorer()
 
             # Get confidence score for the specified agent
@@ -332,7 +332,7 @@ class StandardizedCoordinationTools:
         parameters = {}
 
         try:
-            from vana_multi_agent.core.task_router import TaskRouter
+            from lib._shared_libraries.task_router import TaskRouter
             router = TaskRouter()
 
             # Get routing statistics

@@ -13,7 +13,7 @@ Key Features:
 
 Usage:
     ```python
-    from vana_multi_agent.core.session_manager import ADKSessionManager
+    from lib._shared_libraries.session_manager import ADKSessionManager
     
     # Initialize session manager
     session_manager = ADKSessionManager()
