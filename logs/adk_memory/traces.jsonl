@@ -198,3 +198,617 @@
 {"timestamp": "2025-06-08 10:39:49,604", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_9}
 {"timestamp": "2025-06-08 10:39:49,604", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_8}
 {"timestamp": "2025-06-08 10:39:49,604", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_8}
+{"timestamp": "2025-06-08 10:43:00,878", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_0}
+{"timestamp": "2025-06-08 10:43:00,878", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_0}
+{"timestamp": "2025-06-08 10:43:00,878", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_1}
+{"timestamp": "2025-06-08 10:43:00,878", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_1}
+{"timestamp": "2025-06-08 10:43:00,878", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_2}
+{"timestamp": "2025-06-08 10:43:00,878", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_2}
+{"timestamp": "2025-06-08 10:43:00,878", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_3}
+{"timestamp": "2025-06-08 10:43:00,878", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_3}
+{"timestamp": "2025-06-08 10:43:00,878", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_4}
+{"timestamp": "2025-06-08 10:43:00,878", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_4}
+{"timestamp": "2025-06-08 10:43:00,878", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_5}
+{"timestamp": "2025-06-08 10:43:00,878", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_5}
+{"timestamp": "2025-06-08 10:43:00,878", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_6}
+{"timestamp": "2025-06-08 10:43:00,878", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_6}
+{"timestamp": "2025-06-08 10:43:00,878", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_8}
+{"timestamp": "2025-06-08 10:43:00,878", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_8}
+{"timestamp": "2025-06-08 10:43:00,878", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_9}
+{"timestamp": "2025-06-08 10:43:00,878", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_9}
+{"timestamp": "2025-06-08 10:43:00,878", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_7}
+{"timestamp": "2025-06-08 10:43:00,878", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_7}
+{"timestamp": "2025-06-08 10:43:00,879", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_0}
+{"timestamp": "2025-06-08 10:43:00,879", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_0}
+{"timestamp": "2025-06-08 10:43:00,879", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_1}
+{"timestamp": "2025-06-08 10:43:00,879", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_1}
+{"timestamp": "2025-06-08 10:43:00,879", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_2}
+{"timestamp": "2025-06-08 10:43:00,879", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_2}
+{"timestamp": "2025-06-08 10:43:00,880", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_4}
+{"timestamp": "2025-06-08 10:43:00,880", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_4}
+{"timestamp": "2025-06-08 10:43:00,880", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_3}
+{"timestamp": "2025-06-08 10:43:00,880", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_3}
+{"timestamp": "2025-06-08 10:43:00,880", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_6}
+{"timestamp": "2025-06-08 10:43:00,880", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_6}
+{"timestamp": "2025-06-08 10:43:00,880", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_5}
+{"timestamp": "2025-06-08 10:43:00,880", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_5}
+{"timestamp": "2025-06-08 10:43:00,880", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_8}
+{"timestamp": "2025-06-08 10:43:00,880", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_8}
+{"timestamp": "2025-06-08 10:43:00,880", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_9}
+{"timestamp": "2025-06-08 10:43:00,880", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_9}
+{"timestamp": "2025-06-08 10:43:00,880", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_7}
+{"timestamp": "2025-06-08 10:43:00,880", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_7}
+{"timestamp": "2025-06-08 10:43:00,881", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_0}
+{"timestamp": "2025-06-08 10:43:00,881", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_0}
+{"timestamp": "2025-06-08 10:43:00,881", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_1}
+{"timestamp": "2025-06-08 10:43:00,881", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_1}
+{"timestamp": "2025-06-08 10:43:00,881", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_2}
+{"timestamp": "2025-06-08 10:43:00,881", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_2}
+{"timestamp": "2025-06-08 10:43:00,881", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_4}
+{"timestamp": "2025-06-08 10:43:00,881", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_4}
+{"timestamp": "2025-06-08 10:43:00,881", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_3}
+{"timestamp": "2025-06-08 10:43:00,881", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_3}
+{"timestamp": "2025-06-08 10:43:00,881", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_6}
+{"timestamp": "2025-06-08 10:43:00,881", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_6}
+{"timestamp": "2025-06-08 10:43:00,881", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_5}
+{"timestamp": "2025-06-08 10:43:00,881", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_5}
+{"timestamp": "2025-06-08 10:43:00,881", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_7}
+{"timestamp": "2025-06-08 10:43:00,881", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_7}
+{"timestamp": "2025-06-08 10:43:00,881", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_8}
+{"timestamp": "2025-06-08 10:43:00,881", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_8}
+{"timestamp": "2025-06-08 10:43:00,882", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_9}
+{"timestamp": "2025-06-08 10:43:00,882", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_9}
+{"timestamp": "2025-06-08 10:43:00,882", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_0}
+{"timestamp": "2025-06-08 10:43:00,882", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_0}
+{"timestamp": "2025-06-08 10:43:00,882", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_1}
+{"timestamp": "2025-06-08 10:43:00,882", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_1}
+{"timestamp": "2025-06-08 10:43:00,882", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_2}
+{"timestamp": "2025-06-08 10:43:00,882", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_2}
+{"timestamp": "2025-06-08 10:43:00,882", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_4}
+{"timestamp": "2025-06-08 10:43:00,882", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_4}
+{"timestamp": "2025-06-08 10:43:00,882", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_3}
+{"timestamp": "2025-06-08 10:43:00,882", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_3}
+{"timestamp": "2025-06-08 10:43:00,882", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_5}
+{"timestamp": "2025-06-08 10:43:00,882", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_5}
+{"timestamp": "2025-06-08 10:43:00,883", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_6}
+{"timestamp": "2025-06-08 10:43:00,883", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_6}
+{"timestamp": "2025-06-08 10:43:00,883", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_7}
+{"timestamp": "2025-06-08 10:43:00,883", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_7}
+{"timestamp": "2025-06-08 10:43:00,883", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_8}
+{"timestamp": "2025-06-08 10:43:00,883", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_8}
+{"timestamp": "2025-06-08 10:43:00,883", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_9}
+{"timestamp": "2025-06-08 10:43:00,883", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_9}
+{"timestamp": "2025-06-08 10:43:00,883", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_0}
+{"timestamp": "2025-06-08 10:43:00,883", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_0}
+{"timestamp": "2025-06-08 10:43:00,883", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_1}
+{"timestamp": "2025-06-08 10:43:00,883", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_1}
+{"timestamp": "2025-06-08 10:43:00,883", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_2}
+{"timestamp": "2025-06-08 10:43:00,883", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_2}
+{"timestamp": "2025-06-08 10:43:00,884", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_4}
+{"timestamp": "2025-06-08 10:43:00,884", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_4}
+{"timestamp": "2025-06-08 10:43:00,884", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_3}
+{"timestamp": "2025-06-08 10:43:00,884", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_3}
+{"timestamp": "2025-06-08 10:43:00,884", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_5}
+{"timestamp": "2025-06-08 10:43:00,884", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_5}
+{"timestamp": "2025-06-08 10:43:00,884", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_6}
+{"timestamp": "2025-06-08 10:43:00,884", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_6}
+{"timestamp": "2025-06-08 10:43:00,884", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_7}
+{"timestamp": "2025-06-08 10:43:00,884", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_7}
+{"timestamp": "2025-06-08 10:43:00,884", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_8}
+{"timestamp": "2025-06-08 10:43:00,884", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_8}
+{"timestamp": "2025-06-08 10:43:00,884", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_9}
+{"timestamp": "2025-06-08 10:43:00,884", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_9}
+{"timestamp": "2025-06-08 10:43:00,885", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_1}
+{"timestamp": "2025-06-08 10:43:00,885", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_1}
+{"timestamp": "2025-06-08 10:43:00,885", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_0}
+{"timestamp": "2025-06-08 10:43:00,885", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_0}
+{"timestamp": "2025-06-08 10:43:00,885", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_2}
+{"timestamp": "2025-06-08 10:43:00,885", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_2}
+{"timestamp": "2025-06-08 10:43:00,885", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_4}
+{"timestamp": "2025-06-08 10:43:00,885", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_4}
+{"timestamp": "2025-06-08 10:43:00,885", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_3}
+{"timestamp": "2025-06-08 10:43:00,885", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_3}
+{"timestamp": "2025-06-08 10:43:00,885", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_5}
+{"timestamp": "2025-06-08 10:43:00,885", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_5}
+{"timestamp": "2025-06-08 10:43:00,885", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_6}
+{"timestamp": "2025-06-08 10:43:00,885", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_6}
+{"timestamp": "2025-06-08 10:43:00,886", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_7}
+{"timestamp": "2025-06-08 10:43:00,886", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_7}
+{"timestamp": "2025-06-08 10:43:00,886", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_8}
+{"timestamp": "2025-06-08 10:43:00,886", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_8}
+{"timestamp": "2025-06-08 10:43:00,886", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_9}
+{"timestamp": "2025-06-08 10:43:00,886", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_9}
+{"timestamp": "2025-06-08 10:43:00,886", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_1}
+{"timestamp": "2025-06-08 10:43:00,886", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_1}
+{"timestamp": "2025-06-08 10:43:00,886", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_0}
+{"timestamp": "2025-06-08 10:43:00,886", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_0}
+{"timestamp": "2025-06-08 10:43:00,886", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_2}
+{"timestamp": "2025-06-08 10:43:00,886", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_2}
+{"timestamp": "2025-06-08 10:43:00,886", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_4}
+{"timestamp": "2025-06-08 10:43:00,886", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_4}
+{"timestamp": "2025-06-08 10:43:00,887", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_3}
+{"timestamp": "2025-06-08 10:43:00,887", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_3}
+{"timestamp": "2025-06-08 10:43:00,887", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_5}
+{"timestamp": "2025-06-08 10:43:00,887", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_5}
+{"timestamp": "2025-06-08 10:43:00,887", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_6}
+{"timestamp": "2025-06-08 10:43:00,887", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_6}
+{"timestamp": "2025-06-08 10:43:00,887", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_7}
+{"timestamp": "2025-06-08 10:43:00,887", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_7}
+{"timestamp": "2025-06-08 10:43:00,887", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_8}
+{"timestamp": "2025-06-08 10:43:00,887", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_8}
+{"timestamp": "2025-06-08 10:43:00,887", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_1}
+{"timestamp": "2025-06-08 10:43:00,887", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_1}
+{"timestamp": "2025-06-08 10:43:00,887", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_9}
+{"timestamp": "2025-06-08 10:43:00,887", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_9}
+{"timestamp": "2025-06-08 10:43:00,887", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_0}
+{"timestamp": "2025-06-08 10:43:00,887", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_0}
+{"timestamp": "2025-06-08 10:43:00,888", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_2}
+{"timestamp": "2025-06-08 10:43:00,888", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_2}
+{"timestamp": "2025-06-08 10:43:00,888", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_4}
+{"timestamp": "2025-06-08 10:43:00,888", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_4}
+{"timestamp": "2025-06-08 10:43:00,888", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_3}
+{"timestamp": "2025-06-08 10:43:00,888", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_3}
+{"timestamp": "2025-06-08 10:43:00,888", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_5}
+{"timestamp": "2025-06-08 10:43:00,888", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_5}
+{"timestamp": "2025-06-08 10:43:00,888", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_6}
+{"timestamp": "2025-06-08 10:43:00,888", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_6}
+{"timestamp": "2025-06-08 10:43:00,888", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_7}
+{"timestamp": "2025-06-08 10:43:00,888", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_7}
+{"timestamp": "2025-06-08 10:43:00,889", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_8}
+{"timestamp": "2025-06-08 10:43:00,889", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_8}
+{"timestamp": "2025-06-08 10:43:00,889", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_1}
+{"timestamp": "2025-06-08 10:43:00,889", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_1}
+{"timestamp": "2025-06-08 10:43:00,889", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_0}
+{"timestamp": "2025-06-08 10:43:00,889", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_0}
+{"timestamp": "2025-06-08 10:43:00,889", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_2}
+{"timestamp": "2025-06-08 10:43:00,889", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_2}
+{"timestamp": "2025-06-08 10:43:00,889", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_9}
+{"timestamp": "2025-06-08 10:43:00,889", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_9}
+{"timestamp": "2025-06-08 10:43:00,889", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_4}
+{"timestamp": "2025-06-08 10:43:00,889", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_4}
+{"timestamp": "2025-06-08 10:43:00,889", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_3}
+{"timestamp": "2025-06-08 10:43:00,889", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_3}
+{"timestamp": "2025-06-08 10:43:00,889", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_5}
+{"timestamp": "2025-06-08 10:43:00,889", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_5}
+{"timestamp": "2025-06-08 10:43:00,889", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_6}
+{"timestamp": "2025-06-08 10:43:00,889", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_6}
+{"timestamp": "2025-06-08 10:43:00,889", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_7}
+{"timestamp": "2025-06-08 10:43:00,889", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_7}
+{"timestamp": "2025-06-08 10:43:00,890", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_8}
+{"timestamp": "2025-06-08 10:43:00,890", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_8}
+{"timestamp": "2025-06-08 10:43:00,890", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_0}
+{"timestamp": "2025-06-08 10:43:00,890", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_0}
+{"timestamp": "2025-06-08 10:43:00,890", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_2}
+{"timestamp": "2025-06-08 10:43:00,890", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_2}
+{"timestamp": "2025-06-08 10:43:00,890", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_1}
+{"timestamp": "2025-06-08 10:43:00,890", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_1}
+{"timestamp": "2025-06-08 10:43:00,890", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_9}
+{"timestamp": "2025-06-08 10:43:00,890", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_9}
+{"timestamp": "2025-06-08 10:43:00,890", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_4}
+{"timestamp": "2025-06-08 10:43:00,890", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_4}
+{"timestamp": "2025-06-08 10:43:00,890", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_3}
+{"timestamp": "2025-06-08 10:43:00,890", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_3}
+{"timestamp": "2025-06-08 10:43:00,891", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_5}
+{"timestamp": "2025-06-08 10:43:00,891", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_5}
+{"timestamp": "2025-06-08 10:43:00,891", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_6}
+{"timestamp": "2025-06-08 10:43:00,891", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_6}
+{"timestamp": "2025-06-08 10:43:00,891", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_7}
+{"timestamp": "2025-06-08 10:43:00,891", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_7}
+{"timestamp": "2025-06-08 10:43:00,891", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_8}
+{"timestamp": "2025-06-08 10:43:00,891", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_8}
+{"timestamp": "2025-06-08 10:43:00,892", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_9}
+{"timestamp": "2025-06-08 10:43:00,892", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_9}
+{"timestamp": "2025-06-08 10:43:08,233", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_0}
+{"timestamp": "2025-06-08 10:43:08,233", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_0}
+{"timestamp": "2025-06-08 10:43:08,233", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_1}
+{"timestamp": "2025-06-08 10:43:08,233", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_1}
+{"timestamp": "2025-06-08 10:43:08,233", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_2}
+{"timestamp": "2025-06-08 10:43:08,233", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_2}
+{"timestamp": "2025-06-08 10:43:08,233", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_3}
+{"timestamp": "2025-06-08 10:43:08,233", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_3}
+{"timestamp": "2025-06-08 10:43:08,233", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_0}
+{"timestamp": "2025-06-08 10:43:08,233", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_0}
+{"timestamp": "2025-06-08 10:43:08,234", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_4}
+{"timestamp": "2025-06-08 10:43:08,234", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_4}
+{"timestamp": "2025-06-08 10:43:08,234", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_1}
+{"timestamp": "2025-06-08 10:43:08,234", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_1}
+{"timestamp": "2025-06-08 10:43:08,234", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_2}
+{"timestamp": "2025-06-08 10:43:08,234", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_2}
+{"timestamp": "2025-06-08 10:43:08,234", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_3}
+{"timestamp": "2025-06-08 10:43:08,234", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_3}
+{"timestamp": "2025-06-08 10:43:08,234", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_0}
+{"timestamp": "2025-06-08 10:43:08,234", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_0}
+{"timestamp": "2025-06-08 10:43:08,234", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_4}
+{"timestamp": "2025-06-08 10:43:08,234", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_4}
+{"timestamp": "2025-06-08 10:43:08,234", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_1}
+{"timestamp": "2025-06-08 10:43:08,234", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_1}
+{"timestamp": "2025-06-08 10:43:08,234", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_2}
+{"timestamp": "2025-06-08 10:43:08,234", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_2}
+{"timestamp": "2025-06-08 10:43:08,234", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_3}
+{"timestamp": "2025-06-08 10:43:08,234", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_3}
+{"timestamp": "2025-06-08 10:43:08,234", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_0}
+{"timestamp": "2025-06-08 10:43:08,234", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_0}
+{"timestamp": "2025-06-08 10:43:08,234", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_4}
+{"timestamp": "2025-06-08 10:43:08,234", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_4}
+{"timestamp": "2025-06-08 10:43:08,234", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_1}
+{"timestamp": "2025-06-08 10:43:08,234", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_1}
+{"timestamp": "2025-06-08 10:43:08,234", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_2}
+{"timestamp": "2025-06-08 10:43:08,234", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_2}
+{"timestamp": "2025-06-08 10:43:08,234", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_3}
+{"timestamp": "2025-06-08 10:43:08,234", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_3}
+{"timestamp": "2025-06-08 10:43:08,235", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_0}
+{"timestamp": "2025-06-08 10:43:08,235", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_0}
+{"timestamp": "2025-06-08 10:43:08,235", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_4}
+{"timestamp": "2025-06-08 10:43:08,235", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_1}
+{"timestamp": "2025-06-08 10:43:08,235", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_4}
+{"timestamp": "2025-06-08 10:43:08,235", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_2}
+{"timestamp": "2025-06-08 10:43:08,235", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_1}
+{"timestamp": "2025-06-08 10:43:08,235", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_3}
+{"timestamp": "2025-06-08 10:43:08,235", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_2}
+{"timestamp": "2025-06-08 10:43:08,235", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_0}
+{"timestamp": "2025-06-08 10:43:08,235", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_4}
+{"timestamp": "2025-06-08 10:43:08,235", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_3}
+{"timestamp": "2025-06-08 10:43:08,235", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_1}
+{"timestamp": "2025-06-08 10:43:08,235", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_2}
+{"timestamp": "2025-06-08 10:43:08,235", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_0}
+{"timestamp": "2025-06-08 10:43:08,235", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_3}
+{"timestamp": "2025-06-08 10:43:08,235", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_4}
+{"timestamp": "2025-06-08 10:43:08,235", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_0}
+{"timestamp": "2025-06-08 10:43:08,235", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_1}
+{"timestamp": "2025-06-08 10:43:08,235", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_4}
+{"timestamp": "2025-06-08 10:43:08,235", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_2}
+{"timestamp": "2025-06-08 10:43:08,235", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_3}
+{"timestamp": "2025-06-08 10:43:08,235", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_1}
+{"timestamp": "2025-06-08 10:43:08,235", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_0}
+{"timestamp": "2025-06-08 10:43:08,235", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_2}
+{"timestamp": "2025-06-08 10:43:08,235", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_3}
+{"timestamp": "2025-06-08 10:43:08,235", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_0}
+{"timestamp": "2025-06-08 10:43:08,235", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_4}
+{"timestamp": "2025-06-08 10:43:08,235", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_1}
+{"timestamp": "2025-06-08 10:43:08,236", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_4}
+{"timestamp": "2025-06-08 10:43:08,235", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_2}
+{"timestamp": "2025-06-08 10:43:08,236", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_1}
+{"timestamp": "2025-06-08 10:43:08,235", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_3}
+{"timestamp": "2025-06-08 10:43:08,235", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_0}
+{"timestamp": "2025-06-08 10:43:08,236", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_4}
+{"timestamp": "2025-06-08 10:43:08,236", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_2}
+{"timestamp": "2025-06-08 10:43:08,236", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_1}
+{"timestamp": "2025-06-08 10:43:08,236", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_3}
+{"timestamp": "2025-06-08 10:43:08,236", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_2}
+{"timestamp": "2025-06-08 10:43:08,236", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_0}
+{"timestamp": "2025-06-08 10:43:08,236", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_3}
+{"timestamp": "2025-06-08 10:43:08,236", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_4}
+{"timestamp": "2025-06-08 10:43:08,236", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_0}
+{"timestamp": "2025-06-08 10:43:08,236", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_1}
+{"timestamp": "2025-06-08 10:43:08,236", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_2}
+{"timestamp": "2025-06-08 10:43:08,236", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_4}
+{"timestamp": "2025-06-08 10:43:08,236", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_3}
+{"timestamp": "2025-06-08 10:43:08,236", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_1}
+{"timestamp": "2025-06-08 10:43:08,236", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_0}
+{"timestamp": "2025-06-08 10:43:08,236", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_4}
+{"timestamp": "2025-06-08 10:43:08,236", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_2}
+{"timestamp": "2025-06-08 10:43:08,236", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_3}
+{"timestamp": "2025-06-08 10:43:08,236", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_0}
+{"timestamp": "2025-06-08 10:43:08,236", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_1}
+{"timestamp": "2025-06-08 10:43:08,236", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_4}
+{"timestamp": "2025-06-08 10:43:08,236", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_2}
+{"timestamp": "2025-06-08 10:43:08,236", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_3}
+{"timestamp": "2025-06-08 10:43:08,236", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_1}
+{"timestamp": "2025-06-08 10:43:08,236", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_2}
+{"timestamp": "2025-06-08 10:43:08,237", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_4}
+{"timestamp": "2025-06-08 10:43:08,236", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_3}
+{"timestamp": "2025-06-08 10:43:08,237", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_4}
+{"timestamp": "2025-06-08 10:43:08,237", "level": "DEBUG", "logger": "adk_memory.trace", "message": Started operation trace: op_0 - test_operation}
+{"timestamp": "2025-06-08 10:43:08,237", "level": "DEBUG", "logger": "adk_memory.trace", "message": Started operation trace: op_0 - test_operation}
+{"timestamp": "2025-06-08 10:43:08,237", "level": "DEBUG", "logger": "adk_memory.trace", "message": Started operation trace: op_0 - test_operation}
+{"timestamp": "2025-06-08 10:43:08,237", "level": "DEBUG", "logger": "adk_memory.trace", "message": Started operation trace: op_1 - test_operation}
+{"timestamp": "2025-06-08 10:43:08,237", "level": "DEBUG", "logger": "adk_memory.trace", "message": Started operation trace: op_1 - test_operation}
+{"timestamp": "2025-06-08 10:43:08,237", "level": "DEBUG", "logger": "adk_memory.trace", "message": Started operation trace: op_2 - test_operation}
+{"timestamp": "2025-06-08 10:43:08,237", "level": "DEBUG", "logger": "adk_memory.trace", "message": Started operation trace: op_3 - test_operation}
+{"timestamp": "2025-06-08 10:43:08,237", "level": "DEBUG", "logger": "adk_memory.trace", "message": Started operation trace: op_2 - test_operation}
+{"timestamp": "2025-06-08 10:43:08,237", "level": "DEBUG", "logger": "adk_memory.trace", "message": Started operation trace: op_4 - test_operation}
+{"timestamp": "2025-06-08 10:43:08,237", "level": "DEBUG", "logger": "adk_memory.trace", "message": Started operation trace: op_3 - test_operation}
+{"timestamp": "2025-06-08 10:43:08,237", "level": "DEBUG", "logger": "adk_memory.trace", "message": Started operation trace: op_1 - test_operation}
+{"timestamp": "2025-06-08 10:43:08,237", "level": "DEBUG", "logger": "adk_memory.trace", "message": Started operation trace: op_2 - test_operation}
+{"timestamp": "2025-06-08 10:43:08,237", "level": "DEBUG", "logger": "adk_memory.trace", "message": Started operation trace: op_5 - test_operation}
+{"timestamp": "2025-06-08 10:43:08,237", "level": "DEBUG", "logger": "adk_memory.trace", "message": Started operation trace: op_3 - test_operation}
+{"timestamp": "2025-06-08 10:43:08,237", "level": "DEBUG", "logger": "adk_memory.trace", "message": Started operation trace: op_4 - test_operation}
+{"timestamp": "2025-06-08 10:43:08,237", "level": "DEBUG", "logger": "adk_memory.trace", "message": Started operation trace: op_6 - test_operation}
+{"timestamp": "2025-06-08 10:43:08,237", "level": "DEBUG", "logger": "adk_memory.trace", "message": Started operation trace: op_4 - test_operation}
+{"timestamp": "2025-06-08 10:43:08,237", "level": "DEBUG", "logger": "adk_memory.trace", "message": Started operation trace: op_7 - test_operation}
+{"timestamp": "2025-06-08 10:43:08,237", "level": "DEBUG", "logger": "adk_memory.trace", "message": Started operation trace: op_5 - test_operation}
+{"timestamp": "2025-06-08 10:43:08,237", "level": "DEBUG", "logger": "adk_memory.trace", "message": Started operation trace: op_5 - test_operation}
+{"timestamp": "2025-06-08 10:43:08,237", "level": "DEBUG", "logger": "adk_memory.trace", "message": Started operation trace: op_6 - test_operation}
+{"timestamp": "2025-06-08 10:43:08,238", "level": "DEBUG", "logger": "adk_memory.trace", "message": Started operation trace: op_8 - test_operation}
+{"timestamp": "2025-06-08 10:43:08,237", "level": "DEBUG", "logger": "adk_memory.trace", "message": Started operation trace: op_7 - test_operation}
+{"timestamp": "2025-06-08 10:43:08,238", "level": "DEBUG", "logger": "adk_memory.trace", "message": Started operation trace: op_9 - test_operation}
+{"timestamp": "2025-06-08 10:43:08,237", "level": "DEBUG", "logger": "adk_memory.trace", "message": Started operation trace: op_6 - test_operation}
+{"timestamp": "2025-06-08 10:43:08,237", "level": "DEBUG", "logger": "adk_memory.trace", "message": Started operation trace: op_7 - test_operation}
+{"timestamp": "2025-06-08 10:43:08,238", "level": "DEBUG", "logger": "adk_memory.trace", "message": Started operation trace: op_8 - test_operation}
+{"timestamp": "2025-06-08 10:43:08,238", "level": "DEBUG", "logger": "adk_memory.trace", "message": Started operation trace: op_8 - test_operation}
+{"timestamp": "2025-06-08 10:43:08,238", "level": "DEBUG", "logger": "adk_memory.trace", "message": Started operation trace: op_9 - test_operation}
+{"timestamp": "2025-06-08 10:43:08,238", "level": "DEBUG", "logger": "adk_memory.trace", "message": Started operation trace: op_9 - test_operation}
+{"timestamp": "2025-06-08 10:43:08,249", "level": "DEBUG", "logger": "adk_memory.trace", "message": Completed operation trace: op_0 - 11.4ms}
+{"timestamp": "2025-06-08 10:43:08,249", "level": "DEBUG", "logger": "adk_memory.trace", "message": Completed operation trace: op_0 - 11.4ms}
+{"timestamp": "2025-06-08 10:43:08,249", "level": "DEBUG", "logger": "adk_memory.trace", "message": Completed operation trace: op_0 - 11.4ms}
+{"timestamp": "2025-06-08 10:43:08,249", "level": "DEBUG", "logger": "adk_memory.trace", "message": Completed operation trace: op_1 - 11.6ms}
+{"timestamp": "2025-06-08 10:43:08,249", "level": "DEBUG", "logger": "adk_memory.trace", "message": Completed operation trace: op_1 - 11.6ms}
+{"timestamp": "2025-06-08 10:43:08,249", "level": "DEBUG", "logger": "adk_memory.trace", "message": Completed operation trace: op_1 - 11.6ms}
+{"timestamp": "2025-06-08 10:43:08,249", "level": "DEBUG", "logger": "adk_memory.trace", "message": Completed operation trace: op_2 - 11.6ms}
+{"timestamp": "2025-06-08 10:43:08,249", "level": "DEBUG", "logger": "adk_memory.trace", "message": Completed operation trace: op_2 - 11.6ms}
+{"timestamp": "2025-06-08 10:43:08,249", "level": "DEBUG", "logger": "adk_memory.trace", "message": Completed operation trace: op_2 - 11.6ms}
+{"timestamp": "2025-06-08 10:43:08,249", "level": "DEBUG", "logger": "adk_memory.trace", "message": Completed operation trace: op_7 - 11.4ms}
+{"timestamp": "2025-06-08 10:43:08,249", "level": "DEBUG", "logger": "adk_memory.trace", "message": Completed operation trace: op_7 - 11.4ms}
+{"timestamp": "2025-06-08 10:43:08,249", "level": "DEBUG", "logger": "adk_memory.trace", "message": Completed operation trace: op_7 - 11.4ms}
+{"timestamp": "2025-06-08 10:43:08,249", "level": "DEBUG", "logger": "adk_memory.trace", "message": Completed operation trace: op_9 - 11.3ms}
+{"timestamp": "2025-06-08 10:43:08,249", "level": "DEBUG", "logger": "adk_memory.trace", "message": Completed operation trace: op_9 - 11.3ms}
+{"timestamp": "2025-06-08 10:43:08,249", "level": "DEBUG", "logger": "adk_memory.trace", "message": Completed operation trace: op_9 - 11.3ms}
+{"timestamp": "2025-06-08 10:43:08,249", "level": "DEBUG", "logger": "adk_memory.trace", "message": Completed operation trace: op_4 - 11.7ms}
+{"timestamp": "2025-06-08 10:43:08,249", "level": "DEBUG", "logger": "adk_memory.trace", "message": Completed operation trace: op_4 - 11.7ms}
+{"timestamp": "2025-06-08 10:43:08,249", "level": "DEBUG", "logger": "adk_memory.trace", "message": Completed operation trace: op_4 - 11.7ms}
+{"timestamp": "2025-06-08 10:43:08,250", "level": "DEBUG", "logger": "adk_memory.trace", "message": Completed operation trace: op_3 - 12.8ms}
+{"timestamp": "2025-06-08 10:43:08,250", "level": "DEBUG", "logger": "adk_memory.trace", "message": Completed operation trace: op_3 - 12.8ms}
+{"timestamp": "2025-06-08 10:43:08,250", "level": "DEBUG", "logger": "adk_memory.trace", "message": Completed operation trace: op_3 - 12.8ms}
+{"timestamp": "2025-06-08 10:43:08,250", "level": "DEBUG", "logger": "adk_memory.trace", "message": Completed operation trace: op_5 - 12.7ms}
+{"timestamp": "2025-06-08 10:43:08,250", "level": "DEBUG", "logger": "adk_memory.trace", "message": Completed operation trace: op_5 - 12.7ms}
+{"timestamp": "2025-06-08 10:43:08,250", "level": "DEBUG", "logger": "adk_memory.trace", "message": Completed operation trace: op_5 - 12.7ms}
+{"timestamp": "2025-06-08 10:43:08,250", "level": "DEBUG", "logger": "adk_memory.trace", "message": Completed operation trace: op_8 - 12.5ms}
+{"timestamp": "2025-06-08 10:43:08,250", "level": "DEBUG", "logger": "adk_memory.trace", "message": Completed operation trace: op_8 - 12.5ms}
+{"timestamp": "2025-06-08 10:43:08,250", "level": "DEBUG", "logger": "adk_memory.trace", "message": Completed operation trace: op_8 - 12.5ms}
+{"timestamp": "2025-06-08 10:43:08,250", "level": "DEBUG", "logger": "adk_memory.trace", "message": Completed operation trace: op_6 - 12.8ms}
+{"timestamp": "2025-06-08 10:43:08,250", "level": "DEBUG", "logger": "adk_memory.trace", "message": Completed operation trace: op_6 - 12.8ms}
+{"timestamp": "2025-06-08 10:43:08,250", "level": "DEBUG", "logger": "adk_memory.trace", "message": Completed operation trace: op_6 - 12.8ms}
+{"timestamp": "2025-06-08 10:43:58,216", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_0}
+{"timestamp": "2025-06-08 10:43:58,216", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_0}
+{"timestamp": "2025-06-08 10:43:58,216", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_1}
+{"timestamp": "2025-06-08 10:43:58,216", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_2}
+{"timestamp": "2025-06-08 10:43:58,216", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_1}
+{"timestamp": "2025-06-08 10:43:58,216", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_3}
+{"timestamp": "2025-06-08 10:43:58,216", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_2}
+{"timestamp": "2025-06-08 10:43:58,216", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_4}
+{"timestamp": "2025-06-08 10:43:58,216", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_3}
+{"timestamp": "2025-06-08 10:43:58,216", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_0}
+{"timestamp": "2025-06-08 10:43:58,216", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_4}
+{"timestamp": "2025-06-08 10:43:58,216", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_1}
+{"timestamp": "2025-06-08 10:43:58,216", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_0}
+{"timestamp": "2025-06-08 10:43:58,216", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_1}
+{"timestamp": "2025-06-08 10:43:58,216", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_2}
+{"timestamp": "2025-06-08 10:43:58,216", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_2}
+{"timestamp": "2025-06-08 10:43:58,216", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_3}
+{"timestamp": "2025-06-08 10:43:58,216", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_3}
+{"timestamp": "2025-06-08 10:43:58,217", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_4}
+{"timestamp": "2025-06-08 10:43:58,217", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_4}
+{"timestamp": "2025-06-08 10:43:58,217", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_0}
+{"timestamp": "2025-06-08 10:43:58,217", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_0}
+{"timestamp": "2025-06-08 10:43:58,217", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_1}
+{"timestamp": "2025-06-08 10:43:58,217", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_1}
+{"timestamp": "2025-06-08 10:43:58,217", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_2}
+{"timestamp": "2025-06-08 10:43:58,217", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_2}
+{"timestamp": "2025-06-08 10:43:58,217", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_3}
+{"timestamp": "2025-06-08 10:43:58,217", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_3}
+{"timestamp": "2025-06-08 10:43:58,217", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_4}
+{"timestamp": "2025-06-08 10:43:58,217", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_4}
+{"timestamp": "2025-06-08 10:43:58,217", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_0}
+{"timestamp": "2025-06-08 10:43:58,217", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_0}
+{"timestamp": "2025-06-08 10:43:58,217", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_1}
+{"timestamp": "2025-06-08 10:43:58,217", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_2}
+{"timestamp": "2025-06-08 10:43:58,217", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_1}
+{"timestamp": "2025-06-08 10:43:58,217", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_3}
+{"timestamp": "2025-06-08 10:43:58,217", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_2}
+{"timestamp": "2025-06-08 10:43:58,217", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_3}
+{"timestamp": "2025-06-08 10:43:58,217", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_4}
+{"timestamp": "2025-06-08 10:43:58,217", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_4}
+{"timestamp": "2025-06-08 10:43:58,217", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_0}
+{"timestamp": "2025-06-08 10:43:58,217", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_0}
+{"timestamp": "2025-06-08 10:43:58,217", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_1}
+{"timestamp": "2025-06-08 10:43:58,217", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_1}
+{"timestamp": "2025-06-08 10:43:58,218", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_2}
+{"timestamp": "2025-06-08 10:43:58,218", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_2}
+{"timestamp": "2025-06-08 10:43:58,218", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_3}
+{"timestamp": "2025-06-08 10:43:58,218", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_3}
+{"timestamp": "2025-06-08 10:43:58,218", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_4}
+{"timestamp": "2025-06-08 10:43:58,218", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_4}
+{"timestamp": "2025-06-08 10:43:58,218", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_0}
+{"timestamp": "2025-06-08 10:43:58,218", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_0}
+{"timestamp": "2025-06-08 10:43:58,218", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_1}
+{"timestamp": "2025-06-08 10:43:58,218", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_1}
+{"timestamp": "2025-06-08 10:43:58,218", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_2}
+{"timestamp": "2025-06-08 10:43:58,218", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_2}
+{"timestamp": "2025-06-08 10:43:58,218", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_3}
+{"timestamp": "2025-06-08 10:43:58,218", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_3}
+{"timestamp": "2025-06-08 10:43:58,218", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_4}
+{"timestamp": "2025-06-08 10:43:58,218", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_4}
+{"timestamp": "2025-06-08 10:43:58,218", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_0}
+{"timestamp": "2025-06-08 10:43:58,218", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_0}
+{"timestamp": "2025-06-08 10:43:58,218", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_1}
+{"timestamp": "2025-06-08 10:43:58,218", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_1}
+{"timestamp": "2025-06-08 10:43:58,218", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_2}
+{"timestamp": "2025-06-08 10:43:58,218", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_2}
+{"timestamp": "2025-06-08 10:43:58,218", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_3}
+{"timestamp": "2025-06-08 10:43:58,218", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_3}
+{"timestamp": "2025-06-08 10:43:58,218", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_4}
+{"timestamp": "2025-06-08 10:43:58,218", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_4}
+{"timestamp": "2025-06-08 10:43:58,218", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_0}
+{"timestamp": "2025-06-08 10:43:58,218", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_0}
+{"timestamp": "2025-06-08 10:43:58,218", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_1}
+{"timestamp": "2025-06-08 10:43:58,218", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_1}
+{"timestamp": "2025-06-08 10:43:58,219", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_2}
+{"timestamp": "2025-06-08 10:43:58,219", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_2}
+{"timestamp": "2025-06-08 10:43:58,219", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_3}
+{"timestamp": "2025-06-08 10:43:58,219", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_3}
+{"timestamp": "2025-06-08 10:43:58,219", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_4}
+{"timestamp": "2025-06-08 10:43:58,219", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_4}
+{"timestamp": "2025-06-08 10:43:58,219", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_0}
+{"timestamp": "2025-06-08 10:43:58,219", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_0}
+{"timestamp": "2025-06-08 10:43:58,219", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_1}
+{"timestamp": "2025-06-08 10:43:58,219", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_1}
+{"timestamp": "2025-06-08 10:43:58,219", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_2}
+{"timestamp": "2025-06-08 10:43:58,219", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_2}
+{"timestamp": "2025-06-08 10:43:58,219", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_3}
+{"timestamp": "2025-06-08 10:43:58,219", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_3}
+{"timestamp": "2025-06-08 10:43:58,219", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_4}
+{"timestamp": "2025-06-08 10:43:58,219", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_4}
+{"timestamp": "2025-06-08 10:43:58,219", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_0}
+{"timestamp": "2025-06-08 10:43:58,219", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_0}
+{"timestamp": "2025-06-08 10:43:58,219", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_1}
+{"timestamp": "2025-06-08 10:43:58,219", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_1}
+{"timestamp": "2025-06-08 10:43:58,219", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_2}
+{"timestamp": "2025-06-08 10:43:58,219", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_2}
+{"timestamp": "2025-06-08 10:43:58,219", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_3}
+{"timestamp": "2025-06-08 10:43:58,219", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_3}
+{"timestamp": "2025-06-08 10:43:58,219", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_4}
+{"timestamp": "2025-06-08 10:43:58,219", "level": "DEBUG", "logger": "adk_memory.trace", "message": Session event: update - session_4}
+{"timestamp": "2025-06-08 10:43:58,220", "level": "DEBUG", "logger": "adk_memory.trace", "message": Started operation trace: op_0 - test_operation}
+{"timestamp": "2025-06-08 10:43:58,220", "level": "DEBUG", "logger": "adk_memory.trace", "message": Started operation trace: op_0 - test_operation}
+{"timestamp": "2025-06-08 10:43:58,220", "level": "DEBUG", "logger": "adk_memory.trace", "message": Started operation trace: op_1 - test_operation}
+{"timestamp": "2025-06-08 10:43:58,220", "level": "DEBUG", "logger": "adk_memory.trace", "message": Started operation trace: op_0 - test_operation}
+{"timestamp": "2025-06-08 10:43:58,220", "level": "DEBUG", "logger": "adk_memory.trace", "message": Started operation trace: op_1 - test_operation}
+{"timestamp": "2025-06-08 10:43:58,220", "level": "DEBUG", "logger": "adk_memory.trace", "message": Started operation trace: op_1 - test_operation}
+{"timestamp": "2025-06-08 10:43:58,220", "level": "DEBUG", "logger": "adk_memory.trace", "message": Started operation trace: op_2 - test_operation}
+{"timestamp": "2025-06-08 10:43:58,220", "level": "DEBUG", "logger": "adk_memory.trace", "message": Started operation trace: op_2 - test_operation}
+{"timestamp": "2025-06-08 10:43:58,220", "level": "DEBUG", "logger": "adk_memory.trace", "message": Started operation trace: op_2 - test_operation}
+{"timestamp": "2025-06-08 10:43:58,220", "level": "DEBUG", "logger": "adk_memory.trace", "message": Started operation trace: op_3 - test_operation}
+{"timestamp": "2025-06-08 10:43:58,220", "level": "DEBUG", "logger": "adk_memory.trace", "message": Started operation trace: op_3 - test_operation}
+{"timestamp": "2025-06-08 10:43:58,220", "level": "DEBUG", "logger": "adk_memory.trace", "message": Started operation trace: op_4 - test_operation}
+{"timestamp": "2025-06-08 10:43:58,220", "level": "DEBUG", "logger": "adk_memory.trace", "message": Started operation trace: op_3 - test_operation}
+{"timestamp": "2025-06-08 10:43:58,220", "level": "DEBUG", "logger": "adk_memory.trace", "message": Started operation trace: op_4 - test_operation}
+{"timestamp": "2025-06-08 10:43:58,220", "level": "DEBUG", "logger": "adk_memory.trace", "message": Started operation trace: op_5 - test_operation}
+{"timestamp": "2025-06-08 10:43:58,220", "level": "DEBUG", "logger": "adk_memory.trace", "message": Started operation trace: op_4 - test_operation}
+{"timestamp": "2025-06-08 10:43:58,220", "level": "DEBUG", "logger": "adk_memory.trace", "message": Started operation trace: op_5 - test_operation}
+{"timestamp": "2025-06-08 10:43:58,220", "level": "DEBUG", "logger": "adk_memory.trace", "message": Started operation trace: op_6 - test_operation}
+{"timestamp": "2025-06-08 10:43:58,220", "level": "DEBUG", "logger": "adk_memory.trace", "message": Started operation trace: op_5 - test_operation}
+{"timestamp": "2025-06-08 10:43:58,220", "level": "DEBUG", "logger": "adk_memory.trace", "message": Started operation trace: op_6 - test_operation}
+{"timestamp": "2025-06-08 10:43:58,220", "level": "DEBUG", "logger": "adk_memory.trace", "message": Started operation trace: op_7 - test_operation}
+{"timestamp": "2025-06-08 10:43:58,220", "level": "DEBUG", "logger": "adk_memory.trace", "message": Started operation trace: op_6 - test_operation}
+{"timestamp": "2025-06-08 10:43:58,220", "level": "DEBUG", "logger": "adk_memory.trace", "message": Started operation trace: op_7 - test_operation}
+{"timestamp": "2025-06-08 10:43:58,220", "level": "DEBUG", "logger": "adk_memory.trace", "message": Started operation trace: op_7 - test_operation}
+{"timestamp": "2025-06-08 10:43:58,220", "level": "DEBUG", "logger": "adk_memory.trace", "message": Started operation trace: op_8 - test_operation}
+{"timestamp": "2025-06-08 10:43:58,220", "level": "DEBUG", "logger": "adk_memory.trace", "message": Started operation trace: op_8 - test_operation}
+{"timestamp": "2025-06-08 10:43:58,220", "level": "DEBUG", "logger": "adk_memory.trace", "message": Started operation trace: op_9 - test_operation}
+{"timestamp": "2025-06-08 10:43:58,220", "level": "DEBUG", "logger": "adk_memory.trace", "message": Started operation trace: op_8 - test_operation}
+{"timestamp": "2025-06-08 10:43:58,220", "level": "DEBUG", "logger": "adk_memory.trace", "message": Started operation trace: op_9 - test_operation}
+{"timestamp": "2025-06-08 10:43:58,220", "level": "DEBUG", "logger": "adk_memory.trace", "message": Started operation trace: op_9 - test_operation}
+{"timestamp": "2025-06-08 10:43:58,232", "level": "DEBUG", "logger": "adk_memory.trace", "message": Completed operation trace: op_0 - 12.6ms}
+{"timestamp": "2025-06-08 10:43:58,232", "level": "DEBUG", "logger": "adk_memory.trace", "message": Completed operation trace: op_0 - 12.6ms}
+{"timestamp": "2025-06-08 10:43:58,232", "level": "DEBUG", "logger": "adk_memory.trace", "message": Completed operation trace: op_0 - 12.6ms}
+{"timestamp": "2025-06-08 10:43:58,232", "level": "DEBUG", "logger": "adk_memory.trace", "message": Completed operation trace: op_1 - 12.7ms}
+{"timestamp": "2025-06-08 10:43:58,232", "level": "DEBUG", "logger": "adk_memory.trace", "message": Completed operation trace: op_1 - 12.7ms}
+{"timestamp": "2025-06-08 10:43:58,232", "level": "DEBUG", "logger": "adk_memory.trace", "message": Completed operation trace: op_1 - 12.7ms}
+{"timestamp": "2025-06-08 10:43:58,232", "level": "DEBUG", "logger": "adk_memory.trace", "message": Completed operation trace: op_3 - 12.7ms}
+{"timestamp": "2025-06-08 10:43:58,232", "level": "DEBUG", "logger": "adk_memory.trace", "message": Completed operation trace: op_3 - 12.7ms}
+{"timestamp": "2025-06-08 10:43:58,232", "level": "DEBUG", "logger": "adk_memory.trace", "message": Completed operation trace: op_3 - 12.7ms}
+{"timestamp": "2025-06-08 10:43:58,233", "level": "DEBUG", "logger": "adk_memory.trace", "message": Completed operation trace: op_4 - 12.8ms}
+{"timestamp": "2025-06-08 10:43:58,233", "level": "DEBUG", "logger": "adk_memory.trace", "message": Completed operation trace: op_4 - 12.8ms}
+{"timestamp": "2025-06-08 10:43:58,233", "level": "DEBUG", "logger": "adk_memory.trace", "message": Completed operation trace: op_4 - 12.8ms}
+{"timestamp": "2025-06-08 10:43:58,233", "level": "DEBUG", "logger": "adk_memory.trace", "message": Completed operation trace: op_7 - 12.7ms}
+{"timestamp": "2025-06-08 10:43:58,233", "level": "DEBUG", "logger": "adk_memory.trace", "message": Completed operation trace: op_7 - 12.7ms}
+{"timestamp": "2025-06-08 10:43:58,233", "level": "DEBUG", "logger": "adk_memory.trace", "message": Completed operation trace: op_7 - 12.7ms}
+{"timestamp": "2025-06-08 10:43:58,233", "level": "DEBUG", "logger": "adk_memory.trace", "message": Completed operation trace: op_9 - 12.6ms}
+{"timestamp": "2025-06-08 10:43:58,233", "level": "DEBUG", "logger": "adk_memory.trace", "message": Completed operation trace: op_9 - 12.6ms}
+{"timestamp": "2025-06-08 10:43:58,233", "level": "DEBUG", "logger": "adk_memory.trace", "message": Completed operation trace: op_9 - 12.6ms}
+{"timestamp": "2025-06-08 10:43:58,233", "level": "DEBUG", "logger": "adk_memory.trace", "message": Completed operation trace: op_2 - 13.0ms}
+{"timestamp": "2025-06-08 10:43:58,233", "level": "DEBUG", "logger": "adk_memory.trace", "message": Completed operation trace: op_2 - 13.0ms}
+{"timestamp": "2025-06-08 10:43:58,233", "level": "DEBUG", "logger": "adk_memory.trace", "message": Completed operation trace: op_2 - 13.0ms}
+{"timestamp": "2025-06-08 10:43:58,233", "level": "DEBUG", "logger": "adk_memory.trace", "message": Completed operation trace: op_5 - 12.9ms}
+{"timestamp": "2025-06-08 10:43:58,233", "level": "DEBUG", "logger": "adk_memory.trace", "message": Completed operation trace: op_5 - 12.9ms}
+{"timestamp": "2025-06-08 10:43:58,233", "level": "DEBUG", "logger": "adk_memory.trace", "message": Completed operation trace: op_5 - 12.9ms}
+{"timestamp": "2025-06-08 10:43:58,233", "level": "DEBUG", "logger": "adk_memory.trace", "message": Completed operation trace: op_6 - 12.9ms}
+{"timestamp": "2025-06-08 10:43:58,233", "level": "DEBUG", "logger": "adk_memory.trace", "message": Completed operation trace: op_6 - 12.9ms}
+{"timestamp": "2025-06-08 10:43:58,233", "level": "DEBUG", "logger": "adk_memory.trace", "message": Completed operation trace: op_6 - 12.9ms}
+{"timestamp": "2025-06-08 10:43:58,233", "level": "DEBUG", "logger": "adk_memory.trace", "message": Completed operation trace: op_8 - 12.9ms}
+{"timestamp": "2025-06-08 10:43:58,233", "level": "DEBUG", "logger": "adk_memory.trace", "message": Completed operation trace: op_8 - 12.9ms}
+{"timestamp": "2025-06-08 10:43:58,233", "level": "DEBUG", "logger": "adk_memory.trace", "message": Completed operation trace: op_8 - 12.9ms}
+{"timestamp": "2025-06-08 10:45:19,181", "level": "DEBUG", "logger": "adk_memory.trace", "message": Started operation trace: local_session_1_op_0 - local_test}
+{"timestamp": "2025-06-08 10:45:19,181", "level": "DEBUG", "logger": "adk_memory.trace", "message": Started operation trace: local_session_1_op_0 - local_test}
+{"timestamp": "2025-06-08 10:45:19,181", "level": "DEBUG", "logger": "adk_memory.trace", "message": Started operation trace: local_session_2_op_0 - local_test}
+{"timestamp": "2025-06-08 10:45:19,181", "level": "DEBUG", "logger": "adk_memory.trace", "message": Started operation trace: local_session_2_op_0 - local_test}
+{"timestamp": "2025-06-08 10:45:19,181", "level": "DEBUG", "logger": "adk_memory.trace", "message": Started operation trace: local_session_3_op_0 - local_test}
+{"timestamp": "2025-06-08 10:45:19,181", "level": "DEBUG", "logger": "adk_memory.trace", "message": Started operation trace: local_session_3_op_0 - local_test}
+{"timestamp": "2025-06-08 10:45:19,182", "level": "DEBUG", "logger": "adk_memory.trace", "message": Completed operation trace: local_session_1_op_0 - 1.6ms}
+{"timestamp": "2025-06-08 10:45:19,182", "level": "DEBUG", "logger": "adk_memory.trace", "message": Completed operation trace: local_session_1_op_0 - 1.6ms}
+{"timestamp": "2025-06-08 10:45:19,182", "level": "DEBUG", "logger": "adk_memory.trace", "message": Completed operation trace: local_session_3_op_0 - 1.6ms}
+{"timestamp": "2025-06-08 10:45:19,182", "level": "DEBUG", "logger": "adk_memory.trace", "message": Completed operation trace: local_session_3_op_0 - 1.6ms}
+{"timestamp": "2025-06-08 10:45:19,182", "level": "DEBUG", "logger": "adk_memory.trace", "message": Started operation trace: local_session_3_op_1 - local_test}
+{"timestamp": "2025-06-08 10:45:19,182", "level": "DEBUG", "logger": "adk_memory.trace", "message": Started operation trace: local_session_3_op_1 - local_test}
+{"timestamp": "2025-06-08 10:45:19,182", "level": "DEBUG", "logger": "adk_memory.trace", "message": Completed operation trace: local_session_2_op_0 - 1.7ms}
+{"timestamp": "2025-06-08 10:45:19,182", "level": "DEBUG", "logger": "adk_memory.trace", "message": Completed operation trace: local_session_2_op_0 - 1.7ms}
+{"timestamp": "2025-06-08 10:45:19,182", "level": "DEBUG", "logger": "adk_memory.trace", "message": Started operation trace: local_session_2_op_1 - local_test}
+{"timestamp": "2025-06-08 10:45:19,182", "level": "DEBUG", "logger": "adk_memory.trace", "message": Started operation trace: local_session_2_op_1 - local_test}
+{"timestamp": "2025-06-08 10:45:19,182", "level": "DEBUG", "logger": "adk_memory.trace", "message": Started operation trace: local_session_1_op_1 - local_test}
+{"timestamp": "2025-06-08 10:45:19,182", "level": "DEBUG", "logger": "adk_memory.trace", "message": Started operation trace: local_session_1_op_1 - local_test}
+{"timestamp": "2025-06-08 10:45:19,184", "level": "DEBUG", "logger": "adk_memory.trace", "message": Completed operation trace: local_session_3_op_1 - 1.3ms}
+{"timestamp": "2025-06-08 10:45:19,184", "level": "DEBUG", "logger": "adk_memory.trace", "message": Completed operation trace: local_session_3_op_1 - 1.3ms}
+{"timestamp": "2025-06-08 10:45:19,184", "level": "DEBUG", "logger": "adk_memory.trace", "message": Started operation trace: local_session_3_op_2 - local_test}
+{"timestamp": "2025-06-08 10:45:19,184", "level": "DEBUG", "logger": "adk_memory.trace", "message": Started operation trace: local_session_3_op_2 - local_test}
+{"timestamp": "2025-06-08 10:45:19,184", "level": "DEBUG", "logger": "adk_memory.trace", "message": Completed operation trace: local_session_2_op_1 - 1.4ms}
+{"timestamp": "2025-06-08 10:45:19,184", "level": "DEBUG", "logger": "adk_memory.trace", "message": Completed operation trace: local_session_2_op_1 - 1.4ms}
+{"timestamp": "2025-06-08 10:45:19,184", "level": "DEBUG", "logger": "adk_memory.trace", "message": Started operation trace: local_session_2_op_2 - local_test}
+{"timestamp": "2025-06-08 10:45:19,184", "level": "DEBUG", "logger": "adk_memory.trace", "message": Started operation trace: local_session_2_op_2 - local_test}
+{"timestamp": "2025-06-08 10:45:19,184", "level": "DEBUG", "logger": "adk_memory.trace", "message": Completed operation trace: local_session_1_op_1 - 1.5ms}
+{"timestamp": "2025-06-08 10:45:19,184", "level": "DEBUG", "logger": "adk_memory.trace", "message": Completed operation trace: local_session_1_op_1 - 1.5ms}
+{"timestamp": "2025-06-08 10:45:19,184", "level": "DEBUG", "logger": "adk_memory.trace", "message": Started operation trace: local_session_1_op_2 - local_test}
+{"timestamp": "2025-06-08 10:45:19,184", "level": "DEBUG", "logger": "adk_memory.trace", "message": Started operation trace: local_session_1_op_2 - local_test}
+{"timestamp": "2025-06-08 10:45:19,185", "level": "DEBUG", "logger": "adk_memory.trace", "message": Completed operation trace: local_session_1_op_2 - 1.2ms}
+{"timestamp": "2025-06-08 10:45:19,185", "level": "DEBUG", "logger": "adk_memory.trace", "message": Completed operation trace: local_session_1_op_2 - 1.2ms}
+{"timestamp": "2025-06-08 10:45:19,185", "level": "DEBUG", "logger": "adk_memory.trace", "message": Completed operation trace: local_session_3_op_2 - 1.4ms}
+{"timestamp": "2025-06-08 10:45:19,185", "level": "DEBUG", "logger": "adk_memory.trace", "message": Completed operation trace: local_session_3_op_2 - 1.4ms}
+{"timestamp": "2025-06-08 10:45:19,185", "level": "DEBUG", "logger": "adk_memory.trace", "message": Completed operation trace: local_session_2_op_2 - 1.3ms}
+{"timestamp": "2025-06-08 10:45:19,185", "level": "DEBUG", "logger": "adk_memory.trace", "message": Completed operation trace: local_session_2_op_2 - 1.3ms}
+{"timestamp": "2025-06-08 10:45:19,185", "level": "DEBUG", "logger": "adk_memory.trace", "message": Started operation trace: local_session_1_op_3 - local_test}
+{"timestamp": "2025-06-08 10:45:19,185", "level": "DEBUG", "logger": "adk_memory.trace", "message": Started operation trace: local_session_1_op_3 - local_test}
+{"timestamp": "2025-06-08 10:45:19,185", "level": "DEBUG", "logger": "adk_memory.trace", "message": Started operation trace: local_session_3_op_3 - local_test}
+{"timestamp": "2025-06-08 10:45:19,185", "level": "DEBUG", "logger": "adk_memory.trace", "message": Started operation trace: local_session_3_op_3 - local_test}
+{"timestamp": "2025-06-08 10:45:19,185", "level": "DEBUG", "logger": "adk_memory.trace", "message": Started operation trace: local_session_2_op_3 - local_test}
+{"timestamp": "2025-06-08 10:45:19,185", "level": "DEBUG", "logger": "adk_memory.trace", "message": Started operation trace: local_session_2_op_3 - local_test}
+{"timestamp": "2025-06-08 10:45:19,187", "level": "DEBUG", "logger": "adk_memory.trace", "message": Completed operation trace: local_session_1_op_3 - 1.4ms}
+{"timestamp": "2025-06-08 10:45:19,187", "level": "DEBUG", "logger": "adk_memory.trace", "message": Completed operation trace: local_session_1_op_3 - 1.4ms}
+{"timestamp": "2025-06-08 10:45:19,187", "level": "DEBUG", "logger": "adk_memory.trace", "message": Completed operation trace: local_session_3_op_3 - 1.4ms}
+{"timestamp": "2025-06-08 10:45:19,187", "level": "DEBUG", "logger": "adk_memory.trace", "message": Completed operation trace: local_session_3_op_3 - 1.4ms}
+{"timestamp": "2025-06-08 10:45:19,187", "level": "DEBUG", "logger": "adk_memory.trace", "message": Completed operation trace: local_session_2_op_3 - 1.4ms}
+{"timestamp": "2025-06-08 10:45:19,187", "level": "DEBUG", "logger": "adk_memory.trace", "message": Completed operation trace: local_session_2_op_3 - 1.4ms}
+{"timestamp": "2025-06-08 10:45:19,187", "level": "DEBUG", "logger": "adk_memory.trace", "message": Started operation trace: local_session_1_op_4 - local_test}
+{"timestamp": "2025-06-08 10:45:19,187", "level": "DEBUG", "logger": "adk_memory.trace", "message": Started operation trace: local_session_1_op_4 - local_test}
+{"timestamp": "2025-06-08 10:45:19,187", "level": "DEBUG", "logger": "adk_memory.trace", "message": Started operation trace: local_session_3_op_4 - local_test}
+{"timestamp": "2025-06-08 10:45:19,187", "level": "DEBUG", "logger": "adk_memory.trace", "message": Started operation trace: local_session_3_op_4 - local_test}
+{"timestamp": "2025-06-08 10:45:19,187", "level": "DEBUG", "logger": "adk_memory.trace", "message": Started operation trace: local_session_2_op_4 - local_test}
+{"timestamp": "2025-06-08 10:45:19,187", "level": "DEBUG", "logger": "adk_memory.trace", "message": Started operation trace: local_session_2_op_4 - local_test}
+{"timestamp": "2025-06-08 10:45:19,188", "level": "DEBUG", "logger": "adk_memory.trace", "message": Completed operation trace: local_session_1_op_4 - 1.4ms}
+{"timestamp": "2025-06-08 10:45:19,188", "level": "DEBUG", "logger": "adk_memory.trace", "message": Completed operation trace: local_session_1_op_4 - 1.4ms}
+{"timestamp": "2025-06-08 10:45:19,188", "level": "DEBUG", "logger": "adk_memory.trace", "message": Completed operation trace: local_session_3_op_4 - 1.5ms}
+{"timestamp": "2025-06-08 10:45:19,188", "level": "DEBUG", "logger": "adk_memory.trace", "message": Completed operation trace: local_session_3_op_4 - 1.5ms}
+{"timestamp": "2025-06-08 10:45:19,188", "level": "DEBUG", "logger": "adk_memory.trace", "message": Completed operation trace: local_session_2_op_4 - 1.5ms}
+{"timestamp": "2025-06-08 10:45:19,188", "level": "DEBUG", "logger": "adk_memory.trace", "message": Completed operation trace: local_session_2_op_4 - 1.5ms}
+{"timestamp": "2025-06-08 10:47:09,928", "level": "DEBUG", "logger": "adk_memory.trace", "message": Started operation trace: test_op - test_type}
+{"timestamp": "2025-06-08 10:47:09,928", "level": "DEBUG", "logger": "adk_memory.trace", "message": Started operation trace: test_op - test_type}
+{"timestamp": "2025-06-08 10:47:09,928", "level": "DEBUG", "logger": "adk_memory.trace", "message": Completed operation trace: test_op - 0.2ms}
+{"timestamp": "2025-06-08 10:47:09,928", "level": "DEBUG", "logger": "adk_memory.trace", "message": Completed operation trace: test_op - 0.2ms}
+{"timestamp": "2025-06-08 10:47:09,930", "level": "DEBUG", "logger": "adk_memory.trace", "message": Started operation trace: op_1 - test}
+{"timestamp": "2025-06-08 10:47:09,930", "level": "DEBUG", "logger": "adk_memory.trace", "message": Started operation trace: op_1 - test}
+{"timestamp": "2025-06-08 10:47:09,930", "level": "DEBUG", "logger": "adk_memory.trace", "message": Started operation trace: op_2 - test}
+{"timestamp": "2025-06-08 10:47:09,930", "level": "DEBUG", "logger": "adk_memory.trace", "message": Started operation trace: op_1 - test}
+{"timestamp": "2025-06-08 10:47:09,930", "level": "DEBUG", "logger": "adk_memory.trace", "message": Started operation trace: op_2 - test}
+{"timestamp": "2025-06-08 10:47:09,930", "level": "DEBUG", "logger": "adk_memory.trace", "message": Started operation trace: op_4 - test}
+{"timestamp": "2025-06-08 10:47:09,930", "level": "DEBUG", "logger": "adk_memory.trace", "message": Started operation trace: op_2 - test}
+{"timestamp": "2025-06-08 10:47:09,930", "level": "DEBUG", "logger": "adk_memory.trace", "message": Started operation trace: op_4 - test}
+{"timestamp": "2025-06-08 10:47:09,930", "level": "DEBUG", "logger": "adk_memory.trace", "message": Started operation trace: op_3 - test}
+{"timestamp": "2025-06-08 10:47:09,930", "level": "DEBUG", "logger": "adk_memory.trace", "message": Started operation trace: op_4 - test}
+{"timestamp": "2025-06-08 10:47:09,930", "level": "DEBUG", "logger": "adk_memory.trace", "message": Started operation trace: op_3 - test}
+{"timestamp": "2025-06-08 10:47:09,930", "level": "DEBUG", "logger": "adk_memory.trace", "message": Started operation trace: op_3 - test}
+{"timestamp": "2025-06-08 10:47:09,930", "level": "DEBUG", "logger": "adk_memory.trace", "message": Started operation trace: op_0 - test}
+{"timestamp": "2025-06-08 10:47:09,930", "level": "DEBUG", "logger": "adk_memory.trace", "message": Started operation trace: op_0 - test}
+{"timestamp": "2025-06-08 10:47:09,930", "level": "DEBUG", "logger": "adk_memory.trace", "message": Completed operation trace: op_1 - 0.2ms}
+{"timestamp": "2025-06-08 10:47:09,930", "level": "DEBUG", "logger": "adk_memory.trace", "message": Started operation trace: op_0 - test}
+{"timestamp": "2025-06-08 10:47:09,930", "level": "DEBUG", "logger": "adk_memory.trace", "message": Completed operation trace: op_1 - 0.2ms}
+{"timestamp": "2025-06-08 10:47:09,930", "level": "DEBUG", "logger": "adk_memory.trace", "message": Completed operation trace: op_1 - 0.2ms}
+{"timestamp": "2025-06-08 10:47:09,931", "level": "DEBUG", "logger": "adk_memory.trace", "message": Completed operation trace: op_2 - 0.2ms}
+{"timestamp": "2025-06-08 10:47:09,931", "level": "DEBUG", "logger": "adk_memory.trace", "message": Completed operation trace: op_2 - 0.2ms}
+{"timestamp": "2025-06-08 10:47:09,931", "level": "DEBUG", "logger": "adk_memory.trace", "message": Completed operation trace: op_2 - 0.2ms}
+{"timestamp": "2025-06-08 10:47:09,931", "level": "DEBUG", "logger": "adk_memory.trace", "message": Completed operation trace: op_4 - 0.2ms}
+{"timestamp": "2025-06-08 10:47:09,931", "level": "DEBUG", "logger": "adk_memory.trace", "message": Completed operation trace: op_4 - 0.2ms}
+{"timestamp": "2025-06-08 10:47:09,931", "level": "DEBUG", "logger": "adk_memory.trace", "message": Completed operation trace: op_4 - 0.2ms}
+{"timestamp": "2025-06-08 10:47:09,931", "level": "DEBUG", "logger": "adk_memory.trace", "message": Completed operation trace: op_3 - 0.3ms}
+{"timestamp": "2025-06-08 10:47:09,931", "level": "DEBUG", "logger": "adk_memory.trace", "message": Completed operation trace: op_3 - 0.3ms}
+{"timestamp": "2025-06-08 10:47:09,931", "level": "DEBUG", "logger": "adk_memory.trace", "message": Completed operation trace: op_3 - 0.3ms}
+{"timestamp": "2025-06-08 10:47:09,931", "level": "DEBUG", "logger": "adk_memory.trace", "message": Completed operation trace: op_0 - 0.3ms}
+{"timestamp": "2025-06-08 10:47:09,931", "level": "DEBUG", "logger": "adk_memory.trace", "message": Completed operation trace: op_0 - 0.3ms}
+{"timestamp": "2025-06-08 10:47:09,931", "level": "DEBUG", "logger": "adk_memory.trace", "message": Completed operation trace: op_0 - 0.3ms}
