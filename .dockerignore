@@ -1,7 +1,5 @@
 # Node.js
-dashboard/frontend/node_modules
-# Keep the build directory for deployment
-# dashboard/frontend/build
+node_modules
 
 # Python
 __pycache__

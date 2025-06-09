@@ -9,11 +9,8 @@ Includes proper ADK memory service initialization for vector search and RAG pipe
 import os
 import uvicorn
 import logging
-from fastapi import FastAPI, Request, HTTPException
-from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
+from fastapi import FastAPI, Request
 from google.adk.cli.fast_api import get_fast_api_app
-from google.adk.memory import VertexAiRagMemoryService, InMemoryMemoryService
 
 # Import our smart environment detection
 from lib.environment import setup_environment
@@ -87,19 +84,9 @@ app: FastAPI = get_fast_api_app(
 # Initialize MCP SSE Transport
 mcp_transport = MCPSSETransport(None)  # Server will be initialized later
 
-# Import WebUI routes
-from lib.webui_routes import router as webui_router
 
-# Add WebUI routes
-app.include_router(webui_router)
 
-# Mount static files for React frontend
-static_dir = "/app/static"
-if os.path.exists(static_dir):
-    app.mount("/static", StaticFiles(directory=static_dir), name="static")
-    logger.info(f"Mounted static files from {static_dir}")
-else:
-    logger.warning(f"Static directory {static_dir} not found - React frontend not available")
+
 
 # Add MCP endpoints
 @app.get("/mcp/sse")
@@ -145,30 +132,7 @@ async def agent_info():
         "environment": environment_type
     }
 
-# React Router fallback - serve index.html for client-side routing
-@app.get("/dashboard/{path:path}")
-async def serve_react_app(path: str):
-    """Serve React app for client-side routing"""
-    static_dir = "/app/static"
-    index_file = os.path.join(static_dir, "index.html")
 
-    if os.path.exists(index_file):
-        return FileResponse(index_file)
-    else:
-        logger.error(f"React index.html not found at {index_file}")
-        raise HTTPException(status_code=404, detail="Frontend not available")
-
-@app.get("/dashboard")
-async def serve_react_root():
-    """Serve React app root"""
-    static_dir = "/app/static"
-    index_file = os.path.join(static_dir, "index.html")
-
-    if os.path.exists(index_file):
-        return FileResponse(index_file)
-    else:
-        logger.error(f"React index.html not found at {index_file}")
-        raise HTTPException(status_code=404, detail="Frontend not available")
 
 if __name__ == "__main__":
     # Use the PORT environment variable provided by Cloud Run, defaulting to 8080
