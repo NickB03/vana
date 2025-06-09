@@ -148,7 +148,7 @@
 
 ### **Brave API Key Resolution:** ✅ **COMPLETE**
 - **Issue**: Web search functionality not working
-- **Solution**: Brave API key configured (BSA6fMCYrfJC5seE-AVsWrKjpOFk6Nm)
+- **Solution**: Brave API key configured (stored in Google Secret Manager)
 - **Result**: Web search fully operational in optimization framework
 
 ---

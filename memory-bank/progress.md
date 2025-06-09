@@ -105,7 +105,7 @@
 ### ✅ **OPTIMIZATION FRAMEWORK 100% VALIDATION COMPLETE**
 **Status:** All 5 optimization components fully operational and validated
 **Environment:** https://vana-dev-960076421399.us-central1.run.app
-**Brave API Key:** ✅ Resolved and configured (BSA6fMCYrfJC5seE-AVsWrKjpOFk6Nm)
+**Brave API Key:** ✅ Resolved and configured (stored in Google Secret Manager)
 
 #### **Component Validation Results:**
 1. ✅ **Strategy Orchestrator**: Dynamic strategy selection working perfectly

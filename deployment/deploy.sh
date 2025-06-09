@@ -30,12 +30,16 @@ fi
 echo "🔧 Ensuring required APIs are enabled..."
 gcloud services enable cloudbuild.googleapis.com --quiet
 gcloud services enable run.googleapis.com --quiet
-gcloud services enable containerregistry.googleapis.com --quiet
+gcloud services enable artifactregistry.googleapis.com --quiet
 
 # Build and deploy using Cloud Build (Python 3.13 + Poetry)
 echo "🔨 Building and deploying with Google Cloud Build (Python 3.13 + Poetry)..."
 echo "⚡ Using Poetry for dependency management and correct agent structure!"
-gcloud builds submit --config deployment/cloudbuild.yaml --region=${REGION}
+if ! gcloud builds submit --config deployment/cloudbuild.yaml --region=${REGION}; then
+    echo "❌ Cloud Build failed! Check logs at:"
+    echo "   https://console.cloud.google.com/cloud-build/builds?project=${PROJECT_ID}"
+    exit 1
+fi
 
 # Cloud Build handles both build and deployment automatically
 echo "✅ Cloud Build process initiated!"
@@ -47,10 +51,19 @@ echo "⏱️  Expected build time: < 3 minutes with Poetry dependency resolution
 # Wait for deployment to complete and get service URL
 echo ""
 echo "⏳ Waiting for deployment to complete..."
-sleep 30  # Give Cloud Build time to complete deployment
+for i in {1..20}; do
+    SERVICE_URL=$(gcloud run services describe ${SERVICE_NAME} --region ${REGION} --format="value(status.url)" 2>/dev/null || echo "")
+    if [[ -n "$SERVICE_URL" && "$SERVICE_URL" != "Deployment in progress..." ]]; then
+        break
+    fi
+    echo "⏳ Attempt $i/20: Still waiting for deployment..."
+    sleep 15
+done
 
-echo "🔍 Getting service URL..."
-SERVICE_URL=$(gcloud run services describe ${SERVICE_NAME} --region ${REGION} --format="value(status.url)" 2>/dev/null || echo "Deployment in progress...")
+echo "🔍 Final service URL check..."
+if [[ -z "$SERVICE_URL" ]]; then
+    SERVICE_URL="Deployment in progress..."
+fi
 
 if [ "$SERVICE_URL" != "Deployment in progress..." ]; then
     echo ""
@@ -70,5 +83,5 @@ else
     echo "   https://console.cloud.google.com/cloud-build/builds?project=${PROJECT_ID}"
     echo ""
     echo "Once complete, your service will be available at:"
-    echo "   https://vana-[hash].us-central1.run.app"
+    echo "   https://${SERVICE_NAME}-[hash]-uc.a.run.app"
 fi
