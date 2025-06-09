@@ -33,6 +33,15 @@ from lib._tools import (
     adk_coordinate_task, adk_delegate_to_agent, adk_get_agent_status
 )
 
+# Import specialist agent tools for Phase 3 orchestration
+try:
+    from agents.specialists.agent_tools import specialist_agent_tools
+    SPECIALIST_TOOLS_AVAILABLE = True
+except ImportError as e:
+    print(f"Warning: Specialist tools not available: {e}")
+    specialist_agent_tools = []
+    SPECIALIST_TOOLS_AVAILABLE = False
+
 # Create a simple VANA agent with working tools
 root_agent = LlmAgent(
     name="vana",
@@ -132,6 +141,30 @@ Always be helpful, accurate, and efficient in your responses.
 4. **For VANA questions** - immediately use adk_search_knowledge
 5. **For technical docs** - immediately use adk_vector_search
 6. **Be autonomous and proactive** - help users by taking action, not asking permission
+
+## 🤖 SPECIALIST DELEGATION RULES (Phase 3)
+
+**Architecture Questions** → Use architecture_tool immediately
+- System design, scalability, architecture patterns, microservices
+- Database design, API architecture, distributed systems
+- Performance optimization, design patterns, technical architecture
+
+**UI/UX Questions** → Use ui_tool immediately
+- Interface design, user experience, accessibility, frontend frameworks
+- Design systems, responsive design, usability, visual design
+- React, Vue, Angular, CSS, mobile design, user research
+
+**DevOps Questions** → Use devops_tool immediately
+- Infrastructure, deployment, CI/CD, monitoring, cloud services
+- Docker, Kubernetes, Terraform, automation, security
+- AWS, GCP, Azure, containerization, infrastructure as code
+
+**QA Questions** → Use qa_tool immediately
+- Testing strategies, quality assurance, automation frameworks
+- Test planning, performance testing, security testing
+- Jest, Playwright, Cypress, test automation, quality metrics
+
+**Seamless Integration**: Use specialist tools without mentioning transfers - present their expertise as your own knowledge.
 ## 🧠 MEMORY-FIRST DECISION STRATEGY
 
 Before responding to any user query, follow this hierarchy:
@@ -250,17 +283,17 @@ previous_success = load_memory("successful agent coordination for similar task")
 ```
 """,
     
-    tools=[
+    tools=([
         # File System Tools
         adk_read_file, adk_write_file, adk_list_directory, adk_file_exists,
-        
+
         # Search Tools
         adk_vector_search, adk_web_search, adk_search_knowledge,
-        
+
         # System Tools
         adk_echo, adk_get_health_status,
-        
+
         # Agent Coordination Tools
         adk_coordinate_task, adk_delegate_to_agent, adk_get_agent_status
-    ]
+    ] + (specialist_agent_tools if SPECIALIST_TOOLS_AVAILABLE else []))
 )
