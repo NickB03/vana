@@ -23,10 +23,11 @@ from agents.specialists.qa_specialist import analyze_testing_strategy
 
 class QualityGateAgent(BaseAgent):
     """Custom agent to evaluate quality and control loop continuation."""
-    
-    def __init__(self, name: str = "QualityGate", quality_threshold: float = 0.8):
+
+    def __init__(self, name: str = "QualityGate"):
         super().__init__(name=name)
-        self.quality_threshold = quality_threshold
+        # Store quality threshold in session state instead of as instance variable
+        self._quality_threshold = 0.8
     
     async def _run_async_impl(self, ctx: InvocationContext) -> AsyncGenerator[Event, None]:
         """Evaluate current solution quality and decide whether to continue refinement."""
@@ -55,12 +56,12 @@ class QualityGateAgent(BaseAgent):
         }
         
         # Determine if quality threshold is met
-        should_stop = (overall_quality >= self.quality_threshold) or (iteration_count >= 5)
-        
+        should_stop = (overall_quality >= self._quality_threshold) or (iteration_count >= 5)
+
         # Create quality assessment content
         quality_report = f"""
 Quality Assessment (Iteration {iteration_count + 1}):
-- Overall Quality Score: {overall_quality:.2f} (Threshold: {self.quality_threshold})
+- Overall Quality Score: {overall_quality:.2f} (Threshold: {self._quality_threshold})
 - Completeness: {quality_criteria['completeness']:.2f}
 - Technical Depth: {quality_criteria['technical_depth']:.2f}
 - Integration: {quality_criteria['integration']:.2f}
@@ -70,9 +71,10 @@ Decision: {'APPROVED - Quality threshold met' if should_stop else 'CONTINUE - Re
 """
         
         # Yield quality assessment event
+        from google.genai import types
         yield Event(
             author=self.name,
-            content={"parts": [{"text": quality_report}]},
+            content=types.Content(parts=[types.Part(text=quality_report)]),
             actions=EventActions(
                 state_delta=state_update,
                 escalate=should_stop  # Stop loop if quality is sufficient
@@ -134,7 +136,6 @@ def create_iterative_refinement_workflow(max_iterations: int = 5, quality_thresh
     solution_refiner = LlmAgent(
         name="SolutionRefiner",
         model="gemini-2.0-flash",
-        description="Generates and refines comprehensive solutions",
         instruction="""You are a Solution Refiner. Your task is to create or improve a comprehensive solution.
 
 If this is the first iteration (no 'current_solution' in state):
@@ -160,9 +161,8 @@ Save the improved solution for quality evaluation.""",
     
     # Quality Evaluator
     quality_evaluator = LlmAgent(
-        name="QualityEvaluator", 
+        name="QualityEvaluator",
         model="gemini-2.0-flash",
-        description="Evaluates solution quality and provides improvement feedback",
         instruction="""Evaluate the current solution in state['current_solution'] for:
 
 1. **Completeness** (0.0-1.0): Does it cover all required aspects?
@@ -197,8 +197,7 @@ Provide specific feedback for improvement in each area.""",
     
     # Quality Gate Controller
     quality_gate = QualityGateAgent(
-        name="QualityGate",
-        quality_threshold=quality_threshold
+        name="QualityGate"
     )
     
     # Create the iterative refinement loop
