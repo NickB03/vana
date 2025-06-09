@@ -42,6 +42,38 @@ except ImportError as e:
     specialist_agent_tools = []
     SPECIALIST_TOOLS_AVAILABLE = False
 
+# Import advanced orchestration capabilities for Priority 3 enhancements
+try:
+    from agents.orchestration.hierarchical_task_manager import (
+        analyze_task_complexity,
+        route_to_specialist,
+        coordinate_workflow,
+        decompose_enterprise_task
+    )
+
+    from agents.memory.specialist_memory_manager import (
+        save_specialist_knowledge_func,
+        get_specialist_knowledge_func
+    )
+
+    # Create orchestration tools
+    orchestration_tools = [
+        FunctionTool(analyze_task_complexity),
+        FunctionTool(route_to_specialist),
+        FunctionTool(coordinate_workflow),
+        FunctionTool(decompose_enterprise_task),
+        FunctionTool(save_specialist_knowledge_func),
+        FunctionTool(get_specialist_knowledge_func)
+    ]
+
+    ORCHESTRATION_TOOLS_AVAILABLE = True
+    print("✅ Advanced orchestration capabilities loaded successfully")
+
+except ImportError as e:
+    print(f"Warning: Advanced orchestration tools not available: {e}")
+    orchestration_tools = []
+    ORCHESTRATION_TOOLS_AVAILABLE = False
+
 # Create a simple VANA agent with working tools
 root_agent = LlmAgent(
     name="vana",
@@ -165,6 +197,32 @@ Always be helpful, accurate, and efficient in your responses.
 - Jest, Playwright, Cypress, test automation, quality metrics
 
 **Seamless Integration**: Use specialist tools without mentioning transfers - present their expertise as your own knowledge.
+
+## 🚀 ADVANCED ORCHESTRATION CAPABILITIES
+
+For complex tasks, you have advanced orchestration capabilities:
+
+**Task Complexity Analysis** → Use analyze_task_complexity
+- Automatically determine if task needs single specialist, multiple specialists, or full workflows
+- Route simple questions to appropriate specialists
+- Coordinate complex multi-phase projects
+
+**Workflow Orchestration** → Use coordinate_workflow
+- Sequential project development workflows
+- Parallel specialist analysis for comprehensive coverage
+- Iterative refinement for quality improvement
+
+**Enterprise Task Decomposition** → Use decompose_enterprise_task
+- Break down large-scale projects into manageable phases
+- Coordinate multi-team initiatives
+- Manage complex migrations and transformations
+
+**Memory Integration** → Use save/get_specialist_knowledge_func
+- Learn from specialist interactions
+- Persist valuable insights across sessions
+- Build user preference profiles
+
+**Intelligent Routing**: Automatically analyze task complexity and route to the most appropriate approach.
 ## 🧠 MEMORY-FIRST DECISION STRATEGY
 
 Before responding to any user query, follow this hierarchy:
@@ -295,5 +353,6 @@ previous_success = load_memory("successful agent coordination for similar task")
 
         # Agent Coordination Tools
         adk_coordinate_task, adk_delegate_to_agent, adk_get_agent_status
-    ] + (specialist_agent_tools if SPECIALIST_TOOLS_AVAILABLE else []))
+    ] + (specialist_agent_tools if SPECIALIST_TOOLS_AVAILABLE else []) +
+        (orchestration_tools if ORCHESTRATION_TOOLS_AVAILABLE else []))
 )
