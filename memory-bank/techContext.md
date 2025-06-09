@@ -133,7 +133,7 @@
 *   **Test Configuration:** `tests/automated/tool-tests/vana-tool-suite.json` - 32 test cases across 9 test suites
 *   **Live Testing Results:** ✅ Echo function validated through browser automation
 *   **Performance Baseline:** Sub-5 second response times established
-*   **Service Integration:** Google ADK Dev UI at https://vana-qqugqgsbcq-uc.a.run.app
+*   **Service Integration:** Google ADK Dev UI at https://vana-prod-960076421399.us-central1.run.app
 
 ## 8. Noteworthy Deprecated/Archived Technologies (for historical context)
 *   **Ragie.ai:** Previously used for vector search before transitioning to Vertex AI.

@@ -10,7 +10,7 @@
 
 ### **Current Status**
 - ✅ **Phase 1 Complete**: ReAct framework structurally implemented and deployed
-- ✅ **Production Operational**: Service running at https://vana-qqugqgsbcq-uc.a.run.app
+- ✅ **Production Operational**: Service running at https://vana-prod-960076421399.us-central1.run.app
 - ✅ **Tool Registration Fixed**: All 21 tools working correctly
 - ⚠️ **CRITICAL ISSUE**: Cognitive gap identified - agent not using tools proactively
 

@@ -10,6 +10,7 @@ import json
 import logging
 import datetime
 import traceback
+import threading
 from typing import Dict, Any, List, Optional, Union
 from dataclasses import dataclass, asdict
 from pathlib import Path
@@ -48,24 +49,28 @@ class ADKSessionStateEvent:
     metadata: Dict[str, Any]
 
 class ADKMemoryLogger:
-    """Logger for ADK memory operations and debugging."""
-    
+    """Thread-safe logger for ADK memory operations and debugging."""
+
     def __init__(self, log_dir: str = "logs/adk_memory"):
         self.log_dir = Path(log_dir)
         self.log_dir.mkdir(parents=True, exist_ok=True)
-        
+
         # Setup file handlers
         self.operations_log = self.log_dir / "operations.jsonl"
         self.session_log = self.log_dir / "sessions.jsonl"
         self.trace_log = self.log_dir / "traces.jsonl"
         self.error_log = self.log_dir / "errors.jsonl"
-        
+
         # Setup structured logger
         self.setup_structured_logging()
-        
-        # Operation tracking
+
+        # Operation tracking with thread safety
         self.active_operations = {}
         self.session_states = {}
+
+        # Thread safety locks
+        self._operations_lock = threading.RLock()
+        self._session_lock = threading.RLock()
         
     def setup_structured_logging(self):
         """Setup structured logging for ADK memory operations."""
@@ -121,26 +126,27 @@ class ADKMemoryLogger:
             logger.error(f"Error logging memory operation: {e}")
     
     def log_session_event(self, event: ADKSessionStateEvent):
-        """Log a session state event."""
+        """Log a session state event with thread safety."""
         try:
             event_data = asdict(event)
             self.session_logger.info(json.dumps(event_data))
-            
-            # Update session state tracking
-            self.session_states[event.session_id] = {
-                "last_event": event.timestamp,
-                "event_type": event.event_type,
-                "state_size_mb": event.state_size_mb,
-                "user_id": event.user_id
-            }
-            
+
+            # Thread-safe update of session state tracking
+            with self._session_lock:
+                self.session_states[event.session_id] = {
+                    "last_event": event.timestamp,
+                    "event_type": event.event_type,
+                    "state_size_mb": event.state_size_mb,
+                    "user_id": event.user_id
+                }
+
             # Also log to trace
             self.trace_logger.debug(f"Session event: {event.event_type} - {event.session_id}")
-            
+
         except Exception as e:
             logger.error(f"Error logging session event: {e}")
     
-    def log_error(self, error_type: str, error_message: str, context: Dict[str, Any] = None):
+    def log_error(self, error_type: str, error_message: str, context: Optional[Dict[str, Any]] = None):
         """Log an error with context."""
         try:
             error_data = {
@@ -150,14 +156,14 @@ class ADKMemoryLogger:
                 "context": context or {},
                 "traceback": traceback.format_exc()
             }
-            
+
             self.error_logger.error(json.dumps(error_data))
-            
+
         except Exception as e:
             logger.error(f"Error logging error: {e}")
-    
-    def start_operation_trace(self, operation_id: str, operation_type: str, context: Dict[str, Any] = None):
-        """Start tracing an operation."""
+
+    def start_operation_trace(self, operation_id: str, operation_type: str, context: Optional[Dict[str, Any]] = None):
+        """Start tracing an operation with thread safety."""
         try:
             trace_data = {
                 "operation_id": operation_id,
@@ -165,41 +171,44 @@ class ADKMemoryLogger:
                 "start_time": datetime.datetime.now().isoformat(),
                 "context": context or {}
             }
-            
-            self.active_operations[operation_id] = trace_data
+
+            with self._operations_lock:
+                self.active_operations[operation_id] = trace_data
+
             self.trace_logger.debug(f"Started operation trace: {operation_id} - {operation_type}")
-            
+
         except Exception as e:
             logger.error(f"Error starting operation trace: {e}")
-    
-    def end_operation_trace(self, operation_id: str, success: bool = True, result: Dict[str, Any] = None):
-        """End tracing an operation."""
+
+    def end_operation_trace(self, operation_id: str, success: bool = True, result: Optional[Dict[str, Any]] = None):
+        """End tracing an operation with thread safety."""
         try:
-            if operation_id not in self.active_operations:
-                logger.warning(f"Operation trace not found: {operation_id}")
-                return
-            
-            trace_data = self.active_operations[operation_id]
-            end_time = datetime.datetime.now()
-            start_time = datetime.datetime.fromisoformat(trace_data["start_time"])
-            duration_ms = (end_time - start_time).total_seconds() * 1000
-            
-            trace_data.update({
-                "end_time": end_time.isoformat(),
-                "duration_ms": duration_ms,
-                "success": success,
-                "result": result or {}
-            })
-            
-            self.trace_logger.debug(f"Completed operation trace: {operation_id} - {duration_ms:.1f}ms")
-            
-            # Remove from active operations
-            del self.active_operations[operation_id]
-            
+            with self._operations_lock:
+                if operation_id not in self.active_operations:
+                    logger.warning(f"Operation trace not found: {operation_id}")
+                    return
+
+                trace_data = self.active_operations[operation_id]
+                end_time = datetime.datetime.now()
+                start_time = datetime.datetime.fromisoformat(trace_data["start_time"])
+                duration_ms = (end_time - start_time).total_seconds() * 1000
+
+                trace_data.update({
+                    "end_time": end_time.isoformat(),
+                    "duration_ms": duration_ms,
+                    "success": success,
+                    "result": result or {}
+                })
+
+                self.trace_logger.debug(f"Completed operation trace: {operation_id} - {duration_ms:.1f}ms")
+
+                # Remove from active operations
+                del self.active_operations[operation_id]
+
         except Exception as e:
             logger.error(f"Error ending operation trace: {e}")
     
-    def get_operation_logs(self, hours: int = 24, operation_type: str = None) -> List[Dict[str, Any]]:
+    def get_operation_logs(self, hours: int = 24, operation_type: Optional[str] = None) -> List[Dict[str, Any]]:
         """Get operation logs for analysis."""
         try:
             cutoff_time = datetime.datetime.now() - datetime.timedelta(hours=hours)
@@ -227,7 +236,7 @@ class ADKMemoryLogger:
             logger.error(f"Error getting operation logs: {e}")
             return []
     
-    def get_session_logs(self, hours: int = 24, session_id: str = None) -> List[Dict[str, Any]]:
+    def get_session_logs(self, hours: int = 24, session_id: Optional[str] = None) -> List[Dict[str, Any]]:
         """Get session logs for analysis."""
         try:
             cutoff_time = datetime.datetime.now() - datetime.timedelta(hours=hours)

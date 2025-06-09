@@ -1,24 +1,35 @@
 # 🏗️ Architecture Overview
 
-VANA is built on a sophisticated multi-agent architecture that leverages Google's Agent Development Kit (ADK) for enterprise-grade AI orchestration. This document provides a comprehensive overview of the system's design and components.
+VANA is built on an optimized multi-agent architecture that leverages Google's Agent Development Kit (ADK) with AGOR-inspired orchestration patterns and Node.js best practices for enterprise-grade AI coordination.
 
-## 🎯 Design Principles
+## 🎯 Optimized Design Principles
 
-### 1. **Hierarchical Agent Organization**
-- **Master Orchestrator** coordinates all activities
-- **Domain Orchestrators** manage specialized workflows
-- **Specialist Agents** handle specific tasks
-- **Intelligence Agents** provide system optimization
-- **Utility Agents** ensure system health and coordination
+### 1. **Dynamic Agent Orchestration** ✨ NEW
+- **Strategy-Based Execution** with AGOR patterns (Pipeline, Parallel Divergent, Swarm, Red Team, Mob Programming)
+- **On-Demand Agent Creation** for resource optimization
+- **Intelligent Agent Lifecycle Management** with automatic cleanup
+- **Performance-Based Agent Selection** with confidence scoring
 
-### 2. **Tool Standardization**
-- **Consistent Interfaces** across all 42 tools
+### 2. **Advanced Tool Optimization** ✨ NEW
+- **Intelligent Caching** with TTL-based performance optimization
+- **Tool Consolidation** and duplicate detection
+- **Usage Analytics** and optimization recommendations
+- **Performance Monitoring** with comprehensive metrics
+
+### 3. **AGOR-Style Coordination** ✨ NEW
+- **Coordination Files** for enhanced agent communication
+- **Session State Management** with persistent memory
+- **Task Progress Tracking** and handoff coordination
+- **Real-Time Agent Status Monitoring**
+
+### 4. **Enhanced Tool Standardization**
+- **Consistent Interfaces** across all 59+ tools
 - **Standardized Response Format** for predictable outputs
 - **Input Validation** with comprehensive security checks
 - **Performance Monitoring** for all tool executions
 - **Error Handling** with graceful degradation
 
-### 3. **Cloud-Native Design**
+### 5. **Cloud-Native Design**
 - **Google Cloud Integration** with Vertex AI and Cloud Run
 - **Auto-scaling** based on demand
 - **Resilient Architecture** with circuit breakers and fallbacks

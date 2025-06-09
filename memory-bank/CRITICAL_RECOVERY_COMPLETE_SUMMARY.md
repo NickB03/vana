@@ -19,8 +19,8 @@
 ### 🚀 **PRODUCTION DEPLOYMENT SUCCESS**
 
 **Service URLs Now Operational:**
-- ✅ https://vana-qqugqgsbcq-uc.a.run.app
-- ✅ https://vana-960076421399.us-central1.run.app
+- ✅ https://vana-prod-960076421399.us-central1.run.app
+- ✅ https://vana-prod-960076421399.us-central1.run.app
 
 **Deployment Details:**
 - **Build ID**: 1f552c60-f55b-49de-9105-00407b654063

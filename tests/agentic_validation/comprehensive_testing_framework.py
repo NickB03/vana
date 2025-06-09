@@ -362,7 +362,7 @@ class AgenticTestValidator:
 
 if __name__ == "__main__":
     # Example usage
-    validator = AgenticTestValidator("https://vana-qqugqgsbcq-uc.a.run.app")
+    validator = AgenticTestValidator("https://vana-prod-960076421399.us-central1.run.app")
     report = validator.run_comprehensive_validation()
     
     print("\n" + "="*80)

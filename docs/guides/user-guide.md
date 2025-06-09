@@ -14,7 +14,7 @@ VANA is an advanced multi-agent AI system that can help you with:
 
 ### Accessing VANA
 
-**Production Service**: [https://vana-qqugqgsbcq-uc.a.run.app](https://vana-qqugqgsbcq-uc.a.run.app)
+**Production Service**: [https://vana-prod-960076421399.us-central1.run.app](https://vana-prod-960076421399.us-central1.run.app)
 
 **Local Development**: http://localhost:8080 (after running `python main.py`)
 

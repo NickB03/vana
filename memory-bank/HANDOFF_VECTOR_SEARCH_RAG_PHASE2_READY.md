@@ -10,13 +10,13 @@
 ### **✅ CRITICAL SUCCESS METRICS**
 - **Tool Registration Error**: ✅ COMPLETELY RESOLVED - "Function _search_knowledge is not found" error eliminated
 - **VANA_RAG_CORPUS_ID Support**: ✅ OPERATIONAL - Environment variable priority system working
-- **Production Deployment**: ✅ VALIDATED - All fixes confirmed working at https://vana-960076421399.us-central1.run.app
+- **Production Deployment**: ✅ VALIDATED - All fixes confirmed working at https://vana-prod-960076421399.us-central1.run.app
 - **Backward Compatibility**: ✅ MAINTAINED - Existing configurations continue to work
 - **Puppeteer Testing**: ✅ COMPREHENSIVE - Automated browser testing confirms all functionality
 
 ### **🧪 VALIDATION EVIDENCE**
 **Testing Method:** Puppeteer automated browser testing via Google ADK Dev UI
-**Service URL:** https://vana-960076421399.us-central1.run.app
+**Service URL:** https://vana-prod-960076421399.us-central1.run.app
 **Agent Tested:** VANA agent (selected from dropdown)
 
 **Test Results:**

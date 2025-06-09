@@ -31,7 +31,7 @@
 #### **Test 1.1.1: Service Health Check**
 ```bash
 # Manual verification
-curl https://vana-qqugqgsbcq-uc.a.run.app/health
+curl https://vana-prod-960076421399.us-central1.run.app/health
 ```
 **Expected Result**: `{"status":"healthy","agent":"vana"}`
 **Documentation**: Screenshot + response JSON
@@ -39,7 +39,7 @@ curl https://vana-qqugqgsbcq-uc.a.run.app/health
 #### **Test 1.1.2: Web Interface Accessibility**
 ```javascript
 // Puppeteer test
-await page.goto('https://vana-qqugqgsbcq-uc.a.run.app');
+await page.goto('https://vana-prod-960076421399.us-central1.run.app');
 await page.screenshot({path: 'interface-loaded.png'});
 const pageText = await page.evaluate(() => document.body.innerText);
 ```
