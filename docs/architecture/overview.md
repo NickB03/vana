@@ -1,6 +1,6 @@
 # 🏗️ Architecture Overview
 
-VANA is built on an optimized multi-agent architecture that leverages Google's Agent Development Kit (ADK) with AGOR-inspired orchestration patterns and Node.js best practices for enterprise-grade AI coordination.
+VANA is built on an optimized multi-agent architecture that leverages Google's Agent Development Kit (ADK) with AGOR-inspired orchestration patterns and Python enterprise architecture for scalable AI coordination.
 
 ## 🎯 Optimized Design Principles
 
