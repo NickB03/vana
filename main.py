@@ -37,31 +37,34 @@ logger.info("Lazy initialization manager ready - services will initialize on fir
 # Get the directory where main.py is located - this is where the agent files are now located
 # Supporting directories are now in lib/ to avoid being treated as agents
 AGENT_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "agents")
-print(f"Agent directory: {AGENT_DIR}")
-print(f"Directory exists: {os.path.exists(AGENT_DIR)}")
+logger.debug(f"Agent directory: {AGENT_DIR}")
+logger.debug(f"Directory exists: {os.path.exists(AGENT_DIR)}")
 if os.path.exists(AGENT_DIR):
-    print(f"Agent files in directory: {[f for f in os.listdir(AGENT_DIR) if f.endswith('.py') or f == '__init__.py']}")
-    print(f"Directories in agent dir: {[d for d in os.listdir(AGENT_DIR) if os.path.isdir(os.path.join(AGENT_DIR, d)) and not d.startswith('.')]}")
+    agent_files = [f for f in os.listdir(AGENT_DIR) if f.endswith('.py') or f == '__init__.py']
+    agent_dirs = [d for d in os.listdir(AGENT_DIR) if os.path.isdir(os.path.join(AGENT_DIR, d)) and not d.startswith('.')]
+    logger.debug(f"Agent files in directory: {agent_files}")
+    logger.debug(f"Directories in agent dir: {agent_dirs}")
 
     # Check if vana agent can be imported
     import sys
     sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
     try:
         import vana
-        print(f"✅ Root level vana module imported successfully: {vana}")
-        print(f"✅ Root level vana.agent: {vana.agent}")
+        logger.info(f"✅ Root level vana module imported successfully")
+        logger.debug(f"Root level vana.agent: {vana.agent}")
     except Exception as e:
-        print(f"❌ Failed to import root level vana module: {e}")
+        logger.error(f"❌ Failed to import root level vana module: {e}")
 
     try:
         from agents.vana import agent
-        print(f"✅ agents.vana.agent imported successfully: {agent}")
+        logger.info(f"✅ agents.vana.agent imported successfully")
+        logger.debug(f"Agent object: {agent}")
     except Exception as e:
-        print(f"❌ Failed to import agents.vana.agent: {e}")
+        logger.error(f"❌ Failed to import agents.vana.agent: {e}")
 
     # Check current working directory and Python path
-    print(f"Current working directory: {os.getcwd()}")
-    print(f"Python path: {sys.path[:5]}")  # First 5 entries
+    logger.debug(f"Current working directory: {os.getcwd()}")
+    logger.debug(f"Python path: {sys.path[:5]}")  # First 5 entries
 
 # Session database URL (SQLite for development)
 # Use /tmp for Cloud Run compatibility (writable filesystem)
