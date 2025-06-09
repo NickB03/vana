@@ -26,7 +26,7 @@ vana/
 ## 🚀 Development Setup
 
 ### Prerequisites
-- **Python 3.11+** (Python 3.13 recommended)
+- **Python 3.13+** (mandatory)
 - **Poetry** for dependency management
 - **Google Cloud SDK** with appropriate permissions
 - **Git** for version control

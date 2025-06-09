@@ -5,7 +5,7 @@ Get VANA up and running in 5 minutes with this streamlined setup guide.
 ## 🎯 Prerequisites Check
 
 Before starting, ensure you have:
-- ✅ **Python 3.11+** installed
+- ✅ **Python 3.13+** installed
 - ✅ **Git** installed
 - ✅ **Google Cloud Project** with billing enabled
 
@@ -210,7 +210,7 @@ check_task_status "your-task-id"
 
 ```bash
 # Check Python version
-python --version  # Should be 3.11+
+python --version  # Should be 3.13+
 
 # Reinstall dependencies
 poetry install --no-cache

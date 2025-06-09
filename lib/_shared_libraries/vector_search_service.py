@@ -34,6 +34,7 @@ Based on Context7 research from:
 
 import os
 import logging
+import asyncio
 from typing import List, Dict, Any, Optional
 
 # Configure logging
@@ -55,6 +56,7 @@ try:
     from google.cloud import aiplatform
     from google.cloud.aiplatform import MatchingEngineIndex, MatchingEngineIndexEndpoint
     from google.api_core import exceptions as gcp_exceptions
+    from vertexai.language_models import TextEmbeddingModel
     VERTEX_AI_AVAILABLE = True
 except ImportError as e:
     logger.warning(f"Google Cloud AI Platform not available: {e}")
@@ -149,14 +151,26 @@ class VectorSearchService:
             return self._embedding_cache[cache_key]
         
         try:
-            # Use Vertex AI to generate embedding
-            # Note: This is a simplified implementation - in production you'd use the actual Vertex AI embedding API
             logger.info(f"Generating embedding for text: {text[:100]}...")
-            
-            # For now, return a mock embedding vector of the correct dimensions
-            # TODO: Replace with actual Vertex AI embedding generation
-            import numpy as np
-            embedding = np.random.normal(0, 1, self.embedding_dimensions).tolist()
+
+            def _embed() -> List[float]:
+                model = TextEmbeddingModel.from_pretrained(self.embedding_model)
+                result = model.get_embeddings([text])
+                return result[0].values
+
+            if TENACITY_AVAILABLE:
+                @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=2), retry=retry_if_exception_type(Exception))
+                def _retry_embed():
+                    return _embed()
+
+                embedding = await asyncio.to_thread(_retry_embed)
+            else:
+                embedding = await asyncio.to_thread(_embed)
+
+            # Ensure embedding length matches expected dimensions
+            if len(embedding) != self.embedding_dimensions:
+                logger.warning("Embedding dimension mismatch; expected %s got %s", self.embedding_dimensions, len(embedding))
+                embedding = list(embedding)[: self.embedding_dimensions]
             
             # Cache the result
             if len(self._embedding_cache) < self._cache_max_size:
@@ -211,24 +225,31 @@ class VectorSearchService:
                 return []
             
             logger.info(f"Performing semantic search for: {query[:100]}...")
-            
-            # For now, return mock results since we don't have a real index deployed
-            # TODO: Replace with actual vector similarity search
+
+            def _match():
+                return self.endpoint.match(
+                    deployed_index_id=self.index_id,
+                    queries=[query_embedding],
+                    num_neighbors=top_k,
+                    filter=filter_str or None,
+                )
+
+            response = await asyncio.to_thread(_match)
+
             results = []
-            for i in range(min(top_k, 3)):
-                result = {
-                    "content": f"Vector search result {i+1} for: {query}",
-                    "score": 0.9 - (i * 0.1),
+            for neighbor in response[0].neighbors:
+                results.append({
+                    "content": neighbor.datapoint.datapoint_id,
+                    "score": 1 - neighbor.distance,
                     "source": "vector_search",
                     "metadata": {
-                        "id": f"vector_result_{i+1}",
-                        "distance": 0.1 + (i * 0.1),
+                        "id": neighbor.datapoint.datapoint_id,
+                        "distance": neighbor.distance,
                         "search_type": "semantic_similarity",
-                        "embedding_model": self.embedding_model
-                    }
-                }
-                results.append(result)
-            
+                        "embedding_model": self.embedding_model,
+                    },
+                })
+
             logger.info(f"Vector search returned {len(results)} results")
             return results
             

@@ -254,19 +254,8 @@ class EnvironmentConfig:
             if session_type not in valid_session_types:
                 validation_results["warnings"].append(f"SESSION_SERVICE_TYPE '{session_type}' is not in recommended types: {valid_session_types}")
 
-            # Check for deprecated MCP variables
-            deprecated_vars = [
-                "MCP_ENDPOINT", "MCP_NAMESPACE", "MCP_API_KEY", "USE_LOCAL_MCP",
-                "KNOWLEDGE_GRAPH_API_KEY", "KNOWLEDGE_GRAPH_SERVER_URL", "KNOWLEDGE_GRAPH_NAMESPACE"
-            ]
-
-            found_deprecated = []
-            for var in deprecated_vars:
-                if os.environ.get(var):
-                    found_deprecated.append(var)
-
-            if found_deprecated:
-                validation_results["warnings"].append(f"Deprecated MCP variables found: {found_deprecated}. These should be removed.")
+            # Legacy MCP environment variables are ignored but no longer validated
+            # This allows older configurations to run without noisy warnings
 
             logger.info(f"ADK Memory configuration validation: {'PASSED' if validation_results['valid'] else 'FAILED'}")
 

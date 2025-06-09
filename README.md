@@ -5,7 +5,7 @@
 [![Cloud Run](https://img.shields.io/badge/Deployed%20on-Google%20Cloud%20Run-blue)](https://cloud.google.com/run)
 [![Python](https://img.shields.io/badge/Python-3.13+-blue)](https://python.org)
 
-> **VANA** is a production-ready, multi-agent AI system built on Google's Agent Development Kit (ADK), featuring 24 specialized agents with 42 standardized tools for advanced knowledge management, semantic search, and intelligent task orchestration.
+> **VANA** is a production-ready, multi-agent AI system built on Google's Agent Development Kit (ADK), featuring 12 specialized agents with 59 standardized tools for advanced knowledge management, semantic search, and intelligent task orchestration.
 
 ## 🚀 Quick Start
 
@@ -45,7 +45,7 @@ VANA is an enterprise-grade multi-agent AI system designed for complex task orch
 
 ### ✨ Key Features
 
-- **🤖 24-Agent Ecosystem** - Specialized agents for travel, development, research, and system intelligence
+- **🤖 12-Agent Ecosystem** - Specialized agents for travel, development, research, and system intelligence
 - **🛠️ 59 Standardized Tools** - Comprehensive toolkit for file operations, search, coordination, and more
 - **🔍 Advanced Search** - Vector search, web search, and hybrid search capabilities
 - **☁️ Cloud-Native** - Deployed on Google Cloud Run with auto-scaling and 99.9% uptime
@@ -115,7 +115,7 @@ graph TB
 
 ## 🤖 Agent System
 
-VANA features a sophisticated 24-agent ecosystem organized in a hierarchical structure:
+VANA features a sophisticated 12-agent ecosystem organized in a hierarchical structure:
 
 ### 🎯 Master Orchestrator
 - **VANA Agent** - Central coordinator with PLAN/ACT capabilities
