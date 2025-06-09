@@ -427,7 +427,7 @@ gcloud run deploy vana \
 ### Health Checks
 ```bash
 # Check service health
-curl https://vana-qqugqgsbcq-uc.a.run.app/api/health
+curl https://vana-prod-960076421399.us-central1.run.app/api/health
 
 # Check Cloud Run service status
 gcloud run services describe vana --region=$REGION

@@ -5,7 +5,7 @@
 **Status:** ✅ PHASE 1 COMPLETE - ReAct Cognitive Framework Successfully Deployed  
 **Next Mission:** Phase 2 - Cognitive Architecture Enhancement & Validation  
 **Branch:** `feat/agent-intelligence-enhancement`  
-**Service URL:** https://vana-qqugqgsbcq-uc.a.run.app  
+**Service URL:** https://vana-prod-960076421399.us-central1.run.app  
 **Health Status:** ✅ CONFIRMED OPERATIONAL  
 
 ## 🎉 MISSION ACCOMPLISHED: AUTONOMOUS COGNITIVE ARCHITECTURE FOUNDATION
@@ -39,7 +39,7 @@
 ### 📊 PRODUCTION VERIFICATION - CONFIRMED OPERATIONAL
 
 **✅ Deployment Status**
-- **Service URL:** https://vana-qqugqgsbcq-uc.a.run.app
+- **Service URL:** https://vana-prod-960076421399.us-central1.run.app
 - **Health Check:** ✅ {"status":"healthy","agent":"vana"}
 - **Build Status:** ✅ Successfully deployed to Google Cloud Run
 - **Framework Status:** ✅ ReAct framework active in production

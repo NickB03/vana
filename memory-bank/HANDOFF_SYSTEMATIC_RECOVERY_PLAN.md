@@ -118,7 +118,7 @@ python3 test_agent_import.py  # Should show 60 tools
 
 Before claiming any success, next agent MUST verify:
 - [ ] Agent loads successfully (60 tools)
-- [ ] Service responds at https://vana-960076421399.us-central1.run.app
+- [ ] Service responds at https://vana-prod-960076421399.us-central1.run.app
 - [ ] Google ADK Dev UI can connect to service
 - [ ] Agent provides meaningful responses to queries
 - [ ] No "No root_agent found" errors

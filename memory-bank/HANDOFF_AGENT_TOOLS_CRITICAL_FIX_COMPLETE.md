@@ -45,7 +45,7 @@ Agent-as-tools functionality was completely broken. During comprehensive automat
 
 ### **Automated Testing Validation**
 - **Testing Method**: MCP Puppeteer browser automation
-- **Service URL**: https://vana-qqugqgsbcq-uc.a.run.app
+- **Service URL**: https://vana-prod-960076421399.us-central1.run.app
 - **All Tests**: ✅ PASSING
 - **Agent Tools**: All respond with comprehensive, detailed analysis
 - **Base Tools**: Continue working as expected
@@ -56,7 +56,7 @@ Agent-as-tools functionality was completely broken. During comprehensive automat
 ### **Production Deployment Complete**
 - **Build ID**: 052c63f0-671f-409f-a248-076b5e3ccf53
 - **Status**: ✅ SUCCESS
-- **Service URL**: https://vana-qqugqgsbcq-uc.a.run.app
+- **Service URL**: https://vana-prod-960076421399.us-central1.run.app
 - **Health Check**: ✅ Operational
 - **All Tools**: ✅ Functional in production
 

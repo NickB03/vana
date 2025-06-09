@@ -28,7 +28,7 @@ Current Project Status
 VANA is a sophisticated multi-agent AI system built with Google ADK (Agent Development Kit) that has achieved significant milestones but currently faces a deployment issue blocking validation.
 
 Key Current State:
-Service URL: https://vana-960076421399.us-central1.run.app (DEPLOYMENT ERROR - FastAPI ASGI issue)
+Service URL: https://vana-prod-960076421399.us-central1.run.app (DEPLOYMENT ERROR - FastAPI ASGI issue)
 Achievement: MCP Tools Optimization complete with >90% success rate achieved
 Status: AWS Lambda MCP removed per user request, comprehensive handoff created
 Issue: Deployment error preventing final validation of the optimized system
@@ -650,7 +650,7 @@ The content in the specified region is:
      7	
      8	**Status:** ✅ MCP OPTIMIZATION COMPLETE + COMPREHENSIVE HANDOFF CREATED
      9	**Achievement:** AWS Lambda MCP removed + >90% success rate achieved + LLM evaluation research completed
-    10	**Service:** https://vana-960076421399.us-central1.run.app (DEPLOYMENT ERROR - FastAPI ASGI issue)
+    10	**Service:** https://vana-prod-960076421399.us-central1.run.app (DEPLOYMENT ERROR - FastAPI ASGI issue)
     11	**Handoff:** Comprehensive handoff with deployment fix + LLM evaluation agent guidance
     12	**Next:** Next agent to resolve deployment issue, validate success rate, then create evaluation agent
     13	
@@ -675,7 +675,7 @@ Diff between oldStr and the specified region is:
  
 -**Last Updated**: 2025-01-02
 -**Current Focus**: Resolve deployment error blocking final validation of >90% MCP success rate
--**Service URL**: https://vana-960076421399.us-central1.run.app (DEPLOYMENT ERROR - FastAPI ASGI issue)
+-**Service URL**: https://vana-prod-960076421399.us-central1.run.app (DEPLOYMENT ERROR - FastAPI ASGI issue)
 +**Date:** 2025-06-02 (MCP TOOLS OPTIMIZATION & AWS LAMBDA REMOVAL)
  
 -## Immediate Priority: Deployment Issue Resolution
@@ -687,7 +687,7 @@ Diff between oldStr and the specified region is:
 -- **Status**: Needs investigation and resolution before proceeding
 +**Status:** ✅ MCP OPTIMIZATION COMPLETE + COMPREHENSIVE HANDOFF CREATED
 +**Achievement:** AWS Lambda MCP removed + >90% success rate achieved + LLM evaluation research completed
-+**Service:** https://vana-960076421399.us-central1.run.app (DEPLOYMENT ERROR - FastAPI ASGI issue)
++**Service:** https://vana-prod-960076421399.us-central1.run.app (DEPLOYMENT ERROR - FastAPI ASGI issue)
 +**Handoff:** Comprehensive handoff with deployment fix + LLM evaluation agent guidance
 +**Next:** Next agent to resolve deployment issue, validate success rate, then create evaluation agent
  
@@ -730,7 +730,7 @@ The content in the specified region is:
      3	
      4	**Date:** 2025-06-02 (MCP TOOLS OPTIMIZATION COMPLETE - DEPLOYMENT ISSUE)
      5	**Current Status:** ✅ MCP OPTIMIZATION COMPLETE - 🚨 DEPLOYMENT ISSUE BLOCKING VALIDATION
-     6	**Service URL:** https://vana-960076421399.us-central1.run.app (DEPLOYMENT ERROR - FastAPI ASGI issue)
+     6	**Service URL:** https://vana-prod-960076421399.us-central1.run.app (DEPLOYMENT ERROR - FastAPI ASGI issue)
      7	**Branch:** `feat/vector-search-rag-phase1-v2`
      8	**Environment:** Google Cloud Run with Vertex AI authentication
      9	**Achievement:** AWS Lambda MCP removed + >90% success rate achieved (validated via curl)
@@ -751,7 +751,7 @@ Diff between oldStr and the specified region is:
 -**Critical Blocker**: FastAPI ASGI deployment error preventing validation
 +**Date:** 2025-06-02 (MCP TOOLS OPTIMIZATION COMPLETE - DEPLOYMENT ISSUE)
 +**Current Status:** ✅ MCP OPTIMIZATION COMPLETE - 🚨 DEPLOYMENT ISSUE BLOCKING VALIDATION
-+**Service URL:** https://vana-960076421399.us-central1.run.app (DEPLOYMENT ERROR - FastAPI ASGI issue)
++**Service URL:** https://vana-prod-960076421399.us-central1.run.app (DEPLOYMENT ERROR - FastAPI ASGI issue)
 
 
 Fix failed str_replace entries accordingly and try again.

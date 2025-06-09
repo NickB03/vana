@@ -32,7 +32,7 @@
 // REAL Puppeteer Implementation (not simulation)
 async function realPuppeteerTest(testMessage) {
     // Navigate to actual service
-    await puppeteer_navigate({ url: "https://vana-qqugqgsbcq-uc.a.run.app" });
+    await puppeteer_navigate({ url: "https://vana-prod-960076421399.us-central1.run.app" });
     
     // Wait for page load
     await page.waitForSelector('textarea', { timeout: 10000 });

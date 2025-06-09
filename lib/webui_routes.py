@@ -45,7 +45,7 @@ class LoginResponse(BaseModel):
     message: Optional[str] = None
 
 # VANA Service Configuration
-VANA_SERVICE_URL = "https://vana-qqugqgsbcq-uc.a.run.app"
+VANA_SERVICE_URL = "https://vana-prod-960076421399.us-central1.run.app"
 
 # Simple authentication (for demo purposes)
 DEMO_USERS = {

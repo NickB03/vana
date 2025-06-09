@@ -11,7 +11,7 @@
 
 ### ✅ Foundation Ready
 - **Agent System**: Google ADK-based with 21 operational tools (16 core + 5 MCP)
-- **Deployment**: Stable Cloud Run service at https://vana-qqugqgsbcq-uc.a.run.app
+- **Deployment**: Stable Cloud Run service at https://vana-prod-960076421399.us-central1.run.app
 - **Testing**: Comprehensive Puppeteer automation framework
 - **Architecture**: Multi-agent system with orchestrator patterns
 - **Intelligence Level**: REACTIVE (ready for transformation to AUTONOMOUS)
@@ -163,7 +163,7 @@ COGNITIVE PROCESS - Follow this pattern for every user request:
 
 ### Testing Framework:
 - **Location**: Puppeteer automation configured
-- **Service**: https://vana-qqugqgsbcq-uc.a.run.app
+- **Service**: https://vana-prod-960076421399.us-central1.run.app
 - **Validation**: All 21 tools operational and tested
 
 ## Risk Mitigation

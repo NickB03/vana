@@ -88,7 +88,7 @@ Phase 6 (Production)
 
 ### ✅ Foundation Ready:
 - **Agent System**: Google ADK-based with 21 operational tools (16 core + 5 MCP)
-- **Deployment**: Stable Cloud Run service at https://vana-qqugqgsbcq-uc.a.run.app
+- **Deployment**: Stable Cloud Run service at https://vana-prod-960076421399.us-central1.run.app
 - **Testing**: Comprehensive Puppeteer automation framework operational
 - **Architecture**: Multi-agent system with orchestrator patterns
 - **Intelligence Level**: REACTIVE (ready for transformation to AUTONOMOUS)
@@ -177,7 +177,7 @@ Upon completion, VANA will achieve capabilities comparable to:
 ### GitHub Status:
 - **Branch**: `feat/automated-testing-mcp-puppeteer`
 - **Status**: All work committed and pushed
-- **Service**: https://vana-qqugqgsbcq-uc.a.run.app (operational)
+- **Service**: https://vana-prod-960076421399.us-central1.run.app (operational)
 
 ---
 

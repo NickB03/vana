@@ -36,6 +36,12 @@ steps:
       - 'ENVIRONMENT=development'
       - '--set-env-vars'
       - 'GOOGLE_GENAI_USE_VERTEXAI=true'
+      - '--set-env-vars'
+      - 'GOOGLE_CLOUD_PROJECT=analystai-454200'
+      - '--set-env-vars'
+      - 'GOOGLE_CLOUD_LOCATION=us-central1'
+      - '--set-env-vars'
+      - 'BRAVE_API_KEY=BSA6fMCYrfJC5seE-AVsWrKjpOFk6Nm'
 
 images:
   - 'gcr.io/$PROJECT_ID/vana-dev:latest'

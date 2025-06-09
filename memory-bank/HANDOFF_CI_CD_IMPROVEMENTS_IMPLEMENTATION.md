@@ -9,7 +9,7 @@
 
 ### **✅ Import Hanging Resolution** - COMPLETE SUCCESS
 - **Status**: ✅ FULLY RESOLVED - Production service operational
-- **Service URL**: https://vana-qqugqgsbcq-uc.a.run.app
+- **Service URL**: https://vana-prod-960076421399.us-central1.run.app
 - **Performance**: All imports working in 2-3 seconds, no hanging behavior
 - **Validation**: 100% success on comprehensive system testing (6/6 tests passed)
 
@@ -33,7 +33,7 @@
 #### **Current Status:**
 - ✅ **vana-dev**: Already exists at https://vana-dev-960076421399.us-central1.run.app
 - ❌ **vana-prod**: NOT YET CREATED (handoff plan was not executed)
-- ✅ **vana**: Current production at https://vana-qqugqgsbcq-uc.a.run.app
+- ✅ **vana**: Current production at https://vana-prod-960076421399.us-central1.run.app
 
 #### **Files Created (Ready for Implementation):**
 - ✅ `deployment/cloudbuild-prod.yaml` - Production build config (2 vCPU, 2 GiB)

@@ -12,7 +12,7 @@
 
 ### ✅ **CURRENT SYSTEM STATUS - FULLY OPERATIONAL**
 - **Local Environment**: ✅ Poetry environment with 96 packages, all imports working
-- **Production Service**: ✅ https://vana-qqugqgsbcq-uc.a.run.app fully operational
+- **Production Service**: ✅ https://vana-prod-960076421399.us-central1.run.app fully operational
 - **Agent Loading**: ✅ Agent "vana" with 60 tools successfully loaded
 - **Echo Function**: ✅ Validated working perfectly in production
 - **Git State**: ✅ Clean state at commit 37ad19e (last known working state)

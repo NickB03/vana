@@ -89,7 +89,7 @@ Impact:
 #### **Priority 1: System Validation (IMMEDIATE)**
 - **Scope**: Validate all 60+ tools working in production environment
 - **Method**: Systematic testing through Google ADK Dev UI
-- **URL**: https://vana-qqugqgsbcq-uc.a.run.app
+- **URL**: https://vana-prod-960076421399.us-central1.run.app
 - **Success Criteria**: 95%+ tool success rate confirmed
 
 #### **Priority 2: Agent Orchestration Testing (HIGH)**

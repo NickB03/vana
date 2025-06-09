@@ -2,7 +2,7 @@
 
 **Date:** 2025-05-30  
 **Testing Method:** Comprehensive Browser Automation with MCP Puppeteer  
-**Service URL:** https://vana-qqugqgsbcq-uc.a.run.app  
+**Service URL:** https://vana-prod-960076421399.us-central1.run.app  
 **Total Tools Tested:** 16/16  
 **Success Rate:** 100% (16/16 PASS)  
 

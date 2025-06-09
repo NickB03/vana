@@ -9,6 +9,7 @@ and reliability across the enhanced multi-agent system.
 import time
 import logging
 import traceback
+import threading
 from typing import Dict, Any, List, Optional, Union, Callable
 from dataclasses import dataclass, field
 from enum import Enum
@@ -201,10 +202,11 @@ class ErrorHandler:
         )
 
 class PerformanceMonitor:
-    """Performance monitoring and analytics for tools."""
+    """Thread-safe performance monitoring and analytics for tools."""
 
     def __init__(self):
         self.tool_metrics: Dict[str, ToolMetrics] = {}
+        self._metrics_lock = threading.RLock()
 
     def start_execution(self, tool_name: str) -> float:
         """Start timing tool execution."""
@@ -212,22 +214,26 @@ class PerformanceMonitor:
 
     def end_execution(self, tool_name: str, start_time: float,
                      success: bool) -> float:
-        """End timing and update metrics."""
+        """End timing and update metrics with thread safety."""
         execution_time = time.time() - start_time
 
-        if tool_name not in self.tool_metrics:
-            self.tool_metrics[tool_name] = ToolMetrics()
+        with self._metrics_lock:
+            if tool_name not in self.tool_metrics:
+                self.tool_metrics[tool_name] = ToolMetrics()
 
-        self.tool_metrics[tool_name].update_execution(execution_time, success)
+            self.tool_metrics[tool_name].update_execution(execution_time, success)
+
         return execution_time
 
     def get_metrics(self, tool_name: str) -> Optional[ToolMetrics]:
-        """Get metrics for a specific tool."""
-        return self.tool_metrics.get(tool_name)
+        """Get metrics for a specific tool with thread safety."""
+        with self._metrics_lock:
+            return self.tool_metrics.get(tool_name)
 
     def get_all_metrics(self) -> Dict[str, ToolMetrics]:
-        """Get metrics for all tools."""
-        return self.tool_metrics.copy()
+        """Get metrics for all tools with thread safety."""
+        with self._metrics_lock:
+            return self.tool_metrics.copy()
 
     def get_performance_summary(self) -> Dict[str, Any]:
         """Get performance summary across all tools."""
