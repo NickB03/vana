@@ -7,10 +7,25 @@ Includes proper ADK memory service initialization for vector search and RAG pipe
 """
 
 import os
+import sys
 import uvicorn
 import logging
 from fastapi import FastAPI, Request
 from google.adk.cli.fast_api import get_fast_api_app
+
+# Ensure current directory is in Python path for lib imports
+current_dir = os.path.dirname(os.path.abspath(__file__))
+if current_dir not in sys.path:
+    sys.path.insert(0, current_dir)
+
+# Debug: Print current directory and lib directory status
+print(f"DEBUG: Current working directory: {os.getcwd()}")
+print(f"DEBUG: Script directory: {current_dir}")
+print(f"DEBUG: Python path: {sys.path[:3]}")
+print(f"DEBUG: lib directory exists: {os.path.exists(os.path.join(current_dir, 'lib'))}")
+if os.path.exists(os.path.join(current_dir, 'lib')):
+    lib_contents = os.listdir(os.path.join(current_dir, 'lib'))
+    print(f"DEBUG: lib directory contents: {lib_contents[:5]}")
 
 # Import our smart environment detection
 from lib.environment import setup_environment
