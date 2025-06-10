@@ -51,6 +51,10 @@ try:
         decompose_enterprise_task
     )
 
+    # Domain orchestrators
+    from agents.orchestrators.travel_orchestrator import travel_orchestrator
+    from agents.orchestrators.development_orchestrator import development_orchestrator
+
     from agents.memory.specialist_memory_manager import (
         save_specialist_knowledge_func,
         get_specialist_knowledge_func
@@ -197,6 +201,12 @@ Always be helpful, accurate, and efficient in your responses.
 - Jest, Playwright, Cypress, test automation, quality metrics
 
 **Seamless Integration**: Use specialist tools without mentioning transfers - present their expertise as your own knowledge.
+
+**Travel Requests** → Delegate to `TravelOrchestrator`
+- Itinerary planning, flights, hotels, and bookings
+
+**Software Development** → Delegate to `DevelopmentOrchestrator`
+- Code generation, testing, documentation, security reviews
 
 ## 🚀 ADVANCED ORCHESTRATION CAPABILITIES
 
@@ -354,5 +364,6 @@ previous_success = load_memory("successful agent coordination for similar task")
         # Agent Coordination Tools
         adk_coordinate_task, adk_delegate_to_agent, adk_get_agent_status
     ] + (specialist_agent_tools if SPECIALIST_TOOLS_AVAILABLE else []) +
-        (orchestration_tools if ORCHESTRATION_TOOLS_AVAILABLE else []))
+        (orchestration_tools if ORCHESTRATION_TOOLS_AVAILABLE else [])),
+    sub_agents=[travel_orchestrator, development_orchestrator]
 )

@@ -7,6 +7,15 @@ import os
 import sys
 from typing import Dict, Any
 
+from .schemas import (
+    RequirementsSchema,
+    ArchDesignSchema,
+    UIDesignSchema,
+    DevOpsStrategySchema,
+    QAStrategySchema,
+    IntegratedPlanSchema,
+)
+
 # Add project root to Python path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
 
@@ -45,7 +54,8 @@ def create_project_development_workflow() -> SequentialAgent:
         4. Success criteria
         
         Save your analysis to session state for other specialists to use.""",
-        output_key="project_requirements"
+        output_key="project_requirements",
+        output_schema=RequirementsSchema
     )
     
     # Phase 2: Architecture Design
@@ -69,7 +79,8 @@ def create_project_development_workflow() -> SequentialAgent:
             FunctionTool(get_specialist_knowledge_func),
             FunctionTool(save_specialist_knowledge_func)
         ],
-        output_key="system_architecture"
+        output_key="system_architecture",
+        output_schema=ArchDesignSchema
     )
     
     # Phase 3: UI/UX Design
@@ -89,7 +100,8 @@ def create_project_development_workflow() -> SequentialAgent:
         
         Use the UI analysis tool for detailed design guidance.""",
         tools=[FunctionTool(analyze_user_interface)],
-        output_key="ui_design"
+        output_key="ui_design",
+        output_schema=UIDesignSchema
     )
     
     # Phase 4: DevOps Strategy
@@ -110,7 +122,8 @@ def create_project_development_workflow() -> SequentialAgent:
         
         Use the DevOps analysis tool for detailed infrastructure guidance.""",
         tools=[FunctionTool(analyze_infrastructure)],
-        output_key="devops_strategy"
+        output_key="devops_strategy",
+        output_schema=DevOpsStrategySchema
     )
     
     # Phase 5: QA Strategy
@@ -132,7 +145,8 @@ def create_project_development_workflow() -> SequentialAgent:
         
         Use the QA analysis tool for detailed testing guidance.""",
         tools=[FunctionTool(analyze_testing_strategy)],
-        output_key="qa_strategy"
+        output_key="qa_strategy",
+        output_schema=QAStrategySchema
     )
     
     # Phase 6: Integration Summary
@@ -153,7 +167,8 @@ def create_project_development_workflow() -> SequentialAgent:
         3. Resource requirements
         4. Risk assessment
         5. Success metrics""",
-        output_key="integrated_project_plan"
+        output_key="integrated_project_plan",
+        output_schema=IntegratedPlanSchema
     )
     
     # Create the sequential workflow

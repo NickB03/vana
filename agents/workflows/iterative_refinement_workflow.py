@@ -7,6 +7,8 @@ import os
 import sys
 from typing import AsyncGenerator
 
+from .schemas import QualityFeedbackSchema, CurrentSolutionSchema
+
 # Add project root to Python path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
 
@@ -33,16 +35,16 @@ class QualityGateAgent(BaseAgent):
         """Evaluate current solution quality and decide whether to continue refinement."""
         
         # Get current solution and quality metrics from state
-        current_solution = ctx.session.state.get("current_solution", "")
+        draft = ctx.session.state.get("draft", "")
         quality_score = ctx.session.state.get("quality_score", 0.0)
         iteration_count = ctx.session.state.get("iteration_count", 0)
         
         # Evaluate quality criteria
         quality_criteria = {
-            "completeness": self._evaluate_completeness(current_solution),
-            "technical_depth": self._evaluate_technical_depth(current_solution), 
-            "integration": self._evaluate_integration(current_solution),
-            "feasibility": self._evaluate_feasibility(current_solution)
+            "completeness": self._evaluate_completeness(draft),
+            "technical_depth": self._evaluate_technical_depth(draft), 
+            "integration": self._evaluate_integration(draft),
+            "feasibility": self._evaluate_feasibility(draft)
         }
         
         # Calculate overall quality score
@@ -138,11 +140,11 @@ def create_iterative_refinement_workflow(max_iterations: int = 5, quality_thresh
         model="gemini-2.0-flash",
         instruction="""You are a Solution Refiner. Your task is to create or improve a comprehensive solution.
 
-If this is the first iteration (no 'current_solution' in state):
+If this is the first iteration (no 'draft' in state):
 - Create an initial comprehensive solution based on the user's requirements
 - Include architecture, UI/UX, DevOps, and QA considerations
 
-If refining an existing solution (state['current_solution'] exists):
+If refining an existing solution (state['draft'] exists):
 - Review the current solution and quality feedback in state['quality_criteria']
 - Focus on improving areas with low quality scores
 - Enhance completeness, technical depth, integration, and feasibility
@@ -156,14 +158,15 @@ Save the improved solution for quality evaluation.""",
             FunctionTool(analyze_infrastructure),
             FunctionTool(analyze_testing_strategy)
         ],
-        output_key="current_solution"
+        output_key="draft",
+        output_schema=CurrentSolutionSchema
     )
     
     # Quality Evaluator
     quality_evaluator = LlmAgent(
         name="QualityEvaluator",
         model="gemini-2.0-flash",
-        instruction="""Evaluate the current solution in state['current_solution'] for:
+        instruction="""Evaluate the current solution in state['draft'] for:
 
 1. **Completeness** (0.0-1.0): Does it cover all required aspects?
    - Architecture design and technology choices
@@ -192,7 +195,8 @@ Save the improved solution for quality evaluation.""",
    - Constraint acknowledgment
 
 Provide specific feedback for improvement in each area.""",
-        output_key="quality_feedback"
+        output_key="critique",
+        output_schema=QualityFeedbackSchema
     )
     
     # Quality Gate Controller

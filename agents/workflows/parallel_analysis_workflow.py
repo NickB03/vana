@@ -7,6 +7,12 @@ import os
 import sys
 from typing import Dict, Any
 
+from .schemas import (
+    AnalysisContextSchema,
+    SpecialistAnalysisSchema,
+    SynthesisSchema,
+)
+
 # Add project root to Python path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
 
@@ -38,7 +44,8 @@ def create_parallel_analysis_workflow() -> SequentialAgent:
         4. Prepare context for each specialist domain
         
         Save the prepared context for parallel specialist analysis.""",
-        output_key="analysis_context"
+        output_key="analysis_context",
+        output_schema=AnalysisContextSchema
     )
     
     # Phase 2: Parallel Specialist Analysis
@@ -56,7 +63,8 @@ def create_parallel_analysis_workflow() -> SequentialAgent:
         
         Use the architecture tool for detailed analysis.""",
         tools=[FunctionTool(analyze_system_architecture)],
-        output_key="parallel_architecture_analysis"
+        output_key="parallel_architecture_analysis",
+        output_schema=SpecialistAnalysisSchema
     )
     
     # UI/UX Analysis Agent
@@ -72,7 +80,8 @@ def create_parallel_analysis_workflow() -> SequentialAgent:
         
         Use the UI tool for detailed analysis.""",
         tools=[FunctionTool(analyze_user_interface)],
-        output_key="parallel_ui_analysis"
+        output_key="parallel_ui_analysis",
+        output_schema=SpecialistAnalysisSchema
     )
     
     # DevOps Analysis Agent
@@ -88,7 +97,8 @@ def create_parallel_analysis_workflow() -> SequentialAgent:
         
         Use the DevOps tool for detailed analysis.""",
         tools=[FunctionTool(analyze_infrastructure)],
-        output_key="parallel_devops_analysis"
+        output_key="parallel_devops_analysis",
+        output_schema=SpecialistAnalysisSchema
     )
     
     # QA Analysis Agent
@@ -104,7 +114,8 @@ def create_parallel_analysis_workflow() -> SequentialAgent:
         
         Use the QA tool for detailed analysis.""",
         tools=[FunctionTool(analyze_testing_strategy)],
-        output_key="parallel_qa_analysis"
+        output_key="parallel_qa_analysis",
+        output_schema=SpecialistAnalysisSchema
     )
     
     # Create parallel analysis group
@@ -141,7 +152,8 @@ def create_parallel_analysis_workflow() -> SequentialAgent:
         5. Success metrics and validation criteria
         
         Provide a cohesive, actionable plan that leverages all specialist insights.""",
-        output_key="synthesized_recommendations"
+        output_key="synthesized_recommendations",
+        output_schema=SynthesisSchema
     )
     
     # Create the complete workflow

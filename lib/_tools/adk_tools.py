@@ -11,6 +11,7 @@ import logging
 # Removed unused imports - keeping imports minimal
 
 from google.adk.tools import FunctionTool
+from .tool_breadcrumbs import emit_tool_breadcrumb
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -23,6 +24,7 @@ def read_file(file_path: str) -> str:
         with open(file_path, 'r', encoding='utf-8') as f:
             content = f.read()
         logger.info(f"Successfully read file: {file_path}")
+        emit_tool_breadcrumb("read_file", f"{len(content)} chars from {file_path}")
         return content
     except Exception as e:
         error_msg = f"Error reading file {file_path}: {str(e)}"
@@ -64,6 +66,7 @@ def write_file(file_path: str, content: str) -> str:
             with open(file_path, 'w', encoding='utf-8') as f:
                 f.write(content)
             logger.info(f"Successfully wrote to file: {file_path}")
+            emit_tool_breadcrumb("write_file", f"wrote {len(content)} chars to {file_path}")
             return f"✅ Successfully wrote {len(content)} characters to {file_path}"
 
         except PermissionError:
@@ -88,6 +91,7 @@ def list_directory(directory_path: str) -> str:
             "count": len(items)
         }
         logger.info(f"Listed directory: {directory_path} ({len(items)} items)")
+        emit_tool_breadcrumb("list_directory", f"{len(items)} items in {directory_path}")
         return json.dumps(result, indent=2)
     except Exception as e:
         error_msg = f"Error listing directory {directory_path}: {str(e)}"
@@ -104,6 +108,7 @@ def file_exists(file_path: str) -> str:
             "is_file": os.path.isfile(file_path) if exists else False,
             "is_directory": os.path.isdir(file_path) if exists else False
         }
+        emit_tool_breadcrumb("file_exists", f"{file_path} -> {exists}")
         return json.dumps(result, indent=2)
     except Exception as e:
         error_msg = f"Error checking file existence {file_path}: {str(e)}"
@@ -154,6 +159,7 @@ def vector_search(query: str, max_results: int = 5) -> str:
         }
 
         logger.info(f"Vector search completed: {len(formatted_results)} results")
+        emit_tool_breadcrumb("vector_search", f"{len(formatted_results)} results for '{query}'")
         return json.dumps(result, indent=2)
 
     except Exception as e:
@@ -196,6 +202,7 @@ def web_search(query: str, max_results: int = 5) -> str:
                     'description': result.get('description', '')
                 })
             logger.info(f"Web search completed: {len(results)} results")
+            emit_tool_breadcrumb("web_search", f"{len(results)} results for '{query}'")
             return json.dumps({"query": query, "results": results}, indent=2)
         else:
             error_msg = f"Web search failed: HTTP {response.status_code}"
@@ -345,6 +352,7 @@ def search_knowledge(query: str) -> str:
             }
 
             logger.info(f"File-based knowledge search completed: {len(search_results)} results")
+            emit_tool_breadcrumb("search_knowledge", f"{len(search_results)} results for '{query}'")
             return json.dumps(result, indent=2)
         else:
             logger.info("No relevant knowledge found in file-based search")
@@ -370,6 +378,7 @@ def _create_fallback_result(query: str, error_msg: str) -> str:
         "mode": "fallback",
         "error": error_msg
     }
+    emit_tool_breadcrumb("search_knowledge", f"fallback for '{query}'")
     return json.dumps(result, indent=2)
 
 # Create FunctionTool instances with explicit names (NO underscore prefix - standardized naming)
@@ -393,6 +402,7 @@ def echo(message: str) -> str:
             "status": "echoed",
             "mode": "production"
         }
+        emit_tool_breadcrumb("echo", message)
         return json.dumps(result, indent=2)
     except Exception as e:
         error_msg = f"Echo error: {str(e)}"
@@ -440,6 +450,7 @@ def get_health_status() -> str:
                 "rag_corpus": os.getenv("RAG_CORPUS_RESOURCE_NAME", "not_set")
             }
         }
+        emit_tool_breadcrumb("get_health_status", "ok")
         return json.dumps(result, indent=2)
     except Exception as e:
         error_msg = f"Health status error: {str(e)}"
@@ -459,6 +470,7 @@ def coordinate_task(task_description: str, assigned_agent: str = "") -> str:
             "mode": "production",
             "routing": "PLAN/ACT"
         }
+        emit_tool_breadcrumb("coordinate_task", task_description)
         return json.dumps(result, indent=2)
     except Exception as e:
         error_msg = f"Task coordination error: {str(e)}"
@@ -477,6 +489,7 @@ def delegate_to_agent(agent_name: str, task: str, context: str = "") -> str:
             "status": "delegated",
             "mode": "production"
         }
+        emit_tool_breadcrumb("delegate_to_agent", f"{agent_name} -> {task}")
         return json.dumps(result, indent=2)
     except Exception as e:
         error_msg = f"Task delegation error: {str(e)}"
@@ -500,6 +513,7 @@ def get_agent_status() -> str:
             "mode": "production",
             "status": "all_operational"
         }
+        emit_tool_breadcrumb("get_agent_status", "status")
         return json.dumps(result, indent=2)
     except Exception as e:
         error_msg = f"Agent status error: {str(e)}"
@@ -518,6 +532,7 @@ def transfer_to_agent(agent_name: str, context: str = "") -> str:
             "mode": "production",
             "pattern": "google_adk"
         }
+        emit_tool_breadcrumb("transfer_to_agent", agent_name)
         return json.dumps(result, indent=2)
     except Exception as e:
         error_msg = f"Agent transfer error: {str(e)}"
