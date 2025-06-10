@@ -62,10 +62,10 @@ poetry show | grep google-adk
 
 ```bash
 # Copy environment template
-cp .env.local.example .env.local
+cp .env.example .env
 
 # Edit environment configuration
-nano .env.local  # or use your preferred editor
+nano .env  # or use your preferred editor
 ```
 
 #### Required Environment Variables
@@ -256,7 +256,7 @@ After successful installation:
 
 ## 🆘 Getting Help
 
-- **Documentation**: [docs/](../)
+- **Documentation**: [Documentation Index](../README.md)
 - **Issues**: [GitHub Issues](https://github.com/NickB03/vana/issues)
 - **Troubleshooting**: [Common Issues](../troubleshooting/common-issues.md)
 

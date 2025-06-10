@@ -62,30 +62,8 @@ System health and status information.
 ```json
 {
   "status": "healthy",
-  "agents": {
-    "total": 24,
-    "healthy": 24,
-    "degraded": 0,
-    "failed": 0
-  },
-  "tools": {
-    "total": 59,
-    "available": 59,
-    "errors": 0
-  },
-  "performance": {
-    "avg_response_time": "0.45s",
-    "success_rate": "99.8%",
-    "cache_hit_rate": "95.2%"
-  },
-  "resources": {
-    "memory_usage": "68%",
-    "cpu_usage": "23%",
-    "api_quotas": {
-      "vertex_ai": "45%",
-      "brave_search": "12%"
-    }
-  }
+  "agent": "vana",
+  "mcp_enabled": true
 }
 ```
 
@@ -612,3 +590,4 @@ All inputs are validated for:
 ---
 
 **Need help?** Check our [troubleshooting guide](../troubleshooting/common-issues.md) or [create an issue](https://github.com/NickB03/vana/issues).
+
