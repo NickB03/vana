@@ -43,7 +43,7 @@ class EnvironmentConfig:
         rag_corpus_resource_name = (
             os.environ.get("VANA_RAG_CORPUS_ID") or
             os.environ.get("RAG_CORPUS_RESOURCE_NAME") or
-            "projects/analystai-454200/locations/us-central1/ragCorpora/vana-corpus"
+            "projects/${GOOGLE_CLOUD_PROJECT}/locations/us-central1/ragCorpora/vana-corpus"
         )
 
         similarity_top_k = int(os.environ.get("MEMORY_SIMILARITY_TOP_K", "5"))
@@ -129,7 +129,7 @@ class EnvironmentConfig:
             "rag_corpus_resource_name": (
                 os.environ.get("VANA_RAG_CORPUS_ID") or
                 os.environ.get("RAG_CORPUS_RESOURCE_NAME") or
-                "projects/analystai-454200/locations/us-central1/ragCorpora/vana-corpus"
+                "projects/${GOOGLE_CLOUD_PROJECT}/locations/us-central1/ragCorpora/vana-corpus"
             ),
             "similarity_top_k": int(os.environ.get("MEMORY_SIMILARITY_TOP_K", "5")),
             "vector_distance_threshold": float(os.environ.get("MEMORY_VECTOR_DISTANCE_THRESHOLD", "0.7")),

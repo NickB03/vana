@@ -14,7 +14,7 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 logger = logging.getLogger(__name__)
 
 # VANA service URL
-VANA_SERVICE_URL = "https://vana-prod-960076421399.us-central1.run.app"
+VANA_SERVICE_URL = "https://vana-prod-${PROJECT_NUMBER}.us-central1.run.app"
 
 def test_vana_service_availability():
     """Test that VANA service is available and responding."""

@@ -30,7 +30,7 @@ def setup_vertex_ai():
     try:
         import vertexai
         
-        project_id = os.getenv("GOOGLE_CLOUD_PROJECT", "analystai-454200")
+        project_id = os.getenv("GOOGLE_CLOUD_PROJECT", "${GOOGLE_CLOUD_PROJECT}")
         location = os.getenv("GOOGLE_CLOUD_LOCATION", "us-central1")
         
         logger.info(f"🚀 Initializing Vertex AI...")
@@ -169,7 +169,7 @@ def import_sample_documents(corpus):
                    - Proper function naming without underscore prefixes
                 
                 Configuration:
-                - VANA_RAG_CORPUS_ID: projects/analystai-454200/locations/us-central1/ragCorpora/vana-corpus
+                - VANA_RAG_CORPUS_ID: projects/${GOOGLE_CLOUD_PROJECT}/locations/us-central1/ragCorpora/vana-corpus
                 - Similarity top-k: 5 results
                 - Vector distance threshold: 0.7
                 - Embedding model: text-embedding-004
@@ -194,7 +194,7 @@ def import_sample_documents(corpus):
                 - Environment variables: VANA_ENV=production
                 
                 Key Environment Variables:
-                - GOOGLE_CLOUD_PROJECT: analystai-454200
+                - GOOGLE_CLOUD_PROJECT: ${GOOGLE_CLOUD_PROJECT}
                 - GOOGLE_CLOUD_LOCATION: us-central1
                 - VANA_RAG_CORPUS_ID: Corpus identifier for vector search
                 - RAG_CORPUS_RESOURCE_NAME: Full resource name for backward compatibility

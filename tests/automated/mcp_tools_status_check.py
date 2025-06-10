@@ -12,7 +12,7 @@ from typing import Dict, Any
 
 class MCPToolsStatusChecker:
     def __init__(self):
-        self.service_url = "https://vana-prod-960076421399.us-central1.run.app"
+        self.service_url = "https://vana-prod-${PROJECT_NUMBER}.us-central1.run.app"
         self.session_id = None
         
     async def check_service_health(self) -> Dict[str, Any]:

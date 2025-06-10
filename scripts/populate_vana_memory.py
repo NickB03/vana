@@ -138,7 +138,7 @@ class VANAMemoryPopulator:
             
             # API Configuration
             {
-                "content": "VANA requires environment variables: GOOGLE_GENAI_USE_VERTEXAI=true, GOOGLE_CLOUD_PROJECT=analystai-454200, GOOGLE_CLOUD_LOCATION=us-central1, BRAVE_API_KEY for web search. Uses FastAPI with ADK integration via get_fast_api_app() for production deployment.",
+                "content": "VANA requires environment variables: GOOGLE_GENAI_USE_VERTEXAI=true, GOOGLE_CLOUD_PROJECT=${GOOGLE_CLOUD_PROJECT}, GOOGLE_CLOUD_LOCATION=us-central1, BRAVE_API_KEY for web search. Uses FastAPI with ADK integration via get_fast_api_app() for production deployment.",
                 "metadata": {
                     "type": "api_configuration",
                     "priority": "medium", 

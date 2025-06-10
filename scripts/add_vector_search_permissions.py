@@ -29,7 +29,7 @@ def main():
     """Main function to add Vector Search permissions."""
     parser = argparse.ArgumentParser(description="Add Vector Search Permissions")
     parser.add_argument("--service-account", type=str, 
-                        default="vana-vector-search-sa@analystai-454200.iam.gserviceaccount.com",
+                        default="vana-vector-search-sa@${GOOGLE_CLOUD_PROJECT}.iam.gserviceaccount.com",
                         help="Service account email")
     args = parser.parse_args()
     

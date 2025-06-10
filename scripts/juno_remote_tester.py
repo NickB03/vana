@@ -33,7 +33,7 @@ logger = logging.getLogger(__name__)
 class JunoRemoteTester(JunoAutonomousTester):
     """Enhanced Juno tester for remote VANA service testing with browser automation"""
     
-    def __init__(self, service_url: str = "https://vana-prod-960076421399.us-central1.run.app"):
+    def __init__(self, service_url: str = "https://vana-prod-${PROJECT_NUMBER}.us-central1.run.app"):
         super().__init__()
         self.service_url = service_url
         self.browser_client = None  # MCP Puppeteer client would be initialized here

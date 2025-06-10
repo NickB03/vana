@@ -100,7 +100,7 @@ class TestVanaMemoryService:
             "total_documents": 500,
             "memory_usage_mb": 256,
             "last_updated": "2025-01-27T10:00:00Z",
-            "rag_corpus": "projects/analystai-454200/locations/us-central1/ragCorpora/test-corpus"
+            "rag_corpus": "projects/${GOOGLE_CLOUD_PROJECT}/locations/us-central1/ragCorpora/test-corpus"
         }
         
         mock_vana_memory_service.get_memory_stats.return_value = expected_stats

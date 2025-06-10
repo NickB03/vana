@@ -74,7 +74,7 @@ def check_rag_corpus_status():
             import google.cloud.aiplatform as aiplatform
             
             # Initialize Vertex AI
-            project_id = os.getenv("GOOGLE_CLOUD_PROJECT", "analystai-454200")
+            project_id = os.getenv("GOOGLE_CLOUD_PROJECT", "${GOOGLE_CLOUD_PROJECT}")
             location = os.getenv("GOOGLE_CLOUD_LOCATION", "us-central1")
             
             logger.info(f"🔍 Checking Vertex AI access...")

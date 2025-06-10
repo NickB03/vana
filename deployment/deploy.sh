@@ -4,8 +4,8 @@
 set -e  # Exit on error
 
 # Configuration
-PROJECT_ID="analystai-454200"
-PROJECT_NUMBER="960076421399"
+PROJECT_ID="${GOOGLE_CLOUD_PROJECT}"
+PROJECT_NUMBER="${PROJECT_NUMBER}"
 REGION="us-central1"
 SERVICE_NAME="${1:-vana}"  # Allow service name as first argument, default to "vana"
 
