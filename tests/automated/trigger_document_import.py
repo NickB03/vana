@@ -27,16 +27,16 @@ except ImportError as e:
     sys.exit(1)
 
 # Configuration
-CORPUS_NAME = "projects/960076421399/locations/us-central1/ragCorpora/2305843009213693952"
-PROJECT_ID = "analystai-454200"
+CORPUS_NAME = "projects/${PROJECT_NUMBER}/locations/us-central1/ragCorpora/2305843009213693952"
+PROJECT_ID = "${GOOGLE_CLOUD_PROJECT}"
 LOCATION = "us-central1"
 
 # Files that were uploaded to GCS
 GCS_FILES = [
-    "gs://analystai-454200-vector-search-docs/rag_documents/vana_system_overview.txt",
-    "gs://analystai-454200-vector-search-docs/rag_documents/anthropic-ai-agents.md",
-    "gs://analystai-454200-vector-search-docs/rag_documents/Newwhitepaper_Agents.pdf",
-    "gs://analystai-454200-vector-search-docs/rag_documents/a-practical-guide-to-building-agents.pdf"
+    "gs://${GOOGLE_CLOUD_PROJECT}-vector-search-docs/rag_documents/vana_system_overview.txt",
+    "gs://${GOOGLE_CLOUD_PROJECT}-vector-search-docs/rag_documents/anthropic-ai-agents.md",
+    "gs://${GOOGLE_CLOUD_PROJECT}-vector-search-docs/rag_documents/Newwhitepaper_Agents.pdf",
+    "gs://${GOOGLE_CLOUD_PROJECT}-vector-search-docs/rag_documents/a-practical-guide-to-building-agents.pdf"
 ]
 
 async def import_documents_with_adk():
@@ -108,9 +108,9 @@ def import_document_on_upload(cloud_event):
         return
     
     # Initialize Vertex AI
-    project_id = "analystai-454200"
+    project_id = "${GOOGLE_CLOUD_PROJECT}"
     location = "us-central1"
-    corpus_name = "projects/960076421399/locations/us-central1/ragCorpora/2305843009213693952"
+    corpus_name = "projects/${PROJECT_NUMBER}/locations/us-central1/ragCorpora/2305843009213693952"
     
     vertexai.init(project=project_id, location=location)
     
@@ -137,7 +137,7 @@ def import_document_on_upload(cloud_event):
     logger.info("📄 Cloud Function code template created")
     logger.info("   To deploy this function:")
     logger.info("   1. Create a new Cloud Function")
-    logger.info("   2. Set trigger to Cloud Storage (bucket: analystai-454200-vector-search-docs)")
+    logger.info("   2. Set trigger to Cloud Storage (bucket: ${GOOGLE_CLOUD_PROJECT}-vector-search-docs)")
     logger.info("   3. Set event type to 'Finalize/Create'")
     logger.info("   4. Deploy the function code above")
     

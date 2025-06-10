@@ -38,7 +38,7 @@ class MCPToolTestResult:
 class ComprehensiveMCPValidator:
     """Comprehensive MCP Tools Validation Framework"""
     
-    def __init__(self, service_url: str = "https://vana-prod-960076421399.us-central1.run.app"):
+    def __init__(self, service_url: str = "https://vana-prod-${PROJECT_NUMBER}.us-central1.run.app"):
         self.service_url = service_url
         self.test_results: List[MCPToolTestResult] = []
         self.session = requests.Session()

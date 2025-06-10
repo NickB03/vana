@@ -5,7 +5,7 @@ Comprehensive documentation of VANA's optimized agent ecosystem with dynamic orc
 ## 🎯 Optimized Agent Architecture Overview
 
 **Current Implementation**: 12 core agents with dynamic orchestration
-**Optimization Framework**: AGOR-inspired patterns + Node.js best practices
+**Optimization Framework**: AGOR-inspired patterns + Python enterprise architecture
 **Key Features**: Strategy-based execution, dynamic agent creation, tool optimization
 
 ```mermaid

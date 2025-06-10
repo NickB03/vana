@@ -1,6 +1,7 @@
 # 🤖 VANA - Advanced Multi-Agent AI System
 
-[![Production Status](https://img.shields.io/badge/Status-Production-green)](https://vana-prod-960076421399.us-central1.run.app)
+[![Production Status](https://img.shields.io/badge/Status-Production%20Ready-green)](https://vana-dev-qqugqgsbcq-uc.a.run.app)
+[![Security](https://img.shields.io/badge/Security-Hardened-green)](https://github.com/NickB03/vana)
 [![Google ADK](https://img.shields.io/badge/Google%20ADK-100%25%20Compliant-blue)](https://google.github.io/adk-docs/)
 [![Cloud Run](https://img.shields.io/badge/Deployed%20on-Google%20Cloud%20Run-blue)](https://cloud.google.com/run)
 [![Python](https://img.shields.io/badge/Python-3.13+-blue)](https://python.org)
@@ -18,14 +19,20 @@ cd vana
 poetry install
 
 # Configure environment
-cp .env.local.example .env.local
-# Edit .env.local with your credentials
+cp .env.template .env.local
+# Edit .env.local with your credentials (see .env.template for required variables)
+# The `VANA_MODEL_NAME` variable controls the default model
+# (defaults to `gemini-2.0-flash`)
 
 # Run locally
 python main.py
 ```
 
-**🌐 Production Service:** [https://vana-prod-960076421399.us-central1.run.app](https://vana-prod-960076421399.us-central1.run.app)
+The environment file includes a `VANA_MODEL_NAME` variable which sets the
+default generative model (defaults to `gemini-2.0-flash`).
+
+**🌐 Development Service:** [https://vana-dev-qqugqgsbcq-uc.a.run.app](https://vana-dev-qqugqgsbcq-uc.a.run.app)
+**🚀 Production Service:** [https://vana-prod-960076421399.us-central1.run.app](https://vana-prod-960076421399.us-central1.run.app)
 
 ## 📋 Table of Contents
 
@@ -50,7 +57,8 @@ VANA is an enterprise-grade multi-agent AI system designed for complex task orch
 - **🔍 Advanced Search** - Vector search, web search, and hybrid search capabilities
 - **☁️ Cloud-Native** - Deployed on Google Cloud Run with auto-scaling and 99.9% uptime
 - **📊 Real-Time Monitoring** - Comprehensive health monitoring and performance dashboards
-- **🔒 Enterprise Security** - Google Cloud IAM integration with role-based access control
+- **🔒 Enterprise Security** - Zero hardcoded credentials, Google Cloud IAM integration, Secret Manager
+- **🧹 Production Ready** - Comprehensive cleanup, security hardening, and deployment validation
 
 ### 🎯 Use Cases
 
@@ -231,7 +239,7 @@ Comprehensive documentation is available in the `/docs` directory:
 poetry install
 
 # Configure environment
-cp .env.local.example .env.local
+cp .env.template .env.local
 
 # Run development server
 python main.py

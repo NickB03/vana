@@ -16,7 +16,7 @@ pytz = ">=2023.3"
 python-dateutil = ">=2.8.2"
 mcp = {version = ">=1.2.0", extras = ["cli"]}
 # urllib3 version constraint removed - let google-adk manage this
-spacy = {version = ">=3.8.7,<4.0.0", markers = "python_version < \"3.14\""}
+spacy = ">=3.8.7,<4.0.0"
 psutil = "^7.0.0"
 responses = "^0.25.7"
 

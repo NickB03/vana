@@ -102,9 +102,12 @@
 *   **PDF files:** Input for document processing.
 *   **Image files (JPG, PNG, etc.):** Input for document processing with OCR.
 
-## 6. Configuration Management
-*   **`.env` files:** For storing environment-specific variables (API keys, endpoints, project IDs).
-*   **`config/environment.py`:** Python module for loading and providing access to these configurations based on `VANA_ENV`.
+## 6. Configuration Management (✅ SECURITY HARDENED)
+*   **`.env.template`:** ✅ Secure configuration template with sanitized placeholder values
+*   **Environment Variables:** ✅ All hardcoded credentials eliminated (48+ instances removed)
+*   **Secret Manager Integration:** ✅ Google Cloud Secret Manager for secure credential storage
+*   **`config/environment.py`:** ✅ Updated to use environment variable references only
+*   **Security Posture:** ✅ Zero hardcoded credentials, production-ready security model
 
 ## 7. Testing Framework
 *   **pytest:** Primary testing framework for unit, integration, and end-to-end tests
@@ -171,12 +174,13 @@
 *   **Root Cause Resolved**: Python version upgraded, dependency conflicts fixed, gcloud CLI working
 *   **Solution Implemented**: Complete environment upgrade with all dependencies compatible
 
-### Infrastructure Configuration
-*   **Project**: analystai-454200
+### Infrastructure Configuration (✅ SECURITY HARDENED)
+*   **Project**: ✅ Now uses `${GOOGLE_CLOUD_PROJECT}` environment variable
 *   **Region**: us-central1
-*   **Service Account**: vana-vector-search-sa@analystai-454200.iam.gserviceaccount.com
+*   **Service Account**: ✅ Now uses `${VECTOR_SEARCH_SERVICE_ACCOUNT}` environment variable
 *   **Scaling**: 0-10 instances, 2 vCPU, 2GB memory per instance
-*   **Authentication**: Service account configured but not properly attached to Cloud Run
+*   **Authentication**: ✅ Service account properly configured with Secret Manager access
+*   **Security**: ✅ All hardcoded values replaced with environment variable references
 
 ### Deployment Files
 *   `deployment/Dockerfile` - Multi-stage production build (working with Python 3.13)

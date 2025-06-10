@@ -43,7 +43,7 @@ class EnvironmentConfig:
         rag_corpus_resource_name = (
             os.environ.get("VANA_RAG_CORPUS_ID") or
             os.environ.get("RAG_CORPUS_RESOURCE_NAME") or
-            "projects/analystai-454200/locations/us-central1/ragCorpora/vana-corpus"
+            "projects/${GOOGLE_CLOUD_PROJECT}/locations/us-central1/ragCorpora/vana-corpus"
         )
 
         similarity_top_k = int(os.environ.get("MEMORY_SIMILARITY_TOP_K", "5"))
@@ -129,7 +129,7 @@ class EnvironmentConfig:
             "rag_corpus_resource_name": (
                 os.environ.get("VANA_RAG_CORPUS_ID") or
                 os.environ.get("RAG_CORPUS_RESOURCE_NAME") or
-                "projects/analystai-454200/locations/us-central1/ragCorpora/vana-corpus"
+                "projects/${GOOGLE_CLOUD_PROJECT}/locations/us-central1/ragCorpora/vana-corpus"
             ),
             "similarity_top_k": int(os.environ.get("MEMORY_SIMILARITY_TOP_K", "5")),
             "vector_distance_threshold": float(os.environ.get("MEMORY_VECTOR_DISTANCE_THRESHOLD", "0.7")),
@@ -254,19 +254,7 @@ class EnvironmentConfig:
             if session_type not in valid_session_types:
                 validation_results["warnings"].append(f"SESSION_SERVICE_TYPE '{session_type}' is not in recommended types: {valid_session_types}")
 
-            # Check for deprecated MCP variables
-            deprecated_vars = [
-                "MCP_ENDPOINT", "MCP_NAMESPACE", "MCP_API_KEY", "USE_LOCAL_MCP",
-                "KNOWLEDGE_GRAPH_API_KEY", "KNOWLEDGE_GRAPH_SERVER_URL", "KNOWLEDGE_GRAPH_NAMESPACE"
-            ]
-
-            found_deprecated = []
-            for var in deprecated_vars:
-                if os.environ.get(var):
-                    found_deprecated.append(var)
-
-            if found_deprecated:
-                validation_results["warnings"].append(f"Deprecated MCP variables found: {found_deprecated}. These should be removed.")
+            # Note: Deprecated MCP variable checks removed as part of cleanup
 
             logger.info(f"ADK Memory configuration validation: {'PASSED' if validation_results['valid'] else 'FAILED'}")
 
@@ -296,11 +284,7 @@ class EnvironmentConfig:
         except Exception:
             status["recommendations"].append("Configure ADK memory variables in environment")
 
-        # Check for MCP variables
-        mcp_vars = ["MCP_ENDPOINT", "MCP_NAMESPACE", "MCP_API_KEY"]
-        if any(os.environ.get(var) for var in mcp_vars):
-            status["mcp_variables_present"] = True
-            status["recommendations"].append("Remove deprecated MCP variables from environment")
+        # Note: MCP variable checks removed as part of cleanup
 
         # Validate configuration
         validation = EnvironmentConfig.validate_adk_memory_config()

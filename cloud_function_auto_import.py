@@ -26,9 +26,9 @@ def auto_import_document(cloud_event):
             return
         
         # Initialize Vertex AI
-        project_id = "analystai-454200"
+        project_id = "${GOOGLE_CLOUD_PROJECT}"
         location = "us-central1"
-        corpus_name = "projects/960076421399/locations/us-central1/ragCorpora/2305843009213693952"
+        corpus_name = "projects/${PROJECT_NUMBER}/locations/us-central1/ragCorpora/2305843009213693952"
         
         vertexai.init(project=project_id, location=location)
         

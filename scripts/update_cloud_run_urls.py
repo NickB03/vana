@@ -3,11 +3,11 @@
 Script to update all Cloud Run URL references to use the correct vana-dev / vana-prod structure.
 
 This script replaces:
-- https://vana-prod-960076421399.us-central1.run.app -> https://vana-prod-960076421399.us-central1.run.app
-- https://vana-prod-960076421399.us-central1.run.app -> https://vana-prod-960076421399.us-central1.run.app
+- https://vana-prod-${PROJECT_NUMBER}.us-central1.run.app -> https://vana-prod-${PROJECT_NUMBER}.us-central1.run.app
+- https://vana-prod-${PROJECT_NUMBER}.us-central1.run.app -> https://vana-prod-${PROJECT_NUMBER}.us-central1.run.app
 
 And ensures vana-dev references are correct:
-- https://vana-dev-960076421399.us-central1.run.app (should remain as-is)
+- https://vana-dev-${PROJECT_NUMBER}.us-central1.run.app (should remain as-is)
 """
 
 import os
@@ -16,10 +16,10 @@ import glob
 from pathlib import Path
 
 # URL mappings
-OLD_PROD_URL_1 = "https://vana-prod-960076421399.us-central1.run.app"
-OLD_PROD_URL_2 = "https://vana-prod-960076421399.us-central1.run.app"
-NEW_PROD_URL = "https://vana-prod-960076421399.us-central1.run.app"
-DEV_URL = "https://vana-dev-960076421399.us-central1.run.app"
+OLD_PROD_URL_1 = "https://vana-prod-${PROJECT_NUMBER}.us-central1.run.app"
+OLD_PROD_URL_2 = "https://vana-prod-${PROJECT_NUMBER}.us-central1.run.app"
+NEW_PROD_URL = "https://vana-prod-${PROJECT_NUMBER}.us-central1.run.app"
+DEV_URL = "https://vana-dev-${PROJECT_NUMBER}.us-central1.run.app"
 
 def update_file(file_path):
     """Update URLs in a single file."""

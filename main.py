@@ -7,13 +7,25 @@ Includes proper ADK memory service initialization for vector search and RAG pipe
 """
 
 import os
+import sys
 import uvicorn
 import logging
-from fastapi import FastAPI, Request, HTTPException
-from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
+from fastapi import FastAPI, Request
 from google.adk.cli.fast_api import get_fast_api_app
-from google.adk.memory import VertexAiRagMemoryService, InMemoryMemoryService
+
+# Ensure current directory is in Python path for lib imports
+current_dir = os.path.dirname(os.path.abspath(__file__))
+if current_dir not in sys.path:
+    sys.path.insert(0, current_dir)
+
+# Debug: Print current directory and lib directory status
+print(f"DEBUG: Current working directory: {os.getcwd()}")
+print(f"DEBUG: Script directory: {current_dir}")
+print(f"DEBUG: Python path: {sys.path[:3]}")
+print(f"DEBUG: lib directory exists: {os.path.exists(os.path.join(current_dir, 'lib'))}")
+if os.path.exists(os.path.join(current_dir, 'lib')):
+    lib_contents = os.listdir(os.path.join(current_dir, 'lib'))
+    print(f"DEBUG: lib directory contents: {lib_contents[:5]}")
 
 # Import our smart environment detection
 from lib.environment import setup_environment
@@ -40,31 +52,34 @@ logger.info("Lazy initialization manager ready - services will initialize on fir
 # Get the directory where main.py is located - this is where the agent files are now located
 # Supporting directories are now in lib/ to avoid being treated as agents
 AGENT_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "agents")
-print(f"Agent directory: {AGENT_DIR}")
-print(f"Directory exists: {os.path.exists(AGENT_DIR)}")
+logger.debug(f"Agent directory: {AGENT_DIR}")
+logger.debug(f"Directory exists: {os.path.exists(AGENT_DIR)}")
 if os.path.exists(AGENT_DIR):
-    print(f"Agent files in directory: {[f for f in os.listdir(AGENT_DIR) if f.endswith('.py') or f == '__init__.py']}")
-    print(f"Directories in agent dir: {[d for d in os.listdir(AGENT_DIR) if os.path.isdir(os.path.join(AGENT_DIR, d)) and not d.startswith('.')]}")
+    agent_files = [f for f in os.listdir(AGENT_DIR) if f.endswith('.py') or f == '__init__.py']
+    agent_dirs = [d for d in os.listdir(AGENT_DIR) if os.path.isdir(os.path.join(AGENT_DIR, d)) and not d.startswith('.')]
+    logger.debug(f"Agent files in directory: {agent_files}")
+    logger.debug(f"Directories in agent dir: {agent_dirs}")
 
     # Check if vana agent can be imported
     import sys
     sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
     try:
         import vana
-        print(f"✅ Root level vana module imported successfully: {vana}")
-        print(f"✅ Root level vana.agent: {vana.agent}")
+        logger.info(f"✅ Root level vana module imported successfully")
+        logger.debug(f"Root level vana.agent: {vana.agent}")
     except Exception as e:
-        print(f"❌ Failed to import root level vana module: {e}")
+        logger.error(f"❌ Failed to import root level vana module: {e}")
 
     try:
         from agents.vana import agent
-        print(f"✅ agents.vana.agent imported successfully: {agent}")
+        logger.info(f"✅ agents.vana.agent imported successfully")
+        logger.debug(f"Agent object: {agent}")
     except Exception as e:
-        print(f"❌ Failed to import agents.vana.agent: {e}")
+        logger.error(f"❌ Failed to import agents.vana.agent: {e}")
 
     # Check current working directory and Python path
-    print(f"Current working directory: {os.getcwd()}")
-    print(f"Python path: {sys.path[:5]}")  # First 5 entries
+    logger.debug(f"Current working directory: {os.getcwd()}")
+    logger.debug(f"Python path: {sys.path[:5]}")  # First 5 entries
 
 # Session database URL (SQLite for development)
 # Use /tmp for Cloud Run compatibility (writable filesystem)
@@ -76,6 +91,20 @@ ALLOWED_ORIGINS = ["http://localhost", "http://localhost:8080", "*"]
 # Serve web interface
 SERVE_WEB_INTERFACE = True
 
+# Security guardrail callbacks
+def before_tool_callback(tool_name: str, tool_args: dict, session):
+    """Validate tool arguments before execution."""
+    path_arg = tool_args.get("file_path") or tool_args.get("directory_path")
+    if path_arg and (".." in path_arg or path_arg.startswith("/")):
+        raise ValueError("Invalid path access")
+
+
+def after_model_callback(agent_name: str, response: str, session):
+    """Lightweight policy check on model responses."""
+    banned = ["malware", "illegal"]
+    if any(word in response.lower() for word in banned):
+        logger.warning("Policy violation detected in response")
+
 # Create the FastAPI app using ADK
 app: FastAPI = get_fast_api_app(
     agents_dir=AGENT_DIR,
@@ -84,22 +113,15 @@ app: FastAPI = get_fast_api_app(
     web=SERVE_WEB_INTERFACE,
 )
 
+# Note: Security guardrails defined above for future integration
+# Current ADK version may not support callback parameters
+
 # Initialize MCP SSE Transport
 mcp_transport = MCPSSETransport(None)  # Server will be initialized later
 
-# Import WebUI routes
-from lib.webui_routes import router as webui_router
 
-# Add WebUI routes
-app.include_router(webui_router)
 
-# Mount static files for React frontend
-static_dir = "/app/static"
-if os.path.exists(static_dir):
-    app.mount("/static", StaticFiles(directory=static_dir), name="static")
-    logger.info(f"Mounted static files from {static_dir}")
-else:
-    logger.warning(f"Static directory {static_dir} not found - React frontend not available")
+
 
 # Add MCP endpoints
 @app.get("/mcp/sse")
@@ -145,30 +167,7 @@ async def agent_info():
         "environment": environment_type
     }
 
-# React Router fallback - serve index.html for client-side routing
-@app.get("/dashboard/{path:path}")
-async def serve_react_app(path: str):
-    """Serve React app for client-side routing"""
-    static_dir = "/app/static"
-    index_file = os.path.join(static_dir, "index.html")
 
-    if os.path.exists(index_file):
-        return FileResponse(index_file)
-    else:
-        logger.error(f"React index.html not found at {index_file}")
-        raise HTTPException(status_code=404, detail="Frontend not available")
-
-@app.get("/dashboard")
-async def serve_react_root():
-    """Serve React app root"""
-    static_dir = "/app/static"
-    index_file = os.path.join(static_dir, "index.html")
-
-    if os.path.exists(index_file):
-        return FileResponse(index_file)
-    else:
-        logger.error(f"React index.html not found at {index_file}")
-        raise HTTPException(status_code=404, detail="Frontend not available")
 
 if __name__ == "__main__":
     # Use the PORT environment variable provided by Cloud Run, defaulting to 8080
