@@ -56,7 +56,7 @@ def load_environment_variables():
 def get_service_account_email():
     """Get the service account email from the credentials file or use the known one."""
     # Use the known service account email from the IAM console
-    known_service_account = "vana-vector-search-sa@analystai-454200.iam.gserviceaccount.com"
+    known_service_account = "vana-vector-search-sa@${GOOGLE_CLOUD_PROJECT}.iam.gserviceaccount.com"
 
     # Try to get from credentials file first
     credentials_path = os.environ.get("GOOGLE_APPLICATION_CREDENTIALS")

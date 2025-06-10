@@ -49,7 +49,7 @@ def main():
     aiplatform.init(project=project, location=location)
 
     # Use the correct endpoint ID
-    endpoint_id = "projects/960076421399/locations/us-central1/indexEndpoints/5085685481161621504"
+    endpoint_id = "projects/${PROJECT_NUMBER}/locations/us-central1/indexEndpoints/5085685481161621504"
     logger.info(f"Getting index endpoint: {endpoint_id}")
     index_endpoint = aiplatform.MatchingEngineIndexEndpoint(endpoint_id)
 

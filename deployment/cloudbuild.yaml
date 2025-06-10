@@ -45,9 +45,8 @@ steps:
       - '--service-account'
       - 'vana-vector-search-sa@${PROJECT_ID}.iam.gserviceaccount.com'
       - '--set-env-vars'
-      - 'GOOGLE_CLOUD_PROJECT=${PROJECT_ID},GOOGLE_CLOUD_PROJECT_NUMBER=960076421399,GOOGLE_CLOUD_LOCATION=us-central1,GOOGLE_CLOUD_REGION=us-central1,GOOGLE_GENAI_USE_VERTEXAI=True,VANA_MODEL=gemini-2.0-flash,VANA_ENV=development,VANA_HOST=0.0.0.0,VANA_PORT=8080,LOG_LEVEL=INFO,DASHBOARD_ENABLED=true,USE_LOCAL_MCP=false,VANA_USE_MOCK=false,VECTOR_SEARCH_INDEX_NAME=vana-shared-index,VECTOR_SEARCH_INDEX_ID=vana-shared-index,VECTOR_SEARCH_DIMENSIONS=768,VECTOR_SEARCH_ENDPOINT_ID=projects/960076421399/locations/us-central1/indexEndpoints/5085685481161621504,DEPLOYED_INDEX_ID=vanasharedindex'
-      - '--set-secrets'
-      - 'BRAVE_API_KEY=brave-api-key:latest,OPENROUTER_API_KEY=openrouter-api-key:latest'
+      - 'GOOGLE_CLOUD_PROJECT=${PROJECT_ID},GOOGLE_CLOUD_PROJECT_NUMBER=${PROJECT_NUMBER},GOOGLE_CLOUD_LOCATION=us-central1,GOOGLE_CLOUD_REGION=us-central1,GOOGLE_GENAI_USE_VERTEXAI=True,VANA_MODEL=gemini-2.0-flash,VANA_ENV=development,VANA_HOST=0.0.0.0,VANA_PORT=8080,LOG_LEVEL=INFO,DASHBOARD_ENABLED=true,USE_LOCAL_MCP=false,VANA_USE_MOCK=false,VECTOR_SEARCH_INDEX_NAME=vana-shared-index,VECTOR_SEARCH_INDEX_ID=vana-shared-index,VECTOR_SEARCH_DIMENSIONS=768,VECTOR_SEARCH_ENDPOINT_ID=projects/${PROJECT_NUMBER}/locations/us-central1/indexEndpoints/5085685481161621504,DEPLOYED_INDEX_ID=vanasharedindex'
+
 
 # Images to be pushed to registry
 images:

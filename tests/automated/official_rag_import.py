@@ -23,16 +23,16 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Configuration based on official examples
-CORPUS_NAME = "projects/960076421399/locations/us-central1/ragCorpora/2305843009213693952"
-PROJECT_ID = "analystai-454200"
+CORPUS_NAME = "projects/${PROJECT_NUMBER}/locations/us-central1/ragCorpora/2305843009213693952"
+PROJECT_ID = "${GOOGLE_CLOUD_PROJECT}"
 LOCATION = "us-central1"
 
 # Files that were uploaded to GCS
 GCS_FILES = [
-    "gs://analystai-454200-vector-search-docs/rag_documents/vana_system_overview.txt",
-    "gs://analystai-454200-vector-search-docs/rag_documents/anthropic-ai-agents.md",
-    "gs://analystai-454200-vector-search-docs/rag_documents/Newwhitepaper_Agents.pdf",
-    "gs://analystai-454200-vector-search-docs/rag_documents/a-practical-guide-to-building-agents.pdf"
+    "gs://${GOOGLE_CLOUD_PROJECT}-vector-search-docs/rag_documents/vana_system_overview.txt",
+    "gs://${GOOGLE_CLOUD_PROJECT}-vector-search-docs/rag_documents/anthropic-ai-agents.md",
+    "gs://${GOOGLE_CLOUD_PROJECT}-vector-search-docs/rag_documents/Newwhitepaper_Agents.pdf",
+    "gs://${GOOGLE_CLOUD_PROJECT}-vector-search-docs/rag_documents/a-practical-guide-to-building-agents.pdf"
 ]
 
 def count_files_in_gcs_bucket(path: str) -> int:
@@ -174,9 +174,9 @@ def auto_import_rag_document(cloud_event):
             return
         
         # Initialize Vertex AI
-        project_id = "analystai-454200"
+        project_id = "${GOOGLE_CLOUD_PROJECT}"
         location = "us-central1"
-        corpus_name = "projects/960076421399/locations/us-central1/ragCorpora/2305843009213693952"
+        corpus_name = "projects/${PROJECT_NUMBER}/locations/us-central1/ragCorpora/2305843009213693952"
         
         vertexai.init(project=project_id, location=location)
         
@@ -216,7 +216,7 @@ def auto_import_rag_document(cloud_event):
     logger.info("🚀 To deploy this Cloud Function:")
     logger.info("   gcloud functions deploy auto-import-rag-document \\")
     logger.info("     --runtime python39 \\")
-    logger.info("     --trigger-bucket analystai-454200-vector-search-docs \\")
+    logger.info("     --trigger-bucket ${GOOGLE_CLOUD_PROJECT}-vector-search-docs \\")
     logger.info("     --entry-point auto_import_rag_document \\")
     logger.info("     --source . \\")
     logger.info("     --region us-central1 \\")

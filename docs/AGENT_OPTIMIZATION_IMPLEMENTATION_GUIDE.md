@@ -2,7 +2,7 @@
 
 ## 🎯 Overview
 
-This guide provides comprehensive instructions for implementing the VANA agent structure optimizations based on AGOR multi-agent patterns and Node.js best practices research.
+This guide provides comprehensive instructions for implementing the VANA agent structure optimizations based on AGOR multi-agent patterns and Python enterprise architecture best practices.
 
 ## 📊 Current State Analysis
 
@@ -289,7 +289,7 @@ for rec in recommendations:
 ## 📚 References
 
 - **AGOR Multi-Agent Patterns**: Pipeline, Parallel Divergent, Swarm, Red Team, Mob Programming
-- **Node.js Best Practices**: Component-based architecture, performance optimization
+- **Python Enterprise Architecture**: Component-based design, async/await patterns, performance optimization
 - **Google ADK Documentation**: Agent orchestration and tool patterns
 - **VANA Memory Bank**: System architecture and implementation details
 

@@ -329,7 +329,7 @@ The VANA Optimization Framework consists of 5 integrated components that provide
 ### Required Variables
 ```
 GOOGLE_GENAI_USE_VERTEXAI=true
-GOOGLE_CLOUD_PROJECT=analystai-454200
+GOOGLE_CLOUD_PROJECT=${GOOGLE_CLOUD_PROJECT}
 GOOGLE_CLOUD_LOCATION=us-central1
 BRAVE_API_KEY=<your_brave_api_key>
 ```

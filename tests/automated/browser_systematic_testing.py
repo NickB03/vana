@@ -9,7 +9,7 @@ from typing import Dict, List, Any
 
 class VanaBrowserTester:
     def __init__(self):
-        self.service_url = "https://vana-prod-960076421399.us-central1.run.app"
+        self.service_url = "https://vana-prod-${PROJECT_NUMBER}.us-central1.run.app"
         self.results = {}
         self.test_counter = 0
         
