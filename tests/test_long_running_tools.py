@@ -17,7 +17,7 @@ from lib._tools.long_running_tools import (
 )
 
 from lib._tools.adk_long_running_tools import (
-    _ask_for_approval, _process_large_dataset, _generate_report, _check_task_status
+    adk_ask_for_approval, adk_process_large_dataset, adk_generate_report, adk_check_task_status
 )
 
 class TestLongRunningTaskManager:
@@ -189,48 +189,48 @@ class TestADKIntegration:
     
     def test_ask_for_approval_small_amount(self):
         """Test approval request for small amounts (auto-approved)."""
-        result = _ask_for_approval("Test purchase", 500, "Manager")
-        
+        result = adk_ask_for_approval.func("Test purchase", 500, "Manager")
+
         assert "✅ Approval request created successfully" in result
         assert "approved" in result.lower()
         assert "Task ID" in result
         assert "check_task_status" in result
-    
+
     def test_ask_for_approval_large_amount(self):
         """Test approval request for large amounts (pending)."""
-        result = _ask_for_approval("Major purchase", 5000, "CEO")
-        
+        result = adk_ask_for_approval.func("Major purchase", 5000, "CEO")
+
         assert "✅ Approval request created successfully" in result
         assert "pending" in result.lower()
         assert "Task ID" in result
         assert "check_task_status" in result
-    
+
     def test_process_large_dataset(self):
         """Test dataset processing initiation."""
-        result = _process_large_dataset("customer_data", "analyze")
-        
+        result = adk_process_large_dataset.func("customer_data", "analyze")
+
         assert "🚀 Dataset processing started" in result
         assert "customer_data" in result
         assert "analyze" in result
         assert "Task ID" in result
         assert "check_task_status" in result
-    
+
     def test_generate_report(self):
         """Test report generation initiation."""
-        result = _generate_report("financial", "sales,revenue,costs")
-        
+        result = adk_generate_report.func("financial", "sales,revenue,costs")
+
         assert "📊 Report generation started" in result
         assert "financial" in result
         assert "sales" in result and "revenue" in result
         assert "Task ID" in result
         assert "check_task_status" in result
-    
+
     def test_check_task_status_nonexistent(self):
         """Test checking status of nonexistent task."""
-        result = _check_task_status("nonexistent-task")
-        
+        result = adk_check_task_status.func("nonexistent-task")
+
         assert "❌ Task nonexistent-task not found" in result
-    
+
     def test_check_task_status_existing(self):
         """Test checking status of existing task."""
         # Create a task first
@@ -240,9 +240,9 @@ class TestADKIntegration:
             progress=0.6,
             metadata={"current_stage": "Processing data"}
         )
-        
-        result = _check_task_status(task_id)
-        
+
+        result = adk_check_task_status.func(task_id)
+
         assert "🔄 **Task Status**: In Progress" in result
         assert task_id in result
         assert "60%" in result

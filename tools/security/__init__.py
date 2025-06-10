@@ -8,11 +8,15 @@ This module provides security-related functionality including:
 """
 
 from .credential_manager import CredentialManager
-from .access_control import AccessControl
+from .access_control import AccessControlManager
 from .audit_logger import AuditLogger
+
+# Alias for backward compatibility
+AccessControl = AccessControlManager
 
 __all__ = [
     'CredentialManager',
-    'AccessControl', 
+    'AccessControl',
+    'AccessControlManager',
     'AuditLogger'
 ]
