@@ -20,10 +20,15 @@ poetry install
 # Configure environment
 cp .env.local.example .env.local
 # Edit .env.local with your credentials
+# The `VANA_MODEL_NAME` variable controls the default model
+# (defaults to `gemini-2.0-flash`).
 
 # Run locally
 python main.py
 ```
+
+The environment file includes a `VANA_MODEL_NAME` variable which sets the
+default generative model (defaults to `gemini-2.0-flash`).
 
 **🌐 Production Service:** [https://vana-prod-960076421399.us-central1.run.app](https://vana-prod-960076421399.us-central1.run.app)
 
