@@ -101,7 +101,7 @@ class MockSessionService:
 @pytest.fixture
 def mock_rag_corpus():
     """Provide mock RAG corpus resource name."""
-    return "projects/analystai-454200/locations/us-central1/ragCorpora/test-corpus"
+    return "projects/${GOOGLE_CLOUD_PROJECT}/locations/us-central1/ragCorpora/test-corpus"
 
 
 @pytest.fixture
@@ -147,10 +147,10 @@ def sample_conversation_data():
 def mock_environment_variables():
     """Mock environment variables for testing."""
     env_vars = {
-        "RAG_CORPUS_RESOURCE_NAME": "projects/analystai-454200/locations/us-central1/ragCorpora/test-corpus",
+        "RAG_CORPUS_RESOURCE_NAME": "projects/${GOOGLE_CLOUD_PROJECT}/locations/us-central1/ragCorpora/test-corpus",
         "SIMILARITY_TOP_K": "5",
         "VECTOR_DISTANCE_THRESHOLD": "0.7",
-        "GOOGLE_CLOUD_PROJECT": "analystai-454200",
+        "GOOGLE_CLOUD_PROJECT": "${GOOGLE_CLOUD_PROJECT}",
         "VERTEX_AI_REGION": "us-central1"
     }
     

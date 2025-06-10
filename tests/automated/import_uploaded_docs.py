@@ -18,14 +18,14 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # The corpus that was created
-CORPUS_NAME = "projects/960076421399/locations/us-central1/ragCorpora/2305843009213693952"
+CORPUS_NAME = "projects/${PROJECT_NUMBER}/locations/us-central1/ragCorpora/2305843009213693952"
 
 # Files that were uploaded
 UPLOADED_FILES = [
-    "gs://analystai-454200-vector-search-docs/rag_documents/vana_system_overview.txt",
-    "gs://analystai-454200-vector-search-docs/rag_documents/anthropic-ai-agents.md",
-    "gs://analystai-454200-vector-search-docs/rag_documents/Newwhitepaper_Agents.pdf",
-    "gs://analystai-454200-vector-search-docs/rag_documents/a-practical-guide-to-building-agents.pdf"
+    "gs://${GOOGLE_CLOUD_PROJECT}-vector-search-docs/rag_documents/vana_system_overview.txt",
+    "gs://${GOOGLE_CLOUD_PROJECT}-vector-search-docs/rag_documents/anthropic-ai-agents.md",
+    "gs://${GOOGLE_CLOUD_PROJECT}-vector-search-docs/rag_documents/Newwhitepaper_Agents.pdf",
+    "gs://${GOOGLE_CLOUD_PROJECT}-vector-search-docs/rag_documents/a-practical-guide-to-building-agents.pdf"
 ]
 
 def import_documents_to_rag():
@@ -35,7 +35,7 @@ def import_documents_to_rag():
         from vertexai.preview import rag
         
         # Initialize Vertex AI with the correct project
-        project_id = "analystai-454200"  # Use project ID, not number
+        project_id = "${GOOGLE_CLOUD_PROJECT}"  # Use project ID, not number
         location = "us-central1"
         
         logger.info(f"🚀 Initializing Vertex AI...")

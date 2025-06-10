@@ -18,7 +18,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # The corpus that was created
-CORPUS_NAME = "projects/960076421399/locations/us-central1/ragCorpora/2305843009213693952"
+CORPUS_NAME = "projects/${PROJECT_NUMBER}/locations/us-central1/ragCorpora/2305843009213693952"
 
 def check_corpus_status():
     """Check the status of the RAG corpus"""
@@ -27,7 +27,7 @@ def check_corpus_status():
         from vertexai.preview import rag
         
         # Initialize Vertex AI with the correct project
-        project_id = "analystai-454200"  # Use project ID, not number
+        project_id = "${GOOGLE_CLOUD_PROJECT}"  # Use project ID, not number
         location = "us-central1"
         
         logger.info(f"🚀 Initializing Vertex AI...")
@@ -72,7 +72,7 @@ def test_search():
         from vertexai.preview import rag
         
         # Initialize Vertex AI
-        project_id = "analystai-454200"
+        project_id = "${GOOGLE_CLOUD_PROJECT}"
         location = "us-central1"
         vertexai.init(project=project_id, location=location)
         

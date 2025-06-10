@@ -25,7 +25,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # The corpus that was just created
-CORPUS_NAME = "projects/960076421399/locations/us-central1/ragCorpora/2305843009213693952"
+CORPUS_NAME = "projects/${PROJECT_NUMBER}/locations/us-central1/ragCorpora/2305843009213693952"
 BUCKET_NAME = "analysiai-454200-vector-search-docs"
 
 def setup_services():
@@ -34,7 +34,7 @@ def setup_services():
         import vertexai
         from google.cloud import storage
         
-        project_id = "analystai-454200"  # Use the actual project ID (not project number)
+        project_id = "${GOOGLE_CLOUD_PROJECT}"  # Use the actual project ID (not project number)
         location = "us-central1"
         
         logger.info(f"🚀 Initializing services...")
@@ -112,7 +112,7 @@ Phase 2 of the VANA vector search implementation includes:
    - Integration with ADK tool framework
 
 Configuration:
-- VANA_RAG_CORPUS_ID: projects/960076421399/locations/us-central1/ragCorpora/2305843009213693952
+- VANA_RAG_CORPUS_ID: projects/${PROJECT_NUMBER}/locations/us-central1/ragCorpora/2305843009213693952
 - Similarity top-k: 5 results
 - Vector distance threshold: 0.7
 - Embedding model: text-embedding-004
@@ -139,7 +139,7 @@ Production Environment:
 - Automatic scaling and load balancing
 
 Key Environment Variables:
-- GOOGLE_CLOUD_PROJECT: 960076421399 (actual project for RAG corpus)
+- GOOGLE_CLOUD_PROJECT: ${PROJECT_NUMBER} (actual project for RAG corpus)
 - GOOGLE_CLOUD_LOCATION: us-central1
 - VANA_RAG_CORPUS_ID: Corpus identifier for vector search
 - RAG_CORPUS_RESOURCE_NAME: Full resource name for backward compatibility
@@ -229,19 +229,19 @@ def update_environment_config():
     """Update environment configuration with correct corpus ID"""
     logger.info("🔧 Environment Configuration Update Required:")
     logger.info("")
-    logger.info("   The RAG corpus was created in project 960076421399, but your")
-    logger.info("   environment configuration points to analystai-454200.")
+    logger.info("   The RAG corpus was created in project ${PROJECT_NUMBER}, but your")
+    logger.info("   environment configuration points to ${GOOGLE_CLOUD_PROJECT}.")
     logger.info("")
     logger.info("   To fix this, update your .env.production file:")
     logger.info("")
     logger.info("   BEFORE:")
-    logger.info("   RAG_CORPUS_RESOURCE_NAME=projects/analystai-454200/locations/us-central1/ragCorpora/vana-corpus")
+    logger.info("   RAG_CORPUS_RESOURCE_NAME=projects/${GOOGLE_CLOUD_PROJECT}/locations/us-central1/ragCorpora/vana-corpus")
     logger.info("")
     logger.info("   AFTER:")
     logger.info(f"   RAG_CORPUS_RESOURCE_NAME={CORPUS_NAME}")
     logger.info("")
     logger.info("   Also update:")
-    logger.info("   GOOGLE_CLOUD_PROJECT=960076421399")
+    logger.info("   GOOGLE_CLOUD_PROJECT=${PROJECT_NUMBER}")
     logger.info("")
     logger.info("   Then redeploy the service to use the real RAG corpus.")
 
