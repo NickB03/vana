@@ -11,6 +11,8 @@ from .adk_long_running_tools import (
     adk_ask_for_approval, adk_process_large_dataset,
     adk_generate_report, adk_check_task_status
 )
+
+from .tool_breadcrumbs import emit_tool_breadcrumb
 # from .adk_third_party_tools import (
 #     adk_execute_third_party_tool, adk_list_third_party_tools,
 #     adk_register_langchain_tools, adk_register_crewai_tools,

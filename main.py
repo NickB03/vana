@@ -76,12 +76,28 @@ ALLOWED_ORIGINS = ["http://localhost", "http://localhost:8080", "*"]
 # Serve web interface
 SERVE_WEB_INTERFACE = True
 
+# Guardrail callbacks
+def before_tool_callback(tool_name: str, tool_args: dict, session):
+    """Validate tool arguments before execution."""
+    path_arg = tool_args.get("file_path") or tool_args.get("directory_path")
+    if path_arg and (".." in path_arg or path_arg.startswith("/")):
+        raise ValueError("Invalid path access")
+
+
+def after_model_callback(agent_name: str, response: str, session):
+    """Lightweight policy check on model responses."""
+    banned = ["malware", "illegal"]
+    if any(word in response.lower() for word in banned):
+        logging.warning("Policy violation detected in response")
+
 # Create the FastAPI app using ADK
 app: FastAPI = get_fast_api_app(
     agents_dir=AGENT_DIR,
     session_db_url=SESSION_DB_URL,
     allow_origins=ALLOWED_ORIGINS,
     web=SERVE_WEB_INTERFACE,
+    before_tool_callback=before_tool_callback,
+    after_model_callback=after_model_callback,
 )
 
 # Initialize MCP SSE Transport

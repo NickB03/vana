@@ -1,6 +1,11 @@
 """
 VANA Coordination Manager - AGOR-Inspired State Management
 
+Session state uses standardized keys:
+- ``draft``: work in progress output
+- ``critique``: feedback or review notes
+- ``final_answer``: completed response ready for the user
+
 This module implements AGOR-style coordination patterns with VANA enhancements:
 - Shared coordination files for agent communication
 - Session state synchronization with Google ADK
@@ -28,6 +33,11 @@ from datetime import datetime
 from typing import Dict, List, Optional, Any
 from pathlib import Path
 from dataclasses import dataclass, asdict
+
+# Standardized session state keys
+DRAFT_KEY = "draft"
+CRITIQUE_KEY = "critique"
+FINAL_ANSWER_KEY = "final_answer"
 
 @dataclass
 class AgentStatus:
