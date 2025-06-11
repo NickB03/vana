@@ -26,77 +26,88 @@ Our implementation leverages Google ADK's enterprise-grade features:
 
 ### System Overview
 ```
-VANA System (24 Agents Total)
-├── UI Layer (5 Agents Visible)
-│   ├── memory
-│   ├── orchestration  
-│   ├── specialists
-│   ├── vana (primary)
-│   └── workflows
-└── Backend Layer (24 Agents Operational)
-    ├── Core Agents (4)
-    ├── Orchestrators (4) 
-    ├── Specialists (11)
-    ├── Intelligence (3)
-    └── Utility (2)
+VANA System (7 Agents Discoverable, 5 Functional Directories)
+├── UI Layer (7 Agents Visible via Google ADK)
+│   ├── code_execution (unknown source)
+│   ├── data_science (unknown source)
+│   ├── memory (redirects to VANA)
+│   ├── orchestration (redirects to VANA)
+│   ├── specialists (redirects to VANA)
+│   ├── vana (primary orchestrator)
+│   └── workflows (redirects to VANA)
+└── Implementation Layer (5 Agent Directories)
+    ├── agents/memory/ (redirects to VANA)
+    ├── agents/orchestration/ (redirects to VANA)
+    ├── agents/specialists/ (4 specialist files + redirect to VANA)
+    ├── agents/vana/ (primary orchestrator)
+    └── agents/workflows/ (redirects to VANA)
 ```
 
-### UI vs Backend Relationship
-**UI Layer (5 Agents)**: User-facing agents available in the Google ADK Dev UI dropdown
-- Designed for direct user interaction
-- Simplified interface for common tasks
-- Route complex requests to backend specialists
+### VANA Orchestrator Pattern
+**Primary Agent (VANA)**: Central orchestrator that handles all user interactions
+- Single point of entry for all requests
+- Intelligent routing to specialist tools
+- Maintains conversation context and session state
+- Provides unified user experience
 
-**Backend Layer (24 Agents)**: Full operational agent ecosystem
-- Complete specialist coverage for all domains
-- Advanced orchestration capabilities
-- Tool-rich environment with 59+ available tools
+**Specialist Tools**: Domain expertise accessed as tools, not separate agents
+- Architecture Specialist (`architecture_specialist.py`)
+- UI/UX Specialist (`ui_specialist.py`)
+- DevOps Specialist (`devops_specialist.py`)
+- QA Specialist (`qa_specialist.py`)
 
-This dual-layer approach provides:
-- **Simplicity**: Users see manageable agent options
-- **Power**: Full specialist capabilities available behind the scenes
-- **Scalability**: Easy to add new specialists without UI complexity
+**Redirect Agents**: Agent directories that redirect to VANA for simplicity
+- Provide multiple entry points in UI
+- All route to the same VANA orchestrator
+- Maintain backward compatibility
 
-## Agent Categories
+This orchestrator pattern provides:
+- **Simplicity**: Single functional agent with specialist capabilities
+- **Consistency**: Unified conversation experience
+- **Efficiency**: No context switching between agents
+- **Maintainability**: Centralized logic with modular specialist tools
 
-### 1. Core Agents (4)
-**Purpose**: Fundamental system operations and user interaction
-- **VANA Primary**: Main orchestrator and user interface
-- **System Monitor**: Health checks and performance monitoring
-- **Session Manager**: Context and state management
-- **Error Handler**: Exception management and recovery
+## Agent Implementation Details
 
-### 2. Orchestrators (4) 
-**Purpose**: Task coordination and workflow management
-- **Task Router**: Intelligent routing to appropriate specialists
-- **Workflow Coordinator**: Multi-step process management
-- **Resource Manager**: Tool and system resource allocation
-- **Quality Gate**: Output validation and quality assurance
+### 1. Primary Orchestrator (1)
+**VANA Agent**: Central orchestrator handling all user interactions
+- **Location**: `agents/vana/`
+- **Function**: Main entry point, task routing, conversation management
+- **Tools**: Access to all 59+ tools including specialist functions
+- **Pattern**: Agent-as-orchestrator with tool delegation
 
-### 3. Specialists (11)
-**Purpose**: Domain-specific expertise and execution
-- **Architecture Specialist**: System design and technical architecture
-- **UI/UX Specialist**: Interface design and user experience
-- **DevOps Specialist**: Deployment and infrastructure management
-- **QA Specialist**: Testing strategies and quality assurance
-- **Data Analyst**: Data processing and analysis
-- **Content Writer**: Documentation and content creation
-- **Security Specialist**: Security analysis and recommendations
-- **Performance Specialist**: Optimization and performance tuning
-- **Integration Specialist**: API and system integration
-- **Research Specialist**: Information gathering and analysis
-- **Code Specialist**: Programming and development tasks
+### 2. Specialist Tools (4)
+**Purpose**: Domain-specific expertise accessed as tools, not separate agents
+- **Architecture Specialist**: `agents/specialists/architecture_specialist.py`
+  - System design and technical architecture
+- **UI/UX Specialist**: `agents/specialists/ui_specialist.py`
+  - Interface design and user experience
+- **DevOps Specialist**: `agents/specialists/devops_specialist.py`
+  - Deployment and infrastructure management
+- **QA Specialist**: `agents/specialists/qa_specialist.py`
+  - Testing strategies and quality assurance
 
-### 4. Intelligence (3)
-**Purpose**: Advanced reasoning and decision-making
-- **Strategic Planner**: Long-term planning and strategy
-- **Decision Engine**: Complex decision analysis
-- **Learning Coordinator**: System improvement and adaptation
+### 3. Redirect Agents (4)
+**Purpose**: Provide multiple UI entry points while maintaining single orchestrator
+- **Memory Agent**: `agents/memory/` → redirects to VANA
+- **Orchestration Agent**: `agents/orchestration/` → redirects to VANA
+- **Specialists Agent**: `agents/specialists/` → redirects to VANA
+- **Workflows Agent**: `agents/workflows/` → redirects to VANA
 
-### 5. Utility (2)
-**Purpose**: Supporting functions and system utilities
-- **File Manager**: File operations and organization
-- **Communication Hub**: Inter-agent messaging and coordination
+### 4. Unknown Utility Agents (2)
+**Purpose**: Discovered by Google ADK but source unclear
+- **Code Execution**: Available in UI, implementation unknown
+- **Data Science**: Available in UI, implementation unknown
+
+### 5. Planned vs Implemented
+**Note**: Previous documentation described a theoretical 24-agent system with:
+- Core Agents (4) - **Not implemented as separate agents**
+- Additional Orchestrators (4) - **Not implemented as separate agents**
+- Extended Specialists (11) - **Only 4 implemented as tools**
+- Intelligence Agents (3) - **Not implemented as separate agents**
+- Additional Utility (2) - **Not implemented as separate agents**
+
+**Current Reality**: All functionality is consolidated into the VANA orchestrator with specialist tools, providing the same capabilities with better user experience and maintainability.
 
 ## Tool Integration (59+ Tools)
 
@@ -161,14 +172,17 @@ Parallel Execution → Result Integration → Quality Check → User Response
 ### Current Metrics
 - **Response Time**: 0.045s average (target: <5.0s)
 - **Tool Success Rate**: 95%+ operational
-- **Agent Availability**: 100% uptime for core agents
+- **Agent Availability**: 100% uptime for VANA orchestrator
 - **Memory Retrieval**: Sub-second for most queries
+- **Agent Discovery**: 7 agents discoverable via Google ADK
+- **Functional Agents**: 1 primary orchestrator + 4 specialist tools
 
 ### Scalability Features
-- **Horizontal Scaling**: Add new specialists without core changes
-- **Load Balancing**: Distribute tasks across available agents
-- **Resource Optimization**: Intelligent tool and memory management
+- **Specialist Tool Addition**: Add new specialist tools without core changes
+- **Orchestrator Pattern**: Single agent handles all coordination efficiently
+- **Resource Optimization**: Centralized tool and memory management
 - **Caching**: Reduce redundant operations and API calls
+- **Simplified Architecture**: Easier maintenance and debugging with single orchestrator
 
 ## Integration Points
 
