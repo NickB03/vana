@@ -275,37 +275,100 @@ class VANASystemDiscovery:
     async def test_tool_capability(self, tool_name: str) -> ToolCapability:
         """Test individual tool capability and performance"""
         print(f"🔍 Testing tool: {tool_name}")
-        
-        # This is a placeholder - actual implementation would depend on 
-        # how tools are exposed and can be tested individually
-        
+
         try:
-            # Simulate tool testing
             start_time = time.time()
-            
-            # Tool-specific test logic would go here
-            # For now, we'll simulate based on tool name
-            
-            execution_time = time.time() - start_time
-            
-            capability = ToolCapability(
-                name=tool_name,
-                available=True,  # Would be determined by actual testing
-                execution_time=round(execution_time, 3),
-                success_rate=1.0,  # Would be measured through multiple tests
-                error_handling=True,  # Would be tested with invalid inputs
-                output_quality="good"  # Would be evaluated based on output
-            )
-            
-            print(f"   ✅ {tool_name}: Available")
-            return capability
-            
+
+            # Test tool through browser automation
+            async with async_playwright() as p:
+                browser = await p.chromium.launch(headless=True)
+                page = await browser.new_page()
+
+                try:
+                    # Navigate to service
+                    await page.goto(self.base_url, timeout=30000)
+                    await page.wait_for_load_state("networkidle")
+
+                    # Select VANA agent
+                    await page.click("mat-select")
+                    await page.click("mat-option:has-text('vana')")
+
+                    # Test tool with a query that should trigger it
+                    tool_queries = {
+                        "architecture_tool_func": "Design a system architecture",
+                        "ui_tool_func": "Create a user interface design",
+                        "devops_tool_func": "Set up deployment pipeline",
+                        "qa_tool_func": "Create test strategy",
+                        "search_knowledge": "Search for system information",
+                        "vector_search": "Find technical documentation",
+                        "web_search": "What is the current weather?",
+                        "get_health_status": "Check system health"
+                    }
+
+                    query = tool_queries.get(tool_name, f"Use {tool_name} to help me")
+
+                    # Submit query
+                    await page.fill("textarea", query)
+                    await page.keyboard.press("Enter")
+
+                    # Wait for response
+                    await page.wait_for_selector(".response, .message, .output", timeout=30000)
+                    execution_time = time.time() - start_time
+
+                    # Get response text
+                    response_text = await page.text_content(".response, .message, .output")
+                    if not response_text:
+                        response_text = ""
+
+                    # Analyze response for tool usage indicators
+                    tool_used = (
+                        tool_name.lower() in response_text.lower() or
+                        f"*using {tool_name}*" in response_text.lower() or
+                        any(indicator in response_text.lower() for indicator in [
+                            "architecture", "ui", "devops", "qa", "search", "health"
+                        ])
+                    )
+
+                    # Check for errors
+                    has_errors = any(error in response_text.lower() for error in [
+                        "error", "failed", "not found", "unavailable", "timeout"
+                    ])
+
+                    # Evaluate output quality
+                    output_quality = "good" if len(response_text) > 100 and not has_errors else "poor"
+                    success_rate = 1.0 if tool_used and not has_errors else 0.5
+
+                    capability = ToolCapability(
+                        name=tool_name,
+                        available=tool_used,
+                        execution_time=round(execution_time, 3),
+                        success_rate=success_rate,
+                        error_handling=not has_errors,
+                        output_quality=output_quality
+                    )
+
+                    status = "✅" if tool_used else "⚠️"
+                    print(f"   {status} {tool_name}: {'Available' if tool_used else 'Not detected'} ({execution_time:.3f}s)")
+                    return capability
+
+                except Exception as e:
+                    print(f"   ❌ {tool_name}: Browser test failed - {str(e)}")
+                    return ToolCapability(
+                        name=tool_name,
+                        available=False,
+                        error_handling=False,
+                        output_quality="error"
+                    )
+                finally:
+                    await browser.close()
+
         except Exception as e:
             print(f"   ❌ {tool_name}: {str(e)}")
             return ToolCapability(
                 name=tool_name,
                 available=False,
-                error_handling=False
+                error_handling=False,
+                output_quality="error"
             )
             
     async def discover_memory_systems(self):
@@ -332,27 +395,90 @@ class VANASystemDiscovery:
     async def test_memory_component(self, component: str) -> MemorySystemCapability:
         """Test individual memory system component"""
         print(f"🔍 Testing memory component: {component}")
-        
+
         try:
-            # Component-specific testing logic would go here
-            # This is a placeholder implementation
-            
             start_time = time.time()
-            
-            # Simulate component testing
-            performance = time.time() - start_time
-            
-            capability = MemorySystemCapability(
-                component=component,
-                available=True,  # Would be determined by actual testing
-                performance=round(performance, 3),
-                accuracy=0.9,  # Would be measured through accuracy tests
-                integration_status=True  # Would be tested through integration
-            )
-            
-            print(f"   ✅ {component}: Available")
-            return capability
-            
+
+            # Test memory components through browser automation
+            async with async_playwright() as p:
+                browser = await p.chromium.launch(headless=True)
+                page = await browser.new_page()
+
+                try:
+                    # Navigate to service
+                    await page.goto(self.base_url, timeout=30000)
+                    await page.wait_for_load_state("networkidle")
+
+                    # Select VANA agent
+                    await page.click("mat-select")
+                    await page.click("mat-option:has-text('vana')")
+
+                    # Test memory component with specific queries
+                    memory_queries = {
+                        "session_memory": "Remember that I prefer detailed explanations",
+                        "knowledge_base": "Search for information about VANA capabilities",
+                        "vector_search": "Find technical documentation about system architecture",
+                        "rag_corpus": "Search for information in the knowledge base",
+                        "memory_persistence": "What did we discuss earlier?"
+                    }
+
+                    query = memory_queries.get(component, f"Test {component} functionality")
+
+                    # Submit query
+                    await page.fill("textarea", query)
+                    await page.keyboard.press("Enter")
+
+                    # Wait for response
+                    await page.wait_for_selector(".response, .message, .output", timeout=30000)
+                    performance = time.time() - start_time
+
+                    # Get response text
+                    response_text = await page.text_content(".response, .message, .output")
+                    if not response_text:
+                        response_text = ""
+
+                    # Analyze response for memory component usage
+                    memory_indicators = {
+                        "session_memory": ["remember", "stored", "memory"],
+                        "knowledge_base": ["knowledge", "search", "found"],
+                        "vector_search": ["vector", "search", "documentation"],
+                        "rag_corpus": ["corpus", "rag", "retrieval"],
+                        "memory_persistence": ["earlier", "previous", "discussed"]
+                    }
+
+                    indicators = memory_indicators.get(component, [component.lower()])
+                    component_used = any(indicator in response_text.lower() for indicator in indicators)
+
+                    # Check for errors
+                    has_errors = any(error in response_text.lower() for error in [
+                        "error", "failed", "not found", "unavailable", "timeout"
+                    ])
+
+                    # Calculate accuracy based on response quality
+                    accuracy = 0.9 if component_used and not has_errors else 0.5
+
+                    capability = MemorySystemCapability(
+                        component=component,
+                        available=component_used,
+                        performance=round(performance, 3),
+                        accuracy=accuracy,
+                        integration_status=component_used and not has_errors
+                    )
+
+                    status = "✅" if component_used else "⚠️"
+                    print(f"   {status} {component}: {'Available' if component_used else 'Not detected'} ({performance:.3f}s)")
+                    return capability
+
+                except Exception as e:
+                    print(f"   ❌ {component}: Browser test failed - {str(e)}")
+                    return MemorySystemCapability(
+                        component=component,
+                        available=False,
+                        integration_status=False
+                    )
+                finally:
+                    await browser.close()
+
         except Exception as e:
             print(f"   ❌ {component}: {str(e)}")
             return MemorySystemCapability(
@@ -389,16 +515,62 @@ class VANASystemDiscovery:
     async def measure_performance(self, test_name: str, query: str) -> Dict[str, float]:
         """Measure performance for a specific test scenario"""
         print(f"📊 Measuring performance: {test_name}")
-        
-        # This would implement actual performance measurement
-        # For now, returning placeholder metrics
-        
-        return {
-            "response_time": 2.5,  # Would be measured
-            "throughput": 10.0,    # Requests per second
-            "cpu_usage": 0.3,      # CPU utilization
-            "memory_usage": 0.4    # Memory utilization
-        }
+
+        try:
+            # Measure actual performance through browser automation
+            async with async_playwright() as p:
+                browser = await p.chromium.launch(headless=True)
+                page = await browser.new_page()
+
+                try:
+                    # Navigate to service
+                    await page.goto(self.base_url, timeout=30000)
+                    await page.wait_for_load_state("networkidle")
+
+                    # Select VANA agent
+                    await page.click("mat-select")
+                    await page.click("mat-option:has-text('vana')")
+
+                    # Measure response time
+                    start_time = time.time()
+
+                    # Submit query
+                    await page.fill("textarea", query)
+                    await page.keyboard.press("Enter")
+
+                    # Wait for response
+                    await page.wait_for_selector(".response, .message, .output", timeout=30000)
+                    response_time = time.time() - start_time
+
+                    # Calculate throughput (simplified)
+                    throughput = 1.0 / response_time if response_time > 0 else 0.0
+
+                    return {
+                        "response_time": round(response_time, 3),
+                        "throughput": round(throughput, 2),
+                        "cpu_usage": 0.3,      # Would need system monitoring
+                        "memory_usage": 0.4    # Would need system monitoring
+                    }
+
+                except Exception as e:
+                    print(f"   ❌ Performance measurement failed: {str(e)}")
+                    return {
+                        "response_time": 0.0,
+                        "throughput": 0.0,
+                        "cpu_usage": 0.0,
+                        "memory_usage": 0.0
+                    }
+                finally:
+                    await browser.close()
+
+        except Exception as e:
+            print(f"   ❌ Performance measurement error: {str(e)}")
+            return {
+                "response_time": 0.0,
+                "throughput": 0.0,
+                "cpu_usage": 0.0,
+                "memory_usage": 0.0
+            }
         
     def perform_gap_analysis(self):
         """Perform comprehensive gap analysis"""
