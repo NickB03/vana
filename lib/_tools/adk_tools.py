@@ -422,7 +422,8 @@ def get_health_status() -> str:
             "timestamp": "now",
             "services": {
                 "adk": "operational",
-                "agents": "24 agents active",
+                "agents": "7 agents discoverable, 5 functional directories",
+                "architecture": "VANA orchestrator with specialist tools",
                 "tools": "59+ tools available",
                 "web_search": "brave api configured" if os.getenv("BRAVE_API_KEY") else "not configured",
                 "vector_search": vector_search_status,
@@ -484,21 +485,27 @@ def delegate_to_agent(agent_name: str, task: str, context: str = "") -> str:
         return error_msg
 
 def get_agent_status() -> str:
-    """📊 Get enhanced status of all agents with PLAN/ACT capabilities."""
+    """📊 Get accurate status of all agents with current implementation details."""
     try:
         result = {
-            "total_agents": 24,
-            "active_agents": 24,
+            "total_agents": 7,  # Actual discoverable agents via Google ADK
+            "active_agents": 5,  # Functional agent directories
             "agent_types": {
-                "orchestrators": 4,
-                "specialists": 11,
-                "intelligence": 3,
-                "utility": 2,
-                "core": 4
+                "orchestrator": 1,      # VANA primary orchestrator
+                "specialists": 4,       # Individual specialist files (architecture, ui, devops, qa)
+                "utility": 2,          # code_execution, data_science (discovered by ADK)
+                "redirects": 4         # memory, orchestration, workflows, specialists (redirect to VANA)
             },
-            "capabilities": ["PLAN/ACT", "confidence_scoring", "task_delegation"],
+            "architecture_pattern": "VANA_orchestrator_with_specialist_tools",
+            "capabilities": ["agent_orchestration", "specialist_delegation", "tool_coordination"],
             "mode": "production",
-            "status": "all_operational"
+            "status": "operational",
+            "implementation_notes": {
+                "ui_visible_agents": 7,
+                "functional_orchestrator": "VANA",
+                "specialist_access": "via_tools",
+                "discovery_method": "google_adk_directory_scan"
+            }
         }
         return json.dumps(result, indent=2)
     except Exception as e:
