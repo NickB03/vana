@@ -16,12 +16,104 @@ vana/
 │   ├── _shared_libraries/   # Shared components
 │   ├── environment.py       # Environment detection
 │   └── model_providers/     # LLM integrations
+├── memory-bank/             # Organized persistent knowledge storage
+│   ├── 00-core/            # Essential project files
+│   ├── 01-active/          # Current work and tasks
+│   ├── 02-phases/          # Phase completion documentation
+│   ├── 03-technical/       # Technical documentation
+│   ├── 04-completed/       # Finished work
+│   └── 05-archive/         # Historical context
 ├── docs/                    # Documentation
 ├── tests/                   # Test suites
 ├── scripts/                 # Utility scripts
 ├── main.py                  # FastAPI entry point
 └── pyproject.toml          # Poetry configuration
 ```
+
+## 🧠 Memory Bank Structure
+
+VANA uses an organized Memory Bank for persistent knowledge storage and agent coordination. All memory files are located in `/Users/nick/Development/vana/memory-bank/` and organized into 6 logical categories:
+
+### 📁 Memory Bank Categories
+
+#### **00-core/** - Essential Project Files
+**Purpose:** Core project documentation and current state
+- `activeContext.md` - Current work state and immediate priorities
+- `progress.md` - Project progress tracking and milestones
+- `projectbrief.md` - Project goals, scope, and requirements
+- `productContext.md` - Problem context and solution vision
+- `systemPatterns.md` - Architecture patterns and design decisions
+- `techContext.md` - Technical environment and constraints
+- `memory-bank-index.md` - Master navigation file
+
+#### **01-active/** - Current Work
+**Purpose:** Active tasks, feedback, and immediate action items
+- Current task instructions and agent assignments
+- Active feedback and resolution items
+- Immediate priorities and blockers
+- Work-in-progress documentation
+
+#### **02-phases/** - Phase Completion Documentation
+**Purpose:** Historical phase completions and major milestones
+- Week 1-5 handoff documentation
+- Phase completion summaries (Phase 1-6)
+- Major milestone achievements
+- Transition documentation between phases
+
+#### **03-technical/** - Technical Documentation
+**Purpose:** Implementation plans, architecture, and technical designs
+- Implementation plans and strategies
+- Architecture documentation and patterns
+- System design specifications
+- Technical optimization plans
+
+#### **04-completed/** - Finished Work
+**Purpose:** Successfully completed work and resolved issues
+- Completed handoff documentation
+- Success summaries and achievements
+- Resolved issues and their solutions
+- Validated implementations
+
+#### **05-archive/** - Historical Context
+**Purpose:** Critical recovery history and lessons learned
+- Critical recovery documentation
+- System repair history
+- Emergency fixes and their context
+- Lessons learned from major issues
+
+### 🎯 Memory Bank Usage Guidelines
+
+#### **For Agent Development:**
+1. **Always read core files first** - Start with `00-core/activeContext.md` and `00-core/progress.md`
+2. **Update memory during work** - Document progress and decisions in real-time
+3. **Use proper categorization** - Place new files in appropriate directories
+4. **Cross-reference related work** - Link to relevant documents for context
+
+#### **Memory Bank Best Practices:**
+```python
+# Example: Reading Memory Bank in agent code
+def read_memory_bank_context():
+    """Read essential Memory Bank files for context."""
+    core_files = [
+        "memory-bank/00-core/activeContext.md",
+        "memory-bank/00-core/progress.md",
+        "memory-bank/00-core/systemPatterns.md"
+    ]
+
+    context = {}
+    for file_path in core_files:
+        with open(file_path, 'r') as f:
+            context[file_path] = f.read()
+
+    return context
+```
+
+#### **Documentation Update Triggers:**
+- After major system changes or decisions
+- Before and after agent handoffs
+- When completing project phases or milestones
+- After successful testing or deployment
+- When resolving critical issues or blockers
 
 ## 🚀 Development Setup
 
