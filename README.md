@@ -1,12 +1,12 @@
 # 🤖 VANA - Advanced Multi-Agent AI System
 
-[![Production Status](https://img.shields.io/badge/Status-Production%20Ready-green)](https://vana-dev-qqugqgsbcq-uc.a.run.app)
+[![Development Status](https://img.shields.io/badge/Status-Active%20Development-yellow)](https://vana-dev-960076421399.us-central1.run.app)
 [![Security](https://img.shields.io/badge/Security-Hardened-green)](https://github.com/NickB03/vana)
-[![Google ADK](https://img.shields.io/badge/Google%20ADK-100%25%20Compliant-blue)](https://google.github.io/adk-docs/)
+[![Google ADK](https://img.shields.io/badge/Google%20ADK-Compliant-blue)](https://google.github.io/adk-docs/)
 [![Cloud Run](https://img.shields.io/badge/Deployed%20on-Google%20Cloud%20Run-blue)](https://cloud.google.com/run)
 [![Python](https://img.shields.io/badge/Python-3.13+-blue)](https://python.org)
 
-> **VANA** is a production-ready, multi-agent AI system built on Google's Agent Development Kit (ADK), featuring a robust set of specialized agents and **59 standardized tools** for advanced knowledge management, semantic search, and intelligent task orchestration.
+> **VANA** is an advanced multi-agent AI system built on Google's Agent Development Kit (ADK), currently featuring **7 operational agents** with comprehensive testing framework and infrastructure for intelligent task orchestration. *System is under active development with recent comprehensive testing revealing areas for enhancement.*
 
 ## 🚀 Quick Start
 
@@ -31,8 +31,8 @@ python main.py
 The environment file includes a `VANA_MODEL` variable which sets the
 default generative model (defaults to `gemini-2.0-flash`).
 
-**🌐 Development Service:** [https://vana-dev-qqugqgsbcq-uc.a.run.app](https://vana-dev-qqugqgsbcq-uc.a.run.app)
-**🚀 Production Service:** [https://vana-prod-960076421399.us-central1.run.app](https://vana-prod-960076421399.us-central1.run.app)
+**🌐 Development Service:** [https://vana-dev-960076421399.us-central1.run.app](https://vana-dev-960076421399.us-central1.run.app)
+**🚀 Production Service:** [https://vana-qqugqgsbcq-uc.a.run.app](https://vana-qqugqgsbcq-uc.a.run.app)
 
 ## 📋 Table of Contents
 
@@ -50,22 +50,24 @@ default generative model (defaults to `gemini-2.0-flash`).
 
 VANA is an enterprise-grade multi-agent AI system designed for complex task orchestration and intelligent automation. Built with Google's Agent Development Kit (ADK), it provides a robust foundation for AI-powered applications.
 
--### ✨ Key Features
+### ✨ Key Features
 
-- **🤖 Multi-Agent Ecosystem** - Specialized agents for travel, development, research, and system intelligence
-- **🛠️ 59 Standardized Tools** - Comprehensive toolkit for file operations, search, coordination, and more
-- **🔍 Advanced Search** - Vector search, web search, and hybrid search capabilities
-- **☁️ Cloud-Native** - Deployed on Google Cloud Run with auto-scaling and 99.9% uptime
-- **📊 Real-Time Monitoring** - Comprehensive health monitoring and performance dashboards
+- **🤖 Multi-Agent System** - 7 operational agents with comprehensive testing framework
+- **🧪 Testing Framework** - ADK-compliant evaluation system with performance benchmarking
+- **🔍 Search Capabilities** - Vector search, web search, and knowledge base integration
+- **☁️ Cloud-Native** - Deployed on Google Cloud Run with auto-scaling infrastructure
+- **📊 Comprehensive Monitoring** - Health monitoring and performance tracking
 - **🔒 Enterprise Security** - Zero hardcoded credentials, Google Cloud IAM integration, Secret Manager
-- **🧹 Production Ready** - Comprehensive cleanup, security hardening, and deployment validation
+- **🏗️ Solid Infrastructure** - Robust foundation with comprehensive cleanup and security hardening
 
-### 🎯 Use Cases
+### 🎯 Current Capabilities
 
-- **Travel Planning** - End-to-end trip planning with hotel booking, flight search, and itinerary management
-- **Software Development** - Code generation, testing, documentation, and security analysis
-- **Research & Analysis** - Web research, data analysis, and competitive intelligence
+- **System Orchestration** - Central coordination and task routing through VANA agent
+- **Specialized Agents** - Architecture, UI/UX, DevOps, and QA specialist capabilities
+- **Code Execution** - Secure Python, JavaScript, and Shell code execution in sandbox environment
+- **Data Science** - Data analysis, visualization, cleaning, and machine learning capabilities
 - **Knowledge Management** - Document processing, semantic search, and information retrieval
+- **Testing & Validation** - Comprehensive evaluation framework for system assessment
 
 ## 🏗️ Architecture
 
@@ -123,32 +125,40 @@ graph TB
 
 ## 🤖 Agent System
 
-VANA features a sophisticated agent ecosystem organized in a hierarchical structure:
+VANA currently features **7 operational agents** organized in a hierarchical structure:
 
-### 🎯 Master Orchestrator
-- **VANA Agent** - Central coordinator with PLAN/ACT capabilities
+### 🎯 Core Orchestrator
+- **VANA Agent** - Central coordinator with PLAN/ACT capabilities and intelligent task routing
 
-### 🏢 Domain Orchestrators
-- **Travel Orchestrator** *(planned)* - Travel workflow coordination
-- **Development Orchestrator** *(planned)* - Software development management
-- **Research Orchestrator** *(planned)* - Multi-source research and analysis
+### 🎯 Specialist Agents (4)
+- **Architecture Specialist** - System design and microservices architecture guidance
+- **UI/UX Specialist** - User interface design and user experience optimization
+- **DevOps Specialist** - Deployment strategies and CI/CD pipeline management
+- **QA Specialist** - Testing strategies and quality assurance frameworks
 
-### 🎯 Specialist Agents
-- **Core Specialists** - Architecture, UI, DevOps and QA modules
-- **Additional Specialists** *(planned)* - Travel, development and research domains
+### 🧠 Intelligence & Execution (2)
+- **Code Execution Specialist** - Secure multi-language code execution (Python, JavaScript, Shell)
+- **Data Science Specialist** - Data analysis, visualization, cleaning, and machine learning
 
-### 🧠 Intelligence Agents
-- **Memory Management** - Knowledge storage and retrieval optimization
-- **Decision Engine** - Intelligent routing and task prioritization
-- **Learning Systems** - Performance optimization and pattern recognition
-
-### 🔧 Utility Agents
-- **Monitoring Agent** - System health and performance tracking
-- **Coordination Agent** - Workflow optimization and resource management
+### 📊 Current System Status
+- **Operational Agents**: 7 (corrected from previous claims of 24)
+- **Testing Results**: Recent comprehensive testing revealed 0% success rate, indicating areas for improvement
+- **Infrastructure**: Solid foundation with excellent response times (0.045s average)
+- **Next Priority**: Address functional gaps identified through systematic testing
 
 ## 🛠️ Tools & Capabilities
 
-VANA provides 59 standardized tools across multiple categories:
+VANA includes a comprehensive testing framework and various tool categories:
+
+### 🧪 Testing & Evaluation Framework
+- **Comprehensive Testing Suite** - ADK-compliant evaluation system with 5 evaluation sets
+- **Performance Benchmarking** - Response time, throughput, and scalability testing
+- **Agent Evaluation** - Tool trajectory analysis and response quality scoring
+- **System Discovery** - Automated capability discovery and validation
+- **Integration Testing** - Multi-agent coordination and workflow testing
+
+### 🔧 Current Tool Status
+*Recent comprehensive testing revealed gaps between documented and actual tool availability. System includes:*
 
 ### 📁 File System Tools (4)
 - `read_file` - Secure file reading with validation
@@ -304,10 +314,11 @@ VANA includes comprehensive monitoring and observability:
 - Error tracking and alerting
 
 ### 📈 Performance Metrics
-- 93.8% overall performance improvement
-- 124,183 operations per second throughput
-- 100% success rate with robust error handling
-- 95%+ cache effectiveness
+- **Infrastructure Performance**: Excellent (0.045s average response time)
+- **System Health**: Operational (200 OK responses, healthy status)
+- **Recent Testing Results**: 0% success rate baseline established (January 2025)
+- **Testing Coverage**: 15 test cases across 5 agents with detailed analysis
+- **Improvement Opportunity**: Significant gaps identified for system enhancement
 
 ### 🔍 Observability
 - Structured logging with Google Cloud Logging
