@@ -26,7 +26,7 @@ The VANA Multi-Agent System has been successfully deployed to production with co
 
 ### **Production Logs Confirmation**
 ```
-✅ Google Cloud authentication successful for project: analystai-454200
+✅ Google Cloud authentication successful for project: 960076421399
 🔍 Using agents directory: /app
 🎯 VANA Multi-Agent System operational on 0.0.0.0:8080
 📊 ADK Web UI available at: http://0.0.0.0:8080
@@ -63,7 +63,7 @@ The VANA Multi-Agent System has been successfully deployed to production with co
 
 ### **Authentication Setup**
 - **Method**: Cloud Run service account (automatic)
-- **Project**: analystai-454200
+- **Project**: 960076421399
 - **APIs Enabled**: AI Platform, Generative Language, Vertex AI
 - **Credentials**: No local files required, uses `google.auth.default()`
 

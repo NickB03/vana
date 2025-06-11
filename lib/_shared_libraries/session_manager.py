@@ -70,7 +70,7 @@ class ADKSessionManager:
         try:
             if self.use_vertex_ai:
                 # Initialize VertexAiSessionService for production
-                project_id = os.getenv("GOOGLE_CLOUD_PROJECT", "analystai-454200")
+                project_id = os.getenv("GOOGLE_CLOUD_PROJECT", "960076421399")
                 location = os.getenv("GOOGLE_CLOUD_LOCATION", "us-central1")
                 
                 self.session_service = VertexAiSessionService(

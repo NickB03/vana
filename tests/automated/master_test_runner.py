@@ -147,7 +147,7 @@ class MasterTestRunner:
                     info_str = response.text
                     
                     # Check for old project ID (should not be present)
-                    has_old_project = "analystai-454200" in info_str
+                    has_old_project = "960076421399" in info_str
                     has_hardcoded_key = "BSA6fMCYrfJC5seE-AVsWrKjpOFk6Nm" in info_str
                     
                     status = "PASS" if not has_old_project and not has_hardcoded_key else "FAIL"

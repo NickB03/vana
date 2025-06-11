@@ -166,7 +166,7 @@ Before claiming success, next agent MUST verify:
 - `test_functional_baseline.py` - Comprehensive testing framework
 
 **Authentication:**
-- **gcloud**: Configured for project analystai-454200
+- **gcloud**: Configured for project 960076421399
 - **Issue**: Some gcloud commands hanging intermittently
 
 ---

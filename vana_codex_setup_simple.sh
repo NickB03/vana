@@ -144,14 +144,14 @@ GOOGLE_GENAI_USE_VERTEXAI=False
 VANA_ENV=development
 LOG_LEVEL=DEBUG
 
-# Google Cloud Configuration (analystai-454200)
+# Google Cloud Configuration (960076421399)
 GOOGLE_API_KEY=AIzaSyBzblZlGJoRSvV1VRPPAQUSr064JyDy0yg
-GOOGLE_CLOUD_PROJECT=analystai-454200
+GOOGLE_CLOUD_PROJECT=960076421399
 GOOGLE_CLOUD_LOCATION=us-central1
 
 # RAG Configuration
-VANA_RAG_CORPUS_ID=projects/analystai-454200/locations/us-central1/ragCorpora/vana-corpus
-RAG_CORPUS_RESOURCE_NAME=projects/analystai-454200/locations/us-central1/ragCorpora/vana-corpus
+VANA_RAG_CORPUS_ID=projects/960076421399/locations/us-central1/ragCorpora/vana-corpus
+RAG_CORPUS_RESOURCE_NAME=projects/960076421399/locations/us-central1/ragCorpora/vana-corpus
 
 # External APIs (development only)
 BRAVE_API_KEY=BSA6fMCYrfJC5seE-AVsWrKjpOFk6Nm
@@ -211,7 +211,7 @@ if [ "$PROJECT_TYPE" != "basic" ]; then
 fi
 if [ "$PROJECT_TYPE" = "vana" ]; then
     echo "  VANA: Development environment configured"
-    echo "  Project: analystai-454200 (development)"
+    echo "  Project: 960076421399 (development)"
     echo "  Branch: project-id-audit-deployment-fixes"
 fi
 echo ""

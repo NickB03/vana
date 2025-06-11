@@ -49,7 +49,7 @@ pip install pytest pytest-asyncio psutil
 pip install google-adk[vertexai]
 
 # Set environment variables
-export RAG_CORPUS_RESOURCE_NAME="projects/analystai-454200/locations/us-central1/ragCorpora/test-corpus"
+export RAG_CORPUS_RESOURCE_NAME="projects/960076421399/locations/us-central1/ragCorpora/test-corpus"
 export SIMILARITY_TOP_K=5
 export VECTOR_DISTANCE_THRESHOLD=0.7
 ```

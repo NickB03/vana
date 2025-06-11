@@ -136,8 +136,8 @@ Set the following environment variables:
 
 ```bash
 # Required
-export RAG_CORPUS_RESOURCE_NAME="projects/analystai-454200/locations/us-central1/ragCorpora/vana-corpus"
-export GOOGLE_CLOUD_PROJECT="analystai-454200"
+export RAG_CORPUS_RESOURCE_NAME="projects/960076421399/locations/us-central1/ragCorpora/vana-corpus"
+export GOOGLE_CLOUD_PROJECT="960076421399"
 
 # Optional (with defaults)
 export SIMILARITY_TOP_K=5

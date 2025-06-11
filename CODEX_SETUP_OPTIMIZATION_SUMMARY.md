@@ -42,7 +42,7 @@
 
 ### **4. Current Branch Integration**
 - ✅ **Google Secret Manager support** → Matches production setup
-- ✅ **Project ID configuration** → analystai-454200 (dev) / 960076421399 (prod)
+- ✅ **Project ID configuration** → 960076421399 (dev) / 960076421399 (prod)
 - ✅ **Environment templates** → .env.local + .env.production.template
 - ✅ **Service account setup** → vana-vector-search-sa integration
 
@@ -78,7 +78,7 @@
 ### **Development Environment (.env.local)**
 ```bash
 # Current branch configuration
-GOOGLE_CLOUD_PROJECT=analystai-454200
+GOOGLE_CLOUD_PROJECT=960076421399
 GOOGLE_API_KEY=AIzaSyBzblZlGJoRSvV1VRPPAQUSr064JyDy0yg
 BRAVE_API_KEY=BSA6fMCYrfJC5seE-AVsWrKjpOFk6Nm
 OPENROUTER_API_KEY=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
@@ -102,7 +102,7 @@ GOOGLE_CLOUD_PROJECT=960076421399  # Set by Cloud Run
 2. 🔐 **Current branch compatible** with Google Secret Manager integration
 3. 🚀 **Ultra-optimized** with minimal essential setup
 4. 🛡️ **Fallback protection** for various environment scenarios
-5. 📋 **Project-specific** configuration for analystai-454200
+5. 📋 **Project-specific** configuration for 960076421399
 
 **Key Features:**
 - **Global timeout**: 580s with 20s buffer
@@ -130,7 +130,7 @@ poetry run python -c "import os; print(f'Project: {os.environ.get(\"GOOGLE_CLOUD
 1. **Use pre-built Python** (never compile from source)
 2. **Respect global timeout** (580s maximum)
 3. **Minimal validation** (essential tests only)
-4. **Current branch config** (analystai-454200 for development)
+4. **Current branch config** (960076421399 for development)
 5. **Fallback options** (multiple Python versions, cache clearing)
 
 ## 📈 **Expected Results**

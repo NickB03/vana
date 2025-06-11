@@ -42,7 +42,7 @@ The VANA Multi-Agent System had critical compatibility issues preventing proper 
 #### **4. gcloud CLI Resolution**
 - **Status**: All gcloud commands working without SSL/cryptography errors
 - **Authentication**: Google Cloud authentication operational
-- **Project Access**: Full access to analystai-454200 project
+- **Project Access**: Full access to 960076421399 project
 - **Deployment**: Cloud Run deployment successful
 
 #### **5. Production Deployment**
@@ -122,7 +122,7 @@ python --version  # Should show 3.13.1
 python -c "import google.adk; print('ADK working')"
 
 # Test gcloud CLI
-gcloud config get-value project  # Should show analystai-454200
+gcloud config get-value project  # Should show 960076421399
 
 # Run tests
 python -m pytest tests/ -v
