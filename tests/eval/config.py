@@ -7,8 +7,8 @@ Provides environment-specific settings, performance targets, and UI selectors
 """
 
 import os
-from typing import Dict, List, Any
-from dataclasses import dataclass
+from typing import Dict, List, Any, Optional
+from dataclasses import dataclass, field
 
 @dataclass
 class PerformanceTargets:
@@ -24,7 +24,7 @@ class UISelectors:
     agent_select: str = "mat-select"
     agent_option: str = "mat-option"
     textarea: str = "textarea"
-    response: str = ".response, .message, .output"
+    response: str = "p"  # Updated based on actual UI structure
     vana_option: str = "mat-option:has-text('vana')"
 
 @dataclass
@@ -33,12 +33,12 @@ class EvaluationConfig:
     # Environment URLs
     dev_url: str = "https://vana-dev-960076421399.us-central1.run.app"
     prod_url: str = "https://vana-qqugqgsbcq-uc.a.run.app"
-    
+
     # Performance targets
-    performance_targets: PerformanceTargets = PerformanceTargets()
-    
+    performance_targets: PerformanceTargets = field(default_factory=PerformanceTargets)
+
     # UI selectors
-    ui_selectors: UISelectors = UISelectors()
+    ui_selectors: UISelectors = field(default_factory=UISelectors)
     
     # Browser configuration
     browser_headless: bool = True
@@ -47,7 +47,7 @@ class EvaluationConfig:
     # Test configuration
     baseline_iterations: int = 10
     load_test_iterations: int = 5
-    concurrent_users: List[int] = None
+    concurrent_users: Optional[List[int]] = None
     
     # Results configuration
     results_dir: str = "tests/results"
