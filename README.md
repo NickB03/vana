@@ -116,35 +116,39 @@ graph TB
 
 ### 🔧 Core Components
 
-- **Orchestrator Layer** - Central coordination and task routing
-- **Agent Layer** - Specialized agents for domain-specific tasks
-- **Tool Layer** - 59 standardized tools with consistent interfaces
+- **VANA Orchestrator** - Single agent handling all user interactions and coordination
+- **Specialist Tools** - 4 domain-specific tools (Architecture, UI, DevOps, QA)
+- **Tool Layer** - 59+ standardized tools with consistent interfaces
 - **Infrastructure Layer** - Google Cloud services and monitoring
+- **Agent Discovery** - Google ADK discovers 7 agents (1 functional + redirects)
 
 ## 🤖 Agent System
 
-VANA features a sophisticated agent ecosystem organized in a hierarchical structure:
+VANA features a streamlined agent architecture with a central orchestrator pattern:
 
-### 🎯 Master Orchestrator
-- **VANA Agent** - Central coordinator with PLAN/ACT capabilities
+### 🎯 Primary Orchestrator
+- **VANA Agent** - Central coordinator handling all user interactions
+- **Architecture**: Single agent with specialist tool delegation
+- **Discovery**: 7 agents visible in UI, 1 functional orchestrator
 
-### 🏢 Domain Orchestrators
-- **Travel Orchestrator** *(planned)* - Travel workflow coordination
-- **Development Orchestrator** *(planned)* - Software development management
-- **Research Orchestrator** *(planned)* - Multi-source research and analysis
+### 🛠️ Specialist Tools (Accessed via VANA)
+- **Architecture Specialist** - System design and technical architecture
+- **UI/UX Specialist** - Interface design and user experience
+- **DevOps Specialist** - Deployment and infrastructure management
+- **QA Specialist** - Testing strategies and quality assurance
 
-### 🎯 Specialist Agents
-- **Core Specialists** - Architecture, UI, DevOps and QA modules
-- **Additional Specialists** *(planned)* - Travel, development and research domains
+### 🔄 Agent Directory Structure
+- **agents/vana/** - Primary orchestrator implementation
+- **agents/specialists/** - Specialist tool implementations
+- **agents/memory/** - Redirects to VANA orchestrator
+- **agents/orchestration/** - Redirects to VANA orchestrator
+- **agents/workflows/** - Redirects to VANA orchestrator
 
-### 🧠 Intelligence Agents
-- **Memory Management** - Knowledge storage and retrieval optimization
-- **Decision Engine** - Intelligent routing and task prioritization
-- **Learning Systems** - Performance optimization and pattern recognition
-
-### 🔧 Utility Agents
-- **Monitoring Agent** - System health and performance tracking
-- **Coordination Agent** - Workflow optimization and resource management
+### 🎯 Architecture Benefits
+- **Simplified UX** - Single conversation thread, no agent switching
+- **Consistent Context** - Maintains conversation state across specialist consultations
+- **Efficient Resource Use** - Centralized coordination with tool delegation
+- **Easy Maintenance** - Single orchestrator with modular specialist tools
 
 ## 🛠️ Tools & Capabilities
 
