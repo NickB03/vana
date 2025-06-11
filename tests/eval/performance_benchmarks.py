@@ -194,19 +194,19 @@ class VANAPerformanceBenchmarks:
                 await page.wait_for_load_state("networkidle")
                 await page.click("mat-select")
                 await page.click("mat-option:has-text('vana')")
-                
+
                 # Run iterations
                 for i in range(iterations):
                     try:
                         start_time = time.time()
-                        
+
                         # Clear and submit query
                         await page.fill("textarea", "")
                         await page.fill("textarea", query)
                         await page.keyboard.press("Enter")
-                        
-                        # Wait for response
-                        await page.wait_for_selector(".response, .message, .output", timeout=30000)
+
+                        # Wait for response - look for bot message with response
+                        await page.wait_for_selector(".bot-message .message-card", timeout=30000)
                         response_time = time.time() - start_time
                         
                         response_times.append(response_time)
@@ -358,8 +358,8 @@ class VANAPerformanceBenchmarks:
                         await page.fill("textarea", query)
                         await page.keyboard.press("Enter")
 
-                        # Wait for response
-                        await page.wait_for_selector(".response, .message, .output", timeout=30000)
+                        # Wait for response - look for bot message with response
+                        await page.wait_for_selector(".bot-message .message-card", timeout=30000)
                         response_time = time.time() - start_time
 
                         response_times.append(response_time)
