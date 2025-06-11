@@ -57,7 +57,7 @@
 ## 2.4. ADK Memory & Knowledge Systems (✅ PRODUCTION - Migration Complete)
 *   **Google ADK Memory Service:** VertexAiRagMemoryService operational for managed memory operations
 *   **Vertex AI RAG Corpus:** Native Google Cloud RAG infrastructure deployed and operational
-*   **RAG Corpus Configuration:** `projects/analystai-454200/locations/us-central1/ragCorpora/vana-corpus`
+*   **RAG Corpus Configuration:** `projects/960076421399/locations/us-central1/ragCorpora/vana-corpus`
 *   **ADK Session Management:** Built-in SessionService with automatic state persistence implemented
 *   **ADK Memory Tools:** Built-in `load_memory` tool operational for semantic search across stored conversations
 *   **Session State System:** Native `session.state` dictionary with scoped state management active

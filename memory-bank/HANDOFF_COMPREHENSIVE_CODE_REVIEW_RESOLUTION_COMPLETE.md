@@ -26,7 +26,7 @@ Successfully analyzed and resolved all 12 critical issues identified in the comp
 - **Risk**: HIGH - Real project information in templates
 - **Fix Applied**: Sanitized all real project references
 - **Changes**: 
-  - `"project_id": "analystai-454200"` → `"project_id": "YOUR_PROJECT_ID_HERE"`
+  - `"project_id": "960076421399"` → `"project_id": "YOUR_PROJECT_ID_HERE"`
   - Updated client_email and cert URLs to use placeholders
 - **Validation**: ✅ Template contains only placeholder values
 - **Impact**: Information leakage prevented
@@ -115,7 +115,7 @@ Successfully analyzed and resolved all 12 critical issues identified in the comp
 - **Result**: ✅ No hardcoded credentials in current codebase
 
 #### **Configuration Validation**
-- **Command**: `grep -r "analystai-454200\|960076421399" deployment/`
+- **Command**: `grep -r "960076421399\|960076421399" deployment/`
 - **Result**: ✅ Consistent project ID usage with proper variable separation
 - **Command**: `./scripts/configure_environment.sh --env development --non-interactive`
 - **Result**: ✅ Environment configuration script working correctly

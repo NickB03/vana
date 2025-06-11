@@ -193,7 +193,7 @@ VANA has successfully migrated to Google ADK's native memory architecture, achie
 *   **Managed Infrastructure:** Google Cloud managed services providing 99.9% uptime and automatic scaling
 *   **Zero Configuration:** Production deployment with no custom server maintenance required
 *   **Semantic Search:** Built-in `load_memory` tool operational for intelligent information retrieval
-*   **RAG Corpus Configuration:** `projects/analystai-454200/locations/us-central1/ragCorpora/vana-corpus`
+*   **RAG Corpus Configuration:** `projects/960076421399/locations/us-central1/ragCorpora/vana-corpus`
 
 ### ✅ ADK Session State System - IMPLEMENTED
 *   **Built-in State Management:** Native `session.state` dictionary with automatic persistence operational

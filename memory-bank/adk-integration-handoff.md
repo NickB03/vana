@@ -103,7 +103,7 @@ ERROR: No such file or directory: '/Users/nick/Development/vana-enhanced/vana_mu
 - **Cloud Build Config**: `deployment/cloudbuild.yaml`
 - **Application Code**: `main.py` (root level)
 - **Deployment Script**: `deployment/deploy.sh`
-- **Service Account**: `vana-vector-search-sa@analystai-454200.iam.gserviceaccount.com`
+- **Service Account**: `vana-vector-search-sa@960076421399.iam.gserviceaccount.com`
 
 ### **Google ADK Production Patterns (from Context7)**
 ```python
@@ -121,7 +121,7 @@ app = get_fast_api_app(
 ### **Required Environment Variables**
 ```
 GOOGLE_GENAI_USE_VERTEXAI=True
-GOOGLE_CLOUD_PROJECT=analystai-454200
+GOOGLE_CLOUD_PROJECT=960076421399
 GOOGLE_CLOUD_LOCATION=us-central1
 ```
 

@@ -5,9 +5,9 @@ metadata:
     run.googleapis.com/build-base-image: gcr.io/buildpacks/google-22/run
     run.googleapis.com/build-enable-automatic-updates: 'false'
     run.googleapis.com/build-id: 0b9d76cf-5b91-4893-a101-cb57fa8f5f24
-    run.googleapis.com/build-image-uri: us-central1-docker.pkg.dev/analystai-454200/cloud-run-source-deploy/vana-dev
+    run.googleapis.com/build-image-uri: us-central1-docker.pkg.dev/960076421399/cloud-run-source-deploy/vana-dev
     run.googleapis.com/build-name: projects/960076421399/locations/us-central1/builds/0b9d76cf-5b91-4893-a101-cb57fa8f5f24
-    run.googleapis.com/build-source-location: gs://run-sources-analystai-454200-us-central1/services/vana-dev/1749430375.464567-4a15fee5fba94679b2e196881afd29b8.zip#1749430376476553
+    run.googleapis.com/build-source-location: gs://run-sources-960076421399-us-central1/services/vana-dev/1749430375.464567-4a15fee5fba94679b2e196881afd29b8.zip#1749430376476553
     run.googleapis.com/ingress: all
     run.googleapis.com/ingress-status: all
     run.googleapis.com/urls: '["https://vana-dev-960076421399.us-central1.run.app","https://vana-dev-qqugqgsbcq-uc.a.run.app"]'
@@ -45,10 +45,10 @@ spec:
         - name: GOOGLE_GENAI_USE_VERTEXAI
           value: 'true'
         - name: GOOGLE_CLOUD_PROJECT
-          value: analystai-454200
+          value: 960076421399
         - name: GOOGLE_CLOUD_LOCATION
           value: us-central1
-        image: gcr.io/analystai-454200/vana-dev:latest
+        image: gcr.io/960076421399/vana-dev:latest
         ports:
         - containerPort: 8080
           name: http1
@@ -62,7 +62,7 @@ spec:
           tcpSocket:
             port: 8080
           timeoutSeconds: 240
-      serviceAccountName: vana-vector-search-sa@analystai-454200.iam.gserviceaccount.com
+      serviceAccountName: vana-vector-search-sa@960076421399.iam.gserviceaccount.com
       timeoutSeconds: 600
   traffic:
   - latestRevision: true

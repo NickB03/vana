@@ -216,12 +216,12 @@
 **Replacements Applied:** 48 credential substitutions across entire codebase
 
 1. **Hardcoded Project IDs Eliminated** ✅ COMPLETE
-   - `analystai-454200` → `${GOOGLE_CLOUD_PROJECT}` (environment variable)
+   - `960076421399` → `${GOOGLE_CLOUD_PROJECT}` (environment variable)
    - `960076421399` → `${PROJECT_NUMBER}` (environment variable)
    - **Impact:** Zero hardcoded project identifiers remaining in codebase
 
 2. **Service Account References Sanitized** ✅ COMPLETE
-   - `vana-vector-search-sa@analystai-454200.iam.gserviceaccount.com` → `${VECTOR_SEARCH_SERVICE_ACCOUNT}`
+   - `vana-vector-search-sa@960076421399.iam.gserviceaccount.com` → `${VECTOR_SEARCH_SERVICE_ACCOUNT}`
    - **Impact:** All service account references now use environment variables
 
 3. **RAG Corpus Paths Sanitized** ✅ COMPLETE
@@ -1179,13 +1179,13 @@ Validation: Look for tool execution, NOT agent transfer
 **Status:** ✅ CLOUD FUNCTION SUCCESSFULLY DEPLOYED - AUTOMATIC IMPORT READY
 **Achievement:** Cloud Function `auto-import-rag-document` deployed and configured for automatic document processing
 **Service:** https://vana-qqugqgsbcq-uc.a.run.app (PRODUCTION READY)
-**Cloud Function:** https://us-central1-analystai-454200.cloudfunctions.net/auto-import-rag-document
+**Cloud Function:** https://us-central1-960076421399.cloudfunctions.net/auto-import-rag-document
 **Previous Priority:** 🔍 VERIFY RAG CONNECTION AND ELIMINATE WEB SEARCH FALLBACK - ✅ COMPLETED
 
 ### **🎉 BREAKTHROUGH: AUTOMATIC RAG IMPORT SYSTEM DEPLOYED!**
 **Status**: ✅ Cloud Function successfully deployed with GCS trigger
 **Function Name**: `auto-import-rag-document`
-**Trigger**: `google.cloud.storage.object.v1.finalized` on bucket `analystai-454200-vector-search-docs`
+**Trigger**: `google.cloud.storage.object.v1.finalized` on bucket `960076421399-vector-search-docs`
 **Runtime**: Python 3.9, 512MB memory, 540s timeout
 **Permissions**: All IAM roles configured (Eventarc, Pub/Sub Publisher, Storage)
 
@@ -1217,7 +1217,7 @@ Validation: Look for tool execution, NOT agent transfer
 **Discovery**: Project ID mismatch was causing "fallback knowledge" responses
 
 ### **✅ CRITICAL ISSUE RESOLVED**
-- **Root Cause Found**: System was looking for corpus in wrong project (analystai-454200 vs 960076421399)
+- **Root Cause Found**: System was looking for corpus in wrong project (960076421399 vs 960076421399)
 - **Real Corpus Created**: Vertex AI RAG corpus successfully created with proper structure
 - **Environment Updated**: .env.production updated with correct corpus resource name
 - **Mock Data Eliminated**: System now points to real RAG corpus instead of fallback
@@ -1230,7 +1230,7 @@ Validation: Look for tool execution, NOT agent transfer
 
 ### **✅ DEPLOYMENT AND DOCUMENT IMPORT PROGRESS (2025-06-01)**
 - **Service Deployed**: ✅ Updated configuration deployed to https://vana-qqugqgsbcq-uc.a.run.app
-- **Documents Uploaded**: ✅ 4 documents uploaded to GCS bucket (analystai-454200-vector-search-docs)
+- **Documents Uploaded**: ✅ 4 documents uploaded to GCS bucket (960076421399-vector-search-docs)
   - vana_system_overview.txt
   - anthropic-ai-agents.md
   - Newwhitepaper_Agents.pdf
@@ -2426,7 +2426,7 @@ All scripts created and ready:
 - **Status**: Google ADK fully operational with Vertex AI
 
 #### **🔧 ENVIRONMENT CONFIGURATION COMPLETED**
-- `GOOGLE_CLOUD_PROJECT=analystai-454200`
+- `GOOGLE_CLOUD_PROJECT=960076421399`
 - `GOOGLE_CLOUD_PROJECT_NUMBER=960076421399`
 - `GOOGLE_CLOUD_LOCATION=us-central1`
 - `GOOGLE_GENAI_USE_VERTEXAI=True`

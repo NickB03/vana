@@ -95,7 +95,7 @@ class InfrastructureValidator:
                 # Check for correct project references
                 info_str = json.dumps(info_data)
                 has_correct_project = "960076421399" in info_str
-                has_old_project = "analystai-454200" in info_str
+                has_old_project = "960076421399" in info_str
                 
                 status = "PASS" if has_correct_project and not has_old_project else "FAIL"
                 

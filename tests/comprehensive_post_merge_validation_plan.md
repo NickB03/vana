@@ -510,7 +510,7 @@ class SecurityValidator:
 
                 # Patterns to detect hardcoded credentials
                 patterns = [
-                    r'analystai-454200',  # Old project ID
+                    r'960076421399',  # Old project ID
                     r'BSA6fMCYrfJC5seE-AVsWrKjpOFk6Nm',  # Hardcoded API key
                     r'[A-Za-z0-9]{32,}',  # Potential API keys
                     r'.*@.*\.iam\.gserviceaccount\.com'  # Service account emails

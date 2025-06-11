@@ -155,7 +155,7 @@ Ensure the local VS Code development environment matches the production deployme
 ## 📊 CURRENT PRODUCTION LOGS (Reference)
 
 ```
-✅ Google Cloud authentication successful for project: analystai-454200
+✅ Google Cloud authentication successful for project: 960076421399
 🔍 Using agents directory: /app
 🎯 VANA Multi-Agent System operational on 0.0.0.0:8080
 📊 ADK Web UI available at: http://0.0.0.0:8080

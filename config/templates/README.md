@@ -64,7 +64,7 @@ cp config/templates/.env.test .env.test
 
 ### Required ADK Variables
 ```bash
-RAG_CORPUS_RESOURCE_NAME="projects/analystai-454200/locations/us-central1/ragCorpora/vana-corpus"
+RAG_CORPUS_RESOURCE_NAME="projects/960076421399/locations/us-central1/ragCorpora/vana-corpus"
 MEMORY_SIMILARITY_TOP_K="5"
 MEMORY_VECTOR_DISTANCE_THRESHOLD="0.7"
 SESSION_SERVICE_TYPE="vertex_ai"

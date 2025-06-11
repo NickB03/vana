@@ -111,7 +111,7 @@ from agents.specialists.qa_specialist import analyze_testing_strategy
 - **URL:** https://vana-dev-960076421399.us-central1.run.app
 - **Status:** ✅ OPERATIONAL
 - **Build ID:** 27cbd0bc-d554-443e-acfe-b0ca9b68b0eb
-- **Container:** gcr.io/analystai-454200/vana-dev:latest
+- **Container:** gcr.io/960076421399/vana-dev:latest
 - **Resources:** 1 vCPU, 1 GiB memory (development configuration)
 
 ### **Specialist Integration Status**

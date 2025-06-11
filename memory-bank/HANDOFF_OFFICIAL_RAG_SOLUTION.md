@@ -79,7 +79,7 @@ imported_rag_files_count: 0
 ```bash
 gcloud functions deploy auto-import-rag-document \
   --runtime python39 \
-  --trigger-bucket analystai-454200-vector-search-docs \
+  --trigger-bucket 960076421399-vector-search-docs \
   --entry-point auto_import_rag_document \
   --source . \
   --region us-central1 \

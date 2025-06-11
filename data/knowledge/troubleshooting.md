@@ -54,7 +54,7 @@ type: system_documentation
 ### Required Variables
 ```
 GOOGLE_GENAI_USE_VERTEXAI=true
-GOOGLE_CLOUD_PROJECT=analystai-454200
+GOOGLE_CLOUD_PROJECT=960076421399
 GOOGLE_CLOUD_LOCATION=us-central1
 BRAVE_API_KEY=<your_brave_api_key>
 ```

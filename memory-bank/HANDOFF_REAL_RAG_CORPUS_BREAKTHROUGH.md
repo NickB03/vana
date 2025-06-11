@@ -11,7 +11,7 @@
 
 ### **✅ PROBLEM COMPLETELY SOLVED**
 **Root Cause Identified:** Project ID mismatch causing "fallback knowledge" responses
-- **Expected Project:** `analystai-454200` (in environment configuration)
+- **Expected Project:** `960076421399` (in environment configuration)
 - **Actual Project:** `960076421399` (where authentication and corpus creation works)
 - **Impact:** System was looking for RAG corpus in wrong project, causing fallback to mock data
 

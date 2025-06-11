@@ -115,7 +115,7 @@ docker build --platform linux/amd64 -t vana-multi-agent .
 
 ### Environment Variables (Working)
 ```bash
-GOOGLE_CLOUD_PROJECT=analystai-454200
+GOOGLE_CLOUD_PROJECT=960076421399
 GOOGLE_CLOUD_REGION=us-central1
 VANA_MODEL=gemini-2.0-flash
 VANA_ENV=production
@@ -125,7 +125,7 @@ VANA_ENV=production
 ### Deployment Target
 - **Service**: vana-multi-agent
 - **Region**: us-central1
-- **Project**: analystai-454200
+- **Project**: 960076421399
 - **Expected URL**: https://vana-multi-agent-[hash].us-central1.run.app
 
 ## 📚 REFERENCE MATERIALS
