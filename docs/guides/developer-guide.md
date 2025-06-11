@@ -45,14 +45,14 @@ poetry install
 poetry run pre-commit install
 
 # Configure environment
-cp .env.local.example .env.local
-# Edit .env.local with your configuration
+cp .env.example .env
+# Edit `.env` with your configuration
 ```
 
 ### Development Environment Variables
 
 ```bash
-# .env.local
+# .env
 GOOGLE_CLOUD_PROJECT=your-project-id
 GOOGLE_APPLICATION_CREDENTIALS=path/to/service-account.json
 BRAVE_API_KEY=your-brave-api-key
@@ -515,3 +515,4 @@ def expensive_import():
 - [Tool Architecture](../architecture/tools.md) - Complete tool reference
 - [API Reference](api-reference.md) - Full API documentation
 - [Troubleshooting](../troubleshooting/common-issues.md) - Common issues and solutions
+

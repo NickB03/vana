@@ -285,3 +285,4 @@ gcloud alpha monitoring policies create \
 **🔒 Security is a shared responsibility.** Follow these guidelines to keep VANA and your data secure.
 
 **Need help?** Contact the security team or check our [troubleshooting guide](../troubleshooting/common-issues.md).
+
