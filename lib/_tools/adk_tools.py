@@ -487,14 +487,14 @@ def get_agent_status() -> str:
     """📊 Get enhanced status of all agents with PLAN/ACT capabilities."""
     try:
         result = {
-            "total_agents": 24,
-            "active_agents": 24,
+            "total_agents": 7,
+            "discoverable_agents": 7,
+            "functional_directories": 5,
             "agent_types": {
-                "orchestrators": 4,
-                "specialists": 11,
-                "intelligence": 3,
-                "utility": 2,
-                "core": 4
+                "orchestrator": 1,
+                "specialists": 4,
+                "redirects": 4,
+                "unknown": 2
             },
             "capabilities": ["PLAN/ACT", "confidence_scoring", "task_delegation"],
             "mode": "production",
