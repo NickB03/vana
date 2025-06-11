@@ -33,7 +33,7 @@ VANA is built on an optimized multi-agent architecture that leverages Google's A
 - **Google Cloud Integration** with Vertex AI and Cloud Run
 - **Auto-scaling** based on demand
 - **Resilient Architecture** with circuit breakers and fallbacks
-- **Observability** with comprehensive monitoring and logging
+- **Observability** with comprehensive monitoring
 
 ## 🏛️ System Architecture
 
@@ -179,5 +179,5 @@ graph TB
 
 - **Orchestrator Layer** - Central coordination and task routing
 - **Agent Layer** - Specialized agents for domain-specific tasks
-- **Tool Layer** - 42 standardized tools with consistent interfaces
+- **Tool Layer** - 59 standardized tools with consistent interfaces
 - **Infrastructure Layer** - Google Cloud services and monitoring

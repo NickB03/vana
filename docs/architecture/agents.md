@@ -4,7 +4,9 @@ Comprehensive documentation of VANA's optimized agent ecosystem with dynamic orc
 
 ## 🎯 Optimized Agent Architecture Overview
 
-**Current Implementation**: 12 core agents with dynamic orchestration
+**Current Implementation**: A root orchestrator with four core specialist modules
+(architecture, UI, DevOps, and QA). Additional specialists described below are
+planned features and not yet implemented.
 **Optimization Framework**: AGOR-inspired patterns + Python enterprise architecture
 **Key Features**: Strategy-based execution, dynamic agent creation, tool optimization
 
@@ -27,14 +29,14 @@ graph TB
             QS[🧪 QA Specialist]
         end
 
-        subgraph "Travel Specialists (4) - Dynamic"
+        subgraph "Travel Specialists (planned)"
             HS[🏨 Hotel Search]
             FS[✈️ Flight Search]
             PP[💳 Payment Processing]
             IP[📅 Itinerary Planning]
         end
 
-        subgraph "Development Specialists (4) - Dynamic"
+        subgraph "Development Specialists (planned)"
             CG[💻 Code Generation]
             TE[🧪 Testing]
             DOC[📚 Documentation]
@@ -260,7 +262,7 @@ else:
 - Security testing and vulnerability assessment
 - Quality metrics, reporting, and continuous improvement
 
-## ✈️ Travel Specialists (4 Agents)
+## ✈️ Travel Specialists *(planned)*
 
 ### 🏨 Hotel Search Agent
 **Specialization**: Hotel discovery and comparison  
@@ -310,7 +312,7 @@ else:
 - Local transportation and logistics planning
 - Travel document and requirement verification
 
-## 💻 Development Specialists (4 Agents)
+## 💻 Development Specialists *(planned)*
 
 ### 💻 Code Generation Agent
 **Specialization**: Advanced coding and development  
@@ -360,7 +362,7 @@ else:
 - Security best practices implementation
 - Threat modeling and risk assessment
 
-## 🔍 Research Specialists (3 Agents)
+## 🔍 Research Specialists *(planned)*
 
 ### 🌐 Web Research Agent
 **Specialization**: Internet research and fact-checking  
@@ -398,7 +400,7 @@ else:
 - Industry analysis and benchmarking
 - Threat and opportunity assessment
 
-## 🧠 Intelligence Agents (3 Agents)
+## 🧠 Intelligence Agents *(planned)*
 
 ### 🧠 Memory Management Agent
 **Specialization**: Advanced memory operations and knowledge curation  
@@ -433,7 +435,7 @@ else:
 - Adaptive system behavior and improvement recommendations
 - Continuous learning and system evolution
 
-## ⚙️ Utility Agents (2 Agents)
+## ⚙️ Utility Agents *(planned)*
 
 ### 📊 Monitoring Agent
 **Specialization**: System monitoring and performance tracking  

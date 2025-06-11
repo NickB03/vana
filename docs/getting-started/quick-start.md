@@ -29,10 +29,10 @@ poetry install
 
 ```bash
 # Copy environment template
-cp .env.local.example .env.local
+cp .env.example .env
 
 # Edit with your settings
-nano .env.local
+nano .env
 ```
 
 **Minimal Configuration:**
@@ -239,7 +239,7 @@ gcloud config set project YOUR_PROJECT_ID
 
 Now that VANA is running:
 
-1. **[User Guide](../guides/user-guide.md)** - Learn all 24 agents and 59 tools
+1. **[User Guide](../guides/user-guide.md)** - Learn about available agents and tools
 2. **[Configuration Guide](configuration.md)** - Advanced configuration options
 3. **[API Reference](../guides/api-reference.md)** - Complete API documentation
 4. **[Examples](../guides/examples/)** - Working code examples
@@ -252,7 +252,7 @@ Ready for production? See:
 
 ## 🆘 Need Help?
 
-- **Documentation**: [docs/](../)
+- **Documentation**: [Documentation Index](../README.md)
 - **Troubleshooting**: [Common Issues](../troubleshooting/common-issues.md)
 - **GitHub Issues**: [Report Problems](https://github.com/NickB03/vana/issues)
 
