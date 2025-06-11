@@ -62,30 +62,8 @@ System health and status information.
 ```json
 {
   "status": "healthy",
-  "agents": {
-    "total": 24,
-    "healthy": 24,
-    "degraded": 0,
-    "failed": 0
-  },
-  "tools": {
-    "total": 59,
-    "available": 59,
-    "errors": 0
-  },
-  "performance": {
-    "avg_response_time": "0.45s",
-    "success_rate": "99.8%",
-    "cache_hit_rate": "95.2%"
-  },
-  "resources": {
-    "memory_usage": "68%",
-    "cpu_usage": "23%",
-    "api_quotas": {
-      "vertex_ai": "45%",
-      "brave_search": "12%"
-    }
-  }
+  "agent": "vana",
+  "mcp_enabled": true
 }
 ```
 
@@ -441,33 +419,16 @@ Get MCP integration status.
 
 ### Agent-as-Tools
 
-All 20 specialist agents are available as tools:
+The repository exposes a small set of specialist agents as callable tools:
 
-#### Travel Agents
-- `hotel_agent` - Hotel search and booking
-- `flight_agent` - Flight search and management
-- `payment_agent` - Payment processing
-- `itinerary_agent` - Trip planning
+#### Available Tools
+- `architecture_tool` – Architecture analysis
+- `ui_tool` – UI/UX guidance
+- `devops_tool` – Infrastructure planning
+- `qa_tool` – Testing strategy
 
-#### Development Agents
-- `code_generator` - Code generation
-- `testing_agent` - Test creation and execution
-- `documentation_agent` - Documentation generation
-- `security_agent` - Security analysis
-
-#### Research Agents
-- `web_research_agent` - Web research
-- `data_analysis_agent` - Data analysis
-- `competitive_intelligence_agent` - Market research
-
-#### Intelligence Agents
-- `memory_management_agent` - Knowledge management
-- `decision_engine_agent` - Decision support
-- `learning_systems_agent` - System optimization
-
-#### Utility Agents
-- `monitoring_agent` - System monitoring
-- `coordination_agent` - Workflow coordination
+Additional agent tools described in earlier documentation (e.g. travel or
+research agents) are not implemented in the current codebase.
 
 ## 📊 Response Formats
 
@@ -612,3 +573,4 @@ All inputs are validated for:
 ---
 
 **Need help?** Check our [troubleshooting guide](../troubleshooting/common-issues.md) or [create an issue](https://github.com/NickB03/vana/issues).
+
