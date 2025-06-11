@@ -215,7 +215,7 @@ VANA can request approval for important decisions:
 ### System Health Dashboard
 
 Access the health dashboard at `/health` to monitor:
-- **Agent Status** - Health of all 24 agents
+- **Agent Status** - Health of all agents
 - **Tool Performance** - Success rates and response times
 - **Resource Usage** - Memory, CPU, and API quotas
 - **Recent Activity** - Latest tasks and their outcomes
@@ -318,3 +318,4 @@ experiences in each location"
 **Ready to get started?** Try your first request and discover the power of VANA's multi-agent AI system!
 
 **Need more help?** Check out our [API Reference](api-reference.md) or [Developer Guide](developer-guide.md) for technical details.
+

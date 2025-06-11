@@ -6,7 +6,7 @@
 [![Cloud Run](https://img.shields.io/badge/Deployed%20on-Google%20Cloud%20Run-blue)](https://cloud.google.com/run)
 [![Python](https://img.shields.io/badge/Python-3.13+-blue)](https://python.org)
 
-> **VANA** is a production-ready, multi-agent AI system built on Google's Agent Development Kit (ADK), featuring 24 specialized agents with 42 standardized tools for advanced knowledge management, semantic search, and intelligent task orchestration.
+> **VANA** is a production-ready, multi-agent AI system built on Google's Agent Development Kit (ADK), featuring a robust set of specialized agents and **59 standardized tools** for advanced knowledge management, semantic search, and intelligent task orchestration.
 
 ## 🚀 Quick Start
 
@@ -19,16 +19,16 @@ cd vana
 poetry install
 
 # Configure environment
-cp .env.template .env.local
-# Edit .env.local with your credentials (see .env.template for required variables)
-# The `VANA_MODEL_NAME` variable controls the default model
+cp .env.example .env
+# Edit `.env` with your credentials (see `.env.example` for required variables)
+# The `VANA_MODEL` variable controls the default model
 # (defaults to `gemini-2.0-flash`)
 
 # Run locally
 python main.py
 ```
 
-The environment file includes a `VANA_MODEL_NAME` variable which sets the
+The environment file includes a `VANA_MODEL` variable which sets the
 default generative model (defaults to `gemini-2.0-flash`).
 
 **🌐 Development Service:** [https://vana-dev-qqugqgsbcq-uc.a.run.app](https://vana-dev-qqugqgsbcq-uc.a.run.app)
@@ -50,9 +50,9 @@ default generative model (defaults to `gemini-2.0-flash`).
 
 VANA is an enterprise-grade multi-agent AI system designed for complex task orchestration and intelligent automation. Built with Google's Agent Development Kit (ADK), it provides a robust foundation for AI-powered applications.
 
-### ✨ Key Features
+-### ✨ Key Features
 
-- **🤖 24-Agent Ecosystem** - Specialized agents for travel, development, research, and system intelligence
+- **🤖 Multi-Agent Ecosystem** - Specialized agents for travel, development, research, and system intelligence
 - **🛠️ 59 Standardized Tools** - Comprehensive toolkit for file operations, search, coordination, and more
 - **🔍 Advanced Search** - Vector search, web search, and hybrid search capabilities
 - **☁️ Cloud-Native** - Deployed on Google Cloud Run with auto-scaling and 99.9% uptime
@@ -123,27 +123,26 @@ graph TB
 
 ## 🤖 Agent System
 
-VANA features a sophisticated 24-agent ecosystem organized in a hierarchical structure:
+VANA features a sophisticated agent ecosystem organized in a hierarchical structure:
 
 ### 🎯 Master Orchestrator
 - **VANA Agent** - Central coordinator with PLAN/ACT capabilities
 
-### 🏢 Domain Orchestrators (3 Agents)
-- **Travel Orchestrator** - Complex travel workflow coordination
-- **Development Orchestrator** - Software development pipeline management
-- **Research Orchestrator** - Multi-source research and analysis
+### 🏢 Domain Orchestrators
+- **Travel Orchestrator** *(planned)* - Travel workflow coordination
+- **Development Orchestrator** *(planned)* - Software development management
+- **Research Orchestrator** *(planned)* - Multi-source research and analysis
 
-### 🎯 Specialist Agents (11 Agents)
-- **Travel Specialists** - Hotel booking, flight search, payment processing, itinerary planning
-- **Development Specialists** - Code generation, testing, documentation, security analysis
-- **Research Specialists** - Web research, data analysis, competitive intelligence
+### 🎯 Specialist Agents
+- **Core Specialists** - Architecture, UI, DevOps and QA modules
+- **Additional Specialists** *(planned)* - Travel, development and research domains
 
-### 🧠 Intelligence Agents (3 Agents)
+### 🧠 Intelligence Agents
 - **Memory Management** - Knowledge storage and retrieval optimization
 - **Decision Engine** - Intelligent routing and task prioritization
 - **Learning Systems** - Performance optimization and pattern recognition
 
-### 🔧 Utility Agents (2 Agents)
+### 🔧 Utility Agents
 - **Monitoring Agent** - System health and performance tracking
 - **Coordination Agent** - Workflow optimization and resource management
 
@@ -184,8 +183,10 @@ VANA provides 59 standardized tools across multiple categories:
 - Generic tool adapters
 - Tool discovery and registration
 
-### 🎯 Agent-as-Tools (20)
-All specialist agents available as tools for seamless orchestration
+### 🎯 Agent-as-Tools
+Core specialist agents are exposed as tools (`architecture_tool`, `ui_tool`,
+`devops_tool`, and `qa_tool`) for seamless orchestration. Additional agents may
+be added over time.
 
 ### 🕐 Time Operations (6)
 - `get_current_time` - Current time with timezone support
@@ -239,7 +240,7 @@ Comprehensive documentation is available in the `/docs` directory:
 poetry install
 
 # Configure environment
-cp .env.template .env.local
+cp .env.example .env
 
 # Run development server
 python main.py
@@ -348,7 +349,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 **🔗 Links:**
 - [Production Service](https://vana-prod-960076421399.us-central1.run.app)
-- [Documentation](docs/)
+- [Documentation](docs/README.md)
 - [API Reference](docs/guides/api-reference.md)
 - [Contributing](CONTRIBUTING.md)
 
