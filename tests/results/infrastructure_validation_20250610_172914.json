@@ -1,0 +1,64 @@
+{
+  "test_suite": "Infrastructure Validation",
+  "merge_commit": "774345abf3e265d28ac1f817f9398bacd1488691",
+  "execution_time": "2025-06-10T17:29:14.248860",
+  "base_url": "https://vana-dev-960076421399.us-central1.run.app",
+  "results": [
+    {
+      "test_id": "TC-INF-001",
+      "name": "Service Health Check",
+      "status": "PASS",
+      "response_time": 0.832,
+      "status_code": 200,
+      "expected": {
+        "status": "healthy",
+        "agent": "vana",
+        "mcp_enabled": true
+      },
+      "actual": {
+        "status": "healthy",
+        "agent": "vana",
+        "mcp_enabled": true
+      },
+      "timestamp": "2025-06-10T17:29:10.982331",
+      "details": {
+        "url": "https://vana-dev-960076421399.us-central1.run.app/health",
+        "method": "GET",
+        "timeout": 10
+      }
+    },
+    {
+      "test_id": "TC-INF-002",
+      "name": "Service Info Endpoint",
+      "status": "FAIL",
+      "response_time": 0.674,
+      "status_code": 200,
+      "has_correct_project": false,
+      "has_old_project": false,
+      "response_size": 400,
+      "timestamp": "2025-06-10T17:29:11.656780"
+    },
+    {
+      "test_id": "TC-INF-003",
+      "name": "Agent Selection Endpoint",
+      "status": "FAIL",
+      "response_time": 0.448,
+      "status_code": 404,
+      "error": "HTTP 404",
+      "timestamp": "2025-06-10T17:29:12.104589"
+    },
+    {
+      "test_id": "TC-INF-004",
+      "name": "Response Time Performance",
+      "status": "PASS",
+      "avg_response_time": 1.071,
+      "max_response_time": 1.538,
+      "individual_times": [
+        0.604,
+        1.538
+      ],
+      "performance_target": "< 3s average, < 5s max",
+      "timestamp": "2025-06-10T17:29:14.247914"
+    }
+  ]
+}

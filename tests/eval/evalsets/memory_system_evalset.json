@@ -1,0 +1,83 @@
+{
+  "eval_set_id": "memory_system_evaluation",
+  "name": "Memory System Integration Evaluation",
+  "description": "Tests VANA's memory-first hierarchy and integration with knowledge base, vector search, and session memory",
+  "eval_cases": [
+    {
+      "eval_id": "memory_001",
+      "conversation": [
+        {
+          "user_content": {
+            "parts": [{"text": "Can you search for technical documentation about vector search and RAG implementation?"}],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [{"text": "I'll search our technical documentation for information about vector search and RAG implementation.\n\n*Using vector_search*\n\nBased on our technical documentation, here's comprehensive information about vector search and RAG implementation:\n\n**Vector Search Implementation:**\n\n1. **Embedding Generation**\n   - Using Vertex AI TextEmbeddingModel for high-quality embeddings\n   - Model: text-embedding-004 for optimal performance\n   - Dimension: 768-dimensional vectors\n   - Batch processing for efficiency\n\n2. **Vector Database**\n   - Google Cloud Vertex AI Matching Engine\n   - Approximate Nearest Neighbor (ANN) search\n   - Index type: TreeAH for balanced performance\n   - Real-time updates and incremental indexing\n\n3. **Search Pipeline**\n   - Query embedding generation\n   - Similarity search with cosine distance\n   - Result ranking and filtering\n   - Metadata enrichment\n\n**RAG (Retrieval-Augmented Generation) Architecture:**\n\n1. **Document Processing**\n   - Semantic chunking for optimal retrieval\n   - Metadata extraction and tagging\n   - Document versioning and updates\n   - Multi-format support (PDF, text, markdown)\n\n2. **RAG Corpus Configuration**\n   - Corpus ID: projects/960076421399/locations/us-central1/ragCorpora/2305843009213693952\n   - Real-time document import from Google Cloud Storage\n   - Automatic indexing and embedding generation\n   - Content filtering and quality control\n\n3. **Retrieval Strategy**\n   - Hybrid search combining vector and keyword search\n   - Context window optimization\n   - Relevance scoring and ranking\n   - Multi-document synthesis\n\n**Integration with VANA System:**\n\n1. **Memory Hierarchy**\n   - Session memory → Knowledge base → Vector search → Web search\n   - Automatic fallback mechanisms\n   - Context preservation across searches\n   - Performance optimization\n\n2. **Search Tools**\n   - `search_knowledge`: Knowledge base queries\n   - `vector_search`: Technical documentation search\n   - `load_memory`: Session and user memory retrieval\n   - `web_search`: External information gathering\n\n**Performance Metrics:**\n\n- Search latency: <1 second average\n- Relevance accuracy: >90% for technical queries\n- Index size: 10,000+ documents\n- Update frequency: Real-time with 5-minute propagation\n\nThis implementation provides fast, accurate retrieval of technical information to enhance AI responses with relevant context."}],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {
+                "name": "vector_search",
+                "args": {
+                  "query": "vector search RAG implementation technical documentation"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "eval_id": "memory_002",
+      "conversation": [
+        {
+          "user_content": {
+            "parts": [{"text": "Remember that I prefer detailed technical explanations with code examples"}],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [{"text": "I'll remember your preference for detailed technical explanations with code examples.\n\n*Storing in session memory*\n\nPerfect! I've stored your preference in my memory. From now on, I'll provide:\n\n✅ **Detailed Technical Explanations**\n- In-depth analysis of concepts and implementations\n- Step-by-step breakdowns of complex processes\n- Technical context and background information\n- Best practices and architectural considerations\n\n✅ **Code Examples**\n- Practical implementation examples\n- Multiple language examples when relevant\n- Complete, runnable code snippets\n- Comments explaining key concepts\n\n**Example of how I'll respond to future technical questions:**\n\n```python\n# Vector search implementation example\nfrom google.cloud import aiplatform\nfrom typing import List, Dict, Any\n\nclass VectorSearchService:\n    def __init__(self, project_id: str, location: str, index_endpoint: str):\n        \"\"\"\n        Initialize vector search service with Vertex AI Matching Engine\n        \n        Args:\n            project_id: Google Cloud project ID\n            location: Deployment location (e.g., 'us-central1')\n            index_endpoint: Matching Engine index endpoint ID\n        \"\"\"\n        self.client = aiplatform.MatchingEngineIndexEndpoint(\n            index_endpoint_name=f\"projects/{project_id}/locations/{location}/indexEndpoints/{index_endpoint}\"\n        )\n    \n    async def search_similar_documents(self, query_embedding: List[float], top_k: int = 10) -> List[Dict[str, Any]]:\n        \"\"\"\n        Search for similar documents using vector similarity\n        \n        Args:\n            query_embedding: Query vector (768-dimensional)\n            top_k: Number of results to return\n            \n        Returns:\n            List of similar documents with scores and metadata\n        \"\"\"\n        response = self.client.find_neighbors(\n            deployed_index_id=\"deployed_index_id\",\n            queries=[query_embedding],\n            num_neighbors=top_k\n        )\n        \n        return [\n            {\n                \"document_id\": neighbor.id,\n                \"similarity_score\": neighbor.distance,\n                \"metadata\": neighbor.restricts\n            }\n            for neighbor in response[0]\n        ]\n```\n\nThis preference is now saved and will influence all my future technical responses to provide the depth and practical examples you're looking for."}],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {
+                "name": "store_memory",
+                "args": {
+                  "key": "user_preferences",
+                  "value": "Prefers detailed technical explanations with code examples"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "eval_id": "memory_003",
+      "conversation": [
+        {
+          "user_content": {
+            "parts": [{"text": "What did we discuss about my preferences earlier?"}],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [{"text": "Let me check our conversation history and your stored preferences.\n\n*Using load_memory*\n\nBased on our earlier conversation, you mentioned that you prefer:\n\n**Detailed Technical Explanations with Code Examples**\n\nSpecifically, you want me to provide:\n\n1. **In-depth technical analysis** - Not just surface-level explanations, but comprehensive breakdowns of concepts and implementations\n\n2. **Practical code examples** - Real, runnable code snippets that demonstrate the concepts being discussed\n\n3. **Step-by-step processes** - Clear explanations of how things work under the hood\n\n4. **Technical context** - Background information and architectural considerations\n\nI demonstrated this preference by providing a detailed Python code example of a VectorSearchService class that shows how to implement vector search using Google Cloud's Vertex AI Matching Engine, complete with:\n\n- Proper class initialization\n- Type hints and documentation\n- Async method implementation\n- Error handling considerations\n- Practical usage patterns\n\nThis preference is stored in my memory and influences how I structure all technical responses for you. Would you like me to adjust this preference or add any additional details about how you prefer technical information to be presented?"}],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {
+                "name": "load_memory",
+                "args": {
+                  "key": "user_preferences"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

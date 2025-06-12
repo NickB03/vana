@@ -1,0 +1,51 @@
+{
+  "test_results": {
+    "echo test": {
+      "expected_tool": "echo",
+      "response_time": 0.034893035888671875,
+      "response_text": "",
+      "tool_usage_detected": false,
+      "response_length": 0
+    },
+    "get health status": {
+      "expected_tool": "get_health_status",
+      "response_time": 0.017091989517211914,
+      "response_text": "",
+      "tool_usage_detected": false,
+      "response_length": 0
+    },
+    "search for VANA capabilities": {
+      "expected_tool": "search_knowledge",
+      "response_time": 0.010455846786499023,
+      "response_text": "System health is healthy.",
+      "tool_usage_detected": false,
+      "response_length": 25
+    },
+    "read file README.md": {
+      "expected_tool": "read_file",
+      "response_time": 0.011232852935791016,
+      "response_text": "System health is healthy.",
+      "tool_usage_detected": false,
+      "response_length": 25
+    },
+    "what tools do you have": {
+      "expected_tool": "get_agent_status",
+      "response_time": 0.008142948150634766,
+      "response_text": "System health is healthy.",
+      "tool_usage_detected": false,
+      "response_length": 25
+    }
+  },
+  "analysis": [
+    {
+      "issue": "Extremely fast responses suggest no processing",
+      "fix": "Check if agent is actually executing or just returning cached/empty responses",
+      "priority": "HIGH"
+    },
+    {
+      "issue": "No tool usage patterns detected",
+      "fix": "Verify tool names match between agent config and tool definitions",
+      "priority": "CRITICAL"
+    }
+  ]
+}

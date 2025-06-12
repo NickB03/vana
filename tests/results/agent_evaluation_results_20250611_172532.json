@@ -1,0 +1,63 @@
+{
+  "evaluation_timestamp": "2025-06-11T17:24:16.704538",
+  "evaluation_summary": {
+    "ui_specialist": "AgentPerformanceMetrics(agent_name='ui_specialist', total_tests=2, passed_tests=0, failed_tests=2, average_response_time=0.035, tool_accuracy_score=1.0, response_quality_score=0.0, success_rate=0.0)",
+    "tool_functionality": "AgentPerformanceMetrics(agent_name='tool_functionality', total_tests=4, passed_tests=0, failed_tests=4, average_response_time=0.029, tool_accuracy_score=0.0, response_quality_score=0.0, success_rate=0.0)",
+    "vana_agent": "AgentPerformanceMetrics(agent_name='vana_agent', total_tests=4, passed_tests=0, failed_tests=4, average_response_time=0.032, tool_accuracy_score=0.0, response_quality_score=0.0, success_rate=0.0)",
+    "architecture_specialist": "AgentPerformanceMetrics(agent_name='architecture_specialist', total_tests=2, passed_tests=0, failed_tests=2, average_response_time=0.036, tool_accuracy_score=1.0, response_quality_score=0.0, success_rate=0.0)",
+    "memory_system": "AgentPerformanceMetrics(agent_name='memory_system', total_tests=3, passed_tests=0, failed_tests=3, average_response_time=0.028, tool_accuracy_score=0.0, response_quality_score=0.0, success_rate=0.0)"
+  },
+  "agent_results": {
+    "ui_specialist": [
+      "EvaluationResult(eval_id='ui_001', agent_name='ui_specialist', test_case='Design a responsive dashboard interface for a project management application', success=False, response_time=0.05, tool_trajectory_score=1.0, response_quality_score=0.0, expected_tools=[], actual_tools=[], error_message=None, raw_response='No conversations')",
+      "EvaluationResult(eval_id='ui_002', agent_name='ui_specialist', test_case='Create a user onboarding flow for a complex SaaS application with multiple user roles', success=False, response_time=0.019, tool_trajectory_score=1.0, response_quality_score=0.0, expected_tools=[], actual_tools=[], error_message=None, raw_response='No conversations')"
+    ],
+    "tool_functionality": [
+      "EvaluationResult(eval_id='tool_001', agent_name='tool_functionality', test_case='Can you check the system health status?', success=False, response_time=0.032, tool_trajectory_score=0.0, response_quality_score=0.0, expected_tools=['get_health_status'], actual_tools=[], error_message=None, raw_response='No conversations')",
+      "EvaluationResult(eval_id='tool_002', agent_name='tool_functionality', test_case=\"Echo back this message: 'Testing tool functionality with special characters: @#$%^&*()!'\", success=False, response_time=0.031, tool_trajectory_score=0.0, response_quality_score=0.0, expected_tools=['echo'], actual_tools=[], error_message=None, raw_response='No conversations')",
+      "EvaluationResult(eval_id='tool_003', agent_name='tool_functionality', test_case='Can you coordinate a complex task involving multiple specialists?', success=False, response_time=0.03, tool_trajectory_score=0.0, response_quality_score=0.0, expected_tools=['coordinate_task'], actual_tools=[], error_message=None, raw_response='Conversations')",
+      "EvaluationResult(eval_id='tool_004', agent_name='tool_functionality', test_case=\"What's the current status of all available agents?\", success=False, response_time=0.024, tool_trajectory_score=0.0, response_quality_score=0.0, expected_tools=['get_agent_status'], actual_tools=[], error_message=None, raw_response='Conversations')"
+    ],
+    "vana_agent": [
+      "EvaluationResult(eval_id='vana_001', agent_name='vana_agent', test_case='Design a microservices architecture for an e-commerce platform', success=False, response_time=0.03, tool_trajectory_score=0.0, response_quality_score=0.0, expected_tools=['architecture_tool_func'], actual_tools=[], error_message=None, raw_response='No conversations')",
+      "EvaluationResult(eval_id='vana_002', agent_name='vana_agent', test_case='Create a modern dashboard UI with dark mode support', success=False, response_time=0.031, tool_trajectory_score=0.0, response_quality_score=0.0, expected_tools=['ui_tool_func'], actual_tools=[], error_message=None, raw_response='No conversations')",
+      "EvaluationResult(eval_id='vana_003', agent_name='vana_agent', test_case=\"What are VANA's agent capabilities and how many agents are available?\", success=False, response_time=0.031, tool_trajectory_score=0.0, response_quality_score=0.0, expected_tools=['search_knowledge'], actual_tools=[], error_message=None, raw_response='Conversations')",
+      "EvaluationResult(eval_id='vana_004', agent_name='vana_agent', test_case=\"What's the current weather in San Francisco today?\", success=False, response_time=0.035, tool_trajectory_score=0.0, response_quality_score=0.0, expected_tools=['web_search'], actual_tools=[], error_message=None, raw_response='Conversations')"
+    ],
+    "architecture_specialist": [
+      "EvaluationResult(eval_id='arch_001', agent_name='architecture_specialist', test_case='Design a scalable microservices architecture for a high-traffic social media platform', success=False, response_time=0.031, tool_trajectory_score=1.0, response_quality_score=0.0, expected_tools=[], actual_tools=[], error_message=None, raw_response='No conversations')",
+      "EvaluationResult(eval_id='arch_002', agent_name='architecture_specialist', test_case='How would you implement a real-time chat system with message persistence and offline support?', success=False, response_time=0.041, tool_trajectory_score=1.0, response_quality_score=0.0, expected_tools=[], actual_tools=[], error_message=None, raw_response='No conversations')"
+    ],
+    "memory_system": [
+      "EvaluationResult(eval_id='memory_001', agent_name='memory_system', test_case='Can you search for technical documentation about vector search and RAG implementation?', success=False, response_time=0.032, tool_trajectory_score=0.0, response_quality_score=0.0, expected_tools=['vector_search'], actual_tools=[], error_message=None, raw_response='No conversations')",
+      "EvaluationResult(eval_id='memory_002', agent_name='memory_system', test_case='Remember that I prefer detailed technical explanations with code examples', success=False, response_time=0.025, tool_trajectory_score=0.0, response_quality_score=0.0, expected_tools=['store_memory'], actual_tools=[], error_message=None, raw_response='No conversations')",
+      "EvaluationResult(eval_id='memory_003', agent_name='memory_system', test_case='What did we discuss about my preferences earlier?', success=False, response_time=0.027, tool_trajectory_score=0.0, response_quality_score=0.0, expected_tools=['load_memory'], actual_tools=[], error_message=None, raw_response='No conversations')"
+    ]
+  },
+  "overall_metrics": {
+    "total_agents_tested": 5,
+    "total_test_cases": 15,
+    "total_passed": 0,
+    "total_failed": 15,
+    "overall_success_rate": 0.0,
+    "average_response_time": 0.032,
+    "average_tool_accuracy": 0.4,
+    "average_response_quality": 0.0,
+    "performance_grade": "D (Needs Improvement)"
+  },
+  "recommendations": [
+    "\ud83d\udd27 ui_specialist: Success rate (0.0%) below target (95.0%) - Review test failures",
+    "\ud83d\udcdd ui_specialist: Response quality (0.0%) below target (80.0%) - Improve response content",
+    "\ud83d\udd27 tool_functionality: Success rate (0.0%) below target (95.0%) - Review test failures",
+    "\ud83d\udee0\ufe0f tool_functionality: Tool accuracy (0.0%) below target (90.0%) - Review tool usage patterns",
+    "\ud83d\udcdd tool_functionality: Response quality (0.0%) below target (80.0%) - Improve response content",
+    "\ud83d\udd27 vana_agent: Success rate (0.0%) below target (95.0%) - Review test failures",
+    "\ud83d\udee0\ufe0f vana_agent: Tool accuracy (0.0%) below target (90.0%) - Review tool usage patterns",
+    "\ud83d\udcdd vana_agent: Response quality (0.0%) below target (80.0%) - Improve response content",
+    "\ud83d\udd27 architecture_specialist: Success rate (0.0%) below target (95.0%) - Review test failures",
+    "\ud83d\udcdd architecture_specialist: Response quality (0.0%) below target (80.0%) - Improve response content",
+    "\ud83d\udd27 memory_system: Success rate (0.0%) below target (95.0%) - Review test failures",
+    "\ud83d\udee0\ufe0f memory_system: Tool accuracy (0.0%) below target (90.0%) - Review tool usage patterns",
+    "\ud83d\udcdd memory_system: Response quality (0.0%) below target (80.0%) - Improve response content"
+  ]
+}

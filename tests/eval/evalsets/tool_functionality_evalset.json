@@ -1,0 +1,104 @@
+{
+  "eval_set_id": "tool_functionality_evaluation",
+  "name": "Tool Functionality & Integration Evaluation",
+  "description": "Tests individual tool functionality, error handling, and integration patterns across the VANA system",
+  "eval_cases": [
+    {
+      "eval_id": "tool_001",
+      "conversation": [
+        {
+          "user_content": {
+            "parts": [{"text": "Can you check the system health status?"}],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [{"text": "I'll check the system health status for you.\n\n*Using get_health_status*\n\nHere's the current system health status:\n\n**Overall System Status: ✅ HEALTHY**\n\n**Service Components:**\n- **VANA Agent**: ✅ Operational\n- **MCP Server**: ✅ Enabled and running\n- **Memory Service**: ✅ VertexAI RAG Memory available\n- **Vector Search**: ✅ Operational\n- **Knowledge Base**: ✅ Accessible\n- **Web Search**: ✅ Functional\n\n**Performance Metrics:**\n- **Response Time**: <2 seconds average\n- **Memory Usage**: Normal levels\n- **Tool Availability**: 59+ tools operational\n- **Agent Count**: 24 agents active\n\n**Infrastructure Status:**\n- **Cloud Run Service**: ✅ Running\n- **Database Connections**: ✅ Stable\n- **External APIs**: ✅ Accessible\n- **Authentication**: ✅ Working\n\n**Recent Activity:**\n- Last health check: Just completed\n- System uptime: 99.9%\n- No critical errors detected\n- All monitoring systems operational\n\nThe system is running smoothly with all core components functioning properly. All agents and tools are available for use."}],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {
+                "name": "get_health_status",
+                "args": {}
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "eval_id": "tool_002",
+      "conversation": [
+        {
+          "user_content": {
+            "parts": [{"text": "Echo back this message: 'Testing tool functionality with special characters: @#$%^&*()!'"}],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [{"text": "I'll echo back your message exactly as requested.\n\n*Using echo*\n\n**Echoed Message:**\nTesting tool functionality with special characters: @#$%^&*()\n\n**Tool Execution Details:**\n- ✅ Message received and processed successfully\n- ✅ Special characters handled correctly\n- ✅ No encoding or formatting issues\n- ✅ Complete message integrity maintained\n\nThe echo tool is functioning properly and can handle messages with special characters without any issues."}],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {
+                "name": "echo",
+                "args": {
+                  "message": "Testing tool functionality with special characters: @#$%^&*()!"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "eval_id": "tool_003",
+      "conversation": [
+        {
+          "user_content": {
+            "parts": [{"text": "Can you coordinate a complex task involving multiple specialists?"}],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [{"text": "I'll coordinate a complex task involving multiple specialists for you.\n\n*Using coordinate_task*\n\n**Task Coordination Initiated**\n\n**Coordination Strategy:**\n1. **Task Analysis**: Breaking down the complex task into specialist domains\n2. **Resource Allocation**: Assigning appropriate specialists to each component\n3. **Workflow Management**: Establishing dependencies and execution order\n4. **Quality Assurance**: Implementing review and validation checkpoints\n\n**Specialist Team Assembly:**\n- 🏗️ **Architecture Specialist**: System design and technical architecture\n- 🎨 **UI/UX Specialist**: User interface and experience design\n- ⚙️ **DevOps Specialist**: Deployment and infrastructure management\n- 🧪 **QA Specialist**: Testing strategy and quality validation\n- 📊 **Data Specialist**: Data architecture and analytics\n\n**Coordination Framework:**\n\n**Phase 1: Planning & Design**\n- Architecture specialist defines system structure\n- UI specialist creates user experience flows\n- Data specialist designs data models\n- Estimated duration: 2-3 days\n\n**Phase 2: Implementation**\n- Development teams execute based on specifications\n- DevOps specialist sets up CI/CD pipelines\n- Regular check-ins and progress reviews\n- Estimated duration: 1-2 weeks\n\n**Phase 3: Testing & Validation**\n- QA specialist implements comprehensive testing\n- Performance and security validation\n- User acceptance testing coordination\n- Estimated duration: 3-5 days\n\n**Phase 4: Deployment & Monitoring**\n- DevOps specialist manages production deployment\n- Monitoring and alerting setup\n- Post-deployment validation\n- Estimated duration: 1-2 days\n\n**Communication Protocols:**\n- Daily standups for progress updates\n- Weekly stakeholder reviews\n- Real-time collaboration tools\n- Escalation procedures for blockers\n\n**Success Metrics:**\n- On-time delivery: Target 95%\n- Quality standards: Zero critical defects\n- Stakeholder satisfaction: >90%\n- Performance targets: <3s response time\n\nThe task coordination system is now active and managing the multi-specialist workflow efficiently."}],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {
+                "name": "coordinate_task",
+                "args": {
+                  "task_description": "Complex task involving multiple specialists",
+                  "coordination_type": "multi_specialist_workflow"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "eval_id": "tool_004",
+      "conversation": [
+        {
+          "user_content": {
+            "parts": [{"text": "What's the current status of all available agents?"}],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [{"text": "I'll check the current status of all available agents in the system.\n\n*Using get_agent_status*\n\n**Agent Status Report - All Systems**\n\n**Core Agents (5/5 Active):**\n- ✅ **VANA**: Main orchestrator - Operational\n- ✅ **Memory Agent**: Session and knowledge management - Active\n- ✅ **Orchestration Agent**: Multi-agent coordination - Running\n- ✅ **Workflow Agent**: Process automation - Available\n- ✅ **Specialist Coordinator**: Agent routing - Functional\n\n**Development Specialists (8/8 Active):**\n- ✅ **Architecture Specialist**: System design - Ready\n- ✅ **UI/UX Specialist**: Interface design - Available\n- ✅ **DevOps Specialist**: Infrastructure management - Operational\n- ✅ **QA/Testing Specialist**: Quality assurance - Active\n- ✅ **Backend Specialist**: Server-side development - Running\n- ✅ **Frontend Specialist**: Client-side development - Ready\n- ✅ **Database Specialist**: Data management - Available\n- ✅ **Security Specialist**: Security implementation - Operational\n\n**Business Specialists (6/6 Active):**\n- ✅ **Product Manager**: Product strategy - Available\n- ✅ **Business Analyst**: Requirements analysis - Ready\n- ✅ **Project Manager**: Project coordination - Active\n- ✅ **Marketing Specialist**: Marketing strategy - Operational\n- ✅ **Sales Specialist**: Sales processes - Available\n- ✅ **Customer Success**: Customer relations - Running\n\n**Domain Specialists (5/5 Active):**\n- ✅ **Data Science Specialist**: Analytics and ML - Ready\n- ✅ **AI/ML Specialist**: Machine learning - Operational\n- ✅ **Cloud Infrastructure**: Cloud services - Active\n- ✅ **API Integration**: Integration services - Available\n- ✅ **Performance Optimization**: System optimization - Running\n\n**System Summary:**\n- **Total Agents**: 24/24 (100% operational)\n- **Response Time**: <2 seconds average\n- **Tool Access**: All agents have full tool access\n- **Memory Integration**: All agents connected to memory systems\n- **Last Health Check**: Just completed\n- **System Load**: Normal (optimal performance)\n\n**Agent Coordination Status:**\n- ✅ Agent-as-tool patterns: Fully functional\n- ✅ Cross-agent communication: Operational\n- ✅ Task delegation: Working seamlessly\n- ✅ Context sharing: Active across all agents\n\nAll agents are operational and ready to handle requests across all domains and specializations."}],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {
+                "name": "get_agent_status",
+                "args": {}
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

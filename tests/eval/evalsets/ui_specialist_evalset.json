@@ -1,0 +1,43 @@
+{
+  "eval_set_id": "ui_specialist_evaluation",
+  "name": "UI/UX Specialist Agent Evaluation", 
+  "description": "Tests the UI specialist's ability to provide comprehensive user interface design guidance and user experience recommendations",
+  "eval_cases": [
+    {
+      "eval_id": "ui_001",
+      "conversation": [
+        {
+          "user_content": {
+            "parts": [{"text": "Design a responsive dashboard interface for a project management application"}],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [{"text": "I'll design a responsive dashboard interface for your project management application. Here's a comprehensive UI/UX approach:\n\n**Layout Structure:**\n\n1. **Header Navigation**\n   - Logo and app name (left)\n   - Global search bar (center)\n   - User profile, notifications, settings (right)\n   - Breadcrumb navigation below header\n\n2. **Sidebar Navigation**\n   - Collapsible sidebar with icons and labels\n   - Main sections: Dashboard, Projects, Tasks, Team, Reports\n   - Project quick-access list\n   - Collapse to icon-only on mobile\n\n3. **Main Content Area**\n   - Grid-based widget system\n   - Drag-and-drop widget rearrangement\n   - Responsive card layout\n\n**Dashboard Widgets:**\n\n1. **Project Overview Cards**\n   - Project status indicators (green/yellow/red)\n   - Progress bars with percentage completion\n   - Team member avatars\n   - Due date countdown\n\n2. **Task Management Panel**\n   - Kanban board view (To Do, In Progress, Done)\n   - Quick task creation\n   - Priority indicators (high/medium/low)\n   - Assignee filtering\n\n3. **Analytics Charts**\n   - Burndown charts for sprint progress\n   - Team productivity metrics\n   - Time tracking visualizations\n   - Project timeline Gantt chart\n\n4. **Activity Feed**\n   - Recent project updates\n   - Team member activities\n   - Comment notifications\n   - File upload notifications\n\n**Responsive Design:**\n\n- **Desktop (1200px+)**: Full sidebar, 3-4 column widget grid\n- **Tablet (768-1199px)**: Collapsible sidebar, 2-3 column grid\n- **Mobile (320-767px)**: Hidden sidebar (hamburger menu), single column\n\n**Design System:**\n\n1. **Color Palette**\n   - Primary: #2563EB (Blue)\n   - Secondary: #10B981 (Green)\n   - Warning: #F59E0B (Amber)\n   - Error: #EF4444 (Red)\n   - Neutral: #6B7280 (Gray)\n\n2. **Typography**\n   - Headers: Inter Bold (24px, 20px, 18px)\n   - Body: Inter Regular (16px, 14px)\n   - Captions: Inter Medium (12px)\n\n3. **Spacing**\n   - Base unit: 8px\n   - Component spacing: 16px, 24px, 32px\n   - Section spacing: 48px, 64px\n\n**Interactive Elements:**\n\n- **Buttons**: Primary, secondary, ghost variants\n- **Form Controls**: Consistent input styling with focus states\n- **Tooltips**: Contextual help for complex features\n- **Loading States**: Skeleton screens and progress indicators\n- **Empty States**: Helpful illustrations and action prompts\n\n**Accessibility Features:**\n\n- WCAG 2.1 AA compliance\n- Keyboard navigation support\n- Screen reader optimization\n- High contrast mode support\n- Focus indicators for all interactive elements\n\n**Performance Optimizations:**\n\n- Lazy loading for dashboard widgets\n- Virtual scrolling for large lists\n- Image optimization and compression\n- Progressive web app capabilities\n\nThis design provides an intuitive, efficient interface that scales beautifully across all devices while maintaining excellent usability."}],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "tool_uses": []
+          }
+        }
+      ]
+    },
+    {
+      "eval_id": "ui_002",
+      "conversation": [
+        {
+          "user_content": {
+            "parts": [{"text": "Create a user onboarding flow for a complex SaaS application with multiple user roles"}],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [{"text": "I'll design a comprehensive user onboarding flow for your complex SaaS application with multiple user roles. Here's a strategic approach:\n\n**Onboarding Strategy:**\n\n1. **Progressive Disclosure**\n   - Start with essential information\n   - Gradually introduce advanced features\n   - Role-specific feature introduction\n   - Just-in-time learning\n\n2. **Role-Based Paths**\n   - Admin: Full system setup and configuration\n   - Manager: Team management and project oversight\n   - User: Task execution and collaboration\n   - Viewer: Read-only access and reporting\n\n**Onboarding Flow Steps:**\n\n**Step 1: Welcome & Role Selection**\n- Welcome screen with value proposition\n- Role selection with clear descriptions\n- Expected time commitment display\n- Option to skip and explore freely\n\n**Step 2: Account Setup**\n- Basic profile information\n- Company/organization details\n- Profile photo upload\n- Notification preferences\n\n**Step 3: Role-Specific Configuration**\n\n*Admin Path:*\n- Company settings and branding\n- User invitation and role assignment\n- Integration setup (SSO, APIs)\n- Security and compliance settings\n\n*Manager Path:*\n- Team creation and member invitation\n- Project template selection\n- Workflow customization\n- Reporting dashboard setup\n\n*User Path:*\n- Personal workspace setup\n- Task management preferences\n- Collaboration tool introduction\n- Mobile app download prompt\n\n**Step 4: Interactive Tutorial**\n- Guided tour of key features\n- Interactive hotspots and tooltips\n- Sample data for hands-on practice\n- Achievement badges for completion\n\n**Step 5: First Success Moment**\n- Complete a meaningful task\n- See immediate value from the platform\n- Celebrate the accomplishment\n- Encourage next steps\n\n**UX Design Elements:**\n\n1. **Progress Indicators**\n   - Step counter (Step 2 of 5)\n   - Progress bar with percentage\n   - Estimated time remaining\n   - Option to save and continue later\n\n2. **Interactive Elements**\n   - Animated illustrations\n   - Interactive demos\n   - Clickable prototypes\n   - Video tutorials (optional)\n\n3. **Personalization**\n   - Use user's name throughout\n   - Role-specific messaging\n   - Industry-specific examples\n   - Customized feature recommendations\n\n**Onboarding Components:**\n\n1. **Welcome Modal**\n   - Clean, minimal design\n   - Clear value proposition\n   - Easy dismissal option\n   - Skip onboarding choice\n\n2. **Step-by-Step Wizard**\n   - Card-based layout\n   - Previous/Next navigation\n   - Form validation and error handling\n   - Auto-save functionality\n\n3. **Interactive Overlays**\n   - Spotlight highlighting\n   - Contextual tooltips\n   - Click-to-continue prompts\n   - Dismissible hints\n\n4. **Progress Tracking**\n   - Onboarding checklist\n   - Completion percentage\n   - Quick access to incomplete steps\n   - Achievement system\n\n**Accessibility & Usability:**\n\n- Keyboard navigation support\n- Screen reader compatibility\n- High contrast mode\n- Multiple language support\n- Mobile-responsive design\n- Offline capability for key steps\n\n**Success Metrics:**\n\n- Time to first value (TTFV)\n- Onboarding completion rate\n- Feature adoption rate\n- User activation metrics\n- Support ticket reduction\n\nThis onboarding flow ensures users quickly understand the value of your SaaS application while being guided through role-appropriate features and workflows."}],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "tool_uses": []
+          }
+        }
+      ]
+    }
+  ]
+}
