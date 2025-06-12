@@ -112,6 +112,7 @@ test_results/
 
 # IDE and Editor Configuration Files
 .cursor/
+.claude/
 .roo/
 .roomodes
 .windsurfrules

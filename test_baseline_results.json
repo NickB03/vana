@@ -1,0 +1,93 @@
+{
+  "all_tests_passed": true,
+  "total_tests": 6,
+  "passed_tests": 6,
+  "failed_tests": 0,
+  "test_results": [
+    [
+      "Environment Setup",
+      true,
+      {
+        "python_version": "3.13.2",
+        "executable": "/Users/nick/Library/Caches/pypoetry/virtualenvs/vana-vCvkDMga-py3.13/bin/python",
+        "poetry_env": true
+      }
+    ],
+    [
+      "Core Imports",
+      true,
+      "All core imports successful"
+    ],
+    [
+      "Agent Loading",
+      true,
+      {
+        "agent_name": "vana",
+        "tool_count": 59,
+        "agent_loaded": true
+      }
+    ],
+    [
+      "Tool Registration",
+      true,
+      {
+        "total_tools": 59,
+        "sample_tools": [
+          {
+            "name": "read_file",
+            "type": "FunctionTool",
+            "callable": false
+          },
+          {
+            "name": "write_file",
+            "type": "FunctionTool",
+            "callable": false
+          },
+          {
+            "name": "list_directory",
+            "type": "FunctionTool",
+            "callable": false
+          },
+          {
+            "name": "file_exists",
+            "type": "FunctionTool",
+            "callable": false
+          },
+          {
+            "name": "vector_search",
+            "type": "FunctionTool",
+            "callable": false
+          }
+        ],
+        "all_tools_present": true
+      }
+    ],
+    [
+      "Basic Tool Functionality",
+      true,
+      {
+        "echo_tool_found": true,
+        "echo_test": "not_callable",
+        "tool_type": "FunctionTool"
+      }
+    ],
+    [
+      "Configuration Files",
+      true,
+      {
+        "env_files_found": [
+          ".env",
+          ".env.local",
+          ".env.production"
+        ],
+        "env_variables": {
+          "GOOGLE_CLOUD_PROJECT": "960076421399",
+          "GOOGLE_CLOUD_REGION": "us-central1",
+          "VANA_MODEL": "gemini-2.0-flash-exp"
+        },
+        "config_valid": true
+      }
+    ]
+  ],
+  "baseline_established": true
+}
