@@ -34,10 +34,10 @@ pyvenv.cfg
 secrets/
 *.key
 *.pem
-*.json
 service-account*.json
 *-sa.json
 *credentials*.json
+secrets/*.json
 
 # Google Cloud & ADK specific
 .gcloud/
