@@ -60,7 +60,7 @@
 
 ### **🚀 PRODUCTION SYSTEM STATUS**
 
-- **Service URL**: https://vana-multi-agent-960076421399.us-central1.run.app
+- **Service URL**: https://vana-prod-960076421399.us-central1.run.app
 - **Agent Dropdown**: ✅ **FULLY OPERATIONAL**
 - **Available Agents**: 16/22 agents operational
 - **User Experience**: ✅ Users can select and interact with all available agents
@@ -104,7 +104,7 @@
 - `test_agent_config.py` - Comprehensive validation suite
 - `memory-bank/systemPatterns.md` - Google ADK patterns and architecture
 - `memory-bank/techContext.md` - Technical implementation details
-- Production URL: https://vana-multi-agent-960076421399.us-central1.run.app
+- Production URL: https://vana-prod-960076421399.us-central1.run.app
 
 **Google ADK Patterns Established:**
 - ✅ FunctionTool registration: `FunctionTool(func=function)`

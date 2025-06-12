@@ -91,7 +91,7 @@ The compatibility issues that were blocking development have been completely res
 - **Testing**: All configuration tests passing
 
 ### **🌐 PRODUCTION ENVIRONMENT**
-- **Service URL**: https://vana-multi-agent-qqugqgsbcq-uc.a.run.app
+- **Service URL**: https://vana-prod-960076421399.us-central1.run.app
 - **Status**: Fully operational with VANA agent
 - **Deployment**: Automated via `deployment/deploy.sh`
 - **Monitoring**: Health endpoints responding

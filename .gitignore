@@ -109,3 +109,27 @@ coverage.xml
 service-account-key.json
 sessions.db
 test_results/
+
+# IDE and Editor Configuration Files
+.cursor/
+.roo/
+.roomodes
+.windsurfrules
+.idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# OS Specific Files
+.DS_Store
+Thumbs.db
+
+# Development Logs
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+dev-debug.log

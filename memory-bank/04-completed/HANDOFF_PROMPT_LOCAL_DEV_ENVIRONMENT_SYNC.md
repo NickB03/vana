@@ -10,7 +10,7 @@
 
 ### **✅ Production Deployment Complete Success**
 The VANA Multi-Agent System is now **fully operational** in production with:
-- **Service URL**: https://vana-multi-agent-960076421399.us-central1.run.app
+- **Service URL**: https://vana-prod-960076421399.us-central1.run.app
 - **Status**: ✅ Complete Google ADK integration with all 22 agents operational
 - **Authentication**: ✅ Cloud Run service account working correctly
 - **Web Interface**: ✅ ADK web interface accessible (/docs endpoint working)
