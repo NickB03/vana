@@ -32,7 +32,7 @@ The environment file includes a `VANA_MODEL` variable which sets the
 default generative model (defaults to `gemini-2.0-flash`).
 
 **🌐 Development Service:** [https://vana-dev-960076421399.us-central1.run.app](https://vana-dev-960076421399.us-central1.run.app)
-**🚀 Production Service:** [https://vana-qqugqgsbcq-uc.a.run.app](https://vana-qqugqgsbcq-uc.a.run.app)
+**🚀 Production Service:** [https://vana-prod-960076421399.us-central1.run.app](https://vana-prod-960076421399.us-central1.run.app)
 
 ## 📋 Table of Contents
 

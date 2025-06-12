@@ -1,0 +1,11 @@
+# Task ID: 1
+# Title: Diagnose Agent-Tool Integration Issues
+# Status: pending
+# Dependencies: None
+# Priority: high
+# Description: Investigate and analyze the root causes of tool discovery mechanism failures and agent-tool communication protocol issues.
+# Details:
+Review logs and trace agent-tool interactions to identify broken coordination patterns. Implement fixes for ADK tool registration and communication protocols.
+
+# Test Strategy:
+Validate fixes by testing tool discovery and execution with a target success rate improvement of >50%.

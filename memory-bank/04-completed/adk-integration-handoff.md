@@ -90,7 +90,7 @@ ERROR: No such file or directory: '/Users/nick/Development/vana-enhanced/vana_mu
 
 **Actions Required**:
 1. Execute Cloud Build deployment: `./deploy.sh`
-2. Test ADK integration: `curl https://vana-multi-agent-qqugqgsbcq-uc.a.run.app/info`
+2. Test ADK integration: `curl https://vana-prod-960076421399.us-central1.run.app/info`
 3. Verify response shows `"adk_integrated": true`
 4. Test agent endpoints to confirm 22 agents operational
 

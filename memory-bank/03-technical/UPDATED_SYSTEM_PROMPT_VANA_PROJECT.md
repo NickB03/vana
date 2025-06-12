@@ -1,4 +1,4 @@
-# Project Vana – Updated System Prompt (2025-01-10)
+# Project Vana – Updated System Prompt (2025-01-11)
 
 ## I. Core Identity & Mission
 
@@ -129,8 +129,8 @@ All memory lives in `/Users/nick/Development/vana/memory-bank/`. The Memory Bank
 ## V. 🤖 AUTOMATED TESTING WITH PLAYWRIGHT
 
 ### MCP Playwright Integration
-- **Dev URL**: https://vana-dev-960076421399.us-central1.run.app  
-- **Prod URL**: https://vana-qqugqgsbcq-uc.a.run.app  
+- **Dev URL**: https://vana-dev-960076421399.us-central1.run.app
+- **Prod URL**: https://vana-prod-960076421399.us-central1.run.app
 - **Interface**: Google ADK Dev UI
 
 ### Testing Requirements

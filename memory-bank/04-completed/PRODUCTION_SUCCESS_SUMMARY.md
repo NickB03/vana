@@ -2,7 +2,7 @@
 
 **Date:** 2025-01-28  
 **Status:** ✅ COMPLETE SUCCESS - 100% Operational  
-**Service URL:** https://vana-multi-agent-960076421399.us-central1.run.app  
+**Service URL:** https://vana-prod-960076421399.us-central1.run.app
 
 ## 🎉 MISSION ACCOMPLISHED
 
@@ -19,7 +19,7 @@ The VANA Multi-Agent System has been successfully deployed to production with co
 - **Uptime**: Stable and responsive
 
 ### **Service Endpoints**
-- **Main Service**: https://vana-multi-agent-960076421399.us-central1.run.app
+- **Main Service**: https://vana-prod-960076421399.us-central1.run.app
 - **Health Check**: `/health` - Returns healthy status
 - **System Info**: `/info` - Returns `{"adk_integrated": true, "mode": "production"}`
 - **API Documentation**: `/docs` - FastAPI documentation interface accessible

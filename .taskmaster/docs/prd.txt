@@ -1,0 +1,274 @@
+<context>
+# Overview
+VANA is an advanced multi-agent AI orchestration platform built on Google's Agent Development Kit (ADK). The system provides sophisticated AI capabilities through a hierarchical agent architecture, enabling complex task coordination, specialized domain expertise, and intelligent workflow orchestration. VANA transforms complex real-world tasks through intelligent multi-agent coordination, providing specialized AI capabilities across domains like development, research, travel planning, and business operations.
+
+# Core Features
+- **Multi-Agent Orchestration**: Hierarchical agent system with master orchestrator coordinating 7+ operational agents
+- **Google ADK Compliance**: 100% compliance with Google ADK patterns and 6/6 tool types implemented
+- **Advanced Tool Integration**: 59+ integrated tools for file operations, search, system monitoring, and coordination
+- **Memory Systems**: VertexAI RAG integration with session state management for intelligent knowledge storage
+- **Sandbox Execution**: Secure code execution environment with Docker isolation for Python, JavaScript, and Shell
+- **Real-time Performance**: 0.045s average response time with 93.8% optimization improvement
+- **Cloud-Native Deployment**: Google Cloud Run with auto-scaling (0-10 instances) and managed services
+
+# User Experience
+- **Primary User**: Nick (Project Lead, Technical User) for development, testing, and utilization of VANA capabilities
+- **Key User Flows**: Agent coordination workflows, tool execution patterns, memory-first hierarchy operations
+- **UI/UX**: Google ADK Dev UI interface with agent discovery, tool execution tracking, and response validation
+- **Interaction Patterns**: Natural language task delegation to specialized agents with intelligent routing
+</context>
+<PRD>
+# Technical Architecture
+**Current Infrastructure:**
+- Platform: Google Cloud Run with Python 3.13 and Google ADK 1.0.0+
+- Development Environment: https://vana-dev-960076421399.us-central1.run.app (operational)
+- Production Environment: https://vana-prod-960076421399.us-central1.run.app (deployment ready)
+- Memory Systems: VertexAI RAG Corpus with session state management
+- Security: Docker sandbox execution with comprehensive policy enforcement
+
+**Agent Architecture:**
+- VANA Orchestrator: Master coordinator with 42 ADK-compliant tools
+- Memory Agent: Knowledge management and retrieval specialist
+- Orchestration Agent: Workflow coordination and task delegation
+- Specialists Agent: Domain expertise coordination hub
+- Workflows Agent: Process automation and pipeline management
+- Code Execution Specialist: Multi-language execution (Python, JavaScript, Shell)
+- Data Science Specialist: Statistical analysis, visualization, ML modeling
+
+**Integration Systems:**
+- MCP Servers: GitHub, Brave Search, Fetch integrations with JSON-RPC protocol
+- Third-Party Tools: LangChain and CrewAI ecosystem support
+- API Integrations: OpenRouter, Anthropic, OpenAI model support
+
+# Development Roadmap
+
+**Phase 1: Foundation Repair (Critical Priority)**
+- Fix agent-tool integration issues causing 0% success rate in comprehensive testing
+- Resolve tool discovery and execution coordination problems
+- Implement comprehensive ADK-compliant evaluation system
+- Establish performance benchmarking and monitoring framework
+- Validate core agent functionality and memory systems
+
+**Phase 2: Agent Ecosystem Expansion**
+- Deploy 4 Domain Orchestrators (Travel, Research, Development, Business)
+- Implement 11 Specialist Agents across domains (Hotel Booking, Flight Search, Code Generation, etc.)
+- Deploy 3 Intelligence Agents (Memory Management, Decision Engine, Learning Systems)
+- Add 2 Utility Agents (Monitoring, Coordination)
+- Establish agents-as-tools integration patterns
+
+**Phase 3: Advanced Orchestration**
+- Implement complex multi-agent workflows (hotel booking, travel planning, development tasks)
+- Deploy hierarchical task decomposition and parallel execution patterns
+- Optimize performance for 24-agent coordination while maintaining 93.8% improvement baseline
+- Complete MCP server integration suite and third-party tool ecosystem expansion
+
+**Phase 4: Enterprise Readiness**
+- Advanced approval workflows and enterprise operations
+- Comprehensive monitoring, alerting, and automated maintenance systems
+- Complete technical documentation and developer onboarding resources
+- Production deployment validation with load testing and security audits
+
+# Logical Dependency Chain
+**Foundation First (Weeks 1-4):**
+1. Agent-Tool Integration Fix - Critical blocker preventing all functionality
+2. Testing Framework Implementation - Required for validation of all subsequent work
+3. Core Workflow Validation - Baseline functionality before expansion
+4. Production Deployment Pipeline - Infrastructure for reliable deployments
+
+**Incremental Agent Expansion (Weeks 5-8):**
+1. Domain Orchestrators - Coordination layer for specialized workflows
+2. Specialist Agents - Domain expertise implementation
+3. Intelligence Systems - Advanced routing and optimization
+4. Real-World Workflow Validation - Proof of concept demonstrations
+
+**Advanced Features (Weeks 9-12):**
+1. Complex Workflow Implementation - Multi-agent coordination patterns
+2. Performance Optimization - Scaling for expanded agent ecosystem
+3. Integration Ecosystem - Complete MCP and third-party tool support
+4. Production Validation - Full deployment with monitoring
+
+**Enterprise Polish (Weeks 13-16):**
+1. Advanced Enterprise Features - Approval workflows and reporting
+2. Documentation & Training - Comprehensive user and developer resources
+3. Monitoring & Operations - Advanced observability and automation
+4. Future Roadmap Planning - Next-generation capability strategy
+
+# Risks and Mitigations
+**Technical Challenges:**
+- Agent-Tool Integration Complexity: Comprehensive testing framework and validation
+- Performance Degradation: Continuous monitoring and optimization with baseline maintenance
+- Security Vulnerabilities: Sandbox execution and automated security scanning
+- Scalability Issues: Auto-scaling validation and load testing
+
+**MVP Definition:**
+- Working agent-tool integration with >50% success rate
+- Basic multi-agent coordination patterns functional
+- Core workflows (memory, search, execution) operational
+- Production deployment pipeline with monitoring
+
+**Resource Constraints:**
+- Cloud-based scaling and managed services to minimize infrastructure overhead
+- Phased approach with clear milestones to manage development complexity
+- Automated testing and deployment to reduce manual effort
+- Modular architecture for parallel development streams
+
+# Appendix
+**Current Status Evidence:**
+- Infrastructure: Excellent (0.045s response time, healthy service status)
+- Agent Discovery: 7 operational agents vs 24 documented (79% gap identified)
+- Tool Integration: 0% success rate in comprehensive testing (critical issue)
+- Memory Systems: VertexAI RAG operational with session state management
+- Security: Zero hardcoded credentials, proper Secret Manager integration
+
+**Success Criteria:**
+- Functional Success Rate: >90% across all agent scenarios
+- Tool Integration: 100% discovery and execution functionality
+- Response Quality: Improve from 0.25 to >0.8 quality score
+- Performance: Maintain <5 second response times under load
+- Real-World Validation: Hotel booking, travel planning, development workflows
+
+**Technology Specifications:**
+- Runtime: Python 3.13 with Google ADK 1.0.0+
+- Containerization: Docker multi-stage builds with security optimization
+- Auto-scaling: 0-10 instances (1 vCPU/1GB dev, 2 vCPU/2GB prod)
+- Monitoring: Real-time health checks with performance metrics
+- Compliance: 100% Google ADK compliance maintained across all components
+
+**Detailed Implementation Phases:**
+
+**Phase 1: Foundation Repair (Weeks 1-4) - Critical Priority**
+Week 1: Agent-Tool Integration Diagnosis and Fix
+- Investigate tool discovery mechanism failures
+- Analyze agent-tool communication protocols
+- Fix broken coordination patterns
+- Implement proper ADK tool registration
+- Target: >50% success rate improvement
+
+Week 2: Testing Framework Implementation
+- Deploy comprehensive ADK-compliant evaluation system
+- Implement trajectory analysis and quality scoring
+- Create performance benchmarking framework
+- Establish automated validation pipeline
+- Target: Complete testing infrastructure operational
+
+Week 3: Core Workflow Validation
+- Validate memory systems and session state management
+- Test basic agent coordination patterns
+- Establish baseline performance metrics
+- Verify security and compliance standards
+- Target: Core functionality validated and documented
+
+Week 4: Production Deployment Pipeline
+- Complete deployment automation and validation
+- Establish monitoring and alerting systems
+- Implement rollback and recovery procedures
+- Validate multi-environment deployment
+- Target: Production-ready deployment pipeline
+
+**Phase 2: Agent Ecosystem Expansion (Weeks 5-8)**
+Week 5: Domain Orchestrators Implementation
+- Deploy Travel Orchestrator (hotel booking, flight search, itinerary)
+- Deploy Research Orchestrator (web research, data analysis, competitive intelligence)
+- Deploy Development Orchestrator (code generation, testing, deployment, documentation)
+- Deploy Business Orchestrator (process automation, reporting, decision support)
+- Target: 4 domain orchestrators operational with hierarchical task decomposition
+
+Week 6: Specialist Agent Deployment - Travel & Development
+- Hotel Booking Agent, Flight Search Agent, Payment Processing Agent
+- Code Generation Agent, Testing Agent, Security Agent, Documentation Agent
+- Establish agents-as-tools integration patterns
+- Validate specialized domain capabilities
+- Target: 7 specialist agents operational with tool integration
+
+Week 7: Specialist Agent Deployment - Research & Intelligence
+- Web Research Agent, Data Analysis Agent, Competitive Intelligence Agent
+- Memory Management Agent, Decision Engine Agent, Learning Systems Agent
+- Performance Optimization Agent, Integration Management Agent
+- Target: 11 total specialist agents + 3 intelligence agents operational
+
+Week 8: Real-World Workflow Validation
+- Demonstrate hotel booking workflow end-to-end
+- Validate travel planning orchestration
+- Test development task coordination
+- Implement utility agents (Monitoring, Coordination)
+- Target: Complete 24-agent ecosystem with validated workflows
+
+**Phase 3: Advanced Orchestration (Weeks 9-12)**
+Week 9: Complex Workflow Implementation
+- Multi-agent travel planning workflows with parallel execution
+- Development project orchestration with CI/CD integration
+- Research and analysis coordination with report generation
+- Target: Complex multi-step workflows operational
+
+Week 10: Performance Optimization
+- Maintain 93.8% performance improvement baseline
+- Optimize for 24-agent coordination
+- Implement intelligent caching and resource management
+- Load testing and scalability validation
+- Target: <5 second response times under full load
+
+Week 11: Integration Ecosystem Expansion
+- Complete MCP server integration suite (GitHub, Brave Search, Fetch)
+- Third-party tool ecosystem expansion (LangChain, CrewAI)
+- API integration optimization (OpenRouter, Anthropic, OpenAI)
+- Target: Complete integration ecosystem operational
+
+Week 12: Production Validation
+- Full production deployment with comprehensive monitoring
+- Security audit and compliance verification
+- End-to-end workflow testing with real-world scenarios
+- Performance validation under production load
+- Target: Production-ready system with validated capabilities
+
+**Phase 4: Enterprise Readiness (Weeks 13-16)**
+Week 13: Advanced Enterprise Features
+- Approval workflows and enterprise operations
+- Advanced reporting and analytics capabilities
+- Custom workflow builder and configuration tools
+- Target: Enterprise-grade feature set operational
+
+Week 14: Documentation & Training
+- Comprehensive technical documentation
+- User guides and training materials
+- Developer onboarding resources and API documentation
+- Target: Complete documentation ecosystem
+
+Week 15: Monitoring & Operations
+- Advanced monitoring and alerting systems
+- Performance optimization recommendations
+- Automated maintenance and update procedures
+- Target: Operational excellence framework
+
+Week 16: Future Roadmap & Optimization
+- Next-generation capability planning
+- Technology evolution strategy
+- Scalability and expansion planning
+- Final optimization and performance tuning
+- Target: Strategic roadmap and optimized system
+
+**Critical Success Metrics by Phase:**
+
+Phase 1 Success Criteria:
+- Agent-tool integration success rate: >50% (from 0%)
+- Core agent functionality: 100% operational
+- Testing framework: Complete ADK compliance
+- Production pipeline: Automated deployment working
+
+Phase 2 Success Criteria:
+- Agent ecosystem: 24 agents operational
+- Domain orchestrators: 4 orchestrators with task decomposition
+- Specialist agents: 11 agents with domain expertise
+- Real-world workflows: Hotel booking, travel planning, development tasks
+
+Phase 3 Success Criteria:
+- Complex workflows: Multi-agent coordination operational
+- Performance: <5 second response times maintained
+- Integration: Complete MCP and third-party tool support
+- Production validation: Full deployment with monitoring
+
+Phase 4 Success Criteria:
+- Enterprise features: Approval workflows and reporting
+- Documentation: Comprehensive user and developer resources
+- Operations: Advanced monitoring and automation
+- Future readiness: Strategic roadmap and optimization complete
+</PRD>
