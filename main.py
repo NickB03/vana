@@ -10,8 +10,15 @@ import os
 import sys
 import uvicorn
 import logging
+import time
+import psutil
 from fastapi import FastAPI, Request
 from google.adk.cli.fast_api import get_fast_api_app
+
+# Memory profiling for startup debugging
+startup_start_time = time.time()
+startup_start_memory = psutil.Process().memory_info().rss / 1024 / 1024
+print(f"STARTUP PROFILING: Initial memory usage: {startup_start_memory:.1f}MB")
 
 # Ensure current directory is in Python path for lib imports
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -29,12 +36,18 @@ if os.path.exists(os.path.join(current_dir, 'lib')):
 
 # Import our smart environment detection
 from lib.environment import setup_environment
+checkpoint_1_memory = psutil.Process().memory_info().rss / 1024 / 1024
+print(f"STARTUP PROFILING: After environment import: {checkpoint_1_memory:.1f}MB (+{checkpoint_1_memory - startup_start_memory:.1f}MB)")
 
 # Import MCP server components
 from lib.mcp_server.sse_transport import MCPSSETransport
+checkpoint_2_memory = psutil.Process().memory_info().rss / 1024 / 1024
+print(f"STARTUP PROFILING: After MCP import: {checkpoint_2_memory:.1f}MB (+{checkpoint_2_memory - checkpoint_1_memory:.1f}MB)")
 
 # Import ADK memory service
 from lib._shared_libraries.adk_memory_service import get_adk_memory_service
+checkpoint_3_memory = psutil.Process().memory_info().rss / 1024 / 1024
+print(f"STARTUP PROFILING: After ADK memory service import: {checkpoint_3_memory:.1f}MB (+{checkpoint_3_memory - checkpoint_2_memory:.1f}MB)")
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -112,6 +125,12 @@ app: FastAPI = get_fast_api_app(
     allow_origins=ALLOWED_ORIGINS,
     web=SERVE_WEB_INTERFACE,
 )
+checkpoint_4_memory = psutil.Process().memory_info().rss / 1024 / 1024
+startup_end_time = time.time()
+total_startup_time = startup_end_time - startup_start_time
+total_memory_delta = checkpoint_4_memory - startup_start_memory
+print(f"STARTUP PROFILING: After FastAPI app creation: {checkpoint_4_memory:.1f}MB (+{checkpoint_4_memory - checkpoint_3_memory:.1f}MB)")
+print(f"STARTUP PROFILING SUMMARY: Total time: {total_startup_time:.2f}s, Total memory: {checkpoint_4_memory:.1f}MB (delta: +{total_memory_delta:.1f}MB)")
 
 # Note: Security guardrails defined above for future integration
 # Current ADK version may not support callback parameters
