@@ -1,0 +1,32 @@
+input_validation:
+  max_input_length: 10000
+  forbidden_patterns:
+    - '<script[^>]*>.*?</script>'
+    - 'union\s+select'
+    - '\.\.\/'
+    - 'eval\s*\('
+    - 'exec\s*\('
+  
+rate_limiting:
+  default_limit: 100
+  window_seconds: 60
+  burst_limit: 10
+  
+ip_blocking:
+  auto_block_on_critical: true
+  block_duration_hours: 24
+  whitelist:
+    - "127.0.0.1"
+    - "::1"
+  
+csrf_protection:
+  token_max_age: 3600
+  require_csrf: true
+  
+headers:
+  security_headers:
+    X-Content-Type-Options: "nosniff"
+    X-Frame-Options: "DENY"
+    X-XSS-Protection: "1; mode=block"
+    Strict-Transport-Security: "max-age=31536000; includeSubDomains"
+    Content-Security-Policy: "default-src 'self'"

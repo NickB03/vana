@@ -1,0 +1,142 @@
+{
+  "domain_restrictions": {
+    "allowed_domains": [
+      "github.com",
+      "api.github.com", 
+      "search.brave.com",
+      "api.search.brave.com",
+      "*.googleapis.com",
+      "*.google.com"
+    ],
+    "blocked_domains": [
+      "localhost",
+      "127.0.0.1",
+      "0.0.0.0",
+      "10.*",
+      "172.16.*",
+      "192.168.*",
+      "169.254.*"
+    ],
+    "require_https": true,
+    "allow_redirects": true,
+    "max_redirects": 5
+  },
+  "rate_limiting": {
+    "requests_per_minute": 100,
+    "burst_limit": 10,
+    "cooldown_seconds": 60,
+    "per_server_limits": {
+      "github": {
+        "requests_per_minute": 60,
+        "burst_limit": 5
+      },
+      "brave_search": {
+        "requests_per_minute": 100,
+        "burst_limit": 10
+      },
+      "fetch": {
+        "requests_per_minute": 120,
+        "burst_limit": 15
+      }
+    }
+  },
+  "request_limits": {
+    "max_request_size": 1048576,
+    "max_response_size": 10485760,
+    "timeout_seconds": 30,
+    "max_concurrent_requests": 10,
+    "max_retries": 3
+  },
+  "content_filtering": {
+    "allowed_content_types": [
+      "text/html",
+      "text/plain", 
+      "application/json",
+      "application/xml",
+      "text/xml",
+      "text/csv",
+      "application/javascript",
+      "text/css"
+    ],
+    "blocked_content_types": [
+      "application/x-executable",
+      "application/x-msdownload",
+      "application/x-msdos-program"
+    ],
+    "scan_for_malware": false,
+    "block_suspicious_urls": true
+  },
+  "authentication": {
+    "require_api_keys": {
+      "github": true,
+      "brave_search": true,
+      "fetch": false
+    },
+    "api_key_validation": {
+      "github": {
+        "env_var": "GITHUB_TOKEN",
+        "fallback_env_var": "GITHUB_PERSONAL_ACCESS_TOKEN",
+        "required_scopes": ["repo", "user"]
+      },
+      "brave_search": {
+        "env_var": "BRAVE_API_KEY",
+        "required": true
+      }
+    },
+    "token_rotation": {
+      "enabled": false,
+      "rotation_interval_hours": 24
+    }
+  },
+  "logging_and_monitoring": {
+    "log_all_requests": true,
+    "log_request_bodies": false,
+    "log_response_bodies": false,
+    "log_headers": false,
+    "log_sensitive_data": false,
+    "metrics_collection": {
+      "enabled": true,
+      "include_performance": true,
+      "include_errors": true,
+      "include_rate_limits": true
+    }
+  },
+  "error_handling": {
+    "expose_internal_errors": false,
+    "sanitize_error_messages": true,
+    "max_error_details": 200,
+    "retry_on_errors": [429, 500, 502, 503, 504],
+    "fail_fast_on_errors": [401, 403, 404]
+  },
+  "data_protection": {
+    "encrypt_sensitive_data": false,
+    "mask_api_keys_in_logs": true,
+    "data_retention_days": 30,
+    "anonymize_user_data": true,
+    "gdpr_compliance": true
+  },
+  "network_security": {
+    "use_ssl_verification": true,
+    "ssl_cert_validation": true,
+    "allowed_ssl_protocols": ["TLSv1.2", "TLSv1.3"],
+    "proxy_settings": {
+      "enabled": false,
+      "http_proxy": null,
+      "https_proxy": null,
+      "no_proxy": ["localhost", "127.0.0.1"]
+    }
+  },
+  "access_control": {
+    "ip_whitelist": [],
+    "ip_blacklist": [],
+    "user_agent_filtering": {
+      "enabled": false,
+      "allowed_patterns": [],
+      "blocked_patterns": ["bot", "crawler", "spider"]
+    },
+    "referrer_validation": {
+      "enabled": false,
+      "allowed_referrers": []
+    }
+  }
+}
