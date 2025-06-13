@@ -5,9 +5,7 @@ Provides secure code execution capabilities across multiple programming language
 using the VANA sandbox environment with comprehensive security and monitoring.
 """
 
-from .specialist import code_execution_specialist
+from .specialist import root_agent
 
 # Export the root agent for ADK discovery
-root_agent = code_execution_specialist
-
-__all__ = ["code_execution_specialist", "root_agent"]
+__all__ = ["root_agent"]
