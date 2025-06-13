@@ -35,8 +35,10 @@ steps:
       - '--service-account'
       - 'vana-vector-search-sa@$PROJECT_ID.iam.gserviceaccount.com'
       - '--clear-secrets'
+      - '--port'
+      - '8000'
       - '--set-env-vars'
-      - 'ENVIRONMENT=development,GOOGLE_GENAI_USE_VERTEXAI=true,GOOGLE_CLOUD_PROJECT=$PROJECT_ID,GOOGLE_CLOUD_LOCATION=us-central1'
+      - 'ENVIRONMENT=development,GOOGLE_GENAI_USE_VERTEXAI=true,GOOGLE_CLOUD_PROJECT=$PROJECT_ID,GOOGLE_CLOUD_LOCATION=us-central1,PORT=8000'
 
 
 images:
