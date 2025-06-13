@@ -1,37 +1,17 @@
 # Task ID: 3
-# Title: Establish Communication Protocols
-# Status: done
-# Dependencies: 2
+# Title: Replace Debug Prints with Logging
+# Status: pending
+# Dependencies: 1, 2
 # Priority: high
-# Description: Agent-to-agent communication using JSON-RPC over HTTP is fully implemented and operational.
+# Description: Replace identified print statements with appropriate log calls.
 # Details:
-JSON-RPC 2.0 infrastructure complete with HTTP endpoints, error handling, retry logic, and intelligent routing strategies. Includes capability-based routing, round-robin, least-loaded, and fastest-response strategies. Integrated with coordination tools and comprehensive test suite.
+For each print statement identified in Task 1, replace it with a corresponding log call (e.g., `logging.debug`, `logging.info`). Ensure log messages are descriptive and context-rich. Example:
+```python
+# Before
+print('Processing file:', filename)
+# After
+logging.info('Processing file: %s', filename)
+```
 
 # Test Strategy:
-Comprehensive test suite with 100+ test cases covering message protocol validation, server/client functionality, routing logic, and integration tests. Validates JSON-RPC 2.0 compliance and performance requirements.
-
-# Subtasks:
-## 3.1. JSON-RPC Infrastructure [completed]
-### Dependencies: None
-### Description: Created message_protocol.py, jsonrpc_client.py, and jsonrpc_server.py with full JSON-RPC 2.0 compliance
-### Details:
-
-
-## 3.2. Agent Communication Endpoints [completed]
-### Dependencies: None
-### Description: Implemented agent_communication.py and message_router.py with multiple routing strategies
-### Details:
-
-
-## 3.3. Integration with Coordination Tools [completed]
-### Dependencies: None
-### Description: Updated real_coordination_tools.py and created agent_interface.py with standardized interfaces
-### Details:
-
-
-## 3.4. Comprehensive Test Suite [completed]
-### Dependencies: None
-### Description: Created test_agent_communication.py with 100+ test cases covering all components
-### Details:
-
-
+Run the application and verify that log messages appear as expected in the configured output.

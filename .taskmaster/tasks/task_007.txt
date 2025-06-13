@@ -1,11 +1,11 @@
 # Task ID: 7
-# Title: Implement Intelligent Task Analysis
-# Status: done
+# Title: Enable Advanced Features
+# Status: pending
 # Dependencies: 6
 # Priority: medium
-# Description: Add logic to analyze tasks and determine the best agent for delegation.
+# Description: Implement features enabled by new dependencies.
 # Details:
-Use natural language processing (NLP) or rule-based systems to classify tasks. Match tasks to agent capabilities using the discovery system.
+Update code to utilize the new dependencies (e.g., PDF processing with PyPDF2, image processing with Pillow). Ensure graceful degradation if dependencies are missing.
 
 # Test Strategy:
-Test task classification and delegation accuracy with a variety of input tasks.
+Test features with and without optional dependencies to verify functionality and fallback behavior.

@@ -1,11 +1,18 @@
 # Task ID: 10
-# Title: Conduct Performance Testing
+# Title: Set Up Pre-commit Hooks
 # Status: pending
 # Dependencies: 9
 # Priority: medium
-# Description: Test system performance under load to ensure response times <5 seconds.
+# Description: Automate code quality checks with pre-commit hooks.
 # Details:
-Simulate high load with multiple concurrent tasks. Monitor response times and resource usage. Optimize bottlenecks.
+Configure pre-commit hooks to run `flake8`, `black`, and `mypy` before commits. Example `.pre-commit-config.yaml`:
+```yaml
+repos:
+  - repo: https://github.com/psf/black
+    rev: 22.3.0
+    hooks:
+      - id: black
+```
 
 # Test Strategy:
-Measure response times and success rates under varying loads.
+Test the hooks by making a commit and verifying checks run.

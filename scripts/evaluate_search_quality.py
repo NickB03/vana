@@ -32,7 +32,7 @@ try:
     from tools.knowledge_graph.knowledge_graph_manager import KnowledgeGraphManager
     from tools.enhanced_hybrid_search import EnhancedHybridSearch
     from tools.enhanced_hybrid_search_optimized import EnhancedHybridSearchOptimized
-    from tools.web_search_mock import MockWebSearchClient
+    from tests.mocks.web_search_mock import MockWebSearchClient
 except ImportError as e:
     print(f"Error importing required modules: {e}")
     print("Make sure you run this script from the project root or scripts directory.")

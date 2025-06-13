@@ -189,7 +189,7 @@ def main():
             from tools.vector_search.enhanced_vector_search_client import EnhancedVectorSearchClient
             vector_search_client = EnhancedVectorSearchClient()
         elif args.client == "mock":
-            from tools.vector_search.vector_search_mock import MockVectorSearchClient
+            from tests.mocks.vector_search_mock import MockVectorSearchClient
             vector_search_client = MockVectorSearchClient()
 
     # Create the health checker

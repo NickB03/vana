@@ -1,37 +1,18 @@
 # Task ID: 6
-# Title: Update VANA Orchestrator Instructions
-# Status: done
+# Title: Install Missing Dependencies
+# Status: pending
 # Dependencies: 5
 # Priority: medium
-# Description: Modify VANA's behavior to proactively delegate tasks using comprehensive delegation strategy.
+# Description: Add missing optional dependencies to pyproject.toml.
 # Details:
-Implementation phase: Update agents/vana/team.py with new delegation logic based on completed design. Deploy to Cloud Run dev environment. Test delegation functionality with operational coordination tools from Task #5.
+Update `pyproject.toml` to include the missing dependencies with version constraints. Example:
+```toml
+[tool.poetry.dependencies]
+PyPDF2 = "^3.0.0"
+Pillow = "^9.0.0"
+pytesseract = "^0.3.9"
+tenacity = "^8.0.0"
+```
 
 # Test Strategy:
-Validate VANA's behavior by testing task delegation scenarios in Cloud Run dev environment. Verify integration with coordination tools and fallback handling.
-
-# Subtasks:
-## 6.1. Analysis and design of delegation strategy [completed]
-### Dependencies: None
-### Description: Completed comprehensive proactive delegation strategy for VANA agent integration
-### Details:
-
-
-## 6.2. Implement delegation logic in team.py [done]
-### Dependencies: None
-### Description: Update agents/vana/team.py with new delegation logic
-### Details:
-
-
-## 6.3. Deploy to Cloud Run dev environment [done]
-### Dependencies: None
-### Description: Deploy updated VANA orchestrator to development environment
-### Details:
-
-
-## 6.4. Test delegation functionality [done]
-### Dependencies: None
-### Description: Verify delegation scenarios and fallback mechanisms with operational coordination tools
-### Details:
-
-
+Run `poetry install` and verify that dependencies are installed without conflicts.

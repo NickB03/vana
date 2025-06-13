@@ -1,17 +1,19 @@
 #!/usr/bin/env python3
 """
-Fix Project ID References
-Replace all instances of wrong project ID 960076421399 with correct 960076421399
+Fix Project ID References - SELECTIVE REPLACEMENT
+IMPORTANT: This script has been updated to avoid breaking Cloud Run URLs.
+Only replaces project ID references in specific contexts, not Cloud Run service URLs.
 """
 
-import os
-import re
 import glob
-from pathlib import Path
+import re
 
-# Project ID mappings - REVERT BACK
-OLD_PROJECT_ID = "960076421399"
-NEW_PROJECT_ID = "960076421399"
+# Project ID mappings - Fix to use correct Google Cloud Project ID
+OLD_PROJECT_ID = "960076421399"  # Cloud Run service ID (incorrect for project references)
+NEW_PROJECT_ID = "analystai-454200"  # Correct Google Cloud Project ID
+
+# WARNING: This script is currently DISABLED to prevent breaking Cloud Run URLs
+# Most critical issues have already been fixed manually
 
 def find_files_with_project_id():
     """Find all files containing the old project ID."""
@@ -67,33 +69,19 @@ def update_file(file_path):
         return 0
 
 def main():
-    """Main function to fix all project ID references."""
-    print("🔧 Fixing Project ID References")
-    print("=" * 40)
-    print(f"Replacing: {OLD_PROJECT_ID}")
-    print(f"With:      {NEW_PROJECT_ID}")
-    print("=" * 40)
-    
-    # Find files
-    files_to_update = find_files_with_project_id()
-    
-    if not files_to_update:
-        print("✅ No files found with old project ID")
-        return
-    
-    print(f"Found {len(files_to_update)} files to update:")
-    for file_path in files_to_update:
-        print(f"  - {file_path}")
-    
-    print("\n🔄 Updating files...")
-    
-    total_replacements = 0
-    for file_path in files_to_update:
-        replacements = update_file(file_path)
-        total_replacements += replacements
-    
-    print(f"\n🎉 Complete! Made {total_replacements} replacements across {len(files_to_update)} files")
-    print(f"All references to {OLD_PROJECT_ID} have been replaced with {NEW_PROJECT_ID}")
+    """Main function - DISABLED to prevent breaking Cloud Run URLs."""
+    print("🚨 SCRIPT DISABLED")
+    print("=" * 50)
+    print("This script has been disabled to prevent breaking Cloud Run URLs.")
+    print("Critical project ID issues have been fixed manually:")
+    print("✅ ADK Memory Monitor - Fixed")
+    print("✅ Configuration files - Fixed")
+    print("✅ Shared libraries - Fixed")
+    print("")
+    print("Cloud Run URLs with 960076421399 are CORRECT and should not be changed.")
+    print("Only Google Cloud Project references needed fixing.")
+    print("=" * 50)
+    return
 
 if __name__ == "__main__":
     main()

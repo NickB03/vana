@@ -28,7 +28,7 @@ load_dotenv()
 
 # Import the memory components
 from tools.mcp_memory_client import MCPMemoryClient
-from tools.mcp_memory_client_mock import MockMCPMemoryClient
+from tests.mocks.mcp_memory_client_mock import MockMCPMemoryClient
 from tools.memory_manager import MemoryManager
 from tools.hybrid_search_delta import HybridSearchDelta
 

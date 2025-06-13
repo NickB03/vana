@@ -1,37 +1,19 @@
 # Task ID: 2
-# Title: Implement Agent Discovery System
-# Status: done
-# Dependencies: 1
+# Title: Logging Framework Setup
+# Status: pending
+# Dependencies: None
 # Priority: high
-# Description: Developed and implemented a comprehensive agent discovery and coordination system.
+# Description: Configure Python logging with appropriate handlers and formatters.
 # Details:
-Successfully implemented real-time agent discovery with capability detection and metadata extraction. Created caching system with TTL for performance. Implemented full coordination tools including task routing based on capabilities. Replaced all stub implementations with functional discovery and coordination logic.
+Use Python's built-in `logging` module. Configure handlers (e.g., `StreamHandler`, `FileHandler`) and formatters for structured logging. Set log levels (DEBUG, INFO, WARNING, ERROR) based on the environment (development, production). Example:
+```python
+import logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[logging.StreamHandler()]
+)
+```
 
 # Test Strategy:
-Comprehensive test suite (test_coordination_implementation.py) validates agent discovery functionality, coordination tool behavior, ADK tools integration, and provides detailed test reporting.
-
-# Subtasks:
-## 2.1. Create agent discovery service [completed]
-### Dependencies: None
-### Description: Implemented real-time agent discovery from agents directory and team files
-### Details:
-Created lib/_tools/agent_discovery.py with capability detection, metadata extraction, and caching system with TTL
-
-## 2.2. Implement coordination tools [completed]
-### Dependencies: None
-### Description: Developed functional coordinate_task with intelligent agent selection and delegation
-### Details:
-Created lib/_tools/real_coordination_tools.py with task routing based on capabilities and specializations
-
-## 2.3. Replace stub implementations [completed]
-### Dependencies: None
-### Description: Updated ADK tools with real discovery and routing functionality
-### Details:
-Enhanced adk_tools.py with actual agent communication and fallback mechanisms
-
-## 2.4. Create test suite [completed]
-### Dependencies: None
-### Description: Developed comprehensive tests for discovery and coordination functionality
-### Details:
-Implemented test_coordination_implementation.py with detailed test reporting
-
+Test logging output in different environments to ensure correct log levels and formats are applied.

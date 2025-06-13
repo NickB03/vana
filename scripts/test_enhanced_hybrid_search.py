@@ -45,12 +45,12 @@ def main():
         
         # Initialize with mock or real implementations
         if args.use_mock:
-            from tools.vector_search.vector_search_mock import MockVectorSearchClient
-            from tools.knowledge_graph.knowledge_graph_mock import MockKnowledgeGraphManager
-            from tools.web_search_mock import MockWebSearchClient
+            from tests.mocks.vector_search_mock import MockVectorSearchClient
+            # from tools.knowledge_graph.knowledge_graph_mock import MockKnowledgeGraphManager  # File not found
+            from tests.mocks.web_search_mock import MockWebSearchClient
             
             vector_search_client = MockVectorSearchClient()
-            kg_manager = MockKnowledgeGraphManager()
+            kg_manager = None  # MockKnowledgeGraphManager not available
             web_search_client = MockWebSearchClient()
             
             logger.info("Using mock implementations")

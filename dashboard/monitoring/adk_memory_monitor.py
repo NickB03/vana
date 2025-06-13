@@ -79,8 +79,8 @@ class ADKMemoryMonitor:
         self.check_interval = 60  # 1 minute
         
         # ADK configuration
-        self.rag_corpus = os.getenv("RAG_CORPUS_RESOURCE_NAME", 
-                                   "projects/960076421399/locations/us-central1/ragCorpora/vana-corpus")
+        self.rag_corpus = os.getenv("RAG_CORPUS_RESOURCE_NAME",
+                                   "projects/analystai-454200/locations/us-central1/ragCorpora/vana-corpus")
         self.similarity_top_k = int(os.getenv("SIMILARITY_TOP_K", "5"))
         self.vector_distance_threshold = float(os.getenv("VECTOR_DISTANCE_THRESHOLD", "0.7"))
         

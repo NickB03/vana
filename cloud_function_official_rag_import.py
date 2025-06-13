@@ -1,4 +1,5 @@
 import functions_framework
+import os
 from google.cloud import storage
 from vertexai.preview import rag
 import vertexai
@@ -29,9 +30,10 @@ def auto_import_rag_document(cloud_event):
             return
         
         # Initialize Vertex AI
-        project_id = "${GOOGLE_CLOUD_PROJECT}"
+        project_id = os.environ.get("GOOGLE_CLOUD_PROJECT", "analystai-454200")
+        project_number = os.environ.get("PROJECT_NUMBER", "960076421399")
         location = "us-central1"
-        corpus_name = "projects/${PROJECT_NUMBER}/locations/us-central1/ragCorpora/2305843009213693952"
+        corpus_name = f"projects/{project_number}/locations/us-central1/ragCorpora/2305843009213693952"
         
         vertexai.init(project=project_id, location=location)
         

@@ -10,89 +10,43 @@ import os
 import sys
 import uvicorn
 import logging
-import time
-import psutil
 from fastapi import FastAPI, Request
 from google.adk.cli.fast_api import get_fast_api_app
 
-# Memory profiling for startup debugging
-startup_start_time = time.time()
-startup_start_memory = psutil.Process().memory_info().rss / 1024 / 1024
-print(f"STARTUP PROFILING: Initial memory usage: {startup_start_memory:.1f}MB")
+# Configure logging first
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # Ensure current directory is in Python path for lib imports
 current_dir = os.path.dirname(os.path.abspath(__file__))
 if current_dir not in sys.path:
     sys.path.insert(0, current_dir)
 
-# Debug: Print current directory and lib directory status
-print(f"DEBUG: Current working directory: {os.getcwd()}")
-print(f"DEBUG: Script directory: {current_dir}")
-print(f"DEBUG: Python path: {sys.path[:3]}")
-print(f"DEBUG: lib directory exists: {os.path.exists(os.path.join(current_dir, 'lib'))}")
-if os.path.exists(os.path.join(current_dir, 'lib')):
-    lib_contents = os.listdir(os.path.join(current_dir, 'lib'))
-    print(f"DEBUG: lib directory contents: {lib_contents[:5]}")
+# Verify lib directory exists for imports
+if not os.path.exists(os.path.join(current_dir, 'lib')):
+    logger.warning("lib directory not found - some imports may fail")
 
 # Import our smart environment detection
 from lib.environment import setup_environment
-checkpoint_1_memory = psutil.Process().memory_info().rss / 1024 / 1024
-print(f"STARTUP PROFILING: After environment import: {checkpoint_1_memory:.1f}MB (+{checkpoint_1_memory - startup_start_memory:.1f}MB)")
 
 # Import MCP server components
 from lib.mcp_server.sse_transport import MCPSSETransport
-checkpoint_2_memory = psutil.Process().memory_info().rss / 1024 / 1024
-print(f"STARTUP PROFILING: After MCP import: {checkpoint_2_memory:.1f}MB (+{checkpoint_2_memory - checkpoint_1_memory:.1f}MB)")
-
-# Import ADK memory service
-from lib._shared_libraries.adk_memory_service import get_adk_memory_service
-checkpoint_3_memory = psutil.Process().memory_info().rss / 1024 / 1024
-print(f"STARTUP PROFILING: After ADK memory service import: {checkpoint_3_memory:.1f}MB (+{checkpoint_3_memory - checkpoint_2_memory:.1f}MB)")
-
-# Configure logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
 
 # Setup environment-specific configuration
 logger.info("Setting up environment configuration...")
 environment_type = setup_environment()
 logger.info(f"Environment configured: {environment_type}")
 
-# Initialize lazy initialization manager (prevents import hanging)
-from lib._shared_libraries.lazy_initialization import lazy_manager
-logger.info("Lazy initialization manager ready - services will initialize on first use")
-
 # Get the directory where main.py is located - this is where the agent files are now located
 # Supporting directories are now in lib/ to avoid being treated as agents
 AGENT_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "agents")
-logger.debug(f"Agent directory: {AGENT_DIR}")
-logger.debug(f"Directory exists: {os.path.exists(AGENT_DIR)}")
-if os.path.exists(AGENT_DIR):
-    agent_files = [f for f in os.listdir(AGENT_DIR) if f.endswith('.py') or f == '__init__.py']
-    agent_dirs = [d for d in os.listdir(AGENT_DIR) if os.path.isdir(os.path.join(AGENT_DIR, d)) and not d.startswith('.')]
-    logger.debug(f"Agent files in directory: {agent_files}")
-    logger.debug(f"Directories in agent dir: {agent_dirs}")
+logger.info(f"Agent directory: {AGENT_DIR}")
 
-    # Check if vana agent can be imported
-    import sys
-    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-    try:
-        import vana
-        logger.info(f"✅ Root level vana module imported successfully")
-        logger.debug(f"Root level vana.agent: {vana.agent}")
-    except Exception as e:
-        logger.error(f"❌ Failed to import root level vana module: {e}")
-
-    try:
-        from agents.vana import agent
-        logger.info(f"✅ agents.vana.agent imported successfully")
-        logger.debug(f"Agent object: {agent}")
-    except Exception as e:
-        logger.error(f"❌ Failed to import agents.vana.agent: {e}")
-
-    # Check current working directory and Python path
-    logger.debug(f"Current working directory: {os.getcwd()}")
-    logger.debug(f"Python path: {sys.path[:5]}")  # First 5 entries
+# Verify agent directory exists
+if not os.path.exists(AGENT_DIR):
+    logger.warning(f"Agent directory not found: {AGENT_DIR}")
+else:
+    logger.info("Agent directory found and accessible")
 
 # Session database URL (SQLite for development)
 # Use /tmp for Cloud Run compatibility (writable filesystem)
@@ -105,14 +59,14 @@ ALLOWED_ORIGINS = ["http://localhost", "http://localhost:8080", "*"]
 SERVE_WEB_INTERFACE = True
 
 # Security guardrail callbacks
-def before_tool_callback(tool_name: str, tool_args: dict, session):
+def before_tool_callback(_tool_name: str, tool_args: dict, _session):
     """Validate tool arguments before execution."""
     path_arg = tool_args.get("file_path") or tool_args.get("directory_path")
     if path_arg and (".." in path_arg or path_arg.startswith("/")):
         raise ValueError("Invalid path access")
 
 
-def after_model_callback(agent_name: str, response: str, session):
+def after_model_callback(_agent_name: str, response: str, _session):
     """Lightweight policy check on model responses."""
     banned = ["malware", "illegal"]
     if any(word in response.lower() for word in banned):
@@ -125,12 +79,7 @@ app: FastAPI = get_fast_api_app(
     allow_origins=ALLOWED_ORIGINS,
     web=SERVE_WEB_INTERFACE,
 )
-checkpoint_4_memory = psutil.Process().memory_info().rss / 1024 / 1024
-startup_end_time = time.time()
-total_startup_time = startup_end_time - startup_start_time
-total_memory_delta = checkpoint_4_memory - startup_start_memory
-print(f"STARTUP PROFILING: After FastAPI app creation: {checkpoint_4_memory:.1f}MB (+{checkpoint_4_memory - checkpoint_3_memory:.1f}MB)")
-print(f"STARTUP PROFILING SUMMARY: Total time: {total_startup_time:.2f}s, Total memory: {checkpoint_4_memory:.1f}MB (delta: +{total_memory_delta:.1f}MB)")
+logger.info("FastAPI app created successfully")
 
 # Note: Security guardrails defined above for future integration
 # Current ADK version may not support callback parameters

@@ -16,7 +16,7 @@ python-dateutil = ">=2.8.2"
 mcp = {version = ">=1.2.0", extras = ["cli"]}
 # urllib3 version constraint removed - let google-adk manage this
 spacy = ">=3.8.7,<4.0.0"
-psutil = "^7.0.0"
+psutil = "^5.9.0"
 pyyaml = "^6.0.0"
 docker = "^7.0.0"
 aiohttp = "^3.9.0"

@@ -1,11 +1,17 @@
 # Task ID: 8
-# Title: Develop Multi-Agent Workflow Management
-# Status: done
-# Dependencies: 5, 7
+# Title: Update pyproject.toml Configuration
+# Status: pending
+# Dependencies: None
 # Priority: medium
-# Description: Enable orchestration of tasks across multiple agents.
+# Description: Modernize pyproject.toml to current Poetry standards.
 # Details:
-Implement a workflow engine to manage task dependencies and parallel execution. Use a state machine to track workflow progress.
+Update `pyproject.toml` to comply with PEP 621 standards. Resolve deprecation warnings and ensure backward compatibility. Example:
+```toml
+[project]
+name = "vana"
+version = "0.1.0"
+description = "Code quality enhancement project"
+```
 
 # Test Strategy:
-Validate workflows by simulating multi-agent scenarios and verifying task completion.
+Run `poetry check` to ensure no warnings or errors.
