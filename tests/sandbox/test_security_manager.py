@@ -108,7 +108,7 @@ def broken_function(
         result = self.security_manager.validate_python_code(invalid_code)
         
         assert len(result.violations) > 0
-        assert any(v.violation_type == SecurityViolationType.SUSPICIOUS_PATTERN 
+        assert any(v.violation_type == SecurityViolationType.SYNTAX_ERROR
                   for v in result.violations)
     
     def test_validate_javascript_code_safe(self):
