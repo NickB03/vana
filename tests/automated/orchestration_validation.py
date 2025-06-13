@@ -13,6 +13,9 @@ import time
 from datetime import datetime
 from typing import Dict, List, Any
 from playwright.async_api import async_playwright, Page
+from lib.logging_config import get_logger
+logger = get_logger("vana.orchestration_validation")
+
 
 class OrchestrationValidator:
     def __init__(self):
@@ -23,7 +26,7 @@ class OrchestrationValidator:
     async def setup_page(self, page: Page) -> bool:
         """Setup page for testing"""
         try:
-            print("🔧 Setting up test page...")
+            logger.debug("🔧 Setting up test page...")
             await page.goto(self.base_url, timeout=30000)
             await page.wait_for_load_state("networkidle", timeout=30000)
             
@@ -31,19 +34,19 @@ class OrchestrationValidator:
             agent_selector = "select[name='agent']"
             if await page.locator(agent_selector).count() > 0:
                 await page.select_option(agent_selector, "vana")
-                print("✅ VANA agent selected")
+                logger.debug("✅ VANA agent selected")
                 return True
             else:
-                print("⚠️ Agent selector not found, trying alternative setup...")
+                logger.debug("⚠️ Agent selector not found, trying alternative setup...")
                 return True  # Continue anyway, might be different UI
                 
         except Exception as e:
-            print(f"❌ Page setup failed: {e}")
+            logger.error(f"❌ Page setup failed: {e}")
             return False
             
     async def test_architecture_delegation(self, page: Page) -> Dict[str, Any]:
         """TC-ORG-001: Architecture Specialist Delegation"""
-        print("🔍 Testing architecture specialist delegation...")
+        logger.debug("🔍 Testing architecture specialist delegation...")
         
         try:
             # Clear any existing content
@@ -126,7 +129,7 @@ class OrchestrationValidator:
             
     async def test_ui_delegation(self, page: Page) -> Dict[str, Any]:
         """TC-ORG-002: UI/UX Specialist Delegation"""
-        print("🔍 Testing UI/UX specialist delegation...")
+        logger.debug("🔍 Testing UI/UX specialist delegation...")
         
         try:
             # Clear previous input
@@ -205,7 +208,7 @@ class OrchestrationValidator:
             
     async def test_devops_delegation(self, page: Page) -> Dict[str, Any]:
         """TC-ORG-003: DevOps Specialist Delegation"""
-        print("🔍 Testing DevOps specialist delegation...")
+        logger.debug("🔍 Testing DevOps specialist delegation...")
         
         try:
             # Clear and submit DevOps query
@@ -277,7 +280,7 @@ class OrchestrationValidator:
             
     async def test_tool_functionality(self, page: Page) -> Dict[str, Any]:
         """TC-ORG-004: Basic Tool Functionality"""
-        print("🔍 Testing basic tool functionality...")
+        logger.debug("🔍 Testing basic tool functionality...")
         
         try:
             # Test simple tool execution
@@ -342,8 +345,8 @@ class OrchestrationValidator:
             
     async def run_all_tests(self) -> List[Dict[str, Any]]:
         """Execute all orchestration tests"""
-        print("🤖 Starting Multi-Agent Orchestration Tests...")
-        print("=" * 50)
+        logger.info("🤖 Starting Multi-Agent Orchestration Tests...")
+        logger.debug("%s", "=" * 50)
         
         async with async_playwright() as p:
             browser = await p.chromium.launch(headless=True)
@@ -351,7 +354,7 @@ class OrchestrationValidator:
             
             # Setup page
             if not await self.setup_page(page):
-                print("❌ Failed to setup test page")
+                logger.error("❌ Failed to setup test page")
                 return self.results
             
             tests = [
@@ -364,12 +367,12 @@ class OrchestrationValidator:
             for test in tests:
                 result = await test(page)
                 status_emoji = "✅" if result["status"] == "PASS" else "❌" if result["status"] == "FAIL" else "⚠️"
-                print(f"{status_emoji} {result['test_id']}: {result['name']} - {result['status']}")
+                logger.info("%s", f"{status_emoji} {result['test_id']}: {result['name']} - {result['status']}")
                 
                 if result["status"] == "FAIL":
-                    print(f"   └─ Failure details: {result.get('error', 'See result data')}")
+                    logger.error("%s", f"   └─ Failure details: {result.get('error', 'See result data')}")
                 elif result["status"] == "ERROR":
-                    print(f"   └─ Error: {result.get('error', 'Unknown error')}")
+                    logger.error("%s", f"   └─ Error: {result.get('error', 'Unknown error')}")
                     
                 # Small delay between tests
                 await asyncio.sleep(2)
@@ -380,12 +383,12 @@ class OrchestrationValidator:
         total_tests = len(self.results)
         passed_tests = sum(1 for r in self.results if r["status"] == "PASS")
         
-        print("\n" + "=" * 50)
-        print(f"📊 Orchestration Tests Summary:")
-        print(f"   Total: {total_tests}")
-        print(f"   Passed: {passed_tests}")
-        print(f"   Success Rate: {(passed_tests/total_tests)*100:.1f}%")
-        print("=" * 50)
+        logger.debug("%s", "\n" + "=" * 50)
+        logger.debug(f"📊 Orchestration Tests Summary:")
+        logger.debug(f"   Total: {total_tests}")
+        logger.debug(f"   Passed: {passed_tests}")
+        logger.info(f"   Success Rate: {(passed_tests/total_tests)*100:.1f}%")
+        logger.debug("%s", "=" * 50)
         
         return self.results
         
@@ -409,7 +412,7 @@ class OrchestrationValidator:
         with open(filepath, "w") as f:
             json.dump(results_data, f, indent=2)
             
-        print(f"💾 Results saved to: {filepath}")
+        logger.info(f"💾 Results saved to: {filepath}")
         return filepath
 
 if __name__ == "__main__":

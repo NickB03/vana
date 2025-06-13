@@ -41,13 +41,10 @@ logger = logging.getLogger(__name__)
 
 # Try to import vector search dependencies
 try:
-    from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
     import numpy as np
-    TENACITY_AVAILABLE = True
     NUMPY_AVAILABLE = True
 except ImportError as e:
     logger.warning(f"Vector search dependencies not available: {e}")
-    TENACITY_AVAILABLE = False
     NUMPY_AVAILABLE = False
 
 # Google Cloud imports
@@ -366,7 +363,6 @@ class VectorSearchService:
             "embedding_dimensions": self.embedding_dimensions,
             "cache_size": len(self._embedding_cache),
             "dependencies": {
-                "tenacity": TENACITY_AVAILABLE,
                 "numpy": NUMPY_AVAILABLE,
                 "vertex_ai": VERTEX_AI_AVAILABLE
             }

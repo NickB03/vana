@@ -22,7 +22,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(
 from dashboard.monitoring.vector_search_monitor import VectorSearchMonitor
 
 # Create blueprint
-vector_search_bp = Blueprint('vector_search', __name__, url_prefix='/vector-search')
+vector_search_bp = Blueprint("vector_search", __name__, url_prefix='/vector-search')
 
 # Create monitor instance
 monitor = VectorSearchMonitor()

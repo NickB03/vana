@@ -15,6 +15,9 @@ from datetime import datetime
 from typing import Dict, List, Any, Optional
 from dataclasses import dataclass
 from playwright.async_api import async_playwright
+from lib.logging_config import get_logger
+logger = get_logger("vana.system_discovery_framework")
+
 
 @dataclass
 class AgentCapability:
@@ -63,8 +66,8 @@ class VANASystemDiscovery:
         
     async def run_comprehensive_discovery(self) -> Dict[str, Any]:
         """Execute complete system discovery process"""
-        print("🔍 Starting Comprehensive VANA System Discovery")
-        print("=" * 60)
+        logger.info("🔍 Starting Comprehensive VANA System Discovery")
+        logger.debug("%s", "=" * 60)
         
         # Phase 1: System Health & Connectivity
         await self.discover_system_health()
@@ -91,8 +94,8 @@ class VANASystemDiscovery:
         
     async def discover_system_health(self):
         """Discover and validate system health and connectivity"""
-        print("\n📋 Phase 1: System Health & Connectivity Discovery")
-        print("-" * 40)
+        logger.debug("\n📋 Phase 1: System Health & Connectivity Discovery")
+        logger.debug("%s", "-" * 40)
         
         health_tests = [
             ("health_endpoint", f"{self.base_url}/health"),
@@ -121,21 +124,21 @@ class VANASystemDiscovery:
                     except:
                         health_results[test_name]["response_data"] = response.text[:200]
                         
-                print(f"✅ {test_name}: {response.status_code} ({response_time:.3f}s)")
+                logger.debug(f"✅ {test_name}: {response.status_code} ({response_time:.3f}s)")
                 
             except Exception as e:
                 health_results[test_name] = {
                     "available": False,
                     "error": str(e)
                 }
-                print(f"❌ {test_name}: {str(e)}")
+                logger.debug(f"❌ {test_name}: {str(e)}")
                 
         self.discovery_results["system_health"] = health_results
         
     async def discover_agents(self):
         """Discover and validate all available agents"""
-        print("\n📋 Phase 2: Agent Discovery & Validation")
-        print("-" * 40)
+        logger.debug("\n📋 Phase 2: Agent Discovery & Validation")
+        logger.debug("%s", "-" * 40)
         
         # Discover agents through UI
         agent_results = {}
@@ -156,7 +159,7 @@ class VANASystemDiscovery:
                 # Get all available agent options
                 agent_options = await page.locator("mat-option").all_text_contents()
                 
-                print(f"📊 Discovered {len(agent_options)} agents: {agent_options}")
+                logger.debug(f"📊 Discovered {len(agent_options)} agents: {agent_options}")
                 
                 # Test each agent individually
                 for agent_name in agent_options:
@@ -165,7 +168,7 @@ class VANASystemDiscovery:
                         agent_results[agent_name.strip()] = agent_capability
                         
             except Exception as e:
-                print(f"❌ Agent discovery failed: {e}")
+                logger.error(f"❌ Agent discovery failed: {e}")
                 agent_results["discovery_error"] = str(e)
                 
             await browser.close()
@@ -176,14 +179,14 @@ class VANASystemDiscovery:
         documented_agent_count = 24
         actual_agent_count = len([a for a in agent_results.keys() if not a.endswith("_error")])
         
-        print(f"\n📊 Agent Discovery Summary:")
-        print(f"   Documented: {documented_agent_count} agents")
-        print(f"   Discovered: {actual_agent_count} agents")
-        print(f"   Gap: {documented_agent_count - actual_agent_count} agents")
+        logger.debug(f"\n📊 Agent Discovery Summary:")
+        logger.debug(f"   Documented: {documented_agent_count} agents")
+        logger.debug(f"   Discovered: {actual_agent_count} agents")
+        logger.debug(f"   Gap: {documented_agent_count - actual_agent_count} agents")
         
     async def test_agent_capability(self, page, agent_name: str) -> AgentCapability:
         """Test individual agent capability and performance"""
-        print(f"🔍 Testing agent: {agent_name}")
+        logger.debug(f"🔍 Testing agent: {agent_name}")
         
         try:
             # Select the agent
@@ -222,11 +225,11 @@ class VANASystemDiscovery:
                 performance_score=1.0 if has_meaningful_response and not has_error_indicators else 0.5
             )
             
-            print(f"   ✅ {agent_name}: Available ({response_time:.3f}s)")
+            logger.debug(f"   ✅ {agent_name}: Available ({response_time:.3f}s)")
             return capability
             
         except Exception as e:
-            print(f"   ❌ {agent_name}: {str(e)}")
+            logger.debug(f"   ❌ {agent_name}: {str(e)}")
             return AgentCapability(
                 name=agent_name,
                 available=False,
@@ -236,8 +239,8 @@ class VANASystemDiscovery:
             
     async def discover_tools(self):
         """Discover and validate all available tools"""
-        print("\n📋 Phase 3: Tool Discovery & Validation")
-        print("-" * 40)
+        logger.debug("\n📋 Phase 3: Tool Discovery & Validation")
+        logger.debug("%s", "-" * 40)
         
         # Tool discovery through various methods
         tool_results = {}
@@ -258,7 +261,7 @@ class VANASystemDiscovery:
                 tool_results[tool_name] = tool_capability
                 
         except Exception as e:
-            print(f"❌ Tool discovery failed: {e}")
+            logger.error(f"❌ Tool discovery failed: {e}")
             tool_results["discovery_error"] = str(e)
             
         self.discovery_results["tools"] = tool_results
@@ -267,14 +270,14 @@ class VANASystemDiscovery:
         documented_tool_count = 59
         actual_tool_count = len([t for t in tool_results.keys() if not t.endswith("_error")])
         
-        print(f"\n📊 Tool Discovery Summary:")
-        print(f"   Documented: {documented_tool_count}+ tools")
-        print(f"   Discovered: {actual_tool_count} tools")
-        print(f"   Gap: {documented_tool_count - actual_tool_count} tools")
+        logger.debug(f"\n📊 Tool Discovery Summary:")
+        logger.debug(f"   Documented: {documented_tool_count}+ tools")
+        logger.debug(f"   Discovered: {actual_tool_count} tools")
+        logger.debug(f"   Gap: {documented_tool_count - actual_tool_count} tools")
         
     async def test_tool_capability(self, tool_name: str) -> ToolCapability:
         """Test individual tool capability and performance"""
-        print(f"🔍 Testing tool: {tool_name}")
+        logger.debug(f"🔍 Testing tool: {tool_name}")
 
         try:
             start_time = time.time()
@@ -348,11 +351,11 @@ class VANASystemDiscovery:
                     )
 
                     status = "✅" if tool_used else "⚠️"
-                    print(f"   {status} {tool_name}: {'Available' if tool_used else 'Not detected'} ({execution_time:.3f}s)")
+                    logger.debug("%s", f"   {status} {tool_name}: {'Available' if tool_used else 'Not detected'} ({execution_time:.3f}s)")
                     return capability
 
                 except Exception as e:
-                    print(f"   ❌ {tool_name}: Browser test failed - {str(e)}")
+                    logger.error(f"   ❌ {tool_name}: Browser test failed - {str(e)}")
                     return ToolCapability(
                         name=tool_name,
                         available=False,
@@ -363,7 +366,7 @@ class VANASystemDiscovery:
                     await browser.close()
 
         except Exception as e:
-            print(f"   ❌ {tool_name}: {str(e)}")
+            logger.debug(f"   ❌ {tool_name}: {str(e)}")
             return ToolCapability(
                 name=tool_name,
                 available=False,
@@ -373,8 +376,8 @@ class VANASystemDiscovery:
             
     async def discover_memory_systems(self):
         """Discover and validate memory system components"""
-        print("\n📋 Phase 4: Memory System Discovery")
-        print("-" * 40)
+        logger.debug("\n📋 Phase 4: Memory System Discovery")
+        logger.debug("%s", "-" * 40)
         
         memory_components = [
             "session_memory",
@@ -394,7 +397,7 @@ class VANASystemDiscovery:
         
     async def test_memory_component(self, component: str) -> MemorySystemCapability:
         """Test individual memory system component"""
-        print(f"🔍 Testing memory component: {component}")
+        logger.debug(f"🔍 Testing memory component: {component}")
 
         try:
             start_time = time.time()
@@ -466,11 +469,11 @@ class VANASystemDiscovery:
                     )
 
                     status = "✅" if component_used else "⚠️"
-                    print(f"   {status} {component}: {'Available' if component_used else 'Not detected'} ({performance:.3f}s)")
+                    logger.debug("%s", f"   {status} {component}: {'Available' if component_used else 'Not detected'} ({performance:.3f}s)")
                     return capability
 
                 except Exception as e:
-                    print(f"   ❌ {component}: Browser test failed - {str(e)}")
+                    logger.error(f"   ❌ {component}: Browser test failed - {str(e)}")
                     return MemorySystemCapability(
                         component=component,
                         available=False,
@@ -480,7 +483,7 @@ class VANASystemDiscovery:
                     await browser.close()
 
         except Exception as e:
-            print(f"   ❌ {component}: {str(e)}")
+            logger.debug(f"   ❌ {component}: {str(e)}")
             return MemorySystemCapability(
                 component=component,
                 available=False,
@@ -489,8 +492,8 @@ class VANASystemDiscovery:
             
     async def establish_performance_baseline(self):
         """Establish performance baseline metrics"""
-        print("\n📋 Phase 5: Performance Baseline Establishment")
-        print("-" * 40)
+        logger.debug("\n📋 Phase 5: Performance Baseline Establishment")
+        logger.debug("%s", "-" * 40)
         
         baseline_metrics = {
             "response_times": {},
@@ -514,7 +517,7 @@ class VANASystemDiscovery:
         
     async def measure_performance(self, test_name: str, query: str) -> Dict[str, float]:
         """Measure performance for a specific test scenario"""
-        print(f"📊 Measuring performance: {test_name}")
+        logger.debug(f"📊 Measuring performance: {test_name}")
 
         try:
             # Measure actual performance through browser automation
@@ -553,7 +556,7 @@ class VANASystemDiscovery:
                     }
 
                 except Exception as e:
-                    print(f"   ❌ Performance measurement failed: {str(e)}")
+                    logger.error(f"   ❌ Performance measurement failed: {str(e)}")
                     return {
                         "response_time": 0.0,
                         "throughput": 0.0,
@@ -564,7 +567,7 @@ class VANASystemDiscovery:
                     await browser.close()
 
         except Exception as e:
-            print(f"   ❌ Performance measurement error: {str(e)}")
+            logger.error(f"   ❌ Performance measurement error: {str(e)}")
             return {
                 "response_time": 0.0,
                 "throughput": 0.0,
@@ -574,8 +577,8 @@ class VANASystemDiscovery:
         
     def perform_gap_analysis(self):
         """Perform comprehensive gap analysis"""
-        print("\n📋 Phase 6: Gap Analysis")
-        print("-" * 40)
+        logger.debug("\n📋 Phase 6: Gap Analysis")
+        logger.debug("%s", "-" * 40)
         
         gap_analysis = {
             "documented_vs_actual": {},
@@ -615,14 +618,14 @@ class VANASystemDiscovery:
             
         self.discovery_results["gap_analysis"] = gap_analysis
         
-        print(f"📊 Gap Analysis Complete:")
-        print(f"   Agent Gap: {gap_analysis['documented_vs_actual']['agents']['gap']}")
-        print(f"   Tool Gap: {gap_analysis['documented_vs_actual']['tools']['gap']}")
+        logger.debug(f"📊 Gap Analysis Complete:")
+        logger.debug("%s", f"   Agent Gap: {gap_analysis['documented_vs_actual']['agents']['gap']}")
+        logger.debug("%s", f"   Tool Gap: {gap_analysis['documented_vs_actual']['tools']['gap']}")
         
     def generate_discovery_report(self):
         """Generate comprehensive discovery report"""
-        print("\n📋 Generating Discovery Report")
-        print("-" * 40)
+        logger.debug("\n📋 Generating Discovery Report")
+        logger.debug("%s", "-" * 40)
         
         # Save detailed results
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -631,28 +634,28 @@ class VANASystemDiscovery:
         with open(f"tests/results/{report_filename}", "w") as f:
             json.dump(self.discovery_results, f, indent=2)
             
-        print(f"💾 Discovery report saved: tests/results/{report_filename}")
+        logger.info(f"💾 Discovery report saved: tests/results/{report_filename}")
         
         # Print summary
-        print("\n" + "=" * 60)
-        print("📊 DISCOVERY SUMMARY")
-        print("=" * 60)
+        logger.debug("%s", "\n" + "=" * 60)
+        logger.debug("📊 DISCOVERY SUMMARY")
+        logger.debug("%s", "=" * 60)
         
         system_health = self.discovery_results["system_health"]
         agents = self.discovery_results["agents"]
         tools = self.discovery_results["tools"]
         
-        print(f"System Health: {'✅ Operational' if system_health.get('health_endpoint', {}).get('available') else '❌ Issues'}")
-        print(f"Agents Discovered: {len(agents)}")
-        print(f"Tools Discovered: {len(tools)}")
-        print(f"Memory Systems: {len(self.discovery_results['memory_systems'])}")
+        logger.debug("%s", f"System Health: {'✅ Operational' if system_health.get('health_endpoint', {}).get('available') else '❌ Issues'}")
+        logger.debug(f"Agents Discovered: {len(agents)}")
+        logger.debug(f"Tools Discovered: {len(tools)}")
+        logger.info("%s", f"Memory Systems: {len(self.discovery_results['memory_systems'])}")
         
         gap_analysis = self.discovery_results["gap_analysis"]
-        print(f"\nGap Analysis:")
-        print(f"  Agent Gap: {gap_analysis.get('documented_vs_actual', {}).get('agents', {}).get('gap', 'Unknown')}")
-        print(f"  Tool Gap: {gap_analysis.get('documented_vs_actual', {}).get('tools', {}).get('gap', 'Unknown')}")
+        logger.debug(f"\nGap Analysis:")
+        logger.debug("%s", f"  Agent Gap: {gap_analysis.get('documented_vs_actual', {}).get('agents', {}).get('gap', 'Unknown')}")
+        logger.debug("%s", f"  Tool Gap: {gap_analysis.get('documented_vs_actual', {}).get('tools', {}).get('gap', 'Unknown')}")
         
-        print("=" * 60)
+        logger.debug("%s", "=" * 60)
 
 if __name__ == "__main__":
     async def main():

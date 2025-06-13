@@ -449,8 +449,8 @@ if __name__ == "__main__":
         if client.is_available():
             results = client.search(query)
             formatted = client.format_results(results)
-            print(formatted)
+            logger.info("%s", formatted)
         else:
-            print("Brave Search client not available. Please check your API key configuration.")
+            logger.info("Brave Search client not available. Please check your API key configuration.")
     else:
-        print("Usage: python brave_search_client.py <search query>")
+        logger.info("Usage: python brave_search_client.py <search query>")

@@ -252,14 +252,14 @@ def main():
         logger.error(f"❌ Failed to save report: {str(e)}")
     
     # Print summary
-    print("\n" + "="*50)
-    print("🎯 VANA BROWSER TEST SUMMARY")
-    print("="*50)
-    print(f"Total Tests: {report['summary']['total_tests']}")
-    print(f"Passed: {report['summary']['passed']}")
-    print(f"Failed: {report['summary']['failed']}")
-    print(f"Pass Rate: {report['summary']['pass_rate']}%")
-    print("="*50)
+    logger.debug("%s", "\n" + "="*50)
+    logger.debug("🎯 VANA BROWSER TEST SUMMARY")
+    logger.debug("%s", "="*50)
+    logger.debug("%s", f"Total Tests: {report['summary']['total_tests']}")
+    logger.debug("%s", f"Passed: {report['summary']['passed']}")
+    logger.error("%s", f"Failed: {report['summary']['failed']}")
+    logger.debug("%s", f"Pass Rate: {report['summary']['pass_rate']}%")
+    logger.debug("%s", "="*50)
 
 if __name__ == "__main__":
     main()

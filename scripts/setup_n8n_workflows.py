@@ -386,9 +386,9 @@ def main():
     args = parse_args()
     
     # Print header
-    print("\n" + "=" * 80)
-    print("n8n Workflow Setup")
-    print("=" * 80 + "\n")
+    logger.info("%s", "\n" + "=" * 80)
+    logger.info("n8n Workflow Setup")
+    logger.info("%s", "=" * 80 + "\n")
     
     # Get credentials
     n8n_url, n8n_username, n8n_password = get_n8n_credentials(args)
@@ -412,17 +412,17 @@ def main():
         update_env_file(args.env_file, n8n_url, webhook_urls, webhook_username, webhook_password)
     
     # Print footer
-    print("\n" + "=" * 80)
-    print("Setup Completed")
-    print("=" * 80 + "\n")
+    logger.info("%s", "\n" + "=" * 80)
+    logger.info("Setup Completed")
+    logger.info("%s", "=" * 80 + "\n")
     
     # Print webhook URLs
-    print("Webhook URLs:")
+    logger.info("Webhook URLs:")
     for workflow_name, webhook_url in webhook_urls.items():
-        print(f"  {workflow_name}: {webhook_url}")
+        logger.info(f"  {workflow_name}: {webhook_url}")
     
-    print("\nThese URLs have been added to your .env file.")
-    print("You can now use the WorkflowInterface to trigger these workflows.")
+    logger.info("\nThese URLs have been added to your .env file.")
+    logger.info("You can now use the WorkflowInterface to trigger these workflows.")
 
 if __name__ == "__main__":
     main()

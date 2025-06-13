@@ -455,17 +455,17 @@ def main():
     success = creator.create_knowledge_base()
     
     if success:
-        print(f"\n🎉 VANA Knowledge Base Created Successfully!")
-        print(f"📁 Location: {creator.output_dir}")
-        print(f"📊 Files created: {len(creator.created_files)}")
-        print(f"🧠 Knowledge base is ready for agent access")
+        logger.info(f"\n🎉 VANA Knowledge Base Created Successfully!")
+        logger.info(f"📁 Location: {creator.output_dir}")
+        logger.info(f"📊 Files created: {len(creator.created_files)}")
+        logger.info(f"🧠 Knowledge base is ready for agent access")
         
-        print(f"\n🚀 Next steps:")
-        print(f"1. Update search_knowledge tool to use this knowledge base")
-        print(f"2. Test agent knowledge retrieval")
-        print(f"3. Deploy updated system")
+        logger.info(f"\n🚀 Next steps:")
+        logger.info(f"1. Update search_knowledge tool to use this knowledge base")
+        logger.info(f"2. Test agent knowledge retrieval")
+        logger.info(f"3. Deploy updated system")
     else:
-        print(f"\n❌ Knowledge base creation failed. Check logs for details.")
+        logger.error(f"\n❌ Knowledge base creation failed. Check logs for details.")
         sys.exit(1)
 
 if __name__ == "__main__":

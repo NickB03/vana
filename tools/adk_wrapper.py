@@ -18,47 +18,33 @@ logger = logging.getLogger(__name__)
 class ADKWrapper:
     """Wrapper for ADK functionality that handles import issues."""
 
-    def __init__(self, verbose=False):
+    def __init__(self):
         self.adk_module = None
         self.agent_module = None
         self.vertexai_available = False
-        self.verbose = verbose
         self._initialize()
 
     def _initialize(self):
         """Initialize the ADK wrapper by trying multiple import strategies."""
-        # Check environment
-        if self.verbose:
-            env_info = self._get_environment_info()
-            logger.info("Initializing ADK wrapper...")
-            logger.info(f"Environment: Python {env_info['python_version']}")
-            logger.info(f"Python path: {sys.path}")
+        logger.debug("Initializing ADK wrapper...")
 
         # Strategy 1: Direct import
         try:
-            if self.verbose:
-                logger.info("Trying Strategy 1: Direct import of google.adk")
+            logger.debug("Trying Strategy 1: Direct import of google.adk")
             import google.adk
             self.adk_module = google.adk
             logger.info("✅ Imported ADK directly from google.adk")
-            if self.verbose:
-                logger.info(f"ADK module path: {google.adk.__file__}")
-                logger.info(f"ADK module version: {getattr(google.adk, '__version__', 'unknown')}")
             return
         except ImportError as e:
             logger.warning(f"❌ Failed to import google.adk directly: {str(e)}")
 
         # Strategy 2: Import through google.cloud.aiplatform
         try:
-            if self.verbose:
-                logger.info("Trying Strategy 2: Import through google.cloud.aiplatform")
+            logger.debug("Trying Strategy 2: Import through google.cloud.aiplatform")
             from google.cloud import aiplatform
             if hasattr(aiplatform, 'adk'):
                 self.adk_module = aiplatform.adk
                 logger.info("✅ Imported ADK from google.cloud.aiplatform.adk")
-                if self.verbose:
-                    logger.info(f"ADK module path: {aiplatform.adk.__file__}")
-                    logger.info(f"ADK module version: {getattr(aiplatform.adk, '__version__', 'unknown')}")
                 return
             else:
                 logger.warning("❌ google.cloud.aiplatform does not have 'adk' attribute")
@@ -67,22 +53,17 @@ class ADKWrapper:
 
         # Strategy 3: Try aiplatform.agents for direct agent access
         try:
-            if self.verbose:
-                logger.info("Trying Strategy 3: Import agents from google.cloud.aiplatform")
+            logger.debug("Trying Strategy 3: Import agents from google.cloud.aiplatform")
             from google.cloud.aiplatform import agents
             self.agent_module = agents
             logger.info("✅ Imported agents from google.cloud.aiplatform.agents")
-            if self.verbose:
-                logger.info(f"Agents module path: {agents.__file__}")
-                logger.info(f"Available agent functions: {[f for f in dir(agents) if not f.startswith('_')]}")
             return
         except ImportError as e:
             logger.warning(f"❌ Failed to import google.cloud.aiplatform.agents: {str(e)}")
 
         # Strategy 4: Check for Vertex AI availability for direct LLM calls
         try:
-            if self.verbose:
-                logger.info("Trying Strategy 4: Check Vertex AI availability for direct LLM calls")
+            logger.debug("Trying Strategy 4: Check Vertex AI availability for direct LLM calls")
             import vertexai
             self.vertexai_available = True
             logger.info("✅ Vertex AI is available for direct LLM calls")
@@ -231,64 +212,63 @@ if __name__ == "__main__":
 
     # Parse arguments
     parser = argparse.ArgumentParser(description="Test ADK wrapper functionality")
-    parser.add_argument("--verbose", action="store_true", help="Enable verbose output")
     parser.add_argument("--query", default="What is the architecture of VANA?",
                         help="Test query for agent (default: 'What is the architecture of VANA?')")
     args = parser.parse_args()
 
     # Configure logging
     logging.basicConfig(
-        level=logging.DEBUG if args.verbose else logging.INFO,
+        level=logging.INFO,
         format="%(asctime)s [%(levelname)s] %(message)s"
     )
 
-    # Create a new instance with verbose option
-    adk_test = ADKWrapper(verbose=args.verbose)
+    # Create a new instance
+    adk_test = ADKWrapper()
 
     if adk_test.is_available():
-        print("✅ ADK wrapper initialized successfully")
-        print(f"ADK module: {adk_test.adk_module}")
-        print(f"Agent module: {adk_test.agent_module}")
+        logger.info("✅ ADK wrapper initialized successfully")
+        logger.info(f"ADK module: {adk_test.adk_module}")
+        logger.info(f"Agent module: {adk_test.agent_module}")
 
         # Try to create a simple agent if ADK is available
         try:
-            print("\nTrying to create a simple agent...")
+            logger.info("\nTrying to create a simple agent...")
             agent = adk_test.create_agent(
                 name="TestAgent",
                 description="A test agent",
                 instructions="You are a test agent."
             )
-            print("✅ Successfully created agent")
+            logger.info("✅ Successfully created agent")
 
             # Test the agent with a query
-            print(f"\nTesting agent with query: '{args.query}'")
+            logger.info("%s", f"\nTesting agent with query: '{args.query}'")
             response = adk_test.run_agent(agent, args.query)
-            print("Agent response:")
-            print(response.text if hasattr(response, 'text') else response)
+            logger.info("Agent response:")
+            logger.info("%s", response.text if hasattr(response, 'text') else response)
 
         except Exception as e:
-            print(f"❌ Failed to create or run agent: {str(e)}")
+            logger.error(f"❌ Failed to create or run agent: {str(e)}")
     else:
-        print("⚠️ ADK wrapper initialized with fallback mechanisms")
+        logger.info("⚠️ ADK wrapper initialized with fallback mechanisms")
         diagnostic_info = adk_test.get_diagnostic_info()
-        print(f"Diagnostic info: {diagnostic_info}")
+        logger.info(f"Diagnostic info: {diagnostic_info}")
 
         # Try to create and run a fallback agent
         try:
-            print("\nTrying to create a fallback agent...")
+            logger.info("\nTrying to create a fallback agent...")
             agent = adk_test.create_agent(
                 name="FallbackAgent",
                 description="A fallback agent",
                 instructions="You are a fallback agent."
             )
-            print("✅ Successfully created fallback agent")
+            logger.info("✅ Successfully created fallback agent")
 
             # Test the fallback agent with a query
-            print(f"\nTesting fallback agent with query: '{args.query}'")
+            logger.info("%s", f"\nTesting fallback agent with query: '{args.query}'")
             response = adk_test.run_agent(agent, args.query)
-            print("Fallback agent response:")
-            print(response.text if hasattr(response, 'text') else response)
+            logger.info("Fallback agent response:")
+            logger.info("%s", response.text if hasattr(response, 'text') else response)
 
         except Exception as e:
-            print(f"❌ Failed to create or run fallback agent: {str(e)}")
+            logger.error(f"❌ Failed to create or run fallback agent: {str(e)}")
             sys.exit(1)

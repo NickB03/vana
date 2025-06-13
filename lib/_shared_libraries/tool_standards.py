@@ -360,9 +360,9 @@ from tools import {tool_name}
 
 result = {tool_name}({params_str})
 if result.success:
-    print(f"Success: {{result.data}}")
+    logger.info(f"Success: {{result.data}}")
 else:
-    print(f"Error: {{result.error}}")
+    logger.error(f"Error: {{result.error}}")
 """
 
 class ToolAnalytics:

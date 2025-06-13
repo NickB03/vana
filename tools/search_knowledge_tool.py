@@ -200,4 +200,4 @@ def search_knowledge_tool(query, top_k=5):
 if __name__ == "__main__":
     query = input("Enter your search query: ")
     results = search_knowledge_tool(query)
-    print(results)
+    logger.info("%s", results)

@@ -25,6 +25,9 @@ sys.path.append(str(Path(__file__).parent.parent.parent))
 
 from tests.coordination.coordination_benchmarks import CoordinationBenchmarks
 from tests.coordination.coordination_test_runner import CoordinationTestRunner
+from lib.logging_config import get_logger
+logger = get_logger("vana.task_10_performance_testing")
+
 
 @dataclass
 class PerformanceMetrics:
@@ -51,14 +54,14 @@ class Task10PerformanceValidator:
     
     async def run_task_10_validation(self) -> Dict[str, Any]:
         """Run comprehensive Task #10 performance validation"""
-        print("🚀 TASK #10: PERFORMANCE TESTING VALIDATION")
-        print("=" * 70)
-        print("Objective: Validate system performance under sustained load")
-        print("Success Criteria:")
-        print("  • Response times <5 seconds under load")
-        print("  • Success rates >90% under sustained load")
-        print("  • System stability during concurrent operations")
-        print("=" * 70)
+        logger.debug("🚀 TASK #10: PERFORMANCE TESTING VALIDATION")
+        logger.debug("%s", "=" * 70)
+        logger.debug("Objective: Validate system performance under sustained load")
+        logger.info("Success Criteria:")
+        logger.debug("  • Response times <5 seconds under load")
+        logger.info("  • Success rates >90% under sustained load")
+        logger.debug("  • System stability during concurrent operations")
+        logger.debug("%s", "=" * 70)
         
         self.start_time = time.time()
         
@@ -89,8 +92,8 @@ class Task10PerformanceValidator:
     
     async def _validate_baseline_performance(self):
         """Validate baseline performance using existing framework"""
-        print("\n📊 Phase 1: Baseline Performance Validation")
-        print("-" * 50)
+        logger.debug("\n📊 Phase 1: Baseline Performance Validation")
+        logger.debug("%s", "-" * 50)
         
         # Run standard coordination tests
         test_runner = CoordinationTestRunner()
@@ -113,15 +116,15 @@ class Task10PerformanceValidator:
         
         self.results.append(baseline_metrics)
         
-        print(f"✅ Baseline validation complete:")
-        print(f"   Success Rate: {baseline_metrics.success_rate:.1%}")
-        print(f"   Avg Response Time: {baseline_metrics.avg_response_time:.3f}s")
-        print(f"   Target Achieved: {'✅ YES' if baseline_metrics.target_achieved else '❌ NO'}")
+        logger.debug(f"✅ Baseline validation complete:")
+        logger.info(f"   Success Rate: {baseline_metrics.success_rate:.1%}")
+        logger.debug(f"   Avg Response Time: {baseline_metrics.avg_response_time:.3f}s")
+        logger.debug("%s", f"   Target Achieved: {'✅ YES' if baseline_metrics.target_achieved else '❌ NO'}")
     
     async def _validate_sustained_load(self):
         """Validate performance under sustained load"""
-        print("\n⏱️  Phase 2: Sustained Load Testing")
-        print("-" * 50)
+        logger.debug("\n⏱️  Phase 2: Sustained Load Testing")
+        logger.debug("%s", "-" * 50)
         
         # Run sustained load benchmarks
         benchmarks = CoordinationBenchmarks()
@@ -146,31 +149,31 @@ class Task10PerformanceValidator:
             
             self.results.append(sustained_metrics)
             
-            print(f"✅ Sustained load validation complete:")
-            print(f"   Success Rate: {sustained_metrics.success_rate:.1%}")
-            print(f"   Avg Response Time: {sustained_metrics.avg_response_time:.3f}s")
-            print(f"   Max Response Time: {sustained_metrics.max_response_time:.3f}s")
-            print(f"   Target Achieved: {'✅ YES' if sustained_metrics.target_achieved else '❌ NO'}")
+            logger.debug(f"✅ Sustained load validation complete:")
+            logger.info(f"   Success Rate: {sustained_metrics.success_rate:.1%}")
+            logger.debug(f"   Avg Response Time: {sustained_metrics.avg_response_time:.3f}s")
+            logger.debug(f"   Max Response Time: {sustained_metrics.max_response_time:.3f}s")
+            logger.debug("%s", f"   Target Achieved: {'✅ YES' if sustained_metrics.target_achieved else '❌ NO'}")
     
     async def _validate_peak_concurrent_load(self):
         """Validate performance under peak concurrent load"""
-        print("\n🔀 Phase 3: Peak Concurrent Load Testing")
-        print("-" * 50)
+        logger.debug("\n🔀 Phase 3: Peak Concurrent Load Testing")
+        logger.debug("%s", "-" * 50)
         
         # This would be implemented with actual concurrent testing
         # For now, we'll simulate based on existing concurrent benchmark results
-        print("✅ Peak concurrent load testing simulated")
-        print("   (Full implementation would test 10+ concurrent operations)")
+        logger.debug("✅ Peak concurrent load testing simulated")
+        logger.debug("   (Full implementation would test 10+ concurrent operations)")
     
     async def _validate_endurance_performance(self):
         """Validate system endurance over extended period"""
-        print("\n💪 Phase 4: Endurance Performance Testing")
-        print("-" * 50)
+        logger.debug("\n💪 Phase 4: Endurance Performance Testing")
+        logger.debug("%s", "-" * 50)
         
         # This would be implemented with extended endurance testing
         # For now, we'll simulate based on existing endurance results
-        print("✅ Endurance testing simulated")
-        print("   (Full implementation would run 10+ minute continuous load)")
+        logger.debug("✅ Endurance testing simulated")
+        logger.debug("   (Full implementation would run 10+ minute continuous load)")
     
     def _generate_task_10_report(self) -> Dict[str, Any]:
         """Generate comprehensive Task #10 validation report"""
@@ -259,32 +262,32 @@ class Task10PerformanceValidator:
         with open(filepath, 'w') as f:
             json.dump(report, f, indent=2, default=str)
         
-        print(f"\n📊 Task #10 validation report saved to: {filepath}")
+        logger.debug(f"\n📊 Task #10 validation report saved to: {filepath}")
     
     def _print_task_10_validation(self, report: Dict[str, Any]):
         """Print Task #10 validation summary"""
         validation = report["task_10_validation"]
         
-        print("\n" + "=" * 70)
-        print("🎯 TASK #10: PERFORMANCE TESTING VALIDATION RESULTS")
-        print("=" * 70)
+        logger.debug("%s", "\n" + "=" * 70)
+        logger.info("🎯 TASK #10: PERFORMANCE TESTING VALIDATION RESULTS")
+        logger.debug("%s", "=" * 70)
         
-        print(f"📊 Overall Performance:")
-        print(f"   Success Rate: {validation['overall_success_rate']:.1%}")
-        print(f"   Avg Response Time: {validation['overall_avg_response_time']:.3f}s")
-        print(f"   Max Response Time: {validation['overall_max_response_time']:.3f}s")
-        print(f"   Performance Grade: {validation['performance_grade']}")
+        logger.debug(f"📊 Overall Performance:")
+        logger.info("%s", f"   Success Rate: {validation['overall_success_rate']:.1%}")
+        logger.debug("%s", f"   Avg Response Time: {validation['overall_avg_response_time']:.3f}s")
+        logger.debug("%s", f"   Max Response Time: {validation['overall_max_response_time']:.3f}s")
+        logger.debug("%s", f"   Performance Grade: {validation['performance_grade']}")
         
-        print(f"\n🎯 Task #10 Success Criteria:")
-        print(f"   Success Rate Target (90%): {'✅ ACHIEVED' if validation['success_rate_achieved'] else '❌ MISSED'}")
-        print(f"   Response Time Target (5s): {'✅ ACHIEVED' if validation['response_time_achieved'] else '❌ MISSED'}")
+        logger.info(f"\n🎯 Task #10 Success Criteria:")
+        logger.info("%s", f"   Success Rate Target (90%): {'✅ ACHIEVED' if validation['success_rate_achieved'] else '❌ MISSED'}")
+        logger.debug("%s", f"   Response Time Target (5s): {'✅ ACHIEVED' if validation['response_time_achieved'] else '❌ MISSED'}")
         
-        print(f"\n🚀 Task #10 Status: {'✅ COMPLETE' if validation['task_10_complete'] else '❌ INCOMPLETE'}")
+        logger.debug("%s", f"\n🚀 Task #10 Status: {'✅ COMPLETE' if validation['task_10_complete'] else '❌ INCOMPLETE'}")
         
         if report["recommendations"]:
-            print(f"\n💡 Recommendations:")
+            logger.debug(f"\n💡 Recommendations:")
             for rec in report["recommendations"]:
-                print(f"   • {rec}")
+                logger.debug(f"   • {rec}")
 
 async def main():
     """Main entry point for Task #10 performance validation"""

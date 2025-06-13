@@ -106,4 +106,4 @@ if __name__ == "__main__":
     response = handle_mcp_request(request)
     
     # Print the response
-    print(response)
+    logger.info("%s", response)

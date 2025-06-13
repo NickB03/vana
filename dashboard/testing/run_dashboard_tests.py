@@ -13,7 +13,7 @@ REPORTS_DIR = os.environ.get("VANA_TEST_REPORTS_DIR", "dashboard/testing/reports
 os.makedirs(REPORTS_DIR, exist_ok=True)
 
 def run_test_scenario(scenario: str):
-    print(f"Running test scenario: {scenario}")
+    logger.debug(f"Running test scenario: {scenario}")
     start_time = time.time()
     data = generate_scenario(scenario)
     duration = time.time() - start_time
@@ -39,7 +39,7 @@ def save_report(result: dict):
     path = os.path.join(REPORTS_DIR, filename)
     with open(path, "w") as f:
         json.dump(result, f, indent=2)
-    print(f"Saved test report: {path}")
+    logger.debug(f"Saved test report: {path}")
 
 def test_api_endpoints():
     """
@@ -47,6 +47,9 @@ def test_api_endpoints():
     """
     import requests
     from dashboard.alerting.alert_manager import AlertManager
+from lib.logging_config import get_logger
+logger = get_logger("vana.run_dashboard_tests")
+
 
     alert_manager = AlertManager()
     base_url = "http://localhost:5050"

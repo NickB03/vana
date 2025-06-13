@@ -10,6 +10,9 @@ import time
 from typing import Dict, Any
 from lib.monitoring import get_monitoring
 from lib.security import get_security
+from lib.logging_config import get_logger
+logger = get_logger("vana.monitoring_security_integration_example")
+
 from lib.logging import StructuredLogger
 
 class VanaAgentWithMonitoring:
@@ -195,46 +198,46 @@ async def main():
     # Create agent with monitoring
     agent = VanaAgentWithMonitoring("example_agent")
     
-    print("=== VANA Agent with Monitoring and Security Example ===\n")
+    logger.info("=== VANA Agent with Monitoring and Security Example ===\n")
     
     # Example 1: Process valid input
-    print("1. Processing valid input:")
+    logger.info("1. Processing valid input:")
     result = agent.validate_and_process_input("Hello, how can you help me?", "192.168.1.100")
-    print(f"Result: {result}\n")
+    logger.info(f"Result: {result}\n")
     
     # Example 2: Process invalid input (XSS attempt)
-    print("2. Processing invalid input (XSS attempt):")
+    logger.info("2. Processing invalid input (XSS attempt):")
     result = agent.validate_and_process_input("<script>alert('xss')</script>", "192.168.1.101")
-    print(f"Result: {result}\n")
+    logger.info(f"Result: {result}\n")
     
     # Example 3: Execute tools
-    print("3. Executing tools:")
+    logger.info("3. Executing tools:")
     tool_result = agent.execute_tool("search_tool", {"query": "test search"})
-    print(f"Tool result: {tool_result}\n")
+    logger.info(f"Tool result: {tool_result}\n")
     
     # Example 4: Async task
-    print("4. Executing async task:")
+    logger.info("4. Executing async task:")
     async_result = await agent.async_task({"id": "task_123", "type": "analysis"})
-    print(f"Async result: {async_result}\n")
+    logger.info(f"Async result: {async_result}\n")
     
     # Example 5: Rate limiting test
-    print("5. Testing rate limiting:")
+    logger.info("5. Testing rate limiting:")
     for i in range(7):  # Should hit rate limit
         result = agent.validate_and_process_input(f"Request {i}", "192.168.1.102")
-        print(f"Request {i}: {'Success' if result['success'] else 'Failed - ' + result['error']}")
-    print()
+        logger.error("%s", f"Request {i}: {'Success' if result['success'] else 'Failed - ' + result['error']}")
+    logger.info("")
     
     # Example 6: Get agent status
-    print("6. Agent status:")
+    logger.info("6. Agent status:")
     status = agent.get_agent_status()
-    print(f"Status: {status}\n")
+    logger.info(f"Status: {status}\n")
     
     # Example 7: System metrics
-    print("7. Recording system metrics:")
+    logger.info("7. Recording system metrics:")
     agent.monitoring.record_system_metrics()
-    print("System metrics recorded\n")
+    logger.info("System metrics recorded\n")
     
-    print("=== Example completed ===")
+    logger.info("=== Example completed ===")
 
 if __name__ == "__main__":
     asyncio.run(main())

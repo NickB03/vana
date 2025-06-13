@@ -31,39 +31,42 @@ from tests.eval.test_evaluation import ComprehensiveEvaluationRunner
 try:
     from tests.coordination.coordination_test_runner import CoordinationTestRunner
     from tests.coordination.coordination_benchmarks import CoordinationBenchmarks
+from lib.logging_config import get_logger
+logger = get_logger("vana.run_evaluation")
+
     COORDINATION_TESTING_AVAILABLE = True
 except ImportError:
     COORDINATION_TESTING_AVAILABLE = False
 
 async def run_agents_only(environment: str = "dev"):
     """Run only agent evaluation"""
-    print("🧪 Running Agent Evaluation Only")
-    print("=" * 60)
+    logger.debug("🧪 Running Agent Evaluation Only")
+    logger.debug("%s", "=" * 60)
     
     evaluator = VANASystemEvaluator(environment=environment)
     results = await evaluator.evaluate_all_agents()
     
-    print("\n✅ Agent evaluation completed successfully!")
+    logger.info("\n✅ Agent evaluation completed successfully!")
     return results
 
 async def run_performance_only(environment: str = "dev"):
     """Run only performance benchmarking"""
-    print("⚡ Running Performance Benchmarking Only")
-    print("=" * 60)
+    logger.debug("⚡ Running Performance Benchmarking Only")
+    logger.debug("%s", "=" * 60)
 
     benchmarks = VANAPerformanceBenchmarks()
     results = await benchmarks.run_comprehensive_benchmarks()
 
-    print("\n✅ Performance benchmarking completed successfully!")
+    logger.info("\n✅ Performance benchmarking completed successfully!")
     return results
 
 async def run_coordination_only(environment: str = "dev"):
     """Run only coordination testing (Task #9)"""
-    print("🎯 Running Coordination Testing Only (Task #9)")
-    print("=" * 60)
+    logger.debug("🎯 Running Coordination Testing Only (Task #9)")
+    logger.debug("%s", "=" * 60)
 
     if not COORDINATION_TESTING_AVAILABLE:
-        print("❌ Coordination testing modules not available")
+        logger.debug("❌ Coordination testing modules not available")
         return {"error": "Coordination testing not available"}
 
     # Run coordination tests
@@ -87,13 +90,13 @@ async def run_coordination_only(environment: str = "dev"):
         }
     }
 
-    print("\n✅ Coordination testing completed successfully!")
+    logger.info("\n✅ Coordination testing completed successfully!")
     return combined_results
 
 async def run_full_evaluation(environment: str = "dev", skip_discovery: bool = False, skip_performance: bool = False):
     """Run comprehensive evaluation"""
-    print("🎯 Running Comprehensive VANA System Evaluation")
-    print("=" * 80)
+    logger.debug("🎯 Running Comprehensive VANA System Evaluation")
+    logger.debug("%s", "=" * 80)
     
     runner = ComprehensiveEvaluationRunner()
     results = await runner.run_full_evaluation(
@@ -101,46 +104,46 @@ async def run_full_evaluation(environment: str = "dev", skip_discovery: bool = F
         include_performance=not skip_performance
     )
     
-    print("\n✅ Comprehensive evaluation completed successfully!")
+    logger.info("\n✅ Comprehensive evaluation completed successfully!")
     return results
 
 def print_usage_examples():
     """Print usage examples"""
-    print("\n📋 USAGE EXAMPLES:")
-    print("=" * 50)
-    print("# Quick agent evaluation (recommended for first run)")
-    print("python tests/eval/run_evaluation.py --agents-only")
+    logger.debug("\n📋 USAGE EXAMPLES:")
+    logger.debug("%s", "=" * 50)
+    logger.debug("# Quick agent evaluation (recommended for first run)")
+    logger.debug("python tests/eval/run_evaluation.py --agents-only")
     print()
-    print("# Performance benchmarking only")
-    print("python tests/eval/run_evaluation.py --performance-only")
+    logger.debug("# Performance benchmarking only")
+    logger.debug("python tests/eval/run_evaluation.py --performance-only")
     print()
-    print("# Coordination testing only (Task #9)")
-    print("python tests/eval/run_evaluation.py --coordination-only")
+    logger.debug("# Coordination testing only (Task #9)")
+    logger.debug("python tests/eval/run_evaluation.py --coordination-only")
     print()
-    print("# Full comprehensive evaluation")
-    print("python tests/eval/run_evaluation.py --full")
+    logger.debug("# Full comprehensive evaluation")
+    logger.debug("python tests/eval/run_evaluation.py --full")
     print()
-    print("# Full evaluation without system discovery")
-    print("python tests/eval/run_evaluation.py --full --skip-discovery")
+    logger.debug("# Full evaluation without system discovery")
+    logger.debug("python tests/eval/run_evaluation.py --full --skip-discovery")
     print()
-    print("# Run against production environment")
-    print("python tests/eval/run_evaluation.py --agents-only --env prod")
+    logger.debug("# Run against production environment")
+    logger.debug("python tests/eval/run_evaluation.py --agents-only --env prod")
     print()
-    print("# Environment variables for configuration:")
-    print("export VANA_DEV_URL='https://your-dev-url.com'")
-    print("export VANA_BROWSER_HEADLESS='false'  # Show browser")
-    print("export VANA_RESPONSE_TIME_TARGET='3.0'  # 3 second target")
-    print("=" * 50)
+    logger.debug("# Environment variables for configuration:")
+    logger.debug("%s", "export VANA_DEV_URL='https://your-dev-url.com'")
+    logger.debug("%s", "export VANA_BROWSER_HEADLESS='false'  # Show browser")
+    logger.debug("%s", "export VANA_RESPONSE_TIME_TARGET='3.0'  # 3 second target")
+    logger.debug("%s", "=" * 50)
 
 def validate_environment():
     """Validate that the environment is set up correctly"""
-    print("🔍 Validating Environment...")
+    logger.debug("🔍 Validating Environment...")
     
     # Check if we're in the right directory
     if not Path("agents").exists() or not Path("tests").exists():
-        print("❌ Error: Please run this script from the VANA project root directory")
-        print("   Current directory:", os.getcwd())
-        print("   Expected files: agents/, tests/, pyproject.toml")
+        logger.error("❌ Error: Please run this script from the VANA project root directory")
+        logger.debug("   Current directory:", os.getcwd())
+        logger.debug("   Expected files: agents/, tests/, pyproject.toml")
         return False
     
     # Check if required directories exist
@@ -151,7 +154,7 @@ def validate_environment():
     
     for dir_path in required_dirs:
         if not Path(dir_path).exists():
-            print(f"📁 Creating missing directory: {dir_path}")
+            logger.debug(f"📁 Creating missing directory: {dir_path}")
             Path(dir_path).mkdir(parents=True, exist_ok=True)
     
     # Check if evalsets exist
@@ -159,12 +162,12 @@ def validate_environment():
     evalset_files = list(evalsets_dir.glob("*.json"))
     
     if not evalset_files:
-        print("❌ Error: No evaluation sets found in tests/eval/evalsets/")
-        print("   Expected files: vana_agent_evalset.json, architecture_specialist_evalset.json, etc.")
+        logger.error("❌ Error: No evaluation sets found in tests/eval/evalsets/")
+        logger.debug("   Expected files: vana_agent_evalset.json, architecture_specialist_evalset.json, etc.")
         return False
     
-    print(f"✅ Found {len(evalset_files)} evaluation sets")
-    print("✅ Environment validation passed")
+    logger.debug(f"✅ Found {len(evalset_files)} evaluation sets")
+    logger.debug("✅ Environment validation passed")
     return True
 
 async def main():
@@ -241,35 +244,35 @@ Examples:
             )
 
         if results is None:
-            print("❌ No evaluation mode selected")
+            logger.debug("❌ No evaluation mode selected")
             return 1
 
-        print(f"\n🎉 Evaluation completed successfully!")
-        print(f"📊 Results saved in: tests/results/")
+        logger.info(f"\n🎉 Evaluation completed successfully!")
+        logger.info(f"📊 Results saved in: tests/results/")
 
         # Print quick summary
         if isinstance(results, dict):
             if "overall_metrics" in results:
                 metrics = results["overall_metrics"]
                 if isinstance(metrics, dict):
-                    print(f"\n📈 QUICK SUMMARY:")
+                    logger.debug(f"\n📈 QUICK SUMMARY:")
                     success_rate = metrics.get('overall_success_rate', metrics.get('test_success_rate', 0))
-                    print(f"   Success Rate: {success_rate:.1%}")
-                    print(f"   Avg Response Time: {metrics.get('average_response_time', 0):.2f}s")
-                    print(f"   Performance Grade: {metrics.get('performance_grade', 'N/A')}")
+                    logger.info(f"   Success Rate: {success_rate:.1%}")
+                    logger.debug("%s", f"   Avg Response Time: {metrics.get('average_response_time', 0):.2f}s")
+                    logger.debug("%s", f"   Performance Grade: {metrics.get('performance_grade', 'N/A')}")
 
                     # Special handling for coordination testing
                     if "task_9_completed" in metrics:
-                        print(f"   Task #9 Status: {'✅ COMPLETED' if metrics['task_9_completed'] else '❌ INCOMPLETE'}")
+                        logger.info("%s", f"   Task #9 Status: {'✅ COMPLETED' if metrics['task_9_completed'] else '❌ INCOMPLETE'}")
 
         return 0
         
     except KeyboardInterrupt:
-        print("\n⚠️ Evaluation interrupted by user")
+        logger.debug("\n⚠️ Evaluation interrupted by user")
         return 1
     except Exception as e:
-        print(f"\n❌ Evaluation failed: {str(e)}")
-        print(f"💡 Try running with --examples to see usage examples")
+        logger.error(f"\n❌ Evaluation failed: {str(e)}")
+        logger.debug(f"💡 Try running with --examples to see usage examples")
         return 1
 
 if __name__ == "__main__":

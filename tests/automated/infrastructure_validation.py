@@ -12,6 +12,9 @@ import time
 import os
 from datetime import datetime
 from typing import Dict, List, Any
+from lib.logging_config import get_logger
+logger = get_logger("vana.infrastructure_validation")
+
 
 class InfrastructureValidator:
     def __init__(self):
@@ -21,7 +24,7 @@ class InfrastructureValidator:
         
     def test_service_health(self) -> Dict[str, Any]:
         """TC-INF-001: Service Health Check"""
-        print("🔍 Testing service health endpoint...")
+        logger.debug("🔍 Testing service health endpoint...")
         
         try:
             start_time = time.time()
@@ -82,7 +85,7 @@ class InfrastructureValidator:
             
     def test_service_info(self) -> Dict[str, Any]:
         """TC-INF-002: Service Info Endpoint"""
-        print("🔍 Testing service info endpoint...")
+        logger.debug("🔍 Testing service info endpoint...")
         
         try:
             start_time = time.time()
@@ -137,7 +140,7 @@ class InfrastructureValidator:
             
     def test_agent_availability(self) -> Dict[str, Any]:
         """TC-INF-003: Agent Selection Endpoint"""
-        print("🔍 Testing agent availability...")
+        logger.debug("🔍 Testing agent availability...")
         
         try:
             start_time = time.time()
@@ -189,7 +192,7 @@ class InfrastructureValidator:
             
     def test_response_time_performance(self) -> Dict[str, Any]:
         """TC-INF-004: Response Time Performance"""
-        print("🔍 Testing response time performance...")
+        logger.debug("🔍 Testing response time performance...")
         
         try:
             # Test multiple endpoints for performance
@@ -235,8 +238,8 @@ class InfrastructureValidator:
             
     def run_all_tests(self) -> List[Dict[str, Any]]:
         """Execute all infrastructure tests"""
-        print("🏗️ Starting Infrastructure Validation Tests...")
-        print("=" * 50)
+        logger.info("🏗️ Starting Infrastructure Validation Tests...")
+        logger.debug("%s", "=" * 50)
         
         tests = [
             self.test_service_health,
@@ -248,23 +251,23 @@ class InfrastructureValidator:
         for test in tests:
             result = test()
             status_emoji = "✅" if result["status"] == "PASS" else "❌" if result["status"] == "FAIL" else "⚠️"
-            print(f"{status_emoji} {result['test_id']}: {result['name']} - {result['status']}")
+            logger.info("%s", f"{status_emoji} {result['test_id']}: {result['name']} - {result['status']}")
             
             if result["status"] == "FAIL":
-                print(f"   └─ Failure details: {result.get('error', 'See result data')}")
+                logger.error("%s", f"   └─ Failure details: {result.get('error', 'See result data')}")
             elif result["status"] == "ERROR":
-                print(f"   └─ Error: {result.get('error', 'Unknown error')}")
+                logger.error("%s", f"   └─ Error: {result.get('error', 'Unknown error')}")
                 
         # Calculate summary
         total_tests = len(self.results)
         passed_tests = sum(1 for r in self.results if r["status"] == "PASS")
         
-        print("\n" + "=" * 50)
-        print(f"📊 Infrastructure Tests Summary:")
-        print(f"   Total: {total_tests}")
-        print(f"   Passed: {passed_tests}")
-        print(f"   Success Rate: {(passed_tests/total_tests)*100:.1f}%")
-        print("=" * 50)
+        logger.debug("%s", "\n" + "=" * 50)
+        logger.debug(f"📊 Infrastructure Tests Summary:")
+        logger.debug(f"   Total: {total_tests}")
+        logger.debug(f"   Passed: {passed_tests}")
+        logger.info(f"   Success Rate: {(passed_tests/total_tests)*100:.1f}%")
+        logger.debug("%s", "=" * 50)
         
         return self.results
         
@@ -290,7 +293,7 @@ class InfrastructureValidator:
         with open(filepath, "w") as f:
             json.dump(results_data, f, indent=2)
             
-        print(f"💾 Results saved to: {filepath}")
+        logger.info(f"💾 Results saved to: {filepath}")
         return filepath
 
 if __name__ == "__main__":

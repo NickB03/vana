@@ -11,6 +11,9 @@ import yaml
 from typing import Dict, Any, Optional
 from .performance_monitor import PerformanceMonitor
 from .apm import APM
+from lib.logging_config import get_logger
+logger = get_logger("vana.lib.monitoring.integration")
+
 
 class MonitoringIntegration:
     """Integration utilities for VANA monitoring."""
@@ -31,7 +34,7 @@ class MonitoringIntegration:
                 with open(self.config_path, 'r') as f:
                     return yaml.safe_load(f)
         except Exception as e:
-            print(f"Warning: Could not load monitoring config: {e}")
+            logger.warning(f"Warning: Could not load monitoring config: {e}")
         
         # Default configuration
         return {

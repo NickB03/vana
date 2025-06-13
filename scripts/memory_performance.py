@@ -530,7 +530,7 @@ def generate_report(results: Dict[str, Any], output_file: Optional[str] = None) 
             f.write('\n'.join(report))
         logger.info(f"Report written to {output_file}")
     else:
-        print('\n'.join(report))
+        logger.info("%s", '\n'.join(report))
 
 def generate_charts(results: Dict[str, Any], output_dir: str) -> None:
     """

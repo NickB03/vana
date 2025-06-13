@@ -238,9 +238,9 @@ if __name__ == "__main__":
         try:
             # Alternate between success and failure
             result = cb.call(test_function, i % 2 == 0)
-            print(f"Call {i}: {result}")
+            logger.info(f"Call {i}: {result}")
         except Exception as e:
-            print(f"Call {i}: Error - {e}")
+            logger.error(f"Call {i}: Error - {e}")
         
         # Wait a bit between calls
         time.sleep(1)

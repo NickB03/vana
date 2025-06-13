@@ -23,29 +23,32 @@ sys.path.insert(0, str(project_root))
 
 from config.environment import EnvironmentConfig
 from dotenv import load_dotenv
+from lib.logging_config import get_logger
+logger = get_logger("vana.validate_adk_memory_config")
+
 
 def print_header(title):
     """Print a formatted header"""
-    print(f"\n{'='*60}")
-    print(f" {title}")
-    print(f"{'='*60}")
+    logger.info("%s", f"\n{'='*60}")
+    logger.info(f" {title}")
+    logger.info("%s", f"{'='*60}")
 
 def print_section(title):
     """Print a formatted section header"""
-    print(f"\n{'-'*40}")
-    print(f" {title}")
-    print(f"{'-'*40}")
+    logger.info("%s", f"\n{'-'*40}")
+    logger.info(f" {title}")
+    logger.info("%s", f"{'-'*40}")
 
 def print_status(status, message):
     """Print a status message with color coding"""
     if status == "success":
-        print(f"✅ {message}")
+        logger.info(f"✅ {message}")
     elif status == "warning":
-        print(f"⚠️  {message}")
+        logger.info(f"⚠️  {message}")
     elif status == "error":
-        print(f"❌ {message}")
+        logger.info(f"❌ {message}")
     else:
-        print(f"ℹ️  {message}")
+        logger.info(f"ℹ️  {message}")
 
 def validate_environment_file():
     """Validate that environment file exists and is readable"""
@@ -118,21 +121,21 @@ def validate_adk_memory_configuration():
         # Print configuration details
         config = validation_results.get("config", {})
         if config:
-            print("\nConfiguration Details:")
+            logger.info("\nConfiguration Details:")
             for key, value in config.items():
-                print(f"  {key}: {value}")
+                logger.info(f"  {key}: {value}")
         
         # Print errors
         errors = validation_results.get("errors", [])
         if errors:
-            print("\nConfiguration Errors:")
+            logger.error("\nConfiguration Errors:")
             for error in errors:
                 print_status("error", error)
         
         # Print warnings
         warnings = validation_results.get("warnings", [])
         if warnings:
-            print("\nConfiguration Warnings:")
+            logger.warning("\nConfiguration Warnings:")
             for warning in warnings:
                 print_status("warning", warning)
         
@@ -150,7 +153,7 @@ def check_migration_status():
         status = EnvironmentConfig.get_migration_status()
         
         phase = status.get("migration_phase", "unknown")
-        print(f"Migration Phase: {phase.upper()}")
+        logger.info(f"Migration Phase: {phase.upper()}")
         
         if phase == "complete":
             print_status("success", "Migration to ADK memory is complete")
@@ -160,15 +163,15 @@ def check_migration_status():
             print_status("info", "Migration to ADK memory is in planning phase")
         
         # Print status details
-        print(f"\nStatus Details:")
-        print(f"  ADK Memory Configured: {'✅' if status.get('adk_memory_configured') else '❌'}")
-        print(f"  MCP Variables Present: {'⚠️' if status.get('mcp_variables_present') else '✅'}")
-        print(f"  Configuration Valid: {'✅' if status.get('configuration_valid') else '❌'}")
+        logger.info(f"\nStatus Details:")
+        logger.info("%s", f"  ADK Memory Configured: {'✅' if status.get('adk_memory_configured') else '❌'}")
+        logger.info("%s", f"  MCP Variables Present: {'⚠️' if status.get('mcp_variables_present') else '✅'}")
+        logger.info("%s", f"  Configuration Valid: {'✅' if status.get('configuration_valid') else '❌'}")
         
         # Print recommendations
         recommendations = status.get("recommendations", [])
         if recommendations:
-            print("\nRecommendations:")
+            logger.info("\nRecommendations:")
             for rec in recommendations:
                 print_status("info", rec)
         
@@ -200,11 +203,11 @@ def check_deprecated_variables():
     
     if found_deprecated:
         print_status("warning", f"Found {len(found_deprecated)} deprecated variables")
-        print("\nTo remove deprecated variables:")
-        print("1. Edit your .env file")
-        print("2. Remove or comment out the following lines:")
+        logger.warning("\nTo remove deprecated variables:")
+        logger.info("1. Edit your .env file")
+        logger.info("2. Remove or comment out the following lines:")
         for var in found_deprecated:
-            print(f"   # {var}=...")
+            logger.info(f"   # {var}=...")
     else:
         print_status("success", "No deprecated variables found")
     
@@ -259,17 +262,17 @@ def generate_summary_report(results):
     total_checks = len(results)
     passed_checks = sum(1 for result in results.values() if result)
     
-    print(f"Total Checks: {total_checks}")
-    print(f"Passed: {passed_checks}")
-    print(f"Failed: {total_checks - passed_checks}")
-    print(f"Success Rate: {(passed_checks/total_checks)*100:.1f}%")
+    logger.info(f"Total Checks: {total_checks}")
+    logger.info(f"Passed: {passed_checks}")
+    logger.error(f"Failed: {total_checks - passed_checks}")
+    logger.info(f"Success Rate: {(passed_checks/total_checks)*100:.1f}%")
     
     if passed_checks == total_checks:
         print_status("success", "All validation checks passed!")
-        print("\n🎉 Your ADK memory configuration is ready for use!")
+        logger.info("\n🎉 Your ADK memory configuration is ready for use!")
     else:
         print_status("warning", "Some validation checks failed")
-        print("\n📋 Please review the errors above and update your configuration")
+        logger.error("\n📋 Please review the errors above and update your configuration")
     
     return passed_checks == total_checks
 
@@ -286,8 +289,8 @@ def main():
     load_dotenv()
     
     print_header("VANA ADK Memory Configuration Validation")
-    print(f"Environment: {os.environ.get('VANA_ENV', 'development')}")
-    print(f"Project Root: {project_root}")
+    logger.info("%s", f"Environment: {os.environ.get('VANA_ENV', 'development')}")
+    logger.info(f"Project Root: {project_root}")
     
     # Fix permissions if requested
     if args.fix_permissions:
@@ -314,7 +317,7 @@ def main():
             "environment": os.environ.get("VANA_ENV", "development"),
             "timestamp": str(Path(__file__).stat().st_mtime)
         }
-        print(f"\nJSON Output:\n{json.dumps(json_output, indent=2)}")
+        logger.debug(f"\nJSON Output:\n{json.dumps(json_output, indent=2)}")
     
     # Exit with appropriate code
     sys.exit(0 if all_passed else 1)

@@ -1,3 +1,6 @@
+from lib.logging_config import get_logger
+logger = get_logger("vana.demo")
+
 # Dashboard Demo Configuration (Production-like)
 # This configuration is intended for demonstration purposes and simulates a production environment.
 # For actual production deployment, further security hardening is recommended.
@@ -5,7 +8,7 @@
 # Flask App settings
 DEBUG = False
 # Generate a strong random key for production use
-# You can use Python to generate one: import secrets; print(secrets.token_hex(32))
+# You can use Python to generate one: import secrets; logger.debug("%s", secrets.token_hex(32))
 SECRET_KEY = 'a7f9c8e2d4b6a1f3e8c9d2b5a7f4e1c6b9d8a3f7e2c5b8a1f4e7c9d6b3a8f5e2c1'
 
 # API Settings

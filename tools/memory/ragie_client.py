@@ -1,12 +1,15 @@
 import requests
 import os
 from typing import List, Dict, Any, Optional
+from lib.logging_config import get_logger
+logger = get_logger("vana.tools.memory.ragie_client")
+
 
 def query_memory(
     prompt: str,
     top_k: int = 5,
     api_key: Optional[str] = None,
-    debug: bool = True  # Add debug parameter
+    debug: bool = False
 ) -> List[Dict[Any, Any]]:
     """
     Query the Ragie.ai knowledge base for relevant information.
@@ -36,9 +39,9 @@ def query_memory(
     }
 
     if debug:
-        print(f"\n[DEBUG] Querying Ragie API with prompt: {prompt}")
-        print(f"[DEBUG] API endpoint: https://api.ragie.ai/retrievals")
-        print(f"[DEBUG] Payload: {payload}")
+        logger.debug(f"\n[DEBUG] Querying Ragie API with prompt: {prompt}")
+        logger.debug(f"[DEBUG] API endpoint: https://api.ragie.ai/retrievals")
+        logger.debug(f"[DEBUG] Payload: {payload}")
 
     try:
         response = requests.post(
@@ -52,16 +55,16 @@ def query_memory(
         results = response.json().get("scored_chunks", [])
 
         if debug:
-            print(f"[DEBUG] Received {len(results)} results from Ragie API")
+            logger.debug(f"[DEBUG] Received {len(results)} results from Ragie API")
             for i, result in enumerate(results):
-                print(f"[DEBUG] Result {i+1}: {result.get('text', '')[:100]}...")
+                logger.debug("%s", f"[DEBUG] Result {i+1}: {result.get('text', '')[:100]}...")
 
         return results
     except Exception as e:
-        print(f"Error querying memory: {e}")
+        logger.error(f"Error querying memory: {e}")
         return []
 
-def format_memory_results(results: List[Dict[Any, Any]], debug: bool = True) -> str:
+def format_memory_results(results: List[Dict[Any, Any]], debug: bool = False) -> str:
     """
     Format memory results into a readable string.
 
@@ -74,11 +77,11 @@ def format_memory_results(results: List[Dict[Any, Any]], debug: bool = True) -> 
     """
     if not results:
         if debug:
-            print("[DEBUG] No results to format")
+            logger.debug("[DEBUG] No results to format")
         return "No relevant information found in memory."
 
     if debug:
-        print(f"[DEBUG] Formatting {len(results)} memory results")
+        logger.debug(f"[DEBUG] Formatting {len(results)} memory results")
 
     formatted = []
     for i, result in enumerate(results, 1):
@@ -87,12 +90,12 @@ def format_memory_results(results: List[Dict[Any, Any]], debug: bool = True) -> 
         score = result.get("score", 0)
 
         if debug:
-            print(f"[DEBUG] Formatting result {i}: Score={score:.2f}, Source={source}")
-            print(f"[DEBUG] Text preview: {text[:50]}...")
+            logger.debug(f"[DEBUG] Formatting result {i}: Score={score:.2f}, Source={source}")
+            logger.debug(f"[DEBUG] Text preview: {text[:50]}...")
 
         formatted.append(f"[{i}] {text}\nSource: {source} (Score: {score:.2f})")
 
     if debug:
-        print("[DEBUG] Formatting complete")
+        logger.debug("[DEBUG] Formatting complete")
 
     return "\n\n".join(formatted)

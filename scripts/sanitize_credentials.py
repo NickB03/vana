@@ -13,6 +13,9 @@ import re
 import glob
 from pathlib import Path
 from typing import List, Dict, Tuple
+from lib.logging_config import get_logger
+logger = get_logger("vana.sanitize_credentials")
+
 
 # Hardcoded values to replace
 CREDENTIAL_MAPPINGS = {
@@ -90,7 +93,7 @@ def sanitize_file(file_path: str) -> Tuple[bool, List[str]]:
         return False, []
         
     except Exception as e:
-        print(f"❌ Error processing {file_path}: {e}")
+        logger.error(f"❌ Error processing {file_path}: {e}")
         return False, []
 
 def find_files_to_sanitize() -> List[str]:
@@ -133,27 +136,27 @@ BRAVE_API_KEY=your-brave-api-key
     with open('.env.template', 'w') as f:
         f.write(template_content)
     
-    print("✅ Created .env.template with sanitized placeholders")
+    logger.info("✅ Created .env.template with sanitized placeholders")
 
 def main():
     """Main sanitization process."""
-    print("🧹 VANA Credential Sanitization")
-    print("=" * 50)
+    logger.info("🧹 VANA Credential Sanitization")
+    logger.info("%s", "=" * 50)
     
     # Find files to process
     files_to_sanitize = find_files_to_sanitize()
     
     if not files_to_sanitize:
-        print("✅ No files found that need sanitization!")
+        logger.info("✅ No files found that need sanitization!")
         return
     
-    print(f"📁 Found {len(files_to_sanitize)} files to sanitize:")
+    logger.info(f"📁 Found {len(files_to_sanitize)} files to sanitize:")
     for file_path in files_to_sanitize[:10]:  # Show first 10
-        print(f"  - {file_path}")
+        logger.info(f"  - {file_path}")
     if len(files_to_sanitize) > 10:
-        print(f"  ... and {len(files_to_sanitize) - 10} more")
+        logger.info(f"  ... and {len(files_to_sanitize) - 10} more")
     
-    print("\n🚀 Starting sanitization...")
+    logger.info("\n🚀 Starting sanitization...")
     
     modified_count = 0
     total_changes = 0
@@ -163,25 +166,25 @@ def main():
         if was_modified:
             modified_count += 1
             total_changes += len(changes)
-            print(f"✅ Sanitized: {file_path}")
+            logger.info(f"✅ Sanitized: {file_path}")
             for change in changes:
-                print(f"    - {change}")
+                logger.info(f"    - {change}")
         else:
-            print(f"⏭️  No changes: {file_path}")
+            logger.info(f"⏭️  No changes: {file_path}")
     
     # Create environment template
     create_environment_template()
     
-    print(f"\n🎉 Sanitization complete!")
-    print(f"✅ Modified {modified_count} files")
-    print(f"🔄 Applied {total_changes} credential replacements")
-    print(f"📝 Created .env.template for configuration")
+    logger.info(f"\n🎉 Sanitization complete!")
+    logger.info(f"✅ Modified {modified_count} files")
+    logger.info(f"🔄 Applied {total_changes} credential replacements")
+    logger.info(f"📝 Created .env.template for configuration")
     
-    print("\n⚠️  IMPORTANT NEXT STEPS:")
-    print("1. Review all changes before committing")
-    print("2. Update deployment scripts to use environment variables")
-    print("3. Configure secrets in your deployment environment")
-    print("4. Test all functionality with new configuration")
+    logger.info("\n⚠️  IMPORTANT NEXT STEPS:")
+    logger.info("1. Review all changes before committing")
+    logger.info("2. Update deployment scripts to use environment variables")
+    logger.info("3. Configure secrets in your deployment environment")
+    logger.info("4. Test all functionality with new configuration")
 
 if __name__ == "__main__":
     main()

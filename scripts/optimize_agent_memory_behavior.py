@@ -395,17 +395,17 @@ def main():
     optimizer.create_memory_examples_file()
     
     if success:
-        print(f"\n🎉 Agent Memory Optimization Completed Successfully!")
-        print(f"📊 Total agents optimized: {optimizer.optimized_count}")
-        print(f"🧠 Agents now use memory-first decision strategy")
+        logger.info(f"\n🎉 Agent Memory Optimization Completed Successfully!")
+        logger.info(f"📊 Total agents optimized: {optimizer.optimized_count}")
+        logger.info(f"🧠 Agents now use memory-first decision strategy")
         
         if not args.dry_run:
-            print(f"\n🚀 Next steps:")
-            print(f"1. Test agent behavior with memory-first strategy")
-            print(f"2. Validate proactive memory usage")
-            print(f"3. Monitor memory search patterns")
+            logger.info(f"\n🚀 Next steps:")
+            logger.info(f"1. Test agent behavior with memory-first strategy")
+            logger.info(f"2. Validate proactive memory usage")
+            logger.info(f"3. Monitor memory search patterns")
     else:
-        print(f"\n❌ Agent optimization failed. Check logs for details.")
+        logger.error(f"\n❌ Agent optimization failed. Check logs for details.")
         sys.exit(1)
 
 if __name__ == "__main__":

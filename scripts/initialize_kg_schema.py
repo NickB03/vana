@@ -10,6 +10,9 @@ import sys
 import requests
 import json
 from dotenv import load_dotenv
+from lib.logging_config import get_logger
+logger = get_logger("vana.initialize_kg_schema")
+
 
 # Add project root to path for imports
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
@@ -24,7 +27,7 @@ def initialize_kg_schema():
     namespace = os.environ.get("MCP_NAMESPACE", "vana-dev")
     api_key = os.environ.get("MCP_API_KEY", "local_dev_key")
     
-    print(f"Initializing Knowledge Graph schema at {endpoint}/{namespace}...")
+    logger.info(f"Initializing Knowledge Graph schema at {endpoint}/{namespace}...")
     
     headers = {
         "Content-Type": "application/json",
@@ -62,11 +65,11 @@ def initialize_kg_schema():
             )
             
             if response.status_code == 200:
-                print(f"✅ Initialized entity type: {entity_type}")
+                logger.info(f"✅ Initialized entity type: {entity_type}")
             else:
-                print(f"❌ Failed to initialize entity type {entity_type}: {response.text}")
+                logger.error(f"❌ Failed to initialize entity type {entity_type}: {response.text}")
         except Exception as e:
-            print(f"❌ Error initializing entity type {entity_type}: {e}")
+            logger.error(f"❌ Error initializing entity type {entity_type}: {e}")
     
     # Create relationships between sample entities
     try:
@@ -102,17 +105,17 @@ def initialize_kg_schema():
                 )
                 
                 if response.status_code == 200:
-                    print(f"✅ Initialized relationship: related_to")
+                    logger.info(f"✅ Initialized relationship: related_to")
                 else:
-                    print(f"❌ Failed to initialize relationship: {response.text}")
+                    logger.error(f"❌ Failed to initialize relationship: {response.text}")
             else:
-                print("⚠️ Not enough entities to create a relationship")
+                logger.info("⚠️ Not enough entities to create a relationship")
         else:
-            print(f"❌ Failed to retrieve entities: {response.text}")
+            logger.error(f"❌ Failed to retrieve entities: {response.text}")
     except Exception as e:
-        print(f"❌ Error initializing relationships: {e}")
+        logger.error(f"❌ Error initializing relationships: {e}")
     
-    print("Knowledge Graph schema initialization complete!")
+    logger.info("Knowledge Graph schema initialization complete!")
 
 if __name__ == "__main__":
     initialize_kg_schema()

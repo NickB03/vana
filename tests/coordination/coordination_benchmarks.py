@@ -23,6 +23,9 @@ import json
 sys.path.append(str(Path(__file__).parent.parent.parent))
 
 from lib._tools.adk_tools import (
+from lib.logging_config import get_logger
+logger = get_logger("vana.coordination_benchmarks")
+
     coordinate_task, delegate_to_agent, get_agent_status,
     get_workflow_templates, create_workflow, list_workflows
 )
@@ -51,8 +54,8 @@ class CoordinationBenchmarks:
     
     async def run_all_benchmarks(self) -> Dict[str, Any]:
         """Run all coordination performance benchmarks"""
-        print("⚡ Starting Coordination Performance Benchmarks")
-        print("=" * 60)
+        logger.info("⚡ Starting Coordination Performance Benchmarks")
+        logger.debug("%s", "=" * 60)
         
         # Run individual benchmarks
         await self._benchmark_basic_coordination()
@@ -70,8 +73,8 @@ class CoordinationBenchmarks:
     
     async def _benchmark_basic_coordination(self):
         """Benchmark basic coordination operations"""
-        print("\n🔧 Benchmarking Basic Coordination Operations")
-        print("-" * 50)
+        logger.debug("\n🔧 Benchmarking Basic Coordination Operations")
+        logger.debug("%s", "-" * 50)
         
         # Test coordinate_task performance
         await self._run_benchmark(
@@ -96,8 +99,8 @@ class CoordinationBenchmarks:
     
     async def _benchmark_workflow_operations(self):
         """Benchmark workflow management operations"""
-        print("\n🔄 Benchmarking Workflow Operations")
-        print("-" * 50)
+        logger.debug("\n🔄 Benchmarking Workflow Operations")
+        logger.debug("%s", "-" * 50)
         
         # Test workflow template retrieval
         await self._run_benchmark(
@@ -126,8 +129,8 @@ class CoordinationBenchmarks:
     
     async def _benchmark_concurrent_operations(self):
         """Benchmark concurrent coordination operations"""
-        print("\n🔀 Benchmarking Concurrent Operations")
-        print("-" * 50)
+        logger.debug("\n🔀 Benchmarking Concurrent Operations")
+        logger.debug("%s", "-" * 50)
         
         # Test concurrent coordination tasks
         await self._run_concurrent_benchmark(
@@ -151,8 +154,8 @@ class CoordinationBenchmarks:
     
     async def _benchmark_stress_testing(self):
         """Benchmark system under stress conditions"""
-        print("\n💪 Stress Testing Coordination System")
-        print("-" * 50)
+        logger.debug("\n💪 Stress Testing Coordination System")
+        logger.debug("%s", "-" * 50)
         
         # High-frequency coordination requests
         await self._run_benchmark(
@@ -172,7 +175,7 @@ class CoordinationBenchmarks:
     
     async def _run_benchmark(self, test_name: str, operation_func, iterations: int = 10, delay_between_operations: float = 0.0):
         """Run a performance benchmark for a specific operation"""
-        print(f"  Running {test_name} ({iterations} iterations)...")
+        logger.debug(f"  Running {test_name} ({iterations} iterations)...")
         
         times = []
         successful = 0
@@ -199,7 +202,7 @@ class CoordinationBenchmarks:
                 operation_time = time.time() - operation_start
                 times.append(operation_time)
                 failed += 1
-                print(f"    Operation {i+1} failed: {str(e)[:50]}...")
+                logger.error(f"    Operation {i+1} failed: {str(e)[:50]}...")
             
             if delay_between_operations > 0:
                 await asyncio.sleep(delay_between_operations)
@@ -224,14 +227,14 @@ class CoordinationBenchmarks:
             )
             
             self.results.append(result)
-            print(f"    ✅ Completed: {successful}/{iterations} successful ({result.success_rate:.1%})")
-            print(f"    ⏱️  Avg time: {result.average_time:.3f}s, Ops/sec: {result.operations_per_second:.1f}")
+            logger.info(f"    ✅ Completed: {successful}/{iterations} successful ({result.success_rate:.1%})")
+            logger.info(f"    ⏱️  Avg time: {result.average_time:.3f}s, Ops/sec: {result.operations_per_second:.1f}")
         else:
-            print(f"    ❌ No valid timing data collected")
+            logger.debug(f"    ❌ No valid timing data collected")
     
     async def _run_concurrent_benchmark(self, test_name: str, operation_func, concurrent_operations: int = 5, iterations: int = 3):
         """Run concurrent operations benchmark"""
-        print(f"  Running {test_name} ({concurrent_operations} concurrent ops, {iterations} iterations)...")
+        logger.debug(f"  Running {test_name} ({concurrent_operations} concurrent ops, {iterations} iterations)...")
         
         all_times = []
         total_successful = 0
@@ -288,8 +291,8 @@ class CoordinationBenchmarks:
             )
             
             self.results.append(result)
-            print(f"    ✅ Completed: {total_successful}/{total_operations} successful ({result.success_rate:.1%})")
-            print(f"    ⏱️  Avg time: {result.average_time:.3f}s, Ops/sec: {result.operations_per_second:.1f}")
+            logger.info(f"    ✅ Completed: {total_successful}/{total_operations} successful ({result.success_rate:.1%})")
+            logger.info(f"    ⏱️  Avg time: {result.average_time:.3f}s, Ops/sec: {result.operations_per_second:.1f}")
     
     async def _timed_operation(self, operation_func) -> Tuple[float, bool]:
         """Execute an operation with timing"""
@@ -372,27 +375,27 @@ class CoordinationBenchmarks:
         summary = report["benchmark_summary"]
         targets = report["performance_targets"]
         
-        print("\n" + "=" * 60)
-        print("⚡ COORDINATION PERFORMANCE SUMMARY")
-        print("=" * 60)
+        logger.debug("%s", "\n" + "=" * 60)
+        logger.debug("⚡ COORDINATION PERFORMANCE SUMMARY")
+        logger.debug("%s", "=" * 60)
         
-        print(f"📊 Overall Performance:")
-        print(f"   Success Rate: {summary['overall_success_rate']:.1%}")
-        print(f"   Avg Response Time: {summary['overall_avg_response_time']:.3f}s")
-        print(f"   Operations/Second: {summary['overall_ops_per_second']:.1f}")
-        print(f"   Performance Grade: {summary['performance_grade']}")
+        logger.debug(f"📊 Overall Performance:")
+        logger.info("%s", f"   Success Rate: {summary['overall_success_rate']:.1%}")
+        logger.debug("%s", f"   Avg Response Time: {summary['overall_avg_response_time']:.3f}s")
+        logger.debug("%s", f"   Operations/Second: {summary['overall_ops_per_second']:.1f}")
+        logger.debug("%s", f"   Performance Grade: {summary['performance_grade']}")
         
-        print(f"\n🎯 Target Achievement:")
-        print(f"   Success Rate Target (90%): {'✅ ACHIEVED' if targets['success_rate_achieved'] else '❌ MISSED'}")
-        print(f"   Response Time Target (5s): {'✅ ACHIEVED' if targets['response_time_achieved'] else '❌ MISSED'}")
+        logger.debug(f"\n🎯 Target Achievement:")
+        logger.info("%s", f"   Success Rate Target (90%): {'✅ ACHIEVED' if targets['success_rate_achieved'] else '❌ MISSED'}")
+        logger.debug("%s", f"   Response Time Target (5s): {'✅ ACHIEVED' if targets['response_time_achieved'] else '❌ MISSED'}")
 
     async def run_sustained_load_testing(self) -> Dict[str, Any]:
         """Run sustained load testing for Task #10 performance validation"""
-        print("\n🚀 TASK #10: SUSTAINED LOAD TESTING")
-        print("=" * 60)
-        print("Testing system performance under sustained load conditions")
-        print("Target: Maintain >90% success rate and <5s response times")
-        print("-" * 60)
+        logger.debug("\n🚀 TASK #10: SUSTAINED LOAD TESTING")
+        logger.debug("%s", "=" * 60)
+        logger.debug("Testing system performance under sustained load conditions")
+        logger.info("Target: Maintain >90% success rate and <5s response times")
+        logger.debug("%s", "-" * 60)
 
         # Extended load testing scenarios
         await self._benchmark_sustained_coordination_load()
@@ -410,8 +413,8 @@ class CoordinationBenchmarks:
 
     async def _benchmark_sustained_coordination_load(self):
         """Test sustained coordination operations over extended period"""
-        print("\n⏱️  Sustained Coordination Load Testing")
-        print("-" * 50)
+        logger.debug("\n⏱️  Sustained Coordination Load Testing")
+        logger.debug("%s", "-" * 50)
 
         # 5-minute sustained coordination test
         await self._run_benchmark(
@@ -431,8 +434,8 @@ class CoordinationBenchmarks:
 
     async def _benchmark_sustained_workflow_load(self):
         """Test sustained workflow operations"""
-        print("\n🔄 Sustained Workflow Load Testing")
-        print("-" * 50)
+        logger.debug("\n🔄 Sustained Workflow Load Testing")
+        logger.debug("%s", "-" * 50)
 
         # Sustained workflow creation
         await self._run_benchmark(
@@ -456,8 +459,8 @@ class CoordinationBenchmarks:
 
     async def _benchmark_peak_concurrent_load(self):
         """Test peak concurrent load handling"""
-        print("\n🔀 Peak Concurrent Load Testing")
-        print("-" * 50)
+        logger.debug("\n🔀 Peak Concurrent Load Testing")
+        logger.debug("%s", "-" * 50)
 
         # High concurrency coordination
         await self._run_concurrent_benchmark(
@@ -477,8 +480,8 @@ class CoordinationBenchmarks:
 
     async def _benchmark_endurance_testing(self):
         """Test system endurance under continuous load"""
-        print("\n💪 Endurance Testing")
-        print("-" * 50)
+        logger.debug("\n💪 Endurance Testing")
+        logger.debug("%s", "-" * 50)
 
         # 10-minute endurance test with mixed operations
         start_time = time.time()
@@ -505,7 +508,7 @@ class CoordinationBenchmarks:
             # Progress update every minute
             elapsed = time.time() - start_time
             if iteration_count % 60 == 0:
-                print(f"    Endurance progress: {elapsed/60:.1f}/10 minutes ({iteration_count} operations)")
+                logger.debug(f"    Endurance progress: {elapsed/60:.1f}/10 minutes ({iteration_count} operations)")
 
     def _generate_load_testing_report(self) -> Dict[str, Any]:
         """Generate comprehensive load testing report for Task #10"""
@@ -563,39 +566,39 @@ class CoordinationBenchmarks:
     def _print_load_testing_summary(self, report: Dict[str, Any]):
         """Print load testing summary for Task #10"""
         if "load_testing_summary" not in report:
-            print("❌ No load testing data available")
+            logger.debug("❌ No load testing data available")
             return
 
         load_summary = report["load_testing_summary"]
         task_10 = report["task_10_validation"]
 
-        print("\n" + "=" * 60)
-        print("🚀 TASK #10: LOAD TESTING RESULTS")
-        print("=" * 60)
+        logger.debug("%s", "\n" + "=" * 60)
+        logger.info("🚀 TASK #10: LOAD TESTING RESULTS")
+        logger.debug("%s", "=" * 60)
 
-        print(f"📊 Load Performance Metrics:")
-        print(f"   Success Rate Under Load: {load_summary['load_success_rate']:.1%}")
-        print(f"   Avg Response Time Under Load: {load_summary['load_avg_response_time']:.3f}s")
-        print(f"   Max Response Time Under Load: {load_summary['load_max_response_time']:.3f}s")
-        print(f"   Total Load Operations: {load_summary['total_load_operations']}")
-        print(f"   Performance Degradation: {load_summary['performance_degradation_factor']:.2f}x")
-        print(f"   Load Performance Grade: {load_summary['load_performance_grade']}")
+        logger.debug(f"📊 Load Performance Metrics:")
+        logger.info("%s", f"   Success Rate Under Load: {load_summary['load_success_rate']:.1%}")
+        logger.debug("%s", f"   Avg Response Time Under Load: {load_summary['load_avg_response_time']:.3f}s")
+        logger.debug("%s", f"   Max Response Time Under Load: {load_summary['load_max_response_time']:.3f}s")
+        logger.debug("%s", f"   Total Load Operations: {load_summary['total_load_operations']}")
+        logger.debug("%s", f"   Performance Degradation: {load_summary['performance_degradation_factor']:.2f}x")
+        logger.debug("%s", f"   Load Performance Grade: {load_summary['load_performance_grade']}")
 
-        print(f"\n🎯 Task #10 Validation:")
-        print(f"   Success Rate Target (90%): {'✅ ACHIEVED' if task_10['success_rate_achieved'] else '❌ MISSED'}")
-        print(f"   Response Time Target (5s): {'✅ ACHIEVED' if task_10['response_time_achieved'] else '❌ MISSED'}")
-        print(f"   Task #10 Status: {'✅ COMPLETE' if task_10['task_10_complete'] else '❌ INCOMPLETE'}")
+        logger.debug(f"\n🎯 Task #10 Validation:")
+        logger.info("%s", f"   Success Rate Target (90%): {'✅ ACHIEVED' if task_10['success_rate_achieved'] else '❌ MISSED'}")
+        logger.debug("%s", f"   Response Time Target (5s): {'✅ ACHIEVED' if task_10['response_time_achieved'] else '❌ MISSED'}")
+        logger.debug("%s", f"   Task #10 Status: {'✅ COMPLETE' if task_10['task_10_complete'] else '❌ INCOMPLETE'}")
 
 async def main():
     """Main entry point for benchmarks"""
     benchmarks = CoordinationBenchmarks()
 
     # Run standard benchmarks first
-    print("🔧 Running Standard Performance Benchmarks...")
+    logger.debug("🔧 Running Standard Performance Benchmarks...")
     standard_report = await benchmarks.run_all_benchmarks()
 
     # Run Task #10 sustained load testing
-    print("\n🚀 Running Task #10 Sustained Load Testing...")
+    logger.debug("\n🚀 Running Task #10 Sustained Load Testing...")
     load_report = await benchmarks.run_sustained_load_testing()
 
     # Save reports
@@ -616,8 +619,8 @@ async def main():
     with open(load_filepath, 'w') as f:
         json.dump(load_report, f, indent=2, default=str)
 
-    print(f"\n📊 Standard benchmark report saved to: {standard_filepath}")
-    print(f"📊 Task #10 load testing report saved to: {load_filepath}")
+    logger.debug(f"\n📊 Standard benchmark report saved to: {standard_filepath}")
+    logger.debug(f"📊 Task #10 load testing report saved to: {load_filepath}")
 
     # Return exit code based on Task #10 performance
     if "task_10_validation" in load_report:

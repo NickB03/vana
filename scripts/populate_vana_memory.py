@@ -403,17 +403,17 @@ async def main():
         # Test the populated memory
         await populator.test_memory_search()
         
-        print(f"\n🎉 VANA Memory Population Completed Successfully!")
-        print(f"📊 Total items populated: {populator.populated_count}")
-        print(f"🧠 Memory systems are now ready for intelligent agent interactions")
+        logger.info(f"\n🎉 VANA Memory Population Completed Successfully!")
+        logger.info(f"📊 Total items populated: {populator.populated_count}")
+        logger.info(f"🧠 Memory systems are now ready for intelligent agent interactions")
         
         if not args.dry_run:
-            print(f"\n🚀 Next steps:")
-            print(f"1. Deploy updated system to vana-dev")
-            print(f"2. Test agent memory usage with real queries")
-            print(f"3. Validate knowledge-based responses")
+            logger.info(f"\n🚀 Next steps:")
+            logger.info(f"1. Deploy updated system to vana-dev")
+            logger.info(f"2. Test agent memory usage with real queries")
+            logger.info(f"3. Validate knowledge-based responses")
     else:
-        print(f"\n❌ Memory population failed. Check logs for details.")
+        logger.error(f"\n❌ Memory population failed. Check logs for details.")
         sys.exit(1)
 
 if __name__ == "__main__":

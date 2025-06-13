@@ -7,14 +7,17 @@ import sys
 import subprocess
 import time
 from pathlib import Path
+from lib.logging_config import get_logger
+logger = get_logger("vana.run_sandbox_tests")
+
 
 
 def run_command(command, description):
     """Run a command and return success status."""
-    print(f"\n{'='*60}")
-    print(f"Running: {description}")
-    print(f"Command: {' '.join(command)}")
-    print(f"{'='*60}")
+    logger.debug("%s", f"\n{'='*60}")
+    logger.debug(f"Running: {description}")
+    logger.debug("%s", f"Command: {' '.join(command)}")
+    logger.debug("%s", f"{'='*60}")
     
     start_time = time.time()
     
@@ -22,38 +25,38 @@ def run_command(command, description):
         result = subprocess.run(command, capture_output=True, text=True, check=True)
         duration = time.time() - start_time
         
-        print(f"✅ SUCCESS ({duration:.2f}s)")
+        logger.info(f"✅ SUCCESS ({duration:.2f}s)")
         if result.stdout:
-            print("STDOUT:")
-            print(result.stdout)
+            logger.debug("STDOUT:")
+            logger.info("%s", result.stdout)
         
         return True
         
     except subprocess.CalledProcessError as e:
         duration = time.time() - start_time
         
-        print(f"❌ FAILED ({duration:.2f}s)")
-        print(f"Exit code: {e.returncode}")
+        logger.error(f"❌ FAILED ({duration:.2f}s)")
+        logger.debug(f"Exit code: {e.returncode}")
         
         if e.stdout:
-            print("STDOUT:")
-            print(e.stdout)
+            logger.debug("STDOUT:")
+            logger.debug("%s", e.stdout)
         
         if e.stderr:
-            print("STDERR:")
-            print(e.stderr)
+            logger.debug("STDERR:")
+            logger.debug("%s", e.stderr)
         
         return False
 
 
 def main():
     """Run comprehensive sandbox tests."""
-    print("🚀 Starting Sandbox Infrastructure Test Suite")
-    print(f"Python version: {sys.version}")
+    logger.info("🚀 Starting Sandbox Infrastructure Test Suite")
+    logger.debug(f"Python version: {sys.version}")
     
     # Change to project root
     project_root = Path(__file__).parent.parent.parent
-    print(f"Project root: {project_root}")
+    logger.debug(f"Project root: {project_root}")
     
     # Test commands to run
     test_commands = [
@@ -105,24 +108,24 @@ def main():
         results.append((description, success))
     
     # Summary
-    print(f"\n{'='*60}")
-    print("TEST SUMMARY")
-    print(f"{'='*60}")
+    logger.debug("%s", f"\n{'='*60}")
+    logger.debug("TEST SUMMARY")
+    logger.debug("%s", f"{'='*60}")
     
     passed = sum(1 for _, success in results if success)
     total = len(results)
     
     for description, success in results:
         status = "✅ PASS" if success else "❌ FAIL"
-        print(f"{status} {description}")
+        logger.debug(f"{status} {description}")
     
-    print(f"\nOverall: {passed}/{total} test suites passed")
+    logger.debug(f"\nOverall: {passed}/{total} test suites passed")
     
     if passed == total:
-        print("🎉 All tests passed! Sandbox infrastructure is ready.")
+        logger.debug("🎉 All tests passed! Sandbox infrastructure is ready.")
         return 0
     else:
-        print("⚠️  Some tests failed. Please review the output above.")
+        logger.error("⚠️  Some tests failed. Please review the output above.")
         return 1
 
 

@@ -27,8 +27,11 @@ def run_tests(with_coverage=False):
     if with_coverage:
         try:
             import coverage
+from lib.logging_config import get_logger
+logger = get_logger("vana.run_all_tests")
+
         except ImportError:
-            print("Coverage package not installed. Run 'pip install coverage' first.")
+            logger.debug("%s", "Coverage package not installed. Run 'pip install coverage' first.")
             return False
             
         # Start coverage
@@ -52,13 +55,13 @@ def run_tests(with_coverage=False):
         cov.save()
         
         # Print coverage report
-        print("\nCoverage Report:")
+        logger.debug("\nCoverage Report:")
         cov.report()
         
         # Generate HTML report
         html_dir = os.path.join(os.path.dirname(start_dir), "coverage_html")
         cov.html_report(directory=html_dir)
-        print(f"\nHTML coverage report generated in: {os.path.abspath(html_dir)}")
+        logger.debug(f"\nHTML coverage report generated in: {os.path.abspath(html_dir)}")
     
     return result.wasSuccessful()
 

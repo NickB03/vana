@@ -38,7 +38,7 @@ try:
     from agents.specialists.agent_tools import specialist_agent_tools
     SPECIALIST_TOOLS_AVAILABLE = True
 except ImportError as e:
-    print(f"Warning: Specialist tools not available: {e}")
+    logger.warning(f"Warning: Specialist tools not available: {e}")
     specialist_agent_tools = []
     SPECIALIST_TOOLS_AVAILABLE = False
 
@@ -52,6 +52,9 @@ try:
     )
 
     from agents.memory.specialist_memory_manager import (
+from lib.logging_config import get_logger
+logger = get_logger("vana.agents.vana.team_original")
+
         save_specialist_knowledge_func,
         get_specialist_knowledge_func
     )
@@ -67,10 +70,10 @@ try:
     ]
 
     ORCHESTRATION_TOOLS_AVAILABLE = True
-    print("✅ Advanced orchestration capabilities loaded successfully")
+    logger.info("✅ Advanced orchestration capabilities loaded successfully")
 
 except ImportError as e:
-    print(f"Warning: Advanced orchestration tools not available: {e}")
+    logger.warning(f"Warning: Advanced orchestration tools not available: {e}")
     orchestration_tools = []
     ORCHESTRATION_TOOLS_AVAILABLE = False
 

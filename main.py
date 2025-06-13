@@ -13,9 +13,10 @@ import logging
 from fastapi import FastAPI, Request
 from google.adk.cli.fast_api import get_fast_api_app
 
-# Configure logging first
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+# Configure centralized logging first
+from lib.logging_config import setup_logging
+setup_logging()
+logger = logging.getLogger("vana.main")
 
 # Ensure current directory is in Python path for lib imports
 current_dir = os.path.dirname(os.path.abspath(__file__))

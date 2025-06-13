@@ -390,13 +390,13 @@ def main():
     
     # Output as JSON if requested
     if args.json:
-        print(json.dumps(results, indent=2))
+        logger.debug("%s", json.dumps(results, indent=2))
     
     # Show fix instructions if requested or if there are errors
     if args.fix or results["status"] != "healthy":
         if "fix_instructions" in results:
             logger.info("\n=== Fix Instructions ===")
-            print(results["fix_instructions"])
+            logger.info("%s", results["fix_instructions"])
     
     logger.info("\n=== Diagnostic Complete ===")
     

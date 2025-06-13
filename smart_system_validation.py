@@ -9,6 +9,9 @@ import json
 import time
 from datetime import datetime
 from playwright.async_api import async_playwright
+from lib.logging_config import get_logger
+logger = get_logger("vana.smart_system_validation")
+
 
 class SmartVANAValidator:
     def __init__(self):
@@ -25,9 +28,9 @@ class SmartVANAValidator:
     
     async def run_smart_validation(self):
         """Execute focused validation of actual system capabilities"""
-        print("🧠 Smart VANA System Validation")
-        print("=" * 50)
-        print(f"Testing {len(self.actual_agents)} actual agents")
+        logger.info("🧠 Smart VANA System Validation")
+        logger.info("%s", "=" * 50)
+        logger.info(f"Testing {len(self.actual_agents)} actual agents")
         
         async with async_playwright() as p:
             browser = await p.chromium.launch(headless=True)
@@ -40,7 +43,7 @@ class SmartVANAValidator:
                 
                 # Test each actual agent
                 for agent in self.actual_agents:
-                    print(f"\n🔍 Testing agent: {agent}")
+                    logger.info(f"\n🔍 Testing agent: {agent}")
                     result = await self.test_agent_capabilities(page, agent)
                     self.results["agents"][agent] = result
                 
@@ -51,7 +54,7 @@ class SmartVANAValidator:
                 self.generate_reality_check()
                 
             except Exception as e:
-                print(f"❌ Validation failed: {e}")
+                logger.error(f"❌ Validation failed: {e}")
             finally:
                 await browser.close()
         
@@ -121,12 +124,12 @@ class SmartVANAValidator:
             # Add to global tools list
             self.results["tools_discovered"].extend(tool_indicators)
             
-            print(f"   ✅ {agent_name}: {response_time:.3f}s, {len(tool_indicators)} tools, quality: {agent_result['quality_score']:.2f}")
+            logger.info("%s", f"   ✅ {agent_name}: {response_time:.3f}s, {len(tool_indicators)} tools, quality: {agent_result['quality_score']:.2f}")
             if tool_indicators:
-                print(f"      Tools: {', '.join(tool_indicators)}")
+                logger.info(f"      Tools: {", '.join(tool_indicators)}")
             
         except Exception as e:
-            print(f"   ❌ {agent_name}: {str(e)}")
+            logger.info(f"   ❌ {agent_name}: {str(e)}")
             agent_result["error"] = str(e)
         
         return agent_result
@@ -189,7 +192,7 @@ class SmartVANAValidator:
     
     async def test_memory_systems(self, page):
         """Test memory system capabilities"""
-        print(f"\n🧠 Testing Memory Systems")
+        logger.info(f"\n🧠 Testing Memory Systems")
         
         memory_tests = [
             ("session_memory", "Remember that I prefer detailed technical explanations"),
@@ -238,10 +241,10 @@ class SmartVANAValidator:
                 }
                 
                 status = "✅" if memory_used else "⚠️"
-                print(f"   {status} {test_name}: {response_time:.3f}s")
+                logger.info(f"   {status} {test_name}: {response_time:.3f}s")
                 
             except Exception as e:
-                print(f"   ❌ {test_name}: {str(e)}")
+                logger.info(f"   ❌ {test_name}: {str(e)}")
                 self.results["memory_systems"][test_name] = {"available": False, "error": str(e)}
     
     def generate_reality_check(self):
@@ -291,38 +294,38 @@ async def main():
     results = await validator.run_smart_validation()
     
     # Generate summary report
-    print("\n" + "="*60)
-    print("🎯 SMART VALIDATION SUMMARY")
-    print("="*60)
+    logger.info("%s", "\n" + "="*60)
+    logger.info("🎯 SMART VALIDATION SUMMARY")
+    logger.info("%s", "="*60)
     
     reality = results["reality_check"]
     baseline = results["performance_baseline"]
     
-    print(f"📊 REALITY CHECK:")
-    print(f"   Agents: {reality['working_agents']}/{reality['actual_agents']} working ({reality['documented_agents']} documented)")
-    print(f"   Tools: {reality['discovered_tools']} discovered ({reality['documented_tools']} documented)")
-    print(f"   Memory: {reality['memory_systems_working']}/{reality['memory_systems_tested']} systems working")
-    print(f"   Gap: {reality['agent_gap_percentage']}% between documented and working agents")
+    logger.info(f"📊 REALITY CHECK:")
+    logger.info("%s", f"   Agents: {reality['working_agents']}/{reality['actual_agents']} working ({reality['documented_agents']} documented)")
+    logger.info("%s", f"   Tools: {reality['discovered_tools']} discovered ({reality['documented_tools']} documented)")
+    logger.info("%s", f"   Memory: {reality['memory_systems_working']}/{reality['memory_systems_tested']} systems working")
+    logger.info("%s", f"   Gap: {reality['agent_gap_percentage']}% between documented and working agents")
     
-    print(f"\n⚡ PERFORMANCE BASELINE:")
-    print(f"   Avg Response Time: {baseline['response_time_actual']:.3f}s (target: {baseline['response_time_target']}s)")
-    print(f"   Avg Quality Score: {baseline['quality_actual']:.3f} (target: {baseline['quality_target']})")
-    print(f"   Meets Targets: {'✅ YES' if baseline['meets_targets'] else '❌ NO'}")
+    logger.info(f"\n⚡ PERFORMANCE BASELINE:")
+    logger.info("%s", f"   Avg Response Time: {baseline['response_time_actual']:.3f}s (target: {baseline['response_time_target']}s)")
+    logger.info("%s", f"   Avg Quality Score: {baseline['quality_actual']:.3f} (target: {baseline['quality_target']})")
+    logger.info("%s", f"   Meets Targets: {'✅ YES' if baseline['meets_targets'] else '❌ NO'}")
     
-    print(f"\n🔧 DISCOVERED TOOLS:")
+    logger.info(f"\n🔧 DISCOVERED TOOLS:")
     if reality['unique_tools']:
         for tool in sorted(reality['unique_tools']):
-            print(f"   - {tool}")
+            logger.info(f"   - {tool}")
     else:
-        print("   No tools clearly identified")
+        logger.info("   No tools clearly identified")
     
-    print(f"\n🏥 SYSTEM STATUS: {reality['system_health'].upper()}")
+    logger.info("%s", f"\n🏥 SYSTEM STATUS: {reality['system_health'].upper()}")
     
     # Save detailed results
     with open("smart_validation_results.json", "w") as f:
         json.dump(results, f, indent=2)
     
-    print(f"\n💾 Detailed results saved to: smart_validation_results.json")
+    logger.info(f"\n💾 Detailed results saved to: smart_validation_results.json")
     
     return baseline['meets_targets']
 

@@ -47,14 +47,14 @@ def main():
     ]
     
     # Generate the commands
-    print("\n# Run these commands to add Vector Search permissions:")
+    logger.info("\n# Run these commands to add Vector Search permissions:")
     for role in roles:
         command = f"gcloud projects add-iam-policy-binding {project_id} \\\n    --member=\"serviceAccount:{service_account_email}\" \\\n    --role=\"{role}\""
-        print(f"\n{command}")
+        logger.info(f"\n{command}")
     
     # Generate command to verify permissions
-    print("\n# After adding permissions, verify with:")
-    print(f"gcloud projects get-iam-policy {project_id} \\\n    --flatten=\"bindings[].members\" \\\n    --format=\"table(bindings.role,bindings.members)\" \\\n    --filter=\"bindings.members:{service_account_email}\"")
+    logger.info("\n# After adding permissions, verify with:")
+    logger.info("%s", f"gcloud projects get-iam-policy {project_id} \\\n    --flatten=\"bindings[].members\" \\\n    --format=\"table(bindings.role, bindings.members)\" \\\n    --filter=\"bindings.members:{service_account_email}\"")
     
     logger.info("✅ Successfully generated Vector Search permission commands")
     return 0

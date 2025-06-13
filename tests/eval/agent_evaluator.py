@@ -18,6 +18,9 @@ from playwright.async_api import async_playwright
 
 # Import configuration
 from tests.eval.config import (
+from lib.logging_config import get_logger
+logger = get_logger("vana.agent_evaluator")
+
     get_base_url, get_performance_targets, get_ui_selectors,
     get_browser_config, get_paths, TOOL_PATTERNS
 )
@@ -67,8 +70,8 @@ class VANASystemEvaluator:
         
     async def evaluate_all_agents(self) -> Dict[str, Any]:
         """Evaluate all agents using available evalsets"""
-        print("🧪 Starting Comprehensive Agent Evaluation")
-        print("=" * 60)
+        logger.info("🧪 Starting Comprehensive Agent Evaluation")
+        logger.debug("%s", "=" * 60)
         
         evaluation_results = {
             "evaluation_timestamp": datetime.now().isoformat(),
@@ -82,15 +85,15 @@ class VANASystemEvaluator:
         evalset_files = list(self.evalsets_dir.glob("*.json"))
         
         if not evalset_files:
-            print("❌ No evalsets found in tests/eval/evalsets/")
+            logger.debug("❌ No evalsets found in tests/eval/evalsets/")
             return evaluation_results
             
-        print(f"📋 Found {len(evalset_files)} evalsets to evaluate")
+        logger.debug(f"📋 Found {len(evalset_files)} evalsets to evaluate")
         
         # Evaluate each evalset
         for evalset_file in evalset_files:
             agent_name = evalset_file.stem.replace("_evalset", "")
-            print(f"\n🔍 Evaluating: {agent_name}")
+            logger.debug(f"\n🔍 Evaluating: {agent_name}")
             
             try:
                 agent_results = await self.evaluate_agent_from_evalset(evalset_file)
@@ -101,7 +104,7 @@ class VANASystemEvaluator:
                 evaluation_results["evaluation_summary"][agent_name] = metrics
                 
             except Exception as e:
-                print(f"❌ Error evaluating {agent_name}: {e}")
+                logger.error(f"❌ Error evaluating {agent_name}: {e}")
                 evaluation_results["agent_results"][agent_name] = {
                     "error": str(e),
                     "status": "failed"
@@ -157,7 +160,7 @@ class VANASystemEvaluator:
                     await asyncio.sleep(2)
                     
             except Exception as e:
-                print(f"❌ Browser evaluation failed for {agent_name}: {e}")
+                logger.error(f"❌ Browser evaluation failed for {agent_name}: {e}")
                 
             await browser.close()
             
@@ -171,7 +174,7 @@ class VANASystemEvaluator:
         expected_response = conversation["final_response"]["parts"][0]["text"]
         expected_tools = [tool["name"] for tool in conversation["intermediate_data"]["tool_uses"]]
         
-        print(f"  🧪 Testing {eval_id}: {user_input[:50]}...")
+        logger.debug(f"  🧪 Testing {eval_id}: {user_input[:50]}...")
         
         try:
             start_time = time.time()
@@ -222,12 +225,12 @@ class VANASystemEvaluator:
             )
             
             status = "✅ PASS" if success else "❌ FAIL"
-            print(f"    {status} ({response_time:.2f}s, tools: {tool_trajectory_score:.2f}, quality: {response_quality_score:.2f})")
+            logger.debug(f"    {status} ({response_time:.2f}s, tools: {tool_trajectory_score:.2f}, quality: {response_quality_score:.2f})")
             
             return result
             
         except Exception as e:
-            print(f"    ❌ ERROR: {str(e)}")
+            logger.error(f"    ❌ ERROR: {str(e)}")
             return EvaluationResult(
                 eval_id=eval_id,
                 agent_name=agent_name,
@@ -413,44 +416,44 @@ class VANASystemEvaluator:
         with open(filepath, 'w') as f:
             json.dump(results, f, indent=2, default=str)
 
-        print(f"💾 Evaluation results saved: {filepath}")
+        logger.info(f"💾 Evaluation results saved: {filepath}")
 
     def print_evaluation_summary(self, results: Dict[str, Any]):
         """Print comprehensive evaluation summary"""
-        print("\n" + "=" * 80)
-        print("📊 COMPREHENSIVE AGENT EVALUATION SUMMARY")
-        print("=" * 80)
+        logger.debug("%s", "\n" + "=" * 80)
+        logger.debug("📊 COMPREHENSIVE AGENT EVALUATION SUMMARY")
+        logger.debug("%s", "=" * 80)
 
         overall_metrics = results.get("overall_metrics", {})
         agent_summaries = results.get("evaluation_summary", {})
 
         # Overall metrics
-        print(f"\n🎯 OVERALL SYSTEM PERFORMANCE:")
-        print(f"   Agents Tested: {overall_metrics.get('total_agents_tested', 0)}")
-        print(f"   Test Cases: {overall_metrics.get('total_test_cases', 0)}")
-        print(f"   Success Rate: {overall_metrics.get('overall_success_rate', 0):.1%}")
-        print(f"   Average Response Time: {overall_metrics.get('average_response_time', 0):.2f}s")
-        print(f"   Tool Accuracy: {overall_metrics.get('average_tool_accuracy', 0):.1%}")
-        print(f"   Response Quality: {overall_metrics.get('average_response_quality', 0):.1%}")
-        print(f"   Performance Grade: {overall_metrics.get('performance_grade', 'N/A')}")
+        logger.debug(f"\n🎯 OVERALL SYSTEM PERFORMANCE:")
+        logger.debug("%s", f"   Agents Tested: {overall_metrics.get('total_agents_tested', 0)}")
+        logger.debug("%s", f"   Test Cases: {overall_metrics.get('total_test_cases', 0)}")
+        logger.info("%s", f"   Success Rate: {overall_metrics.get('overall_success_rate', 0):.1%}")
+        logger.debug("%s", f"   Average Response Time: {overall_metrics.get('average_response_time', 0):.2f}s")
+        logger.debug("%s", f"   Tool Accuracy: {overall_metrics.get('average_tool_accuracy', 0):.1%}")
+        logger.debug("%s", f"   Response Quality: {overall_metrics.get('average_response_quality', 0):.1%}")
+        logger.debug("%s", f"   Performance Grade: {overall_metrics.get('performance_grade', 'N/A')}")
 
         # Individual agent results
-        print(f"\n📋 INDIVIDUAL AGENT PERFORMANCE:")
+        logger.debug(f"\n📋 INDIVIDUAL AGENT PERFORMANCE:")
         for agent_name, metrics in agent_summaries.items():
             status = "✅ PASS" if metrics.success_rate >= 0.8 else "❌ FAIL"
-            print(f"   {status} {agent_name}:")
-            print(f"      Tests: {metrics.passed_tests}/{metrics.total_tests} ({metrics.success_rate:.1%})")
-            print(f"      Response Time: {metrics.average_response_time:.2f}s")
-            print(f"      Tool Accuracy: {metrics.tool_accuracy_score:.1%}")
-            print(f"      Quality Score: {metrics.response_quality_score:.1%}")
+            logger.debug(f"   {status} {agent_name}:")
+            logger.info(f"      Tests: {metrics.passed_tests}/{metrics.total_tests} ({metrics.success_rate:.1%})")
+            logger.debug(f"      Response Time: {metrics.average_response_time:.2f}s")
+            logger.debug(f"      Tool Accuracy: {metrics.tool_accuracy_score:.1%}")
+            logger.debug(f"      Quality Score: {metrics.response_quality_score:.1%}")
 
         # Recommendations
         recommendations = results.get("recommendations", [])
-        print(f"\n💡 RECOMMENDATIONS:")
+        logger.debug(f"\n💡 RECOMMENDATIONS:")
         for rec in recommendations:
-            print(f"   {rec}")
+            logger.debug(f"   {rec}")
 
-        print("=" * 80)
+        logger.debug("%s", "=" * 80)
 
 if __name__ == "__main__":
     async def main():
