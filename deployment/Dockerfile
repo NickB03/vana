@@ -32,11 +32,11 @@ COPY . .
 ENV PYTHONUNBUFFERED=1 \
     VANA_ENV=production \
     VANA_HOST=0.0.0.0 \
-    VANA_PORT=8080 \
-    PORT=8080
+    VANA_PORT=8000 \
+    PORT=8000
 
 # Expose port for Cloud Run
-EXPOSE 8080
+EXPOSE 8000
 
 # Run the application with Uvicorn
 CMD ["python", "main.py"]
