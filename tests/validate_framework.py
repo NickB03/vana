@@ -15,6 +15,7 @@ sys.path.append(str(project_root))
 
 # Set up logging
 from lib.logging_config import get_logger
+
 logger = get_logger("vana.validate_framework")
 
 def test_security_framework():

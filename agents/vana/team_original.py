@@ -51,10 +51,7 @@ except ImportError as e:
 
 # Import advanced orchestration capabilities for Priority 3 enhancements
 try:
-    from agents.memory.specialist_memory_manager import (
-        save_specialist_knowledge_func,
-        get_specialist_knowledge_func
-    )
+    from agents.memory.specialist_memory_manager import get_specialist_knowledge_func, save_specialist_knowledge_func
     from agents.orchestration.hierarchical_task_manager import (
         analyze_task_complexity,
         coordinate_workflow,

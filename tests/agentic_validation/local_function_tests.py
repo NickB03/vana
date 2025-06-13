@@ -22,6 +22,7 @@ sys.path.insert(0, '/Users/nick/Development/vana')
 
 # Set up logging
 from lib.logging_config import get_logger
+
 logger = get_logger("vana.local_function_tests")
 
 def test_orchestrated_tools():
