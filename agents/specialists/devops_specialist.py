@@ -15,6 +15,7 @@ Specializations:
 
 import os
 import sys
+
 from dotenv import load_dotenv
 
 # Add project root to Python path
@@ -28,9 +29,8 @@ from google.adk.agents import LlmAgent
 from google.adk.tools import FunctionTool
 
 # Import relevant tools for DevOps analysis
-from lib._tools import (
-    adk_vector_search, adk_search_knowledge, adk_read_file, adk_list_directory
-)
+from lib._tools import adk_list_directory, adk_read_file, adk_search_knowledge, adk_vector_search
+
 
 def analyze_infrastructure(context: str) -> str:
     """Analyze infrastructure requirements and provide deployment recommendations."""
@@ -78,6 +78,7 @@ def analyze_infrastructure(context: str) -> str:
 - **RTO/RPO**: Recovery Time Objective <4 hours, Recovery Point Objective <1 hour
 - **Testing**: Regular disaster recovery drills and documentation"""
 
+
 def optimize_cicd_pipeline(context: str) -> str:
     """Optimize CI/CD pipeline for efficiency and reliability."""
     return f"""🚀 CI/CD Optimization for: {context}
@@ -118,6 +119,7 @@ def optimize_cicd_pipeline(context: str) -> str:
 - **Error Tracking**: Automated error detection and alerting
 - **Performance Monitoring**: Application performance post-deployment"""
 
+
 # Create the DevOps Specialist Agent
 devops_specialist = LlmAgent(
     name="devops_specialist",
@@ -152,13 +154,12 @@ devops_specialist = LlmAgent(
 - Provide code examples and configuration snippets
 
 Always provide expert-level DevOps guidance that emphasizes automation, security, reliability, and operational efficiency.""",
-    
     tools=[
         FunctionTool(func=analyze_infrastructure),
         FunctionTool(func=optimize_cicd_pipeline),
         adk_vector_search,
         adk_search_knowledge,
         adk_read_file,
-        adk_list_directory
-    ]
+        adk_list_directory,
+    ],
 )

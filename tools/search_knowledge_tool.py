@@ -9,21 +9,19 @@ for similar documents.
 This implementation uses the verified approach from verify_vector_search.py.
 """
 
-import os
 import logging
+import os
+
 import vertexai
-from vertexai.language_models import TextEmbeddingModel
-from google.cloud import aiplatform
 from dotenv import load_dotenv
+from google.cloud import aiplatform
+from vertexai.language_models import TextEmbeddingModel
 
 # Set up logging
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(message)s",
-    handlers=[
-        logging.FileHandler("search_knowledge.log"),
-        logging.StreamHandler()
-    ]
+    handlers=[logging.FileHandler("search_knowledge.log"), logging.StreamHandler()],
 )
 logger = logging.getLogger(__name__)
 
@@ -38,6 +36,7 @@ DEPLOYED_INDEX_ID = os.getenv("DEPLOYED_INDEX_ID", "vanasharedindex")
 
 # Get endpoint resource name from environment variable
 ENDPOINT_RESOURCE_NAME = os.getenv("VECTOR_SEARCH_ENDPOINT_ID")
+
 
 def generate_embedding(text):
     """Generate an embedding for a text using Vertex AI."""
@@ -56,6 +55,7 @@ def generate_embedding(text):
         logger.error(f"Error generating embedding: {str(e)}")
         raise
 
+
 def get_vector_search_endpoint():
     """Get the Vector Search endpoint using the verified approach."""
     try:
@@ -67,9 +67,7 @@ def get_vector_search_endpoint():
         # Approach 1: Use the known endpoint resource name
         try:
             logger.info(f"Using known endpoint resource name: {ENDPOINT_RESOURCE_NAME}")
-            endpoint = aiplatform.MatchingEngineIndexEndpoint(
-                index_endpoint_name=ENDPOINT_RESOURCE_NAME
-            )
+            endpoint = aiplatform.MatchingEngineIndexEndpoint(index_endpoint_name=ENDPOINT_RESOURCE_NAME)
             return endpoint, DEPLOYED_INDEX_ID
         except Exception as e:
             logger.warning(f"Error using known endpoint resource name: {str(e)}")
@@ -77,16 +75,14 @@ def get_vector_search_endpoint():
         # Approach 2: Find index by display name
         try:
             logger.info(f"Finding index by display name: {INDEX_NAME}")
-            indexes = aiplatform.MatchingEngineIndex.list(
-                filter=f"display_name={INDEX_NAME}"
-            )
+            indexes = aiplatform.MatchingEngineIndex.list(filter=f"display_name={INDEX_NAME}")
 
             if indexes:
                 index = indexes[0]
                 logger.info(f"Found index: {index.display_name} (ID: {index.name})")
 
                 # Get endpoint from index
-                if hasattr(index, 'deployed_indexes') and index.deployed_indexes:
+                if hasattr(index, "deployed_indexes") and index.deployed_indexes:
                     deployed_index = index.deployed_indexes[0]
                     endpoint_resource_name = deployed_index.index_endpoint
                     deployed_index_id = deployed_index.deployed_index_id
@@ -95,9 +91,7 @@ def get_vector_search_endpoint():
                     logger.info(f"Found endpoint: {endpoint_resource_name}")
 
                     # Initialize the endpoint object
-                    endpoint = aiplatform.MatchingEngineIndexEndpoint(
-                        index_endpoint_name=endpoint_resource_name
-                    )
+                    endpoint = aiplatform.MatchingEngineIndexEndpoint(index_endpoint_name=endpoint_resource_name)
 
                     return endpoint, deployed_index_id
         except Exception as e:
@@ -126,6 +120,7 @@ def get_vector_search_endpoint():
         logger.error(f"Error getting Vector Search endpoint: {str(e)}")
         return None, None
 
+
 def search_knowledge_tool(query, top_k=5):
     """
     Search the knowledge base for information related to the query.
@@ -153,9 +148,7 @@ def search_knowledge_tool(query, top_k=5):
         try:
             logger.info(f"Searching index with deployed_index_id: {deployed_index_id}")
             response = endpoint.find_neighbors(
-                deployed_index_id=deployed_index_id,
-                queries=[query_embedding],
-                num_neighbors=top_k
+                deployed_index_id=deployed_index_id, queries=[query_embedding], num_neighbors=top_k
             )
 
             # Process the results
@@ -195,6 +188,7 @@ def search_knowledge_tool(query, top_k=5):
     except Exception as e:
         logger.error(f"Error in search_knowledge_tool: {str(e)}")
         return f"Error in search_knowledge_tool: {str(e)}"
+
 
 # Test the tool if run directly
 if __name__ == "__main__":

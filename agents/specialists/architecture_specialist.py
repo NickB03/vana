@@ -15,6 +15,7 @@ Specializations:
 
 import os
 import sys
+
 from dotenv import load_dotenv
 
 # Add project root to Python path
@@ -28,9 +29,8 @@ from google.adk.agents import LlmAgent
 from google.adk.tools import FunctionTool
 
 # Import relevant tools for architecture analysis
-from lib._tools import (
-    adk_vector_search, adk_search_knowledge, adk_read_file, adk_list_directory
-)
+from lib._tools import adk_list_directory, adk_read_file, adk_search_knowledge, adk_vector_search
+
 
 def analyze_system_architecture(context: str) -> str:
     """Analyze system architecture and provide detailed recommendations."""
@@ -78,6 +78,7 @@ def analyze_system_architecture(context: str) -> str:
 - **Disaster Recovery**: Multi-region backup with RTO < 4 hours
 - **Capacity Planning**: Auto-scaling with predictive scaling algorithms"""
 
+
 def evaluate_design_patterns(context: str) -> str:
     """Evaluate and recommend appropriate design patterns."""
     return f"""🎯 Design Pattern Analysis for: {context}
@@ -99,6 +100,7 @@ def evaluate_design_patterns(context: str) -> str:
 - **Tight Coupling**: Use interfaces and dependency injection
 - **Premature Optimization**: Focus on clean code first, optimize later
 - **Monolithic Database**: Consider database per service pattern"""
+
 
 # Create the Architecture Specialist Agent
 architecture_specialist = LlmAgent(
@@ -133,13 +135,12 @@ architecture_specialist = LlmAgent(
 - Consider security, monitoring, and operational aspects
 
 Always provide comprehensive, expert-level architectural guidance that considers both immediate needs and long-term scalability.""",
-    
     tools=[
         FunctionTool(func=analyze_system_architecture),
         FunctionTool(func=evaluate_design_patterns),
         adk_vector_search,
         adk_search_knowledge,
         adk_read_file,
-        adk_list_directory
-    ]
+        adk_list_directory,
+    ],
 )

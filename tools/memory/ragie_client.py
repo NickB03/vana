@@ -1,15 +1,15 @@
-import requests
 import os
-from typing import List, Dict, Any, Optional
+from typing import Any, Dict, List, Optional
+
+import requests
+
 from lib.logging_config import get_logger
+
 logger = get_logger("vana.tools.memory.ragie_client")
 
 
 def query_memory(
-    prompt: str,
-    top_k: int = 5,
-    api_key: Optional[str] = None,
-    debug: bool = False
+    prompt: str, top_k: int = 5, api_key: Optional[str] = None, debug: bool = False
 ) -> List[Dict[Any, Any]]:
     """
     Query the Ragie.ai knowledge base for relevant information.
@@ -24,19 +24,13 @@ def query_memory(
         List of matching document chunks with their relevance scores
     """
     # Get API key from parameters or environment variables
-    key = api_key or os.environ.get('RAGIE_API_KEY')
+    key = api_key or os.environ.get("RAGIE_API_KEY")
     if not key:
         raise ValueError("No Ragie API key provided. Set RAGIE_API_KEY environment variable or pass as parameter.")
 
-    headers = {
-        "Authorization": f"Bearer {key}",
-        "Content-Type": "application/json"
-    }
+    headers = {"Authorization": f"Bearer {key}", "Content-Type": "application/json"}
 
-    payload = {
-        "query": prompt,
-        "top_k": top_k
-    }
+    payload = {"query": prompt, "top_k": top_k}
 
     if debug:
         logger.debug(f"\n[DEBUG] Querying Ragie API with prompt: {prompt}")
@@ -44,11 +38,7 @@ def query_memory(
         logger.debug(f"[DEBUG] Payload: {payload}")
 
     try:
-        response = requests.post(
-            "https://api.ragie.ai/retrievals",
-            json=payload,
-            headers=headers
-        )
+        response = requests.post("https://api.ragie.ai/retrievals", json=payload, headers=headers)
         response.raise_for_status()
 
         # Extract relevant data from response
@@ -63,6 +53,7 @@ def query_memory(
     except Exception as e:
         logger.error(f"Error querying memory: {e}")
         return []
+
 
 def format_memory_results(results: List[Dict[Any, Any]], debug: bool = False) -> str:
     """

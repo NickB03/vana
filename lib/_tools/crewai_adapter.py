@@ -10,19 +10,16 @@ Based on CrewAI documentation patterns:
 - Integration with VANA tool framework
 """
 
-import logging
-from typing import Dict, Any, List, Optional, Callable, Union
 import importlib
+import logging
+from typing import Any, Callable, Dict, List, Optional, Union
 
-from lib._tools.third_party_tools import (
-    ThirdPartyToolAdapter, ThirdPartyToolInfo, ThirdPartyToolType
-)
-from lib._shared_libraries.tool_standards import (
-    performance_monitor
-)
+from lib._shared_libraries.tool_standards import performance_monitor
+from lib._tools.third_party_tools import ThirdPartyToolAdapter, ThirdPartyToolInfo, ThirdPartyToolType
 
 # Configure logging
 logger = logging.getLogger(__name__)
+
 
 class CrewAIToolAdapter(ThirdPartyToolAdapter):
     """
@@ -56,6 +53,7 @@ class CrewAIToolAdapter(ThirdPartyToolAdapter):
         try:
             import crewai
             import crewai_tools
+
             return True
         except ImportError:
             return False
@@ -92,7 +90,7 @@ class CrewAIToolAdapter(ThirdPartyToolAdapter):
                             tools.append(tool_info)
 
             # Pattern 3: Module with tool attributes
-            elif hasattr(source, '__dict__'):
+            elif hasattr(source, "__dict__"):
                 for name, obj in source.__dict__.items():
                     if self._is_crewai_tool(obj):
                         tool_info = self._create_crewai_tool_info(obj)
@@ -128,16 +126,16 @@ class CrewAIToolAdapter(ThirdPartyToolAdapter):
                     # For single argument tools, use the first arg as input
                     if len(args) == 1:
                         # Try common parameter names for CrewAI tools
-                        kwargs['query'] = args[0]
+                        kwargs["query"] = args[0]
 
                 # Execute the CrewAI tool
-                if hasattr(crewai_tool, 'run'):
+                if hasattr(crewai_tool, "run"):
                     # Use run method (common for CrewAI tools)
                     if kwargs:
                         result = crewai_tool.run(**kwargs)
                     else:
                         result = crewai_tool.run(*args)
-                elif hasattr(crewai_tool, '_run'):
+                elif hasattr(crewai_tool, "_run"):
                     # Use _run method (internal CrewAI method)
                     if kwargs:
                         result = crewai_tool._run(**kwargs)
@@ -204,18 +202,16 @@ class CrewAIToolAdapter(ThirdPartyToolAdapter):
 
         try:
             # Check if it has CrewAI tool attributes
-            if (hasattr(obj, 'name') and hasattr(obj, 'description') and
-                (hasattr(obj, 'run') or hasattr(obj, '_run'))):
+            if hasattr(obj, "name") and hasattr(obj, "description") and (hasattr(obj, "run") or hasattr(obj, "_run")):
                 return True
 
             # Check for function tools (have __name__ and specific attributes)
-            if (hasattr(obj, '__name__') and hasattr(obj, 'description') and
-                hasattr(obj, 'args')):
+            if hasattr(obj, "__name__") and hasattr(obj, "description") and hasattr(obj, "args"):
                 return True
 
             # Check for CrewAI tool class patterns
             class_name = type(obj).__name__
-            if 'Tool' in class_name and hasattr(obj, 'run'):
+            if "Tool" in class_name and hasattr(obj, "run"):
                 return True
 
             return False
@@ -235,28 +231,21 @@ class CrewAIToolAdapter(ThirdPartyToolAdapter):
         """
         try:
             # Get tool name
-            name = getattr(tool, 'name', getattr(tool, '__name__', 'unknown_tool'))
+            name = getattr(tool, "name", getattr(tool, "__name__", "unknown_tool"))
 
             # Get tool description
-            description = (
-                getattr(tool, 'description', None) or
-                getattr(tool, '__doc__', None) or
-                f"CrewAI tool: {name}"
-            )
+            description = getattr(tool, "description", None) or getattr(tool, "__doc__", None) or f"CrewAI tool: {name}"
 
             # Get parameters from args if available
             parameters = {}
-            if hasattr(tool, 'args') and tool.args:
+            if hasattr(tool, "args") and tool.args:
                 try:
                     # CrewAI tools often have args as a schema
                     args_schema = tool.args
-                    if hasattr(args_schema, '__fields__'):
+                    if hasattr(args_schema, "__fields__"):
                         # Pydantic style
                         parameters = {
-                            field_name: {
-                                'type': field.type_,
-                                'description': getattr(field, 'description', None)
-                            }
+                            field_name: {"type": field.type_, "description": getattr(field, "description", None)}
                             for field_name, field in args_schema.__fields__.items()
                         }
                 except Exception as e:
@@ -270,17 +259,18 @@ class CrewAIToolAdapter(ThirdPartyToolAdapter):
                 adapter=self,
                 parameters=parameters,
                 metadata={
-                    'tool_class': type(tool).__name__,
-                    'has_run': hasattr(tool, 'run'),
-                    'has_private_run': hasattr(tool, '_run'),
-                    'has_args': hasattr(tool, 'args'),
-                    'module': getattr(type(tool), '__module__', 'unknown')
-                }
+                    "tool_class": type(tool).__name__,
+                    "has_run": hasattr(tool, "run"),
+                    "has_private_run": hasattr(tool, "_run"),
+                    "has_args": hasattr(tool, "args"),
+                    "module": getattr(type(tool), "__module__", "unknown"),
+                },
             )
 
         except Exception as e:
             logger.error(f"Error creating CrewAI tool info: {e}")
             return None
+
 
 # Example CrewAI tool discovery functions
 def discover_crewai_tools() -> List[str]:
@@ -301,18 +291,16 @@ def discover_crewai_tools() -> List[str]:
     try:
         # Try to import and discover common CrewAI tools
         tool_modules = [
-            'crewai_tools.tools.file_read_tool',
-            'crewai_tools.tools.file_write_tool',
-            'crewai_tools.tools.directory_read_tool',
-            'crewai_tools.tools.web_scrape_tool',
+            "crewai_tools.tools.file_read_tool",
+            "crewai_tools.tools.file_write_tool",
+            "crewai_tools.tools.directory_read_tool",
+            "crewai_tools.tools.web_scrape_tool",
         ]
 
         for module_name in tool_modules:
             try:
                 module = importlib.import_module(module_name)
-                tool_ids = third_party_registry.discover_tools_from_source(
-                    module, ThirdPartyToolType.CREWAI
-                )
+                tool_ids = third_party_registry.discover_tools_from_source(module, ThirdPartyToolType.CREWAI)
                 registered_tools.extend(tool_ids)
             except ImportError:
                 logger.debug(f"Could not import {module_name}")
@@ -325,6 +313,7 @@ def discover_crewai_tools() -> List[str]:
         logger.error(f"Error discovering CrewAI tools: {e}")
 
     return registered_tools
+
 
 def create_example_crewai_tools() -> List[str]:
     """
@@ -362,7 +351,7 @@ def create_example_crewai_tools() -> List[str]:
         @tool("List Processor")
         def process_list(items: str, operation: str = "sort") -> str:
             """Process a comma-separated list of items."""
-            item_list = [item.strip() for item in items.split(',')]
+            item_list = [item.strip() for item in items.split(",")]
 
             if operation == "sort":
                 result = sorted(item_list)
@@ -381,8 +370,8 @@ def create_example_crewai_tools() -> List[str]:
         def analyze_text(text: str) -> str:
             """Analyze text and provide statistics."""
             words = text.split()
-            sentences = text.split('.')
-            paragraphs = text.split('\n\n')
+            sentences = text.split(".")
+            paragraphs = text.split("\n\n")
 
             return f"""Text Analysis:
 - Characters: {len(text)}
@@ -395,9 +384,7 @@ def create_example_crewai_tools() -> List[str]:
         example_tools = [format_string, process_list, analyze_text]
 
         # Register the tools
-        tool_ids = third_party_registry.discover_tools_from_source(
-            example_tools, ThirdPartyToolType.CREWAI
-        )
+        tool_ids = third_party_registry.discover_tools_from_source(example_tools, ThirdPartyToolType.CREWAI)
         registered_tools.extend(tool_ids)
 
         logger.info(f"Created {len(registered_tools)} example CrewAI tools")
@@ -409,9 +396,6 @@ def create_example_crewai_tools() -> List[str]:
 
     return registered_tools
 
+
 # Export key functions
-__all__ = [
-    'CrewAIToolAdapter',
-    'discover_crewai_tools',
-    'create_example_crewai_tools'
-]
+__all__ = ["CrewAIToolAdapter", "discover_crewai_tools", "create_example_crewai_tools"]

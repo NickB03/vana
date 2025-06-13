@@ -33,14 +33,16 @@ Usage:
 """
 
 import logging
-from typing import List, Dict, Any
-from tools.vector_search.vector_search_client import VectorSearchClient
-from tools.knowledge_graph.knowledge_graph_manager import KnowledgeGraphManager
-from tools.web_search import WebSearchClient
+from typing import Any, Dict, List
+
 from tools.hybrid_search import HybridSearch
+from tools.knowledge_graph.knowledge_graph_manager import KnowledgeGraphManager
+from tools.vector_search.vector_search_client import VectorSearchClient
+from tools.web_search import WebSearchClient
 
 # Configure logging
 logger = logging.getLogger(__name__)
+
 
 class EnhancedHybridSearch(HybridSearch):
     """Enhanced hybrid search combining Vector Search, Knowledge Graph, and Web Search"""
@@ -60,8 +62,10 @@ class EnhancedHybridSearch(HybridSearch):
         vs_available = self.vector_search_client.is_available()
         kg_available = self.kg_manager.is_available()
         web_available = self.web_search_client.is_available()
-        logger.info(f"EnhancedHybridSearch initialized - Vector Search available: {vs_available}, "
-                   f"Knowledge Graph available: {kg_available}, Web Search available: {web_available}")
+        logger.info(
+            f"EnhancedHybridSearch initialized - Vector Search available: {vs_available}, "
+            f"Knowledge Graph available: {kg_available}, Web Search available: {web_available}"
+        )
 
     def search(self, query: str, top_k: int = 5, include_web: bool = True) -> Dict[str, Any]:
         """Search for relevant information using Vector Search, Knowledge Graph, and Web Search
@@ -75,13 +79,7 @@ class EnhancedHybridSearch(HybridSearch):
             Dictionary containing vector_search results, knowledge_graph results,
             web_search results, combined results, and any error messages
         """
-        results = {
-            "vector_search": [],
-            "knowledge_graph": [],
-            "web_search": [],
-            "combined": [],
-            "error": None
-        }
+        results = {"vector_search": [], "knowledge_graph": [], "web_search": [], "combined": [], "error": None}
 
         if not query or not query.strip():
             results["error"] = "Empty query provided"
@@ -135,17 +133,16 @@ class EnhancedHybridSearch(HybridSearch):
                     logger.error(f"Error in Web Search: {str(web_error)}")
 
             # Check if we have any results
-            if (len(results["vector_search"]) == 0 and
-                len(results["knowledge_graph"]) == 0 and
-                len(results["web_search"]) == 0):
+            if (
+                len(results["vector_search"]) == 0
+                and len(results["knowledge_graph"]) == 0
+                and len(results["web_search"]) == 0
+            ):
                 logger.info("No results found in any search service")
 
             # Combine results
             results["combined"] = self._combine_results(
-                results["vector_search"],
-                results["knowledge_graph"],
-                results["web_search"],
-                top_k=top_k
+                results["vector_search"], results["knowledge_graph"], results["web_search"], top_k=top_k
             )
 
             logger.info(f"Combined {len(results['combined'])} results from all sources")
@@ -156,10 +153,13 @@ class EnhancedHybridSearch(HybridSearch):
             logger.error(error_msg)
             return results
 
-    def _combine_results(self, vector_results: List[Dict[str, Any]],
-                        kg_results: List[Dict[str, Any]],
-                        web_results: List[Dict[str, Any]],
-                        top_k: int = 5) -> List[Dict[str, Any]]:
+    def _combine_results(
+        self,
+        vector_results: List[Dict[str, Any]],
+        kg_results: List[Dict[str, Any]],
+        web_results: List[Dict[str, Any]],
+        top_k: int = 5,
+    ) -> List[Dict[str, Any]]:
         """Combine and rank results from Vector Search, Knowledge Graph, and Web Search
 
         Args:
@@ -175,12 +175,14 @@ class EnhancedHybridSearch(HybridSearch):
 
         # Add Vector Search results
         for result in vector_results:
-            combined.append({
-                "content": result.get("content", ""),
-                "score": result.get("score", 0),
-                "source": "vector_search",
-                "metadata": result.get("metadata", {})
-            })
+            combined.append(
+                {
+                    "content": result.get("content", ""),
+                    "score": result.get("score", 0),
+                    "source": "vector_search",
+                    "metadata": result.get("metadata", {}),
+                }
+            )
 
         # Add Knowledge Graph results with dynamic scoring
         for result in kg_results:
@@ -202,15 +204,14 @@ class EnhancedHybridSearch(HybridSearch):
             # Calculate final score
             final_score = base_score + length_factor + type_factor
 
-            combined.append({
-                "content": observation,
-                "score": final_score,
-                "source": "knowledge_graph",
-                "metadata": {
-                    "name": entity_name,
-                    "type": entity_type
+            combined.append(
+                {
+                    "content": observation,
+                    "score": final_score,
+                    "source": "knowledge_graph",
+                    "metadata": {"name": entity_name, "type": entity_type},
                 }
-            })
+            )
 
         # Add Web Search results with dynamic scoring
         for result in web_results:
@@ -237,17 +238,14 @@ class EnhancedHybridSearch(HybridSearch):
             # Calculate final score
             final_score = base_score + date_factor
 
-            combined.append({
-                "content": content,
-                "score": final_score,
-                "source": "web_search",
-                "metadata": {
-                    "title": title,
-                    "url": url,
-                    "source": source,
-                    "date": date
+            combined.append(
+                {
+                    "content": content,
+                    "score": final_score,
+                    "source": "web_search",
+                    "metadata": {"title": title, "url": url, "source": source, "date": date},
                 }
-            })
+            )
 
         # Sort by score (descending)
         combined.sort(key=lambda x: x["score"], reverse=True)
@@ -316,10 +314,7 @@ class EnhancedHybridSearch(HybridSearch):
             Dictionary containing web_search results and any error messages
         """
         logger.info(f"Performing web_search for query: {query}")
-        results = {
-            "web_search": [],
-            "error": None
-        }
+        results = {"web_search": [], "error": None}
 
         try:
             if self.web_search_client.is_available():
@@ -334,6 +329,7 @@ class EnhancedHybridSearch(HybridSearch):
             logger.error(error_msg)
 
         return results
+
 
 # Module-level functions for easier use
 def search_and_format(query: str, top_k: int = 5, include_web: bool = True) -> str:

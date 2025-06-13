@@ -5,11 +5,12 @@ This module provides a backend alerting system for the VANA project.
 It supports alert creation, storage, retrieval, and notification stubs.
 """
 
-import os
-import json
-import threading
 import datetime
-from typing import List, Dict, Optional, Any
+import json
+import os
+import threading
+from typing import Any, Dict, List, Optional
+
 from lib.logging_config import get_logger
 
 logger = get_logger("vana.alert_manager")
@@ -17,15 +18,18 @@ logger = get_logger("vana.alert_manager")
 ALERTS_FILE = os.environ.get("VANA_ALERTS_FILE", "dashboard/alerting/alerts.json")
 ALERTS_LOCK = threading.Lock()
 
+
 class AlertStatus:
     ACTIVE = "active"
     ACKNOWLEDGED = "acknowledged"
     CLEARED = "cleared"
 
+
 class AlertSeverity:
     INFO = "info"
     WARNING = "warning"
     CRITICAL = "critical"
+
 
 class AlertManager:
     def __init__(self, alerts_file: str = ALERTS_FILE):
@@ -47,7 +51,13 @@ class AlertManager:
             with open(self.alerts_file, "w") as f:
                 json.dump(alerts, f, indent=2)
 
-    def create_alert(self, message: str, severity: str = AlertSeverity.INFO, source: str = "system", details: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    def create_alert(
+        self,
+        message: str,
+        severity: str = AlertSeverity.INFO,
+        source: str = "system",
+        details: Optional[Dict[str, Any]] = None,
+    ) -> Dict[str, Any]:
         alert = {
             "id": f"alert_{int(datetime.datetime.now().timestamp() * 1000)}",
             "timestamp": datetime.datetime.now().isoformat(),
@@ -55,7 +65,7 @@ class AlertManager:
             "severity": severity,
             "status": AlertStatus.ACTIVE,
             "source": source,
-            "details": details or {}
+            "details": details or {},
         }
         alerts = self._load_alerts()
         alerts.append(alert)
@@ -115,7 +125,6 @@ class AlertManager:
         if updated:
             self._save_alerts(alerts)
         return updated
-
 
 
 # Example usage:

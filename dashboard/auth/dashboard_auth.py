@@ -11,17 +11,18 @@ It includes:
 - Audit logging for authentication events
 """
 
-import os
-import time
+import functools
+import hashlib
 import json
 import logging
-import hashlib
+import os
 import secrets
-import functools
-from typing import Dict, List, Any, Optional, Callable, Union
+import time
 from datetime import datetime, timedelta
 from pathlib import Path
-from flask import request, Response, redirect, url_for, session, current_app, jsonify
+from typing import Any, Callable, Dict, List, Optional, Union
+
+from flask import Response, current_app, jsonify, redirect, request, session, url_for
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -36,6 +37,7 @@ DEFAULT_AUDIT_LOG_FILE = "logs/audit/dashboard_auth.log"
 # Default API keys file location
 DEFAULT_API_KEYS_FILE = "dashboard/auth/api_keys.json"
 
+
 class DashboardAuth:
     """Dashboard Authentication Manager"""
 
@@ -46,7 +48,7 @@ class DashboardAuth:
         api_keys_file: str = DEFAULT_API_KEYS_FILE,
         token_expiry: int = 86400,  # 24 hours
         enable_audit: bool = True,
-        credentials_data: Optional[Dict[str, Any]] = None
+        credentials_data: Optional[Dict[str, Any]] = None,
     ):
         """
         Initialize the authentication manager
@@ -93,7 +95,7 @@ class DashboardAuth:
 
         try:
             if os.path.exists(self.credentials_file):
-                with open(self.credentials_file, 'r') as f:
+                with open(self.credentials_file, "r") as f:
                     return json.load(f)
             else:
                 # Create default credentials if file doesn't exist
@@ -101,7 +103,7 @@ class DashboardAuth:
                     "admin": {
                         "password_hash": self._hash_password("admin"),
                         "roles": ["admin"],
-                        "created_at": datetime.now().isoformat()
+                        "created_at": datetime.now().isoformat(),
                     }
                 }
 
@@ -109,7 +111,7 @@ class DashboardAuth:
                 os.makedirs(os.path.dirname(self.credentials_file), exist_ok=True)
 
                 # Save default credentials
-                with open(self.credentials_file, 'w') as f:
+                with open(self.credentials_file, "w") as f:
                     json.dump(default_credentials, f, indent=2)
 
                 logger.warning(f"Created default credentials file at {self.credentials_file}")
@@ -130,7 +132,7 @@ class DashboardAuth:
         """
         try:
             if os.path.exists(self.api_keys_file):
-                with open(self.api_keys_file, 'r') as f:
+                with open(self.api_keys_file, "r") as f:
                     return json.load(f)
             else:
                 # Create default API keys if file doesn't exist
@@ -140,7 +142,7 @@ class DashboardAuth:
                         "name": "Default API Key",
                         "roles": ["api"],
                         "created_at": datetime.now().isoformat(),
-                        "created_by": "system"
+                        "created_by": "system",
                     }
                 }
 
@@ -148,7 +150,7 @@ class DashboardAuth:
                 os.makedirs(os.path.dirname(self.api_keys_file), exist_ok=True)
 
                 # Save default API keys
-                with open(self.api_keys_file, 'w') as f:
+                with open(self.api_keys_file, "w") as f:
                     json.dump(default_api_keys, f, indent=2)
 
                 logger.warning(f"Created default API keys file at {self.api_keys_file}")
@@ -171,7 +173,7 @@ class DashboardAuth:
             audit_handler.setLevel(logging.INFO)
 
             # Set up formatter
-            formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+            formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
             audit_handler.setFormatter(formatter)
 
             # Create logger
@@ -218,7 +220,7 @@ class DashboardAuth:
                 "success": success,
                 "ip": request.remote_addr if request else "unknown",
                 "user_agent": request.user_agent.string if request and request.user_agent else "unknown",
-                "details": details or {}
+                "details": details or {},
             }
 
             # Log the entry
@@ -270,7 +272,7 @@ class DashboardAuth:
             "username": username,
             "created_at": datetime.now().isoformat(),
             "expires_at": (datetime.now() + timedelta(seconds=self.token_expiry)).isoformat(),
-            "roles": self.credentials[username]["roles"]
+            "roles": self.credentials[username]["roles"],
         }
 
         # Log token generation
@@ -369,7 +371,7 @@ class DashboardAuth:
 
         # Save credentials
         try:
-            with open(self.credentials_file, 'w') as f:
+            with open(self.credentials_file, "w") as f:
                 json.dump(self.credentials, f, indent=2)
 
             # Log password change
@@ -403,7 +405,9 @@ class DashboardAuth:
         if "expires_at" in api_key_data:
             expires_at = datetime.fromisoformat(api_key_data["expires_at"])
             if datetime.now() > expires_at:
-                self._audit_log("api_key_validation", api_key_data.get("name", "unknown"), False, {"reason": "expired_api_key"})
+                self._audit_log(
+                    "api_key_validation", api_key_data.get("name", "unknown"), False, {"reason": "expired_api_key"}
+                )
                 return None
 
         # API key is valid
@@ -411,7 +415,9 @@ class DashboardAuth:
 
         return api_key_data
 
-    def create_api_key(self, name: str, roles: List[str], created_by: str, expires_in_days: Optional[int] = None) -> str:
+    def create_api_key(
+        self, name: str, roles: List[str], created_by: str, expires_in_days: Optional[int] = None
+    ) -> str:
         """
         Create a new API key
 
@@ -432,7 +438,7 @@ class DashboardAuth:
             "name": name,
             "roles": roles,
             "created_at": datetime.now().isoformat(),
-            "created_by": created_by
+            "created_by": created_by,
         }
 
         # Add expiry if specified
@@ -444,7 +450,7 @@ class DashboardAuth:
 
         # Save API keys
         try:
-            with open(self.api_keys_file, 'w') as f:
+            with open(self.api_keys_file, "w") as f:
                 json.dump(self.api_keys, f, indent=2)
 
             # Log API key creation
@@ -478,7 +484,7 @@ class DashboardAuth:
 
         # Save API keys
         try:
-            with open(self.api_keys_file, 'w') as f:
+            with open(self.api_keys_file, "w") as f:
                 json.dump(self.api_keys, f, indent=2)
 
             # Log API key revocation
@@ -490,6 +496,7 @@ class DashboardAuth:
             self._audit_log("api_key_revoked", api_key_name, False, {"reason": str(e)})
             return False
 
+
 # Flask authentication decorator
 def requires_auth(roles: Optional[List[str]] = None):
     """
@@ -498,17 +505,18 @@ def requires_auth(roles: Optional[List[str]] = None):
     Args:
         roles: List of required roles (if None, any authenticated user is allowed)
     """
+
     def decorator(f):
         @functools.wraps(f)
         def decorated(*args, **kwargs):
-            auth = current_app.config.get('AUTH_MANAGER')
+            auth = current_app.config.get("AUTH_MANAGER")
 
             # Check if authentication is enabled
             if not auth:
                 return f(*args, **kwargs)
 
             # First, check for API key authentication
-            api_key = request.headers.get('X-API-Key')
+            api_key = request.headers.get("X-API-Key")
             if api_key:
                 # Validate API key
                 api_key_data = auth.validate_api_key(api_key)
@@ -517,7 +525,7 @@ def requires_auth(roles: Optional[List[str]] = None):
 
                 # Check roles if specified
                 if roles:
-                    api_key_roles = api_key_data.get('roles', [])
+                    api_key_roles = api_key_data.get("roles", [])
                     if not any(role in api_key_roles for role in roles):
                         return jsonify({"error": "Insufficient permissions"}), 403
 
@@ -525,34 +533,36 @@ def requires_auth(roles: Optional[List[str]] = None):
                 return f(*args, **kwargs)
 
             # If no API key, check for session-based authentication
-            token = session.get('auth_token')
+            token = session.get("auth_token")
             if not token:
                 # If this is an API request (Accept: application/json), return JSON error
-                if request.headers.get('Accept') == 'application/json':
+                if request.headers.get("Accept") == "application/json":
                     return jsonify({"error": "Authentication required"}), 401
                 # Otherwise redirect to login page
-                return redirect(url_for('auth.login', next=request.url))
+                return redirect(url_for("auth.login", next=request.url))
 
             # Validate token
             token_data = auth.validate_token(token)
             if not token_data:
                 # If this is an API request, return JSON error
-                if request.headers.get('Accept') == 'application/json':
+                if request.headers.get("Accept") == "application/json":
                     return jsonify({"error": "Invalid or expired token"}), 401
                 # Otherwise redirect to login page
-                return redirect(url_for('auth.login', next=request.url))
+                return redirect(url_for("auth.login", next=request.url))
 
             # Check roles if specified
             if roles:
-                user_roles = token_data.get('roles', [])
+                user_roles = token_data.get("roles", [])
                 if not any(role in user_roles for role in roles):
                     # If this is an API request, return JSON error
-                    if request.headers.get('Accept') == 'application/json':
+                    if request.headers.get("Accept") == "application/json":
                         return jsonify({"error": "Insufficient permissions"}), 403
                     # Otherwise return 403 response
-                    return Response('Unauthorized', 403)
+                    return Response("Unauthorized", 403)
 
             # Authentication successful
             return f(*args, **kwargs)
+
         return decorated
+
     return decorator

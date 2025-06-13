@@ -15,6 +15,7 @@ Specializations:
 
 import os
 import sys
+
 from dotenv import load_dotenv
 
 # Add project root to Python path
@@ -28,9 +29,8 @@ from google.adk.agents import LlmAgent
 from google.adk.tools import FunctionTool
 
 # Import relevant tools for UI/UX analysis
-from lib._tools import (
-    adk_vector_search, adk_search_knowledge, adk_read_file, adk_list_directory
-)
+from lib._tools import adk_list_directory, adk_read_file, adk_search_knowledge, adk_vector_search
+
 
 def analyze_user_interface(context: str) -> str:
     """Analyze user interface design and provide detailed recommendations."""
@@ -78,6 +78,7 @@ def analyze_user_interface(context: str) -> str:
 - **Icons**: SVG icon system with consistent style and sizing
 - **Animation**: Purposeful animations with reduced motion preferences"""
 
+
 def evaluate_user_experience(context: str) -> str:
     """Evaluate user experience and provide optimization recommendations."""
     return f"""🔍 UX Evaluation for: {context}
@@ -105,6 +106,7 @@ def evaluate_user_experience(context: str) -> str:
 - **Cognitive Load**: Simplified interfaces with clear mental models
 - **Error Prevention**: Constraints and confirmations for destructive actions
 - **Help & Documentation**: Contextual help and onboarding flows"""
+
 
 # Create the UI/UX Specialist Agent
 ui_specialist = LlmAgent(
@@ -140,13 +142,12 @@ ui_specialist = LlmAgent(
 - Reference established design principles and guidelines
 
 Always provide expert-level UI/UX guidance that balances user needs, business goals, technical constraints, and accessibility requirements.""",
-    
     tools=[
         FunctionTool(func=analyze_user_interface),
         FunctionTool(func=evaluate_user_experience),
         adk_vector_search,
         adk_search_knowledge,
         adk_read_file,
-        adk_list_directory
-    ]
+        adk_list_directory,
+    ],
 )

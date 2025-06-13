@@ -6,15 +6,16 @@ This module provides an enhanced implementation of the Vector Search client
 with improved error handling, permission issue detection, and embedding caching.
 """
 
-import os
-import uuid
-import logging
-import time
 import json
+import logging
+import os
+import time
+import uuid
+from typing import Any, Dict, List, Optional, Tuple
+
 import requests
-from typing import List, Dict, Any, Optional, Tuple
+from google.api_core.exceptions import InvalidArgument, NotFound, PermissionDenied
 from google.cloud import aiplatform
-from google.api_core.exceptions import PermissionDenied, NotFound, InvalidArgument
 
 # Import embedding cache
 from tools.embedding_cache import EmbeddingCache
@@ -22,6 +23,7 @@ from tools.embedding_cache import EmbeddingCache
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
 
 class EnhancedVectorSearchClient:
     """Enhanced client for Vertex AI Vector Search with robust error handling"""
@@ -57,9 +59,7 @@ class EnhancedVectorSearchClient:
                 aiplatform.init(project=self.project, location=self.location)
 
                 # Get the index endpoint
-                self.index_endpoint = aiplatform.MatchingEngineIndexEndpoint(
-                    index_endpoint_name=self.endpoint_id
-                )
+                self.index_endpoint = aiplatform.MatchingEngineIndexEndpoint(index_endpoint_name=self.endpoint_id)
                 self.is_initialized = True
                 logger.info("Vector Search client initialized successfully")
             except PermissionDenied as e:
@@ -100,9 +100,7 @@ class EnhancedVectorSearchClient:
 
             # Simple test query with the test vector
             self.index_endpoint.match(
-                deployed_index_id=self.deployed_index_id,
-                queries=[{"datapoint": test_vector}],
-                num_neighbors=1
+                deployed_index_id=self.deployed_index_id, queries=[{"datapoint": test_vector}], num_neighbors=1
             )
             logger.info("Vector Search is available")
             return True
@@ -127,7 +125,7 @@ class EnhancedVectorSearchClient:
             "is_available": self.is_available(),
             "is_initialized": self.is_initialized,
             "last_error": self.last_error,
-            "permission_error": self.permission_error
+            "permission_error": self.permission_error,
         }
 
     def _get_auth_token(self) -> Optional[str]:
@@ -149,8 +147,7 @@ class EnhancedVectorSearchClient:
 
             # Load credentials
             credentials = service_account.Credentials.from_service_account_file(
-                creds_file,
-                scopes=["https://www.googleapis.com/auth/cloud-platform"]
+                creds_file, scopes=["https://www.googleapis.com/auth/cloud-platform"]
             )
 
             # Refresh token if needed
@@ -191,9 +188,7 @@ class EnhancedVectorSearchClient:
                 return self._use_mock_embedding(text)
 
             response = requests.post(
-                endpoint,
-                headers={"Authorization": f"Bearer {auth_token}"},
-                json={"instances": [{"content": text}]}
+                endpoint, headers={"Authorization": f"Bearer {auth_token}"}, json={"instances": [{"content": text}]}
             )
 
             if response.status_code == 403:
@@ -236,8 +231,6 @@ class EnhancedVectorSearchClient:
             logger.error(f"Error generating embedding: {e}")
             raise Exception(f"Vector Search embedding generation failed: {e}")
 
-
-
     def search(self, query: str, top_k: int = 5) -> List[Dict[str, Any]]:
         """
         Search for relevant content using Vector Search
@@ -275,27 +268,25 @@ class EnhancedVectorSearchClient:
                 response = self.index_endpoint.match(
                     deployed_index_id=self.deployed_index_id,
                     queries=[{"datapoint": query_embedding}],
-                    num_neighbors=top_k
+                    num_neighbors=top_k,
                 )
             except (NotFound, InvalidArgument) as e:
                 # Try alternative API if primary fails
                 logger.warning(f"Primary API failed, trying alternative: {e}")
                 response = self.index_endpoint.find_neighbors(
-                    deployed_index_id=self.deployed_index_id,
-                    queries=[query_embedding],
-                    num_neighbors=top_k
+                    deployed_index_id=self.deployed_index_id, queries=[query_embedding], num_neighbors=top_k
                 )
 
             # Format results
             results = []
             for match in response[0]:
                 # Handle different response formats
-                if hasattr(match, 'document'):
+                if hasattr(match, "document"):
                     # match API format
                     content = match.document
                     score = match.distance
                     metadata = match.restricts
-                elif hasattr(match, 'id'):
+                elif hasattr(match, "id"):
                     # find_neighbors API format
                     content = match.id
                     score = match.distance
@@ -305,11 +296,7 @@ class EnhancedVectorSearchClient:
                     logger.warning(f"Unknown match format: {match}")
                     continue
 
-                results.append({
-                    "content": content,
-                    "score": score,
-                    "metadata": metadata
-                })
+                results.append({"content": content, "score": score, "metadata": metadata})
 
             return results
         except PermissionDenied as e:
@@ -319,8 +306,6 @@ class EnhancedVectorSearchClient:
         except Exception as e:
             logger.error(f"Error searching Vector Search: {e}")
             raise Exception(f"Vector Search operation failed: {e}")
-
-
 
     def upload_embedding(self, content: str, metadata: Dict[str, Any] = None) -> bool:
         """
@@ -354,17 +339,10 @@ class EnhancedVectorSearchClient:
                 embedding = [float(x) for x in embedding]
 
             # Create datapoint
-            datapoint = {
-                "id": str(uuid.uuid4()),
-                "feature_vector": embedding,
-                "restricts": metadata or {}
-            }
+            datapoint = {"id": str(uuid.uuid4()), "feature_vector": embedding, "restricts": metadata or {}}
 
             # Upload to Vector Search
-            self.index_endpoint.upsert_datapoints(
-                deployed_index_id=self.deployed_index_id,
-                datapoints=[datapoint]
-            )
+            self.index_endpoint.upsert_datapoints(deployed_index_id=self.deployed_index_id, datapoints=[datapoint])
 
             return True
         except PermissionDenied as e:
@@ -374,8 +352,6 @@ class EnhancedVectorSearchClient:
         except Exception as e:
             logger.error(f"Error uploading to Vector Search: {e}")
             raise Exception(f"Vector Search upload failed: {e}")
-
-
 
     def batch_upload_embeddings(self, items: List[Dict[str, Any]]) -> bool:
         """
@@ -421,7 +397,7 @@ class EnhancedVectorSearchClient:
                 datapoint = {
                     "id": item.get("id", str(uuid.uuid4())),
                     "feature_vector": embedding,
-                    "restricts": metadata
+                    "restricts": metadata,
                 }
 
                 datapoints.append(datapoint)
@@ -433,11 +409,8 @@ class EnhancedVectorSearchClient:
             # Upload to Vector Search in batches of 100
             batch_size = 100
             for i in range(0, len(datapoints), batch_size):
-                batch = datapoints[i:i+batch_size]
-                self.index_endpoint.upsert_datapoints(
-                    deployed_index_id=self.deployed_index_id,
-                    datapoints=batch
-                )
+                batch = datapoints[i : i + batch_size]
+                self.index_endpoint.upsert_datapoints(deployed_index_id=self.deployed_index_id, datapoints=batch)
 
             return True
         except PermissionDenied as e:
@@ -447,8 +420,6 @@ class EnhancedVectorSearchClient:
         except Exception as e:
             logger.error(f"Error batch uploading to Vector Search: {e}")
             raise Exception(f"Vector Search batch upload failed: {e}")
-
-
 
     def get_cache_stats(self) -> Dict[str, Any]:
         """
@@ -460,7 +431,4 @@ class EnhancedVectorSearchClient:
         if not self.use_cache:
             return {"enabled": False}
 
-        return {
-            "enabled": True,
-            "stats": self.embedding_cache.get_stats()
-        }
+        return {"enabled": True, "stats": self.embedding_cache.get_stats()}

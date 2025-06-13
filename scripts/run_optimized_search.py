@@ -11,12 +11,12 @@ Usage:
     python scripts/run_optimized_search.py --query "What are the latest ADK features?" --include-web --count 10
 """
 
+import argparse
+import json
 import os
 import sys
-import argparse
 import time
-import json
-from typing import List, Dict, Any
+from typing import Any, Dict, List
 
 # Add project root to path
 sys.path.insert(0, os.path.abspath(os.path.dirname(os.path.dirname(__file__))))
@@ -25,7 +25,9 @@ sys.path.insert(0, os.path.abspath(os.path.dirname(os.path.dirname(__file__))))
 try:
     from tools.enhanced_hybrid_search_optimized import EnhancedHybridSearchOptimized
     from tools.web_search_client import get_web_search_client
+
 from lib.logging_config import get_logger
+
 logger = get_logger("vana.run_optimized_search")
 
 except ImportError as e:

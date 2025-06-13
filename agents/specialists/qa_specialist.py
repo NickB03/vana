@@ -15,6 +15,7 @@ Specializations:
 
 import os
 import sys
+
 from dotenv import load_dotenv
 
 # Add project root to Python path
@@ -28,9 +29,8 @@ from google.adk.agents import LlmAgent
 from google.adk.tools import FunctionTool
 
 # Import relevant tools for QA analysis
-from lib._tools import (
-    adk_vector_search, adk_search_knowledge, adk_read_file, adk_list_directory
-)
+from lib._tools import adk_list_directory, adk_read_file, adk_search_knowledge, adk_vector_search
+
 
 def analyze_testing_strategy(context: str) -> str:
     """Analyze testing requirements and provide comprehensive testing strategy."""
@@ -78,6 +78,7 @@ def analyze_testing_strategy(context: str) -> str:
 - **Test Reporting**: Real-time dashboards and quality metrics
 - **Continuous Improvement**: Regular retrospectives and process optimization"""
 
+
 def evaluate_test_automation(context: str) -> str:
     """Evaluate test automation approach and provide optimization recommendations."""
     return f"""🤖 Test Automation Evaluation for: {context}
@@ -118,6 +119,7 @@ def evaluate_test_automation(context: str) -> str:
 - **Dependency Scanning**: Automated vulnerability assessment
 - **Penetration Testing**: Regular security assessment and validation"""
 
+
 # Create the QA Specialist Agent
 qa_specialist = LlmAgent(
     name="qa_specialist",
@@ -152,13 +154,12 @@ qa_specialist = LlmAgent(
 - Provide implementation guidance and best practices
 
 Always provide expert-level QA guidance that emphasizes comprehensive test coverage, automation efficiency, and continuous quality improvement.""",
-    
     tools=[
         FunctionTool(func=analyze_testing_strategy),
         FunctionTool(func=evaluate_test_automation),
         adk_vector_search,
         adk_search_knowledge,
         adk_read_file,
-        adk_list_directory
-    ]
+        adk_list_directory,
+    ],
 )

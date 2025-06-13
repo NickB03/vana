@@ -11,10 +11,11 @@ Usage:
     results = client.search("VANA architecture")
 """
 
-import os
 import json
 import logging
-from typing import List, Dict, Any, Optional
+import os
+from typing import Any, Dict, List, Optional
+
 import requests
 from dotenv import load_dotenv
 
@@ -28,6 +29,7 @@ load_dotenv(os.path.join(project_root, ".env"))  # Load from project root
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
 
 class BraveSearchClient:
     """Client for performing web searches using Brave Search API"""
@@ -70,11 +72,7 @@ class BraveSearchClient:
 
         try:
             # Construct request headers
-            headers = {
-                "Accept": "application/json",
-                "Accept-Encoding": "gzip",
-                "X-Subscription-Token": self.api_key
-            }
+            headers = {"Accept": "application/json", "Accept-Encoding": "gzip", "X-Subscription-Token": self.api_key}
 
             # Construct optimized request parameters for Free AI plan
             params = {
@@ -91,7 +89,7 @@ class BraveSearchClient:
                 # Free AI plan exclusive features
                 "extra_snippets": True,  # Get up to 5 additional excerpts (Free AI feature)
                 "summary": True,  # Enable summary generation (Free AI feature)
-                "result_filter": "web,news,videos,infobox,faq"  # Optimize result types
+                "result_filter": "web,news,videos,infobox,faq",  # Optimize result types
             }
 
             # Add any additional parameters
@@ -122,7 +120,7 @@ class BraveSearchClient:
                     "extra_snippets": item.get("extra_snippets", []),  # Additional excerpts
                     "summary": item.get("summary", ""),  # AI-generated summary
                     "type": item.get("type", "web"),  # Result type
-                    "meta_url": item.get("meta_url", {})  # Enhanced metadata
+                    "meta_url": item.get("meta_url", {}),  # Enhanced metadata
                 }
                 results.append(result)
 
@@ -202,12 +200,7 @@ class BraveSearchClient:
             Optimized search results with enhanced data
         """
         # Base optimization parameters
-        base_params = {
-            "extra_snippets": True,
-            "summary": True,
-            "spellcheck": True,
-            "text_decorations": False
-        }
+        base_params = {"extra_snippets": True, "summary": True, "spellcheck": True, "text_decorations": False}
 
         # Search type specific optimizations
         if search_type == "comprehensive":
@@ -216,14 +209,14 @@ class BraveSearchClient:
                 "count": 20,  # Maximum results
                 "result_filter": "web,news,videos,infobox,faq,discussions",
                 "freshness": "pm",  # Past month for comprehensive coverage
-                "safesearch": "moderate"
+                "safesearch": "moderate",
             }
         elif search_type == "fast":
             params = {
                 "count": 5,  # Fewer results for speed
                 "result_filter": "web,infobox",  # Essential results only
                 "spellcheck": True,
-                "text_decorations": False
+                "text_decorations": False,
             }
         elif search_type == "academic":
             params = {
@@ -231,7 +224,7 @@ class BraveSearchClient:
                 "count": 15,
                 "result_filter": "web,news,faq",
                 "freshness": "py",  # Past year for academic content
-                "safesearch": "strict"
+                "safesearch": "strict",
             }
         elif search_type == "recent":
             params = {
@@ -239,7 +232,7 @@ class BraveSearchClient:
                 "count": 10,
                 "result_filter": "web,news,videos",
                 "freshness": "pd",  # Past day for recent content
-                "safesearch": "moderate"
+                "safesearch": "moderate",
             }
         elif search_type == "local":
             params = {
@@ -247,16 +240,11 @@ class BraveSearchClient:
                 "count": 10,
                 "result_filter": "web,locations,news",
                 "country": kwargs.get("country", "US"),
-                "safesearch": "moderate"
+                "safesearch": "moderate",
             }
         else:
             # Default to comprehensive
-            params = {
-                **base_params,
-                "count": 10,
-                "result_filter": "web,news,infobox",
-                "safesearch": "moderate"
-            }
+            params = {**base_params, "count": 10, "result_filter": "web,news,infobox", "safesearch": "moderate"}
 
         # Merge with any additional parameters
         params.update(kwargs)
@@ -284,7 +272,7 @@ class BraveSearchClient:
         goggles = {
             "academic": "https://raw.githubusercontent.com/brave/goggles-quickstart/main/goggles/academic.goggle",
             "news": "https://raw.githubusercontent.com/brave/goggles-quickstart/main/goggles/news.goggle",
-            "tech": "https://raw.githubusercontent.com/brave/goggles-quickstart/main/goggles/tech.goggle"
+            "tech": "https://raw.githubusercontent.com/brave/goggles-quickstart/main/goggles/tech.goggle",
         }
 
         if goggle_type == "custom":
@@ -299,17 +287,14 @@ class BraveSearchClient:
                 return self.search(query, **kwargs)
 
         # Add goggle to search parameters
-        params = {
-            "goggles": [goggle_url],
-            "extra_snippets": True,
-            "summary": True,
-            **kwargs
-        }
+        params = {"goggles": [goggle_url], "extra_snippets": True, "summary": True, **kwargs}
 
         logger.info(f"Searching with {goggle_type} goggle: {goggle_url}")
         return self.search(query, **params)
 
-    def multi_type_search(self, query: str, result_types: List[str] = None, **kwargs) -> Dict[str, List[Dict[str, Any]]]:
+    def multi_type_search(
+        self, query: str, result_types: List[str] = None, **kwargs
+    ) -> Dict[str, List[Dict[str, Any]]]:
         """
         Perform search across multiple result types simultaneously (Free AI optimization)
 
@@ -331,7 +316,7 @@ class BraveSearchClient:
             "extra_snippets": True,
             "summary": True,
             "count": kwargs.get("count", 15),
-            **kwargs
+            **kwargs,
         }
 
         logger.info(f"Multi-type search for: {query} across types: {result_types}")
@@ -359,15 +344,15 @@ class MockBraveSearchClient:
                     "url": "https://github.com/vana-ai/vana",
                     "snippet": "VANA is an advanced AI agent development platform that enables the creation of intelligent, multi-agent systems with enhanced capabilities.",
                     "source": "GitHub",
-                    "date": "2024-01-15"
+                    "date": "2024-01-15",
                 },
                 {
                     "title": "VANA Documentation - Getting Started",
                     "url": "https://docs.vana.ai/getting-started",
                     "snippet": "Complete guide to getting started with VANA, including installation, configuration, and basic usage examples.",
                     "source": "VANA Docs",
-                    "date": "2024-01-10"
-                }
+                    "date": "2024-01-10",
+                },
             ],
             "ai agent": [
                 {
@@ -375,7 +360,7 @@ class MockBraveSearchClient:
                     "url": "https://example.com/ai-agents-guide",
                     "snippet": "AI agents are autonomous software entities that can perceive their environment and take actions to achieve specific goals.",
                     "source": "AI Research",
-                    "date": "2024-01-20"
+                    "date": "2024-01-20",
                 }
             ],
             "default": [
@@ -384,9 +369,9 @@ class MockBraveSearchClient:
                     "url": "https://example.com/sample",
                     "snippet": "This is a sample search result for testing purposes.",
                     "source": "Example",
-                    "date": "2024-01-01"
+                    "date": "2024-01-01",
                 }
-            ]
+            ],
         }
 
     def is_available(self) -> bool:

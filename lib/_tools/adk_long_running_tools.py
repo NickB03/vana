@@ -8,7 +8,7 @@ integrating with the existing VANA tool framework and ADK FunctionTool system.
 import asyncio
 import logging
 import time
-from typing import Dict, Any, Optional
+from typing import Any, Dict, Optional
 
 # ADK imports with fallback
 try:
@@ -20,15 +20,19 @@ except ImportError:
             self.func = func
             self.name = func.__name__
 
+
 from .long_running_tools import (
-    LongRunningFunctionTool, create_long_running_tool, task_manager,
-    ask_for_approval, process_large_dataset, generate_report,
-    LongRunningTaskStatus
+    LongRunningFunctionTool,
+    LongRunningTaskStatus,
+    ask_for_approval,
+    create_long_running_tool,
+    generate_report,
+    process_large_dataset,
+    task_manager,
 )
+
 try:
-    from lib._shared_libraries.tool_standards import (
-        StandardToolResponse, InputValidator, performance_monitor
-    )
+    from lib._shared_libraries.tool_standards import InputValidator, StandardToolResponse, performance_monitor
 except ImportError:
     # Fallback for development
     class StandardToolResponse:
@@ -44,10 +48,12 @@ except ImportError:
     def performance_monitor(func):
         return func
 
+
 # Configure logging
 logger = logging.getLogger(__name__)
 
 # Standardized Long-Running Tool Wrappers
+
 
 def ask_for_approval(purpose: str, amount: float, approver: str = "System Administrator") -> str:
     """
@@ -76,6 +82,7 @@ def ask_for_approval(purpose: str, amount: float, approver: str = "System Admini
         # Since we can't use async in ADK function tools directly, we'll simulate
         # the long-running behavior by creating a task and returning task info
         import uuid
+
         task_id = task_manager.create_task()
 
         # For demo purposes, immediately process small amounts
@@ -86,7 +93,7 @@ def ask_for_approval(purpose: str, amount: float, approver: str = "System Admini
                 "ticket_id": f"approval-{task_id[:8]}",
                 "approver": approver,
                 "approved_amount": amount,
-                "message": f"Auto-approved: {purpose} for ${amount}"
+                "message": f"Auto-approved: {purpose} for ${amount}",
             }
             task_manager.update_task(task_id, LongRunningTaskStatus.APPROVED, result=result)
         else:
@@ -95,7 +102,7 @@ def ask_for_approval(purpose: str, amount: float, approver: str = "System Admini
                 "status": "pending",
                 "ticket_id": f"approval-{task_id[:8]}",
                 "approver": approver,
-                "message": f"Approval required from {approver} for {purpose}: ${amount}"
+                "message": f"Approval required from {approver} for {purpose}: ${amount}",
             }
             task_manager.update_task(task_id, LongRunningTaskStatus.WAITING_APPROVAL, result=result)
 
@@ -115,6 +122,7 @@ Use `check_task_status("{task_id}")` to monitor progress."""
     except Exception as e:
         logger.error(f"Error in approval request: {e}")
         return f"❌ Error creating approval request: {str(e)}"
+
 
 def process_large_dataset(dataset_name: str, operation: str = "analyze") -> str:
     """
@@ -146,13 +154,15 @@ def process_large_dataset(dataset_name: str, operation: str = "analyze") -> str:
             "operation": operation,
             "progress": 0.1,
             "current_stage": "Initializing processing",
-            "estimated_completion": "5-10 minutes"
+            "estimated_completion": "5-10 minutes",
         }
 
         task_manager.update_task(
-            task_id, LongRunningTaskStatus.IN_PROGRESS,
-            result=result, progress=0.1,
-            metadata={"current_stage": "Initializing processing"}
+            task_id,
+            LongRunningTaskStatus.IN_PROGRESS,
+            result=result,
+            progress=0.1,
+            metadata={"current_stage": "Initializing processing"},
         )
 
         return f"""🚀 Dataset processing started:
@@ -171,6 +181,7 @@ Use `check_task_status("{task_id}")` to monitor progress."""
     except Exception as e:
         logger.error(f"Error starting dataset processing: {e}")
         return f"❌ Error starting dataset processing: {str(e)}"
+
 
 def generate_report(report_type: str, data_sources: str = "default") -> str:
     """
@@ -208,13 +219,15 @@ def generate_report(report_type: str, data_sources: str = "default") -> str:
             "progress": 0.2,
             "current_stage": "Collecting data",
             "estimated_pages": 25,
-            "estimated_completion": "3-5 minutes"
+            "estimated_completion": "3-5 minutes",
         }
 
         task_manager.update_task(
-            task_id, LongRunningTaskStatus.IN_PROGRESS,
-            result=result, progress=0.2,
-            metadata={"current_stage": "Collecting data"}
+            task_id,
+            LongRunningTaskStatus.IN_PROGRESS,
+            result=result,
+            progress=0.2,
+            metadata={"current_stage": "Collecting data"},
         )
 
         return f"""📊 Report generation started:
@@ -234,6 +247,7 @@ Use `check_task_status("{task_id}")` to monitor progress."""
     except Exception as e:
         logger.error(f"Error starting report generation: {e}")
         return f"❌ Error starting report generation: {str(e)}"
+
 
 def check_task_status(task_id: str) -> str:
     """
@@ -264,7 +278,7 @@ def check_task_status(task_id: str) -> str:
             LongRunningTaskStatus.REJECTED: "❌",
             LongRunningTaskStatus.COMPLETED: "✅",
             LongRunningTaskStatus.FAILED: "❌",
-            LongRunningTaskStatus.CANCELLED: "🚫"
+            LongRunningTaskStatus.CANCELLED: "🚫",
         }
 
         emoji = status_emoji.get(task.status, "❓")
@@ -299,6 +313,7 @@ def check_task_status(task_id: str) -> str:
         logger.error(f"Error checking task status: {e}")
         return f"❌ Error checking task status: {str(e)}"
 
+
 # Create ADK FunctionTool instances with proper naming (NO underscore prefix - standardized naming)
 adk_ask_for_approval = FunctionTool(func=ask_for_approval)
 adk_ask_for_approval.name = "ask_for_approval"
@@ -311,9 +326,9 @@ adk_check_task_status.name = "check_task_status"
 
 # Export all long-running tools
 __all__ = [
-    'adk_ask_for_approval',
-    'adk_process_large_dataset',
-    'adk_generate_report',
-    'adk_check_task_status',
-    'task_manager'
+    "adk_ask_for_approval",
+    "adk_process_large_dataset",
+    "adk_generate_report",
+    "adk_check_task_status",
+    "task_manager",
 ]

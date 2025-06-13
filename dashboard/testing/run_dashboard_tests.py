@@ -4,9 +4,10 @@ VANA Dashboard Test Runner
 Runs test scenarios using data generators, measures performance, and outputs structured reports.
 """
 
-import time
 import json
 import os
+import time
+
 from dashboard.testing.data_generator import generate_scenario
 
 REPORTS_DIR = os.environ.get("VANA_TEST_REPORTS_DIR", "dashboard/testing/reports")
@@ -47,7 +48,9 @@ def test_api_endpoints():
     """
     import requests
     from dashboard.alerting.alert_manager import AlertManager
+
 from lib.logging_config import get_logger
+
 logger = get_logger("vana.run_dashboard_tests")
 
 

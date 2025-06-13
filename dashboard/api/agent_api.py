@@ -4,16 +4,17 @@ Agent API for VANA Dashboard
 This module provides functions to retrieve agent status and performance data from the VANA system.
 """
 
-import os
-import sys
-import logging
-import random
 import datetime
+import logging
+import os
+import random
+import sys
 
 # Add the parent directory to the path so we can import our modules
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 logger = logging.getLogger(__name__)
+
 
 def get_agent_statuses():
     """
@@ -28,6 +29,7 @@ def get_agent_statuses():
         logging.error(f"Error fetching agent status data: {e}")
         # Still return mock data as fallback to ensure UI works
         return generate_mock_agent_data()
+
 
 def generate_mock_agent_data():
     """Generate realistic mock agent status data."""
@@ -59,10 +61,20 @@ def generate_mock_agent_data():
         # Standard capabilities for each agent based on their role - Updated to functional roles
         capabilities = {
             "vana": ["Task Orchestration", "Agent Coordination", "Context Management", "Memory Integration"],
-            "architecture_specialist": ["System Architecture", "Design Patterns", "Component Integration", "Scalability Planning"],
+            "architecture_specialist": [
+                "System Architecture",
+                "Design Patterns",
+                "Component Integration",
+                "Scalability Planning",
+            ],
             "ui_specialist": ["User Interface Design", "User Experience", "Frontend Development", "Responsive Design"],
-            "devops_specialist": ["Deployment Automation", "Infrastructure Management", "CI/CD Pipelines", "Monitoring"],
-            "qa_specialist": ["Quality Assurance", "Testing Strategies", "Error Detection", "Performance Validation"]
+            "devops_specialist": [
+                "Deployment Automation",
+                "Infrastructure Management",
+                "CI/CD Pipelines",
+                "Monitoring",
+            ],
+            "qa_specialist": ["Quality Assurance", "Testing Strategies", "Error Detection", "Performance Validation"],
         }
 
         # Construct agent data object
@@ -75,12 +87,13 @@ def generate_mock_agent_data():
             "error_rate": error_rate,
             "capabilities": capabilities.get(agent, []),
             "cpu_usage": round(random.uniform(5, 95), 1),
-            "memory_usage_mb": random.randint(50, 500)
+            "memory_usage_mb": random.randint(50, 500),
         }
 
         agents_data.append(agent_data)
 
     return agents_data
+
 
 def get_agent_activity(agent_name, hours=24):
     """
@@ -93,6 +106,7 @@ def get_agent_activity(agent_name, hours=24):
     except Exception as e:
         logging.error(f"Error fetching agent activity data: {e}")
         return generate_mock_agent_activity(agent_name, hours)
+
 
 def generate_mock_agent_activity(agent_name, hours=24):
     """Generate realistic mock historical data for an agent."""
@@ -123,15 +137,13 @@ def generate_mock_agent_activity(agent_name, hours=24):
             "response_time_ms": response_time,
             "error_rate": error_rate,
             "cpu_usage": cpu_usage,
-            "memory_usage_mb": memory_usage
+            "memory_usage_mb": memory_usage,
         }
 
         activity_data.append(data_point)
 
-    return {
-        "agent_name": agent_name,
-        "activity": activity_data
-    }
+    return {"agent_name": agent_name, "activity": activity_data}
+
 
 # Create a simple API object for compatibility
 class AgentAPI:
@@ -143,7 +155,6 @@ class AgentAPI:
     def get_activity(self, agent_name, hours=24):
         return get_agent_activity(agent_name, hours)
 
+
 # Create the API instance
 agent_api = AgentAPI()
-
-

@@ -6,15 +6,17 @@ Automatically detects environment and configures authentication appropriately.
 Includes proper ADK memory service initialization for vector search and RAG pipeline.
 """
 
+import logging
 import os
 import sys
+
 import uvicorn
-import logging
 from fastapi import FastAPI, Request
 from google.adk.cli.fast_api import get_fast_api_app
 
 # Configure centralized logging first
 from lib.logging_config import setup_logging
+
 setup_logging()
 logger = logging.getLogger("vana.main")
 
@@ -24,7 +26,7 @@ if current_dir not in sys.path:
     sys.path.insert(0, current_dir)
 
 # Verify lib directory exists for imports
-if not os.path.exists(os.path.join(current_dir, 'lib')):
+if not os.path.exists(os.path.join(current_dir, "lib")):
     logger.warning("lib directory not found - some imports may fail")
 
 # Import our smart environment detection
@@ -59,6 +61,7 @@ ALLOWED_ORIGINS = ["http://localhost", "http://localhost:8080", "*"]
 # Serve web interface
 SERVE_WEB_INTERFACE = True
 
+
 # Security guardrail callbacks
 def before_tool_callback(_tool_name: str, tool_args: dict, _session):
     """Validate tool arguments before execution."""
@@ -72,6 +75,7 @@ def after_model_callback(_agent_name: str, response: str, _session):
     banned = ["malware", "illegal"]
     if any(word in response.lower() for word in banned):
         logger.warning("Policy violation detected in response")
+
 
 # Create the FastAPI app using ADK
 app: FastAPI = get_fast_api_app(
@@ -89,19 +93,18 @@ logger.info("FastAPI app created successfully")
 mcp_transport = MCPSSETransport(None)  # Server will be initialized later
 
 
-
-
-
 # Add MCP endpoints
 @app.get("/mcp/sse")
 async def mcp_sse_endpoint(request: Request):
     """MCP Server-Sent Events endpoint"""
     return await mcp_transport.handle_sse_connection(request)
 
+
 @app.post("/mcp/messages")
 async def mcp_messages_endpoint(request: Request):
     """MCP messages endpoint for JSON-RPC communication"""
     return await mcp_transport.handle_message_post(request)
+
 
 # Add custom routes if needed
 @app.get("/health")
@@ -109,11 +112,13 @@ async def health_check():
     """Health check endpoint."""
     return {"status": "healthy", "agent": "vana", "mcp_enabled": True}
 
+
 @app.get("/info")
 async def agent_info():
     """Get agent information."""
     # Get current memory service info (lazy initialization)
     from lib._shared_libraries.lazy_initialization import get_adk_memory_service
+
     memory_service = get_adk_memory_service()
     current_memory_info = memory_service.get_service_info()
 
@@ -123,19 +128,15 @@ async def agent_info():
         "version": "1.0.0",
         "adk_integrated": True,
         "mcp_server": True,
-        "mcp_endpoints": {
-            "sse": "/mcp/sse",
-            "messages": "/mcp/messages"
-        },
+        "mcp_endpoints": {"sse": "/mcp/sse", "messages": "/mcp/messages"},
         "memory_service": {
             "type": current_memory_info["service_type"],
             "available": current_memory_info["available"],
             "supports_persistence": current_memory_info["supports_persistence"],
-            "supports_semantic_search": current_memory_info["supports_semantic_search"]
+            "supports_semantic_search": current_memory_info["supports_semantic_search"],
         },
-        "environment": environment_type
+        "environment": environment_type,
     }
-
 
 
 if __name__ == "__main__":

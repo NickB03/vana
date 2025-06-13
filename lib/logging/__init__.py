@@ -10,9 +10,6 @@ Components:
 - Cloud Run and Google Cloud Logging integration
 """
 
-from .structured_logger import StructuredLogger, LogEntry
+from .structured_logger import LogEntry, StructuredLogger
 
-__all__ = [
-    'StructuredLogger',
-    'LogEntry'
-]
+__all__ = ["StructuredLogger", "LogEntry"]

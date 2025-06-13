@@ -1,11 +1,12 @@
-import logging
-import time
-import os
 import json
+import logging
+import os
 import sqlite3
+import time
 import uuid
 from datetime import datetime
-from typing import Dict, List, Any, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
+
 from .mcp_memory_client import MCPMemoryClient
 
 # Import environment configuration
@@ -21,16 +22,17 @@ except ImportError:
                 "cache_size": int(os.environ.get("MEMORY_CACHE_SIZE", "1000")),
                 "cache_ttl": int(os.environ.get("MEMORY_CACHE_TTL", "3600")),
                 "entity_half_life_days": int(os.environ.get("ENTITY_HALF_LIFE_DAYS", "30")),
-                "local_db_path": os.path.join(os.environ.get("VANA_DATA_DIR", "."), "memory_cache.db")
+                "local_db_path": os.path.join(os.environ.get("VANA_DATA_DIR", "."), "memory_cache.db"),
             }
 
+
 logger = logging.getLogger(__name__)
+
 
 class MemoryManager:
     """Manages knowledge graph memory operations with local fallback."""
 
-    def __init__(self, mcp_client: MCPMemoryClient,
-                 sync_interval: int = None):
+    def __init__(self, mcp_client: MCPMemoryClient, sync_interval: int = None):
         """
         Initialize the memory manager.
 
@@ -62,7 +64,8 @@ class MemoryManager:
             cursor = conn.cursor()
 
             # Create tables if they don't exist
-            cursor.execute('''
+            cursor.execute(
+                """
             CREATE TABLE IF NOT EXISTS entities (
                 id TEXT PRIMARY KEY,
                 name TEXT,
@@ -70,9 +73,11 @@ class MemoryManager:
                 data TEXT,
                 modified_at TEXT
             )
-            ''')
+            """
+            )
 
-            cursor.execute('''
+            cursor.execute(
+                """
             CREATE TABLE IF NOT EXISTS relationships (
                 id TEXT PRIMARY KEY,
                 from_entity TEXT,
@@ -82,13 +87,14 @@ class MemoryManager:
                 FOREIGN KEY (from_entity) REFERENCES entities (id),
                 FOREIGN KEY (to_entity) REFERENCES entities (id)
             )
-            ''')
+            """
+            )
 
             # Create indexes for better performance
-            cursor.execute('CREATE INDEX IF NOT EXISTS idx_entities_name ON entities (name)')
-            cursor.execute('CREATE INDEX IF NOT EXISTS idx_entities_type ON entities (type)')
-            cursor.execute('CREATE INDEX IF NOT EXISTS idx_relationships_from ON relationships (from_entity)')
-            cursor.execute('CREATE INDEX IF NOT EXISTS idx_relationships_to ON relationships (to_entity)')
+            cursor.execute("CREATE INDEX IF NOT EXISTS idx_entities_name ON entities (name)")
+            cursor.execute("CREATE INDEX IF NOT EXISTS idx_entities_type ON entities (type)")
+            cursor.execute("CREATE INDEX IF NOT EXISTS idx_relationships_from ON relationships (from_entity)")
+            cursor.execute("CREATE INDEX IF NOT EXISTS idx_relationships_to ON relationships (to_entity)")
 
             conn.commit()
             conn.close()
@@ -182,8 +188,7 @@ class MemoryManager:
             self.mcp_available = False
             return False
 
-    def store_entity(self, entity_name: str, entity_type: str,
-                    observations: List[str]) -> Dict[str, Any]:
+    def store_entity(self, entity_name: str, entity_type: str, observations: List[str]) -> Dict[str, Any]:
         """
         Store an entity in memory.
 
@@ -221,17 +226,13 @@ class MemoryManager:
                 "type": entity_type,
                 "observations": observations,
                 "created_at": timestamp,
-                "modified_at": timestamp
+                "modified_at": timestamp,
             }
 
             self.local_cache[entity_id] = entity
             self._store_entity_in_db(entity)
 
-            return {
-                "success": True,
-                "entity": entity,
-                "message": "Entity stored locally (MCP server not available)"
-            }
+            return {"success": True, "entity": entity, "message": "Entity stored locally (MCP server not available)"}
         except Exception as e:
             logger.error("Error storing entity: %s", e)
             return {"error": str(e), "success": False}
@@ -275,8 +276,7 @@ class MemoryManager:
             logger.error("Error retrieving entity: %s", e)
             return {"error": str(e), "success": False}
 
-    def search_entities(self, query: str, entity_type: str = None,
-                      limit: int = 10) -> Dict[str, Any]:
+    def search_entities(self, query: str, entity_type: str = None, limit: int = 10) -> Dict[str, Any]:
         """
         Search for entities in memory.
 
@@ -365,8 +365,7 @@ class MemoryManager:
             if entity_id in self.local_cache:
                 del self.local_cache[entity_id]
 
-        logger.info("Processed delta: %d added, %d modified, %d deleted",
-                    len(added), len(modified), len(deleted))
+        logger.info("Processed delta: %d added, %d modified, %d deleted", len(added), len(modified), len(deleted))
 
     def _load_from_local_db(self) -> None:
         """Load data from local SQLite database."""
@@ -380,8 +379,8 @@ class MemoryManager:
             entities = cursor.fetchall()
 
             for entity_row in entities:
-                entity_id = entity_row['id']
-                entity_data = json.loads(entity_row['data'])
+                entity_id = entity_row["id"]
+                entity_data = json.loads(entity_row["data"])
                 self.local_cache[entity_id] = entity_data
 
             conn.close()
@@ -409,8 +408,8 @@ class MemoryManager:
                         entity.get("name", ""),
                         entity.get("type", ""),
                         json.dumps(entity),
-                        datetime.now().isoformat()
-                    )
+                        datetime.now().isoformat(),
+                    ),
                 )
 
             conn.commit()
@@ -437,8 +436,8 @@ class MemoryManager:
                     entity.get("name", ""),
                     entity.get("type", ""),
                     json.dumps(entity),
-                    datetime.now().isoformat()
-                )
+                    datetime.now().isoformat(),
+                ),
             )
 
             conn.commit()
@@ -467,15 +466,14 @@ class MemoryManager:
             conn.close()
 
             if result:
-                return json.loads(result['data'])
+                return json.loads(result["data"])
 
             return None
         except Exception as e:
             logger.error("Error retrieving entity from local database: %s", e)
             return None
 
-    def _search_entities_in_db(self, query: str, entity_type: str = None,
-                             limit: int = 10) -> List[Dict[str, Any]]:
+    def _search_entities_in_db(self, query: str, entity_type: str = None, limit: int = 10) -> List[Dict[str, Any]]:
         """
         Search for entities in the local database.
 
@@ -495,25 +493,21 @@ class MemoryManager:
             if entity_type:
                 cursor.execute(
                     "SELECT data FROM entities WHERE name LIKE ? AND type = ? LIMIT ?",
-                    (f"%{query}%", entity_type, limit)
+                    (f"%{query}%", entity_type, limit),
                 )
             else:
-                cursor.execute(
-                    "SELECT data FROM entities WHERE name LIKE ? LIMIT ?",
-                    (f"%{query}%", limit)
-                )
+                cursor.execute("SELECT data FROM entities WHERE name LIKE ? LIMIT ?", (f"%{query}%", limit))
 
             results = cursor.fetchall()
 
             conn.close()
 
-            return [json.loads(result['data']) for result in results]
+            return [json.loads(result["data"]) for result in results]
         except Exception as e:
             logger.error("Error searching entities in local database: %s", e)
             return []
 
-    def _entity_matches_query(self, entity: Dict[str, Any], query: str,
-                            entity_type: str = None) -> bool:
+    def _entity_matches_query(self, entity: Dict[str, Any], query: str, entity_type: str = None) -> bool:
         """
         Check if an entity matches a search query.
 

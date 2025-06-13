@@ -5,27 +5,28 @@ Implements Google ADK ParallelAgent pattern for comprehensive concurrent analysi
 
 import os
 import sys
-from typing import Dict, Any
+from typing import Any, Dict
 
 # Add project root to Python path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
 
-from google.adk.agents import ParallelAgent, LlmAgent, SequentialAgent
+from google.adk.agents import LlmAgent, ParallelAgent, SequentialAgent
 from google.adk.tools import FunctionTool
 
 # Import specialist functions
 from agents.specialists.architecture_specialist import analyze_system_architecture
-from agents.specialists.ui_specialist import analyze_user_interface
 from agents.specialists.devops_specialist import analyze_infrastructure
 from agents.specialists.qa_specialist import analyze_testing_strategy
+from agents.specialists.ui_specialist import analyze_user_interface
+
 
 def create_parallel_analysis_workflow() -> SequentialAgent:
     """
     Create a workflow that performs parallel specialist analysis followed by integration.
-    
+
     Pattern: Input Analysis → Parallel Specialist Analysis → Integration & Synthesis
     """
-    
+
     # Phase 1: Input Preparation
     input_analyzer = LlmAgent(
         name="InputAnalyzer",
@@ -38,11 +39,11 @@ def create_parallel_analysis_workflow() -> SequentialAgent:
         4. Prepare context for each specialist domain
         
         Save the prepared context for parallel specialist analysis.""",
-        output_key="analysis_context"
+        output_key="analysis_context",
     )
-    
+
     # Phase 2: Parallel Specialist Analysis
-    
+
     # Architecture Analysis Agent
     architecture_analyzer = LlmAgent(
         name="ParallelArchitectureAnalyzer",
@@ -56,12 +57,12 @@ def create_parallel_analysis_workflow() -> SequentialAgent:
         
         Use the architecture tool for detailed analysis.""",
         tools=[FunctionTool(analyze_system_architecture)],
-        output_key="parallel_architecture_analysis"
+        output_key="parallel_architecture_analysis",
     )
-    
+
     # UI/UX Analysis Agent
     ui_analyzer = LlmAgent(
-        name="ParallelUIAnalyzer", 
+        name="ParallelUIAnalyzer",
         model="gemini-2.0-flash",
         description="Performs UI/UX analysis in parallel",
         instruction="""Based on the context in state['analysis_context'], perform comprehensive UI/UX analysis:
@@ -72,13 +73,13 @@ def create_parallel_analysis_workflow() -> SequentialAgent:
         
         Use the UI tool for detailed analysis.""",
         tools=[FunctionTool(analyze_user_interface)],
-        output_key="parallel_ui_analysis"
+        output_key="parallel_ui_analysis",
     )
-    
+
     # DevOps Analysis Agent
     devops_analyzer = LlmAgent(
         name="ParallelDevOpsAnalyzer",
-        model="gemini-2.0-flash", 
+        model="gemini-2.0-flash",
         description="Performs DevOps analysis in parallel",
         instruction="""Based on the context in state['analysis_context'], perform comprehensive DevOps analysis:
         1. Infrastructure requirements
@@ -88,14 +89,14 @@ def create_parallel_analysis_workflow() -> SequentialAgent:
         
         Use the DevOps tool for detailed analysis.""",
         tools=[FunctionTool(analyze_infrastructure)],
-        output_key="parallel_devops_analysis"
+        output_key="parallel_devops_analysis",
     )
-    
+
     # QA Analysis Agent
     qa_analyzer = LlmAgent(
         name="ParallelQAAnalyzer",
         model="gemini-2.0-flash",
-        description="Performs QA analysis in parallel", 
+        description="Performs QA analysis in parallel",
         instruction="""Based on the context in state['analysis_context'], perform comprehensive QA analysis:
         1. Testing strategy recommendations
         2. Quality assurance frameworks
@@ -104,21 +105,16 @@ def create_parallel_analysis_workflow() -> SequentialAgent:
         
         Use the QA tool for detailed analysis.""",
         tools=[FunctionTool(analyze_testing_strategy)],
-        output_key="parallel_qa_analysis"
+        output_key="parallel_qa_analysis",
     )
-    
+
     # Create parallel analysis group
     parallel_specialists = ParallelAgent(
         name="ParallelSpecialistAnalysis",
         description="Concurrent analysis by all specialist domains",
-        sub_agents=[
-            architecture_analyzer,
-            ui_analyzer, 
-            devops_analyzer,
-            qa_analyzer
-        ]
+        sub_agents=[architecture_analyzer, ui_analyzer, devops_analyzer, qa_analyzer],
     )
-    
+
     # Phase 3: Integration and Synthesis
     synthesis_manager = LlmAgent(
         name="SynthesisManager",
@@ -141,21 +137,18 @@ def create_parallel_analysis_workflow() -> SequentialAgent:
         5. Success metrics and validation criteria
         
         Provide a cohesive, actionable plan that leverages all specialist insights.""",
-        output_key="synthesized_recommendations"
+        output_key="synthesized_recommendations",
     )
-    
+
     # Create the complete workflow
     parallel_workflow = SequentialAgent(
-        name="ParallelAnalysisWorkflow", 
+        name="ParallelAnalysisWorkflow",
         description="Parallel specialist analysis with synthesis",
-        sub_agents=[
-            input_analyzer,
-            parallel_specialists,
-            synthesis_manager
-        ]
+        sub_agents=[input_analyzer, parallel_specialists, synthesis_manager],
     )
-    
+
     return parallel_workflow
+
 
 # Export for VANA integration
 parallel_analysis_workflow = create_parallel_analysis_workflow()

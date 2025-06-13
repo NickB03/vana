@@ -6,12 +6,13 @@ This script checks the connectivity to the MCP server and tests basic memory ope
 It helps diagnose issues with the memory system and verify the configuration.
 """
 
+import json
 import os
 import sys
-import requests
-import json
 import time
 from datetime import datetime
+
+import requests
 from dotenv import load_dotenv
 
 # Add project root to path
@@ -56,7 +57,9 @@ def test_memory_operations():
     """Test basic memory operations."""
     try:
         from tools.mcp_memory_client import MCPMemoryClient
+
 from lib.logging_config import get_logger
+
 logger = get_logger("vana.memory_diagnostic")
 
         

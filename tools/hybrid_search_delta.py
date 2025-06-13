@@ -1,9 +1,11 @@
-import logging
-from typing import Dict, List, Any, Optional
 import asyncio
+import logging
+from typing import Any, Dict, List, Optional
+
 from .memory_manager import MemoryManager
 
 logger = logging.getLogger(__name__)
+
 
 # Mock implementation of search_knowledge for testing
 async def search_knowledge(query: str, top_k: int = 5) -> Dict[str, Any]:
@@ -13,19 +15,12 @@ async def search_knowledge(query: str, top_k: int = 5) -> Dict[str, Any]:
     # Return mock results
     return {
         "results": [
-            {
-                "content": f"Mock result 1 for query: {query}",
-                "score": 0.95,
-                "metadata": {"source": "mock_source_1.md"}
-            },
-            {
-                "content": f"Mock result 2 for query: {query}",
-                "score": 0.85,
-                "metadata": {"source": "mock_source_2.md"}
-            }
+            {"content": f"Mock result 1 for query: {query}", "score": 0.95, "metadata": {"source": "mock_source_1.md"}},
+            {"content": f"Mock result 2 for query: {query}", "score": 0.85, "metadata": {"source": "mock_source_2.md"}},
         ],
-        "count": 2
+        "count": 2,
     }
+
 
 class HybridSearchDelta:
     """Combines Vector Search and Knowledge Graph search results with delta-based updates."""
@@ -49,8 +44,7 @@ class HybridSearchDelta:
 
         return merged_results
 
-    def _search_knowledge_graph(self, query: str,
-                              top_k: int = 5) -> Dict[str, Any]:
+    def _search_knowledge_graph(self, query: str, top_k: int = 5) -> Dict[str, Any]:
         """Search the Knowledge Graph for relevant entities."""
         # Implementation would connect to the knowledge graph search endpoint
         # This is a simplified example
@@ -60,28 +54,27 @@ class HybridSearchDelta:
         results = []
         for entity_id, entity in self.memory_manager.local_cache.items():
             # Simple text matching (would be more sophisticated in production)
-            if (query.lower() in entity.get("name", "").lower() or
-                any(query.lower() in obs.lower()
-                    for obs in entity.get("observations", []))):
-                results.append({
-                    "id": entity_id,
-                    "name": entity.get("name"),
-                    "type": entity.get("type"),
-                    "observations": entity.get("observations", []),
-                    "source": "knowledge_graph"
-                })
+            if query.lower() in entity.get("name", "").lower() or any(
+                query.lower() in obs.lower() for obs in entity.get("observations", [])
+            ):
+                results.append(
+                    {
+                        "id": entity_id,
+                        "name": entity.get("name"),
+                        "type": entity.get("type"),
+                        "observations": entity.get("observations", []),
+                        "source": "knowledge_graph",
+                    }
+                )
 
                 if len(results) >= top_k:
                     break
 
-        return {
-            "results": results,
-            "count": len(results)
-        }
+        return {"results": results, "count": len(results)}
 
-    def _merge_results(self, vector_results: Dict[str, Any],
-                     kg_results: Dict[str, Any],
-                     top_k: int = 5) -> Dict[str, Any]:
+    def _merge_results(
+        self, vector_results: Dict[str, Any], kg_results: Dict[str, Any], top_k: int = 5
+    ) -> Dict[str, Any]:
         """Merge Vector Search and Knowledge Graph results."""
         # This is a simple merge - production would use more sophisticated
         # relevance scoring and deduplication
@@ -117,10 +110,7 @@ class HybridSearchDelta:
         return {
             "results": limited_results,
             "count": len(limited_results),
-            "sources": {
-                "vector_search": vector_results.get("count", 0),
-                "knowledge_graph": kg_results.get("count", 0)
-            }
+            "sources": {"vector_search": vector_results.get("count", 0), "knowledge_graph": kg_results.get("count", 0)},
         }
 
     def format_results(self, results: Dict[str, Any]) -> str:

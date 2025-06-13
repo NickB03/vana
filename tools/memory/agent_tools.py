@@ -1,9 +1,13 @@
 import json
+
 from google.adk.tools import FunctionTool
-from .ragie_client import query_memory, format_memory_results
+
 from lib.logging_config import get_logger
 
+from .ragie_client import format_memory_results, query_memory
+
 logger = get_logger("vana.tools.memory.agent_tools")
+
 
 def search_memory_tool(query: str, top_k: int = 5) -> str:
     """
@@ -46,11 +50,13 @@ Retrieved information:
     logger.info(f"[AGENT TOOL] Search complete, returning {len(results)} results")
     return formatted_results
 
+
 # Create the memory tool for use in ADK agents
 # Create a function tool with the correct signature for ADK 0.3.0
 search_memory_tool.__name__ = "search_memory"
 search_memory_tool.__doc__ = "Search the agent's memory for relevant information about the project"
 memory_tool = FunctionTool(search_memory_tool)
+
 
 # Function to add memory tools to an agent's toolset
 def add_memory_tools_to_agent(agent_class):
@@ -63,7 +69,7 @@ def add_memory_tools_to_agent(agent_class):
     Returns:
         Updated agent class with memory tools added
     """
-    if not hasattr(agent_class, 'tools'):
+    if not hasattr(agent_class, "tools"):
         agent_class.tools = []
 
     # Add the memory tool if it's not already present

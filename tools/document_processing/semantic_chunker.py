@@ -5,21 +5,19 @@ This module provides structure-aware document chunking that preserves
 semantic boundaries and document hierarchy.
 """
 
-import re
 import logging
-from typing import List, Dict, Any, Optional, Tuple
+import re
+from typing import Any, Dict, List, Optional, Tuple
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+
 class SemanticChunker:
     """Semantic document chunking implementation for VANA"""
 
-    def __init__(self,
-                 target_chunk_size: int = 3000,
-                 min_chunk_size: int = 500,
-                 overlap_size: int = 300):
+    def __init__(self, target_chunk_size: int = 3000, min_chunk_size: int = 500, overlap_size: int = 300):
         """
         Initialize the semantic chunker
 
@@ -46,7 +44,7 @@ class SemanticChunker:
         text = document.get("text", "")
 
         # Split by headings (assumes markdown-like format with # headings)
-        heading_pattern = r'(^|\n)(#{1,6})\s+(.+?)(?=\n)'
+        heading_pattern = r"(^|\n)(#{1,6})\s+(.+?)(?=\n)"
 
         # Find all headings
         headings = re.finditer(heading_pattern, text, re.MULTILINE)
@@ -59,13 +57,15 @@ class SemanticChunker:
         for match in headings:
             # If this isn't the first heading, add the previous section
             if last_pos > 0:
-                section_text = text[last_pos:match.start()]
+                section_text = text[last_pos : match.start()]
                 if section_text.strip():
-                    sections.append({
-                        "text": section_text.strip(),
-                        "path": ".".join(current_path),
-                        "heading": current_path[-1] if current_path else ""
-                    })
+                    sections.append(
+                        {
+                            "text": section_text.strip(),
+                            "path": ".".join(current_path),
+                            "heading": current_path[-1] if current_path else "",
+                        }
+                    )
 
             # Update current heading path
             level = len(match.group(2))  # Number of # characters
@@ -73,7 +73,7 @@ class SemanticChunker:
 
             # Adjust path based on heading level
             if level <= len(current_path):
-                current_path = current_path[:level-1]
+                current_path = current_path[: level - 1]
             current_path.append(heading_text)
 
             # Update position
@@ -83,19 +83,17 @@ class SemanticChunker:
         if last_pos < len(text):
             section_text = text[last_pos:]
             if section_text.strip():
-                sections.append({
-                    "text": section_text.strip(),
-                    "path": ".".join(current_path),
-                    "heading": current_path[-1] if current_path else ""
-                })
+                sections.append(
+                    {
+                        "text": section_text.strip(),
+                        "path": ".".join(current_path),
+                        "heading": current_path[-1] if current_path else "",
+                    }
+                )
 
         # If no sections were found, treat the entire document as one section
         if not sections:
-            sections.append({
-                "text": text.strip(),
-                "path": "",
-                "heading": document.get("title", "")
-            })
+            sections.append({"text": text.strip(), "path": "", "heading": document.get("title", "")})
 
         return sections
 
@@ -110,7 +108,7 @@ class SemanticChunker:
             List of paragraphs
         """
         # Split by double newlines (standard paragraph breaks)
-        paragraphs = re.split(r'\n\s*\n', text)
+        paragraphs = re.split(r"\n\s*\n", text)
 
         # Filter empty paragraphs
         return [p.strip() for p in paragraphs if p.strip()]
@@ -169,17 +167,19 @@ class SemanticChunker:
 
         # If document is very short, create a single chunk
         if len(document.get("text", "").split()) < self.min_chunk_size:
-            chunks.append({
-                "text": document.get("text", ""),
-                "metadata": {
-                    "source": document.get("source", ""),
-                    "doc_id": document.get("doc_id", ""),
-                    "section_path": "",
-                    "heading": document.get("title", ""),
-                    "token_count": len(document.get("text", "").split()),
-                    "chunk_id": f"{document.get('doc_id', 'doc')}_0"
+            chunks.append(
+                {
+                    "text": document.get("text", ""),
+                    "metadata": {
+                        "source": document.get("source", ""),
+                        "doc_id": document.get("doc_id", ""),
+                        "section_path": "",
+                        "heading": document.get("title", ""),
+                        "token_count": len(document.get("text", "").split()),
+                        "chunk_id": f"{document.get('doc_id', 'doc')}_0",
+                    },
                 }
-            })
+            )
             logger.info(f"Created 1 semantic chunk from short document")
             return chunks
 
@@ -199,17 +199,19 @@ class SemanticChunker:
             section_tokens = sum(self.count_tokens(p) for p in paragraphs)
             if section_tokens <= self.min_chunk_size:
                 chunk_text = "\n\n".join(paragraphs)
-                chunks.append({
-                    "text": chunk_text,
-                    "metadata": {
-                        "source": document.get("source", ""),
-                        "doc_id": document.get("doc_id", ""),
-                        "section_path": section_path,
-                        "heading": section_heading,
-                        "token_count": section_tokens,
-                        "chunk_id": f"{document.get('doc_id', 'doc')}_{len(chunks)}"
+                chunks.append(
+                    {
+                        "text": chunk_text,
+                        "metadata": {
+                            "source": document.get("source", ""),
+                            "doc_id": document.get("doc_id", ""),
+                            "section_path": section_path,
+                            "heading": section_heading,
+                            "token_count": section_tokens,
+                            "chunk_id": f"{document.get('doc_id', 'doc')}_{len(chunks)}",
+                        },
                     }
-                })
+                )
                 continue
 
             # Initialize chunk
@@ -225,22 +227,24 @@ class SemanticChunker:
                     # If we have content in the current chunk, add it first
                     if current_chunk:
                         chunk_text = "\n\n".join(current_chunk)
-                        chunks.append({
-                            "text": chunk_text,
-                            "metadata": {
-                                "source": document.get("source", ""),
-                                "doc_id": document.get("doc_id", ""),
-                                "section_path": section_path,
-                                "heading": section_heading,
-                                "token_count": current_tokens,
-                                "chunk_id": f"{document.get('doc_id', 'doc')}_{len(chunks)}"
+                        chunks.append(
+                            {
+                                "text": chunk_text,
+                                "metadata": {
+                                    "source": document.get("source", ""),
+                                    "doc_id": document.get("doc_id", ""),
+                                    "section_path": section_path,
+                                    "heading": section_heading,
+                                    "token_count": current_tokens,
+                                    "chunk_id": f"{document.get('doc_id', 'doc')}_{len(chunks)}",
+                                },
                             }
-                        })
+                        )
                         current_chunk = []
                         current_tokens = 0
 
                     # Split the long paragraph into sentences
-                    sentences = re.split(r'(?<=[.!?])\s+', paragraph)
+                    sentences = re.split(r"(?<=[.!?])\s+", paragraph)
 
                     # Create chunks from sentences
                     sent_chunk = []
@@ -249,20 +253,25 @@ class SemanticChunker:
                     for sentence in sentences:
                         sent_token_count = self.count_tokens(sentence)
 
-                        if sent_tokens + sent_token_count > self.target_chunk_size and sent_tokens >= self.min_chunk_size:
+                        if (
+                            sent_tokens + sent_token_count > self.target_chunk_size
+                            and sent_tokens >= self.min_chunk_size
+                        ):
                             # Add sentence chunk
                             sent_text = " ".join(sent_chunk)
-                            chunks.append({
-                                "text": sent_text,
-                                "metadata": {
-                                    "source": document.get("source", ""),
-                                    "doc_id": document.get("doc_id", ""),
-                                    "section_path": section_path,
-                                    "heading": section_heading,
-                                    "token_count": sent_tokens,
-                                    "chunk_id": f"{document.get('doc_id', 'doc')}_{len(chunks)}"
+                            chunks.append(
+                                {
+                                    "text": sent_text,
+                                    "metadata": {
+                                        "source": document.get("source", ""),
+                                        "doc_id": document.get("doc_id", ""),
+                                        "section_path": section_path,
+                                        "heading": section_heading,
+                                        "token_count": sent_tokens,
+                                        "chunk_id": f"{document.get('doc_id', 'doc')}_{len(chunks)}",
+                                    },
                                 }
-                            })
+                            )
 
                             # Start new sentence chunk
                             sent_chunk = [sentence]
@@ -274,17 +283,19 @@ class SemanticChunker:
                     # Add final sentence chunk if not empty
                     if sent_chunk and sent_tokens >= self.min_chunk_size:
                         sent_text = " ".join(sent_chunk)
-                        chunks.append({
-                            "text": sent_text,
-                            "metadata": {
-                                "source": document.get("source", ""),
-                                "doc_id": document.get("doc_id", ""),
-                                "section_path": section_path,
-                                "heading": section_heading,
-                                "token_count": sent_tokens,
-                                "chunk_id": f"{document.get('doc_id', 'doc')}_{len(chunks)}"
+                        chunks.append(
+                            {
+                                "text": sent_text,
+                                "metadata": {
+                                    "source": document.get("source", ""),
+                                    "doc_id": document.get("doc_id", ""),
+                                    "section_path": section_path,
+                                    "heading": section_heading,
+                                    "token_count": sent_tokens,
+                                    "chunk_id": f"{document.get('doc_id', 'doc')}_{len(chunks)}",
+                                },
                             }
-                        })
+                        )
                     elif sent_chunk:
                         # If chunk is too small, start the next paragraph chunk with it
                         current_chunk = sent_chunk
@@ -294,17 +305,19 @@ class SemanticChunker:
                 elif current_tokens + para_tokens > self.target_chunk_size and current_tokens >= self.min_chunk_size:
                     # Create chunk
                     chunk_text = "\n\n".join(current_chunk)
-                    chunks.append({
-                        "text": chunk_text,
-                        "metadata": {
-                            "source": document.get("source", ""),
-                            "doc_id": document.get("doc_id", ""),
-                            "section_path": section_path,
-                            "heading": section_heading,
-                            "token_count": current_tokens,
-                            "chunk_id": f"{document.get('doc_id', 'doc')}_{len(chunks)}"
+                    chunks.append(
+                        {
+                            "text": chunk_text,
+                            "metadata": {
+                                "source": document.get("source", ""),
+                                "doc_id": document.get("doc_id", ""),
+                                "section_path": section_path,
+                                "heading": section_heading,
+                                "token_count": current_tokens,
+                                "chunk_id": f"{document.get('doc_id', 'doc')}_{len(chunks)}",
+                            },
                         }
-                    })
+                    )
 
                     # Start new chunk with overlap
                     overlap_paragraphs = self.get_overlap_paragraphs(current_chunk, self.overlap_size)
@@ -318,17 +331,19 @@ class SemanticChunker:
             # Add final chunk if not empty
             if current_chunk and current_tokens >= self.min_chunk_size:
                 chunk_text = "\n\n".join(current_chunk)
-                chunks.append({
-                    "text": chunk_text,
-                    "metadata": {
-                        "source": document.get("source", ""),
-                        "doc_id": document.get("doc_id", ""),
-                        "section_path": section_path,
-                        "heading": section_heading,
-                        "token_count": current_tokens,
-                        "chunk_id": f"{document.get('doc_id', 'doc')}_{len(chunks)}"
+                chunks.append(
+                    {
+                        "text": chunk_text,
+                        "metadata": {
+                            "source": document.get("source", ""),
+                            "doc_id": document.get("doc_id", ""),
+                            "section_path": section_path,
+                            "heading": section_heading,
+                            "token_count": current_tokens,
+                            "chunk_id": f"{document.get('doc_id', 'doc')}_{len(chunks)}",
+                        },
                     }
-                })
+                )
             elif current_chunk:
                 # If the final chunk is too small, add it to the previous chunk if possible
                 if chunks:
@@ -344,7 +359,24 @@ class SemanticChunker:
                     else:
                         # Add as a separate chunk even though it's small
                         chunk_text = "\n\n".join(current_chunk)
-                        chunks.append({
+                        chunks.append(
+                            {
+                                "text": chunk_text,
+                                "metadata": {
+                                    "source": document.get("source", ""),
+                                    "doc_id": document.get("doc_id", ""),
+                                    "section_path": section_path,
+                                    "heading": section_heading,
+                                    "token_count": current_tokens,
+                                    "chunk_id": f"{document.get('doc_id', 'doc')}_{len(chunks)}",
+                                },
+                            }
+                        )
+                else:
+                    # Add as a separate chunk even though it's small
+                    chunk_text = "\n\n".join(current_chunk)
+                    chunks.append(
+                        {
                             "text": chunk_text,
                             "metadata": {
                                 "source": document.get("source", ""),
@@ -352,23 +384,10 @@ class SemanticChunker:
                                 "section_path": section_path,
                                 "heading": section_heading,
                                 "token_count": current_tokens,
-                                "chunk_id": f"{document.get('doc_id', 'doc')}_{len(chunks)}"
-                            }
-                        })
-                else:
-                    # Add as a separate chunk even though it's small
-                    chunk_text = "\n\n".join(current_chunk)
-                    chunks.append({
-                        "text": chunk_text,
-                        "metadata": {
-                            "source": document.get("source", ""),
-                            "doc_id": document.get("doc_id", ""),
-                            "section_path": section_path,
-                            "heading": section_heading,
-                            "token_count": current_tokens,
-                            "chunk_id": f"{document.get('doc_id', 'doc')}_{len(chunks)}"
+                                "chunk_id": f"{document.get('doc_id', 'doc')}_{len(chunks)}",
+                            },
                         }
-                    })
+                    )
 
         # Add document metadata to all chunks
         for chunk in chunks:

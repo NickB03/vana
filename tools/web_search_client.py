@@ -18,7 +18,8 @@ Usage:
 """
 
 import logging
-from typing import List, Dict, Any
+from typing import Any, Dict, List
+
 from tools.brave_search_client import get_brave_search_client
 
 logger = logging.getLogger(__name__)
@@ -66,9 +67,7 @@ class WebSearchClient:
                     "link": result.get("url", ""),
                     "snippet": result.get("snippet", ""),
                     "displayLink": result.get("source", ""),
-                    "pagemap": {
-                        "metatags": [{"article:published_time": result.get("date", "")}]
-                    }
+                    "pagemap": {"metatags": [{"article:published_time": result.get("date", "")}]},
                 }
                 items.append(item)
 
@@ -101,9 +100,7 @@ class MockWebSearchClient:
                     "link": result.get("url", ""),
                     "snippet": result.get("snippet", ""),
                     "displayLink": result.get("source", ""),
-                    "pagemap": {
-                        "metatags": [{"article:published_time": result.get("date", "")}]
-                    }
+                    "pagemap": {"metatags": [{"article:published_time": result.get("date", "")}]},
                 }
                 items.append(item)
 

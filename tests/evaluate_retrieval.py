@@ -11,14 +11,15 @@ This script evaluates the quality of knowledge retrieval using different methods
 It measures precision, recall, and relevance of retrieved information.
 """
 
+import json
+import logging
+import math
 import os
 import sys
-import json
 import time
-import math
-import logging
-from typing import List, Dict, Any, Tuple, Optional
 from datetime import datetime
+from typing import Any, Dict, List, Optional, Tuple
+
 from dotenv import load_dotenv
 
 # Add the project root to the Python path
@@ -26,8 +27,8 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # Import the necessary tools
 from tools.hybrid_search import HybridSearch
-from tools.vector_search.vector_search_client import VectorSearchClient
 from tools.knowledge_graph.knowledge_graph_manager import KnowledgeGraphManager
+from tools.vector_search.vector_search_client import VectorSearchClient
 from tools.web_search import WebSearchClient
 
 # Load environment variables
@@ -43,62 +44,62 @@ TEST_QUERIES = [
         "query": "What is VANA?",
         "expected_keywords": ["Versatile Agent Network Architecture", "intelligent", "agent", "system", "ADK"],
         "category": "general",
-        "difficulty": "easy"
+        "difficulty": "easy",
     },
     {
         "query": "How does Vector Search work?",
         "expected_keywords": ["embedding", "semantic", "similarity", "Vertex AI", "index"],
         "category": "technology",
-        "difficulty": "medium"
+        "difficulty": "medium",
     },
     {
         "query": "What is the Knowledge Graph in VANA?",
         "expected_keywords": ["structured", "entity", "relationship", "MCP", "knowledge"],
         "category": "technology",
-        "difficulty": "medium"
+        "difficulty": "medium",
     },
     {
         "query": "How to implement hybrid search?",
         "expected_keywords": ["combine", "Vector Search", "Knowledge Graph", "results", "ranking"],
         "category": "implementation",
-        "difficulty": "hard"
+        "difficulty": "hard",
     },
     {
         "query": "What are the main components of VANA?",
         "expected_keywords": ["Vector Search", "Knowledge Graph", "ADK", "agents", "tools"],
         "category": "architecture",
-        "difficulty": "medium"
+        "difficulty": "medium",
     },
     {
         "query": "How does entity extraction work in VANA?",
         "expected_keywords": ["NLP", "spaCy", "entity", "extraction", "patterns"],
         "category": "implementation",
-        "difficulty": "hard"
+        "difficulty": "hard",
     },
     {
         "query": "What is semantic chunking?",
         "expected_keywords": ["document", "chunk", "semantic", "boundary", "section"],
         "category": "technology",
-        "difficulty": "medium"
+        "difficulty": "medium",
     },
     {
         "query": "How to set up the VANA environment?",
         "expected_keywords": ["virtual environment", "dependencies", "setup", "configuration", "launch"],
         "category": "setup",
-        "difficulty": "easy"
+        "difficulty": "easy",
     },
     {
         "query": "What APIs does VANA use?",
         "expected_keywords": ["Google", "Vertex AI", "ADK", "MCP", "API"],
         "category": "integration",
-        "difficulty": "medium"
+        "difficulty": "medium",
     },
     {
         "query": "How does VANA handle PDF documents?",
         "expected_keywords": ["PDF", "extract", "text", "process", "metadata"],
         "category": "feature",
-        "difficulty": "medium"
-    }
+        "difficulty": "medium",
+    },
 ]
 
 # Define evaluation metrics
@@ -106,29 +107,22 @@ METRICS = {
     "precision": {
         "name": "Precision",
         "description": "Fraction of retrieved information that is relevant",
-        "higher_is_better": True
+        "higher_is_better": True,
     },
     "recall": {
         "name": "Recall",
         "description": "Fraction of relevant information that is retrieved",
-        "higher_is_better": True
+        "higher_is_better": True,
     },
-    "f1": {
-        "name": "F1 Score",
-        "description": "Harmonic mean of precision and recall",
-        "higher_is_better": True
-    },
+    "f1": {"name": "F1 Score", "description": "Harmonic mean of precision and recall", "higher_is_better": True},
     "keyword_coverage": {
         "name": "Keyword Coverage",
         "description": "Fraction of expected keywords found in results",
-        "higher_is_better": True
+        "higher_is_better": True,
     },
-    "latency": {
-        "name": "Latency (ms)",
-        "description": "Time taken to retrieve results",
-        "higher_is_better": False
-    }
+    "latency": {"name": "Latency (ms)", "description": "Time taken to retrieve results", "higher_is_better": False},
 }
+
 
 def calculate_precision(results: List[Dict[str, Any]], expected_keywords: List[str]) -> float:
     """
@@ -159,6 +153,7 @@ def calculate_precision(results: List[Dict[str, Any]], expected_keywords: List[s
 
     return relevant_count / len(results)
 
+
 def calculate_keyword_coverage(results: List[Dict[str, Any]], expected_keywords: List[str]) -> float:
     """
     Calculate keyword coverage of retrieval results
@@ -183,6 +178,7 @@ def calculate_keyword_coverage(results: List[Dict[str, Any]], expected_keywords:
 
     return keywords_found / len(expected_keywords)
 
+
 def calculate_f1_score(precision: float, recall: float) -> float:
     """
     Calculate F1 score from precision and recall
@@ -200,6 +196,7 @@ def calculate_f1_score(precision: float, recall: float) -> float:
         return 0.0
 
     return 2 * (precision * recall) / (precision + recall)
+
 
 def calculate_relevance_scores(results: List[Dict[str, Any]], expected_keywords: List[str]) -> List[float]:
     """
@@ -228,6 +225,7 @@ def calculate_relevance_scores(results: List[Dict[str, Any]], expected_keywords:
         relevance_scores.append(relevance)
 
     return relevance_scores
+
 
 def calculate_ndcg(relevance_scores: List[float], k: int = None) -> float:
     """
@@ -263,6 +261,7 @@ def calculate_ndcg(relevance_scores: List[float], k: int = None) -> float:
 
     return dcg / idcg
 
+
 def measure_latency(func, *args, **kwargs) -> Tuple[Any, float]:
     """
     Measure the latency of a function call
@@ -281,6 +280,7 @@ def measure_latency(func, *args, **kwargs) -> Tuple[Any, float]:
 
     latency_ms = (end_time - start_time) * 1000
     return result, latency_ms
+
 
 def evaluate_vector_search():
     """Evaluate Vector Search retrieval quality"""
@@ -319,17 +319,19 @@ def evaluate_vector_search():
         logger.info(f"  NDCG: {ndcg:.2f}")
         logger.info(f"  Latency: {latency:.2f} ms")
 
-        results.append({
-            "query": query,
-            "category": category,
-            "difficulty": difficulty,
-            "precision": precision,
-            "recall": recall,
-            "f1": f1,
-            "ndcg": ndcg,
-            "latency": latency,
-            "result_count": len(search_results)
-        })
+        results.append(
+            {
+                "query": query,
+                "category": category,
+                "difficulty": difficulty,
+                "precision": precision,
+                "recall": recall,
+                "f1": f1,
+                "ndcg": ndcg,
+                "latency": latency,
+                "result_count": len(search_results),
+            }
+        )
 
     # Calculate average metrics
     avg_precision = sum(r["precision"] for r in results) / len(results)
@@ -368,22 +370,27 @@ def evaluate_vector_search():
     results_file = f"vector_search_evaluation_{timestamp}.json"
     try:
         with open(os.path.join("logs", results_file), "w") as f:
-            json.dump({
-                "timestamp": timestamp,
-                "results": results,
-                "averages": {
-                    "precision": avg_precision,
-                    "recall": avg_recall,
-                    "f1": avg_f1,
-                    "ndcg": avg_ndcg,
-                    "latency": avg_latency
-                }
-            }, f, indent=2)
+            json.dump(
+                {
+                    "timestamp": timestamp,
+                    "results": results,
+                    "averages": {
+                        "precision": avg_precision,
+                        "recall": avg_recall,
+                        "f1": avg_f1,
+                        "ndcg": avg_ndcg,
+                        "latency": avg_latency,
+                    },
+                },
+                f,
+                indent=2,
+            )
         logger.info(f"\nResults saved to logs/{results_file}")
     except Exception as e:
         logger.error(f"Error saving results: {str(e)}")
 
     return True
+
 
 def evaluate_knowledge_graph():
     """Evaluate Knowledge Graph retrieval quality"""
@@ -410,13 +417,12 @@ def evaluate_knowledge_graph():
         # Convert to common format for evaluation
         search_results = []
         for entity in entities:
-            search_results.append({
-                "content": entity.get("observation", ""),
-                "metadata": {
-                    "name": entity.get("name", ""),
-                    "type": entity.get("type", "")
+            search_results.append(
+                {
+                    "content": entity.get("observation", ""),
+                    "metadata": {"name": entity.get("name", ""), "type": entity.get("type", "")},
                 }
-            })
+            )
 
         # Calculate metrics
         precision = calculate_precision(search_results, expected_keywords)
@@ -425,11 +431,7 @@ def evaluate_knowledge_graph():
         logger.info(f"  Precision: {precision:.2f}")
         logger.info(f"  Keyword Coverage: {coverage:.2f}")
 
-        results.append({
-            "query": query,
-            "precision": precision,
-            "coverage": coverage
-        })
+        results.append({"query": query, "precision": precision, "coverage": coverage})
 
     # Calculate average metrics
     if results:
@@ -440,6 +442,7 @@ def evaluate_knowledge_graph():
         logger.info(f"Knowledge Graph Average Keyword Coverage: {avg_coverage:.2f}")
 
     return True
+
 
 def evaluate_hybrid_search():
     """Evaluate Hybrid Search retrieval quality"""
@@ -466,11 +469,7 @@ def evaluate_hybrid_search():
         logger.info(f"  Precision: {precision:.2f}")
         logger.info(f"  Keyword Coverage: {coverage:.2f}")
 
-        results.append({
-            "query": query,
-            "precision": precision,
-            "coverage": coverage
-        })
+        results.append({"query": query, "precision": precision, "coverage": coverage})
 
     # Calculate average metrics
     avg_precision = sum(r["precision"] for r in results) / len(results)
@@ -480,6 +479,7 @@ def evaluate_hybrid_search():
     logger.info(f"Hybrid Search Average Keyword Coverage: {avg_coverage:.2f}")
 
     return True
+
 
 def evaluate_web_search():
     """Evaluate Web Search retrieval quality"""
@@ -505,13 +505,12 @@ def evaluate_web_search():
         # Convert to common format for evaluation
         formatted_results = []
         for result in search_results:
-            formatted_results.append({
-                "content": f"{result.get('title')} {result.get('snippet')}",
-                "metadata": {
-                    "url": result.get("url", ""),
-                    "source": result.get("source", "")
+            formatted_results.append(
+                {
+                    "content": f"{result.get('title')} {result.get('snippet')}",
+                    "metadata": {"url": result.get("url", ""), "source": result.get("source", "")},
                 }
-            })
+            )
 
         # Calculate metrics
         precision = calculate_precision(formatted_results, expected_keywords)
@@ -520,11 +519,7 @@ def evaluate_web_search():
         logger.info(f"  Precision: {precision:.2f}")
         logger.info(f"  Keyword Coverage: {coverage:.2f}")
 
-        results.append({
-            "query": query,
-            "precision": precision,
-            "coverage": coverage
-        })
+        results.append({"query": query, "precision": precision, "coverage": coverage})
 
     # Calculate average metrics
     if results:
@@ -535,6 +530,7 @@ def evaluate_web_search():
         logger.info(f"Web Search Average Keyword Coverage: {avg_coverage:.2f}")
 
     return True
+
 
 def main():
     """Main function"""
@@ -557,16 +553,20 @@ def main():
     summary_file = f"retrieval_evaluation_summary_{timestamp}.json"
     try:
         with open(os.path.join("logs", summary_file), "w") as f:
-            json.dump({
-                "timestamp": timestamp,
-                "methods_evaluated": {
-                    "vector_search": vs_success,
-                    "knowledge_graph": kg_success,
-                    "hybrid_search": hs_success,
-                    "web_search": ws_success
+            json.dump(
+                {
+                    "timestamp": timestamp,
+                    "methods_evaluated": {
+                        "vector_search": vs_success,
+                        "knowledge_graph": kg_success,
+                        "hybrid_search": hs_success,
+                        "web_search": ws_success,
+                    },
+                    "overall_success": success,
                 },
-                "overall_success": success
-            }, f, indent=2)
+                f,
+                indent=2,
+            )
         logger.info(f"\nSummary saved to logs/{summary_file}")
     except Exception as e:
         logger.error(f"Error saving summary: {str(e)}")
@@ -577,6 +577,7 @@ def main():
     else:
         logger.error("\nRetrieval evaluation failed. No retrieval methods available.")
         return 1
+
 
 if __name__ == "__main__":
     sys.exit(main())
