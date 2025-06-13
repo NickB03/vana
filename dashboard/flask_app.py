@@ -55,7 +55,7 @@ def create_app(config_name=None):
         SESSION_PERMANENT=False,
         SESSION_USE_SIGNER=True,
         PERMANENT_SESSION_LIFETIME=86400,  # 24 hours
-        TEMPLATES_AUTO_RELOAD=True
+        TEMPLATES_AUTO_RELOAD=False
     )
 
     # Apply additional configuration

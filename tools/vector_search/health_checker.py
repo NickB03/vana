@@ -465,14 +465,14 @@ def main():
     """Test Vector Search Health Checker"""
     checker = VectorSearchHealthChecker()
     result = checker.check_health()
-    print(f"Health status: {result['status']}")
+    logger.info("%s", f"Health status: {result['status']}")
 
     recommendations = checker.get_recommendations(result)
     for i, rec in enumerate(recommendations):
-        print(f"{i+1}. [{rec['priority']}] {rec['title']}: {rec['action']}")
+        logger.info("%s", f"{i+1}. [{rec['priority']}] {rec['title']}: {rec['action']}")
 
     report = checker.generate_report()
-    print(f"Generated report with status: {report['current_status']}")
+    logger.info("%s", f"Generated report with status: {report['current_status']}")
 
     checker.save_report_to_file("vector_search_health_report.json")
 

@@ -25,9 +25,12 @@ sys.path.insert(0, os.path.abspath(os.path.dirname(os.path.dirname(__file__))))
 try:
     from tools.enhanced_hybrid_search_optimized import EnhancedHybridSearchOptimized
     from tools.web_search_client import get_web_search_client
+from lib.logging_config import get_logger
+logger = get_logger("vana.run_optimized_search")
+
 except ImportError as e:
-    print(f"Error importing required modules: {e}")
-    print("Make sure you run this script from the project root or scripts directory.")
+    logger.error(f"Error importing required modules: {e}")
+    logger.info("Make sure you run this script from the project root or scripts directory.")
     sys.exit(1)
 
 
@@ -62,17 +65,17 @@ def format_results(results: List[Dict[str, Any]], include_metadata: bool = False
 
 def run_optimized_search(query: str, include_web: bool = False, result_count: int = 5, use_mock: bool = False, verbose: bool = False):
     """Run optimized hybrid search with optional web integration."""
-    print(f"Running optimized search for query: '{query}'")
-    print(f"Include web results: {include_web}")
-    print(f"Number of results: {result_count}")
-    print(f"Using mock web client: {use_mock}")
-    print("-" * 50)
+    logger.info("%s", f"Running optimized search for query: '{query}'")
+    logger.info(f"Include web results: {include_web}")
+    logger.info(f"Number of results: {result_count}")
+    logger.info(f"Using mock web client: {use_mock}")
+    logger.info("%s", "-" * 50)
 
     # Get web search client if needed
     web_client = None
     if include_web:
         web_client = get_web_search_client(use_mock=use_mock)
-        print(f"Using {'mock' if use_mock else 'real'} web search client")
+        logger.info("%s", f"Using {'mock' if use_mock else 'real'} web search client")
 
     # Create optimized hybrid search instance
     search = EnhancedHybridSearchOptimized(web_search_client=web_client)
@@ -83,8 +86,8 @@ def run_optimized_search(query: str, include_web: bool = False, result_count: in
     end_time = time.time()
 
     # Print results
-    print(f"\nFound {len(results['combined'])} results in {end_time - start_time:.2f} seconds:\n")
-    print(format_results(results['combined'], include_metadata=verbose))
+    logger.info("%s", f"\nFound {len(results['combined'])} results in {end_time - start_time:.2f} seconds:\n")
+    logger.info("%s", format_results(results['combined'], include_metadata=verbose))
 
     # Print source distribution if verbose
     if verbose:
@@ -92,9 +95,9 @@ def run_optimized_search(query: str, include_web: bool = False, result_count: in
         for result in results['combined']:
             source = result["source"]
             sources[source] = sources.get(source, 0) + 1
-        print("Source distribution:")
+        logger.info("Source distribution:")
         for source, count in sources.items():
-            print(f"  {source}: {count} results ({count/len(results['combined'])*100:.1f}%)")
+            logger.info("%s", f"  {source}: {count} results ({count/len(results['combined'])*100:.1f}%)")
 
 
 def main():
@@ -115,8 +118,8 @@ def main():
 
     # Implement comparison with basic hybrid search if needed
     if args.compare:
-        print("\nComparison with basic hybrid search not yet implemented.")
-        print("This will be added in a future update.")
+        logger.info("\nComparison with basic hybrid search not yet implemented.")
+        logger.info("This will be added in a future update.")
 
 
 if __name__ == "__main__":

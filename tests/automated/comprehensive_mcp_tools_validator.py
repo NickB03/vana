@@ -380,24 +380,24 @@ async def main():
     """Main validation execution"""
     validator = ComprehensiveMCPValidator()
     
-    print("🎯 COMPREHENSIVE MCP TOOLS VALIDATION STARTING")
-    print("=" * 60)
+    logger.info("🎯 COMPREHENSIVE MCP TOOLS VALIDATION STARTING")
+    logger.debug("%s", "=" * 60)
     
     results = await validator.validate_all_mcp_tools()
     
-    print("\n📊 VALIDATION RESULTS")
-    print("=" * 60)
-    print(json.dumps(results["validation_summary"], indent=2))
+    logger.info("\n📊 VALIDATION RESULTS")
+    logger.debug("%s", "=" * 60)
+    logger.debug("%s", json.dumps(results["validation_summary"], indent=2))
     
-    print("\n💡 RECOMMENDATIONS")
-    print("=" * 60)
+    logger.debug("\n💡 RECOMMENDATIONS")
+    logger.debug("%s", "=" * 60)
     for rec in results["recommendations"]:
-        print(f"  {rec}")
+        logger.debug(f"  {rec}")
     
-    print("\n🎯 NEXT STEPS")
-    print("=" * 60)
+    logger.debug("\n🎯 NEXT STEPS")
+    logger.debug("%s", "=" * 60)
     for step in results["next_steps"]:
-        print(f"  {step}")
+        logger.debug(f"  {step}")
     
     # Save detailed results with timestamp
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -405,7 +405,7 @@ async def main():
     with open(filename, "w") as f:
         json.dump(results, f, indent=2, default=str)
 
-    print(f"\n📄 Detailed results saved to: {filename}")
+    logger.info(f"\n📄 Detailed results saved to: {filename}")
     
     return results
 

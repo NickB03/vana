@@ -41,23 +41,23 @@ def main():
     logger.info(f"  Service Account: {service_account_email}")
     
     # Generate the commands
-    print("\n# Run these commands to create a new service account key file:")
+    logger.info("\n# Run these commands to create a new service account key file:")
     
     # Create the secrets directory if it doesn't exist
-    print("\n# Create the secrets directory if it doesn't exist")
-    print("mkdir -p secrets")
+    logger.info("%s", "\n# Create the secrets directory if it doesn't exist")
+    logger.info("mkdir -p secrets")
     
     # Create the service account key
-    print("\n# Create the service account key")
-    print(f"gcloud iam service-accounts keys create secrets/vana-vector-search-sa.json \\\n    --iam-account={service_account_email}")
+    logger.info("\n# Create the service account key")
+    logger.info(f"gcloud iam service-accounts keys create secrets/vana-vector-search-sa.json \\\n    --iam-account={service_account_email}")
     
     # Update the .env file
-    print("\n# Update the .env file to use the new service account key")
-    print("sed -i '' 's|GOOGLE_APPLICATION_CREDENTIALS=.*|GOOGLE_APPLICATION_CREDENTIALS=/Users/nick/Development/vana/secrets/vana-vector-search-sa.json|' .env")
+    logger.info("\n# Update the .env file to use the new service account key")
+    logger.info("%s", "sed -i '' 's|GOOGLE_APPLICATION_CREDENTIALS=.*|GOOGLE_APPLICATION_CREDENTIALS=/Users/nick/Development/vana/secrets/vana-vector-search-sa.json|' .env")
     
     # Test the Vector Search client
-    print("\n# Test the Vector Search client")
-    print("python scripts/verify_vector_search_client.py")
+    logger.info("\n# Test the Vector Search client")
+    logger.info("python scripts/verify_vector_search_client.py")
     
     logger.info("✅ Successfully generated commands for creating a service account key")
     return 0

@@ -26,7 +26,7 @@ def check_mcp_server():
     namespace = os.environ.get("MCP_NAMESPACE", "vana-project")
     api_key = os.environ.get("MCP_API_KEY", "")
     
-    print(f"Checking MCP server at {endpoint}/{namespace}...")
+    logger.info(f"Checking MCP server at {endpoint}/{namespace}...")
     
     headers = {
         "Content-Type": "application/json",
@@ -41,23 +41,26 @@ def check_mcp_server():
         )
         
         if response.status_code == 200:
-            print(f"✅ MCP server is accessible")
-            print(f"Response: {response.text}")
+            logger.info(f"✅ MCP server is accessible")
+            logger.info(f"Response: {response.text}")
             return True
         else:
-            print(f"❌ MCP server returned status code {response.status_code}")
-            print(f"Response: {response.text}")
+            logger.info(f"❌ MCP server returned status code {response.status_code}")
+            logger.info(f"Response: {response.text}")
             return False
     except Exception as e:
-        print(f"❌ Error connecting to MCP server: {e}")
+        logger.error(f"❌ Error connecting to MCP server: {e}")
         return False
 
 def test_memory_operations():
     """Test basic memory operations."""
     try:
         from tools.mcp_memory_client import MCPMemoryClient
+from lib.logging_config import get_logger
+logger = get_logger("vana.memory_diagnostic")
+
         
-        print("Initializing MCP Memory Client...")
+        logger.info("Initializing MCP Memory Client...")
         
         # Initialize client
         endpoint = os.environ.get("MCP_ENDPOINT", "https://mcp.community.augment.co")
@@ -73,7 +76,7 @@ def test_memory_operations():
             "observations": ["This is a test entity created for diagnostic purposes"]
         }
         
-        print(f"Storing test entity: {test_entity['name']}...")
+        logger.info("%s", f"Storing test entity: {test_entity['name']}...")
         
         try:
             result = mcp_client.store_entity(
@@ -83,41 +86,41 @@ def test_memory_operations():
             )
             
             if "success" in result and result["success"]:
-                print("✅ Test entity stored successfully")
+                logger.info("✅ Test entity stored successfully")
             else:
-                print(f"❌ Failed to store test entity: {result.get('error', 'Unknown error')}")
+                logger.error("%s", f"❌ Failed to store test entity: {result.get('error', 'Unknown error')}")
         except Exception as e:
-            print(f"❌ Error storing test entity: {e}")
+            logger.error(f"❌ Error storing test entity: {e}")
         
         # Test retrieving an entity
-        print(f"Retrieving test entity: {test_entity['name']}...")
+        logger.info("%s", f"Retrieving test entity: {test_entity['name']}...")
         
         try:
             result = mcp_client.retrieve_entity(test_entity["name"])
             
             if "entity" in result:
-                print("✅ Test entity retrieved successfully")
-                print(f"Entity data: {json.dumps(result['entity'], indent=2)}")
+                logger.info("✅ Test entity retrieved successfully")
+                logger.debug("%s", f"Entity data: {json.dumps(result['entity'], indent=2)}")
             else:
-                print(f"❌ Failed to retrieve test entity: {result.get('error', 'Unknown error')}")
+                logger.error("%s", f"❌ Failed to retrieve test entity: {result.get('error', 'Unknown error')}")
         except Exception as e:
-            print(f"❌ Error retrieving test entity: {e}")
+            logger.error(f"❌ Error retrieving test entity: {e}")
         
         # Test initial data load
-        print("Testing initial data load...")
+        logger.info("Testing initial data load...")
         
         try:
             result = mcp_client.get_initial_data()
             
             if "entities" in result:
-                print(f"✅ Initial data loaded successfully ({len(result['entities'])} entities)")
+                logger.info("%s", f"✅ Initial data loaded successfully ({len(result['entities'])} entities)")
             else:
-                print(f"❌ Failed to load initial data: {result.get('error', 'Unknown error')}")
+                logger.error("%s", f"❌ Failed to load initial data: {result.get('error', 'Unknown error')}")
         except Exception as e:
-            print(f"❌ Error loading initial data: {e}")
+            logger.error(f"❌ Error loading initial data: {e}")
         
         # Test delta sync
-        print("Testing delta sync...")
+        logger.info("Testing delta sync...")
         
         try:
             result = mcp_client.sync_delta()
@@ -126,21 +129,21 @@ def test_memory_operations():
                 added = len(result.get("added", []))
                 modified = len(result.get("modified", []))
                 deleted = len(result.get("deleted", []))
-                print(f"✅ Delta sync successful (Added: {added}, Modified: {modified}, Deleted: {deleted})")
+                logger.info(f"✅ Delta sync successful (Added: {added}, Modified: {modified}, Deleted: {deleted})")
             else:
-                print(f"❌ Failed to perform delta sync: {result.get('error', 'Unknown error')}")
+                logger.error("%s", f"❌ Failed to perform delta sync: {result.get('error', 'Unknown error')}")
         except Exception as e:
-            print(f"❌ Error performing delta sync: {e}")
+            logger.error(f"❌ Error performing delta sync: {e}")
             
     except ImportError as e:
-        print(f"❌ Error importing memory components: {e}")
-        print("Make sure you're running this script from the project root directory.")
+        logger.error(f"❌ Error importing memory components: {e}")
+        logger.info("%s", "Make sure you're running this script from the project root directory.")
     except Exception as e:
-        print(f"❌ Unexpected error in memory operations test: {e}")
+        logger.error(f"❌ Unexpected error in memory operations test: {e}")
 
 def check_environment_variables():
     """Check if required environment variables are set."""
-    print("Checking environment variables...")
+    logger.info("Checking environment variables...")
     
     variables = {
         "MCP_ENDPOINT": os.environ.get("MCP_ENDPOINT", "https://mcp.community.augment.co"),
@@ -156,32 +159,32 @@ def check_environment_variables():
     
     for name, value in variables.items():
         if value:
-            print(f"✅ {name} is set to: {value[:5]}{'*' * (len(value) - 5) if len(value) > 5 else ''}")
+            logger.info("%s", f"✅ {name} is set to: {value[:5]}{'*' * (len(value) - 5) if len(value) > 5 else ''}")
         else:
-            print(f"❌ {name} is not set")
+            logger.info(f"❌ {name} is not set")
             all_set = False
     
     return all_set
 
 if __name__ == "__main__":
-    print("=== VANA Memory System Diagnostic ===\n")
+    logger.info("=== VANA Memory System Diagnostic ===\n")
     
     # Check environment variables
-    print("\n--- Checking Environment Variables ---")
+    logger.info("\n--- Checking Environment Variables ---")
     env_vars_set = check_environment_variables()
     
     if not env_vars_set:
-        print("\n⚠️ Some environment variables are not set. This may affect functionality.")
+        logger.info("\n⚠️ Some environment variables are not set. This may affect functionality.")
     
     # Check MCP server
-    print("\n--- Checking MCP Server ---")
+    logger.info("\n--- Checking MCP Server ---")
     mcp_available = check_mcp_server()
     
     # Test memory operations
     if mcp_available:
-        print("\n--- Testing Memory Operations ---")
+        logger.info("\n--- Testing Memory Operations ---")
         test_memory_operations()
     else:
-        print("\n⚠️ Skipping memory operations test as MCP server is not available")
+        logger.info("\n⚠️ Skipping memory operations test as MCP server is not available")
     
-    print("\n=== Diagnostic Complete ===")
+    logger.info("\n=== Diagnostic Complete ===")

@@ -17,6 +17,9 @@ from dataclasses import dataclass
 from concurrent.futures import ThreadPoolExecutor
 from playwright.async_api import async_playwright
 import requests
+from lib.logging_config import get_logger
+logger = get_logger("vana.performance_benchmarks")
+
 
 @dataclass
 class PerformanceMetric:
@@ -82,8 +85,8 @@ class VANAPerformanceBenchmarks:
         
     async def run_comprehensive_benchmarks(self) -> Dict[str, Any]:
         """Execute comprehensive performance benchmarks"""
-        print("⚡ Starting Comprehensive Performance Benchmarks")
-        print("=" * 60)
+        logger.info("⚡ Starting Comprehensive Performance Benchmarks")
+        logger.debug("%s", "=" * 60)
         
         benchmark_results = {
             "benchmark_timestamp": datetime.now().isoformat(),
@@ -95,17 +98,17 @@ class VANAPerformanceBenchmarks:
         }
         
         # Phase 1: Baseline Performance Testing
-        print("\n📊 Phase 1: Baseline Performance Testing")
+        logger.debug("\n📊 Phase 1: Baseline Performance Testing")
         baseline_results = await self.run_baseline_tests()
         benchmark_results["baseline_metrics"] = baseline_results
         
         # Phase 2: Load Testing
-        print("\n🔥 Phase 2: Load Testing")
+        logger.debug("\n🔥 Phase 2: Load Testing")
         load_test_results = await self.run_load_tests()
         benchmark_results["load_test_results"] = load_test_results
         
         # Phase 3: Performance Analysis
-        print("\n📈 Phase 3: Performance Analysis")
+        logger.debug("\n📈 Phase 3: Performance Analysis")
         analysis = self.analyze_performance_results(baseline_results, load_test_results)
         benchmark_results["performance_analysis"] = analysis
         
@@ -141,7 +144,7 @@ class VANAPerformanceBenchmarks:
         baseline_results = {}
         
         for test_name, scenario in self.test_scenarios.items():
-            print(f"  🧪 Testing: {test_name}")
+            logger.debug(f"  🧪 Testing: {test_name}")
             
             # Run single-user baseline test
             result = await self.run_single_user_test(test_name, scenario, iterations=10)
@@ -158,11 +161,11 @@ class VANAPerformanceBenchmarks:
         load_test_results = {}
         
         for test_name, scenario in self.test_scenarios.items():
-            print(f"  🔥 Load testing: {test_name}")
+            logger.debug(f"  🔥 Load testing: {test_name}")
             load_test_results[test_name] = {}
             
             for concurrent_users in scenario["concurrent_users"]:
-                print(f"    👥 {concurrent_users} concurrent users")
+                logger.debug(f"    👥 {concurrent_users} concurrent users")
                 
                 result = await self.run_concurrent_user_test(
                     test_name, scenario, concurrent_users, iterations_per_user=5
@@ -227,10 +230,10 @@ class VANAPerformanceBenchmarks:
                         
                     except Exception as e:
                         failed_requests += 1
-                        print(f"      ❌ Request {i+1} failed: {e}")
+                        logger.error(f"      ❌ Request {i+1} failed: {e}")
                         
             except Exception as e:
-                print(f"    ❌ Test setup failed: {e}")
+                logger.error(f"    ❌ Test setup failed: {e}")
                 
             await browser.close()
             
@@ -269,7 +272,7 @@ class VANAPerformanceBenchmarks:
         
     async def run_concurrent_user_test(self, test_name: str, scenario: Dict, concurrent_users: int, iterations_per_user: int) -> BenchmarkResult:
         """Run concurrent user load test"""
-        print(f"      🚀 Starting {concurrent_users} concurrent users...")
+        logger.info(f"      🚀 Starting {concurrent_users} concurrent users...")
         
         # Create tasks for concurrent execution
         tasks = []
@@ -594,7 +597,7 @@ class VANAPerformanceBenchmarks:
         with open(filepath, 'w') as f:
             json.dump(serializable_results, f, indent=2, default=str)
 
-        print(f"💾 Benchmark results saved: {filepath}")
+        logger.info(f"💾 Benchmark results saved: {filepath}")
 
     def make_serializable(self, obj):
         """Convert dataclasses and other objects to JSON-serializable format"""
@@ -609,31 +612,31 @@ class VANAPerformanceBenchmarks:
 
     def print_benchmark_summary(self, results: Dict[str, Any]):
         """Print comprehensive benchmark summary"""
-        print("\n" + "=" * 80)
-        print("⚡ COMPREHENSIVE PERFORMANCE BENCHMARK SUMMARY")
-        print("=" * 80)
+        logger.debug("%s", "\n" + "=" * 80)
+        logger.debug("⚡ COMPREHENSIVE PERFORMANCE BENCHMARK SUMMARY")
+        logger.debug("%s", "=" * 80)
 
         # System info
         system_info = results.get("system_info", {})
-        print(f"\n🖥️  SYSTEM INFORMATION:")
-        print(f"   Service URL: {system_info.get('service_url', 'N/A')}")
-        print(f"   Health Status: {system_info.get('health_status', {}).get('status', 'N/A')}")
+        logger.debug(f"\n🖥️  SYSTEM INFORMATION:")
+        logger.debug("%s", f"   Service URL: {system_info.get('service_url', 'N/A')}")
+        logger.debug("%s", f"   Health Status: {system_info.get('health_status', {}).get('status', 'N/A')}")
 
         # Baseline metrics
         baseline_metrics = results.get("baseline_metrics", {})
-        print(f"\n📊 BASELINE PERFORMANCE:")
+        logger.debug(f"\n📊 BASELINE PERFORMANCE:")
         for test_name, result in baseline_metrics.items():
-            print(f"   {test_name}:")
-            print(f"      Average Response Time: {result.average_response_time:.2f}s")
-            print(f"      P95 Response Time: {result.p95_response_time:.2f}s")
-            print(f"      Success Rate: {result.successful_requests}/{result.total_requests} ({(1-result.error_rate):.1%})")
-            print(f"      Throughput: {result.throughput_rps:.1f} RPS")
+            logger.debug(f"   {test_name}:")
+            logger.info(f"      Average Response Time: {result.average_response_time:.2f}s")
+            logger.info(f"      P95 Response Time: {result.p95_response_time:.2f}s")
+            logger.error(f"      Success Rate: {result.successful_requests}/{result.total_requests} ({(1-result.error_rate):.1%})")
+            logger.info(f"      Throughput: {result.throughput_rps:.1f} RPS")
 
         # Load test results
         load_test_results = results.get("load_test_results", {})
-        print(f"\n🔥 LOAD TEST RESULTS:")
+        logger.info(f"\n🔥 LOAD TEST RESULTS:")
         for test_name, user_results in load_test_results.items():
-            print(f"   {test_name}:")
+            logger.debug(f"   {test_name}:")
             for user_count, result in user_results.items():
                 print(f"      {user_count}: {result.average_response_time:.2f}s avg, "
                       f"{result.throughput_rps:.1f} RPS, {result.error_rate:.1%} errors")
@@ -641,21 +644,21 @@ class VANAPerformanceBenchmarks:
         # Performance analysis
         analysis = results.get("performance_analysis", {})
         scalability = analysis.get("scalability_assessment", {})
-        print(f"\n📈 SCALABILITY ASSESSMENT:")
-        print(f"   Overall Score: {scalability.get('overall_scalability_score', 0):.1%}")
-        print(f"   Rating: {scalability.get('scalability_rating', 'N/A')}")
+        logger.debug(f"\n📈 SCALABILITY ASSESSMENT:")
+        logger.debug("%s", f"   Overall Score: {scalability.get('overall_scalability_score', 0):.1%}")
+        logger.debug("%s", f"   Rating: {scalability.get('scalability_rating', 'N/A')}")
 
         max_users = scalability.get("max_concurrent_users_by_test", {})
         for test_name, max_user_count in max_users.items():
-            print(f"   {test_name}: Max {max_user_count} concurrent users")
+            logger.debug(f"   {test_name}: Max {max_user_count} concurrent users")
 
         # Recommendations
         recommendations = results.get("recommendations", [])
-        print(f"\n💡 PERFORMANCE RECOMMENDATIONS:")
+        logger.debug(f"\n💡 PERFORMANCE RECOMMENDATIONS:")
         for rec in recommendations:
-            print(f"   {rec}")
+            logger.debug(f"   {rec}")
 
-        print("=" * 80)
+        logger.debug("%s", "=" * 80)
 
 if __name__ == "__main__":
     async def main():

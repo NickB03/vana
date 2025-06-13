@@ -6,6 +6,9 @@ Script to update the Vector Search test to use caching
 import os
 import re
 import sys
+from lib.logging_config import get_logger
+logger = get_logger("vana.tools.update_vector_search")
+
 
 def update_file(file_path):
     with open(file_path, 'r') as f:
@@ -24,7 +27,7 @@ def update_file(file_path):
     with open(file_path, 'w') as f:
         f.write(content)
     
-    print(f"Updated {file_path} to use embedding cache")
+    logger.info(f"Updated {file_path} to use embedding cache")
 
 if __name__ == "__main__":
     # Update the test_vector_search_direct.py file
@@ -35,5 +38,5 @@ if __name__ == "__main__":
     if os.path.exists(file_path):
         update_file(file_path)
     else:
-        print(f"File not found: {file_path}")
+        logger.info(f"File not found: {file_path}")
         sys.exit(1)

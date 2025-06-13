@@ -19,7 +19,7 @@ Usage:
         result_ratings=[5, 4, 3, 2, 1]
     )
     
-    print(response)
+    logger.info("%s", response)
 """
 
 import os
@@ -244,22 +244,22 @@ def main():
             implementation=args.implementation
         )
         
-        print(json.dumps(response, indent=2))
+        logger.debug("%s", json.dumps(response, indent=2))
     
     elif args.command == 'get':
         # Get feedback
         response = client.get_feedback(limit=args.limit)
-        print(json.dumps(response, indent=2))
+        logger.debug("%s", json.dumps(response, indent=2))
     
     elif args.command == 'stats':
         # Get statistics
         response = client.get_statistics()
-        print(json.dumps(response, indent=2))
+        logger.debug("%s", json.dumps(response, indent=2))
     
     elif args.command == 'analyze':
         # Analyze feedback
         response = client.analyze_feedback(min_count=args.min_count)
-        print(json.dumps(response, indent=2))
+        logger.debug("%s", json.dumps(response, indent=2))
     
     else:
         logger.error("No command specified. Use --help for usage information.")

@@ -22,11 +22,11 @@ Usage:
 
     # Format results
     formatted = hybrid_search.format_results(results)
-    print(formatted)
+    logger.info("%s", formatted)
 
     # Or search and format in one step
     result_text = hybrid_search.search_and_format("What is VANA?")
-    print(result_text)
+    logger.info("%s", result_text)
     ```
 """
 

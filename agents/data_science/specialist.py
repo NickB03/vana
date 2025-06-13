@@ -48,23 +48,23 @@ data = pd.DataFrame({{
     'B': [2, 4, 6, 8, 10, 12, 14, 16, 18, 20],
     'C': [1, 1, 2, 2, 3, 3, 4, 4, 5, 5]
 }})
-print("Using sample data for demonstration")
+logger.info("Using sample data for demonstration")
 
 # Perform descriptive analysis using functions instead of methods
-print("=== DESCRIPTIVE STATISTICS ===")
-print("Data shape:", len(data), "rows x", len(data.columns), "columns")
-print("Columns:", list(data.columns))
+logger.info("=== DESCRIPTIVE STATISTICS ===")
+logger.info("Data shape:", len(data), "rows x", len(data.columns), "columns")
+logger.info("Columns:", list(data.columns))
 
 # Calculate statistics manually to avoid method calls
 for col in data.columns:
     values = data[col]
-    print(f"\\n--- {{col}} ---")
-    print(f"Count: {{len(values)}}")
-    print(f"Mean: {{np.mean(values):.3f}}")
-    print(f"Median: {{np.median(values):.3f}}")
-    print(f"Min: {{np.min(values):.3f}}")
-    print(f"Max: {{np.max(values):.3f}}")
-    print(f"Std: {{np.std(values):.3f}}")
+    logger.info(f"\\n--- {{col}} ---")
+    logger.info(f"Count: {{len(values)}}")
+    logger.info(f"Mean: {{np.mean(values):.3f}}")
+    logger.info(f"Median: {{np.median(values):.3f}}")
+    logger.info(f"Min: {{np.min(values):.3f}}")
+    logger.info(f"Max: {{np.max(values):.3f}}")
+    logger.info(f"Std: {{np.std(values):.3f}}")
 '''
         
         elif analysis_type.lower() == "correlation":
@@ -78,24 +78,24 @@ data = pd.DataFrame({{
     'B': [2, 4, 6, 8, 10, 12, 14, 16, 18, 20],  # Highly correlated with A
     'C': [10, 9, 8, 7, 6, 5, 4, 3, 2, 1]       # Negatively correlated with A
 }})
-print("Using sample data for correlation demonstration")
+logger.info("Using sample data for correlation demonstration")
 
 # Perform correlation analysis using numpy functions
-print("=== CORRELATION ANALYSIS ===")
+logger.info("=== CORRELATION ANALYSIS ===")
 columns = list(data.columns)
-print("Columns:", columns)
+logger.info("Columns:", columns)
 
 # Calculate correlations manually
 for i, col1 in enumerate(columns):
     for j, col2 in enumerate(columns):
         if i <= j:
             corr = np.corrcoef(data[col1], data[col2])[0, 1]
-            print(f"{{col1}} - {{col2}}: {{corr:.3f}}")
+            logger.info(f"{{col1}} - {{col2}}: {{corr:.3f}}")
 
-print("\\n=== INTERPRETATION ===")
-print("Correlation values close to 1: Strong positive relationship")
-print("Correlation values close to -1: Strong negative relationship")
-print("Correlation values close to 0: Weak relationship")
+logger.info("\\n=== INTERPRETATION ===")
+logger.info("Correlation values close to 1: Strong positive relationship")
+logger.info("Correlation values close to -1: Strong negative relationship")
+logger.info("Correlation values close to 0: Weak relationship")
 '''
         
         else:  # distribution analysis
@@ -110,26 +110,26 @@ data = pd.DataFrame({{
     'Skewed': [1, 1, 2, 2, 2, 3, 4, 5, 8, 10],
     'Uniform': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 }})
-print("Using sample data with different distributions")
+logger.info("Using sample data with different distributions")
 
 # Perform distribution analysis using numpy functions
-print("=== DISTRIBUTION ANALYSIS ===")
+logger.info("=== DISTRIBUTION ANALYSIS ===")
 for column in data.columns:
     values = data[column]
-    print(f"\\n--- {{column}} ---")
-    print(f"Mean: {{np.mean(values):.3f}}")
-    print(f"Median: {{np.median(values):.3f}}")
-    print(f"Std Dev: {{np.std(values):.3f}}")
-    print(f"Min: {{np.min(values):.3f}}")
-    print(f"Max: {{np.max(values):.3f}}")
-    print(f"Range: {{np.max(values) - np.min(values):.3f}}")
+    logger.info(f"\\n--- {{column}} ---")
+    logger.info(f"Mean: {{np.mean(values):.3f}}")
+    logger.info(f"Median: {{np.median(values):.3f}}")
+    logger.info(f"Std Dev: {{np.std(values):.3f}}")
+    logger.info(f"Min: {{np.min(values):.3f}}")
+    logger.info(f"Max: {{np.max(values):.3f}}")
+    logger.info(f"Range: {{np.max(values) - np.min(values):.3f}}")
 
     # Simple skewness approximation
     mean_val = np.mean(values)
     median_val = np.median(values)
     if median_val != 0:
         skew_approx = (mean_val - median_val) / np.std(values)
-        print(f"Skewness (approx): {{skew_approx:.3f}}")
+        logger.info(f"Skewness (approx): {{skew_approx:.3f}}")
 '''
         
         # Execute the analysis using Code Execution Specialist
@@ -188,7 +188,7 @@ try:
             'B': np.random.randn(100),
             'C': np.random.randint(1, 10, 100)
         }})
-        print("Using sample data for demonstration")
+        logger.info("Using sample data for demonstration")
 except:
     data = pd.DataFrame({{
         'A': np.random.randn(100),
@@ -200,17 +200,17 @@ except:
 numeric_data = data.select_dtypes(include=[np.number])
 columns_to_plot = ["{columns}"] if "{columns}" != "all" else list(numeric_data.columns)
 
-print("=== HISTOGRAM VISUALIZATION ===")
+logger.info("=== HISTOGRAM VISUALIZATION ===")
 for col in columns_to_plot[:3]:  # Limit to 3 columns
     if col in numeric_data.columns:
-        print(f"\\nHistogram for {{col}}:")
-        print(f"- Min: {{numeric_data[col].min():.3f}}")
-        print(f"- Max: {{numeric_data[col].max():.3f}}")
-        print(f"- Mean: {{numeric_data[col].mean():.3f}}")
-        print(f"- Distribution shape: {{'Normal' if abs(numeric_data[col].skew()) < 0.5 else 'Skewed'}}")
+        logger.info(f"\\nHistogram for {{col}}:")
+        logger.info(f"- Min: {{numeric_data[col].min():.3f}}")
+        logger.info(f"- Max: {{numeric_data[col].max():.3f}}")
+        logger.info(f"- Mean: {{numeric_data[col].mean():.3f}}")
+        logger.info("%s", f"- Distribution shape: {{'Normal' if abs(numeric_data[col].skew()) < 0.5 else 'Skewed'}}")
 
-print("\\n📊 Chart would show distribution patterns for numerical columns")
-print("💡 Use this to identify outliers and data distribution patterns")
+logger.info("\\n📊 Chart would show distribution patterns for numerical columns")
+logger.info("💡 Use this to identify outliers and data distribution patterns")
 '''
         
         elif chart_type.lower() == "scatter":
@@ -228,7 +228,7 @@ try:
             'B': np.random.randn(100),
             'C': np.random.randint(1, 10, 100)
         }})
-        print("Using sample data for demonstration")
+        logger.info("Using sample data for demonstration")
 except:
     data = pd.DataFrame({{
         'A': np.random.randn(100),
@@ -240,16 +240,16 @@ except:
 numeric_data = data.select_dtypes(include=[np.number])
 columns_list = list(numeric_data.columns)
 
-print("=== SCATTER PLOT ANALYSIS ===")
+logger.info("=== SCATTER PLOT ANALYSIS ===")
 if len(columns_list) >= 2:
     x_col, y_col = columns_list[0], columns_list[1]
     correlation = numeric_data[x_col].corr(numeric_data[y_col])
-    print(f"Scatter plot: {{x_col}} vs {{y_col}}")
-    print(f"Correlation: {{correlation:.3f}}")
-    print(f"Relationship: {{'Strong' if abs(correlation) > 0.7 else 'Moderate' if abs(correlation) > 0.3 else 'Weak'}}")
+    logger.info(f"Scatter plot: {{x_col}} vs {{y_col}}")
+    logger.info(f"Correlation: {{correlation:.3f}}")
+    logger.info("%s", f"Relationship: {{'Strong' if abs(correlation) > 0.7 else 'Moderate' if abs(correlation) > 0.3 else 'Weak'}}")
     
-print("\\n📊 Chart would show relationship between variables")
-print("💡 Use this to identify correlations and patterns")
+logger.info("\\n📊 Chart would show relationship between variables")
+logger.info("💡 Use this to identify correlations and patterns")
 '''
         
         else:  # Default to summary visualization
@@ -267,7 +267,7 @@ try:
             'B': np.random.randn(100),
             'C': np.random.randint(1, 10, 100)
         }})
-        print("Using sample data for demonstration")
+        logger.info("Using sample data for demonstration")
 except:
     data = pd.DataFrame({{
         'A': np.random.randn(100),
@@ -275,12 +275,12 @@ except:
         'C': np.random.randint(1, 10, 100)
     }})
 
-print("=== VISUALIZATION SUMMARY ===")
-print(f"Chart type: {chart_type}")
-print(f"Data shape: {{data.shape}}")
-print(f"Available columns: {{list(data.columns)}}")
-print("\\n📊 Visualization would be generated using matplotlib/seaborn")
-print("💡 Consider specific chart types: histogram, scatter, bar, line, heatmap")
+logger.info("=== VISUALIZATION SUMMARY ===")
+logger.info(f"Chart type: {chart_type}")
+logger.info(f"Data shape: {{data.shape}}")
+logger.info(f"Available columns: {{list(data.columns)}}")
+logger.info("\\n📊 Visualization would be generated using matplotlib/seaborn")
+logger.info("💡 Consider specific chart types: histogram, scatter, bar, line, heatmap")
 '''
         
         # Execute the visualization using Code Execution Specialist
@@ -338,7 +338,7 @@ try:
             'B': [np.nan, 2, 3, 4, np.nan],
             'C': [1, 2, 3, 4, 5]
         }})
-        print("Using sample data with missing values for demonstration")
+        logger.info("Using sample data with missing values for demonstration")
 except:
     data = pd.DataFrame({{
         'A': [1, 2, np.nan, 4, 5],
@@ -346,10 +346,10 @@ except:
         'C': [1, 2, 3, 4, 5]
     }})
 
-print("=== MISSING VALUES ANALYSIS ===")
-print("Before cleaning:")
-print(f"Shape: {{data.shape}}")
-print(f"Missing values:\\n{{data.isnull().sum()}}")
+logger.info("=== MISSING VALUES ANALYSIS ===")
+logger.info("Before cleaning:")
+logger.info(f"Shape: {{data.shape}}")
+logger.info(f"Missing values:\\n{{data.isnull().sum()}}")
 
 # Handle missing values
 data_cleaned = data.copy()
@@ -361,10 +361,10 @@ for column in data_cleaned.columns:
         # Fill categorical columns with mode
         data_cleaned[column].fillna(data_cleaned[column].mode()[0] if not data_cleaned[column].mode().empty else 'Unknown', inplace=True)
 
-print("\\nAfter cleaning:")
-print(f"Shape: {{data_cleaned.shape}}")
-print(f"Missing values: {{data_cleaned.isnull().sum().sum()}}")
-print("\\n✅ Missing values handled successfully")
+logger.info("\\nAfter cleaning:")
+logger.info(f"Shape: {{data_cleaned.shape}}")
+logger.info(f"Missing values: {{data_cleaned.isnull().sum().sum()}}")
+logger.info("\\n✅ Missing values handled successfully")
 '''
 
         elif operations.lower() == "outliers":
@@ -382,14 +382,14 @@ try:
         normal_data = np.random.randn(95)
         outliers = np.array([10, -10, 15, -15, 20])
         data = pd.DataFrame({{'values': np.concatenate([normal_data, outliers])}})
-        print("Using sample data with outliers for demonstration")
+        logger.info("Using sample data with outliers for demonstration")
 except:
     np.random.seed(42)
     normal_data = np.random.randn(95)
     outliers = np.array([10, -10, 15, -15, 20])
     data = pd.DataFrame({{'values': np.concatenate([normal_data, outliers])}})
 
-print("=== OUTLIER DETECTION ===")
+logger.info("=== OUTLIER DETECTION ===")
 numeric_data = data.select_dtypes(include=[np.number])
 
 for column in numeric_data.columns:
@@ -401,14 +401,14 @@ for column in numeric_data.columns:
 
     outliers = numeric_data[(numeric_data[column] < lower_bound) | (numeric_data[column] > upper_bound)]
 
-    print(f"\\nColumn: {{column}}")
-    print(f"IQR bounds: [{{lower_bound:.3f}}, {{upper_bound:.3f}}]")
-    print(f"Outliers detected: {{len(outliers)}}")
+    logger.info(f"\\nColumn: {{column}}")
+    logger.info(f"IQR bounds: [{{lower_bound:.3f}}, {{upper_bound:.3f}}]")
+    logger.info(f"Outliers detected: {{len(outliers)}}")
 
     if len(outliers) > 0:
-        print(f"Outlier values: {{outliers[column].tolist()[:5]}}")  # Show first 5
+        logger.info(f"Outlier values: {{outliers[column].tolist()[:5]}}")  # Show first 5
 
-print("\\n💡 Consider removing or transforming outliers based on domain knowledge")
+logger.info("\\n💡 Consider removing or transforming outliers based on domain knowledge")
 '''
 
         else:  # basic cleaning
@@ -426,7 +426,7 @@ try:
             'B': ['a', 'b', 'c', 'b', 'a', 'a'],
             'C': [1.1, 2.2, 3.3, 4.4, 5.5, 1.1]
         }})
-        print("Using sample data for demonstration")
+        logger.info("Using sample data for demonstration")
 except:
     data = pd.DataFrame({{
         'A': [1, 2, np.nan, 4, 5, 1],
@@ -434,12 +434,12 @@ except:
         'C': [1.1, 2.2, 3.3, 4.4, 5.5, 1.1]
     }})
 
-print("=== BASIC DATA CLEANING ===")
-print("Original data info:")
-print(f"Shape: {{data.shape}}")
-print(f"Data types:\\n{{data.dtypes}}")
-print(f"Missing values: {{data.isnull().sum().sum()}}")
-print(f"Duplicates: {{data.duplicated().sum()}}")
+logger.info("=== BASIC DATA CLEANING ===")
+logger.info("Original data info:")
+logger.info(f"Shape: {{data.shape}}")
+logger.info(f"Data types:\\n{{data.dtypes}}")
+logger.info(f"Missing values: {{data.isnull().sum().sum()}}")
+logger.info(f"Duplicates: {{data.duplicated().sum()}}")
 
 # Basic cleaning operations
 data_cleaned = data.copy()
@@ -450,11 +450,11 @@ data_cleaned = data_cleaned.drop_duplicates()
 # Handle missing values (simple forward fill)
 data_cleaned = data_cleaned.fillna(method='ffill').fillna(method='bfill')
 
-print("\\nAfter basic cleaning:")
-print(f"Shape: {{data_cleaned.shape}}")
-print(f"Missing values: {{data_cleaned.isnull().sum().sum()}}")
-print(f"Duplicates: {{data_cleaned.duplicated().sum()}}")
-print("\\n✅ Basic cleaning completed")
+logger.info("\\nAfter basic cleaning:")
+logger.info(f"Shape: {{data_cleaned.shape}}")
+logger.info(f"Missing values: {{data_cleaned.isnull().sum().sum()}}")
+logger.info(f"Duplicates: {{data_cleaned.duplicated().sum()}}")
+logger.info("\\n✅ Basic cleaning completed")
 '''
 
         # Execute the cleaning using Code Execution Specialist
@@ -516,7 +516,7 @@ try:
         y = 2*X[:, 0] + 3*X[:, 1] - X[:, 2] + np.random.randn(100)*0.1
         data = pd.DataFrame(X, columns=['feature1', 'feature2', 'feature3'])
         data['{target_column}'] = y
-        print("Using sample regression data for demonstration")
+        logger.info("Using sample regression data for demonstration")
 except:
     np.random.seed(42)
     X = np.random.randn(100, 3)
@@ -524,14 +524,14 @@ except:
     data = pd.DataFrame(X, columns=['feature1', 'feature2', 'feature3'])
     data['{target_column}'] = y
 
-print("=== LINEAR REGRESSION MODEL ===")
+logger.info("=== LINEAR REGRESSION MODEL ===")
 
 # Prepare features and target
 if '{target_column}' in data.columns:
     target_col = '{target_column}'
 else:
     target_col = data.columns[-1]  # Use last column as target
-    print(f"Target column not found, using: {{target_col}}")
+    logger.info(f"Target column not found, using: {{target_col}}")
 
 X = data.drop(columns=[target_col])
 y = data[target_col]
@@ -550,17 +550,17 @@ y_pred = model.predict(X_test)
 mse = mean_squared_error(y_test, y_pred)
 r2 = r2_score(y_test, y_pred)
 
-print(f"Training samples: {{len(X_train)}}")
-print(f"Test samples: {{len(X_test)}}")
-print(f"Features: {{list(X.columns)}}")
-print(f"\\nModel Performance:")
-print(f"R² Score: {{r2:.3f}}")
-print(f"MSE: {{mse:.3f}}")
-print(f"RMSE: {{np.sqrt(mse):.3f}}")
+logger.info(f"Training samples: {{len(X_train)}}")
+logger.info(f"Test samples: {{len(X_test)}}")
+logger.info(f"Features: {{list(X.columns)}}")
+logger.info(f"\\nModel Performance:")
+logger.info(f"R² Score: {{r2:.3f}}")
+logger.info(f"MSE: {{mse:.3f}}")
+logger.info(f"RMSE: {{np.sqrt(mse):.3f}}")
 
-print(f"\\nFeature Coefficients:")
+logger.info(f"\\nFeature Coefficients:")
 for feature, coef in zip(X.columns, model.coef_):
-    print(f"{{feature}}: {{coef:.3f}}")
+    logger.info(f"{{feature}}: {{coef:.3f}}")
 '''
 
         elif model_type.lower() == "classification":
@@ -582,7 +582,7 @@ try:
         y = (X[:, 0] + X[:, 1] > 0).astype(int)
         data = pd.DataFrame(X, columns=['feature1', 'feature2', 'feature3'])
         data['{target_column}'] = y
-        print("Using sample classification data for demonstration")
+        logger.info("Using sample classification data for demonstration")
 except:
     np.random.seed(42)
     X = np.random.randn(100, 3)
@@ -590,14 +590,14 @@ except:
     data = pd.DataFrame(X, columns=['feature1', 'feature2', 'feature3'])
     data['{target_column}'] = y
 
-print("=== CLASSIFICATION MODEL ===")
+logger.info("=== CLASSIFICATION MODEL ===")
 
 # Prepare features and target
 if '{target_column}' in data.columns:
     target_col = '{target_column}'
 else:
     target_col = data.columns[-1]
-    print(f"Target column not found, using: {{target_col}}")
+    logger.info(f"Target column not found, using: {{target_col}}")
 
 X = data.drop(columns=[target_col])
 y = data[target_col]
@@ -615,16 +615,16 @@ y_pred = model.predict(X_test)
 # Calculate metrics
 accuracy = accuracy_score(y_test, y_pred)
 
-print(f"Training samples: {{len(X_train)}}")
-print(f"Test samples: {{len(X_test)}}")
-print(f"Features: {{list(X.columns)}}")
-print(f"Classes: {{sorted(y.unique())}}")
-print(f"\\nModel Performance:")
-print(f"Accuracy: {{accuracy:.3f}}")
+logger.info(f"Training samples: {{len(X_train)}}")
+logger.info(f"Test samples: {{len(X_test)}}")
+logger.info(f"Features: {{list(X.columns)}}")
+logger.info(f"Classes: {{sorted(y.unique())}}")
+logger.info(f"\\nModel Performance:")
+logger.info(f"Accuracy: {{accuracy:.3f}}")
 
-print(f"\\nFeature Importance:")
+logger.info(f"\\nFeature Importance:")
 for feature, importance in zip(X.columns, model.feature_importances_):
-    print(f"{{feature}}: {{importance:.3f}}")
+    logger.info(f"{{feature}}: {{importance:.3f}}")
 '''
 
         else:  # clustering
@@ -646,7 +646,7 @@ try:
         cluster3 = np.random.randn(30, 2) + [2, -2]
         X = np.vstack([cluster1, cluster2, cluster3])
         data = pd.DataFrame(X, columns=['feature1', 'feature2'])
-        print("Using sample clustering data for demonstration")
+        logger.info("Using sample clustering data for demonstration")
 except:
     np.random.seed(42)
     cluster1 = np.random.randn(30, 2) + [2, 2]
@@ -655,7 +655,7 @@ except:
     X = np.vstack([cluster1, cluster2, cluster3])
     data = pd.DataFrame(X, columns=['feature1', 'feature2'])
 
-print("=== K-MEANS CLUSTERING ===")
+logger.info("=== K-MEANS CLUSTERING ===")
 
 # Prepare features (exclude target column if exists)
 if '{target_column}' in data.columns:
@@ -672,21 +672,21 @@ n_clusters = 3
 kmeans = KMeans(n_clusters=n_clusters, random_state=42)
 clusters = kmeans.fit_predict(X_scaled)
 
-print(f"Data points: {{len(X)}}")
-print(f"Features: {{list(X.columns)}}")
-print(f"Number of clusters: {{n_clusters}}")
+logger.info(f"Data points: {{len(X)}}")
+logger.info(f"Features: {{list(X.columns)}}")
+logger.info(f"Number of clusters: {{n_clusters}}")
 
-print(f"\\nCluster distribution:")
+logger.info(f"\\nCluster distribution:")
 unique, counts = np.unique(clusters, return_counts=True)
 for cluster, count in zip(unique, counts):
-    print(f"Cluster {{cluster}}: {{count}} points")
+    logger.info(f"Cluster {{cluster}}: {{count}} points")
 
-print(f"\\nCluster centers (scaled):")
+logger.info(f"\\nCluster centers (scaled):")
 for i, center in enumerate(kmeans.cluster_centers_):
-    print(f"Cluster {{i}}: {{center}}")
+    logger.info(f"Cluster {{i}}: {{center}}")
 
 # Calculate inertia (within-cluster sum of squares)
-print(f"\\nInertia (WCSS): {{kmeans.inertia_:.3f}}")
+logger.info(f"\\nInertia (WCSS): {{kmeans.inertia_:.3f}}")
 '''
 
         # Execute the modeling using Code Execution Specialist

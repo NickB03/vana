@@ -34,8 +34,8 @@ try:
     from tools.enhanced_hybrid_search_optimized import EnhancedHybridSearchOptimized
     from tests.mocks.web_search_mock import MockWebSearchClient
 except ImportError as e:
-    print(f"Error importing required modules: {e}")
-    print("Make sure you run this script from the project root or scripts directory.")
+    logger.error(f"Error importing required modules: {e}")
+    logger.info("Make sure you run this script from the project root or scripts directory.")
     sys.exit(1)
 
 # Configure logging

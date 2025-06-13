@@ -7,6 +7,9 @@ Only replaces project ID references in specific contexts, not Cloud Run service 
 
 import glob
 import re
+from lib.logging_config import get_logger
+logger = get_logger("vana.fix_project_id_references")
+
 
 # Project ID mappings - Fix to use correct Google Cloud Project ID
 OLD_PROJECT_ID = "960076421399"  # Cloud Run service ID (incorrect for project references)
@@ -61,26 +64,26 @@ def update_file(file_path):
         with open(file_path, 'w', encoding='utf-8') as f:
             f.write(new_content)
         
-        print(f"✅ {file_path}: {old_count} replacements")
+        logger.info(f"✅ {file_path}: {old_count} replacements")
         return old_count
         
     except Exception as e:
-        print(f"❌ Error updating {file_path}: {e}")
+        logger.error(f"❌ Error updating {file_path}: {e}")
         return 0
 
 def main():
     """Main function - DISABLED to prevent breaking Cloud Run URLs."""
-    print("🚨 SCRIPT DISABLED")
-    print("=" * 50)
-    print("This script has been disabled to prevent breaking Cloud Run URLs.")
-    print("Critical project ID issues have been fixed manually:")
-    print("✅ ADK Memory Monitor - Fixed")
-    print("✅ Configuration files - Fixed")
-    print("✅ Shared libraries - Fixed")
-    print("")
-    print("Cloud Run URLs with 960076421399 are CORRECT and should not be changed.")
-    print("Only Google Cloud Project references needed fixing.")
-    print("=" * 50)
+    logger.info("🚨 SCRIPT DISABLED")
+    logger.info("%s", "=" * 50)
+    logger.info("This script has been disabled to prevent breaking Cloud Run URLs.")
+    logger.error("Critical project ID issues have been fixed manually:")
+    logger.info("✅ ADK Memory Monitor - Fixed")
+    logger.info("✅ Configuration files - Fixed")
+    logger.info("✅ Shared libraries - Fixed")
+    logger.info("")
+    logger.info("Cloud Run URLs with 960076421399 are CORRECT and should not be changed.")
+    logger.info("Only Google Cloud Project references needed fixing.")
+    logger.info("%s", "=" * 50)
     return
 
 if __name__ == "__main__":

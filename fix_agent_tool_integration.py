@@ -8,6 +8,9 @@ import asyncio
 import json
 import time
 from playwright.async_api import async_playwright
+from lib.logging_config import get_logger
+logger = get_logger("vana.fix_agent_tool_integration")
+
 
 class AgentToolIntegrationFixer:
     def __init__(self):
@@ -16,8 +19,8 @@ class AgentToolIntegrationFixer:
     
     async def diagnose_tool_integration_issue(self):
         """Diagnose why agents aren't using tools"""
-        print("🔧 Diagnosing Agent-Tool Integration Issue")
-        print("=" * 50)
+        logger.info("🔧 Diagnosing Agent-Tool Integration Issue")
+        logger.info("%s", "=" * 50)
         
         async with async_playwright() as p:
             browser = await p.chromium.launch(headless=True)
@@ -42,9 +45,9 @@ class AgentToolIntegrationFixer:
                 await asyncio.sleep(1)
                 
                 for query, expected_tool, description in tool_tests:
-                    print(f"\n🧪 Testing: {description}")
-                    print(f"   Query: {query}")
-                    print(f"   Expected tool: {expected_tool}")
+                    logger.info(f"\n🧪 Testing: {description}")
+                    logger.info(f"   Query: {query}")
+                    logger.info(f"   Expected tool: {expected_tool}")
                     
                     # Clear and send query
                     await page.fill("textarea", "")
@@ -81,36 +84,36 @@ class AgentToolIntegrationFixer:
                     }
                     
                     status = "✅" if tool_usage_detected else "❌"
-                    print(f"   {status} Tool usage: {tool_usage_detected}")
-                    print(f"   Response time: {response_time:.3f}s")
-                    print(f"   Response: {response_text[:100]}...")
+                    logger.info(f"   {status} Tool usage: {tool_usage_detected}")
+                    logger.info(f"   Response time: {response_time:.3f}s")
+                    logger.info(f"   Response: {response_text[:100]}...")
                     
                     await asyncio.sleep(2)  # Wait between tests
                 
             except Exception as e:
-                print(f"❌ Diagnosis failed: {e}")
+                logger.error(f"❌ Diagnosis failed: {e}")
             finally:
                 await browser.close()
     
     def analyze_results(self):
         """Analyze test results to identify the root cause"""
-        print("\n🔍 Analysis Results")
-        print("=" * 30)
+        logger.info("\n🔍 Analysis Results")
+        logger.info("%s", "=" * 30)
         
         total_tests = len(self.test_results)
         tools_working = sum(1 for result in self.test_results.values() if result["tool_usage_detected"])
         
-        print(f"Total tests: {total_tests}")
-        print(f"Tools working: {tools_working}")
-        print(f"Success rate: {(tools_working/total_tests)*100:.1f}%")
+        logger.info(f"Total tests: {total_tests}")
+        logger.info(f"Tools working: {tools_working}")
+        logger.info(f"Success rate: {(tools_working/total_tests)*100:.1f}%")
         
         if tools_working == 0:
-            print("\n🚨 ROOT CAUSE IDENTIFIED: NO TOOLS ARE BEING USED")
-            print("Possible causes:")
-            print("1. Agent configuration issue - tools not properly registered")
-            print("2. ADK execution issue - tools not being called")
-            print("3. Tool naming mismatch - agent calling wrong tool names")
-            print("4. Tool execution failure - tools failing silently")
+            logger.info("\n🚨 ROOT CAUSE IDENTIFIED: NO TOOLS ARE BEING USED")
+            logger.info("Possible causes:")
+            logger.info("1. Agent configuration issue - tools not properly registered")
+            logger.info("2. ADK execution issue - tools not being called")
+            logger.info("3. Tool naming mismatch - agent calling wrong tool names")
+            logger.info("4. Tool execution failure - tools failing silently")
             
             # Check response patterns
             response_patterns = {}
@@ -125,17 +128,17 @@ class AgentToolIntegrationFixer:
                 else:
                     response_patterns["normal"] = response_patterns.get("normal", 0) + 1
             
-            print(f"\nResponse patterns: {response_patterns}")
+            logger.info(f"\nResponse patterns: {response_patterns}")
             
             return self.suggest_fixes()
         else:
-            print(f"\n✅ Some tools are working ({tools_working}/{total_tests})")
+            logger.info(f"\n✅ Some tools are working ({tools_working}/{total_tests})")
             return self.suggest_improvements()
     
     def suggest_fixes(self):
         """Suggest specific fixes based on analysis"""
-        print("\n🔧 Suggested Fixes")
-        print("=" * 20)
+        logger.info("\n🔧 Suggested Fixes")
+        logger.info("%s", "=" * 20)
         
         fixes = []
         
@@ -167,21 +170,21 @@ class AgentToolIntegrationFixer:
             })
         
         for i, fix in enumerate(fixes, 1):
-            print(f"{i}. {fix['priority']}: {fix['issue']}")
-            print(f"   Fix: {fix['fix']}")
+            logger.info("%s", f"{i}. {fix['priority']}: {fix['issue']}")
+            logger.info("%s", f"   Fix: {fix['fix']}")
         
         return fixes
     
     def suggest_improvements(self):
         """Suggest improvements for partially working system"""
-        print("\n💡 Suggested Improvements")
-        print("=" * 25)
+        logger.info("\n💡 Suggested Improvements")
+        logger.info("%s", "=" * 25)
         
         working_tools = [query for query, result in self.test_results.items() if result["tool_usage_detected"]]
         broken_tools = [query for query, result in self.test_results.items() if not result["tool_usage_detected"]]
         
-        print(f"Working queries: {working_tools}")
-        print(f"Broken queries: {broken_tools}")
+        logger.info(f"Working queries: {working_tools}")
+        logger.info(f"Broken queries: {broken_tools}")
         
         return {
             "working": working_tools,
@@ -205,7 +208,7 @@ async def main():
             "analysis": analysis
         }, f, indent=2)
     
-    print(f"\n💾 Detailed diagnosis saved to: agent_tool_diagnosis.json")
+    logger.info(f"\n💾 Detailed diagnosis saved to: agent_tool_diagnosis.json")
     
     return analysis
 

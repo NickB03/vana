@@ -449,11 +449,11 @@ if __name__ == "__main__":
             test_case["input"]
         )
         
-        print(f"\n📊 Test Result: {result.test_name}")
-        print(f"   Valid: {result.overall_valid}")
-        print(f"   Confidence: {result.confidence_score:.2f}")
-        print(f"   Mock Detected: {result.mock_detected}")
+        logger.info(f"\n📊 Test Result: {result.test_name}")
+        logger.info(f"   Valid: {result.overall_valid}")
+        logger.info(f"   Confidence: {result.confidence_score:.2f}")
+        logger.info(f"   Mock Detected: {result.mock_detected}")
         
         for validation in result.validation_results:
             status = "✅" if validation.valid else "❌"
-            print(f"   {status} {validation.layer}: {validation.reason}")
+            logger.debug(f"   {status} {validation.layer}: {validation.reason}")

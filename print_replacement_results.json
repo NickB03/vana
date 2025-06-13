@@ -1,0 +1,427 @@
+{
+  "timestamp": "2025-06-13T17:32:43.141960",
+  "total_files_processed": 39,
+  "total_replacements": 899,
+  "errors": 0,
+  "results": [
+    {
+      "file": "agents/vana/team.py",
+      "replacements": 0,
+      "status": "skipped"
+    },
+    {
+      "file": "agents/vana/team_original.py",
+      "replacements": 0,
+      "status": "skipped"
+    },
+    {
+      "file": "agents/data_science/specialist.py",
+      "replacements": 0,
+      "status": "skipped"
+    },
+    {
+      "file": "lib/security/integration.py",
+      "replacements": 0,
+      "status": "skipped"
+    },
+    {
+      "file": "lib/sandbox/executors/python_executor.py",
+      "replacements": 0,
+      "status": "skipped"
+    },
+    {
+      "file": "lib/_shared_libraries/dynamic_agent_factory.py",
+      "replacements": 0,
+      "status": "skipped"
+    },
+    {
+      "file": "lib/_shared_libraries/tool_standards.py",
+      "replacements": 0,
+      "status": "skipped"
+    },
+    {
+      "file": "lib/monitoring/integration.py",
+      "replacements": 0,
+      "status": "skipped"
+    },
+    {
+      "file": "tools/feedback_client.py",
+      "replacements": 0,
+      "status": "skipped"
+    },
+    {
+      "file": "tools/knowledge_graph/knowledge_graph_manager.py",
+      "replacements": 0,
+      "status": "skipped"
+    },
+    {
+      "file": "tools/update_vector_search.py",
+      "replacements": 0,
+      "status": "skipped"
+    },
+    {
+      "file": "tools/hybrid_search.py",
+      "replacements": 0,
+      "status": "skipped"
+    },
+    {
+      "file": "tools/memory/ragie_client.py",
+      "replacements": 0,
+      "status": "skipped"
+    },
+    {
+      "file": "tools/memory/agent_tools.py",
+      "replacements": 0,
+      "status": "skipped"
+    },
+    {
+      "file": "tools/memory/mcp_integration.py",
+      "replacements": 0,
+      "status": "skipped"
+    },
+    {
+      "file": "tools/enhanced_hybrid_search.py",
+      "replacements": 0,
+      "status": "skipped"
+    },
+    {
+      "file": "tools/brave_search_client.py",
+      "replacements": 0,
+      "status": "skipped"
+    },
+    {
+      "file": "tools/adk_wrapper.py",
+      "replacements": 0,
+      "status": "skipped"
+    },
+    {
+      "file": "tools/search_knowledge_tool.py",
+      "replacements": 0,
+      "status": "skipped"
+    },
+    {
+      "file": "tools/feedback_collector.py",
+      "replacements": 0,
+      "status": "skipped"
+    },
+    {
+      "file": "tools/monitoring/circuit_breaker.py",
+      "replacements": 0,
+      "status": "skipped"
+    },
+    {
+      "file": "tools/vector_search/health_checker.py",
+      "replacements": 0,
+      "status": "skipped"
+    },
+    {
+      "file": "dashboard/alerting/alert_manager.py",
+      "replacements": 0,
+      "status": "skipped"
+    },
+    {
+      "file": "dashboard/config/demo.py",
+      "replacements": 0,
+      "status": "skipped"
+    },
+    {
+      "file": "dashboard/testing/run_dashboard_tests.py",
+      "replacements": 0,
+      "status": "skipped"
+    },
+    {
+      "file": "dashboard/monitoring/vector_search_monitor.py",
+      "replacements": 0,
+      "status": "skipped"
+    },
+    {
+      "file": "dashboard/routes/vector_search_routes.py",
+      "replacements": 0,
+      "status": "skipped"
+    },
+    {
+      "file": "dashboard/routes/api_routes.py",
+      "replacements": 0,
+      "status": "skipped"
+    },
+    {
+      "file": "dashboard/routes/auth_routes.py",
+      "replacements": 0,
+      "status": "skipped"
+    },
+    {
+      "file": "scripts/run_optimized_search.py",
+      "replacements": 0,
+      "status": "skipped"
+    },
+    {
+      "file": "scripts/memory_diagnostic.py",
+      "replacements": 0,
+      "status": "skipped"
+    },
+    {
+      "file": "scripts/initialize_local_mcp.py",
+      "replacements": 0,
+      "status": "skipped"
+    },
+    {
+      "file": "scripts/evaluate_search_quality.py",
+      "replacements": 0,
+      "status": "skipped"
+    },
+    {
+      "file": "scripts/process_document_diffs.py",
+      "replacements": 0,
+      "status": "skipped"
+    },
+    {
+      "file": "scripts/update_cloud_run_urls.py",
+      "replacements": 0,
+      "status": "skipped"
+    },
+    {
+      "file": "scripts/create_vector_search_sa_key.py",
+      "replacements": 0,
+      "status": "skipped"
+    },
+    {
+      "file": "scripts/optimize_agent_memory_behavior.py",
+      "replacements": 0,
+      "status": "skipped"
+    },
+    {
+      "file": "scripts/generate_vector_search_permission_commands_for_backend_sa.py",
+      "replacements": 4,
+      "status": "success",
+      "backup": "scripts/generate_vector_search_permission_commands_for_backend_sa.py.backup"
+    },
+    {
+      "file": "scripts/vector_search_diagnostic.py",
+      "replacements": 2,
+      "status": "success",
+      "backup": "scripts/vector_search_diagnostic.py.backup"
+    },
+    {
+      "file": "scripts/initialize_kg_schema.py",
+      "replacements": 10,
+      "status": "success",
+      "backup": "scripts/initialize_kg_schema.py.backup"
+    },
+    {
+      "file": "scripts/populate_vana_memory.py",
+      "replacements": 8,
+      "status": "success",
+      "backup": "scripts/populate_vana_memory.py.backup"
+    },
+    {
+      "file": "scripts/setup_n8n_workflows.py",
+      "replacements": 10,
+      "status": "success",
+      "backup": "scripts/setup_n8n_workflows.py.backup"
+    },
+    {
+      "file": "scripts/comprehensive_cleanup.py",
+      "replacements": 39,
+      "status": "success",
+      "backup": "scripts/comprehensive_cleanup.py.backup"
+    },
+    {
+      "file": "scripts/sanitize_credentials.py",
+      "replacements": 21,
+      "status": "success",
+      "backup": "scripts/sanitize_credentials.py.backup"
+    },
+    {
+      "file": "scripts/create_vana_knowledge_base.py",
+      "replacements": 9,
+      "status": "success",
+      "backup": "scripts/create_vana_knowledge_base.py.backup"
+    },
+    {
+      "file": "scripts/generate_vector_search_permission_commands.py",
+      "replacements": 4,
+      "status": "success",
+      "backup": "scripts/generate_vector_search_permission_commands.py.backup"
+    },
+    {
+      "file": "scripts/cleanup_repository.py",
+      "replacements": 25,
+      "status": "success",
+      "backup": "scripts/cleanup_repository.py.backup"
+    },
+    {
+      "file": "scripts/knowledge_graph_example.py",
+      "replacements": 25,
+      "status": "success",
+      "backup": "scripts/knowledge_graph_example.py.backup"
+    },
+    {
+      "file": "scripts/validate_adk_memory_config.py",
+      "replacements": 33,
+      "status": "success",
+      "backup": "scripts/validate_adk_memory_config.py.backup"
+    },
+    {
+      "file": "scripts/memory_performance.py",
+      "replacements": 1,
+      "status": "success",
+      "backup": "scripts/memory_performance.py.backup"
+    },
+    {
+      "file": "fix_project_id_references.py",
+      "replacements": 13,
+      "status": "success",
+      "backup": "fix_project_id_references.py.backup"
+    },
+    {
+      "file": "examples/monitoring_security_integration_example.py",
+      "replacements": 16,
+      "status": "success",
+      "backup": "examples/monitoring_security_integration_example.py.backup"
+    },
+    {
+      "file": "fix_agent_tool_integration.py",
+      "replacements": 31,
+      "status": "success",
+      "backup": "fix_agent_tool_integration.py.backup"
+    },
+    {
+      "file": "simple_environment_test.py",
+      "replacements": 35,
+      "status": "success",
+      "backup": "simple_environment_test.py.backup"
+    },
+    {
+      "file": "smart_system_validation.py",
+      "replacements": 28,
+      "status": "success",
+      "backup": "smart_system_validation.py.backup"
+    },
+    {
+      "file": "tests/validate_framework.py",
+      "replacements": 40,
+      "status": "success",
+      "backup": "tests/validate_framework.py.backup"
+    },
+    {
+      "file": "tests/automated/comprehensive_mcp_tools_validator.py",
+      "replacements": 12,
+      "status": "success",
+      "backup": "tests/automated/comprehensive_mcp_tools_validator.py.backup"
+    },
+    {
+      "file": "tests/automated/robust_validation_framework.py",
+      "replacements": 5,
+      "status": "success",
+      "backup": "tests/automated/robust_validation_framework.py.backup"
+    },
+    {
+      "file": "tests/automated/browser/vana_browser_tester.py",
+      "replacements": 8,
+      "status": "success",
+      "backup": "tests/automated/browser/vana_browser_tester.py.backup"
+    },
+    {
+      "file": "tests/automated/browser_systematic_testing.py",
+      "replacements": 25,
+      "status": "success",
+      "backup": "tests/automated/browser_systematic_testing.py.backup"
+    },
+    {
+      "file": "tests/automated/infrastructure_validation.py",
+      "replacements": 16,
+      "status": "success",
+      "backup": "tests/automated/infrastructure_validation.py.backup"
+    },
+    {
+      "file": "tests/automated/systematic_tool_testing.py",
+      "replacements": 32,
+      "status": "success",
+      "backup": "tests/automated/systematic_tool_testing.py.backup"
+    },
+    {
+      "file": "tests/automated/mcp_tools_status_check.py",
+      "replacements": 26,
+      "status": "success",
+      "backup": "tests/automated/mcp_tools_status_check.py.backup"
+    },
+    {
+      "file": "tests/automated/trigger_document_import.py",
+      "replacements": 2,
+      "status": "success",
+      "backup": "tests/automated/trigger_document_import.py.backup"
+    },
+    {
+      "file": "tests/automated/orchestration_validation.py",
+      "replacements": 21,
+      "status": "success",
+      "backup": "tests/automated/orchestration_validation.py.backup"
+    },
+    {
+      "file": "tests/coordination/task_10_performance_testing.py",
+      "replacements": 44,
+      "status": "success",
+      "backup": "tests/coordination/task_10_performance_testing.py.backup"
+    },
+    {
+      "file": "tests/coordination/coordination_benchmarks.py",
+      "replacements": 62,
+      "status": "success",
+      "backup": "tests/coordination/coordination_benchmarks.py.backup"
+    },
+    {
+      "file": "tests/discovery/system_discovery_framework.py",
+      "replacements": 58,
+      "status": "success",
+      "backup": "tests/discovery/system_discovery_framework.py.backup"
+    },
+    {
+      "file": "tests/agentic_validation/local_function_tests.py",
+      "replacements": 58,
+      "status": "success",
+      "backup": "tests/agentic_validation/local_function_tests.py.backup"
+    },
+    {
+      "file": "tests/agentic_validation/simple_http_tests.py",
+      "replacements": 33,
+      "status": "success",
+      "backup": "tests/agentic_validation/simple_http_tests.py.backup"
+    },
+    {
+      "file": "tests/sandbox/run_sandbox_tests.py",
+      "replacements": 23,
+      "status": "success",
+      "backup": "tests/sandbox/run_sandbox_tests.py.backup"
+    },
+    {
+      "file": "tests/fixtures/vector_search_fixtures.py",
+      "replacements": 1,
+      "status": "success",
+      "backup": "tests/fixtures/vector_search_fixtures.py.backup"
+    },
+    {
+      "file": "tests/eval/run_evaluation.py",
+      "replacements": 52,
+      "status": "success",
+      "backup": "tests/eval/run_evaluation.py.backup"
+    },
+    {
+      "file": "tests/eval/agent_evaluator.py",
+      "replacements": 31,
+      "status": "success",
+      "backup": "tests/eval/agent_evaluator.py.backup"
+    },
+    {
+      "file": "tests/eval/performance_benchmarks.py",
+      "replacements": 33,
+      "status": "success",
+      "backup": "tests/eval/performance_benchmarks.py.backup"
+    },
+    {
+      "file": "tests/run_all_tests.py",
+      "replacements": 3,
+      "status": "success",
+      "backup": "tests/run_all_tests.py.backup"
+    }
+  ]
+}

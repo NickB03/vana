@@ -1,5 +1,9 @@
+import json
 from google.adk.tools import FunctionTool
 from .ragie_client import query_memory, format_memory_results
+from lib.logging_config import get_logger
+
+logger = get_logger("vana.tools.memory.agent_tools")
 
 def search_memory_tool(query: str, top_k: int = 5) -> str:
     """
@@ -15,18 +19,16 @@ def search_memory_tool(query: str, top_k: int = 5) -> str:
     Returns:
         Formatted string with memory results
     """
-    print(f"\n[AGENT TOOL] Searching memory for: {query}")
-    print(f"[AGENT TOOL] Using top_k={top_k}")
+    logger.info(f"\n[AGENT TOOL] Searching memory for: {query}")
+    logger.info(f"[AGENT TOOL] Using top_k={top_k}")
 
-    # Force debug=True to get detailed logging
-    results = query_memory(query, top_k=top_k, debug=True)
+    # Query memory with standard logging
+    results = query_memory(query, top_k=top_k)
 
-    # Print the raw results for debugging
-    print("\n[AGENT TOOL] RAW RESULTS:")
-    import json
-    print(json.dumps(results, indent=2))
+    # Log the raw results for debugging
+    logger.debug("RAW RESULTS: %s", json.dumps(results, indent=2))
 
-    formatted_results = format_memory_results(results, debug=True)
+    formatted_results = format_memory_results(results)
 
     # Add a strong grounding prefix to remind the agent to only use retrieved information
     grounding_prefix = """
@@ -41,7 +43,7 @@ Retrieved information:
 
     formatted_results = grounding_prefix + formatted_results
 
-    print(f"[AGENT TOOL] Search complete, returning {len(results)} results")
+    logger.info(f"[AGENT TOOL] Search complete, returning {len(results)} results")
     return formatted_results
 
 # Create the memory tool for use in ADK agents

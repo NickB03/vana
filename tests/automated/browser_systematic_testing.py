@@ -6,6 +6,9 @@ Tests all 16 tools using Puppeteer browser automation.
 
 import time
 from typing import Dict, List, Any
+from lib.logging_config import get_logger
+logger = get_logger("vana.browser_systematic_testing")
+
 
 class VanaBrowserTester:
     def __init__(self):
@@ -124,16 +127,16 @@ class VanaBrowserTester:
     
     def print_header(self):
         """Print the testing header."""
-        print("🚀 SYSTEMATIC BROWSER-BASED TOOL TESTING")
-        print("=" * 60)
-        print(f"🎯 Service URL: {self.service_url}")
-        print(f"🧪 Total Tools to Test: {len(self.tools_to_test)}")
-        print("=" * 60)
+        logger.debug("🚀 SYSTEMATIC BROWSER-BASED TOOL TESTING")
+        logger.debug("%s", "=" * 60)
+        logger.debug(f"🎯 Service URL: {self.service_url}")
+        logger.debug(f"🧪 Total Tools to Test: {len(self.tools_to_test)}")
+        logger.debug("%s", "=" * 60)
     
     def print_category_header(self, category: str, tools_in_category: int):
         """Print category header."""
-        print(f"\n📁 {category.upper()} ({tools_in_category} tools)")
-        print("-" * 40)
+        logger.debug(f"\n📁 {category.upper()} ({tools_in_category} tools)")
+        logger.debug("%s", "-" * 40)
     
     def test_tool_browser(self, tool_info: Dict[str, Any]) -> Dict[str, Any]:
         """Test a single tool using browser automation."""
@@ -142,8 +145,8 @@ class VanaBrowserTester:
         message = tool_info["message"]
         expected_keywords = tool_info["expected_keywords"]
         
-        print(f"\n🧪 Test {self.test_counter}/16: {tool_name}")
-        print(f"📝 Message: {message}")
+        logger.debug(f"\n🧪 Test {self.test_counter}/16: {tool_name}")
+        logger.debug(f"📝 Message: {message}")
         
         # This would be implemented with actual Puppeteer calls
         # For now, returning a placeholder structure
@@ -185,25 +188,25 @@ class VanaBrowserTester:
                 
                 # Print immediate result
                 status = "✅ PASS" if result["success"] else "❌ PENDING"
-                print(f"📊 Status: {status}")
+                logger.debug(f"📊 Status: {status}")
                 
                 # Brief pause between tests
                 time.sleep(0.5)
     
     def print_summary(self):
         """Print comprehensive test summary."""
-        print("\n" + "=" * 60)
-        print("📊 SYSTEMATIC TESTING SUMMARY")
-        print("=" * 60)
+        logger.debug("%s", "\n" + "=" * 60)
+        logger.debug("📊 SYSTEMATIC TESTING SUMMARY")
+        logger.debug("%s", "=" * 60)
         
         total_tests = len(self.results)
         passed_tests = sum(1 for result in self.results.values() if result["success"])
         failed_tests = total_tests - passed_tests
         
-        print(f"📈 Total Tests: {total_tests}")
-        print(f"✅ Passed: {passed_tests}")
-        print(f"❌ Failed: {failed_tests}")
-        print(f"📊 Success Rate: {(passed_tests/total_tests)*100:.1f}%")
+        logger.debug(f"📈 Total Tests: {total_tests}")
+        logger.debug(f"✅ Passed: {passed_tests}")
+        logger.error(f"❌ Failed: {failed_tests}")
+        logger.info(f"📊 Success Rate: {(passed_tests/total_tests)*100:.1f}%")
         
         # Summary by category
         categories = {}
@@ -215,27 +218,27 @@ class VanaBrowserTester:
             if result["success"]:
                 categories[category]["passed"] += 1
         
-        print(f"\n📊 RESULTS BY CATEGORY:")
+        logger.info(f"\n📊 RESULTS BY CATEGORY:")
         for category, stats in categories.items():
             success_rate = (stats["passed"] / stats["total"]) * 100
-            print(f"  📁 {category}: {stats['passed']}/{stats['total']} ({success_rate:.1f}%)")
+            logger.info("%s", f"  📁 {category}: {stats['passed']}/{stats['total']} ({success_rate:.1f}%)")
         
         if failed_tests > 0:
-            print(f"\n❌ FAILED TOOLS:")
+            logger.error(f"\n❌ FAILED TOOLS:")
             for tool, result in self.results.items():
                 if not result["success"]:
                     error = result.get("error", "Test not completed")
-                    print(f"  - {tool}: {error}")
+                    logger.error(f"  - {tool}: {error}")
         
-        print(f"\n✅ WORKING TOOLS:")
+        logger.debug(f"\n✅ WORKING TOOLS:")
         for tool, result in self.results.items():
             if result["success"]:
                 keywords = ", ".join(result["keywords_found"])
-                print(f"  - {tool}: Keywords found: {keywords}")
+                logger.debug(f"  - {tool}: Keywords found: {keywords}")
 
 if __name__ == "__main__":
-    print("🔧 This is a template for browser-based testing.")
-    print("🔧 Actual implementation requires Puppeteer integration.")
+    logger.debug("🔧 This is a template for browser-based testing.")
+    logger.debug("🔧 Actual implementation requires Puppeteer integration.")
     
     tester = VanaBrowserTester()
     tester.run_systematic_tests()

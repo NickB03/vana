@@ -22,7 +22,7 @@ Usage:
     
     # Get feedback statistics
     stats = feedback_collector.get_statistics()
-    print(stats)
+    logger.info("%s", stats)
 """
 
 import os

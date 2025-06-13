@@ -17,6 +17,9 @@ import json
 import re
 import time
 from typing import Dict, List, Any, Optional
+from lib.logging_config import get_logger
+logger = get_logger("vana.simple_http_tests")
+
 
 class SimpleAgenticTester:
     """
@@ -60,7 +63,7 @@ class SimpleAgenticTester:
                     elif response.status_code == 404:
                         continue  # Try next endpoint
                     else:
-                        print(f"HTTP {response.status_code} from {url}")
+                        logger.debug(f"HTTP {response.status_code} from {url}")
                         
                 except requests.exceptions.RequestException:
                     continue  # Try next endpoint
@@ -79,18 +82,18 @@ class SimpleAgenticTester:
                 except requests.exceptions.RequestException:
                     continue  # Try next endpoint
             
-            print(f"❌ All endpoints failed for service: {self.service_url}")
+            logger.error(f"❌ All endpoints failed for service: {self.service_url}")
             return None
             
         except Exception as e:
-            print(f"❌ Request error: {e}")
+            logger.error(f"❌ Request error: {e}")
             return None
     
     def test_task_id_invisibility(self) -> Dict[str, Any]:
         """
         CRITICAL TEST: Ensure no task IDs are exposed to users
         """
-        print("🧪 Testing Task ID Invisibility...")
+        logger.debug("🧪 Testing Task ID Invisibility...")
         
         test_queries = [
             "Plan a trip to Paris from July 12th to July 16th",
@@ -113,7 +116,7 @@ class SimpleAgenticTester:
         ]
         
         for query in test_queries:
-            print(f"  Testing query: {query[:50]}...")
+            logger.debug(f"  Testing query: {query[:50]}...")
             response = self.make_request(query)
             
             if response:
@@ -127,12 +130,12 @@ class SimpleAgenticTester:
                             "matches": matches,
                             "response_excerpt": response[:300] + "..." if len(response) > 300 else response
                         })
-                        print(f"    ❌ Found violation: {pattern}")
+                        logger.debug(f"    ❌ Found violation: {pattern}")
                         break
                 else:
-                    print(f"    ✅ No task IDs found")
+                    logger.debug(f"    ✅ No task IDs found")
             else:
-                print(f"    ⚠️  No response received")
+                logger.debug(f"    ⚠️  No response received")
         
         result = {
             "test_name": "task_id_invisibility",
@@ -148,7 +151,7 @@ class SimpleAgenticTester:
         """
         CRITICAL TEST: Verify orchestrator takes ownership of responses
         """
-        print("🧪 Testing Orchestrator Ownership...")
+        logger.debug("🧪 Testing Orchestrator Ownership...")
         
         test_cases = [
             {
@@ -190,7 +193,7 @@ class SimpleAgenticTester:
         
         for test_case in test_cases:
             query = test_case["query"]
-            print(f"  Testing query: {query[:50]}...")
+            logger.debug(f"  Testing query: {query[:50]}...")
             response = self.make_request(query)
             
             if response:
@@ -205,7 +208,7 @@ class SimpleAgenticTester:
                             "pattern": pattern,
                             "response_excerpt": response[:300] + "..." if len(response) > 300 else response
                         })
-                        print(f"    ❌ Found relay pattern: {pattern}")
+                        logger.debug(f"    ❌ Found relay pattern: {pattern}")
                         break
                 
                 # Check for required ownership patterns
@@ -216,7 +219,7 @@ class SimpleAgenticTester:
                         break
                 
                 if ownership_found:
-                    print(f"    ✅ Ownership language found")
+                    logger.debug(f"    ✅ Ownership language found")
                 else:
                     ownership_violations.append({
                         "query": query,
@@ -224,9 +227,9 @@ class SimpleAgenticTester:
                         "details": "No ownership language found in response",
                         "response_excerpt": response[:300] + "..." if len(response) > 300 else response
                     })
-                    print(f"    ❌ No ownership language found")
+                    logger.debug(f"    ❌ No ownership language found")
             else:
-                print(f"    ⚠️  No response received")
+                logger.debug(f"    ⚠️  No response received")
         
         result = {
             "test_name": "orchestrator_ownership",
@@ -242,20 +245,20 @@ class SimpleAgenticTester:
         """
         Basic test to ensure the service is available and responding
         """
-        print("🧪 Testing Service Availability...")
+        logger.debug("🧪 Testing Service Availability...")
         
         try:
             response = self.make_request("Hello, are you working?")
             
             if response and len(response) > 10:  # Got a meaningful response
-                print("  ✅ Service is responding")
+                logger.debug("  ✅ Service is responding")
                 result = {
                     "test_name": "service_availability",
                     "status": "PASS",
                     "details": f"Service responded with {len(response)} characters"
                 }
             else:
-                print("  ❌ Service not responding properly")
+                logger.debug("  ❌ Service not responding properly")
                 result = {
                     "test_name": "service_availability", 
                     "status": "FAIL",
@@ -263,7 +266,7 @@ class SimpleAgenticTester:
                 }
                 
         except Exception as e:
-            print(f"  ❌ Service availability test failed: {e}")
+            logger.error(f"  ❌ Service availability test failed: {e}")
             result = {
                 "test_name": "service_availability",
                 "status": "FAIL", 
@@ -277,11 +280,11 @@ class SimpleAgenticTester:
         """
         Run all HTTP-based tests for agentic system validation
         """
-        print("🔬 COMPREHENSIVE HTTP TESTING FOR AGENTIC SYSTEMS")
-        print("=" * 60)
-        print(f"Service: {self.service_url}")
-        print(f"Timestamp: {time.strftime('%Y-%m-%d %H:%M:%S')}")
-        print("")
+        logger.debug("🔬 COMPREHENSIVE HTTP TESTING FOR AGENTIC SYSTEMS")
+        logger.debug("%s", "=" * 60)
+        logger.debug(f"Service: {self.service_url}")
+        logger.debug("%s", f"Timestamp: {time.strftime('%Y-%m-%d %H:%M:%S')}")
+        logger.debug("")
         
         # Run all tests
         tests = [
@@ -291,10 +294,10 @@ class SimpleAgenticTester:
         ]
         
         for test_func in tests:
-            print(f"\n{test_func.__name__.replace('_', ' ').title()}")
-            print("-" * 40)
+            logger.debug("%s", f"\n{test_func.__name__.replace('_', ' ').title()}")
+            logger.debug("%s", "-" * 40)
             result = test_func()
-            print(f"Result: {result['status']}")
+            logger.info("%s", f"Result: {result['status']}")
         
         # Generate comprehensive report
         return self.generate_test_report()
@@ -338,23 +341,23 @@ def main():
     tester = SimpleAgenticTester()
     report = tester.run_comprehensive_tests()
     
-    print("\n" + "="*80)
-    print("🔬 COMPREHENSIVE HTTP TESTING REPORT")
-    print("="*80)
-    print(json.dumps(report, indent=2))
+    logger.debug("%s", "\n" + "="*80)
+    logger.debug("🔬 COMPREHENSIVE HTTP TESTING REPORT")
+    logger.debug("%s", "="*80)
+    logger.debug("%s", json.dumps(report, indent=2))
     
     # Save report
     with open("simple_http_test_results.json", "w") as f:
         json.dump(report, f, indent=2)
     
-    print(f"\n📊 Detailed results saved to: simple_http_test_results.json")
+    logger.info(f"\n📊 Detailed results saved to: simple_http_test_results.json")
     
     # Exit with appropriate code
     if report["summary"]["failed"] > 0:
-        print(f"\n❌ {report['summary']['failed']} tests FAILED")
+        logger.error("%s", f"\n❌ {report['summary']['failed']} tests FAILED")
         return 1
     else:
-        print(f"\n✅ All {report['summary']['passed']} tests PASSED")
+        logger.debug("%s", f"\n✅ All {report['summary']['passed']} tests PASSED")
         return 0
 
 if __name__ == "__main__":

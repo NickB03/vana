@@ -26,6 +26,9 @@ import weakref
 import gc
 from google.adk.agents import LlmAgent
 from google.adk.tools import FunctionTool
+from lib.logging_config import get_logger
+logger = get_logger("vana.lib._shared_libraries.dynamic_agent_factory")
+
 
 class AgentState(Enum):
     """Agent lifecycle states"""
@@ -313,7 +316,7 @@ class DynamicAgentFactory:
                 break
             except Exception as e:
                 # Log error but continue cleanup loop
-                print(f"Error in cleanup loop: {e}")
+                logger.error(f"Error in cleanup loop: {e}")
     
     async def _cleanup_idle_agents(self):
         """Clean up agents that have been idle too long"""

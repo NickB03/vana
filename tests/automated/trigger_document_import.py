@@ -128,10 +128,10 @@ def import_document_on_upload(cloud_event):
                 )
             )
         )
-        print(f"Successfully imported {gcs_uri}")
+        logger.info(f"Successfully imported {gcs_uri}")
         
     except Exception as e:
-        print(f"Failed to import {gcs_uri}: {str(e)}")
+        logger.error(f"Failed to import {gcs_uri}: {str(e)}")
 '''
     
     logger.info("📄 Cloud Function code template created")

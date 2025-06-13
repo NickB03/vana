@@ -29,8 +29,8 @@ try:
     from tools.knowledge_graph.knowledge_graph_manager import KnowledgeGraphManager
     from tools.vector_search.vector_search_client import VectorSearchClient
 except ImportError as e:
-    print(f"Error importing required modules: {e}")
-    print("Make sure you run this script from the project root directory.")
+    logger.error(f"Error importing required modules: {e}")
+    logger.info("Make sure you run this script from the project root directory.")
     sys.exit(1)
 
 # Configure logging

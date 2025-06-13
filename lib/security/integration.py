@@ -10,6 +10,9 @@ import time
 import yaml
 from typing import Dict, Any, Optional, Tuple
 from .security_manager import SecurityManager
+from lib.logging_config import get_logger
+logger = get_logger("vana.lib.security.integration")
+
 
 class SecurityIntegration:
     """Integration utilities for VANA security."""
@@ -27,7 +30,7 @@ class SecurityIntegration:
                 with open(self.config_path, 'r') as f:
                     return yaml.safe_load(f)
         except Exception as e:
-            print(f"Warning: Could not load security config: {e}")
+            logger.warning(f"Warning: Could not load security config: {e}")
         
         # Default configuration
         return {

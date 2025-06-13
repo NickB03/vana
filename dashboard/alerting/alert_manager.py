@@ -10,6 +10,9 @@ import json
 import threading
 import datetime
 from typing import List, Dict, Optional, Any
+from lib.logging_config import get_logger
+
+logger = get_logger("vana.alert_manager")
 
 ALERTS_FILE = os.environ.get("VANA_ALERTS_FILE", "dashboard/alerting/alerts.json")
 ALERTS_LOCK = threading.Lock()
@@ -86,39 +89,6 @@ class AlertManager:
         Log an alert from an external source (e.g., security, audit, test).
         """
         return self.create_alert(message, severity, source, details)
-        smtp_server = os.environ.get("VANA_SMTP_SERVER")
-        smtp_port = int(os.environ.get("VANA_SMTP_PORT", "587"))
-        smtp_user = os.environ.get("VANA_SMTP_USERNAME")
-        smtp_pass = os.environ.get("VANA_SMTP_PASSWORD")
-        recipient = os.environ.get("VANA_ALERT_EMAIL_RECIPIENT")
-
-        if not all([smtp_server, smtp_user, smtp_pass, recipient]):
-            return  # Notification not configured
-
-        import smtplib
-        from email.mime.text import MIMEText
-
-        subject = f"[VANA ALERT] {alert.get('message', '')}"
-        body = (
-            f"Severity: {alert.get('severity')}\n"
-            f"Source: {alert.get('source')}\n"
-            f"Time: {alert.get('timestamp')}\n"
-            f"Message: {alert.get('message')}\n"
-            f"Details: {json.dumps(alert.get('details', {}), indent=2)}\n"
-        )
-        msg = MIMEText(body)
-        msg["Subject"] = subject
-        msg["From"] = smtp_user
-        msg["To"] = recipient
-
-        try:
-            with smtplib.SMTP(smtp_server, smtp_port) as server:
-                server.starttls()
-                server.login(smtp_user, smtp_pass)
-                server.sendmail(smtp_user, [recipient], msg.as_string())
-        except Exception as e:
-            # Log but do not raise
-            print(f"Failed to send alert email: {e}")
 
     def get_active_alerts(self) -> List[Dict[str, Any]]:
         alerts = self._load_alerts()
@@ -146,13 +116,10 @@ class AlertManager:
             self._save_alerts(alerts)
         return updated
 
-    def _notify(self, alert: Dict[str, Any]):
-        # Stub for notification (email, SMS, etc.)
-        # To be implemented: send email/SMS based on severity and config
-        pass
+
 
 # Example usage:
 if __name__ == "__main__":
     am = AlertManager()
     am.create_alert("Test alert: system health degraded", severity=AlertSeverity.WARNING, source="health_check")
-    print("Active alerts:", am.get_active_alerts())
+    logger.info("Active alerts:", am.get_active_alerts())

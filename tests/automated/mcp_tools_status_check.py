@@ -9,6 +9,9 @@ import json
 import time
 import requests
 from typing import Dict, Any
+from lib.logging_config import get_logger
+logger = get_logger("vana.mcp_tools_status_check")
+
 
 class MCPToolsStatusChecker:
     def __init__(self):
@@ -103,13 +106,13 @@ class MCPToolsStatusChecker:
     
     async def run_comprehensive_check(self) -> Dict[str, Any]:
         """Run comprehensive MCP tools status check"""
-        print("🎯 MCP TOOLS STATUS CHECK STARTING")
-        print("=" * 50)
+        logger.info("🎯 MCP TOOLS STATUS CHECK STARTING")
+        logger.debug("%s", "=" * 50)
         
         # 1. Check service health
-        print("1. Checking service health...")
+        logger.debug("1. Checking service health...")
         health_result = await self.check_service_health()
-        print(f"   Service Status: {health_result['status']}")
+        logger.info("%s", f"   Service Status: {health_result['status']}")
         
         if health_result["status"] != "healthy":
             return {
@@ -126,21 +129,21 @@ class MCPToolsStatusChecker:
             ("github_mcp_operations", "Get GitHub user information")
         ]
         
-        print("\n2. Testing Core MCP Tools...")
+        logger.debug("\n2. Testing Core MCP Tools...")
         core_results = {}
         successful_core = 0
         
         for tool_name, test_message in core_mcp_tools:
-            print(f"   Testing {tool_name}...")
+            logger.debug(f"   Testing {tool_name}...")
             result = await self.test_mcp_tool(tool_name, test_message)
             core_results[tool_name] = result
             if result["status"] == "success":
                 successful_core += 1
-                print(f"   ✅ {tool_name} - SUCCESS ({result.get('response_time', 0)}s)")
+                logger.info("%s", f"   ✅ {tool_name} - SUCCESS ({result.get('response_time', 0)}s)")
             elif result["status"] == "tool_not_used":
-                print(f"   ⚠️ {tool_name} - RESPONDED BUT TOOL NOT USED ({result.get('response_time', 0)}s)")
+                logger.info("%s", f"   ⚠️ {tool_name} - RESPONDED BUT TOOL NOT USED ({result.get('response_time', 0)}s)")
             else:
-                print(f"   ❌ {tool_name} - FAILED ({result.get('error', result.get('status', 'unknown'))})")
+                logger.error("%s", f"   ❌ {tool_name} - FAILED ({result.get('error', result.get('status', 'unknown'))})")
         
         # 3. Test Time MCP Tools (sample)
         time_tools = [
@@ -148,21 +151,21 @@ class MCPToolsStatusChecker:
             ("list_timezones", "List available timezones")
         ]
         
-        print("\n3. Testing Time MCP Tools...")
+        logger.debug("\n3. Testing Time MCP Tools...")
         time_results = {}
         successful_time = 0
         
         for tool_name, test_message in time_tools:
-            print(f"   Testing {tool_name}...")
+            logger.debug(f"   Testing {tool_name}...")
             result = await self.test_mcp_tool(tool_name, test_message)
             time_results[tool_name] = result
             if result["status"] == "success":
                 successful_time += 1
-                print(f"   ✅ {tool_name} - SUCCESS ({result.get('response_time', 0)}s)")
+                logger.info("%s", f"   ✅ {tool_name} - SUCCESS ({result.get('response_time', 0)}s)")
             elif result["status"] == "tool_not_used":
-                print(f"   ⚠️ {tool_name} - RESPONDED BUT TOOL NOT USED ({result.get('response_time', 0)}s)")
+                logger.info("%s", f"   ⚠️ {tool_name} - RESPONDED BUT TOOL NOT USED ({result.get('response_time', 0)}s)")
             else:
-                print(f"   ❌ {tool_name} - FAILED ({result.get('error', result.get('status', 'unknown'))})")
+                logger.error("%s", f"   ❌ {tool_name} - FAILED ({result.get('error', result.get('status', 'unknown'))})")
         
         # 4. Test Filesystem MCP Tools (sample)
         filesystem_tools = [
@@ -170,33 +173,33 @@ class MCPToolsStatusChecker:
             ("get_file_metadata", "Get metadata for a test file")
         ]
         
-        print("\n4. Testing Filesystem MCP Tools...")
+        logger.debug("\n4. Testing Filesystem MCP Tools...")
         filesystem_results = {}
         successful_filesystem = 0
         
         for tool_name, test_message in filesystem_tools:
-            print(f"   Testing {tool_name}...")
+            logger.debug(f"   Testing {tool_name}...")
             result = await self.test_mcp_tool(tool_name, test_message)
             filesystem_results[tool_name] = result
             if result["status"] == "success":
                 successful_filesystem += 1
-                print(f"   ✅ {tool_name} - SUCCESS ({result.get('response_time', 0)}s)")
+                logger.info("%s", f"   ✅ {tool_name} - SUCCESS ({result.get('response_time', 0)}s)")
             elif result["status"] == "tool_not_used":
-                print(f"   ⚠️ {tool_name} - RESPONDED BUT TOOL NOT USED ({result.get('response_time', 0)}s)")
+                logger.info("%s", f"   ⚠️ {tool_name} - RESPONDED BUT TOOL NOT USED ({result.get('response_time', 0)}s)")
             else:
-                print(f"   ❌ {tool_name} - FAILED ({result.get('error', result.get('status', 'unknown'))})")
+                logger.error("%s", f"   ❌ {tool_name} - FAILED ({result.get('error', result.get('status', 'unknown'))})")
         
         # Calculate overall success rate
         total_tested = len(core_mcp_tools) + len(time_tools) + len(filesystem_tools)
         total_successful = successful_core + successful_time + successful_filesystem
         success_rate = (total_successful / total_tested * 100) if total_tested > 0 else 0
         
-        print(f"\n📊 RESULTS SUMMARY")
-        print("=" * 50)
-        print(f"Core MCP Tools: {successful_core}/{len(core_mcp_tools)} ({successful_core/len(core_mcp_tools)*100:.1f}%)")
-        print(f"Time Tools: {successful_time}/{len(time_tools)} ({successful_time/len(time_tools)*100:.1f}%)")
-        print(f"Filesystem Tools: {successful_filesystem}/{len(filesystem_tools)} ({successful_filesystem/len(filesystem_tools)*100:.1f}%)")
-        print(f"OVERALL SUCCESS RATE: {success_rate:.1f}% ({total_successful}/{total_tested})")
+        logger.info(f"\n📊 RESULTS SUMMARY")
+        logger.debug("%s", "=" * 50)
+        logger.info(f"Core MCP Tools: {successful_core}/{len(core_mcp_tools)} ({successful_core/len(core_mcp_tools)*100:.1f}%)")
+        logger.info(f"Time Tools: {successful_time}/{len(time_tools)} ({successful_time/len(time_tools)*100:.1f}%)")
+        logger.info(f"Filesystem Tools: {successful_filesystem}/{len(filesystem_tools)} ({successful_filesystem/len(filesystem_tools)*100:.1f}%)")
+        logger.info(f"OVERALL SUCCESS RATE: {success_rate:.1f}% ({total_successful}/{total_tested})")
         
         return {
             "overall_status": "completed",
@@ -227,7 +230,7 @@ async def main():
     with open(filename, "w") as f:
         json.dump(results, f, indent=2, default=str)
     
-    print(f"\n💾 Results saved to: {filename}")
+    logger.info(f"\n💾 Results saved to: {filename}")
     
     return results
 

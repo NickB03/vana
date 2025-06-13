@@ -45,13 +45,13 @@ class KnowledgeGraphManager:
             response.raise_for_status()
             return True
         except Exception as e:
-            print(f"Knowledge Graph is not available: {e}")
+            logger.info(f"Knowledge Graph is not available: {e}")
             return False
 
     def query(self, entity_type: str, query_text: str) -> Dict[str, Any]:
         """Query the Knowledge Graph for entities"""
         if not self.is_available():
-            print("Knowledge Graph is not available")
+            logger.info("Knowledge Graph is not available")
             return {"entities": []}
 
         try:
@@ -67,13 +67,13 @@ class KnowledgeGraphManager:
             response.raise_for_status()
             return response.json()
         except Exception as e:
-            print(f"Error querying Knowledge Graph: {e}")
+            logger.error(f"Error querying Knowledge Graph: {e}")
             return {"entities": []}
 
     def store(self, entity_name: str, entity_type: str, observation: str) -> Dict[str, Any]:
         """Store information in the Knowledge Graph"""
         if not self.is_available():
-            print("Knowledge Graph is not available")
+            logger.info("Knowledge Graph is not available")
             return {"success": False}
 
         try:
@@ -92,13 +92,13 @@ class KnowledgeGraphManager:
             response.raise_for_status()
             return response.json()
         except Exception as e:
-            print(f"Error storing in Knowledge Graph: {e}")
+            logger.error(f"Error storing in Knowledge Graph: {e}")
             return {"success": False}
 
     def get_context(self) -> Dict[str, Any]:
         """Get the current Knowledge Graph context"""
         if not self.is_available():
-            print("Knowledge Graph is not available")
+            logger.info("Knowledge Graph is not available")
             return {"context": {}}
 
         try:
@@ -110,13 +110,13 @@ class KnowledgeGraphManager:
             response.raise_for_status()
             return response.json()
         except Exception as e:
-            print(f"Error getting Knowledge Graph context: {e}")
+            logger.error(f"Error getting Knowledge Graph context: {e}")
             return {"context": {}}
 
     def query_related(self, entity_name: str, relationship_type: str) -> Dict[str, Any]:
         """Query for entities related to a specific entity"""
         if not self.is_available():
-            print("Knowledge Graph is not available")
+            logger.info("Knowledge Graph is not available")
             return {"entities": []}
 
         try:
@@ -132,13 +132,13 @@ class KnowledgeGraphManager:
             response.raise_for_status()
             return response.json()
         except Exception as e:
-            print(f"Error querying related entities: {e}")
+            logger.error(f"Error querying related entities: {e}")
             return {"entities": []}
 
     def store_relationship(self, entity1: str, relationship: str, entity2: str) -> Dict[str, Any]:
         """Store a relationship between two entities"""
         if not self.is_available():
-            print("Knowledge Graph is not available")
+            logger.info("Knowledge Graph is not available")
             return {"success": False}
 
         try:
@@ -155,13 +155,13 @@ class KnowledgeGraphManager:
             response.raise_for_status()
             return response.json()
         except Exception as e:
-            print(f"Error storing relationship: {e}")
+            logger.error(f"Error storing relationship: {e}")
             return {"success": False}
 
     def delete(self, entity_name: str) -> Dict[str, Any]:
         """Delete an entity from the Knowledge Graph"""
         if not self.is_available():
-            print("Knowledge Graph is not available")
+            logger.info("Knowledge Graph is not available")
             return {"success": False}
 
         try:
@@ -176,7 +176,7 @@ class KnowledgeGraphManager:
             response.raise_for_status()
             return response.json()
         except Exception as e:
-            print(f"Error deleting entity: {e}")
+            logger.error(f"Error deleting entity: {e}")
             return {"success": False}
 
     def extract_entities(self, text: str) -> List[Dict[str, Any]]:

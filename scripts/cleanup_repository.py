@@ -11,6 +11,9 @@ import shutil
 import glob
 from pathlib import Path
 from typing import List
+from lib.logging_config import get_logger
+logger = get_logger("vana.cleanup_repository")
+
 
 # Patterns to remove
 CLEANUP_PATTERNS = [
@@ -43,7 +46,7 @@ def remove_pattern(pattern: str) -> List[str]:
                 shutil.rmtree(path)
                 removed.append(f"Directory: {path}")
         except Exception as e:
-            print(f"❌ Error removing {path}: {e}")
+            logger.error(f"❌ Error removing {path}: {e}")
     
     return removed
 
@@ -171,58 +174,58 @@ test_results/
                 for line in lines_to_add:
                     f.write(f"{line}\n")
             
-            print(f"✅ Added {len(lines_to_add)} new patterns to .gitignore")
+            logger.info(f"✅ Added {len(lines_to_add)} new patterns to .gitignore")
         else:
-            print("✅ .gitignore is already comprehensive")
+            logger.info("✅ .gitignore is already comprehensive")
             
     except Exception as e:
-        print(f"❌ Error updating .gitignore: {e}")
+        logger.error(f"❌ Error updating .gitignore: {e}")
 
 def main():
     """Main cleanup process."""
-    print("🧹 VANA Repository Cleanup")
-    print("=" * 40)
+    logger.info("🧹 VANA Repository Cleanup")
+    logger.info("%s", "=" * 40)
     
     total_removed = 0
     
     # Remove cleanup patterns
-    print("\n📁 Removing compiled bytecode and cache files...")
+    logger.info("\n📁 Removing compiled bytecode and cache files...")
     for pattern in CLEANUP_PATTERNS:
         removed = remove_pattern(pattern)
         if removed:
             total_removed += len(removed)
-            print(f"✅ Removed {len(removed)} items matching '{pattern}'")
+            logger.info("%s", f"✅ Removed {len(removed)} items matching '{pattern}'")
             for item in removed[:5]:  # Show first 5
-                print(f"    - {item}")
+                logger.info(f"    - {item}")
             if len(removed) > 5:
-                print(f"    ... and {len(removed) - 5} more")
+                logger.info(f"    ... and {len(removed) - 5} more")
     
     # Find large files
-    print("\n📊 Checking for large files...")
+    logger.info("\n📊 Checking for large files...")
     large_files = find_large_files()
     if large_files:
-        print(f"⚠️  Found {len(large_files)} large files:")
+        logger.info(f"⚠️  Found {len(large_files)} large files:")
         for file_info in large_files[:10]:  # Show first 10
-            print(f"    - {file_info}")
+            logger.info(f"    - {file_info}")
         if len(large_files) > 10:
-            print(f"    ... and {len(large_files) - 10} more")
-        print("    Consider reviewing these files for repository inclusion")
+            logger.info(f"    ... and {len(large_files) - 10} more")
+        logger.info("    Consider reviewing these files for repository inclusion")
     else:
-        print("✅ No unusually large files found")
+        logger.info("✅ No unusually large files found")
     
     # Update .gitignore
-    print("\n📝 Updating .gitignore...")
+    logger.info("\n📝 Updating .gitignore...")
     update_gitignore()
     
-    print(f"\n🎉 Cleanup complete!")
-    print(f"✅ Removed {total_removed} items")
-    print(f"📝 Updated .gitignore with comprehensive patterns")
+    logger.info(f"\n🎉 Cleanup complete!")
+    logger.info(f"✅ Removed {total_removed} items")
+    logger.info(f"📝 Updated .gitignore with comprehensive patterns")
     
-    print("\n⚠️  RECOMMENDED NEXT STEPS:")
-    print("1. Review changes before committing")
-    print("2. Run 'git status' to see what was removed")
-    print("3. Consider adding large files to .gitignore if needed")
-    print("4. Test that your application still works correctly")
+    logger.info("\n⚠️  RECOMMENDED NEXT STEPS:")
+    logger.info("1. Review changes before committing")
+    logger.info("%s", "2. Run 'git status' to see what was removed")
+    logger.info("3. Consider adding large files to .gitignore if needed")
+    logger.info("4. Test that your application still works correctly")
 
 if __name__ == "__main__":
     main()

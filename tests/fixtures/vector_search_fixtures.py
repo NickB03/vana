@@ -321,4 +321,4 @@ def test_fixtures_example():
 if __name__ == "__main__":
     # Run the example test if this file is executed directly
     test_fixtures_example()
-    print("Fixtures test completed successfully!")
+    logger.info("Fixtures test completed successfully!")

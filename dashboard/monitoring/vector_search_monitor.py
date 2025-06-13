@@ -305,15 +305,15 @@ def main():
     
     # Run health check
     result = monitor.run_health_check()
-    print(f"Health status: {result.get('status')}")
+    logger.info("%s", f"Health status: {result.get('status')}")
     
     # Get dashboard metrics
     metrics = monitor.get_dashboard_metrics()
-    print(f"Dashboard metrics: {json.dumps(metrics, indent=2)}")
+    logger.debug(f"Dashboard metrics: {json.dumps(metrics, indent=2)}")
     
     # Get historical data
     historical_data = monitor.get_historical_data(days=7)
-    print(f"Historical data: {json.dumps(historical_data, indent=2)}")
+    logger.debug(f"Historical data: {json.dumps(historical_data, indent=2)}")
 
 if __name__ == "__main__":
     main()
