@@ -24,15 +24,17 @@ from google.adk.agents import LlmAgent
 from google.adk.tools import FunctionTool
 
 # Import executor components
-from lib.executors import PythonExecutor, JavaScriptExecutor, ShellExecutor, ExecutionResult
+from lib.sandbox.executors import PythonExecutor, JavaScriptExecutor, ShellExecutor, ExecutorResult
+from lib.sandbox.core.security_manager import SecurityManager
 
 logger = logging.getLogger(__name__)
 
-# Initialize executors globally
+# Initialize security manager and executors globally
+_security_manager = SecurityManager()
 _executors = {
-    "python": PythonExecutor(),
-    "javascript": JavaScriptExecutor(),
-    "shell": ShellExecutor()
+    "python": PythonExecutor(_security_manager),
+    "javascript": JavaScriptExecutor(_security_manager),
+    "shell": ShellExecutor(_security_manager)
 }
 
 async def execute_code(code: str, language: str, timeout: int = 30) -> str:
