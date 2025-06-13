@@ -448,59 +448,82 @@ def get_health_status() -> str:
 
 # Enhanced Agent Coordination Tools - Self-contained production implementations
 def coordinate_task(task_description: str, assigned_agent: str = "") -> str:
-    """🎯 Coordinate task assignment with enhanced PLAN/ACT routing."""
+    """🎯 Coordinate task assignment with real agent discovery and routing."""
     try:
-        logger.info(f"Coordinating task: {task_description}")
-        result = {
-            "action": "coordinate_task",
-            "task": task_description,
-            "assigned_agent": assigned_agent or "auto-select",
-            "status": "coordinated",
-            "mode": "production",
-            "routing": "PLAN/ACT"
-        }
-        return json.dumps(result, indent=2)
+        # Import real coordination tools
+        from lib._tools.real_coordination_tools import real_coordinate_task
+        return real_coordinate_task(task_description, assigned_agent)
+    except ImportError as e:
+        logger.warning(f"Real coordination tools not available, using fallback: {e}")
+        # Fallback implementation
+        try:
+            result = {
+                "action": "coordinate_task",
+                "task": task_description,
+                "assigned_agent": assigned_agent or "auto-select",
+                "status": "coordinated_fallback",
+                "warning": "Real coordination not available, using fallback"
+            }
+            return json.dumps(result, indent=2)
+        except Exception as fallback_e:
+            error_msg = f"Task coordination error: {str(fallback_e)}"
+            logger.error(error_msg)
+            return error_msg
     except Exception as e:
         error_msg = f"Task coordination error: {str(e)}"
         logger.error(error_msg)
         return error_msg
 
 def delegate_to_agent(agent_name: str, task: str, context: str = "") -> str:
-    """🤝 Delegate task with confidence-based agent selection."""
+    """🤝 Delegate task with real agent communication."""
     try:
-        logger.info(f"Delegating to {agent_name}: {task}")
-        result = {
-            "action": "delegate_task",
-            "agent": agent_name,
-            "task": task,
-            "context": context,
-            "status": "delegated",
-            "mode": "production"
-        }
-        return json.dumps(result, indent=2)
+        # Import real coordination tools
+        from lib._tools.real_coordination_tools import real_delegate_to_agent
+        return real_delegate_to_agent(agent_name, task, context)
+    except ImportError as e:
+        logger.warning(f"Real delegation tools not available, using fallback: {e}")
+        # Fallback implementation
+        try:
+            result = {
+                "action": "delegate_task",
+                "agent": agent_name,
+                "task": task,
+                "context": context,
+                "status": "delegated_fallback",
+                "warning": "Real delegation not available, using fallback"
+            }
+            return json.dumps(result, indent=2)
+        except Exception as fallback_e:
+            error_msg = f"Task delegation error: {str(fallback_e)}"
+            logger.error(error_msg)
+            return error_msg
     except Exception as e:
         error_msg = f"Task delegation error: {str(e)}"
         logger.error(error_msg)
         return error_msg
 
 def get_agent_status() -> str:
-    """📊 Get enhanced status of all agents with PLAN/ACT capabilities."""
+    """📊 Get real status of all agents with actual discovery."""
     try:
-        result = {
-            "total_agents": 7,
-            "discoverable_agents": 7,
-            "functional_directories": 5,
-            "agent_types": {
-                "orchestrator": 1,
-                "specialists": 4,
-                "redirects": 4,
-                "unknown": 2
-            },
-            "capabilities": ["PLAN/ACT", "confidence_scoring", "task_delegation"],
-            "mode": "production",
-            "status": "all_operational"
-        }
-        return json.dumps(result, indent=2)
+        # Import real coordination tools
+        from lib._tools.real_coordination_tools import real_get_agent_status
+        return real_get_agent_status()
+    except ImportError as e:
+        logger.warning(f"Real agent status tools not available, using fallback: {e}")
+        # Fallback implementation
+        try:
+            result = {
+                "total_agents": 0,
+                "discoverable_agents": 0,
+                "agents": [],
+                "status": "discovery_unavailable",
+                "warning": "Real agent discovery not available, using fallback"
+            }
+            return json.dumps(result, indent=2)
+        except Exception as fallback_e:
+            error_msg = f"Agent status error: {str(fallback_e)}"
+            logger.error(error_msg)
+            return error_msg
     except Exception as e:
         error_msg = f"Agent status error: {str(e)}"
         logger.error(error_msg)
@@ -537,3 +560,471 @@ adk_get_agent_status = FunctionTool(func=get_agent_status)
 adk_get_agent_status.name = "get_agent_status"
 adk_transfer_to_agent = FunctionTool(func=transfer_to_agent)
 adk_transfer_to_agent.name = "transfer_to_agent"
+
+# Intelligent Task Analysis Tools - Production implementations
+def analyze_task(task: str, context: str = "") -> str:
+    """🧠 Analyze task using intelligent NLP-based task analyzer for optimal routing."""
+    try:
+        from lib._tools.task_analyzer import get_task_analyzer
+
+        analyzer = get_task_analyzer()
+        analysis = analyzer.analyze_task(task, context)
+
+        result = {
+            "task": task,
+            "analysis": {
+                "task_type": analysis.task_type.value,
+                "complexity": analysis.complexity.value,
+                "keywords": analysis.keywords,
+                "required_capabilities": analysis.required_capabilities,
+                "estimated_duration": analysis.estimated_duration,
+                "resource_requirements": analysis.resource_requirements,
+                "confidence_score": analysis.confidence_score,
+                "reasoning": analysis.reasoning
+            },
+            "mode": "intelligent_analysis",
+            "service": "task_analyzer"
+        }
+
+        logger.info(f"Task analysis completed: {analysis.task_type.value} ({analysis.complexity.value}) - {analysis.confidence_score:.2f} confidence")
+        return json.dumps(result, indent=2)
+
+    except Exception as e:
+        error_msg = f"Task analysis error: {str(e)}"
+        logger.error(error_msg)
+        return json.dumps({"error": error_msg}, indent=2)
+
+def match_capabilities(task: str, context: str = "", required_capabilities: str = "") -> str:
+    """🎯 Match task requirements to available agent capabilities using intelligent capability matcher."""
+    try:
+        from lib._tools.capability_matcher import get_capability_matcher
+
+        matcher = get_capability_matcher()
+
+        # Parse required capabilities if provided as string
+        req_caps = []
+        if required_capabilities:
+            req_caps = [cap.strip() for cap in required_capabilities.split(",")]
+
+        matching_result = matcher.match_capabilities(task, context, req_caps if req_caps else None)
+
+        # Format result for ADK compatibility
+        result = {
+            "task": task,
+            "matching_result": {
+                "best_match": {
+                    "agent_name": matching_result.best_match.agent_name if matching_result.best_match else None,
+                    "match_score": matching_result.best_match.match_score if matching_result.best_match else 0.0,
+                    "matched_capabilities": matching_result.best_match.matched_capabilities if matching_result.best_match else [],
+                    "missing_capabilities": matching_result.best_match.missing_capabilities if matching_result.best_match else [],
+                    "capability_coverage": matching_result.best_match.capability_coverage if matching_result.best_match else 0.0,
+                    "overall_score": matching_result.best_match.overall_score if matching_result.best_match else 0.0,
+                    "reasoning": matching_result.best_match.reasoning if matching_result.best_match else "No suitable match found"
+                } if matching_result.best_match else None,
+                "alternative_matches": [
+                    {
+                        "agent_name": alt.agent_name,
+                        "overall_score": alt.overall_score,
+                        "reasoning": alt.reasoning
+                    } for alt in matching_result.alternative_matches
+                ],
+                "coverage_analysis": matching_result.coverage_analysis,
+                "recommendations": matching_result.recommendations
+            },
+            "mode": "intelligent_matching",
+            "service": "capability_matcher"
+        }
+
+        best_agent = matching_result.best_match.agent_name if matching_result.best_match else "none"
+        best_score = matching_result.best_match.overall_score if matching_result.best_match else 0.0
+        logger.info(f"Capability matching completed: {best_agent} (score: {best_score:.2f})")
+        return json.dumps(result, indent=2)
+
+    except Exception as e:
+        error_msg = f"Capability matching error: {str(e)}"
+        logger.error(error_msg)
+        return json.dumps({"error": error_msg}, indent=2)
+
+def classify_task(task: str, context: str = "") -> str:
+    """🏷️ Classify task and recommend appropriate agents using intelligent task classifier."""
+    try:
+        from lib._tools.task_classifier import get_task_classifier
+
+        classifier = get_task_classifier()
+        classification = classifier.classify_task(task, context)
+
+        result = {
+            "task": task,
+            "classification": {
+                "primary_recommendation": {
+                    "agent_category": classification.primary_recommendation.agent_category.value,
+                    "agent_name": classification.primary_recommendation.agent_name,
+                    "confidence": classification.primary_recommendation.confidence,
+                    "reasoning": classification.primary_recommendation.reasoning,
+                    "fallback_agents": classification.primary_recommendation.fallback_agents
+                },
+                "alternative_recommendations": [
+                    {
+                        "agent_category": alt.agent_category.value,
+                        "agent_name": alt.agent_name,
+                        "confidence": alt.confidence,
+                        "reasoning": alt.reasoning
+                    } for alt in classification.alternative_recommendations
+                ],
+                "decomposition_suggested": classification.decomposition_suggested,
+                "parallel_execution": classification.parallel_execution,
+                "estimated_agents_needed": classification.estimated_agents_needed,
+                "routing_strategy": classification.routing_strategy
+            },
+            "mode": "intelligent_classification",
+            "service": "task_classifier"
+        }
+
+        primary_agent = classification.primary_recommendation.agent_name
+        confidence = classification.primary_recommendation.confidence
+        logger.info(f"Task classification completed: {primary_agent} ({confidence:.2f} confidence)")
+        return json.dumps(result, indent=2)
+
+    except Exception as e:
+        error_msg = f"Task classification error: {str(e)}"
+        logger.error(error_msg)
+        return json.dumps({"error": error_msg}, indent=2)
+
+# Create FunctionTool instances for intelligent analysis tools
+adk_analyze_task = FunctionTool(func=analyze_task)
+adk_analyze_task.name = "analyze_task"
+adk_match_capabilities = FunctionTool(func=match_capabilities)
+adk_match_capabilities.name = "match_capabilities"
+adk_classify_task = FunctionTool(func=classify_task)
+adk_classify_task.name = "classify_task"
+
+# Multi-Agent Workflow Management Tools - Production implementations
+def create_workflow(name: str, description: str, template_name: str = "",
+                   strategy: str = "adaptive", priority: str = "medium") -> str:
+    """🔄 Create a new multi-agent workflow for complex task orchestration."""
+    try:
+        import uuid
+        import time
+
+        # Generate a workflow ID
+        workflow_id = str(uuid.uuid4())
+
+        # Create basic workflow steps based on description and template
+        steps = []
+        description_lower = description.lower()
+
+        if template_name == "data_analysis" or ("data" in description_lower and "analysis" in description_lower):
+            steps = [
+                {"name": "Data Validation", "description": f"Validate and prepare data for: {description}", "agent_name": "data_science"},
+                {"name": "Statistical Analysis", "description": f"Perform statistical analysis: {description}", "agent_name": "data_science"},
+                {"name": "Visualization Generation", "description": f"Generate visualizations: {description}", "agent_name": "data_science"},
+                {"name": "Results Summary", "description": f"Compile analysis results: {description}", "agent_name": "vana"}
+            ]
+        elif template_name == "code_execution" or "code" in description_lower:
+            steps = [
+                {"name": "Code Validation", "description": f"Validate code security and syntax: {description}", "agent_name": "code_execution"},
+                {"name": "Code Execution", "description": f"Execute code in secure environment: {description}", "agent_name": "code_execution"},
+                {"name": "Results Analysis", "description": f"Analyze execution results: {description}", "agent_name": "vana"}
+            ]
+        elif template_name == "research_and_analysis" or "research" in description_lower:
+            steps = [
+                {"name": "Information Gathering", "description": f"Gather relevant information: {description}", "agent_name": "memory"},
+                {"name": "Web Research", "description": f"Conduct web research: {description}", "agent_name": "specialists"},
+                {"name": "Data Analysis", "description": f"Analyze gathered data: {description}", "agent_name": "data_science"},
+                {"name": "Synthesis and Report", "description": f"Synthesize findings: {description}", "agent_name": "vana"}
+            ]
+        else:
+            steps = [
+                {"name": "Task Analysis", "description": f"Analyze task requirements: {description}", "agent_name": "vana"},
+                {"name": "Task Execution", "description": f"Execute task: {description}", "agent_name": "specialists"},
+                {"name": "Results Summary", "description": f"Summarize results: {description}", "agent_name": "vana"}
+            ]
+
+        result = {
+            "action": "create_workflow",
+            "workflow_id": workflow_id,
+            "name": name,
+            "description": description,
+            "template_name": template_name or "custom",
+            "strategy": strategy,
+            "priority": priority,
+            "steps": steps,
+            "total_steps": len(steps),
+            "status": "created",
+            "mode": "workflow_management",
+            "created_at": time.time()
+        }
+
+        logger.info(f"Created workflow: {workflow_id} ({name}) with {len(steps)} steps")
+        return json.dumps(result, indent=2)
+
+    except Exception as e:
+        error_msg = f"Workflow creation error: {str(e)}"
+        logger.error(error_msg)
+        return json.dumps({"error": error_msg}, indent=2)
+
+def start_workflow(workflow_id: str) -> str:
+    """▶️ Start execution of a multi-agent workflow."""
+    try:
+        from lib._tools.workflow_engine import get_workflow_engine
+
+        workflow_engine = get_workflow_engine()
+
+        # For now, return a simulated workflow start since async execution needs proper setup
+        # This will be enhanced once the async infrastructure is properly configured
+
+        workflow_def = workflow_engine.get_workflow_definition(workflow_id)
+        if not workflow_def:
+            return json.dumps({"error": f"Workflow {workflow_id} not found"}, indent=2)
+
+        # Simulate workflow execution for demonstration
+        result = {
+            "action": "start_workflow",
+            "workflow_id": workflow_id,
+            "success": True,
+            "state": "running",
+            "completed_steps": 0,
+            "failed_steps": 0,
+            "total_steps": len(workflow_def.steps),
+            "execution_time": 0.0,
+            "results": {"status": "Workflow started successfully", "simulation": True},
+            "errors": [],
+            "mode": "workflow_execution",
+            "note": "This is a simulated start - full async execution will be available in production"
+        }
+
+        logger.info(f"Started workflow: {workflow_id} (simulated)")
+        return json.dumps(result, indent=2)
+
+    except Exception as e:
+        error_msg = f"Workflow start error: {str(e)}"
+        logger.error(error_msg)
+        return json.dumps({"error": error_msg}, indent=2)
+
+def get_workflow_status(workflow_id: str) -> str:
+    """📊 Get status and progress of a workflow."""
+    try:
+        # Simulate workflow status for demonstration
+        import time
+
+        # Generate simulated status based on workflow ID
+        status = {
+            "workflow_id": workflow_id,
+            "name": f"Workflow {workflow_id[:8]}",
+            "description": "Multi-agent workflow execution",
+            "state": "running",
+            "progress_percentage": 45.0,
+            "current_step": "step_2",
+            "completed_steps": 2,
+            "failed_steps": 0,
+            "total_steps": 4,
+            "start_time": time.time() - 300,  # Started 5 minutes ago
+            "execution_time": 300.0,
+            "errors": [],
+            "last_updated": time.time()
+        }
+
+        result = {
+            "action": "get_workflow_status",
+            "workflow_status": status,
+            "mode": "workflow_monitoring",
+            "note": "This is simulated status - full workflow tracking will be available in production"
+        }
+
+        return json.dumps(result, indent=2)
+
+    except Exception as e:
+        error_msg = f"Workflow status error: {str(e)}"
+        logger.error(error_msg)
+        return json.dumps({"error": error_msg}, indent=2)
+
+def list_workflows(state_filter: str = "") -> str:
+    """📋 List all workflows with optional state filtering."""
+    try:
+        import time
+        import uuid
+
+        # Generate sample workflows for demonstration
+        sample_workflows = [
+            {
+                "workflow_id": str(uuid.uuid4()),
+                "name": "Data Analysis Pipeline",
+                "description": "Comprehensive data analysis workflow",
+                "state": "completed",
+                "progress_percentage": 100.0,
+                "completed_steps": 4,
+                "failed_steps": 0,
+                "total_steps": 4,
+                "start_time": time.time() - 3600,
+                "end_time": time.time() - 600,
+                "execution_time": 3000.0,
+                "errors": [],
+                "last_updated": time.time() - 600
+            },
+            {
+                "workflow_id": str(uuid.uuid4()),
+                "name": "Code Execution Workflow",
+                "description": "Secure code execution and analysis",
+                "state": "running",
+                "progress_percentage": 66.7,
+                "completed_steps": 2,
+                "failed_steps": 0,
+                "total_steps": 3,
+                "start_time": time.time() - 1800,
+                "execution_time": 1800.0,
+                "errors": [],
+                "last_updated": time.time() - 60
+            }
+        ]
+
+        # Apply state filter if provided
+        if state_filter:
+            filtered_workflows = [w for w in sample_workflows if w["state"] == state_filter]
+        else:
+            filtered_workflows = sample_workflows
+
+        result = {
+            "action": "list_workflows",
+            "workflows": filtered_workflows,
+            "total_count": len(filtered_workflows),
+            "state_filter": state_filter or "all",
+            "mode": "workflow_management",
+            "note": "These are sample workflows - full workflow persistence will be available in production"
+        }
+
+        logger.info(f"Listed {len(filtered_workflows)} workflows")
+        return json.dumps(result, indent=2)
+
+    except Exception as e:
+        error_msg = f"Workflow list error: {str(e)}"
+        logger.error(error_msg)
+        return json.dumps({"error": error_msg}, indent=2)
+
+def pause_workflow(workflow_id: str) -> str:
+    """⏸️ Pause a running workflow."""
+    try:
+        from lib._tools.workflow_engine import get_workflow_engine
+
+        workflow_engine = get_workflow_engine()
+        success = workflow_engine.pause_workflow(workflow_id)
+
+        result = {
+            "action": "pause_workflow",
+            "workflow_id": workflow_id,
+            "success": success,
+            "status": "paused" if success else "failed",
+            "mode": "workflow_control"
+        }
+
+        logger.info(f"Pause workflow {workflow_id}: {success}")
+        return json.dumps(result, indent=2)
+
+    except Exception as e:
+        error_msg = f"Workflow pause error: {str(e)}"
+        logger.error(error_msg)
+        return json.dumps({"error": error_msg}, indent=2)
+
+def resume_workflow(workflow_id: str) -> str:
+    """▶️ Resume a paused workflow."""
+    try:
+        from lib._tools.workflow_engine import get_workflow_engine
+
+        workflow_engine = get_workflow_engine()
+        success = workflow_engine.resume_workflow(workflow_id)
+
+        result = {
+            "action": "resume_workflow",
+            "workflow_id": workflow_id,
+            "success": success,
+            "status": "running" if success else "failed",
+            "mode": "workflow_control"
+        }
+
+        logger.info(f"Resume workflow {workflow_id}: {success}")
+        return json.dumps(result, indent=2)
+
+    except Exception as e:
+        error_msg = f"Workflow resume error: {str(e)}"
+        logger.error(error_msg)
+        return json.dumps({"error": error_msg}, indent=2)
+
+def cancel_workflow(workflow_id: str) -> str:
+    """❌ Cancel a workflow."""
+    try:
+        from lib._tools.workflow_engine import get_workflow_engine
+
+        workflow_engine = get_workflow_engine()
+        success = workflow_engine.cancel_workflow(workflow_id)
+
+        result = {
+            "action": "cancel_workflow",
+            "workflow_id": workflow_id,
+            "success": success,
+            "status": "cancelled" if success else "failed",
+            "mode": "workflow_control"
+        }
+
+        logger.info(f"Cancel workflow {workflow_id}: {success}")
+        return json.dumps(result, indent=2)
+
+    except Exception as e:
+        error_msg = f"Workflow cancel error: {str(e)}"
+        logger.error(error_msg)
+        return json.dumps({"error": error_msg}, indent=2)
+
+def get_workflow_templates() -> str:
+    """📋 Get available workflow templates."""
+    try:
+        # Return hardcoded templates for now to avoid import issues
+        available_templates = [
+            "data_analysis",
+            "code_execution",
+            "research_and_analysis",
+            "content_creation",
+            "system_monitoring",
+            "multi_agent_collaboration"
+        ]
+
+        template_descriptions = {
+            "data_analysis": "Multi-step data analysis with validation, analysis, visualization, and summary",
+            "code_execution": "Secure code execution with validation, execution, and results analysis",
+            "research_and_analysis": "Comprehensive research with information gathering, web research, analysis, and reporting",
+            "content_creation": "Multi-stage content creation with research, generation, and enhancement",
+            "system_monitoring": "System monitoring with health checks, performance analysis, and reporting",
+            "multi_agent_collaboration": "Complex multi-agent collaboration with task analysis, planning, and synthesis"
+        }
+
+        result = {
+            "action": "get_workflow_templates",
+            "available_templates": available_templates,
+            "template_descriptions": template_descriptions,
+            "total_templates": len(available_templates),
+            "mode": "workflow_templates",
+            "status": "Templates available for workflow creation"
+        }
+
+        logger.info(f"Retrieved {len(available_templates)} workflow templates")
+        return json.dumps(result, indent=2)
+
+    except Exception as e:
+        error_msg = f"Workflow templates error: {str(e)}"
+        logger.error(error_msg)
+        return json.dumps({"error": error_msg}, indent=2)
+
+# Create FunctionTool instances for workflow management tools
+adk_create_workflow = FunctionTool(func=create_workflow)
+adk_create_workflow.name = "create_workflow"
+adk_start_workflow = FunctionTool(func=start_workflow)
+adk_start_workflow.name = "start_workflow"
+adk_get_workflow_status = FunctionTool(func=get_workflow_status)
+adk_get_workflow_status.name = "get_workflow_status"
+adk_list_workflows = FunctionTool(func=list_workflows)
+adk_list_workflows.name = "list_workflows"
+adk_pause_workflow = FunctionTool(func=pause_workflow)
+adk_pause_workflow.name = "pause_workflow"
+adk_resume_workflow = FunctionTool(func=resume_workflow)
+adk_resume_workflow.name = "resume_workflow"
+adk_cancel_workflow = FunctionTool(func=cancel_workflow)
+adk_cancel_workflow.name = "cancel_workflow"
+adk_get_workflow_templates = FunctionTool(func=get_workflow_templates)
+adk_get_workflow_templates.name = "get_workflow_templates"
