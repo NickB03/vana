@@ -146,4 +146,7 @@ logs
 # OS specific
 # Task files
 tasks.json
-tasks/ 
+tasks/
+
+# Optional test files (not essential for core functionality)
+tests/test_agent_communication.py
