@@ -5,10 +5,11 @@ This module provides web search capabilities using Google Custom Search API.
 It enables VANA to retrieve recent information from the web with proper citation handling.
 """
 
-import os
 import json
 import logging
-from typing import List, Dict, Any
+import os
+from typing import Any, Dict, List
+
 import requests
 from dotenv import load_dotenv
 
@@ -18,6 +19,7 @@ load_dotenv()
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
 
 class WebSearchClient:
     """Client for performing web searches using Google Custom Search"""
@@ -66,7 +68,7 @@ class WebSearchClient:
                 "num": num_results,
                 "gl": "us",  # Geolocation - US results
                 "safe": "active",  # Safe search
-                "lr": "lang_en"  # English language results
+                "lr": "lang_en",  # English language results
             }
 
             # Make request
@@ -88,7 +90,7 @@ class WebSearchClient:
                     "url": item.get("link", ""),
                     "snippet": item.get("snippet", ""),
                     "source": item.get("displayLink", ""),
-                    "date": item.get("pagemap", {}).get("metatags", [{}])[0].get("article:published_time", "")
+                    "date": item.get("pagemap", {}).get("metatags", [{}])[0].get("article:published_time", ""),
                 }
                 results.append(result)
 

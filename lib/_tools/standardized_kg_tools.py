@@ -8,19 +8,23 @@ and performance monitoring.
 
 import os
 import sys
-from typing import Dict, Any, List, Union
+from typing import Any, Dict, List, Union
 
 # Add the parent directory to the path to import VANA tools
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 
 from lib._shared_libraries.tool_standards import (
-    StandardToolResponse, InputValidator, ErrorHandler,
-    standardized_tool_wrapper, performance_monitor, tool_analytics
+    ErrorHandler,
+    InputValidator,
+    StandardToolResponse,
+    performance_monitor,
+    standardized_tool_wrapper,
+    tool_analytics,
 )
 
 # Import original knowledge graph tools with fallback to avoid circular imports
 try:
-    from agent.tools import kg_query, kg_store, kg_relationship, kg_extract_entities
+    from agent.tools import kg_extract_entities, kg_query, kg_relationship, kg_store
 except ImportError:
     # Fallback implementations to avoid circular imports during initialization
     def kg_query(entity_type: str, query_text: str):
@@ -34,6 +38,7 @@ except ImportError:
 
     def kg_extract_entities(text: str):
         return {"success": False, "error": "Knowledge graph not available during initialization"}
+
 
 class StandardizedKnowledgeGraphTools:
     """Standardized knowledge graph tools with enhanced monitoring and error handling."""
@@ -50,8 +55,12 @@ class StandardizedKnowledgeGraphTools:
             StandardToolResponse with query results or error information
         """
         # Validate inputs
-        entity_type = InputValidator.validate_string(entity_type, "entity_type", required=True, min_length=1, max_length=100)
-        query_text = InputValidator.validate_string(query_text, "query_text", required=True, min_length=1, max_length=1000)
+        entity_type = InputValidator.validate_string(
+            entity_type, "entity_type", required=True, min_length=1, max_length=100
+        )
+        query_text = InputValidator.validate_string(
+            query_text, "query_text", required=True, min_length=1, max_length=1000
+        )
 
         # Record usage for analytics
         parameters = {"entity_type": entity_type, "query_text": query_text}
@@ -63,9 +72,7 @@ class StandardizedKnowledgeGraphTools:
             # Handle different result formats
             if isinstance(results, dict) and not results.get("success", True):
                 response = StandardToolResponse(
-                    success=False,
-                    error=results.get("error", "Knowledge graph query failed"),
-                    tool_name="kg_query"
+                    success=False, error=results.get("error", "Knowledge graph query failed"), tool_name="kg_query"
                 )
             else:
                 # Ensure results is a list
@@ -78,11 +85,7 @@ class StandardizedKnowledgeGraphTools:
                     success=True,
                     data=results,
                     tool_name="kg_query",
-                    metadata={
-                        "entity_type": entity_type,
-                        "query_text": query_text,
-                        "result_count": len(results)
-                    }
+                    metadata={"entity_type": entity_type, "query_text": query_text, "result_count": len(results)},
                 )
         except Exception as e:
             response = ErrorHandler.create_error_response("kg_query", e)
@@ -104,8 +107,12 @@ class StandardizedKnowledgeGraphTools:
             StandardToolResponse with storage result or error information
         """
         # Validate inputs
-        entity_name = InputValidator.validate_string(entity_name, "entity_name", required=True, min_length=1, max_length=200)
-        entity_type = InputValidator.validate_string(entity_type, "entity_type", required=True, min_length=1, max_length=100)
+        entity_name = InputValidator.validate_string(
+            entity_name, "entity_name", required=True, min_length=1, max_length=200
+        )
+        entity_type = InputValidator.validate_string(
+            entity_type, "entity_type", required=True, min_length=1, max_length=100
+        )
         properties = InputValidator.validate_string(properties, "properties", required=False, max_length=2000)
 
         # Record usage for analytics
@@ -118,24 +125,18 @@ class StandardizedKnowledgeGraphTools:
             # Handle different result formats
             if isinstance(result, dict) and not result.get("success", True):
                 response = StandardToolResponse(
-                    success=False,
-                    error=result.get("error", "Knowledge graph storage failed"),
-                    tool_name="kg_store"
+                    success=False, error=result.get("error", "Knowledge graph storage failed"), tool_name="kg_store"
                 )
             else:
                 response = StandardToolResponse(
                     success=True,
-                    data={
-                        "entity_name": entity_name,
-                        "entity_type": entity_type,
-                        "stored": True
-                    },
+                    data={"entity_name": entity_name, "entity_type": entity_type, "stored": True},
                     tool_name="kg_store",
                     metadata={
                         "entity_name": entity_name,
                         "entity_type": entity_type,
-                        "properties_length": len(properties)
-                    }
+                        "properties_length": len(properties),
+                    },
                 )
         except Exception as e:
             response = ErrorHandler.create_error_response("kg_store", e)
@@ -158,7 +159,9 @@ class StandardizedKnowledgeGraphTools:
         """
         # Validate inputs
         entity1 = InputValidator.validate_string(entity1, "entity1", required=True, min_length=1, max_length=200)
-        relationship = InputValidator.validate_string(relationship, "relationship", required=True, min_length=1, max_length=100)
+        relationship = InputValidator.validate_string(
+            relationship, "relationship", required=True, min_length=1, max_length=100
+        )
         entity2 = InputValidator.validate_string(entity2, "entity2", required=True, min_length=1, max_length=200)
 
         # Record usage for analytics
@@ -173,23 +176,14 @@ class StandardizedKnowledgeGraphTools:
                 response = StandardToolResponse(
                     success=False,
                     error=result.get("error", "Knowledge graph relationship creation failed"),
-                    tool_name="kg_relationship"
+                    tool_name="kg_relationship",
                 )
             else:
                 response = StandardToolResponse(
                     success=True,
-                    data={
-                        "entity1": entity1,
-                        "relationship": relationship,
-                        "entity2": entity2,
-                        "created": True
-                    },
+                    data={"entity1": entity1, "relationship": relationship, "entity2": entity2, "created": True},
                     tool_name="kg_relationship",
-                    metadata={
-                        "entity1": entity1,
-                        "relationship": relationship,
-                        "entity2": entity2
-                    }
+                    metadata={"entity1": entity1, "relationship": relationship, "entity2": entity2},
                 )
         except Exception as e:
             response = ErrorHandler.create_error_response("kg_relationship", e)
@@ -224,7 +218,7 @@ class StandardizedKnowledgeGraphTools:
                 response = StandardToolResponse(
                     success=False,
                     error=results.get("error", "Entity extraction failed"),
-                    tool_name="kg_extract_entities"
+                    tool_name="kg_extract_entities",
                 )
             else:
                 # Ensure results is a list
@@ -240,8 +234,8 @@ class StandardizedKnowledgeGraphTools:
                     metadata={
                         "text_length": len(text),
                         "entities_extracted": len(results),
-                        "store_entities": store_entities
-                    }
+                        "store_entities": store_entities,
+                    },
                 )
         except Exception as e:
             response = ErrorHandler.create_error_response("kg_extract_entities", e)
@@ -250,8 +244,10 @@ class StandardizedKnowledgeGraphTools:
         tool_analytics.record_usage("kg_extract_entities", parameters, response)
         return response
 
+
 # Create global instance
 standardized_kg_tools = StandardizedKnowledgeGraphTools()
+
 
 # Wrapper functions for ADK compatibility
 def standardized_kg_query(entity_type: str, query_text: str) -> str:
@@ -259,20 +255,24 @@ def standardized_kg_query(entity_type: str, query_text: str) -> str:
     result = standardized_kg_tools.kg_query(entity_type, query_text)
     return result.to_string()
 
+
 def standardized_kg_store(entity_name: str, entity_type: str, properties: str = "") -> str:
     """💾 KG store with standardized interface - returns string for ADK compatibility."""
     result = standardized_kg_tools.kg_store(entity_name, entity_type, properties)
     return result.to_string()
+
 
 def standardized_kg_relationship(entity1: str, relationship: str, entity2: str) -> str:
     """🔗 KG relationship with standardized interface - returns string for ADK compatibility."""
     result = standardized_kg_tools.kg_relationship(entity1, relationship, entity2)
     return result.to_string()
 
+
 def standardized_kg_extract_entities(text: str, store_entities: bool = True) -> str:
     """🎯 KG entity extraction with standardized interface - returns string for ADK compatibility."""
     result = standardized_kg_tools.kg_extract_entities(text, store_entities)
     return result.to_string()
+
 
 # Performance monitoring functions
 def get_kg_tools_performance() -> Dict[str, Any]:
@@ -281,8 +281,9 @@ def get_kg_tools_performance() -> Dict[str, Any]:
         "kg_query": performance_monitor.get_metrics("kg_query"),
         "kg_store": performance_monitor.get_metrics("kg_store"),
         "kg_relationship": performance_monitor.get_metrics("kg_relationship"),
-        "kg_extract_entities": performance_monitor.get_metrics("kg_extract_entities")
+        "kg_extract_entities": performance_monitor.get_metrics("kg_extract_entities"),
     }
+
 
 def get_kg_tools_analytics() -> Dict[str, Any]:
     """Get usage analytics for knowledge graph tools."""
@@ -290,5 +291,5 @@ def get_kg_tools_analytics() -> Dict[str, Any]:
         "kg_query": tool_analytics.get_usage_analytics("kg_query"),
         "kg_store": tool_analytics.get_usage_analytics("kg_store"),
         "kg_relationship": tool_analytics.get_usage_analytics("kg_relationship"),
-        "kg_extract_entities": tool_analytics.get_usage_analytics("kg_extract_entities")
+        "kg_extract_entities": tool_analytics.get_usage_analytics("kg_extract_entities"),
     }

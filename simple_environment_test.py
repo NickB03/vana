@@ -4,10 +4,13 @@ Simple VANA Environment Test
 Quick validation of current system state before running comprehensive testing
 """
 
-import requests
 import time
+
+import requests
 from playwright.sync_api import sync_playwright
+
 from lib.logging_config import get_logger
+
 logger = get_logger("vana.simple_environment_test")
 
 
@@ -15,9 +18,9 @@ def test_service_health():
     """Test basic service health and connectivity"""
     logger.debug("🔍 Testing VANA Service Health")
     logger.debug("%s", "=" * 40)
-    
+
     base_url = "https://vana-dev-960076421399.us-central1.run.app"
-    
+
     # Test health endpoint
     try:
         response = requests.get(f"{base_url}/health", timeout=10)
@@ -27,7 +30,7 @@ def test_service_health():
     except Exception as e:
         logger.error(f"❌ Health endpoint failed: {e}")
         return False
-    
+
     # Test info endpoint
     try:
         response = requests.get(f"{base_url}/info", timeout=10)
@@ -39,51 +42,52 @@ def test_service_health():
     except Exception as e:
         logger.error(f"❌ Info endpoint failed: {e}")
         return False
-    
+
     return True
+
 
 def test_basic_agent_interaction():
     """Test basic agent interaction through UI"""
     logger.debug("\n🤖 Testing Basic Agent Interaction")
     logger.debug("%s", "=" * 40)
-    
+
     base_url = "https://vana-dev-960076421399.us-central1.run.app"
-    
+
     try:
         with sync_playwright() as p:
             browser = p.chromium.launch(headless=True)
             page = browser.new_page()
-            
+
             # Navigate to service
             logger.debug("📍 Navigating to VANA service...")
             page.goto(base_url, timeout=30000)
             page.wait_for_load_state("networkidle")
-            
+
             # Check if agent selector is available
             try:
                 page.wait_for_selector("mat-select", timeout=10000)
                 logger.debug("✅ Agent selector found")
-                
+
                 # Click to see available agents
                 page.click("mat-select")
                 page.wait_for_selector("mat-option", timeout=5000)
-                
+
                 # Get available agents
                 agent_options = page.locator("mat-option").all_text_contents()
                 logger.debug(f"✅ Available agents: {agent_options}")
-                
+
                 # Select VANA agent if available
                 if any("vana" in agent.lower() for agent in agent_options):
                     page.click("mat-option:has-text('vana')")
                     logger.debug("✅ VANA agent selected")
-                    
+
                     # Test simple interaction
                     test_message = "Hello, can you help me test the system?"
                     page.fill("textarea", test_message)
-                    
+
                     start_time = time.time()
                     page.keyboard.press("Enter")
-                    
+
                     # Wait for response (updated selector)
                     page.wait_for_selector("p", timeout=30000)
                     response_time = time.time() - start_time
@@ -119,48 +123,50 @@ def test_basic_agent_interaction():
                         logger.debug(f"   Tool usage detected: {has_tool_usage}")
                         logger.debug(f"   Meaningful content: {has_meaningful_content}")
                         return False
-                        
+
                 else:
                     logger.debug("❌ VANA agent not found in options")
                     return False
-                    
+
             except Exception as e:
                 logger.error(f"❌ Agent interaction failed: {e}")
                 return False
             finally:
                 browser.close()
-                
+
     except Exception as e:
         logger.error(f"❌ Browser test failed: {e}")
         return False
+
 
 def main():
     """Run simple environment validation"""
     logger.debug("🚀 VANA Environment Validation Test")
     logger.debug("%s", "=" * 50)
-    
+
     # Test 1: Service Health
     health_ok = test_service_health()
-    
+
     # Test 2: Basic Agent Interaction
     if health_ok:
         interaction_ok = test_basic_agent_interaction()
     else:
         logger.debug("⚠️ Skipping agent interaction test due to health check failure")
         interaction_ok = False
-    
+
     # Summary
     logger.debug("\n📊 Test Summary")
     logger.debug("%s", "=" * 20)
     logger.debug("%s", f"Service Health: {'✅ PASS' if health_ok else '❌ FAIL'}")
     logger.debug("%s", f"Agent Interaction: {'✅ PASS' if interaction_ok else '❌ FAIL'}")
-    
+
     if health_ok and interaction_ok:
         logger.debug("\n🎉 Environment validation PASSED - Ready for comprehensive testing!")
         return True
     else:
         logger.error("\n⚠️ Environment validation FAILED - Issues need to be resolved")
         return False
+
 
 if __name__ == "__main__":
     success = main()

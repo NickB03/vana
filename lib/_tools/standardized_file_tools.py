@@ -8,14 +8,18 @@ and performance monitoring.
 
 import os
 import sys
-from typing import Dict, Any, List, Union
+from typing import Any, Dict, List, Union
 
 # Add the parent directory to the path to import VANA tools
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 
 from lib._shared_libraries.tool_standards import (
-    StandardToolResponse, InputValidator, ErrorHandler,
-    standardized_tool_wrapper, performance_monitor, tool_analytics
+    ErrorHandler,
+    InputValidator,
+    StandardToolResponse,
+    performance_monitor,
+    standardized_tool_wrapper,
+    tool_analytics,
 )
 
 # Import original file system tools with fallback to avoid circular imports
@@ -35,6 +39,7 @@ except ImportError:
 
         def file_exists(self, file_path: str):
             return {"success": False, "error": "FileSystemTool not available during initialization"}
+
 
 class StandardizedFileSystemTools:
     """Standardized file system tools with enhanced monitoring and error handling."""
@@ -67,17 +72,10 @@ class StandardizedFileSystemTools:
                 success=True,
                 data=result["content"],
                 tool_name="read_file",
-                metadata={
-                    "file_size": len(result["content"]),
-                    "file_path": file_path
-                }
+                metadata={"file_size": len(result["content"]), "file_path": file_path},
             )
         else:
-            response = StandardToolResponse(
-                success=False,
-                error=result["error"],
-                tool_name="read_file"
-            )
+            response = StandardToolResponse(success=False, error=result["error"], tool_name="read_file")
 
         # Record analytics
         tool_analytics.record_usage("read_file", parameters, response)
@@ -111,18 +109,10 @@ class StandardizedFileSystemTools:
                 success=True,
                 data=f"Successfully {'appended to' if append else 'wrote'} file: {file_path}",
                 tool_name="write_file",
-                metadata={
-                    "file_path": file_path,
-                    "content_length": len(content),
-                    "append_mode": append
-                }
+                metadata={"file_path": file_path, "content_length": len(content), "append_mode": append},
             )
         else:
-            response = StandardToolResponse(
-                success=False,
-                error=result["error"],
-                tool_name="write_file"
-            )
+            response = StandardToolResponse(success=False, error=result["error"], tool_name="write_file")
 
         # Record analytics
         tool_analytics.record_usage("write_file", parameters, response)
@@ -158,15 +148,11 @@ class StandardizedFileSystemTools:
                     "directory_path": directory_path,
                     "item_count": len(contents),
                     "file_count": sum(1 for item in contents if item.get("type") == "file"),
-                    "directory_count": sum(1 for item in contents if item.get("type") == "directory")
-                }
+                    "directory_count": sum(1 for item in contents if item.get("type") == "directory"),
+                },
             )
         else:
-            response = StandardToolResponse(
-                success=False,
-                error=result["error"],
-                tool_name="list_directory"
-            )
+            response = StandardToolResponse(success=False, error=result["error"], tool_name="list_directory")
 
         # Record analytics
         tool_analytics.record_usage("list_directory", parameters, response)
@@ -196,30 +182,21 @@ class StandardizedFileSystemTools:
             exists = result["exists"]
             response = StandardToolResponse(
                 success=True,
-                data={
-                    "exists": exists,
-                    "path": file_path,
-                    "type": result.get("type", "unknown") if exists else None
-                },
+                data={"exists": exists, "path": file_path, "type": result.get("type", "unknown") if exists else None},
                 tool_name="file_exists",
-                metadata={
-                    "file_path": file_path,
-                    "exists": exists
-                }
+                metadata={"file_path": file_path, "exists": exists},
             )
         else:
-            response = StandardToolResponse(
-                success=False,
-                error=result["error"],
-                tool_name="file_exists"
-            )
+            response = StandardToolResponse(success=False, error=result["error"], tool_name="file_exists")
 
         # Record analytics
         tool_analytics.record_usage("file_exists", parameters, response)
         return response
 
+
 # Create global instance
 standardized_fs_tools = StandardizedFileSystemTools()
+
 
 # Wrapper functions for ADK compatibility
 def standardized_read_file(file_path: str) -> str:
@@ -227,20 +204,24 @@ def standardized_read_file(file_path: str) -> str:
     result = standardized_fs_tools.read_file(file_path)
     return result.to_string()
 
+
 def standardized_write_file(file_path: str, content: str, append: bool = False) -> str:
     """✍️ Write file with standardized interface - returns string for ADK compatibility."""
     result = standardized_fs_tools.write_file(file_path, content, append)
     return result.to_string()
+
 
 def standardized_list_directory(directory_path: str) -> str:
     """📁 List directory with standardized interface - returns string for ADK compatibility."""
     result = standardized_fs_tools.list_directory(directory_path)
     return result.to_string()
 
+
 def standardized_file_exists(file_path: str) -> str:
     """🔍 Check file existence with standardized interface - returns string for ADK compatibility."""
     result = standardized_fs_tools.file_exists(file_path)
     return result.to_string()
+
 
 # Performance monitoring functions
 def get_file_tools_performance() -> Dict[str, Any]:
@@ -249,8 +230,9 @@ def get_file_tools_performance() -> Dict[str, Any]:
         "read_file": performance_monitor.get_metrics("read_file"),
         "write_file": performance_monitor.get_metrics("write_file"),
         "list_directory": performance_monitor.get_metrics("list_directory"),
-        "file_exists": performance_monitor.get_metrics("file_exists")
+        "file_exists": performance_monitor.get_metrics("file_exists"),
     }
+
 
 def get_file_tools_analytics() -> Dict[str, Any]:
     """Get usage analytics for file system tools."""
@@ -258,5 +240,5 @@ def get_file_tools_analytics() -> Dict[str, Any]:
         "read_file": tool_analytics.get_usage_analytics("read_file"),
         "write_file": tool_analytics.get_usage_analytics("write_file"),
         "list_directory": tool_analytics.get_usage_analytics("list_directory"),
-        "file_exists": tool_analytics.get_usage_analytics("file_exists")
+        "file_exists": tool_analytics.get_usage_analytics("file_exists"),
     }

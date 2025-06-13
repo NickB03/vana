@@ -1,9 +1,10 @@
-import os
-import requests
-import logging
 import json
+import logging
+import os
 from datetime import datetime
-from typing import List, Dict, Any, Optional
+from typing import Any, Dict, List, Optional
+
+import requests
 
 try:
     from .buffer_manager import MemoryBufferManager
@@ -11,6 +12,7 @@ try:
 except ImportError:
     # Fall back to absolute import if relative import fails
     from tools.memory.buffer_manager import MemoryBufferManager
+
     try:
         from tools.memory.enhanced_operations import EnhancedMemoryOperations
     except ImportError:
@@ -19,9 +21,11 @@ except ImportError:
             def __init__(self, *args, **kwargs):
                 pass
 
+
 # Set up logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
 
 class MemoryMCP:
     def __init__(self, buffer_manager=None):
@@ -96,7 +100,9 @@ class MemoryMCP:
 
                 try:
                     results = self.enhanced_memory.filter_memories_by_date(query, start_date, end_date)
-                    return self._format_memory_results(results, f"Memories for '{query}' between {start_date} and {end_date}")
+                    return self._format_memory_results(
+                        results, f"Memories for '{query}' between {start_date} and {end_date}"
+                    )
                 except Exception as e:
                     logger.error(f"Error filtering memories by date: {e}")
                     return f"Error filtering memories: {str(e)}"
@@ -137,10 +143,10 @@ class MemoryMCP:
 
         formatted = f"{title}\n\n"
         for i, result in enumerate(results[:5]):  # Limit to 5 results
-            text = result.get('text', '')
-            score = result.get('score', 0)
-            source = result.get('metadata', {}).get('source', 'Unknown')
-            timestamp = result.get('metadata', {}).get('timestamp', 'Unknown date')
+            text = result.get("text", "")
+            score = result.get("score", 0)
+            source = result.get("metadata", {}).get("source", "Unknown")
+            timestamp = result.get("metadata", {}).get("timestamp", "Unknown date")
 
             formatted += f"{i+1}. [{timestamp}] (Score: {score:.2f})\n"
             formatted += f"   Source: {source}\n"
@@ -162,18 +168,18 @@ class MemoryMCP:
         formatted = "Memory Analytics\n\n"
 
         # Total memories
-        total = analytics.get('total_memories', 0)
+        total = analytics.get("total_memories", 0)
         formatted += f"Total memories: {total}\n"
 
         # Memory by source
-        sources = analytics.get('sources', {})
+        sources = analytics.get("sources", {})
         if sources:
             formatted += "\nMemories by source:\n"
             for source, count in sources.items():
                 formatted += f"- {source}: {count}\n"
 
         # Memory by date
-        date_counts = analytics.get('date_counts', {})
+        date_counts = analytics.get("date_counts", {})
         if date_counts:
             formatted += "\nMemories by date (last 7 days):\n"
             for date, count in date_counts.items():
@@ -215,7 +221,7 @@ Enhanced Commands:
         payload = {
             "buffer": buffer,
             "memory_on": self.buffer_manager.memory_on,
-            "timestamp": datetime.now().isoformat()
+            "timestamp": datetime.now().isoformat(),
         }
 
         # Add tags if provided
@@ -225,12 +231,7 @@ Enhanced Commands:
 
         try:
             logger.info(f"Triggering webhook at {self.webhook_url}")
-            response = requests.post(
-                self.webhook_url,
-                json=payload,
-                auth=self.webhook_auth,
-                timeout=10
-            )
+            response = requests.post(self.webhook_url, json=payload, auth=self.webhook_auth, timeout=10)
             response.raise_for_status()
             return response.json()
         except requests.exceptions.RequestException as e:

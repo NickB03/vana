@@ -10,31 +10,36 @@ This module provides integration components for ADK document processing includin
 5. Integration with VANA multi-agent system
 """
 
-import os
 import asyncio
-import logging
 import json
-from typing import List, Dict, Any, Optional, Callable, Union
+import logging
+import os
+from dataclasses import asdict, dataclass
 from datetime import datetime, timedelta
-from dataclasses import dataclass, asdict
 from pathlib import Path
+from typing import Any, Callable, Dict, List, Optional, Union
 
 # Google ADK imports
 try:
     from google.adk.agents import LlmAgent
-    from google.adk.tools import FunctionTool
     from google.adk.memory import VertexAiRagMemoryService
+    from google.adk.tools import FunctionTool
+
     ADK_AVAILABLE = True
 except ImportError:
     ADK_AVAILABLE = False
+
     # Create mock classes for development
     class LlmAgent:
         pass
+
     class FunctionTool:
         def __init__(self, func):
             self.func = func
+
     class VertexAiRagMemoryService:
         pass
+
 
 # VANA imports
 from tools.document_processing.adk_document_processor import ADKDocumentProcessor
@@ -46,9 +51,11 @@ from tools.document_processing.migration_utils import ComprehensiveMigrationMana
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+
 @dataclass
 class DocumentProcessingRequest:
     """Request for document processing"""
+
     request_id: str
     file_paths: List[str]
     processing_type: str  # "single", "batch", "migration"
@@ -56,9 +63,11 @@ class DocumentProcessingRequest:
     requester: str
     timestamp: str
 
+
 @dataclass
 class DocumentProcessingResponse:
     """Response from document processing"""
+
     request_id: str
     success: bool
     results: List[Dict[str, Any]]
@@ -66,13 +75,13 @@ class DocumentProcessingResponse:
     processing_time_seconds: float = 0.0
     timestamp: str = ""
 
+
 class DocumentProcessingAPI:
     """High-level API for document processing operations"""
 
-    def __init__(self,
-                 adk_processor: ADKDocumentProcessor,
-                 enable_validation: bool = True,
-                 enable_monitoring: bool = True):
+    def __init__(
+        self, adk_processor: ADKDocumentProcessor, enable_validation: bool = True, enable_monitoring: bool = True
+    ):
         """
         Initialize document processing API
 
@@ -102,19 +111,17 @@ class DocumentProcessingAPI:
             "successful_requests": 0,
             "failed_requests": 0,
             "total_documents_processed": 0,
-            "total_processing_time_seconds": 0.0
+            "total_processing_time_seconds": 0.0,
         }
 
     def generate_request_id(self) -> str:
         """Generate unique request ID"""
-        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S_%f')
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
         return f"req_{timestamp}"
 
-    async def process_single_document(self,
-                                     file_path: str,
-                                     requester: str = "api",
-                                     validate_first: bool = None,
-                                     **options) -> DocumentProcessingResponse:
+    async def process_single_document(
+        self, file_path: str, requester: str = "api", validate_first: bool = None, **options
+    ) -> DocumentProcessingResponse:
         """
         Process a single document
 
@@ -137,7 +144,7 @@ class DocumentProcessingAPI:
             processing_type="single",
             options=options,
             requester=requester,
-            timestamp=start_time.isoformat()
+            timestamp=start_time.isoformat(),
         )
 
         self.active_requests[request_id] = request
@@ -155,9 +162,7 @@ class DocumentProcessingAPI:
 
             # Process document
             result = await self.adk_processor.upload_file_to_rag_corpus(
-                file_path,
-                display_name=options.get("display_name"),
-                description=options.get("description")
+                file_path, display_name=options.get("display_name"), description=options.get("description")
             )
 
             # Create response
@@ -168,7 +173,7 @@ class DocumentProcessingAPI:
                 success=result.get("success", False),
                 results=[result],
                 processing_time_seconds=processing_time,
-                timestamp=datetime.now().isoformat()
+                timestamp=datetime.now().isoformat(),
             )
 
             # Update statistics
@@ -194,11 +199,9 @@ class DocumentProcessingAPI:
             if request_id in self.active_requests:
                 del self.active_requests[request_id]
 
-    async def process_batch_documents(self,
-                                     file_paths: List[str],
-                                     requester: str = "api",
-                                     progress_callback: Optional[Callable] = None,
-                                     **options) -> DocumentProcessingResponse:
+    async def process_batch_documents(
+        self, file_paths: List[str], requester: str = "api", progress_callback: Optional[Callable] = None, **options
+    ) -> DocumentProcessingResponse:
         """
         Process multiple documents in batch
 
@@ -221,7 +224,7 @@ class DocumentProcessingAPI:
             processing_type="batch",
             options=options,
             requester=requester,
-            timestamp=start_time.isoformat()
+            timestamp=start_time.isoformat(),
         )
 
         self.active_requests[request_id] = request
@@ -234,7 +237,7 @@ class DocumentProcessingAPI:
             batch_result = await self.batch_processor.process_batch(
                 file_paths,
                 progress_callback=progress_callback,
-                validate_first=options.get("validate_first", self.enable_validation)
+                validate_first=options.get("validate_first", self.enable_validation),
             )
 
             # Create response
@@ -245,7 +248,7 @@ class DocumentProcessingAPI:
                 success=batch_result.get("success", False),
                 results=batch_result.get("results", []),
                 processing_time_seconds=processing_time,
-                timestamp=datetime.now().isoformat()
+                timestamp=datetime.now().isoformat(),
             )
 
             # Update statistics
@@ -272,11 +275,9 @@ class DocumentProcessingAPI:
             if request_id in self.active_requests:
                 del self.active_requests[request_id]
 
-    async def migrate_documents(self,
-                               source_directory: str,
-                               requester: str = "api",
-                               progress_callback: Optional[Callable] = None,
-                               **options) -> DocumentProcessingResponse:
+    async def migrate_documents(
+        self, source_directory: str, requester: str = "api", progress_callback: Optional[Callable] = None, **options
+    ) -> DocumentProcessingResponse:
         """
         Migrate documents from legacy system
 
@@ -305,7 +306,7 @@ class DocumentProcessingAPI:
             processing_type="migration",
             options=options,
             requester=requester,
-            timestamp=start_time.isoformat()
+            timestamp=start_time.isoformat(),
         )
 
         self.active_requests[request_id] = request
@@ -316,9 +317,7 @@ class DocumentProcessingAPI:
 
             # Perform migration
             migration_result = await self.migration_manager.migrate_documents_from_filesystem(
-                source_directory,
-                file_extensions=options.get("file_extensions"),
-                progress_callback=progress_callback
+                source_directory, file_extensions=options.get("file_extensions"), progress_callback=progress_callback
             )
 
             # Create response
@@ -329,7 +328,7 @@ class DocumentProcessingAPI:
                 success=migration_result.get("success", False),
                 results=[migration_result],
                 processing_time_seconds=processing_time,
-                timestamp=datetime.now().isoformat()
+                timestamp=datetime.now().isoformat(),
             )
 
             # Update statistics
@@ -356,10 +355,9 @@ class DocumentProcessingAPI:
             if request_id in self.active_requests:
                 del self.active_requests[request_id]
 
-    def _create_error_response(self,
-                              request_id: str,
-                              error_message: str,
-                              start_time: datetime) -> DocumentProcessingResponse:
+    def _create_error_response(
+        self, request_id: str, error_message: str, start_time: datetime
+    ) -> DocumentProcessingResponse:
         """Create error response"""
         processing_time = (datetime.now() - start_time).total_seconds()
         self.api_stats["failed_requests"] += 1
@@ -371,7 +369,7 @@ class DocumentProcessingAPI:
             results=[],
             error_message=error_message,
             processing_time_seconds=processing_time,
-            timestamp=datetime.now().isoformat()
+            timestamp=datetime.now().isoformat(),
         )
 
     def get_api_statistics(self) -> Dict[str, Any]:
@@ -397,6 +395,7 @@ class DocumentProcessingAPI:
         """Get list of active requests"""
         return [asdict(request) for request in self.active_requests.values()]
 
+
 class ADKDocumentProcessingTools:
     """ADK-compatible tools for document processing"""
 
@@ -420,10 +419,9 @@ class ADKDocumentProcessingTools:
         tools = []
 
         # Single document processing tool
-        async def process_document_tool(file_path: str,
-                                       display_name: str = None,
-                                       description: str = None,
-                                       validate_first: bool = True) -> Dict[str, Any]:
+        async def process_document_tool(
+            file_path: str, display_name: str = None, description: str = None, validate_first: bool = True
+        ) -> Dict[str, Any]:
             """
             Process a single document and upload to RAG Corpus
 
@@ -442,7 +440,7 @@ class ADKDocumentProcessingTools:
                     requester="adk_tool",
                     validate_first=validate_first,
                     display_name=display_name,
-                    description=description
+                    description=description,
                 )
 
                 return {
@@ -450,21 +448,18 @@ class ADKDocumentProcessingTools:
                     "request_id": response.request_id,
                     "results": response.results,
                     "error_message": response.error_message,
-                    "processing_time_seconds": response.processing_time_seconds
+                    "processing_time_seconds": response.processing_time_seconds,
                 }
 
             except Exception as e:
-                return {
-                    "success": False,
-                    "error_message": f"Tool execution error: {str(e)}"
-                }
+                return {"success": False, "error_message": f"Tool execution error: {str(e)}"}
 
         tools.append(FunctionTool(process_document_tool))
 
         # Batch processing tool
-        async def process_batch_documents_tool(file_paths: List[str],
-                                              validate_first: bool = True,
-                                              max_concurrent: int = 5) -> Dict[str, Any]:
+        async def process_batch_documents_tool(
+            file_paths: List[str], validate_first: bool = True, max_concurrent: int = 5
+        ) -> Dict[str, Any]:
             """
             Process multiple documents in batch
 
@@ -481,7 +476,7 @@ class ADKDocumentProcessingTools:
                     file_paths=file_paths,
                     requester="adk_tool",
                     validate_first=validate_first,
-                    max_concurrent=max_concurrent
+                    max_concurrent=max_concurrent,
                 )
 
                 return {
@@ -490,23 +485,19 @@ class ADKDocumentProcessingTools:
                     "total_files": len(file_paths),
                     "results_summary": {
                         "successful": sum(1 for r in response.results if r.get("success", False)),
-                        "failed": sum(1 for r in response.results if not r.get("success", False))
+                        "failed": sum(1 for r in response.results if not r.get("success", False)),
                     },
                     "error_message": response.error_message,
-                    "processing_time_seconds": response.processing_time_seconds
+                    "processing_time_seconds": response.processing_time_seconds,
                 }
 
             except Exception as e:
-                return {
-                    "success": False,
-                    "error_message": f"Tool execution error: {str(e)}"
-                }
+                return {"success": False, "error_message": f"Tool execution error: {str(e)}"}
 
         tools.append(FunctionTool(process_batch_documents_tool))
 
         # Migration tool
-        async def migrate_documents_tool(source_directory: str,
-                                        file_extensions: List[str] = None) -> Dict[str, Any]:
+        async def migrate_documents_tool(source_directory: str, file_extensions: List[str] = None) -> Dict[str, Any]:
             """
             Migrate documents from a directory to ADK RAG Corpus
 
@@ -519,9 +510,7 @@ class ADKDocumentProcessingTools:
             """
             try:
                 response = await self.api.migrate_documents(
-                    source_directory=source_directory,
-                    requester="adk_tool",
-                    file_extensions=file_extensions
+                    source_directory=source_directory, requester="adk_tool", file_extensions=file_extensions
                 )
 
                 migration_summary = response.results[0].get("migration_summary", {}) if response.results else {}
@@ -531,14 +520,11 @@ class ADKDocumentProcessingTools:
                     "request_id": response.request_id,
                     "migration_summary": migration_summary,
                     "error_message": response.error_message,
-                    "processing_time_seconds": response.processing_time_seconds
+                    "processing_time_seconds": response.processing_time_seconds,
                 }
 
             except Exception as e:
-                return {
-                    "success": False,
-                    "error_message": f"Tool execution error: {str(e)}"
-                }
+                return {"success": False, "error_message": f"Tool execution error: {str(e)}"}
 
         tools.append(FunctionTool(migrate_documents_tool))
 
@@ -555,17 +541,15 @@ class ADKDocumentProcessingTools:
             """
             try:
                 if not self.api.enable_validation:
-                    return {
-                        "success": False,
-                        "error_message": "Document validation is disabled"
-                    }
+                    return {"success": False, "error_message": "Document validation is disabled"}
 
                 validation_reports = self.api.validator.validate_batch(file_paths)
 
                 valid_files = [r.file_path for r in validation_reports if r.is_valid]
                 invalid_files = [
                     {"file": r.file_path, "errors": r.error_count, "warnings": r.warning_count}
-                    for r in validation_reports if not r.is_valid
+                    for r in validation_reports
+                    if not r.is_valid
                 ]
 
                 return {
@@ -577,15 +561,12 @@ class ADKDocumentProcessingTools:
                         "valid_count": len(valid_files),
                         "invalid_count": len(invalid_files),
                         "total_errors": sum(r.error_count for r in validation_reports),
-                        "total_warnings": sum(r.warning_count for r in validation_reports)
-                    }
+                        "total_warnings": sum(r.warning_count for r in validation_reports),
+                    },
                 }
 
             except Exception as e:
-                return {
-                    "success": False,
-                    "error_message": f"Tool execution error: {str(e)}"
-                }
+                return {"success": False, "error_message": f"Tool execution error: {str(e)}"}
 
         tools.append(FunctionTool(validate_documents_tool))
 
@@ -607,25 +588,21 @@ class ADKDocumentProcessingTools:
                     "api_statistics": api_stats,
                     "active_requests": active_requests,
                     "processor_statistics": processor_stats,
-                    "timestamp": datetime.now().isoformat()
+                    "timestamp": datetime.now().isoformat(),
                 }
 
             except Exception as e:
-                return {
-                    "success": False,
-                    "error_message": f"Tool execution error: {str(e)}"
-                }
+                return {"success": False, "error_message": f"Tool execution error: {str(e)}"}
 
         tools.append(FunctionTool(get_processing_status_tool))
 
         return tools
 
+
 class DocumentLifecycleManager:
     """Manages document lifecycle in ADK system"""
 
-    def __init__(self,
-                 adk_processor: ADKDocumentProcessor,
-                 memory_service: Optional[VertexAiRagMemoryService] = None):
+    def __init__(self, adk_processor: ADKDocumentProcessor, memory_service: Optional[VertexAiRagMemoryService] = None):
         """
         Initialize lifecycle manager
 
@@ -640,10 +617,7 @@ class DocumentLifecycleManager:
         self.document_registry: Dict[str, Dict[str, Any]] = {}
         self.lifecycle_log: List[Dict[str, Any]] = []
 
-    def register_document(self,
-                         document_id: str,
-                         metadata: Dict[str, Any],
-                         lifecycle_stage: str = "uploaded") -> bool:
+    def register_document(self, document_id: str, metadata: Dict[str, Any], lifecycle_stage: str = "uploaded") -> bool:
         """
         Register a document in the lifecycle system
 
@@ -661,7 +635,7 @@ class DocumentLifecycleManager:
                 "metadata": metadata,
                 "lifecycle_stage": lifecycle_stage,
                 "registered_timestamp": datetime.now().isoformat(),
-                "last_updated": datetime.now().isoformat()
+                "last_updated": datetime.now().isoformat(),
             }
 
             # Log lifecycle event
@@ -674,10 +648,9 @@ class DocumentLifecycleManager:
             logger.error(f"Error registering document {document_id}: {str(e)}")
             return False
 
-    def update_document_stage(self,
-                             document_id: str,
-                             new_stage: str,
-                             metadata_updates: Optional[Dict[str, Any]] = None) -> bool:
+    def update_document_stage(
+        self, document_id: str, new_stage: str, metadata_updates: Optional[Dict[str, Any]] = None
+    ) -> bool:
         """
         Update document lifecycle stage
 
@@ -702,11 +675,11 @@ class DocumentLifecycleManager:
                 self.document_registry[document_id]["metadata"].update(metadata_updates)
 
             # Log lifecycle event
-            self._log_lifecycle_event(document_id, "stage_updated", {
-                "old_stage": old_stage,
-                "new_stage": new_stage,
-                "metadata_updates": metadata_updates
-            })
+            self._log_lifecycle_event(
+                document_id,
+                "stage_updated",
+                {"old_stage": old_stage, "new_stage": new_stage, "metadata_updates": metadata_updates},
+            )
 
             logger.info(f"Document stage updated: {document_id} ({old_stage} -> {new_stage})")
             return True
@@ -715,16 +688,13 @@ class DocumentLifecycleManager:
             logger.error(f"Error updating document stage {document_id}: {str(e)}")
             return False
 
-    def _log_lifecycle_event(self,
-                            document_id: str,
-                            event_type: str,
-                            event_data: Dict[str, Any]):
+    def _log_lifecycle_event(self, document_id: str, event_type: str, event_data: Dict[str, Any]):
         """Log a lifecycle event"""
         event = {
             "document_id": document_id,
             "event_type": event_type,
             "event_data": event_data,
-            "timestamp": datetime.now().isoformat()
+            "timestamp": datetime.now().isoformat(),
         }
 
         self.lifecycle_log.append(event)
@@ -735,10 +705,7 @@ class DocumentLifecycleManager:
 
     def get_documents_by_stage(self, stage: str) -> List[Dict[str, Any]]:
         """Get documents in a specific lifecycle stage"""
-        return [
-            doc for doc in self.document_registry.values()
-            if doc["lifecycle_stage"] == stage
-        ]
+        return [doc for doc in self.document_registry.values() if doc["lifecycle_stage"] == stage]
 
     def get_lifecycle_log(self, document_id: Optional[str] = None) -> List[Dict[str, Any]]:
         """Get lifecycle log, optionally filtered by document ID"""
@@ -746,14 +713,17 @@ class DocumentLifecycleManager:
             return [event for event in self.lifecycle_log if event["document_id"] == document_id]
         return self.lifecycle_log.copy()
 
+
 # Utility functions
 def create_document_processing_api(adk_processor: ADKDocumentProcessor, **kwargs) -> DocumentProcessingAPI:
     """Create document processing API with default settings"""
     return DocumentProcessingAPI(adk_processor, **kwargs)
 
+
 def create_adk_tools(api: DocumentProcessingAPI) -> ADKDocumentProcessingTools:
     """Create ADK tools for document processing"""
     return ADKDocumentProcessingTools(api)
+
 
 def create_lifecycle_manager(adk_processor: ADKDocumentProcessor, **kwargs) -> DocumentLifecycleManager:
     """Create document lifecycle manager"""

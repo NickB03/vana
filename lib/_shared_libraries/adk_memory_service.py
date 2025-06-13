@@ -27,18 +27,20 @@ Usage:
     ```
 """
 
-import os
 import logging
+import os
 import re
 from datetime import datetime
-from typing import List, Dict, Any, Optional
-from google.adk.memory import VertexAiRagMemoryService, InMemoryMemoryService
+from typing import Any, Dict, List, Optional
+
+from google.adk.memory import InMemoryMemoryService, VertexAiRagMemoryService
 from google.adk.sessions import Session
 from google.adk.tools import load_memory
 
 # Vector Search integration for Phase 2
 try:
     from .vector_search_service import get_vector_search_service
+
     VECTOR_SEARCH_AVAILABLE = True
     _get_vector_search_service = get_vector_search_service
 except ImportError as e:
@@ -48,6 +50,7 @@ except ImportError as e:
 
 # Configure logging
 logger = logging.getLogger(__name__)
+
 
 class ADKMemoryService:
     """
@@ -93,7 +96,9 @@ class ADKMemoryService:
                     # Priority 1: VANA_RAG_CORPUS_ID (validate if it's full resource name)
                     rag_corpus = os.getenv("VANA_RAG_CORPUS_ID")
                     if rag_corpus and not self._validate_rag_corpus_resource_name(rag_corpus):
-                        logger.warning(f"VANA_RAG_CORPUS_ID appears to be corpus ID, not full resource name: {rag_corpus}")
+                        logger.warning(
+                            f"VANA_RAG_CORPUS_ID appears to be corpus ID, not full resource name: {rag_corpus}"
+                        )
                         rag_corpus = None
 
                     # Priority 2: RAG_CORPUS_RESOURCE_NAME (backward compatibility)
@@ -108,9 +113,7 @@ class ADKMemoryService:
                         rag_corpus = f"projects/{project_id}/locations/{location}/ragCorpora/{corpus_id}"
 
                 self.memory_service = VertexAiRagMemoryService(
-                    rag_corpus=rag_corpus,
-                    similarity_top_k=5,
-                    vector_distance_threshold=0.7
+                    rag_corpus=rag_corpus, similarity_top_k=5, vector_distance_threshold=0.7
                 )
                 logger.info(f"Initialized VertexAiRagMemoryService with corpus: {rag_corpus}")
 
@@ -164,25 +167,25 @@ class ADKMemoryService:
             logger.info(f"Enhanced memory search requested for: {query}")
 
             # Base ADK memory result
-            base_results = [{
-                "content": f"ADK Memory service available. Use load_memory tool to search for: {query}",
-                "score": 1.0,
-                "source": "adk_memory_service",
-                "metadata": {
-                    "service_type": self.get_service_info()["service_type"],
-                    "available": True,
-                    "note": "Use ToolContext.search_memory() for actual search"
+            base_results = [
+                {
+                    "content": f"ADK Memory service available. Use load_memory tool to search for: {query}",
+                    "score": 1.0,
+                    "source": "adk_memory_service",
+                    "metadata": {
+                        "service_type": self.get_service_info()["service_type"],
+                        "available": True,
+                        "note": "Use ToolContext.search_memory() for actual search",
+                    },
                 }
-            }]
+            ]
 
             # Enhanced Phase 2: Add vector search results if available
-            if hasattr(self, 'vector_search_service') and self.vector_search_service:
+            if hasattr(self, "vector_search_service") and self.vector_search_service:
                 try:
                     logger.info("Performing hybrid search with vector similarity")
                     vector_results = await self.vector_search_service.hybrid_search(
-                        query=query,
-                        keyword_results=base_results,
-                        top_k=top_k
+                        query=query, keyword_results=base_results, top_k=top_k
                     )
 
                     # Add Phase 2 enhancement indicator
@@ -245,17 +248,17 @@ class ADKMemoryService:
                 return False
 
             # For InMemoryMemoryService, we can add content directly to the internal store
-            if hasattr(self.memory_service, '_memory_store'):
+            if hasattr(self.memory_service, "_memory_store"):
                 # Create a memory entry
                 memory_entry = {
                     "content": content,
                     "metadata": metadata,
                     "timestamp": datetime.now().isoformat(),
-                    "id": f"knowledge_{len(self.memory_service._memory_store)}"
+                    "id": f"knowledge_{len(self.memory_service._memory_store)}",
                 }
 
                 # Add to memory store
-                if not hasattr(self.memory_service, '_memory_store'):
+                if not hasattr(self.memory_service, "_memory_store"):
                     self.memory_service._memory_store = []
 
                 self.memory_service._memory_store.append(memory_entry)
@@ -299,11 +302,13 @@ class ADKMemoryService:
             "service_type": "VertexAiRagMemoryService" if self.use_vertex_ai else "InMemoryMemoryService",
             "available": self.is_available(),
             "supports_persistence": self.use_vertex_ai,
-            "supports_semantic_search": True
+            "supports_semantic_search": True,
         }
+
 
 # Global instance for easy access
 _adk_memory_service = None
+
 
 def get_adk_memory_service() -> ADKMemoryService:
     """
@@ -323,6 +328,7 @@ def get_adk_memory_service() -> ADKMemoryService:
         logger.info(f"Initializing ADK memory service: use_vertex_ai={use_vertex_ai}")
         _adk_memory_service = ADKMemoryService(use_vertex_ai=use_vertex_ai)
     return _adk_memory_service
+
 
 def reset_adk_memory_service():
     """Reset the global ADK memory service instance (useful for testing)."""

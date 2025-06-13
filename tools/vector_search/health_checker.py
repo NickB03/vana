@@ -6,16 +6,17 @@ This module provides a comprehensive health checker for the Vector Search integr
 It monitors health, collects metrics, and provides actionable recommendations.
 """
 
+import json
+import logging
 import os
 import time
-import logging
-import json
-from typing import Dict, List, Any, Optional
 from datetime import datetime
+from typing import Any, Dict, List, Optional
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
 
 class VectorSearchHealthChecker:
     """Health checker for Vector Search integration"""
@@ -43,17 +44,14 @@ class VectorSearchHealthChecker:
             "status": "unknown",
             "checks": {},
             "metrics": {},
-            "issues": []
+            "issues": [],
         }
 
         # Get or create Vector Search client
         client = self._get_vector_search_client()
         if not client:
             result["status"] = "critical"
-            result["issues"].append({
-                "severity": "critical",
-                "message": "Failed to initialize Vector Search client"
-            })
+            result["issues"].append({"severity": "critical", "message": "Failed to initialize Vector Search client"})
             self._add_to_history(result)
             return result
 
@@ -62,7 +60,7 @@ class VectorSearchHealthChecker:
             "environment": self._check_environment(),
             "authentication": self._check_authentication(client),
             "embedding": self._check_embedding(client),
-            "search": self._check_search(client)
+            "search": self._check_search(client),
         }
 
         # Calculate overall status
@@ -70,10 +68,7 @@ class VectorSearchHealthChecker:
 
         # Calculate metrics
         duration = time.time() - start_time
-        result["metrics"] = {
-            "response_time": duration,
-            "success_rate": self._calculate_success_rate(result["checks"])
-        }
+        result["metrics"] = {"response_time": duration, "success_rate": self._calculate_success_rate(result["checks"])}
 
         # Add to history
         self._add_to_history(result)
@@ -91,56 +86,68 @@ class VectorSearchHealthChecker:
         if env_check.get("status") != "ok":
             missing_vars = env_check.get("details", {}).get("missing_vars", [])
             if missing_vars:
-                recommendations.append({
-                    "priority": "high",
-                    "category": "configuration",
-                    "title": "Missing environment variables",
-                    "action": f"Set the following missing environment variables: {', '.join(missing_vars)}"
-                })
+                recommendations.append(
+                    {
+                        "priority": "high",
+                        "category": "configuration",
+                        "title": "Missing environment variables",
+                        "action": f"Set the following missing environment variables: {', '.join(missing_vars)}",
+                    }
+                )
 
         # Check authentication
         auth_check = checks.get("authentication", {})
         if auth_check.get("status") != "ok":
-            recommendations.append({
-                "priority": "high",
-                "category": "authentication",
-                "title": "Authentication issues with Vector Search",
-                "action": "Verify that GOOGLE_APPLICATION_CREDENTIALS points to a valid service account key file with appropriate permissions."
-            })
+            recommendations.append(
+                {
+                    "priority": "high",
+                    "category": "authentication",
+                    "title": "Authentication issues with Vector Search",
+                    "action": "Verify that GOOGLE_APPLICATION_CREDENTIALS points to a valid service account key file with appropriate permissions.",
+                }
+            )
 
         # Check embedding
         embed_check = checks.get("embedding", {})
         if embed_check.get("status") != "ok":
-            recommendations.append({
-                "priority": "high",
-                "category": "functionality",
-                "title": "Embedding generation not working",
-                "action": "Check that the service account has access to Vertex AI Embeddings API and that the model 'text-embedding-004' is available in your region."
-            })
+            recommendations.append(
+                {
+                    "priority": "high",
+                    "category": "functionality",
+                    "title": "Embedding generation not working",
+                    "action": "Check that the service account has access to Vertex AI Embeddings API and that the model 'text-embedding-004' is available in your region.",
+                }
+            )
         elif embed_check.get("details", {}).get("is_mock", False):
-            recommendations.append({
-                "priority": "medium",
-                "category": "functionality",
-                "title": "Using mock embeddings",
-                "action": "Check authentication and permissions for Vertex AI Embeddings API."
-            })
+            recommendations.append(
+                {
+                    "priority": "medium",
+                    "category": "functionality",
+                    "title": "Using mock embeddings",
+                    "action": "Check authentication and permissions for Vertex AI Embeddings API.",
+                }
+            )
 
         # Check search
         search_check = checks.get("search", {})
         if search_check.get("status") == "error":
-            recommendations.append({
-                "priority": "high",
-                "category": "functionality",
-                "title": "Vector Search not working",
-                "action": "Verify that the Vector Search endpoint and deployed index exist and are accessible."
-            })
+            recommendations.append(
+                {
+                    "priority": "high",
+                    "category": "functionality",
+                    "title": "Vector Search not working",
+                    "action": "Verify that the Vector Search endpoint and deployed index exist and are accessible.",
+                }
+            )
         elif search_check.get("details", {}).get("result_count", 0) == 0:
-            recommendations.append({
-                "priority": "medium",
-                "category": "data",
-                "title": "No search results",
-                "action": "Verify that your Vector Search index contains data. You may need to upload content first."
-            })
+            recommendations.append(
+                {
+                    "priority": "medium",
+                    "category": "data",
+                    "title": "No search results",
+                    "action": "Verify that your Vector Search index contains data. You may need to upload content first.",
+                }
+            )
 
         return recommendations
 
@@ -168,7 +175,7 @@ class VectorSearchHealthChecker:
             "metrics": latest.get("metrics", {}),
             "trends": trends,
             "recommendations": recommendations,
-            "history_summary": self._get_history_summary()
+            "history_summary": self._get_history_summary(),
         }
 
         return report
@@ -187,13 +194,29 @@ class VectorSearchHealthChecker:
             "response_time": {
                 "current": response_times[-1] if response_times else 0,
                 "previous": response_times[-2] if len(response_times) > 1 else 0,
-                "trend": "improving" if response_times[-1] < response_times[-2] else "degrading" if response_times[-1] > response_times[-2] else "stable" if len(response_times) > 1 else "unknown"
+                "trend": (
+                    "improving"
+                    if response_times[-1] < response_times[-2]
+                    else (
+                        "degrading"
+                        if response_times[-1] > response_times[-2]
+                        else "stable" if len(response_times) > 1 else "unknown"
+                    )
+                ),
             },
             "success_rate": {
                 "current": success_rates[-1] if success_rates else 0,
                 "previous": success_rates[-2] if len(success_rates) > 1 else 0,
-                "trend": "improving" if success_rates[-1] > success_rates[-2] else "degrading" if success_rates[-1] < success_rates[-2] else "stable" if len(success_rates) > 1 else "unknown"
-            }
+                "trend": (
+                    "improving"
+                    if success_rates[-1] > success_rates[-2]
+                    else (
+                        "degrading"
+                        if success_rates[-1] < success_rates[-2]
+                        else "stable" if len(success_rates) > 1 else "unknown"
+                    )
+                ),
+            },
         }
 
         return trends
@@ -209,14 +232,14 @@ class VectorSearchHealthChecker:
             "warn": statuses.count("warn"),
             "error": statuses.count("error"),
             "critical": statuses.count("critical"),
-            "unknown": statuses.count("unknown")
+            "unknown": statuses.count("unknown"),
         }
 
         return {
             "check_count": len(statuses),
             "status_counts": status_counts,
             "first_check_time": self.health_history[0].get("timestamp") if self.health_history else None,
-            "last_check_time": self.health_history[-1].get("timestamp") if self.health_history else None
+            "last_check_time": self.health_history[-1].get("timestamp") if self.health_history else None,
         }
 
     def _get_vector_search_client(self) -> Any:
@@ -233,9 +256,11 @@ class VectorSearchHealthChecker:
             # Try enhanced client first, fall back to standard client
             try:
                 from tools.vector_search.enhanced_vector_search_client import EnhancedVectorSearchClient
+
                 return EnhancedVectorSearchClient()
             except (ImportError, Exception):
                 from tools.vector_search.vector_search_client import VectorSearchClient
+
                 return VectorSearchClient()
         except Exception as e:
             logger.error(f"Failed to create Vector Search client: {e}")
@@ -243,16 +268,15 @@ class VectorSearchHealthChecker:
 
     def _check_environment(self) -> Dict[str, Any]:
         """Check environment variables"""
-        required_vars = ["GOOGLE_CLOUD_PROJECT", "GOOGLE_CLOUD_LOCATION", "VECTOR_SEARCH_ENDPOINT_ID",
-                         "GOOGLE_APPLICATION_CREDENTIALS"]
+        required_vars = [
+            "GOOGLE_CLOUD_PROJECT",
+            "GOOGLE_CLOUD_LOCATION",
+            "VECTOR_SEARCH_ENDPOINT_ID",
+            "GOOGLE_APPLICATION_CREDENTIALS",
+        ]
         missing = [var for var in required_vars if not os.environ.get(var)]
 
-        return {
-            "status": "ok" if not missing else "error",
-            "details": {
-                "missing_vars": missing
-            }
-        }
+        return {"status": "ok" if not missing else "error", "details": {"missing_vars": missing}}
 
     def _check_authentication(self, client) -> Dict[str, Any]:
         """Check authentication status"""
@@ -260,21 +284,12 @@ class VectorSearchHealthChecker:
             # Check if client has auth token method or is_available
             if hasattr(client, "_get_auth_token"):
                 token = client._get_auth_token()
-                return {
-                    "status": "ok" if token else "error",
-                    "details": {"has_token": bool(token)}
-                }
+                return {"status": "ok" if token else "error", "details": {"has_token": bool(token)}}
             else:
                 available = client.is_available()
-                return {
-                    "status": "ok" if available else "error",
-                    "details": {"is_available": available}
-                }
+                return {"status": "ok" if available else "error", "details": {"is_available": available}}
         except Exception as e:
-            return {
-                "status": "error",
-                "error": str(e)
-            }
+            return {"status": "error", "error": str(e)}
 
     def _check_embedding(self, client) -> Dict[str, Any]:
         """
@@ -296,11 +311,7 @@ class VectorSearchHealthChecker:
             if not embedding or len(embedding) == 0:
                 return {
                     "status": "error",
-                    "details": {
-                        "dimensions": 0,
-                        "response_time": duration,
-                        "error": "Empty embedding returned"
-                    }
+                    "details": {"dimensions": 0, "response_time": duration, "error": "Empty embedding returned"},
                 }
 
             # Check if this is likely a mock implementation
@@ -315,17 +326,10 @@ class VectorSearchHealthChecker:
 
             return {
                 "status": "ok",
-                "details": {
-                    "dimensions": len(embedding),
-                    "response_time": duration,
-                    "is_mock": is_mock
-                }
+                "details": {"dimensions": len(embedding), "response_time": duration, "is_mock": is_mock},
             }
         except Exception as e:
-            return {
-                "status": "error",
-                "error": str(e)
-            }
+            return {"status": "error", "error": str(e)}
 
     def _check_search(self, client) -> Dict[str, Any]:
         """
@@ -350,8 +354,8 @@ class VectorSearchHealthChecker:
                     "details": {
                         "result_count": 0,
                         "response_time": duration,
-                        "message": "No search results returned - this may be expected if the index is empty"
-                    }
+                        "message": "No search results returned - this may be expected if the index is empty",
+                    },
                 }
 
             # Check result quality
@@ -359,8 +363,7 @@ class VectorSearchHealthChecker:
 
             # Check if results have expected fields
             has_expected_fields = all(
-                isinstance(r, dict) and "content" in r and "score" in r
-                for r in results[:min(3, result_count)]
+                isinstance(r, dict) and "content" in r and "score" in r for r in results[: min(3, result_count)]
             )
 
             return {
@@ -368,14 +371,11 @@ class VectorSearchHealthChecker:
                 "details": {
                     "result_count": result_count,
                     "response_time": duration,
-                    "has_expected_fields": has_expected_fields
-                }
+                    "has_expected_fields": has_expected_fields,
+                },
             }
         except Exception as e:
-            return {
-                "status": "error",
-                "error": str(e)
-            }
+            return {"status": "error", "error": str(e)}
 
     def _calculate_overall_status(self, checks: Dict[str, Dict[str, Any]]) -> str:
         """
@@ -388,8 +388,10 @@ class VectorSearchHealthChecker:
             Overall status string: "ok", "warn", "error", or "critical"
         """
         # Check for critical failures in authentication or environment
-        if (checks.get("authentication", {}).get("status") == "error" and
-            checks.get("environment", {}).get("status") == "error"):
+        if (
+            checks.get("authentication", {}).get("status") == "error"
+            and checks.get("environment", {}).get("status") == "error"
+        ):
             return "critical"
 
         # Check for any errors
@@ -430,7 +432,7 @@ class VectorSearchHealthChecker:
 
         # Trim history if needed
         if len(self.health_history) > self.history_size:
-            self.health_history = self.health_history[-self.history_size:]
+            self.health_history = self.health_history[-self.history_size :]
 
     def get_health_status(self) -> str:
         """Get current health status"""
@@ -445,7 +447,7 @@ class VectorSearchHealthChecker:
         try:
             report = self.generate_report()
 
-            with open(filename, 'w') as f:
+            with open(filename, "w") as f:
                 json.dump(report, f, indent=2)
 
             logger.info(f"Saved health report to {filename}")
@@ -475,6 +477,7 @@ def main():
     logger.info("%s", f"Generated report with status: {report['current_status']}")
 
     checker.save_report_to_file("vector_search_health_report.json")
+
 
 if __name__ == "__main__":
     main()

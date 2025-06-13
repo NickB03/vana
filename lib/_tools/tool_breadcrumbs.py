@@ -6,6 +6,7 @@ breadcrumb events to the ADK event stream.
 """
 
 import logging
+
 from google.adk.events import Event
 from google.genai import types
 
@@ -15,7 +16,7 @@ logger = logging.getLogger(__name__)
 def emit_tool_breadcrumb(tool: str, summary: str) -> None:
     """
     Emit a short breadcrumb event to the ADK event stream.
-    
+
     Args:
         tool: Name of the tool being executed
         summary: Brief summary of the tool action

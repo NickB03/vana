@@ -5,17 +5,18 @@ This module provides secure audit logging for sensitive operations in the VANA p
 It creates tamper-evident logs with proper metadata and security information.
 """
 
-import os
+import datetime
+import hashlib
 import json
+import logging
+import os
 import time
 import uuid
-import logging
-import hashlib
-import datetime
-from typing import Dict, Any, Optional, List, Union
+from typing import Any, Dict, List, Optional, Union
 
 # Set up logging
 logger = logging.getLogger(__name__)
+
 
 class AuditLogger:
     """
@@ -33,10 +34,7 @@ class AuditLogger:
             log_dir: Directory to store audit logs (optional)
         """
         # Set log directory
-        self.log_dir = log_dir or os.path.join(
-            os.environ.get("VANA_DATA_DIR", "."),
-            "audit_logs"
-        )
+        self.log_dir = log_dir or os.path.join(os.environ.get("VANA_DATA_DIR", "."), "audit_logs")
 
         # Create log directory if it doesn't exist
         os.makedirs(self.log_dir, exist_ok=True)
@@ -109,10 +107,16 @@ class AuditLogger:
         # Compute hash
         return hashlib.sha256(combined.encode("utf-8")).hexdigest()
 
-    def log_event(self, event_type: str, user_id: str, operation: str,
-                resource_type: str, resource_id: Optional[str] = None,
-                details: Optional[Dict[str, Any]] = None,
-                status: str = "success") -> bool:
+    def log_event(
+        self,
+        event_type: str,
+        user_id: str,
+        operation: str,
+        resource_type: str,
+        resource_id: Optional[str] = None,
+        details: Optional[Dict[str, Any]] = None,
+        status: str = "success",
+    ) -> bool:
         """
         Log an audit event.
 
@@ -140,7 +144,7 @@ class AuditLogger:
                 "user_id": user_id,
                 "operation": operation,
                 "resource_type": resource_type,
-                "status": status
+                "status": status,
             }
 
             # Add optional fields
@@ -156,7 +160,7 @@ class AuditLogger:
             log_data["source"] = {
                 "ip": os.environ.get("REMOTE_ADDR", "unknown"),
                 "user_agent": os.environ.get("HTTP_USER_AGENT", "unknown"),
-                "hostname": os.environ.get("HOSTNAME", "unknown")
+                "hostname": os.environ.get("HOSTNAME", "unknown"),
             }
 
             # Compute hash for tamper evidence
@@ -190,8 +194,15 @@ class AuditLogger:
 
         # List of sensitive field names
         sensitive_fields = [
-            "password", "api_key", "token", "secret", "credential",
-            "auth", "key", "private", "certificate"
+            "password",
+            "api_key",
+            "token",
+            "secret",
+            "credential",
+            "auth",
+            "key",
+            "private",
+            "certificate",
         ]
 
         # Filter sensitive fields
@@ -211,13 +222,16 @@ class AuditLogger:
 
         return filtered
 
-    def get_audit_logs(self, start_time: Optional[str] = None,
-                     end_time: Optional[str] = None,
-                     event_types: Optional[List[str]] = None,
-                     user_id: Optional[str] = None,
-                     resource_type: Optional[str] = None,
-                     operation: Optional[str] = None,
-                     limit: int = 100) -> List[Dict[str, Any]]:
+    def get_audit_logs(
+        self,
+        start_time: Optional[str] = None,
+        end_time: Optional[str] = None,
+        event_types: Optional[List[str]] = None,
+        user_id: Optional[str] = None,
+        resource_type: Optional[str] = None,
+        operation: Optional[str] = None,
+        limit: int = 100,
+    ) -> List[Dict[str, Any]]:
         """
         Get audit logs with filtering.
 
@@ -264,13 +278,7 @@ class AuditLogger:
 
                             # Apply filters
                             if not self._matches_filters(
-                                log_entry,
-                                start_datetime,
-                                end_datetime,
-                                event_types,
-                                user_id,
-                                resource_type,
-                                operation
+                                log_entry, start_datetime, end_datetime, event_types, user_id, resource_type, operation
                             ):
                                 continue
 
@@ -291,8 +299,9 @@ class AuditLogger:
             logger.error(f"Error retrieving audit logs: {str(e)}")
             return []
 
-    def _get_log_files_for_time_range(self, start_datetime: Optional[datetime.datetime],
-                                    end_datetime: Optional[datetime.datetime]) -> List[str]:
+    def _get_log_files_for_time_range(
+        self, start_datetime: Optional[datetime.datetime], end_datetime: Optional[datetime.datetime]
+    ) -> List[str]:
         """
         Get log files for a time range.
 
@@ -343,13 +352,16 @@ class AuditLogger:
 
         return log_files
 
-    def _matches_filters(self, log_entry: Dict[str, Any],
-                       start_datetime: Optional[datetime.datetime],
-                       end_datetime: Optional[datetime.datetime],
-                       event_types: Optional[List[str]],
-                       user_id: Optional[str],
-                       resource_type: Optional[str],
-                       operation: Optional[str]) -> bool:
+    def _matches_filters(
+        self,
+        log_entry: Dict[str, Any],
+        start_datetime: Optional[datetime.datetime],
+        end_datetime: Optional[datetime.datetime],
+        event_types: Optional[List[str]],
+        user_id: Optional[str],
+        resource_type: Optional[str],
+        operation: Optional[str],
+    ) -> bool:
         """
         Check if a log entry matches the filters.
 
@@ -403,12 +415,7 @@ class AuditLogger:
         Returns:
             Dictionary with verification results
         """
-        results = {
-            "verified": True,
-            "errors": [],
-            "files_checked": 0,
-            "entries_checked": 0
-        }
+        results = {"verified": True, "errors": [], "files_checked": 0, "entries_checked": 0}
 
         try:
             # Get all log files
@@ -455,23 +462,21 @@ class AuditLogger:
                             # Compare hashes
                             if log_hash != expected_hash:
                                 results["verified"] = False
-                                results["errors"].append({
-                                    "file": log_file,
-                                    "line": line_num,
-                                    "error": "Hash mismatch",
-                                    "expected": expected_hash,
-                                    "actual": log_hash
-                                })
+                                results["errors"].append(
+                                    {
+                                        "file": log_file,
+                                        "line": line_num,
+                                        "error": "Hash mismatch",
+                                        "expected": expected_hash,
+                                        "actual": log_hash,
+                                    }
+                                )
 
                             # Update previous hash
                             previous_hash = log_hash
                         except json.JSONDecodeError:
                             results["verified"] = False
-                            results["errors"].append({
-                                "file": log_file,
-                                "line": line_num,
-                                "error": "Invalid JSON"
-                            })
+                            results["errors"].append({"file": log_file, "line": line_num, "error": "Invalid JSON"})
 
             return results
         except Exception as e:
@@ -480,5 +485,5 @@ class AuditLogger:
                 "verified": False,
                 "errors": [{"error": str(e)}],
                 "files_checked": results["files_checked"],
-                "entries_checked": results["entries_checked"]
+                "entries_checked": results["entries_checked"],
             }

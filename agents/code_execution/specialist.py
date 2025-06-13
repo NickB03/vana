@@ -5,12 +5,13 @@ Provides secure code execution capabilities across multiple programming language
 using enhanced executor architecture with comprehensive security and monitoring.
 """
 
-import os
-import sys
 import asyncio
 import json
 import logging
-from typing import Dict, Any, Optional, List
+import os
+import sys
+from typing import Any, Dict, List, Optional
+
 from dotenv import load_dotenv
 
 # Add project root to Python path
@@ -23,9 +24,10 @@ load_dotenv()
 from google.adk.agents import LlmAgent
 from google.adk.tools import FunctionTool
 
-# Import executor components
-from lib.sandbox.executors import PythonExecutor, JavaScriptExecutor, ShellExecutor, ExecutorResult
 from lib.sandbox.core.security_manager import SecurityManager
+
+# Import executor components
+from lib.sandbox.executors import ExecutorResult, JavaScriptExecutor, PythonExecutor, ShellExecutor
 
 logger = logging.getLogger(__name__)
 
@@ -34,8 +36,9 @@ _security_manager = SecurityManager()
 _executors = {
     "python": PythonExecutor(_security_manager),
     "javascript": JavaScriptExecutor(_security_manager),
-    "shell": ShellExecutor(_security_manager)
+    "shell": ShellExecutor(_security_manager),
 }
+
 
 async def execute_code(code: str, language: str, timeout: int = 30) -> str:
     """Execute code with security validation and resource monitoring."""
@@ -66,8 +69,6 @@ async def execute_code(code: str, language: str, timeout: int = 30) -> str:
 
     except Exception as e:
         return f"❌ Execution failed: {str(e)}"
-
-
 
 
 async def validate_code_security(code: str, language: str) -> str:
@@ -131,9 +132,9 @@ def _get_security_recommendations(error: str, language: str) -> List[str]:
     return recommendations
 
 
-
 # In-memory execution history for demo
 _execution_history = []
+
 
 async def get_execution_history(limit: int = 10) -> str:
     """Get recent execution history with performance metrics."""
@@ -174,8 +175,6 @@ async def get_execution_history(limit: int = 10) -> str:
 
     except Exception as e:
         return f"❌ Failed to retrieve execution history: {str(e)}"
-
-
 
 
 async def get_supported_languages() -> str:
@@ -237,13 +236,12 @@ code_execution_specialist = LlmAgent(
 - Give practical examples and best practices
 
 Always prioritize security and provide comprehensive explanations of execution results.""",
-
     tools=[
         FunctionTool(func=execute_code),
         FunctionTool(func=validate_code_security),
         FunctionTool(func=get_execution_history),
-        FunctionTool(func=get_supported_languages)
-    ]
+        FunctionTool(func=get_supported_languages),
+    ],
 )
 
 # Export for ADK discovery
@@ -258,7 +256,9 @@ def _analyze_error(error: str, language: str) -> str:
     if "timeout" in error_lower:
         return "Code execution timed out. Consider optimizing the algorithm or increasing the timeout."
     elif "security violation" in error_lower:
-        return f"Code contains security violations. Review {language} security policies and remove restricted operations."
+        return (
+            f"Code contains security violations. Review {language} security policies and remove restricted operations."
+        )
     elif "resource limit exceeded" in error_lower:
         return "Code exceeded resource limits. Optimize memory usage or reduce computational complexity."
     elif "syntax" in error_lower:
@@ -266,4 +266,6 @@ def _analyze_error(error: str, language: str) -> str:
     elif "import" in error_lower or "module" in error_lower:
         return f"Module import error. Ensure the required packages are available in the {language} sandbox environment."
     else:
-        return "Review the error message and check the code logic. Consider adding error handling or debugging statements."
+        return (
+            "Review the error message and check the code logic. Consider adding error handling or debugging statements."
+        )

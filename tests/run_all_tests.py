@@ -9,10 +9,11 @@ Usage:
     python tests/run_all_tests.py [--coverage]
 """
 
+import argparse
 import os
 import sys
 import unittest
-import argparse
+
 
 def run_tests(with_coverage=False):
     """
@@ -27,7 +28,9 @@ def run_tests(with_coverage=False):
     if with_coverage:
         try:
             import coverage
+
 from lib.logging_config import get_logger
+
 logger = get_logger("vana.run_all_tests")
 
         except ImportError:

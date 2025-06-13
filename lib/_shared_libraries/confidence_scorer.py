@@ -5,13 +5,13 @@ Implements intelligent task routing based on agent capability confidence scores.
 Inspired by Cursor/Devin's approach to capability assessment and task delegation.
 """
 
-from typing import Dict, Any, List, Tuple, Optional
-from dataclasses import dataclass
-from enum import Enum
-from functools import lru_cache
 import hashlib
 import re
 import time
+from dataclasses import dataclass
+from enum import Enum
+from functools import lru_cache
+from typing import Any, Dict, List, Optional, Tuple
 
 # Import intelligent caching system
 from .intelligent_cache import agent_decision_cache
@@ -19,6 +19,7 @@ from .intelligent_cache import agent_decision_cache
 
 class AgentSpecialty(Enum):
     """Agent specialization areas."""
+
     ORCHESTRATION = "orchestration"
     ARCHITECTURE = "architecture"
     UI_UX = "ui_ux"
@@ -29,6 +30,7 @@ class AgentSpecialty(Enum):
 @dataclass
 class CapabilityScore:
     """Represents an agent's capability score for a specific task type."""
+
     agent_name: str
     specialty: AgentSpecialty
     base_confidence: float  # 0.0 - 1.0
@@ -41,6 +43,7 @@ class CapabilityScore:
 @dataclass
 class TaskAnalysis:
     """Analysis of task requirements and complexity."""
+
     task_description: str
     primary_domain: AgentSpecialty
     secondary_domains: List[AgentSpecialty]
@@ -66,7 +69,7 @@ class ConfidenceScorer:
         # Performance optimization: Pre-computed compatibility matrices
         self._agent_compatibility_matrix = self._precompute_agent_compatibility()
         self._task_analysis_cache = {}  # Manual cache for task analysis
-        self._confidence_cache = {}     # Manual cache for confidence calculations
+        self._confidence_cache = {}  # Manual cache for confidence calculations
 
     def _initialize_agent_capabilities(self) -> Dict[str, Dict[str, Any]]:
         """Initialize base capability scores for each agent."""
@@ -75,87 +78,163 @@ class ConfidenceScorer:
                 "specialty": AgentSpecialty.ORCHESTRATION,
                 "base_confidence": 0.9,
                 "strengths": [
-                    "task_coordination", "agent_delegation", "workflow_management",
-                    "multi_domain_tasks", "complex_orchestration", "decision_making"
+                    "task_coordination",
+                    "agent_delegation",
+                    "workflow_management",
+                    "multi_domain_tasks",
+                    "complex_orchestration",
+                    "decision_making",
                 ],
                 "tools": [
-                    "adk_coordinate_task", "adk_delegate_to_agent", "adk_get_agent_status",
-                    "adk_read_file", "adk_write_file", "adk_vector_search", "adk_web_search"
-                ]
+                    "adk_coordinate_task",
+                    "adk_delegate_to_agent",
+                    "adk_get_agent_status",
+                    "adk_read_file",
+                    "adk_write_file",
+                    "adk_vector_search",
+                    "adk_web_search",
+                ],
             },
             "architecture_specialist": {
                 "specialty": AgentSpecialty.ARCHITECTURE,
                 "base_confidence": 0.85,
                 "strengths": [
-                    "system_design", "architecture_planning", "performance_optimization",
-                    "scalability_analysis", "design_patterns", "technical_strategy"
+                    "system_design",
+                    "architecture_planning",
+                    "performance_optimization",
+                    "scalability_analysis",
+                    "design_patterns",
+                    "technical_strategy",
                 ],
                 "tools": [
-                    "adk_read_file", "adk_write_file", "adk_vector_search",
-                    "adk_search_knowledge", "adk_kg_query"
-                ]
+                    "adk_read_file",
+                    "adk_write_file",
+                    "adk_vector_search",
+                    "adk_search_knowledge",
+                    "adk_kg_query",
+                ],
             },
             "ui_specialist": {
                 "specialty": AgentSpecialty.UI_UX,
                 "base_confidence": 0.8,
                 "strengths": [
-                    "interface_design", "user_experience", "frontend_development",
-                    "visual_design", "usability_analysis", "interaction_design"
+                    "interface_design",
+                    "user_experience",
+                    "frontend_development",
+                    "visual_design",
+                    "usability_analysis",
+                    "interaction_design",
                 ],
-                "tools": [
-                    "adk_read_file", "adk_write_file", "adk_web_search",
-                    "adk_search_knowledge", "adk_kg_query"
-                ]
+                "tools": ["adk_read_file", "adk_write_file", "adk_web_search", "adk_search_knowledge", "adk_kg_query"],
             },
             "devops_specialist": {
                 "specialty": AgentSpecialty.DEVOPS,
                 "base_confidence": 0.8,
                 "strengths": [
-                    "infrastructure_management", "deployment_automation", "monitoring_setup",
-                    "security_implementation", "performance_tuning", "ci_cd_pipelines"
+                    "infrastructure_management",
+                    "deployment_automation",
+                    "monitoring_setup",
+                    "security_implementation",
+                    "performance_tuning",
+                    "ci_cd_pipelines",
                 ],
                 "tools": [
-                    "adk_read_file", "adk_write_file", "adk_vector_search",
-                    "adk_web_search", "adk_get_health_status"
-                ]
+                    "adk_read_file",
+                    "adk_write_file",
+                    "adk_vector_search",
+                    "adk_web_search",
+                    "adk_get_health_status",
+                ],
             },
             "qa_specialist": {
                 "specialty": AgentSpecialty.QA_TESTING,
                 "base_confidence": 0.8,
                 "strengths": [
-                    "test_strategy", "quality_assurance", "validation_procedures",
-                    "bug_detection", "performance_testing", "security_testing"
+                    "test_strategy",
+                    "quality_assurance",
+                    "validation_procedures",
+                    "bug_detection",
+                    "performance_testing",
+                    "security_testing",
                 ],
                 "tools": [
-                    "adk_read_file", "adk_write_file", "adk_vector_search",
-                    "adk_web_search", "adk_search_knowledge"
-                ]
-            }
+                    "adk_read_file",
+                    "adk_write_file",
+                    "adk_vector_search",
+                    "adk_web_search",
+                    "adk_search_knowledge",
+                ],
+            },
         }
 
     def _initialize_task_patterns(self) -> Dict[AgentSpecialty, List[str]]:
         """Initialize keyword patterns for each agent specialty."""
         return {
             AgentSpecialty.ORCHESTRATION: [
-                "coordinate", "manage", "orchestrate", "delegate", "organize",
-                "workflow", "process", "overall", "comprehensive", "multi"
+                "coordinate",
+                "manage",
+                "orchestrate",
+                "delegate",
+                "organize",
+                "workflow",
+                "process",
+                "overall",
+                "comprehensive",
+                "multi",
             ],
             AgentSpecialty.ARCHITECTURE: [
-                "design", "architect", "structure", "system", "pattern", "framework",
-                "scalability", "performance", "optimization", "technical", "strategy"
+                "design",
+                "architect",
+                "structure",
+                "system",
+                "pattern",
+                "framework",
+                "scalability",
+                "performance",
+                "optimization",
+                "technical",
+                "strategy",
             ],
             AgentSpecialty.UI_UX: [
-                "interface", "ui", "ux", "frontend", "design", "user", "visual",
-                "layout", "component", "styling", "responsive", "accessibility"
+                "interface",
+                "ui",
+                "ux",
+                "frontend",
+                "design",
+                "user",
+                "visual",
+                "layout",
+                "component",
+                "styling",
+                "responsive",
+                "accessibility",
             ],
             AgentSpecialty.DEVOPS: [
-                "deploy", "infrastructure", "server", "production", "monitoring",
-                "security", "automation", "pipeline", "environment", "configuration"
+                "deploy",
+                "infrastructure",
+                "server",
+                "production",
+                "monitoring",
+                "security",
+                "automation",
+                "pipeline",
+                "environment",
+                "configuration",
             ],
             AgentSpecialty.QA_TESTING: [
-                "test", "quality", "validate", "verify", "check", "bug", "error",
-                "testing", "qa", "assurance", "validation", "debugging"
-            ]
+                "test",
+                "quality",
+                "validate",
+                "verify",
+                "check",
+                "bug",
+                "error",
+                "testing",
+                "qa",
+                "assurance",
+                "validation",
+                "debugging",
+            ],
         }
 
     def analyze_task(self, task_description: str) -> TaskAnalysis:
@@ -190,21 +269,24 @@ class ConfidenceScorer:
 
         # Determine secondary domains (scores > 0 but not primary)
         secondary_domains = [
-            domain for domain, score in domain_scores.items()
-            if score > 0 and domain != primary_domain
+            domain for domain, score in domain_scores.items() if score > 0 and domain != primary_domain
         ]
 
         # Calculate complexity
         complexity_indicators = {
-            "simple": 0.2, "basic": 0.3, "standard": 0.4, "complex": 0.7,
-            "advanced": 0.8, "comprehensive": 0.9, "multiple": 0.6,
-            "integrate": 0.7, "coordinate": 0.8, "optimize": 0.7
+            "simple": 0.2,
+            "basic": 0.3,
+            "standard": 0.4,
+            "complex": 0.7,
+            "advanced": 0.8,
+            "comprehensive": 0.9,
+            "multiple": 0.6,
+            "integrate": 0.7,
+            "coordinate": 0.8,
+            "optimize": 0.7,
         }
 
-        complexity_scores = [
-            score for word, score in complexity_indicators.items()
-            if word in task_lower
-        ]
+        complexity_scores = [score for word, score in complexity_indicators.items() if word in task_lower]
         complexity_score = max(complexity_scores) if complexity_scores else 0.5
 
         # Determine required tools
@@ -213,7 +295,7 @@ class ConfidenceScorer:
             "write": ["adk_write_file"],
             "search": ["adk_vector_search", "adk_web_search"],
             "knowledge": ["adk_search_knowledge", "adk_kg_query"],
-            "coordinate": ["adk_coordinate_task", "adk_delegate_to_agent"]
+            "coordinate": ["adk_coordinate_task", "adk_delegate_to_agent"],
         }
 
         required_tools = []
@@ -231,10 +313,10 @@ class ConfidenceScorer:
 
         # Determine if collaboration needed
         collaboration_needed = (
-            len(secondary_domains) > 1 or
-            complexity_score > 0.7 or
-            "multiple" in task_lower or
-            "coordinate" in task_lower
+            len(secondary_domains) > 1
+            or complexity_score > 0.7
+            or "multiple" in task_lower
+            or "coordinate" in task_lower
         )
 
         return TaskAnalysis(
@@ -244,7 +326,7 @@ class ConfidenceScorer:
             complexity_score=complexity_score,
             required_tools=list(set(required_tools)),
             estimated_duration=duration,
-            collaboration_needed=collaboration_needed
+            collaboration_needed=collaboration_needed,
         )
 
     def calculate_agent_confidence(self, agent_name: str, task_analysis: TaskAnalysis) -> CapabilityScore:
@@ -292,7 +374,7 @@ class ConfidenceScorer:
                 task_match_score=0.0,
                 experience_bonus=0.0,
                 final_confidence=0.1,
-                reasoning="Unknown agent"
+                reasoning="Unknown agent",
             )
 
         agent_info = self.agent_capabilities[agent_name]
@@ -308,9 +390,7 @@ class ConfidenceScorer:
         final_confidence = min(1.0, base_confidence * task_match_score + experience_bonus)
 
         # Generate reasoning
-        reasoning = self._generate_confidence_reasoning(
-            agent_info, task_analysis, task_match_score, experience_bonus
-        )
+        reasoning = self._generate_confidence_reasoning(agent_info, task_analysis, task_match_score, experience_bonus)
 
         return CapabilityScore(
             agent_name=agent_name,
@@ -319,7 +399,7 @@ class ConfidenceScorer:
             task_match_score=task_match_score,
             experience_bonus=experience_bonus,
             final_confidence=final_confidence,
-            reasoning=reasoning
+            reasoning=reasoning,
         )
 
     def _calculate_task_match(self, agent_info: Dict[str, Any], task_analysis: TaskAnalysis) -> float:
@@ -354,7 +434,7 @@ class ConfidenceScorer:
             tool_coverage = 1.0
 
         # Weighted combination
-        return (domain_match * 0.5 + strength_score * 0.3 + tool_coverage * 0.2)
+        return domain_match * 0.5 + strength_score * 0.3 + tool_coverage * 0.2
 
     def _calculate_experience_bonus(self, agent_name: str, task_analysis: TaskAnalysis) -> float:
         """Calculate experience bonus based on historical performance."""
@@ -372,18 +452,12 @@ class ConfidenceScorer:
         return min(0.2, (avg_performance - 0.5) * 0.4) if avg_performance > 0.5 else 0.0
 
     def _generate_confidence_reasoning(
-        self,
-        agent_info: Dict[str, Any],
-        task_analysis: TaskAnalysis,
-        task_match_score: float,
-        experience_bonus: float
+        self, agent_info: Dict[str, Any], task_analysis: TaskAnalysis, task_match_score: float, experience_bonus: float
     ) -> str:
         """Generate human-readable reasoning for confidence score."""
         specialty = agent_info["specialty"].value
 
-        reasoning_parts = [
-            f"Agent specializes in {specialty}"
-        ]
+        reasoning_parts = [f"Agent specializes in {specialty}"]
 
         if task_match_score > 0.8:
             reasoning_parts.append("Excellent match for task requirements")
@@ -478,10 +552,7 @@ class ConfidenceScorer:
             "total_agents": len(self.agent_capabilities),
             "agents_with_history": len(self.performance_history),
             "total_performance_records": sum(len(scores) for scores in self.performance_history.values()),
-            "agent_specialties": {
-                name: info["specialty"].value
-                for name, info in self.agent_capabilities.items()
-            }
+            "agent_specialties": {name: info["specialty"].value for name, info in self.agent_capabilities.items()},
         }
 
     # ========== PERFORMANCE OPTIMIZATION METHODS ==========
@@ -514,7 +585,7 @@ class ConfidenceScorer:
         # Normalize task description for better cache hits
         normalized = task_description.lower().strip()
         # Remove common variations that don't affect analysis
-        normalized = re.sub(r'\s+', ' ', normalized)  # Normalize whitespace
+        normalized = re.sub(r"\s+", " ", normalized)  # Normalize whitespace
         return hashlib.md5(normalized.encode()).hexdigest()
 
     @lru_cache(maxsize=1000)
@@ -535,7 +606,7 @@ class ConfidenceScorer:
             AgentSpecialty.ARCHITECTURE: ["design", "architect", "structure", "system", "pattern", "framework"],
             AgentSpecialty.UI_UX: ["interface", "ui", "ux", "frontend", "design", "user", "visual"],
             AgentSpecialty.DEVOPS: ["deploy", "infrastructure", "server", "production", "monitoring", "ci/cd"],
-            AgentSpecialty.QA_TESTING: ["test", "quality", "validate", "verify", "check", "bug"]
+            AgentSpecialty.QA_TESTING: ["test", "quality", "validate", "verify", "check", "bug"],
         }
 
         max_matches = 0
@@ -557,7 +628,7 @@ class ConfidenceScorer:
         complexity_indicators = {
             "simple": ["read", "write", "list", "check", "get", "show"],
             "medium": ["search", "find", "analyze", "create", "update", "process"],
-            "complex": ["design", "implement", "optimize", "coordinate", "integrate", "architect"]
+            "complex": ["design", "implement", "optimize", "coordinate", "integrate", "architect"],
         }
 
         complexity_score = 0.3  # Default
@@ -578,7 +649,7 @@ class ConfidenceScorer:
             "adk_vector_search": ["search", "find", "query"],
             "adk_web_search": ["web", "internet", "online"],
             "adk_kg_query": ["knowledge", "graph", "relationship"],
-            "adk_coordinate_task": ["coordinate", "manage", "orchestrate"]
+            "adk_coordinate_task": ["coordinate", "manage", "orchestrate"],
         }
 
         required_tools = []
@@ -592,10 +663,10 @@ class ConfidenceScorer:
 
         # Determine collaboration needs
         collaboration_needed = (
-            len(secondary_domains) > 1 or
-            complexity_score > 0.7 or
-            "multiple" in task_lower or
-            "coordinate" in task_lower
+            len(secondary_domains) > 1
+            or complexity_score > 0.7
+            or "multiple" in task_lower
+            or "coordinate" in task_lower
         )
 
         return TaskAnalysis(
@@ -605,5 +676,5 @@ class ConfidenceScorer:
             complexity_score=complexity_score,
             required_tools=list(set(required_tools)),
             estimated_duration=duration,
-            collaboration_needed=collaboration_needed
+            collaboration_needed=collaboration_needed,
         )

@@ -5,12 +5,14 @@ This module provides Pydantic models for structured data validation
 in workflow orchestration and agent coordination.
 """
 
-from pydantic import BaseModel
 from typing import List, Optional
+
+from pydantic import BaseModel
 
 
 class RequirementsSchema(BaseModel):
     """Schema for project requirements definition."""
+
     functional: List[str]
     non_functional: List[str]
     constraints: List[str]
@@ -19,6 +21,7 @@ class RequirementsSchema(BaseModel):
 
 class ArchDesignSchema(BaseModel):
     """Schema for architecture design specifications."""
+
     architecture: str
     tech_stack: List[str]
     notes: Optional[str] = None
@@ -26,12 +29,14 @@ class ArchDesignSchema(BaseModel):
 
 class UIDesignSchema(BaseModel):
     """Schema for user interface design specifications."""
+
     overview: str
     technologies: List[str]
 
 
 class DevOpsStrategySchema(BaseModel):
     """Schema for DevOps strategy and deployment planning."""
+
     deployment: str
     ci_cd: str
     infrastructure: List[str]
@@ -39,33 +44,39 @@ class DevOpsStrategySchema(BaseModel):
 
 class QAStrategySchema(BaseModel):
     """Schema for quality assurance strategy."""
+
     strategy: str
     automation_tools: List[str]
 
 
 class IntegratedPlanSchema(BaseModel):
     """Schema for integrated project planning."""
+
     summary: str
 
 
 class AnalysisContextSchema(BaseModel):
     """Schema for analysis context and requirements."""
+
     requirements: List[str]
     complexity: str
 
 
 class SpecialistAnalysisSchema(BaseModel):
     """Schema for specialist analysis reports."""
+
     report: str
 
 
 class SynthesisSchema(BaseModel):
     """Schema for synthesis and recommendations."""
+
     recommendations: str
 
 
 class QualityFeedbackSchema(BaseModel):
     """Schema for quality feedback and assessment."""
+
     completeness: float
     technical_depth: float
     integration: float
@@ -75,12 +86,13 @@ class QualityFeedbackSchema(BaseModel):
 
 class CurrentSolutionSchema(BaseModel):
     """Schema for current solution representation."""
+
     content: str
 
 
 __all__ = [
     "RequirementsSchema",
-    "ArchDesignSchema", 
+    "ArchDesignSchema",
     "UIDesignSchema",
     "DevOpsStrategySchema",
     "QAStrategySchema",

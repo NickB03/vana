@@ -9,8 +9,8 @@ This script implements the proper way to import documents to RAG corpus
 using the correct parameters and methods from the official documentation.
 """
 
-import sys
 import logging
+import sys
 import time
 from pathlib import Path
 
@@ -32,8 +32,9 @@ GCS_FILES = [
     "gs://${GOOGLE_CLOUD_PROJECT}-vector-search-docs/rag_documents/vana_system_overview.txt",
     "gs://${GOOGLE_CLOUD_PROJECT}-vector-search-docs/rag_documents/anthropic-ai-agents.md",
     "gs://${GOOGLE_CLOUD_PROJECT}-vector-search-docs/rag_documents/Newwhitepaper_Agents.pdf",
-    "gs://${GOOGLE_CLOUD_PROJECT}-vector-search-docs/rag_documents/a-practical-guide-to-building-agents.pdf"
+    "gs://${GOOGLE_CLOUD_PROJECT}-vector-search-docs/rag_documents/a-practical-guide-to-building-agents.pdf",
 ]
+
 
 def count_files_in_gcs_bucket(path: str) -> int:
     """Count files in GCS bucket path (simplified version)"""
@@ -41,48 +42,44 @@ def count_files_in_gcs_bucket(path: str) -> int:
     # For directories, this would count all files
     return 1
 
-def import_rag_files_from_gcs(
-    paths: list[str], 
-    chunk_size: int, 
-    chunk_overlap: int, 
-    corpus_name: str
-) -> None:
+
+def import_rag_files_from_gcs(paths: list[str], chunk_size: int, chunk_overlap: int, corpus_name: str) -> None:
     """
     Imports files from Google Cloud Storage to a RAG corpus.
-    
+
     Based on official Google Cloud Platform implementation:
     https://github.com/GoogleCloudPlatform/generative-ai/blob/main/gemini/rag-engine/rag_engine_evaluation.ipynb
-    
+
     Args:
       paths: A list of GCS paths to import files from.
       chunk_size: The size of each chunk to import.
       chunk_overlap: The overlap between consecutive chunks.
       corpus_name: The name of the RAG corpus to import files into.
-    
+
     Returns:
       None
     """
     try:
         from vertexai.preview import rag
-        
+
         total_imported, total_num_of_files = 0, 0
-        
+
         logger.info(f"🚀 Starting official RAG import process...")
         logger.info(f"   Corpus: {corpus_name}")
         logger.info(f"   Chunk size: {chunk_size}")
         logger.info(f"   Chunk overlap: {chunk_overlap}")
-        
+
         for path in paths:
             logger.info(f"📄 Processing: {path}")
-            
+
             num_files_to_be_imported = count_files_in_gcs_bucket(path)
             total_num_of_files += num_files_to_be_imported
-            
+
             max_retries, attempt, imported = 10, 0, 0
-            
+
             while attempt < max_retries and imported < num_files_to_be_imported:
                 logger.info(f"   Attempt {attempt + 1}/{max_retries}")
-                
+
                 try:
                     # Use the official parameters from Google Cloud documentation
                     response = rag.import_files(
@@ -93,56 +90,58 @@ def import_rag_files_from_gcs(
                         timeout=20000,
                         max_embedding_requests_per_min=1400,
                     )
-                    
+
                     imported += response.imported_rag_files_count or 0
-                    
+
                     logger.info(f"   ✅ Import response: {response}")
                     logger.info(f"   📊 Imported: {imported}/{num_files_to_be_imported}")
-                    
-                    if hasattr(response, 'skipped_rag_files_count'):
+
+                    if hasattr(response, "skipped_rag_files_count"):
                         skipped = response.skipped_rag_files_count
                         if skipped > 0:
                             logger.warning(f"   ⚠️  {skipped} files were skipped")
-                    
+
                     break  # Success, exit retry loop
-                    
+
                 except Exception as e:
                     logger.error(f"   ❌ Attempt {attempt + 1} failed: {str(e)}")
                     attempt += 1
                     if attempt < max_retries:
                         logger.info(f"   ⏳ Retrying in 5 seconds...")
                         time.sleep(5)
-            
+
             total_imported += imported
             logger.info(f"   📈 Total imported so far: {total_imported}")
-        
+
         logger.info(f"🎉 Import completed: {total_imported} files out of {total_num_of_files} imported!")
-        
+
     except Exception as e:
         logger.error(f"❌ Failed to import files: {str(e)}")
         raise
+
 
 def setup_vertex_ai():
     """Initialize Vertex AI with proper configuration"""
     try:
         import vertexai
-        
+
         logger.info(f"🔧 Initializing Vertex AI...")
         logger.info(f"   Project: {PROJECT_ID}")
         logger.info(f"   Location: {LOCATION}")
-        
+
         vertexai.init(project=PROJECT_ID, location=LOCATION)
-        
+
         logger.info(f"✅ Vertex AI initialized successfully")
         return True
-        
+
     except Exception as e:
         logger.error(f"❌ Failed to initialize Vertex AI: {str(e)}")
         return False
 
+
 def create_cloud_function_trigger():
     """Create Cloud Function deployment script for automatic imports"""
-    
+
     cloud_function_code = '''import functions_framework
 from google.cloud import storage
 from vertexai.preview import rag
@@ -206,11 +205,11 @@ def auto_import_rag_document(cloud_event):
 # google-cloud-aiplatform
 # google-cloud-storage
 '''
-    
+
     # Save the Cloud Function code
     with open("cloud_function_official_rag_import.py", "w") as f:
         f.write(cloud_function_code)
-    
+
     logger.info("📄 Official Cloud Function code saved to cloud_function_official_rag_import.py")
     logger.info("")
     logger.info("🚀 To deploy this Cloud Function:")
@@ -222,47 +221,44 @@ def auto_import_rag_document(cloud_event):
     logger.info("     --region us-central1 \\")
     logger.info("     --timeout 540s \\")
     logger.info("     --memory 512MB")
-    
+
     return cloud_function_code
+
 
 def main():
     """Main function implementing official RAG import process"""
     logger.info("🚀 Starting Official RAG Engine Import Process...")
     logger.info("   Based on: https://github.com/GoogleCloudPlatform/generative-ai/tree/main/gemini/rag-engine")
-    
+
     # Initialize Vertex AI
     if not setup_vertex_ai():
         logger.error("❌ Failed to initialize Vertex AI")
         return False
-    
+
     # Import documents using official method
     try:
-        import_rag_files_from_gcs(
-            paths=GCS_FILES,
-            chunk_size=512,
-            chunk_overlap=50,
-            corpus_name=CORPUS_NAME
-        )
-        
+        import_rag_files_from_gcs(paths=GCS_FILES, chunk_size=512, chunk_overlap=50, corpus_name=CORPUS_NAME)
+
         logger.info("✅ Official import process completed!")
-        
+
     except Exception as e:
         logger.error(f"❌ Import process failed: {str(e)}")
         return False
-    
+
     # Create Cloud Function for automation
     logger.info("")
     logger.info("🤖 Creating Cloud Function for automatic future imports...")
     create_cloud_function_trigger()
-    
+
     logger.info("")
     logger.info("🎯 Next Steps:")
     logger.info("   1. Wait 5-10 minutes for import to complete")
     logger.info("   2. Test search functionality with real queries")
     logger.info("   3. Deploy Cloud Function for automatic future imports")
     logger.info("   4. Verify no more 'fallback knowledge' responses")
-    
+
     return True
+
 
 if __name__ == "__main__":
     success = main()

@@ -5,8 +5,9 @@ This module provides configuration management for different environments (develo
 It handles environment-specific settings and provides a consistent interface for accessing configuration.
 """
 
-import os
 import logging
+import os
+
 from dotenv import load_dotenv
 
 # Load environment variables
@@ -14,6 +15,7 @@ load_dotenv()
 
 # Set up logging
 logger = logging.getLogger(__name__)
+
 
 class EnvironmentConfig:
     """Configuration manager for different environments"""
@@ -41,9 +43,9 @@ class EnvironmentConfig:
         # Priority 2: RAG_CORPUS_RESOURCE_NAME (backward compatibility)
         # Priority 3: Default value
         rag_corpus_resource_name = (
-            os.environ.get("VANA_RAG_CORPUS_ID") or
-            os.environ.get("RAG_CORPUS_RESOURCE_NAME") or
-            "projects/${GOOGLE_CLOUD_PROJECT}/locations/us-central1/ragCorpora/vana-corpus"
+            os.environ.get("VANA_RAG_CORPUS_ID")
+            or os.environ.get("RAG_CORPUS_RESOURCE_NAME")
+            or "projects/${GOOGLE_CLOUD_PROJECT}/locations/us-central1/ragCorpora/vana-corpus"
         )
 
         similarity_top_k = int(os.environ.get("MEMORY_SIMILARITY_TOP_K", "5"))
@@ -57,7 +59,7 @@ class EnvironmentConfig:
             "rag_corpus_resource_name": rag_corpus_resource_name,
             "similarity_top_k": similarity_top_k,
             "vector_distance_threshold": vector_distance_threshold,
-            "session_service_type": session_service_type
+            "session_service_type": session_service_type,
         }
 
     @staticmethod
@@ -67,7 +69,7 @@ class EnvironmentConfig:
             "project_id": os.environ.get("GOOGLE_CLOUD_PROJECT", ""),
             "location": os.environ.get("GOOGLE_CLOUD_LOCATION", ""),
             "endpoint_id": os.environ.get("VECTOR_SEARCH_ENDPOINT_ID", ""),
-            "deployed_index_id": os.environ.get("DEPLOYED_INDEX_ID", "vanasharedindex")
+            "deployed_index_id": os.environ.get("DEPLOYED_INDEX_ID", "vanasharedindex"),
         }
 
         logger.info(f"Using Vector Search endpoint: {config['endpoint_id']}")
@@ -82,7 +84,7 @@ class EnvironmentConfig:
                 logger.error(f"GCP credentials file not found at: {gcp_creds_path}")
             else:
                 # Further validation could be added here (e.g., JSON parsing, permission checks)
-                pass # Placeholder for more robust validation
+                pass  # Placeholder for more robust validation
         else:
             logger.warning("GOOGLE_APPLICATION_CREDENTIALS environment variable not set. Vector Search may require it.")
 
@@ -95,12 +97,11 @@ class EnvironmentConfig:
         engine_id = os.environ.get("GOOGLE_SEARCH_ENGINE_ID", "")
 
         if not api_key or not engine_id:
-            logger.warning("GOOGLE_SEARCH_API_KEY or GOOGLE_SEARCH_ENGINE_ID not found in environment. WebSearchClient may not function.")
+            logger.warning(
+                "GOOGLE_SEARCH_API_KEY or GOOGLE_SEARCH_ENGINE_ID not found in environment. WebSearchClient may not function."
+            )
 
-        return {
-            "api_key": api_key,
-            "search_engine_id": engine_id
-        }
+        return {"api_key": api_key, "search_engine_id": engine_id}
 
     @staticmethod
     def get_data_dir():
@@ -127,18 +128,17 @@ class EnvironmentConfig:
         return {
             # ADK Memory Service settings with priority hierarchy
             "rag_corpus_resource_name": (
-                os.environ.get("VANA_RAG_CORPUS_ID") or
-                os.environ.get("RAG_CORPUS_RESOURCE_NAME") or
-                "projects/${GOOGLE_CLOUD_PROJECT}/locations/us-central1/ragCorpora/vana-corpus"
+                os.environ.get("VANA_RAG_CORPUS_ID")
+                or os.environ.get("RAG_CORPUS_RESOURCE_NAME")
+                or "projects/${GOOGLE_CLOUD_PROJECT}/locations/us-central1/ragCorpora/vana-corpus"
             ),
             "similarity_top_k": int(os.environ.get("MEMORY_SIMILARITY_TOP_K", "5")),
             "vector_distance_threshold": float(os.environ.get("MEMORY_VECTOR_DISTANCE_THRESHOLD", "0.7")),
             "session_service_type": os.environ.get("SESSION_SERVICE_TYPE", "vertex_ai"),
-
             # Local caching settings (for performance optimization)
             "cache_size": int(os.environ.get("MEMORY_CACHE_SIZE", "1000")),
             "cache_ttl": int(os.environ.get("MEMORY_CACHE_TTL", "3600")),
-            "local_db_path": os.path.join(EnvironmentConfig.get_data_dir(), "adk_memory_cache.db")
+            "local_db_path": os.path.join(EnvironmentConfig.get_data_dir(), "adk_memory_cache.db"),
         }
 
     @staticmethod
@@ -161,11 +161,13 @@ class EnvironmentConfig:
             return None
 
         if not os.path.exists(credentials_path):
-            logger.error(f"GCP credentials file specified by GOOGLE_APPLICATION_CREDENTIALS not found: {credentials_path}")
+            logger.error(
+                f"GCP credentials file specified by GOOGLE_APPLICATION_CREDENTIALS not found: {credentials_path}"
+            )
             return None
 
         # Check file permissions on Unix systems
-        if os.name == 'posix':
+        if os.name == "posix":
             try:
                 file_stat = os.stat(credentials_path)
                 file_mode = file_stat.st_mode
@@ -181,7 +183,8 @@ class EnvironmentConfig:
 
         try:
             import json
-            with open(credentials_path, 'r') as f:
+
+            with open(credentials_path, "r") as f:
                 credentials = json.load(f)
 
             # Comprehensive validation: check for essential keys and their format
@@ -192,7 +195,9 @@ class EnvironmentConfig:
 
             # Validate service account type
             if credentials.get("type") != "service_account":
-                logger.error(f"GCP credentials file {credentials_path} is not a service account key (type: {credentials.get('type')}).")
+                logger.error(
+                    f"GCP credentials file {credentials_path} is not a service account key (type: {credentials.get('type')})."
+                )
                 return None
 
             # Validate private key format
@@ -220,12 +225,7 @@ class EnvironmentConfig:
     @staticmethod
     def validate_adk_memory_config():
         """Validate ADK Memory configuration and return validation results"""
-        validation_results = {
-            "valid": True,
-            "errors": [],
-            "warnings": [],
-            "config": {}
-        }
+        validation_results = {"valid": True, "errors": [], "warnings": [], "config": {}}
 
         try:
             config = EnvironmentConfig.get_adk_memory_config()
@@ -252,7 +252,9 @@ class EnvironmentConfig:
             session_type = config.get("session_service_type", "")
             valid_session_types = ["vertex_ai", "local", "memory"]
             if session_type not in valid_session_types:
-                validation_results["warnings"].append(f"SESSION_SERVICE_TYPE '{session_type}' is not in recommended types: {valid_session_types}")
+                validation_results["warnings"].append(
+                    f"SESSION_SERVICE_TYPE '{session_type}' is not in recommended types: {valid_session_types}"
+                )
 
             # Note: Deprecated MCP variable checks removed as part of cleanup
 
@@ -273,7 +275,7 @@ class EnvironmentConfig:
             "adk_memory_configured": False,
             "mcp_variables_present": False,
             "configuration_valid": False,
-            "recommendations": []
+            "recommendations": [],
         }
 
         # Check if ADK memory is configured

@@ -11,22 +11,21 @@ This module provides comprehensive testing for Tasks #5-8:
 Target: >90% coordination success rate
 """
 
+from .coordination_benchmarks import BenchmarkResult, CoordinationBenchmarks
+from .coordination_test_runner import CoordinationTestRunner
 from .test_coordination_framework import (
+    CoordinationMetrics,
     CoordinationTestFramework,
     CoordinationTestResult,
-    CoordinationMetrics,
     TestCoordinationTools,
-    TestWorkflowManagement,
     TestIntelligentTaskAnalysis,
-    TestVANAOrchestration
+    TestVANAOrchestration,
+    TestWorkflowManagement,
 )
-
-from .coordination_test_runner import CoordinationTestRunner
-from .coordination_benchmarks import CoordinationBenchmarks, BenchmarkResult
 
 __all__ = [
     "CoordinationTestFramework",
-    "CoordinationTestResult", 
+    "CoordinationTestResult",
     "CoordinationMetrics",
     "TestCoordinationTools",
     "TestWorkflowManagement",
@@ -34,5 +33,5 @@ __all__ = [
     "TestVANAOrchestration",
     "CoordinationTestRunner",
     "CoordinationBenchmarks",
-    "BenchmarkResult"
+    "BenchmarkResult",
 ]

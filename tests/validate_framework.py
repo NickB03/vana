@@ -91,7 +91,7 @@ def test_benchmarking_framework():
         from tests.benchmarks.benchmark_runner import BenchmarkRunner, BenchmarkSuite
         from tests.benchmarks.performance_baselines import BaselineManager, PerformanceBaseline
         from tests.benchmarks.regression_detector import RegressionDetector, RegressionSeverity
-        
+
         # Test 1: Benchmark suite creation
         suite = BenchmarkSuite("test_suite")
         
@@ -188,7 +188,9 @@ def test_integration_framework():
     except Exception as e:
         logger.error(f"  ❌ Integration framework validation FAILED: {e}")
         import traceback
+
 from lib.logging_config import get_logger
+
 logger = get_logger("vana.validate_framework")
 
         traceback.print_exc()
@@ -200,7 +202,7 @@ def test_ci_framework():
     
     try:
         from tests.automated.ci_runner import CIRunner, TestResult
-        
+
         # Test 1: CI runner creation
         ci_runner = CIRunner(project_root)
         logger.info("  ✅ CI runner created successfully")

@@ -5,10 +5,12 @@ This is a simplified version with only working tools to test basic functionality
 """
 
 import os
-from dotenv import load_dotenv
 
 # Add project root to Python path for absolute imports
 import sys
+
+from dotenv import load_dotenv
+
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
 
 # Load environment variables before importing Google ADK
@@ -20,34 +22,40 @@ from google.adk.tools import FunctionTool
 
 # Logging configuration
 from lib.logging_config import get_logger
+
 logger = get_logger("vana.agents.vana.team")
 
 # Import only working ADK-compatible tools
-from lib._tools import (
-    # File System Tools
-    adk_read_file, adk_write_file, adk_list_directory, adk_file_exists,
-
-    # Search Tools
-    adk_vector_search, adk_web_search, adk_search_knowledge,
-
-    # System Tools
-    adk_echo, adk_get_health_status,
-
-    # Agent Coordination Tools
-    adk_coordinate_task, adk_delegate_to_agent, adk_get_agent_status,
-
-    # Intelligent Task Analysis Tools
-    adk_analyze_task, adk_match_capabilities, adk_classify_task,
-
-    # Multi-Agent Workflow Management Tools
-    adk_create_workflow, adk_start_workflow, adk_get_workflow_status,
-    adk_list_workflows, adk_pause_workflow, adk_resume_workflow,
-    adk_cancel_workflow, adk_get_workflow_templates
+from lib._tools import (  # File System Tools; Search Tools; System Tools; Agent Coordination Tools; Intelligent Task Analysis Tools; Multi-Agent Workflow Management Tools
+    adk_analyze_task,
+    adk_cancel_workflow,
+    adk_classify_task,
+    adk_coordinate_task,
+    adk_create_workflow,
+    adk_delegate_to_agent,
+    adk_echo,
+    adk_file_exists,
+    adk_get_agent_status,
+    adk_get_health_status,
+    adk_get_workflow_status,
+    adk_get_workflow_templates,
+    adk_list_directory,
+    adk_list_workflows,
+    adk_match_capabilities,
+    adk_pause_workflow,
+    adk_read_file,
+    adk_resume_workflow,
+    adk_search_knowledge,
+    adk_start_workflow,
+    adk_vector_search,
+    adk_web_search,
+    adk_write_file,
 )
 
 # Import specialist agent tools for Phase 3 orchestration
 try:
     from agents.specialists.agent_tools import specialist_agent_tools
+
     SPECIALIST_TOOLS_AVAILABLE = True
 except ImportError as e:
     logger.warning(f"Warning: Specialist tools not available: {e}")
@@ -56,16 +64,12 @@ except ImportError as e:
 
 # Import advanced orchestration capabilities for Priority 3 enhancements
 try:
+    from agents.memory.specialist_memory_manager import get_specialist_knowledge_func, save_specialist_knowledge_func
     from agents.orchestration.hierarchical_task_manager import (
         analyze_task_complexity,
-        route_to_specialist,
         coordinate_workflow,
-        decompose_enterprise_task
-    )
-
-    from agents.memory.specialist_memory_manager import (
-        save_specialist_knowledge_func,
-        get_specialist_knowledge_func
+        decompose_enterprise_task,
+        route_to_specialist,
     )
 
     # Create orchestration tools
@@ -75,7 +79,7 @@ try:
         FunctionTool(coordinate_workflow),
         FunctionTool(decompose_enterprise_task),
         FunctionTool(save_specialist_knowledge_func),
-        FunctionTool(get_specialist_knowledge_func)
+        FunctionTool(get_specialist_knowledge_func),
     ]
 
     ORCHESTRATION_TOOLS_AVAILABLE = True
@@ -346,27 +350,39 @@ previous_success = load_memory("successful agent coordination for similar task")
 # Select agents based on memory insights and update patterns
 ```
 """,
-    
-    tools=([
-        # File System Tools
-        adk_read_file, adk_write_file, adk_list_directory, adk_file_exists,
-
-        # Search Tools
-        adk_vector_search, adk_web_search, adk_search_knowledge,
-
-        # System Tools
-        adk_echo, adk_get_health_status,
-
-        # Agent Coordination Tools
-        adk_coordinate_task, adk_delegate_to_agent, adk_get_agent_status,
-
-        # Intelligent Task Analysis Tools
-        adk_analyze_task, adk_match_capabilities, adk_classify_task,
-
-        # Multi-Agent Workflow Management Tools
-        adk_create_workflow, adk_start_workflow, adk_get_workflow_status,
-        adk_list_workflows, adk_pause_workflow, adk_resume_workflow,
-        adk_cancel_workflow, adk_get_workflow_templates
-    ] + (specialist_agent_tools if SPECIALIST_TOOLS_AVAILABLE else []) +
-        (orchestration_tools if ORCHESTRATION_TOOLS_AVAILABLE else []))
+    tools=(
+        [
+            # File System Tools
+            adk_read_file,
+            adk_write_file,
+            adk_list_directory,
+            adk_file_exists,
+            # Search Tools
+            adk_vector_search,
+            adk_web_search,
+            adk_search_knowledge,
+            # System Tools
+            adk_echo,
+            adk_get_health_status,
+            # Agent Coordination Tools
+            adk_coordinate_task,
+            adk_delegate_to_agent,
+            adk_get_agent_status,
+            # Intelligent Task Analysis Tools
+            adk_analyze_task,
+            adk_match_capabilities,
+            adk_classify_task,
+            # Multi-Agent Workflow Management Tools
+            adk_create_workflow,
+            adk_start_workflow,
+            adk_get_workflow_status,
+            adk_list_workflows,
+            adk_pause_workflow,
+            adk_resume_workflow,
+            adk_cancel_workflow,
+            adk_get_workflow_templates,
+        ]
+        + (specialist_agent_tools if SPECIALIST_TOOLS_AVAILABLE else [])
+        + (orchestration_tools if ORCHESTRATION_TOOLS_AVAILABLE else [])
+    ),
 )

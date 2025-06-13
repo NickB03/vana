@@ -10,19 +10,16 @@ Based on LangChain documentation patterns:
 - Integration with VANA tool framework
 """
 
-import logging
-from typing import Dict, Any, List, Optional, Callable, Union
 import importlib
+import logging
+from typing import Any, Callable, Dict, List, Optional, Union
 
-from lib._tools.third_party_tools import (
-    ThirdPartyToolAdapter, ThirdPartyToolInfo, ThirdPartyToolType
-)
-from lib._shared_libraries.tool_standards import (
-    performance_monitor, InputValidator
-)
+from lib._shared_libraries.tool_standards import InputValidator, performance_monitor
+from lib._tools.third_party_tools import ThirdPartyToolAdapter, ThirdPartyToolInfo, ThirdPartyToolType
 
 # Configure logging
 logger = logging.getLogger(__name__)
+
 
 class LangChainToolAdapter(ThirdPartyToolAdapter):
     """
@@ -55,8 +52,9 @@ class LangChainToolAdapter(ThirdPartyToolAdapter):
             True if LangChain is available, False otherwise
         """
         try:
-            import langchain_core.tools
             import langchain_community.tools
+            import langchain_core.tools
+
             return True
         except ImportError:
             return False
@@ -96,7 +94,7 @@ class LangChainToolAdapter(ThirdPartyToolAdapter):
                             tools.append(tool_info)
 
             # Pattern 3: Toolkit with get_tools() method
-            elif hasattr(source, 'get_tools') and callable(getattr(source, 'get_tools')):
+            elif hasattr(source, "get_tools") and callable(getattr(source, "get_tools")):
                 try:
                     toolkit_tools = source.get_tools()
                     for tool in toolkit_tools:
@@ -108,7 +106,7 @@ class LangChainToolAdapter(ThirdPartyToolAdapter):
                     logger.error(f"Error getting tools from toolkit: {e}")
 
             # Pattern 4: Module with tool attributes
-            elif hasattr(source, '__dict__'):
+            elif hasattr(source, "__dict__"):
                 for name, obj in source.__dict__.items():
                     if self._is_langchain_tool(obj):
                         tool_info = self._create_langchain_tool_info(obj)
@@ -143,22 +141,22 @@ class LangChainToolAdapter(ThirdPartyToolAdapter):
                 if args and not kwargs:
                     # For single argument tools, use the first arg as input
                     if len(args) == 1:
-                        if hasattr(langchain_tool, 'args_schema'):
+                        if hasattr(langchain_tool, "args_schema"):
                             # Get the first field name from the schema
                             schema = langchain_tool.args_schema
-                            if hasattr(schema, '__fields__'):
+                            if hasattr(schema, "__fields__"):
                                 field_names = list(schema.__fields__.keys())
                                 if field_names:
                                     kwargs[field_names[0]] = args[0]
                         else:
                             # Default to 'query' or 'input'
-                            kwargs['query'] = args[0]
+                            kwargs["query"] = args[0]
 
                 # Execute the LangChain tool
-                if hasattr(langchain_tool, 'invoke'):
+                if hasattr(langchain_tool, "invoke"):
                     # Use invoke method (preferred for newer LangChain versions)
                     result = langchain_tool.invoke(kwargs)
-                elif hasattr(langchain_tool, 'run'):
+                elif hasattr(langchain_tool, "run"):
                     # Use run method (older LangChain versions)
                     if kwargs:
                         result = langchain_tool.run(**kwargs)
@@ -231,13 +229,11 @@ class LangChainToolAdapter(ThirdPartyToolAdapter):
                 return True
 
             # Check if it has LangChain tool attributes
-            if (hasattr(obj, 'name') and hasattr(obj, 'description') and
-                (hasattr(obj, 'run') or hasattr(obj, 'invoke'))):
+            if hasattr(obj, "name") and hasattr(obj, "description") and (hasattr(obj, "run") or hasattr(obj, "invoke")):
                 return True
 
             # Check for function tools (have __name__ and specific attributes)
-            if (hasattr(obj, '__name__') and hasattr(obj, 'description') and
-                hasattr(obj, 'args_schema')):
+            if hasattr(obj, "__name__") and hasattr(obj, "description") and hasattr(obj, "args_schema"):
                 return True
 
             return False
@@ -257,36 +253,33 @@ class LangChainToolAdapter(ThirdPartyToolAdapter):
         """
         try:
             # Get tool name
-            name = getattr(tool, 'name', getattr(tool, '__name__', 'unknown_tool'))
+            name = getattr(tool, "name", getattr(tool, "__name__", "unknown_tool"))
 
             # Get tool description
             description = (
-                getattr(tool, 'description', None) or
-                getattr(tool, '__doc__', None) or
-                f"LangChain tool: {name}"
+                getattr(tool, "description", None) or getattr(tool, "__doc__", None) or f"LangChain tool: {name}"
             )
 
             # Get parameters from args_schema if available
             parameters = {}
-            if hasattr(tool, 'args_schema') and tool.args_schema:
+            if hasattr(tool, "args_schema") and tool.args_schema:
                 try:
                     schema = tool.args_schema
-                    if hasattr(schema, '__fields__'):
+                    if hasattr(schema, "__fields__"):
                         # Pydantic v1 style
                         parameters = {
                             field_name: {
-                                'type': field.type_,
-                                'description': field.field_info.description if hasattr(field.field_info, 'description') else None
+                                "type": field.type_,
+                                "description": (
+                                    field.field_info.description if hasattr(field.field_info, "description") else None
+                                ),
                             }
                             for field_name, field in schema.__fields__.items()
                         }
-                    elif hasattr(schema, 'model_fields'):
+                    elif hasattr(schema, "model_fields"):
                         # Pydantic v2 style
                         parameters = {
-                            field_name: {
-                                'type': field.annotation,
-                                'description': field.description
-                            }
+                            field_name: {"type": field.annotation, "description": field.description}
                             for field_name, field in schema.model_fields.items()
                         }
                 except Exception as e:
@@ -300,17 +293,18 @@ class LangChainToolAdapter(ThirdPartyToolAdapter):
                 adapter=self,
                 parameters=parameters,
                 metadata={
-                    'tool_class': type(tool).__name__,
-                    'has_invoke': hasattr(tool, 'invoke'),
-                    'has_run': hasattr(tool, 'run'),
-                    'has_args_schema': hasattr(tool, 'args_schema'),
-                    'module': getattr(type(tool), '__module__', 'unknown')
-                }
+                    "tool_class": type(tool).__name__,
+                    "has_invoke": hasattr(tool, "invoke"),
+                    "has_run": hasattr(tool, "run"),
+                    "has_args_schema": hasattr(tool, "args_schema"),
+                    "module": getattr(type(tool), "__module__", "unknown"),
+                },
             )
 
         except Exception as e:
             logger.error(f"Error creating LangChain tool info: {e}")
             return None
+
 
 # Example LangChain tool discovery functions
 def discover_langchain_community_tools() -> List[str]:
@@ -331,18 +325,16 @@ def discover_langchain_community_tools() -> List[str]:
     try:
         # Try to import and discover common LangChain tools
         tool_modules = [
-            'langchain_community.tools.tavily_search',
-            'langchain_community.tools.wikipedia',
-            'langchain_community.tools.serpapi',
-            'langchain_community.tools.google_search',
+            "langchain_community.tools.tavily_search",
+            "langchain_community.tools.wikipedia",
+            "langchain_community.tools.serpapi",
+            "langchain_community.tools.google_search",
         ]
 
         for module_name in tool_modules:
             try:
                 module = importlib.import_module(module_name)
-                tool_ids = third_party_registry.discover_tools_from_source(
-                    module, ThirdPartyToolType.LANGCHAIN
-                )
+                tool_ids = third_party_registry.discover_tools_from_source(module, ThirdPartyToolType.LANGCHAIN)
                 registered_tools.extend(tool_ids)
             except ImportError:
                 logger.debug(f"Could not import {module_name}")
@@ -355,6 +347,7 @@ def discover_langchain_community_tools() -> List[str]:
         logger.error(f"Error discovering LangChain community tools: {e}")
 
     return registered_tools
+
 
 def load_langchain_tools(tool_names: List[str]) -> List[str]:
     """
@@ -381,9 +374,7 @@ def load_langchain_tools(tool_names: List[str]) -> List[str]:
         tools = load_tools(tool_names)
 
         # Register the loaded tools
-        tool_ids = third_party_registry.discover_tools_from_source(
-            tools, ThirdPartyToolType.LANGCHAIN
-        )
+        tool_ids = third_party_registry.discover_tools_from_source(tools, ThirdPartyToolType.LANGCHAIN)
         registered_tools.extend(tool_ids)
 
         logger.info(f"Loaded {len(registered_tools)} LangChain tools: {tool_names}")
@@ -392,6 +383,7 @@ def load_langchain_tools(tool_names: List[str]) -> List[str]:
         logger.error(f"Error loading LangChain tools {tool_names}: {e}")
 
     return registered_tools
+
 
 def create_example_langchain_tools() -> List[str]:
     """
@@ -417,7 +409,7 @@ def create_example_langchain_tools() -> List[str]:
             """Calculate mathematical expressions safely."""
             try:
                 # Simple calculator for basic operations
-                allowed_chars = set('0123456789+-*/.() ')
+                allowed_chars = set("0123456789+-*/.() ")
                 if not all(c in allowed_chars for c in expression):
                     return "Error: Only basic mathematical operations are allowed"
 
@@ -446,9 +438,7 @@ def create_example_langchain_tools() -> List[str]:
         example_tools = [calculator, text_length, word_count, reverse_text]
 
         # Register the tools
-        tool_ids = third_party_registry.discover_tools_from_source(
-            example_tools, ThirdPartyToolType.LANGCHAIN
-        )
+        tool_ids = third_party_registry.discover_tools_from_source(example_tools, ThirdPartyToolType.LANGCHAIN)
         registered_tools.extend(tool_ids)
 
         logger.info(f"Created {len(registered_tools)} example LangChain tools")
@@ -460,10 +450,11 @@ def create_example_langchain_tools() -> List[str]:
 
     return registered_tools
 
+
 # Export key functions
 __all__ = [
-    'LangChainToolAdapter',
-    'discover_langchain_community_tools',
-    'load_langchain_tools',
-    'create_example_langchain_tools'
+    "LangChainToolAdapter",
+    "discover_langchain_community_tools",
+    "load_langchain_tools",
+    "create_example_langchain_tools",
 ]

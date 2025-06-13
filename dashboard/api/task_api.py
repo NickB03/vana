@@ -4,16 +4,17 @@ Task API for VANA Dashboard
 This module provides functions to retrieve task execution data from the VANA system.
 """
 
-import os
-import sys
 import logging
-from datetime import datetime, timedelta
+import os
 import random
+import sys
+from datetime import datetime, timedelta
 
 # Add the parent directory to the path so we can import our modules
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 logger = logging.getLogger(__name__)
+
 
 def get_task_summary(time_range="day"):
     """
@@ -33,6 +34,7 @@ def get_task_summary(time_range="day"):
         logging.error(f"Error fetching task summary: {e}")
         return generate_mock_task_summary(time_range)
 
+
 def generate_mock_task_summary(time_range="day"):
     """
     Generate mock task summary data.
@@ -50,8 +52,9 @@ def generate_mock_task_summary(time_range="day"):
         "pending_tasks": random.randint(0, 10),
         "average_duration": random.uniform(0.5, 5.0),
         "success_rate": random.uniform(0.8, 1.0),
-        "time_range": time_range
+        "time_range": time_range,
     }
+
 
 def get_task_details(task_id=None):
     """
@@ -71,6 +74,7 @@ def get_task_details(task_id=None):
         logging.error(f"Error fetching task details: {e}")
         return generate_mock_task_details(task_id)
 
+
 def generate_mock_task_details(task_id=None):
     """
     Generate mock task details data.
@@ -83,8 +87,13 @@ def generate_mock_task_details(task_id=None):
     """
     # Define task types
     task_types = [
-        "memory_retrieval", "memory_storage", "knowledge_graph_query",
-        "vector_search", "web_search", "task_planning", "agent_coordination"
+        "memory_retrieval",
+        "memory_storage",
+        "knowledge_graph_query",
+        "vector_search",
+        "web_search",
+        "task_planning",
+        "agent_coordination",
     ]
 
     # Define task statuses
@@ -106,8 +115,8 @@ def generate_mock_task_details(task_id=None):
             "details": {
                 "input": f"Task input for {task_id}",
                 "output": f"Task output for {task_id}",
-                "error": None if random.random() > 0.2 else f"Error in task {task_id}"
-            }
+                "error": None if random.random() > 0.2 else f"Error in task {task_id}",
+            },
         }
 
     # Otherwise, return details for multiple tasks
@@ -125,8 +134,8 @@ def generate_mock_task_details(task_id=None):
             "details": {
                 "input": f"Task input for {task_id}",
                 "output": f"Task output for {task_id}",
-                "error": None if random.random() > 0.2 else f"Error in task {task_id}"
-            }
+                "error": None if random.random() > 0.2 else f"Error in task {task_id}",
+            },
         }
         tasks.append(task)
 
@@ -134,6 +143,7 @@ def generate_mock_task_details(task_id=None):
     tasks.sort(key=lambda x: x["created_at"], reverse=True)
 
     return tasks
+
 
 def get_task_timeline(time_range="day"):
     """
@@ -153,6 +163,7 @@ def get_task_timeline(time_range="day"):
         logging.error(f"Error fetching task timeline: {e}")
         return generate_mock_task_timeline(time_range)
 
+
 def generate_mock_task_timeline(time_range="day"):
     """
     Generate mock task timeline data.
@@ -167,8 +178,13 @@ def generate_mock_task_timeline(time_range="day"):
 
     # Define task types
     task_types = [
-        "memory_retrieval", "memory_storage", "knowledge_graph_query",
-        "vector_search", "web_search", "task_planning", "agent_coordination"
+        "memory_retrieval",
+        "memory_storage",
+        "knowledge_graph_query",
+        "vector_search",
+        "web_search",
+        "task_planning",
+        "agent_coordination",
     ]
 
     # Define task statuses
@@ -191,7 +207,7 @@ def generate_mock_task_timeline(time_range="day"):
             "start_time": start_time.isoformat(),
             "end_time": end_time.isoformat(),
             "duration": duration,
-            "agent": random.choice(agents)
+            "agent": random.choice(agents),
         }
         tasks.append(task)
 
@@ -199,6 +215,7 @@ def generate_mock_task_timeline(time_range="day"):
     tasks.sort(key=lambda x: x["start_time"])
 
     return tasks
+
 
 # Create a simple API object for compatibility
 class TaskAPI:
@@ -212,6 +229,7 @@ class TaskAPI:
 
     def get_timeline(self, time_range="day"):
         return get_task_timeline(time_range)
+
 
 # Create the API instance
 task_api = TaskAPI()

@@ -5,22 +5,25 @@ This module provides self-contained implementations of all VANA tools
 for production deployment without external dependencies.
 """
 
-import os
 import json
 import logging
-# Removed unused imports - keeping imports minimal
+import os
 
 from google.adk.tools import FunctionTool
+
+# Removed unused imports - keeping imports minimal
+
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+
 # File System Tools - Self-contained production implementations
 def read_file(file_path: str) -> str:
     """📖 Read the contents of a file with enhanced error handling and security checks."""
     try:
-        with open(file_path, 'r', encoding='utf-8') as f:
+        with open(file_path, "r", encoding="utf-8") as f:
             content = f.read()
         logger.info(f"Successfully read file: {file_path}")
         return content
@@ -28,6 +31,7 @@ def read_file(file_path: str) -> str:
         error_msg = f"Error reading file {file_path}: {str(e)}"
         logger.error(error_msg)
         return error_msg
+
 
 def write_file(file_path: str, content: str) -> str:
     """✍️ Write content to a file with enhanced validation and error handling."""
@@ -61,7 +65,7 @@ def write_file(file_path: str, content: str) -> str:
 
         # Write file with proper error handling
         try:
-            with open(file_path, 'w', encoding='utf-8') as f:
+            with open(file_path, "w", encoding="utf-8") as f:
                 f.write(content)
             logger.info(f"Successfully wrote to file: {file_path}")
             return f"✅ Successfully wrote {len(content)} characters to {file_path}"
@@ -78,21 +82,19 @@ def write_file(file_path: str, content: str) -> str:
         logger.error(error_msg)
         return error_msg
 
+
 def list_directory(directory_path: str) -> str:
     """📁 List contents of a directory with enhanced formatting and metadata."""
     try:
         items = os.listdir(directory_path)
-        result = {
-            "directory": directory_path,
-            "items": items,
-            "count": len(items)
-        }
+        result = {"directory": directory_path, "items": items, "count": len(items)}
         logger.info(f"Listed directory: {directory_path} ({len(items)} items)")
         return json.dumps(result, indent=2)
     except Exception as e:
         error_msg = f"Error listing directory {directory_path}: {str(e)}"
         logger.error(error_msg)
         return error_msg
+
 
 def file_exists(file_path: str) -> str:
     """🔍 Check if a file or directory exists with detailed status information."""
@@ -102,13 +104,14 @@ def file_exists(file_path: str) -> str:
             "path": file_path,
             "exists": exists,
             "is_file": os.path.isfile(file_path) if exists else False,
-            "is_directory": os.path.isdir(file_path) if exists else False
+            "is_directory": os.path.isdir(file_path) if exists else False,
         }
         return json.dumps(result, indent=2)
     except Exception as e:
         error_msg = f"Error checking file existence {file_path}: {str(e)}"
         logger.error(error_msg)
         return error_msg
+
 
 # Create FunctionTool instances with explicit names
 adk_read_file = FunctionTool(func=read_file)
@@ -119,6 +122,7 @@ adk_list_directory = FunctionTool(func=list_directory)
 adk_list_directory.name = "list_directory"
 adk_file_exists = FunctionTool(func=file_exists)
 adk_file_exists.name = "file_exists"
+
 
 # Search Tools - Real production implementations with ADK integration
 def vector_search(query: str, max_results: int = 5) -> str:
@@ -138,19 +142,21 @@ def vector_search(query: str, max_results: int = 5) -> str:
         # Format results for ADK compatibility
         formatted_results = []
         for result in search_results:
-            formatted_results.append({
-                "content": result.get("content", ""),
-                "score": float(result.get("score", 0.0)),
-                "metadata": result.get("metadata", {}),
-                "source": "vertex_ai_vector_search"
-            })
+            formatted_results.append(
+                {
+                    "content": result.get("content", ""),
+                    "score": float(result.get("score", 0.0)),
+                    "metadata": result.get("metadata", {}),
+                    "source": "vertex_ai_vector_search",
+                }
+            )
 
         result = {
             "query": query,
             "results": formatted_results,
             "total": len(formatted_results),
             "mode": "production",
-            "service": "vertex_ai_vector_search"
+            "service": "vertex_ai_vector_search",
         }
 
         logger.info(f"Vector search completed: {len(formatted_results)} results")
@@ -163,13 +169,14 @@ def vector_search(query: str, max_results: int = 5) -> str:
             "query": query,
             "results": [
                 {"content": f"Fallback result for: {query}", "score": 0.75, "source": "fallback"},
-                {"content": f"Related fallback information: {query}", "score": 0.65, "source": "fallback"}
+                {"content": f"Related fallback information: {query}", "score": 0.65, "source": "fallback"},
             ],
             "total": 2,
             "mode": "fallback",
-            "error": str(e)
+            "error": str(e),
         }
         return json.dumps(result, indent=2)
+
 
 def web_search(query: str, max_results: int = 5) -> str:
     """🌐 Search the web for current information with enhanced formatting."""
@@ -177,7 +184,7 @@ def web_search(query: str, max_results: int = 5) -> str:
         # Lazy import to avoid HTTP requests during module import
         import requests
 
-        api_key = os.getenv('BRAVE_API_KEY')
+        api_key = os.getenv("BRAVE_API_KEY")
         if not api_key:
             return json.dumps({"error": "Brave API key not configured"}, indent=2)
 
@@ -189,12 +196,14 @@ def web_search(query: str, max_results: int = 5) -> str:
         if response.status_code == 200:
             data = response.json()
             results = []
-            for result in data.get('web', {}).get('results', [])[:max_results]:
-                results.append({
-                    'title': result.get('title', ''),
-                    'url': result.get('url', ''),
-                    'description': result.get('description', '')
-                })
+            for result in data.get("web", {}).get("results", [])[:max_results]:
+                results.append(
+                    {
+                        "title": result.get("title", ""),
+                        "url": result.get("url", ""),
+                        "description": result.get("description", ""),
+                    }
+                )
             logger.info(f"Web search completed: {len(results)} results")
             return json.dumps({"query": query, "results": results}, indent=2)
         else:
@@ -206,6 +215,7 @@ def web_search(query: str, max_results: int = 5) -> str:
         logger.error(error_msg)
         return json.dumps({"error": error_msg}, indent=2)
 
+
 def search_knowledge(query: str) -> str:
     """🧠 Search the VANA knowledge base with file-based fallback."""
     try:
@@ -214,6 +224,7 @@ def search_knowledge(query: str) -> str:
         # First try ADK Memory Service
         try:
             from lib._shared_libraries.adk_memory_service import get_adk_memory_service
+
             memory_service = get_adk_memory_service()
 
             if memory_service and memory_service.is_available():
@@ -233,26 +244,27 @@ def search_knowledge(query: str) -> str:
                 # Check if we got real results (not fallback)
                 if search_results and len(search_results) > 0:
                     has_real_content = any(
-                        "fallback" not in result.get("content", "").lower()
-                        for result in search_results
+                        "fallback" not in result.get("content", "").lower() for result in search_results
                     )
 
                     if has_real_content:
                         formatted_results = []
                         for result in search_results:
-                            formatted_results.append({
-                                "content": result.get("content", ""),
-                                "score": float(result.get("score", 0.0)),
-                                "metadata": result.get("metadata", {}),
-                                "source": result.get("source", "adk_memory")
-                            })
+                            formatted_results.append(
+                                {
+                                    "content": result.get("content", ""),
+                                    "score": float(result.get("score", 0.0)),
+                                    "metadata": result.get("metadata", {}),
+                                    "source": result.get("source", "adk_memory"),
+                                }
+                            )
 
                         result = {
                             "query": query,
                             "results": formatted_results,
                             "total": len(formatted_results),
                             "mode": "production",
-                            "service": "adk_memory_rag"
+                            "service": "adk_memory_rag",
                         }
 
                         logger.info(f"ADK memory search completed: {len(formatted_results)} results")
@@ -283,7 +295,7 @@ def search_knowledge(query: str) -> str:
                 continue
 
             try:
-                with open(md_file, 'r', encoding='utf-8') as f:
+                with open(md_file, "r", encoding="utf-8") as f:
                     content = f.read()
 
                 # Simple text search with scoring
@@ -303,7 +315,7 @@ def search_knowledge(query: str) -> str:
 
                 if score > 0:
                     # Extract relevant sections
-                    lines = content.split('\n')
+                    lines = content.split("\n")
                     relevant_lines = []
 
                     for i, line in enumerate(lines):
@@ -311,22 +323,24 @@ def search_knowledge(query: str) -> str:
                             # Include context around matching lines
                             start = max(0, i - 2)
                             end = min(len(lines), i + 3)
-                            context = '\n'.join(lines[start:end])
+                            context = "\n".join(lines[start:end])
                             relevant_lines.append(context)
 
                     if relevant_lines:
-                        content_excerpt = '\n\n'.join(relevant_lines[:3])  # Limit to 3 sections
+                        content_excerpt = "\n\n".join(relevant_lines[:3])  # Limit to 3 sections
 
-                        search_results.append({
-                            "content": content_excerpt,
-                            "score": min(score, 1.0),  # Cap at 1.0
-                            "metadata": {
-                                "file": md_file.name,
-                                "title": md_file.stem.replace('_', ' ').title(),
-                                "type": "vana_knowledge"
-                            },
-                            "source": "vana_knowledge_base"
-                        })
+                        search_results.append(
+                            {
+                                "content": content_excerpt,
+                                "score": min(score, 1.0),  # Cap at 1.0
+                                "metadata": {
+                                    "file": md_file.name,
+                                    "title": md_file.stem.replace("_", " ").title(),
+                                    "type": "vana_knowledge",
+                                },
+                                "source": "vana_knowledge_base",
+                            }
+                        )
 
             except Exception as e:
                 logger.warning(f"Error reading {md_file}: {e}")
@@ -341,7 +355,7 @@ def search_knowledge(query: str) -> str:
                 "results": search_results,
                 "total": len(search_results),
                 "mode": "file_based",
-                "service": "vana_knowledge_base"
+                "service": "vana_knowledge_base",
             }
 
             logger.info(f"File-based knowledge search completed: {len(search_results)} results")
@@ -354,6 +368,7 @@ def search_knowledge(query: str) -> str:
         logger.error(f"Knowledge search failed completely: {e}")
         return _create_fallback_result(query, str(e))
 
+
 def _create_fallback_result(query: str, error_msg: str) -> str:
     """Create a fallback result when knowledge search fails."""
     result = {
@@ -363,14 +378,15 @@ def _create_fallback_result(query: str, error_msg: str) -> str:
                 "content": f"I don't have specific information about '{query}' in my knowledge base. You might want to try a web search or ask for more general information about VANA capabilities.",
                 "score": 0.3,
                 "metadata": {"type": "fallback"},
-                "source": "fallback"
+                "source": "fallback",
             }
         ],
         "total": 1,
         "mode": "fallback",
-        "error": error_msg
+        "error": error_msg,
     }
     return json.dumps(result, indent=2)
+
 
 # Create FunctionTool instances with explicit names (NO underscore prefix - standardized naming)
 adk_vector_search = FunctionTool(func=vector_search)
@@ -382,28 +398,26 @@ adk_search_knowledge.name = "search_knowledge"
 
 # Knowledge Graph functionality removed - using ADK native memory systems only
 
+
 # System Tools - Self-contained production implementations
 def echo(message: str) -> str:
     """📢 Echo a message back with enhanced formatting for testing."""
     try:
         logger.info(f"Echo: {message}")
-        result = {
-            "message": message,
-            "timestamp": "now",
-            "status": "echoed",
-            "mode": "production"
-        }
+        result = {"message": message, "timestamp": "now", "status": "echoed", "mode": "production"}
         return json.dumps(result, indent=2)
     except Exception as e:
         error_msg = f"Echo error: {str(e)}"
         logger.error(error_msg)
         return error_msg
 
+
 def get_health_status() -> str:
     """💚 Get comprehensive system health status with detailed metrics."""
     try:
         # Get real memory service status
         from lib._shared_libraries.adk_memory_service import get_adk_memory_service
+
         memory_service = get_adk_memory_service()
         memory_info = memory_service.get_service_info()
 
@@ -411,6 +425,7 @@ def get_health_status() -> str:
         vector_search_status = "unknown"
         try:
             from tools.vector_search.vector_search_client import VectorSearchClient
+
             vector_client = VectorSearchClient()
             vector_search_status = "configured" if vector_client else "unavailable"
         except Exception:
@@ -430,15 +445,15 @@ def get_health_status() -> str:
                     "service_type": memory_info["service_type"],
                     "available": memory_info["available"],
                     "supports_persistence": memory_info["supports_persistence"],
-                    "supports_semantic_search": memory_info["supports_semantic_search"]
-                }
+                    "supports_semantic_search": memory_info["supports_semantic_search"],
+                },
             },
             "environment": {
                 "google_cloud_project": os.getenv("GOOGLE_CLOUD_PROJECT", "not_set"),
                 "region": os.getenv("GOOGLE_CLOUD_REGION", "not_set"),
                 "vertex_ai": os.getenv("GOOGLE_GENAI_USE_VERTEXAI", "not_set"),
-                "rag_corpus": os.getenv("RAG_CORPUS_RESOURCE_NAME", "not_set")
-            }
+                "rag_corpus": os.getenv("RAG_CORPUS_RESOURCE_NAME", "not_set"),
+            },
         }
         return json.dumps(result, indent=2)
     except Exception as e:
@@ -446,12 +461,14 @@ def get_health_status() -> str:
         logger.error(error_msg)
         return error_msg
 
+
 # Enhanced Agent Coordination Tools - Self-contained production implementations
 def coordinate_task(task_description: str, assigned_agent: str = "") -> str:
     """🎯 Coordinate task assignment with real agent discovery and routing."""
     try:
         # Import real coordination tools
         from lib._tools.real_coordination_tools import real_coordinate_task
+
         return real_coordinate_task(task_description, assigned_agent)
     except ImportError as e:
         logger.warning(f"Real coordination tools not available, using fallback: {e}")
@@ -462,7 +479,7 @@ def coordinate_task(task_description: str, assigned_agent: str = "") -> str:
                 "task": task_description,
                 "assigned_agent": assigned_agent or "auto-select",
                 "status": "coordinated_fallback",
-                "warning": "Real coordination not available, using fallback"
+                "warning": "Real coordination not available, using fallback",
             }
             return json.dumps(result, indent=2)
         except Exception as fallback_e:
@@ -474,11 +491,13 @@ def coordinate_task(task_description: str, assigned_agent: str = "") -> str:
         logger.error(error_msg)
         return error_msg
 
+
 def delegate_to_agent(agent_name: str, task: str, context: str = "") -> str:
     """🤝 Delegate task with real agent communication."""
     try:
         # Import real coordination tools
         from lib._tools.real_coordination_tools import real_delegate_to_agent
+
         return real_delegate_to_agent(agent_name, task, context)
     except ImportError as e:
         logger.warning(f"Real delegation tools not available, using fallback: {e}")
@@ -490,7 +509,7 @@ def delegate_to_agent(agent_name: str, task: str, context: str = "") -> str:
                 "task": task,
                 "context": context,
                 "status": "delegated_fallback",
-                "warning": "Real delegation not available, using fallback"
+                "warning": "Real delegation not available, using fallback",
             }
             return json.dumps(result, indent=2)
         except Exception as fallback_e:
@@ -502,11 +521,13 @@ def delegate_to_agent(agent_name: str, task: str, context: str = "") -> str:
         logger.error(error_msg)
         return error_msg
 
+
 def get_agent_status() -> str:
     """📊 Get real status of all agents with actual discovery."""
     try:
         # Import real coordination tools
         from lib._tools.real_coordination_tools import real_get_agent_status
+
         return real_get_agent_status()
     except ImportError as e:
         logger.warning(f"Real agent status tools not available, using fallback: {e}")
@@ -517,7 +538,7 @@ def get_agent_status() -> str:
                 "discoverable_agents": 0,
                 "agents": [],
                 "status": "discovery_unavailable",
-                "warning": "Real agent discovery not available, using fallback"
+                "warning": "Real agent discovery not available, using fallback",
             }
             return json.dumps(result, indent=2)
         except Exception as fallback_e:
@@ -529,6 +550,7 @@ def get_agent_status() -> str:
         logger.error(error_msg)
         return error_msg
 
+
 def transfer_to_agent(agent_name: str, context: str = "") -> str:
     """🔄 Transfer conversation to specified agent (Google ADK Pattern)."""
     try:
@@ -539,13 +561,14 @@ def transfer_to_agent(agent_name: str, context: str = "") -> str:
             "context": context,
             "status": "transferred",
             "mode": "production",
-            "pattern": "google_adk"
+            "pattern": "google_adk",
         }
         return json.dumps(result, indent=2)
     except Exception as e:
         error_msg = f"Agent transfer error: {str(e)}"
         logger.error(error_msg)
         return error_msg
+
 
 # Create FunctionTool instances with explicit names (NO underscore prefix - standardized naming)
 adk_echo = FunctionTool(func=echo)
@@ -560,6 +583,7 @@ adk_get_agent_status = FunctionTool(func=get_agent_status)
 adk_get_agent_status.name = "get_agent_status"
 adk_transfer_to_agent = FunctionTool(func=transfer_to_agent)
 adk_transfer_to_agent.name = "transfer_to_agent"
+
 
 # Intelligent Task Analysis Tools - Production implementations
 def analyze_task(task: str, context: str = "") -> str:
@@ -580,19 +604,22 @@ def analyze_task(task: str, context: str = "") -> str:
                 "estimated_duration": analysis.estimated_duration,
                 "resource_requirements": analysis.resource_requirements,
                 "confidence_score": analysis.confidence_score,
-                "reasoning": analysis.reasoning
+                "reasoning": analysis.reasoning,
             },
             "mode": "intelligent_analysis",
-            "service": "task_analyzer"
+            "service": "task_analyzer",
         }
 
-        logger.info(f"Task analysis completed: {analysis.task_type.value} ({analysis.complexity.value}) - {analysis.confidence_score:.2f} confidence")
+        logger.info(
+            f"Task analysis completed: {analysis.task_type.value} ({analysis.complexity.value}) - {analysis.confidence_score:.2f} confidence"
+        )
         return json.dumps(result, indent=2)
 
     except Exception as e:
         error_msg = f"Task analysis error: {str(e)}"
         logger.error(error_msg)
         return json.dumps({"error": error_msg}, indent=2)
+
 
 def match_capabilities(task: str, context: str = "", required_capabilities: str = "") -> str:
     """🎯 Match task requirements to available agent capabilities using intelligent capability matcher."""
@@ -612,27 +639,40 @@ def match_capabilities(task: str, context: str = "", required_capabilities: str 
         result = {
             "task": task,
             "matching_result": {
-                "best_match": {
-                    "agent_name": matching_result.best_match.agent_name if matching_result.best_match else None,
-                    "match_score": matching_result.best_match.match_score if matching_result.best_match else 0.0,
-                    "matched_capabilities": matching_result.best_match.matched_capabilities if matching_result.best_match else [],
-                    "missing_capabilities": matching_result.best_match.missing_capabilities if matching_result.best_match else [],
-                    "capability_coverage": matching_result.best_match.capability_coverage if matching_result.best_match else 0.0,
-                    "overall_score": matching_result.best_match.overall_score if matching_result.best_match else 0.0,
-                    "reasoning": matching_result.best_match.reasoning if matching_result.best_match else "No suitable match found"
-                } if matching_result.best_match else None,
-                "alternative_matches": [
+                "best_match": (
                     {
-                        "agent_name": alt.agent_name,
-                        "overall_score": alt.overall_score,
-                        "reasoning": alt.reasoning
-                    } for alt in matching_result.alternative_matches
+                        "agent_name": matching_result.best_match.agent_name if matching_result.best_match else None,
+                        "match_score": matching_result.best_match.match_score if matching_result.best_match else 0.0,
+                        "matched_capabilities": (
+                            matching_result.best_match.matched_capabilities if matching_result.best_match else []
+                        ),
+                        "missing_capabilities": (
+                            matching_result.best_match.missing_capabilities if matching_result.best_match else []
+                        ),
+                        "capability_coverage": (
+                            matching_result.best_match.capability_coverage if matching_result.best_match else 0.0
+                        ),
+                        "overall_score": (
+                            matching_result.best_match.overall_score if matching_result.best_match else 0.0
+                        ),
+                        "reasoning": (
+                            matching_result.best_match.reasoning
+                            if matching_result.best_match
+                            else "No suitable match found"
+                        ),
+                    }
+                    if matching_result.best_match
+                    else None
+                ),
+                "alternative_matches": [
+                    {"agent_name": alt.agent_name, "overall_score": alt.overall_score, "reasoning": alt.reasoning}
+                    for alt in matching_result.alternative_matches
                 ],
                 "coverage_analysis": matching_result.coverage_analysis,
-                "recommendations": matching_result.recommendations
+                "recommendations": matching_result.recommendations,
             },
             "mode": "intelligent_matching",
-            "service": "capability_matcher"
+            "service": "capability_matcher",
         }
 
         best_agent = matching_result.best_match.agent_name if matching_result.best_match else "none"
@@ -644,6 +684,7 @@ def match_capabilities(task: str, context: str = "", required_capabilities: str 
         error_msg = f"Capability matching error: {str(e)}"
         logger.error(error_msg)
         return json.dumps({"error": error_msg}, indent=2)
+
 
 def classify_task(task: str, context: str = "") -> str:
     """🏷️ Classify task and recommend appropriate agents using intelligent task classifier."""
@@ -661,23 +702,24 @@ def classify_task(task: str, context: str = "") -> str:
                     "agent_name": classification.primary_recommendation.agent_name,
                     "confidence": classification.primary_recommendation.confidence,
                     "reasoning": classification.primary_recommendation.reasoning,
-                    "fallback_agents": classification.primary_recommendation.fallback_agents
+                    "fallback_agents": classification.primary_recommendation.fallback_agents,
                 },
                 "alternative_recommendations": [
                     {
                         "agent_category": alt.agent_category.value,
                         "agent_name": alt.agent_name,
                         "confidence": alt.confidence,
-                        "reasoning": alt.reasoning
-                    } for alt in classification.alternative_recommendations
+                        "reasoning": alt.reasoning,
+                    }
+                    for alt in classification.alternative_recommendations
                 ],
                 "decomposition_suggested": classification.decomposition_suggested,
                 "parallel_execution": classification.parallel_execution,
                 "estimated_agents_needed": classification.estimated_agents_needed,
-                "routing_strategy": classification.routing_strategy
+                "routing_strategy": classification.routing_strategy,
             },
             "mode": "intelligent_classification",
-            "service": "task_classifier"
+            "service": "task_classifier",
         }
 
         primary_agent = classification.primary_recommendation.agent_name
@@ -690,6 +732,7 @@ def classify_task(task: str, context: str = "") -> str:
         logger.error(error_msg)
         return json.dumps({"error": error_msg}, indent=2)
 
+
 # Create FunctionTool instances for intelligent analysis tools
 adk_analyze_task = FunctionTool(func=analyze_task)
 adk_analyze_task.name = "analyze_task"
@@ -698,13 +741,15 @@ adk_match_capabilities.name = "match_capabilities"
 adk_classify_task = FunctionTool(func=classify_task)
 adk_classify_task.name = "classify_task"
 
+
 # Multi-Agent Workflow Management Tools - Production implementations
-def create_workflow(name: str, description: str, template_name: str = "",
-                   strategy: str = "adaptive", priority: str = "medium") -> str:
+def create_workflow(
+    name: str, description: str, template_name: str = "", strategy: str = "adaptive", priority: str = "medium"
+) -> str:
     """🔄 Create a new multi-agent workflow for complex task orchestration."""
     try:
-        import uuid
         import time
+        import uuid
 
         # Generate a workflow ID
         workflow_id = str(uuid.uuid4())
@@ -715,29 +760,77 @@ def create_workflow(name: str, description: str, template_name: str = "",
 
         if template_name == "data_analysis" or ("data" in description_lower and "analysis" in description_lower):
             steps = [
-                {"name": "Data Validation", "description": f"Validate and prepare data for: {description}", "agent_name": "data_science"},
-                {"name": "Statistical Analysis", "description": f"Perform statistical analysis: {description}", "agent_name": "data_science"},
-                {"name": "Visualization Generation", "description": f"Generate visualizations: {description}", "agent_name": "data_science"},
-                {"name": "Results Summary", "description": f"Compile analysis results: {description}", "agent_name": "vana"}
+                {
+                    "name": "Data Validation",
+                    "description": f"Validate and prepare data for: {description}",
+                    "agent_name": "data_science",
+                },
+                {
+                    "name": "Statistical Analysis",
+                    "description": f"Perform statistical analysis: {description}",
+                    "agent_name": "data_science",
+                },
+                {
+                    "name": "Visualization Generation",
+                    "description": f"Generate visualizations: {description}",
+                    "agent_name": "data_science",
+                },
+                {
+                    "name": "Results Summary",
+                    "description": f"Compile analysis results: {description}",
+                    "agent_name": "vana",
+                },
             ]
         elif template_name == "code_execution" or "code" in description_lower:
             steps = [
-                {"name": "Code Validation", "description": f"Validate code security and syntax: {description}", "agent_name": "code_execution"},
-                {"name": "Code Execution", "description": f"Execute code in secure environment: {description}", "agent_name": "code_execution"},
-                {"name": "Results Analysis", "description": f"Analyze execution results: {description}", "agent_name": "vana"}
+                {
+                    "name": "Code Validation",
+                    "description": f"Validate code security and syntax: {description}",
+                    "agent_name": "code_execution",
+                },
+                {
+                    "name": "Code Execution",
+                    "description": f"Execute code in secure environment: {description}",
+                    "agent_name": "code_execution",
+                },
+                {
+                    "name": "Results Analysis",
+                    "description": f"Analyze execution results: {description}",
+                    "agent_name": "vana",
+                },
             ]
         elif template_name == "research_and_analysis" or "research" in description_lower:
             steps = [
-                {"name": "Information Gathering", "description": f"Gather relevant information: {description}", "agent_name": "memory"},
-                {"name": "Web Research", "description": f"Conduct web research: {description}", "agent_name": "specialists"},
-                {"name": "Data Analysis", "description": f"Analyze gathered data: {description}", "agent_name": "data_science"},
-                {"name": "Synthesis and Report", "description": f"Synthesize findings: {description}", "agent_name": "vana"}
+                {
+                    "name": "Information Gathering",
+                    "description": f"Gather relevant information: {description}",
+                    "agent_name": "memory",
+                },
+                {
+                    "name": "Web Research",
+                    "description": f"Conduct web research: {description}",
+                    "agent_name": "specialists",
+                },
+                {
+                    "name": "Data Analysis",
+                    "description": f"Analyze gathered data: {description}",
+                    "agent_name": "data_science",
+                },
+                {
+                    "name": "Synthesis and Report",
+                    "description": f"Synthesize findings: {description}",
+                    "agent_name": "vana",
+                },
             ]
         else:
             steps = [
-                {"name": "Task Analysis", "description": f"Analyze task requirements: {description}", "agent_name": "vana"},
+                {
+                    "name": "Task Analysis",
+                    "description": f"Analyze task requirements: {description}",
+                    "agent_name": "vana",
+                },
                 {"name": "Task Execution", "description": f"Execute task: {description}", "agent_name": "specialists"},
-                {"name": "Results Summary", "description": f"Summarize results: {description}", "agent_name": "vana"}
+                {"name": "Results Summary", "description": f"Summarize results: {description}", "agent_name": "vana"},
             ]
 
         result = {
@@ -752,7 +845,7 @@ def create_workflow(name: str, description: str, template_name: str = "",
             "total_steps": len(steps),
             "status": "created",
             "mode": "workflow_management",
-            "created_at": time.time()
+            "created_at": time.time(),
         }
 
         logger.info(f"Created workflow: {workflow_id} ({name}) with {len(steps)} steps")
@@ -762,6 +855,7 @@ def create_workflow(name: str, description: str, template_name: str = "",
         error_msg = f"Workflow creation error: {str(e)}"
         logger.error(error_msg)
         return json.dumps({"error": error_msg}, indent=2)
+
 
 def start_workflow(workflow_id: str) -> str:
     """▶️ Start execution of a multi-agent workflow."""
@@ -790,7 +884,7 @@ def start_workflow(workflow_id: str) -> str:
             "results": {"status": "Workflow started successfully", "simulation": True},
             "errors": [],
             "mode": "workflow_execution",
-            "note": "This is a simulated start - full async execution will be available in production"
+            "note": "This is a simulated start - full async execution will be available in production",
         }
 
         logger.info(f"Started workflow: {workflow_id} (simulated)")
@@ -800,6 +894,7 @@ def start_workflow(workflow_id: str) -> str:
         error_msg = f"Workflow start error: {str(e)}"
         logger.error(error_msg)
         return json.dumps({"error": error_msg}, indent=2)
+
 
 def get_workflow_status(workflow_id: str) -> str:
     """📊 Get status and progress of a workflow."""
@@ -821,14 +916,14 @@ def get_workflow_status(workflow_id: str) -> str:
             "start_time": time.time() - 300,  # Started 5 minutes ago
             "execution_time": 300.0,
             "errors": [],
-            "last_updated": time.time()
+            "last_updated": time.time(),
         }
 
         result = {
             "action": "get_workflow_status",
             "workflow_status": status,
             "mode": "workflow_monitoring",
-            "note": "This is simulated status - full workflow tracking will be available in production"
+            "note": "This is simulated status - full workflow tracking will be available in production",
         }
 
         return json.dumps(result, indent=2)
@@ -837,6 +932,7 @@ def get_workflow_status(workflow_id: str) -> str:
         error_msg = f"Workflow status error: {str(e)}"
         logger.error(error_msg)
         return json.dumps({"error": error_msg}, indent=2)
+
 
 def list_workflows(state_filter: str = "") -> str:
     """📋 List all workflows with optional state filtering."""
@@ -859,7 +955,7 @@ def list_workflows(state_filter: str = "") -> str:
                 "end_time": time.time() - 600,
                 "execution_time": 3000.0,
                 "errors": [],
-                "last_updated": time.time() - 600
+                "last_updated": time.time() - 600,
             },
             {
                 "workflow_id": str(uuid.uuid4()),
@@ -873,8 +969,8 @@ def list_workflows(state_filter: str = "") -> str:
                 "start_time": time.time() - 1800,
                 "execution_time": 1800.0,
                 "errors": [],
-                "last_updated": time.time() - 60
-            }
+                "last_updated": time.time() - 60,
+            },
         ]
 
         # Apply state filter if provided
@@ -889,7 +985,7 @@ def list_workflows(state_filter: str = "") -> str:
             "total_count": len(filtered_workflows),
             "state_filter": state_filter or "all",
             "mode": "workflow_management",
-            "note": "These are sample workflows - full workflow persistence will be available in production"
+            "note": "These are sample workflows - full workflow persistence will be available in production",
         }
 
         logger.info(f"Listed {len(filtered_workflows)} workflows")
@@ -899,6 +995,7 @@ def list_workflows(state_filter: str = "") -> str:
         error_msg = f"Workflow list error: {str(e)}"
         logger.error(error_msg)
         return json.dumps({"error": error_msg}, indent=2)
+
 
 def pause_workflow(workflow_id: str) -> str:
     """⏸️ Pause a running workflow."""
@@ -913,7 +1010,7 @@ def pause_workflow(workflow_id: str) -> str:
             "workflow_id": workflow_id,
             "success": success,
             "status": "paused" if success else "failed",
-            "mode": "workflow_control"
+            "mode": "workflow_control",
         }
 
         logger.info(f"Pause workflow {workflow_id}: {success}")
@@ -923,6 +1020,7 @@ def pause_workflow(workflow_id: str) -> str:
         error_msg = f"Workflow pause error: {str(e)}"
         logger.error(error_msg)
         return json.dumps({"error": error_msg}, indent=2)
+
 
 def resume_workflow(workflow_id: str) -> str:
     """▶️ Resume a paused workflow."""
@@ -937,7 +1035,7 @@ def resume_workflow(workflow_id: str) -> str:
             "workflow_id": workflow_id,
             "success": success,
             "status": "running" if success else "failed",
-            "mode": "workflow_control"
+            "mode": "workflow_control",
         }
 
         logger.info(f"Resume workflow {workflow_id}: {success}")
@@ -947,6 +1045,7 @@ def resume_workflow(workflow_id: str) -> str:
         error_msg = f"Workflow resume error: {str(e)}"
         logger.error(error_msg)
         return json.dumps({"error": error_msg}, indent=2)
+
 
 def cancel_workflow(workflow_id: str) -> str:
     """❌ Cancel a workflow."""
@@ -961,7 +1060,7 @@ def cancel_workflow(workflow_id: str) -> str:
             "workflow_id": workflow_id,
             "success": success,
             "status": "cancelled" if success else "failed",
-            "mode": "workflow_control"
+            "mode": "workflow_control",
         }
 
         logger.info(f"Cancel workflow {workflow_id}: {success}")
@@ -971,6 +1070,7 @@ def cancel_workflow(workflow_id: str) -> str:
         error_msg = f"Workflow cancel error: {str(e)}"
         logger.error(error_msg)
         return json.dumps({"error": error_msg}, indent=2)
+
 
 def get_workflow_templates() -> str:
     """📋 Get available workflow templates."""
@@ -982,7 +1082,7 @@ def get_workflow_templates() -> str:
             "research_and_analysis",
             "content_creation",
             "system_monitoring",
-            "multi_agent_collaboration"
+            "multi_agent_collaboration",
         ]
 
         template_descriptions = {
@@ -991,7 +1091,7 @@ def get_workflow_templates() -> str:
             "research_and_analysis": "Comprehensive research with information gathering, web research, analysis, and reporting",
             "content_creation": "Multi-stage content creation with research, generation, and enhancement",
             "system_monitoring": "System monitoring with health checks, performance analysis, and reporting",
-            "multi_agent_collaboration": "Complex multi-agent collaboration with task analysis, planning, and synthesis"
+            "multi_agent_collaboration": "Complex multi-agent collaboration with task analysis, planning, and synthesis",
         }
 
         result = {
@@ -1000,7 +1100,7 @@ def get_workflow_templates() -> str:
             "template_descriptions": template_descriptions,
             "total_templates": len(available_templates),
             "mode": "workflow_templates",
-            "status": "Templates available for workflow creation"
+            "status": "Templates available for workflow creation",
         }
 
         logger.info(f"Retrieved {len(available_templates)} workflow templates")
@@ -1010,6 +1110,7 @@ def get_workflow_templates() -> str:
         error_msg = f"Workflow templates error: {str(e)}"
         logger.error(error_msg)
         return json.dumps({"error": error_msg}, indent=2)
+
 
 # Create FunctionTool instances for workflow management tools
 adk_create_workflow = FunctionTool(func=create_workflow)

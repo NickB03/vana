@@ -23,9 +23,10 @@ from google.adk.tools import FunctionTool
 
 # Import specialist functions directly
 from agents.specialists.architecture_specialist import analyze_system_architecture
-from agents.specialists.ui_specialist import analyze_user_interface
 from agents.specialists.devops_specialist import analyze_infrastructure
 from agents.specialists.qa_specialist import analyze_testing_strategy
+from agents.specialists.ui_specialist import analyze_user_interface
+
 
 def architecture_tool_func(context: str) -> str:
     """
@@ -75,6 +76,7 @@ def architecture_tool_func(context: str) -> str:
 
 *Note: Detailed analysis available - specialist agent integration in progress.*"""
 
+
 def ui_tool_func(context: str) -> str:
     """
     UI/UX specialist tool function.
@@ -123,6 +125,7 @@ def ui_tool_func(context: str) -> str:
 - **Screen Readers**: ARIA labels and descriptions for assistive technology
 
 *Note: Detailed analysis available - specialist agent integration in progress.*"""
+
 
 def devops_tool_func(context: str) -> str:
     """
@@ -179,6 +182,7 @@ def devops_tool_func(context: str) -> str:
 
 *Note: Detailed analysis available - specialist agent integration in progress.*"""
 
+
 def qa_tool_func(context: str) -> str:
     """
     QA specialist tool function.
@@ -234,6 +238,7 @@ def qa_tool_func(context: str) -> str:
 
 *Note: Detailed analysis available - specialist agent integration in progress.*"""
 
+
 def create_specialist_agent_tools() -> Dict[str, FunctionTool]:
     """
     Create FunctionTool instances for all specialist agents.
@@ -252,29 +257,26 @@ def create_specialist_agent_tools() -> Dict[str, FunctionTool]:
     devops_tool = FunctionTool(devops_tool_func)
     qa_tool = FunctionTool(qa_tool_func)
 
-    return {
-        "architecture_tool": architecture_tool,
-        "ui_tool": ui_tool,
-        "devops_tool": devops_tool,
-        "qa_tool": qa_tool
-    }
+    return {"architecture_tool": architecture_tool, "ui_tool": ui_tool, "devops_tool": devops_tool, "qa_tool": qa_tool}
+
 
 def get_specialist_tools_for_vana():
     """
     Get specialist agent tools ready for VANA integration.
-    
+
     Returns:
         List of AgentTool instances for VANA's tool list
     """
     tools_dict = create_specialist_agent_tools()
     return list(tools_dict.values())
 
+
 # Create the tools for export
 specialist_tools = create_specialist_agent_tools()
 
 # Export individual tools for direct access
 architecture_tool = specialist_tools["architecture_tool"]
-ui_tool = specialist_tools["ui_tool"] 
+ui_tool = specialist_tools["ui_tool"]
 devops_tool = specialist_tools["devops_tool"]
 qa_tool = specialist_tools["qa_tool"]
 
@@ -283,11 +285,11 @@ specialist_agent_tools = get_specialist_tools_for_vana()
 
 __all__ = [
     "create_specialist_agent_tools",
-    "get_specialist_tools_for_vana", 
+    "get_specialist_tools_for_vana",
     "specialist_tools",
     "architecture_tool",
     "ui_tool",
-    "devops_tool", 
+    "devops_tool",
     "qa_tool",
-    "specialist_agent_tools"
+    "specialist_agent_tools",
 ]

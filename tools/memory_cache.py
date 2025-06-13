@@ -1,10 +1,11 @@
-import time
 import logging
-from typing import Dict, Any, Optional, List, Set, Tuple
+import time
 from collections import defaultdict
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 # Set up logging
 logger = logging.getLogger(__name__)
+
 
 class MemoryCache:
     """
@@ -103,8 +104,7 @@ class MemoryCache:
 
         return results
 
-    def search(self, query: str, entity_type: Optional[str] = None,
-              limit: int = 10) -> List[Any]:
+    def search(self, query: str, entity_type: Optional[str] = None, limit: int = 10) -> List[Any]:
         """
         Search for items in the cache.
 
@@ -127,8 +127,9 @@ class MemoryCache:
                     entity_name = value.get("name", "")
                     observations = value.get("observations", [])
 
-                    if (query.lower() in entity_name.lower() or
-                        any(query.lower() in obs.lower() for obs in observations)):
+                    if query.lower() in entity_name.lower() or any(
+                        query.lower() in obs.lower() for obs in observations
+                    ):
                         results.append(value)
                         if len(results) >= limit:
                             break
@@ -214,7 +215,7 @@ class MemoryCache:
             "miss_count": self.miss_count,
             "hit_ratio": hit_ratio,
             "eviction_count": self.eviction_count,
-            "type_counts": {t: len(keys) for t, keys in self.type_index.items()}
+            "type_counts": {t: len(keys) for t, keys in self.type_index.items()},
         }
 
     def _evict_oldest(self) -> None:

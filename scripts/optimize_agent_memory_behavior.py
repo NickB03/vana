@@ -15,34 +15,32 @@ Usage:
     python scripts/optimize_agent_memory_behavior.py [--dry-run] [--verbose]
 """
 
-import os
-import sys
-import re
 import logging
+import os
+import re
+import sys
 from pathlib import Path
-from typing import Dict, List, Any
+from typing import Any, Dict, List
 
 # Add project root to path
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
 # Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
+
 
 class AgentMemoryOptimizer:
     """Optimizes VANA agent behavior for intelligent memory usage."""
-    
+
     def __init__(self, dry_run: bool = False):
         self.dry_run = dry_run
         self.optimized_count = 0
-        
+
     def get_memory_first_prompt_additions(self) -> str:
         """Get memory-first strategy prompt additions for agents."""
-        
+
         return """
 ## 🧠 MEMORY-FIRST DECISION STRATEGY
 
@@ -116,7 +114,7 @@ This memory-first approach ensures intelligent, personalized, and efficient resp
 
     def get_agent_coordination_memory_patterns(self) -> str:
         """Get agent coordination memory patterns."""
-        
+
         return """
 ## 🤝 AGENT COORDINATION MEMORY PATTERNS
 
@@ -169,113 +167,112 @@ previous_success = load_memory("successful agent coordination for similar task")
 
     def optimize_agent_file(self, agent_file_path: Path) -> bool:
         """Optimize a single agent file for memory-first behavior."""
-        
+
         try:
             logger.info(f"Optimizing agent file: {agent_file_path}")
-            
+
             # Read current agent file
-            with open(agent_file_path, 'r', encoding='utf-8') as f:
+            with open(agent_file_path, "r", encoding="utf-8") as f:
                 content = f.read()
-            
+
             # Check if already optimized
             if "MEMORY-FIRST DECISION STRATEGY" in content:
                 logger.info(f"✅ Already optimized: {agent_file_path.name}")
                 return True
-            
+
             # Find agent instruction sections
             instruction_patterns = [
                 r'(instruction\s*=\s*""")(.*?)(""")',
                 r'(instruction\s*=\s*")(.*?)(")',
                 r'(instruction\s*=\s*f""")(.*?)(""")',
-                r'(instruction\s*=\s*f")(.*?)(")'
+                r'(instruction\s*=\s*f")(.*?)(")',
             ]
-            
+
             optimized = False
-            
+
             for pattern in instruction_patterns:
                 matches = re.finditer(pattern, content, re.DOTALL)
-                
+
                 for match in matches:
                     start_quote = match.group(1)
                     instruction_content = match.group(2)
                     end_quote = match.group(3)
-                    
+
                     # Add memory-first strategy to instruction
                     memory_additions = self.get_memory_first_prompt_additions()
-                    
+
                     # Check if this is a coordination-related agent
-                    if any(keyword in instruction_content.lower() for keyword in 
-                           ['coordinat', 'orchestrat', 'manag', 'strategy']):
+                    if any(
+                        keyword in instruction_content.lower()
+                        for keyword in ["coordinat", "orchestrat", "manag", "strategy"]
+                    ):
                         memory_additions += self.get_agent_coordination_memory_patterns()
-                    
+
                     new_instruction = instruction_content + memory_additions
-                    
+
                     # Replace in content
                     new_match = start_quote + new_instruction + end_quote
                     content = content.replace(match.group(0), new_match)
                     optimized = True
-                    
+
                     logger.info(f"✅ Added memory-first strategy to agent instruction")
-            
+
             if not optimized:
                 logger.warning(f"⚠️ No instruction patterns found in {agent_file_path.name}")
                 return False
-            
+
             # Write optimized content
             if not self.dry_run:
-                with open(agent_file_path, 'w', encoding='utf-8') as f:
+                with open(agent_file_path, "w", encoding="utf-8") as f:
                     f.write(content)
                 logger.info(f"💾 Saved optimized agent file: {agent_file_path.name}")
             else:
                 logger.info(f"🔍 DRY RUN: Would optimize {agent_file_path.name}")
-            
+
             self.optimized_count += 1
             return True
-            
+
         except Exception as e:
             logger.error(f"❌ Failed to optimize {agent_file_path}: {e}")
             return False
-    
+
     def optimize_all_agents(self) -> bool:
         """Optimize all VANA agent files for memory-first behavior."""
-        
+
         logger.info("🚀 Starting agent memory behavior optimization...")
-        
+
         # Find all agent files
-        agent_directories = [
-            project_root / "agents" / "vana",
-            project_root / "agent",
-            project_root / "lib" / "_tools"
-        ]
-        
+        agent_directories = [project_root / "agents" / "vana", project_root / "agent", project_root / "lib" / "_tools"]
+
         agent_files = []
         for directory in agent_directories:
             if directory.exists():
                 # Find Python files that likely contain agents
                 for file_path in directory.rglob("*.py"):
-                    if any(keyword in file_path.name.lower() for keyword in 
-                           ['agent', 'team', 'coordinator', 'manager']):
+                    if any(
+                        keyword in file_path.name.lower() for keyword in ["agent", "team", "coordinator", "manager"]
+                    ):
                         agent_files.append(file_path)
-        
+
         if not agent_files:
             logger.warning("⚠️ No agent files found to optimize")
             return False
-        
+
         logger.info(f"📁 Found {len(agent_files)} agent files to optimize")
-        
+
         success_count = 0
         for agent_file in agent_files:
             if self.optimize_agent_file(agent_file):
                 success_count += 1
-        
+
         logger.info(f"📊 Optimization completed: {success_count}/{len(agent_files)} files optimized")
-        
+
         return success_count > 0
-    
+
     def create_memory_usage_examples(self) -> str:
         """Create examples of proper memory usage for agents."""
-        
-        examples_content = '''# VANA Agent Memory Usage Examples
+
+        examples_content = """# VANA Agent Memory Usage Examples
 
 ## Example 1: User Asks About VANA Capabilities
 
@@ -349,56 +346,57 @@ def handle_analysis_request(data, user_request):
     elif user_feedback == "perfect":
         session.state['user_analysis_preference'] = analysis_style
 ```
-'''
-        
+"""
+
         return examples_content
-    
+
     def create_memory_examples_file(self):
         """Create a file with memory usage examples."""
-        
+
         examples_path = project_root / "docs" / "agent_memory_examples.md"
         examples_content = self.create_memory_usage_examples()
-        
+
         if not self.dry_run:
             examples_path.parent.mkdir(exist_ok=True)
-            with open(examples_path, 'w', encoding='utf-8') as f:
+            with open(examples_path, "w", encoding="utf-8") as f:
                 f.write(examples_content)
             logger.info(f"📚 Created memory usage examples: {examples_path}")
         else:
             logger.info(f"🔍 DRY RUN: Would create examples file at {examples_path}")
 
+
 def main():
     """Main execution function."""
-    
+
     import argparse
-    
-    parser = argparse.ArgumentParser(description='Optimize VANA agent memory behavior')
-    parser.add_argument('--dry-run', action='store_true', help='Show what would be optimized without actually doing it')
-    parser.add_argument('--verbose', action='store_true', help='Enable verbose logging')
-    parser.add_argument('--examples-only', action='store_true', help='Only create examples file')
-    
+
+    parser = argparse.ArgumentParser(description="Optimize VANA agent memory behavior")
+    parser.add_argument("--dry-run", action="store_true", help="Show what would be optimized without actually doing it")
+    parser.add_argument("--verbose", action="store_true", help="Enable verbose logging")
+    parser.add_argument("--examples-only", action="store_true", help="Only create examples file")
+
     args = parser.parse_args()
-    
+
     if args.verbose:
         logging.getLogger().setLevel(logging.DEBUG)
-    
+
     optimizer = AgentMemoryOptimizer(dry_run=args.dry_run)
-    
+
     if args.examples_only:
         optimizer.create_memory_examples_file()
         return
-    
+
     # Optimize agent behavior
     success = optimizer.optimize_all_agents()
-    
+
     # Create examples file
     optimizer.create_memory_examples_file()
-    
+
     if success:
         logger.info(f"\n🎉 Agent Memory Optimization Completed Successfully!")
         logger.info(f"📊 Total agents optimized: {optimizer.optimized_count}")
         logger.info(f"🧠 Agents now use memory-first decision strategy")
-        
+
         if not args.dry_run:
             logger.info(f"\n🚀 Next steps:")
             logger.info(f"1. Test agent behavior with memory-first strategy")
@@ -407,6 +405,7 @@ def main():
     else:
         logger.error(f"\n❌ Agent optimization failed. Check logs for details.")
         sys.exit(1)
+
 
 if __name__ == "__main__":
     main()

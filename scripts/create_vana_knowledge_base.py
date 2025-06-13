@@ -11,35 +11,33 @@ Usage:
     python scripts/create_vana_knowledge_base.py [--output-dir data/knowledge]
 """
 
-import os
-import sys
 import json
 import logging
-from pathlib import Path
-from typing import List, Dict, Any
+import os
+import sys
 from datetime import datetime
+from pathlib import Path
+from typing import Any, Dict, List
 
 # Add project root to path
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
 # Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
+
 
 class VANAKnowledgeBaseCreator:
     """Creates a comprehensive VANA knowledge base."""
-    
+
     def __init__(self, output_dir: str = "data/knowledge"):
         self.output_dir = Path(output_dir)
         self.created_files = []
-        
+
     def get_vana_system_knowledge(self) -> Dict[str, str]:
         """Get core VANA system knowledge organized by topic."""
-        
+
         return {
             "system_overview.md": """# VANA System Overview
 
@@ -63,7 +61,6 @@ VANA is a comprehensive multi-agent AI system built with Google ADK (Agent Devel
 - **Production**: vana-prod environment (2 vCPU/2 GiB)
 - **Technology Stack**: Python 3.13, Poetry, FastAPI, Google Cloud
 """,
-
             "agent_capabilities.md": """# VANA Agent Capabilities
 
 ## Core Agents
@@ -112,7 +109,6 @@ VANA is a comprehensive multi-agent AI system built with Google ADK (Agent Devel
 - **Parallel Processing**: Multiple agents working on different aspects
 - **Error Recovery**: Fallback strategies and error handling
 """,
-
             "tool_documentation.md": """# VANA Tool Documentation
 
 ## Search Tools
@@ -175,7 +171,6 @@ VANA is a comprehensive multi-agent AI system built with Google ADK (Agent Devel
 - **Features**: Multiple formats, template support
 - **Output**: Formatted report document
 """,
-
             "optimization_framework.md": """# VANA Optimization Framework
 
 ## Overview
@@ -225,7 +220,6 @@ The VANA Optimization Framework consists of 5 integrated components that provide
 - **Adaptive Behavior**: System learns and improves over time
 - **Resource Management**: Intelligent allocation and cleanup
 """,
-
             "memory_architecture.md": """# VANA Memory Architecture
 
 ## Memory Hierarchy
@@ -279,7 +273,6 @@ The VANA Optimization Framework consists of 5 integrated components that provide
 - **Store important discoveries** in session state
 - **Cite memory sources** when using retrieved information
 """,
-
             "troubleshooting.md": """# VANA Troubleshooting Guide
 
 ## Common Issues
@@ -345,26 +338,26 @@ BRAVE_API_KEY=<your_brave_api_key>
 3. **Environment**: Verify all required variables are set
 4. **Memory**: Check memory service availability and content
 5. **Coordination**: Debug agent communication patterns
-"""
+""",
         }
-    
+
     def create_knowledge_base(self) -> bool:
         """Create the complete VANA knowledge base."""
-        
+
         logger.info("🚀 Creating VANA knowledge base...")
-        
+
         # Create output directory
         self.output_dir.mkdir(parents=True, exist_ok=True)
-        
+
         # Get knowledge content
         knowledge_files = self.get_vana_system_knowledge()
-        
+
         success_count = 0
-        
+
         for filename, content in knowledge_files.items():
             try:
                 file_path = self.output_dir / filename
-                
+
                 # Add metadata header
                 metadata_header = f"""---
 title: {filename.replace('.md', '').replace('_', ' ').title()}
@@ -374,29 +367,29 @@ type: system_documentation
 ---
 
 """
-                
+
                 full_content = metadata_header + content
-                
+
                 # Write file
-                with open(file_path, 'w', encoding='utf-8') as f:
+                with open(file_path, "w", encoding="utf-8") as f:
                     f.write(full_content)
-                
+
                 self.created_files.append(str(file_path))
                 success_count += 1
                 logger.info(f"✅ Created: {filename}")
-                
+
             except Exception as e:
                 logger.error(f"❌ Failed to create {filename}: {e}")
-        
+
         # Create index file
         self.create_index_file()
-        
+
         logger.info(f"📊 Knowledge base creation completed: {success_count}/{len(knowledge_files)} files created")
         return success_count == len(knowledge_files)
-    
+
     def create_index_file(self):
         """Create an index file for the knowledge base."""
-        
+
         index_content = f"""# VANA Knowledge Base Index
 
 Created: {datetime.now().isoformat()}
@@ -404,12 +397,12 @@ Created: {datetime.now().isoformat()}
 ## Available Documentation
 
 """
-        
+
         for file_path in self.created_files:
             filename = Path(file_path).name
-            title = filename.replace('.md', '').replace('_', ' ').title()
+            title = filename.replace(".md", "").replace("_", " ").title()
             index_content += f"- [{title}]({filename})\n"
-        
+
         index_content += f"""
 ## Usage
 
@@ -429,37 +422,38 @@ results = search_knowledge("brave_search_mcp usage")
 ## Files Created
 Total files: {len(self.created_files)}
 """
-        
+
         index_path = self.output_dir / "index.md"
-        with open(index_path, 'w', encoding='utf-8') as f:
+        with open(index_path, "w", encoding="utf-8") as f:
             f.write(index_content)
-        
+
         logger.info(f"📚 Created index file: {index_path}")
+
 
 def main():
     """Main execution function."""
-    
+
     import argparse
-    
-    parser = argparse.ArgumentParser(description='Create VANA knowledge base')
-    parser.add_argument('--output-dir', default='data/knowledge', help='Output directory for knowledge base')
-    parser.add_argument('--verbose', action='store_true', help='Enable verbose logging')
-    
+
+    parser = argparse.ArgumentParser(description="Create VANA knowledge base")
+    parser.add_argument("--output-dir", default="data/knowledge", help="Output directory for knowledge base")
+    parser.add_argument("--verbose", action="store_true", help="Enable verbose logging")
+
     args = parser.parse_args()
-    
+
     if args.verbose:
         logging.getLogger().setLevel(logging.DEBUG)
-    
+
     creator = VANAKnowledgeBaseCreator(output_dir=args.output_dir)
-    
+
     success = creator.create_knowledge_base()
-    
+
     if success:
         logger.info(f"\n🎉 VANA Knowledge Base Created Successfully!")
         logger.info(f"📁 Location: {creator.output_dir}")
         logger.info(f"📊 Files created: {len(creator.created_files)}")
         logger.info(f"🧠 Knowledge base is ready for agent access")
-        
+
         logger.info(f"\n🚀 Next steps:")
         logger.info(f"1. Update search_knowledge tool to use this knowledge base")
         logger.info(f"2. Test agent knowledge retrieval")
@@ -467,6 +461,7 @@ def main():
     else:
         logger.error(f"\n❌ Knowledge base creation failed. Check logs for details.")
         sys.exit(1)
+
 
 if __name__ == "__main__":
     main()

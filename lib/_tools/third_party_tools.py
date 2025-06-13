@@ -11,39 +11,47 @@ Based on Google ADK documentation:
 - Seamless integration with existing tool framework
 """
 
-import logging
 import importlib
 import inspect
-from typing import Dict, Any, List, Optional, Callable, Union, Type
-from dataclasses import dataclass
+import logging
 from abc import ABC, abstractmethod
+from dataclasses import dataclass
 from enum import Enum
+from typing import Any, Callable, Dict, List, Optional, Type, Union
 
 from lib._shared_libraries.tool_standards import (
-    StandardToolResponse, ToolErrorType, ErrorHandler,
-    performance_monitor, InputValidator
+    ErrorHandler,
+    InputValidator,
+    StandardToolResponse,
+    ToolErrorType,
+    performance_monitor,
 )
 
 # Configure logging
 logger = logging.getLogger(__name__)
 
+
 class ThirdPartyToolType(Enum):
     """Types of third-party tool libraries supported."""
+
     LANGCHAIN = "langchain"
     CREWAI = "crewai"
     LLAMAINDEX = "llamaindex"
     GENERIC = "generic"
 
+
 @dataclass
 class ThirdPartyToolInfo:
     """Information about a third-party tool."""
+
     name: str
     description: str
     tool_type: ThirdPartyToolType
     original_tool: Any
-    adapter: 'ThirdPartyToolAdapter'
+    adapter: "ThirdPartyToolAdapter"
     parameters: Dict[str, Any]
     metadata: Dict[str, Any]
+
 
 class ThirdPartyToolAdapter(ABC):
     """
@@ -168,6 +176,7 @@ class ThirdPartyToolAdapter(ABC):
         """
         return self.discovered_tools.get(tool_id)
 
+
 class GenericThirdPartyAdapter(ThirdPartyToolAdapter):
     """
     Generic adapter for third-party tools that don't have specific adapters.
@@ -194,7 +203,7 @@ class GenericThirdPartyAdapter(ThirdPartyToolAdapter):
 
         try:
             # Try to discover tools from common patterns
-            if hasattr(source, '__dict__'):
+            if hasattr(source, "__dict__"):
                 for name, obj in source.__dict__.items():
                     if self._is_tool_like(obj):
                         tool_info = self._create_tool_info(name, obj)
@@ -202,10 +211,10 @@ class GenericThirdPartyAdapter(ThirdPartyToolAdapter):
                             tools.append(tool_info)
 
             # Try to discover from lists/iterables
-            elif hasattr(source, '__iter__'):
+            elif hasattr(source, "__iter__"):
                 for i, obj in enumerate(source):
                     if self._is_tool_like(obj):
-                        name = getattr(obj, 'name', getattr(obj, '__name__', f"tool_{i}"))
+                        name = getattr(obj, "name", getattr(obj, "__name__", f"tool_{i}"))
                         tool_info = self._create_tool_info(name, obj)
                         if tool_info:
                             tools.append(tool_info)
@@ -242,15 +251,15 @@ class GenericThirdPartyAdapter(ThirdPartyToolAdapter):
                     result = original_tool(*args, **kwargs)
 
                 # Pattern 2: Has run method
-                elif hasattr(original_tool, 'run'):
+                elif hasattr(original_tool, "run"):
                     result = original_tool.run(*args, **kwargs)
 
                 # Pattern 3: Has invoke method
-                elif hasattr(original_tool, 'invoke'):
+                elif hasattr(original_tool, "invoke"):
                     result = original_tool.invoke(*args, **kwargs)
 
                 # Pattern 4: Has call method
-                elif hasattr(original_tool, '__call__'):
+                elif hasattr(original_tool, "__call__"):
                     result = original_tool(*args, **kwargs)
 
                 else:
@@ -304,13 +313,13 @@ class GenericThirdPartyAdapter(ThirdPartyToolAdapter):
         if callable(obj):
             return True
 
-        if hasattr(obj, 'run') and callable(getattr(obj, 'run')):
+        if hasattr(obj, "run") and callable(getattr(obj, "run")):
             return True
 
-        if hasattr(obj, 'invoke') and callable(getattr(obj, 'invoke')):
+        if hasattr(obj, "invoke") and callable(getattr(obj, "invoke")):
             return True
 
-        if hasattr(obj, '__call__'):
+        if hasattr(obj, "__call__"):
             return True
 
         return False
@@ -329,15 +338,15 @@ class GenericThirdPartyAdapter(ThirdPartyToolAdapter):
         try:
             # Get description from various sources
             description = (
-                getattr(tool, 'description', None) or
-                getattr(tool, '__doc__', None) or
-                f"Generic third-party tool: {name}"
+                getattr(tool, "description", None)
+                or getattr(tool, "__doc__", None)
+                or f"Generic third-party tool: {name}"
             )
 
             # Get parameters if available
             parameters = {}
-            if hasattr(tool, 'args_schema'):
-                parameters = getattr(tool, 'args_schema', {})
+            if hasattr(tool, "args_schema"):
+                parameters = getattr(tool, "args_schema", {})
             elif callable(tool):
                 sig = inspect.signature(tool)
                 parameters = {param.name: param.annotation for param in sig.parameters.values()}
@@ -350,16 +359,17 @@ class GenericThirdPartyAdapter(ThirdPartyToolAdapter):
                 adapter=self,
                 parameters=parameters,
                 metadata={
-                    'source_type': type(tool).__name__,
-                    'has_run': hasattr(tool, 'run'),
-                    'has_invoke': hasattr(tool, 'invoke'),
-                    'is_callable': callable(tool)
-                }
+                    "source_type": type(tool).__name__,
+                    "has_run": hasattr(tool, "run"),
+                    "has_invoke": hasattr(tool, "invoke"),
+                    "is_callable": callable(tool),
+                },
             )
 
         except Exception as e:
             logger.error(f"Error creating tool info for {name}: {e}")
             return None
+
 
 class ThirdPartyToolRegistry:
     """
@@ -386,8 +396,7 @@ class ThirdPartyToolRegistry:
         self.adapters[adapter.tool_type] = adapter
         logger.info(f"Registered adapter for {adapter.tool_type.value}")
 
-    def discover_tools_from_source(self, source: Any,
-                                  tool_type: Optional[ThirdPartyToolType] = None) -> List[str]:
+    def discover_tools_from_source(self, source: Any, tool_type: Optional[ThirdPartyToolType] = None) -> List[str]:
         """
         Discover and register tools from a source.
 
@@ -469,15 +478,16 @@ class ThirdPartyToolRegistry:
         """
         return [tool for tool in self.all_tools.values() if tool.tool_type == tool_type]
 
+
 # Global registry instance
 third_party_registry = ThirdPartyToolRegistry()
 
 # Export key classes and functions
 __all__ = [
-    'ThirdPartyToolType',
-    'ThirdPartyToolInfo',
-    'ThirdPartyToolAdapter',
-    'GenericThirdPartyAdapter',
-    'ThirdPartyToolRegistry',
-    'third_party_registry'
+    "ThirdPartyToolType",
+    "ThirdPartyToolInfo",
+    "ThirdPartyToolAdapter",
+    "GenericThirdPartyAdapter",
+    "ThirdPartyToolRegistry",
+    "third_party_registry",
 ]

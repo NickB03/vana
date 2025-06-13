@@ -5,10 +5,12 @@ This is a simplified version with only working tools to test basic functionality
 """
 
 import os
-from dotenv import load_dotenv
 
 # Add project root to Python path for absolute imports
 import sys
+
+from dotenv import load_dotenv
+
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
 
 # Load environment variables before importing Google ADK
@@ -19,18 +21,19 @@ from google.adk.agents import LlmAgent
 from google.adk.tools import FunctionTool
 
 # Import only working ADK-compatible tools
-from lib._tools import (
-    # File System Tools
-    adk_read_file, adk_write_file, adk_list_directory, adk_file_exists,
-
-    # Search Tools
-    adk_vector_search, adk_web_search, adk_search_knowledge,
-
-    # System Tools
-    adk_echo, adk_get_health_status,
-
-    # Agent Coordination Tools
-    adk_coordinate_task, adk_delegate_to_agent, adk_get_agent_status
+from lib._tools import (  # File System Tools; Search Tools; System Tools; Agent Coordination Tools
+    adk_coordinate_task,
+    adk_delegate_to_agent,
+    adk_echo,
+    adk_file_exists,
+    adk_get_agent_status,
+    adk_get_health_status,
+    adk_list_directory,
+    adk_read_file,
+    adk_search_knowledge,
+    adk_vector_search,
+    adk_web_search,
+    adk_write_file,
 )
 
 # Create a simple VANA agent with working tools
@@ -239,18 +242,22 @@ previous_success = load_memory("successful agent coordination for similar task")
 # Select agents based on memory insights
 ```
 """,
-    
     tools=[
         # File System Tools
-        adk_read_file, adk_write_file, adk_list_directory, adk_file_exists,
-        
+        adk_read_file,
+        adk_write_file,
+        adk_list_directory,
+        adk_file_exists,
         # Search Tools
-        adk_vector_search, adk_web_search, adk_search_knowledge,
-        
+        adk_vector_search,
+        adk_web_search,
+        adk_search_knowledge,
         # System Tools
-        adk_echo, adk_get_health_status,
-        
+        adk_echo,
+        adk_get_health_status,
         # Agent Coordination Tools
-        adk_coordinate_task, adk_delegate_to_agent, adk_get_agent_status
-    ]
+        adk_coordinate_task,
+        adk_delegate_to_agent,
+        adk_get_agent_status,
+    ],
 )

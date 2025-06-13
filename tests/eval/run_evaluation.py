@@ -10,10 +10,10 @@ Usage:
     python tests/eval/run_evaluation.py --performance-only
 """
 
-import asyncio
 import argparse
-import sys
+import asyncio
 import os
+import sys
 from pathlib import Path
 
 # Add project root to path
@@ -31,7 +31,9 @@ from tests.eval.test_evaluation import ComprehensiveEvaluationRunner
 try:
     from tests.coordination.coordination_test_runner import CoordinationTestRunner
     from tests.coordination.coordination_benchmarks import CoordinationBenchmarks
+
 from lib.logging_config import get_logger
+
 logger = get_logger("vana.run_evaluation")
 
     COORDINATION_TESTING_AVAILABLE = True

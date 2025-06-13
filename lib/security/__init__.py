@@ -10,12 +10,7 @@ Components:
 - CSRF protection and authentication helpers
 """
 
-from .security_manager import SecurityManager, SecurityEvent
 from .integration import SecurityIntegration, get_security
+from .security_manager import SecurityEvent, SecurityManager
 
-__all__ = [
-    'SecurityManager',
-    'SecurityEvent',
-    'SecurityIntegration',
-    'get_security'
-]
+__all__ = ["SecurityManager", "SecurityEvent", "SecurityIntegration", "get_security"]

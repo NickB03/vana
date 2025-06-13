@@ -2,15 +2,17 @@
 Client for interacting with VANA agents.
 """
 
-import requests
-import logging
 import json
+import logging
 import os
 import time
 from datetime import datetime
 
+import requests
+
 # Set up logging
 logger = logging.getLogger(__name__)
+
 
 class AgentClient:
     """Client for interacting with VANA agents."""
@@ -20,10 +22,10 @@ class AgentClient:
 
         In test mode, this will use mock responses if real server is not available.
         """
-        self.base_url = base_url or os.environ.get('VANA_API_URL', 'http://localhost:8000/api')
+        self.base_url = base_url or os.environ.get("VANA_API_URL", "http://localhost:8000/api")
         self.timeout = timeout
         self.session = requests.Session()
-        self.use_mock = os.environ.get('VANA_USE_MOCK', 'false').lower() == 'true'
+        self.use_mock = os.environ.get("VANA_USE_MOCK", "false").lower() == "true"
         self.conversation_id = None
 
     def send_message(self, agent_id, message, session_id=None):
@@ -40,9 +42,7 @@ class AgentClient:
         """
         url = f"{self.base_url}/agents/{agent_id}/messages"
 
-        payload = {
-            "message": message
-        }
+        payload = {"message": message}
 
         if session_id:
             payload["session_id"] = session_id
@@ -54,10 +54,7 @@ class AgentClient:
             return response.json()
         except requests.exceptions.RequestException as e:
             logger.error(f"Error sending message to agent {agent_id}: {e}")
-            return {
-                "success": False,
-                "error": str(e)
-            }
+            return {"success": False, "error": str(e)}
 
     def get_agent_status(self, agent_id):
         """
@@ -78,10 +75,7 @@ class AgentClient:
             return response.json()
         except requests.exceptions.RequestException as e:
             logger.error(f"Error getting status for agent {agent_id}: {e}")
-            return {
-                "success": False,
-                "error": str(e)
-            }
+            return {"success": False, "error": str(e)}
 
     def get_conversation_history(self, session_id):
         """
@@ -102,10 +96,7 @@ class AgentClient:
             return response.json()
         except requests.exceptions.RequestException as e:
             logger.error(f"Error getting conversation history for session {session_id}: {e}")
-            return {
-                "success": False,
-                "error": str(e)
-            }
+            return {"success": False, "error": str(e)}
 
     def create_session(self):
         """
@@ -196,10 +187,7 @@ class AgentClient:
         if not session_id:
             session_id = self.create_session()
             if not session_id:
-                return {
-                    "success": False,
-                    "error": "Failed to create session"
-                }
+                return {"success": False, "error": "Failed to create session"}
 
         conversation = []
 
@@ -209,11 +197,7 @@ class AgentClient:
                 self.send_message(agent_id, message, session_id)
 
                 # Add the message to the conversation
-                conversation.append({
-                    "sender": "user",
-                    "message": message,
-                    "timestamp": datetime.now().isoformat()
-                })
+                conversation.append({"sender": "user", "message": message, "timestamp": datetime.now().isoformat()})
 
                 # Wait for the agent's response
                 if wait_for_response:
@@ -221,17 +205,8 @@ class AgentClient:
                     if response:
                         conversation.append(response)
 
-            return {
-                "success": True,
-                "session_id": session_id,
-                "conversation": conversation
-            }
+            return {"success": True, "session_id": session_id, "conversation": conversation}
 
         except Exception as e:
             logger.error(f"Error simulating conversation with agent {agent_id}: {e}")
-            return {
-                "success": False,
-                "error": str(e),
-                "session_id": session_id,
-                "conversation": conversation
-            }
+            return {"success": False, "error": str(e), "session_id": session_id, "conversation": conversation}

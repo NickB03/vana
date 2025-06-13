@@ -6,21 +6,22 @@ of the VANA agent, including short-term and long-term memory, context maintenanc
 and handling of corrections to previously stored information.
 """
 
-import os
-import sys
 import logging
-import time
+import os
 import random
+import sys
+import time
 from datetime import datetime, timedelta
 
 # Add the parent directory to the path so we can import our modules
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))))
 
-from tests.e2e.framework.test_case import TestCase
 from tests.e2e.framework.agent_client import AgentClient
-from tests.e2e.framework.test_utils import extract_key_information, check_response_coherence
+from tests.e2e.framework.test_case import TestCase
+from tests.e2e.framework.test_utils import check_response_coherence, extract_key_information
 
 logger = logging.getLogger(__name__)
+
 
 class MemoryRetrievalTest(TestCase):
     """Test case for memory retrieval capabilities of the VANA agent."""
@@ -29,7 +30,7 @@ class MemoryRetrievalTest(TestCase):
         """Initialize the test case."""
         super().__init__(
             name="memory_retrieval",
-            description="Comprehensive test for memory retrieval capabilities of the VANA agent"
+            description="Comprehensive test for memory retrieval capabilities of the VANA agent",
         )
         self.agent_client = None
         self.session_id = None
@@ -37,33 +38,17 @@ class MemoryRetrievalTest(TestCase):
             {
                 "type": "personal_fact",
                 "content": "My name is Alex Chen and I work as a software engineer at Acme Corp",
-                "category": "identity"
+                "category": "identity",
             },
-            {
-                "type": "personal_fact",
-                "content": "My favorite movie is The Matrix",
-                "category": "preferences"
-            },
-            {
-                "type": "personal_fact",
-                "content": "I have two cats named Luna and Stella",
-                "category": "pets"
-            },
+            {"type": "personal_fact", "content": "My favorite movie is The Matrix", "category": "preferences"},
+            {"type": "personal_fact", "content": "I have two cats named Luna and Stella", "category": "pets"},
             {
                 "type": "event",
                 "content": "I have a doctor's appointment next Tuesday at 2pm",
-                "category": "appointments"
+                "category": "appointments",
             },
-            {
-                "type": "task",
-                "content": "I need to finish the quarterly report by Friday",
-                "category": "work"
-            },
-            {
-                "type": "contact",
-                "content": "My colleague Taylor's email is taylor@example.com",
-                "category": "contacts"
-            }
+            {"type": "task", "content": "I need to finish the quarterly report by Friday", "category": "work"},
+            {"type": "contact", "content": "My colleague Taylor's email is taylor@example.com", "category": "contacts"},
         ]
         self.stored_memories = []
 
@@ -83,12 +68,7 @@ class MemoryRetrievalTest(TestCase):
     def _send_message_and_verify(self, message, expected_content=None, timeout=30):
         """Helper method to send a message and verify the response."""
         # Send message
-        response = self.execute_step(
-            self.agent_client.send_message,
-            "vana",
-            message,
-            self.session_id
-        )
+        response = self.execute_step(self.agent_client.send_message, "vana", message, self.session_id)
 
         # Wait for agent response
         start_time = time.time()
@@ -108,13 +88,12 @@ class MemoryRetrievalTest(TestCase):
             if isinstance(expected_content, list):
                 for content in expected_content:
                     self.assert_true(
-                        content.lower() in response_text,
-                        f"Expected '{content}' not found in response: {response_text}"
+                        content.lower() in response_text, f"Expected '{content}' not found in response: {response_text}"
                     )
             else:
                 self.assert_true(
                     expected_content.lower() in response_text,
-                    f"Expected '{expected_content}' not found in response: {response_text}"
+                    f"Expected '{expected_content}' not found in response: {response_text}",
                 )
 
         return agent_response
@@ -124,8 +103,7 @@ class MemoryRetrievalTest(TestCase):
         # Step 1: Start conversation and establish context
         self.step("start", "Start conversation and establish context")
         self._send_message_and_verify(
-            "Hello Vana, I'd like to test your memory capabilities today.",
-            ["hello", "memory", "help"]
+            "Hello Vana, I'd like to test your memory capabilities today.", ["hello", "memory", "help"]
         )
 
         # Step 2: Store multiple memory items with delays between them
@@ -139,8 +117,7 @@ class MemoryRetrievalTest(TestCase):
             # Store the memory
             self.substep(f"store_memory_{i+1}", f"Store memory item {i+1}: {memory_item['content']}")
             response = self._send_message_and_verify(
-                f"Please remember that {memory_item['content']}.",
-                ["remember", "noted", "got it"]
+                f"Please remember that {memory_item['content']}.", ["remember", "noted", "got it"]
             )
 
             # Add to stored memories
@@ -158,7 +135,7 @@ class MemoryRetrievalTest(TestCase):
             "What's the weather like today?",
             "Can you tell me about vector databases?",
             "How does machine learning work?",
-            "What's your favorite color?"
+            "What's your favorite color?",
         ]
 
         for i, question in enumerate(unrelated_questions):
@@ -170,8 +147,7 @@ class MemoryRetrievalTest(TestCase):
         self.step("recent_recall", "Test recall of most recent memory")
         most_recent = self.stored_memories[-1]
         response = self._send_message_and_verify(
-            "What was the last important thing I asked you to remember?",
-            most_recent["content"]
+            "What was the last important thing I asked you to remember?", most_recent["content"]
         )
 
         # Step 5: Test recall of a specific memory by category
@@ -186,8 +162,7 @@ class MemoryRetrievalTest(TestCase):
             category_name = target_memory["category"]
 
             response = self._send_message_and_verify(
-                f"What do I need to do related to {category_name}?",
-                target_memory["content"]
+                f"What do I need to do related to {category_name}?", target_memory["content"]
             )
         else:
             self.log_warning("No memories with target categories found")
@@ -198,10 +173,7 @@ class MemoryRetrievalTest(TestCase):
 
         if identity_memories:
             identity_memory = identity_memories[0]
-            response = self._send_message_and_verify(
-                "What is my name and where do I work?",
-                ["Alex Chen", "Acme Corp"]
-            )
+            response = self._send_message_and_verify("What is my name and where do I work?", ["Alex Chen", "Acme Corp"])
         else:
             self.log_warning("No identity memory found")
 
@@ -218,7 +190,7 @@ class MemoryRetrievalTest(TestCase):
 
             for memory in self.stored_memories:
                 # Create a simplified version of the memory content for matching
-                memory_keywords = ' '.join(memory["content"].lower().split()[:4])
+                memory_keywords = " ".join(memory["content"].lower().split()[:4])
 
                 if memory_keywords not in response_text:
                     missing_memories.append(memory["content"])
@@ -227,7 +199,7 @@ class MemoryRetrievalTest(TestCase):
             recall_percentage = (len(self.stored_memories) - len(missing_memories)) / len(self.stored_memories)
             self.assert_true(
                 recall_percentage >= 0.8,
-                f"Agent recalled only {recall_percentage:.0%} of memories. Missing: {missing_memories}"
+                f"Agent recalled only {recall_percentage:.0%} of memories. Missing: {missing_memories}",
             )
 
         # Step 8: Test recall after a simulated time gap
@@ -235,8 +207,7 @@ class MemoryRetrievalTest(TestCase):
 
         # First, tell the agent we're going to continue later
         self._send_message_and_verify(
-            "I need to step away for a bit. We'll continue our conversation later.",
-            ["okay", "sure", "later"]
+            "I need to step away for a bit. We'll continue our conversation later.", ["okay", "sure", "later"]
         )
 
         # Wait a bit to simulate time passing
@@ -245,9 +216,8 @@ class MemoryRetrievalTest(TestCase):
         # Now come back and test recall
         random_memory = random.choice(self.stored_memories)
         response = self._send_message_and_verify(
-            "I'm back. Can you still remember what I told you about " +
-            random_memory["category"] + "?",
-            random_memory["content"]
+            "I'm back. Can you still remember what I told you about " + random_memory["category"] + "?",
+            random_memory["content"],
         )
 
         # Step 9: Test memory correction
@@ -274,14 +244,12 @@ class MemoryRetrievalTest(TestCase):
 
         # Send the correction
         self._send_message_and_verify(
-            f"I need to correct something. {corrected_content}.",
-            ["updated", "corrected", "changed", "noted"]
+            f"I need to correct something. {corrected_content}.", ["updated", "corrected", "changed", "noted"]
         )
 
         # Test if the correction was remembered
         response = self._send_message_and_verify(
-            f"What do you remember about my {memory_to_correct['category']}?",
-            corrected_content
+            f"What do you remember about my {memory_to_correct['category']}?", corrected_content
         )
 
         # Step 10: Test complex retrieval that requires combining information
@@ -293,8 +261,7 @@ class MemoryRetrievalTest(TestCase):
 
         if work_memories and identity_memories:
             response = self._send_message_and_verify(
-                "What is my profession and what task do I need to complete?",
-                ["software engineer", "report"]
+                "What is my profession and what task do I need to complete?", ["software engineer", "report"]
             )
         else:
             self.log_warning("Missing work or identity memories for complex retrieval test")
@@ -303,19 +270,23 @@ class MemoryRetrievalTest(TestCase):
         self.step("end", "End the test")
         self._send_message_and_verify(
             "Thank you for helping me test your memory capabilities. How do you think you did?",
-            ["memory", "remember", "test"]
+            ["memory", "remember", "test"],
         )
+
 
 # Create an instance of the test case
 test_case = MemoryRetrievalTest()
+
 
 def setup():
     """Set up the test scenario."""
     test_case.setup()
 
+
 def run():
     """Run the test scenario."""
     return test_case.run()
+
 
 def teardown():
     """Tear down the test scenario."""

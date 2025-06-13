@@ -7,18 +7,18 @@ Implements smart routing with fallback chains and performance tracking.
 Thread-safe implementation with race condition protection.
 """
 
-from typing import Dict, Any, List, Tuple, Optional
-from dataclasses import dataclass
-from functools import lru_cache
 import hashlib
+import logging
 import time
 import uuid
-import logging
-from threading import RLock
+from dataclasses import dataclass
 from enum import Enum
+from functools import lru_cache
+from threading import RLock
+from typing import Any, Dict, List, Optional, Tuple
 
-from .mode_manager import ModeManager, AgentMode, TaskPlan, ExecutionResult
-from .confidence_scorer import ConfidenceScorer, CapabilityScore, TaskAnalysis
+from .confidence_scorer import CapabilityScore, ConfidenceScorer, TaskAnalysis
+from .mode_manager import AgentMode, ExecutionResult, ModeManager, TaskPlan
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -26,14 +26,16 @@ logger = logging.getLogger(__name__)
 
 class CircuitBreakerState(Enum):
     """Circuit breaker states for agent failure protection."""
-    CLOSED = "closed"      # Normal operation
-    OPEN = "open"          # Failing, reject requests
+
+    CLOSED = "closed"  # Normal operation
+    OPEN = "open"  # Failing, reject requests
     HALF_OPEN = "half_open"  # Testing if service recovered
 
 
 @dataclass
 class CircuitBreakerConfig:
     """Configuration for circuit breaker."""
+
     failure_threshold: int = 5
     timeout_seconds: int = 60
     success_threshold: int = 3  # For half-open state
@@ -69,8 +71,7 @@ class AgentCircuitBreaker:
                 return True
             elif self.state == CircuitBreakerState.OPEN:
                 # Check if timeout has passed
-                if (self.last_failure_time and
-                    time.time() - self.last_failure_time > self.config.timeout_seconds):
+                if self.last_failure_time and time.time() - self.last_failure_time > self.config.timeout_seconds:
                     self.state = CircuitBreakerState.HALF_OPEN
                     self.success_count = 0
                     logger.info(f"Circuit breaker transitioning to HALF_OPEN (correlation: {self.correlation_id})")
@@ -115,13 +116,14 @@ class AgentCircuitBreaker:
                 "success_count": self.success_count,
                 "last_failure_time": self.last_failure_time,
                 "correlation_id": self.correlation_id,
-                "can_execute": self.can_execute()
+                "can_execute": self.can_execute(),
             }
 
 
 @dataclass
 class RoutingDecision:
     """Represents a complete routing decision with rationale."""
+
     task_id: str
     task_description: str
     selected_agent: str
@@ -191,10 +193,7 @@ class TaskRouter:
             return self._agent_circuit_breakers[agent_name]
 
     def route_task(
-        self,
-        task_description: str,
-        context: Optional[Dict[str, Any]] = None,
-        force_planning: bool = False
+        self, task_description: str, context: Optional[Dict[str, Any]] = None, force_planning: bool = False
     ) -> RoutingDecision:
         """
         Route a task to the most appropriate agent(s) with intelligent planning and caching.
@@ -240,10 +239,7 @@ class TaskRouter:
             raise
 
     def _route_task_uncached(
-        self,
-        task_description: str,
-        context: Optional[Dict[str, Any]] = None,
-        force_planning: bool = False
+        self, task_description: str, context: Optional[Dict[str, Any]] = None, force_planning: bool = False
     ) -> RoutingDecision:
         """
         Route a task to the most appropriate agent(s) with intelligent planning.
@@ -285,11 +281,14 @@ class TaskRouter:
                         break
 
             if not alternative_found:
-                logger.error(f"No available agents found, all circuit breakers open (correlation: {self._correlation_id})")
+                logger.error(
+                    f"No available agents found, all circuit breakers open (correlation: {self._correlation_id})"
+                )
                 # Use VANA as final fallback regardless of circuit breaker
                 best_agent = "vana"
                 # Create a basic score for VANA
-                from .confidence_scorer import CapabilityScore, AgentSpecialty
+                from .confidence_scorer import AgentSpecialty, CapabilityScore
+
                 best_score = CapabilityScore(
                     agent_name="vana",
                     specialty=AgentSpecialty.ORCHESTRATION,
@@ -297,17 +296,17 @@ class TaskRouter:
                     task_match_score=0.5,
                     experience_bonus=0.0,
                     final_confidence=0.5,
-                    reasoning="Emergency fallback due to circuit breaker protection"
+                    reasoning="Emergency fallback due to circuit breaker protection",
                 )
 
         collaboration_recommendations = self.confidence_scorer.get_collaboration_recommendations(task_description)
 
         # Step 3: Determine if planning is required
         requires_planning = (
-            force_planning or
-            task_analysis.complexity_score > self.planning_complexity_threshold or
-            best_score.final_confidence < self.min_confidence_threshold or
-            task_analysis.collaboration_needed
+            force_planning
+            or task_analysis.complexity_score > self.planning_complexity_threshold
+            or best_score.final_confidence < self.min_confidence_threshold
+            or task_analysis.collaboration_needed
         )
 
         # Step 4: Create execution plan if needed
@@ -322,9 +321,7 @@ class TaskRouter:
         collaboration_agents = [agent for agent, _ in collaboration_recommendations if agent != best_agent]
 
         # Step 7: Generate routing reasoning
-        reasoning = self._generate_routing_reasoning(
-            task_analysis, best_score, requires_planning, collaboration_agents
-        )
+        reasoning = self._generate_routing_reasoning(task_analysis, best_score, requires_planning, collaboration_agents)
 
         # Step 8: Create routing decision with correlation ID
         task_id = f"route_{int(time.time() * 1000)}_{self._correlation_id}"
@@ -340,7 +337,7 @@ class TaskRouter:
             reasoning=reasoning,
             fallback_agents=fallback_agents,
             estimated_duration=task_analysis.estimated_duration,
-            created_at=time.time()
+            created_at=time.time(),
         )
 
         # Step 9: Thread-safe storage of routing decision
@@ -353,9 +350,7 @@ class TaskRouter:
         return routing_decision
 
     def _build_fallback_chain(
-        self,
-        collaboration_recommendations: List[Tuple[str, CapabilityScore]],
-        primary_agent: str
+        self, collaboration_recommendations: List[Tuple[str, CapabilityScore]], primary_agent: str
     ) -> List[str]:
         """Build fallback chain for error recovery."""
         fallback_chain = []
@@ -372,9 +367,7 @@ class TaskRouter:
         return fallback_chain[:3]  # Limit to 3 fallback options
 
     def _build_fallback_chain_with_circuit_breaker(
-        self,
-        collaboration_recommendations: List[Tuple[str, CapabilityScore]],
-        primary_agent: str
+        self, collaboration_recommendations: List[Tuple[str, CapabilityScore]], primary_agent: str
     ) -> List[str]:
         """Build fallback chain for error recovery with circuit breaker protection."""
         fallback_chain = []
@@ -386,7 +379,9 @@ class TaskRouter:
                 if circuit_breaker.can_execute():
                     fallback_chain.append(agent)
                 else:
-                    logger.debug(f"Skipping {agent} for fallback - circuit breaker is OPEN (correlation: {self._correlation_id})")
+                    logger.debug(
+                        f"Skipping {agent} for fallback - circuit breaker is OPEN (correlation: {self._correlation_id})"
+                    )
 
         # Always include VANA orchestrator as final fallback if not already included
         # (VANA is allowed even if circuit breaker is open as emergency fallback)
@@ -400,7 +395,7 @@ class TaskRouter:
         task_analysis: TaskAnalysis,
         best_score: CapabilityScore,
         requires_planning: bool,
-        collaboration_agents: List[str]
+        collaboration_agents: List[str],
     ) -> str:
         """Generate human-readable reasoning for routing decision."""
         reasoning_parts = []
@@ -465,11 +460,12 @@ class TaskRouter:
 
             # Update performance history
             self.confidence_scorer.record_performance(
-                routing_decision.selected_agent,
-                result.get("performance_score", 0.8)
+                routing_decision.selected_agent, result.get("performance_score", 0.8)
             )
 
-            logger.info(f"Task execution successful for {routing_decision.selected_agent} (correlation: {self._correlation_id})")
+            logger.info(
+                f"Task execution successful for {routing_decision.selected_agent} (correlation: {self._correlation_id})"
+            )
 
             return ExecutionResult(
                 task_id=routing_decision.task_id,
@@ -479,7 +475,7 @@ class TaskRouter:
                 execution_time=execution_time,
                 errors=errors,
                 outputs=[result],
-                confidence_score=routing_decision.confidence_score
+                confidence_score=routing_decision.confidence_score,
             )
 
         except Exception as e:
@@ -490,7 +486,9 @@ class TaskRouter:
             # Record failure in circuit breaker
             circuit_breaker.record_failure()
 
-            logger.warning(f"Task execution failed for {routing_decision.selected_agent}: {str(e)} (correlation: {self._correlation_id})")
+            logger.warning(
+                f"Task execution failed for {routing_decision.selected_agent}: {str(e)} (correlation: {self._correlation_id})"
+            )
 
             # Try fallback if available
             if routing_decision.fallback_agents:
@@ -509,7 +507,7 @@ class TaskRouter:
                 execution_time=execution_time,
                 errors=errors,
                 outputs=outputs,
-                confidence_score=routing_decision.confidence_score
+                confidence_score=routing_decision.confidence_score,
             )
 
     def _execute_with_planning(self, routing_decision: RoutingDecision) -> Dict[str, Any]:
@@ -546,7 +544,7 @@ class TaskRouter:
             "total_steps": len(plan.steps),
             "step_outputs": step_outputs,
             "performance_score": 0.9,
-            "execution_mode": "planned"
+            "execution_mode": "planned",
         }
 
     def _execute_direct(self, routing_decision: RoutingDecision) -> Dict[str, Any]:
@@ -556,7 +554,7 @@ class TaskRouter:
             "task_description": routing_decision.task_description,
             "selected_agent": routing_decision.selected_agent,
             "execution_mode": "direct",
-            "performance_score": 0.8
+            "performance_score": 0.8,
         }
 
         return result
@@ -574,7 +572,7 @@ class TaskRouter:
             "tools_used": step.get("tools", []),
             "agent": agent_name,
             "status": "completed",
-            "output": f"Executed {step['action']} successfully"
+            "output": f"Executed {step['action']} successfully",
         }
 
     def _validate_step_completion(self, step: Dict[str, Any], step_result: Dict[str, Any]) -> bool:
@@ -602,7 +600,7 @@ class TaskRouter:
                     reasoning=f"Fallback execution after primary failure: {error}",
                     fallback_agents=[],
                     estimated_duration="Extended due to fallback",
-                    created_at=time.time()
+                    created_at=time.time(),
                 )
 
                 # Try fallback execution
@@ -616,7 +614,7 @@ class TaskRouter:
                     execution_time=0.0,  # Will be updated by caller
                     errors=[f"Primary agent failed: {error}", "Recovered with fallback"],
                     outputs=[fallback_result],
-                    confidence_score=0.6
+                    confidence_score=0.6,
                 )
 
             except Exception as fallback_error:
@@ -624,14 +622,18 @@ class TaskRouter:
 
         return None  # All fallbacks failed
 
-    def _try_fallback_execution_with_circuit_breaker(self, routing_decision: RoutingDecision, error: str) -> Optional[ExecutionResult]:
+    def _try_fallback_execution_with_circuit_breaker(
+        self, routing_decision: RoutingDecision, error: str
+    ) -> Optional[ExecutionResult]:
         """Try fallback agents if primary execution fails, with circuit breaker protection."""
         for fallback_agent in routing_decision.fallback_agents:
             try:
                 # Check circuit breaker for fallback agent
                 fallback_circuit_breaker = self.get_agent_circuit_breaker(fallback_agent)
                 if not fallback_circuit_breaker.can_execute() and fallback_agent != "vana":
-                    logger.debug(f"Skipping fallback {fallback_agent} - circuit breaker is OPEN (correlation: {self._correlation_id})")
+                    logger.debug(
+                        f"Skipping fallback {fallback_agent} - circuit breaker is OPEN (correlation: {self._correlation_id})"
+                    )
                     continue
 
                 # Create new routing decision for fallback
@@ -646,7 +648,7 @@ class TaskRouter:
                     reasoning=f"Fallback execution after primary failure: {error}",
                     fallback_agents=[],
                     estimated_duration="Extended due to fallback",
-                    created_at=time.time()
+                    created_at=time.time(),
                 )
 
                 # Try fallback execution
@@ -655,7 +657,9 @@ class TaskRouter:
                 # Record success in fallback circuit breaker
                 fallback_circuit_breaker.record_success()
 
-                logger.info(f"Fallback execution successful with {fallback_agent} (correlation: {self._correlation_id})")
+                logger.info(
+                    f"Fallback execution successful with {fallback_agent} (correlation: {self._correlation_id})"
+                )
 
                 return ExecutionResult(
                     task_id=routing_decision.task_id,
@@ -665,14 +669,16 @@ class TaskRouter:
                     execution_time=0.0,  # Will be updated by caller
                     errors=[f"Primary agent failed: {error}", f"Recovered with fallback: {fallback_agent}"],
                     outputs=[fallback_result],
-                    confidence_score=0.6
+                    confidence_score=0.6,
                 )
 
             except Exception as fallback_error:
                 # Record failure in fallback circuit breaker
                 fallback_circuit_breaker = self.get_agent_circuit_breaker(fallback_agent)
                 fallback_circuit_breaker.record_failure()
-                logger.warning(f"Fallback {fallback_agent} also failed: {str(fallback_error)} (correlation: {self._correlation_id})")
+                logger.warning(
+                    f"Fallback {fallback_agent} also failed: {str(fallback_error)} (correlation: {self._correlation_id})"
+                )
                 continue  # Try next fallback
 
         return None  # All fallbacks failed
@@ -681,8 +687,7 @@ class TaskRouter:
         """Get status of all circuit breakers."""
         with self._circuit_breaker_lock:
             return {
-                agent_name: breaker.get_state_info()
-                for agent_name, breaker in self._agent_circuit_breakers.items()
+                agent_name: breaker.get_state_info() for agent_name, breaker in self._agent_circuit_breakers.items()
             }
 
     def reset_circuit_breaker(self, agent_name: str) -> bool:
@@ -721,7 +726,7 @@ class TaskRouter:
             "planning_rate": planned_routes / total_routes,
             "average_confidence": avg_confidence,
             "agent_usage": agent_usage,
-            "active_routes": len(self.active_routes)
+            "active_routes": len(self.active_routes),
         }
 
     def get_agent_performance_summary(self) -> Dict[str, Any]:
@@ -729,12 +734,14 @@ class TaskRouter:
         return {
             "confidence_scorer_status": self.confidence_scorer.get_confidence_summary(),
             "mode_manager_status": self.mode_manager.get_mode_status(),
-            "routing_statistics": self.get_routing_statistics()
+            "routing_statistics": self.get_routing_statistics(),
         }
 
     # ========== PERFORMANCE OPTIMIZATION METHODS ==========
 
-    def _get_routing_cache_key(self, task_description: str, context: Optional[Dict[str, Any]], force_planning: bool) -> str:
+    def _get_routing_cache_key(
+        self, task_description: str, context: Optional[Dict[str, Any]], force_planning: bool
+    ) -> str:
         """Generate cache key for routing decisions."""
         # Normalize task description for better cache hits
         normalized_task = task_description.lower().strip()
@@ -750,7 +757,9 @@ class TaskRouter:
 
         return f"{normalized_task}_{context_key}_{force_planning}"
 
-    def _create_cached_routing_decision(self, cached_decision: RoutingDecision, task_description: str) -> RoutingDecision:
+    def _create_cached_routing_decision(
+        self, cached_decision: RoutingDecision, task_description: str
+    ) -> RoutingDecision:
         """Create a new routing decision based on cached result with updated timestamp."""
         task_id = f"route_{int(time.time() * 1000)}"
 
@@ -765,7 +774,7 @@ class TaskRouter:
             reasoning=f"Cached: {cached_decision.reasoning}",
             fallback_agents=cached_decision.fallback_agents,
             estimated_duration=cached_decision.estimated_duration,
-            created_at=time.time()
+            created_at=time.time(),
         )
 
     @lru_cache(maxsize=500)
@@ -797,5 +806,5 @@ class TaskRouter:
         return {
             "routing_cache_size": len(self._routing_cache),
             "agent_selection_cache_size": len(self._agent_selection_cache),
-            "lru_cache_info": self._get_cached_agent_selection.cache_info()._asdict()
+            "lru_cache_info": self._get_cached_agent_selection.cache_info()._asdict(),
         }

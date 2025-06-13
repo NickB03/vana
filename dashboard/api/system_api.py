@@ -4,16 +4,17 @@ System API for VANA Dashboard
 This module provides functions to retrieve system health and performance data from the VANA system.
 """
 
-import os
-import sys
-import logging
-import random
 import datetime
+import logging
+import os
 import platform
+import random
+import sys
 
 # Try to import psutil, but don't fail if it's not available
 try:
     import psutil
+
     PSUTIL_AVAILABLE = True
 except ImportError:
     PSUTIL_AVAILABLE = False
@@ -23,6 +24,7 @@ except ImportError:
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 logger = logging.getLogger(__name__)
+
 
 def get_service_status():
     """
@@ -39,6 +41,7 @@ def get_service_status():
         logging.error(f"Error fetching service status: {e}")
         return generate_mock_service_status()
 
+
 def generate_mock_service_status():
     """
     Generate mock service status data.
@@ -52,7 +55,7 @@ def generate_mock_service_status():
         {"id": "knowledge-graph", "name": "Knowledge Graph", "status": "running"},
         {"id": "mcp-server", "name": "MCP Server", "status": "running"},
         {"id": "n8n", "name": "n8n Workflow", "status": "running"},
-        {"id": "web-search", "name": "Web Search", "status": "running"}
+        {"id": "web-search", "name": "Web Search", "status": "running"},
     ]
 
     # Add some random metrics
@@ -70,6 +73,7 @@ def generate_mock_service_status():
 
     return services
 
+
 def get_system_health():
     """
     Retrieve system health data.
@@ -82,6 +86,7 @@ def get_system_health():
         logging.error(f"Error getting real system health: {e}")
         # Fall back to mock data
         return generate_mock_system_health()
+
 
 def get_real_system_health():
     """Get real system health metrics using psutil."""
@@ -96,7 +101,7 @@ def get_real_system_health():
     memory = psutil.virtual_memory()
 
     # Get disk usage
-    disk = psutil.disk_usage('/')
+    disk = psutil.disk_usage("/")
 
     # Get network stats (as counters, not rates)
     net = psutil.net_io_counters()
@@ -108,7 +113,7 @@ def get_real_system_health():
         "architecture": platform.architecture()[0],
         "processor": platform.processor(),
         "hostname": platform.node(),
-        "uptime": datetime.datetime.now() - datetime.datetime.fromtimestamp(psutil.boot_time())
+        "uptime": datetime.datetime.now() - datetime.datetime.fromtimestamp(psutil.boot_time()),
     }
 
     return {
@@ -116,19 +121,19 @@ def get_real_system_health():
         "cpu": {
             "usage_percent": cpu_percent,
             "count": cpu_count,
-            "load_avg": psutil.getloadavg() if hasattr(psutil, 'getloadavg') else [0, 0, 0]
+            "load_avg": psutil.getloadavg() if hasattr(psutil, "getloadavg") else [0, 0, 0],
         },
         "memory": {
             "total_mb": memory.total / (1024 * 1024),
             "available_mb": memory.available / (1024 * 1024),
             "used_mb": memory.used / (1024 * 1024),
-            "percent": memory.percent
+            "percent": memory.percent,
         },
         "disk": {
             "total_gb": disk.total / (1024**3),
             "free_gb": disk.free / (1024**3),
             "used_gb": disk.used / (1024**3),
-            "percent": disk.percent
+            "percent": disk.percent,
         },
         "network": {
             "bytes_sent": net.bytes_sent,
@@ -138,10 +143,11 @@ def get_real_system_health():
             "err_in": net.errin,
             "err_out": net.errout,
             "drop_in": net.dropin,
-            "drop_out": net.dropout
+            "drop_out": net.dropout,
         },
-        "system_info": system_info
+        "system_info": system_info,
     }
+
 
 def generate_mock_system_health():
     """Generate realistic mock system health data."""
@@ -177,9 +183,9 @@ def generate_mock_system_health():
         "architecture": "64-bit",
         "processor": "Intel(R) Core(TM) i7-10700K CPU @ 3.80GHz",
         "hostname": "vana-server",
-        "uptime": datetime.timedelta(days=random.randint(1, 30),
-                                     hours=random.randint(0, 23),
-                                     minutes=random.randint(0, 59))
+        "uptime": datetime.timedelta(
+            days=random.randint(1, 30), hours=random.randint(0, 23), minutes=random.randint(0, 59)
+        ),
     }
 
     return {
@@ -187,20 +193,15 @@ def generate_mock_system_health():
         "cpu": {
             "usage_percent": cpu_percent,
             "count": cpu_count,
-            "load_avg": [round(random.uniform(0, 4), 2) for _ in range(3)]
+            "load_avg": [round(random.uniform(0, 4), 2) for _ in range(3)],
         },
         "memory": {
             "total_mb": memory_total,
             "available_mb": memory_available,
             "used_mb": memory_used,
-            "percent": memory_percent
+            "percent": memory_percent,
         },
-        "disk": {
-            "total_gb": disk_total,
-            "free_gb": disk_free,
-            "used_gb": disk_used,
-            "percent": disk_percent
-        },
+        "disk": {"total_gb": disk_total, "free_gb": disk_free, "used_gb": disk_used, "percent": disk_percent},
         "network": {
             "bytes_sent": bytes_sent,
             "bytes_recv": bytes_recv,
@@ -209,10 +210,11 @@ def generate_mock_system_health():
             "err_in": random.randint(0, 10),
             "err_out": random.randint(0, 5),
             "drop_in": random.randint(0, 20),
-            "drop_out": random.randint(0, 10)
+            "drop_out": random.randint(0, 10),
         },
-        "system_info": system_info
+        "system_info": system_info,
     }
+
 
 def get_system_health_history(hours=24):
     """
@@ -224,6 +226,7 @@ def get_system_health_history(hours=24):
     except Exception as e:
         logging.error(f"Error fetching system health history: {e}")
         return generate_mock_system_health_history(hours)
+
 
 def generate_mock_system_health_history(hours=24):
     """Generate realistic mock historical system health data."""
@@ -267,12 +270,13 @@ def generate_mock_system_health_history(hours=24):
             "memory_percent": memory_percent,
             "disk_percent": disk_percent,
             "network_send_bytes": network_send,
-            "network_recv_bytes": network_recv
+            "network_recv_bytes": network_recv,
         }
 
         history.append(data_point)
 
     return history
+
 
 def get_system_alerts(limit=10):
     """
@@ -284,6 +288,7 @@ def get_system_alerts(limit=10):
     except Exception as e:
         logging.error(f"Error fetching system alerts: {e}")
         return generate_mock_system_alerts(limit)
+
 
 def generate_mock_system_alerts(limit=10):
     """Generate realistic mock system alerts."""
@@ -300,7 +305,7 @@ def generate_mock_system_alerts(limit=10):
         {"type": "network", "level": "warning", "message": "Network packet loss detected ({loss_rate}%)"},
         {"type": "system", "level": "info", "message": "System updated to version {version}"},
         {"type": "system", "level": "warning", "message": "System restart required for updates"},
-        {"type": "application", "level": "error", "message": "Application crashed: {error_message}"}
+        {"type": "application", "level": "error", "message": "Application crashed: {error_message}"},
     ]
 
     # Generate alerts
@@ -335,7 +340,7 @@ def generate_mock_system_alerts(limit=10):
                 "NullPointerException",
                 "DatabaseConnectionError",
                 "Segmentation fault",
-                "Timeout waiting for response"
+                "Timeout waiting for response",
             ]
             message_params["error_message"] = random.choice(error_messages)
 
@@ -348,7 +353,7 @@ def generate_mock_system_alerts(limit=10):
             "type": alert_type,
             "level": level,
             "message": message,
-            "acknowledged": random.random() > 0.3  # 70% are acknowledged
+            "acknowledged": random.random() > 0.3,  # 70% are acknowledged
         }
 
         alerts.append(alert)
@@ -357,6 +362,7 @@ def generate_mock_system_alerts(limit=10):
     alerts.sort(key=lambda a: a["timestamp"], reverse=True)
 
     return alerts
+
 
 # Create a simple API object for compatibility
 class SystemAPI:
@@ -370,6 +376,7 @@ class SystemAPI:
 
     def get_alerts(self, limit=10):
         return get_system_alerts(limit)
+
 
 # Create the API instance
 system_api = SystemAPI()

@@ -1,16 +1,16 @@
-import requests
 import json
 import logging
 import os
 import time
-from typing import Dict, List, Any, Optional, Tuple
 from datetime import datetime
+from typing import Any, Dict, List, Optional, Tuple
+
+import requests
+
+from tools.resilience import CircuitBreakerOpenError, circuit_breaker
 
 # Import security components
-from tools.security import CredentialManager
-from tools.security import AuditLogger
-from tools.security import AccessControlManager, Role, Operation, require_permission
-from tools.resilience import circuit_breaker, CircuitBreakerOpenError
+from tools.security import AccessControlManager, AuditLogger, CredentialManager, Operation, Role, require_permission
 
 # Import environment configuration
 try:
@@ -24,11 +24,13 @@ except ImportError:
             return {
                 "endpoint": os.environ.get("MCP_ENDPOINT", "https://mcp.community.augment.co"),
                 "namespace": os.environ.get("MCP_NAMESPACE", "vana-project"),
-                "api_key": os.environ.get("MCP_API_KEY", "")
+                "api_key": os.environ.get("MCP_API_KEY", ""),
             }
+
 
 # Set up logging
 logger = logging.getLogger(__name__)
+
 
 class MCPMemoryClient:
     """Client for interacting with MCP Knowledge Graph Memory Server."""
@@ -63,10 +65,7 @@ class MCPMemoryClient:
             api_key_to_use = api_key
 
         # Set up headers with secure credentials
-        self.headers = {
-            "Content-Type": "application/json",
-            "Authorization": f"Bearer {api_key_to_use}"
-        }
+        self.headers = {"Content-Type": "application/json", "Authorization": f"Bearer {api_key_to_use}"}
         self.last_sync_timestamp = None
         self.is_available = False
         self.last_connection_check = 0
@@ -110,8 +109,7 @@ class MCPMemoryClient:
 
     @circuit_breaker("mcp_store_entity", failure_threshold=3, reset_timeout=60.0)
     @require_permission(Operation.STORE_ENTITY, entity_type_arg="entity_type")
-    def store_entity(self, entity_name: str, entity_type: str,
-                     observations: List[str]) -> Dict[str, Any]:
+    def store_entity(self, entity_name: str, entity_type: str, observations: List[str]) -> Dict[str, Any]:
         """
         Store a new entity in the knowledge graph.
 
@@ -129,7 +127,7 @@ class MCPMemoryClient:
                 "operation": "store",
                 "entityName": entity_name,
                 "entityType": entity_type,
-                "observations": observations
+                "observations": observations,
             }
 
             # Make the request
@@ -145,9 +143,9 @@ class MCPMemoryClient:
                 details={
                     "entity_name": entity_name,
                     "entity_type": entity_type,
-                    "observation_count": len(observations)
+                    "observation_count": len(observations),
                 },
-                status="success" if result.get("success", False) else "failure"
+                status="success" if result.get("success", False) else "failure",
             )
 
             return result
@@ -161,12 +159,8 @@ class MCPMemoryClient:
                 user_id=f"agent:{self.role.value}",
                 operation="store_entity",
                 resource_type="entity",
-                details={
-                    "entity_name": entity_name,
-                    "entity_type": entity_type,
-                    "error": str(e)
-                },
-                status="error"
+                details={"entity_name": entity_name, "entity_type": entity_type, "error": str(e)},
+                status="error",
             )
 
             return {"error": str(e), "success": False}
@@ -185,10 +179,7 @@ class MCPMemoryClient:
         """
         try:
             # Create payload
-            payload = {
-                "operation": "retrieve",
-                "entityName": entity_name
-            }
+            payload = {"operation": "retrieve", "entityName": entity_name}
 
             # Make the request
             result = self._make_request(payload)
@@ -201,7 +192,7 @@ class MCPMemoryClient:
                 resource_type="entity",
                 resource_id=result.get("entity", {}).get("id", "unknown"),
                 details={"entity_name": entity_name},
-                status="success" if "entity" in result else "failure"
+                status="success" if "entity" in result else "failure",
             )
 
             return result
@@ -215,17 +206,13 @@ class MCPMemoryClient:
                 user_id=f"agent:{self.role.value}",
                 operation="retrieve_entity",
                 resource_type="entity",
-                details={
-                    "entity_name": entity_name,
-                    "error": str(e)
-                },
-                status="error"
+                details={"entity_name": entity_name, "error": str(e)},
+                status="error",
             )
 
             return {"error": str(e), "success": False}
 
-    def create_relationship(self, from_entity: str, relationship: str,
-                          to_entity: str) -> Dict[str, Any]:
+    def create_relationship(self, from_entity: str, relationship: str, to_entity: str) -> Dict[str, Any]:
         """
         Create a relationship between entities.
 
@@ -241,7 +228,7 @@ class MCPMemoryClient:
             "operation": "relate",
             "fromEntity": from_entity,
             "relationship": relationship,
-            "toEntity": to_entity
+            "toEntity": to_entity,
         }
 
         return self._make_request(payload)
@@ -253,15 +240,12 @@ class MCPMemoryClient:
         Returns:
             Dict containing all entities or error
         """
-        payload = {
-            "operation": "retrieve_all"
-        }
+        payload = {"operation": "retrieve_all"}
 
         result = self._make_request(payload)
 
         # Update last sync timestamp
-        self.last_sync_timestamp = result.get("timestamp",
-                            self._current_timestamp())
+        self.last_sync_timestamp = result.get("timestamp", self._current_timestamp())
 
         return result
 
@@ -276,10 +260,7 @@ class MCPMemoryClient:
             # If no previous sync, perform initial load
             return self.get_initial_data()
 
-        payload = {
-            "operation": "sync",
-            "lastSyncTimestamp": self.last_sync_timestamp
-        }
+        payload = {"operation": "sync", "lastSyncTimestamp": self.last_sync_timestamp}
 
         result = self._make_request(payload)
 
@@ -289,8 +270,7 @@ class MCPMemoryClient:
 
         return result
 
-    def search_entities(self, query: str, entity_type: str = None,
-                      limit: int = 10) -> Dict[str, Any]:
+    def search_entities(self, query: str, entity_type: str = None, limit: int = 10) -> Dict[str, Any]:
         """
         Search for entities in the knowledge graph.
 
@@ -302,11 +282,7 @@ class MCPMemoryClient:
         Returns:
             Dict containing search results
         """
-        payload = {
-            "operation": "search",
-            "query": query,
-            "limit": limit
-        }
+        payload = {"operation": "search", "query": query, "limit": limit}
 
         if entity_type:
             payload["entityType"] = entity_type
@@ -323,10 +299,7 @@ class MCPMemoryClient:
         Returns:
             Dict containing operation result
         """
-        payload = {
-            "operation": "delete",
-            "entityName": entity_name
-        }
+        payload = {"operation": "delete", "entityName": entity_name}
 
         return self._make_request(payload)
 
@@ -363,8 +336,7 @@ class MCPMemoryClient:
 
         try:
             # Make the request with timeout
-            response = requests.post(url, headers=self.headers,
-                                  json=payload, timeout=10)
+            response = requests.post(url, headers=self.headers, json=payload, timeout=10)
 
             if response.status_code == 200:
                 # Log success

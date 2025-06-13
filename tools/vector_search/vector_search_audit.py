@@ -6,10 +6,10 @@ This module provides audit logging for security-sensitive operations in the Vect
 It leverages the AuditLogger from the security module to create tamper-evident logs.
 """
 
-import os
-import logging
 import datetime
-from typing import Dict, Any, Optional, List, Union
+import logging
+import os
+from typing import Any, Dict, List, Optional, Union
 
 # Import the AuditLogger
 from tools.security.audit_logger import AuditLogger
@@ -17,6 +17,7 @@ from tools.security.audit_logger import AuditLogger
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
 
 class VectorSearchAuditLogger:
     """
@@ -41,9 +42,15 @@ class VectorSearchAuditLogger:
 
         logger.info(f"Vector Search Audit Logger initialized with log directory: {log_dir}")
 
-    def log_search(self, user_id: str, query: str, num_results: int,
-                  metadata_filter: Optional[Dict[str, Any]] = None,
-                  status: str = "success", details: Optional[Dict[str, Any]] = None) -> bool:
+    def log_search(
+        self,
+        user_id: str,
+        query: str,
+        num_results: int,
+        metadata_filter: Optional[Dict[str, Any]] = None,
+        status: str = "success",
+        details: Optional[Dict[str, Any]] = None,
+    ) -> bool:
         """
         Log a Vector Search operation.
 
@@ -59,10 +66,7 @@ class VectorSearchAuditLogger:
             True if the event was logged successfully, False otherwise
         """
         # Create details dictionary
-        log_details = {
-            "query": query,
-            "num_results": num_results
-        }
+        log_details = {"query": query, "num_results": num_results}
 
         # Add metadata filter if provided
         if metadata_filter:
@@ -80,12 +84,18 @@ class VectorSearchAuditLogger:
             resource_type="vector_index",
             resource_id=os.environ.get("DEPLOYED_INDEX_ID", "unknown"),
             details=log_details,
-            status=status
+            status=status,
         )
 
-    def log_update(self, user_id: str, operation_type: str, num_items: int,
-                  item_ids: Optional[List[str]] = None,
-                  status: str = "success", details: Optional[Dict[str, Any]] = None) -> bool:
+    def log_update(
+        self,
+        user_id: str,
+        operation_type: str,
+        num_items: int,
+        item_ids: Optional[List[str]] = None,
+        status: str = "success",
+        details: Optional[Dict[str, Any]] = None,
+    ) -> bool:
         """
         Log a Vector Search update operation.
 
@@ -101,10 +111,7 @@ class VectorSearchAuditLogger:
             True if the event was logged successfully, False otherwise
         """
         # Create details dictionary
-        log_details = {
-            "operation_type": operation_type,
-            "num_items": num_items
-        }
+        log_details = {"operation_type": operation_type, "num_items": num_items}
 
         # Add item IDs if provided (limit to first 10 for brevity)
         if item_ids:
@@ -124,12 +131,18 @@ class VectorSearchAuditLogger:
             resource_type="vector_index",
             resource_id=os.environ.get("DEPLOYED_INDEX_ID", "unknown"),
             details=log_details,
-            status=status
+            status=status,
         )
 
-    def log_config_change(self, user_id: str, config_type: str,
-                         old_value: Optional[Any] = None, new_value: Optional[Any] = None,
-                         status: str = "success", details: Optional[Dict[str, Any]] = None) -> bool:
+    def log_config_change(
+        self,
+        user_id: str,
+        config_type: str,
+        old_value: Optional[Any] = None,
+        new_value: Optional[Any] = None,
+        status: str = "success",
+        details: Optional[Dict[str, Any]] = None,
+    ) -> bool:
         """
         Log a Vector Search configuration change.
 
@@ -145,9 +158,7 @@ class VectorSearchAuditLogger:
             True if the event was logged successfully, False otherwise
         """
         # Create details dictionary
-        log_details = {
-            "config_type": config_type
-        }
+        log_details = {"config_type": config_type}
 
         # Add old and new values if provided
         if old_value is not None:
@@ -168,12 +179,17 @@ class VectorSearchAuditLogger:
             resource_type="vector_search_config",
             resource_id=config_type,
             details=log_details,
-            status=status
+            status=status,
         )
 
-    def log_access(self, user_id: str, access_type: str,
-                  resource_id: Optional[str] = None,
-                  status: str = "success", details: Optional[Dict[str, Any]] = None) -> bool:
+    def log_access(
+        self,
+        user_id: str,
+        access_type: str,
+        resource_id: Optional[str] = None,
+        status: str = "success",
+        details: Optional[Dict[str, Any]] = None,
+    ) -> bool:
         """
         Log a Vector Search access event.
 
@@ -188,9 +204,7 @@ class VectorSearchAuditLogger:
             True if the event was logged successfully, False otherwise
         """
         # Create details dictionary
-        log_details = {
-            "access_type": access_type
-        }
+        log_details = {"access_type": access_type}
 
         # Add additional details if provided
         if details:
@@ -204,8 +218,9 @@ class VectorSearchAuditLogger:
             resource_type="vector_search",
             resource_id=resource_id or os.environ.get("DEPLOYED_INDEX_ID", "unknown"),
             details=log_details,
-            status=status
+            status=status,
         )
+
 
 # Create a singleton instance
 vector_search_audit_logger = VectorSearchAuditLogger()

@@ -7,4 +7,4 @@ This module provides a root-level import for the VANA agent to ensure ADK compat
 from agents.vana import agent, root_agent
 
 # Export both agent and root_agent at the root level for ADK discovery
-__all__ = ['agent', 'root_agent']
+__all__ = ["agent", "root_agent"]

@@ -7,14 +7,14 @@ and measuring the relevance of the results. It can evaluate Vector Search, Knowl
 and Hybrid Search.
 """
 
+import argparse
+import datetime
+import json
+import logging
+import math
 import os
 import sys
-import argparse
-import logging
-import json
-import datetime
-import math
-from typing import List, Dict, Any, Optional
+from typing import Any, Dict, List, Optional
 
 # Add the project root to the Python path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -28,10 +28,7 @@ from tools.vector_search.vector_search_client import VectorSearchClient
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(message)s",
-    handlers=[
-        logging.FileHandler("evaluate_knowledge_base.log"),
-        logging.StreamHandler()
-    ]
+    handlers=[logging.FileHandler("evaluate_knowledge_base.log"), logging.StreamHandler()],
 )
 logger = logging.getLogger(__name__)
 
@@ -41,33 +38,34 @@ DEFAULT_TEST_QUERIES = [
         "query": "What is VANA?",
         "expected_keywords": ["Versatile Agent Network Architecture", "intelligent", "agent", "system", "ADK"],
         "category": "general",
-        "difficulty": "easy"
+        "difficulty": "easy",
     },
     {
         "query": "How does Vector Search work?",
         "expected_keywords": ["embedding", "semantic", "similarity", "Vertex AI", "index"],
         "category": "technology",
-        "difficulty": "medium"
+        "difficulty": "medium",
     },
     {
         "query": "What is the Knowledge Graph in VANA?",
         "expected_keywords": ["structured", "entity", "relationship", "MCP", "knowledge"],
         "category": "technology",
-        "difficulty": "medium"
+        "difficulty": "medium",
     },
     {
         "query": "How to implement hybrid search?",
         "expected_keywords": ["combine", "Vector Search", "Knowledge Graph", "results", "ranking"],
         "category": "implementation",
-        "difficulty": "hard"
+        "difficulty": "hard",
     },
     {
         "query": "What are the main components of VANA?",
         "expected_keywords": ["Vector Search", "Knowledge Graph", "ADK", "agents", "tools"],
         "category": "architecture",
-        "difficulty": "medium"
-    }
+        "difficulty": "medium",
+    },
 ]
+
 
 def calculate_precision(results: List[Dict[str, Any]], expected_keywords: List[str]) -> float:
     """
@@ -94,6 +92,7 @@ def calculate_precision(results: List[Dict[str, Any]], expected_keywords: List[s
 
     return relevant_count / len(results)
 
+
 def calculate_recall(results: List[Dict[str, Any]], expected_keywords: List[str]) -> float:
     """
     Calculate recall of retrieval results
@@ -116,6 +115,7 @@ def calculate_recall(results: List[Dict[str, Any]], expected_keywords: List[str]
 
     return found_keywords / len(expected_keywords)
 
+
 def calculate_f1_score(precision: float, recall: float) -> float:
     """
     Calculate F1 score from precision and recall
@@ -131,6 +131,7 @@ def calculate_f1_score(precision: float, recall: float) -> float:
         return 0.0
 
     return 2 * (precision * recall) / (precision + recall)
+
 
 def calculate_relevance_scores(results: List[Dict[str, Any]], expected_keywords: List[str]) -> List[float]:
     """
@@ -159,6 +160,7 @@ def calculate_relevance_scores(results: List[Dict[str, Any]], expected_keywords:
         relevance_scores.append(relevance)
 
     return relevance_scores
+
 
 def calculate_ndcg(relevance_scores: List[float], k: int = None) -> float:
     """
@@ -193,6 +195,7 @@ def calculate_ndcg(relevance_scores: List[float], k: int = None) -> float:
         return 0.0
 
     return dcg / idcg
+
 
 def evaluate_vector_search(test_queries: List[Dict[str, Any]], top_k: int = 5) -> Dict[str, Any]:
     """
@@ -239,16 +242,18 @@ def evaluate_vector_search(test_queries: List[Dict[str, Any]], top_k: int = 5) -
         logger.info(f"  F1 Score: {f1:.2f}")
         logger.info(f"  NDCG: {ndcg:.2f}")
 
-        results.append({
-            "query": query,
-            "category": category,
-            "difficulty": difficulty,
-            "precision": precision,
-            "recall": recall,
-            "f1": f1,
-            "ndcg": ndcg,
-            "result_count": len(search_results)
-        })
+        results.append(
+            {
+                "query": query,
+                "category": category,
+                "difficulty": difficulty,
+                "precision": precision,
+                "recall": recall,
+                "f1": f1,
+                "ndcg": ndcg,
+                "result_count": len(search_results),
+            }
+        )
 
     # Calculate average metrics
     avg_precision = sum(r["precision"] for r in results) / len(results)
@@ -287,15 +292,11 @@ def evaluate_vector_search(test_queries: List[Dict[str, Any]], top_k: int = 5) -
     return {
         "success": True,
         "results": results,
-        "averages": {
-            "precision": avg_precision,
-            "recall": avg_recall,
-            "f1": avg_f1,
-            "ndcg": avg_ndcg
-        },
+        "averages": {"precision": avg_precision, "recall": avg_recall, "f1": avg_f1, "ndcg": avg_ndcg},
         "category_metrics": category_metrics,
-        "difficulty_metrics": difficulty_metrics
+        "difficulty_metrics": difficulty_metrics,
     }
+
 
 def evaluate_knowledge_graph(test_queries: List[Dict[str, Any]]) -> Dict[str, Any]:
     """
@@ -333,13 +334,12 @@ def evaluate_knowledge_graph(test_queries: List[Dict[str, Any]]) -> Dict[str, An
         # Convert entities to a format similar to Vector Search results
         search_results = []
         for entity in entities:
-            search_results.append({
-                "content": entity.get("observation", ""),
-                "metadata": {
-                    "name": entity.get("name", ""),
-                    "type": entity.get("type", "")
+            search_results.append(
+                {
+                    "content": entity.get("observation", ""),
+                    "metadata": {"name": entity.get("name", ""), "type": entity.get("type", "")},
                 }
-            })
+            )
 
         # Calculate metrics
         precision = calculate_precision(search_results, expected_keywords)
@@ -353,16 +353,18 @@ def evaluate_knowledge_graph(test_queries: List[Dict[str, Any]]) -> Dict[str, An
         logger.info(f"  F1 Score: {f1:.2f}")
         logger.info(f"  NDCG: {ndcg:.2f}")
 
-        results.append({
-            "query": query,
-            "category": category,
-            "difficulty": difficulty,
-            "precision": precision,
-            "recall": recall,
-            "f1": f1,
-            "ndcg": ndcg,
-            "result_count": len(search_results)
-        })
+        results.append(
+            {
+                "query": query,
+                "category": category,
+                "difficulty": difficulty,
+                "precision": precision,
+                "recall": recall,
+                "f1": f1,
+                "ndcg": ndcg,
+                "result_count": len(search_results),
+            }
+        )
 
     # Calculate average metrics
     if not results:
@@ -405,15 +407,11 @@ def evaluate_knowledge_graph(test_queries: List[Dict[str, Any]]) -> Dict[str, An
     return {
         "success": True,
         "results": results,
-        "averages": {
-            "precision": avg_precision,
-            "recall": avg_recall,
-            "f1": avg_f1,
-            "ndcg": avg_ndcg
-        },
+        "averages": {"precision": avg_precision, "recall": avg_recall, "f1": avg_f1, "ndcg": avg_ndcg},
         "category_metrics": category_metrics,
-        "difficulty_metrics": difficulty_metrics
+        "difficulty_metrics": difficulty_metrics,
     }
+
 
 def evaluate_hybrid_search(test_queries: List[Dict[str, Any]], top_k: int = 5) -> Dict[str, Any]:
     """
@@ -464,16 +462,18 @@ def evaluate_hybrid_search(test_queries: List[Dict[str, Any]], top_k: int = 5) -
         logger.info(f"  F1 Score: {f1:.2f}")
         logger.info(f"  NDCG: {ndcg:.2f}")
 
-        results.append({
-            "query": query,
-            "category": category,
-            "difficulty": difficulty,
-            "precision": precision,
-            "recall": recall,
-            "f1": f1,
-            "ndcg": ndcg,
-            "result_count": len(search_results)
-        })
+        results.append(
+            {
+                "query": query,
+                "category": category,
+                "difficulty": difficulty,
+                "precision": precision,
+                "recall": recall,
+                "f1": f1,
+                "ndcg": ndcg,
+                "result_count": len(search_results),
+            }
+        )
 
     # Calculate average metrics
     if not results:
@@ -516,15 +516,11 @@ def evaluate_hybrid_search(test_queries: List[Dict[str, Any]], top_k: int = 5) -
     return {
         "success": True,
         "results": results,
-        "averages": {
-            "precision": avg_precision,
-            "recall": avg_recall,
-            "f1": avg_f1,
-            "ndcg": avg_ndcg
-        },
+        "averages": {"precision": avg_precision, "recall": avg_recall, "f1": avg_f1, "ndcg": avg_ndcg},
         "category_metrics": category_metrics,
-        "difficulty_metrics": difficulty_metrics
+        "difficulty_metrics": difficulty_metrics,
     }
+
 
 def main():
     """Main function"""
@@ -563,7 +559,7 @@ def main():
         "timestamp": datetime.datetime.now().isoformat(),
         "vector_search": None,
         "knowledge_graph": None,
-        "hybrid_search": None
+        "hybrid_search": None,
     }
 
     # Evaluate Vector Search
@@ -592,6 +588,7 @@ def main():
 
     # Return success status
     return 0
+
 
 if __name__ == "__main__":
     sys.exit(main())

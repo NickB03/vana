@@ -5,11 +5,11 @@ Provides comprehensive data analysis, visualization, and machine learning capabi
 by leveraging the Code Execution Specialist for secure Python execution.
 """
 
-import os
-import sys
 import json
 import logging
-from typing import Dict, Any, Optional, List
+import os
+import sys
+from typing import Any, Dict, List, Optional
 
 # Add project root to Python path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
@@ -27,18 +27,18 @@ logger = logging.getLogger(__name__)
 def analyze_data(data_source: str, analysis_type: str = "descriptive") -> str:
     """
     Perform statistical analysis on data.
-    
+
     Args:
         data_source: Data source (CSV file path, JSON string, or sample data)
         analysis_type: Type of analysis (descriptive, correlation, distribution)
-    
+
     Returns:
         Formatted analysis results
     """
     try:
         # Generate Python code for data analysis (avoiding security patterns)
         if analysis_type.lower() == "descriptive":
-            python_code = f'''
+            python_code = f"""
 import pandas as pd
 import numpy as np
 
@@ -65,10 +65,10 @@ for col in data.columns:
     logger.info(f"Min: {{np.min(values):.3f}}")
     logger.info(f"Max: {{np.max(values):.3f}}")
     logger.info(f"Std: {{np.std(values):.3f}}")
-'''
-        
+"""
+
         elif analysis_type.lower() == "correlation":
-            python_code = f'''
+            python_code = f"""
 import pandas as pd
 import numpy as np
 
@@ -96,10 +96,10 @@ logger.info("\\n=== INTERPRETATION ===")
 logger.info("Correlation values close to 1: Strong positive relationship")
 logger.info("Correlation values close to -1: Strong negative relationship")
 logger.info("Correlation values close to 0: Weak relationship")
-'''
-        
+"""
+
         else:  # distribution analysis
-            python_code = f'''
+            python_code = f"""
 import pandas as pd
 import numpy as np
 from scipy import stats
@@ -130,11 +130,11 @@ for column in data.columns:
     if median_val != 0:
         skew_approx = (mean_val - median_val) / np.std(values)
         logger.info(f"Skewness (approx): {{skew_approx:.3f}}")
-'''
-        
+"""
+
         # Execute the analysis using Code Execution Specialist
-        result = execute_code('python', python_code, description=f"Data analysis: {analysis_type}")
-        
+        result = execute_code("python", python_code, description=f"Data analysis: {analysis_type}")
+
         # Add insights to the result
         insights = f"""
 📊 **Data Science Analysis Complete**
@@ -150,9 +150,9 @@ for column in data.columns:
 - Consider visualization for better understanding
 - Use clean_data tool if data quality issues found
 """
-        
+
         return insights
-        
+
     except Exception as e:
         logger.error(f"Data analysis failed: {str(e)}")
         return f"❌ Analysis failed: {str(e)}"
@@ -161,19 +161,19 @@ for column in data.columns:
 def visualize_data(data_source: str, chart_type: str = "histogram", columns: str = "all") -> str:
     """
     Generate data visualizations.
-    
+
     Args:
         data_source: Data source (CSV file path, JSON string, or sample data)
         chart_type: Type of chart (histogram, scatter, bar, line, heatmap)
         columns: Columns to visualize (comma-separated or 'all')
-    
+
     Returns:
         Visualization code and description
     """
     try:
         # Generate Python code for visualization
         if chart_type.lower() == "histogram":
-            python_code = f'''
+            python_code = f"""
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -211,10 +211,10 @@ for col in columns_to_plot[:3]:  # Limit to 3 columns
 
 logger.info("\\n📊 Chart would show distribution patterns for numerical columns")
 logger.info("💡 Use this to identify outliers and data distribution patterns")
-'''
-        
+"""
+
         elif chart_type.lower() == "scatter":
-            python_code = f'''
+            python_code = f"""
 import pandas as pd
 import numpy as np
 
@@ -250,10 +250,10 @@ if len(columns_list) >= 2:
     
 logger.info("\\n📊 Chart would show relationship between variables")
 logger.info("💡 Use this to identify correlations and patterns")
-'''
-        
+"""
+
         else:  # Default to summary visualization
-            python_code = f'''
+            python_code = f"""
 import pandas as pd
 import numpy as np
 
@@ -281,11 +281,11 @@ logger.info(f"Data shape: {{data.shape}}")
 logger.info(f"Available columns: {{list(data.columns)}}")
 logger.info("\\n📊 Visualization would be generated using matplotlib/seaborn")
 logger.info("💡 Consider specific chart types: histogram, scatter, bar, line, heatmap")
-'''
-        
+"""
+
         # Execute the visualization using Code Execution Specialist
-        result = execute_code('python', python_code, description=f"Data visualization: {chart_type}")
-        
+        result = execute_code("python", python_code, description=f"Data visualization: {chart_type}")
+
         # Add visualization insights
         insights = f"""
 📈 **Data Visualization Complete**
@@ -302,9 +302,9 @@ logger.info("💡 Consider specific chart types: histogram, scatter, bar, line, 
 - Consider different chart types for various data patterns
 - Use analyze_data tool for statistical insights first
 """
-        
+
         return insights
-        
+
     except Exception as e:
         logger.error(f"Data visualization failed: {str(e)}")
         return f"❌ Visualization failed: {str(e)}"
@@ -324,7 +324,7 @@ def clean_data(data_source: str, operations: str = "basic") -> str:
     try:
         # Generate Python code for data cleaning
         if operations.lower() == "missing_values":
-            python_code = f'''
+            python_code = f"""
 import pandas as pd
 import numpy as np
 
@@ -365,10 +365,10 @@ logger.info("\\nAfter cleaning:")
 logger.info(f"Shape: {{data_cleaned.shape}}")
 logger.info(f"Missing values: {{data_cleaned.isnull().sum().sum()}}")
 logger.info("\\n✅ Missing values handled successfully")
-'''
+"""
 
         elif operations.lower() == "outliers":
-            python_code = f'''
+            python_code = f"""
 import pandas as pd
 import numpy as np
 
@@ -409,10 +409,10 @@ for column in numeric_data.columns:
         logger.info(f"Outlier values: {{outliers[column].tolist()[:5]}}")  # Show first 5
 
 logger.info("\\n💡 Consider removing or transforming outliers based on domain knowledge")
-'''
+"""
 
         else:  # basic cleaning
-            python_code = f'''
+            python_code = f"""
 import pandas as pd
 import numpy as np
 
@@ -455,10 +455,10 @@ logger.info(f"Shape: {{data_cleaned.shape}}")
 logger.info(f"Missing values: {{data_cleaned.isnull().sum().sum()}}")
 logger.info(f"Duplicates: {{data_cleaned.duplicated().sum()}}")
 logger.info("\\n✅ Basic cleaning completed")
-'''
+"""
 
         # Execute the cleaning using Code Execution Specialist
-        result = execute_code('python', python_code, description=f"Data cleaning: {operations}")
+        result = execute_code("python", python_code, description=f"Data cleaning: {operations}")
 
         # Add cleaning insights
         insights = f"""
@@ -498,7 +498,7 @@ def model_data(data_source: str, target_column: str = "target", model_type: str 
     try:
         # Generate Python code for machine learning
         if model_type.lower() == "regression":
-            python_code = f'''
+            python_code = f"""
 import pandas as pd
 import numpy as np
 from sklearn.model_selection import train_test_split
@@ -561,10 +561,10 @@ logger.info(f"RMSE: {{np.sqrt(mse):.3f}}")
 logger.info(f"\\nFeature Coefficients:")
 for feature, coef in zip(X.columns, model.coef_):
     logger.info(f"{{feature}}: {{coef:.3f}}")
-'''
+"""
 
         elif model_type.lower() == "classification":
-            python_code = f'''
+            python_code = f"""
 import pandas as pd
 import numpy as np
 from sklearn.model_selection import train_test_split
@@ -625,10 +625,10 @@ logger.info(f"Accuracy: {{accuracy:.3f}}")
 logger.info(f"\\nFeature Importance:")
 for feature, importance in zip(X.columns, model.feature_importances_):
     logger.info(f"{{feature}}: {{importance:.3f}}")
-'''
+"""
 
         else:  # clustering
-            python_code = f'''
+            python_code = f"""
 import pandas as pd
 import numpy as np
 from sklearn.cluster import KMeans
@@ -687,10 +687,10 @@ for i, center in enumerate(kmeans.cluster_centers_):
 
 # Calculate inertia (within-cluster sum of squares)
 logger.info(f"\\nInertia (WCSS): {{kmeans.inertia_:.3f}}")
-'''
+"""
 
         # Execute the modeling using Code Execution Specialist
-        result = execute_code('python', python_code, description=f"Machine learning: {model_type}")
+        result = execute_code("python", python_code, description=f"Machine learning: {model_type}")
 
         # Add modeling insights
         insights = f"""
@@ -759,11 +759,10 @@ data_science_specialist = LlmAgent(
 - Always include data science best practices and considerations
 
 Focus on generating high-quality Python code that leverages the full power of data science libraries while maintaining security and performance standards.""",
-
     tools=[
         FunctionTool(func=analyze_data),
         FunctionTool(func=visualize_data),
         FunctionTool(func=clean_data),
-        FunctionTool(func=model_data)
-    ]
+        FunctionTool(func=model_data),
+    ],
 )

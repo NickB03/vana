@@ -4,34 +4,35 @@ Memory Bank Update Script
 Updates memory bank files with current system status and fixes applied.
 """
 
+import logging
 import os
 import sys
-import logging
 from datetime import datetime
-from typing import Dict, Any
+from typing import Any, Dict
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
 MEMORY_BANK_DIR = "/Users/nick/Development/vana/memory-bank"
 
+
 def update_active_context():
     """Update activeContext.md with current system status."""
     logger.info("📝 Updating activeContext.md")
-    
+
     try:
         active_context_path = os.path.join(MEMORY_BANK_DIR, "activeContext.md")
-        
+
         # Read current content
         if os.path.exists(active_context_path):
-            with open(active_context_path, 'r') as f:
+            with open(active_context_path, "r") as f:
                 current_content = f.read()
         else:
             current_content = ""
-        
+
         # Create update section
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        
+
         update_section = f"""
 
 ## 🔧 **SYSTEM REPAIR COMPLETION - {timestamp}**
@@ -79,37 +80,38 @@ def update_active_context():
 
 **STATUS**: System repair complete - ready for production deployment and validation.
 """
-        
+
         # Append update to file
         updated_content = current_content + update_section
-        
-        with open(active_context_path, 'w') as f:
+
+        with open(active_context_path, "w") as f:
             f.write(updated_content)
-        
+
         logger.info("✅ activeContext.md updated successfully")
         return True
-        
+
     except Exception as e:
         logger.error(f"❌ Failed to update activeContext.md: {e}")
         return False
 
+
 def update_progress():
     """Update progress.md with repair completion."""
     logger.info("📝 Updating progress.md")
-    
+
     try:
         progress_path = os.path.join(MEMORY_BANK_DIR, "progress.md")
-        
+
         # Read current content
         if os.path.exists(progress_path):
-            with open(progress_path, 'r') as f:
+            with open(progress_path, "r") as f:
                 current_content = f.read()
         else:
             current_content = ""
-        
+
         # Create progress update
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        
+
         progress_update = f"""
 
 ## 🎉 **SYSTEM REPAIR PROJECT COMPLETION - {timestamp}**
@@ -168,28 +170,29 @@ System is now ready for production deployment with:
 
 **CONFIDENCE LEVEL**: 9/10 - All critical issues resolved, system fully functional.
 """
-        
+
         # Append to progress file
         updated_content = current_content + progress_update
-        
-        with open(progress_path, 'w') as f:
+
+        with open(progress_path, "w") as f:
             f.write(updated_content)
-        
+
         logger.info("✅ progress.md updated successfully")
         return True
-        
+
     except Exception as e:
         logger.error(f"❌ Failed to update progress.md: {e}")
         return False
 
+
 def create_system_repair_summary():
     """Create a comprehensive system repair summary document."""
     logger.info("📝 Creating system repair summary")
-    
+
     try:
         summary_path = os.path.join(MEMORY_BANK_DIR, "SYSTEM_REPAIR_SUMMARY.md")
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        
+
         summary_content = f"""# 🔧 VANA SYSTEM REPAIR SUMMARY
 
 **Completion Date**: {timestamp}  
@@ -342,30 +345,31 @@ curl -X POST "https://vana-service-url/run" \\
 
 **FINAL STATUS**: 🎉 **SYSTEM REPAIR SUCCESSFUL** - Ready for production use.
 """
-        
-        with open(summary_path, 'w') as f:
+
+        with open(summary_path, "w") as f:
             f.write(summary_content)
-        
+
         logger.info("✅ System repair summary created successfully")
         return True
-        
+
     except Exception as e:
         logger.error(f"❌ Failed to create system repair summary: {e}")
         return False
 
+
 def run_memory_bank_update():
     """Run all memory bank updates."""
     logger.info("🚀 Starting Memory Bank Update")
-    logger.info("="*60)
-    
+    logger.info("=" * 60)
+
     updates = [
         ("Active Context", update_active_context),
         ("Progress", update_progress),
-        ("System Repair Summary", create_system_repair_summary)
+        ("System Repair Summary", create_system_repair_summary),
     ]
-    
+
     results = {}
-    
+
     for update_name, update_func in updates:
         logger.info(f"\n📝 Running: {update_name}")
         try:
@@ -373,29 +377,30 @@ def run_memory_bank_update():
         except Exception as e:
             logger.error(f"❌ {update_name} failed with exception: {e}")
             results[update_name] = False
-    
+
     # Generate report
-    logger.info("\n" + "="*60)
+    logger.info("\n" + "=" * 60)
     logger.info("📊 MEMORY BANK UPDATE REPORT")
-    logger.info("="*60)
-    
+    logger.info("=" * 60)
+
     passed = 0
     total = len(updates)
-    
+
     for update_name, result in results.items():
         status = "✅ COMPLETE" if result else "❌ FAILED"
         logger.info(f"{status} {update_name}")
         if result:
             passed += 1
-    
+
     logger.info(f"\n📈 Results: {passed}/{total} updates completed ({passed/total*100:.1f}%)")
-    
+
     if passed == total:
         logger.info("🎉 Memory bank update SUCCESSFUL")
         return True
     else:
         logger.error("🚨 Memory bank update FAILED")
         return False
+
 
 if __name__ == "__main__":
     success = run_memory_bank_update()
