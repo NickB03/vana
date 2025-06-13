@@ -27,6 +27,14 @@ from tests.eval.agent_evaluator import VANASystemEvaluator
 from tests.eval.performance_benchmarks import VANAPerformanceBenchmarks
 from tests.eval.test_evaluation import ComprehensiveEvaluationRunner
 
+# Import coordination testing (Task #9)
+try:
+    from tests.coordination.coordination_test_runner import CoordinationTestRunner
+    from tests.coordination.coordination_benchmarks import CoordinationBenchmarks
+    COORDINATION_TESTING_AVAILABLE = True
+except ImportError:
+    COORDINATION_TESTING_AVAILABLE = False
+
 async def run_agents_only(environment: str = "dev"):
     """Run only agent evaluation"""
     print("🧪 Running Agent Evaluation Only")
@@ -42,12 +50,45 @@ async def run_performance_only(environment: str = "dev"):
     """Run only performance benchmarking"""
     print("⚡ Running Performance Benchmarking Only")
     print("=" * 60)
-    
+
     benchmarks = VANAPerformanceBenchmarks()
     results = await benchmarks.run_comprehensive_benchmarks()
-    
+
     print("\n✅ Performance benchmarking completed successfully!")
     return results
+
+async def run_coordination_only(environment: str = "dev"):
+    """Run only coordination testing (Task #9)"""
+    print("🎯 Running Coordination Testing Only (Task #9)")
+    print("=" * 60)
+
+    if not COORDINATION_TESTING_AVAILABLE:
+        print("❌ Coordination testing modules not available")
+        return {"error": "Coordination testing not available"}
+
+    # Run coordination tests
+    test_runner = CoordinationTestRunner()
+    test_results = await test_runner.run_all_coordination_tests()
+
+    # Run coordination benchmarks
+    benchmarks = CoordinationBenchmarks()
+    benchmark_results = await benchmarks.run_all_benchmarks()
+
+    # Combine results
+    combined_results = {
+        "coordination_tests": test_results,
+        "coordination_benchmarks": benchmark_results,
+        "overall_metrics": {
+            "test_success_rate": test_results["metrics"]["success_rate"],
+            "benchmark_success_rate": benchmark_results["benchmark_summary"]["overall_success_rate"],
+            "average_response_time": test_results["metrics"]["average_response_time"],
+            "performance_grade": benchmark_results["benchmark_summary"]["performance_grade"],
+            "task_9_completed": test_results["target_achieved"] and benchmark_results["performance_targets"]["success_rate_achieved"]
+        }
+    }
+
+    print("\n✅ Coordination testing completed successfully!")
+    return combined_results
 
 async def run_full_evaluation(environment: str = "dev", skip_discovery: bool = False, skip_performance: bool = False):
     """Run comprehensive evaluation"""
@@ -72,6 +113,9 @@ def print_usage_examples():
     print()
     print("# Performance benchmarking only")
     print("python tests/eval/run_evaluation.py --performance-only")
+    print()
+    print("# Coordination testing only (Task #9)")
+    print("python tests/eval/run_evaluation.py --coordination-only")
     print()
     print("# Full comprehensive evaluation")
     print("python tests/eval/run_evaluation.py --full")
@@ -140,10 +184,12 @@ Examples:
     
     # Execution mode (mutually exclusive)
     mode_group = parser.add_mutually_exclusive_group(required=True)
-    mode_group.add_argument("--agents-only", action="store_true", 
+    mode_group.add_argument("--agents-only", action="store_true",
                            help="Run only agent evaluation (recommended for first run)")
     mode_group.add_argument("--performance-only", action="store_true",
                            help="Run only performance benchmarking")
+    mode_group.add_argument("--coordination-only", action="store_true",
+                           help="Run only coordination testing (Task #9)")
     mode_group.add_argument("--full", action="store_true",
                            help="Run comprehensive evaluation")
     mode_group.add_argument("--examples", action="store_true",
@@ -180,29 +226,42 @@ Examples:
     
     try:
         # Execute based on mode
+        results = None
         if args.agents_only:
             results = await run_agents_only(args.env)
         elif args.performance_only:
             results = await run_performance_only(args.env)
+        elif args.coordination_only:
+            results = await run_coordination_only(args.env)
         elif args.full:
             results = await run_full_evaluation(
                 environment=args.env,
                 skip_discovery=args.skip_discovery,
                 skip_performance=args.skip_performance
             )
-        
+
+        if results is None:
+            print("❌ No evaluation mode selected")
+            return 1
+
         print(f"\n🎉 Evaluation completed successfully!")
         print(f"📊 Results saved in: tests/results/")
-        
+
         # Print quick summary
         if isinstance(results, dict):
             if "overall_metrics" in results:
                 metrics = results["overall_metrics"]
-                print(f"\n📈 QUICK SUMMARY:")
-                print(f"   Success Rate: {metrics.get('overall_success_rate', 0):.1%}")
-                print(f"   Avg Response Time: {metrics.get('average_response_time', 0):.2f}s")
-                print(f"   Performance Grade: {metrics.get('performance_grade', 'N/A')}")
-        
+                if isinstance(metrics, dict):
+                    print(f"\n📈 QUICK SUMMARY:")
+                    success_rate = metrics.get('overall_success_rate', metrics.get('test_success_rate', 0))
+                    print(f"   Success Rate: {success_rate:.1%}")
+                    print(f"   Avg Response Time: {metrics.get('average_response_time', 0):.2f}s")
+                    print(f"   Performance Grade: {metrics.get('performance_grade', 'N/A')}")
+
+                    # Special handling for coordination testing
+                    if "task_9_completed" in metrics:
+                        print(f"   Task #9 Status: {'✅ COMPLETED' if metrics['task_9_completed'] else '❌ INCOMPLETE'}")
+
         return 0
         
     except KeyboardInterrupt:
