@@ -5,13 +5,11 @@ This module provides a comprehensive test scenario for basic conversation with t
 including greeting, information retrieval, memory testing, and error handling.
 """
 
-import json
 import logging
 import os
 import random
 import sys
 import time
-from datetime import datetime
 
 # Add the parent directory to the path so we can import our modules
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))))

@@ -14,7 +14,6 @@ import os
 import sys
 import time
 from datetime import datetime
-from typing import Any, Dict, List, Tuple
 
 # Add the project root to the Python path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -26,10 +25,7 @@ logger = logging.getLogger(__name__)
 # Import necessary tools
 try:
     from tools.enhanced_hybrid_search import EnhancedHybridSearch
-    from tools.hybrid_search import HybridSearch
-    from tools.knowledge_graph.knowledge_graph_manager import KnowledgeGraphManager
     from tools.vector_search.vector_search_client import VectorSearchClient
-    from tools.web_search import WebSearchClient
 except ImportError as e:
     logger.warning(f"Could not import some tools: {e}")
 

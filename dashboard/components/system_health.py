@@ -10,12 +10,10 @@ from datetime import datetime
 import altair as alt
 import humanize
 import pandas as pd
-import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
 
 from dashboard.api.system_api import get_service_status, get_system_alerts, get_system_health, get_system_health_history
-from dashboard.utils.data_formatter import format_timestamp
 
 logger = logging.getLogger(__name__)
 

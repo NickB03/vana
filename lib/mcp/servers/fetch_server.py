@@ -6,14 +6,13 @@ This module provides comprehensive HTTP client functionality including GET/POST/
 requests, web scraping, file downloads, and URL status checking.
 """
 
-import json
 import logging
 import os
 import time
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional, Union
-from urllib.parse import urljoin, urlparse
+from typing import Any, Callable, Dict, List, Optional
+from urllib.parse import urljoin
 
 import requests
 

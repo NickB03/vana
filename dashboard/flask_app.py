@@ -11,7 +11,6 @@ import argparse
 import logging
 import os
 import sys
-from pathlib import Path
 
 from flask import Flask, redirect, render_template, url_for
 

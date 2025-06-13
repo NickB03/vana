@@ -7,7 +7,7 @@ framework with existing VANA components.
 
 import os
 import time
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, Tuple
 
 import yaml
 

@@ -21,9 +21,7 @@ Directory Structure (AGOR-inspired):
 └── task_progress.json        # Task progress and handoff tracking
 """
 
-import asyncio
 import json
-import os
 from dataclasses import asdict, dataclass
 from datetime import datetime
 from pathlib import Path

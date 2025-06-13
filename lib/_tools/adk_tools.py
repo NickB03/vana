@@ -275,7 +275,6 @@ def search_knowledge(query: str) -> str:
         # Fallback to file-based knowledge base
         logger.info("Using file-based VANA knowledge base")
 
-        import os
         from pathlib import Path
 
         # Get knowledge base directory

@@ -11,14 +11,12 @@ import os
 import random
 import sys
 import time
-from datetime import datetime, timedelta
 
 # Add the parent directory to the path so we can import our modules
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))))
 
 from tests.e2e.framework.agent_client import AgentClient
 from tests.e2e.framework.test_case import TestCase
-from tests.e2e.framework.test_utils import check_response_coherence, extract_key_information
 
 logger = logging.getLogger(__name__)
 

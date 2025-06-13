@@ -14,8 +14,7 @@ import json
 import threading
 import time
 from collections import defaultdict
-from dataclasses import asdict, dataclass
-from functools import lru_cache
+from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Tuple
 
 
@@ -268,7 +267,6 @@ class CacheWarmer:
         """Warm cache with common usage patterns."""
         # This would be called during system startup or low-usage periods
         # Implementation would pre-compute common operations
-        pass
 
 
 # Global cache instances

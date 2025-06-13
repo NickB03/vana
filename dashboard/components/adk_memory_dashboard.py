@@ -5,8 +5,6 @@ This module provides Streamlit components for visualizing ADK memory
 performance, costs, session state, and reliability metrics.
 """
 
-import datetime
-from typing import Any, Dict, List
 
 import pandas as pd
 import plotly.express as px
@@ -15,7 +13,6 @@ import streamlit as st
 from plotly.subplots import make_subplots
 
 from dashboard.api.adk_memory_api import adk_memory_api
-from dashboard.utils.data_formatter import format_bytes, format_currency, format_percentage
 
 
 def display_adk_memory_overview():

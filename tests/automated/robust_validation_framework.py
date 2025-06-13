@@ -7,13 +7,12 @@ by implementing strict validation logic that can distinguish between
 real functionality and mock/fallback responses.
 """
 
-import json
 import logging
 import re
 import time
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)

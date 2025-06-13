@@ -5,10 +5,8 @@ This module provides Google ADK-compatible wrappers for long-running function to
 integrating with the existing VANA tool framework and ADK FunctionTool system.
 """
 
-import asyncio
 import logging
 import time
-from typing import Any, Dict, Optional
 
 # ADK imports with fallback
 try:
@@ -22,7 +20,6 @@ except ImportError:
 
 
 from .long_running_tools import (
-    LongRunningFunctionTool,
     LongRunningTaskStatus,
     ask_for_approval,
     create_long_running_tool,
@@ -81,7 +78,6 @@ def ask_for_approval(purpose: str, amount: float, approver: str = "System Admini
 
         # Since we can't use async in ADK function tools directly, we'll simulate
         # the long-running behavior by creating a task and returning task info
-        import uuid
 
         task_id = task_manager.create_task()
 

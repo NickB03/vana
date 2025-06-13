@@ -7,25 +7,23 @@ cost analysis, and reliability monitoring.
 """
 
 import datetime
-import json
 import logging
 import os
 import time
 import traceback
 from dataclasses import asdict, dataclass
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List
 
 # Import Google ADK components if available
 try:
     from google.adk.memory import VertexAiRagMemoryService
-    from google.adk.tools import load_memory
 
     ADK_AVAILABLE = True
 except ImportError:
     ADK_AVAILABLE = False
     logging.warning("Google ADK not available. Using mock data for monitoring.")
 
-from dashboard.alerting.alert_manager import AlertManager, AlertSeverity
+from dashboard.alerting.alert_manager import AlertManager
 
 logger = logging.getLogger(__name__)
 

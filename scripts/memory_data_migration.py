@@ -14,7 +14,6 @@ import os
 import sys
 import time
 from datetime import datetime
-from typing import Any, Dict, List, Optional, Tuple
 
 # Add project root to path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
@@ -25,9 +24,7 @@ logger = logging.getLogger(__name__)
 
 # Import components
 try:
-    from config.environment import EnvironmentConfig
     from tools.mcp_memory_client import MCPMemoryClient
-    from tools.memory_manager import MemoryManager
 except ImportError as e:
     logger.error(f"Error importing required components: {e}")
     logger.error("Make sure you're running this script from the project root directory.")

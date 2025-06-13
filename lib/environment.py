@@ -6,7 +6,6 @@ Automatically detects local vs Cloud Run environment and loads appropriate confi
 import logging
 import os
 from pathlib import Path
-from typing import Optional
 
 from dotenv import load_dotenv
 

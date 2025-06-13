@@ -12,9 +12,9 @@ Based on LangChain documentation patterns:
 
 import importlib
 import logging
-from typing import Any, Callable, Dict, List, Optional, Union
+from typing import Any, Callable, List, Optional
 
-from lib._shared_libraries.tool_standards import InputValidator, performance_monitor
+from lib._shared_libraries.tool_standards import performance_monitor
 from lib._tools.third_party_tools import ThirdPartyToolAdapter, ThirdPartyToolInfo, ThirdPartyToolType
 
 # Configure logging
@@ -52,8 +52,7 @@ class LangChainToolAdapter(ThirdPartyToolAdapter):
             True if LangChain is available, False otherwise
         """
         try:
-            import langchain_community.tools
-            import langchain_core.tools
+            pass
 
             return True
         except ImportError:
@@ -77,7 +76,7 @@ class LangChainToolAdapter(ThirdPartyToolAdapter):
 
         try:
             # Import LangChain components
-            from langchain_core.tools import BaseTool
+            pass
 
             # Pattern 1: Single LangChain tool
             if self._is_langchain_tool(source):

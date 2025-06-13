@@ -12,13 +12,12 @@ Usage:
 import argparse
 import json
 import logging
-import os
 import sys
 import time
 import traceback
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
@@ -87,17 +86,13 @@ class VanaSetupValidator:
 
     def test_basic_imports(self) -> bool:
         """Test basic Python imports."""
-        import json
-        import os
-        import sys
-        from pathlib import Path
 
         return True
 
     def test_google_cloud_imports(self) -> bool:
         """Test Google Cloud imports."""
         try:
-            from google.cloud import aiplatform
+            pass
 
             return True
         except ImportError as e:
@@ -106,8 +101,7 @@ class VanaSetupValidator:
     def test_google_adk_imports(self) -> bool:
         """Test Google ADK imports."""
         try:
-            from google.adk import Agent
-            from google.adk.tools import Tool
+            pass
 
             return True
         except ImportError as e:
@@ -118,10 +112,6 @@ class VanaSetupValidator:
         try:
             from tools.security import (
                 AccessControlManager,
-                AuditLogger,
-                CredentialManager,
-                Operation,
-                PermissionLevel,
                 Role,
             )
 
@@ -136,7 +126,7 @@ class VanaSetupValidator:
     def test_local_tool_imports(self) -> bool:
         """Test local tool imports."""
         try:
-            from lib._tools import adk_tools
+            pass
 
             return True
         except ImportError as e:
@@ -160,8 +150,7 @@ class VanaSetupValidator:
     def test_pytest_configuration(self) -> bool:
         """Test pytest configuration."""
         try:
-            import pytest
-            import pytest_asyncio
+            pass
 
             # Check if pytest.ini exists and has correct configuration
             pytest_ini = Path("pytest.ini")

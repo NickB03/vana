@@ -27,15 +27,14 @@ from tests.eval.agent_evaluator import VANASystemEvaluator
 from tests.eval.performance_benchmarks import VANAPerformanceBenchmarks
 from tests.eval.test_evaluation import ComprehensiveEvaluationRunner
 
-# Import coordination testing (Task #9)
-try:
-    from tests.coordination.coordination_test_runner import CoordinationTestRunner
-    from tests.coordination.coordination_benchmarks import CoordinationBenchmarks
-
 from lib.logging_config import get_logger
 
 logger = get_logger("vana.run_evaluation")
 
+# Import coordination testing (Task #9)
+try:
+    from tests.coordination.coordination_test_runner import CoordinationTestRunner
+    from tests.coordination.coordination_benchmarks import CoordinationBenchmarks
     COORDINATION_TESTING_AVAILABLE = True
 except ImportError:
     COORDINATION_TESTING_AVAILABLE = False

@@ -5,13 +5,10 @@ This module provides shared fixtures and configuration for all ADK memory tests,
 including mock services, test data, and common setup/teardown functionality.
 """
 
-import asyncio
 import os
-import shutil
-import tempfile
-from datetime import datetime, timedelta
-from typing import Any, Dict, List, Optional
-from unittest.mock import AsyncMock, MagicMock, patch
+from datetime import datetime
+from typing import Dict, Optional
+from unittest.mock import MagicMock, patch
 
 import pytest
 

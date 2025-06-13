@@ -6,12 +6,9 @@ This module provides comprehensive Brave Search API integration including web se
 news search, image/video search, local search, and search suggestions.
 """
 
-import json
 import logging
-import os
 from dataclasses import dataclass
-from datetime import datetime
-from typing import Any, Dict, List, Optional, Union
+from typing import List, Optional
 
 import requests
 

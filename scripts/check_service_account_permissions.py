@@ -11,7 +11,7 @@ import sys
 
 from dotenv import load_dotenv
 from google.cloud import resourcemanager_v3
-from google.iam.v1 import iam_policy_pb2, policy_pb2
+from google.iam.v1 import iam_policy_pb2
 from google.oauth2 import service_account
 
 # Configure logging

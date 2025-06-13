@@ -22,14 +22,13 @@ from typing import Any, Dict, List
 sys.path.insert(0, os.path.abspath(os.path.dirname(os.path.dirname(__file__))))
 
 # Import search implementations
-try:
-    from tools.enhanced_hybrid_search_optimized import EnhancedHybridSearchOptimized
-    from tools.web_search_client import get_web_search_client
-
 from lib.logging_config import get_logger
 
 logger = get_logger("vana.run_optimized_search")
 
+try:
+    from tools.enhanced_hybrid_search_optimized import EnhancedHybridSearchOptimized
+    from tools.web_search_client import get_web_search_client
 except ImportError as e:
     logger.error(f"Error importing required modules: {e}")
     logger.info("Make sure you run this script from the project root or scripts directory.")

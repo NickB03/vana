@@ -18,12 +18,11 @@ Usage:
 
 import argparse
 import logging
-import os
 import subprocess
 import sys
 import time
 from pathlib import Path
-from typing import List, Optional, Tuple
+from typing import List, Tuple
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")

@@ -5,7 +5,6 @@ Initialize Knowledge Graph Schema
 This script initializes the basic schema for the Knowledge Graph in the local MCP server.
 """
 
-import json
 import os
 import sys
 

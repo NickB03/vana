@@ -5,7 +5,7 @@ Tests all 16 tools using Puppeteer browser automation.
 """
 
 import time
-from typing import Any, Dict, List
+from typing import Any, Dict
 
 from lib.logging_config import get_logger
 

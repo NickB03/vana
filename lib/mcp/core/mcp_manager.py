@@ -11,11 +11,10 @@ import json
 import logging
 import time
 from dataclasses import dataclass
-from enum import Enum
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from .mcp_client import ConnectionStatus, MCPClient, ServerConfig, ToolInfo, ToolResponse
+from .mcp_client import ConnectionStatus, MCPClient, ServerConfig, ToolInfo
 
 logger = logging.getLogger(__name__)
 

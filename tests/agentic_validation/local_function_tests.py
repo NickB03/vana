@@ -13,14 +13,16 @@ Based on UiPath Agentic Testing Best Practices - tests actual functionality.
 """
 
 import json
-import os
 import re
 import sys
 import time
-from typing import Any, Dict, List
 
 # Add project root to path
 sys.path.insert(0, '/Users/nick/Development/vana')
+
+# Set up logging
+from lib.logging_config import get_logger
+logger = get_logger("vana.local_function_tests")
 
 def test_orchestrated_tools():
     """
@@ -34,11 +36,9 @@ def test_orchestrated_tools():
         # Import the orchestrated tools
         from lib._tools.orchestrated_specialist_tools import (
             code_generation_tool,
-            competitive_intelligence_tool,
             flight_search_tool,
             hotel_search_tool,
             itinerary_planning_tool,
-            testing_tool,
         )
         
         test_results = []
@@ -212,11 +212,6 @@ def test_old_vs_new_tools():
         
         # Test new tool (should NOT expose task IDs)
         from lib._tools.orchestrated_specialist_tools import itinerary_planning_tool as new_tool
-
-from lib.logging_config import get_logger
-
-logger = get_logger("vana.local_function_tests")
-
         new_response = new_tool("Plan a trip to Paris")
         
         # Check old tool for task ID exposure

@@ -7,11 +7,9 @@ and provides a secure interface for accessing credentials.
 """
 
 import base64
-import hashlib
-import json
 import logging
 import os
-from typing import Any, Dict, Optional
+from typing import Dict, Optional
 
 from cryptography.fernet import Fernet
 from cryptography.hazmat.primitives import hashes

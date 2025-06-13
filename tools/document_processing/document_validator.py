@@ -19,11 +19,11 @@ import re
 from dataclasses import asdict, dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any, Dict, List, Optional
 
 # Optional dependency for better file type detection
 try:
-    import magic
+    pass
 
     MAGIC_AVAILABLE = True
 except ImportError:

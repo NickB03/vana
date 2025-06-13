@@ -4,12 +4,9 @@ Dashboard Test Scenario for VANA.
 This module provides a test scenario for the VANA dashboard.
 """
 
-import json
 import logging
 import os
 import sys
-import time
-from datetime import datetime
 
 import requests
 

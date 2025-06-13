@@ -9,7 +9,6 @@ It helps diagnose issues with the memory system and verify the configuration.
 import json
 import os
 import sys
-import time
 from datetime import datetime
 
 import requests
@@ -20,6 +19,10 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')
 
 # Load environment variables
 load_dotenv()
+
+# Set up logging
+from lib.logging_config import get_logger
+logger = get_logger("vana.memory_diagnostic")
 
 def check_mcp_server():
     """Check if MCP server is accessible."""
@@ -58,11 +61,6 @@ def test_memory_operations():
     try:
         from tools.mcp_memory_client import MCPMemoryClient
 
-from lib.logging_config import get_logger
-
-logger = get_logger("vana.memory_diagnostic")
-
-        
         logger.info("Initializing MCP Memory Client...")
         
         # Initialize client

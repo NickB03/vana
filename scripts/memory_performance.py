@@ -15,7 +15,7 @@ import string
 import sys
 import time
 from datetime import datetime
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 
 import matplotlib.pyplot as plt
 import psutil
@@ -29,7 +29,6 @@ logger = logging.getLogger(__name__)
 
 # Import components
 try:
-    from config.environment import EnvironmentConfig
     from tools.mcp_memory_client import MCPMemoryClient
     from tools.memory_cache import MemoryCache
     from tools.memory_manager import MemoryManager

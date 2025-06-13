@@ -11,7 +11,7 @@ import datetime
 import json
 import logging
 import os
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)

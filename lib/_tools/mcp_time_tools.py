@@ -11,11 +11,10 @@ Part of Phase 3: Fundamental MCP Implementation
 """
 
 import datetime
-import os
-from typing import Any, Dict, List, Optional
+from typing import Optional
 
 import pytz
-from dateutil import parser, relativedelta
+from dateutil import relativedelta
 from google.adk.tools import FunctionTool
 
 # Time zone mappings for common abbreviations

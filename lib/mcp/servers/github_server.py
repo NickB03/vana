@@ -6,13 +6,10 @@ This module provides comprehensive GitHub API integration including repository
 management, issue tracking, code search, and pull request operations.
 """
 
-import json
 import logging
-import os
 import subprocess
 from dataclasses import dataclass
-from datetime import datetime
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional
 
 import requests
 

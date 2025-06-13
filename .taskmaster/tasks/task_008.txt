@@ -1,6 +1,6 @@
 # Task ID: 8
 # Title: Update pyproject.toml Configuration
-# Status: pending
+# Status: done
 # Dependencies: None
 # Priority: medium
 # Description: Modernize pyproject.toml to current Poetry standards.

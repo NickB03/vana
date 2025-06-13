@@ -224,7 +224,6 @@ def import_sample_documents(corpus):
         for i, doc in enumerate(sample_docs):
             try:
                 # Create a temporary file for the document
-                import json
                 import tempfile
 
                 with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as f:
@@ -260,7 +259,7 @@ def import_sample_documents(corpus):
 def validate_corpus_functionality(corpus):
     """Validate that the corpus is functional for search"""
     try:
-        from vertexai.preview import rag
+        pass
 
         logger.info("🔍 Validating corpus functionality...")
 

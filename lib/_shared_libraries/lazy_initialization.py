@@ -6,7 +6,7 @@ Prevents import-time initialization that causes hanging.
 import logging
 import os
 from functools import wraps
-from typing import Any, Callable, Dict, Optional
+from typing import Any, Callable, Dict
 
 logger = logging.getLogger(__name__)
 

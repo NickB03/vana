@@ -6,11 +6,10 @@ This wrapper provides access to ADK functionality regardless of the import path.
 It attempts multiple import strategies to ensure compatibility.
 """
 
-import importlib
 import logging
 import os
 import sys
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -68,7 +67,6 @@ class ADKWrapper:
         # Strategy 4: Check for Vertex AI availability for direct LLM calls
         try:
             logger.debug("Trying Strategy 4: Check Vertex AI availability for direct LLM calls")
-            import vertexai
 
             self.vertexai_available = True
             logger.info("✅ Vertex AI is available for direct LLM calls")

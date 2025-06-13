@@ -5,10 +5,8 @@ Initialize Local MCP Server
 This script initializes the local MCP server with basic entity types and relationships.
 """
 
-import json
 import os
 import sys
-import time
 
 import requests
 from dotenv import load_dotenv

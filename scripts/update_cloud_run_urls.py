@@ -11,9 +11,6 @@ And ensures vana-dev references are correct:
 """
 
 import glob
-import os
-import re
-from pathlib import Path
 
 from lib.logging_config import get_logger
 

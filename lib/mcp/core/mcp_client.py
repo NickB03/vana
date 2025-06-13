@@ -9,11 +9,10 @@ communicating with external MCP servers using the JSON-RPC protocol.
 import asyncio
 import json
 import logging
-import subprocess
 import time
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 

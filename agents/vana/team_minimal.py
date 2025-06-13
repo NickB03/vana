@@ -18,7 +18,6 @@ load_dotenv()
 
 # Google ADK imports (installed in environment)
 from google.adk.agents import LlmAgent
-from google.adk.tools import FunctionTool
 
 # Import only working ADK-compatible tools
 from lib._tools import (  # File System Tools; Search Tools; System Tools; Agent Coordination Tools

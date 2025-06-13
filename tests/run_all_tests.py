@@ -14,6 +14,10 @@ import os
 import sys
 import unittest
 
+# Set up logging
+from lib.logging_config import get_logger
+logger = get_logger("vana.run_all_tests")
+
 
 def run_tests(with_coverage=False):
     """
@@ -28,11 +32,6 @@ def run_tests(with_coverage=False):
     if with_coverage:
         try:
             import coverage
-
-from lib.logging_config import get_logger
-
-logger = get_logger("vana.run_all_tests")
-
         except ImportError:
             logger.debug("%s", "Coverage package not installed. Run 'pip install coverage' first.")
             return False

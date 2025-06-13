@@ -6,9 +6,7 @@ This module provides a mock implementation of the Google Custom Search API
 for testing purposes. It returns predefined results for specific queries.
 """
 
-import json
 import logging
-import os
 import re
 from typing import Any, Dict, List
 

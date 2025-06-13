@@ -6,9 +6,8 @@ timelines, agent performance, and detailed task information.
 """
 
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime
 
-import altair as alt
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go

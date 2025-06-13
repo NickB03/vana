@@ -15,10 +15,7 @@ Enhanced with VANA-specific optimizations:
 - Fallback strategy chains
 """
 
-import json
-import os
 from dataclasses import dataclass
-from datetime import datetime
 from enum import Enum
 from typing import Any, Dict, List, Optional
 

@@ -5,17 +5,14 @@ This module provides helper functions for creating visualizations.
 """
 
 import logging
-from datetime import datetime, timedelta
 
 import altair as alt
-import numpy as np
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
 
 from dashboard.utils.config import get_config_value
-from dashboard.utils.data_formatter import format_bytes, format_duration, format_percentage, format_time_ago
 
 logger = logging.getLogger(__name__)
 

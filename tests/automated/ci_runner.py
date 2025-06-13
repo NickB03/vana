@@ -12,10 +12,8 @@ Automated testing infrastructure for CI/CD pipelines including:
 
 import json
 import logging
-import shutil
 import subprocess
 import sys
-import tempfile
 import time
 from dataclasses import dataclass, field
 from pathlib import Path

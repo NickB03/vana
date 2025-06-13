@@ -6,12 +6,11 @@ This module provides an enhanced implementation of the Vector Search client
 with improved error handling, permission issue detection, and embedding caching.
 """
 
-import json
 import logging
 import os
 import time
 import uuid
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 
 import requests
 from google.api_core.exceptions import InvalidArgument, NotFound, PermissionDenied

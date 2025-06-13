@@ -36,8 +36,6 @@ import logging
 from typing import Any, Dict, List
 
 from tools.hybrid_search import HybridSearch
-from tools.knowledge_graph.knowledge_graph_manager import KnowledgeGraphManager
-from tools.vector_search.vector_search_client import VectorSearchClient
 from tools.web_search import WebSearchClient
 
 # Configure logging

@@ -71,7 +71,6 @@ def test_search():
     """Test search functionality"""
     try:
         import vertexai
-        from vertexai.preview import rag
 
         # Initialize Vertex AI
         project_id = "${GOOGLE_CLOUD_PROJECT}"

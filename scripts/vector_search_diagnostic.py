@@ -12,10 +12,10 @@ import json
 import logging
 import os
 import sys
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict
 
 import requests
-from google.api_core.exceptions import InvalidArgument, NotFound, PermissionDenied
+from google.api_core.exceptions import PermissionDenied
 from google.cloud import aiplatform
 
 # Add project root to path

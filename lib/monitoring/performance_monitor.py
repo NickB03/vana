@@ -1,9 +1,7 @@
-import asyncio
-import json
 import time
 from collections import defaultdict, deque
-from dataclasses import asdict, dataclass
-from typing import Callable, Dict, List, Optional
+from dataclasses import dataclass
+from typing import Dict, List, Optional
 
 import psutil
 

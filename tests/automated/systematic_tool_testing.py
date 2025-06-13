@@ -4,7 +4,6 @@ Systematic Tool Testing Script for VANA Agent System
 Tests all 16 tools to ensure they're working as intended.
 """
 
-import json
 import time
 from typing import Any, Dict, List
 

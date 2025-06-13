@@ -15,7 +15,7 @@ import argparse
 import platform
 import subprocess
 import sys
-from typing import Any, Dict, List
+from typing import Dict
 
 
 def check_dependency_available(package_name: str, import_name: str = None) -> bool:

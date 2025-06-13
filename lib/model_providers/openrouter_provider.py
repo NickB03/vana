@@ -5,11 +5,10 @@ This module provides a wrapper to use OpenRouter models with Google ADK's LlmAge
 It intercepts model calls and routes them to OpenRouter while maintaining ADK compatibility.
 """
 
-import json
 import logging
 import os
 from dataclasses import dataclass
-from typing import Any, AsyncGenerator, Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 import requests
 

@@ -9,7 +9,7 @@ Google ADK agent composition and delegation patterns.
 import logging
 import time
 from dataclasses import dataclass
-from typing import Any, Callable, Dict, Optional
+from typing import Any, Dict, Optional
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)

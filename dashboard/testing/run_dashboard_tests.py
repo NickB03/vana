@@ -42,18 +42,17 @@ def save_report(result: dict):
         json.dump(result, f, indent=2)
     logger.debug(f"Saved test report: {path}")
 
-def test_api_endpoints():
-    """
-    Test dashboard API endpoints and log failures as alerts.
-    """
-    import requests
-    from dashboard.alerting.alert_manager import AlertManager
-
+import requests
+from dashboard.alerting.alert_manager import AlertManager
 from lib.logging_config import get_logger
 
 logger = get_logger("vana.run_dashboard_tests")
 
 
+def test_api_endpoints():
+    """
+    Test dashboard API endpoints and log failures as alerts.
+    """
     alert_manager = AlertManager()
     base_url = "http://localhost:5050"
 
@@ -75,6 +74,8 @@ logger = get_logger("vana.run_dashboard_tests")
                 source="test_api_endpoints",
                 details={"endpoint": ep, "error": str(e)}
             )
+
+
 def main():
     scenarios = ["default", "high_load", "degraded_services", "error_spike"]
     for scenario in scenarios:

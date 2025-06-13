@@ -4,8 +4,6 @@ Code Execution Tool
 Advanced code execution capabilities with enhanced debugging and analysis features.
 """
 
-import asyncio
-import json
 import logging
 from typing import Any, Dict, List, Optional
 

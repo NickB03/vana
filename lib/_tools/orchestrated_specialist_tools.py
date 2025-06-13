@@ -19,7 +19,6 @@ Based on Google ADK documentation and UiPath agentic testing best practices.
 
 import logging
 import time
-import uuid
 from typing import Any, Dict, Optional
 
 from lib._tools.long_running_tools import LongRunningTaskStatus, task_manager
