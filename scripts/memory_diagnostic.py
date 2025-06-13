@@ -22,6 +22,7 @@ load_dotenv()
 
 # Set up logging
 from lib.logging_config import get_logger
+
 logger = get_logger("vana.memory_diagnostic")
 
 def check_mcp_server():

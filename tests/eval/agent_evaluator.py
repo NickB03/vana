@@ -20,8 +20,12 @@ from playwright.async_api import async_playwright
 # Import configuration
 from lib.logging_config import get_logger
 from tests.eval.config import (
-    get_base_url, get_performance_targets, get_ui_selectors,
-    get_browser_config, get_paths, TOOL_PATTERNS
+    TOOL_PATTERNS,
+    get_base_url,
+    get_browser_config,
+    get_paths,
+    get_performance_targets,
+    get_ui_selectors,
 )
 
 logger = get_logger("vana.agent_evaluator")

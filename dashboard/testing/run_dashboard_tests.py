@@ -43,6 +43,7 @@ def save_report(result: dict):
     logger.debug(f"Saved test report: {path}")
 
 import requests
+
 from dashboard.alerting.alert_manager import AlertManager
 from lib.logging_config import get_logger
 

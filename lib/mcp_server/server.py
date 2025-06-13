@@ -10,7 +10,6 @@ import json
 import logging
 from typing import Any, Dict, List, Optional
 
-
 # MCP SDK imports
 try:
     import mcp.types as types
