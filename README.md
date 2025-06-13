@@ -34,6 +34,63 @@ default generative model (defaults to `gemini-2.0-flash`).
 **🌐 Development Service:** [https://vana-dev-960076421399.us-central1.run.app](https://vana-dev-960076421399.us-central1.run.app)
 **🚀 Production Service:** [https://vana-prod-960076421399.us-central1.run.app](https://vana-prod-960076421399.us-central1.run.app)
 
+## 📦 Optional Dependencies
+
+VANA includes excellent **graceful degradation** for optional features. Core functionality works perfectly without additional dependencies.
+
+### 📄 Document Processing Features
+
+For enhanced document processing capabilities:
+
+```bash
+# PDF text extraction and metadata parsing
+pip install PyPDF2>=3.0.0
+
+# Image processing and OCR text extraction
+pip install Pillow>=10.0.0 pytesseract>=0.3.10
+```
+
+### 🔧 System Requirements for OCR
+
+OCR functionality requires system-level Tesseract installation:
+
+```bash
+# macOS
+brew install tesseract
+
+# Ubuntu/Debian
+sudo apt-get install tesseract-ocr
+
+# Windows
+# Download from: https://github.com/UB-Mannheim/tesseract/wiki
+```
+
+### ✨ Feature Availability
+
+| Feature | Without Dependencies | With Dependencies |
+|---------|---------------------|-------------------|
+| **Core VANA** | ✅ Full functionality | ✅ Full functionality |
+| **PDF Processing** | ⚠️ Graceful error messages | ✅ Full text extraction & metadata |
+| **Image Processing** | ⚠️ Graceful error messages | ✅ Image analysis & OCR |
+| **Document Pipeline** | ✅ Text documents only | ✅ Multi-format support |
+
+### 🎯 Installation Strategy
+
+**Recommended**: Start with core installation, add optional dependencies as needed:
+
+```bash
+# Core installation (always works)
+poetry install
+
+# Add PDF support when needed
+pip install PyPDF2>=3.0.0
+
+# Add full document processing when needed
+pip install Pillow>=10.0.0 pytesseract>=0.3.10
+```
+
+All optional features include **intelligent fallback mechanisms** with clear user feedback.
+
 ## 📋 Table of Contents
 
 - [🎯 Overview](#-overview)
