@@ -2,7 +2,7 @@
 Code Execution Specialist Agent
 
 Provides secure code execution capabilities across multiple programming languages
-using the VANA sandbox environment with comprehensive security and monitoring.
+using enhanced executor architecture with comprehensive security and monitoring.
 """
 
 import os
@@ -23,130 +23,144 @@ load_dotenv()
 from google.adk.agents import LlmAgent
 from google.adk.tools import FunctionTool
 
-# Import sandbox components
-from lib.sandbox.core.execution_engine import ExecutionEngine, ExecutionStatus
-from lib.sandbox.core.security_manager import SecurityManager
+# Import executor components
+from lib.executors import PythonExecutor, JavaScriptExecutor, ShellExecutor, ExecutionResult
 
 logger = logging.getLogger(__name__)
 
-# Initialize sandbox components globally
-execution_engine = ExecutionEngine()
-security_manager = SecurityManager()
+# Initialize executors globally
+_executors = {
+    "python": PythonExecutor(),
+    "javascript": JavaScriptExecutor(),
+    "shell": ShellExecutor()
+}
 
-
-def execute_code(language: str, code: str, timeout: int = 30, description: str = "") -> str:
-    """
-    Execute code in secure sandbox environment.
-
-    Args:
-        language: Programming language (python, javascript, shell)
-        code: Code to execute
-        timeout: Execution timeout in seconds
-        description: Optional description of the code
-
-    Returns:
-        Formatted execution result as string
-    """
+async def execute_code(code: str, language: str, timeout: int = 30) -> str:
+    """Execute code with security validation and resource monitoring."""
     try:
-        # Add description to metadata if provided
-        metadata = {"description": description} if description else {}
+        executor = _executors.get(language)
+        if not executor:
+            return f"❌ Unsupported language: {language}"
 
-        # Execute code using the sandbox engine (synchronous call for now)
-        import asyncio
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
+        result = await executor.execute(code, timeout=timeout)
 
-        try:
-            result = loop.run_until_complete(
-                execution_engine.execute_code(
-                    language=language,
-                    code=code,
-                    timeout=timeout,
-                    metadata=metadata
-                )
-            )
-        finally:
-            loop.close()
-
-        # Format result for agent response
-        if result.status == ExecutionStatus.COMPLETED:
-            response = f"""✅ Code Execution Successful
+        if result.success:
+            return f"""✅ Code Execution Successful
 
 **Language**: {result.language}
 **Execution Time**: {round(result.execution_time, 3)}s
+**Memory Usage**: {result.memory_usage} bytes
 **Output**:
 ```
 {result.output}
 ```"""
         else:
-            error_analysis = _analyze_error(result.error or "Unknown error", language)
-            response = f"""❌ Code Execution Failed
+            return f"""❌ Code Execution Failed
 
 **Language**: {result.language}
 **Status**: {result.status.value}
 **Error**: {result.error}
-**Analysis**: {error_analysis}
 **Execution Time**: {round(result.execution_time, 3)}s"""
 
-        return response
-
     except Exception as e:
-        logger.error(f"Code execution failed: {str(e)}")
         return f"❌ Execution failed: {str(e)}"
 
 
-def validate_code_security(language: str, code: str) -> str:
-    """
-    Validate code for security issues.
 
-    Args:
-        language: Programming language
-        code: Code to validate
 
-    Returns:
-        Validation result as formatted string
-    """
+async def validate_code_security(code: str, language: str) -> str:
+    """Analyze code security and return detailed assessment."""
     try:
-        # Use security manager to validate code
-        security_manager.validate_code(code, language)
+        executor = _executors.get(language)
+        if not executor:
+            return f"❌ Unsupported language: {language}"
 
-        return f"""✅ Security Validation Passed
+        # Try to validate the code
+        try:
+            is_safe = executor.validate_code(code)
+            return f"""✅ Security Validation Passed
 
 **Language**: {language}
 **Status**: Safe
+**Risk Level**: Low
 **Message**: Code passed security validation"""
+        except Exception as security_error:
+            recommendations = _get_security_recommendations(str(security_error), language)
+            rec_text = "\n".join([f"- {rec}" for rec in recommendations])
 
-    except Exception as e:
-        recommendations = _get_security_recommendations(str(e), language)
-        rec_text = "\n".join([f"- {rec}" for rec in recommendations])
-
-        return f"""⚠️ Security Validation Failed
+            return f"""⚠️ Security Validation Failed
 
 **Language**: {language}
 **Status**: Unsafe
-**Error**: {str(e)}
+**Risk Level**: High
+**Error**: {str(security_error)}
 **Recommendations**:
 {rec_text}"""
 
+    except Exception as e:
+        return f"❌ Security validation failed: {str(e)}"
 
-def get_execution_history(limit: int = 10) -> str:
-    """Get recent execution history."""
+
+def _get_security_recommendations(error: str, language: str) -> List[str]:
+    """Get security recommendations based on validation error."""
+    recommendations = []
+    error_lower = error.lower()
+
+    if "import" in error_lower:
+        recommendations.append(f"Remove restricted imports in {language} code")
+        recommendations.append("Use only allowed standard library modules")
+
+    if "file" in error_lower:
+        recommendations.append("Avoid file system operations outside the workspace")
+        recommendations.append("Use relative paths within the sandbox environment")
+
+    if "network" in error_lower:
+        recommendations.append("Remove network operations (HTTP requests, socket connections)")
+        recommendations.append("Use provided tools for external data access")
+
+    if "subprocess" in error_lower or "exec" in error_lower:
+        recommendations.append("Avoid subprocess execution and dynamic code evaluation")
+        recommendations.append("Use language-specific alternatives for the desired functionality")
+
+    if not recommendations:
+        recommendations.append("Review the security policies for the specific language")
+        recommendations.append("Ensure code follows sandbox security guidelines")
+
+    return recommendations
+
+
+
+# In-memory execution history for demo
+_execution_history = []
+
+async def get_execution_history(limit: int = 10) -> str:
+    """Get recent execution history with performance metrics."""
     try:
-        history = execution_engine.get_execution_history(limit)
+        # For demo purposes, return mock history
+        # In production, this would query a real execution history database
+        if not _execution_history:
+            return """📋 Execution History
 
-        if not history:
-            return "📋 No execution history available"
+**Summary**:
+- Total executions: 0
+- Success rate: 0%
+- Message: No execution history available"""
+
+        # Get limited history
+        recent_history = _execution_history[-limit:]
 
         # Calculate summary statistics
-        total_executions = len(history)
-        successful_executions = sum(1 for r in history if r.status == ExecutionStatus.COMPLETED)
+        total_executions = len(_execution_history)
+        successful_executions = sum(1 for r in _execution_history if r.get("success", False))
         success_rate = round(successful_executions / total_executions * 100, 1) if total_executions > 0 else 0
 
-        # Format history
+        # Format recent executions
         history_text = []
-        for result in history[-5:]:  # Show last 5 executions
-            status_emoji = "✅" if result.status == ExecutionStatus.COMPLETED else "❌"
-            history_text.append(f"{status_emoji} {result.language} - {round(result.execution_time, 3)}s")
+        for result in recent_history[-5:]:  # Show last 5 executions
+            status_emoji = "✅" if result.get("success", False) else "❌"
+            lang = result.get("language", "unknown")
+            exec_time = result.get("execution_time", 0)
+            history_text.append(f"{status_emoji} {lang} - {round(exec_time, 3)}s")
 
         return f"""📋 Execution History
 
@@ -157,87 +171,40 @@ def get_execution_history(limit: int = 10) -> str:
 {chr(10).join(history_text)}"""
 
     except Exception as e:
-        logger.error(f"Failed to get execution history: {str(e)}")
         return f"❌ Failed to retrieve execution history: {str(e)}"
 
 
-def get_supported_languages() -> str:
-    """Get supported programming languages and their capabilities."""
+
+
+async def get_supported_languages() -> str:
+    """Get comprehensive information about supported languages."""
     try:
-        languages = execution_engine.get_supported_languages()
+        languages = list(_executors.keys())
+
+        # Get detailed info for each language
+        language_details = []
+        for lang_name, executor in _executors.items():
+            lang_info = executor.get_language_info()
+            details = f"""**{lang_info['name'].title()}**:
+- Version: {lang_info['version']}
+- Features: {', '.join(lang_info['features'])}
+- Restrictions: {', '.join(lang_info['restrictions'])}"""
+            language_details.append(details)
 
         return f"""🔧 Supported Languages
 
 **Available Languages**: {', '.join(languages)}
 
-**Python 3.13**:
-- Data science: numpy, pandas, matplotlib
-- Web development: requests, flask
-- Security: AST validation, import restrictions
-
-**JavaScript (Node.js 20)**:
-- Utilities: lodash, moment, axios
-- Security: VM isolation, safe require system
-
-**Shell (Bash)**:
-- Text processing: grep, sed, awk
-- File operations: ls, cat, find
-- Security: command validation, path restrictions
+{chr(10).join(language_details)}
 
 **Sandbox Features**:
 - Resource monitoring and limits
 - Execution timeout protection
 - Security validation
-- Container isolation"""
+- Isolated execution environment"""
 
     except Exception as e:
-        logger.error(f"Failed to get supported languages: {str(e)}")
         return f"❌ Failed to retrieve language information: {str(e)}"
-
-
-def _analyze_error(error: str, language: str) -> str:
-    """Analyze error and provide helpful suggestions."""
-    error_lower = error.lower()
-
-    if "timeout" in error_lower:
-        return "Code execution timed out. Consider optimizing the algorithm or increasing the timeout."
-    elif "security violation" in error_lower:
-        return f"Code contains security violations. Review {language} security policies and remove restricted operations."
-    elif "resource limit exceeded" in error_lower:
-        return "Code exceeded resource limits. Optimize memory usage or reduce computational complexity."
-    elif "syntax" in error_lower:
-        return f"Syntax error in {language} code. Check for missing brackets, quotes, or incorrect indentation."
-    elif "import" in error_lower or "module" in error_lower:
-        return f"Module import error. Ensure the required packages are available in the {language} sandbox environment."
-    else:
-        return "Review the error message and check the code logic. Consider adding error handling or debugging statements."
-
-
-def _get_security_recommendations(error: str, language: str) -> List[str]:
-    """Get security recommendations based on validation error."""
-    recommendations = []
-
-    if "import" in error.lower():
-        recommendations.append(f"Remove restricted imports in {language} code")
-        recommendations.append("Use only allowed standard library modules")
-
-    if "file" in error.lower():
-        recommendations.append("Avoid file system operations outside the workspace")
-        recommendations.append("Use relative paths within the sandbox environment")
-
-    if "network" in error.lower():
-        recommendations.append("Remove network operations (HTTP requests, socket connections)")
-        recommendations.append("Use provided tools for external data access")
-
-    if "subprocess" in error.lower() or "exec" in error.lower():
-        recommendations.append("Avoid subprocess execution and dynamic code evaluation")
-        recommendations.append("Use language-specific alternatives for the desired functionality")
-
-    if not recommendations:
-        recommendations.append("Review the security policies for the specific language")
-        recommendations.append("Ensure code follows sandbox security guidelines")
-
-    return recommendations
 
 
 # Create the Code Execution Specialist Agent
@@ -276,3 +243,25 @@ Always prioritize security and provide comprehensive explanations of execution r
         FunctionTool(func=get_supported_languages)
     ]
 )
+
+# Export for ADK discovery
+root_agent = code_execution_specialist
+
+
+# Legacy functions for backward compatibility (if needed)
+def _analyze_error(error: str, language: str) -> str:
+    """Analyze error and provide helpful suggestions."""
+    error_lower = error.lower()
+
+    if "timeout" in error_lower:
+        return "Code execution timed out. Consider optimizing the algorithm or increasing the timeout."
+    elif "security violation" in error_lower:
+        return f"Code contains security violations. Review {language} security policies and remove restricted operations."
+    elif "resource limit exceeded" in error_lower:
+        return "Code exceeded resource limits. Optimize memory usage or reduce computational complexity."
+    elif "syntax" in error_lower:
+        return f"Syntax error in {language} code. Check for missing brackets, quotes, or incorrect indentation."
+    elif "import" in error_lower or "module" in error_lower:
+        return f"Module import error. Ensure the required packages are available in the {language} sandbox environment."
+    else:
+        return "Review the error message and check the code logic. Consider adding error handling or debugging statements."
