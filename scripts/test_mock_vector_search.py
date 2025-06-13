@@ -35,7 +35,7 @@ def main():
     load_dotenv()
     
     # Import the mock Vector Search client
-    from tools.vector_search.vector_search_mock import MockVectorSearchClient
+    from tests.mocks.vector_search_mock import MockVectorSearchClient
     
     # Create the mock client
     client = MockVectorSearchClient()

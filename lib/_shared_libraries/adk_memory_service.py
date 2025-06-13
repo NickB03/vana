@@ -102,7 +102,7 @@ class ADKMemoryService:
 
                     # Priority 3: Build from individual components
                     if not rag_corpus:
-                        project_id = os.getenv("GOOGLE_CLOUD_PROJECT", "960076421399")
+                        project_id = os.getenv("GOOGLE_CLOUD_PROJECT", "analystai-454200")
                         location = os.getenv("GOOGLE_CLOUD_LOCATION", "us-central1")
                         corpus_id = os.getenv("RAG_CORPUS_ID", "vana-corpus")  # Different from VANA_RAG_CORPUS_ID
                         rag_corpus = f"projects/{project_id}/locations/{location}/ragCorpora/{corpus_id}"

@@ -45,7 +45,7 @@ spec:
         - name: GOOGLE_GENAI_USE_VERTEXAI
           value: 'true'
         - name: GOOGLE_CLOUD_PROJECT
-          value: 960076421399
+          value: analystai-454200
         - name: GOOGLE_CLOUD_LOCATION
           value: us-central1
         image: gcr.io/960076421399/vana-dev:latest
@@ -62,7 +62,7 @@ spec:
           tcpSocket:
             port: 8080
           timeoutSeconds: 240
-      serviceAccountName: vana-vector-search-sa@960076421399.iam.gserviceaccount.com
+      serviceAccountName: vana-vector-search-sa@analystai-454200.iam.gserviceaccount.com
       timeoutSeconds: 600
   traffic:
   - latestRevision: true

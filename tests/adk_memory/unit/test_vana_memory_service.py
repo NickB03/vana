@@ -58,7 +58,7 @@ class TestVanaMemoryService:
     async def test_add_session_to_memory_success(self, mock_vana_memory_service, mock_session):
         """Test successfully adding session to memory."""
         mock_session.add_message("user", "Hello, how are you?")
-        mock_session.add_message("assistant", "I'm doing well, thank you\!")
+        mock_session.add_message("assistant", "I'm doing well, thank you!")
         
         result = await mock_vana_memory_service.add_session_to_memory(mock_session)
         

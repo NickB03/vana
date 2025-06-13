@@ -1,0 +1,607 @@
+{
+  "test_summary": {
+    "framework": "CoordinationTestFramework",
+    "execution_time": 14.11213994026184,
+    "timestamp": 1749848604.620883
+  },
+  "metrics": {
+    "total_tests": 15,
+    "successful_tests": 14,
+    "failed_tests": 1,
+    "success_rate": 0.9333333333333333,
+    "average_response_time": 0.9407858530680339,
+    "fastest_response": 2.6941299438476562e-05,
+    "slowest_response": 7.012540102005005,
+    "error_breakdown": {}
+  },
+  "success_rate_target": 0.9,
+  "target_achieved": true,
+  "detailed_results": [
+    {
+      "test_name": "coordinate_task_basic",
+      "success": true,
+      "execution_time": 0.04774618148803711,
+      "error_message": null,
+      "agent_used": null,
+      "response_data": {
+        "action": "coordinate_task",
+        "task": "execute simple python code",
+        "assigned_agent": "code_execution",
+        "agent_description": "Specialist for secure code execution and debugging across multiple programming languages",
+        "agent_capabilities": [
+          "package_management",
+          "execution_history",
+          "python",
+          "debugging_assistance",
+          "security_validation",
+          "resource_monitoring",
+          "error_analysis",
+          "shell",
+          "javascript",
+          "secure_execution"
+        ],
+        "status": "coordinated",
+        "task_id": "task_1",
+        "reasoning": "Selected code_execution for code execution task based on specialization",
+        "timestamp": "2025-06-13T16:03:10.556450"
+      }
+    },
+    {
+      "test_name": "delegate_data_science",
+      "success": true,
+      "execution_time": 7.012540102005005,
+      "error_message": null,
+      "agent_used": null,
+      "response_data": {
+        "action": "delegate_task",
+        "delegation_id": "delegation_1",
+        "agent": "data_science",
+        "agent_description": "",
+        "task": "analyze sample dataset",
+        "context": "",
+        "status": "error",
+        "agent_capabilities": [],
+        "available_tools": [
+          "Execute Code"
+        ],
+        "communication_result": {
+          "status": "error",
+          "error": "Communication error: Cannot connect to host localhost:8000 ssl:default [Multiple exceptions: [Errno 61] Connect call failed ('::1', 8000, 0, 0), [Errno 61] Connect call failed ('127.0.0.1', 8000)]",
+          "error_code": -32005,
+          "agent_name": "data_science"
+        },
+        "execution_time_ms": null,
+        "timestamp": "2025-06-13T16:03:17.568659",
+        "next_steps": "Task delegation failed. Error: Communication error: Cannot connect to host localhost:8000 ssl:default [Multiple exceptions: [Errno 61] Connect call failed ('::1', 8000, 0, 0), [Errno 61] Connect call failed ('127.0.0.1', 8000)]"
+      }
+    },
+    {
+      "test_name": "delegate_code_execution",
+      "success": true,
+      "execution_time": 7.0104660987854,
+      "error_message": null,
+      "agent_used": null,
+      "response_data": {
+        "action": "delegate_task",
+        "delegation_id": "delegation_2",
+        "agent": "code_execution",
+        "agent_description": "Specialist for secure code execution and debugging across multiple programming languages",
+        "task": "run python script",
+        "context": "",
+        "status": "error",
+        "agent_capabilities": [
+          "package_management",
+          "execution_history",
+          "python",
+          "debugging_assistance",
+          "security_validation",
+          "resource_monitoring",
+          "error_analysis",
+          "shell",
+          "javascript",
+          "secure_execution"
+        ],
+        "available_tools": [
+          "Get Execution History",
+          "Execute Code",
+          "Validate Code Security"
+        ],
+        "communication_result": {
+          "status": "error",
+          "error": "Communication error: Cannot connect to host localhost:8000 ssl:default [Multiple exceptions: [Errno 61] Connect call failed ('::1', 8000, 0, 0), [Errno 61] Connect call failed ('127.0.0.1', 8000)]",
+          "error_code": -32005,
+          "agent_name": "code_execution"
+        },
+        "execution_time_ms": null,
+        "timestamp": "2025-06-13T16:03:24.578281",
+        "next_steps": "Task delegation failed. Error: Communication error: Cannot connect to host localhost:8000 ssl:default [Multiple exceptions: [Errno 61] Connect call failed ('::1', 8000, 0, 0), [Errno 61] Connect call failed ('127.0.0.1', 8000)]"
+      }
+    },
+    {
+      "test_name": "get_agent_status",
+      "success": true,
+      "execution_time": 0.040174007415771484,
+      "error_message": null,
+      "agent_used": null,
+      "response_data": {
+        "action": "get_agent_status",
+        "total_agents": 7,
+        "discoverable_agents": 7,
+        "agents": [
+          {
+            "name": "memory",
+            "description": "Memory Agent",
+            "status": "active",
+            "capabilities": [],
+            "tools": [],
+            "model": null,
+            "specialization": null,
+            "last_updated": "2025-06-13T16:03:24.580226"
+          },
+          {
+            "name": "vana",
+            "description": "Main orchestration agent for task coordination and delegation",
+            "status": "active",
+            "capabilities": [
+              "orchestration",
+              "delegation",
+              "memory_management",
+              "task_coordination"
+            ],
+            "tools": [
+              "Echo",
+              "Read File",
+              "Write File",
+              "List Directory",
+              "Vector Search",
+              "Web Search",
+              "Search Knowledge",
+              "Coordinate Task",
+              "Delegate To Agent",
+              "Get Agent Status"
+            ],
+            "model": "gemini-2.0-flash-exp",
+            "specialization": "orchestration",
+            "last_updated": "2025-06-13T16:03:24.619653"
+          },
+          {
+            "name": "data_science",
+            "description": "",
+            "status": "active",
+            "capabilities": [],
+            "tools": [
+              "Execute Code"
+            ],
+            "model": null,
+            "specialization": null,
+            "last_updated": "2025-06-13T16:03:24.587557"
+          },
+          {
+            "name": "workflows",
+            "description": "Workflows Agent",
+            "status": "active",
+            "capabilities": [],
+            "tools": [],
+            "model": null,
+            "specialization": null,
+            "last_updated": "2025-06-13T16:03:24.587713"
+          },
+          {
+            "name": "specialists",
+            "description": "Specialists Agent",
+            "status": "active",
+            "capabilities": [],
+            "tools": [],
+            "model": null,
+            "specialization": null,
+            "last_updated": "2025-06-13T16:03:24.587808"
+          },
+          {
+            "name": "orchestration",
+            "description": "Orchestration Agent",
+            "status": "active",
+            "capabilities": [],
+            "tools": [],
+            "model": null,
+            "specialization": null,
+            "last_updated": "2025-06-13T16:03:24.587886"
+          },
+          {
+            "name": "code_execution",
+            "description": "Specialist for secure code execution and debugging across multiple programming languages",
+            "status": "active",
+            "capabilities": [
+              "package_management",
+              "execution_history",
+              "python",
+              "debugging_assistance",
+              "security_validation",
+              "resource_monitoring",
+              "error_analysis",
+              "shell",
+              "javascript",
+              "secure_execution"
+            ],
+            "tools": [
+              "Get Execution History",
+              "Execute Code",
+              "Validate Code Security"
+            ],
+            "model": null,
+            "specialization": null,
+            "last_updated": "2025-06-13T16:03:24.601893"
+          }
+        ],
+        "discovery_summary": {
+          "total_agents": 7,
+          "agent_names": [
+            "memory",
+            "vana",
+            "data_science",
+            "workflows",
+            "specialists",
+            "orchestration",
+            "code_execution"
+          ],
+          "last_discovery": "2025-06-13T16:03:24.619668",
+          "cache_valid": true,
+          "discovery_status": "success"
+        },
+        "coordination_stats": {
+          "total_coordinations": 1,
+          "active_delegations": 2,
+          "last_coordination": "2025-06-13T16:03:10.556447"
+        },
+        "status": "operational",
+        "timestamp": "2025-06-13T16:03:24.619749"
+      }
+    },
+    {
+      "test_name": "get_workflow_templates",
+      "success": true,
+      "execution_time": 4.291534423828125e-05,
+      "error_message": null,
+      "agent_used": null,
+      "response_data": {
+        "action": "get_workflow_templates",
+        "available_templates": [
+          "data_analysis",
+          "code_execution",
+          "research_and_analysis",
+          "content_creation",
+          "system_monitoring",
+          "multi_agent_collaboration"
+        ],
+        "template_descriptions": {
+          "data_analysis": "Multi-step data analysis with validation, analysis, visualization, and summary",
+          "code_execution": "Secure code execution with validation, execution, and results analysis",
+          "research_and_analysis": "Comprehensive research with information gathering, web research, analysis, and reporting",
+          "content_creation": "Multi-stage content creation with research, generation, and enhancement",
+          "system_monitoring": "System monitoring with health checks, performance analysis, and reporting",
+          "multi_agent_collaboration": "Complex multi-agent collaboration with task analysis, planning, and synthesis"
+        },
+        "total_templates": 6,
+        "mode": "workflow_templates",
+        "status": "Templates available for workflow creation"
+      }
+    },
+    {
+      "test_name": "create_workflow_data_analysis",
+      "success": true,
+      "execution_time": 5.91278076171875e-05,
+      "error_message": null,
+      "agent_used": null,
+      "response_data": {
+        "action": "create_workflow",
+        "workflow_id": "ddc6b739-c9b2-43fe-ac4e-830147f12a24",
+        "name": "Test Data Analysis",
+        "description": "Test workflow for data analysis",
+        "template_name": "data_analysis",
+        "strategy": "adaptive",
+        "priority": "medium",
+        "steps": [
+          {
+            "name": "Data Validation",
+            "description": "Validate and prepare data for: Test workflow for data analysis",
+            "agent_name": "data_science"
+          },
+          {
+            "name": "Statistical Analysis",
+            "description": "Perform statistical analysis: Test workflow for data analysis",
+            "agent_name": "data_science"
+          },
+          {
+            "name": "Visualization Generation",
+            "description": "Generate visualizations: Test workflow for data analysis",
+            "agent_name": "data_science"
+          },
+          {
+            "name": "Results Summary",
+            "description": "Compile analysis results: Test workflow for data analysis",
+            "agent_name": "vana"
+          }
+        ],
+        "total_steps": 4,
+        "status": "created",
+        "mode": "workflow_management",
+        "created_at": 1749848604.619949
+      }
+    },
+    {
+      "test_name": "create_workflow_code_execution",
+      "success": true,
+      "execution_time": 3.409385681152344e-05,
+      "error_message": null,
+      "agent_used": null,
+      "response_data": {
+        "action": "create_workflow",
+        "workflow_id": "967ac19a-ef57-4e36-a2a5-52251f0a7909",
+        "name": "Test Code Execution",
+        "description": "Test workflow for code execution",
+        "template_name": "code_execution",
+        "strategy": "adaptive",
+        "priority": "medium",
+        "steps": [
+          {
+            "name": "Code Validation",
+            "description": "Validate code security and syntax: Test workflow for code execution",
+            "agent_name": "code_execution"
+          },
+          {
+            "name": "Code Execution",
+            "description": "Execute code in secure environment: Test workflow for code execution",
+            "agent_name": "code_execution"
+          },
+          {
+            "name": "Results Analysis",
+            "description": "Analyze execution results: Test workflow for code execution",
+            "agent_name": "vana"
+          }
+        ],
+        "total_steps": 3,
+        "status": "created",
+        "mode": "workflow_management",
+        "created_at": 1749848604.6200068
+      }
+    },
+    {
+      "test_name": "list_workflows",
+      "success": true,
+      "execution_time": 4.1961669921875e-05,
+      "error_message": null,
+      "agent_used": null,
+      "response_data": {
+        "action": "list_workflows",
+        "workflows": [
+          {
+            "workflow_id": "7da1c560-24d7-436c-ae9a-f567bbe1fd57",
+            "name": "Data Analysis Pipeline",
+            "description": "Comprehensive data analysis workflow",
+            "state": "completed",
+            "progress_percentage": 100.0,
+            "completed_steps": 4,
+            "failed_steps": 0,
+            "total_steps": 4,
+            "start_time": 1749845004.620051,
+            "end_time": 1749848004.620051,
+            "execution_time": 3000.0,
+            "errors": [],
+            "last_updated": 1749848004.620051
+          },
+          {
+            "workflow_id": "cd8c01f2-e045-4ee7-9a45-258195f6785d",
+            "name": "Code Execution Workflow",
+            "description": "Secure code execution and analysis",
+            "state": "running",
+            "progress_percentage": 66.7,
+            "completed_steps": 2,
+            "failed_steps": 0,
+            "total_steps": 3,
+            "start_time": 1749846804.620055,
+            "execution_time": 1800.0,
+            "errors": [],
+            "last_updated": 1749848544.620055
+          }
+        ],
+        "total_count": 2,
+        "state_filter": "all",
+        "mode": "workflow_management",
+        "note": "These are sample workflows - full workflow persistence will be available in production"
+      }
+    },
+    {
+      "test_name": "workflow_status_monitoring",
+      "success": true,
+      "execution_time": 4.363059997558594e-05,
+      "error_message": null,
+      "agent_used": null,
+      "response_data": {
+        "action": "get_workflow_status",
+        "workflow_status": {
+          "workflow_id": "6494dc89-6ebc-4183-b2de-8bc118ec0f80",
+          "name": "Workflow 6494dc89",
+          "description": "Multi-agent workflow execution",
+          "state": "running",
+          "progress_percentage": 45.0,
+          "current_step": "step_2",
+          "completed_steps": 2,
+          "failed_steps": 0,
+          "total_steps": 4,
+          "start_time": 1749848304.6201348,
+          "execution_time": 300.0,
+          "errors": [],
+          "last_updated": 1749848604.6201348
+        },
+        "mode": "workflow_monitoring",
+        "note": "This is simulated status - full workflow tracking will be available in production"
+      }
+    },
+    {
+      "test_name": "code_task_routing",
+      "success": true,
+      "execution_time": 5.1975250244140625e-05,
+      "error_message": null,
+      "agent_used": null,
+      "response_data": {
+        "action": "coordinate_task",
+        "task": "write python function to calculate fibonacci",
+        "assigned_agent": "code_execution",
+        "agent_description": "Specialist for secure code execution and debugging across multiple programming languages",
+        "agent_capabilities": [
+          "package_management",
+          "execution_history",
+          "python",
+          "debugging_assistance",
+          "security_validation",
+          "resource_monitoring",
+          "error_analysis",
+          "shell",
+          "javascript",
+          "secure_execution"
+        ],
+        "status": "coordinated",
+        "task_id": "task_2",
+        "reasoning": "Selected code_execution based on available capabilities: package_management, execution_history, python",
+        "timestamp": "2025-06-13T16:03:24.620198"
+      }
+    },
+    {
+      "test_name": "data_analysis_routing",
+      "success": true,
+      "execution_time": 3.5762786865234375e-05,
+      "error_message": null,
+      "agent_used": null,
+      "response_data": {
+        "action": "coordinate_task",
+        "task": "analyze sales data and create visualization",
+        "assigned_agent": "data_science",
+        "agent_description": "",
+        "agent_capabilities": [],
+        "status": "coordinated",
+        "task_id": "task_3",
+        "reasoning": "Selected data_science for data analysis task based on capabilities",
+        "timestamp": "2025-06-13T16:03:24.620247"
+      }
+    },
+    {
+      "test_name": "complex_task_decomposition",
+      "success": true,
+      "execution_time": 3.314018249511719e-05,
+      "error_message": null,
+      "agent_used": null,
+      "response_data": {
+        "action": "coordinate_task",
+        "task": "analyze customer data, create visualization, and generate report with recommendations",
+        "assigned_agent": "data_science",
+        "agent_description": "",
+        "agent_capabilities": [],
+        "status": "coordinated",
+        "task_id": "task_4",
+        "reasoning": "Selected data_science for data analysis task based on capabilities",
+        "timestamp": "2025-06-13T16:03:24.620289"
+      }
+    },
+    {
+      "test_name": "vana_delegation_code",
+      "success": true,
+      "execution_time": 3.0994415283203125e-05,
+      "error_message": null,
+      "agent_used": null,
+      "response_data": {
+        "action": "coordinate_task",
+        "task": "execute python code to process CSV file",
+        "assigned_agent": "code_execution",
+        "agent_description": "Specialist for secure code execution and debugging across multiple programming languages",
+        "agent_capabilities": [
+          "package_management",
+          "execution_history",
+          "python",
+          "debugging_assistance",
+          "security_validation",
+          "resource_monitoring",
+          "error_analysis",
+          "shell",
+          "javascript",
+          "secure_execution"
+        ],
+        "status": "coordinated",
+        "task_id": "task_5",
+        "reasoning": "Selected code_execution for code execution task based on specialization",
+        "timestamp": "2025-06-13T16:03:24.620332"
+      }
+    },
+    {
+      "test_name": "vana_delegation_data",
+      "success": true,
+      "execution_time": 2.6941299438476562e-05,
+      "error_message": null,
+      "agent_used": null,
+      "response_data": {
+        "action": "coordinate_task",
+        "task": "perform statistical analysis on dataset",
+        "assigned_agent": "data_science",
+        "agent_description": "",
+        "agent_capabilities": [],
+        "status": "coordinated",
+        "task_id": "task_6",
+        "reasoning": "Selected data_science for data analysis task based on capabilities",
+        "timestamp": "2025-06-13T16:03:24.620369"
+      }
+    },
+    {
+      "test_name": "fallback_mechanisms",
+      "success": false,
+      "execution_time": 0.0004608631134033203,
+      "error_message": null,
+      "agent_used": null,
+      "response_data": {
+        "action": "delegate_task",
+        "agent": "nonexistent_agent",
+        "task": "test task",
+        "status": "failed",
+        "error": "Agent 'nonexistent_agent' not found",
+        "available_agents": [
+          "memory",
+          "vana",
+          "data_science",
+          "workflows",
+          "specialists",
+          "orchestration",
+          "code_execution"
+        ],
+        "timestamp": "2025-06-13T16:03:24.620654"
+      }
+    }
+  ],
+  "recommendations": [
+    "\u2705 Coordination success rate target achieved!"
+  ],
+  "test_categories": {
+    "coordination_tools": {
+      "count": 5,
+      "success_rate": 1.0,
+      "avg_response_time": 2.822194004058838
+    },
+    "workflow_management": {
+      "count": 5,
+      "success_rate": 1.0,
+      "avg_response_time": 4.4345855712890625e-05
+    },
+    "task_analysis": {
+      "count": 3,
+      "success_rate": 1.0,
+      "avg_response_time": 4.029273986816406e-05
+    },
+    "vana_orchestration": {
+      "count": 3,
+      "success_rate": 0.6666666666666666,
+      "avg_response_time": 0.00017293294270833334
+    }
+  },
+  "task_completion_status": {
+    "task_5_coordination_tools": true,
+    "task_6_vana_orchestration": false,
+    "task_7_task_analysis": true,
+    "task_8_workflow_management": true
+  }
+}

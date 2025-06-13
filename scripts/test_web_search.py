@@ -41,7 +41,7 @@ def main():
     # Initialize web search client
     if args.use_mock:
         try:
-            from tools.web_search_mock import MockWebSearchClient
+            from tests.mocks.web_search_mock import MockWebSearchClient
             web_search = MockWebSearchClient()
             logger.info("Using mock implementation")
         except ImportError:

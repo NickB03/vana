@@ -95,7 +95,7 @@ class VectorSearchClient:
             self._initialize()
 
         # Initialize mock client for fallback
-        from tools.vector_search.vector_search_mock import MockVectorSearchClient
+        from tests.mocks.vector_search_mock import MockVectorSearchClient
         try:
             self.mock_client = MockVectorSearchClient()
             if self.use_mock:

@@ -1,11 +1,15 @@
 # Task ID: 9
-# Title: Create Testing Framework
-# Status: done
-# Dependencies: 5, 8
+# Title: Add Code Quality Tools
+# Status: pending
+# Dependencies: 8
 # Priority: medium
-# Description: Build a framework to test coordination and delegation functionality.
+# Description: Integrate linting, formatting, and type checking tools.
 # Details:
-Develop unit and integration tests for coordination tools and workflows. Include performance benchmarks and success rate tracking.
+Add tools like `flake8` (linting), `black` (formatting), and `mypy` (type checking) to the project. Configure them in `pyproject.toml` or separate config files. Example:
+```toml
+[tool.black]
+line-length = 88
+```
 
 # Test Strategy:
-Run automated tests and analyze success rates to ensure >90% coordination success.
+Run the tools and verify they enforce code quality standards.
