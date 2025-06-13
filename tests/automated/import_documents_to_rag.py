@@ -7,9 +7,7 @@ and imports them into the RAG corpus for real vector search.
 """
 
 import logging
-import os
 import sys
-import tempfile
 from pathlib import Path
 
 from dotenv import load_dotenv

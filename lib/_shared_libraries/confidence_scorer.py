@@ -7,14 +7,12 @@ Inspired by Cursor/Devin's approach to capability assessment and task delegation
 
 import hashlib
 import re
-import time
 from dataclasses import dataclass
 from enum import Enum
 from functools import lru_cache
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Tuple
 
 # Import intelligent caching system
-from .intelligent_cache import agent_decision_cache
 
 
 class AgentSpecialty(Enum):

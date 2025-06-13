@@ -9,7 +9,7 @@ and performance monitoring.
 import os
 import sys
 import time
-from typing import Any, Dict, List, Union
+from typing import Any, Dict
 
 # Add the parent directory to the path to import VANA tools
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))

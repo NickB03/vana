@@ -8,12 +8,11 @@ session state debugging, trace logging, and troubleshooting utilities.
 import datetime
 import json
 import logging
-import os
 import threading
 import traceback
 from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional
 
 # Configure logging
 logger = logging.getLogger(__name__)

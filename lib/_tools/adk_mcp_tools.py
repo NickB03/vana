@@ -13,12 +13,10 @@ MCP Server Implementation:
 - Cloud Run compatible architecture
 """
 
-import json
 import logging
 import os
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 
-import requests
 from google.adk.tools import FunctionTool
 
 logger = logging.getLogger(__name__)

@@ -7,11 +7,8 @@ if ADK is not available.
 """
 
 import argparse
-import json
 import logging
-import os
 import sys
-from typing import Any, Dict, List, Optional
 
 # Set up logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")

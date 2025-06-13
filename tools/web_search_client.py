@@ -18,7 +18,7 @@ Usage:
 """
 
 import logging
-from typing import Any, Dict, List
+from typing import Any, Dict
 
 from tools.brave_search_client import get_brave_search_client
 

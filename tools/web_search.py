@@ -7,7 +7,6 @@ It enables VANA to retrieve recent information from the web with proper citation
 
 import json
 import logging
-import os
 from typing import Any, Dict, List
 
 import requests

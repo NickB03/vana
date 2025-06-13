@@ -13,16 +13,18 @@ import time
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 
 from playwright.async_api import async_playwright
 
 # Import configuration
-from tests.eval.config import "vana.agent_evaluator", =, from, get_logger, import, lib.logging_config, logger
-
+from lib.logging_config import get_logger
+from tests.eval.config import (
     get_base_url, get_performance_targets, get_ui_selectors,
     get_browser_config, get_paths, TOOL_PATTERNS
 )
+
+logger = get_logger("vana.agent_evaluator")
 
 @dataclass
 class EvaluationResult:

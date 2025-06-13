@@ -15,14 +15,11 @@ import json
 import logging
 import mimetypes
 import os
-import re
 from datetime import datetime
-from pathlib import Path
-from typing import Any, BinaryIO, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple
 
 # Google Cloud and ADK imports
 try:
-    from google.adk.memory import VertexAiRagMemoryService
     from google.cloud import aiplatform, storage
     from vertexai import rag
 

@@ -5,12 +5,10 @@ Provides secure code execution capabilities across multiple programming language
 using enhanced executor architecture with comprehensive security and monitoring.
 """
 
-import asyncio
-import json
 import logging
 import os
 import sys
-from typing import Any, Dict, List, Optional
+from typing import List
 
 from dotenv import load_dotenv
 
@@ -27,7 +25,7 @@ from google.adk.tools import FunctionTool
 from lib.sandbox.core.security_manager import SecurityManager
 
 # Import executor components
-from lib.sandbox.executors import ExecutorResult, JavaScriptExecutor, PythonExecutor, ShellExecutor
+from lib.sandbox.executors import JavaScriptExecutor, PythonExecutor, ShellExecutor
 
 logger = logging.getLogger(__name__)
 

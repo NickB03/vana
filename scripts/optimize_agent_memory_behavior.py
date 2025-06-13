@@ -16,11 +16,9 @@ Usage:
 """
 
 import logging
-import os
 import re
 import sys
 from pathlib import Path
-from typing import Any, Dict, List
 
 # Add project root to path
 project_root = Path(__file__).parent.parent

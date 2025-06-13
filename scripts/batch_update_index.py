@@ -16,9 +16,7 @@ import logging
 import os
 import time
 import uuid
-from typing import Any, Dict, List
 
-import vertexai
 from dotenv import load_dotenv
 from google.cloud import aiplatform, storage
 

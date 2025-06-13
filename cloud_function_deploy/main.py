@@ -2,7 +2,6 @@ import logging
 
 import functions_framework
 import vertexai
-from google.cloud import storage
 from vertexai.preview import rag
 
 # Configure logging

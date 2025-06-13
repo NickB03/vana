@@ -4,7 +4,6 @@ This is a sample implementation and should be adapted to your specific agent str
 """
 
 import logging
-from typing import Any, Dict, List, Optional
 
 from .buffer_manager import MemoryBufferManager
 from .mcp_interface import MemoryMCP

@@ -6,10 +6,8 @@ This script tests Vector Search functionality with multiple queries
 covering different aspects of the project.
 """
 
-import json
 import logging
 import sys
-from pathlib import Path
 
 # Set up logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")

@@ -14,7 +14,6 @@ Run this script regularly to ensure the RAG system is working properly.
 import datetime
 import json
 import logging
-import os
 import sys
 import time
 from pathlib import Path

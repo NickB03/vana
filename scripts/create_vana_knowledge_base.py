@@ -11,13 +11,11 @@ Usage:
     python scripts/create_vana_knowledge_base.py [--output-dir data/knowledge]
 """
 
-import json
 import logging
-import os
 import sys
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Dict
 
 # Add project root to path
 project_root = Path(__file__).parent.parent

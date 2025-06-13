@@ -12,7 +12,7 @@ import os
 import sys
 import traceback
 import uuid
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, Optional
 
 # Configure default logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")

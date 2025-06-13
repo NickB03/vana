@@ -6,9 +6,9 @@ Server-Sent Events transport implementation for MCP protocol compatibility
 import asyncio
 import json
 import logging
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 
-from fastapi import FastAPI, Request, Response
+from fastapi import Request
 from fastapi.responses import StreamingResponse
 from starlette.responses import JSONResponse
 

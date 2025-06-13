@@ -7,8 +7,7 @@ It identifies entities, their types, and relationships from text content.
 
 import logging
 import re
-from collections import defaultdict
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List
 
 import spacy
 

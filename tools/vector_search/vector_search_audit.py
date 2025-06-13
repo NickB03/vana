@@ -6,10 +6,9 @@ This module provides audit logging for security-sensitive operations in the Vect
 It leverages the AuditLogger from the security module to create tamper-evident logs.
 """
 
-import datetime
 import logging
 import os
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional
 
 # Import the AuditLogger
 from tools.security.audit_logger import AuditLogger

@@ -6,17 +6,10 @@ This module implements a proper MCP server using the official MCP SDK
 with Server-Sent Events (SSE) transport for Cloud Run compatibility.
 """
 
-import asyncio
 import json
 import logging
-import os
 from typing import Any, Dict, List, Optional
 
-from fastapi import FastAPI, Request, Response
-from fastapi.responses import StreamingResponse
-from starlette.applications import Starlette
-from starlette.responses import JSONResponse
-from starlette.routing import Route
 
 # MCP SDK imports
 try:
@@ -26,7 +19,6 @@ try:
     from mcp.types import (
         CallToolResult,
         GetPromptResult,
-        ListToolsResult,
         Prompt,
         ReadResourceResult,
         Resource,

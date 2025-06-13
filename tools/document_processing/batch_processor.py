@@ -10,15 +10,13 @@ This module provides utilities for batch processing documents including:
 """
 
 import asyncio
-import concurrent.futures
 import json
 import logging
 import os
 import time
 from collections import defaultdict
 from dataclasses import asdict, dataclass
-from datetime import datetime, timedelta
-from pathlib import Path
+from datetime import datetime
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
 from tools.document_processing.adk_document_processor import ADKDocumentProcessor

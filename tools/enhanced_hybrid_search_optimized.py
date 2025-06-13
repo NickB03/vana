@@ -6,10 +6,9 @@ that improves result quality based on evaluation findings.
 """
 
 import logging
-import os
 import re
 import time
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)

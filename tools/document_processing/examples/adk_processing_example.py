@@ -12,30 +12,12 @@ This example demonstrates how to use the ADK document processing pipeline includ
 
 import asyncio
 import logging
-import os
 import sys
 from pathlib import Path
 
 # Add parent directory to path for imports
 sys.path.append(str(Path(__file__).parent.parent.parent.parent))
 
-from tools.document_processing.adk_document_processor import ADKDocumentProcessor, create_adk_processor
-from tools.document_processing.adk_integration import (
-    DocumentProcessingAPI,
-    create_adk_tools,
-    create_document_processing_api,
-)
-from tools.document_processing.batch_processor import (
-    BatchDocumentProcessor,
-    create_batch_processor,
-    default_progress_callback,
-)
-from tools.document_processing.document_validator import DocumentValidator, create_validator
-from tools.document_processing.migration_utils import (
-    ComprehensiveMigrationManager,
-    create_migration_manager,
-    default_migration_progress_callback,
-)
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")

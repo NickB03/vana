@@ -22,11 +22,13 @@ from typing import Any, Dict, List, Tuple
 # Add project root to path
 sys.path.append(str(Path(__file__).parent.parent.parent))
 
-from lib._tools.adk_tools import "vana.coordination_benchmarks", =, from, get_logger, import, lib.logging_config, logger
-
+from lib.logging_config import get_logger
+from lib._tools.adk_tools import (
     coordinate_task, delegate_to_agent, get_agent_status,
     get_workflow_templates, create_workflow, list_workflows
 )
+
+logger = get_logger("vana.coordination_benchmarks")
 
 @dataclass
 class BenchmarkResult:

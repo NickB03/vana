@@ -6,11 +6,9 @@ and integrates with the AlertManager to generate alerts on WARNING/ERROR.
 """
 
 import datetime
-import json
 import logging
-import os
 import time
-from typing import Any, Callable, Dict, List, Optional, Union
+from typing import Any, Callable, Dict
 
 from dashboard.alerting.alert_manager import AlertManager, AlertSeverity
 

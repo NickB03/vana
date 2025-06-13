@@ -215,7 +215,6 @@ class CircuitBreaker:
 class CircuitOpenError(Exception):
     """Exception raised when a circuit is open and no fallback is provided"""
 
-    pass
 
 
 # Example usage

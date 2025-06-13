@@ -6,11 +6,9 @@ It implements health check endpoints and deep health checks for system component
 """
 
 import datetime
-import json
 import logging
-import os
 import time
-from typing import Any, Callable, Dict, List, Optional, Union
+from typing import Any, Callable, Dict
 
 # Set up logging
 logger = logging.getLogger(__name__)

@@ -10,7 +10,7 @@ import functools
 import logging
 import threading
 import time
-from typing import Any, Callable, Dict, List, Optional, TypeVar, Union, cast
+from typing import Any, Callable, Dict, Optional, TypeVar
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -221,7 +221,6 @@ class CircuitBreaker:
 class CircuitBreakerOpenError(Exception):
     """Exception raised when a circuit breaker is open."""
 
-    pass
 
 
 class CircuitBreakerRegistry:

@@ -5,7 +5,6 @@ Implements Google ADK ParallelAgent pattern for comprehensive concurrent analysi
 
 import os
 import sys
-from typing import Any, Dict
 
 # Add project root to Python path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))

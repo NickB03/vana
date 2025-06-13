@@ -5,11 +5,9 @@ Provides comprehensive data analysis, visualization, and machine learning capabi
 by leveraging the Code Execution Specialist for secure Python execution.
 """
 
-import json
 import logging
 import os
 import sys
-from typing import Any, Dict, List, Optional
 
 # Add project root to Python path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))

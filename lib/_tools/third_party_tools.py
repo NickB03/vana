@@ -11,19 +11,14 @@ Based on Google ADK documentation:
 - Seamless integration with existing tool framework
 """
 
-import importlib
 import inspect
 import logging
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Callable, Dict, List, Optional, Type, Union
+from typing import Any, Callable, Dict, List, Optional
 
 from lib._shared_libraries.tool_standards import (
-    ErrorHandler,
-    InputValidator,
-    StandardToolResponse,
-    ToolErrorType,
     performance_monitor,
 )
 
@@ -85,7 +80,6 @@ class ThirdPartyToolAdapter(ABC):
         Returns:
             List of discovered tool information
         """
-        pass
 
     @abstractmethod
     def adapt_tool(self, tool_info: ThirdPartyToolInfo) -> Callable:
@@ -98,7 +92,6 @@ class ThirdPartyToolAdapter(ABC):
         Returns:
             Adapted tool function compatible with VANA
         """
-        pass
 
     @abstractmethod
     def validate_tool(self, tool: Any) -> bool:
@@ -111,7 +104,6 @@ class ThirdPartyToolAdapter(ABC):
         Returns:
             True if tool is compatible, False otherwise
         """
-        pass
 
     def register_tool(self, tool_info: ThirdPartyToolInfo) -> str:
         """

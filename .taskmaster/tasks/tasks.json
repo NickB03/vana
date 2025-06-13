@@ -234,15 +234,23 @@
     {
       "id": 7,
       "title": "Enable Advanced Features",
-      "description": "Implement features enabled by new dependencies.",
-      "details": "Update code to utilize the new dependencies (e.g., PDF processing with PyPDF2, image processing with Pillow). Ensure graceful degradation if dependencies are missing.",
-      "testStrategy": "Test features with and without optional dependencies to verify functionality and fallback behavior.",
-      "priority": "medium",
+      "description": "Implement features enabled by new dependencies after completing code quality improvements.",
+      "status": "in-progress",
       "dependencies": [
         6
       ],
-      "status": "pending",
-      "subtasks": []
+      "priority": "medium",
+      "details": "After automated code cleanup (Phase 2), update code to utilize the new dependencies (e.g., PDF processing with PyPDF2, image processing with Pillow). Ensure graceful degradation if dependencies are missing. Build upon the completed Phase 1 fixes (critical syntax errors and import corrections).",
+      "testStrategy": "Test features with and without optional dependencies to verify functionality and fallback behavior. Ensure tests run after code quality improvements are complete.",
+      "subtasks": [
+        {
+          "id": 7.1,
+          "title": "Wait for Phase 2 code quality improvements",
+          "description": "Hold until automated cleanup of remaining code quality issues is complete",
+          "status": "pending",
+          "dependencies": []
+        }
+      ]
     },
     {
       "id": 8,
@@ -252,21 +260,47 @@
       "testStrategy": "Run `poetry check` to ensure no warnings or errors.",
       "priority": "medium",
       "dependencies": [],
-      "status": "pending",
+      "status": "done",
       "subtasks": []
     },
     {
       "id": 9,
       "title": "Add Code Quality Tools",
-      "description": "Integrate linting, formatting, and type checking tools.",
-      "details": "Add tools like `flake8` (linting), `black` (formatting), and `mypy` (type checking) to the project. Configure them in `pyproject.toml` or separate config files. Example:\n```toml\n[tool.black]\nline-length = 88\n```",
-      "testStrategy": "Run the tools and verify they enforce code quality standards.",
-      "priority": "medium",
+      "description": "Implemented comprehensive code quality improvements including linting, formatting, type checking and security scanning across the entire codebase.",
+      "status": "done",
       "dependencies": [
         8
       ],
-      "status": "pending",
-      "subtasks": []
+      "priority": "medium",
+      "details": "Completed major code quality foundation work:\n\n- Created modern pyproject.toml with PEP 621 standards\n- Configured tools: black (120 char line length, excludes archived_scripts), isort (black profile), flake8 (with ignores), mypy (gradual adoption), bandit (security)\n- Applied black formatting to 294 files\n- Standardized imports with isort\n- Identified 526 code quality issues via flake8\n\nExample configuration:\n```toml\n[tool.black]\nline-length = 120\nexclude = 'archived_scripts'\n\n[tool.isort]\nprofile = 'black'\n```",
+      "testStrategy": "Verified tools enforce standards through:\n- Successful formatting of 294 files with black\n- Consistent import ordering with isort\n- Comprehensive flake8 analysis identifying 526 issues\n- Type checking with mypy\n- Security scanning with bandit",
+      "subtasks": [
+        {
+          "id": 9.1,
+          "title": "Configure pyproject.toml with PEP 621 standards",
+          "status": "completed"
+        },
+        {
+          "id": 9.2,
+          "title": "Install and configure black, isort, flake8, mypy, bandit",
+          "status": "completed"
+        },
+        {
+          "id": 9.3,
+          "title": "Apply black formatting to entire codebase (294 files)",
+          "status": "completed"
+        },
+        {
+          "id": 9.4,
+          "title": "Standardize imports with isort",
+          "status": "completed"
+        },
+        {
+          "id": 9.5,
+          "title": "Run flake8 analysis (526 issues identified)",
+          "status": "completed"
+        }
+      ]
     },
     {
       "id": 10,

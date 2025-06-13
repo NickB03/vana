@@ -4,12 +4,16 @@ VANA Multi-Agent Team Definition - Minimal Working Version
 This is a simplified version with only working tools to test basic functionality.
 """
 
+import logging
 import os
 
 # Add project root to Python path for absolute imports
 import sys
 
 from dotenv import load_dotenv
+
+# Set up logging
+logger = logging.getLogger(__name__)
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
 
@@ -48,22 +52,14 @@ except ImportError as e:
 # Import advanced orchestration capabilities for Priority 3 enhancements
 try:
     from agents.memory.specialist_memory_manager import (
-        "vana.agents.vana.team_original",
-        =,
-        er,
-        get_logger,
-        import,
-        lib.logging_config,
+        save_specialist_knowledge_func,
+        get_specialist_knowledge_func
     )
     from agents.orchestration.hierarchical_task_manager import (
         analyze_task_complexity,
         coordinate_workflow,
         decompose_enterprise_task,
         route_to_specialist,
-    )
-
-        save_specialist_knowledge_func,
-        get_specialist_knowledge_func
     )
 
     # Create orchestration tools

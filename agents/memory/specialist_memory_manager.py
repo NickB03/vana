@@ -7,13 +7,11 @@ import json
 import os
 import sys
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 # Add project root to Python path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
 
-from google.adk.agents import LlmAgent
-from google.adk.tools import FunctionTool
 
 
 class SpecialistMemoryManager:

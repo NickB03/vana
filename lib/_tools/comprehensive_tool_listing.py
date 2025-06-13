@@ -3,9 +3,8 @@ Comprehensive Tool Listing
 Provides complete inventory of all available tools across all categories.
 """
 
-import json
 import logging
-from typing import Any, Dict, List
+from typing import Any, Dict
 
 logger = logging.getLogger(__name__)
 

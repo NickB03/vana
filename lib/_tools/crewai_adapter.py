@@ -12,7 +12,7 @@ Based on CrewAI documentation patterns:
 
 import importlib
 import logging
-from typing import Any, Callable, Dict, List, Optional, Union
+from typing import Any, Callable, List, Optional
 
 from lib._shared_libraries.tool_standards import performance_monitor
 from lib._tools.third_party_tools import ThirdPartyToolAdapter, ThirdPartyToolInfo, ThirdPartyToolType
@@ -51,8 +51,7 @@ class CrewAIToolAdapter(ThirdPartyToolAdapter):
             True if CrewAI is available, False otherwise
         """
         try:
-            import crewai
-            import crewai_tools
+            pass
 
             return True
         except ImportError:

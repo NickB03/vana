@@ -18,7 +18,7 @@ from threading import RLock
 from typing import Any, Dict, List, Optional, Tuple
 
 from .confidence_scorer import CapabilityScore, ConfidenceScorer, TaskAnalysis
-from .mode_manager import AgentMode, ExecutionResult, ModeManager, TaskPlan
+from .mode_manager import ExecutionResult, ModeManager, TaskPlan
 
 # Configure logging
 logger = logging.getLogger(__name__)

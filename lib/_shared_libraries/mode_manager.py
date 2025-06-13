@@ -7,11 +7,10 @@ Implements intelligent mode switching inspired by Cline:
 - Mode transitions based on task complexity and confidence levels
 """
 
-import json
 import time
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List
 
 
 class AgentMode(Enum):

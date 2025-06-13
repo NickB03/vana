@@ -11,11 +11,7 @@ Google ADK Compliance:
 - Consistent naming with adk_ prefix
 """
 
-import json
-import time
-from typing import Any, Dict, Optional
 
-from google.adk.tools import FunctionTool
 
 # =============================================================================
 # RESEARCH SPECIALIST TOOLS (Phase 5C)

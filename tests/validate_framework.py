@@ -13,6 +13,10 @@ from pathlib import Path
 project_root = Path(__file__).parent.parent
 sys.path.append(str(project_root))
 
+# Set up logging
+from lib.logging_config import get_logger
+logger = get_logger("vana.validate_framework")
+
 def test_security_framework():
     """Test security validation framework."""
     logger.debug("🔒 Testing Security Framework...")
@@ -88,9 +92,9 @@ def test_benchmarking_framework():
     logger.debug("📊 Testing Benchmarking Framework...")
     
     try:
-        from tests.benchmarks.benchmark_runner import BenchmarkRunner, BenchmarkSuite
-        from tests.benchmarks.performance_baselines import BaselineManager, PerformanceBaseline
-        from tests.benchmarks.regression_detector import RegressionDetector, RegressionSeverity
+        from tests.benchmarks.benchmark_runner import BenchmarkSuite
+        from tests.benchmarks.performance_baselines import BaselineManager
+        from tests.benchmarks.regression_detector import RegressionDetector
 
         # Test 1: Benchmark suite creation
         suite = BenchmarkSuite("test_suite")
@@ -188,11 +192,6 @@ def test_integration_framework():
     except Exception as e:
         logger.error(f"  ❌ Integration framework validation FAILED: {e}")
         import traceback
-
-from lib.logging_config import get_logger
-
-logger = get_logger("vana.validate_framework")
-
         traceback.print_exc()
         return False
 

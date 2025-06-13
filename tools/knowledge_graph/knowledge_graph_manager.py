@@ -14,7 +14,7 @@ The Knowledge Graph Manager provides:
 
 import logging
 import os
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List
 
 import requests
 

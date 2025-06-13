@@ -15,14 +15,12 @@ import logging
 import os
 from dataclasses import asdict, dataclass
 from datetime import datetime
-from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional
 
 from tools.document_processing.adk_document_processor import ADKDocumentMigrator, ADKDocumentProcessor
 
 # Import legacy and new processors
 from tools.document_processing.document_processor import DocumentProcessor
-from tools.document_processing.semantic_chunker import SemanticChunker
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)

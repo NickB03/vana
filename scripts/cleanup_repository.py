@@ -9,7 +9,6 @@ Updates .gitignore to prevent future issues.
 import glob
 import os
 import shutil
-from pathlib import Path
 from typing import List
 
 from lib.logging_config import get_logger

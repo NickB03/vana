@@ -20,10 +20,9 @@ Key Features:
 import asyncio
 import gc
 import time
-import weakref
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Callable, Dict, List, Optional, Type
+from typing import Any, Dict, List, Optional
 
 from google.adk.agents import LlmAgent
 from google.adk.tools import FunctionTool

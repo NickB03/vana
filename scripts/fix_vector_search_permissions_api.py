@@ -17,8 +17,6 @@ import os
 import sys
 
 from dotenv import load_dotenv
-from google.cloud import aiplatform, resourcemanager_v3
-from google.oauth2 import service_account
 
 # Configure logging
 logging.basicConfig(

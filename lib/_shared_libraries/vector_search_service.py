@@ -41,7 +41,7 @@ logger = logging.getLogger(__name__)
 
 # Try to import vector search dependencies
 try:
-    import numpy as np
+    pass
 
     NUMPY_AVAILABLE = True
 except ImportError as e:
@@ -50,7 +50,6 @@ except ImportError as e:
 
 # Google Cloud imports
 try:
-    from google.api_core import exceptions as gcp_exceptions
     from google.cloud import aiplatform
     from google.cloud.aiplatform import MatchingEngineIndex, MatchingEngineIndexEndpoint
 

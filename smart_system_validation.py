@@ -129,7 +129,7 @@ class SmartVANAValidator:
             
             logger.info("%s", f"   ✅ {agent_name}: {response_time:.3f}s, {len(tool_indicators)} tools, quality: {agent_result['quality_score']:.2f}")
             if tool_indicators:
-                logger.info(f"      Tools: {", '.join(tool_indicators)}")
+                logger.info(f"      Tools: {', '.join(tool_indicators)}")
             
         except Exception as e:
             logger.info(f"   ❌ {agent_name}: {str(e)}")

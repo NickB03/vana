@@ -11,7 +11,7 @@ import os
 import sys
 from datetime import datetime
 
-from flask import Blueprint, current_app, jsonify, render_template, request
+from flask import Blueprint, jsonify, render_template, request
 
 # Import authentication decorator
 from dashboard.auth.dashboard_auth import requires_auth

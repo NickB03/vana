@@ -5,7 +5,7 @@ import sqlite3
 import time
 import uuid
 from datetime import datetime
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 
 from .mcp_memory_client import MCPMemoryClient
 
