@@ -1,11 +1,11 @@
 # Task ID: 5
-# Title: Deploy Travel Orchestrator
-# Status: pending
-# Dependencies: 4
-# Priority: medium
-# Description: Implement the Travel Orchestrator for hotel booking, flight search, and itinerary management.
+# Title: Replace Stub Coordination Tools
+# Status: done
+# Dependencies: 3, 4
+# Priority: high
+# Description: Replace fake implementations of coordination tools with functional versions.
 # Details:
-Develop hierarchical task decomposition for travel-related workflows.
+Implement `coordinate_task`, `delegate_to_agent`, and `get_agent_status` tools using the communication protocols and routing engine. Ensure tools adhere to Google ADK standards.
 
 # Test Strategy:
-Validate orchestrator functionality with real-world travel scenarios.
+Test each tool with mock agents to verify coordination and delegation functionality.
