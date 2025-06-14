@@ -1,6 +1,6 @@
 # Task ID: 6
 # Title: Install Missing Dependencies
-# Status: done
+# Status: in-progress
 # Dependencies: 5
 # Priority: medium
 # Description: Add missing optional dependencies to pyproject.toml.
