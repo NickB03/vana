@@ -149,7 +149,7 @@ def main():
     if success_count == total_phases:
         logger.info("\n🎊 ALL CLEANUP TASKS COMPLETED SUCCESSFULLY!")
         logger.info("\n📋 RECOMMENDED NEXT STEPS:")
-        logger.info("1. Review all changes: git status && git diff")
+        logger.info("1. Review all changes: git status && git dif")
         logger.info("2. Test functionality: poetry run python -m pytest")
         logger.info("3. Update documentation if needed")
         logger.info("%s", "4. Commit changes: git add . && git commit -m 'Complete comprehensive cleanup'")
@@ -160,7 +160,7 @@ def main():
 
         existing_generated = [f for f in generated_files if os.path.exists(f)]
         if existing_generated:
-            logger.info(f"\n📄 Generated files to review:")
+            logger.info("\n📄 Generated files to review:")
             for file in existing_generated:
                 logger.info(f"   - {file}")
     else:

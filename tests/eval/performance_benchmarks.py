@@ -578,19 +578,19 @@ class VANAPerformanceBenchmarks:
             if not metrics["meets_target"]:
                 recommendations.append(
                     f"⚡ {test_name}: Baseline performance ({metrics['performance_rating']}) - "
-                    f"Optimize response time to meet target"
+                    "Optimize response time to meet target"
                 )
 
             if metrics["reliability_score"] < 0.95:
                 recommendations.append(
                     f"🔧 {test_name}: Reliability score ({metrics['reliability_score']:.1%}) - "
-                    f"Investigate and fix error sources"
+                    "Investigate and fix error sources"
                 )
 
             if metrics["consistency_score"] < 0.8:
                 recommendations.append(
                     f"📊 {test_name}: Consistency score ({metrics['consistency_score']:.1%}) - "
-                    f"Reduce response time variance"
+                    "Reduce response time variance"
                 )
 
         # Load test recommendations
@@ -603,7 +603,7 @@ class VANAPerformanceBenchmarks:
         if scalability.get("scalability_rating") in ["Poor", "Unacceptable"]:
             recommendations.append(
                 f"📈 Scalability ({scalability.get('scalability_rating')}) - "
-                f"Implement horizontal scaling and load balancing"
+                "Implement horizontal scaling and load balancing"
             )
 
         # General recommendations
@@ -653,13 +653,13 @@ class VANAPerformanceBenchmarks:
 
         # System info
         system_info = results.get("system_info", {})
-        logger.debug(f"\n🖥️  SYSTEM INFORMATION:")
+        logger.debug("\n🖥️  SYSTEM INFORMATION:")
         logger.debug("%s", f"   Service URL: {system_info.get('service_url', 'N/A')}")
         logger.debug("%s", f"   Health Status: {system_info.get('health_status', {}).get('status', 'N/A')}")
 
         # Baseline metrics
         baseline_metrics = results.get("baseline_metrics", {})
-        logger.debug(f"\n📊 BASELINE PERFORMANCE:")
+        logger.debug("\n📊 BASELINE PERFORMANCE:")
         for test_name, result in baseline_metrics.items():
             logger.debug(f"   {test_name}:")
             logger.info(f"      Average Response Time: {result.average_response_time:.2f}s")
@@ -671,7 +671,7 @@ class VANAPerformanceBenchmarks:
 
         # Load test results
         load_test_results = results.get("load_test_results", {})
-        logger.info(f"\n🔥 LOAD TEST RESULTS:")
+        logger.info("\n🔥 LOAD TEST RESULTS:")
         for test_name, user_results in load_test_results.items():
             logger.debug(f"   {test_name}:")
             for user_count, result in user_results.items():
@@ -683,7 +683,7 @@ class VANAPerformanceBenchmarks:
         # Performance analysis
         analysis = results.get("performance_analysis", {})
         scalability = analysis.get("scalability_assessment", {})
-        logger.debug(f"\n📈 SCALABILITY ASSESSMENT:")
+        logger.debug("\n📈 SCALABILITY ASSESSMENT:")
         logger.debug("%s", f"   Overall Score: {scalability.get('overall_scalability_score', 0):.1%}")
         logger.debug("%s", f"   Rating: {scalability.get('scalability_rating', 'N/A')}")
 
@@ -693,7 +693,7 @@ class VANAPerformanceBenchmarks:
 
         # Recommendations
         recommendations = results.get("recommendations", [])
-        logger.debug(f"\n💡 PERFORMANCE RECOMMENDATIONS:")
+        logger.debug("\n💡 PERFORMANCE RECOMMENDATIONS:")
         for rec in recommendations:
             logger.debug(f"   {rec}")
 

@@ -67,7 +67,7 @@ class OrchestrationValidator:
             # Submit query (try Enter key first, then button if available)
             try:
                 await page.keyboard.press("Enter")
-            except:
+            except Exception:
                 submit_button = "button[type='submit'], .submit-button, #submit"
                 if await page.locator(submit_button).count() > 0:
                     await page.click(submit_button)
@@ -153,7 +153,7 @@ class OrchestrationValidator:
             # Submit query
             try:
                 await page.keyboard.press("Enter")
-            except:
+            except Exception:
                 submit_button = "button[type='submit'], .submit-button, #submit"
                 if await page.locator(submit_button).count() > 0:
                     await page.click(submit_button)
@@ -230,7 +230,7 @@ class OrchestrationValidator:
 
             try:
                 await page.keyboard.press("Enter")
-            except:
+            except Exception:
                 submit_button = "button[type='submit'], .submit-button, #submit"
                 if await page.locator(submit_button).count() > 0:
                     await page.click(submit_button)
@@ -301,7 +301,7 @@ class OrchestrationValidator:
 
             try:
                 await page.keyboard.press("Enter")
-            except:
+            except Exception:
                 submit_button = "button[type='submit'], .submit-button, #submit"
                 if await page.locator(submit_button).count() > 0:
                     await page.click(submit_button)
@@ -388,7 +388,7 @@ class OrchestrationValidator:
         passed_tests = sum(1 for r in self.results if r["status"] == "PASS")
 
         logger.debug("%s", "\n" + "=" * 50)
-        logger.debug(f"📊 Orchestration Tests Summary:")
+        logger.debug("📊 Orchestration Tests Summary:")
         logger.debug(f"   Total: {total_tests}")
         logger.debug(f"   Passed: {passed_tests}")
         logger.info(f"   Success Rate: {(passed_tests/total_tests)*100:.1f}%")

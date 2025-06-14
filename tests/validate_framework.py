@@ -43,7 +43,7 @@ def vulnerable_function(user_input):
         # Test 2: Configuration security
         insecure_config = {
             "password": "hardcoded_secret_123",
-            "api_key": "sk-1234567890abcdef1234567890abcdef",
+            "api_key": "sk-1234567890abcdef1234567890abcde",
             "debug": True,
             "ssl_verify": False,
         }
@@ -210,7 +210,7 @@ def test_ci_framework():
 
         result_dict = test_result.to_dict()
         logger.info("  ✅ Test result serialization successful")
-        assert result_dict["success"] == True, "Test result should serialize correctly"
+        assert result_dict["success"] is True, "Test result should serialize correctly"
 
         logger.debug("  🎉 CI/CD framework validation PASSED")
         return True

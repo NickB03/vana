@@ -40,7 +40,7 @@ def initialize_kg_schema():
     # Define basic relationship types
     relationship_types = [
         "related_to",
-        "part_of",
+        "part_o",
         "created_by",
         "assigned_to",
         "depends_on",
@@ -91,7 +91,7 @@ def initialize_kg_schema():
                 response = requests.post(f"{endpoint}/{namespace}/memory", headers=headers, json=payload, timeout=10)
 
                 if response.status_code == 200:
-                    logger.info(f"✅ Initialized relationship: related_to")
+                    logger.info("✅ Initialized relationship: related_to")
                 else:
                     logger.error(f"❌ Failed to initialize relationship: {response.text}")
             else:

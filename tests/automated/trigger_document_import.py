@@ -35,8 +35,8 @@ LOCATION = "us-central1"
 GCS_FILES = [
     "gs://${GOOGLE_CLOUD_PROJECT}-vector-search-docs/rag_documents/vana_system_overview.txt",
     "gs://${GOOGLE_CLOUD_PROJECT}-vector-search-docs/rag_documents/anthropic-ai-agents.md",
-    "gs://${GOOGLE_CLOUD_PROJECT}-vector-search-docs/rag_documents/Newwhitepaper_Agents.pdf",
-    "gs://${GOOGLE_CLOUD_PROJECT}-vector-search-docs/rag_documents/a-practical-guide-to-building-agents.pdf",
+    "gs://${GOOGLE_CLOUD_PROJECT}-vector-search-docs/rag_documents/Newwhitepaper_Agents.pd",
+    "gs://${GOOGLE_CLOUD_PROJECT}-vector-search-docs/rag_documents/a-practical-guide-to-building-agents.pd",
 ]
 
 
@@ -93,26 +93,26 @@ import vertexai
 @functions_framework.cloud_event
 def import_document_on_upload(cloud_event):
     """Triggered when a file is uploaded to the GCS bucket"""
-    
+
     # Get file information from the event
     data = cloud_event.data
     bucket_name = data["bucket"]
     file_name = data["name"]
-    
+
     # Only process files in the rag_documents folder
     if not file_name.startswith("rag_documents/"):
         return
-    
+
     # Initialize Vertex AI
     project_id = "${GOOGLE_CLOUD_PROJECT}"
     location = "us-central1"
     corpus_name = "projects/${PROJECT_NUMBER}/locations/us-central1/ragCorpora/2305843009213693952"
-    
+
     vertexai.init(project=project_id, location=location)
-    
+
     # Import the file to RAG corpus
     gcs_uri = f"gs://{bucket_name}/{file_name}"
-    
+
     try:
         response = rag.import_files(
             corpus_name=corpus_name,
@@ -125,7 +125,7 @@ def import_document_on_upload(cloud_event):
             )
         )
         logger.info(f"Successfully imported {gcs_uri}")
-        
+
     except Exception as e:
         logger.error(f"Failed to import {gcs_uri}: {str(e)}")
 '''

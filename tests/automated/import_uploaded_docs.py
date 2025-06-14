@@ -24,8 +24,8 @@ CORPUS_NAME = "projects/${PROJECT_NUMBER}/locations/us-central1/ragCorpora/23058
 UPLOADED_FILES = [
     "gs://${GOOGLE_CLOUD_PROJECT}-vector-search-docs/rag_documents/vana_system_overview.txt",
     "gs://${GOOGLE_CLOUD_PROJECT}-vector-search-docs/rag_documents/anthropic-ai-agents.md",
-    "gs://${GOOGLE_CLOUD_PROJECT}-vector-search-docs/rag_documents/Newwhitepaper_Agents.pdf",
-    "gs://${GOOGLE_CLOUD_PROJECT}-vector-search-docs/rag_documents/a-practical-guide-to-building-agents.pdf",
+    "gs://${GOOGLE_CLOUD_PROJECT}-vector-search-docs/rag_documents/Newwhitepaper_Agents.pd",
+    "gs://${GOOGLE_CLOUD_PROJECT}-vector-search-docs/rag_documents/a-practical-guide-to-building-agents.pd",
 ]
 
 
@@ -39,7 +39,7 @@ def import_documents_to_rag():
         project_id = "${GOOGLE_CLOUD_PROJECT}"  # Use project ID, not number
         location = "us-central1"
 
-        logger.info(f"🚀 Initializing Vertex AI...")
+        logger.info("🚀 Initializing Vertex AI...")
         logger.info(f"   Project: {project_id}")
         logger.info(f"   Location: {location}")
         logger.info(f"   Corpus: {CORPUS_NAME}")
@@ -57,7 +57,7 @@ def import_documents_to_rag():
             ),
         )
 
-        logger.info(f"✅ Import operation started successfully")
+        logger.info("✅ Import operation started successfully")
         logger.info("   📋 Import details:")
         logger.info(f"      Response: {response}")
         logger.info(f"      Files: {len(UPLOADED_FILES)}")

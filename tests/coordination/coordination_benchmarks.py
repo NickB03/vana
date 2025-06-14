@@ -224,7 +224,7 @@ class CoordinationBenchmarks:
             logger.info(f"    ✅ Completed: {successful}/{iterations} successful ({result.success_rate:.1%})")
             logger.info(f"    ⏱️  Avg time: {result.average_time:.3f}s, Ops/sec: {result.operations_per_second:.1f}")
         else:
-            logger.debug(f"    ❌ No valid timing data collected")
+            logger.debug("    ❌ No valid timing data collected")
 
     async def _run_concurrent_benchmark(
         self, test_name: str, operation_func, concurrent_operations: int = 5, iterations: int = 3
@@ -379,13 +379,13 @@ class CoordinationBenchmarks:
         logger.debug("⚡ COORDINATION PERFORMANCE SUMMARY")
         logger.debug("%s", "=" * 60)
 
-        logger.debug(f"📊 Overall Performance:")
+        logger.debug("📊 Overall Performance:")
         logger.info("%s", f"   Success Rate: {summary['overall_success_rate']:.1%}")
         logger.debug("%s", f"   Avg Response Time: {summary['overall_avg_response_time']:.3f}s")
         logger.debug("%s", f"   Operations/Second: {summary['overall_ops_per_second']:.1f}")
         logger.debug("%s", f"   Performance Grade: {summary['performance_grade']}")
 
-        logger.debug(f"\n🎯 Target Achievement:")
+        logger.debug("\n🎯 Target Achievement:")
         logger.info(
             "%s", f"   Success Rate Target (90%): {'✅ ACHIEVED' if targets['success_rate_achieved'] else '❌ MISSED'}"
         )
@@ -579,7 +579,7 @@ class CoordinationBenchmarks:
         logger.info("🚀 TASK #10: LOAD TESTING RESULTS")
         logger.debug("%s", "=" * 60)
 
-        logger.debug(f"📊 Load Performance Metrics:")
+        logger.debug("📊 Load Performance Metrics:")
         logger.info("%s", f"   Success Rate Under Load: {load_summary['load_success_rate']:.1%}")
         logger.debug("%s", f"   Avg Response Time Under Load: {load_summary['load_avg_response_time']:.3f}s")
         logger.debug("%s", f"   Max Response Time Under Load: {load_summary['load_max_response_time']:.3f}s")
@@ -587,7 +587,7 @@ class CoordinationBenchmarks:
         logger.debug("%s", f"   Performance Degradation: {load_summary['performance_degradation_factor']:.2f}x")
         logger.debug("%s", f"   Load Performance Grade: {load_summary['load_performance_grade']}")
 
-        logger.debug(f"\n🎯 Task #10 Validation:")
+        logger.debug("\n🎯 Task #10 Validation:")
         logger.info(
             "%s", f"   Success Rate Target (90%): {'✅ ACHIEVED' if task_10['success_rate_achieved'] else '❌ MISSED'}"
         )
