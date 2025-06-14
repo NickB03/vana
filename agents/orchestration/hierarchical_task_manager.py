@@ -3,6 +3,12 @@ Hierarchical Task Manager - Complex Task Decomposition
 Implements Google ADK hierarchical agent patterns for complex task orchestration.
 """
 
+from agents.specialists.ui_specialist import analyze_user_interface
+from agents.specialists.qa_specialist import analyze_testing_strategy
+from agents.specialists.devops_specialist import analyze_infrastructure
+from agents.specialists.architecture_specialist import analyze_system_architecture
+from google.adk.tools import FunctionTool
+from google.adk.agents import LlmAgent
 import os
 import sys
 from enum import Enum
@@ -11,14 +17,8 @@ from typing import Any, Dict
 # Add project root to Python path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
 
-from google.adk.agents import LlmAgent
-from google.adk.tools import FunctionTool
 
 # Import specialist functions
-from agents.specialists.architecture_specialist import analyze_system_architecture
-from agents.specialists.devops_specialist import analyze_infrastructure
-from agents.specialists.qa_specialist import analyze_testing_strategy
-from agents.specialists.ui_specialist import analyze_user_interface
 
 # Import workflows
 
@@ -242,7 +242,7 @@ def decompose_enterprise_task(task_description: str) -> str:
     for i, phase in enumerate(phases, 1):
         result += f"{i}. {phase}\n"
 
-    result += f"\nEach phase will be managed as a separate complex project with full specialist coordination."
+    result += "\nEach phase will be managed as a separate complex project with full specialist coordination."
 
     return result
 

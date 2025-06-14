@@ -5,6 +5,10 @@ Provides secure code execution capabilities across multiple programming language
 using enhanced executor architecture with comprehensive security and monitoring.
 """
 
+from lib.sandbox.executors import JavaScriptExecutor, PythonExecutor, ShellExecutor
+from lib.sandbox.core.security_manager import SecurityManager
+from google.adk.tools import FunctionTool
+from google.adk.agents import LlmAgent
 import logging
 import os
 import sys
@@ -19,13 +23,9 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
 load_dotenv()
 
 # Google ADK imports
-from google.adk.agents import LlmAgent
-from google.adk.tools import FunctionTool
 
-from lib.sandbox.core.security_manager import SecurityManager
 
 # Import executor components
-from lib.sandbox.executors import JavaScriptExecutor, PythonExecutor, ShellExecutor
 
 logger = logging.getLogger(__name__)
 
@@ -235,10 +235,14 @@ code_execution_specialist = LlmAgent(
 
 Always prioritize security and provide comprehensive explanations of execution results.""",
     tools=[
-        FunctionTool(func=execute_code),
-        FunctionTool(func=validate_code_security),
-        FunctionTool(func=get_execution_history),
-        FunctionTool(func=get_supported_languages),
+        FunctionTool(
+            func=execute_code),
+        FunctionTool(
+            func=validate_code_security),
+        FunctionTool(
+            func=get_execution_history),
+        FunctionTool(
+            func=get_supported_languages),
     ],
 )
 

@@ -3,22 +3,6 @@ VANA Agent - Simplified Version for Testing
 Fixed agent-tool integration issues by simplifying instruction
 """
 
-import os
-
-# Add project root to Python path for absolute imports
-import sys
-
-from dotenv import load_dotenv
-
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
-
-# Load environment variables before importing Google ADK
-load_dotenv()
-
-# Google ADK imports
-from google.adk.agents import LlmAgent
-
-# Import only essential working tools
 from lib._tools import (  # File System Tools; Search Tools; System Tools; Agent Coordination Tools
     adk_coordinate_task,
     adk_delegate_to_agent,
@@ -33,6 +17,22 @@ from lib._tools import (  # File System Tools; Search Tools; System Tools; Agent
     adk_web_search,
     adk_write_file,
 )
+from google.adk.agents import LlmAgent
+import os
+
+# Add project root to Python path for absolute imports
+import sys
+
+from dotenv import load_dotenv
+
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
+
+# Load environment variables before importing Google ADK
+load_dotenv()
+
+# Google ADK imports
+
+# Import only essential working tools
 
 # Create simplified VANA agent with concise instruction
 root_agent = LlmAgent(
@@ -42,7 +42,7 @@ root_agent = LlmAgent(
 
 TOOL USAGE RULES:
 - For "echo" requests: use echo tool immediately
-- For "health" requests: use get_health_status tool immediately  
+- For "health" requests: use get_health_status tool immediately
 - For "agent status" requests: use get_agent_status tool immediately
 - For file operations: use read_file, write_file, list_directory, file_exists
 - For searches: use vector_search, web_search, search_knowledge
