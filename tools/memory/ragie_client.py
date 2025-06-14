@@ -34,7 +34,7 @@ def query_memory(
 
     if debug:
         logger.debug(f"\n[DEBUG] Querying Ragie API with prompt: {prompt}")
-        logger.debug(f"[DEBUG] API endpoint: https://api.ragie.ai/retrievals")
+        logger.debug("[DEBUG] API endpoint: https://api.ragie.ai/retrievals")
         logger.debug(f"[DEBUG] Payload: {payload}")
 
     try:

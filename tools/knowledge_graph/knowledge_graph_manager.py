@@ -541,9 +541,7 @@ class KnowledgeGraphManager:
         doc_entity_type = "document"
         doc_observation = f"Document: {title}. Source: {source}. ID: {doc_id}."
 
-        doc_entity_result = self.store(
-            entity_name=doc_entity_name, entity_type=doc_entity_type, observation=doc_observation
-        )
+        self.store(entity_name=doc_entity_name, entity_type=doc_entity_type, observation=doc_observation)
 
         # Store entities
         stored_entities = []
