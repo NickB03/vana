@@ -177,10 +177,10 @@ def main():
     # Create environment template
     create_environment_template()
 
-    logger.info(f"\n🎉 Sanitization complete!")
+    logger.info("\n🎉 Sanitization complete!")
     logger.info(f"✅ Modified {modified_count} files")
     logger.info(f"🔄 Applied {total_changes} credential replacements")
-    logger.info(f"📝 Created .env.template for configuration")
+    logger.info("📝 Created .env.template for configuration")
 
     logger.info("\n⚠️  IMPORTANT NEXT STEPS:")
     logger.info("1. Review all changes before committing")

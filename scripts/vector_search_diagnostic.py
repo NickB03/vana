@@ -167,7 +167,7 @@ def check_service_account_permissions() -> Dict[str, Any]:
                 project_number = response.text
                 results["project_number"] = project_number
                 logger.info(f"✅ Project number: {project_number}")
-        except:
+        except Exception:
             logger.warning("⚠️ Could not get project number from metadata server")
             results["errors"].append("Could not get project number from metadata server")
 
@@ -299,7 +299,7 @@ def generate_permission_fix_instructions(results: Dict[str, Any]) -> str:
     if not service_account:
         return "Could not determine service account email. Check your credentials file."
 
-    instructions.append(f"# Vector Search Permission Fix Instructions\n")
+    instructions.append("# Vector Search Permission Fix Instructions\n")
     instructions.append(
         f"The service account `{service_account}` does not have sufficient permissions to access Vector Search.\n"
     )

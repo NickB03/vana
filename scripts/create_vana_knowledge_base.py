@@ -69,7 +69,7 @@ VANA is a comprehensive multi-agent AI system built with Google ADK (Agent Devel
 - **Capabilities**: Web research, source validation, comprehensive reporting
 - **Output**: Structured research reports with citations
 
-### Analysis Agent  
+### Analysis Agent
 - **Purpose**: Data processing and insight generation
 - **Tools**: Analytical tools, data processing, visualization
 - **Capabilities**: Statistical analysis, pattern recognition, report generation
@@ -117,7 +117,7 @@ VANA is a comprehensive multi-agent AI system built with Google ADK (Agent Devel
 - **Features**: Rate limit protection, intelligent caching
 - **Output**: Structured search results with URLs and snippets
 
-### search_knowledge  
+### search_knowledge
 - **Purpose**: Search VANA knowledge base using RAG pipeline
 - **Usage**: `search_knowledge("VANA capabilities")`
 - **Features**: Semantic search, VANA-specific knowledge
@@ -278,7 +278,7 @@ The VANA Optimization Framework consists of 5 integrated components that provide
 ### Import Hanging Issues
 - **Symptoms**: Python imports hang or timeout
 - **Causes**: Heavy dependency chains, blocking authentication
-- **Solutions**: 
+- **Solutions**:
   - Recreate Poetry environment
   - Use lazy loading patterns
   - Check authentication configuration
@@ -357,7 +357,7 @@ BRAVE_API_KEY=<your_brave_api_key>
                 file_path = self.output_dir / filename
 
                 # Add metadata header
-                metadata_header = f"""---
+                metadata_header = """---
 title: {filename.replace('.md', '').replace('_', ' ').title()}
 created: {datetime.now().isoformat()}
 source: vana_knowledge_base_creator
@@ -388,7 +388,7 @@ type: system_documentation
     def create_index_file(self):
         """Create an index file for the knowledge base."""
 
-        index_content = f"""# VANA Knowledge Base Index
+        index_content = """# VANA Knowledge Base Index
 
 Created: {datetime.now().isoformat()}
 
@@ -401,7 +401,7 @@ Created: {datetime.now().isoformat()}
             title = filename.replace(".md", "").replace("_", " ").title()
             index_content += f"- [{title}]({filename})\n"
 
-        index_content += f"""
+        index_content += """
 ## Usage
 
 This knowledge base can be accessed by VANA agents through the `search_knowledge` tool:
@@ -410,7 +410,7 @@ This knowledge base can be accessed by VANA agents through the `search_knowledge
 # Search for system information
 results = search_knowledge("VANA capabilities")
 
-# Search for agent information  
+# Search for agent information
 results = search_knowledge("Research Agent role")
 
 # Search for tool documentation
@@ -447,17 +447,17 @@ def main():
     success = creator.create_knowledge_base()
 
     if success:
-        logger.info(f"\n🎉 VANA Knowledge Base Created Successfully!")
+        logger.info("\n🎉 VANA Knowledge Base Created Successfully!")
         logger.info(f"📁 Location: {creator.output_dir}")
         logger.info(f"📊 Files created: {len(creator.created_files)}")
-        logger.info(f"🧠 Knowledge base is ready for agent access")
+        logger.info("🧠 Knowledge base is ready for agent access")
 
-        logger.info(f"\n🚀 Next steps:")
-        logger.info(f"1. Update search_knowledge tool to use this knowledge base")
-        logger.info(f"2. Test agent knowledge retrieval")
-        logger.info(f"3. Deploy updated system")
+        logger.info("\n🚀 Next steps:")
+        logger.info("1. Update search_knowledge tool to use this knowledge base")
+        logger.info("2. Test agent knowledge retrieval")
+        logger.info("3. Deploy updated system")
     else:
-        logger.error(f"\n❌ Knowledge base creation failed. Check logs for details.")
+        logger.error("\n❌ Knowledge base creation failed. Check logs for details.")
         sys.exit(1)
 
 

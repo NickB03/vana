@@ -31,8 +31,8 @@ LOCATION = "us-central1"
 GCS_FILES = [
     "gs://${GOOGLE_CLOUD_PROJECT}-vector-search-docs/rag_documents/vana_system_overview.txt",
     "gs://${GOOGLE_CLOUD_PROJECT}-vector-search-docs/rag_documents/anthropic-ai-agents.md",
-    "gs://${GOOGLE_CLOUD_PROJECT}-vector-search-docs/rag_documents/Newwhitepaper_Agents.pdf",
-    "gs://${GOOGLE_CLOUD_PROJECT}-vector-search-docs/rag_documents/a-practical-guide-to-building-agents.pdf",
+    "gs://${GOOGLE_CLOUD_PROJECT}-vector-search-docs/rag_documents/Newwhitepaper_Agents.pd",
+    "gs://${GOOGLE_CLOUD_PROJECT}-vector-search-docs/rag_documents/a-practical-guide-to-building-agents.pd",
 ]
 
 
@@ -64,7 +64,7 @@ def import_rag_files_from_gcs(paths: list[str], chunk_size: int, chunk_overlap: 
 
         total_imported, total_num_of_files = 0, 0
 
-        logger.info(f"🚀 Starting official RAG import process...")
+        logger.info("🚀 Starting official RAG import process...")
         logger.info(f"   Corpus: {corpus_name}")
         logger.info(f"   Chunk size: {chunk_size}")
         logger.info(f"   Chunk overlap: {chunk_overlap}")
@@ -107,7 +107,7 @@ def import_rag_files_from_gcs(paths: list[str], chunk_size: int, chunk_overlap: 
                     logger.error(f"   ❌ Attempt {attempt + 1} failed: {str(e)}")
                     attempt += 1
                     if attempt < max_retries:
-                        logger.info(f"   ⏳ Retrying in 5 seconds...")
+                        logger.info("   ⏳ Retrying in 5 seconds...")
                         time.sleep(5)
 
             total_imported += imported
@@ -125,13 +125,13 @@ def setup_vertex_ai():
     try:
         import vertexai
 
-        logger.info(f"🔧 Initializing Vertex AI...")
+        logger.info("🔧 Initializing Vertex AI...")
         logger.info(f"   Project: {PROJECT_ID}")
         logger.info(f"   Location: {LOCATION}")
 
         vertexai.init(project=PROJECT_ID, location=LOCATION)
 
-        logger.info(f"✅ Vertex AI initialized successfully")
+        logger.info("✅ Vertex AI initialized successfully")
         return True
 
     except Exception as e:
@@ -158,32 +158,32 @@ def auto_import_rag_document(cloud_event):
     Automatically import document when uploaded to GCS bucket
     Based on official Google Cloud RAG engine implementation
     """
-    
+
     try:
         # Get file information from the event
         data = cloud_event.data
         bucket_name = data["bucket"]
         file_name = data["name"]
-        
+
         logger.info(f"File uploaded: gs://{bucket_name}/{file_name}")
-        
+
         # Only process files in the rag_documents folder
         if not file_name.startswith("rag_documents/"):
             logger.info("File not in rag_documents folder, skipping")
             return
-        
+
         # Initialize Vertex AI
         project_id = "${GOOGLE_CLOUD_PROJECT}"
         location = "us-central1"
         corpus_name = "projects/${PROJECT_NUMBER}/locations/us-central1/ragCorpora/2305843009213693952"
-        
+
         vertexai.init(project=project_id, location=location)
-        
+
         # Import the file to RAG corpus using official parameters
         gcs_uri = f"gs://{bucket_name}/{file_name}"
-        
+
         logger.info(f"Importing {gcs_uri} to RAG corpus...")
-        
+
         response = rag.import_files(
             corpus_name,
             [gcs_uri],
@@ -192,10 +192,10 @@ def auto_import_rag_document(cloud_event):
             timeout=20000,
             max_embedding_requests_per_min=1400,
         )
-        
+
         logger.info(f"Successfully started import for {gcs_uri}")
         logger.info(f"Response: {response}")
-        
+
     except Exception as e:
         logger.error(f"Failed to import {gcs_uri}: {str(e)}")
         raise e

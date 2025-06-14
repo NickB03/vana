@@ -69,7 +69,7 @@ def parse_claude_history(file_path):
                 if timestamp_match
                 else datetime.now().isoformat()
             )
-        except:
+        except Exception:
             timestamp = datetime.now().isoformat()
 
         # Extract messages

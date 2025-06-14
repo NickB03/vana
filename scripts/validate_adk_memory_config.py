@@ -171,7 +171,7 @@ def check_migration_status():
             print_status("info", "Migration to ADK memory is in planning phase")
 
         # Print status details
-        logger.info(f"\nStatus Details:")
+        logger.info("\nStatus Details:")
         logger.info("%s", f"  ADK Memory Configured: {'✅' if status.get('adk_memory_configured') else '❌'}")
         logger.info("%s", f"  MCP Variables Present: {'⚠️' if status.get('mcp_variables_present') else '✅'}")
         logger.info("%s", f"  Configuration Valid: {'✅' if status.get('configuration_valid') else '❌'}")

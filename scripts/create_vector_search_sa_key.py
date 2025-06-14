@@ -34,7 +34,7 @@ def main():
     # Service account email
     service_account_email = f"vana-vector-search-sa@{project_id}.iam.gserviceaccount.com"
 
-    logger.info(f"Generating commands for creating a service account key for:")
+    logger.info("Generating commands for creating a service account key for:")
     logger.info(f"  Project: {project_id}")
     logger.info(f"  Service Account: {service_account_email}")
 
