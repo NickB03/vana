@@ -15,7 +15,7 @@ import requests
 from dotenv import load_dotenv
 
 # Add project root to path
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 # Load environment variables
 load_dotenv()
@@ -25,6 +25,7 @@ from lib.logging_config import get_logger
 
 logger = get_logger("vana.memory_diagnostic")
 
+
 def check_mcp_server():
     """Check if MCP server is accessible."""
     endpoint = os.environ.get("MCP_ENDPOINT", "https://mcp.community.augment.co")
@@ -33,17 +34,10 @@ def check_mcp_server():
 
     logger.info(f"Checking MCP server at {endpoint}/{namespace}...")
 
-    headers = {
-        "Content-Type": "application/json",
-        "Authorization": f"Bearer {api_key}"
-    }
+    headers = {"Content-Type": "application/json", "Authorization": f"Bearer {api_key}"}
 
     try:
-        response = requests.get(
-            f"{endpoint}/{namespace}/status",
-            headers=headers,
-            timeout=10
-        )
+        response = requests.get(f"{endpoint}/{namespace}/status", headers=headers, timeout=10)
 
         if response.status_code == 200:
             logger.info(f"✅ MCP server is accessible")
@@ -56,6 +50,7 @@ def check_mcp_server():
     except Exception as e:
         logger.error(f"❌ Error connecting to MCP server: {e}")
         return False
+
 
 def test_memory_operations():
     """Test basic memory operations."""
@@ -75,17 +70,13 @@ def test_memory_operations():
         test_entity = {
             "name": f"Test Entity {datetime.now().isoformat()}",
             "type": "Test",
-            "observations": ["This is a test entity created for diagnostic purposes"]
+            "observations": ["This is a test entity created for diagnostic purposes"],
         }
 
         logger.info("%s", f"Storing test entity: {test_entity['name']}...")
 
         try:
-            result = mcp_client.store_entity(
-                test_entity["name"],
-                test_entity["type"],
-                test_entity["observations"]
-            )
+            result = mcp_client.store_entity(test_entity["name"], test_entity["type"], test_entity["observations"])
 
             if "success" in result and result["success"]:
                 logger.info("✅ Test entity stored successfully")
@@ -143,6 +134,7 @@ def test_memory_operations():
     except Exception as e:
         logger.error(f"❌ Unexpected error in memory operations test: {e}")
 
+
 def check_environment_variables():
     """Check if required environment variables are set."""
     logger.info("Checking environment variables...")
@@ -154,7 +146,7 @@ def check_environment_variables():
         "VECTOR_SEARCH_ENDPOINT_ID": os.environ.get("VECTOR_SEARCH_ENDPOINT_ID", ""),
         "DEPLOYED_INDEX_ID": os.environ.get("DEPLOYED_INDEX_ID", "vanasharedindex"),
         "GOOGLE_CLOUD_PROJECT": os.environ.get("GOOGLE_CLOUD_PROJECT", ""),
-        "GOOGLE_CLOUD_LOCATION": os.environ.get("GOOGLE_CLOUD_LOCATION", "")
+        "GOOGLE_CLOUD_LOCATION": os.environ.get("GOOGLE_CLOUD_LOCATION", ""),
     }
 
     all_set = True
@@ -167,6 +159,7 @@ def check_environment_variables():
             all_set = False
 
     return all_set
+
 
 if __name__ == "__main__":
     logger.info("=== VANA Memory System Diagnostic ===\n")

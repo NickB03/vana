@@ -18,12 +18,13 @@ import sys
 import time
 
 # Add project root to path
-sys.path.insert(0, '/Users/nick/Development/vana')
+sys.path.insert(0, "/Users/nick/Development/vana")
 
 # Set up logging
 from lib.logging_config import get_logger
 
 logger = get_logger("vana.local_function_tests")
+
 
 def test_orchestrated_tools():
     """
@@ -50,10 +51,10 @@ def test_orchestrated_tools():
 
         # Check for task ID exposure
         task_id_patterns = [
-            r'[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}',
+            r"[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}",
             r'check_task_status\(["\']([^"\']+)["\']\)',
-            r'Task ID[:\s]+([a-f0-9-]+)',
-            r'monitor progress.*([a-f0-9-]{20,})'
+            r"Task ID[:\s]+([a-f0-9-]+)",
+            r"monitor progress.*([a-f0-9-]{20,})",
         ]
 
         task_ids_found = []
@@ -64,27 +65,34 @@ def test_orchestrated_tools():
 
         if task_ids_found:
             logger.error(f"❌ FAILED: Found task IDs in response: {task_ids_found}")
-            test_results.append({"test": "itinerary_planning_task_ids", "status": "FAIL", "details": f"Task IDs found: {task_ids_found}"})
+            test_results.append(
+                {
+                    "test": "itinerary_planning_task_ids",
+                    "status": "FAIL",
+                    "details": f"Task IDs found: {task_ids_found}",
+                }
+            )
         else:
             logger.debug("✅ PASSED: No task IDs exposed")
-            test_results.append({"test": "itinerary_planning_task_ids", "status": "PASS", "details": "No task IDs exposed"})
+            test_results.append(
+                {"test": "itinerary_planning_task_ids", "status": "PASS", "details": "No task IDs exposed"}
+            )
 
         # Check for ownership language
-        ownership_patterns = [
-            r"I've created",
-            r"I found",
-            r"I can provide",
-            r"Your itinerary is ready"
-        ]
+        ownership_patterns = [r"I've created", r"I found", r"I can provide", r"Your itinerary is ready"]
 
         ownership_found = any(re.search(pattern, response, re.IGNORECASE) for pattern in ownership_patterns)
 
         if ownership_found:
             logger.debug("✅ PASSED: Proper ownership language found")
-            test_results.append({"test": "itinerary_planning_ownership", "status": "PASS", "details": "Ownership language present"})
+            test_results.append(
+                {"test": "itinerary_planning_ownership", "status": "PASS", "details": "Ownership language present"}
+            )
         else:
             logger.error("❌ FAILED: No ownership language found")
-            test_results.append({"test": "itinerary_planning_ownership", "status": "FAIL", "details": "No ownership language"})
+            test_results.append(
+                {"test": "itinerary_planning_ownership", "status": "FAIL", "details": "No ownership language"}
+            )
 
         logger.debug(f"Response excerpt: {response[:200]}...")
 
@@ -101,7 +109,9 @@ def test_orchestrated_tools():
 
         if task_ids_found:
             logger.error(f"❌ FAILED: Found task IDs in response: {task_ids_found}")
-            test_results.append({"test": "hotel_search_task_ids", "status": "FAIL", "details": f"Task IDs found: {task_ids_found}"})
+            test_results.append(
+                {"test": "hotel_search_task_ids", "status": "FAIL", "details": f"Task IDs found: {task_ids_found}"}
+            )
         else:
             logger.debug("✅ PASSED: No task IDs exposed")
             test_results.append({"test": "hotel_search_task_ids", "status": "PASS", "details": "No task IDs exposed"})
@@ -121,7 +131,9 @@ def test_orchestrated_tools():
 
         if task_ids_found:
             logger.error(f"❌ FAILED: Found task IDs in response: {task_ids_found}")
-            test_results.append({"test": "flight_search_task_ids", "status": "FAIL", "details": f"Task IDs found: {task_ids_found}"})
+            test_results.append(
+                {"test": "flight_search_task_ids", "status": "FAIL", "details": f"Task IDs found: {task_ids_found}"}
+            )
         else:
             logger.debug("✅ PASSED: No task IDs exposed")
             test_results.append({"test": "flight_search_task_ids", "status": "PASS", "details": "No task IDs exposed"})
@@ -141,10 +153,14 @@ def test_orchestrated_tools():
 
         if task_ids_found:
             logger.error(f"❌ FAILED: Found task IDs in response: {task_ids_found}")
-            test_results.append({"test": "code_generation_task_ids", "status": "FAIL", "details": f"Task IDs found: {task_ids_found}"})
+            test_results.append(
+                {"test": "code_generation_task_ids", "status": "FAIL", "details": f"Task IDs found: {task_ids_found}"}
+            )
         else:
             logger.debug("✅ PASSED: No task IDs exposed")
-            test_results.append({"test": "code_generation_task_ids", "status": "PASS", "details": "No task IDs exposed"})
+            test_results.append(
+                {"test": "code_generation_task_ids", "status": "PASS", "details": "No task IDs exposed"}
+            )
 
         logger.debug(f"Response excerpt: {response[:200]}...")
 
@@ -176,6 +192,7 @@ def test_orchestrated_tools():
         logger.error(f"❌ UNEXPECTED ERROR: {e}")
         return [{"test": "unexpected_error", "status": "FAIL", "details": str(e)}]
 
+
 def test_model_configuration():
     """
     Test if the model configuration is properly set to DeepSeek
@@ -186,6 +203,7 @@ def test_model_configuration():
     try:
         # Check environment variables
         import os
+
         vana_model = os.getenv("VANA_MODEL")
 
         if vana_model == "deepseek/deepseek-r1-0528:free":
@@ -199,6 +217,7 @@ def test_model_configuration():
         logger.error(f"❌ ERROR testing model configuration: {e}")
         return [{"test": "model_config_error", "status": "FAIL", "details": str(e)}]
 
+
 def test_old_vs_new_tools():
     """
     Compare old (task ID exposing) vs new (orchestrated) tools
@@ -209,14 +228,16 @@ def test_old_vs_new_tools():
     try:
         # Test old tool (should expose task IDs)
         from lib._tools.fixed_specialist_tools import itinerary_planning_tool as old_tool
+
         old_response = old_tool("Plan a trip to Paris")
 
         # Test new tool (should NOT expose task IDs)
         from lib._tools.orchestrated_specialist_tools import itinerary_planning_tool as new_tool
+
         new_response = new_tool("Plan a trip to Paris")
 
         # Check old tool for task ID exposure
-        task_id_pattern = r'[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}'
+        task_id_pattern = r"[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}"
         old_has_task_ids = bool(re.search(task_id_pattern, old_response))
         new_has_task_ids = bool(re.search(task_id_pattern, new_response))
 
@@ -225,7 +246,9 @@ def test_old_vs_new_tools():
 
         if old_has_task_ids and not new_has_task_ids:
             logger.info("✅ PASSED: New tool successfully removes task ID exposure")
-            return [{"test": "old_vs_new_comparison", "status": "PASS", "details": "Task ID exposure successfully removed"}]
+            return [
+                {"test": "old_vs_new_comparison", "status": "PASS", "details": "Task ID exposure successfully removed"}
+            ]
         elif not old_has_task_ids and not new_has_task_ids:
             logger.warning("⚠️  WARNING: Neither tool exposes task IDs (unexpected for old tool)")
             return [{"test": "old_vs_new_comparison", "status": "PARTIAL", "details": "Neither tool exposes task IDs"}]
@@ -236,6 +259,7 @@ def test_old_vs_new_tools():
     except Exception as e:
         logger.error(f"❌ ERROR comparing tools: {e}")
         return [{"test": "tool_comparison_error", "status": "FAIL", "details": str(e)}]
+
 
 def main():
     """
@@ -271,15 +295,15 @@ def main():
 
     # Save results
     report = {
-        "timestamp": time.strftime('%Y-%m-%d %H:%M:%S'),
+        "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
         "summary": {
             "total": total_tests,
             "passed": passed_tests,
             "failed": failed_tests,
             "partial": partial_tests,
-            "success_rate": f"{success_rate:.1f}%"
+            "success_rate": f"{success_rate:.1f}%",
         },
-        "test_results": all_results
+        "test_results": all_results,
     }
 
     with open("local_function_test_results.json", "w") as f:
@@ -293,6 +317,7 @@ def main():
     else:
         logger.error(f"❌ {failed_tests} LOCAL FUNCTION TESTS FAILED")
         return 1
+
 
 if __name__ == "__main__":
     exit(main())

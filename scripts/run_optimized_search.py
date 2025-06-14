@@ -54,17 +54,19 @@ def format_results(results: List[Dict[str, Any]], include_metadata: bool = False
     for i, result in enumerate(results):
         formatted += f"{i+1}. {result['title']}\n"
         formatted += f"   Source: {result['source']}\n"
-        if 'link' in result:
+        if "link" in result:
             formatted += f"   URL: {result['link']}\n"
-        if 'snippet' in result:
+        if "snippet" in result:
             formatted += f"   Snippet: {result['snippet']}\n"
-        if include_metadata and 'metadata' in result:
+        if include_metadata and "metadata" in result:
             formatted += f"   Metadata: {json.dumps(result['metadata'], indent=2)}\n"
         formatted += "\n"
     return formatted
 
 
-def run_optimized_search(query: str, include_web: bool = False, result_count: int = 5, use_mock: bool = False, verbose: bool = False):
+def run_optimized_search(
+    query: str, include_web: bool = False, result_count: int = 5, use_mock: bool = False, verbose: bool = False
+):
     """Run optimized hybrid search with optional web integration."""
     logger.info("%s", f"Running optimized search for query: '{query}'")
     logger.info(f"Include web results: {include_web}")
@@ -88,12 +90,12 @@ def run_optimized_search(query: str, include_web: bool = False, result_count: in
 
     # Print results
     logger.info("%s", f"\nFound {len(results['combined'])} results in {end_time - start_time:.2f} seconds:\n")
-    logger.info("%s", format_results(results['combined'], include_metadata=verbose))
+    logger.info("%s", format_results(results["combined"], include_metadata=verbose))
 
     # Print source distribution if verbose
     if verbose:
         sources = {}
-        for result in results['combined']:
+        for result in results["combined"]:
             source = result["source"]
             sources[source] = sources.get(source, 0) + 1
         logger.info("Source distribution:")
@@ -110,11 +112,7 @@ def main():
 
     # Run optimized search
     run_optimized_search(
-        query=args.query,
-        include_web=include_web,
-        result_count=args.count,
-        use_mock=args.mock,
-        verbose=args.verbose
+        query=args.query, include_web=include_web, result_count=args.count, use_mock=args.mock, verbose=args.verbose
     )
 
     # Implement comparison with basic hybrid search if needed
