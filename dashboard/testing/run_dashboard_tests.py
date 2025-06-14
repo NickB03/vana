@@ -4,6 +4,9 @@ VANA Dashboard Test Runner
 Runs test scenarios using data generators, measures performance, and outputs structured reports.
 """
 
+from lib.logging_config import get_logger
+from dashboard.alerting.alert_manager import AlertManager
+import requests
 import json
 import os
 import time
@@ -44,11 +47,6 @@ def save_report(result: dict):
         json.dump(result, f, indent=2)
     logger.debug(f"Saved test report: {path}")
 
-
-import requests
-
-from dashboard.alerting.alert_manager import AlertManager
-from lib.logging_config import get_logger
 
 logger = get_logger("vana.run_dashboard_tests")
 

@@ -4,28 +4,6 @@ VANA Multi-Agent Team Definition - Minimal Working Version
 This is a simplified version with only working tools to test basic functionality.
 """
 
-import os
-
-# Add project root to Python path for absolute imports
-import sys
-
-from dotenv import load_dotenv
-
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
-
-# Load environment variables before importing Google ADK
-load_dotenv()
-
-# Google ADK imports (installed in environment)
-from google.adk.agents import LlmAgent
-from google.adk.tools import FunctionTool
-
-# Logging configuration
-from lib.logging_config import get_logger
-
-logger = get_logger("vana.agents.vana.team")
-
-# Import only working ADK-compatible tools
 from lib._tools import (  # File System Tools; Search Tools; System Tools; Agent Coordination Tools; Intelligent Task Analysis Tools; Multi-Agent Workflow Management Tools
     adk_analyze_task,
     adk_cancel_workflow,
@@ -51,6 +29,28 @@ from lib._tools import (  # File System Tools; Search Tools; System Tools; Agent
     adk_web_search,
     adk_write_file,
 )
+from lib.logging_config import get_logger
+from google.adk.tools import FunctionTool
+from google.adk.agents import LlmAgent
+import os
+
+# Add project root to Python path for absolute imports
+import sys
+
+from dotenv import load_dotenv
+
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
+
+# Load environment variables before importing Google ADK
+load_dotenv()
+
+# Google ADK imports (installed in environment)
+
+# Logging configuration
+
+logger = get_logger("vana.agents.vana.team")
+
+# Import only working ADK-compatible tools
 
 # Import specialist agent tools for Phase 3 orchestration
 try:

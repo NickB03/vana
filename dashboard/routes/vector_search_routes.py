@@ -5,6 +5,7 @@ Vector Search Dashboard Routes
 This module provides routes for the Vector Search health dashboard.
 """
 
+from dashboard.monitoring.vector_search_monitor import VectorSearchMonitor
 import json
 import logging
 import os
@@ -20,7 +21,6 @@ from dashboard.auth.dashboard_auth import requires_auth
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 # Import the Vector Search Monitor
-from dashboard.monitoring.vector_search_monitor import VectorSearchMonitor
 
 # Create blueprint
 vector_search_bp = Blueprint("vector_search", __name__, url_prefix="/vector-search")

@@ -5,6 +5,9 @@ Provides comprehensive data analysis, visualization, and machine learning capabi
 by leveraging the Code Execution Specialist for secure Python execution.
 """
 
+from agents.code_execution.specialist import execute_code
+from google.adk.tools import FunctionTool
+from google.adk.agents import LlmAgent
 import logging
 import os
 import sys
@@ -13,11 +16,8 @@ import sys
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
 
 # Google ADK imports
-from google.adk.agents import LlmAgent
-from google.adk.tools import FunctionTool
 
 # Import Code Execution Specialist for integration
-from agents.code_execution.specialist import execute_code
 
 logger = logging.getLogger(__name__)
 
@@ -36,7 +36,7 @@ def analyze_data(data_source: str, analysis_type: str = "descriptive") -> str:
     try:
         # Generate Python code for data analysis (avoiding security patterns)
         if analysis_type.lower() == "descriptive":
-            python_code = f"""
+            python_code = """
 import pandas as pd
 import numpy as np
 
@@ -66,7 +66,7 @@ for col in data.columns:
 """
 
         elif analysis_type.lower() == "correlation":
-            python_code = f"""
+            python_code = """
 import pandas as pd
 import numpy as np
 
@@ -97,7 +97,7 @@ logger.info("Correlation values close to 0: Weak relationship")
 """
 
         else:  # distribution analysis
-            python_code = f"""
+            python_code = """
 import pandas as pd
 import numpy as np
 from scipy import stats
@@ -245,7 +245,7 @@ if len(columns_list) >= 2:
     logger.info(f"Scatter plot: {{x_col}} vs {{y_col}}")
     logger.info(f"Correlation: {{correlation:.3f}}")
     logger.info("%s", f"Relationship: {{'Strong' if abs(correlation) > 0.7 else 'Moderate' if abs(correlation) > 0.3 else 'Weak'}}")
-    
+
 logger.info("\\n📊 Chart would show relationship between variables")
 logger.info("💡 Use this to identify correlations and patterns")
 """

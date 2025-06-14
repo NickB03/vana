@@ -13,6 +13,9 @@ Specializations:
 - Quality metrics and continuous improvement
 """
 
+from lib._tools import adk_list_directory, adk_read_file, adk_search_knowledge, adk_vector_search
+from google.adk.tools import FunctionTool
+from google.adk.agents import LlmAgent
 import os
 import sys
 
@@ -25,11 +28,8 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
 load_dotenv()
 
 # Google ADK imports
-from google.adk.agents import LlmAgent
-from google.adk.tools import FunctionTool
 
 # Import relevant tools for QA analysis
-from lib._tools import adk_list_directory, adk_read_file, adk_search_knowledge, adk_vector_search
 
 
 def analyze_testing_strategy(context: str) -> str:
@@ -155,8 +155,10 @@ qa_specialist = LlmAgent(
 
 Always provide expert-level QA guidance that emphasizes comprehensive test coverage, automation efficiency, and continuous quality improvement.""",
     tools=[
-        FunctionTool(func=analyze_testing_strategy),
-        FunctionTool(func=evaluate_test_automation),
+        FunctionTool(
+            func=analyze_testing_strategy),
+        FunctionTool(
+            func=evaluate_test_automation),
         adk_vector_search,
         adk_search_knowledge,
         adk_read_file,
