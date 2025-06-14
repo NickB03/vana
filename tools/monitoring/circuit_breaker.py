@@ -216,7 +216,6 @@ class CircuitOpenError(Exception):
     """Exception raised when a circuit is open and no fallback is provided"""
 
 
-
 # Example usage
 if __name__ == "__main__":
     # Example function with circuit breaker

@@ -30,9 +30,11 @@ from tests.eval.config import (
 
 logger = get_logger("vana.agent_evaluator")
 
+
 @dataclass
 class EvaluationResult:
     """Data class for evaluation results"""
+
     eval_id: str
     agent_name: str
     test_case: str
@@ -45,9 +47,11 @@ class EvaluationResult:
     error_message: Optional[str] = None
     raw_response: Optional[str] = None
 
+
 @dataclass
 class AgentPerformanceMetrics:
     """Data class for agent performance metrics"""
+
     agent_name: str
     total_tests: int
     passed_tests: int
@@ -56,6 +60,7 @@ class AgentPerformanceMetrics:
     tool_accuracy_score: float
     response_quality_score: float
     success_rate: float
+
 
 class VANASystemEvaluator:
     """Comprehensive VANA system evaluator using ADK evaluation patterns"""
@@ -83,7 +88,7 @@ class VANASystemEvaluator:
             "evaluation_summary": {},
             "agent_results": {},
             "overall_metrics": {},
-            "recommendations": []
+            "recommendations": [],
         }
 
         # Discover available evalsets
@@ -110,20 +115,13 @@ class VANASystemEvaluator:
 
             except Exception as e:
                 logger.error(f"❌ Error evaluating {agent_name}: {e}")
-                evaluation_results["agent_results"][agent_name] = {
-                    "error": str(e),
-                    "status": "failed"
-                }
+                evaluation_results["agent_results"][agent_name] = {"error": str(e), "status": "failed"}
 
         # Calculate overall metrics
-        evaluation_results["overall_metrics"] = self.calculate_overall_metrics(
-            evaluation_results["evaluation_summary"]
-        )
+        evaluation_results["overall_metrics"] = self.calculate_overall_metrics(evaluation_results["evaluation_summary"])
 
         # Generate recommendations
-        evaluation_results["recommendations"] = self.generate_recommendations(
-            evaluation_results["evaluation_summary"]
-        )
+        evaluation_results["recommendations"] = self.generate_recommendations(evaluation_results["evaluation_summary"])
 
         # Save results
         self.save_evaluation_results(evaluation_results)
@@ -135,7 +133,7 @@ class VANASystemEvaluator:
 
     async def evaluate_agent_from_evalset(self, evalset_file: Path) -> List[EvaluationResult]:
         """Evaluate an agent using its evalset"""
-        with open(evalset_file, 'r') as f:
+        with open(evalset_file, "r") as f:
             evalset = json.load(f)
 
         agent_name = evalset_file.stem.replace("_evalset", "")
@@ -211,9 +209,9 @@ class VANASystemEvaluator:
 
             # Determine success
             success = (
-                response_time <= self.performance_targets["response_time"] and
-                tool_trajectory_score >= self.performance_targets["tool_accuracy"] and
-                response_quality_score >= self.performance_targets["response_quality"]
+                response_time <= self.performance_targets["response_time"]
+                and tool_trajectory_score >= self.performance_targets["tool_accuracy"]
+                and response_quality_score >= self.performance_targets["response_quality"]
             )
 
             result = EvaluationResult(
@@ -226,11 +224,13 @@ class VANASystemEvaluator:
                 response_quality_score=response_quality_score,
                 expected_tools=expected_tools,
                 actual_tools=actual_tools,
-                raw_response=response_text[:500]  # Truncate for storage
+                raw_response=response_text[:500],  # Truncate for storage
             )
 
             status = "✅ PASS" if success else "❌ FAIL"
-            logger.debug(f"    {status} ({response_time:.2f}s, tools: {tool_trajectory_score:.2f}, quality: {response_quality_score:.2f})")
+            logger.debug(
+                f"    {status} ({response_time:.2f}s, tools: {tool_trajectory_score:.2f}, quality: {response_quality_score:.2f})"
+            )
 
             return result
 
@@ -246,7 +246,7 @@ class VANASystemEvaluator:
                 response_quality_score=0.0,
                 expected_tools=expected_tools,
                 actual_tools=[],
-                error_message=str(e)
+                error_message=str(e),
             )
 
     def extract_tools_from_response(self, response_text: str) -> List[str]:
@@ -305,7 +305,9 @@ class VANASystemEvaluator:
         else:
             return 0.5
 
-    def calculate_performance_metrics(self, agent_name: str, results: List[EvaluationResult]) -> AgentPerformanceMetrics:
+    def calculate_performance_metrics(
+        self, agent_name: str, results: List[EvaluationResult]
+    ) -> AgentPerformanceMetrics:
         """Calculate performance metrics for an agent"""
         if not results:
             return AgentPerformanceMetrics(
@@ -316,7 +318,7 @@ class VANASystemEvaluator:
                 average_response_time=0.0,
                 tool_accuracy_score=0.0,
                 response_quality_score=0.0,
-                success_rate=0.0
+                success_rate=0.0,
             )
 
         total_tests = len(results)
@@ -336,7 +338,7 @@ class VANASystemEvaluator:
             average_response_time=round(avg_response_time, 3),
             tool_accuracy_score=round(avg_tool_accuracy, 3),
             response_quality_score=round(avg_response_quality, 3),
-            success_rate=round(success_rate, 3)
+            success_rate=round(success_rate, 3),
         )
 
     def calculate_overall_metrics(self, agent_summaries: Dict[str, AgentPerformanceMetrics]) -> Dict[str, Any]:
@@ -350,7 +352,9 @@ class VANASystemEvaluator:
 
         avg_response_time = sum(metrics.average_response_time for metrics in agent_summaries.values()) / total_agents
         avg_tool_accuracy = sum(metrics.tool_accuracy_score for metrics in agent_summaries.values()) / total_agents
-        avg_response_quality = sum(metrics.response_quality_score for metrics in agent_summaries.values()) / total_agents
+        avg_response_quality = (
+            sum(metrics.response_quality_score for metrics in agent_summaries.values()) / total_agents
+        )
         overall_success_rate = total_passed / total_tests if total_tests > 0 else 0.0
 
         return {
@@ -362,7 +366,9 @@ class VANASystemEvaluator:
             "average_response_time": round(avg_response_time, 3),
             "average_tool_accuracy": round(avg_tool_accuracy, 3),
             "average_response_quality": round(avg_response_quality, 3),
-            "performance_grade": self.calculate_performance_grade(overall_success_rate, avg_response_time, avg_tool_accuracy)
+            "performance_grade": self.calculate_performance_grade(
+                overall_success_rate, avg_response_time, avg_tool_accuracy
+            ),
         }
 
     def calculate_performance_grade(self, success_rate: float, response_time: float, tool_accuracy: float) -> str:
@@ -418,7 +424,7 @@ class VANASystemEvaluator:
         filename = f"agent_evaluation_results_{timestamp}.json"
         filepath = self.results_dir / filename
 
-        with open(filepath, 'w') as f:
+        with open(filepath, "w") as f:
             json.dump(results, f, indent=2, default=str)
 
         logger.info(f"💾 Evaluation results saved: {filepath}")
@@ -460,7 +466,9 @@ class VANASystemEvaluator:
 
         logger.debug("%s", "=" * 80)
 
+
 if __name__ == "__main__":
+
     async def main():
         evaluator = VANASystemEvaluator()
         results = await evaluator.evaluate_all_agents()

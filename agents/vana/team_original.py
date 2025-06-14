@@ -43,6 +43,7 @@ from lib._tools import (  # File System Tools; Search Tools; System Tools; Agent
 # Import specialist agent tools for Phase 3 orchestration
 try:
     from agents.specialists.agent_tools import specialist_agent_tools
+
     SPECIALIST_TOOLS_AVAILABLE = True
 except ImportError as e:
     logger.warning(f"Warning: Specialist tools not available: {e}")
@@ -66,7 +67,7 @@ try:
         FunctionTool(coordinate_workflow),
         FunctionTool(decompose_enterprise_task),
         FunctionTool(save_specialist_knowledge_func),
-        FunctionTool(get_specialist_knowledge_func)
+        FunctionTool(get_specialist_knowledge_func),
     ]
 
     ORCHESTRATION_TOOLS_AVAILABLE = True
@@ -343,19 +344,26 @@ previous_success = load_memory("successful agent coordination for similar task")
 # Select agents based on memory insights
 ```
 """,
-
-    tools=([
-        # File System Tools
-        adk_read_file, adk_write_file, adk_list_directory, adk_file_exists,
-
-        # Search Tools
-        adk_vector_search, adk_web_search, adk_search_knowledge,
-
-        # System Tools
-        adk_echo, adk_get_health_status,
-
-        # Agent Coordination Tools
-        adk_coordinate_task, adk_delegate_to_agent, adk_get_agent_status
-    ] + (specialist_agent_tools if SPECIALIST_TOOLS_AVAILABLE else []) +
-        (orchestration_tools if ORCHESTRATION_TOOLS_AVAILABLE else []))
+    tools=(
+        [
+            # File System Tools
+            adk_read_file,
+            adk_write_file,
+            adk_list_directory,
+            adk_file_exists,
+            # Search Tools
+            adk_vector_search,
+            adk_web_search,
+            adk_search_knowledge,
+            # System Tools
+            adk_echo,
+            adk_get_health_status,
+            # Agent Coordination Tools
+            adk_coordinate_task,
+            adk_delegate_to_agent,
+            adk_get_agent_status,
+        ]
+        + (specialist_agent_tools if SPECIALIST_TOOLS_AVAILABLE else [])
+        + (orchestration_tools if ORCHESTRATION_TOOLS_AVAILABLE else [])
+    ),
 )

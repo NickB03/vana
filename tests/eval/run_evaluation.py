@@ -34,9 +34,11 @@ logger = get_logger("vana.run_evaluation")
 try:
     from tests.coordination.coordination_benchmarks import CoordinationBenchmarks
     from tests.coordination.coordination_test_runner import CoordinationTestRunner
+
     COORDINATION_TESTING_AVAILABLE = True
 except ImportError:
     COORDINATION_TESTING_AVAILABLE = False
+
 
 async def run_agents_only(environment: str = "dev"):
     """Run only agent evaluation"""
@@ -49,6 +51,7 @@ async def run_agents_only(environment: str = "dev"):
     logger.info("\n✅ Agent evaluation completed successfully!")
     return results
 
+
 async def run_performance_only(environment: str = "dev"):
     """Run only performance benchmarking"""
     logger.debug("⚡ Running Performance Benchmarking Only")
@@ -59,6 +62,7 @@ async def run_performance_only(environment: str = "dev"):
 
     logger.info("\n✅ Performance benchmarking completed successfully!")
     return results
+
 
 async def run_coordination_only(environment: str = "dev"):
     """Run only coordination testing (Task #9)"""
@@ -86,12 +90,14 @@ async def run_coordination_only(environment: str = "dev"):
             "benchmark_success_rate": benchmark_results["benchmark_summary"]["overall_success_rate"],
             "average_response_time": test_results["metrics"]["average_response_time"],
             "performance_grade": benchmark_results["benchmark_summary"]["performance_grade"],
-            "task_9_completed": test_results["target_achieved"] and benchmark_results["performance_targets"]["success_rate_achieved"]
-        }
+            "task_9_completed": test_results["target_achieved"]
+            and benchmark_results["performance_targets"]["success_rate_achieved"],
+        },
     }
 
     logger.info("\n✅ Coordination testing completed successfully!")
     return combined_results
+
 
 async def run_full_evaluation(environment: str = "dev", skip_discovery: bool = False, skip_performance: bool = False):
     """Run comprehensive evaluation"""
@@ -100,12 +106,12 @@ async def run_full_evaluation(environment: str = "dev", skip_discovery: bool = F
 
     runner = ComprehensiveEvaluationRunner()
     results = await runner.run_full_evaluation(
-        include_discovery=not skip_discovery,
-        include_performance=not skip_performance
+        include_discovery=not skip_discovery, include_performance=not skip_performance
     )
 
     logger.info("\n✅ Comprehensive evaluation completed successfully!")
     return results
+
 
 def print_usage_examples():
     """Print usage examples"""
@@ -135,6 +141,7 @@ def print_usage_examples():
     logger.debug("%s", "export VANA_RESPONSE_TIME_TARGET='3.0'  # 3 second target")
     logger.debug("%s", "=" * 50)
 
+
 def validate_environment():
     """Validate that the environment is set up correctly"""
     logger.debug("🔍 Validating Environment...")
@@ -147,10 +154,7 @@ def validate_environment():
         return False
 
     # Check if required directories exist
-    required_dirs = [
-        "tests/eval/evalsets",
-        "tests/results"
-    ]
+    required_dirs = ["tests/eval/evalsets", "tests/results"]
 
     for dir_path in required_dirs:
         if not Path(dir_path).exists():
@@ -170,6 +174,7 @@ def validate_environment():
     logger.debug("✅ Environment validation passed")
     return True
 
+
 async def main():
     """Main entry point"""
     parser = argparse.ArgumentParser(
@@ -182,33 +187,27 @@ Examples:
   %(prog)s --full                     # Complete evaluation
   %(prog)s --full --skip-discovery    # Skip system discovery phase
   %(prog)s --agents-only --env prod   # Test production environment
-        """
+        """,
     )
 
     # Execution mode (mutually exclusive)
     mode_group = parser.add_mutually_exclusive_group(required=True)
-    mode_group.add_argument("--agents-only", action="store_true",
-                           help="Run only agent evaluation (recommended for first run)")
-    mode_group.add_argument("--performance-only", action="store_true",
-                           help="Run only performance benchmarking")
-    mode_group.add_argument("--coordination-only", action="store_true",
-                           help="Run only coordination testing (Task #9)")
-    mode_group.add_argument("--full", action="store_true",
-                           help="Run comprehensive evaluation")
-    mode_group.add_argument("--examples", action="store_true",
-                           help="Show usage examples and exit")
+    mode_group.add_argument(
+        "--agents-only", action="store_true", help="Run only agent evaluation (recommended for first run)"
+    )
+    mode_group.add_argument("--performance-only", action="store_true", help="Run only performance benchmarking")
+    mode_group.add_argument("--coordination-only", action="store_true", help="Run only coordination testing (Task #9)")
+    mode_group.add_argument("--full", action="store_true", help="Run comprehensive evaluation")
+    mode_group.add_argument("--examples", action="store_true", help="Show usage examples and exit")
 
     # Configuration options
-    parser.add_argument("--env", choices=["dev", "prod"], default="dev",
-                       help="Environment to test (default: dev)")
-    parser.add_argument("--skip-discovery", action="store_true",
-                       help="Skip system discovery phase (only with --full)")
-    parser.add_argument("--skip-performance", action="store_true",
-                       help="Skip performance benchmarking (only with --full)")
-    parser.add_argument("--headless", action="store_true",
-                       help="Force headless browser mode")
-    parser.add_argument("--show-browser", action="store_true",
-                       help="Show browser during testing (non-headless)")
+    parser.add_argument("--env", choices=["dev", "prod"], default="dev", help="Environment to test (default: dev)")
+    parser.add_argument("--skip-discovery", action="store_true", help="Skip system discovery phase (only with --full)")
+    parser.add_argument(
+        "--skip-performance", action="store_true", help="Skip performance benchmarking (only with --full)"
+    )
+    parser.add_argument("--headless", action="store_true", help="Force headless browser mode")
+    parser.add_argument("--show-browser", action="store_true", help="Show browser during testing (non-headless)")
 
     args = parser.parse_args()
 
@@ -238,9 +237,7 @@ Examples:
             results = await run_coordination_only(args.env)
         elif args.full:
             results = await run_full_evaluation(
-                environment=args.env,
-                skip_discovery=args.skip_discovery,
-                skip_performance=args.skip_performance
+                environment=args.env, skip_discovery=args.skip_discovery, skip_performance=args.skip_performance
             )
 
         if results is None:
@@ -256,14 +253,17 @@ Examples:
                 metrics = results["overall_metrics"]
                 if isinstance(metrics, dict):
                     logger.debug(f"\n📈 QUICK SUMMARY:")
-                    success_rate = metrics.get('overall_success_rate', metrics.get('test_success_rate', 0))
+                    success_rate = metrics.get("overall_success_rate", metrics.get("test_success_rate", 0))
                     logger.info(f"   Success Rate: {success_rate:.1%}")
                     logger.debug("%s", f"   Avg Response Time: {metrics.get('average_response_time', 0):.2f}s")
                     logger.debug("%s", f"   Performance Grade: {metrics.get('performance_grade', 'N/A')}")
 
                     # Special handling for coordination testing
                     if "task_9_completed" in metrics:
-                        logger.info("%s", f"   Task #9 Status: {'✅ COMPLETED' if metrics['task_9_completed'] else '❌ INCOMPLETE'}")
+                        logger.info(
+                            "%s",
+                            f"   Task #9 Status: {'✅ COMPLETED' if metrics['task_9_completed'] else '❌ INCOMPLETE'}",
+                        )
 
         return 0
 
@@ -274,6 +274,7 @@ Examples:
         logger.error(f"\n❌ Evaluation failed: {str(e)}")
         logger.debug(f"💡 Try running with --examples to see usage examples")
         return 1
+
 
 if __name__ == "__main__":
     exit_code = asyncio.run(main())

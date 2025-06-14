@@ -34,9 +34,11 @@ from lib.logging_config import get_logger
 
 logger = get_logger("vana.coordination_benchmarks")
 
+
 @dataclass
 class BenchmarkResult:
     """Result of a performance benchmark"""
+
     test_name: str
     total_operations: int
     successful_operations: int
@@ -49,6 +51,7 @@ class BenchmarkResult:
     median_time: float
     p95_time: float
     operations_per_second: float
+
 
 class CoordinationBenchmarks:
     """Performance benchmarks for coordination functionality"""
@@ -84,22 +87,18 @@ class CoordinationBenchmarks:
         await self._run_benchmark(
             "coordinate_task_performance",
             lambda: coordinate_task("execute simple python code", "normal"),
-            iterations=20
+            iterations=20,
         )
 
         # Test delegate_to_agent performance
         await self._run_benchmark(
             "delegate_to_agent_performance",
             lambda: delegate_to_agent("data_science", "analyze sample data"),
-            iterations=15
+            iterations=15,
         )
 
         # Test get_agent_status performance
-        await self._run_benchmark(
-            "get_agent_status_performance",
-            lambda: get_agent_status(),
-            iterations=30
-        )
+        await self._run_benchmark("get_agent_status_performance", lambda: get_agent_status(), iterations=30)
 
     async def _benchmark_workflow_operations(self):
         """Benchmark workflow management operations"""
@@ -107,11 +106,7 @@ class CoordinationBenchmarks:
         logger.debug("%s", "-" * 50)
 
         # Test workflow template retrieval
-        await self._run_benchmark(
-            "get_workflow_templates_performance",
-            lambda: get_workflow_templates(),
-            iterations=25
-        )
+        await self._run_benchmark("get_workflow_templates_performance", lambda: get_workflow_templates(), iterations=25)
 
         # Test workflow creation
         await self._run_benchmark(
@@ -119,17 +114,13 @@ class CoordinationBenchmarks:
             lambda: create_workflow(
                 name=f"Benchmark Workflow {time.time()}",
                 description="Performance test workflow",
-                template_name="data_analysis"
+                template_name="data_analysis",
             ),
-            iterations=10
+            iterations=10,
         )
 
         # Test workflow listing
-        await self._run_benchmark(
-            "list_workflows_performance",
-            lambda: list_workflows(),
-            iterations=20
-        )
+        await self._run_benchmark("list_workflows_performance", lambda: list_workflows(), iterations=20)
 
     async def _benchmark_concurrent_operations(self):
         """Benchmark concurrent coordination operations"""
@@ -141,7 +132,7 @@ class CoordinationBenchmarks:
             "concurrent_coordination",
             lambda: coordinate_task("process data concurrently", "normal"),
             concurrent_operations=5,
-            iterations=3
+            iterations=3,
         )
 
         # Test concurrent workflow operations
@@ -150,10 +141,10 @@ class CoordinationBenchmarks:
             lambda: create_workflow(
                 name=f"Concurrent Workflow {time.time()}",
                 description="Concurrent test workflow",
-                template_name="code_execution"
+                template_name="code_execution",
             ),
             concurrent_operations=3,
-            iterations=2
+            iterations=2,
         )
 
     async def _benchmark_stress_testing(self):
@@ -166,18 +157,17 @@ class CoordinationBenchmarks:
             "high_frequency_coordination",
             lambda: coordinate_task("stress test task", "normal"),
             iterations=50,
-            delay_between_operations=0.1
+            delay_between_operations=0.1,
         )
 
         # Rapid workflow operations
         await self._run_benchmark(
-            "rapid_workflow_operations",
-            lambda: get_workflow_templates(),
-            iterations=100,
-            delay_between_operations=0.05
+            "rapid_workflow_operations", lambda: get_workflow_templates(), iterations=100, delay_between_operations=0.05
         )
 
-    async def _run_benchmark(self, test_name: str, operation_func, iterations: int = 10, delay_between_operations: float = 0.0):
+    async def _run_benchmark(
+        self, test_name: str, operation_func, iterations: int = 10, delay_between_operations: float = 0.0
+    ):
         """Run a performance benchmark for a specific operation"""
         logger.debug(f"  Running {test_name} ({iterations} iterations)...")
 
@@ -227,7 +217,7 @@ class CoordinationBenchmarks:
                 max_time=max(times),
                 median_time=statistics.median(times),
                 p95_time=statistics.quantiles(times, n=20)[18] if len(times) >= 20 else max(times),
-                operations_per_second=iterations / total_time
+                operations_per_second=iterations / total_time,
             )
 
             self.results.append(result)
@@ -236,7 +226,9 @@ class CoordinationBenchmarks:
         else:
             logger.debug(f"    ❌ No valid timing data collected")
 
-    async def _run_concurrent_benchmark(self, test_name: str, operation_func, concurrent_operations: int = 5, iterations: int = 3):
+    async def _run_concurrent_benchmark(
+        self, test_name: str, operation_func, concurrent_operations: int = 5, iterations: int = 3
+    ):
         """Run concurrent operations benchmark"""
         logger.debug(f"  Running {test_name} ({concurrent_operations} concurrent ops, {iterations} iterations)...")
 
@@ -291,11 +283,13 @@ class CoordinationBenchmarks:
                 max_time=max(all_times),
                 median_time=statistics.median(all_times),
                 p95_time=statistics.quantiles(all_times, n=20)[18] if len(all_times) >= 20 else max(all_times),
-                operations_per_second=total_operations / total_time
+                operations_per_second=total_operations / total_time,
             )
 
             self.results.append(result)
-            logger.info(f"    ✅ Completed: {total_successful}/{total_operations} successful ({result.success_rate:.1%})")
+            logger.info(
+                f"    ✅ Completed: {total_successful}/{total_operations} successful ({result.success_rate:.1%})"
+            )
             logger.info(f"    ⏱️  Avg time: {result.average_time:.3f}s, Ops/sec: {result.operations_per_second:.1f}")
 
     async def _timed_operation(self, operation_func) -> Tuple[float, bool]:
@@ -325,7 +319,9 @@ class CoordinationBenchmarks:
             return {"error": "No benchmark results available"}
 
         # Overall statistics
-        overall_success_rate = sum(r.successful_operations for r in self.results) / sum(r.total_operations for r in self.results)
+        overall_success_rate = sum(r.successful_operations for r in self.results) / sum(
+            r.total_operations for r in self.results
+        )
         overall_avg_time = statistics.mean([r.average_time for r in self.results])
         overall_ops_per_sec = sum(r.operations_per_second for r in self.results) / len(self.results)
 
@@ -338,7 +334,7 @@ class CoordinationBenchmarks:
                 "overall_success_rate": overall_success_rate,
                 "overall_avg_response_time": overall_avg_time,
                 "overall_ops_per_second": overall_ops_per_sec,
-                "performance_grade": performance_grade
+                "performance_grade": performance_grade,
             },
             "detailed_results": [
                 {
@@ -349,7 +345,7 @@ class CoordinationBenchmarks:
                     "max_time": r.max_time,
                     "p95_time": r.p95_time,
                     "ops_per_second": r.operations_per_second,
-                    "total_operations": r.total_operations
+                    "total_operations": r.total_operations,
                 }
                 for r in self.results
             ],
@@ -357,8 +353,8 @@ class CoordinationBenchmarks:
                 "success_rate_target": 0.90,
                 "response_time_target": 5.0,
                 "success_rate_achieved": overall_success_rate >= 0.90,
-                "response_time_achieved": overall_avg_time <= 5.0
-            }
+                "response_time_achieved": overall_avg_time <= 5.0,
+            },
         }
 
     def _calculate_performance_grade(self, success_rate: float, avg_time: float) -> str:
@@ -390,8 +386,12 @@ class CoordinationBenchmarks:
         logger.debug("%s", f"   Performance Grade: {summary['performance_grade']}")
 
         logger.debug(f"\n🎯 Target Achievement:")
-        logger.info("%s", f"   Success Rate Target (90%): {'✅ ACHIEVED' if targets['success_rate_achieved'] else '❌ MISSED'}")
-        logger.debug("%s", f"   Response Time Target (5s): {'✅ ACHIEVED' if targets['response_time_achieved'] else '❌ MISSED'}")
+        logger.info(
+            "%s", f"   Success Rate Target (90%): {'✅ ACHIEVED' if targets['success_rate_achieved'] else '❌ MISSED'}"
+        )
+        logger.debug(
+            "%s", f"   Response Time Target (5s): {'✅ ACHIEVED' if targets['response_time_achieved'] else '❌ MISSED'}"
+        )
 
     async def run_sustained_load_testing(self) -> Dict[str, Any]:
         """Run sustained load testing for Task #10 performance validation"""
@@ -425,7 +425,7 @@ class CoordinationBenchmarks:
             "sustained_coordination_5min",
             lambda: coordinate_task("sustained load test task", "normal"),
             iterations=300,  # 1 per second for 5 minutes
-            delay_between_operations=1.0
+            delay_between_operations=1.0,
         )
 
         # High-frequency burst test
@@ -433,7 +433,7 @@ class CoordinationBenchmarks:
             "high_frequency_burst",
             lambda: coordinate_task("burst test task", "high"),
             iterations=100,
-            delay_between_operations=0.2  # 5 per second
+            delay_between_operations=0.2,  # 5 per second
         )
 
     async def _benchmark_sustained_workflow_load(self):
@@ -447,18 +447,15 @@ class CoordinationBenchmarks:
             lambda: create_workflow(
                 name=f"Load Test Workflow {time.time()}",
                 description="Sustained load test workflow",
-                template_name="data_analysis"
+                template_name="data_analysis",
             ),
             iterations=50,
-            delay_between_operations=2.0
+            delay_between_operations=2.0,
         )
 
         # Rapid template retrieval
         await self._run_benchmark(
-            "rapid_template_retrieval",
-            lambda: get_workflow_templates(),
-            iterations=200,
-            delay_between_operations=0.5
+            "rapid_template_retrieval", lambda: get_workflow_templates(), iterations=200, delay_between_operations=0.5
         )
 
     async def _benchmark_peak_concurrent_load(self):
@@ -471,7 +468,7 @@ class CoordinationBenchmarks:
             "peak_concurrent_coordination",
             lambda: coordinate_task("peak load test", "normal"),
             concurrent_operations=10,
-            iterations=5
+            iterations=5,
         )
 
         # Mixed operation concurrency
@@ -479,7 +476,7 @@ class CoordinationBenchmarks:
             "mixed_concurrent_operations",
             lambda: get_agent_status() if time.time() % 2 < 1 else get_workflow_templates(),
             concurrent_operations=8,
-            iterations=3
+            iterations=3,
         )
 
     async def _benchmark_endurance_testing(self):
@@ -495,17 +492,14 @@ class CoordinationBenchmarks:
             lambda: coordinate_task("endurance test", "normal"),
             lambda: get_agent_status(),
             lambda: get_workflow_templates(),
-            lambda: list_workflows()
+            lambda: list_workflows(),
         ]
 
         iteration_count = 0
         while time.time() - start_time < endurance_duration:
             operation = operations[iteration_count % len(operations)]
             await self._run_benchmark(
-                f"endurance_operation_{iteration_count}",
-                operation,
-                iterations=1,
-                delay_between_operations=1.0
+                f"endurance_operation_{iteration_count}", operation, iterations=1, delay_between_operations=1.0
             )
             iteration_count += 1
 
@@ -519,14 +513,19 @@ class CoordinationBenchmarks:
         base_report = self._generate_benchmark_report()
 
         # Filter load testing results
-        load_results = [r for r in self.results if any(keyword in r.test_name for keyword in
-                       ['sustained', 'peak', 'endurance', 'burst', 'rapid'])]
+        load_results = [
+            r
+            for r in self.results
+            if any(keyword in r.test_name for keyword in ["sustained", "peak", "endurance", "burst", "rapid"])
+        ]
 
         if not load_results:
             return {"error": "No load testing results available"}
 
         # Calculate load-specific metrics
-        load_success_rate = sum(r.successful_operations for r in load_results) / sum(r.total_operations for r in load_results)
+        load_success_rate = sum(r.successful_operations for r in load_results) / sum(
+            r.total_operations for r in load_results
+        )
         load_avg_time = statistics.mean([r.average_time for r in load_results])
         load_max_time = max([r.max_time for r in load_results])
         load_total_ops = sum(r.total_operations for r in load_results)
@@ -543,15 +542,15 @@ class CoordinationBenchmarks:
                 "load_max_response_time": load_max_time,
                 "total_load_operations": load_total_ops,
                 "performance_degradation_factor": performance_degradation,
-                "load_performance_grade": self._calculate_load_performance_grade(load_success_rate, load_avg_time)
+                "load_performance_grade": self._calculate_load_performance_grade(load_success_rate, load_avg_time),
             },
             "task_10_validation": {
                 "success_rate_target": 0.90,
                 "response_time_target": 5.0,
                 "success_rate_achieved": load_success_rate >= 0.90,
                 "response_time_achieved": load_avg_time <= 5.0 and load_max_time <= 10.0,
-                "task_10_complete": load_success_rate >= 0.90 and load_avg_time <= 5.0 and load_max_time <= 10.0
-            }
+                "task_10_complete": load_success_rate >= 0.90 and load_avg_time <= 5.0 and load_max_time <= 10.0,
+            },
         }
 
     def _calculate_load_performance_grade(self, success_rate: float, avg_time: float) -> str:
@@ -589,9 +588,14 @@ class CoordinationBenchmarks:
         logger.debug("%s", f"   Load Performance Grade: {load_summary['load_performance_grade']}")
 
         logger.debug(f"\n🎯 Task #10 Validation:")
-        logger.info("%s", f"   Success Rate Target (90%): {'✅ ACHIEVED' if task_10['success_rate_achieved'] else '❌ MISSED'}")
-        logger.debug("%s", f"   Response Time Target (5s): {'✅ ACHIEVED' if task_10['response_time_achieved'] else '❌ MISSED'}")
+        logger.info(
+            "%s", f"   Success Rate Target (90%): {'✅ ACHIEVED' if task_10['success_rate_achieved'] else '❌ MISSED'}"
+        )
+        logger.debug(
+            "%s", f"   Response Time Target (5s): {'✅ ACHIEVED' if task_10['response_time_achieved'] else '❌ MISSED'}"
+        )
         logger.debug("%s", f"   Task #10 Status: {'✅ COMPLETE' if task_10['task_10_complete'] else '❌ INCOMPLETE'}")
+
 
 async def main():
     """Main entry point for benchmarks"""
@@ -614,13 +618,13 @@ async def main():
     # Save standard benchmark report
     standard_filename = f"coordination_benchmarks_{timestamp}.json"
     standard_filepath = results_dir / standard_filename
-    with open(standard_filepath, 'w') as f:
+    with open(standard_filepath, "w") as f:
         json.dump(standard_report, f, indent=2, default=str)
 
     # Save load testing report
     load_filename = f"task_10_load_testing_{timestamp}.json"
     load_filepath = results_dir / load_filename
-    with open(load_filepath, 'w') as f:
+    with open(load_filepath, "w") as f:
         json.dump(load_report, f, indent=2, default=str)
 
     logger.debug(f"\n📊 Standard benchmark report saved to: {standard_filepath}")
@@ -634,6 +638,7 @@ async def main():
         # Fallback to standard performance targets
         targets = standard_report["performance_targets"]
         return 0 if targets["success_rate_achieved"] and targets["response_time_achieved"] else 1
+
 
 if __name__ == "__main__":
     exit_code = asyncio.run(main())

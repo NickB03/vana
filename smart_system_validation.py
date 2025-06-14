@@ -19,14 +19,14 @@ logger = get_logger("vana.smart_system_validation")
 class SmartVANAValidator:
     def __init__(self):
         self.base_url = "https://vana-dev-960076421399.us-central1.run.app"
-        self.actual_agents = ['memory', 'orchestration', 'specialists', 'vana', 'workflows']
+        self.actual_agents = ["memory", "orchestration", "specialists", "vana", "workflows"]
         self.results = {
             "validation_timestamp": datetime.now().isoformat(),
             "agents": {},
             "tools_discovered": [],
             "memory_systems": {},
             "performance_baseline": {},
-            "reality_check": {}
+            "reality_check": {},
         }
 
     async def run_smart_validation(self):
@@ -70,7 +70,7 @@ class SmartVANAValidator:
             "response_time": None,
             "tools_used": [],
             "capabilities": [],
-            "quality_score": 0.0
+            "quality_score": 0.0,
         }
 
         try:
@@ -85,7 +85,7 @@ class SmartVANAValidator:
                 "orchestration": "Coordinate a task between multiple specialists",
                 "specialists": "Help me with system architecture design",
                 "vana": "What tools do you have available?",
-                "workflows": "Create a workflow for software development"
+                "workflows": "Create a workflow for software development",
             }
 
             query = test_queries.get(agent_name, f"What can you help me with as the {agent_name} agent?")
@@ -116,18 +116,23 @@ class SmartVANAValidator:
                         tool_indicators.extend(tools)
 
             # Analyze response quality
-            agent_result.update({
-                "available": True,
-                "response_time": round(response_time, 3),
-                "tools_used": tool_indicators,
-                "response_length": len(response_text),
-                "quality_score": self.calculate_quality_score(response_text, tool_indicators)
-            })
+            agent_result.update(
+                {
+                    "available": True,
+                    "response_time": round(response_time, 3),
+                    "tools_used": tool_indicators,
+                    "response_length": len(response_text),
+                    "quality_score": self.calculate_quality_score(response_text, tool_indicators),
+                }
+            )
 
             # Add to global tools list
             self.results["tools_discovered"].extend(tool_indicators)
 
-            logger.info("%s", f"   ✅ {agent_name}: {response_time:.3f}s, {len(tool_indicators)} tools, quality: {agent_result['quality_score']:.2f}")
+            logger.info(
+                "%s",
+                f"   ✅ {agent_name}: {response_time:.3f}s, {len(tool_indicators)} tools, quality: {agent_result['quality_score']:.2f}",
+            )
             if tool_indicators:
                 logger.info(f"      Tools: {', '.join(tool_indicators)}")
 
@@ -143,21 +148,22 @@ class SmartVANAValidator:
 
         # Look for robot_2bolt [tool] pattern
         import re
-        tool_pattern = r'robot_2bolt\s+(\w+)'
+
+        tool_pattern = r"robot_2bolt\s+(\w+)"
         matches = re.findall(tool_pattern, response_text)
         tools.extend(matches)
 
         # Look for common tool indicators
         tool_indicators = {
-            'search_knowledge': ['search', 'knowledge', 'information'],
-            'vector_search': ['vector', 'documentation', 'technical'],
-            'web_search': ['web', 'internet', 'online'],
-            'architecture_tool': ['architecture', 'design', 'system'],
-            'ui_tool': ['ui', 'interface', 'design'],
-            'devops_tool': ['devops', 'deployment', 'infrastructure'],
-            'qa_tool': ['qa', 'testing', 'quality'],
-            'memory_tool': ['memory', 'remember', 'store'],
-            'coordinate_task': ['coordinate', 'workflow', 'orchestrate']
+            "search_knowledge": ["search", "knowledge", "information"],
+            "vector_search": ["vector", "documentation", "technical"],
+            "web_search": ["web", "internet", "online"],
+            "architecture_tool": ["architecture", "design", "system"],
+            "ui_tool": ["ui", "interface", "design"],
+            "devops_tool": ["devops", "deployment", "infrastructure"],
+            "qa_tool": ["qa", "testing", "quality"],
+            "memory_tool": ["memory", "remember", "store"],
+            "coordinate_task": ["coordinate", "workflow", "orchestrate"],
         }
 
         response_lower = response_text.lower()
@@ -183,8 +189,17 @@ class SmartVANAValidator:
 
         # Content quality indicators
         quality_indicators = [
-            'help', 'assist', 'provide', 'analyze', 'create', 'design',
-            'search', 'find', 'coordinate', 'manage', 'optimize'
+            "help",
+            "assist",
+            "provide",
+            "analyze",
+            "create",
+            "design",
+            "search",
+            "find",
+            "coordinate",
+            "manage",
+            "optimize",
         ]
 
         response_lower = response_text.lower()
@@ -200,7 +215,7 @@ class SmartVANAValidator:
         memory_tests = [
             ("session_memory", "Remember that I prefer detailed technical explanations"),
             ("knowledge_search", "Search for VANA system architecture information"),
-            ("vector_search", "Find technical documentation about multi-agent systems")
+            ("vector_search", "Find technical documentation about multi-agent systems"),
         ]
 
         # Select VANA agent for memory testing
@@ -231,7 +246,7 @@ class SmartVANAValidator:
                 memory_indicators = {
                     "session_memory": ["remember", "stored", "preference"],
                     "knowledge_search": ["search", "found", "information"],
-                    "vector_search": ["vector", "documentation", "technical"]
+                    "vector_search": ["vector", "documentation", "technical"],
                 }
 
                 indicators = memory_indicators.get(test_name, [])
@@ -240,7 +255,7 @@ class SmartVANAValidator:
                 self.results["memory_systems"][test_name] = {
                     "available": memory_used,
                     "response_time": round(response_time, 3),
-                    "response_quality": len(response_text)
+                    "response_quality": len(response_text),
                 }
 
                 status = "✅" if memory_used else "⚠️"
@@ -258,10 +273,14 @@ class SmartVANAValidator:
         working_memory = sum(1 for mem in self.results["memory_systems"].values() if mem.get("available", False))
 
         # Calculate performance baseline
-        response_times = [agent.get("response_time", 0) for agent in self.results["agents"].values() if agent.get("response_time")]
+        response_times = [
+            agent.get("response_time", 0) for agent in self.results["agents"].values() if agent.get("response_time")
+        ]
         avg_response_time = sum(response_times) / len(response_times) if response_times else 0
 
-        quality_scores = [agent.get("quality_score", 0) for agent in self.results["agents"].values() if agent.get("quality_score")]
+        quality_scores = [
+            agent.get("quality_score", 0) for agent in self.results["agents"].values() if agent.get("quality_score")
+        ]
         avg_quality = sum(quality_scores) / len(quality_scores) if quality_scores else 0
 
         self.results["reality_check"] = {
@@ -269,18 +288,14 @@ class SmartVANAValidator:
             "actual_agents": len(self.actual_agents),
             "working_agents": working_agents,
             "agent_gap_percentage": round((24 - working_agents) / 24 * 100, 1),
-
             "documented_tools": "59+",
             "discovered_tools": len(unique_tools),
             "unique_tools": unique_tools,
-
             "memory_systems_tested": len(self.results["memory_systems"]),
             "memory_systems_working": working_memory,
-
             "avg_response_time": round(avg_response_time, 3),
             "avg_quality_score": round(avg_quality, 3),
-
-            "system_health": "operational" if working_agents >= 3 else "degraded"
+            "system_health": "operational" if working_agents >= 3 else "degraded",
         }
 
         self.results["performance_baseline"] = {
@@ -288,8 +303,9 @@ class SmartVANAValidator:
             "response_time_actual": avg_response_time,
             "quality_target": 0.8,
             "quality_actual": avg_quality,
-            "meets_targets": avg_response_time <= 5.0 and avg_quality >= 0.6
+            "meets_targets": avg_response_time <= 5.0 and avg_quality >= 0.6,
         }
+
 
 async def main():
     """Run smart validation and generate report"""
@@ -297,27 +313,35 @@ async def main():
     results = await validator.run_smart_validation()
 
     # Generate summary report
-    logger.info("%s", "\n" + "="*60)
+    logger.info("%s", "\n" + "=" * 60)
     logger.info("🎯 SMART VALIDATION SUMMARY")
-    logger.info("%s", "="*60)
+    logger.info("%s", "=" * 60)
 
     reality = results["reality_check"]
     baseline = results["performance_baseline"]
 
     logger.info(f"📊 REALITY CHECK:")
-    logger.info("%s", f"   Agents: {reality['working_agents']}/{reality['actual_agents']} working ({reality['documented_agents']} documented)")
+    logger.info(
+        "%s",
+        f"   Agents: {reality['working_agents']}/{reality['actual_agents']} working ({reality['documented_agents']} documented)",
+    )
     logger.info("%s", f"   Tools: {reality['discovered_tools']} discovered ({reality['documented_tools']} documented)")
-    logger.info("%s", f"   Memory: {reality['memory_systems_working']}/{reality['memory_systems_tested']} systems working")
+    logger.info(
+        "%s", f"   Memory: {reality['memory_systems_working']}/{reality['memory_systems_tested']} systems working"
+    )
     logger.info("%s", f"   Gap: {reality['agent_gap_percentage']}% between documented and working agents")
 
     logger.info(f"\n⚡ PERFORMANCE BASELINE:")
-    logger.info("%s", f"   Avg Response Time: {baseline['response_time_actual']:.3f}s (target: {baseline['response_time_target']}s)")
+    logger.info(
+        "%s",
+        f"   Avg Response Time: {baseline['response_time_actual']:.3f}s (target: {baseline['response_time_target']}s)",
+    )
     logger.info("%s", f"   Avg Quality Score: {baseline['quality_actual']:.3f} (target: {baseline['quality_target']})")
     logger.info("%s", f"   Meets Targets: {'✅ YES' if baseline['meets_targets'] else '❌ NO'}")
 
     logger.info(f"\n🔧 DISCOVERED TOOLS:")
-    if reality['unique_tools']:
-        for tool in sorted(reality['unique_tools']):
+    if reality["unique_tools"]:
+        for tool in sorted(reality["unique_tools"]):
             logger.info(f"   - {tool}")
     else:
         logger.info("   No tools clearly identified")
@@ -330,7 +354,8 @@ async def main():
 
     logger.info(f"\n💾 Detailed results saved to: smart_validation_results.json")
 
-    return baseline['meets_targets']
+    return baseline["meets_targets"]
+
 
 if __name__ == "__main__":
     success = asyncio.run(main())

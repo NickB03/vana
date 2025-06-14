@@ -18,6 +18,7 @@ from lib.logging_config import get_logger
 
 logger = get_logger("vana.validate_framework")
 
+
 def test_security_framework():
     """Test security validation framework."""
     logger.debug("🔒 Testing Security Framework...")
@@ -28,12 +29,12 @@ def test_security_framework():
         validator = SecurityValidator()
 
         # Test 1: Code injection detection
-        malicious_code = '''
+        malicious_code = """
 def vulnerable_function(user_input):
     eval(user_input)  # Code injection vulnerability
     exec("dangerous_code")  # Another vulnerability
     return "result"
-'''
+"""
 
         violations = validator.validate_python_code(malicious_code, "test_vulnerable.py")
         logger.debug(f"  ✅ Code analysis detected {len(violations)} violations")
@@ -44,7 +45,7 @@ def vulnerable_function(user_input):
             "password": "hardcoded_secret_123",
             "api_key": "sk-1234567890abcdef1234567890abcdef",
             "debug": True,
-            "ssl_verify": False
+            "ssl_verify": False,
         }
 
         config_violations = validator.validate_configuration(insecure_config, "test_config")
@@ -52,22 +53,14 @@ def vulnerable_function(user_input):
         assert len(config_violations) >= 3, "Should detect multiple configuration issues"
 
         # Test 3: Network security
-        dangerous_urls = [
-            "http://localhost:8080/admin",
-            "http://127.0.0.1:3000/debug",
-            "ftp://internal.server/files"
-        ]
+        dangerous_urls = ["http://localhost:8080/admin", "http://127.0.0.1:3000/debug", "ftp://internal.server/files"]
 
         network_violations = validator.validate_network_access(dangerous_urls)
         logger.debug(f"  ✅ Network analysis detected {len(network_violations)} violations")
         assert len(network_violations) >= 3, "Should detect network security issues"
 
         # Test 4: OWASP compliance
-        xss_inputs = [
-            "<script>alert('XSS')</script>",
-            "javascript:alert('XSS')",
-            "'; DROP TABLE users; --"
-        ]
+        xss_inputs = ["<script>alert('XSS')</script>", "javascript:alert('XSS')", "'; DROP TABLE users; --"]
 
         input_violations = validator.validate_input_sanitization(xss_inputs)
         logger.debug(f"  ✅ Input validation detected {len(input_violations)} violations")
@@ -76,8 +69,8 @@ def vulnerable_function(user_input):
         # Test 5: Security report generation
         report = validator.get_security_report()
         logger.debug("%s", f"  ✅ Security report generated with {report['total_violations']} total violations")
-        assert report['total_violations'] > 0, "Should have detected violations"
-        assert 'severity_breakdown' in report, "Report should include severity breakdown"
+        assert report["total_violations"] > 0, "Should have detected violations"
+        assert "severity_breakdown" in report, "Report should include severity breakdown"
 
         logger.debug("  🎉 Security framework validation PASSED")
         return True
@@ -85,8 +78,10 @@ def vulnerable_function(user_input):
     except Exception as e:
         logger.error(f"  ❌ Security framework validation FAILED: {e}")
         import traceback
+
         traceback.print_exc()
         return False
+
 
 def test_benchmarking_framework():
     """Test benchmarking framework (without psutil dependencies)."""
@@ -103,6 +98,7 @@ def test_benchmarking_framework():
         def sample_benchmark():
             """Sample benchmark function."""
             import time
+
             time.sleep(0.01)  # Simulate work
             return "benchmark_result"
 
@@ -114,9 +110,7 @@ def test_benchmarking_framework():
 
         # Create sample performance data
         sample_values = [0.1, 0.12, 0.09, 0.11, 0.10, 0.13, 0.08, 0.11, 0.10, 0.12]
-        baseline = baseline_manager.establish_baseline(
-            "test_benchmark", "execution_time", sample_values, "seconds"
-        )
+        baseline = baseline_manager.establish_baseline("test_benchmark", "execution_time", sample_values, "seconds")
 
         logger.debug(f"  ✅ Baseline established: {baseline.baseline_value:.3f} seconds")
         assert baseline.baseline_value > 0, "Baseline should have positive value"
@@ -127,7 +121,7 @@ def test_benchmarking_framework():
         )
 
         logger.debug("%s", f"  ✅ Baseline comparison: {comparison['status']}")
-        assert comparison['has_baseline'], "Should find existing baseline"
+        assert comparison["has_baseline"], "Should find existing baseline"
 
         # Test 4: Regression detection
         detector = RegressionDetector()
@@ -135,12 +129,13 @@ def test_benchmarking_framework():
         # Test with regressed performance
         regressed_values = [0.18, 0.19, 0.17, 0.20, 0.18]  # Much slower
         regression = detector.detect_regression(
-            "test_benchmark", "execution_time",
-            baseline.baseline_value, regressed_values
+            "test_benchmark", "execution_time", baseline.baseline_value, regressed_values
         )
 
         if regression:
-            logger.debug(f"  ✅ Regression detected: {regression.regression_percentage:.1f}% ({regression.severity.value})")
+            logger.debug(
+                f"  ✅ Regression detected: {regression.regression_percentage:.1f}% ({regression.severity.value})"
+            )
             assert regression.regression_percentage > 0, "Should detect performance regression"
         else:
             logger.debug("  ⚠️  No regression detected (may be due to thresholds)")
@@ -155,8 +150,10 @@ def test_benchmarking_framework():
     except Exception as e:
         logger.error(f"  ❌ Benchmarking framework validation FAILED: {e}")
         import traceback
+
         traceback.print_exc()
         return False
+
 
 def test_integration_framework():
     """Test integration testing framework."""
@@ -165,6 +162,7 @@ def test_integration_framework():
     try:
         # Test basic imports
         from tests.integration.test_agent_workflows import TestAgentWorkflows
+
         logger.info("  ✅ Integration test imports successful")
 
         # Test mock agent system creation
@@ -172,16 +170,12 @@ def test_integration_framework():
 
         # Create mock agent system (simplified)
         mock_agents = {
-            "vana": type('MockAgent', (), {
-                'name': 'vana',
-                'role': 'orchestrator',
-                'available_tools': ['delegate_task']
-            })(),
-            "specialist": type('MockAgent', (), {
-                'name': 'specialist',
-                'role': 'specialist',
-                'available_tools': ['execute_task']
-            })()
+            "vana": type(
+                "MockAgent", (), {"name": "vana", "role": "orchestrator", "available_tools": ["delegate_task"]}
+            )(),
+            "specialist": type(
+                "MockAgent", (), {"name": "specialist", "role": "specialist", "available_tools": ["execute_task"]}
+            )(),
         }
 
         logger.debug(f"  ✅ Mock agent system created with {len(mock_agents)} agents")
@@ -193,8 +187,10 @@ def test_integration_framework():
     except Exception as e:
         logger.error(f"  ❌ Integration framework validation FAILED: {e}")
         import traceback
+
         traceback.print_exc()
         return False
+
 
 def test_ci_framework():
     """Test CI/CD automation framework."""
@@ -209,17 +205,12 @@ def test_ci_framework():
 
         # Test 2: Test result creation
         test_result = TestResult(
-            test_type="unit_test",
-            success=True,
-            exit_code=0,
-            duration=1.5,
-            output="Test output",
-            error=""
+            test_type="unit_test", success=True, exit_code=0, duration=1.5, output="Test output", error=""
         )
 
         result_dict = test_result.to_dict()
         logger.info("  ✅ Test result serialization successful")
-        assert result_dict['success'] == True, "Test result should serialize correctly"
+        assert result_dict["success"] == True, "Test result should serialize correctly"
 
         logger.debug("  🎉 CI/CD framework validation PASSED")
         return True
@@ -227,8 +218,10 @@ def test_ci_framework():
     except Exception as e:
         logger.error(f"  ❌ CI/CD framework validation FAILED: {e}")
         import traceback
+
         traceback.print_exc()
         return False
+
 
 def main():
     """Run all framework validation tests."""
@@ -264,6 +257,7 @@ def main():
     else:
         logger.error(f"\n❌ {total - passed} framework component(s) failed validation")
         return 1
+
 
 if __name__ == "__main__":
     exit_code = main()

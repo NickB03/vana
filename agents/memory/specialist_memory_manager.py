@@ -13,7 +13,6 @@ from typing import Any, Dict, List
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
 
 
-
 class SpecialistMemoryManager:
     """Manages persistent memory for specialist agents using ADK session state."""
 

@@ -222,7 +222,6 @@ class CircuitBreakerOpenError(Exception):
     """Exception raised when a circuit breaker is open."""
 
 
-
 class CircuitBreakerRegistry:
     """
     Registry for circuit breakers.

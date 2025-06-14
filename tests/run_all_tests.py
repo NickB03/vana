@@ -23,10 +23,10 @@ logger = get_logger("vana.run_all_tests")
 def run_tests(with_coverage=False):
     """
     Run all tests in the tests directory.
-    
+
     Args:
         with_coverage: Whether to run tests with coverage reporting
-    
+
     Returns:
         True if all tests pass, False otherwise
     """
@@ -39,8 +39,7 @@ def run_tests(with_coverage=False):
 
         # Start coverage
         cov = coverage.Coverage(
-            source=["adk-setup/vana/context", "adk-setup/vana/adk_integration"],
-            omit=["*/__init__.py", "*/tests/*"]
+            source=["adk-setup/vana/context", "adk-setup/vana/adk_integration"], omit=["*/__init__.py", "*/tests/*"]
         )
         cov.start()
 
@@ -67,6 +66,7 @@ def run_tests(with_coverage=False):
         logger.debug(f"\nHTML coverage report generated in: {os.path.abspath(html_dir)}")
 
     return result.wasSuccessful()
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run VANA tests")
