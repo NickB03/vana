@@ -571,7 +571,7 @@ class DocumentValidator:
             file_name = os.path.basename(file_path)
             file_size = os.path.getsize(file_path) if os.path.exists(file_path) else 0
             mime_type, _ = mimetypes.guess_type(file_path)
-        except:
+        except (OSError, IOError, ValueError):
             file_name = os.path.basename(file_path)
             file_size = 0
             mime_type = "unknown"
