@@ -120,7 +120,7 @@ class Task10PerformanceValidator:
 
         self.results.append(baseline_metrics)
 
-        logger.debug(f"✅ Baseline validation complete:")
+        logger.debug("✅ Baseline validation complete:")
         logger.info(f"   Success Rate: {baseline_metrics.success_rate:.1%}")
         logger.debug(f"   Avg Response Time: {baseline_metrics.avg_response_time:.3f}s")
         logger.debug("%s", f"   Target Achieved: {'✅ YES' if baseline_metrics.target_achieved else '❌ NO'}")
@@ -157,7 +157,7 @@ class Task10PerformanceValidator:
 
             self.results.append(sustained_metrics)
 
-            logger.debug(f"✅ Sustained load validation complete:")
+            logger.debug("✅ Sustained load validation complete:")
             logger.info(f"   Success Rate: {sustained_metrics.success_rate:.1%}")
             logger.debug(f"   Avg Response Time: {sustained_metrics.avg_response_time:.3f}s")
             logger.debug(f"   Max Response Time: {sustained_metrics.max_response_time:.3f}s")
@@ -280,13 +280,13 @@ class Task10PerformanceValidator:
         logger.info("🎯 TASK #10: PERFORMANCE TESTING VALIDATION RESULTS")
         logger.debug("%s", "=" * 70)
 
-        logger.debug(f"📊 Overall Performance:")
+        logger.debug("📊 Overall Performance:")
         logger.info("%s", f"   Success Rate: {validation['overall_success_rate']:.1%}")
         logger.debug("%s", f"   Avg Response Time: {validation['overall_avg_response_time']:.3f}s")
         logger.debug("%s", f"   Max Response Time: {validation['overall_max_response_time']:.3f}s")
         logger.debug("%s", f"   Performance Grade: {validation['performance_grade']}")
 
-        logger.info(f"\n🎯 Task #10 Success Criteria:")
+        logger.info("\n🎯 Task #10 Success Criteria:")
         logger.info(
             "%s",
             f"   Success Rate Target (90%): {'✅ ACHIEVED' if validation['success_rate_achieved'] else '❌ MISSED'}",
@@ -301,7 +301,7 @@ class Task10PerformanceValidator:
         )
 
         if report["recommendations"]:
-            logger.debug(f"\n💡 Recommendations:")
+            logger.debug("\n💡 Recommendations:")
             for rec in report["recommendations"]:
                 logger.debug(f"   • {rec}")
 

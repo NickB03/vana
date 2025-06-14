@@ -92,7 +92,7 @@ class DiffProcessor:
             if file_path_match:
                 file_path = file_path_match.group(1)
             else:
-                file_path = os.path.basename(diff_file).replace(".diff", "")
+                file_path = os.path.basename(diff_file).replace(".dif", "")
 
             # Extract sections
             sections = []
@@ -396,7 +396,7 @@ class DiffProcessor:
         # Find all diff files
         diff_files = []
         for file in os.listdir(directory):
-            if file.endswith(".diff"):
+            if file.endswith(".dif"):
                 diff_files.append(os.path.join(directory, file))
 
         logger.info(f"Found {len(diff_files)} diff files in {directory}")

@@ -81,7 +81,7 @@ def check_rag_corpus_status():
             project_id = os.getenv("GOOGLE_CLOUD_PROJECT", "${GOOGLE_CLOUD_PROJECT}")
             location = os.getenv("GOOGLE_CLOUD_LOCATION", "us-central1")
 
-            logger.info(f"🔍 Checking Vertex AI access...")
+            logger.info("🔍 Checking Vertex AI access...")
             logger.info(f"   Project: {project_id}")
             logger.info(f"   Location: {location}")
 
@@ -120,7 +120,7 @@ def check_authentication():
         import google.auth
 
         credentials, project = google.auth.default()
-        logger.info(f"✅ Authentication successful")
+        logger.info("✅ Authentication successful")
         logger.info(f"   Project: {project}")
         logger.info(f"   Credentials type: {type(credentials).__name__}")
 

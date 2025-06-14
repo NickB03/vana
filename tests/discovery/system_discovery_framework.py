@@ -130,7 +130,7 @@ class VANASystemDiscovery:
                 if response.status_code == 200:
                     try:
                         health_results[test_name]["response_data"] = response.json()
-                    except:
+                    except Exception:
                         health_results[test_name]["response_data"] = response.text[:200]
 
                 logger.debug(f"✅ {test_name}: {response.status_code} ({response_time:.3f}s)")
@@ -185,7 +185,7 @@ class VANASystemDiscovery:
         documented_agent_count = 24
         actual_agent_count = len([a for a in agent_results.keys() if not a.endswith("_error")])
 
-        logger.debug(f"\n📊 Agent Discovery Summary:")
+        logger.debug("\n📊 Agent Discovery Summary:")
         logger.debug(f"   Documented: {documented_agent_count} agents")
         logger.debug(f"   Discovered: {actual_agent_count} agents")
         logger.debug(f"   Gap: {documented_agent_count - actual_agent_count} agents")
@@ -278,7 +278,7 @@ class VANASystemDiscovery:
         documented_tool_count = 59
         actual_tool_count = len([t for t in tool_results.keys() if not t.endswith("_error")])
 
-        logger.debug(f"\n📊 Tool Discovery Summary:")
+        logger.debug("\n📊 Tool Discovery Summary:")
         logger.debug(f"   Documented: {documented_tool_count}+ tools")
         logger.debug(f"   Discovered: {actual_tool_count} tools")
         logger.debug(f"   Gap: {documented_tool_count - actual_tool_count} tools")
@@ -596,7 +596,7 @@ class VANASystemDiscovery:
 
         self.discovery_results["gap_analysis"] = gap_analysis
 
-        logger.debug(f"📊 Gap Analysis Complete:")
+        logger.debug("📊 Gap Analysis Complete:")
         logger.debug("%s", f"   Agent Gap: {gap_analysis['documented_vs_actual']['agents']['gap']}")
         logger.debug("%s", f"   Tool Gap: {gap_analysis['documented_vs_actual']['tools']['gap']}")
 
@@ -632,7 +632,7 @@ class VANASystemDiscovery:
         logger.info("%s", f"Memory Systems: {len(self.discovery_results['memory_systems'])}")
 
         gap_analysis = self.discovery_results["gap_analysis"]
-        logger.debug(f"\nGap Analysis:")
+        logger.debug("\nGap Analysis:")
         logger.debug(
             "%s", f"  Agent Gap: {gap_analysis.get('documented_vs_actual', {}).get('agents', {}).get('gap', 'Unknown')}"
         )

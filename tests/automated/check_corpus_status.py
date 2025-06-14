@@ -31,14 +31,14 @@ def check_corpus_status():
         project_id = "${GOOGLE_CLOUD_PROJECT}"  # Use project ID, not number
         location = "us-central1"
 
-        logger.info(f"🚀 Initializing Vertex AI...")
+        logger.info("🚀 Initializing Vertex AI...")
         logger.info(f"   Project: {project_id}")
         logger.info(f"   Location: {location}")
         logger.info(f"   Corpus: {CORPUS_NAME}")
 
         vertexai.init(project=project_id, location=location)
 
-        logger.info(f"📋 Checking corpus status...")
+        logger.info("📋 Checking corpus status...")
 
         # Get corpus information
         corpus = rag.get_corpus(name=CORPUS_NAME)
@@ -47,7 +47,7 @@ def check_corpus_status():
         logger.info(f"   Updated: {corpus.update_time}")
 
         # List files in the corpus
-        logger.info(f"📄 Listing files in corpus...")
+        logger.info("📄 Listing files in corpus...")
         files = rag.list_files(corpus_name=CORPUS_NAME)
 
         if files:
@@ -77,7 +77,7 @@ def test_search():
         location = "us-central1"
         vertexai.init(project=project_id, location=location)
 
-        logger.info(f"🔍 Testing search functionality...")
+        logger.info("🔍 Testing search functionality...")
 
         # Try a simple search
         query = "VANA vector search"

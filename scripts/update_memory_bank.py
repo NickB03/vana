@@ -32,7 +32,7 @@ def update_active_context():
         # Create update section
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-        update_section = f"""
+        update_section = """
 
 ## 🔧 **SYSTEM REPAIR COMPLETION - {timestamp}**
 
@@ -111,14 +111,14 @@ def update_progress():
         # Create progress update
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-        progress_update = f"""
+        progress_update = """
 
 ## 🎉 **SYSTEM REPAIR PROJECT COMPLETION - {timestamp}**
 
 ### **✅ PHASE 1: EMERGENCY FIXES - COMPLETED**
 - **Duration**: 4-6 hours
 - **Status**: ✅ COMPLETE
-- **Results**: 
+- **Results**:
   - Import hanging resolved with lazy initialization
   - Specialist tools converted to proper task-based implementation
   - All tools now create trackable task IDs
@@ -192,12 +192,12 @@ def create_system_repair_summary():
         summary_path = os.path.join(MEMORY_BANK_DIR, "SYSTEM_REPAIR_SUMMARY.md")
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-        summary_content = f"""# 🔧 VANA SYSTEM REPAIR SUMMARY
+        summary_content = """# 🔧 VANA SYSTEM REPAIR SUMMARY
 
-**Completion Date**: {timestamp}  
-**Project Duration**: 3-5 days  
-**Status**: ✅ COMPLETE  
-**Confidence Level**: 9/10  
+**Completion Date**: {timestamp}
+**Project Duration**: 3-5 days
+**Status**: ✅ COMPLETE
+**Confidence Level**: 9/10
 
 ## 🎯 **EXECUTIVE SUMMARY**
 
@@ -271,7 +271,7 @@ from lib._shared_libraries.lazy_initialization import lazy_manager
 
 ### **Automated Testing**
 - ✅ **Phase 1 Validation**: 100% pass rate
-- ✅ **Phase 2 Validation**: 100% pass rate  
+- ✅ **Phase 2 Validation**: 100% pass rate
 - ✅ **Phase 3 Validation**: Puppeteer framework ready
 - ✅ **Import Speed**: <2 seconds consistently
 - ✅ **Task Creation**: All specialist tools creating proper task IDs

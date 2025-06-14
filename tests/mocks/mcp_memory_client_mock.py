@@ -58,7 +58,7 @@ class MockMCPMemoryClient:
                 to_id = entity_id
 
         if not from_id or not to_id:
-            logger.info(f"Relationship creation failed: entities not found")
+            logger.info("Relationship creation failed: entities not found")
             return {"success": False, "message": "One or both entities not found"}
 
         # Create relationship
@@ -75,7 +75,7 @@ class MockMCPMemoryClient:
 
         logger.info(f"Created relationship: {from_entity} {relationship} {to_entity}")
 
-        return {"success": True, "relationshipId": rel_id, "message": f"Relationship created successfully"}
+        return {"success": True, "relationshipId": rel_id, "message": "Relationship created successfully"}
 
     def get_initial_data(self) -> Dict[str, Any]:
         """Perform initial complete data load from mock knowledge graph."""

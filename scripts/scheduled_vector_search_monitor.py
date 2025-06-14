@@ -529,7 +529,7 @@ def analyze_and_report_history(history_dir="health_history"):
         logger.info(f"Health history analysis saved to {filename}")
 
         # Log summary
-        logger.info(f"Health history analysis summary:")
+        logger.info("Health history analysis summary:")
         logger.info(f"Total checks: {analysis['total_checks']}")
         logger.info(f"Health percentage: {analysis['health_percentage']:.2f}%")
         logger.info(f"Average response time: {analysis['avg_response_time']:.3f}s")

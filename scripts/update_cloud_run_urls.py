@@ -68,7 +68,7 @@ def find_files_to_update():
                     content = f.read()
                     if OLD_PROD_URL_1 in content or OLD_PROD_URL_2 in content:
                         files_to_update.add(file_path)
-            except:
+            except Exception:
                 continue
 
     return sorted(files_to_update)
@@ -78,12 +78,12 @@ def main():
     """Main function to update all URLs."""
     logger.info("🔄 VANA Cloud Run URL Update Script")
     logger.info("%s", "=" * 50)
-    logger.info(f"Replacing:")
+    logger.info("Replacing:")
     logger.info(f"  {OLD_PROD_URL_1}")
     logger.info(f"  {OLD_PROD_URL_2}")
-    logger.info(f"With:")
+    logger.info("With:")
     logger.info(f"  {NEW_PROD_URL}")
-    logger.info(f"Keeping:")
+    logger.info("Keeping:")
     logger.info(f"  {DEV_URL}")
     logger.info("%s", "=" * 50)
 
@@ -105,7 +105,7 @@ def main():
         if update_file(file_path):
             updated_count += 1
 
-    logger.info(f"\n🎉 Update complete!")
+    logger.info("\n🎉 Update complete!")
     logger.info(f"✅ Updated {updated_count} files")
     logger.info(f"⏭️  Skipped {len(files_to_update) - updated_count} files (no changes needed)")
 

@@ -216,19 +216,19 @@ class VanaBrowserTester:
             if result["success"]:
                 categories[category]["passed"] += 1
 
-        logger.info(f"\n📊 RESULTS BY CATEGORY:")
+        logger.info("\n📊 RESULTS BY CATEGORY:")
         for category, stats in categories.items():
             success_rate = (stats["passed"] / stats["total"]) * 100
             logger.info("%s", f"  📁 {category}: {stats['passed']}/{stats['total']} ({success_rate:.1f}%)")
 
         if failed_tests > 0:
-            logger.error(f"\n❌ FAILED TOOLS:")
+            logger.error("\n❌ FAILED TOOLS:")
             for tool, result in self.results.items():
                 if not result["success"]:
                     error = result.get("error", "Test not completed")
                     logger.error(f"  - {tool}: {error}")
 
-        logger.debug(f"\n✅ WORKING TOOLS:")
+        logger.debug("\n✅ WORKING TOOLS:")
         for tool, result in self.results.items():
             if result["success"]:
                 keywords = ", ".join(result["keywords_found"])

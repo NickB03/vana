@@ -173,7 +173,7 @@ class MCPToolsStatusChecker:
         total_successful = successful_core + successful_time + successful_filesystem
         success_rate = (total_successful / total_tested * 100) if total_tested > 0 else 0
 
-        logger.info(f"\n📊 RESULTS SUMMARY")
+        logger.info("\n📊 RESULTS SUMMARY")
         logger.debug("%s", "=" * 50)
         logger.info(
             f"Core MCP Tools: {successful_core}/{len(core_mcp_tools)} ({successful_core/len(core_mcp_tools)*100:.1f}%)"

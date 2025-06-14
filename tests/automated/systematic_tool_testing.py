@@ -208,13 +208,13 @@ class VanaToolTester:
         logger.info(f"📊 Success Rate: {(passed_tests/total_tests)*100:.1f}%")
 
         if failed_tests > 0:
-            logger.error(f"\n❌ FAILED TOOLS:")
+            logger.error("\n❌ FAILED TOOLS:")
             for tool, result in self.results.items():
                 if not result.get("test_passed", False):
                     error = result.get("error", "Test criteria not met")
                     logger.error(f"  - {tool}: {error}")
 
-        logger.debug(f"\n✅ WORKING TOOLS:")
+        logger.debug("\n✅ WORKING TOOLS:")
         for tool, result in self.results.items():
             if result.get("test_passed", False):
                 logger.debug(f"  - {tool}: Working correctly")

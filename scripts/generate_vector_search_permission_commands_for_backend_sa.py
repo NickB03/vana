@@ -33,7 +33,7 @@ def main():
         logger.error("Required: GOOGLE_CLOUD_PROJECT, FIREBASE_CLIENT_EMAIL")
         return 1
 
-    logger.info(f"Generating Vector Search permission commands for:")
+    logger.info("Generating Vector Search permission commands for:")
     logger.info(f"  Project: {project_id}")
     logger.info(f"  Service Account: {service_account_email}")
 

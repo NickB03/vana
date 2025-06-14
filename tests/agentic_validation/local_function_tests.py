@@ -170,7 +170,7 @@ def test_orchestrated_tools():
         failed_tests = len([r for r in test_results if r["status"] == "FAIL"])
         success_rate = (passed_tests / total_tests * 100) if total_tests > 0 else 0
 
-        logger.info(f"\n🔬 LOCAL FUNCTION TEST RESULTS")
+        logger.info("\n🔬 LOCAL FUNCTION TEST RESULTS")
         logger.debug("%s", "=" * 40)
         logger.debug(f"Total Tests: {total_tests}")
         logger.debug(f"Passed: {passed_tests}")
@@ -285,7 +285,7 @@ def main():
 
     success_rate = (passed_tests / total_tests * 100) if total_tests > 0 else 0
 
-    logger.info(f"\n🔬 COMPREHENSIVE TEST RESULTS")
+    logger.info("\n🔬 COMPREHENSIVE TEST RESULTS")
     logger.debug("%s", "=" * 50)
     logger.debug(f"Total Tests: {total_tests}")
     logger.debug(f"Passed: {passed_tests}")
@@ -309,7 +309,7 @@ def main():
     with open("local_function_test_results.json", "w") as f:
         json.dump(report, f, indent=2)
 
-    logger.info(f"\n📊 Detailed results saved to: local_function_test_results.json")
+    logger.info("\n📊 Detailed results saved to: local_function_test_results.json")
 
     if failed_tests == 0:
         logger.debug("✅ ALL LOCAL FUNCTION TESTS PASSED!")

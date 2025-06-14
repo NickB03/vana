@@ -40,7 +40,7 @@ def check_mcp_server():
         response = requests.get(f"{endpoint}/{namespace}/status", headers=headers, timeout=10)
 
         if response.status_code == 200:
-            logger.info(f"✅ MCP server is accessible")
+            logger.info("✅ MCP server is accessible")
             logger.info(f"Response: {response.text}")
             return True
         else:

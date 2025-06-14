@@ -54,7 +54,7 @@ Before responding to any user query, follow this hierarchy:
 - Use: search_knowledge("query about VANA system")
 - This searches the RAG corpus with VANA-specific knowledge
 
-### 3. MEMORY RETRIEVAL (load_memory) 
+### 3. MEMORY RETRIEVAL (load_memory)
 - For user preferences, past interactions, or learned patterns
 - Use: load_memory with relevant query
 - This retrieves cross-session user context and preferences
@@ -102,7 +102,7 @@ After successful task completion, important session content should be converted 
 ## ⚠️ MEMORY USAGE RULES
 
 1. **NEVER guess** about VANA capabilities - always search_knowledge first
-2. **NEVER assume** user preferences - always load_memory first  
+2. **NEVER assume** user preferences - always load_memory first
 3. **NEVER repeat** external searches - check memory systems first
 4. **ALWAYS store** successful patterns and user preferences
 5. **ALWAYS cite** memory sources when using retrieved information
@@ -182,8 +182,8 @@ previous_success = load_memory("successful agent coordination for similar task")
             instruction_patterns = [
                 r'(instruction\s*=\s*""")(.*?)(""")',
                 r'(instruction\s*=\s*")(.*?)(")',
-                r'(instruction\s*=\s*f""")(.*?)(""")',
-                r'(instruction\s*=\s*f")(.*?)(")',
+                r'(instruction\s*=\s*""")(.*?)(""")',
+                r'(instruction\s*=\s*")(.*?)(")',
             ]
 
             optimized = False
@@ -213,7 +213,7 @@ previous_success = load_memory("successful agent coordination for similar task")
                     content = content.replace(match.group(0), new_match)
                     optimized = True
 
-                    logger.info(f"✅ Added memory-first strategy to agent instruction")
+                    logger.info("✅ Added memory-first strategy to agent instruction")
 
             if not optimized:
                 logger.warning(f"⚠️ No instruction patterns found in {agent_file_path.name}")
@@ -283,7 +283,7 @@ def handle_vana_question(query):
 def handle_vana_question(query):
     # First check VANA knowledge base
     knowledge_results = search_knowledge(f"VANA capabilities {query}")
-    
+
     if knowledge_results and "fallback" not in knowledge_results:
         # Use authoritative VANA knowledge
         return format_knowledge_response(knowledge_results)
@@ -299,20 +299,20 @@ def handle_vana_question(query):
 def coordinate_research_task(user_request):
     # Check if similar task was done before
     previous_approach = load_memory(f"successful research approach for {task_type}")
-    
+
     if previous_approach:
         # Use proven approach
         strategy = adapt_previous_strategy(previous_approach, user_request)
     else:
         # Create new strategy
         strategy = create_research_strategy(user_request)
-    
+
     # Store coordination plan in session
     session.state['coordination_plan'] = strategy
-    
+
     # Execute with memory tracking
     results = execute_coordinated_research(strategy)
-    
+
     # Store successful pattern for future use
     if results.success:
         session.state['successful_research_pattern'] = {
@@ -329,15 +329,15 @@ def coordinate_research_task(user_request):
 def handle_analysis_request(data, user_request):
     # Check user preferences for analysis style
     preferences = load_memory("user analysis preferences")
-    
+
     analysis_style = "detailed"  # default
     if preferences:
         analysis_style = preferences.get("preferred_detail_level", "detailed")
         visualization_type = preferences.get("preferred_charts", "bar")
-    
+
     # Perform analysis with user preferences
     results = analyze_data(data, style=analysis_style)
-    
+
     # Learn from user feedback
     if user_feedback == "too_detailed":
         session.state['user_analysis_preference'] = "summary"
@@ -391,17 +391,17 @@ def main():
     optimizer.create_memory_examples_file()
 
     if success:
-        logger.info(f"\n🎉 Agent Memory Optimization Completed Successfully!")
+        logger.info("\n🎉 Agent Memory Optimization Completed Successfully!")
         logger.info(f"📊 Total agents optimized: {optimizer.optimized_count}")
-        logger.info(f"🧠 Agents now use memory-first decision strategy")
+        logger.info("🧠 Agents now use memory-first decision strategy")
 
         if not args.dry_run:
-            logger.info(f"\n🚀 Next steps:")
-            logger.info(f"1. Test agent behavior with memory-first strategy")
-            logger.info(f"2. Validate proactive memory usage")
-            logger.info(f"3. Monitor memory search patterns")
+            logger.info("\n🚀 Next steps:")
+            logger.info("1. Test agent behavior with memory-first strategy")
+            logger.info("2. Validate proactive memory usage")
+            logger.info("3. Monitor memory search patterns")
     else:
-        logger.error(f"\n❌ Agent optimization failed. Check logs for details.")
+        logger.error("\n❌ Agent optimization failed. Check logs for details.")
         sys.exit(1)
 
 

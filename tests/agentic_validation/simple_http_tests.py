@@ -129,9 +129,9 @@ class SimpleAgenticTester:
                         logger.debug(f"    ❌ Found violation: {pattern}")
                         break
                 else:
-                    logger.debug(f"    ✅ No task IDs found")
+                    logger.debug("    ✅ No task IDs found")
             else:
-                logger.debug(f"    ⚠️  No response received")
+                logger.debug("    ⚠️  No response received")
 
         result = {
             "test_name": "task_id_invisibility",
@@ -211,7 +211,7 @@ class SimpleAgenticTester:
                         break
 
                 if ownership_found:
-                    logger.debug(f"    ✅ Ownership language found")
+                    logger.debug("    ✅ Ownership language found")
                 else:
                     ownership_violations.append(
                         {
@@ -221,9 +221,9 @@ class SimpleAgenticTester:
                             "response_excerpt": response[:300] + "..." if len(response) > 300 else response,
                         }
                     )
-                    logger.debug(f"    ❌ No ownership language found")
+                    logger.debug("    ❌ No ownership language found")
             else:
-                logger.debug(f"    ⚠️  No response received")
+                logger.debug("    ⚠️  No response received")
 
         result = {
             "test_name": "orchestrator_ownership",
@@ -341,7 +341,7 @@ def main():
     with open("simple_http_test_results.json", "w") as f:
         json.dump(report, f, indent=2)
 
-    logger.info(f"\n📊 Detailed results saved to: simple_http_test_results.json")
+    logger.info("\n📊 Detailed results saved to: simple_http_test_results.json")
 
     # Exit with appropriate code
     if report["summary"]["failed"] > 0:

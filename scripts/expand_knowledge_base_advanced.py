@@ -140,7 +140,7 @@ def process_directory_advanced(
 
     Args:
         directory: Directory to process
-        file_types: List of file types to process (e.g., ["pdf", "txt", "md"])
+        file_types: List of file types to process (e.g., ["pd", "txt", "md"])
         recursive: Whether to process subdirectories
         add_to_vector_search: Whether to add documents to Vector Search
         add_to_knowledge_graph: Whether to add documents to Knowledge Graph
@@ -171,7 +171,7 @@ def process_directory_advanced(
 
     # Set default file types if not provided
     if file_types is None:
-        file_types = ["txt", "md", "pdf", "html"]
+        file_types = ["txt", "md", "pd", "html"]
 
     # Get files to process
     files = []
