@@ -90,7 +90,7 @@ class ADKWrapper:
             import pkg_resources
 
             return [f"{pkg.key}=={pkg.version}" for pkg in pkg_resources.working_set]
-        except:
+        except (ImportError, AttributeError, Exception):
             return ["Unable to retrieve packages"]
 
     def create_agent(self, name, description, instructions, tools=None):
