@@ -91,10 +91,10 @@ def itinerary_planning_tool(context: str) -> str:
         )
 
         # Return user-friendly response WITHOUT task ID
-        user_response = f"""🗓️ I've created a comprehensive itinerary plan for your trip.
+        user_response = """🗓️ I've created a comprehensive itinerary plan for your trip.
 
 **Itinerary Overview:**
-• Day 1: Arrival and city orientation  
+• Day 1: Arrival and city orientation
 • Day 2-3: Major attractions and cultural sites
 • Day 4: Local experiences and cuisine
 • Day 5: Departure preparations
@@ -112,7 +112,7 @@ Your itinerary is ready! I can provide more details about any specific day or as
 
     except Exception as e:
         logger.error(f"Error in itinerary planning: {e}")
-        return f"I encountered an issue while planning your itinerary. Let me try a different approach to help you plan your trip."
+        return "I encountered an issue while planning your itinerary. Let me try a different approach to help you plan your trip."
 
 
 def hotel_search_tool(context: str) -> str:
@@ -152,16 +152,16 @@ def hotel_search_tool(context: str) -> str:
 **Top Recommendations:**
 🌟 **Grand Plaza Hotel** - $180/night - 4.5★
    • Central location, pool, complimentary breakfast
-   
-🌟 **Boutique Central** - $120/night - 4.3★  
+
+🌟 **Boutique Central** - $120/night - 4.3★
    • Stylish rooms, great value, walking distance to attractions
-   
+
 🌟 **Luxury Suites** - $280/night - 4.8★
    • Premium amenities, spa, concierge service
 
 **Search Results:**
 ✅ 15 hotels analyzed across different price ranges
-✅ Amenities and location scores evaluated  
+✅ Amenities and location scores evaluated
 ✅ Guest reviews and ratings considered
 ✅ Availability confirmed for your dates
 
@@ -211,10 +211,10 @@ def flight_search_tool(context: str) -> str:
 **Best Flight Options:**
 🛫 **Direct Flight** - $650 - 8h 30m
    • No layovers, fastest option, good value
-   
-🛫 **One Stop** - $420 - 12h 15m  
+
+🛫 **One Stop** - $420 - 12h 15m
    • Budget-friendly, short layover, reliable airlines
-   
+
 🛫 **Premium Direct** - $980 - 8h 45m
    • Business class comfort, priority boarding, extra legroom
 
@@ -268,7 +268,7 @@ def code_generation_tool(context: str) -> str:
 
 **Code Generation Complete:**
 ✅ **Architecture Design** - Modular structure with clean separation
-✅ **Core Implementation** - 8 files generated with full functionality  
+✅ **Core Implementation** - 8 files generated with full functionality
 ✅ **Database Layer** - SQLAlchemy models and migrations
 ✅ **API Endpoints** - FastAPI routes with proper validation
 ✅ **Testing Suite** - Comprehensive test coverage with Pytest
@@ -330,7 +330,7 @@ def testing_tool(context: str) -> str:
 
 **Testing Layers:**
 • **Unit Tests** - Individual component validation
-• **Integration Tests** - System interaction verification  
+• **Integration Tests** - System interaction verification
 • **End-to-End Tests** - Complete user workflow validation
 • **Performance Tests** - Load, stress, and scalability testing
 
