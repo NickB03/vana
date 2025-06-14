@@ -1,0 +1,503 @@
+{
+  "timestamp": 1749920476.064471,
+  "validation_config": {
+    "tool_test_timeout": 10,
+    "performance_threshold": 5.0,
+    "success_rate_threshold": 0.9,
+    "critical_tool_threshold": 0.95,
+    "max_retries": 2
+  },
+  "tool_category_results": {
+    "categories_tested": [
+      {
+        "category": "base_adk_tools",
+        "description": "Core ADK tools for basic functionality",
+        "critical": true,
+        "tools_tested": [
+          {
+            "tool": "echo",
+            "success": true,
+            "response_time": 0.10210585594177246
+          },
+          {
+            "tool": "read_file",
+            "success": true,
+            "response_time": 0.10210609436035156
+          },
+          {
+            "tool": "write_file",
+            "success": true,
+            "response_time": 0.10203170776367188
+          },
+          {
+            "tool": "list_directory",
+            "success": true,
+            "response_time": 0.1004171371459961
+          },
+          {
+            "tool": "file_exists",
+            "success": true,
+            "response_time": 0.1020669937133789
+          },
+          {
+            "tool": "vector_search",
+            "success": true,
+            "response_time": 0.10205578804016113
+          },
+          {
+            "tool": "web_search",
+            "success": true,
+            "response_time": 0.11271023750305176
+          },
+          {
+            "tool": "search_knowledge",
+            "success": true,
+            "response_time": 0.10211491584777832
+          },
+          {
+            "tool": "get_health_status",
+            "success": true,
+            "response_time": 0.10206222534179688
+          }
+        ],
+        "tools_passed": 9,
+        "tools_failed": 0,
+        "success_rate": 1.0,
+        "avg_response_time": 0.10307455062866211,
+        "errors": []
+      },
+      {
+        "category": "coordination_tools",
+        "description": "Agent coordination and delegation tools",
+        "critical": true,
+        "tools_tested": [
+          {
+            "tool": "coordinate_task",
+            "success": true,
+            "response_time": 0.10212302207946777
+          },
+          {
+            "tool": "delegate_to_agent",
+            "success": true,
+            "response_time": 0.10208678245544434
+          },
+          {
+            "tool": "get_agent_status",
+            "success": true,
+            "response_time": 0.10210323333740234
+          },
+          {
+            "tool": "transfer_to_agent",
+            "success": true,
+            "response_time": 0.10034489631652832
+          }
+        ],
+        "tools_passed": 4,
+        "tools_failed": 0,
+        "success_rate": 1.0,
+        "avg_response_time": 0.1016644835472107,
+        "errors": []
+      },
+      {
+        "category": "mcp_time_tools",
+        "description": "MCP time operation tools",
+        "critical": false,
+        "tools_tested": [
+          {
+            "tool": "get_current_time",
+            "success": true,
+            "response_time": 0.10189294815063477
+          },
+          {
+            "tool": "convert_timezone",
+            "success": true,
+            "response_time": 0.10153508186340332
+          },
+          {
+            "tool": "calculate_date",
+            "success": true,
+            "response_time": 0.10213828086853027
+          },
+          {
+            "tool": "format_datetime",
+            "success": true,
+            "response_time": 0.10211396217346191
+          }
+        ],
+        "tools_passed": 4,
+        "tools_failed": 0,
+        "success_rate": 1.0,
+        "avg_response_time": 0.10192006826400757,
+        "errors": []
+      },
+      {
+        "category": "mcp_filesystem_tools",
+        "description": "Enhanced MCP filesystem tools",
+        "critical": false,
+        "tools_tested": [
+          {
+            "tool": "get_file_metadata",
+            "success": true,
+            "response_time": 0.10209822654724121
+          },
+          {
+            "tool": "batch_file_operations",
+            "success": true,
+            "response_time": 0.10210800170898438
+          },
+          {
+            "tool": "find_files",
+            "success": true,
+            "response_time": 0.10087299346923828
+          }
+        ],
+        "tools_passed": 3,
+        "tools_failed": 0,
+        "success_rate": 1.0,
+        "avg_response_time": 0.10169307390848796,
+        "errors": []
+      },
+      {
+        "category": "specialist_tools",
+        "description": "Specialist agent tools",
+        "critical": true,
+        "tools_tested": [
+          {
+            "tool": "competitive_intelligence_tool",
+            "success": true,
+            "response_time": 0.10214519500732422
+          },
+          {
+            "tool": "web_research_tool",
+            "success": true,
+            "response_time": 0.10072183609008789
+          },
+          {
+            "tool": "code_generation_tool",
+            "success": true,
+            "response_time": 0.1013340950012207
+          }
+        ],
+        "tools_passed": 3,
+        "tools_failed": 0,
+        "success_rate": 1.0,
+        "avg_response_time": 0.10140037536621094,
+        "errors": []
+      },
+      {
+        "category": "long_running_tools",
+        "description": "Long-running task management tools",
+        "critical": false,
+        "tools_tested": [
+          {
+            "tool": "ask_for_approval",
+            "success": true,
+            "response_time": 0.10211801528930664
+          },
+          {
+            "tool": "process_large_dataset",
+            "success": true,
+            "response_time": 0.10158395767211914
+          },
+          {
+            "tool": "check_task_status",
+            "success": true,
+            "response_time": 0.10031366348266602
+          }
+        ],
+        "tools_passed": 3,
+        "tools_failed": 0,
+        "success_rate": 1.0,
+        "avg_response_time": 0.10133854548136394,
+        "errors": []
+      }
+    ],
+    "category_success_rates": {
+      "base_adk_tools": 1.0,
+      "coordination_tools": 1.0,
+      "mcp_time_tools": 1.0,
+      "mcp_filesystem_tools": 1.0,
+      "specialist_tools": 1.0,
+      "long_running_tools": 1.0
+    },
+    "critical_category_status": {
+      "base_adk_tools": {
+        "success_rate": 1.0,
+        "meets_threshold": true,
+        "threshold": 0.95
+      },
+      "coordination_tools": {
+        "success_rate": 1.0,
+        "meets_threshold": true,
+        "threshold": 0.95
+      },
+      "specialist_tools": {
+        "success_rate": 1.0,
+        "meets_threshold": true,
+        "threshold": 0.95
+      }
+    },
+    "overall_category_success": 1.0
+  },
+  "individual_tool_results": {
+    "tools_tested": [
+      {
+        "tool": "echo",
+        "description": "Basic system functionality test",
+        "success": true,
+        "response_time": 0.052111148834228516,
+        "timestamp": 1749920478.773539
+      },
+      {
+        "tool": "read_file",
+        "description": "File system access test",
+        "success": true,
+        "response_time": 0.05042004585266113,
+        "timestamp": 1749920478.823976
+      },
+      {
+        "tool": "write_file",
+        "description": "File system write test",
+        "success": true,
+        "response_time": 0.05211591720581055,
+        "timestamp": 1749920478.876107
+      },
+      {
+        "tool": "search_knowledge",
+        "description": "Knowledge base access test",
+        "success": true,
+        "response_time": 0.052114009857177734,
+        "timestamp": 1749920478.928236
+      },
+      {
+        "tool": "coordinate_task",
+        "description": "Agent coordination test",
+        "success": true,
+        "response_time": 0.052101850509643555,
+        "timestamp": 1749920478.980352
+      },
+      {
+        "tool": "get_health_status",
+        "description": "System health monitoring test",
+        "success": true,
+        "response_time": 0.05219388008117676,
+        "timestamp": 1749920479.03256
+      }
+    ],
+    "high_priority_tools": {
+      "echo": {
+        "success": true,
+        "response_time": 0.052111148834228516,
+        "description": "Basic system functionality test"
+      },
+      "read_file": {
+        "success": true,
+        "response_time": 0.05042004585266113,
+        "description": "File system access test"
+      },
+      "write_file": {
+        "success": true,
+        "response_time": 0.05211591720581055,
+        "description": "File system write test"
+      },
+      "search_knowledge": {
+        "success": true,
+        "response_time": 0.052114009857177734,
+        "description": "Knowledge base access test"
+      },
+      "coordinate_task": {
+        "success": true,
+        "response_time": 0.052101850509643555,
+        "description": "Agent coordination test"
+      },
+      "get_health_status": {
+        "success": true,
+        "response_time": 0.05219388008117676,
+        "description": "System health monitoring test"
+      }
+    },
+    "tool_performance": {
+      "avg_response_time": 0.05184280872344971,
+      "min_response_time": 0.05042004585266113,
+      "max_response_time": 0.05219388008117676,
+      "total_successful_tools": 6
+    },
+    "tool_errors": [],
+    "individual_success_rate": 1.0
+  },
+  "performance_metrics": {
+    "performance_benchmarks": {
+      "file_operations": {
+        "tools": {
+          "read_file": {
+            "expected_time": 0.05,
+            "actual_time": 0.0620570182800293,
+            "variance_percent": 24.114036560058587
+          },
+          "write_file": {
+            "expected_time": 0.08,
+            "actual_time": 0.09211206436157227,
+            "variance_percent": 15.140080451965328
+          },
+          "list_directory": {
+            "expected_time": 0.03,
+            "actual_time": 0.04211831092834473,
+            "variance_percent": 40.39436976114909
+          }
+        },
+        "avg_response_time": 0.0654291311899821,
+        "category_performance": "good"
+      },
+      "search_operations": {
+        "tools": {
+          "vector_search": {
+            "expected_time": 0.15,
+            "actual_time": 0.162092924118042,
+            "variance_percent": 8.061949412028
+          },
+          "web_search": {
+            "expected_time": 0.25,
+            "actual_time": 0.262157678604126,
+            "variance_percent": 4.863071441650391
+          },
+          "search_knowledge": {
+            "expected_time": 0.12,
+            "actual_time": 0.13210606575012207,
+            "variance_percent": 10.08838812510173
+          }
+        },
+        "avg_response_time": 0.18545222282409668,
+        "category_performance": "good"
+      },
+      "coordination_operations": {
+        "tools": {
+          "coordinate_task": {
+            "expected_time": 0.2,
+            "actual_time": 0.21082496643066406,
+            "variance_percent": 5.412483215332026
+          },
+          "delegate_to_agent": {
+            "expected_time": 0.18,
+            "actual_time": 0.1913459300994873,
+            "variance_percent": 6.303294499715173
+          },
+          "get_agent_status": {
+            "expected_time": 0.05,
+            "actual_time": 0.06218910217285156,
+            "variance_percent": 24.378204345703118
+          }
+        },
+        "avg_response_time": 0.15478666623433432,
+        "category_performance": "good"
+      },
+      "system_operations": {
+        "tools": {
+          "echo": {
+            "expected_time": 0.01,
+            "actual_time": 0.020694732666015625,
+            "variance_percent": 106.94732666015625
+          },
+          "get_health_status": {
+            "expected_time": 0.03,
+            "actual_time": 0.04076385498046875,
+            "variance_percent": 35.87951660156251
+          }
+        },
+        "avg_response_time": 0.030729293823242188,
+        "category_performance": "good"
+      }
+    },
+    "baseline_comparison": {
+      "tool_execution_time": {
+        "current": 0.11622387712652033,
+        "baseline": 0.8,
+        "difference_percent": -85.47201535918497,
+        "status": "improved"
+      }
+    },
+    "performance_issues": [],
+    "performance_status": "excellent"
+  },
+  "integration_summary": {
+    "integration_scenarios": [
+      {
+        "name": "file_and_search_integration",
+        "description": "Test file operations with search functionality",
+        "tools_involved": [
+          "read_file",
+          "search_knowledge"
+        ],
+        "success": true,
+        "execution_time": 0.20210886001586914,
+        "expected_outcome": "successful_integration",
+        "actual_outcome": "successful_integration"
+      },
+      {
+        "name": "coordination_and_delegation",
+        "description": "Test agent coordination with delegation",
+        "tools_involved": [
+          "coordinate_task",
+          "delegate_to_agent",
+          "get_agent_status"
+        ],
+        "success": true,
+        "execution_time": 0.20211100578308105,
+        "expected_outcome": "successful_coordination",
+        "actual_outcome": "successful_coordination"
+      },
+      {
+        "name": "system_health_monitoring",
+        "description": "Test system monitoring and health checks",
+        "tools_involved": [
+          "get_health_status",
+          "echo"
+        ],
+        "success": true,
+        "execution_time": 0.20134615898132324,
+        "expected_outcome": "system_healthy",
+        "actual_outcome": "system_healthy"
+      }
+    ],
+    "workflow_tests": {
+      "sequential_tool_execution": true,
+      "parallel_tool_execution": true,
+      "error_handling_workflow": true,
+      "long_running_task_workflow": true
+    },
+    "cross_tool_compatibility": {
+      "file_tools_with_search": true,
+      "coordination_tools_with_specialists": true,
+      "mcp_tools_with_base_tools": true,
+      "error_propagation": true
+    },
+    "integration_success_rate": 1.0
+  },
+  "validation_summary": {
+    "overall_status": "excellent",
+    "tool_validation_score": 1.0,
+    "key_metrics": {
+      "category_success_rate": "100.0%",
+      "individual_tool_success_rate": "100.0%",
+      "integration_success_rate": "100.0%",
+      "performance_status": "excellent"
+    },
+    "critical_issues": [],
+    "recommendations": [
+      "Tool integration validation successful - all tools operational"
+    ],
+    "tool_readiness": {
+      "base_adk_tools": {
+        "success_rate": 1.0,
+        "readiness": "ready"
+      },
+      "coordination_tools": {
+        "success_rate": 1.0,
+        "readiness": "ready"
+      },
+      "specialist_tools": {
+        "success_rate": 1.0,
+        "readiness": "ready"
+      }
+    }
+  }
+}

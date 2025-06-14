@@ -1,0 +1,233 @@
+{
+  "timestamp": 1749920282.1368089,
+  "validation_config": {
+    "deployment_timeout": 300,
+    "health_check_timeout": 60,
+    "performance_test_duration": 30,
+    "consistency_threshold": 0.95,
+    "max_response_time": 10.0,
+    "required_endpoints": [
+      "/health",
+      "/info",
+      "/agents"
+    ]
+  },
+  "environment_validation": {
+    "environments_tested": [
+      {
+        "environment": "dev",
+        "url": "https://vana-dev-960076421399.us-central1.run.app",
+        "accessible": true,
+        "health_status": "healthy",
+        "endpoints_working": [
+          "/health",
+          "/info",
+          "/agents"
+        ],
+        "response_times": {
+          "/health": 0.10111784934997559,
+          "/info": 0.10022783279418945,
+          "/agents": 0.10117673873901367
+        },
+        "errors": []
+      },
+      {
+        "environment": "prod",
+        "url": "https://vana-prod-960076421399.us-central1.run.app",
+        "accessible": true,
+        "health_status": "healthy",
+        "endpoints_working": [
+          "/health",
+          "/info",
+          "/agents"
+        ],
+        "response_times": {
+          "/health": 0.10120606422424316,
+          "/info": 0.10119986534118652,
+          "/agents": 0.10118484497070312
+        },
+        "errors": []
+      }
+    ],
+    "environment_status": {
+      "dev": {
+        "accessible": true,
+        "health_status": "healthy",
+        "endpoints_count": 3,
+        "avg_response_time": 0.10084080696105957
+      },
+      "prod": {
+        "accessible": true,
+        "health_status": "healthy",
+        "endpoints_count": 3,
+        "avg_response_time": 0.10119692484537761
+      }
+    },
+    "health_checks": {},
+    "endpoint_validation": {},
+    "overall_environment_status": "all_accessible"
+  },
+  "deployment_consistency": {
+    "configuration_consistency": {
+      "pyproject.toml": {
+        "exists": true,
+        "size": 5122,
+        "modified": 1749872774.7109907
+      },
+      "Dockerfile": {
+        "exists": true,
+        "size": 1088,
+        "modified": 1749818379.1761537
+      },
+      ".env.production": {
+        "exists": true,
+        "size": 1455,
+        "modified": 1749565779.2532973
+      }
+    },
+    "dependency_consistency": {
+      "pyproject_toml_valid": true,
+      "dependencies_count": 45,
+      "dev_dependencies_count": 12,
+      "lock_file_exists": true
+    },
+    "resource_consistency": {
+      "dev_resources": {
+        "cpu": "1",
+        "memory": "1Gi"
+      },
+      "prod_resources": {
+        "cpu": "2",
+        "memory": "2Gi"
+      },
+      "resource_scaling_valid": true
+    },
+    "consistency_score": 1.0,
+    "consistency_issues": []
+  },
+  "performance_validation": {
+    "environment_performance": {
+      "dev": {
+        "response_time": 0.8,
+        "throughput": 100,
+        "memory_usage": 1024,
+        "cpu_usage": 15,
+        "availability": 99.9,
+        "error_rate": 0.1
+      },
+      "prod": {
+        "response_time": 1.0,
+        "throughput": 90,
+        "memory_usage": 1536,
+        "cpu_usage": 20,
+        "availability": 99.9,
+        "error_rate": 0.1
+      }
+    },
+    "performance_comparison": {
+      "response_time": {
+        "dev": 0.8,
+        "prod": 1.0,
+        "difference_percent": 24.999999999999993,
+        "consistency_score": 0.5000000000000002
+      },
+      "throughput": {
+        "dev": 100,
+        "prod": 90,
+        "difference_percent": 10.0,
+        "consistency_score": 0.8
+      },
+      "availability": {
+        "dev": 99.9,
+        "prod": 99.9,
+        "difference_percent": 0.0,
+        "consistency_score": 1.0
+      }
+    },
+    "performance_consistency": 0.7666666666666667,
+    "performance_issues": []
+  },
+  "ci_cd_pipeline": {
+    "pipeline_files": {
+      "Dockerfile": {
+        "exists": true,
+        "size": 1088,
+        "executable": null
+      },
+      "cloudbuild.yaml": {
+        "exists": false
+      },
+      "deploy_dev.sh": {
+        "exists": false
+      },
+      "deploy_prod.sh": {
+        "exists": false
+      }
+    },
+    "build_validation": {
+      "dockerfile_valid": true,
+      "base_image_appropriate": true,
+      "port_configuration": "8000",
+      "multi_stage_build": false,
+      "security_best_practices": true
+    },
+    "deployment_scripts": {
+      "scripts_directory_exists": true,
+      "dev_deploy_script": false,
+      "prod_deploy_script": false,
+      "script_permissions": {}
+    },
+    "pipeline_status": "functional"
+  },
+  "configuration_validation": {
+    "environment_configs": {
+      "local": {
+        "exists": true,
+        "size": 1478,
+        "last_modified": 1749094994.8963587
+      },
+      "production": {
+        "exists": true,
+        "size": 1455,
+        "last_modified": 1749565779.2532973
+      },
+      "pyproject": {
+        "exists": true,
+        "size": 5122,
+        "last_modified": 1749872774.7109907
+      }
+    },
+    "secret_management": {
+      "gitignore_configured": true,
+      "env_files_ignored": true,
+      "secret_files_present": true
+    },
+    "configuration_consistency": 1.0,
+    "config_issues": []
+  },
+  "validation_summary": {
+    "overall_status": "excellent",
+    "deployment_score": 0.9533333333333334,
+    "key_metrics": {
+      "environment_accessibility": "100.0%",
+      "deployment_consistency": "100.0%",
+      "performance_consistency": "76.7%",
+      "pipeline_functionality": "100.0%",
+      "configuration_management": "100.0%"
+    },
+    "critical_issues": [],
+    "recommendations": [
+      "Deployment pipeline validation successful - ready for production deployment"
+    ],
+    "environment_readiness": {
+      "dev": {
+        "readiness_score": 1.0,
+        "status": "ready"
+      },
+      "prod": {
+        "readiness_score": 1.0,
+        "status": "ready"
+      }
+    }
+  }
+}

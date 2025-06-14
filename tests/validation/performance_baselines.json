@@ -1,0 +1,262 @@
+{
+  "baselines": {
+    "system_memory_usage": {
+      "benchmark_name": "system",
+      "metric_name": "memory_usage",
+      "baseline_value": 5972.228125,
+      "unit": "MB",
+      "confidence_interval": 251.2599179738359,
+      "sample_size": 5,
+      "timestamp": 1749919528.281408,
+      "metadata": {
+        "std_dev": 286.65013092373385,
+        "min_value": 5763.328125,
+        "max_value": 6396.484375,
+        "median_value": 5793.203125,
+        "confidence_level": 0.95
+      }
+    },
+    "system_cpu_usage": {
+      "benchmark_name": "system",
+      "metric_name": "cpu_usage",
+      "baseline_value": 12.86,
+      "unit": "units",
+      "confidence_interval": 2.0127968998386305,
+      "sample_size": 5,
+      "timestamp": 1749919528.284729,
+      "metadata": {
+        "std_dev": 2.2963013739489866,
+        "min_value": 10.1,
+        "max_value": 14.9,
+        "median_value": 13.8,
+        "confidence_level": 0.95
+      }
+    },
+    "system_disk_usage": {
+      "benchmark_name": "system",
+      "metric_name": "disk_usage",
+      "baseline_value": 4.591083475332744,
+      "unit": "units",
+      "confidence_interval": 0.0,
+      "sample_size": 5,
+      "timestamp": 1749919528.285766,
+      "metadata": {
+        "std_dev": 0.0,
+        "min_value": 4.591083475332744,
+        "max_value": 4.591083475332744,
+        "median_value": 4.591083475332744,
+        "confidence_level": 0.95
+      }
+    },
+    "system_system_availability": {
+      "benchmark_name": "system",
+      "metric_name": "system_availability",
+      "baseline_value": 100.0,
+      "unit": "percentage",
+      "confidence_interval": 0.0,
+      "sample_size": 5,
+      "timestamp": 1749919528.2866292,
+      "metadata": {
+        "std_dev": 0.0,
+        "min_value": 100.0,
+        "max_value": 100.0,
+        "median_value": 100.0,
+        "confidence_level": 0.95
+      }
+    },
+    "agent_agent_discovery_time": {
+      "benchmark_name": "agent",
+      "metric_name": "agent_discovery_time",
+      "baseline_value": 0.05120940208435058,
+      "unit": "seconds",
+      "confidence_interval": 4.062864712205356e-05,
+      "sample_size": 5,
+      "timestamp": 1749919528.2877061,
+      "metadata": {
+        "std_dev": 4.6351233060593343e-05,
+        "min_value": 0.05115818977355957,
+        "max_value": 0.051260948181152344,
+        "median_value": 0.05121493339538574,
+        "confidence_level": 0.95
+      }
+    },
+    "agent_agent_response_time": {
+      "benchmark_name": "agent",
+      "metric_name": "agent_response_time",
+      "baseline_value": 0.3012089252471924,
+      "unit": "seconds",
+      "confidence_interval": 2.663915683809657e-05,
+      "sample_size": 5,
+      "timestamp": 1749919528.2887712,
+      "metadata": {
+        "std_dev": 3.039130895574607e-05,
+        "min_value": 0.3011620044708252,
+        "max_value": 0.30124688148498535,
+        "median_value": 0.301210880279541,
+        "confidence_level": 0.95
+      }
+    },
+    "agent_agent_success_rate": {
+      "benchmark_name": "agent",
+      "metric_name": "agent_success_rate",
+      "baseline_value": 95.0,
+      "unit": "percentage",
+      "confidence_interval": 0.0,
+      "sample_size": 5,
+      "timestamp": 1749919528.292126,
+      "metadata": {
+        "std_dev": 0.0,
+        "min_value": 95.0,
+        "max_value": 95.0,
+        "median_value": 95.0,
+        "confidence_level": 0.95
+      }
+    },
+    "agent_coordination_time": {
+      "benchmark_name": "agent",
+      "metric_name": "coordination_time",
+      "baseline_value": 0.24000000000000002,
+      "unit": "seconds",
+      "confidence_interval": 0.027718585822512666,
+      "sample_size": 5,
+      "timestamp": 1749919528.295555,
+      "metadata": {
+        "std_dev": 0.0316227766016838,
+        "min_value": 0.2,
+        "max_value": 0.28,
+        "median_value": 0.24000000000000002,
+        "confidence_level": 0.95
+      }
+    },
+    "api_health_endpoint_time": {
+      "benchmark_name": "api",
+      "metric_name": "health_endpoint_time",
+      "baseline_value": 0.05,
+      "unit": "seconds",
+      "confidence_interval": 0.0,
+      "sample_size": 5,
+      "timestamp": 1749919528.296525,
+      "metadata": {
+        "std_dev": 0.0,
+        "min_value": 0.05,
+        "max_value": 0.05,
+        "median_value": 0.05,
+        "confidence_level": 0.95
+      }
+    },
+    "api_info_endpoint_time": {
+      "benchmark_name": "api",
+      "metric_name": "info_endpoint_time",
+      "baseline_value": 0.08,
+      "unit": "seconds",
+      "confidence_interval": 0.0,
+      "sample_size": 5,
+      "timestamp": 1749919528.297746,
+      "metadata": {
+        "std_dev": 0.0,
+        "min_value": 0.08,
+        "max_value": 0.08,
+        "median_value": 0.08,
+        "confidence_level": 0.95
+      }
+    },
+    "api_agent_list_time": {
+      "benchmark_name": "api",
+      "metric_name": "agent_list_time",
+      "baseline_value": 0.12,
+      "unit": "seconds",
+      "confidence_interval": 0.0,
+      "sample_size": 5,
+      "timestamp": 1749919528.298752,
+      "metadata": {
+        "std_dev": 0.0,
+        "min_value": 0.12,
+        "max_value": 0.12,
+        "median_value": 0.12,
+        "confidence_level": 0.95
+      }
+    },
+    "api_api_availability": {
+      "benchmark_name": "api",
+      "metric_name": "api_availability",
+      "baseline_value": 100.0,
+      "unit": "percentage",
+      "confidence_interval": 0.0,
+      "sample_size": 5,
+      "timestamp": 1749919528.300137,
+      "metadata": {
+        "std_dev": 0.0,
+        "min_value": 100.0,
+        "max_value": 100.0,
+        "median_value": 100.0,
+        "confidence_level": 0.95
+      }
+    },
+    "integration_end_to_end_workflow_time": {
+      "benchmark_name": "integration",
+      "metric_name": "end_to_end_workflow_time",
+      "baseline_value": 2.5,
+      "unit": "seconds",
+      "confidence_interval": 0.0,
+      "sample_size": 5,
+      "timestamp": 1749919528.301908,
+      "metadata": {
+        "std_dev": 0.0,
+        "min_value": 2.5,
+        "max_value": 2.5,
+        "median_value": 2.5,
+        "confidence_level": 0.95
+      }
+    },
+    "integration_tool_execution_time": {
+      "benchmark_name": "integration",
+      "metric_name": "tool_execution_time",
+      "baseline_value": 0.8,
+      "unit": "seconds",
+      "confidence_interval": 0.0,
+      "sample_size": 5,
+      "timestamp": 1749919528.3027499,
+      "metadata": {
+        "std_dev": 0.0,
+        "min_value": 0.8,
+        "max_value": 0.8,
+        "median_value": 0.8,
+        "confidence_level": 0.95
+      }
+    },
+    "integration_memory_integration_time": {
+      "benchmark_name": "integration",
+      "metric_name": "memory_integration_time",
+      "baseline_value": 0.4,
+      "unit": "seconds",
+      "confidence_interval": 0.0,
+      "sample_size": 5,
+      "timestamp": 1749919528.3035462,
+      "metadata": {
+        "std_dev": 0.0,
+        "min_value": 0.4,
+        "max_value": 0.4,
+        "median_value": 0.4,
+        "confidence_level": 0.95
+      }
+    },
+    "integration_coordination_success_rate": {
+      "benchmark_name": "integration",
+      "metric_name": "coordination_success_rate",
+      "baseline_value": 93.0,
+      "unit": "percentage",
+      "confidence_interval": 0.0,
+      "sample_size": 5,
+      "timestamp": 1749919528.304193,
+      "metadata": {
+        "std_dev": 0.0,
+        "min_value": 93.0,
+        "max_value": 93.0,
+        "median_value": 93.0,
+        "confidence_level": 0.95
+      }
+    }
+  },
+  "total_baselines": 16,
+  "last_updated": 1749919528.304299
+}
