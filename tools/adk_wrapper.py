@@ -112,18 +112,6 @@ class ADKWrapper:
         if hasattr(agent, "run"):
             return agent.run(query, **kwargs)
         elif hasattr(agent, "generate_content"):
-            return agent.generate_content(query, **kwargs)
-        elif isinstance(agent, AgentProxy):
-            # Fall back to direct knowledge retrieval
-            return agent.run(query, **kwargs)
-        else:
-            raise AttributeError("Agent does not have 'run' or 'generate_content' method and is not a fallback proxy")
-
-    def run_agent(self, agent, query, **kwargs):
-        """Run an agent using the available module or fall back to direct search."""
-        if hasattr(agent, "run"):
-            return agent.run(query, **kwargs)
-        elif hasattr(agent, "generate_content"):
             # Handle SimpleAgent from the fallback
             response = agent.generate_content(query)
             return {"response": response.text, "source": "simple_agent"}

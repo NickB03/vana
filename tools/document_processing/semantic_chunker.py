@@ -180,7 +180,7 @@ class SemanticChunker:
                     },
                 }
             )
-            logger.info(f"Created 1 semantic chunk from short document")
+            logger.info("Created 1 semantic chunk from short document")
             return chunks
 
         for section in sections:
