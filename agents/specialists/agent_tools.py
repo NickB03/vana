@@ -45,7 +45,7 @@ def architecture_tool_func(context: str) -> str:
         # Call the specialist function directly
         response = analyze_system_architecture(context)
         return f"🏗️ **Architecture Specialist Analysis:**\n\n{response}"
-    except Exception as e:
+    except Exception:
         # Fallback to a comprehensive architecture response
         return f"""🏗️ **Architecture Specialist Analysis:**
 
@@ -94,7 +94,7 @@ def ui_tool_func(context: str) -> str:
         # Call the specialist function directly
         response = analyze_user_interface(context)
         return f"🎨 **UI/UX Specialist Analysis:**\n\n{response}"
-    except Exception as e:
+    except Exception:
         # Fallback to a comprehensive UI/UX response
         return f"""🎨 **UI/UX Specialist Analysis:**
 
@@ -144,7 +144,7 @@ def devops_tool_func(context: str) -> str:
         # Call the specialist function directly
         response = analyze_infrastructure(context)
         return f"⚙️ **DevOps Specialist Analysis:**\n\n{response}"
-    except Exception as e:
+    except Exception:
         # Fallback to a comprehensive DevOps response
         return f"""⚙️ **DevOps Specialist Analysis:**
 
@@ -200,7 +200,7 @@ def qa_tool_func(context: str) -> str:
         # Call the specialist function directly
         response = analyze_testing_strategy(context)
         return f"🧪 **QA Specialist Analysis:**\n\n{response}"
-    except Exception as e:
+    except Exception:
         # Fallback to a comprehensive QA response
         return f"""🧪 **QA Specialist Analysis:**
 

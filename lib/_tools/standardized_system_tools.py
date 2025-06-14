@@ -36,7 +36,7 @@ if project_root not in sys.path:
 # Import real echo function from agent/tools/echo.py
 try:
     from agent.tools.echo import echo
-except ImportError as e:
+except ImportError:
     # Fallback if import fails
     def echo(message: str) -> str:
         """Fallback echo implementation."""
@@ -65,7 +65,7 @@ try:
         except Exception as e:
             return f"System Status: Operational - Vector Search: Error ({str(e)})"
 
-except ImportError as e:
+except ImportError:
     # Fallback if import fails
     def get_health_status() -> str:
         """Fallback health status implementation."""
@@ -340,7 +340,7 @@ class StandardizedCoordinationTools:
 
             # Get routing statistics
             stats = router.get_routing_statistics()
-            performance = router.get_agent_performance_summary()
+            router.get_agent_performance_summary()
 
             status_result = {
                 "agents": {

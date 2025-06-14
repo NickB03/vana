@@ -59,7 +59,7 @@ class BasicConversationTest(TestCase):
         self.conversation_history.append({"role": "user", "message": message})
 
         # Send message
-        response = self.execute_step(self.agent_client.send_message, "vana", message, self.session_id)
+        self.execute_step(self.agent_client.send_message, "vana", message, self.session_id)
 
         # Wait for agent response
         start_time = time.time()

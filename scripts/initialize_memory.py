@@ -138,7 +138,7 @@ def initialize_memory_system(args):
 
     mcp_client = MCPMemoryClient()
     memory_manager = MemoryManager(mcp_client)
-    memory_cache = MemoryCache()
+    MemoryCache()
 
     # Check MCP server connectivity
     if mcp_client.is_available:

@@ -80,7 +80,7 @@ class VANAOptimizer:
         strategy_config = self.strategy_orchestrator.select_strategy(task_description, context)
 
         # Step 2: Initialize strategy coordination
-        strategy_result = self.strategy_orchestrator.initialize_strategy(strategy_config)
+        self.strategy_orchestrator.initialize_strategy(strategy_config)
 
         # Step 3: Get optimized agents for the strategy
         required_agents = await self._get_strategy_agents(strategy_config)
@@ -242,7 +242,6 @@ class VANAOptimizer:
 
     async def _execute_parallel_divergent_strategy(self, agents: List[Any], task: str) -> Dict[str, Any]:
         """Execute parallel divergent strategy - multiple independent solutions"""
-        results = {}
 
         # Phase 1: Divergent (parallel execution)
         divergent_results = {}

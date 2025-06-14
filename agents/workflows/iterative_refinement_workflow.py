@@ -35,7 +35,7 @@ class QualityGateAgent(BaseAgent):
 
         # Get current solution and quality metrics from state
         current_solution = ctx.session.state.get("current_solution", "")
-        quality_score = ctx.session.state.get("quality_score", 0.0)
+        ctx.session.state.get("quality_score", 0.0)
         iteration_count = ctx.session.state.get("iteration_count", 0)
 
         # Evaluate quality criteria

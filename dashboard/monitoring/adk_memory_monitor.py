@@ -184,7 +184,7 @@ class ADKMemoryMonitor:
         import random
 
         # Generate realistic mock data
-        base_time = time.time()
+        time.time()
         variation = random.uniform(0.8, 1.2)
 
         return ADKMemoryMetrics(

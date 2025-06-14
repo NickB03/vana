@@ -78,7 +78,7 @@ async def validate_code_security(code: str, language: str) -> str:
 
         # Try to validate the code
         try:
-            is_safe = executor.validate_code(code)
+            executor.validate_code(code)
             return f"""✅ Security Validation Passed
 
 **Language**: {language}

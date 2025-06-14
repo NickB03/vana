@@ -617,7 +617,7 @@ class TaskRouter:
                     confidence_score=0.6,
                 )
 
-            except Exception as fallback_error:
+            except Exception:
                 continue  # Try next fallback
 
         return None  # All fallbacks failed

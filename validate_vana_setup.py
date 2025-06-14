@@ -116,8 +116,8 @@ class VanaSetupValidator:
             )
 
             # Test that Role enum works
-            role = Role.USER
-            acm = AccessControlManager()
+            Role.USER
+            AccessControlManager()
 
             return True
         except ImportError as e:
