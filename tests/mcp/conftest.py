@@ -81,7 +81,6 @@ def sample_server_info():
 
 
 # Pytest markers for different test categories
-pytest_plugins = []
 
 def pytest_configure(config):
     """Configure pytest markers."""

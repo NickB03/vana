@@ -33,6 +33,7 @@ except ImportError:
     def web_search(query: str, max_results: int = 5):
         return {"success": False, "error": "Web search not available during initialization"}
 
+
 class StandardizedSearchTools:
     """Standardized search tools with enhanced monitoring and error handling."""
 
@@ -204,15 +205,19 @@ class StandardizedSearchTools:
 standardized_search_tools = StandardizedSearchTools()
 
 # Wrapper functions for ADK compatibility
+
+
 def standardized_vector_search(query: str, max_results: int = 5) -> str:
     """🔍 Vector search with standardized interface - returns string for ADK compatibility."""
     result = standardized_search_tools.vector_search(query, max_results)
     return result.to_string()
 
+
 def standardized_web_search(query: str, max_results: int = 5) -> str:
     """🌐 Web search with standardized interface - returns string for ADK compatibility."""
     result = standardized_search_tools.web_search(query, max_results)
     return result.to_string()
+
 
 def standardized_search_knowledge(query: str, max_results: int = 5) -> str:
     """🧠 Knowledge search with standardized interface - returns string for ADK compatibility."""
@@ -220,6 +225,8 @@ def standardized_search_knowledge(query: str, max_results: int = 5) -> str:
     return result.to_string()
 
 # Performance monitoring functions
+
+
 def get_search_tools_performance() -> Dict[str, Any]:
     """Get performance metrics for search tools."""
     return {
@@ -228,6 +235,7 @@ def get_search_tools_performance() -> Dict[str, Any]:
         "search_knowledge": performance_monitor.get_metrics("search_knowledge")
     }
 
+
 def get_search_tools_analytics() -> Dict[str, Any]:
     """Get usage analytics for search tools."""
     return {
@@ -235,6 +243,7 @@ def get_search_tools_analytics() -> Dict[str, Any]:
         "web_search": tool_analytics.get_usage_analytics("web_search"),
         "search_knowledge": tool_analytics.get_usage_analytics("search_knowledge")
     }
+
 
 def get_unified_search_performance() -> Dict[str, Any]:
     """Get unified performance summary for all search tools."""

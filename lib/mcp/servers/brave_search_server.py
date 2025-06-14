@@ -130,7 +130,7 @@ class LocalResults:
 
 class BraveSearchServer:
     """Brave Search API integration for web search capabilities."""
-    
+
     def __init__(self, api_key: str, rate_limit: int = 100):
         """Initialize with Brave Search API key."""
         self.api_key = api_key
@@ -143,14 +143,14 @@ class BraveSearchServer:
             "X-Subscription-Token": api_key,
             "User-Agent": "VANA-MCP-Brave/1.0"
         })
-    
-    def web_search(self, query: str, count: int = 10, offset: int = 0, 
+
+    def web_search(self, query: str, count: int = 10, offset: int = 0,
                    country: str = "US", language: str = "en") -> SearchResults:
         """Perform web search with filtering options."""
         try:
             import time
             start_time = time.time()
-            
+
             params = {
                 "q": query,
                 "count": min(count, 20),  # Brave API max is 20
@@ -163,17 +163,17 @@ class BraveSearchServer:
                 "spellcheck": True,
                 "result_filter": "web"
             }
-            
+
             response = self.session.get(f"{self.base_url}/web/search", params=params, timeout=15)
             response.raise_for_status()
-            
+
             data = response.json()
             search_time = time.time() - start_time
-            
+
             # Parse web results
             web_results = data.get("web", {}).get("results", [])
             results = []
-            
+
             for result in web_results:
                 results.append(SearchResult(
                     title=result.get("title", ""),
@@ -185,13 +185,13 @@ class BraveSearchServer:
                     family_friendly=result.get("family_friendly", True),
                     type="web"
                 ))
-            
+
             # Get suggestions if available
             suggestions = []
             query_data = data.get("query", {})
             if "altered" in query_data:
                 suggestions.append(query_data["altered"])
-            
+
             return SearchResults(
                 query=query,
                 results=results,
@@ -199,21 +199,21 @@ class BraveSearchServer:
                 search_time=search_time,
                 suggestions=suggestions
             )
-            
+
         except requests.exceptions.RequestException as e:
             logger.error(f"Brave web search failed for '{query}': {e}")
             raise
         except Exception as e:
             logger.error(f"Error in web search: {e}")
             raise
-    
-    def news_search(self, query: str, count: int = 10, 
+
+    def news_search(self, query: str, count: int = 10,
                     freshness: str = "pd", country: str = "US") -> NewsResults:
         """Search news articles with date filtering."""
         try:
             import time
             start_time = time.time()
-            
+
             params = {
                 "q": query,
                 "count": min(count, 20),
@@ -221,17 +221,17 @@ class BraveSearchServer:
                 "freshness": freshness,  # pd=past day, pw=past week, pm=past month
                 "text_decorations": False
             }
-            
+
             response = self.session.get(f"{self.base_url}/news/search", params=params, timeout=15)
             response.raise_for_status()
-            
+
             data = response.json()
             search_time = time.time() - start_time
-            
+
             # Parse news results
             news_results = data.get("results", [])
             results = []
-            
+
             for result in news_results:
                 results.append(NewsResult(
                     title=result.get("title", ""),
@@ -243,28 +243,28 @@ class BraveSearchServer:
                     category=result.get("category"),
                     breaking=result.get("breaking", False)
                 ))
-            
+
             return NewsResults(
                 query=query,
                 results=results,
                 total_count=len(results),
                 search_time=search_time
             )
-            
+
         except requests.exceptions.RequestException as e:
             logger.error(f"Brave news search failed for '{query}': {e}")
             raise
         except Exception as e:
             logger.error(f"Error in news search: {e}")
             raise
-    
-    def image_search(self, query: str, count: int = 10, 
+
+    def image_search(self, query: str, count: int = 10,
                      size: str = "medium", type: str = "photo") -> ImageResults:
         """Search images with size and type filtering."""
         try:
             import time
             start_time = time.time()
-            
+
             params = {
                 "q": query,
                 "count": min(count, 20),
@@ -275,17 +275,17 @@ class BraveSearchServer:
                 "license": "all",
                 "safesearch": "moderate"
             }
-            
+
             response = self.session.get(f"{self.base_url}/images/search", params=params, timeout=15)
             response.raise_for_status()
-            
+
             data = response.json()
             search_time = time.time() - start_time
-            
+
             # Parse image results
             image_results = data.get("results", [])
             results = []
-            
+
             for result in image_results:
                 results.append(ImageResult(
                     title=result.get("title", ""),
@@ -297,28 +297,28 @@ class BraveSearchServer:
                     size=result.get("properties", {}).get("size", ""),
                     format=result.get("properties", {}).get("format", "")
                 ))
-            
+
             return ImageResults(
                 query=query,
                 results=results,
                 total_count=len(results),
                 search_time=search_time
             )
-            
+
         except requests.exceptions.RequestException as e:
             logger.error(f"Brave image search failed for '{query}': {e}")
             raise
         except Exception as e:
             logger.error(f"Error in image search: {e}")
             raise
-    
-    def video_search(self, query: str, count: int = 10, 
+
+    def video_search(self, query: str, count: int = 10,
                      duration: str = "medium") -> VideoResults:
         """Search videos with duration filtering."""
         try:
             import time
             start_time = time.time()
-            
+
             params = {
                 "q": query,
                 "count": min(count, 20),
@@ -326,17 +326,17 @@ class BraveSearchServer:
                 "resolution": "all",
                 "safesearch": "moderate"
             }
-            
+
             response = self.session.get(f"{self.base_url}/videos/search", params=params, timeout=15)
             response.raise_for_status()
-            
+
             data = response.json()
             search_time = time.time() - start_time
-            
+
             # Parse video results
             video_results = data.get("results", [])
             results = []
-            
+
             for result in video_results:
                 results.append(VideoResult(
                     title=result.get("title", ""),
@@ -347,28 +347,28 @@ class BraveSearchServer:
                     published=result.get("age"),
                     source=result.get("source", "")
                 ))
-            
+
             return VideoResults(
                 query=query,
                 results=results,
                 total_count=len(results),
                 search_time=search_time
             )
-            
+
         except requests.exceptions.RequestException as e:
             logger.error(f"Brave video search failed for '{query}': {e}")
             raise
         except Exception as e:
             logger.error(f"Error in video search: {e}")
             raise
-    
-    def local_search(self, query: str, location: str, 
+
+    def local_search(self, query: str, location: str,
                      radius: int = 5000) -> LocalResults:
         """Search local businesses and places."""
         try:
             import time
             start_time = time.time()
-            
+
             params = {
                 "q": query,
                 "location": location,
@@ -376,17 +376,17 @@ class BraveSearchServer:
                 "count": 20,
                 "safesearch": "moderate"
             }
-            
+
             response = self.session.get(f"{self.base_url}/local/search", params=params, timeout=15)
             response.raise_for_status()
-            
+
             data = response.json()
             search_time = time.time() - start_time
-            
+
             # Parse local results
             local_results = data.get("results", [])
             results = []
-            
+
             for result in local_results:
                 results.append(LocalResult(
                     name=result.get("title", ""),
@@ -398,7 +398,7 @@ class BraveSearchServer:
                     category=result.get("category", ""),
                     distance=result.get("distance")
                 ))
-            
+
             return LocalResults(
                 query=query,
                 location=location,
@@ -406,14 +406,14 @@ class BraveSearchServer:
                 total_count=len(results),
                 search_time=search_time
             )
-            
+
         except requests.exceptions.RequestException as e:
             logger.error(f"Brave local search failed for '{query}' in '{location}': {e}")
             raise
         except Exception as e:
             logger.error(f"Error in local search: {e}")
             raise
-    
+
     def get_suggestions(self, query: str, country: str = "US") -> List[str]:
         """Get search suggestions for query."""
         try:
@@ -421,12 +421,12 @@ class BraveSearchServer:
                 "q": query,
                 "country": country
             }
-            
+
             response = self.session.get(f"{self.base_url}/suggest", params=params, timeout=10)
             response.raise_for_status()
-            
+
             data = response.json()
-            
+
             # Parse suggestions
             suggestions = []
             for suggestion in data.get("results", []):
@@ -434,9 +434,9 @@ class BraveSearchServer:
                     suggestions.append(suggestion.get("query", ""))
                 else:
                     suggestions.append(str(suggestion))
-            
+
             return suggestions
-            
+
         except requests.exceptions.RequestException as e:
             logger.error(f"Brave suggestions failed for '{query}': {e}")
             return []

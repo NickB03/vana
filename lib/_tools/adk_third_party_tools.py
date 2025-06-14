@@ -54,6 +54,7 @@ logger = logging.getLogger(__name__)
 _registered_langchain_tools = []
 _registered_crewai_tools = []
 
+
 def execute_third_party_tool(tool_id: str, *args, **kwargs) -> str:
     """
     Execute a registered third-party tool using Google ADK patterns.
@@ -105,6 +106,7 @@ def execute_third_party_tool(tool_id: str, *args, **kwargs) -> str:
         logger.error(f"Error executing third-party tool {tool_id}: {e}")
         return f"❌ Error executing tool '{tool_id}': {str(e)}"
 
+
 def list_third_party_tools() -> str:
     """
     List all registered third-party tools using Google ADK patterns.
@@ -146,6 +148,7 @@ def list_third_party_tools() -> str:
     except Exception as e:
         logger.error(f"Error listing third-party tools: {e}")
         return f"❌ Error listing tools: {str(e)}"
+
 
 def register_langchain_tools() -> str:
     """
@@ -201,6 +204,7 @@ def register_langchain_tools() -> str:
     except Exception as e:
         logger.error(f"Error registering LangChain tools: {e}")
         return f"❌ Error registering LangChain tools: {str(e)}"
+
 
 def register_crewai_tools() -> str:
     """
@@ -271,6 +275,7 @@ def register_crewai_tools() -> str:
     except Exception as e:
         logger.error(f"Error registering CrewAI tools: {e}")
         return f"❌ Error registering CrewAI tools: {str(e)}"
+
 
 def get_third_party_tool_info(tool_id: str) -> str:
     """
@@ -349,6 +354,7 @@ def get_third_party_tool_info(tool_id: str) -> str:
     except Exception as e:
         logger.error(f"Error getting tool info for {tool_id}: {e}")
         return f"❌ Error getting tool info: {str(e)}"
+
 
 def get_all_third_party_tools():
     """

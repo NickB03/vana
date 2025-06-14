@@ -12,9 +12,10 @@ from typing import Dict, Any, Optional
 from .performance_monitor import PerformanceMonitor
 from .apm import APM
 
+
 class MonitoringIntegration:
     """Integration utilities for VANA monitoring."""
-    
+
     def __init__(self, config_path: str = None):
         self.config_path = config_path or "config/monitoring/monitoring.yaml"
         self.config = self._load_config()
@@ -23,7 +24,7 @@ class MonitoringIntegration:
         )
         self.apm = APM(self.monitor)
         self._setup_thresholds()
-    
+
     def _load_config(self) -> Dict[str, Any]:
         """Load monitoring configuration."""
         try:
@@ -32,7 +33,7 @@ class MonitoringIntegration:
                     return yaml.safe_load(f)
         except Exception as e:
             print(f"Warning: Could not load monitoring config: {e}")
-        
+
         # Default configuration
         return {
             "performance_monitoring": {"retention_minutes": 60},
@@ -42,7 +43,7 @@ class MonitoringIntegration:
                 "cpu_usage": {"warning": 70.0, "critical": 85.0}
             }
         }
-    
+
     def _setup_thresholds(self):
         """Setup performance thresholds from configuration."""
         thresholds = self.config.get("thresholds", {})
@@ -70,15 +71,15 @@ class MonitoringIntegration:
                         threshold_config["warning"],
                         threshold_config["critical"]
                     )
-    
+
     def get_monitor(self) -> PerformanceMonitor:
         """Get the performance monitor instance."""
         return self.monitor
-    
+
     def get_apm(self) -> APM:
         """Get the APM instance."""
         return self.apm
-    
+
     def record_agent_response(self, agent_name: str, duration: float, success: bool = True):
         """Record agent response time."""
         self.monitor.record_response_time(
@@ -87,7 +88,7 @@ class MonitoringIntegration:
             success=success,
             agent=agent_name
         )
-    
+
     def record_tool_execution(self, tool_name: str, duration: float, success: bool = True):
         """Record tool execution time."""
         self.monitor.record_response_time(
@@ -96,19 +97,19 @@ class MonitoringIntegration:
             success=success,
             tool=tool_name
         )
-    
+
     def record_system_metrics(self):
         """Record system-level metrics."""
         self.monitor.record_memory_usage("vana_system")
         self.monitor.record_cpu_usage("vana_system")
-    
+
     def get_health_status(self) -> Dict[str, Any]:
         """Get overall system health status."""
         recent_alerts = [
             alert for alert in self.monitor.alerts
             if alert["timestamp"] > (time.time() - 300)  # Last 5 minutes
         ]
-        
+
         return {
             "status": "critical" if any(a["level"] == "critical" for a in recent_alerts) else "healthy",
             "recent_alerts": len(recent_alerts),
@@ -118,6 +119,7 @@ class MonitoringIntegration:
 
 # Global monitoring instance
 _monitoring_integration = None
+
 
 def get_monitoring() -> MonitoringIntegration:
     """Get global monitoring integration instance."""

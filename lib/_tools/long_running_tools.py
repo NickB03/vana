@@ -58,6 +58,7 @@ except ImportError:
 # Configure logging
 logger = logging.getLogger(__name__)
 
+
 class LongRunningTaskStatus(Enum):
     """Status types for long-running tasks."""
     PENDING = "pending"
@@ -68,6 +69,7 @@ class LongRunningTaskStatus(Enum):
     COMPLETED = "completed"
     FAILED = "failed"
     CANCELLED = "cancelled"
+
 
 @dataclass
 class LongRunningTaskResult:
@@ -96,6 +98,7 @@ class LongRunningTaskResult:
             self.progress = progress
         if metadata is not None:
             self.metadata.update(metadata)
+
 
 class LongRunningTaskManager:
     """Manager for tracking long-running tasks."""
@@ -168,6 +171,7 @@ class LongRunningTaskManager:
 
 # Global task manager
 task_manager = LongRunningTaskManager()
+
 
 class LongRunningFunctionTool:
     """
@@ -301,6 +305,8 @@ class LongRunningFunctionTool:
         }
 
 # Factory function for creating long-running tools
+
+
 def create_long_running_tool(func: Callable, **kwargs) -> LongRunningFunctionTool:
     """
     Factory function to create a LongRunningFunctionTool.
@@ -315,6 +321,7 @@ def create_long_running_tool(func: Callable, **kwargs) -> LongRunningFunctionToo
     return LongRunningFunctionTool(func=func, **kwargs)
 
 # Example Long-Running Tool Implementations
+
 
 async def ask_for_approval(task_id: str, purpose: str, amount: float,
                           approver: str = "System Administrator") -> Dict[str, Any]:
@@ -380,6 +387,7 @@ async def ask_for_approval(task_id: str, purpose: str, amount: float,
     task_manager.update_task(task_id, status, result=result, progress=1.0)
     return result
 
+
 async def process_large_dataset(task_id: str, dataset_name: str,
                                operation: str = "analyze") -> Dict[str, Any]:
     """
@@ -441,6 +449,7 @@ async def process_large_dataset(task_id: str, dataset_name: str,
     }
 
     return final_result
+
 
 def generate_report(task_id: str, report_type: str,
                    data_sources: list = None) -> Dict[str, Any]:

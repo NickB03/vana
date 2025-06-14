@@ -3,6 +3,7 @@ from typing import Callable, Any
 
 logger = logging.getLogger(__name__)
 
+
 def safe_tool(func: Callable[..., Any]) -> Callable[..., Any]:
     """Execute a tool safely, logging exceptions and returning the error string."""
     def wrapper(*args, **kwargs):

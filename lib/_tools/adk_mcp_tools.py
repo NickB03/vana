@@ -26,6 +26,7 @@ logger = logging.getLogger(__name__)
 # TIER 1 PRIORITY: CONTEXT7 SEQUENTIAL THINKING MCP TOOL
 # ============================================================================
 
+
 def context7_sequential_thinking(prompt: str, minimum_tokens: int = 10000) -> Dict[str, Any]:
     """
     Advanced reasoning and structured problem-solving using sequential thinking patterns.
@@ -178,6 +179,7 @@ def context7_sequential_thinking(prompt: str, minimum_tokens: int = 10000) -> Di
 # TIER 1 PRIORITY: BRAVE SEARCH MCP TOOL (UPGRADED)
 # ============================================================================
 
+
 def brave_search_mcp(query: str, max_results: int = 5) -> Dict[str, Any]:
     """
     Enhanced web search using Brave Search API with MCP-style interface.
@@ -315,6 +317,7 @@ def brave_search_mcp(query: str, max_results: int = 5) -> Dict[str, Any]:
 # ============================================================================
 # TIER 1 PRIORITY: GITHUB MCP TOOL
 # ============================================================================
+
 
 def github_mcp_operations(operation: str, **kwargs) -> Dict[str, Any]:
     """
@@ -522,10 +525,11 @@ def github_mcp_operations(operation: str, **kwargs) -> Dict[str, Any]:
 # MCP SERVER MANAGEMENT UTILITIES
 # ============================================================================
 
+
 def list_available_mcp_servers() -> Dict[str, Any]:
     """
     List all available MCP servers configured for VANA.
-    
+
     Returns:
         Dict containing available MCP servers and their status
     """
@@ -559,17 +563,18 @@ def list_available_mcp_servers() -> Dict[str, Any]:
             }
         }
     }
-    
+
     return {
         "available_servers": servers,
         "total_servers": sum(len(tier.keys()) for tier in servers.values()),
         "ready_servers": sum(
-            1 for tier in servers.values() 
-            for server in tier.values() 
+            1 for tier in servers.values()
+            for server in tier.values()
             if server["status"] == "ready"
         ),
         "implementation_status": "Phase 6A in progress"
     }
+
 
 def get_mcp_integration_status() -> Dict[str, Any]:
     """

@@ -24,6 +24,7 @@ from lib._shared_libraries.tool_standards import (
 # Configure logging
 logger = logging.getLogger(__name__)
 
+
 class CrewAIToolAdapter(ThirdPartyToolAdapter):
     """
     Adapter for integrating CrewAI tools into VANA.
@@ -283,6 +284,8 @@ class CrewAIToolAdapter(ThirdPartyToolAdapter):
             return None
 
 # Example CrewAI tool discovery functions
+
+
 def discover_crewai_tools() -> List[str]:
     """
     Discover tools from crewai-tools package.
@@ -325,6 +328,7 @@ def discover_crewai_tools() -> List[str]:
         logger.error(f"Error discovering CrewAI tools: {e}")
 
     return registered_tools
+
 
 def create_example_crewai_tools() -> List[str]:
     """

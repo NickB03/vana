@@ -27,12 +27,14 @@ from lib._shared_libraries.tool_standards import (
 # Configure logging
 logger = logging.getLogger(__name__)
 
+
 class ThirdPartyToolType(Enum):
     """Types of third-party tool libraries supported."""
     LANGCHAIN = "langchain"
     CREWAI = "crewai"
     LLAMAINDEX = "llamaindex"
     GENERIC = "generic"
+
 
 @dataclass
 class ThirdPartyToolInfo:
@@ -44,6 +46,7 @@ class ThirdPartyToolInfo:
     adapter: 'ThirdPartyToolAdapter'
     parameters: Dict[str, Any]
     metadata: Dict[str, Any]
+
 
 class ThirdPartyToolAdapter(ABC):
     """
@@ -167,6 +170,7 @@ class ThirdPartyToolAdapter(ABC):
             Tool information or None if not found
         """
         return self.discovered_tools.get(tool_id)
+
 
 class GenericThirdPartyAdapter(ThirdPartyToolAdapter):
     """
@@ -360,6 +364,7 @@ class GenericThirdPartyAdapter(ThirdPartyToolAdapter):
         except Exception as e:
             logger.error(f"Error creating tool info for {name}: {e}")
             return None
+
 
 class ThirdPartyToolRegistry:
     """

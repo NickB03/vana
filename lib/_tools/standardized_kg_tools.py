@@ -35,6 +35,7 @@ except ImportError:
     def kg_extract_entities(text: str):
         return {"success": False, "error": "Knowledge graph not available during initialization"}
 
+
 class StandardizedKnowledgeGraphTools:
     """Standardized knowledge graph tools with enhanced monitoring and error handling."""
 
@@ -254,20 +255,25 @@ class StandardizedKnowledgeGraphTools:
 standardized_kg_tools = StandardizedKnowledgeGraphTools()
 
 # Wrapper functions for ADK compatibility
+
+
 def standardized_kg_query(entity_type: str, query_text: str) -> str:
     """🕸️ KG query with standardized interface - returns string for ADK compatibility."""
     result = standardized_kg_tools.kg_query(entity_type, query_text)
     return result.to_string()
+
 
 def standardized_kg_store(entity_name: str, entity_type: str, properties: str = "") -> str:
     """💾 KG store with standardized interface - returns string for ADK compatibility."""
     result = standardized_kg_tools.kg_store(entity_name, entity_type, properties)
     return result.to_string()
 
+
 def standardized_kg_relationship(entity1: str, relationship: str, entity2: str) -> str:
     """🔗 KG relationship with standardized interface - returns string for ADK compatibility."""
     result = standardized_kg_tools.kg_relationship(entity1, relationship, entity2)
     return result.to_string()
+
 
 def standardized_kg_extract_entities(text: str, store_entities: bool = True) -> str:
     """🎯 KG entity extraction with standardized interface - returns string for ADK compatibility."""
@@ -275,6 +281,8 @@ def standardized_kg_extract_entities(text: str, store_entities: bool = True) -> 
     return result.to_string()
 
 # Performance monitoring functions
+
+
 def get_kg_tools_performance() -> Dict[str, Any]:
     """Get performance metrics for knowledge graph tools."""
     return {
@@ -283,6 +291,7 @@ def get_kg_tools_performance() -> Dict[str, Any]:
         "kg_relationship": performance_monitor.get_metrics("kg_relationship"),
         "kg_extract_entities": performance_monitor.get_metrics("kg_extract_entities")
     }
+
 
 def get_kg_tools_analytics() -> Dict[str, Any]:
     """Get usage analytics for knowledge graph tools."""

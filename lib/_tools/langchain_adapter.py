@@ -24,6 +24,7 @@ from lib._shared_libraries.tool_standards import (
 # Configure logging
 logger = logging.getLogger(__name__)
 
+
 class LangChainToolAdapter(ThirdPartyToolAdapter):
     """
     Adapter for integrating LangChain tools into VANA.
@@ -313,6 +314,8 @@ class LangChainToolAdapter(ThirdPartyToolAdapter):
             return None
 
 # Example LangChain tool discovery functions
+
+
 def discover_langchain_community_tools() -> List[str]:
     """
     Discover tools from langchain-community.
@@ -356,6 +359,7 @@ def discover_langchain_community_tools() -> List[str]:
 
     return registered_tools
 
+
 def load_langchain_tools(tool_names: List[str]) -> List[str]:
     """
     Load specific LangChain tools by name.
@@ -392,6 +396,7 @@ def load_langchain_tools(tool_names: List[str]) -> List[str]:
         logger.error(f"Error loading LangChain tools {tool_names}: {e}")
 
     return registered_tools
+
 
 def create_example_langchain_tools() -> List[str]:
     """

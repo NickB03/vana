@@ -18,6 +18,7 @@ import json
 # Configure logging
 logger = logging.getLogger(__name__)
 
+
 class ToolErrorType(Enum):
     """Standardized tool error types for intelligent error handling."""
     VALIDATION_ERROR = "validation_error"
@@ -27,6 +28,7 @@ class ToolErrorType(Enum):
     TIMEOUT_ERROR = "timeout_error"
     SYSTEM_ERROR = "system_error"
     UNKNOWN_ERROR = "unknown_error"
+
 
 @dataclass
 class ToolMetrics:
@@ -57,6 +59,7 @@ class ToolMetrics:
             )
         else:
             self.average_execution_time = execution_time
+
 
 @dataclass
 class StandardToolResponse:
@@ -99,6 +102,7 @@ class StandardToolResponse:
                 return str(self.data)
         else:
             return f"❌ Error in {self.tool_name}: {self.error}"
+
 
 class InputValidator:
     """Standardized input validation for tool parameters."""
@@ -157,6 +161,7 @@ class InputValidator:
 
         return value
 
+
 class ErrorHandler:
     """Standardized error handling and classification."""
 
@@ -200,6 +205,7 @@ class ErrorHandler:
             tool_name=tool_name,
             metadata={"traceback": traceback.format_exc()}
         )
+
 
 class PerformanceMonitor:
     """Thread-safe performance monitoring and analytics for tools."""
@@ -261,6 +267,7 @@ class PerformanceMonitor:
 # Global performance monitor instance
 performance_monitor = PerformanceMonitor()
 
+
 def standardized_tool_wrapper(tool_name: str, validate_inputs: bool = True):
     """Decorator to standardize tool execution with monitoring and error handling."""
 
@@ -302,6 +309,7 @@ def standardized_tool_wrapper(tool_name: str, validate_inputs: bool = True):
 
         return wrapper
     return decorator
+
 
 class ToolDocumentationGenerator:
     """Auto-generate documentation for standardized tools."""
@@ -364,6 +372,7 @@ if result.success:
 else:
     print(f"Error: {{result.error}}")
 """
+
 
 class ToolAnalytics:
     """Analytics framework for tool usage patterns."""

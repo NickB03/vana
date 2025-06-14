@@ -8,6 +8,6 @@ from .sse_transport import MCPSSETransport
 
 __all__ = [
     "VANAMCPServer",
-    "vana_mcp_server", 
+    "vana_mcp_server",
     "MCPSSETransport"
 ]

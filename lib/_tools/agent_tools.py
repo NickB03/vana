@@ -15,6 +15,7 @@ from dataclasses import dataclass
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+
 @dataclass
 class AgentToolResult:
     """Result from agent tool execution."""
@@ -26,22 +27,23 @@ class AgentToolResult:
     error_message: Optional[str] = None
     metadata: Optional[Dict[str, Any]] = None
 
+
 class AgentTool:
     """
     Google ADK Agents-as-Tools Pattern Implementation.
-    
+
     Wraps specialist agents as tools that can be used by other agents,
     enabling proper agent composition and delegation patterns.
     """
-    
-    def __init__(self, 
+
+    def __init__(self,
                  agent: Any,
                  name: Optional[str] = None,
                  description: Optional[str] = None,
                  timeout: float = 60.0):
         """
         Initialize Agent Tool.
-        
+
         Args:
             agent: The specialist agent to wrap as a tool
             name: Optional name override for the tool
@@ -52,17 +54,17 @@ class AgentTool:
         self.name = name or getattr(agent, 'name', 'unknown_agent')
         self.description = description or getattr(agent, 'description', f'Agent tool for {self.name}')
         self.timeout = timeout
-        
+
         # Extract agent capabilities
         self.capabilities = self._extract_capabilities()
-        
+
         logger.info(f"AgentTool created for '{self.name}' with capabilities: {self.capabilities}")
-    
+
     def _extract_capabilities(self) -> list:
         """Extract capabilities from the agent's instruction or description."""
         agent_instruction = getattr(self.agent, 'instruction', '')
         agent_description = getattr(self.agent, 'description', '')
-        
+
         # Extract capabilities based on agent type
         if 'architecture' in self.name.lower():
             return ["system_design", "architecture_planning", "performance_optimization", "scalability_analysis"]
@@ -74,45 +76,45 @@ class AgentTool:
             return ["testing", "quality_assurance", "validation", "performance_testing"]
         else:
             return ["general_assistance", "task_processing"]
-    
+
     def __call__(self, context: str, **kwargs) -> str:
         """
         Execute the agent tool with given context.
-        
+
         Args:
             context: Context/prompt for the agent
             **kwargs: Additional parameters
-            
+
         Returns:
             String result from agent execution
         """
         result = self.execute(context, **kwargs)
         return result.result if result.success else f"Error: {result.error_message}"
-    
+
     def execute(self, context: str, **kwargs) -> AgentToolResult:
         """
         Execute the wrapped agent with context.
-        
+
         Args:
             context: Context/prompt for the agent
             **kwargs: Additional parameters
-            
+
         Returns:
             AgentToolResult with execution details
         """
         start_time = time.time()
-        
+
         try:
             logger.info(f"Executing agent tool '{self.name}' with context: {context[:100]}...")
-            
+
             # For now, simulate agent execution since we don't have full LLM integration in tests
             # In practice, this would call the actual agent's run/execute method
             result = self._simulate_agent_execution(context, **kwargs)
-            
+
             execution_time = time.time() - start_time
-            
+
             logger.info(f"Agent tool '{self.name}' completed in {execution_time:.2f}s")
-            
+
             return AgentToolResult(
                 success=True,
                 result=result,
@@ -125,12 +127,12 @@ class AgentTool:
                     "kwargs": kwargs
                 }
             )
-            
+
         except Exception as e:
             execution_time = time.time() - start_time
             error_msg = f"Agent tool '{self.name}' failed: {str(e)}"
             logger.error(error_msg)
-            
+
             return AgentToolResult(
                 success=False,
                 result="",
@@ -143,11 +145,11 @@ class AgentTool:
                     "kwargs": kwargs
                 }
             )
-    
+
     def _simulate_agent_execution(self, context: str, **kwargs) -> str:
         """
         Simulate agent execution for testing purposes.
-        
+
         In production, this would be replaced with actual agent execution.
         """
         # Simulate different responses based on agent type
@@ -175,7 +177,7 @@ Architecture Analysis for: {context}
 
 This analysis provides the foundation for UI design and DevOps implementation.
 """
-        
+
         elif 'ui' in self.name.lower():
             return f"""
 UI/UX Design for: {context}
@@ -206,7 +208,7 @@ UI/UX Design for: {context}
 
 This design aligns with the system architecture and supports deployment requirements.
 """
-        
+
         elif 'devops' in self.name.lower():
             return f"""
 DevOps Implementation Plan for: {context}
@@ -243,7 +245,7 @@ DevOps Implementation Plan for: {context}
 
 This plan supports the architecture design and enables reliable UI deployment.
 """
-        
+
         elif 'qa' in self.name.lower():
             return f"""
 Quality Assurance Strategy for: {context}
@@ -286,7 +288,7 @@ Quality Assurance Strategy for: {context}
 
 This QA strategy validates the architecture, UI, and deployment implementations.
 """
-        
+
         else:
             return f"""
 General Analysis for: {context}
@@ -311,7 +313,7 @@ General Analysis for: {context}
 
 This analysis provides general guidance for the requested task.
 """
-    
+
     def get_tool_info(self) -> Dict[str, Any]:
         """Get information about this agent tool."""
         return {
@@ -325,20 +327,24 @@ This analysis provides general guidance for the requested task.
         }
 
 # Factory function to create agent tools
+
+
 def create_agent_tool(agent: Any, **kwargs) -> AgentTool:
     """
     Factory function to create an AgentTool from a specialist agent.
-    
+
     Args:
         agent: The specialist agent to wrap
         **kwargs: Additional parameters for AgentTool
-        
+
     Returns:
         AgentTool instance
     """
     return AgentTool(agent=agent, **kwargs)
 
 # Convenience function to create all specialist agent tools
+
+
 def create_specialist_agent_tools(architecture_specialist, ui_specialist, devops_specialist, qa_specialist) -> Dict[str, AgentTool]:
     """
     Create agent tools for all specialist agents.
@@ -371,6 +377,7 @@ def create_specialist_agent_tools(architecture_specialist, ui_specialist, devops
 
 # Create ADK FunctionTool wrappers for the basic agent tools
 # These will be imported by the main agent module and then re-exported
+
 
 def _create_adk_agent_tools():
     """Create ADK FunctionTool instances for agent tools."""
@@ -415,6 +422,7 @@ def _create_adk_agent_tools():
 # Lazy initialization to avoid import-time issues
 _adk_tools = None
 
+
 def _get_adk_tools():
     """Get ADK tools with lazy initialization."""
     global _adk_tools
@@ -426,6 +434,8 @@ def _get_adk_tools():
 # Old functions removed - replaced with singleton pattern below
 
 # Singleton pattern to ensure tools are initialized only once and persist
+
+
 class _AgentToolsSingleton:
     """Singleton class to manage agent tools initialization."""
     _instance = None
@@ -456,9 +466,11 @@ class _AgentToolsSingleton:
 # Global singleton instance
 _agent_tools = _AgentToolsSingleton()
 
+
 def initialize_agent_tools():
     """Public function to initialize agent tools when needed."""
     _agent_tools.initialize_tools()
+
 
 def _get_tool_or_initialize(tool_name):
     """Get a tool, initializing if necessary."""
@@ -467,14 +479,19 @@ def _get_tool_or_initialize(tool_name):
     return getattr(_agent_tools, tool_name)
 
 # Create the actual tool instances using property-like functions that auto-initialize
+
+
 def get_adk_architecture_tool():
     return _get_tool_or_initialize('adk_architecture_tool')
+
 
 def get_adk_ui_tool():
     return _get_tool_or_initialize('adk_ui_tool')
 
+
 def get_adk_devops_tool():
     return _get_tool_or_initialize('adk_devops_tool')
+
 
 def get_adk_qa_tool():
     return _get_tool_or_initialize('adk_qa_tool')

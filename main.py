@@ -78,14 +78,14 @@ if os.path.exists(AGENT_DIR):
     sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
     try:
         import vana
-        logger.info(f"✅ Root level vana module imported successfully")
+        logger.info("✅ Root level vana module imported successfully")
         logger.debug(f"Root level vana.agent: {vana.agent}")
     except Exception as e:
         logger.error(f"❌ Failed to import root level vana module: {e}")
 
     try:
         from agents.vana import agent
-        logger.info(f"✅ agents.vana.agent imported successfully")
+        logger.info("✅ agents.vana.agent imported successfully")
         logger.debug(f"Agent object: {agent}")
     except Exception as e:
         logger.error(f"❌ Failed to import agents.vana.agent: {e}")
@@ -105,6 +105,8 @@ ALLOWED_ORIGINS = ["http://localhost", "http://localhost:8080", "*"]
 SERVE_WEB_INTERFACE = True
 
 # Security guardrail callbacks
+
+
 def before_tool_callback(tool_name: str, tool_args: dict, session):
     """Validate tool arguments before execution."""
     path_arg = tool_args.get("file_path") or tool_args.get("directory_path")
@@ -139,14 +141,12 @@ print(f"STARTUP PROFILING SUMMARY: Total time: {total_startup_time:.2f}s, Total 
 mcp_transport = MCPSSETransport(None)  # Server will be initialized later
 
 
-
-
-
 # Add MCP endpoints
 @app.get("/mcp/sse")
 async def mcp_sse_endpoint(request: Request):
     """MCP Server-Sent Events endpoint"""
     return await mcp_transport.handle_sse_connection(request)
+
 
 @app.post("/mcp/messages")
 async def mcp_messages_endpoint(request: Request):
@@ -154,10 +154,13 @@ async def mcp_messages_endpoint(request: Request):
     return await mcp_transport.handle_message_post(request)
 
 # Add custom routes if needed
+
+
 @app.get("/health")
 async def health_check():
     """Health check endpoint."""
     return {"status": "healthy", "agent": "vana", "mcp_enabled": True}
+
 
 @app.get("/info")
 async def agent_info():
@@ -185,7 +188,6 @@ async def agent_info():
         },
         "environment": environment_type
     }
-
 
 
 if __name__ == "__main__":

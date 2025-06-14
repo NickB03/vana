@@ -49,6 +49,7 @@ except ImportError as e:
 # Configure logging
 logger = logging.getLogger(__name__)
 
+
 class ADKMemoryService:
     """
     ADK Memory Service wrapper providing integration with Google ADK's native memory systems.
@@ -305,6 +306,7 @@ class ADKMemoryService:
 # Global instance for easy access
 _adk_memory_service = None
 
+
 def get_adk_memory_service() -> ADKMemoryService:
     """
     Get the global ADK memory service instance.
@@ -323,6 +325,7 @@ def get_adk_memory_service() -> ADKMemoryService:
         logger.info(f"Initializing ADK memory service: use_vertex_ai={use_vertex_ai}")
         _adk_memory_service = ADKMemoryService(use_vertex_ai=use_vertex_ai)
     return _adk_memory_service
+
 
 def reset_adk_memory_service():
     """Reset the global ADK memory service instance (useful for testing)."""

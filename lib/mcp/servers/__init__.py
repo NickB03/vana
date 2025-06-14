@@ -10,24 +10,24 @@ from .fetch_server import FetchServer, HttpResponse, ScrapedContent, DownloadRes
 __all__ = [
     # Server classes
     "GitHubServer",
-    "BraveSearchServer", 
+    "BraveSearchServer",
     "FetchServer",
-    
+
     # GitHub data classes
     "Repository",
     "Issue",
     "Comment",
-    "PullRequest", 
+    "PullRequest",
     "CodeResult",
     "FileContent",
-    
+
     # Brave Search data classes
     "SearchResults",
     "NewsResults",
     "ImageResults",
     "VideoResults",
     "LocalResults",
-    
+
     # Fetch data classes
     "HttpResponse",
     "ScrapedContent",

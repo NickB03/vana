@@ -36,6 +36,7 @@ except ImportError:
         def file_exists(self, file_path: str):
             return {"success": False, "error": "FileSystemTool not available during initialization"}
 
+
 class StandardizedFileSystemTools:
     """Standardized file system tools with enhanced monitoring and error handling."""
 
@@ -222,20 +223,25 @@ class StandardizedFileSystemTools:
 standardized_fs_tools = StandardizedFileSystemTools()
 
 # Wrapper functions for ADK compatibility
+
+
 def standardized_read_file(file_path: str) -> str:
     """📖 Read file with standardized interface - returns string for ADK compatibility."""
     result = standardized_fs_tools.read_file(file_path)
     return result.to_string()
+
 
 def standardized_write_file(file_path: str, content: str, append: bool = False) -> str:
     """✍️ Write file with standardized interface - returns string for ADK compatibility."""
     result = standardized_fs_tools.write_file(file_path, content, append)
     return result.to_string()
 
+
 def standardized_list_directory(directory_path: str) -> str:
     """📁 List directory with standardized interface - returns string for ADK compatibility."""
     result = standardized_fs_tools.list_directory(directory_path)
     return result.to_string()
+
 
 def standardized_file_exists(file_path: str) -> str:
     """🔍 Check file existence with standardized interface - returns string for ADK compatibility."""
@@ -243,6 +249,8 @@ def standardized_file_exists(file_path: str) -> str:
     return result.to_string()
 
 # Performance monitoring functions
+
+
 def get_file_tools_performance() -> Dict[str, Any]:
     """Get performance metrics for file system tools."""
     return {
@@ -251,6 +259,7 @@ def get_file_tools_performance() -> Dict[str, Any]:
         "list_directory": performance_monitor.get_metrics("list_directory"),
         "file_exists": performance_monitor.get_metrics("file_exists")
     }
+
 
 def get_file_tools_analytics() -> Dict[str, Any]:
     """Get usage analytics for file system tools."""

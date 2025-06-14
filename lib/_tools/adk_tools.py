@@ -17,6 +17,8 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # File System Tools - Self-contained production implementations
+
+
 def read_file(file_path: str) -> str:
     """📖 Read the contents of a file with enhanced error handling and security checks."""
     try:
@@ -28,6 +30,7 @@ def read_file(file_path: str) -> str:
         error_msg = f"Error reading file {file_path}: {str(e)}"
         logger.error(error_msg)
         return error_msg
+
 
 def write_file(file_path: str, content: str) -> str:
     """✍️ Write content to a file with enhanced validation and error handling."""
@@ -78,6 +81,7 @@ def write_file(file_path: str, content: str) -> str:
         logger.error(error_msg)
         return error_msg
 
+
 def list_directory(directory_path: str) -> str:
     """📁 List contents of a directory with enhanced formatting and metadata."""
     try:
@@ -93,6 +97,7 @@ def list_directory(directory_path: str) -> str:
         error_msg = f"Error listing directory {directory_path}: {str(e)}"
         logger.error(error_msg)
         return error_msg
+
 
 def file_exists(file_path: str) -> str:
     """🔍 Check if a file or directory exists with detailed status information."""
@@ -121,6 +126,8 @@ adk_file_exists = FunctionTool(func=file_exists)
 adk_file_exists.name = "file_exists"
 
 # Search Tools - Real production implementations with ADK integration
+
+
 def vector_search(query: str, max_results: int = 5) -> str:
     """🔍 Search the vector database for relevant information using Vertex AI Vector Search."""
     try:
@@ -171,6 +178,7 @@ def vector_search(query: str, max_results: int = 5) -> str:
         }
         return json.dumps(result, indent=2)
 
+
 def web_search(query: str, max_results: int = 5) -> str:
     """🌐 Search the web for current information with enhanced formatting."""
     try:
@@ -205,6 +213,7 @@ def web_search(query: str, max_results: int = 5) -> str:
         error_msg = f"Web search error: {str(e)}"
         logger.error(error_msg)
         return json.dumps({"error": error_msg}, indent=2)
+
 
 def search_knowledge(query: str) -> str:
     """🧠 Search the VANA knowledge base with file-based fallback."""
@@ -354,6 +363,7 @@ def search_knowledge(query: str) -> str:
         logger.error(f"Knowledge search failed completely: {e}")
         return _create_fallback_result(query, str(e))
 
+
 def _create_fallback_result(query: str, error_msg: str) -> str:
     """Create a fallback result when knowledge search fails."""
     result = {
@@ -383,6 +393,8 @@ adk_search_knowledge.name = "search_knowledge"
 # Knowledge Graph functionality removed - using ADK native memory systems only
 
 # System Tools - Self-contained production implementations
+
+
 def echo(message: str) -> str:
     """📢 Echo a message back with enhanced formatting for testing."""
     try:
@@ -398,6 +410,7 @@ def echo(message: str) -> str:
         error_msg = f"Echo error: {str(e)}"
         logger.error(error_msg)
         return error_msg
+
 
 def get_health_status() -> str:
     """💚 Get comprehensive system health status with detailed metrics."""
@@ -447,6 +460,8 @@ def get_health_status() -> str:
         return error_msg
 
 # Enhanced Agent Coordination Tools - Self-contained production implementations
+
+
 def coordinate_task(task_description: str, assigned_agent: str = "") -> str:
     """🎯 Coordinate task assignment with real agent discovery and routing."""
     try:
@@ -473,6 +488,7 @@ def coordinate_task(task_description: str, assigned_agent: str = "") -> str:
         error_msg = f"Task coordination error: {str(e)}"
         logger.error(error_msg)
         return error_msg
+
 
 def delegate_to_agent(agent_name: str, task: str, context: str = "") -> str:
     """🤝 Delegate task with real agent communication."""
@@ -502,6 +518,7 @@ def delegate_to_agent(agent_name: str, task: str, context: str = "") -> str:
         logger.error(error_msg)
         return error_msg
 
+
 def get_agent_status() -> str:
     """📊 Get real status of all agents with actual discovery."""
     try:
@@ -528,6 +545,7 @@ def get_agent_status() -> str:
         error_msg = f"Agent status error: {str(e)}"
         logger.error(error_msg)
         return error_msg
+
 
 def transfer_to_agent(agent_name: str, context: str = "") -> str:
     """🔄 Transfer conversation to specified agent (Google ADK Pattern)."""
@@ -562,6 +580,8 @@ adk_transfer_to_agent = FunctionTool(func=transfer_to_agent)
 adk_transfer_to_agent.name = "transfer_to_agent"
 
 # Intelligent Task Analysis Tools - Production implementations
+
+
 def analyze_task(task: str, context: str = "") -> str:
     """🧠 Analyze task using intelligent NLP-based task analyzer for optimal routing."""
     try:
@@ -593,6 +613,7 @@ def analyze_task(task: str, context: str = "") -> str:
         error_msg = f"Task analysis error: {str(e)}"
         logger.error(error_msg)
         return json.dumps({"error": error_msg}, indent=2)
+
 
 def match_capabilities(task: str, context: str = "", required_capabilities: str = "") -> str:
     """🎯 Match task requirements to available agent capabilities using intelligent capability matcher."""
@@ -644,6 +665,7 @@ def match_capabilities(task: str, context: str = "", required_capabilities: str 
         error_msg = f"Capability matching error: {str(e)}"
         logger.error(error_msg)
         return json.dumps({"error": error_msg}, indent=2)
+
 
 def classify_task(task: str, context: str = "") -> str:
     """🏷️ Classify task and recommend appropriate agents using intelligent task classifier."""
@@ -699,6 +721,8 @@ adk_classify_task = FunctionTool(func=classify_task)
 adk_classify_task.name = "classify_task"
 
 # Multi-Agent Workflow Management Tools - Production implementations
+
+
 def create_workflow(name: str, description: str, template_name: str = "",
                    strategy: str = "adaptive", priority: str = "medium") -> str:
     """🔄 Create a new multi-agent workflow for complex task orchestration."""
@@ -763,6 +787,7 @@ def create_workflow(name: str, description: str, template_name: str = "",
         logger.error(error_msg)
         return json.dumps({"error": error_msg}, indent=2)
 
+
 def start_workflow(workflow_id: str) -> str:
     """▶️ Start execution of a multi-agent workflow."""
     try:
@@ -801,6 +826,7 @@ def start_workflow(workflow_id: str) -> str:
         logger.error(error_msg)
         return json.dumps({"error": error_msg}, indent=2)
 
+
 def get_workflow_status(workflow_id: str) -> str:
     """📊 Get status and progress of a workflow."""
     try:
@@ -837,6 +863,7 @@ def get_workflow_status(workflow_id: str) -> str:
         error_msg = f"Workflow status error: {str(e)}"
         logger.error(error_msg)
         return json.dumps({"error": error_msg}, indent=2)
+
 
 def list_workflows(state_filter: str = "") -> str:
     """📋 List all workflows with optional state filtering."""
@@ -900,6 +927,7 @@ def list_workflows(state_filter: str = "") -> str:
         logger.error(error_msg)
         return json.dumps({"error": error_msg}, indent=2)
 
+
 def pause_workflow(workflow_id: str) -> str:
     """⏸️ Pause a running workflow."""
     try:
@@ -923,6 +951,7 @@ def pause_workflow(workflow_id: str) -> str:
         error_msg = f"Workflow pause error: {str(e)}"
         logger.error(error_msg)
         return json.dumps({"error": error_msg}, indent=2)
+
 
 def resume_workflow(workflow_id: str) -> str:
     """▶️ Resume a paused workflow."""
@@ -948,6 +977,7 @@ def resume_workflow(workflow_id: str) -> str:
         logger.error(error_msg)
         return json.dumps({"error": error_msg}, indent=2)
 
+
 def cancel_workflow(workflow_id: str) -> str:
     """❌ Cancel a workflow."""
     try:
@@ -971,6 +1001,7 @@ def cancel_workflow(workflow_id: str) -> str:
         error_msg = f"Workflow cancel error: {str(e)}"
         logger.error(error_msg)
         return json.dumps({"error": error_msg}, indent=2)
+
 
 def get_workflow_templates() -> str:
     """📋 Get available workflow templates."""

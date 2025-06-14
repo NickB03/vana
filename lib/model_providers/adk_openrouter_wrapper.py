@@ -22,6 +22,7 @@ from .openrouter_provider import is_openrouter_model
 
 logger = logging.getLogger(__name__)
 
+
 def create_llm_agent(*args, **kwargs) -> LlmAgent:
     """
     Factory function to create an LlmAgent with proper OpenRouter support via LiteLLM.
@@ -81,15 +82,16 @@ def create_llm_agent(*args, **kwargs) -> LlmAgent:
             logger.info(f"Creating standard ADK agent for model: {model}")
         return LlmAgent(*args, **kwargs)
 
+
 def get_effective_model() -> str:
     """
     Get the effective model being used, accounting for OpenRouter configuration.
-    
+
     Returns:
         The actual model name being used
     """
     model = os.getenv('VANA_MODEL', 'gemini-2.0-flash')
-    
+
     if is_openrouter_model(model):
         # Return the actual OpenRouter model name
         return model.replace('openrouter/', '')

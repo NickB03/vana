@@ -65,6 +65,7 @@ except ImportError as e:
         """Fallback health status implementation."""
         return "System Status: Operational - All agents ready"
 
+
 class StandardizedSystemTools:
     """Standardized system tools with enhanced monitoring and error handling."""
 
@@ -149,6 +150,7 @@ class StandardizedSystemTools:
         # Record analytics
         tool_analytics.record_usage("get_health_status", parameters, response)
         return response
+
 
 class StandardizedCoordinationTools:
     """Standardized coordination tools with enhanced PLAN/ACT integration."""
@@ -487,30 +489,37 @@ standardized_system_tools = StandardizedSystemTools()
 standardized_coordination_tools = StandardizedCoordinationTools()
 
 # Wrapper functions for ADK compatibility
+
+
 def standardized_echo(message: str) -> str:
     """📢 Echo with standardized interface - returns string for ADK compatibility."""
     result = standardized_system_tools.echo(message)
     return result.to_string()
+
 
 def standardized_get_health_status() -> str:
     """💚 Health status with standardized interface - returns string for ADK compatibility."""
     result = standardized_system_tools.get_health_status()
     return result.to_string()
 
+
 def standardized_coordinate_task(task_description: str, assigned_agent: str = "") -> str:
     """🎯 Task coordination with standardized interface - returns string for ADK compatibility."""
     result = standardized_coordination_tools.coordinate_task(task_description, assigned_agent)
     return result.to_string()
+
 
 def standardized_delegate_to_agent(agent_name: str, task: str, context: str = "") -> str:
     """🤝 Agent delegation with standardized interface - returns string for ADK compatibility."""
     result = standardized_coordination_tools.delegate_to_agent(agent_name, task, context)
     return result.to_string()
 
+
 def standardized_get_agent_status() -> str:
     """📊 Agent status with standardized interface - returns string for ADK compatibility."""
     result = standardized_coordination_tools.get_agent_status()
     return result.to_string()
+
 
 def standardized_transfer_to_agent(agent_name: str, context: str = "") -> str:
     """🔄 Agent transfer with standardized interface - returns string for ADK compatibility."""
@@ -518,6 +527,8 @@ def standardized_transfer_to_agent(agent_name: str, context: str = "") -> str:
     return result.to_string()
 
 # Performance monitoring functions
+
+
 def get_system_tools_performance() -> Dict[str, Any]:
     """Get performance metrics for system and coordination tools."""
     return {

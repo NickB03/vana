@@ -25,24 +25,25 @@ from lib._tools.long_running_tools import task_manager, LongRunningTaskStatus
 
 logger = logging.getLogger(__name__)
 
+
 class OrchestrationResult:
     """
     Result object for orchestrated specialist tools
     Handles task management internally without exposing to users
     """
-    
-    def __init__(self, success: bool, result_data: Dict[str, Any], 
+
+    def __init__(self, success: bool, result_data: Dict[str, Any],
                  user_message: str, internal_task_id: Optional[str] = None):
         self.success = success
         self.result_data = result_data
         self.user_message = user_message
         self.internal_task_id = internal_task_id
         self.timestamp = time.strftime("%Y-%m-%d %H:%M:%S")
-    
+
     def to_user_response(self) -> str:
         """Return user-facing response with NO task ID exposure"""
         return self.user_message
-    
+
     def get_internal_data(self) -> Dict[str, Any]:
         """Get internal data for orchestrator use"""
         return {
@@ -54,6 +55,7 @@ class OrchestrationResult:
 
 # Travel Specialist Tools - FIXED ORCHESTRATION PATTERN
 
+
 def itinerary_planning_tool(context: str) -> str:
     """
     🗓️ Itinerary planning specialist for travel coordination.
@@ -62,33 +64,33 @@ def itinerary_planning_tool(context: str) -> str:
     try:
         # Create internal task (not exposed to user)
         internal_task_id = task_manager.create_task()
-        
+
         # Simulate planning work
         planning_result = {
             "destination_analysis": "Analyzed travel requirements and preferences",
             "itinerary_outline": "Created preliminary itinerary structure",
             "recommendations": [
                 "Day 1: Arrival and city orientation",
-                "Day 2-3: Major attractions and cultural sites", 
+                "Day 2-3: Major attractions and cultural sites",
                 "Day 4: Local experiences and cuisine",
                 "Day 5: Departure preparations"
             ],
             "estimated_budget": "Budget analysis completed",
             "logistics": "Transportation and accommodation coordinated"
         }
-        
+
         # Update internal task
         task_manager.update_task(
             internal_task_id, LongRunningTaskStatus.COMPLETED,
             result=planning_result, progress=1.0,
             metadata={"planning_type": "itinerary_planning", "context": context}
         )
-        
+
         # Return user-friendly response WITHOUT task ID
-        user_response = f"""🗓️ I've created a comprehensive itinerary plan for your trip.
+        user_response = """🗓️ I've created a comprehensive itinerary plan for your trip.
 
 **Itinerary Overview:**
-• Day 1: Arrival and city orientation  
+• Day 1: Arrival and city orientation
 • Day 2-3: Major attractions and cultural sites
 • Day 4: Local experiences and cuisine
 • Day 5: Departure preparations
@@ -101,12 +103,13 @@ def itinerary_planning_tool(context: str) -> str:
 ✅ Local experiences curated
 
 Your itinerary is ready! I can provide more details about any specific day or aspect of your trip."""
-        
+
         return user_response
-        
+
     except Exception as e:
         logger.error(f"Error in itinerary planning: {e}")
-        return f"I encountered an issue while planning your itinerary. Let me try a different approach to help you plan your trip."
+        return "I encountered an issue while planning your itinerary. Let me try a different approach to help you plan your trip."
+
 
 def hotel_search_tool(context: str) -> str:
     """
@@ -116,53 +119,54 @@ def hotel_search_tool(context: str) -> str:
     try:
         # Create internal task (not exposed to user)
         internal_task_id = task_manager.create_task()
-        
+
         # Simulate hotel search
         search_result = {
             "hotels_found": 15,
             "price_range": "$80-$350 per night",
             "top_recommendations": [
                 "Grand Plaza Hotel - $180/night - 4.5★",
-                "Boutique Central - $120/night - 4.3★", 
+                "Boutique Central - $120/night - 4.3★",
                 "Luxury Suites - $280/night - 4.8★"
             ],
             "amenities_analysis": "Pool, WiFi, Breakfast options analyzed",
             "location_scores": "Proximity to attractions evaluated"
         }
-        
+
         # Update internal task
         task_manager.update_task(
             internal_task_id, LongRunningTaskStatus.COMPLETED,
             result=search_result, progress=1.0,
             metadata={"search_type": "hotel_search", "context": context}
         )
-        
+
         # Return user-friendly response WITHOUT task ID
-        user_response = f"""🏨 I found excellent hotel options for your stay!
+        user_response = """🏨 I found excellent hotel options for your stay!
 
 **Top Recommendations:**
 🌟 **Grand Plaza Hotel** - $180/night - 4.5★
    • Central location, pool, complimentary breakfast
-   
-🌟 **Boutique Central** - $120/night - 4.3★  
+
+🌟 **Boutique Central** - $120/night - 4.3★
    • Stylish rooms, great value, walking distance to attractions
-   
+
 🌟 **Luxury Suites** - $280/night - 4.8★
    • Premium amenities, spa, concierge service
 
 **Search Results:**
 ✅ 15 hotels analyzed across different price ranges
-✅ Amenities and location scores evaluated  
+✅ Amenities and location scores evaluated
 ✅ Guest reviews and ratings considered
 ✅ Availability confirmed for your dates
 
 Would you like more details about any of these hotels or see additional options?"""
-        
+
         return user_response
-        
+
     except Exception as e:
         logger.error(f"Error in hotel search: {e}")
-        return f"I had trouble accessing hotel databases. Let me search for accommodations using alternative methods."
+        return "I had trouble accessing hotel databases. Let me search for accommodations using alternative methods."
+
 
 def flight_search_tool(context: str) -> str:
     """
@@ -172,7 +176,7 @@ def flight_search_tool(context: str) -> str:
     try:
         # Create internal task (not exposed to user)
         internal_task_id = task_manager.create_task()
-        
+
         # Simulate flight search
         search_result = {
             "flights_found": 23,
@@ -185,24 +189,24 @@ def flight_search_tool(context: str) -> str:
             "airlines": ["Delta", "United", "American", "Lufthansa"],
             "departure_times": "Morning, afternoon, and evening options"
         }
-        
+
         # Update internal task
         task_manager.update_task(
             internal_task_id, LongRunningTaskStatus.COMPLETED,
             result=search_result, progress=1.0,
             metadata={"search_type": "flight_search", "context": context}
         )
-        
+
         # Return user-friendly response WITHOUT task ID
-        user_response = f"""✈️ I found great flight options for your journey!
+        user_response = """✈️ I found great flight options for your journey!
 
 **Best Flight Options:**
 🛫 **Direct Flight** - $650 - 8h 30m
    • No layovers, fastest option, good value
-   
-🛫 **One Stop** - $420 - 12h 15m  
+
+🛫 **One Stop** - $420 - 12h 15m
    • Budget-friendly, short layover, reliable airlines
-   
+
 🛫 **Premium Direct** - $980 - 8h 45m
    • Business class comfort, priority boarding, extra legroom
 
@@ -213,14 +217,15 @@ def flight_search_tool(context: str) -> str:
 ✅ Price comparison across different booking classes
 
 I can help you book any of these flights or find alternatives with different dates or times."""
-        
+
         return user_response
-        
+
     except Exception as e:
         logger.error(f"Error in flight search: {e}")
-        return f"I encountered an issue searching flights. Let me try alternative flight search methods to find you the best options."
+        return "I encountered an issue searching flights. Let me try alternative flight search methods to find you the best options."
 
 # Development Specialist Tools - FIXED ORCHESTRATION PATTERN
+
 
 def code_generation_tool(context: str) -> str:
     """
@@ -230,7 +235,7 @@ def code_generation_tool(context: str) -> str:
     try:
         # Create internal task (not exposed to user)
         internal_task_id = task_manager.create_task()
-        
+
         # Simulate code generation
         generation_result = {
             "code_analysis": "Requirements analyzed and architecture planned",
@@ -239,20 +244,20 @@ def code_generation_tool(context: str) -> str:
             "files_generated": 8,
             "documentation": "Comprehensive documentation and examples included"
         }
-        
+
         # Update internal task
         task_manager.update_task(
             internal_task_id, LongRunningTaskStatus.COMPLETED,
             result=generation_result, progress=1.0,
             metadata={"generation_type": "code_generation", "context": context}
         )
-        
+
         # Return user-friendly response WITHOUT task ID
-        user_response = f"""💻 I've generated the code solution for your project!
+        user_response = """💻 I've generated the code solution for your project!
 
 **Code Generation Complete:**
 ✅ **Architecture Design** - Modular structure with clean separation
-✅ **Core Implementation** - 8 files generated with full functionality  
+✅ **Core Implementation** - 8 files generated with full functionality
 ✅ **Database Layer** - SQLAlchemy models and migrations
 ✅ **API Endpoints** - FastAPI routes with proper validation
 ✅ **Testing Suite** - Comprehensive test coverage with Pytest
@@ -265,12 +270,13 @@ def code_generation_tool(context: str) -> str:
 • Pytest for comprehensive testing
 
 The code is production-ready with proper error handling, logging, and security considerations. Would you like me to explain any specific part or help with deployment?"""
-        
+
         return user_response
-        
+
     except Exception as e:
         logger.error(f"Error in code generation: {e}")
-        return f"I encountered an issue during code generation. Let me try a different approach to create your solution."
+        return "I encountered an issue during code generation. Let me try a different approach to create your solution."
+
 
 def testing_tool(context: str) -> str:
     """
@@ -280,7 +286,7 @@ def testing_tool(context: str) -> str:
     try:
         # Create internal task (not exposed to user)
         internal_task_id = task_manager.create_task()
-        
+
         # Simulate testing work
         testing_result = {
             "test_strategy": "Comprehensive testing strategy developed",
@@ -289,16 +295,16 @@ def testing_tool(context: str) -> str:
             "test_cases": 127,
             "automation": "Full CI/CD pipeline integration"
         }
-        
+
         # Update internal task
         task_manager.update_task(
             internal_task_id, LongRunningTaskStatus.COMPLETED,
             result=testing_result, progress=1.0,
             metadata={"testing_type": "quality_assurance", "context": context}
         )
-        
+
         # Return user-friendly response WITHOUT task ID
-        user_response = f"""🧪 I've created a comprehensive testing strategy for your project!
+        user_response = """🧪 I've created a comprehensive testing strategy for your project!
 
 **Testing Strategy Complete:**
 ✅ **Test Plan** - Multi-layered testing approach designed
@@ -309,7 +315,7 @@ def testing_tool(context: str) -> str:
 
 **Testing Layers:**
 • **Unit Tests** - Individual component validation
-• **Integration Tests** - System interaction verification  
+• **Integration Tests** - System interaction verification
 • **End-to-End Tests** - Complete user workflow validation
 • **Performance Tests** - Load, stress, and scalability testing
 
@@ -320,14 +326,15 @@ def testing_tool(context: str) -> str:
 • Cross-browser and device compatibility verified
 
 Your testing framework is ready to ensure high-quality, reliable software delivery!"""
-        
+
         return user_response
-        
+
     except Exception as e:
         logger.error(f"Error in testing: {e}")
-        return f"I had an issue setting up the testing framework. Let me create an alternative testing approach for your project."
+        return "I had an issue setting up the testing framework. Let me create an alternative testing approach for your project."
 
 # Research Specialist Tools - FIXED ORCHESTRATION PATTERN
+
 
 def competitive_intelligence_tool(context: str) -> str:
     """
@@ -337,7 +344,7 @@ def competitive_intelligence_tool(context: str) -> str:
     try:
         # Create internal task (not exposed to user)
         internal_task_id = task_manager.create_task()
-        
+
         # Simulate competitive analysis
         analysis_result = {
             "competitors_analyzed": 12,
@@ -346,16 +353,16 @@ def competitive_intelligence_tool(context: str) -> str:
             "threats": ["New market entrants", "Price competition"],
             "recommendations": "Strategic positioning recommendations developed"
         }
-        
+
         # Update internal task
         task_manager.update_task(
             internal_task_id, LongRunningTaskStatus.COMPLETED,
             result=analysis_result, progress=1.0,
             metadata={"analysis_type": "competitive_intelligence", "context": context}
         )
-        
+
         # Return user-friendly response WITHOUT task ID
-        user_response = f"""🔍 I've completed a comprehensive competitive intelligence analysis!
+        user_response = """🔍 I've completed a comprehensive competitive intelligence analysis!
 
 **Market Analysis Complete:**
 ✅ **Competitor Landscape** - 12 key competitors analyzed in detail
@@ -381,9 +388,9 @@ def competitive_intelligence_tool(context: str) -> str:
 • Strengthen customer retention programs
 
 The analysis provides actionable insights for strategic decision-making. Would you like me to dive deeper into any specific area?"""
-        
+
         return user_response
-        
+
     except Exception as e:
         logger.error(f"Error in competitive intelligence: {e}")
-        return f"I encountered an issue during the competitive analysis. Let me gather market intelligence using alternative research methods."
+        return "I encountered an issue during the competitive analysis. Let me gather market intelligence using alternative research methods."

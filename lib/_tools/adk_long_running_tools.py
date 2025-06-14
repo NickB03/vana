@@ -49,6 +49,7 @@ logger = logging.getLogger(__name__)
 
 # Standardized Long-Running Tool Wrappers
 
+
 def ask_for_approval(purpose: str, amount: float, approver: str = "System Administrator") -> str:
     """
     🎫 Request approval for an action requiring authorization.
@@ -116,6 +117,7 @@ Use `check_task_status("{task_id}")` to monitor progress."""
         logger.error(f"Error in approval request: {e}")
         return f"❌ Error creating approval request: {str(e)}"
 
+
 def process_large_dataset(dataset_name: str, operation: str = "analyze") -> str:
     """
     📊 Process a large dataset with progress tracking.
@@ -171,6 +173,7 @@ Use `check_task_status("{task_id}")` to monitor progress."""
     except Exception as e:
         logger.error(f"Error starting dataset processing: {e}")
         return f"❌ Error starting dataset processing: {str(e)}"
+
 
 def generate_report(report_type: str, data_sources: str = "default") -> str:
     """
@@ -234,6 +237,7 @@ Use `check_task_status("{task_id}")` to monitor progress."""
     except Exception as e:
         logger.error(f"Error starting report generation: {e}")
         return f"❌ Error starting report generation: {str(e)}"
+
 
 def check_task_status(task_id: str) -> str:
     """

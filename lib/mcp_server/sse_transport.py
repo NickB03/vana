@@ -13,34 +13,35 @@ from starlette.responses import JSONResponse
 
 logger = logging.getLogger(__name__)
 
+
 class MCPSSETransport:
     """MCP Server-Sent Events Transport for Cloud Run"""
-    
+
     def __init__(self, mcp_server):
         self.mcp_server = mcp_server
         self.active_connections = {}
-        
+
     async def handle_sse_connection(self, request: Request) -> StreamingResponse:
         """Handle SSE connection endpoint"""
-        
+
         async def event_stream():
             """Generate SSE events"""
             try:
                 # Send initial connection event
                 yield f"data: {json.dumps({'type': 'connection', 'status': 'connected', 'server': 'vana-mcp-server'})}\n\n"
-                
+
                 # Keep connection alive
                 while True:
                     # Send heartbeat every 30 seconds
                     yield f"data: {json.dumps({'type': 'heartbeat', 'timestamp': asyncio.get_event_loop().time()})}\n\n"
                     await asyncio.sleep(30)
-                    
+
             except asyncio.CancelledError:
                 logger.info("SSE connection cancelled")
             except Exception as e:
                 logger.error(f"SSE stream error: {e}")
                 yield f"data: {json.dumps({'type': 'error', 'message': str(e)})}\n\n"
-        
+
         return StreamingResponse(
             event_stream(),
             media_type="text/event-stream",
@@ -51,25 +52,25 @@ class MCPSSETransport:
                 "Access-Control-Allow-Headers": "Cache-Control"
             }
         )
-    
+
     async def handle_message_post(self, request: Request) -> JSONResponse:
         """Handle MCP message POST endpoint"""
         try:
             # Parse JSON-RPC message
             message = await request.json()
-            
+
             # Validate JSON-RPC format
             if not isinstance(message, dict) or "jsonrpc" not in message:
                 return JSONResponse(
                     {"error": {"code": -32600, "message": "Invalid Request"}},
                     status_code=400
                 )
-            
+
             # Handle different MCP methods
             method = message.get("method", "")
             params = message.get("params", {})
             message_id = message.get("id")
-            
+
             if method == "initialize":
                 result = await self._handle_initialize(params)
             elif method == "tools/list":
@@ -90,16 +91,16 @@ class MCPSSETransport:
                     "id": message_id,
                     "error": {"code": -32601, "message": f"Method not found: {method}"}
                 })
-            
+
             # Return JSON-RPC response
             response = {
                 "jsonrpc": "2.0",
                 "id": message_id,
                 "result": result
             }
-            
+
             return JSONResponse(response)
-            
+
         except json.JSONDecodeError:
             return JSONResponse(
                 {"error": {"code": -32700, "message": "Parse error"}},
@@ -108,11 +109,11 @@ class MCPSSETransport:
         except Exception as e:
             logger.error(f"Message handling error: {e}")
             return JSONResponse({
-                "jsonrpc": "2.0", 
+                "jsonrpc": "2.0",
                 "id": message.get("id") if 'message' in locals() else None,
                 "error": {"code": -32603, "message": f"Internal error: {str(e)}"}
             })
-    
+
     async def _handle_initialize(self, params: Dict[str, Any]) -> Dict[str, Any]:
         """Handle MCP initialize request"""
         return {
@@ -131,7 +132,7 @@ class MCPSSETransport:
                 "platform": "Google Cloud Run"
             }
         }
-    
+
     async def _handle_list_tools(self, params: Dict[str, Any]) -> Dict[str, Any]:
         """Handle tools/list request"""
         return {
@@ -199,12 +200,12 @@ class MCPSSETransport:
                 }
             ]
         }
-    
+
     async def _handle_call_tool(self, params: Dict[str, Any]) -> Dict[str, Any]:
         """Handle tools/call request"""
         tool_name = params.get("name", "")
         arguments = params.get("arguments", {})
-        
+
         try:
             if tool_name == "context7_sequential_thinking":
                 from lib._tools.adk_mcp_tools import context7_sequential_thinking
@@ -234,17 +235,17 @@ class MCPSSETransport:
                     ],
                     "isError": True
                 }
-            
+
             return {
                 "content": [
                     {
-                        "type": "text", 
+                        "type": "text",
                         "text": json.dumps(result, indent=2)
                     }
                 ],
                 "isError": False
             }
-            
+
         except Exception as e:
             logger.error(f"Tool call error for {tool_name}: {e}")
             return {
@@ -256,7 +257,7 @@ class MCPSSETransport:
                 ],
                 "isError": True
             }
-    
+
     async def _handle_list_resources(self, params: Dict[str, Any]) -> Dict[str, Any]:
         """Handle resources/list request"""
         return {
@@ -275,11 +276,11 @@ class MCPSSETransport:
                 }
             ]
         }
-    
+
     async def _handle_read_resource(self, params: Dict[str, Any]) -> Dict[str, Any]:
         """Handle resources/read request"""
         uri = params.get("uri", "")
-        
+
         if uri == "vana://status":
             status = {
                 "server": "vana-mcp-server",
@@ -332,7 +333,7 @@ class MCPSSETransport:
             }
         else:
             raise ValueError(f"Unknown resource: {uri}")
-    
+
     async def _handle_list_prompts(self, params: Dict[str, Any]) -> Dict[str, Any]:
         """Handle prompts/list request"""
         return {
@@ -355,16 +356,16 @@ class MCPSSETransport:
                 }
             ]
         }
-    
+
     async def _handle_get_prompt(self, params: Dict[str, Any]) -> Dict[str, Any]:
         """Handle prompts/get request"""
         name = params.get("name", "")
         arguments = params.get("arguments", {})
-        
+
         if name == "vana_analysis":
             topic = arguments.get("topic", "")
             depth = arguments.get("depth", "detailed")
-            
+
             prompt_text = f"""
 Analyze the following topic using structured reasoning: {topic}
 
@@ -379,7 +380,7 @@ Please provide:
 
 Use the Context7 sequential thinking framework for comprehensive analysis.
 """
-            
+
             return {
                 "messages": [
                     {
