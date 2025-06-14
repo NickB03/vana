@@ -52,67 +52,67 @@ class BenchmarkResult:
 
 class CoordinationBenchmarks:
     """Performance benchmarks for coordination functionality"""
-    
+
     def __init__(self):
         self.results: List[BenchmarkResult] = []
-    
+
     async def run_all_benchmarks(self) -> Dict[str, Any]:
         """Run all coordination performance benchmarks"""
         logger.info("⚡ Starting Coordination Performance Benchmarks")
         logger.debug("%s", "=" * 60)
-        
+
         # Run individual benchmarks
         await self._benchmark_basic_coordination()
         await self._benchmark_workflow_operations()
         await self._benchmark_concurrent_operations()
         await self._benchmark_stress_testing()
-        
+
         # Generate comprehensive report
         report = self._generate_benchmark_report()
-        
+
         # Print summary
         self._print_benchmark_summary(report)
-        
+
         return report
-    
+
     async def _benchmark_basic_coordination(self):
         """Benchmark basic coordination operations"""
         logger.debug("\n🔧 Benchmarking Basic Coordination Operations")
         logger.debug("%s", "-" * 50)
-        
+
         # Test coordinate_task performance
         await self._run_benchmark(
             "coordinate_task_performance",
             lambda: coordinate_task("execute simple python code", "normal"),
             iterations=20
         )
-        
+
         # Test delegate_to_agent performance
         await self._run_benchmark(
-            "delegate_to_agent_performance", 
+            "delegate_to_agent_performance",
             lambda: delegate_to_agent("data_science", "analyze sample data"),
             iterations=15
         )
-        
+
         # Test get_agent_status performance
         await self._run_benchmark(
             "get_agent_status_performance",
             lambda: get_agent_status(),
             iterations=30
         )
-    
+
     async def _benchmark_workflow_operations(self):
         """Benchmark workflow management operations"""
         logger.debug("\n🔄 Benchmarking Workflow Operations")
         logger.debug("%s", "-" * 50)
-        
+
         # Test workflow template retrieval
         await self._run_benchmark(
             "get_workflow_templates_performance",
             lambda: get_workflow_templates(),
             iterations=25
         )
-        
+
         # Test workflow creation
         await self._run_benchmark(
             "create_workflow_performance",
@@ -123,19 +123,19 @@ class CoordinationBenchmarks:
             ),
             iterations=10
         )
-        
+
         # Test workflow listing
         await self._run_benchmark(
             "list_workflows_performance",
             lambda: list_workflows(),
             iterations=20
         )
-    
+
     async def _benchmark_concurrent_operations(self):
         """Benchmark concurrent coordination operations"""
         logger.debug("\n🔀 Benchmarking Concurrent Operations")
         logger.debug("%s", "-" * 50)
-        
+
         # Test concurrent coordination tasks
         await self._run_concurrent_benchmark(
             "concurrent_coordination",
@@ -143,7 +143,7 @@ class CoordinationBenchmarks:
             concurrent_operations=5,
             iterations=3
         )
-        
+
         # Test concurrent workflow operations
         await self._run_concurrent_benchmark(
             "concurrent_workflow_creation",
@@ -155,12 +155,12 @@ class CoordinationBenchmarks:
             concurrent_operations=3,
             iterations=2
         )
-    
+
     async def _benchmark_stress_testing(self):
         """Benchmark system under stress conditions"""
         logger.debug("\n💪 Stress Testing Coordination System")
         logger.debug("%s", "-" * 50)
-        
+
         # High-frequency coordination requests
         await self._run_benchmark(
             "high_frequency_coordination",
@@ -168,7 +168,7 @@ class CoordinationBenchmarks:
             iterations=50,
             delay_between_operations=0.1
         )
-        
+
         # Rapid workflow operations
         await self._run_benchmark(
             "rapid_workflow_operations",
@@ -176,43 +176,43 @@ class CoordinationBenchmarks:
             iterations=100,
             delay_between_operations=0.05
         )
-    
+
     async def _run_benchmark(self, test_name: str, operation_func, iterations: int = 10, delay_between_operations: float = 0.0):
         """Run a performance benchmark for a specific operation"""
         logger.debug(f"  Running {test_name} ({iterations} iterations)...")
-        
+
         times = []
         successful = 0
         failed = 0
-        
+
         start_time = time.time()
-        
+
         for i in range(iterations):
             operation_start = time.time()
-            
+
             try:
                 result = operation_func()
                 operation_time = time.time() - operation_start
                 times.append(operation_time)
                 successful += 1
-                
+
                 # Basic success validation
                 if isinstance(result, str) and ("error" not in result.lower() or "success" in result.lower()):
                     pass  # Consider it successful
                 elif isinstance(result, dict) and result.get("status") != "error":
                     pass  # Consider it successful
-                
+
             except Exception as e:
                 operation_time = time.time() - operation_start
                 times.append(operation_time)
                 failed += 1
                 logger.error(f"    Operation {i+1} failed: {str(e)[:50]}...")
-            
+
             if delay_between_operations > 0:
                 await asyncio.sleep(delay_between_operations)
-        
+
         total_time = time.time() - start_time
-        
+
         # Calculate statistics
         if times:
             result = BenchmarkResult(
@@ -229,23 +229,23 @@ class CoordinationBenchmarks:
                 p95_time=statistics.quantiles(times, n=20)[18] if len(times) >= 20 else max(times),
                 operations_per_second=iterations / total_time
             )
-            
+
             self.results.append(result)
             logger.info(f"    ✅ Completed: {successful}/{iterations} successful ({result.success_rate:.1%})")
             logger.info(f"    ⏱️  Avg time: {result.average_time:.3f}s, Ops/sec: {result.operations_per_second:.1f}")
         else:
             logger.debug(f"    ❌ No valid timing data collected")
-    
+
     async def _run_concurrent_benchmark(self, test_name: str, operation_func, concurrent_operations: int = 5, iterations: int = 3):
         """Run concurrent operations benchmark"""
         logger.debug(f"  Running {test_name} ({concurrent_operations} concurrent ops, {iterations} iterations)...")
-        
+
         all_times = []
         total_successful = 0
         total_failed = 0
-        
+
         start_time = time.time()
-        
+
         for iteration in range(iterations):
             # Run concurrent operations
             tasks = []
@@ -274,10 +274,10 @@ class CoordinationBenchmarks:
                         # Handle unexpected result format
                         total_failed += 1
                         all_times.append(0.1)
-        
+
         total_time = time.time() - start_time
         total_operations = concurrent_operations * iterations
-        
+
         if all_times:
             result = BenchmarkResult(
                 test_name=test_name,
@@ -293,45 +293,45 @@ class CoordinationBenchmarks:
                 p95_time=statistics.quantiles(all_times, n=20)[18] if len(all_times) >= 20 else max(all_times),
                 operations_per_second=total_operations / total_time
             )
-            
+
             self.results.append(result)
             logger.info(f"    ✅ Completed: {total_successful}/{total_operations} successful ({result.success_rate:.1%})")
             logger.info(f"    ⏱️  Avg time: {result.average_time:.3f}s, Ops/sec: {result.operations_per_second:.1f}")
-    
+
     async def _timed_operation(self, operation_func) -> Tuple[float, bool]:
         """Execute an operation with timing"""
         start_time = time.time()
-        
+
         try:
             result = operation_func()
             execution_time = time.time() - start_time
-            
+
             # Determine success
             success = True
             if isinstance(result, str) and "error" in result.lower() and "success" not in result.lower():
                 success = False
             elif isinstance(result, dict) and result.get("status") == "error":
                 success = False
-            
+
             return execution_time, success
-            
+
         except Exception:
             execution_time = time.time() - start_time
             return execution_time, False
-    
+
     def _generate_benchmark_report(self) -> Dict[str, Any]:
         """Generate comprehensive benchmark report"""
         if not self.results:
             return {"error": "No benchmark results available"}
-        
+
         # Overall statistics
         overall_success_rate = sum(r.successful_operations for r in self.results) / sum(r.total_operations for r in self.results)
         overall_avg_time = statistics.mean([r.average_time for r in self.results])
         overall_ops_per_sec = sum(r.operations_per_second for r in self.results) / len(self.results)
-        
+
         # Performance grades
         performance_grade = self._calculate_performance_grade(overall_success_rate, overall_avg_time)
-        
+
         return {
             "benchmark_summary": {
                 "total_benchmarks": len(self.results),
@@ -360,7 +360,7 @@ class CoordinationBenchmarks:
                 "response_time_achieved": overall_avg_time <= 5.0
             }
         }
-    
+
     def _calculate_performance_grade(self, success_rate: float, avg_time: float) -> str:
         """Calculate performance grade based on metrics"""
         if success_rate >= 0.95 and avg_time <= 2.0:
@@ -373,22 +373,22 @@ class CoordinationBenchmarks:
             return "C"
         else:
             return "D"
-    
+
     def _print_benchmark_summary(self, report: Dict[str, Any]):
         """Print benchmark summary"""
         summary = report["benchmark_summary"]
         targets = report["performance_targets"]
-        
+
         logger.debug("%s", "\n" + "=" * 60)
         logger.debug("⚡ COORDINATION PERFORMANCE SUMMARY")
         logger.debug("%s", "=" * 60)
-        
+
         logger.debug(f"📊 Overall Performance:")
         logger.info("%s", f"   Success Rate: {summary['overall_success_rate']:.1%}")
         logger.debug("%s", f"   Avg Response Time: {summary['overall_avg_response_time']:.3f}s")
         logger.debug("%s", f"   Operations/Second: {summary['overall_ops_per_second']:.1f}")
         logger.debug("%s", f"   Performance Grade: {summary['performance_grade']}")
-        
+
         logger.debug(f"\n🎯 Target Achievement:")
         logger.info("%s", f"   Success Rate Target (90%): {'✅ ACHIEVED' if targets['success_rate_achieved'] else '❌ MISSED'}")
         logger.debug("%s", f"   Response Time Target (5s): {'✅ ACHIEVED' if targets['response_time_achieved'] else '❌ MISSED'}")

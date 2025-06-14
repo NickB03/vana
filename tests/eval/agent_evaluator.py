@@ -72,12 +72,12 @@ class VANASystemEvaluator:
         self.performance_targets = get_performance_targets()
         self.ui_selectors = get_ui_selectors()
         self.browser_config = get_browser_config()
-        
+
     async def evaluate_all_agents(self) -> Dict[str, Any]:
         """Evaluate all agents using available evalsets"""
         logger.info("🧪 Starting Comprehensive Agent Evaluation")
         logger.debug("%s", "=" * 60)
-        
+
         evaluation_results = {
             "evaluation_timestamp": datetime.now().isoformat(),
             "evaluation_summary": {},
@@ -85,64 +85,64 @@ class VANASystemEvaluator:
             "overall_metrics": {},
             "recommendations": []
         }
-        
+
         # Discover available evalsets
         evalset_files = list(self.evalsets_dir.glob("*.json"))
-        
+
         if not evalset_files:
             logger.debug("❌ No evalsets found in tests/eval/evalsets/")
             return evaluation_results
-            
+
         logger.debug(f"📋 Found {len(evalset_files)} evalsets to evaluate")
-        
+
         # Evaluate each evalset
         for evalset_file in evalset_files:
             agent_name = evalset_file.stem.replace("_evalset", "")
             logger.debug(f"\n🔍 Evaluating: {agent_name}")
-            
+
             try:
                 agent_results = await self.evaluate_agent_from_evalset(evalset_file)
                 evaluation_results["agent_results"][agent_name] = agent_results
-                
+
                 # Calculate performance metrics
                 metrics = self.calculate_performance_metrics(agent_name, agent_results)
                 evaluation_results["evaluation_summary"][agent_name] = metrics
-                
+
             except Exception as e:
                 logger.error(f"❌ Error evaluating {agent_name}: {e}")
                 evaluation_results["agent_results"][agent_name] = {
                     "error": str(e),
                     "status": "failed"
                 }
-        
+
         # Calculate overall metrics
         evaluation_results["overall_metrics"] = self.calculate_overall_metrics(
             evaluation_results["evaluation_summary"]
         )
-        
+
         # Generate recommendations
         evaluation_results["recommendations"] = self.generate_recommendations(
             evaluation_results["evaluation_summary"]
         )
-        
+
         # Save results
         self.save_evaluation_results(evaluation_results)
-        
+
         # Print summary
         self.print_evaluation_summary(evaluation_results)
-        
+
         return evaluation_results
-        
+
     async def evaluate_agent_from_evalset(self, evalset_file: Path) -> List[EvaluationResult]:
         """Evaluate an agent using its evalset"""
         with open(evalset_file, 'r') as f:
             evalset = json.load(f)
-            
+
         agent_name = evalset_file.stem.replace("_evalset", "")
         eval_cases = evalset.get("eval_cases", [])
-        
+
         results = []
-        
+
         async with async_playwright() as p:
             browser = await p.chromium.launch(headless=self.browser_config["headless"])
             page = await browser.new_page()
@@ -155,22 +155,22 @@ class VANASystemEvaluator:
                 # Select VANA agent (main orchestrator for all tests)
                 await page.click(self.ui_selectors["agent_select"])
                 await page.click(self.ui_selectors["vana_option"])
-                
+
                 # Evaluate each test case
                 for eval_case in eval_cases:
                     result = await self.evaluate_single_case(page, agent_name, eval_case)
                     results.append(result)
-                    
+
                     # Wait between tests to avoid rate limiting
                     await asyncio.sleep(2)
-                    
+
             except Exception as e:
                 logger.error(f"❌ Browser evaluation failed for {agent_name}: {e}")
-                
+
             await browser.close()
-            
+
         return results
-        
+
     async def evaluate_single_case(self, page, agent_name: str, eval_case: Dict) -> EvaluationResult:
         """Evaluate a single test case"""
         eval_id = eval_case["eval_id"]
@@ -178,12 +178,12 @@ class VANASystemEvaluator:
         user_input = conversation["user_content"]["parts"][0]["text"]
         expected_response = conversation["final_response"]["parts"][0]["text"]
         expected_tools = [tool["name"] for tool in conversation["intermediate_data"]["tool_uses"]]
-        
+
         logger.debug(f"  🧪 Testing {eval_id}: {user_input[:50]}...")
-        
+
         try:
             start_time = time.time()
-            
+
             # Clear any existing content
             await page.fill(self.ui_selectors["textarea"], "")
 
@@ -194,28 +194,28 @@ class VANASystemEvaluator:
             # Wait for response with tool indicators
             await page.wait_for_selector(self.ui_selectors["response"], timeout=self.browser_config["timeout"])
             response_time = time.time() - start_time
-            
+
             # Get response text
             response_text = await page.text_content(self.ui_selectors["response"])
             if not response_text:
                 response_text = ""
-            
+
             # Extract tool usage from response (look for tool indicators)
             actual_tools = self.extract_tools_from_response(response_text)
-            
+
             # Evaluate tool trajectory
             tool_trajectory_score = self.evaluate_tool_trajectory(expected_tools, actual_tools)
-            
+
             # Evaluate response quality
             response_quality_score = self.evaluate_response_quality(expected_response, response_text)
-            
+
             # Determine success
             success = (
                 response_time <= self.performance_targets["response_time"] and
                 tool_trajectory_score >= self.performance_targets["tool_accuracy"] and
                 response_quality_score >= self.performance_targets["response_quality"]
             )
-            
+
             result = EvaluationResult(
                 eval_id=eval_id,
                 agent_name=agent_name,
@@ -228,12 +228,12 @@ class VANASystemEvaluator:
                 actual_tools=actual_tools,
                 raw_response=response_text[:500]  # Truncate for storage
             )
-            
+
             status = "✅ PASS" if success else "❌ FAIL"
             logger.debug(f"    {status} ({response_time:.2f}s, tools: {tool_trajectory_score:.2f}, quality: {response_quality_score:.2f})")
-            
+
             return result
-            
+
         except Exception as e:
             logger.error(f"    ❌ ERROR: {str(e)}")
             return EvaluationResult(
@@ -248,7 +248,7 @@ class VANASystemEvaluator:
                 actual_tools=[],
                 error_message=str(e)
             )
-            
+
     def extract_tools_from_response(self, response_text: str) -> List[str]:
         """Extract tool usage from response text"""
         if not response_text:
@@ -266,37 +266,37 @@ class VANASystemEvaluator:
                     break
 
         return tools
-        
+
     def evaluate_tool_trajectory(self, expected_tools: List[str], actual_tools: List[str]) -> float:
         """Evaluate tool usage trajectory accuracy"""
         if not expected_tools:
             return 1.0 if not actual_tools else 0.8  # No tools expected
-            
+
         if not actual_tools:
             return 0.0  # Tools expected but none used
-            
+
         # Calculate overlap score
         expected_set = set(expected_tools)
         actual_set = set(actual_tools)
-        
+
         intersection = expected_set.intersection(actual_set)
         union = expected_set.union(actual_set)
-        
+
         if not union:
             return 1.0
-            
+
         return len(intersection) / len(union)
-        
+
     def evaluate_response_quality(self, expected_response: str, actual_response: str) -> float:
         """Evaluate response quality and completeness"""
         if not actual_response or len(actual_response) < 50:
             return 0.0
-            
+
         # Check for error indicators
         error_indicators = ["error", "failed", "not found", "unavailable", "timeout"]
         if any(error in actual_response.lower() for error in error_indicators):
             return 0.3
-            
+
         # Check for meaningful content
         if len(actual_response) > 200:
             return 0.9
@@ -304,7 +304,7 @@ class VANASystemEvaluator:
             return 0.7
         else:
             return 0.5
-            
+
     def calculate_performance_metrics(self, agent_name: str, results: List[EvaluationResult]) -> AgentPerformanceMetrics:
         """Calculate performance metrics for an agent"""
         if not results:
@@ -318,16 +318,16 @@ class VANASystemEvaluator:
                 response_quality_score=0.0,
                 success_rate=0.0
             )
-            
+
         total_tests = len(results)
         passed_tests = sum(1 for r in results if r.success)
         failed_tests = total_tests - passed_tests
-        
+
         avg_response_time = sum(r.response_time for r in results) / total_tests
         avg_tool_accuracy = sum(r.tool_trajectory_score for r in results) / total_tests
         avg_response_quality = sum(r.response_quality_score for r in results) / total_tests
         success_rate = passed_tests / total_tests
-        
+
         return AgentPerformanceMetrics(
             agent_name=agent_name,
             total_tests=total_tests,
