@@ -30,21 +30,21 @@ def check_mcp_server():
     endpoint = os.environ.get("MCP_ENDPOINT", "https://mcp.community.augment.co")
     namespace = os.environ.get("MCP_NAMESPACE", "vana-project")
     api_key = os.environ.get("MCP_API_KEY", "")
-    
+
     logger.info(f"Checking MCP server at {endpoint}/{namespace}...")
-    
+
     headers = {
         "Content-Type": "application/json",
         "Authorization": f"Bearer {api_key}"
     }
-    
+
     try:
         response = requests.get(
             f"{endpoint}/{namespace}/status",
             headers=headers,
             timeout=10
         )
-        
+
         if response.status_code == 200:
             logger.info(f"✅ MCP server is accessible")
             logger.info(f"Response: {response.text}")
@@ -63,43 +63,43 @@ def test_memory_operations():
         from tools.mcp_memory_client import MCPMemoryClient
 
         logger.info("Initializing MCP Memory Client...")
-        
+
         # Initialize client
         endpoint = os.environ.get("MCP_ENDPOINT", "https://mcp.community.augment.co")
         namespace = os.environ.get("MCP_NAMESPACE", "vana-project")
         api_key = os.environ.get("MCP_API_KEY", "")
-        
+
         mcp_client = MCPMemoryClient(endpoint, namespace, api_key)
-        
+
         # Test storing an entity
         test_entity = {
             "name": f"Test Entity {datetime.now().isoformat()}",
             "type": "Test",
             "observations": ["This is a test entity created for diagnostic purposes"]
         }
-        
+
         logger.info("%s", f"Storing test entity: {test_entity['name']}...")
-        
+
         try:
             result = mcp_client.store_entity(
                 test_entity["name"],
                 test_entity["type"],
                 test_entity["observations"]
             )
-            
+
             if "success" in result and result["success"]:
                 logger.info("✅ Test entity stored successfully")
             else:
                 logger.error("%s", f"❌ Failed to store test entity: {result.get('error', 'Unknown error')}")
         except Exception as e:
             logger.error(f"❌ Error storing test entity: {e}")
-        
+
         # Test retrieving an entity
         logger.info("%s", f"Retrieving test entity: {test_entity['name']}...")
-        
+
         try:
             result = mcp_client.retrieve_entity(test_entity["name"])
-            
+
             if "entity" in result:
                 logger.info("✅ Test entity retrieved successfully")
                 logger.debug("%s", f"Entity data: {json.dumps(result['entity'], indent=2)}")
@@ -107,26 +107,26 @@ def test_memory_operations():
                 logger.error("%s", f"❌ Failed to retrieve test entity: {result.get('error', 'Unknown error')}")
         except Exception as e:
             logger.error(f"❌ Error retrieving test entity: {e}")
-        
+
         # Test initial data load
         logger.info("Testing initial data load...")
-        
+
         try:
             result = mcp_client.get_initial_data()
-            
+
             if "entities" in result:
                 logger.info("%s", f"✅ Initial data loaded successfully ({len(result['entities'])} entities)")
             else:
                 logger.error("%s", f"❌ Failed to load initial data: {result.get('error', 'Unknown error')}")
         except Exception as e:
             logger.error(f"❌ Error loading initial data: {e}")
-        
+
         # Test delta sync
         logger.info("Testing delta sync...")
-        
+
         try:
             result = mcp_client.sync_delta()
-            
+
             if "added" in result or "modified" in result or "deleted" in result:
                 added = len(result.get("added", []))
                 modified = len(result.get("modified", []))
@@ -136,7 +136,7 @@ def test_memory_operations():
                 logger.error("%s", f"❌ Failed to perform delta sync: {result.get('error', 'Unknown error')}")
         except Exception as e:
             logger.error(f"❌ Error performing delta sync: {e}")
-            
+
     except ImportError as e:
         logger.error(f"❌ Error importing memory components: {e}")
         logger.info("%s", "Make sure you're running this script from the project root directory.")
@@ -146,7 +146,7 @@ def test_memory_operations():
 def check_environment_variables():
     """Check if required environment variables are set."""
     logger.info("Checking environment variables...")
-    
+
     variables = {
         "MCP_ENDPOINT": os.environ.get("MCP_ENDPOINT", "https://mcp.community.augment.co"),
         "MCP_NAMESPACE": os.environ.get("MCP_NAMESPACE", "vana-project"),
@@ -156,37 +156,37 @@ def check_environment_variables():
         "GOOGLE_CLOUD_PROJECT": os.environ.get("GOOGLE_CLOUD_PROJECT", ""),
         "GOOGLE_CLOUD_LOCATION": os.environ.get("GOOGLE_CLOUD_LOCATION", "")
     }
-    
+
     all_set = True
-    
+
     for name, value in variables.items():
         if value:
             logger.info("%s", f"✅ {name} is set to: {value[:5]}{'*' * (len(value) - 5) if len(value) > 5 else ''}")
         else:
             logger.info(f"❌ {name} is not set")
             all_set = False
-    
+
     return all_set
 
 if __name__ == "__main__":
     logger.info("=== VANA Memory System Diagnostic ===\n")
-    
+
     # Check environment variables
     logger.info("\n--- Checking Environment Variables ---")
     env_vars_set = check_environment_variables()
-    
+
     if not env_vars_set:
         logger.info("\n⚠️ Some environment variables are not set. This may affect functionality.")
-    
+
     # Check MCP server
     logger.info("\n--- Checking MCP Server ---")
     mcp_available = check_mcp_server()
-    
+
     # Test memory operations
     if mcp_available:
         logger.info("\n--- Testing Memory Operations ---")
         test_memory_operations()
     else:
         logger.info("\n⚠️ Skipping memory operations test as MCP server is not available")
-    
+
     logger.info("\n=== Diagnostic Complete ===")

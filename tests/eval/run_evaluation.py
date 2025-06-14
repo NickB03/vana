@@ -42,10 +42,10 @@ async def run_agents_only(environment: str = "dev"):
     """Run only agent evaluation"""
     logger.debug("🧪 Running Agent Evaluation Only")
     logger.debug("%s", "=" * 60)
-    
+
     evaluator = VANASystemEvaluator(environment=environment)
     results = await evaluator.evaluate_all_agents()
-    
+
     logger.info("\n✅ Agent evaluation completed successfully!")
     return results
 
@@ -97,13 +97,13 @@ async def run_full_evaluation(environment: str = "dev", skip_discovery: bool = F
     """Run comprehensive evaluation"""
     logger.debug("🎯 Running Comprehensive VANA System Evaluation")
     logger.debug("%s", "=" * 80)
-    
+
     runner = ComprehensiveEvaluationRunner()
     results = await runner.run_full_evaluation(
         include_discovery=not skip_discovery,
         include_performance=not skip_performance
     )
-    
+
     logger.info("\n✅ Comprehensive evaluation completed successfully!")
     return results
 
@@ -138,34 +138,34 @@ def print_usage_examples():
 def validate_environment():
     """Validate that the environment is set up correctly"""
     logger.debug("🔍 Validating Environment...")
-    
+
     # Check if we're in the right directory
     if not Path("agents").exists() or not Path("tests").exists():
         logger.error("❌ Error: Please run this script from the VANA project root directory")
         logger.debug("   Current directory:", os.getcwd())
         logger.debug("   Expected files: agents/, tests/, pyproject.toml")
         return False
-    
+
     # Check if required directories exist
     required_dirs = [
         "tests/eval/evalsets",
         "tests/results"
     ]
-    
+
     for dir_path in required_dirs:
         if not Path(dir_path).exists():
             logger.debug(f"📁 Creating missing directory: {dir_path}")
             Path(dir_path).mkdir(parents=True, exist_ok=True)
-    
+
     # Check if evalsets exist
     evalsets_dir = Path("tests/eval/evalsets")
     evalset_files = list(evalsets_dir.glob("*.json"))
-    
+
     if not evalset_files:
         logger.error("❌ Error: No evaluation sets found in tests/eval/evalsets/")
         logger.debug("   Expected files: vana_agent_evalset.json, architecture_specialist_evalset.json, etc.")
         return False
-    
+
     logger.debug(f"✅ Found {len(evalset_files)} evaluation sets")
     logger.debug("✅ Environment validation passed")
     return True
@@ -184,7 +184,7 @@ Examples:
   %(prog)s --agents-only --env prod   # Test production environment
         """
     )
-    
+
     # Execution mode (mutually exclusive)
     mode_group = parser.add_mutually_exclusive_group(required=True)
     mode_group.add_argument("--agents-only", action="store_true",
@@ -197,36 +197,36 @@ Examples:
                            help="Run comprehensive evaluation")
     mode_group.add_argument("--examples", action="store_true",
                            help="Show usage examples and exit")
-    
+
     # Configuration options
     parser.add_argument("--env", choices=["dev", "prod"], default="dev",
                        help="Environment to test (default: dev)")
     parser.add_argument("--skip-discovery", action="store_true",
                        help="Skip system discovery phase (only with --full)")
-    parser.add_argument("--skip-performance", action="store_true", 
+    parser.add_argument("--skip-performance", action="store_true",
                        help="Skip performance benchmarking (only with --full)")
     parser.add_argument("--headless", action="store_true",
                        help="Force headless browser mode")
     parser.add_argument("--show-browser", action="store_true",
                        help="Show browser during testing (non-headless)")
-    
+
     args = parser.parse_args()
-    
+
     # Show examples and exit
     if args.examples:
         print_usage_examples()
         return
-    
+
     # Set browser mode if specified
     if args.headless:
         os.environ["VANA_BROWSER_HEADLESS"] = "true"
     elif args.show_browser:
         os.environ["VANA_BROWSER_HEADLESS"] = "false"
-    
+
     # Validate environment
     if not validate_environment():
         sys.exit(1)
-    
+
     try:
         # Execute based on mode
         results = None
@@ -266,7 +266,7 @@ Examples:
                         logger.info("%s", f"   Task #9 Status: {'✅ COMPLETED' if metrics['task_9_completed'] else '❌ INCOMPLETE'}")
 
         return 0
-        
+
     except KeyboardInterrupt:
         logger.debug("\n⚠️ Evaluation interrupted by user")
         return 1

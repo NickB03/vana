@@ -343,7 +343,7 @@ previous_success = load_memory("successful agent coordination for similar task")
 # Select agents based on memory insights
 ```
 """,
-    
+
     tools=([
         # File System Tools
         adk_read_file, adk_write_file, adk_list_directory, adk_file_exists,
