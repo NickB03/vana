@@ -86,7 +86,7 @@ def main():
 
     # Query VANA
     vana_query = kg_manager.query("project", "VANA")
-    logger.info("%s", f"Query for 'project VANA':")
+    logger.info("%s", "Query for 'project VANA':")
     if vana_query.get("entities"):
         for entity in vana_query.get("entities", []):
             logger.info("%s", f"  - {entity.get('name')}: {entity.get('observation')}")
@@ -95,7 +95,7 @@ def main():
 
     # Query technologies
     tech_query = kg_manager.query("technology", "*")
-    logger.info("%s", f"\nQuery for 'technology *':")
+    logger.info("%s", "\nQuery for 'technology *':")
     if tech_query.get("entities"):
         for entity in tech_query.get("entities", []):
             logger.info("%s", f"  - {entity.get('name')}: {entity.get('observation')}")
@@ -107,7 +107,7 @@ def main():
 
     # What does VANA use?
     rel_query = kg_manager.query_relationships("VANA", "uses", "*")
-    logger.info("%s", f"Query for 'VANA uses *':")
+    logger.info("%s", "Query for 'VANA uses *':")
     if rel_query.get("relationships"):
         for rel in rel_query.get("relationships", []):
             logger.info("%s", f"  - {rel.get('entity1')} {rel.get('relationship')} {rel.get('entity2')}")

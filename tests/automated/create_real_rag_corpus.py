@@ -35,7 +35,7 @@ def setup_vertex_ai():
         project_id = os.getenv("GOOGLE_CLOUD_PROJECT", "${GOOGLE_CLOUD_PROJECT}")
         location = os.getenv("GOOGLE_CLOUD_LOCATION", "us-central1")
 
-        logger.info(f"🚀 Initializing Vertex AI...")
+        logger.info("🚀 Initializing Vertex AI...")
         logger.info(f"   Project: {project_id}")
         logger.info(f"   Location: {location}")
 
@@ -126,19 +126,19 @@ def import_sample_documents(corpus):
             {
                 "content": """
                 VANA Vector Search System Documentation
-                
-                VANA is an advanced AI agent system that uses vector search and RAG (Retrieval-Augmented Generation) 
-                for intelligent knowledge retrieval. The system is built on Google ADK (Agent Development Kit) and 
+
+                VANA is an advanced AI agent system that uses vector search and RAG (Retrieval-Augmented Generation)
+                for intelligent knowledge retrieval. The system is built on Google ADK (Agent Development Kit) and
                 uses Vertex AI for vector embeddings and semantic search.
-                
+
                 Key Features:
                 - Hybrid semantic search combining vector similarity and keyword matching
                 - Real-time knowledge corpus with automatic embedding generation
-                - Multi-phase development architecture with Phase 1 (ReAct framework), Phase 2 (cognitive enhancements), 
+                - Multi-phase development architecture with Phase 1 (ReAct framework), Phase 2 (cognitive enhancements),
                   and Phase 3 (real vector search implementation)
                 - Integration with Google Cloud Vertex AI RAG engine
                 - Production deployment on Google Cloud Run
-                
+
                 Technical Architecture:
                 - Vector embeddings using text-embedding-004 model (768 dimensions)
                 - Vertex AI Vector Search for similarity matching
@@ -150,29 +150,29 @@ def import_sample_documents(corpus):
             {
                 "content": """
                 Vector Search Phase 2 Implementation Details
-                
+
                 Phase 2 of the VANA vector search implementation includes:
-                
+
                 1. Enhanced Search Architecture:
                    - Hybrid search combining semantic similarity and keyword matching
                    - Multi-stage retrieval with ranking and relevance scoring
                    - Context window optimization for improved results
-                
+
                 2. ADK Memory Integration:
                    - VertexAiRagMemoryService for production knowledge storage
                    - Environment variable priority system (VANA_RAG_CORPUS_ID → RAG_CORPUS_RESOURCE_NAME)
                    - Backward compatibility with existing configurations
-                
+
                 3. Performance Optimizations:
                    - Query result caching with configurable TTL
                    - Batch processing for multiple queries
                    - Error handling and fallback mechanisms
-                
+
                 4. Tool Registration:
                    - search_knowledge function for semantic search
                    - load_memory function for memory retrieval
                    - Proper function naming without underscore prefixes
-                
+
                 Configuration:
                 - VANA_RAG_CORPUS_ID: projects/${GOOGLE_CLOUD_PROJECT}/locations/us-central1/ragCorpora/vana-corpus
                 - Similarity top-k: 5 results
@@ -184,32 +184,32 @@ def import_sample_documents(corpus):
             {
                 "content": """
                 VANA Environment Configuration and Deployment
-                
+
                 VANA supports multiple deployment environments with smart configuration detection:
-                
+
                 Development Environment:
                 - Local development with .env.local configuration
                 - API key authentication for testing
                 - Mock services for rapid development
-                
+
                 Production Environment:
                 - Google Cloud Run deployment
                 - Vertex AI authentication using service accounts
                 - Real vector search with production RAG corpus
                 - Environment variables: VANA_ENV=production
-                
+
                 Key Environment Variables:
                 - GOOGLE_CLOUD_PROJECT: ${GOOGLE_CLOUD_PROJECT}
                 - GOOGLE_CLOUD_LOCATION: us-central1
                 - VANA_RAG_CORPUS_ID: Corpus identifier for vector search
                 - RAG_CORPUS_RESOURCE_NAME: Full resource name for backward compatibility
                 - GOOGLE_GENAI_USE_VERTEXAI: Enable Vertex AI authentication
-                
+
                 Storage Infrastructure:
                 - analysiai-454200-vector-search: Primary storage bucket
                 - analysiai-454200-vector-search-docs: Document storage bucket
                 - Both buckets configured in us-central1 region with Standard storage class
-                
+
                 Deployment Process:
                 1. Build container image with proper dependencies
                 2. Deploy to Cloud Run with environment variables

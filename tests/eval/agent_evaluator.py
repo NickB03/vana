@@ -439,7 +439,7 @@ class VANASystemEvaluator:
         agent_summaries = results.get("evaluation_summary", {})
 
         # Overall metrics
-        logger.debug(f"\n🎯 OVERALL SYSTEM PERFORMANCE:")
+        logger.debug("\n🎯 OVERALL SYSTEM PERFORMANCE:")
         logger.debug("%s", f"   Agents Tested: {overall_metrics.get('total_agents_tested', 0)}")
         logger.debug("%s", f"   Test Cases: {overall_metrics.get('total_test_cases', 0)}")
         logger.info("%s", f"   Success Rate: {overall_metrics.get('overall_success_rate', 0):.1%}")
@@ -449,7 +449,7 @@ class VANASystemEvaluator:
         logger.debug("%s", f"   Performance Grade: {overall_metrics.get('performance_grade', 'N/A')}")
 
         # Individual agent results
-        logger.debug(f"\n📋 INDIVIDUAL AGENT PERFORMANCE:")
+        logger.debug("\n📋 INDIVIDUAL AGENT PERFORMANCE:")
         for agent_name, metrics in agent_summaries.items():
             status = "✅ PASS" if metrics.success_rate >= 0.8 else "❌ FAIL"
             logger.debug(f"   {status} {agent_name}:")
@@ -460,7 +460,7 @@ class VANASystemEvaluator:
 
         # Recommendations
         recommendations = results.get("recommendations", [])
-        logger.debug(f"\n💡 RECOMMENDATIONS:")
+        logger.debug("\n💡 RECOMMENDATIONS:")
         for rec in recommendations:
             logger.debug(f"   {rec}")
 

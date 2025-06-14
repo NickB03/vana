@@ -222,9 +222,9 @@ def main():
     logger.info("\n📝 Updating .gitignore...")
     update_gitignore()
 
-    logger.info(f"\n🎉 Cleanup complete!")
+    logger.info("\n🎉 Cleanup complete!")
     logger.info(f"✅ Removed {total_removed} items")
-    logger.info(f"📝 Updated .gitignore with comprehensive patterns")
+    logger.info("📝 Updated .gitignore with comprehensive patterns")
 
     logger.info("\n⚠️  RECOMMENDED NEXT STEPS:")
     logger.info("1. Review changes before committing")

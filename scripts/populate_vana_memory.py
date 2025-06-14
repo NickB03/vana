@@ -310,7 +310,7 @@ class VANAMemoryPopulator:
 
             self.populated_count = total_populated
 
-            logger.info(f"🎉 Memory population completed!")
+            logger.info("🎉 Memory population completed!")
             logger.info(f"📊 Total items populated: {total_populated}")
 
             return True
@@ -384,17 +384,17 @@ async def main():
         # Test the populated memory
         await populator.test_memory_search()
 
-        logger.info(f"\n🎉 VANA Memory Population Completed Successfully!")
+        logger.info("\n🎉 VANA Memory Population Completed Successfully!")
         logger.info(f"📊 Total items populated: {populator.populated_count}")
-        logger.info(f"🧠 Memory systems are now ready for intelligent agent interactions")
+        logger.info("🧠 Memory systems are now ready for intelligent agent interactions")
 
         if not args.dry_run:
-            logger.info(f"\n🚀 Next steps:")
-            logger.info(f"1. Deploy updated system to vana-dev")
-            logger.info(f"2. Test agent memory usage with real queries")
-            logger.info(f"3. Validate knowledge-based responses")
+            logger.info("\n🚀 Next steps:")
+            logger.info("1. Deploy updated system to vana-dev")
+            logger.info("2. Test agent memory usage with real queries")
+            logger.info("3. Validate knowledge-based responses")
     else:
-        logger.error(f"\n❌ Memory population failed. Check logs for details.")
+        logger.error("\n❌ Memory population failed. Check logs for details.")
         sys.exit(1)
 
 

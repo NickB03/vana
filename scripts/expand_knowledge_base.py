@@ -43,7 +43,7 @@ def process_directory(
 
     Args:
         directory: Directory to process
-        file_types: List of file types to process (e.g., ["pdf", "txt", "md"])
+        file_types: List of file types to process (e.g., ["pd", "txt", "md"])
         recursive: Whether to process subdirectories
         add_to_vector_search: Whether to add documents to Vector Search
         add_to_knowledge_graph: Whether to add documents to Knowledge Graph
@@ -57,7 +57,7 @@ def process_directory(
 
     # Set default file types if not provided
     if not file_types:
-        file_types = ["pdf", "txt", "md", "markdown"]
+        file_types = ["pd", "txt", "md", "markdown"]
 
     # Initialize tools
     document_processor = DocumentProcessor()
@@ -189,7 +189,7 @@ def main():
     parser.add_argument(
         "--file-types",
         nargs="+",
-        default=["pdf", "txt", "md", "markdown"],
+        default=["pd", "txt", "md", "markdown"],
         help="File types to process (default: pdf, txt, md, markdown)",
     )
     parser.add_argument("--recursive", action="store_true", help="Process subdirectories")

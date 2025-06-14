@@ -266,7 +266,7 @@ class InfrastructureValidator:
         passed_tests = sum(1 for r in self.results if r["status"] == "PASS")
 
         logger.debug("%s", "\n" + "=" * 50)
-        logger.debug(f"📊 Infrastructure Tests Summary:")
+        logger.debug("📊 Infrastructure Tests Summary:")
         logger.debug(f"   Total: {total_tests}")
         logger.debug(f"   Passed: {passed_tests}")
         logger.info(f"   Success Rate: {(passed_tests/total_tests)*100:.1f}%")

@@ -37,7 +37,7 @@ def setup_services():
         project_id = "${GOOGLE_CLOUD_PROJECT}"  # Use the actual project ID (not project number)
         location = "us-central1"
 
-        logger.info(f"🚀 Initializing services...")
+        logger.info("🚀 Initializing services...")
         logger.info(f"   Project: {project_id}")
         logger.info(f"   Location: {location}")
         logger.info(f"   Bucket: {BUCKET_NAME}")
@@ -68,7 +68,7 @@ VANA is an advanced AI agent system that uses vector search and RAG (Retrieval-A
 
 Key Features:
 - Hybrid semantic search combining vector similarity and keyword matching
-- Real-time knowledge corpus with automatic embedding generation  
+- Real-time knowledge corpus with automatic embedding generation
 - Multi-phase development architecture with Phase 1 (ReAct framework), Phase 2 (cognitive enhancements), and Phase 3 (real vector search implementation)
 - Integration with Google Cloud Vertex AI RAG engine
 - Production deployment on Google Cloud Run

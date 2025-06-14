@@ -183,7 +183,7 @@ async def main():
         epilog="""
 Examples:
   %(prog)s --agents-only              # Quick agent evaluation
-  %(prog)s --performance-only         # Performance benchmarking only  
+  %(prog)s --performance-only         # Performance benchmarking only
   %(prog)s --full                     # Complete evaluation
   %(prog)s --full --skip-discovery    # Skip system discovery phase
   %(prog)s --agents-only --env prod   # Test production environment
@@ -244,15 +244,15 @@ Examples:
             logger.debug("❌ No evaluation mode selected")
             return 1
 
-        logger.info(f"\n🎉 Evaluation completed successfully!")
-        logger.info(f"📊 Results saved in: tests/results/")
+        logger.info("\n🎉 Evaluation completed successfully!")
+        logger.info("📊 Results saved in: tests/results/")
 
         # Print quick summary
         if isinstance(results, dict):
             if "overall_metrics" in results:
                 metrics = results["overall_metrics"]
                 if isinstance(metrics, dict):
-                    logger.debug(f"\n📈 QUICK SUMMARY:")
+                    logger.debug("\n📈 QUICK SUMMARY:")
                     success_rate = metrics.get("overall_success_rate", metrics.get("test_success_rate", 0))
                     logger.info(f"   Success Rate: {success_rate:.1%}")
                     logger.debug("%s", f"   Avg Response Time: {metrics.get('average_response_time', 0):.2f}s")
@@ -272,7 +272,7 @@ Examples:
         return 1
     except Exception as e:
         logger.error(f"\n❌ Evaluation failed: {str(e)}")
-        logger.debug(f"💡 Try running with --examples to see usage examples")
+        logger.debug("💡 Try running with --examples to see usage examples")
         return 1
 
 

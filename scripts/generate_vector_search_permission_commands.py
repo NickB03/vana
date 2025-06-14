@@ -43,7 +43,7 @@ def main():
 
     service_account_email = args.service_account
 
-    logger.info(f"Generating Vector Search permission commands for:")
+    logger.info("Generating Vector Search permission commands for:")
     logger.info(f"  Project: {project_id}")
     logger.info(f"  Service Account: {service_account_email}")
 

@@ -224,7 +224,7 @@ if __name__ == "__main__":
         os.chmod(test_script_path, 0o755)
 
         logger.info(f"✅ Created test script: {test_script_path}")
-        logger.info(f"Run the test script to verify the mock implementation:")
+        logger.info("Run the test script to verify the mock implementation:")
         logger.info(f"python {test_script_path}")
     else:
         logger.info("Since we can't use gcloud directly, we'll need to:")

@@ -169,7 +169,7 @@ def prepare_embeddings_file(embeddings_file: str) -> str:
         if isinstance(embeddings_data, list) and all(
             isinstance(item, dict) and "id" in item and "embedding" in item for item in embeddings_data
         ):
-            logger.info(f"Embeddings file is already in the correct format")
+            logger.info("Embeddings file is already in the correct format")
             return embeddings_file
 
         # Convert to the correct format if needed
@@ -223,7 +223,7 @@ def main():
                 logger.error("Batch update failed")
                 return 1
         else:
-            logger.info(f"Batch update operation started. Check the operation status manually.")
+            logger.info("Batch update operation started. Check the operation status manually.")
 
         return 0
     except Exception as e:

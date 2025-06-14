@@ -101,14 +101,14 @@ def check_current_status():
     print(f"Tesseract (System OCR):      {'✅ Available' if tesseract_available else '❌ Missing'}")
 
     # Feature availability summary
-    print(f"\n🎯 Feature Availability:")
+    print("\n🎯 Feature Availability:")
     print(f"PDF Processing:              {'✅ Enabled' if pdf_available else '⚠️  Graceful fallback'}")
     print(
         f"Image Processing:            {'✅ Enabled' if (pil_available and pytesseract_available and tesseract_available) else '⚠️  Graceful fallback'}"
     )
-    print(f"Core VANA Functionality:     ✅ Always Available")
+    print("Core VANA Functionality:     ✅ Always Available")
 
-    return {"pdf": pdf_available, "images": pil_available and pytesseract_available, "tesseract": tesseract_available}
+    return {"pd": pdf_available, "images": pil_available and pytesseract_available, "tesseract": tesseract_available}
 
 
 def install_pdf_support():
@@ -158,7 +158,7 @@ def interactive_install():
     print_feature_info()
     status = check_current_status()
 
-    print(f"\n🔧 Installation Options:")
+    print("\n🔧 Installation Options:")
     print("1. Install PDF processing support")
     print("2. Install image processing & OCR support")
     print("3. Install all optional dependencies")
@@ -170,7 +170,7 @@ def interactive_install():
             choice = input("\nSelect an option (1-5): ").strip()
 
             if choice == "1":
-                if status["pdf"]:
+                if status["pd"]:
                     print("✅ PDF support already available!")
                 else:
                     install_pdf_support()
@@ -182,7 +182,7 @@ def interactive_install():
                     install_image_support()
                 break
             elif choice == "3":
-                if not status["pdf"]:
+                if not status["pd"]:
                     install_pdf_support()
                 if not status["images"]:
                     install_image_support()
@@ -215,7 +215,7 @@ Examples:
     )
 
     parser.add_argument("--all", action="store_true", help="Install all optional dependencies")
-    parser.add_argument("--pdf", action="store_true", help="Install PDF processing dependencies")
+    parser.add_argument("--pd", action="store_true", help="Install PDF processing dependencies")
     parser.add_argument("--images", action="store_true", help="Install image processing dependencies")
     parser.add_argument("--status", action="store_true", help="Check dependency status only")
 
@@ -233,7 +233,7 @@ Examples:
         status = check_current_status()
 
         if args.all or args.pdf:
-            if not status["pdf"]:
+            if not status["pd"]:
                 install_pdf_support()
             else:
                 print("✅ PDF support already available!")
