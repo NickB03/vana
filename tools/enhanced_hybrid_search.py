@@ -87,9 +87,6 @@ class EnhancedHybridSearch(HybridSearch):
         logger.info(f"Performing enhanced hybrid search for query: {query}")
 
         # Track service availability
-        vs_available = False
-        kg_available = False
-        web_available = False
 
         try:
             # Try Vector Search first - will use mock if real one is not available
@@ -97,7 +94,6 @@ class EnhancedHybridSearch(HybridSearch):
                 # Always call search - it will use mock if real one is not available
                 vector_results = self.vector_search_client.search(query, top_k=top_k)
                 if vector_results:
-                    vs_available = True
                     results["vector_search"] = vector_results
                     logger.info(f"Vector Search returned {len(vector_results)} results")
                 else:
@@ -108,7 +104,6 @@ class EnhancedHybridSearch(HybridSearch):
             # Try Knowledge Graph
             try:
                 if self.kg_manager.is_available():
-                    kg_available = True
                     kg_results = self.kg_manager.query("*", query)
                     results["knowledge_graph"] = kg_results.get("entities", [])
                     logger.info(f"Knowledge Graph returned {len(results['knowledge_graph'])} results")
@@ -121,7 +116,6 @@ class EnhancedHybridSearch(HybridSearch):
             if include_web:
                 try:
                     if self.web_search_client.is_available():
-                        web_available = True
                         web_results = self.web_search_client.search(query, num_results=top_k)
                         results["web_search"] = web_results
                         logger.info(f"Web Search returned {len(web_results)} results")
@@ -289,10 +283,10 @@ class EnhancedHybridSearch(HybridSearch):
                 formatted += f"Entity: {entity_name} (Type: {entity_type})\n"
                 formatted += f"{content}\n\n"
             elif source == "web_search":
-                title = metadata.get("title", "Unknown title")
-                url = metadata.get("url", "")
+                metadata.get("title", "Unknown title")
+                metadata.get("url", "")
                 source_info = metadata.get("source", "Unknown source")
-                date = metadata.get("date", "")
+                metadata.get("date", "")
 
                 formatted += f"{i}. [WEB SEARCH] (Score: {score:.2f})\n"
                 formatted += f"{content}\n\n"

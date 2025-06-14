@@ -61,8 +61,8 @@ class AgentTool:
 
     def _extract_capabilities(self) -> list:
         """Extract capabilities from the agent's instruction or description."""
-        agent_instruction = getattr(self.agent, "instruction", "")
-        agent_description = getattr(self.agent, "description", "")
+        getattr(self.agent, "instruction", "")
+        getattr(self.agent, "description", "")
 
         # Extract capabilities based on agent type
         if "architecture" in self.name.lower():

@@ -406,10 +406,10 @@ class VANAPerformanceBenchmarks:
                         # Small delay between requests
                         await asyncio.sleep(0.5)
 
-                    except Exception as e:
+                    except Exception:
                         failed_requests += 1
 
-            except Exception as e:
+            except Exception:
                 failed_requests += iterations
 
             await browser.close()
@@ -704,6 +704,6 @@ if __name__ == "__main__":
 
     async def main():
         benchmarks = VANAPerformanceBenchmarks()
-        results = await benchmarks.run_comprehensive_benchmarks()
+        await benchmarks.run_comprehensive_benchmarks()
 
     asyncio.run(main())

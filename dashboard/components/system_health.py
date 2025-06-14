@@ -120,7 +120,7 @@ def display_system_health():
 
         # Memory details
         total_gb = health_data["memory"]["total_mb"] / 1024
-        used_gb = health_data["memory"]["used_mb"] / 1024
+        health_data["memory"]["used_mb"] / 1024
         available_gb = health_data["memory"]["available_mb"] / 1024
 
         st.metric("Total Memory", f"{total_gb:.2f} GB")

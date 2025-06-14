@@ -166,7 +166,7 @@ def test_integration_framework():
         logger.info("  ✅ Integration test imports successful")
 
         # Test mock agent system creation
-        test_class = TestAgentWorkflows()
+        TestAgentWorkflows()
 
         # Create mock agent system (simplified)
         mock_agents = {
@@ -200,7 +200,7 @@ def test_ci_framework():
         from tests.automated.ci_runner import CIRunner, TestResult
 
         # Test 1: CI runner creation
-        ci_runner = CIRunner(project_root)
+        CIRunner(project_root)
         logger.info("  ✅ CI runner created successfully")
 
         # Test 2: Test result creation

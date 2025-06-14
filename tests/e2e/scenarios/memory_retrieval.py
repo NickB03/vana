@@ -66,7 +66,7 @@ class MemoryRetrievalTest(TestCase):
     def _send_message_and_verify(self, message, expected_content=None, timeout=30):
         """Helper method to send a message and verify the response."""
         # Send message
-        response = self.execute_step(self.agent_client.send_message, "vana", message, self.session_id)
+        self.execute_step(self.agent_client.send_message, "vana", message, self.session_id)
 
         # Wait for agent response
         start_time = time.time()
@@ -170,7 +170,7 @@ class MemoryRetrievalTest(TestCase):
         identity_memories = [m for m in self.stored_memories if m["category"] == "identity"]
 
         if identity_memories:
-            identity_memory = identity_memories[0]
+            identity_memories[0]
             response = self._send_message_and_verify("What is my name and where do I work?", ["Alex Chen", "Acme Corp"])
         else:
             self.log_warning("No identity memory found")

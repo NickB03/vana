@@ -596,7 +596,7 @@ class ComprehensiveMigrationManager:
 
             # Step 2: Convert format if needed
             if self.config.preserve_metadata or self.config.preserve_chunks:
-                converted_document = self.format_converter.convert_legacy_document_to_adk(legacy_document)
+                self.format_converter.convert_legacy_document_to_adk(legacy_document)
 
             # Step 3: Upload to ADK
             upload_result = await self.adk_processor.upload_file_to_rag_corpus(file_path)

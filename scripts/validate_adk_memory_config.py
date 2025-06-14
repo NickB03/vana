@@ -229,15 +229,15 @@ def test_configuration_loading():
 
     try:
         # Test ADK memory config
-        adk_config = EnvironmentConfig.get_adk_memory_config()
+        EnvironmentConfig.get_adk_memory_config()
         print_status("success", "ADK memory configuration loaded successfully")
 
         # Test memory config
-        memory_config = EnvironmentConfig.get_memory_config()
+        EnvironmentConfig.get_memory_config()
         print_status("success", "Memory configuration loaded successfully")
 
         # Test vector search config
-        vector_config = EnvironmentConfig.get_vector_search_config()
+        EnvironmentConfig.get_vector_search_config()
         print_status("success", "Vector search configuration loaded successfully")
 
         # Test environment detection

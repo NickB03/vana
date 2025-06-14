@@ -87,7 +87,7 @@ class VanaEnvironmentSetup:
             logger.info(f"✅ Poetry Python {major}.{minor}.{patch} is compatible")
             return True
 
-        except (IndexError, ValueError) as e:
+        except (IndexError, ValueError):
             logger.error(f"Failed to parse Python version: {output}")
             return False
 

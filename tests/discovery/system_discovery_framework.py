@@ -647,6 +647,6 @@ if __name__ == "__main__":
 
     async def main():
         discovery = VANASystemDiscovery()
-        results = await discovery.run_comprehensive_discovery()
+        await discovery.run_comprehensive_discovery()
 
     asyncio.run(main())

@@ -116,7 +116,7 @@ def process_directory(
             )
 
             # Get document information
-            doc_id = document.get("doc_id", "unknown")
+            document.get("doc_id", "unknown")
             title = document.get("title", os.path.basename(file_path))
             chunks = document.get("chunks", [])
 

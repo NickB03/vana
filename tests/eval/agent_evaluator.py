@@ -471,6 +471,6 @@ if __name__ == "__main__":
 
     async def main():
         evaluator = VANASystemEvaluator()
-        results = await evaluator.evaluate_all_agents()
+        await evaluator.evaluate_all_agents()
 
     asyncio.run(main())
