@@ -20,6 +20,14 @@ import sys
 from datetime import datetime
 from typing import Any, Dict, List
 
+# Configure logging first
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(message)s",
+    handlers=[logging.FileHandler("process_document_diffs.log"), logging.StreamHandler()],
+)
+logger = logging.getLogger(__name__)
+
 # Add the project root to the Python path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -32,14 +40,6 @@ except ImportError as e:
     logger.error(f"Error importing required modules: {e}")
     logger.info("Make sure you run this script from the project root directory.")
     sys.exit(1)
-
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s [%(levelname)s] %(message)s",
-    handlers=[logging.FileHandler("process_document_diffs.log"), logging.StreamHandler()],
-)
-logger = logging.getLogger(__name__)
 
 
 class DiffProcessor:
