@@ -13,6 +13,9 @@ Specializations:
 - Cloud architecture and infrastructure design
 """
 
+from lib._tools import adk_list_directory, adk_read_file, adk_search_knowledge, adk_vector_search
+from google.adk.tools import FunctionTool
+from google.adk.agents import LlmAgent
 import os
 import sys
 
@@ -25,11 +28,8 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
 load_dotenv()
 
 # Google ADK imports
-from google.adk.agents import LlmAgent
-from google.adk.tools import FunctionTool
 
 # Import relevant tools for architecture analysis
-from lib._tools import adk_list_directory, adk_read_file, adk_search_knowledge, adk_vector_search
 
 
 def analyze_system_architecture(context: str) -> str:
@@ -136,8 +136,10 @@ architecture_specialist = LlmAgent(
 
 Always provide comprehensive, expert-level architectural guidance that considers both immediate needs and long-term scalability.""",
     tools=[
-        FunctionTool(func=analyze_system_architecture),
-        FunctionTool(func=evaluate_design_patterns),
+        FunctionTool(
+            func=analyze_system_architecture),
+        FunctionTool(
+            func=evaluate_design_patterns),
         adk_vector_search,
         adk_search_knowledge,
         adk_read_file,

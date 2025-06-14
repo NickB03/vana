@@ -4,22 +4,6 @@ VANA Multi-Agent Team Definition - Minimal Working Version
 This is a simplified version with only working tools to test basic functionality.
 """
 
-import os
-
-# Add project root to Python path for absolute imports
-import sys
-
-from dotenv import load_dotenv
-
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
-
-# Load environment variables before importing Google ADK
-load_dotenv()
-
-# Google ADK imports (installed in environment)
-from google.adk.agents import LlmAgent
-
-# Import only working ADK-compatible tools
 from lib._tools import (  # File System Tools; Search Tools; System Tools; Agent Coordination Tools
     adk_coordinate_task,
     adk_delegate_to_agent,
@@ -34,6 +18,22 @@ from lib._tools import (  # File System Tools; Search Tools; System Tools; Agent
     adk_web_search,
     adk_write_file,
 )
+from google.adk.agents import LlmAgent
+import os
+
+# Add project root to Python path for absolute imports
+import sys
+
+from dotenv import load_dotenv
+
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
+
+# Load environment variables before importing Google ADK
+load_dotenv()
+
+# Google ADK imports (installed in environment)
+
+# Import only working ADK-compatible tools
 
 # Create a simple VANA agent with working tools
 root_agent = LlmAgent(
@@ -113,7 +113,7 @@ You are VANA, an AI assistant with access to file operations, search capabilitie
 
 Available tools:
 - File operations: read, write, list, check existence
-- Search: vector search, web search, knowledge search  
+- Search: vector search, web search, knowledge search
 - System: echo, health status
 - Agent coordination: coordinate tasks, delegate, get status, transfer
 
@@ -138,7 +138,7 @@ Before responding to any user query, follow this hierarchy:
 - Use: search_knowledge("query about VANA system")
 - This searches the RAG corpus with VANA-specific knowledge
 
-### 3. MEMORY RETRIEVAL (load_memory) 
+### 3. MEMORY RETRIEVAL (load_memory)
 - For user preferences, past interactions, or learned patterns
 - Use: load_memory with relevant query
 - This retrieves cross-session user context and preferences
@@ -186,7 +186,7 @@ After successful task completion, important session content should be converted 
 ## ⚠️ MEMORY USAGE RULES
 
 1. **NEVER guess** about VANA capabilities - always search_knowledge first
-2. **NEVER assume** user preferences - always load_memory first  
+2. **NEVER assume** user preferences - always load_memory first
 3. **NEVER repeat** external searches - check memory systems first
 4. **ALWAYS store** successful patterns and user preferences
 5. **ALWAYS cite** memory sources when using retrieved information
