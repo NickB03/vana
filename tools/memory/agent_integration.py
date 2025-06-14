@@ -97,7 +97,6 @@ class BenAgent(Agent):
     def __init__(self, name, description, instructions):
         super().__init__(name=name, description=description, instructions=instructions)
         # Original initialization code
-        
     def process_message(self, message):
         # Original message processing code
         return "Response to " + message

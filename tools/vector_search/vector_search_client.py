@@ -83,7 +83,7 @@ class VectorSearchClient:
         self.match_client = None
 
         # Log configuration
-        logger.info(f"Vector Search Client Configuration:")
+        logger.info("Vector Search Client Configuration:")
         logger.info(f"  Project ID: {self.project_id}")
         logger.info(f"  Location: {self.location}")
         logger.info(f"  Endpoint ID: {self.endpoint_id}")
