@@ -3,23 +3,23 @@ Project Development Workflow - Sequential Specialist Collaboration
 Implements Google ADK SequentialAgent pattern for end-to-end project development.
 """
 
+from agents.specialists.ui_specialist import analyze_user_interface
+from agents.specialists.qa_specialist import analyze_testing_strategy
+from agents.specialists.devops_specialist import analyze_infrastructure
+from agents.specialists.architecture_specialist import analyze_system_architecture
+from agents.memory.specialist_memory_manager import get_specialist_knowledge_func, save_specialist_knowledge_func
+from google.adk.tools import FunctionTool
+from google.adk.agents import LlmAgent, SequentialAgent
 import os
 import sys
 
 # Add project root to Python path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
 
-from google.adk.agents import LlmAgent, SequentialAgent
-from google.adk.tools import FunctionTool
 
 # Import memory management
-from agents.memory.specialist_memory_manager import get_specialist_knowledge_func, save_specialist_knowledge_func
 
 # Import specialist functions
-from agents.specialists.architecture_specialist import analyze_system_architecture
-from agents.specialists.devops_specialist import analyze_infrastructure
-from agents.specialists.qa_specialist import analyze_testing_strategy
-from agents.specialists.ui_specialist import analyze_user_interface
 
 
 def create_project_development_workflow() -> SequentialAgent:
@@ -37,10 +37,10 @@ def create_project_development_workflow() -> SequentialAgent:
         description="Analyzes project requirements and creates detailed specifications",
         instruction="""You are a Requirements Analyst. Analyze the user's project request and create:
         1. Functional requirements
-        2. Non-functional requirements  
+        2. Non-functional requirements
         3. Technical constraints
         4. Success criteria
-        
+
         Save your analysis to session state for other specialists to use.""",
         output_key="project_requirements",
     )
@@ -77,13 +77,13 @@ def create_project_development_workflow() -> SequentialAgent:
         instruction="""You are a UI/UX Specialist. Based on:
         - Requirements: state['project_requirements']
         - Architecture: state['system_architecture']
-        
+
         Create:
         1. User interface design
         2. User experience flow
         3. Accessibility considerations
         4. Frontend technology recommendations
-        
+
         Use the UI analysis tool for detailed design guidance.""",
         tools=[FunctionTool(analyze_user_interface)],
         output_key="ui_design",
@@ -98,13 +98,13 @@ def create_project_development_workflow() -> SequentialAgent:
         - Requirements: state['project_requirements']
         - Architecture: state['system_architecture']
         - UI Design: state['ui_design']
-        
+
         Create:
         1. Deployment strategy
         2. CI/CD pipeline design
         3. Infrastructure requirements
         4. Monitoring and scaling plans
-        
+
         Use the DevOps analysis tool for detailed infrastructure guidance.""",
         tools=[FunctionTool(analyze_infrastructure)],
         output_key="devops_strategy",
@@ -116,17 +116,17 @@ def create_project_development_workflow() -> SequentialAgent:
         model="gemini-2.0-flash",
         description="Creates comprehensive testing strategy",
         instruction="""You are a QA Specialist. Based on all previous phases:
-        - Requirements: state['project_requirements'] 
+        - Requirements: state['project_requirements']
         - Architecture: state['system_architecture']
         - UI Design: state['ui_design']
         - DevOps: state['devops_strategy']
-        
+
         Create:
         1. Testing strategy
         2. Quality assurance plan
         3. Automation framework
         4. Performance testing approach
-        
+
         Use the QA analysis tool for detailed testing guidance.""",
         tools=[FunctionTool(analyze_testing_strategy)],
         output_key="qa_strategy",
@@ -139,11 +139,11 @@ def create_project_development_workflow() -> SequentialAgent:
         description="Integrates all specialist recommendations into final project plan",
         instruction="""You are an Integration Manager. Review all specialist outputs:
         - Requirements: state['project_requirements']
-        - Architecture: state['system_architecture'] 
+        - Architecture: state['system_architecture']
         - UI Design: state['ui_design']
         - DevOps: state['devops_strategy']
         - QA Strategy: state['qa_strategy']
-        
+
         Create a comprehensive project plan that integrates all recommendations:
         1. Implementation roadmap
         2. Timeline and milestones

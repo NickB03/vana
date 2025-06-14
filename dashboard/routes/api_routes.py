@@ -9,6 +9,10 @@ This module provides API routes for the VANA dashboard, including:
 - Task API endpoints
 """
 
+from dashboard.api.task_api import get_task_details, get_task_summary, get_task_timeline
+from dashboard.api.system_api import get_service_status, get_system_alerts, get_system_health, get_system_health_history
+from dashboard.api.memory_api import get_memory_metrics_history, get_memory_usage, get_recent_queries
+from dashboard.api.agent_api import get_agent_activity, get_agent_statuses
 import logging
 import os
 import sys
@@ -22,10 +26,6 @@ from dashboard.auth.dashboard_auth import requires_auth
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 # Import API modules
-from dashboard.api.agent_api import get_agent_activity, get_agent_statuses
-from dashboard.api.memory_api import get_memory_metrics_history, get_memory_usage, get_recent_queries
-from dashboard.api.system_api import get_service_status, get_system_alerts, get_system_health, get_system_health_history
-from dashboard.api.task_api import get_task_details, get_task_summary, get_task_timeline
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
