@@ -23,6 +23,10 @@ import time
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
+# Configure logging first
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
 # Add project root to path
 sys.path.insert(0, os.path.abspath(os.path.dirname(os.path.dirname(__file__))))
 
@@ -37,10 +41,6 @@ except ImportError as e:
     logger.error(f"Error importing required modules: {e}")
     logger.info("Make sure you run this script from the project root or scripts directory.")
     sys.exit(1)
-
-# Configure logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
 
 # Default test queries
 DEFAULT_TEST_QUERIES = [
