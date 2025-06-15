@@ -4,20 +4,22 @@ Welcome to VANA! This comprehensive guide will help you understand and effective
 
 ## 🎯 What is VANA?
 
-VANA is an advanced multi-agent AI system currently featuring **7 operational agents** that can help you with:
-- **System Orchestration** - Central coordination and intelligent task routing
-- **Architecture Design** - System design and technical architecture guidance
-- **UI/UX Design** - User interface and user experience optimization
-- **DevOps & Deployment** - Infrastructure management and CI/CD strategies
-- **Quality Assurance** - Testing strategies and quality frameworks
+VANA is an advanced multi-agent AI system featuring **7 discoverable agents** (3 real + 4 proxy) that can help you with:
+- **Task Coordination** - Central coordination using 19 core tools + conditional tools
 - **Code Execution** - Secure multi-language code execution (Python, JavaScript, Shell)
 - **Data Science** - Data analysis, visualization, cleaning, and machine learning
+- **File Operations** - Reading, writing, and managing files securely
+- **Search Capabilities** - Vector search, web search, and knowledge base queries
+- **System Monitoring** - Health checks and system status monitoring
+- **Workflow Management** - Multi-step task coordination and execution
 
-### 📊 Current System Status
-- **Operational Agents**: 7 specialized agents ready to assist
-- **Infrastructure**: Excellent performance with 0.045s average response time
-- **Testing Framework**: Comprehensive evaluation system for continuous improvement
-- **Development Status**: Active development with recent comprehensive testing and improvements
+### 📊 Current System Status (Verified 2025-06-15)
+- **Discoverable Agents**: 7 (3 real + 4 proxy using simplified architecture)
+- **Core Tools**: 19 always available + conditional tools when dependencies available
+- **Real Agents**: VANA Orchestrator, Code Execution Specialist, Data Science Specialist
+- **Proxy Agents**: Memory, Orchestration, Specialists, Workflows (all delegate to VANA)
+- **Infrastructure**: Google Cloud Run with excellent performance and auto-scaling
+- **Architecture**: Simplified multi-agent with proxy pattern (not complex orchestration)
 
 ## 🚀 Getting Started
 
@@ -41,10 +43,11 @@ VANA is an advanced multi-agent AI system currently featuring **7 operational ag
 VANA uses natural language processing, so you can communicate in plain English:
 
 ```
-"Can you help me plan a weekend trip to San Francisco?"
 "Generate a Python function to calculate fibonacci numbers"
 "Search for the latest AI research papers"
 "What's the current system health status?"
+"Read the contents of README.md file"
+"Analyze this dataset and create visualizations"
 ```
 
 ### Request Structure
@@ -56,143 +59,142 @@ For best results, structure your requests with:
 
 **Good Example:**
 ```
-"I need to plan a 3-day business trip to Tokyo for next month. 
-Budget is $3000, prefer hotels near the business district, 
-and I need vegetarian meal options."
+"I need to analyze a CSV dataset with sales data.
+Please clean the data, perform statistical analysis,
+and create visualizations showing trends by month and region."
 ```
 
 **Less Effective:**
 ```
-"Plan a trip"
+"Analyze data"
 ```
 
 ## 🎯 Core Capabilities
 
-### 1. Travel Planning
+### 1. File Operations & Data Management
 
-VANA can handle complete travel workflows:
+VANA provides secure file operations using its core tools:
 
-#### Hotel Search & Booking
+#### File Reading & Writing
 ```
-"Find 4-star hotels in downtown Seattle under $200/night for March 15-17"
-"Book a hotel room at the Marriott in Chicago for next Friday"
-"Show me pet-friendly hotels in San Diego with ocean views"
-```
-
-#### Flight Search & Management
-```
-"Find flights from LAX to JFK departing March 20th, returning March 25th"
-"Search for the cheapest flights to London in the next 3 months"
-"Check flight status for United 1234 tomorrow"
+"Read the contents of config.json and explain the configuration"
+"Write this data to a new CSV file called sales_report.csv"
+"Check if the file backup.sql exists in the current directory"
 ```
 
-#### Itinerary Planning
+#### Directory Management
 ```
-"Create a 5-day itinerary for visiting Paris with cultural attractions"
-"Plan a family-friendly weekend in Orlando with theme park visits"
-"Suggest a food tour itinerary for Tokyo"
-```
-
-#### Payment Processing
-```
-"Process payment for the hotel booking confirmation #ABC123"
-"Set up automatic payment for recurring travel expenses"
-"Generate an expense report for my last business trip"
+"List all Python files in the src/ directory"
+"Show me the directory structure of this project"
+"Find all files modified in the last week"
 ```
 
-### 2. Software Development
-
-VANA provides comprehensive development assistance:
-
-#### Code Generation
+#### Data Processing
 ```
-"Create a REST API endpoint for user authentication in Python Flask"
-"Generate a React component for a product catalog"
-"Write a SQL query to find top-selling products by category"
+"Read this CSV file and show me the first 10 rows"
+"Convert this JSON data to a formatted table"
+"Extract specific columns from this dataset"
 ```
 
-#### Testing & Quality Assurance
+### 2. Code Execution & Development
+
+VANA provides secure code execution and development assistance:
+
+#### Multi-Language Code Execution
 ```
-"Create unit tests for this Python function: [paste code]"
-"Generate integration tests for my API endpoints"
-"Review this code for security vulnerabilities: [paste code]"
+"Execute this Python code: print('Hello, World!')"
+"Run this JavaScript function and show the output"
+"Execute this shell command: ls -la"
 ```
 
-#### Documentation
+#### Code Analysis & Debugging
 ```
-"Generate API documentation for my Flask application"
-"Create a README file for my Python project"
-"Write technical documentation for this database schema"
-```
-
-#### Security Analysis
-```
-"Analyze this code for security issues: [paste code]"
-"Check my API for common vulnerabilities"
-"Generate a security checklist for my web application"
+"Execute this Python function and explain what it does: [paste code]"
+"Run this code and help me debug any errors"
+"Test this algorithm with sample data and show the results"
 ```
 
-### 3. Research & Analysis
-
-VANA excels at information gathering and analysis:
-
-#### Web Research
+#### Development Assistance
 ```
-"Research the latest trends in artificial intelligence"
-"Find information about sustainable energy solutions"
-"What are the current market conditions for electric vehicles?"
+"Create a Python function to calculate fibonacci numbers"
+"Generate a simple REST API endpoint example"
+"Write a function to parse CSV data"
 ```
+
+#### Secure Execution Environment
+```
+"Execute this data processing script safely"
+"Run this analysis code with resource monitoring"
+"Test this function with different input parameters"
+```
+
+### 3. Search & Information Retrieval
+
+VANA provides powerful search capabilities using its core tools:
+
+#### Vector Search (Semantic)
+```
+"Search for information about machine learning algorithms"
+"Find documents related to data science best practices"
+"Look for content about system architecture patterns"
+```
+
+#### Web Search
+```
+"Search the web for latest trends in artificial intelligence"
+"Find current information about Python programming best practices"
+"What are the recent developments in cloud computing?"
+```
+
+#### Knowledge Base Search
+```
+"Search the VANA knowledge base for agent coordination patterns"
+"Find information about tool integration in the system"
+"Look up documentation about security features"
+```
+
+### 4. Data Science & Analytics
+
+VANA provides comprehensive data science capabilities:
 
 #### Data Analysis
 ```
-"Analyze the sales data in this CSV file and identify trends"
-"Create a summary of customer feedback from these reviews"
-"Compare the performance metrics of different marketing campaigns"
+"Analyze this dataset and show descriptive statistics"
+"Create visualizations for this sales data"
+"Identify patterns and trends in this time series data"
 ```
 
-#### Competitive Intelligence
+#### Machine Learning
 ```
-"Research my competitors in the SaaS market"
-"Analyze pricing strategies in the e-commerce industry"
-"What are the latest product launches from tech companies?"
-```
-
-### 4. Knowledge Management
-
-VANA can help organize and retrieve information:
-
-#### Document Processing
-```
-"Extract key information from this PDF document"
-"Summarize the main points from these research papers"
-"Create an index of topics covered in these documents"
+"Build a simple regression model for this dataset"
+"Perform clustering analysis on customer data"
+"Create a classification model and evaluate its performance"
 ```
 
-#### Semantic Search
+#### Statistical Computing
 ```
-"Find documents related to machine learning algorithms"
-"Search for information about customer retention strategies"
-"Locate all references to data privacy in our documentation"
+"Calculate correlation coefficients for these variables"
+"Perform hypothesis testing on this sample data"
+"Generate statistical summaries and insights"
 ```
 
 ## 🛠️ Advanced Features
 
 ### Multi-Agent Coordination
 
-VANA automatically coordinates multiple agents for complex tasks:
+VANA automatically coordinates between its real agents for complex tasks:
 
 ```
-"Plan a complete business trip including flights, hotels, 
-ground transportation, and meeting scheduling for a 
-conference in Berlin next month"
+"Analyze this dataset, clean the data, create visualizations,
+and generate a comprehensive report with statistical insights"
 ```
 
 This request will involve:
-- **Travel Orchestrator** - Coordinating the overall plan
-- **Flight Agent** - Finding and booking flights
-- **Hotel Agent** - Securing accommodation
-- **Itinerary Agent** - Creating the schedule
-- **Payment Agent** - Processing payments
+- **VANA Orchestrator** - Coordinating the overall workflow using core tools
+- **Data Science Agent** - Performing data analysis and statistical computations
+- **Code Execution Agent** - Running data processing and visualization code
+- **File Operations** - Reading input data and writing results using adk_read_file/adk_write_file
+- **Coordination Tools** - Using adk_coordinate_task and adk_delegate_to_agent
 
 ### Long-Running Tasks
 

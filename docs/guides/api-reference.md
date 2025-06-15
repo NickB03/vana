@@ -78,17 +78,33 @@ List all available agents and their status.
       "name": "vana",
       "type": "orchestrator",
       "status": "healthy",
-      "description": "Master orchestrator agent",
-      "capabilities": ["coordination", "planning", "synthesis"],
-      "tools": ["echo", "coordinate_task", "delegate_to_agent"]
+      "description": "VANA Orchestrator with 19 core tools",
+      "capabilities": ["coordination", "task_routing", "file_operations", "search", "workflows"],
+      "tools": ["adk_echo", "adk_coordinate_task", "adk_delegate_to_agent", "adk_read_file", "adk_web_search"]
     },
     {
-      "name": "travel_orchestrator",
-      "type": "domain_orchestrator",
+      "name": "code_execution",
+      "type": "specialist",
       "status": "healthy",
-      "description": "Travel workflow coordination",
-      "capabilities": ["travel_planning", "booking_coordination"],
-      "tools": ["hotel_agent", "flight_agent", "itinerary_agent"]
+      "description": "Secure multi-language code execution",
+      "capabilities": ["python_execution", "javascript_execution", "shell_execution"],
+      "tools": ["secure_sandbox", "resource_monitoring"]
+    },
+    {
+      "name": "data_science",
+      "type": "specialist",
+      "status": "healthy",
+      "description": "Data analysis and machine learning",
+      "capabilities": ["data_analysis", "visualization", "machine_learning"],
+      "tools": ["statistical_analysis", "data_visualization"]
+    },
+    {
+      "name": "memory",
+      "type": "proxy",
+      "status": "healthy",
+      "description": "Proxy agent - delegates to VANA",
+      "capabilities": ["delegation_to_vana"],
+      "tools": ["proxy_delegation"]
     }
   ]
 }
@@ -102,14 +118,45 @@ List all available tools and their specifications.
 {
   "tools": [
     {
-      "name": "echo",
+      "name": "adk_echo",
       "category": "system",
-      "description": "Echo input for testing",
+      "description": "System testing and validation",
       "parameters": {
         "message": {
           "type": "string",
           "required": true,
           "description": "Message to echo"
+        }
+      },
+      "response_format": "StandardToolResponse"
+    },
+    {
+      "name": "adk_read_file",
+      "category": "file_system",
+      "description": "Secure file reading with validation",
+      "parameters": {
+        "file_path": {
+          "type": "string",
+          "required": true,
+          "description": "Path to the file to read"
+        }
+      },
+      "response_format": "StandardToolResponse"
+    },
+    {
+      "name": "adk_vector_search",
+      "category": "search",
+      "description": "Semantic similarity search via Vertex AI",
+      "parameters": {
+        "query": {
+          "type": "string",
+          "required": true,
+          "description": "Search query for semantic matching"
+        },
+        "limit": {
+          "type": "integer",
+          "required": false,
+          "description": "Maximum number of results to return"
         }
       },
       "response_format": "StandardToolResponse"
@@ -417,18 +464,23 @@ Get MCP integration status.
 
 **Parameters:** None
 
-### Agent-as-Tools
+### Conditional Tools
 
-The repository exposes a small set of specialist agents as callable tools:
+VANA includes conditional tools that are available when dependencies are successfully imported:
 
-#### Available Tools
-- `architecture_tool` – Architecture analysis
-- `ui_tool` – UI/UX guidance
-- `devops_tool` – Infrastructure planning
-- `qa_tool` – Testing strategy
+#### Specialist Tools
+- Available when `agents.specialists.agent_tools` imports successfully
+- Provides additional specialist capabilities when available
 
-Additional agent tools described in earlier documentation (e.g. travel or
-research agents) are not implemented in the current codebase.
+#### Orchestration Tools (6)
+- `analyze_task_complexity` - Advanced task complexity analysis
+- `route_to_specialist` - Intelligent specialist routing
+- `coordinate_workflow` - Advanced workflow coordination
+- `decompose_enterprise_task` - Enterprise task decomposition
+- `save_specialist_knowledge_func` - Specialist knowledge storage
+- `get_specialist_knowledge_func` - Specialist knowledge retrieval
+
+These tools are loaded conditionally and provide enhanced functionality when the required dependencies are available.
 
 ## 📊 Response Formats
 
