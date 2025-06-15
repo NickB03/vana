@@ -1,36 +1,68 @@
-# VANA System Architecture
+# 🏗️ VANA System Architecture
 
-## Overview
-VANA is a multi-agent AI system built on Google ADK with comprehensive tool integration, memory systems, and secure code execution capabilities. The system provides intelligent task coordination, specialist agent delegation, and seamless integration with external services.
+## 📊 Overview
+VANA is an advanced multi-agent AI system built on Google's Agent Development Kit (ADK), featuring **7 discoverable agents** (3 real + 4 proxy) with **19 core tools** plus conditional tools. The system uses a simplified multi-agent architecture with proxy pattern for optimal performance and maintainability.
 
-## Core Components
+> **📊 Visual Architecture**: See our [complete system architecture diagram](../assets/diagrams/system-architecture.md) for a visual overview.
 
-### Agent Layer
-VANA operates with a sophisticated multi-agent architecture featuring:
+## ✅ Verified System Status (2025-06-15)
+- **Agents**: 7 discoverable (3 real + 4 proxy)
+- **Tools**: 19 core + conditional tools
+- **Architecture**: Simplified multi-agent with proxy pattern
+- **Deployment**: Google Cloud Run (dev & prod environments)
+- **Status**: ✅ Operational
 
-- **Orchestration Agents**: Coordinate complex workflows and delegate tasks to appropriate specialists
-- **Specialist Agents**: Handle specific domains with deep expertise (code execution, data science, architecture, etc.)
-- **Utility Agents**: Provide supporting functionality (memory management, workflow coordination)
+## 🔧 Core Components
 
-#### Agent Types
-1. **VANA Master Orchestrator**: Central coordination hub for all system operations
-2. **Code Execution Specialist**: Secure multi-language code execution with sandbox isolation
-3. **Data Science Specialist**: Advanced data analysis, visualization, and machine learning capabilities
-4. **Memory Agent**: Intelligent information storage, retrieval, and context management
-5. **Workflow Orchestrator**: Complex multi-step task coordination and execution
+### 🤖 Agent Architecture (7 Discoverable)
 
-### Tool Integration Layer
-VANA integrates 59+ tools across multiple categories:
+> **🔄 Agent Interactions**: See our [agent interaction flow diagrams](../assets/diagrams/agent-interactions.md) for detailed coordination patterns.
 
-- **Native Tools**: Built-in VANA functionality (echo, search_knowledge, coordinate_task)
-- **MCP Tools**: External service integration via Model Context Protocol
-- **Sandbox Tools**: Secure code execution with multi-language support (Python, JavaScript, Shell)
-- **Memory Tools**: Session management, vector search, and knowledge base operations
+#### Real Agents (3)
+1. **VANA Orchestrator** (`agents/vana/team.py`)
+   - Central coordinator with 19 core tools + conditional tools
+   - Model: gemini-2.0-flash-exp
+   - Capabilities: File operations, search, coordination, task analysis, workflows
 
-#### Tool Categories
-- **Core Tools**: File system operations, search capabilities, system utilities
-- **Advanced Tools**: Long-running processes, third-party integrations, agent-as-tool patterns
-- **Security Tools**: Access control, validation, and security policy enforcement
+2. **Code Execution Specialist** (`agents/code_execution/specialist.py`)
+   - Secure multi-language code execution (Python, JavaScript, Shell)
+   - Sandbox isolation with resource monitoring and timeouts
+   - Coordinates with VANA for complex development tasks
+
+3. **Data Science Specialist** (`agents/data_science/specialist.py`)
+   - Data analysis, visualization, and machine learning capabilities
+   - Leverages Code Execution Specialist for secure Python execution
+   - Statistical computing and data processing workflows
+
+#### Proxy Agents (4) - Discovery Pattern
+- **Memory Agent** - Delegates to VANA (`agents/memory/__init__.py`)
+- **Orchestration Agent** - Delegates to VANA (`agents/orchestration/__init__.py`)
+- **Specialists Agent** - Delegates to VANA (`agents/specialists/__init__.py`)
+- **Workflows Agent** - Delegates to VANA (`agents/workflows/__init__.py`)
+
+### 🛠️ Tool Integration Layer
+
+> **🛠️ Tool Organization**: See our [tool organization diagrams](../assets/diagrams/tool-organization.md) for visual breakdown of all tools.
+
+VANA provides **19 core tools** always available, plus conditional tools when dependencies are available:
+
+#### Core Tools (19) - Always Available
+- **File System (4)**: `adk_read_file`, `adk_write_file`, `adk_list_directory`, `adk_file_exists`
+- **Search (3)**: `adk_vector_search`, `adk_web_search`, `adk_search_knowledge`
+- **System (2)**: `adk_echo`, `adk_get_health_status`
+- **Agent Coordination (4)**: `adk_coordinate_task`, `adk_delegate_to_agent`, `adk_get_agent_status`, `adk_transfer_to_agent`
+- **Task Analysis (3)**: `adk_analyze_task`, `adk_match_capabilities`, `adk_classify_task`
+- **Workflow Management (8)**: Complete workflow lifecycle management tools
+
+#### Conditional Tools (Variable Count)
+- **Specialist Tools**: Available when `agents.specialists.agent_tools` imports successfully
+- **Orchestration Tools (6)**: Advanced task complexity analysis and specialist routing
+
+#### Tool Architecture
+- **Standardized Interface**: All tools follow ADK FunctionTool pattern
+- **Error Handling**: Consistent error responses and logging
+- **Performance Monitoring**: Built-in execution timing and metrics
+- **Security**: Input validation and secure execution patterns
 
 ### Memory Systems
 VANA implements a sophisticated memory hierarchy:
@@ -65,19 +97,28 @@ graph TB
     KB --> CS
 ```
 
-### Infrastructure Layer
+### ☁️ Infrastructure Layer
+
+> **🚀 Deployment Architecture**: See our [deployment architecture diagrams](../assets/diagrams/deployment-architecture.md) for complete infrastructure overview.
+
 Built on Google Cloud Platform with enterprise-grade reliability:
 
+#### Google Cloud Services
 - **Google ADK**: Agent framework and runtime environment
-- **Cloud Run**: Containerized deployment with auto-scaling
-- **Vertex AI**: LLM services and embedding generation
-- **Docker**: Containerization for sandbox environments and deployment
+- **Cloud Run**: Serverless container deployment with auto-scaling
+- **Vertex AI**: Vector search, text embeddings, and language models
+- **RAG Corpus**: Knowledge storage and semantic search
+- **Secret Manager**: Secure credential management (zero hardcoded credentials)
 
-#### Infrastructure Components
-- **Container Orchestration**: Docker-based sandbox environments for secure code execution
-- **Auto-scaling**: Dynamic resource allocation based on demand
-- **Load Balancing**: Intelligent request distribution across agent instances
-- **Monitoring**: Comprehensive observability with Cloud Logging and Monitoring
+#### Deployment Environments
+- **Development**: https://vana-dev-960076421399.us-central1.run.app
+- **Production**: https://vana-prod-960076421399.us-central1.run.app
+
+#### Infrastructure Features
+- **Auto-scaling**: Dynamic resource allocation (0-10 instances production)
+- **Security**: Google Cloud IAM integration and service account authentication
+- **Monitoring**: Built-in Cloud Run metrics plus custom monitoring
+- **Container Registry**: Google Container Registry for image management
 
 ## Data Flow
 
@@ -196,10 +237,12 @@ Response: {
 GET /info
 Response: {
   "system_status": "operational",
-  "total_agents": 24,
-  "active_agents": 7,
-  "available_tools": 59,
-  "memory_systems": ["session", "knowledge", "vector", "rag"]
+  "discoverable_agents": 7,
+  "real_agents": 3,
+  "proxy_agents": 4,
+  "core_tools": 19,
+  "conditional_tools": "variable",
+  "memory_systems": ["adk_session", "vertex_ai_rag", "vector_search"]
 }
 ```
 

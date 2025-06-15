@@ -1,16 +1,19 @@
-# VANA Documentation
+# 📚 VANA Documentation Hub
 
-Welcome to the VANA documentation! This directory contains comprehensive guides for understanding, deploying, and using the VANA multi-agent AI system.
+Welcome to the comprehensive documentation for **VANA** - an advanced multi-agent AI system built on Google's Agent Development Kit (ADK).
+
+> **🚀 Quick Start**: New to VANA? Start with our [Quick Start Guide](getting-started/quick-start.md) to get up and running in minutes.
 
 ## 📚 Documentation Structure
 
-### 🏗️ Architecture
-- **[System Overview](architecture/system-overview.md)** - Complete system architecture with diagrams and data flow
-- **[Agent Interaction Patterns](architecture/agent-patterns.md)** - Agent-as-tool patterns, memory hierarchy, and delegation
-- **[Agent System](architecture/agent-system.md)** - Detailed agent architecture and coordination patterns
-- **[Agents](architecture/agents.md)** - Individual agent specifications and capabilities
+### 🏗️ Architecture & Design
+- **[🎯 System Overview](architecture/system-overview.md)** - Complete system architecture with verified 7-agent design
+- **[🤖 Agent Reference](agents/agent-reference.md)** - Complete documentation for all 7 discoverable agents
+- **[🛠️ Tool Reference](tools/tool-reference.md)** - Complete documentation for 19 core tools + conditional tools
+- **[📊 Visual Diagrams](assets/diagrams/README.md)** - Interactive architecture diagrams and flowcharts
+- **[Agent Interaction Patterns](architecture/agent-patterns.md)** - Agent coordination and delegation patterns
+- **[Agent System](architecture/agent-system.md)** - Detailed agent architecture documentation
 - **[Tools](architecture/tools.md)** - Tool system architecture and integration patterns
-- **[Overview](architecture/overview.md)** - High-level system design principles
 
 ### 🔌 API Documentation
 - **[Agent API Reference](api/agent-api.md)** - Complete API reference with examples and error handling
@@ -57,36 +60,39 @@ Welcome to the VANA documentation! This directory contains comprehensive guides 
 
 ## 🎯 Quick Navigation
 
-### For New Users
-1. Start with [Getting Started Tutorial](user/getting-started.md)
-2. Read the [User Guide](guides/user-guide.md)
-3. Explore [System Overview](architecture/system-overview.md)
+### 🚀 For New Users
+1. **[🏁 Quick Start](getting-started/quick-start.md)** - Get VANA running in 5 minutes
+2. **[👤 User Guide](guides/user-guide.md)** - End-user documentation and tutorials
+3. **[🎯 System Overview](architecture/system-overview.md)** - Understand the 7-agent architecture
 
-### For Developers
-1. Follow the [Developer Guide](guides/developer-guide.md)
-2. Review [Agent Interaction Patterns](architecture/agent-patterns.md)
-3. Check [API Reference](api/agent-api.md)
-4. Learn [Tool Integration](api/tool-integration.md)
+### 👨‍💻 For Developers
+1. **[🛠️ Developer Guide](guides/developer-guide.md)** - Development setup and best practices
+2. **[🤖 Agent Reference](agents/agent-reference.md)** - Complete agent documentation
+3. **[🛠️ Tool Reference](tools/tool-reference.md)** - All 19 core tools + conditional tools
+4. **[📡 API Reference](api/agent-api.md)** - Complete API documentation
+5. **[📊 Visual Diagrams](assets/diagrams/README.md)** - Architecture diagrams and flows
 
-### For Deployment
-1. Set up [Local Development](deployment/local-setup.md)
-2. Follow [Cloud Run Deployment](deployment/cloud-run.md)
-3. Configure [Security Settings](deployment/security-guide.md)
+### 🚀 For Deployment
+1. **[🏠 Local Setup](deployment/local-setup.md)** - Local development environment
+2. **[☁️ Cloud Run Deployment](deployment/cloud-run.md)** - Google Cloud Run deployment
+3. **[🔒 Security Guide](deployment/security-guide.md)** - Security configuration and best practices
+4. **[🚀 Deployment Architecture](assets/diagrams/deployment-architecture.md)** - Infrastructure overview
 
-### For AI Agents
-1. Read [AI Agent Development Guide](guides/ai-agent-development-guide.md)
-2. Understand [Agent Coordination Patterns](architecture/agent-patterns.md)
-3. Follow [Implementation Templates](implementation/technical-implementation-templates.md)
+### 🤖 For AI Agents
+1. **[🤖 AI Agent Development Guide](guides/ai-agent-development-guide.md)** - Guide for AI agents working with VANA
+2. **[🔄 Agent Interactions](assets/diagrams/agent-interactions.md)** - Visual interaction flows
+3. **[🛠️ Implementation Templates](implementation/technical-implementation-templates.md)** - Standardized patterns
 
 ## 📊 System Status
 
-- **Current Version**: 2.0.0
-- **Agent Count**: 24 total agents (7 active)
-- **Tool Count**: 59+ integrated tools
-- **Deployment Status**: Production ready
-- **Memory Systems**: Session, Knowledge Base, Vector Search, RAG Integration
-- **Security Features**: Sandbox isolation, input validation, access control
-- **Last Updated**: 2025-06-12
+- **Status**: ✅ Operational
+- **Agent Count**: 7 discoverable agents (3 real + 4 proxy)
+- **Tool Count**: 19 core tools + conditional tools
+- **Architecture**: Simplified multi-agent with proxy pattern
+- **Deployment**: Google Cloud Run (dev & prod environments)
+- **Memory Systems**: Vertex AI RAG corpus, ADK session management
+- **Security Features**: Zero hardcoded credentials, Google Cloud IAM, Secret Manager
+- **Last Updated**: 2025-06-15 (verified system state)
 
 ## 🤝 Contributing
 
