@@ -28,7 +28,7 @@ def initialize_local_mcp():
     # Use local MCP server
     endpoint = "http://localhost:5000"
     namespace = "vana-dev"
-    api_key = "local_dev_key"
+    api_key = os.getenv("api_key".upper(), "")
 
     logger.info(f"Initializing local MCP server at {endpoint}/{namespace}...")
 

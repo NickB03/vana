@@ -1,3 +1,4 @@
+import os
 """
 Web Search Tool for VANA
 
@@ -26,7 +27,7 @@ class WebSearchClient:
     def __init__(self):
         """Initialize the web search client"""
         # Use the provided API key directly
-        self.api_key = "AIzaSyAZtFNVDHlb6r6bR6VIPVtLcl29rOS_yRk"
+        self.api_key = os.getenv("api_key".upper(), "")
         self.search_engine_id = "04ca3153331b749b0"
         self.base_url = "https://www.googleapis.com/customsearch/v1"
 

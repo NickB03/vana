@@ -1,23 +1,34 @@
 performance_monitoring:
-  retention_minutes: 60
-  collection_interval: 30
-  
+  retention_minutes: 120
+  collection_interval: 15
+  enable_caching: true
+  cache_ttl: 300
+
 thresholds:
   response_time:
-    warning: 2.0
-    critical: 5.0
-  
+    warning: 1.5
+    critical: 3.0
+
   memory_usage:
-    warning: 80.0
-    critical: 90.0
-  
-  cpu_usage:
-    warning: 70.0
+    warning: 75.0
     critical: 85.0
-  
+
+  cpu_usage:
+    warning: 65.0
+    critical: 80.0
+
   error_rate:
-    warning: 5.0
-    critical: 10.0
+    warning: 3.0
+    critical: 7.0
+
+optimization:
+  enable_connection_pooling: true
+  max_connections: 50
+  connection_timeout: 30
+  enable_query_caching: true
+  cache_size_mb: 256
+  enable_compression: true
+  batch_size: 100
 
 alerting:
   enabled: true

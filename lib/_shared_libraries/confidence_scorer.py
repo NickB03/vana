@@ -584,7 +584,7 @@ class ConfidenceScorer:
         normalized = task_description.lower().strip()
         # Remove common variations that don't affect analysis
         normalized = re.sub(r"\s+", " ", normalized)  # Normalize whitespace
-        return hashlib.md5(normalized.encode()).hexdigest()
+        return hashlib.sha256(normalized.encode()).hexdigest()
 
     @lru_cache(maxsize=1000)
     def _analyze_task_cached(self, task_hash: str, task_description: str) -> TaskAnalysis:

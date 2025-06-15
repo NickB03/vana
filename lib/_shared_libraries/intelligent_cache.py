@@ -168,7 +168,7 @@ class ToolResultCache(IntelligentCache):
         # Normalize parameters for better cache hits
         normalized_params = self._normalize_parameters(parameters)
         param_str = json.dumps(normalized_params, sort_keys=True)
-        return f"{tool_name}:{hashlib.md5(param_str.encode()).hexdigest()}"
+        return f"{tool_name}:{hashlib.sha256(param_str.encode()).hexdigest()}"
 
     def _normalize_parameters(self, parameters: Dict[str, Any]) -> Dict[str, Any]:
         """Normalize parameters for better cache hits."""
@@ -218,7 +218,7 @@ class AgentDecisionCache(IntelligentCache):
 
         # Sort for consistent signatures
         key_words.sort()
-        return hashlib.md5(" ".join(key_words[:10]).encode()).hexdigest()[:16]
+        return hashlib.sha256(" ".join(key_words[:10]).encode()).hexdigest()[:16]
 
     def _get_context_signature(self, context: Dict[str, Any]) -> str:
         """Generate context signature."""
@@ -233,7 +233,7 @@ class AgentDecisionCache(IntelligentCache):
             return "empty"
 
         context_str = json.dumps(relevant_context, sort_keys=True)
-        return hashlib.md5(context_str.encode()).hexdigest()[:8]
+        return hashlib.sha256(context_str.encode()).hexdigest()[:8]
 
 
 class CacheWarmer:
