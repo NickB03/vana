@@ -745,7 +745,7 @@ class TaskRouter:
         """Generate cache key for routing decisions."""
         # Normalize task description for better cache hits
         normalized_task = task_description.lower().strip()
-        normalized_task = hashlib.md5(normalized_task.encode()).hexdigest()[:16]
+        normalized_task = hashlib.sha256(normalized_task.encode()).hexdigest()[:16]
 
         # Include relevant context in cache key
         context_key = ""
@@ -753,7 +753,7 @@ class TaskRouter:
             # Only include context keys that affect routing
             relevant_context = {k: v for k, v in context.items() if k in ["priority", "deadline", "complexity"]}
             if relevant_context:
-                context_key = hashlib.md5(str(sorted(relevant_context.items())).encode()).hexdigest()[:8]
+                context_key = hashlib.sha256(str(sorted(relevant_context.items())).encode()).hexdigest()[:8]
 
         return f"{normalized_task}_{context_key}_{force_planning}"
 
@@ -792,7 +792,7 @@ class TaskRouter:
 
         # Sort words for consistent hashing
         key_words.sort()
-        return hashlib.md5(" ".join(key_words).encode()).hexdigest()
+        return hashlib.sha256(" ".join(key_words).encode()).hexdigest()
 
     def clear_caches(self):
         """Clear all caches for memory management."""

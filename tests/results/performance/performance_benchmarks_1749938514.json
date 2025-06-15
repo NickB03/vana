@@ -1,0 +1,307 @@
+{
+  "summary": {
+    "total_benchmarks": 21,
+    "total_load_tests": 4,
+    "average_response_time_ms": 55.54232433027492,
+    "average_throughput_ops_per_sec": 86.12469294728845,
+    "average_memory_usage_mb": -0.004464285714285714,
+    "performance_targets_met": true,
+    "benchmarking_time_seconds": 83.96940302848816
+  },
+  "detailed_benchmarks": [
+    {
+      "agent_name": "vana",
+      "test_type": "response_time",
+      "response_time_ms": 50.280915366278755,
+      "throughput_ops_per_sec": 0.0,
+      "memory_usage_mb": 18.40625,
+      "cpu_usage_percent": 0.0,
+      "success_rate": 0.9,
+      "error_count": 2,
+      "timestamp": 1749938431.958424
+    },
+    {
+      "agent_name": "data_science",
+      "test_type": "response_time",
+      "response_time_ms": 98.02250862121582,
+      "throughput_ops_per_sec": 0.0,
+      "memory_usage_mb": 18.4375,
+      "cpu_usage_percent": 0.0,
+      "success_rate": 1.0,
+      "error_count": 0,
+      "timestamp": 1749938433.919441
+    },
+    {
+      "agent_name": "code_execution",
+      "test_type": "response_time",
+      "response_time_ms": 95.91192948190789,
+      "throughput_ops_per_sec": 0.0,
+      "memory_usage_mb": 18.4375,
+      "cpu_usage_percent": 0.0,
+      "success_rate": 0.95,
+      "error_count": 1,
+      "timestamp": 1749938435.86007
+    },
+    {
+      "agent_name": "memory",
+      "test_type": "response_time",
+      "response_time_ms": 31.74266815185547,
+      "throughput_ops_per_sec": 0.0,
+      "memory_usage_mb": 18.46875,
+      "cpu_usage_percent": 0.0,
+      "success_rate": 1.0,
+      "error_count": 0,
+      "timestamp": 1749938436.495573
+    },
+    {
+      "agent_name": "orchestration",
+      "test_type": "response_time",
+      "response_time_ms": 50.91561769184313,
+      "throughput_ops_per_sec": 0.0,
+      "memory_usage_mb": 18.46875,
+      "cpu_usage_percent": 0.0,
+      "success_rate": 0.95,
+      "error_count": 1,
+      "timestamp": 1749938437.5176508
+    },
+    {
+      "agent_name": "workflows",
+      "test_type": "response_time",
+      "response_time_ms": 30.993315908643936,
+      "throughput_ops_per_sec": 0.0,
+      "memory_usage_mb": 18.5,
+      "cpu_usage_percent": 0.0,
+      "success_rate": 0.9,
+      "error_count": 2,
+      "timestamp": 1749938438.137312
+    },
+    {
+      "agent_name": "specialists",
+      "test_type": "response_time",
+      "response_time_ms": 30.929315090179443,
+      "throughput_ops_per_sec": 0.0,
+      "memory_usage_mb": 18.5,
+      "cpu_usage_percent": 0.0,
+      "success_rate": 1.0,
+      "error_count": 0,
+      "timestamp": 1749938438.756454
+    },
+    {
+      "agent_name": "vana",
+      "test_type": "throughput",
+      "response_time_ms": 0.0,
+      "throughput_ops_per_sec": 87.09083889052427,
+      "memory_usage_mb": 18.53125,
+      "cpu_usage_percent": 0.0,
+      "success_rate": 0.9581958195819582,
+      "error_count": 38,
+      "timestamp": 1749938448.7582269
+    },
+    {
+      "agent_name": "data_science",
+      "test_type": "throughput",
+      "response_time_ms": 0.0,
+      "throughput_ops_per_sec": 86.72799038255042,
+      "memory_usage_mb": 18.53125,
+      "cpu_usage_percent": 0.0,
+      "success_rate": 0.9591160220994475,
+      "error_count": 37,
+      "timestamp": 1749938458.766921
+    },
+    {
+      "agent_name": "code_execution",
+      "test_type": "throughput",
+      "response_time_ms": 0.0,
+      "throughput_ops_per_sec": 86.54318564851685,
+      "memory_usage_mb": 18.53125,
+      "cpu_usage_percent": 0.0,
+      "success_rate": 0.9569060773480663,
+      "error_count": 39,
+      "timestamp": 1749938468.773817
+    },
+    {
+      "agent_name": "memory",
+      "test_type": "throughput",
+      "response_time_ms": 0.0,
+      "throughput_ops_per_sec": 85.2664468120424,
+      "memory_usage_mb": 18.53125,
+      "cpu_usage_percent": 0.0,
+      "success_rate": 0.9394273127753304,
+      "error_count": 55,
+      "timestamp": 1749938478.7781062
+    },
+    {
+      "agent_name": "orchestration",
+      "test_type": "throughput",
+      "response_time_ms": 0.0,
+      "throughput_ops_per_sec": 86.07144088166356,
+      "memory_usage_mb": 18.53125,
+      "cpu_usage_percent": 0.0,
+      "success_rate": 0.9534883720930233,
+      "error_count": 42,
+      "timestamp": 1749938488.7817411
+    },
+    {
+      "agent_name": "workflows",
+      "test_type": "throughput",
+      "response_time_ms": 0.0,
+      "throughput_ops_per_sec": 85.25909120534641,
+      "memory_usage_mb": 18.53125,
+      "cpu_usage_percent": 0.0,
+      "success_rate": 0.9404630650496141,
+      "error_count": 54,
+      "timestamp": 1749938498.786881
+    },
+    {
+      "agent_name": "specialists",
+      "test_type": "throughput",
+      "response_time_ms": 0.0,
+      "throughput_ops_per_sec": 85.91385681037521,
+      "memory_usage_mb": 18.5625,
+      "cpu_usage_percent": 0.0,
+      "success_rate": 0.9492273730684326,
+      "error_count": 46,
+      "timestamp": 1749938508.797308
+    },
+    {
+      "agent_name": "vana",
+      "test_type": "memory",
+      "response_time_ms": 0.0,
+      "throughput_ops_per_sec": 0.0,
+      "memory_usage_mb": 0.0,
+      "cpu_usage_percent": 0.0,
+      "success_rate": 1.0,
+      "error_count": 0,
+      "timestamp": 1749938509.32691
+    },
+    {
+      "agent_name": "data_science",
+      "test_type": "memory",
+      "response_time_ms": 0.0,
+      "throughput_ops_per_sec": 0.0,
+      "memory_usage_mb": 0.0,
+      "cpu_usage_percent": 0.0,
+      "success_rate": 1.0,
+      "error_count": 0,
+      "timestamp": 1749938510.283983
+    },
+    {
+      "agent_name": "code_execution",
+      "test_type": "memory",
+      "response_time_ms": 0.0,
+      "throughput_ops_per_sec": 0.0,
+      "memory_usage_mb": 0.0,
+      "cpu_usage_percent": 0.0,
+      "success_rate": 1.0,
+      "error_count": 0,
+      "timestamp": 1749938511.326772
+    },
+    {
+      "agent_name": "memory",
+      "test_type": "memory",
+      "response_time_ms": 0.0,
+      "throughput_ops_per_sec": 0.0,
+      "memory_usage_mb": 0.0,
+      "cpu_usage_percent": 0.0,
+      "success_rate": 1.0,
+      "error_count": 0,
+      "timestamp": 1749938511.648612
+    },
+    {
+      "agent_name": "orchestration",
+      "test_type": "memory",
+      "response_time_ms": 0.0,
+      "throughput_ops_per_sec": 0.0,
+      "memory_usage_mb": 0.0,
+      "cpu_usage_percent": 0.0,
+      "success_rate": 1.0,
+      "error_count": 0,
+      "timestamp": 1749938512.1436632
+    },
+    {
+      "agent_name": "workflows",
+      "test_type": "memory",
+      "response_time_ms": 0.0,
+      "throughput_ops_per_sec": 0.0,
+      "memory_usage_mb": -0.03125,
+      "cpu_usage_percent": 0.0,
+      "success_rate": 1.0,
+      "error_count": 0,
+      "timestamp": 1749938512.463042
+    },
+    {
+      "agent_name": "specialists",
+      "test_type": "memory",
+      "response_time_ms": 0.0,
+      "throughput_ops_per_sec": 0.0,
+      "memory_usage_mb": 0.0,
+      "cpu_usage_percent": 0.0,
+      "success_rate": 1.0,
+      "error_count": 0,
+      "timestamp": 1749938512.7827358
+    }
+  ],
+  "load_test_results": [
+    {
+      "concurrent_requests": 1,
+      "total_requests": 10,
+      "successful_requests": 10,
+      "failed_requests": 0,
+      "average_response_time": 0.05421040058135986,
+      "min_response_time": 0.04357194900512695,
+      "max_response_time": 0.05979609489440918,
+      "p95_response_time": 0.059847915172576906,
+      "throughput": 184.466447263968,
+      "error_rate": 0.0
+    },
+    {
+      "concurrent_requests": 5,
+      "total_requests": 50,
+      "successful_requests": 46,
+      "failed_requests": 4,
+      "average_response_time": 0.05000393390655518,
+      "min_response_time": 0.0406649112701416,
+      "max_response_time": 0.06040215492248535,
+      "p95_response_time": 0.05982222557067871,
+      "throughput": 183.98552436279303,
+      "error_rate": 0.08
+    },
+    {
+      "concurrent_requests": 10,
+      "total_requests": 100,
+      "successful_requests": 95,
+      "failed_requests": 5,
+      "average_response_time": 0.051092939376831056,
+      "min_response_time": 0.04021191596984863,
+      "max_response_time": 0.060658931732177734,
+      "p95_response_time": 0.059337496757507324,
+      "throughput": 185.9356716577542,
+      "error_rate": 0.05
+    },
+    {
+      "concurrent_requests": 20,
+      "total_requests": 200,
+      "successful_requests": 185,
+      "failed_requests": 15,
+      "average_response_time": 0.050118018388748166,
+      "min_response_time": 0.04026198387145996,
+      "max_response_time": 0.06097602844238281,
+      "p95_response_time": 0.05944880247116089,
+      "throughput": 184.56436023170238,
+      "error_rate": 0.075
+    }
+  ],
+  "performance_targets": {
+    "response_time_ms": 2000,
+    "throughput_ops_per_sec": 10,
+    "memory_usage_mb": 500,
+    "cpu_usage_percent": 80,
+    "success_rate": 0.95,
+    "error_rate": 0.05
+  },
+  "targets_analysis": {
+    "response_time": true,
+    "throughput": true,
+    "memory_usage": true
+  }
+}

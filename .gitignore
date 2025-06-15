@@ -150,3 +150,9 @@ tasks/
 
 # Optional test files (not essential for core functionality)
 tests/test_agent_communication.py
+# Security files
+*.p12
+*.pfx
+.env*
+credentials/
+security_audit_*.json

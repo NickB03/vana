@@ -64,7 +64,7 @@ def get_file_metadata(file_path: str) -> str:
             # Calculate file hash for integrity checking
             try:
                 with open(path, "rb") as f:
-                    file_hash = hashlib.md5()
+                    file_hash = hashlib.sha256()
                     for chunk in iter(lambda: f.read(4096), b""):
                         file_hash.update(chunk)
                     metadata["md5_hash"] = file_hash.hexdigest()

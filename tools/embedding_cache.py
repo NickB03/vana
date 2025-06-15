@@ -217,7 +217,7 @@ class EmbeddingCache:
             Cache key string
         """
         # Create a hash of the text and model to use as cache key
-        text_hash = hashlib.md5(text.encode()).hexdigest()
+        text_hash = hashlib.sha256(text.encode()).hexdigest()
         return f"{model}_{text_hash}"
 
     def cache_decorator(self, model: str = "text-embedding-004") -> Callable:
