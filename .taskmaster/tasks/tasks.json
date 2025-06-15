@@ -1,350 +1,725 @@
 {
-  "tasks": [
-    {
-      "id": 1,
-      "title": "Debug Code Audit",
-      "description": "Analyze and categorize all 2,536 print statements found in the codebase (updated from initial estimate of 782).",
-      "status": "done",
-      "dependencies": [],
-      "priority": "high",
-      "details": "The audit has been completed using grep and a Python script to scan 138 Python files. Results show print statements categorized by file location (tests, scripts, agents, lib, dashboard) and purpose (formatted output, general, testing, error handling, info, result display, debug). Deliverables include debug_audit_report.json, debug_audit_analyzer.py, and categorized data.",
-      "testStrategy": "Verify the accuracy of categorization by reviewing sample files from each category, with special attention to the top files with most print statements (specialist.py, test_adk_memory_monitoring.py, coordination_benchmarks.py).",
-      "subtasks": [
-        {
-          "id": 1.1,
-          "title": "Initial print statement identification",
-          "description": "Use grep to scan all .py files for print statements",
-          "status": "done"
-        },
-        {
-          "id": 1.2,
-          "title": "Categorization by file type",
-          "description": "Organize print statements by file category (tests, scripts, agents, lib, dashboard)",
-          "status": "done"
-        },
-        {
-          "id": 1.3,
-          "title": "Categorization by purpose",
-          "description": "Classify print statements by purpose (formatted output, general, testing, error handling, etc.)",
-          "status": "done"
-        },
-        {
-          "id": 1.4,
-          "title": "Create audit report",
-          "description": "Generate debug_audit_report.json with complete structured analysis",
-          "status": "done"
-        },
-        {
-          "id": 1.5,
-          "title": "Create reusable analyzer script",
-          "description": "Develop debug_audit_analyzer.py for future audits",
-          "status": "done"
-        },
-        {
-          "id": 1.6,
-          "title": "Verify results accuracy",
-          "description": "Manually review samples from each category to validate categorization",
-          "status": "done"
-        }
-      ]
-    },
-    {
-      "id": 2,
-      "title": "Logging Framework Setup",
-      "description": "Python logging framework with comprehensive features and environment-specific configurations implemented successfully.",
-      "status": "done",
-      "dependencies": [],
-      "priority": "high",
-      "details": "✅ COMPREHENSIVE LOGGING INFRASTRUCTURE CREATED:\n\n📁 **Core Components Implemented:**\n1. **lib/logging_config.py** - Centralized logging configuration with environment detection\n2. **lib/logging_utils.py** - Convenient logging utilities, decorators, and mixins\n3. **config/logging.yaml** - YAML configuration file for advanced logging setup\n4. **test_logging_framework.py** - Comprehensive test suite for validation\n\n🔧 **Features Implemented:**\n- Environment Detection: Automatic detection of production (Cloud Run), development, and testing environments\n- Multi-Handler Support: Console, file, error-specific, and JSON logging handlers\n- Structured Logging: Integration with existing StructuredLogger for correlation IDs and context\n- Log Rotation: Automatic log file rotation with 10MB size limit and 5 backup files\n- Performance Logging: Decorators for function performance monitoring\n- Context Management: Log operation start/end with execution time tracking\n- Correlation IDs: Cross-component operation tracking support\n\n🎯 **Environment-Specific Configuration:**\n- **Production (Cloud Run)**: INFO level, /tmp/logs directory, structured JSON logging\n- **Development**: DEBUG level, project/logs directory, detailed file logging\n- **Testing**: WARNING level, console-only logging",
-      "testStrategy": "✅ **Testing Results:**\n- All logging framework tests passed successfully\n- Environment detection working correctly\n- Log level configuration functional\n- File handlers creating logs in appropriate directories\n- Structured logging with correlation IDs operational\n- Performance monitoring and context managers working\n- LoggerMixin providing easy class-based logging",
-      "subtasks": [
-        {
-          "id": 2.1,
-          "title": "Centralized logging configuration",
-          "description": "Implement lib/logging_config.py with environment detection",
-          "status": "completed"
-        },
-        {
-          "id": 2.2,
-          "title": "Logging utilities implementation",
-          "description": "Create lib/logging_utils.py with decorators and mixins",
-          "status": "completed"
-        },
-        {
-          "id": 2.3,
-          "title": "YAML configuration setup",
-          "description": "Configure config/logging.yaml for advanced logging setup",
-          "status": "completed"
-        },
-        {
-          "id": 2.4,
-          "title": "Test suite implementation",
-          "description": "Develop comprehensive test_logging_framework.py",
-          "status": "completed"
-        },
-        {
-          "id": 2.5,
-          "title": "Integration with main application",
-          "description": "Update main.py to use centralized logging configuration",
-          "status": "completed"
-        },
-        {
-          "id": 2.6,
-          "title": "StructuredLogger enhancement",
-          "description": "Integrate and enhance existing StructuredLogger",
-          "status": "completed"
-        }
-      ]
-    },
-    {
-      "id": 3,
-      "title": "Replace Debug Prints with Logging",
-      "description": "All print statements have been successfully replaced with logging implementation. Task is 100% complete.",
-      "status": "done",
-      "dependencies": [
-        1,
-        2
-      ],
-      "priority": "high",
-      "details": "**Final Completion (100% complete):**\n- 1,246/1,246 print statements successfully replaced\n- 80 core production files processed\n- Intelligent log level selection implemented and validated\n- Backup files created and verified for all modifications\n\n**Key Achievements:**\n- Core agents, shared libraries, tools, and dashboard components updated\n- Proper logging imports added to all modified files\n- Context-aware log level selection (error, warning, info, debug)\n- Consistent logging patterns established across codebase\n- Zero errors encountered during replacement process\n- Final validation and integration testing completed successfully\n\n**Files Processed in Final Phase:**\n- add_json_logger_dependency.py\n- analyze_and_archive_scripts.py\n- replace_print_statements.py\n- examples/monitoring_security_integration_example.py",
-      "testStrategy": "1. All log messages and levels validated\n2. Integration with monitoring systems confirmed\n3. Backup files verified to contain original print statements\n4. No behavioral changes in core functionality detected\n5. Log output matches expected format across all levels\n6. Logging configuration and instances verified\n7. Modified files maintain original functionality",
-      "subtasks": [
-        {
-          "id": 3.1,
-          "title": "Process main application files (main.py, agents/, lib/)",
-          "status": "completed"
-        },
-        {
-          "id": 3.2,
-          "title": "Update deployment infrastructure scripts",
-          "status": "completed"
-        },
-        {
-          "id": 3.3,
-          "title": "Convert core tools and dashboard components",
-          "status": "completed"
-        },
-        {
-          "id": 3.4,
-          "title": "Update memory & search system logging",
-          "status": "completed"
-        },
-        {
-          "id": 3.5,
-          "title": "Enhance security & monitoring logging",
-          "status": "completed"
-        },
-        {
-          "id": 3.6,
-          "title": "Process remaining 10 print statements",
-          "status": "completed"
-        },
-        {
-          "id": 3.7,
-          "title": "Final validation of all logging implementations",
-          "status": "completed"
-        },
-        {
-          "id": 3.8,
-          "title": "Complete integration testing",
-          "status": "completed"
-        }
-      ]
-    },
-    {
-      "id": 4,
-      "title": "Remove Unnecessary Debug Code",
-      "description": "Clean up debug code from production files.",
-      "details": "Remove any remaining debug-specific code (e.g., commented-out prints, temporary variables) from production files. Ensure no debug artifacts remain.",
-      "testStrategy": "Review a sample of cleaned files and run tests to confirm no functionality is broken.",
-      "priority": "high",
-      "dependencies": [
-        3
-      ],
-      "status": "done",
-      "subtasks": []
-    },
-    {
-      "id": 5,
-      "title": "Dependency Analysis",
-      "description": "Review current optional dependency usage and requirements - analysis completed with recommendations.",
-      "status": "done",
-      "dependencies": [],
-      "priority": "medium",
-      "details": "Analysis has been completed with the following findings:\n- PyPDF2: Used in document_processor.py for PDF text extraction (missing from requirements.txt)\n- Pillow: Used in document_processor.py for image processing (missing from requirements.txt)\n- pytesseract: Used in document_processor.py for OCR functionality (missing from requirements.txt)\n- tenacity: Imported but unused in vector_search_service.py (cleaned up)\n\nImplementation quality was excellent with proper graceful degradation patterns. Comprehensive report created (dependency_analysis_report.md).",
-      "testStrategy": "Verification completed - analysis covers all critical use cases and dependencies with excellent fallback mechanisms.",
-      "subtasks": [
-        {
-          "id": 5.1,
-          "title": "Analyze specified dependencies",
-          "description": "Analyze PyPDF2, Pillow, pytesseract, tenacity usage",
-          "status": "done"
-        },
-        {
-          "id": 5.2,
-          "title": "Document usage patterns",
-          "description": "Document exact files, functionality and impact assessment",
-          "status": "done"
-        },
-        {
-          "id": 5.3,
-          "title": "Assess implementation quality",
-          "description": "Evaluate graceful degradation patterns",
-          "status": "done"
-        },
-        {
-          "id": 5.4,
-          "title": "Clean up unused tenacity import",
-          "description": "Remove unused import from vector_search_service.py",
-          "status": "done"
-        },
-        {
-          "id": 5.5,
-          "title": "Create analysis report",
-          "description": "Generate dependency_analysis_report.md with full findings",
-          "status": "done"
-        },
-        {
-          "id": 5.6,
-          "title": "Update documentation",
-          "description": "Add optional dependency information to README",
-          "status": "done"
-        },
-        {
-          "id": 5.7,
-          "title": "Plan for dependency groups",
-          "description": "Prepare for future pyproject.toml migration with dependency groups",
-          "status": "done"
-        }
-      ]
-    },
-    {
-      "id": 6,
-      "title": "Install Missing Dependencies",
-      "description": "Add missing optional dependencies to pyproject.toml.",
-      "details": "Update `pyproject.toml` to include the missing dependencies with version constraints. Example:\n```toml\n[tool.poetry.dependencies]\nPyPDF2 = \"^3.0.0\"\nPillow = \"^9.0.0\"\npytesseract = \"^0.3.9\"\ntenacity = \"^8.0.0\"\n```",
-      "testStrategy": "Run `poetry install` and verify that dependencies are installed without conflicts.",
-      "priority": "medium",
-      "dependencies": [
-        5
-      ],
-      "status": "in-progress",
-      "subtasks": []
-    },
-    {
-      "id": 7,
-      "title": "Enable Advanced Features",
-      "description": "Implement features enabled by new dependencies after completing code quality improvements.",
-      "status": "in-progress",
-      "dependencies": [
-        6
-      ],
-      "priority": "medium",
-      "details": "After automated code cleanup (Phase 2), update code to utilize the new dependencies (e.g., PDF processing with PyPDF2, image processing with Pillow). Ensure graceful degradation if dependencies are missing. Build upon the completed Phase 1 fixes (critical syntax errors and import corrections).",
-      "testStrategy": "Test features with and without optional dependencies to verify functionality and fallback behavior. Ensure tests run after code quality improvements are complete.",
-      "subtasks": [
-        {
-          "id": 7.1,
-          "title": "Wait for Phase 2 code quality improvements",
-          "description": "Hold until automated cleanup of remaining code quality issues is complete",
-          "status": "pending",
-          "dependencies": []
-        }
-      ]
-    },
-    {
-      "id": 8,
-      "title": "Update pyproject.toml Configuration",
-      "description": "Modernize pyproject.toml to current Poetry standards.",
-      "details": "Update `pyproject.toml` to comply with PEP 621 standards. Resolve deprecation warnings and ensure backward compatibility. Example:\n```toml\n[project]\nname = \"vana\"\nversion = \"0.1.0\"\ndescription = \"Code quality enhancement project\"\n```",
-      "testStrategy": "Run `poetry check` to ensure no warnings or errors.",
-      "priority": "medium",
-      "dependencies": [],
-      "status": "done",
-      "subtasks": []
-    },
-    {
-      "id": 9,
-      "title": "Add Code Quality Tools",
-      "description": "Implemented comprehensive code quality improvements including linting, formatting, type checking and security scanning across the entire codebase.",
-      "status": "done",
-      "dependencies": [
-        8
-      ],
-      "priority": "medium",
-      "details": "Completed major code quality foundation work:\n\n- Created modern pyproject.toml with PEP 621 standards\n- Configured tools: black (120 char line length, excludes archived_scripts), isort (black profile), flake8 (with ignores), mypy (gradual adoption), bandit (security)\n- Applied black formatting to 294 files\n- Standardized imports with isort\n- Identified 526 code quality issues via flake8\n\nExample configuration:\n```toml\n[tool.black]\nline-length = 120\nexclude = 'archived_scripts'\n\n[tool.isort]\nprofile = 'black'\n```",
-      "testStrategy": "Verified tools enforce standards through:\n- Successful formatting of 294 files with black\n- Consistent import ordering with isort\n- Comprehensive flake8 analysis identifying 526 issues\n- Type checking with mypy\n- Security scanning with bandit",
-      "subtasks": [
-        {
-          "id": 9.1,
-          "title": "Configure pyproject.toml with PEP 621 standards",
-          "status": "completed"
-        },
-        {
-          "id": 9.2,
-          "title": "Install and configure black, isort, flake8, mypy, bandit",
-          "status": "completed"
-        },
-        {
-          "id": 9.3,
-          "title": "Apply black formatting to entire codebase (294 files)",
-          "status": "completed"
-        },
-        {
-          "id": 9.4,
-          "title": "Standardize imports with isort",
-          "status": "completed"
-        },
-        {
-          "id": 9.5,
-          "title": "Run flake8 analysis (526 issues identified)",
-          "status": "completed"
-        }
-      ]
-    },
-    {
-      "id": 10,
-      "title": "Set Up Pre-commit Hooks",
-      "description": "Automate code quality checks with pre-commit hooks.",
-      "details": "Configure pre-commit hooks to run `flake8`, `black`, and `mypy` before commits. Example `.pre-commit-config.yaml`:\n```yaml\nrepos:\n  - repo: https://github.com/psf/black\n    rev: 22.3.0\n    hooks:\n      - id: black\n```",
-      "testStrategy": "Test the hooks by making a commit and verifying checks run.",
-      "priority": "medium",
-      "dependencies": [
-        9
-      ],
-      "status": "pending",
-      "subtasks": []
-    },
-    {
-      "id": 11,
-      "title": "Update Development Documentation",
-      "description": "Document all changes and new processes for developers.",
-      "details": "Update README and other docs to reflect new logging practices, dependency usage, and code quality tools. Include setup and usage instructions.",
-      "testStrategy": "Review documentation for accuracy and completeness.",
-      "priority": "low",
-      "dependencies": [
-        4,
-        7,
-        10
-      ],
-      "status": "pending",
-      "subtasks": []
-    },
-    {
-      "id": 12,
-      "title": "Comprehensive Testing",
-      "description": "Validate all changes and enhancements.",
-      "details": "Run unit, integration, and performance tests to ensure no regressions. Test logging, dependency features, and code quality tools.",
-      "testStrategy": "Automated and manual testing to cover all scenarios, including edge cases.",
-      "priority": "high",
-      "dependencies": [
-        4,
-        7,
-        10,
-        11
-      ],
-      "status": "pending",
-      "subtasks": []
+  "master": {
+    "tasks": [
+      {
+        "id": 1,
+        "title": "Debug Code Audit",
+        "description": "Analyze and categorize all 2,536 print statements found in the codebase (updated from initial estimate of 782).",
+        "status": "done",
+        "dependencies": [],
+        "priority": "high",
+        "details": "The audit has been completed using grep and a Python script to scan 138 Python files. Results show print statements categorized by file location (tests, scripts, agents, lib, dashboard) and purpose (formatted output, general, testing, error handling, info, result display, debug). Deliverables include debug_audit_report.json, debug_audit_analyzer.py, and categorized data.",
+        "testStrategy": "Verify the accuracy of categorization by reviewing sample files from each category, with special attention to the top files with most print statements (specialist.py, test_adk_memory_monitoring.py, coordination_benchmarks.py).",
+        "subtasks": [
+          {
+            "id": 1.1,
+            "title": "Initial print statement identification",
+            "description": "Use grep to scan all .py files for print statements",
+            "status": "done"
+          },
+          {
+            "id": 1.2,
+            "title": "Categorization by file type",
+            "description": "Organize print statements by file category (tests, scripts, agents, lib, dashboard)",
+            "status": "done"
+          },
+          {
+            "id": 1.3,
+            "title": "Categorization by purpose",
+            "description": "Classify print statements by purpose (formatted output, general, testing, error handling, etc.)",
+            "status": "done"
+          },
+          {
+            "id": 1.4,
+            "title": "Create audit report",
+            "description": "Generate debug_audit_report.json with complete structured analysis",
+            "status": "done"
+          },
+          {
+            "id": 1.5,
+            "title": "Create reusable analyzer script",
+            "description": "Develop debug_audit_analyzer.py for future audits",
+            "status": "done"
+          },
+          {
+            "id": 1.6,
+            "title": "Verify results accuracy",
+            "description": "Manually review samples from each category to validate categorization",
+            "status": "done"
+          }
+        ]
+      },
+      {
+        "id": 2,
+        "title": "Logging Framework Setup",
+        "description": "Python logging framework with comprehensive features and environment-specific configurations implemented successfully.",
+        "status": "done",
+        "dependencies": [],
+        "priority": "high",
+        "details": "✅ COMPREHENSIVE LOGGING INFRASTRUCTURE CREATED:\n\n📁 **Core Components Implemented:**\n1. **lib/logging_config.py** - Centralized logging configuration with environment detection\n2. **lib/logging_utils.py** - Convenient logging utilities, decorators, and mixins\n3. **config/logging.yaml** - YAML configuration file for advanced logging setup\n4. **test_logging_framework.py** - Comprehensive test suite for validation\n\n🔧 **Features Implemented:**\n- Environment Detection: Automatic detection of production (Cloud Run), development, and testing environments\n- Multi-Handler Support: Console, file, error-specific, and JSON logging handlers\n- Structured Logging: Integration with existing StructuredLogger for correlation IDs and context\n- Log Rotation: Automatic log file rotation with 10MB size limit and 5 backup files\n- Performance Logging: Decorators for function performance monitoring\n- Context Management: Log operation start/end with execution time tracking\n- Correlation IDs: Cross-component operation tracking support\n\n🎯 **Environment-Specific Configuration:**\n- **Production (Cloud Run)**: INFO level, /tmp/logs directory, structured JSON logging\n- **Development**: DEBUG level, project/logs directory, detailed file logging\n- **Testing**: WARNING level, console-only logging",
+        "testStrategy": "✅ **Testing Results:**\n- All logging framework tests passed successfully\n- Environment detection working correctly\n- Log level configuration functional\n- File handlers creating logs in appropriate directories\n- Structured logging with correlation IDs operational\n- Performance monitoring and context managers working\n- LoggerMixin providing easy class-based logging",
+        "subtasks": [
+          {
+            "id": 2.1,
+            "title": "Centralized logging configuration",
+            "description": "Implement lib/logging_config.py with environment detection",
+            "status": "completed"
+          },
+          {
+            "id": 2.2,
+            "title": "Logging utilities implementation",
+            "description": "Create lib/logging_utils.py with decorators and mixins",
+            "status": "completed"
+          },
+          {
+            "id": 2.3,
+            "title": "YAML configuration setup",
+            "description": "Configure config/logging.yaml for advanced logging setup",
+            "status": "completed"
+          },
+          {
+            "id": 2.4,
+            "title": "Test suite implementation",
+            "description": "Develop comprehensive test_logging_framework.py",
+            "status": "completed"
+          },
+          {
+            "id": 2.5,
+            "title": "Integration with main application",
+            "description": "Update main.py to use centralized logging configuration",
+            "status": "completed"
+          },
+          {
+            "id": 2.6,
+            "title": "StructuredLogger enhancement",
+            "description": "Integrate and enhance existing StructuredLogger",
+            "status": "completed"
+          }
+        ]
+      },
+      {
+        "id": 3,
+        "title": "Replace Debug Prints with Logging",
+        "description": "All print statements have been successfully replaced with logging implementation. Task is 100% complete.",
+        "status": "done",
+        "dependencies": [
+          1,
+          2
+        ],
+        "priority": "high",
+        "details": "**Final Completion (100% complete):**\n- 1,246/1,246 print statements successfully replaced\n- 80 core production files processed\n- Intelligent log level selection implemented and validated\n- Backup files created and verified for all modifications\n\n**Key Achievements:**\n- Core agents, shared libraries, tools, and dashboard components updated\n- Proper logging imports added to all modified files\n- Context-aware log level selection (error, warning, info, debug)\n- Consistent logging patterns established across codebase\n- Zero errors encountered during replacement process\n- Final validation and integration testing completed successfully\n\n**Files Processed in Final Phase:**\n- add_json_logger_dependency.py\n- analyze_and_archive_scripts.py\n- replace_print_statements.py\n- examples/monitoring_security_integration_example.py",
+        "testStrategy": "1. All log messages and levels validated\n2. Integration with monitoring systems confirmed\n3. Backup files verified to contain original print statements\n4. No behavioral changes in core functionality detected\n5. Log output matches expected format across all levels\n6. Logging configuration and instances verified\n7. Modified files maintain original functionality",
+        "subtasks": [
+          {
+            "id": 3.1,
+            "title": "Process main application files (main.py, agents/, lib/)",
+            "status": "completed"
+          },
+          {
+            "id": 3.2,
+            "title": "Update deployment infrastructure scripts",
+            "status": "completed"
+          },
+          {
+            "id": 3.3,
+            "title": "Convert core tools and dashboard components",
+            "status": "completed"
+          },
+          {
+            "id": 3.4,
+            "title": "Update memory & search system logging",
+            "status": "completed"
+          },
+          {
+            "id": 3.5,
+            "title": "Enhance security & monitoring logging",
+            "status": "completed"
+          },
+          {
+            "id": 3.6,
+            "title": "Process remaining 10 print statements",
+            "status": "completed"
+          },
+          {
+            "id": 3.7,
+            "title": "Final validation of all logging implementations",
+            "status": "completed"
+          },
+          {
+            "id": 3.8,
+            "title": "Complete integration testing",
+            "status": "completed"
+          }
+        ]
+      },
+      {
+        "id": 4,
+        "title": "Remove Unnecessary Debug Code",
+        "description": "Clean up debug code from production files.",
+        "details": "Remove any remaining debug-specific code (e.g., commented-out prints, temporary variables) from production files. Ensure no debug artifacts remain.",
+        "testStrategy": "Review a sample of cleaned files and run tests to confirm no functionality is broken.",
+        "priority": "high",
+        "dependencies": [
+          3
+        ],
+        "status": "done",
+        "subtasks": []
+      },
+      {
+        "id": 5,
+        "title": "Dependency Analysis",
+        "description": "Review current optional dependency usage and requirements - analysis completed with recommendations.",
+        "status": "done",
+        "dependencies": [],
+        "priority": "medium",
+        "details": "Analysis has been completed with the following findings:\n- PyPDF2: Used in document_processor.py for PDF text extraction (missing from requirements.txt)\n- Pillow: Used in document_processor.py for image processing (missing from requirements.txt)\n- pytesseract: Used in document_processor.py for OCR functionality (missing from requirements.txt)\n- tenacity: Imported but unused in vector_search_service.py (cleaned up)\n\nImplementation quality was excellent with proper graceful degradation patterns. Comprehensive report created (dependency_analysis_report.md).",
+        "testStrategy": "Verification completed - analysis covers all critical use cases and dependencies with excellent fallback mechanisms.",
+        "subtasks": [
+          {
+            "id": 5.1,
+            "title": "Analyze specified dependencies",
+            "description": "Analyze PyPDF2, Pillow, pytesseract, tenacity usage",
+            "status": "done"
+          },
+          {
+            "id": 5.2,
+            "title": "Document usage patterns",
+            "description": "Document exact files, functionality and impact assessment",
+            "status": "done"
+          },
+          {
+            "id": 5.3,
+            "title": "Assess implementation quality",
+            "description": "Evaluate graceful degradation patterns",
+            "status": "done"
+          },
+          {
+            "id": 5.4,
+            "title": "Clean up unused tenacity import",
+            "description": "Remove unused import from vector_search_service.py",
+            "status": "done"
+          },
+          {
+            "id": 5.5,
+            "title": "Create analysis report",
+            "description": "Generate dependency_analysis_report.md with full findings",
+            "status": "done"
+          },
+          {
+            "id": 5.6,
+            "title": "Update documentation",
+            "description": "Add optional dependency information to README",
+            "status": "done"
+          },
+          {
+            "id": 5.7,
+            "title": "Plan for dependency groups",
+            "description": "Prepare for future pyproject.toml migration with dependency groups",
+            "status": "done"
+          }
+        ]
+      },
+      {
+        "id": 6,
+        "title": "Install Missing Dependencies",
+        "description": "Add missing optional dependencies to pyproject.toml.",
+        "details": "Update `pyproject.toml` to include the missing dependencies with version constraints. Example:\n```toml\n[tool.poetry.dependencies]\nPyPDF2 = \"^3.0.0\"\nPillow = \"^9.0.0\"\npytesseract = \"^0.3.9\"\ntenacity = \"^8.0.0\"\n```",
+        "testStrategy": "Run `poetry install` and verify that dependencies are installed without conflicts.",
+        "priority": "medium",
+        "dependencies": [
+          5
+        ],
+        "status": "in-progress",
+        "subtasks": []
+      },
+      {
+        "id": 7,
+        "title": "Enable Advanced Features",
+        "description": "Implement features enabled by new dependencies after completing code quality improvements.",
+        "status": "in-progress",
+        "dependencies": [
+          6
+        ],
+        "priority": "medium",
+        "details": "After automated code cleanup (Phase 2), update code to utilize the new dependencies (e.g., PDF processing with PyPDF2, image processing with Pillow). Ensure graceful degradation if dependencies are missing. Build upon the completed Phase 1 fixes (critical syntax errors and import corrections).",
+        "testStrategy": "Test features with and without optional dependencies to verify functionality and fallback behavior. Ensure tests run after code quality improvements are complete.",
+        "subtasks": [
+          {
+            "id": 7.1,
+            "title": "Wait for Phase 2 code quality improvements",
+            "description": "Hold until automated cleanup of remaining code quality issues is complete",
+            "status": "pending",
+            "dependencies": []
+          }
+        ]
+      },
+      {
+        "id": 8,
+        "title": "Update pyproject.toml Configuration",
+        "description": "Modernize pyproject.toml to current Poetry standards.",
+        "details": "Update `pyproject.toml` to comply with PEP 621 standards. Resolve deprecation warnings and ensure backward compatibility. Example:\n```toml\n[project]\nname = \"vana\"\nversion = \"0.1.0\"\ndescription = \"Code quality enhancement project\"\n```",
+        "testStrategy": "Run `poetry check` to ensure no warnings or errors.",
+        "priority": "medium",
+        "dependencies": [],
+        "status": "done",
+        "subtasks": []
+      },
+      {
+        "id": 9,
+        "title": "Add Code Quality Tools",
+        "description": "Implemented comprehensive code quality improvements including linting, formatting, type checking and security scanning across the entire codebase.",
+        "status": "done",
+        "dependencies": [
+          8
+        ],
+        "priority": "medium",
+        "details": "Completed major code quality foundation work:\n\n- Created modern pyproject.toml with PEP 621 standards\n- Configured tools: black (120 char line length, excludes archived_scripts), isort (black profile), flake8 (with ignores), mypy (gradual adoption), bandit (security)\n- Applied black formatting to 294 files\n- Standardized imports with isort\n- Identified 526 code quality issues via flake8\n\nExample configuration:\n```toml\n[tool.black]\nline-length = 120\nexclude = 'archived_scripts'\n\n[tool.isort]\nprofile = 'black'\n```",
+        "testStrategy": "Verified tools enforce standards through:\n- Successful formatting of 294 files with black\n- Consistent import ordering with isort\n- Comprehensive flake8 analysis identifying 526 issues\n- Type checking with mypy\n- Security scanning with bandit",
+        "subtasks": [
+          {
+            "id": 9.1,
+            "title": "Configure pyproject.toml with PEP 621 standards",
+            "status": "completed"
+          },
+          {
+            "id": 9.2,
+            "title": "Install and configure black, isort, flake8, mypy, bandit",
+            "status": "completed"
+          },
+          {
+            "id": 9.3,
+            "title": "Apply black formatting to entire codebase (294 files)",
+            "status": "completed"
+          },
+          {
+            "id": 9.4,
+            "title": "Standardize imports with isort",
+            "status": "completed"
+          },
+          {
+            "id": 9.5,
+            "title": "Run flake8 analysis (526 issues identified)",
+            "status": "completed"
+          }
+        ]
+      },
+      {
+        "id": 10,
+        "title": "Set Up Pre-commit Hooks",
+        "description": "Automate code quality checks with pre-commit hooks.",
+        "details": "Configure pre-commit hooks to run `flake8`, `black`, and `mypy` before commits. Example `.pre-commit-config.yaml`:\n```yaml\nrepos:\n  - repo: https://github.com/psf/black\n    rev: 22.3.0\n    hooks:\n      - id: black\n```",
+        "testStrategy": "Test the hooks by making a commit and verifying checks run.",
+        "priority": "medium",
+        "dependencies": [
+          9
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 11,
+        "title": "Update Development Documentation",
+        "description": "Document all changes and new processes for developers.",
+        "details": "Update README and other docs to reflect new logging practices, dependency usage, and code quality tools. Include setup and usage instructions.",
+        "testStrategy": "Review documentation for accuracy and completeness.",
+        "priority": "low",
+        "dependencies": [
+          4,
+          7,
+          10
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 12,
+        "title": "Comprehensive Testing",
+        "description": "Validate all changes and enhancements.",
+        "details": "Run unit, integration, and performance tests to ensure no regressions. Test logging, dependency features, and code quality tools.",
+        "testStrategy": "Automated and manual testing to cover all scenarios, including edge cases.",
+        "priority": "high",
+        "dependencies": [
+          4,
+          7,
+          10,
+          11
+        ],
+        "status": "pending",
+        "subtasks": []
+      }
+    ],
+    "metadata": {
+      "created": "2025-06-15T22:52:01.996Z",
+      "updated": "2025-06-15T22:52:01.996Z",
+      "description": "Tasks for master context"
     }
-  ]
+  },
+  "documentation-remediation": {
+    "tasks": [
+      {
+        "id": 1,
+        "title": "Setup Documentation Audit Environment",
+        "description": "Prepare the environment for auditing and correcting documentation, including version control setup and access to all relevant files.",
+        "details": "Create a dedicated branch in the version control system for documentation remediation. Ensure all team members have access to the documentation repository. Set up a local copy of the documentation structure for testing changes.",
+        "testStrategy": "Verify that all team members can access the repository and that the branch is correctly set up.",
+        "priority": "high",
+        "dependencies": [],
+        "status": "done",
+        "subtasks": []
+      },
+      {
+        "id": 2,
+        "title": "Audit and Correct Coordination Tools Claims",
+        "description": "Remove or correct all false claims about coordination tools being operational in the core documentation files.",
+        "status": "done",
+        "dependencies": [
+          1
+        ],
+        "priority": "high",
+        "details": "Completed corrections in core files. Next focus: standardize agent count references across all documentation. Ensure remaining files reflect: coordination tools as stub implementations, accurate agent count (7), and remove all misleading success metrics.",
+        "testStrategy": "1. Verify core files already corrected (activeContext.md, progress.md, systemPatterns.md) maintain accurate claims. 2. Cross-reference agent count in all documentation with actual codebase (7 agent directories). 3. Validate no remaining false functionality claims exist in peripheral documentation.",
+        "subtasks": [
+          {
+            "id": 2.1,
+            "description": "Update activeContext.md header to reflect documentation remediation focus",
+            "status": "completed"
+          },
+          {
+            "id": 2.2,
+            "description": "Replace false 'COORDINATION TOOLS FIXED' claims with accurate 'STUB IMPLEMENTATIONS' status",
+            "status": "completed"
+          },
+          {
+            "id": 2.3,
+            "description": "Correct agent count references and success rate claims",
+            "status": "completed"
+          },
+          {
+            "id": 2.4,
+            "description": "Update progress.md to remove 'MISSION ACCOMPLISHED' and 'ALL TASKS COMPLETED' false claims",
+            "status": "completed"
+          },
+          {
+            "id": 2.5,
+            "description": "Replace task completion summary with accurate audit findings",
+            "status": "completed"
+          },
+          {
+            "id": 2.6,
+            "description": "Document actual system status vs. previous false claims",
+            "status": "completed"
+          },
+          {
+            "id": 2.7,
+            "description": "Standardize agent count (7) across all remaining documentation files",
+            "status": "done"
+          },
+          {
+            "id": 2.8,
+            "description": "Audit peripheral documentation for any remaining false coordination tools claims",
+            "status": "done"
+          }
+        ]
+      },
+      {
+        "id": 3,
+        "title": "Standardize Agent Count References",
+        "description": "Update all references to agent counts from '33 agents' to '7 agents' throughout the documentation.",
+        "details": "Perform a systematic search and replace operation across all documentation files. Update any related claims about agent capabilities and testing.",
+        "testStrategy": "Verify that all instances of '33 agents' have been replaced and that the context remains accurate.",
+        "priority": "high",
+        "dependencies": [
+          1
+        ],
+        "status": "done",
+        "subtasks": []
+      },
+      {
+        "id": 4,
+        "title": "Correct Task Completion Statuses",
+        "description": "Documentation now accurately reflects implementation state after comprehensive corrections.",
+        "status": "done",
+        "dependencies": [
+          1
+        ],
+        "priority": "high",
+        "details": "Completed major corrections including: created ACCURATE_SYSTEM_STATUS_2025_06_15.md, corrected coordination tools status, updated agent counts, removed false completion claims, and documented evidence of actual system state. Ready for final documentation cleanup and archival of outdated claims.",
+        "testStrategy": "Verify all corrections against the new ACCURATE_SYSTEM_STATUS_2025_06_15.md document and confirm removal of false claims from all documentation.",
+        "subtasks": [
+          {
+            "id": 4.1,
+            "title": "Archive outdated documentation claims",
+            "description": "Move false completion claims to historical archive with appropriate labeling",
+            "status": "done"
+          },
+          {
+            "id": 4.2,
+            "title": "Final review of all documentation",
+            "description": "Ensure all documents reflect the accurate system status",
+            "status": "done"
+          },
+          {
+            "id": 4.3,
+            "title": "Update stakeholder communications",
+            "description": "Align all external communications with corrected status information",
+            "status": "done"
+          }
+        ]
+      },
+      {
+        "id": 5,
+        "title": "Audit Technical Implementation Claims",
+        "description": "Verify and correct technical implementation claims in the `03-technical/` directory with focus on MCP implementation accuracy.",
+        "status": "done",
+        "dependencies": [
+          1
+        ],
+        "priority": "high",
+        "details": "Review architecture and integration documentation for accuracy. Update claims to reflect that:\n1. MCP server architecture is implemented but tools use direct API calls\n2. Remove misleading 'TRUE MCP IMPLEMENTATION' claims\n3. Document actual implementation patterns (direct API calls with MCP-style interfaces)\n4. Preserve accurate claims about functional components",
+        "testStrategy": "1. Cross-reference technical documentation with actual implementation\n2. Verify MCP server components exist as documented\n3. Confirm tool implementations use direct API calls\n4. Check documentation reflects actual architecture patterns",
+        "subtasks": [
+          {
+            "id": 5.1,
+            "title": "Audit MCP server implementation claims",
+            "description": "Verify MCP server components match documentation",
+            "status": "completed"
+          },
+          {
+            "id": 5.2,
+            "title": "Audit MCP tools implementation patterns",
+            "description": "Document actual implementation approach (direct API calls)",
+            "status": "done"
+          },
+          {
+            "id": 5.3,
+            "title": "Update documentation to reflect accurate architecture",
+            "description": "Correct claims about MCP implementation and document actual patterns",
+            "status": "done"
+          },
+          {
+            "id": 5.4,
+            "title": "Remove misleading 'TRUE MCP IMPLEMENTATION' claims",
+            "description": "Update documentation to accurately represent system architecture",
+            "status": "done"
+          }
+        ]
+      },
+      {
+        "id": 6,
+        "title": "Review and Correct Active Documentation",
+        "description": "Audit files in the `01-active/` directory for accuracy and correct any false claims.",
+        "details": "Identify and update coordination tools and testing framework claims. Ensure performance metrics reflect reality.",
+        "testStrategy": "Validate changes against the codebase and ensure no outdated claims remain.",
+        "priority": "medium",
+        "dependencies": [
+          1
+        ],
+        "status": "done",
+        "subtasks": []
+      },
+      {
+        "id": 7,
+        "title": "Archive Outdated and False Claims",
+        "description": "Move outdated and false claims to the `05-archive/` directory with appropriate prefixes.",
+        "details": "Prefix archived files with 'ARCHIVED_OUTDATED_' and ensure they are moved to the correct directory. Maintain an audit trail of changes.",
+        "testStrategy": "Verify that all archived files are correctly labeled and stored.",
+        "priority": "medium",
+        "dependencies": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "status": "done",
+        "subtasks": []
+      },
+      {
+        "id": 8,
+        "title": "Create Current Status Documentation",
+        "description": "Document the accurate current system status, separating implemented and planned features.",
+        "details": "Generate new documentation that clearly states the current state of coordination tools, agent counts, and task statuses. Include a realistic project roadmap.",
+        "testStrategy": "Review the new documentation with stakeholders to ensure accuracy.",
+        "priority": "medium",
+        "dependencies": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 9,
+        "title": "Update Memory Bank Structure",
+        "description": "Ensure the Memory Bank structure reflects accurate and up-to-date information.",
+        "details": "Reorganize the Memory Bank directories to align with the corrected documentation. Update any cross-references.",
+        "testStrategy": "Validate that the structure is logical and all links are functional.",
+        "priority": "medium",
+        "dependencies": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 10,
+        "title": "Implement Documentation Review Process",
+        "description": "Establish a process for future documentation reviews to prevent recurrence of false claims.",
+        "details": "Define a review cycle and criteria for documentation updates. Train team members on the new process.",
+        "testStrategy": "Simulate a documentation update to test the review process.",
+        "priority": "low",
+        "dependencies": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 11,
+        "title": "Communicate Changes to Stakeholders",
+        "description": "Inform all stakeholders about the documentation corrections and their impact.",
+        "details": "Prepare a summary of changes and distribute it to the team. Hold a meeting to address any questions.",
+        "testStrategy": "Gather feedback from stakeholders to ensure clarity.",
+        "priority": "low",
+        "dependencies": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 12,
+        "title": "Validate Documentation Navigation",
+        "description": "Test all internal links and references to ensure they are functional post-corrections.",
+        "details": "Check all hyperlinks and cross-references in the documentation. Fix any broken links.",
+        "testStrategy": "Perform a full navigation test to ensure all links work as expected.",
+        "priority": "low",
+        "dependencies": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 13,
+        "title": "Finalize Audit Trail",
+        "description": "Complete the audit trail of all documentation corrections made during the project.",
+        "details": "Document the reasoning behind each correction and the steps taken. Store the audit trail in a secure location.",
+        "testStrategy": "Review the audit trail for completeness and accuracy.",
+        "priority": "low",
+        "dependencies": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 14,
+        "title": "Conduct Stakeholder Review",
+        "description": "Hold a final review session with stakeholders to confirm all corrections meet expectations.",
+        "details": "Present the corrected documentation and audit trail to stakeholders. Address any final concerns.",
+        "testStrategy": "Obtain formal sign-off from stakeholders.",
+        "priority": "low",
+        "dependencies": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 15,
+        "title": "Close Documentation Remediation Project",
+        "description": "Formally conclude the documentation remediation project and archive project files.",
+        "details": "Archive all project-related files and update the project status to 'Completed'.",
+        "testStrategy": "Ensure all project artifacts are properly stored and accessible.",
+        "priority": "low",
+        "dependencies": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14
+        ],
+        "status": "pending",
+        "subtasks": []
+      }
+    ],
+    "metadata": {
+      "created": "2025-06-15T22:52:10.069Z",
+      "updated": "2025-06-15T23:11:24.040Z",
+      "description": "Tasks for documentation-remediation context"
+    }
+  }
 }
