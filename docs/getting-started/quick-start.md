@@ -81,66 +81,75 @@ Try these commands in the web interface:
 
 ```
 # Test basic functionality
-echo "Hello VANA"
+"Use adk_echo to test the system"
 
 # Test file operations
-list_directory "."
+"Use adk_list_directory to show current directory contents"
 
 # Test search capabilities
-web_search "latest AI news"
+"Use adk_web_search to find latest AI news"
 
-# Test agent coordination
-architecture_tool "design a simple web API"
+# Test system health
+"Use adk_get_health_status to check system status"
 ```
 
-### Travel Planning Example
+### Code Execution Example
 
 ```
-# Test travel orchestration
-hotel_search_tool "Find hotels in Paris for 2 nights"
+# Test code execution capabilities
+"Execute this Python code: print('Hello from VANA!')"
 
-# Check task status (use the task ID from above)
-check_task_status "task-id-from-hotel-search"
+# Test data science capabilities
+"Create a simple data analysis example with sample data"
 ```
 
-### Development Example
+### File Operations Example
 
 ```
-# Test development capabilities
-code_generation_tool "Create a Python function to calculate fibonacci numbers"
+# Test file reading
+"Use adk_read_file to read README.md"
 
-# Test documentation
-documentation_tool "Document the fibonacci function"
+# Test file existence check
+"Use adk_file_exists to check if config.json exists"
 ```
 
-## 🔧 Essential Tools Overview
+## 🔧 Essential Tools Overview (19 Core Tools)
 
-### 📁 File Operations
-- `read_file` - Read file contents
-- `write_file` - Create/modify files
-- `list_directory` - Browse directories
+### 📁 File System Tools (4)
+- `adk_read_file` - Secure file reading with validation
+- `adk_write_file` - File creation and modification with permissions
+- `adk_list_directory` - Directory exploration and listing
+- `adk_file_exists` - File existence checking
 
-### 🔍 Search & Research
-- `web_search` - Real-time web search
-- `vector_search` - Semantic search
-- `web_research_tool` - Comprehensive research
+### 🔍 Search Tools (3)
+- `adk_vector_search` - Semantic similarity search via Vertex AI
+- `adk_web_search` - Real-time web search with Brave API
+- `adk_search_knowledge` - RAG corpus knowledge search
 
-### 🤖 Agent Coordination
-- `architecture_tool` - System design
-- `ui_tool` - Interface design
-- `devops_tool` - Infrastructure planning
-- `qa_tool` - Testing strategy
+### ⚙️ System Tools (2)
+- `adk_echo` - System testing and validation
+- `adk_get_health_status` - Real-time system health monitoring
 
-### ✈️ Travel Planning
-- `hotel_search_tool` - Hotel discovery
-- `flight_search_tool` - Flight search
-- `itinerary_planning_tool` - Trip planning
+### 🤝 Agent Coordination Tools (4)
+- `adk_coordinate_task` - Multi-agent task coordination
+- `adk_delegate_to_agent` - Direct agent delegation
+- `adk_get_agent_status` - Agent discovery and status
+- `adk_transfer_to_agent` - Agent transfer capabilities
 
-### 💻 Development
-- `code_generation_tool` - Code creation
-- `testing_tool` - Quality assurance
-- `documentation_tool` - Technical writing
-- `security_tool` - Security analysis
+### 📊 Task Analysis Tools (3)
+- `adk_analyze_task` - NLP-based task analysis
+- `adk_match_capabilities` - Agent-task capability matching
+- `adk_classify_task` - Task classification and routing
+
+### ⚡ Workflow Management Tools (8)
+- `adk_create_workflow` - Create multi-step workflows
+- `adk_start_workflow` - Initiate workflow execution
+- `adk_get_workflow_status` - Monitor workflow progress
+- `adk_list_workflows` - List active and completed workflows
+- `adk_pause_workflow` - Pause workflow execution
+- `adk_resume_workflow` - Resume paused workflows
+- `adk_cancel_workflow` - Cancel workflow execution
+- `adk_get_workflow_templates` - Access workflow templates
 
 ## 📊 Monitoring & Status
 
@@ -176,32 +185,31 @@ check_task_status "your-task-id"
 
 ## 🔄 Common Workflows
 
-### 1. Research Workflow
+### 1. Data Analysis Workflow
 
 ```
-1. web_research_tool "research topic"
-2. data_analysis_tool "analyze the research data"
-3. competitive_intelligence_tool "market analysis"
-4. generate_report "comprehensive research report"
+1. "Use adk_read_file to load the dataset"
+2. "Delegate to Data Science agent for analysis"
+3. "Use adk_vector_search to find related research"
+4. "Use adk_write_file to save results"
 ```
 
-### 2. Development Workflow
+### 2. Code Development Workflow
 
 ```
-1. architecture_tool "system requirements"
-2. code_generation_tool "implement the design"
-3. testing_tool "create test suite"
-4. security_tool "security analysis"
-5. documentation_tool "create documentation"
+1. "Use adk_read_file to examine existing code"
+2. "Delegate to Code Execution agent for implementation"
+3. "Use adk_echo to test functionality"
+4. "Use adk_write_file to save the new code"
 ```
 
-### 3. Travel Planning Workflow
+### 3. Multi-Step Research Workflow
 
 ```
-1. hotel_search_tool "accommodation requirements"
-2. flight_search_tool "flight preferences"
-3. itinerary_planning_tool "complete trip plan"
-4. payment_processing_tool "booking confirmation"
+1. "Use adk_web_search for external information"
+2. "Use adk_search_knowledge for internal documentation"
+3. "Use adk_coordinate_task to organize findings"
+4. "Use adk_create_workflow for complex analysis"
 ```
 
 ## 🚨 Quick Troubleshooting

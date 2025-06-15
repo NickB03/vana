@@ -25,14 +25,24 @@ The VANA interface consists of:
 - **Tool Indicators**: Visual feedback showing which tools are being used
 
 ### 3. Select an Agent
-Choose an agent based on your task:
+VANA features **7 discoverable agents** using a simplified multi-agent architecture with proxy pattern:
 
-| Agent | Best For | Example Use Cases |
-|-------|----------|-------------------|
-| **VANA** | General coordination, complex workflows | "Help me analyze data and create a report" |
-| **Code Execution** | Running and debugging code | "Execute this Python script and explain the output" |
-| **Data Science** | Data analysis and visualization | "Analyze this dataset and create visualizations" |
-| **Memory** | Information storage and retrieval | "Remember this information for later use" |
+#### Real Agents (3)
+| Agent | Type | Best For | Example Use Cases |
+|-------|------|----------|-------------------|
+| **VANA Orchestrator** | Real | Central coordination, task routing, 19 core tools | "Help me analyze data and create a report" |
+| **Code Execution** | Real | Secure multi-language code execution (Python, JS, Shell) | "Execute this Python script safely in sandbox" |
+| **Data Science** | Real | Data analysis, visualization, machine learning | "Analyze this dataset and create visualizations" |
+
+#### Proxy Agents (4) - Discovery Pattern
+| Agent | Type | Behavior | Purpose |
+|-------|------|----------|---------|
+| **Memory** | Proxy→VANA | All requests automatically delegate to VANA | Agent discovery compatibility |
+| **Orchestration** | Proxy→VANA | All requests automatically delegate to VANA | Agent discovery compatibility |
+| **Specialists** | Proxy→VANA | All requests automatically delegate to VANA | Agent discovery compatibility |
+| **Workflows** | Proxy→VANA | All requests automatically delegate to VANA | Agent discovery compatibility |
+
+> **💡 How Proxy Agents Work**: The 4 proxy agents appear as discoverable agents for compatibility, but all requests are automatically redirected to the VANA orchestrator. Users can interact with any agent normally - the system handles delegation transparently.
 
 ### 4. Start with Simple Requests
 Begin with straightforward requests to understand how VANA works:
@@ -181,17 +191,17 @@ VANA remembers context across conversations:
 - Integrates with Google's RAG (Retrieval Augmented Generation) system
 
 ### Multi-Step Workflows
-VANA can handle complex, multi-step tasks:
+VANA can handle complex, multi-step tasks using its 19 core tools and specialist agents:
 
 ```
 User: "I need to process a dataset, clean it, analyze it, create visualizations, and generate a report"
 
 VANA Workflow:
-1. Data Science agent cleans the dataset
-2. Data Science agent performs statistical analysis
-3. Code Execution agent creates visualizations
-4. VANA coordinates the workflow
-5. Memory agent stores results for future reference
+1. VANA uses adk_read_file to access the dataset
+2. VANA delegates to Data Science agent for cleaning and analysis
+3. VANA delegates to Code Execution agent for visualization creation
+4. VANA coordinates the workflow using adk_coordinate_task
+5. VANA uses adk_write_file to save results
 6. VANA generates comprehensive report combining all results
 ```
 
