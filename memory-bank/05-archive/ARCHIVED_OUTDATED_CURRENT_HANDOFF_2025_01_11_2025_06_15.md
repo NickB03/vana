@@ -1,8 +1,8 @@
-# ✅ DEPLOYMENT SUCCESS - ISSUE RESOLVED
+# ❌ ARCHIVED OUTDATED - DEPLOYMENT SUCCESS - ISSUE RESOLVED
 
 **Date**: 2025-06-13
-**Status**: RESOLVED
-**Service URL**: https://vana-dev-960076421399.us-central1.run.app
+**Status**: ARCHIVED 2025-06-15 - OUTDATED INFORMATION
+**Archive Reason**: Contains mixed dates and outdated deployment information
 
 ## Root Cause Identified and Fixed
 The deployment failure was caused by **Cloud Run using buildpacks instead of the Dockerfile**. The issue was that our Dockerfile was named `Dockerfile.production` instead of `Dockerfile`.
