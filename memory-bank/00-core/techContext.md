@@ -113,10 +113,10 @@
         *   **Text Embedding Models:** (e.g., `text-embedding-004`) Used to generate embeddings for Vector Search.
         *   **Document AI:** Planned primary service for document parsing and extraction.
     *   **Google Cloud Storage (GCS):** Potentially used for storing raw documents or intermediate files in the document processing pipeline.
-*   **MCP (Model Context Protocol) Server:** ✅ DEPRECATED
+*   **MCP (Model Context Protocol) Server:** ✅ ARCHIVED (2025-06-15)
     *   Previously used for Knowledge Graph integration (REMOVED)
     *   Replaced with Google ADK native memory systems
-    *   Custom MCP server dependencies eliminated
+    *   Legacy servers archived to `legacy-archive/mcp-servers-archived-2025-06-15/`
 *   **Brave Search API:** ✅ PRODUCTION - Free AI plan optimized for enhanced web search capabilities
     *   **Free AI Plan Features:** Extra snippets (5x content), AI summaries, goggles, multi-type search
     *   **Search Optimization:** 5 search types (comprehensive, fast, academic, recent, local)
