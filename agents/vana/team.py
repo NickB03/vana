@@ -90,6 +90,24 @@ except ImportError as e:
     specialist_agents = []
     SPECIALIST_AGENTS_AVAILABLE = False
 
+# Create AgentTool wrappers for specialist agents (Agent Zero pattern)
+specialist_agent_tools_wrapped = []
+if SPECIALIST_AGENTS_AVAILABLE:
+    try:
+        from google.adk.tools import agent_tool
+
+        # Test with limited AgentTool wrappers to avoid resource issues in Cloud Run
+        # Only wrap the first 2 specialist agents to test functionality
+        for agent in specialist_agents[:2]:  # Limit to first 2 agents
+            # Create AgentTool wrapper for each specialist agent
+            agent_tool_wrapper = agent_tool.AgentTool(agent=agent)
+            specialist_agent_tools_wrapped.append(agent_tool_wrapper)
+
+        logger.info(f"✅ Created AgentTool wrappers for {len(specialist_agent_tools_wrapped)} specialist agents")
+    except ImportError as e:
+        logger.warning(f"⚠️ AgentTool not available, using fallback specialist tools: {e}")
+        specialist_agent_tools_wrapped = []
+
 # Import advanced orchestration capabilities for Priority 3 enhancements
 try:
     from agents.memory.specialist_memory_manager import get_specialist_knowledge_func, save_specialist_knowledge_func
@@ -415,6 +433,7 @@ previous_success = load_memory("successful agent coordination for similar task")
             FunctionTool(github_mcp_operations),
         ]
         + (specialist_agent_tools if SPECIALIST_TOOLS_AVAILABLE else [])
+        + (specialist_agent_tools_wrapped if SPECIALIST_AGENTS_AVAILABLE else [])
         + (orchestration_tools if ORCHESTRATION_TOOLS_AVAILABLE else [])
     ),
     # Add specialist agents as sub_agents for proper ADK delegation
