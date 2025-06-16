@@ -1,0 +1,59 @@
+# VANA Sandbox Python Requirements
+# Essential packages for secure code execution
+
+# Core data science libraries
+numpy==1.26.4
+pandas==2.2.0
+matplotlib==3.8.3
+seaborn==0.13.2
+scipy==1.12.0
+
+# Machine learning libraries
+scikit-learn==1.4.1.post1
+
+# Utility libraries
+requests==2.31.0
+pyyaml==6.0.1
+python-dateutil==2.8.2
+pytz==2024.1
+
+# JSON and data processing
+jsonschema==4.21.1
+xmltodict==0.13.0
+
+# Text processing
+regex==2023.12.25
+
+# Mathematical libraries
+sympy==1.12
+statsmodels==0.14.1
+
+# Visualization
+plotly==5.18.0
+
+# Development and testing
+pytest==8.0.0
+pytest-asyncio==0.23.5
+
+# Security and validation
+cryptography==42.0.2
+validators==0.22.0
+
+# Performance
+numba==0.59.0
+
+# File handling
+openpyxl==3.1.2
+xlrd==2.0.1
+
+# Network utilities (limited for security)
+urllib3==2.2.0
+
+# Time and date utilities
+arrow==1.3.0
+
+# Configuration
+configparser==6.0.0
+
+# Logging
+structlog==24.1.0

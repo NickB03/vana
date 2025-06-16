@@ -1,0 +1,182 @@
+<context>
+# VANA Coordination Tools Implementation Project
+
+## Overview
+This project addresses critical infrastructure gaps identified in the VANA multi-agent system where real coordination tools exist locally but are missing from the GitHub repository, causing the system to fall back to stub implementations. The previous agent successfully completed documentation remediation (PR #67), and now we need to implement the actual functionality to match the corrected documentation.
+
+## Current State Analysis
+- **Documentation Status**: ✅ CORRECTED - False claims about coordination tools have been remediated
+- **Implementation Status**: ❌ CRITICAL GAP - real_coordination_tools.py exists locally but not in GitHub repository
+- **Functionality Status**: ❌ FALLBACK MODE - Coordination tools using stub implementations due to missing dependencies
+- **Impact**: System appears functional but lacks real agent coordination capabilities
+
+## Core Problem Statement
+The VANA system has comprehensive coordination infrastructure implemented locally, but critical files are missing from the GitHub repository and dependencies are not properly configured, causing the system to operate in fallback mode with stub implementations instead of real agent coordination.
+
+## Success Criteria
+1. All coordination tools import successfully without fallback warnings
+2. Real agent discovery returns 7 operational agents with proper descriptions
+3. Coordination tools perform actual agent-to-agent communication
+4. System passes comprehensive functional validation in development environment
+5. Documentation accurately reflects actual system capabilities
+6. Branch synchronization process prevents future misalignment issues
+
+## User Experience Impact
+- **Current**: Users see coordination responses but they're stub implementations
+- **Target**: Users get real agent coordination with actual task routing and delegation
+- **Benefit**: Functional multi-agent system with intelligent task distribution
+</context>
+
+<PRD>
+# Technical Architecture
+
+## Infrastructure Components
+### Core Coordination Files (Missing from Repository)
+- **real_coordination_tools.py**: Main coordination service implementation
+- **agent_discovery.py**: Agent discovery and capability detection
+- **agent_communication.py**: JSON-RPC communication service
+- **routing_engine.py**: Intelligent task routing engine
+- **task_orchestrator.py**: Multi-agent coordination orchestrator
+
+### Dependency Requirements
+- **aiohttp**: Required for HTTP client operations in JSON-RPC communication
+- **fastapi**: Required for agent communication server
+- **uvicorn**: Required for running communication services
+
+### Integration Points
+- **adk_tools.py**: Currently imports real coordination tools with fallback to stubs
+- **Google ADK**: Agent discovery integration for multi-agent system
+- **Cloud Run**: Deployment environment requiring proper dependency configuration
+
+## Development Roadmap
+
+### Phase 1: Critical Infrastructure Deployment (High Priority)
+**Objective**: Deploy missing coordination tools to GitHub repository and fix dependencies
+
+**Tasks**:
+1. **Deploy Real Coordination Tools**
+   - Add real_coordination_tools.py to GitHub repository
+   - Verify all coordination infrastructure files are present on main branch
+   - Ensure proper file permissions and structure
+
+2. **Fix Missing Dependencies**
+   - Add aiohttp dependency to pyproject.toml
+   - Add fastapi and uvicorn dependencies for communication services
+   - Update requirements.txt for Cloud Run compatibility
+   - Test dependency installation locally
+
+3. **Validate Infrastructure Dependencies**
+   - Verify agent_discovery.py exists and is functional
+   - Verify agent_communication.py and JSON-RPC components exist
+   - Verify routing_engine.py and task_orchestrator.py exist
+   - Test import chain from adk_tools.py to real_coordination_tools.py
+
+### Phase 2: Testing and Validation (High Priority)
+**Objective**: Comprehensive testing of coordination functionality
+
+**Tasks**:
+4. **Local Integration Testing**
+   - Test coordination tools import successfully
+   - Verify no fallback warnings in logs
+   - Test agent discovery returns 7 agents with real descriptions
+   - Validate coordination tools return real results, not stub responses
+
+5. **Development Environment Deployment**
+   - Deploy to vana-dev Cloud Run environment
+   - Test coordination functionality in deployed environment
+   - Use Playwright to validate agent discovery and coordination
+   - Verify response times and functionality meet requirements
+
+6. **Comprehensive Functional Validation**
+   - Test coordinate_task with various task types
+   - Test delegate_to_agent with different agents
+   - Test get_agent_status returns real agent information
+   - Validate intelligent routing and orchestration features
+
+### Phase 3: Process and Documentation Improvements (Medium Priority)
+**Objective**: Establish processes to prevent future documentation/implementation misalignment
+
+**Tasks**:
+7. **Branch Synchronization Protocol**
+   - Create pre-review verification checklist
+   - Establish process for ensuring local/remote branch alignment
+   - Document synchronization procedures for future reviews
+   - Implement automated checks where possible
+
+8. **Documentation Accuracy Framework**
+   - Audit all Memory Bank files against actual codebase state
+   - Create systematic verification process against GitHub repository
+   - Establish regular documentation review schedule
+   - Update Memory Bank with current accurate status
+
+## Logical Dependency Chain
+
+### Critical Path (Must Complete in Order)
+1. **Deploy Coordination Tools** → 2. **Fix Dependencies** → 3. **Validate Infrastructure**
+2. **Local Testing** → 5. **Development Deployment** → 6. **Functional Validation**
+3. **Branch Synchronization** → 8. **Documentation Accuracy** (Can run in parallel with testing)
+
+### Parallel Execution Opportunities
+- Process improvements (Tasks 7-8) can run parallel to testing (Tasks 4-6)
+- Documentation updates can happen concurrent with technical implementation
+- Multiple validation tests can run simultaneously once infrastructure is deployed
+
+## Risks and Mitigations
+
+### Technical Risks
+**Risk**: Missing coordination infrastructure files on main branch
+**Mitigation**: Systematic verification of all required files before proceeding
+
+**Risk**: Dependency conflicts in Cloud Run environment
+**Mitigation**: Test dependency installation locally before deployment
+
+**Risk**: Import chain failures due to missing components
+**Mitigation**: Test complete import chain from adk_tools.py through all dependencies
+
+### Process Risks
+**Risk**: Future documentation/implementation misalignment
+**Mitigation**: Establish systematic verification process and regular audits
+
+**Risk**: Branch synchronization issues causing review confusion
+**Mitigation**: Create pre-review verification checklist and synchronization protocol
+
+### Validation Risks
+**Risk**: Coordination tools appear to work but still use fallbacks
+**Mitigation**: Comprehensive testing with specific validation of real vs stub responses
+
+## Appendix
+
+### Success Validation Criteria
+1. **Import Test**: `from lib._tools.real_coordination_tools import real_coordinate_task` succeeds
+2. **Agent Discovery**: get_agent_status() returns 7 agents with real descriptions
+3. **No Fallback Warnings**: No "using fallback" messages in coordination tool logs
+4. **Real Responses**: Coordination tools return structured JSON with real agent information
+5. **Cloud Run Deployment**: System functions correctly in vana-dev environment
+6. **Playwright Validation**: Automated tests confirm coordination functionality
+
+### File Verification Checklist
+- [ ] real_coordination_tools.py committed to GitHub
+- [ ] agent_discovery.py present and functional
+- [ ] agent_communication.py present and functional
+- [ ] routing_engine.py present and functional
+- [ ] task_orchestrator.py present and functional
+- [ ] jsonrpc_client.py present and functional
+- [ ] jsonrpc_server.py present and functional
+- [ ] message_protocol.py present and functional
+
+### Dependency Verification Checklist
+- [ ] aiohttp added to pyproject.toml
+- [ ] fastapi added to pyproject.toml
+- [ ] uvicorn added to pyproject.toml
+- [ ] Dependencies install successfully locally
+- [ ] Dependencies work in Cloud Run environment
+- [ ] No import errors in coordination tool chain
+
+### Testing Validation Checklist
+- [ ] Local import testing passes
+- [ ] Agent discovery returns 7 real agents
+- [ ] Coordination tools return real responses
+- [ ] Development environment deployment successful
+- [ ] Playwright functional validation passes
+- [ ] No fallback implementations used
+</PRD>
