@@ -66,6 +66,30 @@ except ImportError as e:
     specialist_agent_tools = []
     SPECIALIST_TOOLS_AVAILABLE = False
 
+# Import specialist agents for proper ADK delegation
+try:
+    from agents.data_science.specialist import data_science_specialist
+    from agents.code_execution.specialist import code_execution_specialist
+    from agents.specialists.architecture_specialist import architecture_specialist
+    from agents.specialists.devops_specialist import devops_specialist
+    from agents.specialists.qa_specialist import qa_specialist
+    from agents.specialists.ui_specialist import ui_specialist
+
+    specialist_agents = [
+        data_science_specialist,
+        code_execution_specialist,
+        architecture_specialist,
+        devops_specialist,
+        qa_specialist,
+        ui_specialist
+    ]
+    SPECIALIST_AGENTS_AVAILABLE = True
+    logger.info("✅ Specialist agents imported successfully for ADK delegation")
+except ImportError as e:
+    logger.warning(f"Warning: Specialist agents not available: {e}")
+    specialist_agents = []
+    SPECIALIST_AGENTS_AVAILABLE = False
+
 # Import advanced orchestration capabilities for Priority 3 enhancements
 try:
     from agents.memory.specialist_memory_manager import get_specialist_knowledge_func, save_specialist_knowledge_func
@@ -393,4 +417,6 @@ previous_success = load_memory("successful agent coordination for similar task")
         + (specialist_agent_tools if SPECIALIST_TOOLS_AVAILABLE else [])
         + (orchestration_tools if ORCHESTRATION_TOOLS_AVAILABLE else [])
     ),
+    # Add specialist agents as sub_agents for proper ADK delegation
+    sub_agents=specialist_agents if SPECIALIST_AGENTS_AVAILABLE else [],
 )
