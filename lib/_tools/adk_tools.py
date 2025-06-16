@@ -465,6 +465,11 @@ def get_health_status() -> str:
 def coordinate_task(task_description: str, assigned_agent: str = "") -> str:
     """🎯 Coordinate task assignment with real agent discovery and routing."""
     try:
+        # TEMPORARY FIX: Disable real coordination tools due to hanging issue
+        # The real coordination tools try to make JSON-RPC calls to separate agent services
+        # but in Cloud Run, all agents are part of the same application
+        raise ImportError("Real coordination tools disabled to prevent hanging")
+
         # Import real coordination tools
         from lib._tools.real_coordination_tools import real_coordinate_task
 
@@ -494,6 +499,11 @@ def coordinate_task(task_description: str, assigned_agent: str = "") -> str:
 def delegate_to_agent(agent_name: str, task: str, context: str = "") -> str:
     """🤝 Delegate task with real agent communication."""
     try:
+        # TEMPORARY FIX: Disable real coordination tools due to hanging issue
+        # The real coordination tools try to make JSON-RPC calls to separate agent services
+        # but in Cloud Run, all agents are part of the same application
+        raise ImportError("Real coordination tools disabled to prevent hanging")
+
         # Import real coordination tools
         from lib._tools.real_coordination_tools import real_delegate_to_agent
 
