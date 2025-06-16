@@ -187,7 +187,7 @@ grep -r "f[\"'][^{]*[\"']" . --include="*.py" | head -20
 ### **Critical Validation Required:**
 - [ ] **Functionality Testing:** Ensure all systems remain operational
 - [ ] **Cloud Run Deployment:** Test in vana-dev environment first
-- [ ] **Agent Coordination:** Verify all 33 agents still function correctly
+- [ ] **Agent Coordination:** Verify all 7 agents still function correctly
 - [ ] **Vector Search:** Confirm search functionality works
 - [ ] **Memory Systems:** Test knowledge base and memory retrieval
 - [ ] **Dashboard Access:** Verify dashboard loads and functions
