@@ -1,0 +1,339 @@
+# VANA Sandbox Security Policies
+# Comprehensive security configuration for safe code execution
+
+python:
+  forbidden_imports:
+    - os
+    - sys
+    - subprocess
+    - socket
+    - urllib
+    - requests
+    - shutil
+    - glob
+    - tempfile
+    - pickle
+    - marshal
+    - ctypes
+    - importlib
+    - __builtin__
+    - builtins
+    - threading
+    - multiprocessing
+    - asyncio
+    - concurrent
+    - queue
+    - signal
+    - atexit
+    - weakref
+    - gc
+    - inspect
+    - types
+    - code
+    - dis
+    - ast
+    - tokenize
+    - keyword
+    - parser
+    - symbol
+    - token
+    - platform
+    - site
+    - sysconfig
+    - distutils
+    - pkg_resources
+    - setuptools
+    - pip
+    - easy_install
+
+  forbidden_functions:
+    - exec
+    - eval
+    - compile
+    - open
+    - file
+    - input
+    - raw_input
+    - __import__
+    - getattr
+    - setattr
+    - delattr
+    - hasattr
+    - vars
+    - dir
+    - globals
+    - locals
+    - memoryview
+    - bytearray
+    - bytes
+    - classmethod
+    - staticmethod
+    - property
+    - super
+    - type
+    - isinstance
+    - issubclass
+    - callable
+    - iter
+    - next
+    - enumerate
+    - filter
+    - map
+    - reduce
+    - apply
+    - reload
+    - execfile
+
+  forbidden_patterns:
+    - "__.*__"          # Dunder methods
+    - "import\\s+os"    # OS imports
+    - "from\\s+os"      # OS from imports
+    - "import\\s+sys"   # System imports
+    - "from\\s+sys"     # System from imports
+    - "\\\\x[0-9a-fA-F]" # Hex escape sequences
+    - "\\\\[0-7]{1,3}"  # Octal escape sequences
+    - "chr\\s*\\("      # Character conversion
+    - "ord\\s*\\("      # Ordinal conversion
+    - "exec\\s*\\("     # Exec function
+    - "eval\\s*\\("     # Eval function
+
+javascript:
+  forbidden_imports:
+    - fs
+    - path
+    - os
+    - child_process
+    - cluster
+    - crypto
+    - dgram
+    - dns
+    - http
+    - https
+    - net
+    - tls
+    - url
+    - querystring
+    - stream
+    - util
+    - vm
+    - zlib
+    - buffer
+    - events
+    - readline
+    - repl
+    - string_decoder
+    - timers
+    - tty
+    - worker_threads
+    - perf_hooks
+    - async_hooks
+    - inspector
+    - v8
+    - process
+    - global
+
+  forbidden_functions:
+    - eval
+    - Function
+    - setTimeout
+    - setInterval
+    - setImmediate
+    - clearTimeout
+    - clearInterval
+    - clearImmediate
+    - require
+    - import
+    - process
+    - global
+    - window
+    - document
+    - XMLHttpRequest
+    - fetch
+    - WebSocket
+    - Worker
+    - SharedWorker
+    - ServiceWorker
+    - localStorage
+    - sessionStorage
+    - indexedDB
+    - navigator
+    - location
+    - history
+
+  forbidden_patterns:
+    - "require\\s*\\("        # Node.js require
+    - "import\\s+.*\\s+from"  # ES6 imports
+    - "fetch\\s*\\("          # Network requests
+    - "XMLHttpRequest"        # AJAX requests
+    - "new\\s+Worker"         # Web workers
+    - "new\\s+WebSocket"      # WebSocket connections
+    - "document\\."           # DOM access
+    - "window\\."             # Window object access
+    - "process\\."            # Node.js process object
+    - "global\\."             # Node.js global object
+    - "\\\\x[0-9a-fA-F]"      # Hex escape sequences
+    - "\\\\u[0-9a-fA-F]{4}"   # Unicode escape sequences
+    - "String\\.fromCharCode" # Character code conversion
+    - "eval\\s*\\("           # Eval function
+    - "Function\\s*\\("       # Function constructor
+
+shell:
+  forbidden_commands:
+    - rm
+    - rmdir
+    - mv
+    - cp
+    - chmod
+    - chown
+    - chgrp
+    - sudo
+    - su
+    - passwd
+    - useradd
+    - userdel
+    - usermod
+    - groupadd
+    - groupdel
+    - groupmod
+    - mount
+    - umount
+    - fdisk
+    - mkfs
+    - fsck
+    - dd
+    - wget
+    - curl
+    - nc
+    - netcat
+    - ssh
+    - scp
+    - rsync
+    - ftp
+    - sftp
+    - telnet
+    - ping
+    - traceroute
+    - nslookup
+    - dig
+    - host
+    - iptables
+    - ufw
+    - firewall-cmd
+    - systemctl
+    - service
+    - crontab
+    - at
+    - batch
+    - nohup
+    - screen
+    - tmux
+    - kill
+    - killall
+    - pkill
+    - ps
+    - top
+    - htop
+    - netstat
+    - ss
+    - lsof
+    - strace
+    - ltrace
+    - gdb
+    - objdump
+    - hexdump
+    - strings
+    - file
+    - which
+    - whereis
+    - locate
+    - find
+    - xargs
+
+  forbidden_patterns:
+    - ">\\s*/"              # Redirect to system paths
+    - "\\|\\s*sh"           # Pipe to shell
+    - "&&"                  # Command chaining
+    - "\\|\\|"              # Command chaining
+    - "`.*`"                # Command substitution
+    - "\\$\\("              # Command substitution
+    - "\\$\\{.*\\}"         # Variable substitution
+    - "\\*"                 # Wildcards
+    - "\\?"                 # Wildcards
+    - "\\[.*\\]"            # Character classes
+    - "~"                   # Home directory
+    - "\\.\\./"             # Parent directory traversal
+    - "/etc/"               # System configuration
+    - "/proc/"              # Process information
+    - "/sys/"               # System information
+    - "/dev/"               # Device files
+    - "/var/"               # Variable data
+    - "/tmp/"               # Temporary files
+    - "/usr/"               # User programs
+    - "/bin/"               # System binaries
+    - "/sbin/"              # System binaries
+    - "/lib/"               # System libraries
+    - "/opt/"               # Optional software
+    - "/root/"              # Root home directory
+
+resource_limits:
+  max_execution_time: 30      # Maximum execution time in seconds
+  max_memory_mb: 512          # Maximum memory usage in MB
+  max_cpu_cores: 1            # Maximum CPU cores
+  max_file_size_mb: 10        # Maximum file size in MB
+  max_output_size_kb: 1024    # Maximum output size in KB
+  max_processes: 10           # Maximum number of processes
+  max_open_files: 100         # Maximum number of open files
+  max_network_connections: 0  # Maximum network connections (0 = disabled)
+  
+  allowed_file_extensions:
+    - .txt
+    - .json
+    - .csv
+    - .xml
+    - .yaml
+    - .yml
+    - .md
+    - .py
+    - .js
+    - .sh
+    - .sql
+    - .html
+    - .css
+    - .log
+
+  blocked_file_paths:
+    - /etc/
+    - /proc/
+    - /sys/
+    - /dev/
+    - /var/
+    - /tmp/
+    - /usr/
+    - /bin/
+    - /sbin/
+    - /lib/
+    - /opt/
+    - /root/
+    - /home/
+    - ..
+
+container_security:
+  network_mode: none           # Disable network access
+  read_only: true             # Read-only filesystem
+  no_new_privileges: true     # Prevent privilege escalation
+  drop_capabilities: all      # Drop all Linux capabilities
+  user: "sandbox:sandbox"     # Run as non-root user
+  
+  tmpfs_mounts:
+    /tmp: "size=100m,noexec"  # Temporary filesystem with no execution
+    /var/tmp: "size=50m,noexec"
+    
+  security_options:
+    - no-new-privileges:true
+    - seccomp:unconfined      # May need adjustment based on requirements
+    
+  environment_variables:
+    PATH: "/usr/local/bin:/usr/bin:/bin"
+    HOME: "/workspace"
+    USER: "sandbox"
+    SHELL: "/bin/bash"
