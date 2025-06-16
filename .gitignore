@@ -85,7 +85,8 @@ Desktop.ini
 *.so
 develop-eggs/
 downloads/
-lib/
+# lib/ - COMMENTED OUT: VANA uses lib/ for core source code, not package installations
+# lib/
 lib64/
 parts/
 sdist/
