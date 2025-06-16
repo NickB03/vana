@@ -28,6 +28,10 @@ from lib._tools import (  # File System Tools; Search Tools; System Tools; Agent
     adk_vector_search,
     adk_web_search,
     adk_write_file,
+    # MCP Integration Tools
+    context7_sequential_thinking,
+    brave_search_mcp,
+    github_mcp_operations,
 )
 from lib.logging_config import get_logger
 from google.adk.tools import FunctionTool
@@ -381,6 +385,10 @@ previous_success = load_memory("successful agent coordination for similar task")
             adk_resume_workflow,
             adk_cancel_workflow,
             adk_get_workflow_templates,
+            # MCP Integration Tools
+            FunctionTool(context7_sequential_thinking),
+            FunctionTool(brave_search_mcp),
+            FunctionTool(github_mcp_operations),
         ]
         + (specialist_agent_tools if SPECIALIST_TOOLS_AVAILABLE else [])
         + (orchestration_tools if ORCHESTRATION_TOOLS_AVAILABLE else [])

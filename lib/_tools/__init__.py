@@ -39,6 +39,14 @@ from .adk_tools import (
     adk_get_workflow_templates,
 )
 
+# Import MCP Tools
+from .adk_mcp_tools import (
+    # MCP Integration Tools
+    context7_sequential_thinking,
+    brave_search_mcp,
+    github_mcp_operations,
+)
+
 # Export all tools for easy import
 __all__ = [
     # File System Tools
@@ -76,4 +84,9 @@ __all__ = [
     'adk_resume_workflow',
     'adk_cancel_workflow',
     'adk_get_workflow_templates',
+
+    # MCP Integration Tools
+    'context7_sequential_thinking',
+    'brave_search_mcp',
+    'github_mcp_operations',
 ]
