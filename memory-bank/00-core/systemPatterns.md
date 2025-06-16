@@ -1,16 +1,31 @@
-✅ **CONTENT ACCURACY VERIFIED** ✅
-**Last Updated:** 2025-06-15T19:00:00Z  
-**Status:** ✅ VERIFIED - Content based on actual codebase analysis  
-**Audit Complete:** All claims verified through direct code inspection  
+⚠️ **CONTENT ACCURACY VERIFIED BUT DEPLOYMENT BROKEN** ⚠️
+**Last Updated:** 2025-06-16T20:30:00Z
+**Status:** 🚨 VERIFIED CODE BUT BROKEN DEPLOYMENT - Local code correct, vana-dev deployment missing tools
+**Audit Complete:** Code verified through inspection, deployment issues confirmed through manual testing
+**Operational Status:** Local code functional, deployed environment broken (missing adk_web_search tools)
 
 # System Patterns & Architecture: VANA
 
 ## ✅ VERIFIED SYSTEM OVERVIEW (Code-Audited 2025-06-15)
 
-**Status**: ✅ Accurate System Documentation Based on Actual Implementation
-**Achievement**: Verified agent count, tool inventory, and architecture patterns through code analysis
-**Reality**: Simplified multi-agent system with proxy pattern for discovery
-**Foundation**: 3 real agents + 4 proxy agents = 7 discoverable agents with 19 core tools
+**Status**: 🚨 VERIFIED CODE BUT BROKEN DEPLOYMENT - Local code functional, vana-dev deployment missing critical tools
+**Achievement**: Code analysis confirms correct implementation, manual testing reveals deployment issues
+**Reality**: Simplified multi-agent system with proxy pattern for discovery - CODE CORRECT, DEPLOYMENT BROKEN
+**Foundation**: 3 real agents + 4 proxy agents = 7 discoverable agents with 19 core tools (locally)
+**Deployment Gap**: Local code has adk_web_search, deployed environment shows "undeclared function" error
+
+### **🚨 DEPLOYMENT ISSUE DISCOVERED (2025-06-16T20:30:00Z)**
+**Status:** ❌ CRITICAL DEPLOYMENT MISMATCH - Local code correct, deployed environment missing tools
+**Issue:** ADK evaluation tests gave false positives, manual testing reveals real functionality broken
+**Root Cause:** Deployment gap between local codebase and vana-dev environment
+
+#### **❌ ACTUAL DEPLOYMENT STATUS (Manual Testing):**
+- **Agent Discovery**: 7+ agents discoverable but tools missing
+- **Web Search**: "undeclared function: adk_web_search" error in deployed environment
+- **BRAVE_API_KEY**: "The Brave API key is not configured" error persists
+- **Tool Registration**: Web search tools not available in deployed vana-dev
+- **Environment Config**: Missing environment variables in Cloud Run deployment
+- **User Experience**: Original failing scenarios still broken in deployed environment
 
 ---
 
