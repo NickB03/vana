@@ -1,0 +1,58 @@
+{
+  "evaluation_summary": {
+    "total_tests": 4,
+    "passed_tests": 0,
+    "failed_tests": 4,
+    "success_rate": 0.0,
+    "avg_response_time": 0.0,
+    "avg_quality_score": 0.0,
+    "environment": "dev",
+    "timestamp": 8533.292758
+  },
+  "test_results": [
+    {
+      "test_id": "critical_001",
+      "test_name": "Web Search Functionality",
+      "passed": false,
+      "response_time": 0.0,
+      "response_quality": 0.0,
+      "tool_used": "",
+      "expected_behavior": "Return current weather information for Chicago",
+      "actual_behavior": "Exception occurred",
+      "error_message": "HTTP 404: {\"detail\":\"Not Found\"}"
+    },
+    {
+      "test_id": "critical_002",
+      "test_name": "Knowledge Search Functionality",
+      "passed": false,
+      "response_time": 0.0,
+      "response_quality": 0.0,
+      "tool_used": "",
+      "expected_behavior": "Return detailed information about VANA capabilities",
+      "actual_behavior": "Exception occurred",
+      "error_message": "HTTP 404: {\"detail\":\"Not Found\"}"
+    },
+    {
+      "test_id": "critical_003",
+      "test_name": "Trip Planning Scenario (Original Failure)",
+      "passed": false,
+      "response_time": 0.0,
+      "response_quality": 0.0,
+      "tool_used": "",
+      "expected_behavior": "Provide helpful trip planning information for Chicago in June",
+      "actual_behavior": "Exception occurred",
+      "error_message": "HTTP 404: {\"detail\":\"Not Found\"}"
+    },
+    {
+      "test_id": "critical_004",
+      "test_name": "Environment Configuration Status",
+      "passed": false,
+      "response_time": 0.0,
+      "response_quality": 0.0,
+      "tool_used": "",
+      "expected_behavior": "Show healthy system configuration",
+      "actual_behavior": "Exception occurred",
+      "error_message": "HTTP 404: {\"detail\":\"Not Found\"}"
+    }
+  ]
+}
