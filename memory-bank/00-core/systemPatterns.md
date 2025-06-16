@@ -8,24 +8,25 @@
 
 ## ✅ VERIFIED SYSTEM OVERVIEW (Code-Audited 2025-06-15)
 
-**Status**: 🚨 VERIFIED CODE BUT BROKEN DEPLOYMENT - Local code functional, vana-dev deployment missing critical tools
-**Achievement**: Code analysis confirms correct implementation, manual testing reveals deployment issues
-**Reality**: Simplified multi-agent system with proxy pattern for discovery - CODE CORRECT, DEPLOYMENT BROKEN
-**Foundation**: 3 real agents + 4 proxy agents = 7 discoverable agents with 19 core tools (locally)
-**Deployment Gap**: Local code has adk_web_search, deployed environment shows "undeclared function" error
+**Status**: 🚨 VERIFIED CODE BUT BROKEN EVERYWHERE - Local AND deployed environments both missing environment variables
+**Achievement**: Code analysis confirms correct implementation, local testing reveals environment issues everywhere
+**Reality**: Simplified multi-agent system with proxy pattern for discovery - CODE CORRECT, ENVIRONMENT BROKEN EVERYWHERE
+**Foundation**: 3 real agents + 4 proxy agents = 7 discoverable agents with 19 core tools (code level)
+**Environment Gap**: BRAVE_API_KEY missing locally AND in deployment, tools fail everywhere
 
-### **🚨 DEPLOYMENT ISSUE DISCOVERED (2025-06-16T20:30:00Z)**
-**Status:** ❌ CRITICAL DEPLOYMENT MISMATCH - Local code correct, deployed environment missing tools
-**Issue:** ADK evaluation tests gave false positives, manual testing reveals real functionality broken
-**Root Cause:** Deployment gap between local codebase and vana-dev environment
+### **🚨 ENVIRONMENT ISSUE DISCOVERED (2025-06-16T21:00:00Z)**
+**Status:** ❌ CRITICAL ENVIRONMENT MISMATCH - Local code correct, environment variables missing everywhere
+**Issue:** ADK evaluation tests gave false positives, local testing reveals functionality broken everywhere
+**Root Cause:** Environment configuration missing in local AND deployed environments
 
-#### **❌ ACTUAL DEPLOYMENT STATUS (Manual Testing):**
-- **Agent Discovery**: 7+ agents discoverable but tools missing
-- **Web Search**: "undeclared function: adk_web_search" error in deployed environment
-- **BRAVE_API_KEY**: "The Brave API key is not configured" error persists
+#### **❌ ACTUAL STATUS EVERYWHERE (Local AND Deployed Testing):**
+- **Local Web Search**: `{"error": "Brave API key not configured"}` - BROKEN LOCALLY
+- **Local Environment**: BRAVE_API_KEY not set, all environment variables show "not_set"
+- **Deployed Web Search**: "undeclared function: adk_web_search" error in deployed environment
+- **Deployed Environment**: "The Brave API key is not configured" error persists
 - **Tool Registration**: Web search tools not available in deployed vana-dev
-- **Environment Config**: Missing environment variables in Cloud Run deployment
-- **User Experience**: Original failing scenarios still broken in deployed environment
+- **Environment Config**: Missing environment variables everywhere - local AND Cloud Run
+- **User Experience**: Original failing scenarios broken in both environments
 
 ---
 

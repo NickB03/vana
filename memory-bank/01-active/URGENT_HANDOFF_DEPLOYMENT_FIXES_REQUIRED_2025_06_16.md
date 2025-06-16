@@ -1,60 +1,66 @@
-# URGENT HANDOFF: Critical Deployment Fixes Required
+# URGENT HANDOFF: Critical Environment & Deployment Fixes Required
 
-**Date:** 2025-06-16T20:30:00Z  
-**Handoff From:** Current Agent (ADK Evaluation & Testing)  
-**Handoff To:** Next Agent (Deployment & Configuration)  
-**Priority:** 🚨 CRITICAL - Immediate action required  
-**Status:** ❌ DEPLOYMENT BROKEN - Local code correct, vana-dev deployment missing tools  
+**Date:** 2025-06-16T21:00:00Z
+**Handoff From:** Current Agent (ADK Evaluation & Testing)
+**Handoff To:** Next Agent (Environment Configuration & Deployment)
+**Priority:** 🚨 CRITICAL - Immediate action required
+**Status:** ❌ BROKEN EVERYWHERE - Local AND deployed environments both missing BRAVE_API_KEY and environment variables
 
 ---
 
 ## 🚨 CRITICAL SITUATION SUMMARY
 
 ### **URGENT ISSUE DISCOVERED:**
-The ADK evaluation tests I created gave **FALSE POSITIVE** results. Manual testing by Nick confirms that **all critical functionality is still broken** in the vana-dev environment.
+The ADK evaluation tests I created gave **FALSE POSITIVE** results. Local testing confirms that **NO FIXES WERE EVER APPLIED ANYWHERE** - both local and deployed environments are completely broken.
 
-### **REAL STATUS (Manual Testing Confirmed):**
-- ❌ **Web Search**: "The Brave API key is not configured" error persists
-- ❌ **Tool Deployment**: "undeclared function: adk_web_search" error in vana-dev
-- ❌ **Environment Config**: BRAVE_API_KEY not configured in Cloud Run
-- ❌ **User Experience**: Original failing scenarios still broken
+### **REAL STATUS (Local AND Deployed Testing Confirmed):**
+- ❌ **Local Web Search**: `{"error": "Brave API key not configured"}` - BROKEN LOCALLY
+- ❌ **Deployed Web Search**: "undeclared function: adk_web_search" error in vana-dev
+- ❌ **Local Environment**: BRAVE_API_KEY not set in local environment
+- ❌ **Deployed Environment**: BRAVE_API_KEY not configured in Cloud Run
+- ❌ **Environment Variables**: All show "not_set" locally, missing in deployment
+- ❌ **User Experience**: Original failing scenarios broken everywhere
 
 ---
 
 ## 🔍 ROOT CAUSE ANALYSIS
 
-### **1. Deployment Gap Issue**
+### **1. Environment Configuration Missing Everywhere**
+**Problem:** BRAVE_API_KEY not configured anywhere - local OR deployed
+**Evidence:**
+- ❌ Local environment: `BRAVE_API_KEY` not set, web search returns error
+- ❌ Deployed environment: "The Brave API key is not configured"
+
+### **2. Deployment Gap Issue**
 **Problem:** Local codebase has correct implementation, but vana-dev deployment is missing tools
-**Evidence:** 
+**Evidence:**
 - ✅ Local code: `adk_web_search` properly defined in `agents/vana/team.py`
 - ❌ Deployed code: "Model tried to call an undeclared function: adk_web_search"
 
-### **2. Environment Configuration Missing**
-**Problem:** BRAVE_API_KEY not configured in Cloud Run environment
-**Evidence:** Manual test shows "The Brave API key is not configured"
-
-### **3. Test Methodology Flaw**
-**Problem:** ADK evaluation tests didn't validate actual tool execution
-**Evidence:** Tests passed but manual testing shows complete failure
+### **3. Test Methodology Completely Flawed**
+**Problem:** ADK evaluation tests gave false positives - didn't validate actual tool execution
+**Evidence:** Tests passed but local AND deployed testing shows complete failure everywhere
 
 ---
 
 ## 📋 IMMEDIATE ACTIONS REQUIRED
 
-### **🚀 PRIORITY 1: Deploy Working Code to vana-dev**
+### **🔧 PRIORITY 1: Configure Environment Variables Everywhere**
+1. **Set Local Environment**: Configure BRAVE_API_KEY in local development environment
+2. **Set Cloud Run Environment**: Configure BRAVE_API_KEY in Cloud Run environment variables
+3. **Set Required Variables**: Ensure GOOGLE_CLOUD_REGION, RAG_CORPUS_RESOURCE_NAME are set everywhere
+4. **Validate Local Configuration**: Test that local web search works
+
+### **🚀 PRIORITY 2: Deploy Working Code to vana-dev**
 1. **Verify Current Deployment**: Check what's actually deployed to vana-dev
 2. **Deploy Latest Code**: Ensure local codebase with adk_web_search tools is deployed
 3. **Validate Tool Registration**: Confirm all tools are properly registered in deployed environment
 
-### **🔧 PRIORITY 2: Configure Environment Variables**
-1. **Set BRAVE_API_KEY**: Configure in Cloud Run environment variables
-2. **Set Required Variables**: Ensure GOOGLE_CLOUD_REGION, RAG_CORPUS_RESOURCE_NAME are set
-3. **Validate Configuration**: Test that environment variables are accessible
-
-### **✅ PRIORITY 3: Validate Fixes**
-1. **Manual Testing**: Test the exact scenarios Nick tested
-2. **Tool Availability**: Verify adk_web_search is available and functional
-3. **End-to-End Testing**: Confirm weather queries work properly
+### **✅ PRIORITY 3: Validate Fixes Everywhere**
+1. **Local Testing**: Confirm web search works locally with environment variables
+2. **Deployed Testing**: Test the exact scenarios Nick tested in vana-dev
+3. **Tool Availability**: Verify adk_web_search is available and functional everywhere
+4. **End-to-End Testing**: Confirm weather queries work properly in both environments
 
 ---
 
@@ -72,14 +78,15 @@ The ADK evaluation tests I created gave **FALSE POSITIVE** results. Manual testi
 
 ## 🛠️ TECHNICAL DETAILS FOR NEXT AGENT
 
-### **Local Codebase Status (CORRECT):**
-- **File**: `agents/vana/team.py`
-- **Tools Defined**: `adk_web_search` properly imported and registered
-- **Configuration**: All tool definitions present and correct
+### **Local Environment Status (BROKEN):**
+- **File**: `agents/vana/team.py` - Tools properly defined
+- **Environment**: BRAVE_API_KEY not set in local environment
+- **Web Search Test**: `{"error": "Brave API key not configured"}`
+- **Health Status**: Shows `"web_search": "not configured"`
 
 ### **Deployment Environment (BROKEN):**
 - **URL**: https://vana-dev-960076421399.us-central1.run.app
-- **Issue**: Tools missing from deployed environment
+- **Issue**: Tools missing from deployed environment + environment variables missing
 - **Error**: "MALFORMED_FUNCTION_CALL: undeclared function: adk_web_search"
 
 ### **Environment Variables Needed:**
@@ -91,10 +98,16 @@ RAG_CORPUS_RESOURCE_NAME=<corpus_resource_name>
 
 ### **Test Commands for Validation:**
 ```bash
-# Test web search functionality
+# Test local web search functionality
+cd /Users/nick/Development/vana && poetry run python -c "
+from lib._tools.adk_tools import web_search
+result = web_search('Chicago weather')
+print('Web search result:', result)"
+
+# Test deployed web search functionality
 curl -s "https://vana-dev-960076421399.us-central1.run.app/run" \
   -X POST -H "Content-Type: application/json" \
-  -d '{"appName": "vana", "userId": "test_user", "sessionId": "test", 
+  -d '{"appName": "vana", "userId": "test_user", "sessionId": "test",
        "newMessage": {"parts": [{"text": "hows the weather in san diego"}], "role": "user"}}'
 ```
 
@@ -115,30 +128,47 @@ All tasks have been updated to reflect the actual broken status. Use Augment tas
 
 ## 🎯 SUCCESS CRITERIA FOR NEXT AGENT
 
-### **✅ DEPLOYMENT SUCCESS INDICATORS:**
-1. **Web Search Working**: Weather queries return actual data (not "API key not configured")
-2. **Tool Registration**: No "undeclared function" errors
-3. **Environment Config**: All required variables accessible
-4. **Manual Testing**: Nick's test scenarios work properly
+### **✅ SUCCESS INDICATORS (Local AND Deployed):**
+1. **Local Web Search Working**: Local test returns actual data (not "API key not configured")
+2. **Deployed Web Search Working**: Weather queries return actual data in vana-dev
+3. **Tool Registration**: No "undeclared function" errors in deployed environment
+4. **Environment Config**: All required variables accessible everywhere
+5. **Manual Testing**: Nick's test scenarios work properly in both environments
 
 ### **📊 VALIDATION CHECKLIST:**
+- [ ] Configure BRAVE_API_KEY locally
+- [ ] Test local web search functionality
 - [ ] Deploy latest code to vana-dev
 - [ ] Configure BRAVE_API_KEY in Cloud Run
-- [ ] Test web search functionality manually
+- [ ] Test deployed web search functionality manually
 - [ ] Verify tool availability in deployed environment
-- [ ] Confirm environment variables are set
+- [ ] Confirm environment variables are set everywhere
 - [ ] Update Memory Bank with success status
 
 ---
 
 ## ⚠️ CRITICAL NOTES FOR NEXT AGENT
 
-1. **Don't Trust ADK Evaluation Tests**: They gave false positives - use manual testing
-2. **Focus on Deployment**: The code is correct locally, deployment is the issue
-3. **Environment Variables**: Critical for functionality - must be set in Cloud Run
-4. **Manual Validation**: Test exactly what Nick tested to confirm fixes
-5. **Update Memory Bank**: Correct all status information after successful fixes
+1. **Don't Trust ADK Evaluation Tests**: They gave false positives - use manual testing only
+2. **Fix Environment Variables First**: BRAVE_API_KEY missing everywhere - local AND deployed
+3. **Local Testing Required**: Must test locally before deploying to confirm fixes work
+4. **Deployment Gap**: Code is correct but tools missing from deployed environment
+5. **Manual Validation**: Test exactly what Nick tested in both environments
+6. **Update Memory Bank**: Correct all status information after successful fixes
+
+### **🔍 LOCAL TESTING EVIDENCE (2025-06-16T21:00:00Z):**
+```
+BRAVE_API_KEY environment variable:
+Set: False
+BRAVE_API_KEY is not set in environment
+
+Web search result:
+{"error": "Brave API key not configured"}
+
+Health status result:
+{"web_search": "not configured", "environment": {"BRAVE_API_KEY": "not_set", ...}}
+```
 
 ---
 
-**🚨 URGENT: This is a critical deployment issue blocking production readiness. Immediate action required to deploy working code and configure environment variables.**
+**🚨 URGENT: This is a critical environment configuration issue affecting BOTH local and deployed environments. NO FIXES WERE EVER APPLIED ANYWHERE. Immediate action required to configure environment variables and deploy working code.**
