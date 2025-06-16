@@ -140,6 +140,8 @@ except ImportError as e:
 root_agent = LlmAgent(
     name="vana",
     model="gemini-2.0-flash-exp",
+    description="🧠 VANA - Intelligent AI Assistant with Memory-First Decision Strategy",
+    output_key="vana_results",
     instruction="""
 ## 🧠 MEMORY-FIRST DECISION STRATEGY
 

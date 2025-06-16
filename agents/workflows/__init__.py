@@ -20,6 +20,8 @@ class WorkflowsAgentProxy:
 # Export proxy agent for ADK discovery
 agent = WorkflowsAgentProxy()
 
+# ADK expects root_agent specifically
+root_agent = WorkflowsAgentProxy()
 
 # Function to get root_agent for backward compatibility
 def get_agent():
@@ -28,4 +30,4 @@ def get_agent():
 
 
 # Ensure agent is available at module level
-__all__ = ["agent", "get_agent"]
+__all__ = ["agent", "get_agent", "root_agent"]
