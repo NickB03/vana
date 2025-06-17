@@ -34,8 +34,12 @@ steps:
       - '0'
       - '--timeout'
       - '900'
+      - '--port'
+      - '8000'
       - '--set-env-vars'
-      - 'ENVIRONMENT=production,GOOGLE_GENAI_USE_VERTEXAI=true,GOOGLE_CLOUD_PROJECT=$PROJECT_ID,GOOGLE_CLOUD_LOCATION=us-central1'
+      - 'ENVIRONMENT=production,GOOGLE_GENAI_USE_VERTEXAI=true,GOOGLE_CLOUD_PROJECT=$PROJECT_ID,GOOGLE_CLOUD_LOCATION=us-central1,GOOGLE_CLOUD_REGION=us-central1,RAG_CORPUS_RESOURCE_NAME=projects/$PROJECT_ID/locations/us-central1/ragCorpora/2305843009213693952'
+      - '--set-secrets'
+      - 'BRAVE_API_KEY=brave-api-key:latest,OPENROUTER_API_KEY=openrouter-api-key:latest'
 
 images:
   - 'gcr.io/$PROJECT_ID/vana-prod:$COMMIT_SHA'
