@@ -28,6 +28,8 @@ pyvenv.cfg
 .env
 .env.*
 .env.local
+.env.production
+.env.development
 .env.development.local
 .env.test.local
 .env.production.local
@@ -38,6 +40,11 @@ service-account*.json
 *-sa.json
 *credentials*.json
 secrets/*.json
+
+# Secret Manager Migration - Explicit exclusions
+.env.production
+.env.local
+.env.development
 
 # Google Cloud & ADK specific
 .gcloud/
