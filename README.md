@@ -21,8 +21,9 @@ cd vana
 poetry install
 
 # Configure environment
-cp .env.example .env
-# Edit `.env` with your credentials (see `.env.example` for required variables)
+cp .env.template .env.local
+# Edit `.env.local` with your configuration (see `.env.template` for required variables)
+# API keys are automatically loaded from Google Secret Manager
 # The `VANA_MODEL` variable controls the default model
 # (defaults to `gemini-2.0-flash`)
 
@@ -116,7 +117,7 @@ VANA is an enterprise-grade multi-agent AI system designed for complex task orch
 - **🔍 Advanced Search** - Vector search via Vertex AI, web search, and knowledge base integration
 - **☁️ Cloud-Native** - Deployed on Google Cloud Run with auto-scaling infrastructure
 - **📊 Performance Monitoring** - Health monitoring, performance tracking, and system analytics
-- **🔒 Enterprise Security** - Zero hardcoded credentials, Google Cloud IAM integration, Secret Manager
+- **🔒 Enterprise Security** - Google Secret Manager integration, zero hardcoded credentials, Google Cloud IAM
 - **🏗️ Production Ready** - Robust foundation with comprehensive testing and security hardening
 
 ### 🎯 Current Capabilities
@@ -318,7 +319,9 @@ Comprehensive documentation is available in the `/docs` directory:
 poetry install
 
 # Configure environment
-cp .env.example .env
+cp .env.template .env.local
+# API keys are automatically loaded from Google Secret Manager
+# Ensure you have gcloud SDK authenticated
 
 # Run development server
 python main.py
@@ -349,6 +352,11 @@ cd vana
 
 # Install dependencies for the backend and dashboard
 poetry install
+
+# Configure environment with Secret Manager
+cp .env.template .env.local
+# Authenticate with Google Cloud (required for Secret Manager)
+gcloud auth application-default login
 
 # Setup pre-commit hooks
 pre-commit install
