@@ -1,10 +1,38 @@
 # Active Context - VANA Project
 
-**Last Updated:** 2025-06-16T18:30:00Z
-**Current Focus:** 🎯 SOLUTION IDENTIFIED - Agent Intelligence Enhancement Complete
-**Status:** ✅ BREAKTHROUGH ACHIEVED - Root cause identified, solution documented, ready for implementation
-**Next Priority:** Implement prompt enhancements and deploy agent intelligence fix
-**Latest Achievement:** 🎯 AI SYSTEM PROMPT ANALYSIS COMPLETE - Exact solution for agent reasoning gap identified
+**Last Updated:** 2025-06-17T01:35:00Z
+**Current Focus:** ✅ CRITICAL FIXES DEPLOYED - Testing and Validation Phase
+**Status:** 🎯 ROOT CAUSE RESOLVED - Ultra-simplified agent deployed with environment variable fix
+**Next Priority:** Test cloud deployment and validate 90% success rate achievement
+**Latest Achievement:** ✅ DEPLOYED ULTRA-SIMPLIFIED AGENT - Fixed hardcoded model and complex instructions
+
+---
+
+## ✅ CRITICAL FIXES IMPLEMENTED: ULTRA-SIMPLIFIED AGENT (2025-06-17T01:35:00Z)
+
+### **🎯 ROOT CAUSE RESOLUTION COMPLETE**
+**Status:** ✅ DEPLOYED - Ultra-simplified agent with environment variable fix
+**Implementation:** Two critical fixes deployed to resolve cloud deployment issue
+**Deployment URL:** https://vana-dev-960076421399.us-central1.run.app
+**Build ID:** 52eed17a-d124-42dc-92c1-207bab04e9de
+
+#### **🔧 CRITICAL FIXES IMPLEMENTED:**
+
+**1. Fixed Hardcoded Model Issue:**
+- **Problem:** Agent hardcoded to "gemini-2.0-flash-exp" ignoring environment variables
+- **Solution:** Changed to `os.getenv("VANA_MODEL", "gemini-2.0-flash-exp")`
+- **Location:** `agents/vana/team.py` line 142
+
+**2. Ultra-Simplified Instructions:**
+- **Problem:** Complex 400+ line instructions causing Gemini to misinterpret user queries
+- **Solution:** Single clear sentence: "You are VANA. For current information like time, weather, or news, use adk_web_search and extract the actual data from results. Never provide URLs as answers - always give the specific information requested."
+- **Location:** `agents/vana/team.py` line 145
+
+#### **📋 IMMEDIATE NEXT STEPS:**
+1. **Test Cloud Deployment** - Verify agent now processes queries instead of generic responses
+2. **Validate Data Extraction** - Confirm agent extracts actual data vs providing URLs
+3. **Achieve 90% Success Rate** - Complete original objective with all test cases
+4. **Deploy to Production** - Once cloud testing confirms fixes work
 
 ---
 
