@@ -1,6 +1,7 @@
 """
 Smart Environment Detection and Configuration for VANA ADK
 Automatically detects local vs Cloud Run environment and loads appropriate configuration.
+Uses Google Secret Manager for secure API key management.
 """
 
 import logging
@@ -10,6 +11,35 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 logger = logging.getLogger(__name__)
+
+
+def load_secrets_from_secret_manager():
+    """Load API keys from Google Secret Manager and set as environment variables"""
+    try:
+        from lib.secrets import get_api_key
+
+        logger.info("Loading API keys from Google Secret Manager...")
+
+        # Load secrets from Secret Manager
+        secrets = {
+            'BRAVE_API_KEY': get_api_key('brave-api-key'),
+            'OPENROUTER_API_KEY': get_api_key('openrouter-api-key'),
+        }
+
+        # Set as environment variables for compatibility
+        for key, value in secrets.items():
+            if value:
+                os.environ[key] = value
+                logger.info(f"✅ Loaded {key} from Secret Manager")
+            else:
+                logger.warning(f"⚠️  Could not load {key} from Secret Manager")
+
+        return secrets
+
+    except Exception as e:
+        logger.error(f"Failed to load secrets from Secret Manager: {e}")
+        logger.info("Falling back to environment variables from .env files")
+        return {}
 
 
 class EnvironmentDetector:
@@ -93,6 +123,9 @@ class EnvironmentDetector:
 
             # Ensure local development configuration
             EnvironmentDetector._ensure_local_config()
+
+        # Load API keys from Secret Manager (works for both local and cloud)
+        load_secrets_from_secret_manager()
 
         # Log the final authentication configuration
         EnvironmentDetector._log_auth_config()
