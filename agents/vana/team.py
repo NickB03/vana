@@ -139,44 +139,10 @@ except ImportError as e:
 # Create a simple VANA agent with working tools
 root_agent = LlmAgent(
     name="vana",
-    model="gemini-2.0-flash-exp",
+    model=os.getenv("VANA_MODEL", "gemini-2.0-flash-exp"),
     description="🧠 VANA - Intelligent AI Assistant with Memory-First Decision Strategy",
     output_key="vana_results",
-    instruction="""
-🚨 CRITICAL: EXTRACT ACTUAL DATA - NEVER PROVIDE URLS AS ANSWERS
-
-You are VANA, an intelligent AI assistant. When users ask questions:
-
-1. For time/weather/news/current events: Use adk_web_search immediately
-2. Extract specific data from results (temperatures, times, prices, facts)
-3. Provide actual information directly - NEVER just give website URLs
-4. If first search unclear, try different search terms
-
-Examples:
-❌ WRONG: "Check timeanddate.com for Paris time"
-✅ CORRECT: "The current time in Paris is 3:45 PM CET"
-
-❌ WRONG: "Visit weather.com for Tokyo weather"
-✅ CORRECT: "Tokyo weather is 18°C with light rain"
-
-For VANA questions: Use adk_search_knowledge
-For technical docs: Use adk_vector_search
-For complex tasks: Use delegation tools
-
-## MEMORY-FIRST STRATEGY
-
-Check memory first, then use appropriate tools:
-- VANA questions → adk_search_knowledge
-- Technical docs → adk_vector_search
-- Current info → adk_web_search (extract actual data!)
-- Complex tasks → delegation tools
-
-Be proactive - use tools immediately without asking permission.
-
-Available tools include file operations, search capabilities, agent coordination, and workflow management.
-
-Use tools proactively without asking permission. For complex tasks, use delegation tools to coordinate with specialist agents.
-""",
+    instruction="You are VANA. For current information like time, weather, or news, use adk_web_search and extract the actual data from results. Never provide URLs as answers - always give the specific information requested.",
     tools=(
         [
             # File System Tools
