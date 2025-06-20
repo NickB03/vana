@@ -168,8 +168,16 @@ def vector_search(query: str, max_results: int = 5) -> str:
         result = {
             "query": query,
             "results": [
-                {"content": f"Fallback result for: {query}", "score": 0.75, "source": "fallback"},
-                {"content": f"Related fallback information: {query}", "score": 0.65, "source": "fallback"},
+                {
+                    "content": f"Fallback result for: {query}",
+                    "score": 0.75,
+                    "source": "fallback",
+                },
+                {
+                    "content": f"Related fallback information: {query}",
+                    "score": 0.65,
+                    "source": "fallback",
+                },
             ],
             "total": 2,
             "mode": "fallback",
@@ -179,7 +187,7 @@ def vector_search(query: str, max_results: int = 5) -> str:
 
 
 def web_search(query: str, max_results: int = 5) -> str:
-    """🌐 Search the web for current information with enhanced formatting."""
+    """🌐 Search the web for current information with enhanced data extraction."""
     try:
         # Lazy import to avoid HTTP requests during module import
         import requests
@@ -190,22 +198,52 @@ def web_search(query: str, max_results: int = 5) -> str:
 
         url = "https://api.search.brave.com/res/v1/web/search"
         headers = {"X-Subscription-Token": api_key}
-        params = {"q": query, "count": min(max_results, 10)}
+        params = {
+            "q": query,
+            "count": min(max_results, 10),
+            "extra_snippets": True,  # Enable additional excerpts
+            "summary": True,  # Enable AI summary
+            "spellcheck": True,  # Enable spell correction
+            "text_decorations": False,
+            "result_filter": "web,infobox,faq",  # Include structured data
+        }
 
         response = requests.get(url, headers=headers, params=params, timeout=10)
         if response.status_code == 200:
             data = response.json()
+
+            # Extract enhanced results with rich data
             results = []
-            for result in data.get("web", {}).get("results", [])[:max_results]:
-                results.append(
-                    {
-                        "title": result.get("title", ""),
-                        "url": result.get("url", ""),
-                        "description": result.get("description", ""),
-                    }
-                )
-            logger.info(f"Web search completed: {len(results)} results")
-            return json.dumps({"query": query, "results": results}, indent=2)
+            web_results = data.get("web", {}).get("results", [])
+
+            for result in web_results[:max_results]:
+                enhanced_result = {
+                    "title": result.get("title", ""),
+                    "url": result.get("url", ""),
+                    "description": result.get("description", ""),
+                    # Rich data fields for extraction
+                    "extra_snippets": result.get("extra_snippets", []),
+                    "summary": result.get("summary", ""),
+                    "age": result.get("age", ""),
+                    "relevance_score": result.get("profile", {}).get("score", 0),
+                    "language": result.get("language", "en"),
+                }
+                results.append(enhanced_result)
+
+            # Add structured data if available
+            response_data = {
+                "query": query,
+                "results": results,
+                "infobox": data.get("infobox", {}),
+                "faq": data.get("faq", {}),
+                "summarizer": data.get("summarizer", {}),
+                "query_info": data.get("query", {}),
+            }
+
+            logger.info(
+                f"Enhanced web search completed: {len(results)} results with structured data"
+            )
+            return json.dumps(response_data, indent=2)
         else:
             error_msg = f"Web search failed: HTTP {response.status_code}"
             logger.error(error_msg)
@@ -244,7 +282,8 @@ def search_knowledge(query: str) -> str:
                 # Check if we got real results (not fallback)
                 if search_results and len(search_results) > 0:
                     has_real_content = any(
-                        "fallback" not in result.get("content", "").lower() for result in search_results
+                        "fallback" not in result.get("content", "").lower()
+                        for result in search_results
                     )
 
                     if has_real_content:
@@ -267,7 +306,9 @@ def search_knowledge(query: str) -> str:
                             "service": "adk_memory_rag",
                         }
 
-                        logger.info(f"ADK memory search completed: {len(formatted_results)} results")
+                        logger.info(
+                            f"ADK memory search completed: {len(formatted_results)} results"
+                        )
                         return json.dumps(result, indent=2)
         except Exception as e:
             logger.warning(f"ADK memory search failed: {e}")
@@ -326,7 +367,9 @@ def search_knowledge(query: str) -> str:
                             relevant_lines.append(context)
 
                     if relevant_lines:
-                        content_excerpt = "\n\n".join(relevant_lines[:3])  # Limit to 3 sections
+                        content_excerpt = "\n\n".join(
+                            relevant_lines[:3]
+                        )  # Limit to 3 sections
 
                         search_results.append(
                             {
@@ -357,7 +400,9 @@ def search_knowledge(query: str) -> str:
                 "service": "vana_knowledge_base",
             }
 
-            logger.info(f"File-based knowledge search completed: {len(search_results)} results")
+            logger.info(
+                f"File-based knowledge search completed: {len(search_results)} results"
+            )
             return json.dumps(result, indent=2)
         else:
             logger.info("No relevant knowledge found in file-based search")
@@ -403,7 +448,12 @@ def echo(message: str) -> str:
     """📢 Echo a message back with enhanced formatting for testing."""
     try:
         logger.info(f"Echo: {message}")
-        result = {"message": message, "timestamp": "now", "status": "echoed", "mode": "production"}
+        result = {
+            "message": message,
+            "timestamp": "now",
+            "status": "echoed",
+            "mode": "production",
+        }
         return json.dumps(result, indent=2)
     except Exception as e:
         error_msg = f"Echo error: {str(e)}"
@@ -438,7 +488,9 @@ def get_health_status() -> str:
                 "adk": "operational",
                 "agents": "24 agents active",
                 "tools": "59+ tools available",
-                "web_search": "brave api configured" if os.getenv("BRAVE_API_KEY") else "not configured",
+                "web_search": "brave api configured"
+                if os.getenv("BRAVE_API_KEY")
+                else "not configured",
                 "vector_search": vector_search_status,
                 "adk_memory": {
                     "service_type": memory_info["service_type"],
@@ -491,10 +543,10 @@ def coordinate_task(task_description: str, assigned_agent: str = "") -> str:
                     "architecture_specialist",
                     "devops_specialist",
                     "qa_specialist",
-                    "ui_specialist"
+                    "ui_specialist",
                 ],
                 "adk_pattern": "sub_agents",
-                "no_hanging": "✅ No JSON-RPC calls, no timeouts, no hanging"
+                "no_hanging": "✅ No JSON-RPC calls, no timeouts, no hanging",
             }
             return json.dumps(result, indent=2)
         except Exception as fallback_e:
@@ -511,7 +563,7 @@ def delegate_to_agent(agent_name: str, task: str, context: str = "") -> str:
     """🤝 Delegate task using ADK AgentTool pattern for actual delegation."""
     try:
         # Import the specialist agents that are available as sub_agents
-        from agents.vana.team import specialist_agents, SPECIALIST_AGENTS_AVAILABLE
+        from agents.vana.team import SPECIALIST_AGENTS_AVAILABLE, specialist_agents
 
         if not SPECIALIST_AGENTS_AVAILABLE or not specialist_agents:
             return f"❌ Specialist agents not available for delegation to {agent_name}"
@@ -529,10 +581,10 @@ def delegate_to_agent(agent_name: str, task: str, context: str = "") -> str:
 
         # For ADK delegation, we need to use the AgentTool pattern
         # This creates a tool that wraps the specialist agent
-        from google.adk.tools import agent_tool
+        # from google.adk.tools import agent_tool
 
         # Create an AgentTool wrapper for the target agent
-        agent_tool_wrapper = agent_tool.AgentTool(agent=target_agent)
+        # agent_tool_wrapper = agent_tool.AgentTool(agent=target_agent)
 
         # Execute the agent tool with the task
         # Note: This should be called by the LLM, but we can simulate the call
@@ -652,7 +704,9 @@ def analyze_task(task: str, context: str = "") -> str:
         return json.dumps({"error": error_msg}, indent=2)
 
 
-def match_capabilities(task: str, context: str = "", required_capabilities: str = "") -> str:
+def match_capabilities(
+    task: str, context: str = "", required_capabilities: str = ""
+) -> str:
     """🎯 Match task requirements to available agent capabilities using intelligent capability matcher."""
     try:
         from lib._tools.capability_matcher import get_capability_matcher
@@ -664,7 +718,9 @@ def match_capabilities(task: str, context: str = "", required_capabilities: str 
         if required_capabilities:
             req_caps = [cap.strip() for cap in required_capabilities.split(",")]
 
-        matching_result = matcher.match_capabilities(task, context, req_caps if req_caps else None)
+        matching_result = matcher.match_capabilities(
+            task, context, req_caps if req_caps else None
+        )
 
         # Format result for ADK compatibility
         result = {
@@ -672,19 +728,31 @@ def match_capabilities(task: str, context: str = "", required_capabilities: str 
             "matching_result": {
                 "best_match": (
                     {
-                        "agent_name": matching_result.best_match.agent_name if matching_result.best_match else None,
-                        "match_score": matching_result.best_match.match_score if matching_result.best_match else 0.0,
+                        "agent_name": matching_result.best_match.agent_name
+                        if matching_result.best_match
+                        else None,
+                        "match_score": matching_result.best_match.match_score
+                        if matching_result.best_match
+                        else 0.0,
                         "matched_capabilities": (
-                            matching_result.best_match.matched_capabilities if matching_result.best_match else []
+                            matching_result.best_match.matched_capabilities
+                            if matching_result.best_match
+                            else []
                         ),
                         "missing_capabilities": (
-                            matching_result.best_match.missing_capabilities if matching_result.best_match else []
+                            matching_result.best_match.missing_capabilities
+                            if matching_result.best_match
+                            else []
                         ),
                         "capability_coverage": (
-                            matching_result.best_match.capability_coverage if matching_result.best_match else 0.0
+                            matching_result.best_match.capability_coverage
+                            if matching_result.best_match
+                            else 0.0
                         ),
                         "overall_score": (
-                            matching_result.best_match.overall_score if matching_result.best_match else 0.0
+                            matching_result.best_match.overall_score
+                            if matching_result.best_match
+                            else 0.0
                         ),
                         "reasoning": (
                             matching_result.best_match.reasoning
@@ -696,7 +764,11 @@ def match_capabilities(task: str, context: str = "", required_capabilities: str 
                     else None
                 ),
                 "alternative_matches": [
-                    {"agent_name": alt.agent_name, "overall_score": alt.overall_score, "reasoning": alt.reasoning}
+                    {
+                        "agent_name": alt.agent_name,
+                        "overall_score": alt.overall_score,
+                        "reasoning": alt.reasoning,
+                    }
                     for alt in matching_result.alternative_matches
                 ],
                 "coverage_analysis": matching_result.coverage_analysis,
@@ -706,9 +778,19 @@ def match_capabilities(task: str, context: str = "", required_capabilities: str 
             "service": "capability_matcher",
         }
 
-        best_agent = matching_result.best_match.agent_name if matching_result.best_match else "none"
-        best_score = matching_result.best_match.overall_score if matching_result.best_match else 0.0
-        logger.info(f"Capability matching completed: {best_agent} (score: {best_score:.2f})")
+        best_agent = (
+            matching_result.best_match.agent_name
+            if matching_result.best_match
+            else "none"
+        )
+        best_score = (
+            matching_result.best_match.overall_score
+            if matching_result.best_match
+            else 0.0
+        )
+        logger.info(
+            f"Capability matching completed: {best_agent} (score: {best_score:.2f})"
+        )
         return json.dumps(result, indent=2)
 
     except Exception as e:
@@ -755,7 +837,9 @@ def classify_task(task: str, context: str = "") -> str:
 
         primary_agent = classification.primary_recommendation.agent_name
         confidence = classification.primary_recommendation.confidence
-        logger.info(f"Task classification completed: {primary_agent} ({confidence:.2f} confidence)")
+        logger.info(
+            f"Task classification completed: {primary_agent} ({confidence:.2f} confidence)"
+        )
         return json.dumps(result, indent=2)
 
     except Exception as e:
@@ -775,7 +859,11 @@ adk_classify_task.name = "classify_task"
 
 # Multi-Agent Workflow Management Tools - Production implementations
 def create_workflow(
-    name: str, description: str, template_name: str = "", strategy: str = "adaptive", priority: str = "medium"
+    name: str,
+    description: str,
+    template_name: str = "",
+    strategy: str = "adaptive",
+    priority: str = "medium",
 ) -> str:
     """🔄 Create a new multi-agent workflow for complex task orchestration."""
     try:
@@ -789,7 +877,9 @@ def create_workflow(
         steps = []
         description_lower = description.lower()
 
-        if template_name == "data_analysis" or ("data" in description_lower and "analysis" in description_lower):
+        if template_name == "data_analysis" or (
+            "data" in description_lower and "analysis" in description_lower
+        ):
             steps = [
                 {
                     "name": "Data Validation",
@@ -830,7 +920,9 @@ def create_workflow(
                     "agent_name": "vana",
                 },
             ]
-        elif template_name == "research_and_analysis" or "research" in description_lower:
+        elif (
+            template_name == "research_and_analysis" or "research" in description_lower
+        ):
             steps = [
                 {
                     "name": "Information Gathering",
@@ -860,8 +952,16 @@ def create_workflow(
                     "description": f"Analyze task requirements: {description}",
                     "agent_name": "vana",
                 },
-                {"name": "Task Execution", "description": f"Execute task: {description}", "agent_name": "specialists"},
-                {"name": "Results Summary", "description": f"Summarize results: {description}", "agent_name": "vana"},
+                {
+                    "name": "Task Execution",
+                    "description": f"Execute task: {description}",
+                    "agent_name": "specialists",
+                },
+                {
+                    "name": "Results Summary",
+                    "description": f"Summarize results: {description}",
+                    "agent_name": "vana",
+                },
             ]
 
         result = {
@@ -1006,7 +1106,9 @@ def list_workflows(state_filter: str = "") -> str:
 
         # Apply state filter if provided
         if state_filter:
-            filtered_workflows = [w for w in sample_workflows if w["state"] == state_filter]
+            filtered_workflows = [
+                w for w in sample_workflows if w["state"] == state_filter
+            ]
         else:
             filtered_workflows = sample_workflows
 
