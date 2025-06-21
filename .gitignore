@@ -2,6 +2,9 @@
 node_modules/
 .vana/
 .venv/
+
+# Project-specific directories
+memory-bank/
 __pycache__/
 *.pyc
 *.pyo
