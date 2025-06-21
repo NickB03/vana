@@ -4,7 +4,13 @@ VANA Multi-Agent Team Definition - Minimal Working Version
 This is a simplified version with only working tools to test basic functionality.
 """
 
-from lib._tools import (  # File System Tools; Search Tools; System Tools; Agent Coordination Tools; Intelligent Task Analysis Tools; Multi-Agent Workflow Management Tools
+import os
+
+from dotenv import load_dotenv
+from google.adk.agents import LlmAgent
+from google.adk.tools import FunctionTool
+
+from lib._tools import (  # File System Tools; Search Tools; System Tools; Agent Coordination Tools; Intelligent Task Analysis Tools; Multi-Agent Workflow Management Tools; MCP Integration Tools
     adk_analyze_task,
     adk_cancel_workflow,
     adk_classify_task,
@@ -28,17 +34,11 @@ from lib._tools import (  # File System Tools; Search Tools; System Tools; Agent
     adk_vector_search,
     adk_web_search,
     adk_write_file,
-    # MCP Integration Tools
-    context7_sequential_thinking,
     brave_search_mcp,
+    context7_sequential_thinking,
     github_mcp_operations,
 )
 from lib.logging_config import get_logger
-from google.adk.tools import FunctionTool
-from google.adk.agents import LlmAgent
-import os
-
-from dotenv import load_dotenv
 
 # Load environment variables before importing Google ADK
 load_dotenv()
@@ -63,8 +63,8 @@ except ImportError as e:
 
 # Import specialist agents for proper ADK delegation
 try:
-    from agents.data_science.specialist import data_science_specialist
     from agents.code_execution.specialist import code_execution_specialist
+    from agents.data_science.specialist import data_science_specialist
     from agents.specialists.architecture_specialist import architecture_specialist
     from agents.specialists.devops_specialist import devops_specialist
     from agents.specialists.qa_specialist import qa_specialist
@@ -76,7 +76,7 @@ try:
         architecture_specialist,
         devops_specialist,
         qa_specialist,
-        ui_specialist
+        ui_specialist,
     ]
     SPECIALIST_AGENTS_AVAILABLE = True
     logger.info("✅ Specialist agents imported successfully for ADK delegation")
@@ -98,9 +98,13 @@ if SPECIALIST_AGENTS_AVAILABLE:
             agent_tool_wrapper = agent_tool.AgentTool(agent=agent)
             specialist_agent_tools_wrapped.append(agent_tool_wrapper)
 
-        logger.info(f"✅ Created AgentTool wrappers for {len(specialist_agent_tools_wrapped)} specialist agents")
+        logger.info(
+            f"✅ Created AgentTool wrappers for {len(specialist_agent_tools_wrapped)} specialist agents"
+        )
     except ImportError as e:
-        logger.warning(f"⚠️ AgentTool not available, using fallback specialist tools: {e}")
+        logger.warning(
+            f"⚠️ AgentTool not available, using fallback specialist tools: {e}"
+        )
         specialist_agent_tools_wrapped = []
 
 # Import advanced orchestration capabilities for Priority 3 enhancements

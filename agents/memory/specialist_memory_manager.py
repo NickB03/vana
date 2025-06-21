@@ -4,19 +4,23 @@ Implements Google ADK session state patterns for specialist knowledge persistenc
 """
 
 import json
-import os
-import sys
 from datetime import datetime
-from typing import Any, Dict, List
-
-# Add project root to Python path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
+from typing import Any, Dict, List, Optional
 
 
 class SpecialistMemoryManager:
-    """Manages persistent memory for specialist agents using ADK session state."""
+    """Manages persistent memory for specialist agents using ADK session state or Firestore."""
 
-    def __init__(self):
+    def __init__(self, firestore_memory_service: Optional[Any] = None):
+        """
+        Initialize SpecialistMemoryManager.
+
+        Args:
+            firestore_memory_service: Optional Firestore memory service for persistent storage
+        """
+        self.firestore_memory = firestore_memory_service
+        self.use_firestore = firestore_memory_service is not None
+
         self.memory_keys = {
             "architecture": "specialist_memory:architecture",
             "ui": "specialist_memory:ui",
@@ -32,6 +36,78 @@ class SpecialistMemoryManager:
         }
 
         self.project_memory_key = "project_memory"
+
+    async def save_specialist_knowledge_to_firestore(
+        self, session_id: str, specialist_type: str, knowledge: Dict[str, Any]
+    ) -> None:
+        """Save specialist knowledge to Firestore memory service."""
+        if not self.use_firestore:
+            return
+
+        try:
+            # Create memory content for Firestore
+            memory_content = {
+                "specialist_type": specialist_type,
+                "knowledge": knowledge,
+                "timestamp": datetime.now().isoformat(),
+                "quality_score": knowledge.get("quality_score", 0.0)
+            }
+
+            # Store in Firestore with metadata
+            metadata = {
+                "type": "specialist_knowledge",
+                "specialist_type": specialist_type,
+                "session_id": session_id
+            }
+
+            await self.firestore_memory.add_session_to_memory(
+                session_id=session_id,
+                content=json.dumps(memory_content),
+                metadata=metadata
+            )
+
+        except Exception as e:
+            # Fallback gracefully - don't break existing functionality
+            print(f"Warning: Failed to save to Firestore memory: {e}")
+
+    async def get_specialist_knowledge_from_firestore(
+        self, session_id: str, specialist_type: str, context: str = ""
+    ) -> Dict[str, Any]:
+        """Retrieve specialist knowledge from Firestore memory service."""
+        if not self.use_firestore:
+            return {}
+
+        try:
+            # Search for specialist knowledge
+            search_query = f"specialist_type:{specialist_type}"
+            if context:
+                search_query += f" {context}"
+
+            memories = await self.firestore_memory.search_memory(
+                query=search_query,
+                top_k=10,
+                session_id=session_id
+            )
+
+            # Process memories into specialist knowledge format
+            relevant_knowledge = []
+            for memory in memories:
+                try:
+                    content = json.loads(memory.content)
+                    if content.get("specialist_type") == specialist_type:
+                        relevant_knowledge.append(content)
+                except (json.JSONDecodeError, KeyError):
+                    continue
+
+            return {
+                "relevant_knowledge": relevant_knowledge,
+                "total_entries": len(relevant_knowledge),
+                "source": "firestore"
+            }
+
+        except Exception as e:
+            print(f"Warning: Failed to retrieve from Firestore memory: {e}")
+            return {}
 
     def save_specialist_knowledge(
         self, session_state: Dict[str, Any], specialist_type: str, knowledge: Dict[str, Any]

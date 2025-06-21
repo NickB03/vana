@@ -20,13 +20,10 @@ from lib.logging_config import setup_logging
 setup_logging()
 logger = logging.getLogger("vana.main")
 
-# Ensure current directory is in Python path for lib imports
-current_dir = os.path.dirname(os.path.abspath(__file__))
-if current_dir not in sys.path:
-    sys.path.insert(0, current_dir)
+# Note: sys.path.insert removed - using proper package imports instead
 
 # Verify lib directory exists for imports
-if not os.path.exists(os.path.join(current_dir, "lib")):
+if not os.path.exists("lib"):
     logger.warning("lib directory not found - some imports may fail")
 
 # Import our smart environment detection
