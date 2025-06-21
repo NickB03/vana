@@ -1,0 +1,78 @@
+[
+  {
+    "query_id": "ANALYTICAL_COMPARISON_001",
+    "query": "Compare the performance of Python vs JavaScript for web development",
+    "query_type": "analytical",
+    "expected_tools": ["adk_web_search", "delegate_to_agent"],
+    "expected_pattern": "research_then_analyze",
+    "expected_data": {
+      "comparison_aspects": ["performance", "ecosystem", "learning_curve"],
+      "data_type": "comparative_analysis",
+      "complexity": "medium"
+    },
+    "validation_criteria": {
+      "must_contain": ["Python", "JavaScript", "performance", "comparison"],
+      "must_not_contain": ["I cannot compare"],
+      "min_length": 200,
+      "structure_required": ["advantages", "disadvantages"],
+      "accuracy_threshold": 0.8
+    }
+  },
+  {
+    "query_id": "ANALYTICAL_TREND_001",
+    "query": "Analyze the trends in AI development over the past 5 years",
+    "query_type": "analytical",
+    "expected_tools": ["adk_web_search", "delegate_to_agent"],
+    "expected_pattern": "research_then_synthesize",
+    "expected_data": {
+      "temporal_scope": "5 years",
+      "data_type": "trend_analysis",
+      "complexity": "high"
+    },
+    "validation_criteria": {
+      "must_contain": ["AI", "trends", "development", "years"],
+      "must_not_contain": ["I cannot analyze"],
+      "min_length": 300,
+      "structure_required": ["timeline", "key_developments"],
+      "accuracy_threshold": 0.75
+    }
+  },
+  {
+    "query_id": "ANALYTICAL_PROBLEM_001",
+    "query": "What are the main challenges in implementing microservices architecture?",
+    "query_type": "analytical",
+    "expected_tools": ["adk_web_search", "delegate_to_agent"],
+    "expected_pattern": "research_then_categorize",
+    "expected_data": {
+      "problem_domain": "software_architecture",
+      "data_type": "challenge_analysis",
+      "complexity": "medium"
+    },
+    "validation_criteria": {
+      "must_contain": ["microservices", "challenges", "architecture"],
+      "must_not_contain": ["I cannot identify"],
+      "min_length": 250,
+      "structure_required": ["challenges", "solutions"],
+      "accuracy_threshold": 0.8
+    }
+  },
+  {
+    "query_id": "ANALYTICAL_EVALUATION_001",
+    "query": "Evaluate the pros and cons of remote work for software teams",
+    "query_type": "analytical",
+    "expected_tools": ["adk_web_search", "delegate_to_agent"],
+    "expected_pattern": "research_then_evaluate",
+    "expected_data": {
+      "evaluation_domain": "work_practices",
+      "data_type": "pros_cons_analysis",
+      "complexity": "medium"
+    },
+    "validation_criteria": {
+      "must_contain": ["remote work", "pros", "cons", "software teams"],
+      "must_not_contain": ["I cannot evaluate"],
+      "min_length": 200,
+      "structure_required": ["advantages", "disadvantages", "conclusion"],
+      "accuracy_threshold": 0.8
+    }
+  }
+]

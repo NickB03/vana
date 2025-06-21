@@ -67,27 +67,6 @@ document-processing = [
     "pytesseract>=0.3.10",
 ]
 
-[tool.poetry.group.optional]
-optional = true
-
-[tool.poetry.group.optional.dependencies]
-# Optional dependencies for enhanced document processing
-PyPDF2 = "^3.0.0"
-Pillow = "^10.0.0"
-pytesseract = "^0.3.10"
-
-
-[tool.poetry.group.dev.dependencies]
-autoflake = "^2.3.1"
-isort = "^6.0.1"
-autopep8 = "^2.3.2"
-black = "^25.1.0"
-
-[tool.poetry.extras]
-document-processing = ["PyPDF2", "Pillow"]
-ocr = ["pytesseract"]
-full-documents = ["PyPDF2", "Pillow", "pytesseract"]
-
 # Code Quality Tools Configuration
 
 [tool.black]
@@ -185,21 +164,37 @@ exclude_dirs = ["tests", "archived_scripts", "*.backup"]
 skips = ["B101", "B601"]  # Skip assert_used and shell_injection for specific cases
 
 [tool.pytest.ini_options]
-minversion = "6.0"
-addopts = "-ra -q --strict-markers --strict-config"
-testpaths = ["tests"]
-markers = [
-    "unit: Unit tests",
-    "integration: Integration tests", 
-    "performance: Performance tests",
-    "slow: Slow running tests",
-    "network: Tests requiring network access",
-]
+# asyncio support for modern async code
 asyncio_mode = "auto"
+
+# Define the single source of truth for test paths
+testpaths = ["tests"]
+
+# A unified and comprehensive set of markers for the full test plan
+markers = [
+    "unit: (Level 1) Fast, isolated tests for a single component (e.g., a tool).",
+    "agent: (Level 2) Tests for a single agent's logic and reasoning.",
+    "integration: (Level 3) Tests for communication between 2-3 agents.",
+    "e2e: (Level 4) Full system workflow tests for complex scenarios.",
+    "security: Tests for security features, access control, and credentials.",
+    "performance: Slow tests that benchmark performance and measure latency.",
+    "network: Tests that require real network access to external services.",
+    "slow: A general marker for any test that takes a long time to run.",
+]
+
+# Recommended, robust options for the test runner.
+# -v: verbose output
+# -ra: show extra summary info for all but passing tests
+# --strict-markers: fail on unregistered markers
+# --disable-warnings: hide deprecation and other warnings for cleaner output
+addopts = "-ra -v --strict-markers --disable-warnings"
+
+# Filter out common, noisy warnings
 filterwarnings = [
     "ignore::DeprecationWarning",
-    "ignore::PendingDeprecationWarning",
+    "ignore::UserWarning:google.*",
 ]
+
 
 [tool.coverage.run]
 source = ["lib", "agents", "tools"]

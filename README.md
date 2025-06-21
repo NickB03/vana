@@ -118,7 +118,7 @@ VANA is an enterprise-grade multi-agent AI system designed for complex task orch
 - **☁️ Cloud-Native** - Deployed on Google Cloud Run with auto-scaling infrastructure
 - **📊 Performance Monitoring** - Health monitoring, performance tracking, and system analytics
 - **🔒 Enterprise Security** - Google Secret Manager integration, zero hardcoded credentials, Google Cloud IAM
-- **🏗️ Production Ready** - Robust foundation with comprehensive testing and security hardening
+- **🏗️ Production Ready** - Robust foundation with comprehensive AI Agent Testing Framework and security hardening
 
 ### 🎯 Current Capabilities
 
@@ -366,18 +366,49 @@ poetry run pytest
 ```
 
 ### 🧪 Testing
+
+VANA includes a comprehensive **AI Agent Testing Framework** specifically designed for testing AI agent intelligence, behavior consistency, and Google ADK compliance.
+
+#### **🎯 AI Agent Testing Framework**
+- **Agent Intelligence Validation** - Tests reasoning consistency, tool selection intelligence, and context utilization
+- **Response Quality Analysis** - Analyzes accuracy, completeness, relevance, and clarity with HITL support
+- **Google ADK Compliance** - Validates async patterns, tool integration, and memory service compliance
+- **Performance Benchmarking** - Response times, throughput, resource usage, and scalability testing
+
+#### **🔧 Framework Components**
+- `AgentIntelligenceValidator` - Validates AI agent reasoning and behavior patterns
+- `ResponseQualityAnalyzer` - Analyzes response quality with human-in-the-loop support
+- `TestDataManager` - Data-driven testing with external scenario files
+- `AgentTestClient` - Standardized agent interaction interface for testing
+
+#### **📊 Test Categories**
 ```bash
 # Run all tests
 poetry run pytest
 
-# Run specific test categories
-poetry run pytest tests/unit/
-poetry run pytest tests/integration/
-poetry run pytest tests/e2e/
+# AI Agent Testing Framework
+poetry run pytest tests/framework/
+
+# Test categories with markers
+poetry run pytest -m unit          # Unit tests
+poetry run pytest -m agent         # Agent intelligence tests
+poetry run pytest -m integration   # Integration tests
+poetry run pytest -m e2e           # End-to-end tests
+poetry run pytest -m security      # Security tests
+poetry run pytest -m performance   # Performance tests
 
 # Run with coverage
 poetry run pytest --cov=agents --cov=lib --cov=tools
+
+# Comprehensive test runner
+python tests/run_comprehensive_tests.py
 ```
+
+#### **✅ Framework Status**
+- **Validation Complete** - All framework components tested and working
+- **VANA Integration** - Successfully connects to deployed VANA system
+- **Google ADK Compliance** - Proper endpoint integration and session management
+- **Ready for Implementation** - Framework validated and ready for comprehensive test suite development
 
 ## 📊 Monitoring
 
