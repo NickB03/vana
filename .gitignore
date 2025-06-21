@@ -7,6 +7,11 @@ node_modules/
 memory-bank/
 memory-bank-*/
 memory-bak/
+
+# Archive and development artifacts
+archive/
+dashboard/
+memory-bank/
 __pycache__/
 *.pyc
 *.pyo

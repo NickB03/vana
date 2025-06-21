@@ -9,7 +9,7 @@
 ### **What is the Memory Bank?**
 The Memory Bank is **your persistent memory system** as an AI development agent. Since your memory resets between sessions, this file-based system maintains:
 - Project context and current status
-- Technical decisions and architecture patterns  
+- Technical decisions and architecture patterns
 - Progress tracking and completed work
 - Active tasks and priorities
 - Historical context and lessons learned
@@ -23,7 +23,7 @@ The Memory Bank is **your persistent memory system** as an AI development agent.
 
 ## 📁 Memory Bank Structure
 
-Located at: `/Users/nick/Development/vana/memory-bank/`
+Located at: `/Users/nick/Development/vana/archive/` (archived development artifacts)
 
 ### **00-core/** - Essential Project Files
 **Your starting point for every session**
@@ -126,9 +126,8 @@ Located at: `/Users/nick/Development/vana/memory-bank/`
 # Always work from project root
 cd /Users/nick/Development/vana
 
-# Read core context files
-cat memory-bank/00-core/activeContext.md
-cat memory-bank/00-core/progress.md
+# Read project documentation
+cat docs/README.md
 
 # Update files using appropriate tools
 # Use str-replace-editor for modifications
@@ -136,10 +135,10 @@ cat memory-bank/00-core/progress.md
 ```
 
 ### **Directory Structure Maintenance:**
-- **Keep organized** - Don't let files accumulate in wrong directories
-- **Use master index** - Update `00-core/memory-bank-index.md` when adding major files
-- **Archive old work** - Move completed work to appropriate completed/archive directories
-- **Clean up duplicates** - Remove outdated or duplicate information
+- **Keep organized** - Use the simplified 2-directory structure effectively
+- **Update system_status.md** - Keep the single source of truth current and accurate
+- **Archive old work** - Move outdated files to `02-archive/` with `ARCHIVED_OUTDATED_` prefix
+- **Clean up duplicates** - Remove outdated or duplicate information regularly
 
 ---
 
@@ -160,11 +159,11 @@ cat memory-bank/00-core/progress.md
 - ❌ Incomplete handoff documentation
 
 ### **Quality Indicators:**
-- ✅ Clear, up-to-date activeContext.md
-- ✅ Comprehensive progress tracking
-- ✅ Well-organized file structure
-- ✅ Effective cross-referencing
-- ✅ Smooth agent transitions
+- ✅ Clear, up-to-date system_status.md
+- ✅ Comprehensive progress tracking in structured format
+- ✅ Clean 2-directory structure
+- ✅ Effective evidence-based documentation
+- ✅ Smooth agent transitions with clear handoff notes
 
 ---
 
@@ -172,7 +171,7 @@ cat memory-bank/00-core/progress.md
 
 - **User Guide:** `docs/guides/user-guide.md` - For VANA system users
 - **Developer Guide:** `docs/guides/developer-guide.md` - For VANA system development
-- **Memory Bank Index:** `memory-bank/00-core/memory-bank-index.md` - Complete navigation
+- **Project Documentation:** `docs/` - Comprehensive project documentation
 - **Architecture Docs:** `docs/architecture/` - System design and patterns
 
 **Remember: The Memory Bank is YOUR tool for maintaining continuity and context across development sessions. Use it effectively to ensure smooth project progression.** 🎯
