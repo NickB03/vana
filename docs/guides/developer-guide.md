@@ -169,15 +169,15 @@ my_agent = LlmAgent(
     description="🎯 My Custom Agent",
     output_key="my_agent_results",
     instruction="""You are My Custom Agent, specializing in...
-    
+
     ## Core Expertise:
     - Specific capability 1
     - Specific capability 2
-    
+
     ## Google ADK Integration:
     - Your results are saved to session state as 'my_agent_results'
     - Work with other agents using established patterns
-    
+
     Always provide detailed analysis and actionable recommendations.""",
     tools=[
         # Add relevant tools
@@ -289,7 +289,7 @@ def my_long_running_tool(context: str) -> str:
     try:
         # Create task
         task_id = task_manager.create_task()
-        
+
         # Initial task setup
         result = {
             "task_id": task_id,
@@ -299,23 +299,23 @@ def my_long_running_tool(context: str) -> str:
             "current_stage": "Initializing process",
             "estimated_completion": "2-3 minutes"
         }
-        
+
         # Update task status
         task_manager.update_task(
             task_id, LongRunningTaskStatus.IN_PROGRESS,
             result=result, progress=0.1,
             metadata={"current_stage": "Initializing process"}
         )
-        
+
         return f"""⏳ Long-Running Process Started:
-        
+
 **Task ID**: {task_id}
 **Context**: {context}
 **Status**: Processing in progress
 **Progress**: 10%
 
 Use `check_task_status("{task_id}")` to monitor progress."""
-        
+
     except Exception as e:
         logger.error(f"Error starting long-running tool: {e}")
         return f"❌ Error: {str(e)}"
@@ -352,10 +352,69 @@ __all__ = [
 
 ## 🧪 Testing
 
-### Unit Testing
+VANA includes a comprehensive **AI Agent Testing Framework** specifically designed for testing AI agent intelligence, behavior consistency, and Google ADK compliance.
+
+### 🎯 AI Agent Testing Framework
+
+The framework provides specialized testing capabilities for AI agents:
+
+#### **Framework Components**
+- **`AgentIntelligenceValidator`** - Tests reasoning consistency, tool selection intelligence, and context utilization
+- **`ResponseQualityAnalyzer`** - Analyzes accuracy, completeness, relevance, and clarity with HITL support
+- **`TestDataManager`** - Data-driven testing with external scenario files
+- **`AgentTestClient`** - Standardized agent interaction interface for testing
+
+#### **Using the Framework**
 
 ```python
-# tests/test_my_agent.py
+# tests/framework/test_agent_intelligence.py
+import asyncio
+from tests.framework import AgentIntelligenceValidator, create_test_agent_client
+
+async def test_agent_reasoning():
+    """Test agent reasoning consistency."""
+    client = await create_test_agent_client('vana')
+    validator = AgentIntelligenceValidator(client)
+
+    result = await validator.validate_reasoning_consistency()
+    assert result.passed
+    assert result.score >= 0.8
+
+async def test_tool_selection():
+    """Test intelligent tool selection."""
+    client = await create_test_agent_client('vana')
+    validator = AgentIntelligenceValidator(client)
+
+    result = await validator.validate_tool_selection_intelligence()
+    assert result.passed
+    assert result.score >= 0.85
+```
+
+#### **Response Quality Analysis**
+
+```python
+# tests/framework/test_response_quality.py
+from tests.framework import ResponseQualityAnalyzer
+
+def test_response_quality():
+    """Test response quality analysis."""
+    analyzer = ResponseQualityAnalyzer()
+
+    response = "The weather in New York is 75°F with partly cloudy skies."
+    query = "What's the weather in New York?"
+
+    quality = analyzer.analyze_response_quality(response, query)
+    assert quality.accuracy >= 0.8
+    assert quality.completeness >= 0.8
+    assert quality.relevance >= 0.8
+```
+
+### Traditional Testing
+
+#### **Unit Testing**
+
+```python
+# tests/unit/test_my_agent.py
 import pytest
 from agents.vana.team import my_agent
 
@@ -372,7 +431,7 @@ def test_my_agent_tools():
     assert "web_search" in tool_names
 ```
 
-### Integration Testing
+#### **Integration Testing**
 
 ```python
 # tests/integration/test_my_agent_integration.py
@@ -392,17 +451,33 @@ def test_tool_integration():
 # Run all tests
 poetry run pytest
 
-# Run specific test categories
-poetry run pytest tests/unit/
-poetry run pytest tests/integration/
-poetry run pytest tests/e2e/
+# AI Agent Testing Framework
+poetry run pytest tests/framework/
+
+# Test categories with markers
+poetry run pytest -m unit          # Unit tests
+poetry run pytest -m agent         # Agent intelligence tests
+poetry run pytest -m integration   # Integration tests
+poetry run pytest -m e2e           # End-to-end tests
+poetry run pytest -m security      # Security tests
+poetry run pytest -m performance   # Performance tests
 
 # Run with coverage
 poetry run pytest --cov=agents --cov=lib --cov=tools
 
+# Comprehensive test runner
+python tests/run_comprehensive_tests.py
+
 # Run specific test file
 poetry run pytest tests/test_my_agent.py -v
 ```
+
+### ✅ Framework Status
+
+- **Validation Complete** - All framework components tested and working
+- **VANA Integration** - Successfully connects to deployed VANA system
+- **Google ADK Compliance** - Proper endpoint integration and session management
+- **Ready for Implementation** - Framework validated and ready for comprehensive test suite development
 
 ## 🔄 Development Workflow
 
@@ -577,10 +652,10 @@ from lib.mcp_server.sse_transport import MCPSSETransport
 
 class MyMCPServer:
     """Custom MCP server implementation."""
-    
+
     def __init__(self):
         self.transport = MCPSSETransport(self)
-    
+
     async def handle_request(self, request):
         """Handle MCP requests."""
         # Implementation
@@ -607,4 +682,3 @@ def expensive_import():
 - [Tool Architecture](../architecture/tools.md) - Complete tool reference
 - [API Reference](api-reference.md) - Full API documentation
 - [Troubleshooting](../troubleshooting/common-issues.md) - Common issues and solutions
-
