@@ -2,6 +2,7 @@
 Smart Environment Detection and Configuration for VANA ADK
 Automatically detects local vs Cloud Run environment and loads appropriate configuration.
 Uses Google Secret Manager for secure API key management.
+Enhanced with pydantic-settings for structured configuration management.
 """
 
 import logging
@@ -9,6 +10,15 @@ import os
 from pathlib import Path
 
 from dotenv import load_dotenv
+
+# Import pydantic settings for enhanced configuration management
+try:
+    from config.settings import get_settings
+    PYDANTIC_SETTINGS_AVAILABLE = True
+    _get_settings = get_settings  # Store reference to avoid unbound variable
+except ImportError:
+    PYDANTIC_SETTINGS_AVAILABLE = False
+    _get_settings = None
 
 logger = logging.getLogger(__name__)
 
@@ -185,12 +195,56 @@ class EnvironmentDetector:
         logger.info("=====================================")
 
 
+def get_enhanced_settings():
+    """
+    Get enhanced settings using pydantic-settings if available.
+
+    Returns:
+        Settings object if pydantic-settings is available, None otherwise
+    """
+    if PYDANTIC_SETTINGS_AVAILABLE and _get_settings:
+        try:
+            settings = _get_settings()
+            logger.info("✅ Using enhanced pydantic-settings configuration")
+            return settings
+        except Exception as e:
+            logger.warning(f"Failed to load pydantic settings: {e}")
+            logger.info("Falling back to traditional environment configuration")
+    else:
+        logger.info("Pydantic settings not available, using traditional configuration")
+
+    return None
+
+
 def setup_environment() -> str:
     """
     Main function to set up the environment.
     Call this at the start of your application.
+    Enhanced with pydantic-settings integration.
 
     Returns:
         str: The environment type ('development' or 'production')
     """
-    return EnvironmentDetector.load_environment_config()
+    # Load traditional environment configuration first
+    env_type = EnvironmentDetector.load_environment_config()
+
+    # Try to enhance with pydantic settings
+    enhanced_settings = get_enhanced_settings()
+    if enhanced_settings:
+        # Update environment variables with pydantic settings values
+        logger.info("Applying enhanced configuration from pydantic settings")
+
+        # Update key environment variables from settings
+        if hasattr(enhanced_settings, 'vana_env'):
+            os.environ['VANA_ENV'] = enhanced_settings.vana_env
+
+        if hasattr(enhanced_settings, 'google_project_id'):
+            os.environ['GOOGLE_CLOUD_PROJECT'] = enhanced_settings.google_project_id
+
+        if hasattr(enhanced_settings, 'google_location'):
+            os.environ['GOOGLE_CLOUD_LOCATION'] = enhanced_settings.google_location
+
+        # Log enhanced configuration status
+        logger.info(f"Enhanced settings applied - Environment: {enhanced_settings.vana_env if hasattr(enhanced_settings, 'vana_env') else 'unknown'}")
+
+    return env_type

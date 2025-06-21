@@ -252,8 +252,13 @@ def _process_search_results(query: str, results: list, raw_data: dict) -> str:
 
     # Detect query type for specialized processing
     query_lower = query.lower()
-    is_time_query = any(word in query_lower for word in ['time', 'clock', 'timezone', 'what time'])
-    is_weather_query = any(word in query_lower for word in ['weather', 'temperature', 'forecast', 'climate'])
+    is_time_query = any(
+        word in query_lower for word in ["time", "clock", "timezone", "what time"]
+    )
+    is_weather_query = any(
+        word in query_lower
+        for word in ["weather", "temperature", "forecast", "climate"]
+    )
 
     # Extract location from query
     location = _extract_location_from_query(query)
@@ -263,13 +268,17 @@ def _process_search_results(query: str, results: list, raw_data: dict) -> str:
 
     for result in results:
         # Try multiple extraction strategies
-        extracted_data = _extract_specific_data(result, is_time_query, is_weather_query, location)
+        extracted_data = _extract_specific_data(
+            result, is_time_query, is_weather_query, location
+        )
         if extracted_data:
             extracted_info.append(extracted_data)
 
     # Format response with explicit context
     if extracted_info:
-        formatted_response = _format_extracted_data(query, extracted_info, is_time_query, is_weather_query, location)
+        formatted_response = _format_extracted_data(
+            query, extracted_info, is_time_query, is_weather_query, location
+        )
         return formatted_response
     else:
         # Fallback to enhanced raw data with clear instructions
@@ -282,9 +291,9 @@ def _extract_location_from_query(query: str) -> str:
 
     # Common location patterns
     patterns = [
-        r'in\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*)',  # "in Paris", "in New York"
-        r'([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*)\s+time',  # "Paris time"
-        r'([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*)\s+weather',  # "Paris weather"
+        r"in\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*)",  # "in Paris", "in New York"
+        r"([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*)\s+time",  # "Paris time"
+        r"([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*)\s+weather",  # "Paris weather"
     ]
 
     for pattern in patterns:
@@ -295,7 +304,9 @@ def _extract_location_from_query(query: str) -> str:
     return ""
 
 
-def _extract_specific_data(result: dict, is_time_query: bool, is_weather_query: bool, location: str):
+def _extract_specific_data(
+    result: dict, is_time_query: bool, is_weather_query: bool, location: str
+):
     """Extract specific data based on query type."""
     import re
 
@@ -303,76 +314,88 @@ def _extract_specific_data(result: dict, is_time_query: bool, is_weather_query: 
 
     # Combine all available text sources
     text_sources = [
-        result.get('description', ''),
-        result.get('title', ''),
+        result.get("description", ""),
+        result.get("title", ""),
     ]
 
     # Add extra_snippets if available
-    if result.get('extra_snippets'):
-        text_sources.extend(result['extra_snippets'])
+    if result.get("extra_snippets"):
+        text_sources.extend(result["extra_snippets"])
 
     # Add summary if available
-    if result.get('summary'):
-        text_sources.append(result['summary'])
+    if result.get("summary"):
+        text_sources.append(result["summary"])
 
-    all_text = ' '.join(text_sources)
+    all_text = " ".join(text_sources)
 
     if is_time_query:
-        # Time extraction patterns
+        # Time extraction patterns - more specific and ordered by precision
         time_patterns = [
-            r'(\d{1,2}:\d{2}\s*(?:AM|PM|am|pm))',  # 7:40 PM
-            r'(\d{1,2}:\d{2})',  # 19:40
-            r'current.*time.*is\s*([^.]+)',  # "current time is 7:40 PM"
-            r'time.*is\s*([^.]+)',  # "time is 7:40 PM"
-            r'(\d{1,2}\s*(?:AM|PM|am|pm))',  # 7 PM
+            r"(\d{1,2}:\d{2}\s*(?:AM|PM|am|pm)(?:\s+[A-Z]{3,4})?)",  # 7:40 PM EST
+            r"current.*time.*is\s*(\d{1,2}:\d{2}\s*(?:AM|PM|am|pm))",  # "current time is 7:40 PM"
+            r"time.*is\s*(\d{1,2}:\d{2}\s*(?:AM|PM|am|pm))",  # "time is 7:40 PM"
+            r"(\d{1,2}:\d{2})",  # 19:40 (24-hour format)
+            r"(\d{1,2}\s*(?:AM|PM|am|pm))",  # 7 PM
+            r"(\d{1,2}:\d{2}\s*[A-Z]{3,4})",  # 19:40 EST
         ]
 
         for pattern in time_patterns:
             match = re.search(pattern, all_text, re.IGNORECASE)
             if match:
-                extracted['time'] = match.group(1).strip()
-                extracted['location'] = location
-                extracted['source'] = 'extracted'
-                break
+                time_str = match.group(1).strip()
+                # Clean up common extraction issues
+                time_str = re.sub(r'[,.]$', '', time_str)  # Remove trailing punctuation
+                # Validate that we have a reasonable time format
+                if len(time_str) > 2 and (':' in time_str or any(x in time_str.upper() for x in ['AM', 'PM'])):
+                    extracted["time"] = time_str
+                    extracted["location"] = location
+                    extracted["source"] = "extracted"
+                    break
 
     elif is_weather_query:
         # Weather extraction patterns
         temp_patterns = [
-            r'(\d+°[CF])',  # 85°F, 29°C
-            r'(\d+\s*degrees?)',  # 85 degrees
-            r'temperature.*?(\d+)',  # temperature 85
+            r"(\d+°[CF])",  # 85°F, 29°C
+            r"(\d+\s*degrees?)",  # 85 degrees
+            r"temperature.*?(\d+)",  # temperature 85
         ]
 
         condition_patterns = [
-            r'(sunny|cloudy|rainy|snowy|clear|overcast|partly cloudy|mostly sunny)',
+            r"(sunny|cloudy|rainy|snowy|clear|overcast|partly cloudy|mostly sunny)",
         ]
 
         for pattern in temp_patterns:
             match = re.search(pattern, all_text, re.IGNORECASE)
             if match:
-                extracted['temperature'] = match.group(1)
+                extracted["temperature"] = match.group(1)
                 break
 
         for pattern in condition_patterns:
             match = re.search(pattern, all_text, re.IGNORECASE)
             if match:
-                extracted['condition'] = match.group(1)
+                extracted["condition"] = match.group(1)
                 break
 
         if extracted:
-            extracted['location'] = location
-            extracted['source'] = 'extracted'
+            extracted["location"] = location
+            extracted["source"] = "extracted"
 
     return extracted if extracted else None
 
 
-def _format_extracted_data(query: str, extracted_info: list, is_time_query: bool, is_weather_query: bool, location: str) -> str:
+def _format_extracted_data(
+    query: str,
+    extracted_info: list,
+    is_time_query: bool,
+    is_weather_query: bool,
+    location: str,
+) -> str:
     """Format extracted data with explicit context for agent."""
 
     if is_time_query and extracted_info:
         # Format time data with explicit context
         time_data = extracted_info[0]
-        if 'time' in time_data:
+        if "time" in time_data:
             response = f"""[REAL-TIME SEARCH RESULT]
 Query: {query}
 CURRENT TIME INFORMATION:
@@ -387,8 +410,8 @@ Based on the real-time search data above, the current time in {time_data.get('lo
     elif is_weather_query and extracted_info:
         # Format weather data with explicit context
         weather_data = extracted_info[0]
-        temp = weather_data.get('temperature', '')
-        condition = weather_data.get('condition', '')
+        temp = weather_data.get("temperature", "")
+        condition = weather_data.get("condition", "")
 
         response = f"""[REAL-TIME SEARCH RESULT]
 Query: {query}
@@ -432,7 +455,7 @@ def _format_fallback_response(query: str, results: list, raw_data: dict) -> str:
         "faq": raw_data.get("faq", {}),
         "summarizer": raw_data.get("summarizer", {}),
         "query_info": raw_data.get("query", {}),
-        "extraction_note": "No specific data extracted. Please analyze the results manually."
+        "extraction_note": "No specific data extracted. Please analyze the results manually.",
     }
 
     return json.dumps(response_data, indent=2)

@@ -19,14 +19,8 @@ from lib._tools import (  # File System Tools; Search Tools; System Tools; Agent
     adk_write_file,
 )
 from google.adk.agents import LlmAgent
-import os
-
-# Add project root to Python path for absolute imports
-import sys
 
 from dotenv import load_dotenv
-
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
 
 # Load environment variables before importing Google ADK
 load_dotenv()

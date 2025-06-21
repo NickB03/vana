@@ -101,15 +101,24 @@ def get_lazy_service(name: str) -> Any:
 @lazy_service("adk_memory_service", force_lazy=True)
 def create_adk_memory_service():
     """Create ADK memory service with lazy initialization."""
-    from lib._shared_libraries.adk_memory_service import ADKMemoryService
+    # Check if Firestore memory service is enabled
+    use_firestore_memory = os.getenv("USE_FIRESTORE_MEMORY", "False").lower() == "true"
 
-    # Determine Vertex AI usage
-    use_vertex_ai_env = os.getenv("GOOGLE_GENAI_USE_VERTEXAI", "False").lower() == "true"
-    session_service_type = os.getenv("SESSION_SERVICE_TYPE", "in_memory").lower()
-    use_vertex_ai = use_vertex_ai_env or session_service_type == "vertex_ai"
+    if use_firestore_memory:
+        logger.info("Creating Firestore memory service")
+        from lib.memory.firestore_memory import FirestoreMemoryService
+        return FirestoreMemoryService()
+    else:
+        # Use existing ADK memory service
+        from lib._shared_libraries.adk_memory_service import ADKMemoryService
 
-    logger.info(f"Creating ADK memory service: use_vertex_ai={use_vertex_ai}")
-    return ADKMemoryService(use_vertex_ai=use_vertex_ai)
+        # Determine Vertex AI usage
+        use_vertex_ai_env = os.getenv("GOOGLE_GENAI_USE_VERTEXAI", "False").lower() == "true"
+        session_service_type = os.getenv("SESSION_SERVICE_TYPE", "in_memory").lower()
+        use_vertex_ai = use_vertex_ai_env or session_service_type == "vertex_ai"
+
+        logger.info(f"Creating ADK memory service: use_vertex_ai={use_vertex_ai}")
+        return ADKMemoryService(use_vertex_ai=use_vertex_ai)
 
 
 @lazy_service("vector_search_client", force_lazy=True)
