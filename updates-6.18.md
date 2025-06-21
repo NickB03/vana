@@ -22,16 +22,16 @@ from pydantic_settings import BaseSettings
 class Settings(BaseSettings):
     # Model configuration
     vana_model: str = "gemini-2.0-flash-exp"
-    
+
     # Google Cloud
     google_project_id: str
     google_location: str = "us-central1"
-    
+
     # API Keys (from Secret Manager)
     openrouter_api_key: str = ""
     github_token: str = ""
     brave_api_key: str = ""
-    
+
     class Config:
         env_file = ".env"
 
@@ -44,7 +44,7 @@ repos:
     hooks:
       - id: ruff
         args: [--fix]
-  
+
   - repo: https://github.com/psf/black
     rev: 24.3.0
     hooks:
@@ -61,15 +61,15 @@ import json
 
 class FirestoreMemoryService(BaseMemoryService):
     """ADK-native persistent memory using Firestore"""
-    
+
     def __init__(self, collection_name: str = "vana_memories"):
         self.db = firestore.Client()
         self.memories = self.db.collection(collection_name)
-        
+
     async def add_session_to_memory(
-        self, 
-        session_id: str, 
-        content: str, 
+        self,
+        session_id: str,
+        content: str,
         metadata: dict
     ):
         """Store memory with automatic TTL"""
@@ -81,22 +81,22 @@ class FirestoreMemoryService(BaseMemoryService):
             'timestamp': datetime.now(),
             'ttl': datetime.now() + timedelta(days=30)  # 30-day TTL
         })
-    
+
     async def search_memory(
-        self, 
-        query: str, 
+        self,
+        query: str,
         top_k: int = 5
     ) -> list[MemoryRecord]:
         """Simple keyword search - upgrade to vector search later"""
         memories = []
-        
+
         # Query recent memories
         docs = (self.memories
                 .where('ttl', '>', datetime.now())
                 .order_by('timestamp', direction=firestore.Query.DESCENDING)
                 .limit(50)
                 .stream())
-        
+
         for doc in docs:
             data = doc.to_dict()
             if query.lower() in data['content'].lower():
@@ -104,7 +104,7 @@ class FirestoreMemoryService(BaseMemoryService):
                     content=data['content'],
                     metadata=data['metadata']
                 ))
-                
+
         return memories[:top_k]
 2.2 Wire Memory into Main
 python# main.py updates
@@ -131,7 +131,7 @@ from google.adk.tools.mcp_tool.mcp_toolset import MCPToolset
 # Document processing
 firecrawl_mcp = MCPToolset("https://mcp.firecrawl.dev/{API_KEY}/sse")
 
-# Browser automation  
+# Browser automation
 playwright_mcp = MCPToolset("https://playwright.workers.dev/sse")
 
 # Time utilities
@@ -165,10 +165,10 @@ import json
 
 class SimpleMetrics:
     """Lightweight metrics without external dependencies"""
-    
+
     def __init__(self, log_file="logs/metrics.jsonl"):
         self.log_file = log_file
-    
+
     def log_request(self, agent: str, duration: float, tokens: int):
         metric = {
             "timestamp": datetime.now().isoformat(),
@@ -177,7 +177,7 @@ class SimpleMetrics:
             "tokens": tokens,
             "cost_estimate": tokens * 0.000002  # Rough estimate
         }
-        
+
         with open(self.log_file, "a") as f:
             f.write(json.dumps(metric) + "\n")
 4.2 Add Health Dashboard Endpoint

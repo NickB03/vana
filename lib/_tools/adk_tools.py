@@ -344,9 +344,11 @@ def _extract_specific_data(
             if match:
                 time_str = match.group(1).strip()
                 # Clean up common extraction issues
-                time_str = re.sub(r'[,.]$', '', time_str)  # Remove trailing punctuation
+                time_str = re.sub(r"[,.]$", "", time_str)  # Remove trailing punctuation
                 # Validate that we have a reasonable time format
-                if len(time_str) > 2 and (':' in time_str or any(x in time_str.upper() for x in ['AM', 'PM'])):
+                if len(time_str) > 2 and (
+                    ":" in time_str or any(x in time_str.upper() for x in ["AM", "PM"])
+                ):
                     extracted["time"] = time_str
                     extracted["location"] = location
                     extracted["source"] = "extracted"

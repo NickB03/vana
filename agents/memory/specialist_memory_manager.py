@@ -50,20 +50,20 @@ class SpecialistMemoryManager:
                 "specialist_type": specialist_type,
                 "knowledge": knowledge,
                 "timestamp": datetime.now().isoformat(),
-                "quality_score": knowledge.get("quality_score", 0.0)
+                "quality_score": knowledge.get("quality_score", 0.0),
             }
 
             # Store in Firestore with metadata
             metadata = {
                 "type": "specialist_knowledge",
                 "specialist_type": specialist_type,
-                "session_id": session_id
+                "session_id": session_id,
             }
 
             await self.firestore_memory.add_session_to_memory(
                 session_id=session_id,
                 content=json.dumps(memory_content),
-                metadata=metadata
+                metadata=metadata,
             )
 
         except Exception as e:
@@ -84,9 +84,7 @@ class SpecialistMemoryManager:
                 search_query += f" {context}"
 
             memories = await self.firestore_memory.search_memory(
-                query=search_query,
-                top_k=10,
-                session_id=session_id
+                query=search_query, top_k=10, session_id=session_id
             )
 
             # Process memories into specialist knowledge format
@@ -102,7 +100,7 @@ class SpecialistMemoryManager:
             return {
                 "relevant_knowledge": relevant_knowledge,
                 "total_entries": len(relevant_knowledge),
-                "source": "firestore"
+                "source": "firestore",
             }
 
         except Exception as e:
@@ -110,7 +108,10 @@ class SpecialistMemoryManager:
             return {}
 
     def save_specialist_knowledge(
-        self, session_state: Dict[str, Any], specialist_type: str, knowledge: Dict[str, Any]
+        self,
+        session_state: Dict[str, Any],
+        specialist_type: str,
+        knowledge: Dict[str, Any],
     ) -> None:
         """Save specialist knowledge to persistent session state."""
 
@@ -121,7 +122,13 @@ class SpecialistMemoryManager:
 
         # Get existing memory or create new
         existing_memory = session_state.get(
-            memory_key, {"knowledge_base": [], "patterns": {}, "preferences": {}, "last_updated": None}
+            memory_key,
+            {
+                "knowledge_base": [],
+                "patterns": {},
+                "preferences": {},
+                "last_updated": None,
+            },
         )
 
         # Add new knowledge entry
@@ -172,7 +179,10 @@ class SpecialistMemoryManager:
         }
 
     def save_user_preferences(
-        self, session_state: Dict[str, Any], specialist_type: str, preferences: Dict[str, Any]
+        self,
+        session_state: Dict[str, Any],
+        specialist_type: str,
+        preferences: Dict[str, Any],
     ) -> None:
         """Save user preferences for specialist recommendations."""
 
@@ -191,7 +201,9 @@ class SpecialistMemoryManager:
         # Save back to session state
         session_state[pref_key] = existing_prefs
 
-    def get_user_preferences(self, session_state: Dict[str, Any], specialist_type: str) -> Dict[str, Any]:
+    def get_user_preferences(
+        self, session_state: Dict[str, Any], specialist_type: str
+    ) -> Dict[str, Any]:
         """Get user preferences for specialist recommendations."""
 
         if specialist_type not in self.user_preference_keys:
@@ -200,12 +212,15 @@ class SpecialistMemoryManager:
         pref_key = self.user_preference_keys[specialist_type]
         return session_state.get(pref_key, {})
 
-    def save_project_memory(self, session_state: Dict[str, Any], project_data: Dict[str, Any]) -> None:
+    def save_project_memory(
+        self, session_state: Dict[str, Any], project_data: Dict[str, Any]
+    ) -> None:
         """Save project-specific memory across sessions."""
 
         # Get existing project memory
         project_memory = session_state.get(
-            self.project_memory_key, {"projects": {}, "cross_project_patterns": {}, "success_metrics": {}}
+            self.project_memory_key,
+            {"projects": {}, "cross_project_patterns": {}, "success_metrics": {}},
         )
 
         project_id = project_data.get("project_id", "default")
@@ -229,7 +244,9 @@ class SpecialistMemoryManager:
         # Save back to session state
         session_state[self.project_memory_key] = project_memory
 
-    def get_project_memory(self, session_state: Dict[str, Any], project_id: str = "default") -> Dict[str, Any]:
+    def get_project_memory(
+        self, session_state: Dict[str, Any], project_id: str = "default"
+    ) -> Dict[str, Any]:
         """Get project-specific memory and patterns."""
 
         project_memory = session_state.get(self.project_memory_key, {})
@@ -246,7 +263,9 @@ class SpecialistMemoryManager:
             "similar_projects": self._find_similar_projects(project_memory, project_id),
         }
 
-    def _update_patterns(self, memory: Dict[str, Any], knowledge: Dict[str, Any]) -> None:
+    def _update_patterns(
+        self, memory: Dict[str, Any], knowledge: Dict[str, Any]
+    ) -> None:
         """Update learned patterns based on new knowledge."""
 
         patterns = memory.setdefault("patterns", {})
@@ -267,7 +286,9 @@ class SpecialistMemoryManager:
             for practice in knowledge["best_practices"]:
                 practice_patterns[practice] = practice_patterns.get(practice, 0) + 1
 
-    def _update_cross_project_patterns(self, project_memory: Dict[str, Any], project_data: Dict[str, Any]) -> None:
+    def _update_cross_project_patterns(
+        self, project_memory: Dict[str, Any], project_data: Dict[str, Any]
+    ) -> None:
         """Update patterns that span across multiple projects."""
 
         cross_patterns = project_memory.setdefault("cross_project_patterns", {})
@@ -280,7 +301,9 @@ class SpecialistMemoryManager:
                 if isinstance(value, (str, list)):
                     success_patterns[key] = success_patterns.get(key, 0) + 1
 
-    def _find_similar_projects(self, project_memory: Dict[str, Any], current_project_id: str) -> List[Dict[str, Any]]:
+    def _find_similar_projects(
+        self, project_memory: Dict[str, Any], current_project_id: str
+    ) -> List[Dict[str, Any]]:
         """Find similar projects based on characteristics."""
 
         projects = project_memory.get("projects", {})
@@ -296,16 +319,26 @@ class SpecialistMemoryManager:
                 continue
 
             # Calculate similarity score (simplified)
-            similarity_score = self._calculate_project_similarity(current_project, project_data)
+            similarity_score = self._calculate_project_similarity(
+                current_project, project_data
+            )
 
             if similarity_score >= 0.6:
                 similar_projects.append(
-                    {"project_id": project_id, "similarity_score": similarity_score, "project_data": project_data}
+                    {
+                        "project_id": project_id,
+                        "similarity_score": similarity_score,
+                        "project_data": project_data,
+                    }
                 )
 
-        return sorted(similar_projects, key=lambda x: x["similarity_score"], reverse=True)[:3]
+        return sorted(
+            similar_projects, key=lambda x: x["similarity_score"], reverse=True
+        )[:3]
 
-    def _calculate_project_similarity(self, project1: Dict[str, Any], project2: Dict[str, Any]) -> float:
+    def _calculate_project_similarity(
+        self, project1: Dict[str, Any], project2: Dict[str, Any]
+    ) -> float:
         """Calculate similarity score between two projects."""
 
         # Simplified similarity calculation
@@ -324,11 +357,15 @@ class SpecialistMemoryManager:
 
 
 # Memory-aware specialist functions
-def save_specialist_knowledge_func(specialist_type: str, knowledge: str, quality_score: float = 0.8) -> str:
+def save_specialist_knowledge_func(
+    specialist_type: str, knowledge: str, quality_score: float = 0.8
+) -> str:
     """Function tool to save specialist knowledge to memory."""
 
     try:
-        knowledge_data = json.loads(knowledge) if isinstance(knowledge, str) else knowledge
+        knowledge_data = (
+            json.loads(knowledge) if isinstance(knowledge, str) else knowledge
+        )
         knowledge_data["quality_score"] = quality_score
 
         # This would be called within an agent context with access to session state

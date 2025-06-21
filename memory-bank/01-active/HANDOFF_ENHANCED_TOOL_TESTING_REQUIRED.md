@@ -26,7 +26,7 @@ def web_search(query: str, max_results: int = 5) -> str:
     """🌐 Search the web for current information with enhanced data extraction."""
     # Enhanced parameters for better data extraction
     params = {
-        "q": query, 
+        "q": query,
         "count": min(max_results, 10),
         "extra_snippets": True,  # Enable additional excerpts
         "summary": True,         # Enable AI summary
@@ -34,7 +34,7 @@ def web_search(query: str, max_results: int = 5) -> str:
         "text_decorations": False,
         "result_filter": "web,infobox,faq",  # Include structured data
     }
-    
+
     # Enhanced result extraction with rich data fields
     enhanced_result = {
         "title": result.get("title", ""),
@@ -47,7 +47,7 @@ def web_search(query: str, max_results: int = 5) -> str:
         "relevance_score": result.get("profile", {}).get("score", 0),
         "language": result.get("language", "en"),
     }
-    
+
     # Add structured data if available
     response_data = {
         "query": query,
