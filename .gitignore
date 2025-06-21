@@ -5,6 +5,8 @@ node_modules/
 
 # Project-specific directories
 memory-bank/
+memory-bank-*/
+memory-bak/
 __pycache__/
 *.pyc
 *.pyo
