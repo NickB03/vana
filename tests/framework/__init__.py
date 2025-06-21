@@ -39,9 +39,29 @@ from .agent_client import (
     create_test_agent_client,
 )
 from .agent_intelligence_validator import AgentIntelligenceValidator, IntelligenceTestResult, ReasoningPattern
+from .mock_services import (
+    BaseMockService,
+    MockAgentCoordinationService,
+    MockServiceManager,
+    MockVectorSearchService,
+    MockWebSearchService,
+    ServiceType,
+    create_mock_service_manager,
+)
 from .performance_benchmarker import LoadTestResult, PerformanceBenchmarker, PerformanceMetrics
+from .performance_monitor import (
+    MetricType,
+    PerformanceMetric,
+    PerformanceMonitor,
+    PerformanceReport,
+    PerformanceThreshold,
+)
 from .response_quality_analyzer import QualityMetrics, ResponseQualityAnalyzer, ReviewStatus, ValidationResult
 from .test_data_manager import QueryType, TestDataManager, TestScenario
+
+# Import test infrastructure components
+from .test_environment import AgentEnvironment, EnvironmentConfig, EnvironmentType, TestEnvironment
+from .test_fixtures import AgentTestData, MultiAgentTestData, TestFixture, TestFixtureManager
 
 __all__ = [
     # Core validators
@@ -69,6 +89,27 @@ __all__ = [
     # Factory functions
     "create_test_agent_client",
     "create_multi_agent_environment",
+    # Test Infrastructure
+    "TestEnvironment",
+    "EnvironmentConfig",
+    "EnvironmentType",
+    "AgentEnvironment",
+    "MockServiceManager",
+    "BaseMockService",
+    "MockWebSearchService",
+    "MockVectorSearchService",
+    "MockAgentCoordinationService",
+    "ServiceType",
+    "create_mock_service_manager",
+    "TestFixtureManager",
+    "TestFixture",
+    "AgentTestData",
+    "MultiAgentTestData",
+    "PerformanceMonitor",
+    "PerformanceMetric",
+    "PerformanceReport",
+    "PerformanceThreshold",
+    "MetricType",
 ]
 
 __version__ = "1.0.0"

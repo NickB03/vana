@@ -5,10 +5,10 @@
 [![Google ADK](https://img.shields.io/badge/Google%20ADK-Compliant-blue)](https://google.github.io/adk-docs/)
 [![Cloud Run](https://img.shields.io/badge/Deployed%20on-Google%20Cloud%20Run-blue)](https://cloud.google.com/run)
 [![Python](https://img.shields.io/badge/Python-3.13+-blue)](https://python.org)
-[![Agents](https://img.shields.io/badge/Agents-7%20Discoverable-blue)](docs/architecture/agents.md)
-[![Tools](https://img.shields.io/badge/Tools-19%20Core%20%2B%20Conditional-blue)](docs/architecture/tools.md)
+[![Agents](https://img.shields.io/badge/Agents-Multi--Agent%20System-blue)](docs/architecture/agents.md)
+[![Tools](https://img.shields.io/badge/Tools-Comprehensive%20Toolset-blue)](docs/architecture/tools.md)
 
-> **VANA** is an advanced multi-agent AI system built on Google's Agent Development Kit (ADK), featuring **7 discoverable agents** (3 real + 4 proxy) with **19 core tools** and comprehensive infrastructure for intelligent task orchestration. The system uses a simplified multi-agent architecture with proxy pattern for optimal performance and maintainability.
+> **VANA** is an advanced multi-agent AI system built on Google's Agent Development Kit (ADK), featuring a discoverable multi-agent architecture with comprehensive toolset and infrastructure for intelligent task orchestration. The system uses a simplified multi-agent architecture with proxy pattern for optimal performance and maintainability.
 
 ## 🚀 Quick Start
 
@@ -112,8 +112,8 @@ VANA is an enterprise-grade multi-agent AI system designed for complex task orch
 
 ### ✨ Key Features
 
-- **🤖 Multi-Agent System** - 7 discoverable agents (3 real + 4 proxy) with simplified architecture
-- **🛠️ Comprehensive Toolset** - 19 core tools + conditional tools for diverse capabilities
+- **🤖 Multi-Agent System** - Discoverable agents with simplified architecture (real agents + proxy pattern)
+- **🛠️ Comprehensive Toolset** - Core tools plus conditional tools for diverse capabilities
 - **🔍 Advanced Search** - Vector search via Vertex AI, web search, and knowledge base integration
 - **☁️ Cloud-Native** - Deployed on Google Cloud Run with auto-scaling infrastructure
 - **📊 Performance Monitoring** - Health monitoring, performance tracking, and system analytics
@@ -122,7 +122,7 @@ VANA is an enterprise-grade multi-agent AI system designed for complex task orch
 
 ### 🎯 Current Capabilities
 
-- **Intelligent Orchestration** - VANA agent coordinates tasks with 19 core tools
+- **Intelligent Orchestration** - VANA agent coordinates tasks with comprehensive toolset
 - **Secure Code Execution** - Python, JavaScript, and Shell execution in sandboxed environment
 - **Data Science Operations** - Data analysis, visualization, and machine learning workflows
 - **Knowledge Management** - Semantic search, document processing, and information retrieval
@@ -133,14 +133,14 @@ VANA is an enterprise-grade multi-agent AI system designed for complex task orch
 
 ```mermaid
 graph TB
-    subgraph "VANA Multi-Agent System - 7 Discoverable Agents"
-        subgraph "Real Agents (3)"
-            VANA[🎯 VANA Orchestrator<br/>19 Core Tools]
+    subgraph "VANA Multi-Agent System"
+        subgraph "Real Agents"
+            VANA[🎯 VANA Orchestrator<br/>Core Tools]
             CODE[💻 Code Execution Specialist<br/>Secure Sandbox]
             DATA[📊 Data Science Specialist<br/>Analysis & ML]
         end
 
-        subgraph "Proxy Agents (4) - Discovery Pattern"
+        subgraph "Proxy Agents - Discovery Pattern"
             MEM[🧠 Memory Proxy]
             ORCH[🔄 Orchestration Proxy]
             SPEC[🛠️ Specialists Proxy]
@@ -184,20 +184,20 @@ graph TB
 
 ### 🔧 Core Components
 
-- **VANA Orchestrator** - Central coordination with 19 core tools + conditional tools
+- **VANA Orchestrator** - Central coordination with core tools plus conditional tools
 - **Specialist Agents** - Code execution and data science capabilities
-- **Proxy Pattern** - 4 proxy agents for discovery compatibility
+- **Proxy Pattern** - Proxy agents for discovery compatibility
 - **Google Cloud Services** - Vertex AI, Cloud Run, and RAG corpus integration
 
 ## 🤖 Agent System
 
-VANA features **7 discoverable agents** using a simplified multi-agent architecture with proxy pattern:
+VANA features a discoverable multi-agent system using a simplified architecture with proxy pattern:
 
-### 🎯 Real Agents (3)
+### 🎯 Real Agents
 
 #### **VANA Orchestrator** (`agents/vana/team.py`)
 - **Role**: Central coordinator and task router
-- **Tools**: 19 core tools + conditional specialist/orchestration tools
+- **Tools**: Core tools plus conditional specialist/orchestration tools
 - **Model**: gemini-2.0-flash-exp
 - **Capabilities**: File operations, search, coordination, task analysis, workflow management
 
@@ -212,7 +212,7 @@ VANA features **7 discoverable agents** using a simplified multi-agent architect
 - **Integration**: Leverages Code Execution Specialist for secure Python execution
 - **Capabilities**: Data processing, analysis, visualization, statistical computing
 
-### 🔄 Proxy Agents (4) - Discovery Pattern
+### 🔄 Proxy Agents - Discovery Pattern
 
 - **Memory Agent** - Delegates to VANA (`agents/memory/__init__.py`)
 - **Orchestration Agent** - Delegates to VANA (`agents/orchestration/__init__.py`)
@@ -220,44 +220,44 @@ VANA features **7 discoverable agents** using a simplified multi-agent architect
 - **Workflows Agent** - Delegates to VANA (`agents/workflows/__init__.py`)
 
 ### 📊 Current System Status
-- **Discoverable Agents**: 7 (3 real + 4 proxy)
+- **Discoverable Agents**: Multi-agent system with real agents and proxy pattern
 - **Architecture**: Simplified multi-agent with proxy pattern (not complex orchestration)
 - **Infrastructure**: Operational on Google Cloud Run with excellent performance
 - **Coordination**: Real agent discovery and delegation working correctly
 
 ## 🛠️ Tools & Capabilities
 
-VANA provides **19 core tools** always available in the VANA agent, plus conditional tools when dependencies are available:
+VANA provides core tools always available in the VANA agent, plus conditional tools when dependencies are available:
 
-### 🔧 Core Tools (19) - Always Available
+### 🔧 Core Tools - Always Available
 
-#### 📁 File System Tools (4)
+#### 📁 File System Tools
 - `adk_read_file` - Secure file reading with validation
 - `adk_write_file` - File creation and modification with proper permissions
 - `adk_list_directory` - Directory exploration and listing
 - `adk_file_exists` - File existence checking
 
-#### 🔍 Search Tools (3)
+#### 🔍 Search Tools
 - `adk_vector_search` - Semantic similarity search via Vertex AI
 - `adk_web_search` - Real-time web search with Brave API
 - `adk_search_knowledge` - RAG corpus knowledge search
 
-#### ⚙️ System Tools (2)
+#### ⚙️ System Tools
 - `adk_echo` - System testing and validation
 - `adk_get_health_status` - Real-time system health monitoring
 
-#### 🤝 Agent Coordination Tools (4)
+#### 🤝 Agent Coordination Tools
 - `adk_coordinate_task` - Multi-agent task coordination
 - `adk_delegate_to_agent` - Direct agent delegation
 - `adk_get_agent_status` - Agent discovery and status
 - `adk_transfer_to_agent` - Agent transfer capabilities
 
-#### 📊 Task Analysis Tools (3)
+#### 📊 Task Analysis Tools
 - `adk_analyze_task` - NLP-based task analysis
 - `adk_match_capabilities` - Agent-task capability matching
 - `adk_classify_task` - Task classification and routing
 
-#### ⚡ Workflow Management Tools (8)
+#### ⚡ Workflow Management Tools
 - `adk_create_workflow` - Create multi-step workflows
 - `adk_start_workflow` - Initiate workflow execution
 - `adk_get_workflow_status` - Monitor workflow progress
@@ -267,13 +267,13 @@ VANA provides **19 core tools** always available in the VANA agent, plus conditi
 - `adk_cancel_workflow` - Cancel workflow execution
 - `adk_get_workflow_templates` - Access workflow templates
 
-### 🔧 Conditional Tools (Variable Count)
+### 🔧 Conditional Tools
 
 #### 🛠️ Specialist Tools
 - Available when `agents.specialists.agent_tools` imports successfully
 - Provides additional specialist capabilities when available
 
-#### 🎯 Orchestration Tools (6)
+#### 🎯 Orchestration Tools
 - Available when memory/orchestration modules import successfully
 - `analyze_task_complexity` - Advanced task complexity analysis
 - `route_to_specialist` - Intelligent specialist routing
@@ -372,7 +372,7 @@ VANA includes a comprehensive **AI Agent Testing Framework** specifically design
 #### **🎯 AI Agent Testing Framework**
 - **Agent Intelligence Validation** - Tests reasoning consistency, tool selection intelligence, and context utilization
 - **Response Quality Analysis** - Analyzes accuracy, completeness, relevance, and clarity with HITL support
-- **Google ADK Compliance** - Validates async patterns, tool integration, and memory service compliance
+- **Google ADK Compliance** - Validates Google ADK patterns, tool integration, and memory service compliance
 - **Performance Benchmarking** - Response times, throughput, resource usage, and scalability testing
 
 #### **🔧 Framework Components**
@@ -421,12 +421,12 @@ VANA includes comprehensive monitoring and observability:
 - Error tracking and alerting
 
 ### 📈 Performance Metrics
-- **System Status**: ✅ Operational with 7 discoverable agents
+- **System Status**: ✅ Operational with discoverable multi-agent system
 - **Infrastructure Performance**: Excellent response times and reliability
-- **Agent Discovery**: 100% success rate - all 7 agents discoverable with proper descriptions
+- **Agent Discovery**: 100% success rate - all agents discoverable with proper descriptions
 - **Coordination Tools**: Fully operational - no fallback implementations
 - **Cloud Deployment**: Stable on Google Cloud Run (dev and prod environments)
-- **Tool Availability**: 19 core tools + conditional tools working correctly
+- **Tool Availability**: Core tools plus conditional tools working correctly
 
 ### 🔍 Observability
 - Structured logging with Google Cloud Logging
