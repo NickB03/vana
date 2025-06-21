@@ -4,6 +4,9 @@ VANA Multi-Agent Team Definition - Minimal Working Version
 This is a simplified version with only working tools to test basic functionality.
 """
 
+from dotenv import load_dotenv
+from google.adk.agents import LlmAgent
+
 from lib._tools import (  # File System Tools; Search Tools; System Tools; Agent Coordination Tools
     adk_coordinate_task,
     adk_delegate_to_agent,
@@ -18,9 +21,6 @@ from lib._tools import (  # File System Tools; Search Tools; System Tools; Agent
     adk_web_search,
     adk_write_file,
 )
-from google.adk.agents import LlmAgent
-
-from dotenv import load_dotenv
 
 # Load environment variables before importing Google ADK
 load_dotenv()

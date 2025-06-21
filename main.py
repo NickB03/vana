@@ -8,7 +8,6 @@ Includes proper ADK memory service initialization for vector search and RAG pipe
 
 import logging
 import os
-import sys
 
 import uvicorn
 from fastapi import FastAPI, Request

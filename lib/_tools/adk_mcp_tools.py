@@ -26,7 +26,9 @@ logger = logging.getLogger(__name__)
 # ============================================================================
 
 
-def context7_sequential_thinking(prompt: str, minimum_tokens: int = 10000) -> Dict[str, Any]:
+def context7_sequential_thinking(
+    prompt: str, minimum_tokens: int = 10000
+) -> Dict[str, Any]:
     """
     Advanced reasoning and structured problem-solving using sequential thinking patterns.
 
@@ -78,9 +80,7 @@ def context7_sequential_thinking(prompt: str, minimum_tokens: int = 10000) -> Di
                     "Ecosystem: Community support and available implementations",
                 ]
 
-                analysis_framework[
-                    "synthesis"
-                ] = """
+                analysis_framework["synthesis"] = """
                 MCP (Model Context Protocol) servers offer significant advantages for AI agent systems:
 
                 BENEFITS:
@@ -125,9 +125,7 @@ def context7_sequential_thinking(prompt: str, minimum_tokens: int = 10000) -> Di
             ]
 
             if "mcp" in prompt.lower():
-                analysis_framework[
-                    "synthesis"
-                ] = """
+                analysis_framework["synthesis"] = """
                 MCP Server Implementation Patterns Analysis:
 
                 CORE PATTERNS:
@@ -159,9 +157,7 @@ def context7_sequential_thinking(prompt: str, minimum_tokens: int = 10000) -> Di
                 "5. Evaluate options and synthesize recommendations",
             ]
 
-            analysis_framework[
-                "synthesis"
-            ] = f"""
+            analysis_framework["synthesis"] = f"""
             Structured analysis of: {prompt}
 
             This requires systematic examination of the problem domain,
@@ -237,7 +233,11 @@ def brave_search_mcp(query: str, max_results: int = 5) -> Dict[str, Any]:
 
         # Make direct API call to Brave Search with enhanced parameters
         url = "https://api.search.brave.com/res/v1/web/search"
-        headers = {"Accept": "application/json", "Accept-Encoding": "gzip", "X-Subscription-Token": brave_api_key}
+        headers = {
+            "Accept": "application/json",
+            "Accept-Encoding": "gzip",
+            "X-Subscription-Token": brave_api_key,
+        }
         params = {
             "q": query,
             "count": min(max_results, 20),  # Brave API max is 20
@@ -276,13 +276,23 @@ def brave_search_mcp(query: str, max_results: int = 5) -> Dict[str, Any]:
             query_insights = {
                 "query_type": (
                     "informational"
-                    if any(word in query.lower() for word in ["what", "how", "why", "when", "where"])
+                    if any(
+                        word in query.lower()
+                        for word in ["what", "how", "why", "when", "where"]
+                    )
                     else "navigational"
                 ),
-                "complexity": "high" if len(query.split()) > 5 else "medium" if len(query.split()) > 2 else "simple",
+                "complexity": "high"
+                if len(query.split()) > 5
+                else "medium"
+                if len(query.split()) > 2
+                else "simple",
                 "domain_focus": (
                     "technical"
-                    if any(word in query.lower() for word in ["api", "code", "programming", "server", "mcp"])
+                    if any(
+                        word in query.lower()
+                        for word in ["api", "code", "programming", "server", "mcp"]
+                    )
                     else "general"
                 ),
             }
@@ -314,7 +324,9 @@ def brave_search_mcp(query: str, max_results: int = 5) -> Dict[str, Any]:
         else:
             return {
                 "error": f"Brave Search API error: {response.status_code}",
-                "message": response.text[:200] if response.text else "Unknown API error",
+                "message": response.text[:200]
+                if response.text
+                else "Unknown API error",
                 "status": "api_error",
             }
 
@@ -358,7 +370,9 @@ def github_mcp_operations(operation: str, **kwargs) -> Dict[str, Any]:
     """
     try:
         # Check if GitHub token is configured
-        github_token = os.getenv("GITHUB_TOKEN") or os.getenv("GITHUB_PERSONAL_ACCESS_TOKEN")
+        github_token = os.getenv("GITHUB_TOKEN") or os.getenv(
+            "GITHUB_PERSONAL_ACCESS_TOKEN"
+        )
         if not github_token:
             return {
                 "error": "GitHub token not configured",
@@ -383,15 +397,27 @@ def github_mcp_operations(operation: str, **kwargs) -> Dict[str, Any]:
 
         # Validate operation type and map to GitHub API endpoints
         operation_mapping = {
-            "repos": {"method": "GET", "endpoint": "/user/repos", "description": "List user repositories"},
-            "issues": {"method": "GET", "endpoint": "/issues", "description": "List user issues"},
+            "repos": {
+                "method": "GET",
+                "endpoint": "/user/repos",
+                "description": "List user repositories",
+            },
+            "issues": {
+                "method": "GET",
+                "endpoint": "/issues",
+                "description": "List user issues",
+            },
             "pull_requests": {
                 "method": "GET",
                 "endpoint": "/search/issues",
                 "query": "type:pr author:@me",
                 "description": "List user pull requests",
             },
-            "user_info": {"method": "GET", "endpoint": "/user", "description": "Get authenticated user info"},
+            "user_info": {
+                "method": "GET",
+                "endpoint": "/user",
+                "description": "Get authenticated user info",
+            },
             "repo_info": {
                 "method": "GET",
                 "endpoint": "/repos/{owner}/{repo}",
@@ -419,7 +445,9 @@ def github_mcp_operations(operation: str, **kwargs) -> Dict[str, Any]:
                 "error": f"Invalid operation: {operation}",
                 "valid_operations": list(operation_mapping.keys()),
                 "status": "invalid_operation",
-                "available_operations": {k: v["description"] for k, v in operation_mapping.items()},
+                "available_operations": {
+                    k: v["description"] for k, v in operation_mapping.items()
+                },
             }
 
         # Prepare GitHub API request
@@ -464,7 +492,10 @@ def github_mcp_operations(operation: str, **kwargs) -> Dict[str, Any]:
         elif op_config["method"] == "POST":
             response = requests.post(url, headers=headers, json=kwargs, timeout=15)
         else:
-            return {"error": f"Unsupported HTTP method: {op_config['method']}", "status": "method_not_supported"}
+            return {
+                "error": f"Unsupported HTTP method: {op_config['method']}",
+                "status": "method_not_supported",
+            }
 
         if response.status_code in [200, 201]:
             data = response.json()
@@ -492,7 +523,9 @@ def github_mcp_operations(operation: str, **kwargs) -> Dict[str, Any]:
                         "state": issue.get("state"),
                         "author": issue.get("user", {}).get("login"),
                         "created": issue.get("created_at"),
-                        "labels": [label.get("name") for label in issue.get("labels", [])],
+                        "labels": [
+                            label.get("name") for label in issue.get("labels", [])
+                        ],
                     }
                     for issue in (data if isinstance(data, list) else [data])
                 ]
@@ -534,7 +567,9 @@ def github_mcp_operations(operation: str, **kwargs) -> Dict[str, Any]:
         else:
             return {
                 "error": f"GitHub API error: {response.status_code}",
-                "message": response.text[:200] if response.text else "Unknown API error",
+                "message": response.text[:200]
+                if response.text
+                else "Unknown API error",
                 "status": "api_error",
             }
 
@@ -606,7 +641,7 @@ def firecrawl_mcp(url: str, mode: str = "scrape", **kwargs) -> Dict[str, Any]:
         base_url = "https://api.firecrawl.dev/v0"
         headers = {
             "Authorization": f"Bearer {firecrawl_api_key}",
-            "Content-Type": "application/json"
+            "Content-Type": "application/json",
         }
 
         if mode == "scrape":
@@ -617,10 +652,12 @@ def firecrawl_mcp(url: str, mode: str = "scrape", **kwargs) -> Dict[str, Any]:
                 "includeTags": kwargs.get("include_tags", []),
                 "excludeTags": kwargs.get("exclude_tags", ["nav", "footer"]),
                 "onlyMainContent": kwargs.get("only_main_content", True),
-                "waitFor": kwargs.get("wait_for", 0)
+                "waitFor": kwargs.get("wait_for", 0),
             }
 
-            response = requests.post(endpoint, headers=headers, json=payload, timeout=30)
+            response = requests.post(
+                endpoint, headers=headers, json=payload, timeout=30
+            )
 
             if response.status_code == 200:
                 data = response.json()
@@ -633,12 +670,14 @@ def firecrawl_mcp(url: str, mode: str = "scrape", **kwargs) -> Dict[str, Any]:
                     "metadata": data.get("data", {}).get("metadata", {}),
                     "firecrawl_api": "v0",
                     "mcp_interface": "Firecrawl API with MCP-style structuring",
-                    "api_response_time": f"{response.elapsed.total_seconds():.2f}s"
+                    "api_response_time": f"{response.elapsed.total_seconds():.2f}s",
                 }
             else:
                 return {
                     "error": f"Firecrawl API error: {response.status_code}",
-                    "message": response.text[:200] if response.text else "Unknown API error",
+                    "message": response.text[:200]
+                    if response.text
+                    else "Unknown API error",
                     "status": "api_error",
                 }
 
@@ -650,15 +689,17 @@ def firecrawl_mcp(url: str, mode: str = "scrape", **kwargs) -> Dict[str, Any]:
                     "includes": kwargs.get("includes", []),
                     "excludes": kwargs.get("excludes", []),
                     "maxDepth": kwargs.get("max_depth", 2),
-                    "limit": kwargs.get("limit", 10)
+                    "limit": kwargs.get("limit", 10),
                 },
                 "pageOptions": {
                     "onlyMainContent": kwargs.get("only_main_content", True),
-                    "formats": kwargs.get("formats", ["markdown"])
-                }
+                    "formats": kwargs.get("formats", ["markdown"]),
+                },
             }
 
-            response = requests.post(endpoint, headers=headers, json=payload, timeout=60)
+            response = requests.post(
+                endpoint, headers=headers, json=payload, timeout=60
+            )
 
             if response.status_code == 200:
                 data = response.json()
@@ -669,19 +710,21 @@ def firecrawl_mcp(url: str, mode: str = "scrape", **kwargs) -> Dict[str, Any]:
                     "job_id": data.get("jobId"),
                     "message": "Crawl job started - use job_id to check status",
                     "firecrawl_api": "v0",
-                    "mcp_interface": "Firecrawl API with MCP-style structuring"
+                    "mcp_interface": "Firecrawl API with MCP-style structuring",
                 }
             else:
                 return {
                     "error": f"Firecrawl crawl error: {response.status_code}",
-                    "message": response.text[:200] if response.text else "Unknown API error",
+                    "message": response.text[:200]
+                    if response.text
+                    else "Unknown API error",
                     "status": "api_error",
                 }
         else:
             return {
                 "error": f"Invalid mode: {mode}",
                 "valid_modes": ["scrape", "crawl"],
-                "status": "invalid_mode"
+                "status": "invalid_mode",
             }
 
     except requests.exceptions.Timeout:
@@ -690,7 +733,7 @@ def firecrawl_mcp(url: str, mode: str = "scrape", **kwargs) -> Dict[str, Any]:
             "status": "timeout",
             "url": url,
             "message": "Request took too long",
-            "suggestion": "Try again or use a simpler URL"
+            "suggestion": "Try again or use a simpler URL",
         }
     except Exception as e:
         logger.error(f"Firecrawl MCP error: {e}")
@@ -698,7 +741,7 @@ def firecrawl_mcp(url: str, mode: str = "scrape", **kwargs) -> Dict[str, Any]:
             "error": str(e),
             "status": "failed",
             "url": url,
-            "fallback_message": "Error occurred during Firecrawl API call"
+            "fallback_message": "Error occurred during Firecrawl API call",
         }
 
 
@@ -727,7 +770,7 @@ def playwright_mcp(action: str, **kwargs) -> Dict[str, Any]:
             "fill": "Fill form field",
             "evaluate": "Execute JavaScript",
             "get_content": "Get page content",
-            "wait_for": "Wait for element or condition"
+            "wait_for": "Wait for element or condition",
         }
 
         if action not in action_mapping:
@@ -735,7 +778,7 @@ def playwright_mcp(action: str, **kwargs) -> Dict[str, Any]:
                 "error": f"Invalid action: {action}",
                 "valid_actions": list(action_mapping.keys()),
                 "status": "invalid_action",
-                "descriptions": action_mapping
+                "descriptions": action_mapping,
             }
 
         # Simulate Playwright operations for MCP interface
@@ -746,7 +789,7 @@ def playwright_mcp(action: str, **kwargs) -> Dict[str, Any]:
             if not url:
                 return {
                     "error": "URL required for navigate action",
-                    "status": "missing_parameter"
+                    "status": "missing_parameter",
                 }
 
             return {
@@ -756,7 +799,7 @@ def playwright_mcp(action: str, **kwargs) -> Dict[str, Any]:
                 "message": f"Successfully navigated to {url}",
                 "playwright_version": "simulated",
                 "mcp_interface": "Playwright automation with MCP-style structuring",
-                "browser_state": "ready"
+                "browser_state": "ready",
             }
 
         elif action == "screenshot":
@@ -767,7 +810,7 @@ def playwright_mcp(action: str, **kwargs) -> Dict[str, Any]:
                 "full_page": kwargs.get("full_page", False),
                 "message": "Screenshot captured successfully",
                 "playwright_version": "simulated",
-                "mcp_interface": "Playwright automation with MCP-style structuring"
+                "mcp_interface": "Playwright automation with MCP-style structuring",
             }
 
         else:
@@ -778,7 +821,7 @@ def playwright_mcp(action: str, **kwargs) -> Dict[str, Any]:
                 "message": f"Playwright {action} action completed",
                 "playwright_version": "simulated",
                 "mcp_interface": "Playwright automation with MCP-style structuring",
-                "note": "This is a simulated response - full implementation requires playwright package"
+                "note": "This is a simulated response - full implementation requires playwright package",
             }
 
     except Exception as e:
@@ -787,7 +830,7 @@ def playwright_mcp(action: str, **kwargs) -> Dict[str, Any]:
             "error": str(e),
             "status": "failed",
             "action": action,
-            "fallback_message": "Error occurred during Playwright operation"
+            "fallback_message": "Error occurred during Playwright operation",
         }
 
 
@@ -806,8 +849,7 @@ def time_utilities_mcp(operation: str, **kwargs) -> Dict[str, Any]:
         Dict containing time operation results
     """
     try:
-        from datetime import datetime, timezone, timedelta
-        import time
+        from datetime import datetime, timedelta, timezone
 
         operation_mapping = {
             "current": "Get current time",
@@ -816,7 +858,7 @@ def time_utilities_mcp(operation: str, **kwargs) -> Dict[str, Any]:
             "parse": "Parse datetime string",
             "schedule": "Calculate future/past times",
             "timestamp": "Unix timestamp operations",
-            "duration": "Calculate time durations"
+            "duration": "Calculate time durations",
         }
 
         if operation not in operation_mapping:
@@ -824,7 +866,7 @@ def time_utilities_mcp(operation: str, **kwargs) -> Dict[str, Any]:
                 "error": f"Invalid operation: {operation}",
                 "valid_operations": list(operation_mapping.keys()),
                 "status": "invalid_operation",
-                "descriptions": operation_mapping
+                "descriptions": operation_mapping,
             }
 
         if operation == "current":
@@ -841,13 +883,13 @@ def time_utilities_mcp(operation: str, **kwargs) -> Dict[str, Any]:
                     "iso": now.isoformat(),
                     "human": now.strftime("%Y-%m-%d %H:%M:%S UTC"),
                     "date_only": now.strftime("%Y-%m-%d"),
-                    "time_only": now.strftime("%H:%M:%S")
+                    "time_only": now.strftime("%H:%M:%S"),
                 },
                 "timezone_info": {
                     "utc_offset": str(local_now.astimezone().utcoffset()),
-                    "timezone_name": str(local_now.astimezone().tzinfo)
+                    "timezone_name": str(local_now.astimezone().tzinfo),
                 },
-                "mcp_interface": "Time utilities with MCP-style structuring"
+                "mcp_interface": "Time utilities with MCP-style structuring",
             }
 
         elif operation == "timestamp":
@@ -860,7 +902,7 @@ def time_utilities_mcp(operation: str, **kwargs) -> Dict[str, Any]:
                     "timestamp": timestamp,
                     "datetime": dt.isoformat(),
                     "human_readable": dt.strftime("%Y-%m-%d %H:%M:%S UTC"),
-                    "mcp_interface": "Time utilities with MCP-style structuring"
+                    "mcp_interface": "Time utilities with MCP-style structuring",
                 }
             else:
                 # Return current timestamp
@@ -870,7 +912,7 @@ def time_utilities_mcp(operation: str, **kwargs) -> Dict[str, Any]:
                     "operation": operation,
                     "current_timestamp": int(now.timestamp()),
                     "datetime": now.isoformat(),
-                    "mcp_interface": "Time utilities with MCP-style structuring"
+                    "mcp_interface": "Time utilities with MCP-style structuring",
                 }
 
         elif operation == "format":
@@ -880,12 +922,12 @@ def time_utilities_mcp(operation: str, **kwargs) -> Dict[str, Any]:
             if not dt_string:
                 return {
                     "error": "datetime parameter required for format operation",
-                    "status": "missing_parameter"
+                    "status": "missing_parameter",
                 }
 
             try:
                 # Try to parse the datetime string
-                dt = datetime.fromisoformat(dt_string.replace('Z', '+00:00'))
+                dt = datetime.fromisoformat(dt_string.replace("Z", "+00:00"))
                 formatted = dt.strftime(format_string)
 
                 return {
@@ -894,13 +936,13 @@ def time_utilities_mcp(operation: str, **kwargs) -> Dict[str, Any]:
                     "input_datetime": dt_string,
                     "format_string": format_string,
                     "formatted_result": formatted,
-                    "mcp_interface": "Time utilities with MCP-style structuring"
+                    "mcp_interface": "Time utilities with MCP-style structuring",
                 }
             except ValueError as e:
                 return {
                     "error": f"Invalid datetime format: {e}",
                     "status": "parse_error",
-                    "input": dt_string
+                    "input": dt_string,
                 }
 
         elif operation == "schedule":
@@ -910,7 +952,7 @@ def time_utilities_mcp(operation: str, **kwargs) -> Dict[str, Any]:
 
             if base_time:
                 try:
-                    dt = datetime.fromisoformat(base_time.replace('Z', '+00:00'))
+                    dt = datetime.fromisoformat(base_time.replace("Z", "+00:00"))
                 except ValueError:
                     dt = datetime.now(timezone.utc)
             else:
@@ -926,7 +968,7 @@ def time_utilities_mcp(operation: str, **kwargs) -> Dict[str, Any]:
                 "offset_hours": offset_hours,
                 "scheduled_time": scheduled_time.isoformat(),
                 "human_readable": scheduled_time.strftime("%Y-%m-%d %H:%M:%S UTC"),
-                "mcp_interface": "Time utilities with MCP-style structuring"
+                "mcp_interface": "Time utilities with MCP-style structuring",
             }
 
         else:
@@ -936,7 +978,7 @@ def time_utilities_mcp(operation: str, **kwargs) -> Dict[str, Any]:
                 "parameters": kwargs,
                 "message": f"Time utility {operation} operation completed",
                 "mcp_interface": "Time utilities with MCP-style structuring",
-                "note": "Additional time operations can be implemented as needed"
+                "note": "Additional time operations can be implemented as needed",
             }
 
     except Exception as e:
@@ -945,7 +987,7 @@ def time_utilities_mcp(operation: str, **kwargs) -> Dict[str, Any]:
             "error": str(e),
             "status": "failed",
             "operation": operation,
-            "fallback_message": "Error occurred during time utility operation"
+            "fallback_message": "Error occurred during time utility operation",
         }
 
 
@@ -984,7 +1026,9 @@ def list_available_mcp_servers() -> Dict[str, Any]:
             "firecrawl": {
                 "package": "firecrawl-api",
                 "type": "api_direct",
-                "status": "ready" if os.getenv("FIRECRAWL_API_KEY") else "needs_api_key",
+                "status": "ready"
+                if os.getenv("FIRECRAWL_API_KEY")
+                else "needs_api_key",
                 "description": "Advanced web scraping and crawling",
             },
             "playwright": {
@@ -1019,7 +1063,12 @@ def list_available_mcp_servers() -> Dict[str, Any]:
     return {
         "available_servers": servers,
         "total_servers": sum(len(tier.keys()) for tier in servers.values()),
-        "ready_servers": sum(1 for tier in servers.values() for server in tier.values() if server["status"] == "ready"),
+        "ready_servers": sum(
+            1
+            for tier in servers.values()
+            for server in tier.values()
+            if server["status"] == "ready"
+        ),
         "implementation_status": "Phase 6A in progress",
     }
 
@@ -1036,7 +1085,9 @@ def get_mcp_integration_status() -> Dict[str, Any]:
     """
     # Check authentication status for each MCP server
     brave_api_key = os.getenv("BRAVE_API_KEY")
-    github_token = os.getenv("GITHUB_TOKEN") or os.getenv("GITHUB_PERSONAL_ACCESS_TOKEN")
+    github_token = os.getenv("GITHUB_TOKEN") or os.getenv(
+        "GITHUB_PERSONAL_ACCESS_TOKEN"
+    )
 
     # Calculate readiness metrics
     framework_complete = True

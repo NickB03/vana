@@ -43,7 +43,7 @@ def web_search(query: str, max_results: int = 5) -> str:
     """🌐 Search the web for current information with enhanced data extraction."""
     try:
         import requests
-        
+
         api_key = os.getenv("BRAVE_API_KEY")
         if not api_key:
             return json.dumps({"error": "Brave API key not configured"}, indent=2)
@@ -51,7 +51,7 @@ def web_search(query: str, max_results: int = 5) -> str:
         url = "https://api.search.brave.com/res/v1/web/search"
         headers = {"X-Subscription-Token": api_key}
         params = {
-            "q": query, 
+            "q": query,
             "count": min(max_results, 10),
             "extra_snippets": True,  # Enable additional excerpts
             "summary": True,         # Enable AI summary
@@ -61,11 +61,11 @@ def web_search(query: str, max_results: int = 5) -> str:
         response = requests.get(url, headers=headers, params=params, timeout=10)
         if response.status_code == 200:
             data = response.json()
-            
+
             # Extract enhanced results with rich data
             results = []
             web_results = data.get("web", {}).get("results", [])
-            
+
             for result in web_results[:max_results]:
                 enhanced_result = {
                     "title": result.get("title", ""),
@@ -78,7 +78,7 @@ def web_search(query: str, max_results: int = 5) -> str:
                     "relevance_score": result.get("profile", {}).get("score", 0),
                 }
                 results.append(enhanced_result)
-            
+
             # Add infobox data if available
             response_data = {
                 "query": query,
@@ -87,7 +87,7 @@ def web_search(query: str, max_results: int = 5) -> str:
                 "faq": data.get("faq", {}),
                 "summarizer": data.get("summarizer", {}),
             }
-            
+
             logger.info(f"Enhanced web search completed: {len(results)} results")
             return json.dumps(response_data, indent=2)
         else:
@@ -107,19 +107,19 @@ For time/weather queries, prioritize structured data:
 def _prioritize_structured_data(query: str, data: dict) -> dict:
     """Prioritize structured data for specific query types."""
     query_lower = query.lower()
-    
+
     # Time queries - prioritize infobox and direct answers
     if any(word in query_lower for word in ["time", "clock", "hour", "minute"]):
         if "infobox" in data and data["infobox"]:
             # Extract time from infobox if available
             pass
-    
+
     # Weather queries - prioritize infobox and FAQ
     if any(word in query_lower for word in ["weather", "temperature", "rain", "snow", "forecast"]):
         if "infobox" in data and data["infobox"]:
             # Extract weather from infobox if available
             pass
-    
+
     return data
 ```
 

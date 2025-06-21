@@ -159,7 +159,7 @@
 ### **✅ Google Cloud Run Deployment**
 **Platform**: Google Cloud Run (serverless containers)
 **Environment**: Python 3.13+ with Poetry dependency management
-**Services**: 
+**Services**:
 - Development: `https://vana-dev-960076421399.us-central1.run.app`
 - Production: `https://vana-prod-960076421399.us-central1.run.app`
 
