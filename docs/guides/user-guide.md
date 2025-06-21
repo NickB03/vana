@@ -288,75 +288,44 @@ Monitor your requests:
 3. **Contact Support** - Create an issue on GitHub
 4. **Community Resources** - Check discussions and forums
 
-## 🧠 AI Agent Memory Bank Structure (For Development Process)
+## 🏗️ VANA Architecture Overview
 
-**Note:** This Memory Bank is **not part of VANA's operational system**. It's a persistent knowledge storage system used by AI development agents (like Claude) to maintain context between sessions when working on the VANA project.
+VANA is built as a multi-agent AI system using Google's Agent Development Kit (ADK). Here's how the system is organized:
 
-The Memory Bank is located at `/Users/nick/Development/vana/memory-bank/` and is organized into 6 logical categories:
+### 📁 Core Components
 
-### 📁 Directory Structure
+#### **Agents** - Specialized AI Agents
+- **VANA Root Agent** - Main orchestrator and coordinator
+- **Specialist Agents** - Domain-specific expertise (code, data science, workflows)
+- **Sub-Agents** - Focused task execution
 
-#### **00-core/** - Essential Project Files
-- `activeContext.md` - Current work state and immediate priorities
-- `progress.md` - Project progress tracking and milestones
-- `projectbrief.md` - Project goals, scope, and requirements
-- `productContext.md` - Problem context and solution vision
-- `systemPatterns.md` - Architecture patterns and design decisions
-- `techContext.md` - Technical environment and constraints
-- `memory-bank-index.md` - Master navigation file
+#### **Tools** - Extensible Functionality
+- **File Operations** - Read, write, and manage files
+- **Search Capabilities** - Web search, knowledge base, vector search
+- **Agent Coordination** - Multi-agent workflow management
+- **System Integration** - Health monitoring, task management
 
-#### **01-active/** - Current Work
-- Current task instructions and agent assignments
-- Active feedback and resolution items
-- Immediate priorities and blockers
-- Work-in-progress documentation
+#### **Deployment** - Cloud-Native Architecture
+- **Google Cloud Run** - Scalable container deployment
+- **FastAPI** - High-performance API framework
+- **ADK Integration** - Google's agent development platform
 
-#### **02-phases/** - Phase Completion Documentation
-- Week 1-5 handoff documentation
-- Phase completion summaries (Phase 1-6)
-- Major milestone achievements
-- Transition documentation between phases
+### 🎯 Key Features
 
-#### **03-technical/** - Technical Documentation
-- Implementation plans and strategies
-- Architecture documentation and patterns
-- System design specifications
-- Technical optimization plans
+**Multi-Agent Coordination:**
+- Agents can delegate tasks to specialized sub-agents
+- Intelligent task routing based on capabilities
+- Shared state management across agent interactions
 
-#### **04-completed/** - Finished Work
-- Completed handoff documentation
-- Success summaries and achievements
-- Resolved issues and their solutions
-- Validated implementations
+**Extensible Tool System:**
+- 50+ built-in tools for common operations
+- Easy integration of new tools and capabilities
+- ADK-compatible tool framework
 
-#### **05-archive/** - Historical Context
-- Critical recovery documentation
-- System repair history
-- Emergency fixes and their context
-- Lessons learned from major issues
-
-### 🎯 Navigation Guide (For AI Development Agents)
-
-**For New AI Agents (like Claude):**
-1. Start with `00-core/` directory for essential project information
-2. Check `01-active/` for current tasks and priorities
-3. Review `02-phases/` for historical context and completed work
-4. Study `03-technical/` for implementation details and patterns
-
-**For Ongoing Development Work:**
-1. Always check `00-core/activeContext.md` for current project status
-2. Update `00-core/progress.md` with achievements and milestones
-3. Use `01-active/` for immediate task management and handoffs
-4. Reference `00-core/systemPatterns.md` for technical decisions and architecture
-
-### 📋 Memory Bank Best Practices (For AI Agents)
-
-- **Always read core files first** before starting any development task
-- **Update activeContext.md and progress.md** after major changes or completions
-- **Use the master index** (`00-core/memory-bank-index.md`) for efficient navigation
-- **Organize new files** into appropriate categories based on content type
-- **Cross-reference related documents** for better context and continuity
-- **Document handoffs clearly** when transitioning between AI agents or sessions
+**Production Ready:**
+- Comprehensive testing framework (90%+ success rate)
+- Cloud deployment with monitoring
+- Security and performance optimizations
 
 ---
 
@@ -400,4 +369,3 @@ a predictive model with performance metrics and recommendations"
 **Ready to get started?** Try your first request and discover the power of VANA's multi-agent AI system!
 
 **Need more help?** Check out our [API Reference](api-reference.md) or [Developer Guide](developer-guide.md) for technical details.
-

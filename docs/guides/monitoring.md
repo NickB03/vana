@@ -1,8 +1,8 @@
 # 📊 Monitoring Guide
 
-This guide explains how to monitor the VANA system and interpret the metrics exposed by the dashboard.
+This guide explains how to monitor the VANA system using built-in health checks and logging.
 
-VANA ships with a small monitoring backend located in [`dashboard/monitoring`](../../dashboard/monitoring/README.md). It provides health checks and metrics for the core services.
+VANA includes comprehensive monitoring capabilities through health endpoints, logging, and performance metrics.
 
 ## Key Metrics
 
@@ -11,12 +11,28 @@ VANA ships with a small monitoring backend located in [`dashboard/monitoring`](.
 - **Tool Usage** — frequency of tool execution
 - **Resource Utilization** — CPU and memory usage
 
-## Dashboard Components
+## Monitoring Methods
 
-- **Health Checks** — periodic checks for each component
-- **Alert Manager** — stores and exposes alert information
-- **Metrics Endpoints** — JSON endpoints for current metrics
-- **Streamlit Dashboard** — optional UI for real-time charts
+### Health Endpoints
+```bash
+# Check overall system health
+curl https://your-vana-deployment/health
 
-Refer to the [dashboard monitoring README](../../dashboard/monitoring/README.md) for implementation details and advanced configuration.
+# Test agent functionality
+curl -X POST https://your-vana-deployment/run \
+  -d '{"newMessage": {"parts": [{"text": "Use adk_get_health_status to check system health"}]}}'
+```
 
+### Logging
+```bash
+# Local development logs
+tail -f logs/vana.log
+
+# Cloud Run logs
+gcloud logging read "resource.type=cloud_run_revision AND resource.labels.service_name=vana-prod"
+```
+
+### Performance Monitoring
+- Monitor response times through Cloud Run metrics
+- Track agent success rates through application logs
+- Use Google Cloud Monitoring for infrastructure metrics
