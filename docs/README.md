@@ -7,9 +7,9 @@ Welcome to the comprehensive documentation for **VANA** - an advanced multi-agen
 ## 📚 Documentation Structure
 
 ### 🏗️ Architecture & Design
-- **[🎯 System Overview](architecture/system-overview.md)** - Complete system architecture with verified 7-agent design
-- **[🤖 Agent Reference](agents/agent-reference.md)** - Complete documentation for all 7 discoverable agents
-- **[🛠️ Tool Reference](tools/tool-reference.md)** - Complete documentation for 19 core tools + conditional tools
+- **[🎯 System Overview](architecture/system-overview.md)** - Complete system architecture with multi-agent design
+- **[🤖 Agent Reference](agents/agent-reference.md)** - Complete documentation for all discoverable agents
+- **[🛠️ Tool Reference](tools/tool-reference.md)** - Complete documentation for core tools and conditional tools
 - **[📊 Visual Diagrams](assets/diagrams/README.md)** - Interactive architecture diagrams and flowcharts
 - **[Agent Interaction Patterns](architecture/agent-patterns.md)** - Agent coordination and delegation patterns
 - **[Agent System](architecture/agent-system.md)** - Detailed agent architecture documentation
@@ -63,12 +63,12 @@ Welcome to the comprehensive documentation for **VANA** - an advanced multi-agen
 ### 🚀 For New Users
 1. **[🏁 Quick Start](getting-started/quick-start.md)** - Get VANA running in 5 minutes
 2. **[👤 User Guide](guides/user-guide.md)** - End-user documentation and tutorials
-3. **[🎯 System Overview](architecture/system-overview.md)** - Understand the 7-agent architecture
+3. **[🎯 System Overview](architecture/system-overview.md)** - Understand the multi-agent architecture
 
 ### 👨‍💻 For Developers
 1. **[🛠️ Developer Guide](guides/developer-guide.md)** - Development setup and best practices
 2. **[🤖 Agent Reference](agents/agent-reference.md)** - Complete agent documentation
-3. **[🛠️ Tool Reference](tools/tool-reference.md)** - All 19 core tools + conditional tools
+3. **[🛠️ Tool Reference](tools/tool-reference.md)** - All core tools and conditional tools
 4. **[📡 API Reference](api/agent-api.md)** - Complete API documentation
 5. **[📊 Visual Diagrams](assets/diagrams/README.md)** - Architecture diagrams and flows
 
@@ -86,8 +86,8 @@ Welcome to the comprehensive documentation for **VANA** - an advanced multi-agen
 ## 📊 System Status
 
 - **Status**: ✅ Operational
-- **Agent Count**: 7 discoverable agents (3 real + 4 proxy)
-- **Tool Count**: 19 core tools + conditional tools
+- **Agent Count**: Discoverable multi-agent system (real agents + proxy pattern)
+- **Tool Count**: Core tools plus conditional tools
 - **Architecture**: Simplified multi-agent with proxy pattern
 - **Deployment**: Google Cloud Run (dev & prod environments)
 - **Memory Systems**: Vertex AI RAG corpus, ADK session management
@@ -111,4 +111,3 @@ To contribute to VANA documentation:
 - **API Reference**: Complete API documentation with examples
 - **Community**: Connect with other VANA users and developers
 - **Troubleshooting**: Common issues and solutions guide
-

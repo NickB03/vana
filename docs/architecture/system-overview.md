@@ -1,26 +1,26 @@
 # 🏗️ VANA System Architecture
 
 ## 📊 Overview
-VANA is an advanced multi-agent AI system built on Google's Agent Development Kit (ADK), featuring **7 discoverable agents** (3 real + 4 proxy) with **19 core tools** plus conditional tools. The system uses a simplified multi-agent architecture with proxy pattern for optimal performance and maintainability.
+VANA is an advanced multi-agent AI system built on Google's Agent Development Kit (ADK), featuring a discoverable multi-agent system with core tools plus conditional tools. The system uses a simplified multi-agent architecture with proxy pattern for optimal performance and maintainability.
 
 > **📊 Visual Architecture**: See our [complete system architecture diagram](../assets/diagrams/system-architecture.md) for a visual overview.
 
-## ✅ Verified System Status (2025-06-15)
-- **Agents**: 7 discoverable (3 real + 4 proxy)
-- **Tools**: 19 core + conditional tools
+## ✅ Verified System Status (2025-06-21)
+- **Agents**: Discoverable multi-agent system (real agents + proxy pattern)
+- **Tools**: Core tools plus conditional tools
 - **Architecture**: Simplified multi-agent with proxy pattern
 - **Deployment**: Google Cloud Run (dev & prod environments)
 - **Status**: ✅ Operational
 
 ## 🔧 Core Components
 
-### 🤖 Agent Architecture (7 Discoverable)
+### 🤖 Agent Architecture
 
 > **🔄 Agent Interactions**: See our [agent interaction flow diagrams](../assets/diagrams/agent-interactions.md) for detailed coordination patterns.
 
-#### Real Agents (3)
+#### Real Agents
 1. **VANA Orchestrator** (`agents/vana/team.py`)
-   - Central coordinator with 19 core tools + conditional tools
+   - Central coordinator with core tools plus conditional tools
    - Model: gemini-2.0-flash-exp
    - Capabilities: File operations, search, coordination, task analysis, workflows
 
@@ -34,7 +34,7 @@ VANA is an advanced multi-agent AI system built on Google's Agent Development Ki
    - Leverages Code Execution Specialist for secure Python execution
    - Statistical computing and data processing workflows
 
-#### Proxy Agents (4) - Discovery Pattern
+#### Proxy Agents - Discovery Pattern
 - **Memory Agent** - Delegates to VANA (`agents/memory/__init__.py`)
 - **Orchestration Agent** - Delegates to VANA (`agents/orchestration/__init__.py`)
 - **Specialists Agent** - Delegates to VANA (`agents/specialists/__init__.py`)
@@ -44,19 +44,19 @@ VANA is an advanced multi-agent AI system built on Google's Agent Development Ki
 
 > **🛠️ Tool Organization**: See our [tool organization diagrams](../assets/diagrams/tool-organization.md) for visual breakdown of all tools.
 
-VANA provides **19 core tools** always available, plus conditional tools when dependencies are available:
+VANA provides core tools always available, plus conditional tools when dependencies are available:
 
-#### Core Tools (19) - Always Available
-- **File System (4)**: `adk_read_file`, `adk_write_file`, `adk_list_directory`, `adk_file_exists`
-- **Search (3)**: `adk_vector_search`, `adk_web_search`, `adk_search_knowledge`
-- **System (2)**: `adk_echo`, `adk_get_health_status`
-- **Agent Coordination (4)**: `adk_coordinate_task`, `adk_delegate_to_agent`, `adk_get_agent_status`, `adk_transfer_to_agent`
-- **Task Analysis (3)**: `adk_analyze_task`, `adk_match_capabilities`, `adk_classify_task`
-- **Workflow Management (8)**: Complete workflow lifecycle management tools
+#### Core Tools - Always Available
+- **File System Tools**: `adk_read_file`, `adk_write_file`, `adk_list_directory`, `adk_file_exists`
+- **Search Tools**: `adk_vector_search`, `adk_web_search`, `adk_search_knowledge`
+- **System Tools**: `adk_echo`, `adk_get_health_status`
+- **Agent Coordination Tools**: `adk_coordinate_task`, `adk_delegate_to_agent`, `adk_get_agent_status`, `adk_transfer_to_agent`
+- **Task Analysis Tools**: `adk_analyze_task`, `adk_match_capabilities`, `adk_classify_task`
+- **Workflow Management Tools**: Complete workflow lifecycle management tools
 
-#### Conditional Tools (Variable Count)
+#### Conditional Tools
 - **Specialist Tools**: Available when `agents.specialists.agent_tools` imports successfully
-- **Orchestration Tools (6)**: Advanced task complexity analysis and specialist routing
+- **Orchestration Tools**: Advanced task complexity analysis and specialist routing
 
 #### Tool Architecture
 - **Standardized Interface**: All tools follow ADK FunctionTool pattern
@@ -81,17 +81,17 @@ graph TB
         VS[Vector Search]
         RAG[RAG Corpus]
     end
-    
+
     subgraph "Storage Layer"
         VAI[Vertex AI Embeddings]
         ME[Matching Engine]
         CS[Cloud Storage]
     end
-    
+
     SM --> KB
     KB --> VS
     VS --> RAG
-    
+
     VS --> VAI
     RAG --> ME
     KB --> CS
@@ -131,7 +131,7 @@ sequenceDiagram
     participant Specialist
     participant Tools
     participant Memory
-    
+
     User->>ADK: Send Request
     ADK->>VANA: Route to Orchestrator
     VANA->>Memory: Check Context
@@ -166,14 +166,14 @@ graph TB
         AL --> VL
         VL --> SL
     end
-    
+
     subgraph "Security Components"
         AC[Access Control]
         IV[Input Validation]
         SE[Sandbox Execution]
         AM[Audit Monitoring]
     end
-    
+
     AL --> AC
     VL --> IV
     SL --> SE
@@ -237,10 +237,8 @@ Response: {
 GET /info
 Response: {
   "system_status": "operational",
-  "discoverable_agents": 7,
-  "real_agents": 3,
-  "proxy_agents": 4,
-  "core_tools": 19,
+  "agent_architecture": "multi-agent with proxy pattern",
+  "tool_categories": ["file_system", "search", "system", "coordination", "task_analysis", "workflow_management"],
   "conditional_tools": "variable",
   "memory_systems": ["adk_session", "vertex_ai_rag", "vector_search"]
 }

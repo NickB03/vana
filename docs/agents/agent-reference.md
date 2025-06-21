@@ -1,12 +1,12 @@
 # 🤖 VANA Agent Reference
 
-Complete reference documentation for all 7 discoverable agents in the VANA system.
+Complete reference documentation for all discoverable agents in the VANA multi-agent system.
 
 ## 📊 Agent Overview
 
 | Agent | Type | Status | Location | Description |
 |-------|------|--------|----------|-------------|
-| **VANA** | Real | ✅ Active | `agents/vana/team.py` | Main orchestrator with 19 core tools |
+| **VANA** | Real | ✅ Active | `agents/vana/team.py` | Main orchestrator with comprehensive toolset |
 | **Code Execution** | Real | ✅ Active | `agents/code_execution/specialist.py` | Secure multi-language code execution |
 | **Data Science** | Real | ✅ Active | `agents/data_science/specialist.py` | Data analysis and machine learning |
 | **Memory** | Proxy | ✅ Active | `agents/memory/__init__.py` | Delegates to VANA |
@@ -14,29 +14,29 @@ Complete reference documentation for all 7 discoverable agents in the VANA syste
 | **Specialists** | Proxy | ✅ Active | `agents/specialists/__init__.py` | Delegates to VANA |
 | **Workflows** | Proxy | ✅ Active | `agents/workflows/__init__.py` | Delegates to VANA |
 
-## 🎯 Real Agents (3)
+## 🎯 Real Agents
 
 ### 1. VANA Orchestrator
 
-**File**: `agents/vana/team.py`  
-**Role**: Central coordinator and task router  
-**Model**: gemini-2.0-flash-exp  
-**Status**: ✅ Operational  
+**File**: `agents/vana/team.py`
+**Role**: Central coordinator and task router
+**Model**: gemini-2.0-flash-exp
+**Status**: ✅ Operational
 
 #### Capabilities
 - **Task Coordination**: Central hub for all system operations
-- **Tool Execution**: 19 core tools + conditional tools
+- **Tool Execution**: Core tools plus conditional tools
 - **Agent Delegation**: Intelligent routing to specialist agents
 - **Workflow Management**: Complete workflow lifecycle management
 - **Memory Integration**: Vertex AI RAG corpus and session management
 
-#### Core Tools (19)
-- **File System (4)**: read_file, write_file, list_directory, file_exists
-- **Search (3)**: vector_search, web_search, search_knowledge
-- **System (2)**: echo, get_health_status
-- **Coordination (4)**: coordinate_task, delegate_to_agent, get_agent_status, transfer_to_agent
-- **Task Analysis (3)**: analyze_task, match_capabilities, classify_task
-- **Workflows (8)**: Complete workflow management suite
+#### Core Tools
+- **File System Tools**: adk_read_file, adk_write_file, adk_list_directory, adk_file_exists
+- **Search Tools**: adk_vector_search, adk_web_search, adk_search_knowledge
+- **System Tools**: adk_echo, adk_get_health_status
+- **Coordination Tools**: adk_coordinate_task, adk_delegate_to_agent, adk_get_agent_status, adk_transfer_to_agent
+- **Task Analysis Tools**: adk_analyze_task, adk_match_capabilities, adk_classify_task
+- **Workflow Management Tools**: Complete workflow management suite
 
 #### Usage Patterns
 - **Primary Entry Point**: All user requests initially handled by VANA
@@ -46,9 +46,9 @@ Complete reference documentation for all 7 discoverable agents in the VANA syste
 
 ### 2. Code Execution Specialist
 
-**File**: `agents/code_execution/specialist.py`  
-**Role**: Secure code execution across multiple programming languages  
-**Status**: ✅ Operational  
+**File**: `agents/code_execution/specialist.py`
+**Role**: Secure code execution across multiple programming languages
+**Status**: ✅ Operational
 
 #### Capabilities
 - **Multi-Language Support**: Python, JavaScript, Shell execution
@@ -71,9 +71,9 @@ Complete reference documentation for all 7 discoverable agents in the VANA syste
 
 ### 3. Data Science Specialist
 
-**File**: `agents/data_science/specialist.py`  
-**Role**: Data analysis, visualization, and machine learning capabilities  
-**Status**: ✅ Operational  
+**File**: `agents/data_science/specialist.py`
+**Role**: Data analysis, visualization, and machine learning capabilities
+**Status**: ✅ Operational
 
 #### Capabilities
 - **Data Analysis**: Statistical analysis and data exploration
@@ -94,7 +94,7 @@ Complete reference documentation for all 7 discoverable agents in the VANA syste
 - **ML Workflows**: End-to-end machine learning pipelines
 - **Statistical Computing**: Advanced statistical operations
 
-## 🔄 Proxy Agents (4)
+## 🔄 Proxy Agents
 
 ### Proxy Pattern Architecture
 
@@ -106,31 +106,31 @@ All proxy agents follow the same pattern:
 
 ### 4. Memory Agent
 
-**File**: `agents/memory/__init__.py`  
-**Implementation**: `MemoryAgentProxy` class  
-**Purpose**: Memory management and knowledge operations  
-**Delegation**: All requests → VANA orchestrator  
+**File**: `agents/memory/__init__.py`
+**Implementation**: `MemoryAgentProxy` class
+**Purpose**: Memory management and knowledge operations
+**Delegation**: All requests → VANA orchestrator
 
 ### 5. Orchestration Agent
 
-**File**: `agents/orchestration/__init__.py`  
-**Implementation**: `OrchestrationAgentProxy` class  
-**Purpose**: Task orchestration and workflow coordination  
-**Delegation**: All requests → VANA orchestrator  
+**File**: `agents/orchestration/__init__.py`
+**Implementation**: `OrchestrationAgentProxy` class
+**Purpose**: Task orchestration and workflow coordination
+**Delegation**: All requests → VANA orchestrator
 
 ### 6. Specialists Agent
 
-**File**: `agents/specialists/__init__.py`  
-**Implementation**: `SpecialistAgentProxy` class  
-**Purpose**: Specialist agent coordination  
-**Delegation**: All requests → VANA orchestrator  
+**File**: `agents/specialists/__init__.py`
+**Implementation**: `SpecialistAgentProxy` class
+**Purpose**: Specialist agent coordination
+**Delegation**: All requests → VANA orchestrator
 
 ### 7. Workflows Agent
 
-**File**: `agents/workflows/__init__.py`  
-**Implementation**: `WorkflowsAgentProxy` class  
-**Purpose**: Workflow management and execution  
-**Delegation**: All requests → VANA orchestrator  
+**File**: `agents/workflows/__init__.py`
+**Implementation**: `WorkflowsAgentProxy` class
+**Purpose**: Workflow management and execution
+**Delegation**: All requests → VANA orchestrator
 
 ## 🔧 Agent Coordination Patterns
 

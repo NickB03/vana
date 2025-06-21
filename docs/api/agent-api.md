@@ -16,8 +16,8 @@ GET /list-apps
     {
       "name": "vana",
       "description": "Main orchestration agent for task coordination and delegation",
-      "tools": ["echo", "search_knowledge", "coordinate_task"],
-      "capabilities": ["orchestration", "delegation", "memory_management"],
+      "tools": ["adk_echo", "adk_search_knowledge", "adk_coordinate_task", "adk_read_file", "adk_web_search"],
+      "capabilities": ["orchestration", "delegation", "file_operations", "search", "workflow_management"],
       "status": "active"
     },
     {
@@ -36,14 +36,36 @@ GET /list-apps
     },
     {
       "name": "memory",
-      "description": "Intelligent memory management and information retrieval",
-      "tools": ["store_memory", "search_memory", "get_context"],
-      "capabilities": ["storage", "retrieval", "context_management"],
+      "description": "Proxy agent that delegates to VANA orchestrator",
+      "tools": ["delegates_to_vana"],
+      "capabilities": ["proxy_delegation"],
+      "status": "active"
+    },
+    {
+      "name": "orchestration",
+      "description": "Proxy agent that delegates to VANA orchestrator",
+      "tools": ["delegates_to_vana"],
+      "capabilities": ["proxy_delegation"],
+      "status": "active"
+    },
+    {
+      "name": "specialists",
+      "description": "Proxy agent that delegates to VANA orchestrator",
+      "tools": ["delegates_to_vana"],
+      "capabilities": ["proxy_delegation"],
+      "status": "active"
+    },
+    {
+      "name": "workflows",
+      "description": "Proxy agent that delegates to VANA orchestrator",
+      "tools": ["delegates_to_vana"],
+      "capabilities": ["proxy_delegation"],
       "status": "active"
     }
   ],
-  "total_agents": 24,
-  "active_agents": 7,
+  "architecture": "multi-agent with proxy pattern",
+  "real_agents": 3,
+  "proxy_agents": 4,
   "system_status": "operational"
 }
 ```
@@ -61,29 +83,38 @@ GET /agents/{agent_name}
 **Response:**
 ```json
 {
-  "name": "code_execution",
-  "description": "Secure code execution specialist with multi-language support",
-  "version": "1.2.0",
+  "name": "vana",
+  "description": "Main orchestration agent for task coordination and delegation",
+  "version": "2.0.0",
   "tools": [
     {
-      "name": "execute_code",
-      "description": "Execute code in secure sandbox environment",
+      "name": "adk_read_file",
+      "description": "Read file contents from the file system",
       "parameters": {
-        "code": {"type": "string", "required": true},
-        "language": {"type": "string", "enum": ["python", "javascript", "shell"]},
-        "timeout": {"type": "integer", "default": 30}
+        "file_path": {"type": "string", "required": true}
+      }
+    },
+    {
+      "name": "adk_web_search",
+      "description": "Search the web for information",
+      "parameters": {
+        "query": {"type": "string", "required": true},
+        "max_results": {"type": "integer", "default": 5}
+      }
+    },
+    {
+      "name": "adk_coordinate_task",
+      "description": "Coordinate tasks between agents",
+      "parameters": {
+        "task_description": {"type": "string", "required": true},
+        "target_agent": {"type": "string", "required": false}
       }
     }
   ],
-  "capabilities": ["python", "javascript", "shell", "security_validation"],
-  "resource_limits": {
-    "memory": "512MB",
-    "cpu": "1 core",
-    "execution_time": "30 seconds"
-  },
-  "security_features": ["sandbox_isolation", "input_validation", "output_sanitization"],
+  "capabilities": ["file_operations", "search", "coordination", "task_analysis", "workflow_management"],
+  "tool_categories": ["file_system", "search", "system", "coordination", "task_analysis", "workflow_management"],
   "status": "active",
-  "last_updated": "2025-06-12T15:30:00Z"
+  "last_updated": "2025-06-21T15:30:00Z"
 }
 ```
 
@@ -104,9 +135,7 @@ POST /agents/{agent_name}/tools/{tool_name}
 ```json
 {
   "parameters": {
-    "code": "print('Hello, VANA!')",
-    "language": "python",
-    "timeout": 30
+    "file_path": "/path/to/file.txt"
   },
   "context": {
     "session_id": "session_123",
@@ -120,15 +149,15 @@ POST /agents/{agent_name}/tools/{tool_name}
 {
   "success": true,
   "result": {
-    "output": "Hello, VANA!\n",
-    "execution_time": 0.123,
-    "memory_usage": 45.6,
-    "exit_code": 0
+    "content": "File contents here...",
+    "file_size": 1024,
+    "encoding": "utf-8",
+    "last_modified": "2025-06-21T10:00:00Z"
   },
   "metadata": {
-    "agent": "code_execution",
-    "tool": "execute_code",
-    "timestamp": "2025-06-12T15:30:00Z",
+    "agent": "vana",
+    "tool": "adk_read_file",
+    "timestamp": "2025-06-21T15:30:00Z",
     "execution_id": "exec_789"
   }
 }
@@ -147,19 +176,18 @@ POST /agents/batch-execute
   "execution_mode": "sequential",
   "tasks": [
     {
-      "agent": "data_science",
-      "tool": "analyze_data",
+      "agent": "vana",
+      "tool": "adk_read_file",
       "parameters": {
-        "data": "dataset.csv",
-        "analysis_type": "descriptive"
+        "file_path": "dataset.csv"
       }
     },
     {
-      "agent": "data_science",
-      "tool": "visualize_data",
+      "agent": "vana",
+      "tool": "adk_web_search",
       "parameters": {
-        "data": "dataset.csv",
-        "chart_type": "histogram"
+        "query": "data analysis techniques",
+        "max_results": 3
       }
     }
   ]
@@ -176,16 +204,20 @@ POST /agents/batch-execute
       "task_id": 0,
       "success": true,
       "result": {
-        "summary": "Dataset contains 1000 rows, 5 columns",
-        "statistics": {"mean": 42.5, "std": 12.3}
+        "content": "CSV file contents with 1000 rows, 5 columns",
+        "file_size": 50000,
+        "encoding": "utf-8"
       }
     },
     {
       "task_id": 1,
       "success": true,
       "result": {
-        "chart_url": "/charts/histogram_456.png",
-        "description": "Distribution of values shows normal pattern"
+        "results": [
+          {"title": "Data Analysis Guide", "url": "https://example.com/guide1"},
+          {"title": "Statistical Methods", "url": "https://example.com/guide2"}
+        ],
+        "total_results": 2
       }
     }
   ],

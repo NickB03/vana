@@ -1,387 +1,419 @@
-# VANA Enhanced Testing Framework
+# VANA AI Agent Testing Framework
 
-Comprehensive testing framework for the VANA project with advanced performance benchmarking, security validation, integration testing, and automated CI/CD capabilities.
+**Status:** ✅ ACTIVE - Modern testing infrastructure implemented
+**Last Updated:** 2025-06-21
+**Infrastructure:** Comprehensive test framework with validated components
 
-## 🚀 Features
+## 🎯 Overview
 
-### Performance Testing
-- **Comprehensive Benchmarking**: Response time, memory usage, and throughput measurement
-- **Baseline Management**: Automatic baseline establishment and performance tracking
-- **Regression Detection**: Statistical analysis for performance regression identification
-- **Concurrent Testing**: Multi-agent and concurrent operation performance validation
+Modern, comprehensive testing framework for VANA AI agents built on validated infrastructure components. This framework provides systematic testing for AI agent intelligence, behavior, and reliability using Google ADK patterns.
 
-### Security Testing
-- **OWASP Top 10 Compliance**: Complete coverage of OWASP security vulnerabilities
-- **Code Analysis**: Python, JavaScript, and configuration security validation
-- **Injection Prevention**: Detection of code, SQL, and XSS injection vulnerabilities
-- **Configuration Security**: Hardcoded secret detection and insecure configuration identification
+## 🏗️ Architecture
 
-### Integration Testing
-- **Multi-Agent Workflows**: Agent-to-agent communication and coordination testing
-- **Memory System Integration**: Session, knowledge, and vector search validation
-- **Tool Execution Pipelines**: End-to-end tool chain testing
-- **Error Handling**: Comprehensive error recovery and fallback testing
+### **Core Infrastructure Components (✅ Validated)**
 
-### Automated Testing
-- **CI/CD Integration**: Automated test execution for continuous integration
-- **Comprehensive Reporting**: Detailed test results with metrics and analysis
-- **Test Orchestration**: Coordinated execution of all testing components
-- **Performance Monitoring**: Real-time performance tracking and alerting
+#### **Test Environment Manager**
+- Agent simulation environments with full isolation
+- Multi-agent coordination testing support
+- Environment lifecycle management with cleanup
+- Support for all test types (unit, integration, e2e, performance, security)
+
+#### **Mock Services Manager**
+- Web search service mocking with realistic responses
+- Vector search service mocking with test data
+- Agent coordination service mocking for delegation testing
+- Centralized service management with call history tracking
+
+#### **Test Fixtures Manager**
+- Agent test data creation and management
+- Multi-agent scenario fixture generation
+- Performance and security test configuration fixtures
+- Fixture lifecycle management with cleanup
+
+#### **Performance Monitor**
+- Real-time performance metrics collection
+- Threshold monitoring and alerting
+- System resource tracking (CPU, memory)
+- Request timing and comprehensive reporting
 
 ## 📁 Directory Structure
 
 ```
 tests/
-├── performance/           # Performance benchmarking
-│   ├── performance_suite.py
-│   └── test_agent_performance.py
-├── security/             # Security validation
-│   ├── security_validator.py
-│   └── test_owasp_compliance.py
-├── integration/          # Integration testing
-│   └── test_agent_workflows.py
-├── automated/            # CI/CD automation
-│   └── ci_runner.py
-├── benchmarks/           # Benchmarking framework
-│   ├── benchmark_runner.py
-│   ├── performance_baselines.py
-│   └── regression_detector.py
-└── run_comprehensive_tests.py
+├── framework/            # ✅ Core testing infrastructure (VALIDATED)
+│   ├── test_environment.py      # Agent simulation environments
+│   ├── mock_services.py         # Mock service management
+│   ├── test_fixtures.py         # Test data and fixture management
+│   ├── performance_monitor.py   # Performance monitoring
+│   ├── agent_client.py          # Agent communication client
+│   ├── agent_intelligence_validator.py  # AI intelligence testing
+│   ├── response_quality_analyzer.py     # Response quality analysis
+│   └── test_data_manager.py     # Test scenario management
+├── infrastructure/      # ✅ Infrastructure setup and validation
+│   └── test_infrastructure_setup.py    # Automated setup & validation
+├── test_data/           # Test scenarios and data
+│   ├── scenarios/       # Test scenario definitions
+│   └── comprehensive_test_queries.json
+├── unit/                # Unit tests (Level 1)
+├── integration/         # Integration tests (Level 3)
+├── e2e/                 # End-to-end tests (Level 4)
+├── performance/         # Performance benchmarking
+├── security/            # Security validation
+└── automated/           # Legacy automation scripts
 ```
 
-## 🛠️ Installation & Setup
+## 🛠️ Setup & Validation
 
 ### Prerequisites
 - Python 3.13+
 - Poetry for dependency management
-- pytest for test execution
+- pytest with asyncio support
+- Access to VANA development environment
 
-### Install Dependencies
+### Quick Start
 ```bash
-# Install testing dependencies
+# 1. Install dependencies
 poetry install
 
-# Install additional testing tools (optional)
-poetry add --group dev pytest-asyncio pytest-benchmark pytest-cov
+# 2. Validate infrastructure (REQUIRED FIRST STEP)
+python tests/infrastructure/test_infrastructure_setup.py
+
+# 3. Run tests by category
+pytest -m unit          # Fast unit tests
+pytest -m agent         # Agent intelligence tests
+pytest -m integration   # Multi-agent coordination
+pytest -m e2e           # End-to-end scenarios
 ```
 
-## 🏃 Usage
+### Infrastructure Validation
+**⚠️ IMPORTANT: Always validate infrastructure before running tests**
 
-### Run All Tests
 ```bash
-# Run comprehensive test suite
-python tests/run_comprehensive_tests.py --suite all
+# Validate all infrastructure components
+python tests/infrastructure/test_infrastructure_setup.py
 
-# Run with verbose output
-python tests/run_comprehensive_tests.py --suite all --verbose
+# Expected output:
+# ============================================================
+# TEST INFRASTRUCTURE SETUP RESULTS
+# ============================================================
+# test_environment          ✅ PASS
+# mock_services             ✅ PASS
+# fixture_manager           ✅ PASS
+# performance_monitor       ✅ PASS
+# agent_integration         ✅ PASS
+#
+# Overall Health: HEALTHY
 ```
 
-### Run Specific Test Suites
+### Test Execution by Level
 ```bash
-# Performance tests only
-python tests/run_comprehensive_tests.py --suite performance
+# Level 1: Unit Tests (Fast, isolated)
+pytest -m unit -v
 
-# Security tests only
-python tests/run_comprehensive_tests.py --suite security
+# Level 2: Agent Tests (Single agent intelligence)
+pytest -m agent -v
 
-# Integration tests only
-python tests/run_comprehensive_tests.py --suite integration
+# Level 3: Integration Tests (Multi-agent coordination)
+pytest -m integration -v
 
-# Unit tests only
-python tests/run_comprehensive_tests.py --suite unit
+# Level 4: E2E Tests (Complete workflows)
+pytest -m e2e -v
 ```
 
-### Run Individual Test Categories
+### Specialized Test Categories
 ```bash
+# Security tests
+pytest -m security -v
+
 # Performance benchmarks
-poetry run pytest tests/performance/ -m performance -v
+pytest -m performance -v
 
-# Security validation
-poetry run pytest tests/security/ -m security -v
+# Network integration tests
+pytest -m network -v
 
-# Integration tests
-poetry run pytest tests/integration/ -m integration -v
+# Long-running tests
+pytest -m slow -v
 ```
 
-### CI/CD Integration
-```bash
-# Run CI pipeline
-python tests/automated/ci_runner.py --suite all --output ci-results.json
+## 🧪 Using the Testing Framework
 
-# Run specific CI suite
-python tests/automated/ci_runner.py --suite performance --timeout 300
-```
-
-## 📊 Performance Benchmarking
-
-### Creating Benchmarks
+### Basic Agent Testing
 ```python
-from tests.performance.performance_suite import PerformanceBenchmark
-
-# Create benchmark
-benchmark = PerformanceBenchmark("my_benchmark")
-
-# Measure response time
-def my_function():
-    # Your code here
-    return "result"
-
-metric = benchmark.measure_response_time(my_function)
-print(f"Execution time: {metric.value} {metric.unit}")
-```
-
-### Baseline Management
-```python
-from tests.benchmarks.performance_baselines import BaselineManager
-
-# Initialize baseline manager
-baseline_manager = BaselineManager()
-
-# Establish baseline
-values = [0.1, 0.12, 0.09, 0.11, 0.10]  # Performance measurements
-baseline = baseline_manager.establish_baseline(
-    "agent_response", "execution_time", values, "seconds"
+from tests.framework import (
+    TestEnvironment,
+    EnvironmentConfig,
+    EnvironmentType,
+    create_test_agent_client
 )
 
-# Compare to baseline
-comparison = baseline_manager.compare_to_baseline(
-    "agent_response", "execution_time", 0.15
+# Create test environment
+config = EnvironmentConfig(env_type=EnvironmentType.UNIT)
+test_env = TestEnvironment(config)
+
+# Test agent in isolated environment
+async with test_env.agent_context("vana") as env:
+    client = await create_test_agent_client("vana")
+    response = await client.query("Test message")
+    assert response.status == "success"
+```
+
+### Mock Services Usage
+```python
+from tests.framework import create_mock_service_manager
+
+# Create and start mock services
+mock_manager = create_mock_service_manager()
+await mock_manager.start_all_services()
+
+# Mock services now intercept external calls
+# Your tests run with mocked dependencies
+```
+
+### Performance Monitoring
+```python
+from tests.framework import PerformanceMonitor
+
+# Monitor test performance
+monitor = PerformanceMonitor()
+await monitor.start_monitoring()
+
+monitor.start_request("test_1")
+# ... run test ...
+monitor.end_request("test_1", success=True)
+
+# Generate performance report
+report = monitor.generate_performance_report("my_test")
+```
+
+### Test Fixtures
+```python
+from tests.framework import TestFixtureManager, QueryType
+
+# Create test fixtures
+fixture_manager = TestFixtureManager()
+agent_fixture = fixture_manager.create_agent_test_fixture(
+    "vana", QueryType.FACTUAL, 5
 )
-print(f"Performance status: {comparison['status']}")
+
+# Use fixture data in tests
+test_data = agent_fixture.data
 ```
 
-### Regression Detection
+## 🔬 AI Agent Intelligence Testing
+
+### Agent Intelligence Validation
 ```python
-from tests.benchmarks.regression_detector import RegressionDetector
+from tests.framework import AgentIntelligenceValidator, QueryType
 
-# Initialize detector
-detector = RegressionDetector()
+# Create validator
+client = await create_test_agent_client("vana")
+validator = AgentIntelligenceValidator(client, test_data_manager)
 
-# Detect regression
-regression = detector.detect_regression(
-    "agent_response", "execution_time", 
-    baseline_value=0.1, current_values=[0.15, 0.16, 0.14]
+# Test reasoning consistency
+result = await validator.validate_reasoning_consistency(QueryType.FACTUAL)
+assert result.passed
+assert result.score >= 0.8
+
+# Test tool selection intelligence
+result = await validator.validate_tool_selection_intelligence()
+assert result.passed
+```
+
+### Response Quality Analysis
+```python
+from tests.framework import ResponseQualityAnalyzer
+
+# Analyze response quality
+analyzer = ResponseQualityAnalyzer()
+metrics = analyzer.analyze_response_quality(
+    response="Agent response text",
+    query="User query"
 )
 
-if regression:
-    print(f"Regression detected: {regression.regression_percentage:.1f}%")
+assert metrics.overall_score >= 0.8
+assert metrics.accuracy >= 0.9
 ```
 
-## 🔒 Security Testing
-
-### Code Security Analysis
+### Multi-Agent Coordination Testing
 ```python
-from tests.security.security_validator import SecurityValidator
-
-# Initialize validator
-validator = SecurityValidator()
-
-# Analyze Python code
-code = '''
-def process_input(user_input):
-    eval(user_input)  # Security violation
-    return "processed"
-'''
-
-violations = validator.validate_python_code(code, "example.py")
-for violation in violations:
-    print(f"{violation.severity}: {violation.description}")
-```
-
-### Configuration Security
-```python
-# Validate configuration
-config = {
-    "debug": True,  # Insecure in production
-    "api_key": "hardcoded_secret"  # Security violation
-}
-
-violations = validator.validate_configuration(config, "config.json")
-```
-
-### OWASP Compliance Testing
-```bash
-# Run OWASP Top 10 compliance tests
-poetry run pytest tests/security/test_owasp_compliance.py -v
-```
-
-## 🔗 Integration Testing
-
-### Multi-Agent Workflows
-```python
-# Test agent coordination
 @pytest.mark.integration
-async def test_agent_workflow():
-    # Setup mock agents
-    vana = Mock()
-    specialist = Mock()
-    
-    # Test delegation
-    result = await vana.delegate_task("specialist", "complex_task")
-    assert result["status"] == "delegated"
+async def test_agent_delegation():
+    # Create multi-agent environment
+    env = await test_env.simulate_multi_agent_environment(
+        ["vana", "code_execution"]
+    )
+
+    # Test delegation workflow
+    response = await env["vana"].query(
+        "Write Python code to calculate fibonacci"
+    )
+
+    # Verify delegation occurred
+    assert "code_execution" in response.agents_involved
 ```
 
-### Memory System Integration
+### End-to-End Workflow Testing
 ```python
-# Test memory integration
-@pytest.mark.integration
-async def test_memory_integration():
-    # Test memory search
-    results = await agent.search_memory("query")
-    assert len(results) > 0
-    
-    # Test memory storage
-    store_result = await agent.store_memory("content")
-    assert store_result["status"] == "stored"
+@pytest.mark.e2e
+async def test_complete_workflow():
+    # Test complete user workflow
+    client = await create_test_agent_client("vana")
+
+    response = await client.query(
+        "Research AI agents and create a summary report"
+    )
+
+    # Verify workflow completion
+    assert response.status == "success"
+    assert len(response.content) > 100
+    assert "AI agents" in response.content
 ```
 
-## 🤖 Automated Testing
+## 📊 Test Configuration
 
-### CI/CD Pipeline
+### Pytest Configuration
+The framework uses centralized pytest configuration in `pyproject.toml`:
+
+```toml
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+markers = [
+    "unit: (Level 1) Fast, isolated tests for a single component",
+    "agent: (Level 2) Tests for a single agent's logic and reasoning",
+    "integration: (Level 3) Tests for communication between 2-3 agents",
+    "e2e: (Level 4) Full system workflow tests for complex scenarios",
+    "security: Tests for security features, access control, and credentials",
+    "performance: Slow tests that benchmark performance and measure latency",
+    "network: Tests that require real network access to external services",
+    "slow: A general marker for any test that takes a long time to run"
+]
+```
+
+### Environment Configuration
 ```python
-from tests.automated.ci_runner import CIRunner
-
-# Initialize CI runner
-ci_runner = CIRunner(project_root)
-
-# Run all tests
-results = ci_runner.run_all_tests()
-
-# Generate report
-ci_runner.save_report("ci-results.json")
+# Test environment configuration
+config = EnvironmentConfig(
+    env_type=EnvironmentType.INTEGRATION,
+    base_url="https://vana-dev-960076421399.us-central1.run.app",
+    timeout=30,
+    enable_logging=True,
+    log_level="INFO"
+)
 ```
 
-### Custom Test Automation
-```python
-# Create custom automation
-def custom_test_suite():
-    # Your custom test logic
-    pass
+## 📈 Performance Monitoring
 
-# Add to CI pipeline
-ci_runner.custom_tests = custom_test_suite
-```
-
-## 📈 Reporting & Analysis
-
-### Test Results
-All test results are saved in JSON format with comprehensive metadata:
-
-```json
-{
-  "timestamp": 1640995200.0,
-  "overall_success": true,
-  "test_results": {
-    "performance": {...},
-    "security": {...},
-    "integration": {...}
-  },
-  "summary": {
-    "total_test_suites": 4,
-    "successful_suites": 4,
-    "success_rate": 1.0
-  }
-}
-```
+### Real-time Metrics
+The performance monitor tracks:
+- Response times (average, P95, P99)
+- System resource usage (CPU, memory)
+- Request throughput and error rates
+- Tool usage timing
+- Agent coordination timing
 
 ### Performance Reports
-Performance benchmarks include statistical analysis:
-- Mean, median, min/max execution times
-- Standard deviation and confidence intervals
-- Percentile analysis (P95, P99)
-- Regression detection and severity classification
+```python
+# Generate performance report
+report = monitor.generate_performance_report("test_suite")
 
-### Security Reports
-Security validation provides:
-- Violation count by severity (critical, high, medium, low)
-- OWASP Top 10 category mapping
-- CWE (Common Weakness Enumeration) references
-- Detailed remediation recommendations
+print(f"Average response time: {report.summary_stats[MetricType.RESPONSE_TIME]['mean']:.2f}s")
+print(f"Success rate: {report.summary_stats[MetricType.ERROR_RATE]['mean']:.2%}")
+```
+
+## ✅ Infrastructure Validation Status
+
+The testing framework has been comprehensively validated:
+
+✅ **Test Environment Manager** - Agent simulation environments working
+✅ **Mock Services Manager** - All mock services operational
+✅ **Test Fixtures Manager** - Test fixtures created and managed
+✅ **Performance Monitor** - Metrics collection functional
+✅ **Agent Integration** - Live VANA system integration working
+
+**Overall Health: HEALTHY** 🎉
 
 ## 🎯 Success Criteria
 
-The testing framework meets all specified success criteria:
+### **Quality Metrics:**
+- **Test Coverage:** >95% unit, >90% agent, >85% integration, >80% e2e
+- **Agent Intelligence Score:** Behavioral consistency >90%
+- **Response Quality Score:** Accuracy >95%, Completeness >90%, Relevance >95%
+- **Google ADK Compliance:** 100% compliance with ADK patterns
 
-✅ **Performance benchmarks establish baseline metrics**
-✅ **Security tests identify and prevent vulnerabilities**
-✅ **Integration tests validate multi-agent workflows**
-✅ **Automated tests run successfully in CI/CD**
-✅ **Test coverage increases to >90% for critical components**
-✅ **All tests are self-contained and reliable**
-✅ **Performance regression detection works**
-✅ **Security compliance with OWASP guidelines**
+### **Performance Metrics:**
+- **Agent Response Time:** <2 seconds average, <5 seconds 95th percentile
+- **System Reliability:** >99.9% uptime, <0.1% error rate
+- **Resource Efficiency:** <100MB memory per agent, <50% CPU utilization
 
-## 🔧 Configuration
+## 🚀 Quick Start Guide
 
-### Performance Thresholds
-```python
-# Configure regression detection thresholds
-detector.configure_thresholds(
-    minor=5.0,      # 5% performance degradation
-    moderate=15.0,  # 15% performance degradation
-    major=30.0,     # 30% performance degradation
-    critical=50.0   # 50% performance degradation
-)
+### 1. Validate Infrastructure (Required First)
+```bash
+python tests/infrastructure/test_infrastructure_setup.py
 ```
 
-### Security Settings
-```python
-# Configure security validation
-validator = SecurityValidator()
-# Validator automatically detects OWASP Top 10 violations
+### 2. Run Basic Tests
+```bash
+# Fast unit tests
+pytest -m unit -v
+
+# Agent intelligence tests
+pytest -m agent -v
 ```
 
-### CI/CD Settings
-```python
-# Configure CI runner
-ci_runner = CIRunner(
-    project_root=Path("/path/to/project"),
-    timeout=600  # 10 minute timeout
-)
+### 3. Run Integration Tests
+```bash
+# Multi-agent coordination
+pytest -m integration -v
+
+# End-to-end workflows
+pytest -m e2e -v
 ```
 
-## 🚀 Getting Started
+## 📝 Best Practices
 
-1. **Install the framework**:
-   ```bash
-   poetry install
-   ```
+### Writing New Tests
+1. **Use the validated infrastructure** - Import from `tests.framework`
+2. **Follow pytest patterns** - Use appropriate markers (`@pytest.mark.unit`, etc.)
+3. **Test against live VANA** - Infrastructure is configured for real system testing
+4. **Include performance monitoring** - Use PerformanceMonitor for timing
+5. **Document thoroughly** - Update this README with new functionality
 
-2. **Run a quick test**:
-   ```bash
-   python tests/run_comprehensive_tests.py --suite unit
-   ```
-
-3. **Run full validation**:
-   ```bash
-   python tests/run_comprehensive_tests.py --suite all --verbose
-   ```
-
-4. **Check results**:
-   ```bash
-   ls test_results/
-   ```
-
-## 📝 Contributing
-
-When adding new tests:
-1. Follow the existing patterns in each test category
-2. Add appropriate pytest markers (`@pytest.mark.performance`, `@pytest.mark.security`, etc.)
-3. Include comprehensive assertions and error handling
-4. Update this README with new functionality
+### Test Organization
+- **Unit tests** → `tests/unit/`
+- **Agent tests** → `tests/agent/`
+- **Integration tests** → `tests/integration/`
+- **E2E tests** → `tests/e2e/`
 
 ## 🐛 Troubleshooting
 
+### Infrastructure Issues
+```bash
+# Re-validate infrastructure
+python tests/infrastructure/test_infrastructure_setup.py
+
+# Check component health
+python -c "from tests.framework import TestEnvironment; print('Framework OK')"
+```
+
 ### Common Issues
-- **Import errors**: Ensure project root is in Python path
-- **Test timeouts**: Increase timeout values in CI runner
-- **Permission errors**: Check file permissions for test result directories
-- **Missing dependencies**: Run `poetry install` to install all dependencies
+- **Import errors**: Ensure `poetry install` completed successfully
+- **Agent connection failures**: Verify VANA dev environment is accessible
+- **Test timeouts**: Check network connectivity to test environment
+- **Mock service issues**: Restart mock services with infrastructure setup
 
 ### Debug Mode
 ```bash
-# Run with debug logging
-python tests/run_comprehensive_tests.py --suite all --verbose
+# Run with verbose output
+pytest -v -s
+
+# Run with performance monitoring
+pytest -m performance --tb=short
 ```
 
-For more detailed troubleshooting, check the test logs in the `test_results/` directory.
+---
+
+**Framework Status:** ✅ OPERATIONAL - Ready for comprehensive test implementation
+**Last Validated:** 2025-06-21
+**Next Steps:** Implement unit tests using validated infrastructure

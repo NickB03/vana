@@ -26,94 +26,84 @@ Our implementation leverages Google ADK's enterprise-grade features:
 
 ### System Overview
 ```
-VANA System (24 Agents Total)
-├── UI Layer (5 Agents Visible)
-│   ├── memory
-│   ├── orchestration  
-│   ├── specialists
-│   ├── vana (primary)
-│   └── workflows
-└── Backend Layer (24 Agents Operational)
-    ├── Core Agents (4)
-    ├── Orchestrators (4) 
-    ├── Specialists (11)
-    ├── Intelligence (3)
-    └── Utility (2)
+VANA Multi-Agent System
+├── Real Agents
+│   ├── vana (primary orchestrator)
+│   ├── code_execution (specialist)
+│   └── data_science (specialist)
+└── Proxy Agents (Discovery Pattern)
+    ├── memory → delegates to vana
+    ├── orchestration → delegates to vana
+    ├── specialists → delegates to vana
+    └── workflows → delegates to vana
 ```
 
-### UI vs Backend Relationship
-**UI Layer (5 Agents)**: User-facing agents available in the Google ADK Dev UI dropdown
-- Designed for direct user interaction
-- Simplified interface for common tasks
-- Route complex requests to backend specialists
+### Simplified Architecture Design
+**Real Agents**: Core functional agents with actual capabilities
+- **VANA Orchestrator**: Primary coordination with comprehensive toolset
+- **Code Execution Specialist**: Secure multi-language code execution
+- **Data Science Specialist**: Data analysis and visualization capabilities
 
-**Backend Layer (24 Agents)**: Full operational agent ecosystem
-- Complete specialist coverage for all domains
-- Advanced orchestration capabilities
-- Tool-rich environment with 59+ available tools
+**Proxy Agents**: Discovery pattern for user interface compatibility
+- Provide discoverable agent names for user selection
+- Delegate all actual work to appropriate real agents
+- Maintain clean separation between interface and implementation
 
-This dual-layer approach provides:
-- **Simplicity**: Users see manageable agent options
-- **Power**: Full specialist capabilities available behind the scenes
-- **Scalability**: Easy to add new specialists without UI complexity
+This simplified approach provides:
+- **Maintainability**: Fewer real agents to manage and update
+- **Performance**: Optimized execution with minimal overhead
+- **Flexibility**: Easy to extend capabilities within existing agents
 
 ## Agent Categories
 
-### 1. Core Agents (4)
-**Purpose**: Fundamental system operations and user interaction
-- **VANA Primary**: Main orchestrator and user interface
-- **System Monitor**: Health checks and performance monitoring
-- **Session Manager**: Context and state management
-- **Error Handler**: Exception management and recovery
+### Real Agents
+**Purpose**: Actual functional agents with capabilities and tools
 
-### 2. Orchestrators (4) 
-**Purpose**: Task coordination and workflow management
-- **Task Router**: Intelligent routing to appropriate specialists
-- **Workflow Coordinator**: Multi-step process management
-- **Resource Manager**: Tool and system resource allocation
-- **Quality Gate**: Output validation and quality assurance
+#### 1. VANA Orchestrator (`agents/vana/team.py`)
+- **Role**: Primary coordination and user interface
+- **Model**: gemini-2.0-flash-exp
+- **Tools**: Comprehensive toolset across all categories
+- **Capabilities**: File operations, search, coordination, task analysis, workflows
 
-### 3. Specialists (11)
-**Purpose**: Domain-specific expertise and execution
-- **Architecture Specialist**: System design and technical architecture
-- **UI/UX Specialist**: Interface design and user experience
-- **DevOps Specialist**: Deployment and infrastructure management
-- **QA Specialist**: Testing strategies and quality assurance
-- **Data Analyst**: Data processing and analysis
-- **Content Writer**: Documentation and content creation
-- **Security Specialist**: Security analysis and recommendations
-- **Performance Specialist**: Optimization and performance tuning
-- **Integration Specialist**: API and system integration
-- **Research Specialist**: Information gathering and analysis
-- **Code Specialist**: Programming and development tasks
+#### 2. Code Execution Specialist (`agents/code_execution/specialist.py`)
+- **Role**: Secure multi-language code execution
+- **Capabilities**: Python, JavaScript, Shell execution
+- **Security**: Sandbox isolation with resource monitoring and timeouts
+- **Integration**: Coordinates with VANA for complex development tasks
 
-### 4. Intelligence (3)
-**Purpose**: Advanced reasoning and decision-making
-- **Strategic Planner**: Long-term planning and strategy
-- **Decision Engine**: Complex decision analysis
-- **Learning Coordinator**: System improvement and adaptation
+#### 3. Data Science Specialist (`agents/data_science/specialist.py`)
+- **Role**: Data analysis, visualization, and machine learning
+- **Capabilities**: Statistical computing and data processing workflows
+- **Integration**: Leverages Code Execution Specialist for secure Python execution
 
-### 5. Utility (2)
-**Purpose**: Supporting functions and system utilities
-- **File Manager**: File operations and organization
-- **Communication Hub**: Inter-agent messaging and coordination
+### Proxy Agents
+**Purpose**: Discovery pattern for user interface compatibility
 
-## Tool Integration (59+ Tools)
+#### Discovery Pattern Implementation
+- **Memory Agent** → Delegates to VANA (`agents/memory/__init__.py`)
+- **Orchestration Agent** → Delegates to VANA (`agents/orchestration/__init__.py`)
+- **Specialists Agent** → Delegates to VANA (`agents/specialists/__init__.py`)
+- **Workflows Agent** → Delegates to VANA (`agents/workflows/__init__.py`)
+
+These proxy agents provide discoverable names in the UI while maintaining a clean, simplified backend architecture.
+
+## Tool Integration
 
 ### Tool Categories
-1. **File Operations**: Read, write, search, organize
-2. **Web Interaction**: Search, browse, extract content
-3. **Code Execution**: Python, shell, various languages
-4. **Memory Management**: Session state, knowledge base, vector search
-5. **Communication**: User messaging, agent coordination
-6. **System Operations**: Health checks, monitoring, deployment
-7. **Specialized Tools**: Domain-specific capabilities per specialist
+Based on the current validated tool inventory:
+
+1. **File System Tools**: Read, write, list directory, file existence checks
+2. **Search Tools**: Vector search, web search, knowledge base search
+3. **System Tools**: Echo, health status monitoring
+4. **Agent Coordination Tools**: Task coordination, delegation, status, transfer
+5. **Task Analysis Tools**: Task analysis, capability matching, classification
+6. **Workflow Management Tools**: Complete workflow lifecycle management
 
 ### Agent-Tool Relationship
-- **Universal Access**: All agents can access core tools
-- **Specialized Tools**: Domain-specific tools for specialists
-- **Tool Orchestration**: Intelligent tool selection and chaining
-- **Safety Mechanisms**: Controlled execution with error handling
+- **VANA Orchestrator**: Access to all core tools plus conditional tools
+- **Specialists**: Domain-specific tool access as needed
+- **Tool Architecture**: Google ADK FunctionTool pattern with `.func()` method access
+- **Error Handling**: Comprehensive fallback implementations and error recovery
 
 ## Memory Architecture
 
@@ -138,37 +128,37 @@ This hierarchy ensures:
 ## Agent Orchestration Patterns
 
 ### Agent-as-Tool Pattern
-VANA implements sophisticated agent orchestration where specialists work as tools:
-- **No User Transfers**: VANA maintains primary interface
-- **Background Coordination**: Specialists work behind the scenes
-- **Seamless Integration**: Users see unified responses
-- **Parallel Processing**: Multiple specialists can work simultaneously
+VANA implements Google ADK's agent delegation patterns:
+- **Transfer Pattern**: Uses `transfer_to_agent()` for actual delegation
+- **Proxy Pattern**: Proxy agents delegate to real agents seamlessly
+- **Unified Interface**: Users interact with discoverable agents
+- **Background Processing**: Real agents handle actual work execution
 
 ### Orchestration Flow
 ```
-User Request → VANA Primary → Task Analysis → Specialist Selection → 
-Parallel Execution → Result Integration → Quality Check → User Response
+User Request → Proxy Agent → transfer_to_agent() → Real Agent →
+Tool Execution → Result Processing → Response → User
 ```
 
 ### Coordination Mechanisms
-- **Task Decomposition**: Break complex requests into specialist tasks
-- **Resource Allocation**: Manage tool and system resources
-- **Result Synthesis**: Combine specialist outputs into coherent responses
-- **Error Recovery**: Handle failures gracefully with fallback strategies
+- **Agent Transfer**: Google ADK native `transfer_to_agent()` functionality
+- **Tool Access**: FunctionTool pattern with `.func()` method calls
+- **Error Handling**: Comprehensive fallback and error recovery
+- **Session Management**: ADK session state preservation across transfers
 
 ## Performance Characteristics
 
 ### Current Metrics
-- **Response Time**: 0.045s average (target: <5.0s)
-- **Tool Success Rate**: 95%+ operational
-- **Agent Availability**: 100% uptime for core agents
+- **Response Time**: Target <5.0s for most operations
+- **Tool Success Rate**: 90.3% (112/124 tests passing)
+- **Agent Discovery**: 100% success rate for all discoverable agents
 - **Memory Retrieval**: Sub-second for most queries
 
 ### Scalability Features
-- **Horizontal Scaling**: Add new specialists without core changes
-- **Load Balancing**: Distribute tasks across available agents
-- **Resource Optimization**: Intelligent tool and memory management
-- **Caching**: Reduce redundant operations and API calls
+- **Simplified Architecture**: Fewer agents to manage and scale
+- **Cloud Run Auto-scaling**: Dynamic resource allocation based on demand
+- **Tool Optimization**: Efficient tool execution with caching
+- **Session Management**: ADK native session state handling
 
 ## Integration Points
 
@@ -201,15 +191,15 @@ Parallel Execution → Result Integration → Quality Check → User Response
 ## Future Architecture Considerations
 
 ### Planned Enhancements
-1. **Dynamic Agent Creation**: On-demand specialist instantiation
-2. **Advanced Orchestration**: More sophisticated coordination patterns
-3. **Enhanced Memory**: Improved knowledge management
-4. **Performance Optimization**: Further speed and efficiency improvements
+1. **Enhanced Testing**: Achieve 95%+ test success rate
+2. **Tool Optimization**: Improve remaining failing test cases
+3. **Performance Monitoring**: Enhanced observability and metrics
+4. **Documentation Accuracy**: Maintain current and accurate system documentation
 
 ### Extensibility Points
-- **Custom Specialists**: Easy addition of domain-specific agents
-- **Tool Expansion**: Pluggable tool architecture
-- **Integration Hooks**: External system connectivity
-- **Monitoring Extensions**: Custom observability solutions
+- **Additional Specialists**: Easy addition of new specialist agents
+- **Tool Expansion**: Google ADK FunctionTool pattern supports easy tool addition
+- **Integration Hooks**: MCP server integration and external system connectivity
+- **Monitoring Extensions**: Custom observability and alerting solutions
 
-This architecture provides a robust foundation for autonomous task execution while maintaining the flexibility to evolve and expand as requirements grow.
+This simplified architecture provides a robust foundation for autonomous task execution while maintaining excellent performance and maintainability.

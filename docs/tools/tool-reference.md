@@ -4,13 +4,13 @@ Complete reference documentation for all tools available in the VANA system.
 
 ## 📊 Tool Overview
 
-VANA provides **19 core tools** always available in the VANA agent, plus conditional tools when dependencies are available.
+VANA provides core tools always available in the VANA agent, plus conditional tools when dependencies are available.
 
 > **🛠️ Visual Organization**: See our [tool organization diagrams](../assets/diagrams/tool-organization.md) for visual breakdown.
 
-## 🔧 Core Tools (19) - Always Available
+## 🔧 Core Tools - Always Available
 
-### 📁 File System Tools (4)
+### 📁 File System Tools
 
 #### `adk_read_file`
 - **Purpose**: Secure file reading with validation
@@ -40,7 +40,7 @@ VANA provides **19 core tools** always available in the VANA agent, plus conditi
 - **Security**: Path validation
 - **Usage**: Conditional file operations, validation
 
-### 🔍 Search Tools (3)
+### 🔍 Search Tools
 
 #### `adk_vector_search`
 - **Purpose**: Semantic similarity search via Vertex AI
@@ -63,7 +63,7 @@ VANA provides **19 core tools** always available in the VANA agent, plus conditi
 - **Integration**: Vertex AI RAG Corpus
 - **Usage**: Internal knowledge retrieval, context-aware search
 
-### ⚙️ System Tools (2)
+### ⚙️ System Tools
 
 #### `adk_echo`
 - **Purpose**: System testing and validation
@@ -78,7 +78,7 @@ VANA provides **19 core tools** always available in the VANA agent, plus conditi
 - **Includes**: Agent status, tool availability, resource usage
 - **Usage**: System monitoring, health checks, diagnostics
 
-### 🤝 Agent Coordination Tools (4)
+### 🤝 Agent Coordination Tools
 
 #### `adk_coordinate_task`
 - **Purpose**: Multi-agent task coordination
@@ -104,7 +104,7 @@ VANA provides **19 core tools** always available in the VANA agent, plus conditi
 - **Returns**: Transfer confirmation and new agent session
 - **Usage**: Seamless agent handoffs, session transfers
 
-### 📊 Task Analysis Tools (3)
+### 📊 Task Analysis Tools
 
 #### `adk_analyze_task`
 - **Purpose**: NLP-based task analysis
@@ -124,7 +124,7 @@ VANA provides **19 core tools** always available in the VANA agent, plus conditi
 - **Returns**: Task category, priority, and routing recommendations
 - **Usage**: Automatic task routing, priority assignment
 
-### ⚡ Workflow Management Tools (8)
+### ⚡ Workflow Management Tools
 
 #### `adk_create_workflow`
 - **Purpose**: Create multi-step workflows
@@ -174,15 +174,14 @@ VANA provides **19 core tools** always available in the VANA agent, plus conditi
 - **Returns**: Available templates with descriptions
 - **Usage**: Workflow creation, template-based automation
 
-## 🔧 Conditional Tools (Variable Count)
+## 🔧 Conditional Tools
 
 ### 🛠️ Specialist Tools
 - **Availability**: When `agents.specialists.agent_tools` imports successfully
 - **Purpose**: Additional specialist capabilities
-- **Count**: Variable based on successful imports
 - **Usage**: Extended functionality when dependencies available
 
-### 🎯 Orchestration Tools (6)
+### 🎯 Orchestration Tools
 
 #### `analyze_task_complexity`
 - **Purpose**: Advanced task complexity analysis
@@ -225,15 +224,15 @@ VANA provides **19 core tools** always available in the VANA agent, plus conditi
 
 ## 📊 Performance Metrics
 
-| Tool Category | Count | Avg Response Time | Availability |
-|---------------|-------|-------------------|--------------|
-| File System | 4 | <50ms | 100% |
-| Search | 3 | <200ms | 99.9% |
-| System | 2 | <10ms | 100% |
-| Coordination | 4 | <100ms | 100% |
-| Task Analysis | 3 | <150ms | 100% |
-| Workflows | 8 | <300ms | 100% |
-| **Core Total** | **19** | **<100ms avg** | **99.9%** |
+| Tool Category | Avg Response Time | Availability | Test Success Rate |
+|---------------|-------------------|--------------|-------------------|
+| File System | <50ms | 100% | 70.6% (12/17 tests) |
+| Search | <200ms | 99.9% | 100% (16/16 tests) |
+| System | <10ms | 100% | 100% (21/21 tests) |
+| Coordination | <100ms | 100% | 100% (24/24 tests) |
+| Task Analysis | <150ms | 100% | 100% (16/16 tests) |
+| Workflows | <300ms | 100% | 100% (15/15 tests) |
+| **Overall System** | **<100ms avg** | **99.9%** | **90.3% (112/124 tests)** |
 
 ## 🔗 Related Documentation
 
