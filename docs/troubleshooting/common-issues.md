@@ -294,7 +294,73 @@ python scripts/rebuild_vector_index.py
 python scripts/vector_search_health_check.py
 ```
 
-### 6. API Rate Limiting
+### 6. Web Search Functionality Issues
+
+#### Symptoms
+- Web search queries return "The web search failed" instead of real-time data
+- Time queries fail: "What time is it in Tokyo?" → "The web search failed"
+- Weather queries fail: "What's the weather in London?" → "The web search failed"
+- Agent shows web_search tool calls in Events tab but returns error responses
+- Preloaded responses instead of live data
+
+#### Diagnosis
+```bash
+# Check if web search tool is being called
+# Look for web_search function calls in agent Events tab
+
+# Test API key access locally
+python -c "
+import os
+from lib.environment import setup_environment
+setup_environment()
+print('BRAVE_API_KEY set:', bool(os.getenv('BRAVE_API_KEY')))
+"
+
+# Check Cloud Run service account
+gcloud run services describe YOUR_SERVICE_NAME \
+    --region=us-central1 \
+    --project=YOUR_PROJECT_ID \
+    --format="value(spec.template.spec.serviceAccountName)"
+
+# Verify Secret Manager permissions
+gcloud secrets get-iam-policy brave-api-key --project=YOUR_PROJECT_ID
+```
+
+#### Solutions
+
+**Root Cause:** Cloud Run service account lacks Secret Manager permissions
+
+**Step 1: Identify Service Account**
+```bash
+SERVICE_ACCOUNT=$(gcloud run services describe YOUR_SERVICE_NAME \
+    --region=us-central1 \
+    --project=YOUR_PROJECT_ID \
+    --format="value(spec.template.spec.serviceAccountName)")
+echo "Service Account: $SERVICE_ACCOUNT"
+```
+
+**Step 2: Grant Secret Manager Access**
+```bash
+gcloud secrets add-iam-policy-binding brave-api-key \
+    --member="serviceAccount:${SERVICE_ACCOUNT}" \
+    --role="roles/secretmanager.secretAccessor" \
+    --project=YOUR_PROJECT_ID
+```
+
+**Step 3: Redeploy Service**
+```bash
+gcloud run deploy YOUR_SERVICE_NAME \
+    --source . \
+    --region us-central1 \
+    --project YOUR_PROJECT_ID
+```
+
+**Step 4: Verify Fix**
+Test with queries like:
+- "What time is it in Tokyo?" → Should return "The current time in Tokyo is XX:XX AM/PM"
+- "What's the weather in London?" → Should return "The weather in London is [conditions]"
+
+### 7. API Rate Limiting
 
 #### Symptoms
 - 429 Too Many Requests errors

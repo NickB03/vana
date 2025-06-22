@@ -271,6 +271,29 @@ gcloud secrets add-iam-policy-binding openrouter-api-key \
     --role="roles/secretmanager.secretAccessor"
 ```
 
+#### ⚠️ Critical: Secret Manager Permissions
+**Important**: If web search functionality fails with "The web search failed" errors, verify that your Cloud Run service account has Secret Manager access:
+
+```bash
+# Check current service account for your Cloud Run service
+SERVICE_ACCOUNT=$(gcloud run services describe YOUR_SERVICE_NAME \
+    --region=us-central1 \
+    --project=YOUR_PROJECT_ID \
+    --format="value(spec.template.spec.serviceAccountName)")
+
+# Grant Secret Manager access if missing
+gcloud secrets add-iam-policy-binding brave-api-key \
+    --member="serviceAccount:${SERVICE_ACCOUNT}" \
+    --role="roles/secretmanager.secretAccessor" \
+    --project=YOUR_PROJECT_ID
+
+# Redeploy service to apply new permissions
+gcloud run deploy YOUR_SERVICE_NAME \
+    --source . \
+    --region us-central1 \
+    --project YOUR_PROJECT_ID
+```
+
 ## 📊 Monitoring and Logging
 
 ### Cloud Logging Setup
@@ -363,11 +386,11 @@ steps:
   # Build the container image
   - name: 'gcr.io/cloud-builders/docker'
     args: ['build', '-t', 'gcr.io/$PROJECT_ID/vana:$COMMIT_SHA', '.']
-  
+
   # Push the container image to Container Registry
   - name: 'gcr.io/cloud-builders/docker'
     args: ['push', 'gcr.io/$PROJECT_ID/vana:$COMMIT_SHA']
-  
+
   # Deploy container image to Cloud Run
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     entrypoint: gcloud
@@ -397,18 +420,18 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    
+
     steps:
     - uses: actions/checkout@v2
-    
+
     - id: 'auth'
       uses: 'google-github-actions/auth@v1'
       with:
         credentials_json: '${{ secrets.GCP_SA_KEY }}'
-    
+
     - name: 'Set up Cloud SDK'
       uses: 'google-github-actions/setup-gcloud@v1'
-    
+
     - name: 'Build and Deploy'
       run: |
         gcloud builds submit --config cloudbuild.yaml
@@ -465,6 +488,40 @@ gcloud projects get-iam-policy $PROJECT_ID \
     --filter="bindings.members:vana-service@${PROJECT_ID}.iam.gserviceaccount.com"
 ```
 
+#### Web Search Functionality Issues
+If web search queries return "The web search failed" instead of real-time data:
+
+**Symptoms:**
+- Time queries fail: "What time is it in Tokyo?" → "The web search failed"
+- Weather queries fail: "What's the weather in London?" → "The web search failed"
+- Agent shows web_search tool calls but returns error responses
+
+**Root Cause:** Cloud Run service account lacks Secret Manager permissions
+
+**Solution:**
+```bash
+# 1. Identify the service account
+SERVICE_ACCOUNT=$(gcloud run services describe YOUR_SERVICE_NAME \
+    --region=us-central1 \
+    --project=YOUR_PROJECT_ID \
+    --format="value(spec.template.spec.serviceAccountName)")
+
+# 2. Grant Secret Manager access
+gcloud secrets add-iam-policy-binding brave-api-key \
+    --member="serviceAccount:${SERVICE_ACCOUNT}" \
+    --role="roles/secretmanager.secretAccessor" \
+    --project=YOUR_PROJECT_ID
+
+# 3. Redeploy to apply permissions
+gcloud run deploy YOUR_SERVICE_NAME \
+    --source . \
+    --region us-central1 \
+    --project YOUR_PROJECT_ID
+
+# 4. Verify fix with test queries
+# Should return real-time data like "The current time in Tokyo is 04:24 AM"
+```
+
 #### Performance Issues
 ```bash
 # Check metrics
@@ -482,4 +539,3 @@ gcloud run services update vana \
 **🎉 Congratulations!** Your VANA system is now deployed to Google Cloud Run and ready for production use.
 
 **Need help?** Check our [troubleshooting guide](../troubleshooting/common-issues.md) or [monitoring documentation](../guides/monitoring.md).
-

@@ -139,12 +139,19 @@ VANA provides powerful search capabilities using its core tools:
 "Look for content about system architecture patterns"
 ```
 
-#### Web Search
+#### Web Search (Real-Time with Intelligent Processing)
 ```
+"What time is it in Tokyo right now?"
+"What's the weather in London today?"
 "Search the web for latest trends in artificial intelligence"
 "Find current information about Python programming best practices"
 "What are the recent developments in cloud computing?"
 ```
+
+**Features:**
+- **Real-Time Data**: Current time, weather, and live information
+- **Intelligent Processing**: Automatic data extraction and formatting
+- **Clear Responses**: "The current time in Tokyo is 04:24 AM" instead of raw search results
 
 #### Knowledge Base Search
 ```
