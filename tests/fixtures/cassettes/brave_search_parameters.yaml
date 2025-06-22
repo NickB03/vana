@@ -1,0 +1,35 @@
+interactions:
+- request:
+    body: null
+    headers:
+      Accept:
+      - application/json
+      Accept-Encoding:
+      - gzip
+      Connection:
+      - keep-alive
+      User-Agent:
+      - python-requests/2.32.4
+      X-Subscription-Token:
+      - test_vcr_key
+    method: GET
+    uri: https://api.search.brave.com/res/v1/web/search?q=machine+learning&count=5&offset=0&country=US&search_lang=en&ui_lang=en-US&safesearch=moderate&freshness=pw&text_decorations=False&spellcheck=True&extra_snippets=True&summary=True&result_filter=web%2Cnews%2Cvideos%2Cinfobox%2Cfaq
+  response:
+    body:
+      string: '{"error":{"code":"SUBSCRIPTION_TOKEN_INVALID","detail":"The provided
+        subscription token is invalid.","meta":{"component":"authentication"},"status":422},"type":"ErrorResponse"}'
+    headers:
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '176'
+      Content-Type:
+      - application/json
+      Date:
+      - Sun, 22 Jun 2025 15:16:53 GMT
+      Server:
+      - awselb/2.0
+    status:
+      code: 422
+      message: ''
+version: 1

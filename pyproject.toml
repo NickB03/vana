@@ -54,12 +54,16 @@ dev = [
     "pytest>=8.0.0",
     "pytest-asyncio>=0.23.0",
     "pytest-cov>=4.0.0",
+    "pytest-vcr>=1.0.2",
+    "vcrpy>=7.0.0",
     "black>=23.0.0",
     "isort>=5.12.0",
     "flake8>=6.0.0",
     "mypy>=1.5.0",
     "bandit>=1.7.0",
     "pre-commit>=3.0.0",
+    "pip-audit>=2.6.0",
+    "safety>=3.0.0",
 ]
 document-processing = [
     "PyPDF2>=3.0.0",
@@ -187,7 +191,9 @@ markers = [
 # -ra: show extra summary info for all but passing tests
 # --strict-markers: fail on unregistered markers
 # --disable-warnings: hide deprecation and other warnings for cleaner output
-addopts = "-ra -v --strict-markers --disable-warnings"
+# --cov: enable coverage reporting
+# --cov-fail-under: fail if coverage is below threshold
+addopts = "-ra -v --strict-markers --disable-warnings --cov=lib --cov=agents --cov=tools --cov-report=term --cov-report=html --cov-report=json --cov-fail-under=80"
 
 # Filter out common, noisy warnings
 filterwarnings = [
@@ -198,15 +204,21 @@ filterwarnings = [
 
 [tool.coverage.run]
 source = ["lib", "agents", "tools"]
+branch = true
 omit = [
     "*/tests/*",
     "*/archived_scripts/*",
     "*/*.backup",
     "*/venv/*",
     "*/__pycache__/*",
+    "*/conftest.py",
+    "*/fixtures/*",
 ]
 
 [tool.coverage.report]
+fail_under = 80
+show_missing = true
+skip_covered = false
 exclude_lines = [
     "pragma: no cover",
     "def __repr__",
@@ -218,6 +230,7 @@ exclude_lines = [
     "if __name__ == .__main__.:",
     "class .*\\bProtocol\\):",
     "@(abc\\.)?abstractmethod",
+    "if TYPE_CHECKING:",
 ]
 
 [tool.coverage.html]
