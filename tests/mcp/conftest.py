@@ -58,7 +58,9 @@ def sample_tool_info():
         description="A test tool for testing",
         input_schema={
             "type": "object",
-            "properties": {"param": {"type": "string", "description": "Test parameter"}},
+            "properties": {
+                "param": {"type": "string", "description": "Test parameter"}
+            },
             "required": ["param"],
         },
     )
@@ -80,7 +82,7 @@ def sample_server_info():
 
 
 # Pytest markers for different test categories
-pytest_plugins = []
+# Note: pytest_plugins moved to root conftest.py to avoid deprecation warning
 
 
 def pytest_configure(config):
@@ -95,7 +97,10 @@ def pytest_collection_modifyitems(config, items):
     """Modify test collection to add markers automatically."""
     for item in items:
         # Add unit marker to all tests by default
-        if not any(marker.name in ["integration", "slow", "network"] for marker in item.iter_markers()):
+        if not any(
+            marker.name in ["integration", "slow", "network"]
+            for marker in item.iter_markers()
+        ):
             item.add_marker(pytest.mark.unit)
 
         # Add slow marker to integration tests

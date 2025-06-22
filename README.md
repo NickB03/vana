@@ -123,6 +123,7 @@ VANA is an enterprise-grade multi-agent AI system designed for complex task orch
 ### 🎯 Current Capabilities
 
 - **Intelligent Orchestration** - VANA agent coordinates tasks with comprehensive toolset
+- **Real-Time Web Search** - Intelligent web search with automatic data processing for time, weather, and general queries
 - **Secure Code Execution** - Python, JavaScript, and Shell execution in sandboxed environment
 - **Data Science Operations** - Data analysis, visualization, and machine learning workflows
 - **Knowledge Management** - Semantic search, document processing, and information retrieval
@@ -239,7 +240,10 @@ VANA provides core tools always available in the VANA agent, plus conditional to
 
 #### 🔍 Search Tools
 - `adk_vector_search` - Semantic similarity search via Vertex AI
-- `adk_web_search` - Real-time web search with Brave API
+- `adk_web_search` - Real-time web search with intelligent data processing
+  - **Time Queries**: "What time is it in Tokyo?" → Real-time current time
+  - **Weather Queries**: "What's the weather in London?" → Current weather conditions
+  - **Intelligent Processing**: Automatic data extraction and formatting for clear responses
 - `adk_search_knowledge` - RAG corpus knowledge search
 
 #### ⚙️ System Tools

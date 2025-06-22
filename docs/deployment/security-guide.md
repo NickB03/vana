@@ -37,17 +37,54 @@ gcloud secrets list
 
 #### 2. Grant Service Account Access
 ```bash
-# Get your service account email
-export SERVICE_ACCOUNT="vana-service@${PROJECT_ID}.iam.gserviceaccount.com"
+# Get your service account email (check your actual Cloud Run service)
+SERVICE_ACCOUNT=$(gcloud run services describe YOUR_SERVICE_NAME \
+    --region=us-central1 \
+    --project=YOUR_PROJECT_ID \
+    --format="value(spec.template.spec.serviceAccountName)")
+
+# Example: vana-vector-search-sa@analystai-454200.iam.gserviceaccount.com
 
 # Grant access to secrets
 gcloud secrets add-iam-policy-binding brave-api-key \
     --member="serviceAccount:${SERVICE_ACCOUNT}" \
-    --role="roles/secretmanager.secretAccessor"
+    --role="roles/secretmanager.secretAccessor" \
+    --project=YOUR_PROJECT_ID
 
 gcloud secrets add-iam-policy-binding openrouter-api-key \
     --member="serviceAccount:${SERVICE_ACCOUNT}" \
-    --role="roles/secretmanager.secretAccessor"
+    --role="roles/secretmanager.secretAccessor" \
+    --project=YOUR_PROJECT_ID
+```
+
+#### ⚠️ Critical: Web Search Functionality Troubleshooting
+**If web search returns "The web search failed" instead of real-time data:**
+
+**Symptoms:**
+- Time queries fail: "What time is it in Tokyo?" → "The web search failed"
+- Weather queries fail: "What's the weather in London?" → "The web search failed"
+
+**Root Cause:** Missing Secret Manager permissions
+
+**Solution:**
+```bash
+# 1. Identify service account
+SERVICE_ACCOUNT=$(gcloud run services describe YOUR_SERVICE_NAME \
+    --region=us-central1 \
+    --project=YOUR_PROJECT_ID \
+    --format="value(spec.template.spec.serviceAccountName)")
+
+# 2. Grant permissions
+gcloud secrets add-iam-policy-binding brave-api-key \
+    --member="serviceAccount:${SERVICE_ACCOUNT}" \
+    --role="roles/secretmanager.secretAccessor" \
+    --project=YOUR_PROJECT_ID
+
+# 3. Redeploy service
+gcloud run deploy YOUR_SERVICE_NAME \
+    --source . \
+    --region us-central1 \
+    --project YOUR_PROJECT_ID
 ```
 
 #### 3. Use Secrets in Cloud Run
@@ -197,10 +234,10 @@ def get_secret(secret_id: str) -> str:
     """Securely retrieve secret from Google Secret Manager."""
     client = secretmanager.SecretManagerServiceClient()
     project_id = os.environ.get('GOOGLE_CLOUD_PROJECT')
-    
+
     name = f"projects/{project_id}/secrets/{secret_id}/versions/latest"
     response = client.access_secret_version(request={"name": name})
-    
+
     return response.payload.data.decode("UTF-8")
 
 # Usage
@@ -285,4 +322,3 @@ gcloud alpha monitoring policies create \
 **🔒 Security is a shared responsibility.** Follow these guidelines to keep VANA and your data secure.
 
 **Need help?** Contact the security team or check our [troubleshooting guide](../troubleshooting/common-issues.md).
-
