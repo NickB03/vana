@@ -24,3 +24,7 @@ class VertexAiRagMemoryService:
             "last_updated": "2025-01-01T00:00:00Z",
             "rag_corpus": self.rag_corpus,
         }
+
+
+# Alias for backward compatibility
+VanaMemoryService = VertexAiRagMemoryService
