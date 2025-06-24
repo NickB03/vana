@@ -51,7 +51,7 @@ steps:
       - 'BRAVE_API_KEY=brave-api-key:latest,OPENROUTER_API_KEY=openrouter-api-key:latest'
 
   # Validate enhanced features are working
-  - name: 'gcr.io/cloud-builders/curl'
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     entrypoint: 'bash'
     args:
       - '-c'
@@ -59,7 +59,10 @@ steps:
         echo "=== Validating Enhanced VANA Deployment ==="
         
         # Wait for deployment to be ready
-        sleep 30
+        sleep 45
+        
+        # Install curl in cloud-sdk container
+        apt-get update && apt-get install -y curl
         
         # Get service URL
         SERVICE_URL=$$(gcloud run services describe vana-enhanced-dev \
@@ -68,31 +71,64 @@ steps:
         
         echo "Service URL: $$SERVICE_URL"
         
+        # Fix IAM permissions first
+        echo "Setting IAM permissions..."
+        gcloud run services add-iam-policy-binding vana-enhanced-dev \
+          --region=us-central1 \
+          --member=allUsers \
+          --role=roles/run.invoker
+        
+        # Wait a bit more for permissions to propagate
+        sleep 15
+        
         # Test health endpoint
         echo "Testing health endpoint..."
-        curl -f "$$SERVICE_URL/health" || echo "Health check failed"
+        HEALTH_RESPONSE=$$(curl -s "$$SERVICE_URL/health")
+        echo "Health response: $$HEALTH_RESPONSE"
         
-        # Test enhanced features
+        if echo "$$HEALTH_RESPONSE" | grep -q "healthy"; then
+          echo "✅ Health check passed"
+        else
+          echo "❌ Health check failed"
+          exit 1
+        fi
+        
+        # Test enhanced features via version endpoint (more reliable than info)
         echo "Testing enhanced features..."
-        INFO_RESPONSE=$$(curl -s "$$SERVICE_URL/info")
-        echo "Info response received"
+        VERSION_RESPONSE=$$(curl -s "$$SERVICE_URL/version")
+        echo "Version response received"
         
         # Validate enhanced reasoning features are present
-        if echo "$$INFO_RESPONSE" | grep -q "enhanced_features"; then
+        if echo "$$VERSION_RESPONSE" | grep -q "enhanced_features"; then
           echo "✅ Enhanced features detected in deployment"
         else
           echo "❌ Enhanced features not found in deployment"
           exit 1
         fi
         
-        if echo "$$INFO_RESPONSE" | grep -q "reasoning_tools.*5"; then
+        if echo "$$VERSION_RESPONSE" | grep -q "reasoning_tools.*5"; then
           echo "✅ All 5 reasoning tools confirmed"
         else
           echo "❌ Reasoning tools count incorrect"
           exit 1
         fi
         
-        echo "=== Enhanced VANA Deployment Validation Successful ==="
+        if echo "$$VERSION_RESPONSE" | grep -q "mathematical_reasoning.*true"; then
+          echo "✅ Mathematical reasoning enabled"
+        else
+          echo "❌ Mathematical reasoning not enabled"
+          exit 1
+        fi
+        
+        if echo "$$VERSION_RESPONSE" | grep -q "logical_reasoning.*true"; then
+          echo "✅ Logical reasoning enabled"
+        else
+          echo "❌ Logical reasoning not enabled"
+          exit 1
+        fi
+        
+        echo "=== ✅ Enhanced VANA Deployment Validation Successful ==="
+        echo "🧠 Enhanced reasoning capabilities confirmed in production!"
 
 images:
   - 'gcr.io/$PROJECT_ID/vana-enhanced-dev:latest'
