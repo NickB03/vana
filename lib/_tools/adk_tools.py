@@ -1471,3 +1471,114 @@ adk_cancel_workflow = FunctionTool(func=cancel_workflow)
 adk_cancel_workflow.name = "cancel_workflow"
 adk_get_workflow_templates = FunctionTool(func=get_workflow_templates)
 adk_get_workflow_templates.name = "get_workflow_templates"
+
+
+# ============================================================================
+# ENHANCED REASONING TOOLS INTEGRATION
+# ============================================================================
+
+# Import enhanced reasoning capabilities
+try:
+    from .enhanced_reasoning_tools import (
+        LogicalReasoning,
+        MathematicalReasoning,
+        enhanced_analyze_task,
+        intelligent_echo,
+        reasoning_coordinate_task,
+    )
+
+    # Create FunctionTool instances for enhanced reasoning
+    adk_intelligent_echo = FunctionTool(func=intelligent_echo)
+    adk_intelligent_echo.name = "intelligent_echo"
+
+    adk_enhanced_analyze_task = FunctionTool(func=enhanced_analyze_task)
+    adk_enhanced_analyze_task.name = "enhanced_analyze_task"
+
+    adk_reasoning_coordinate_task = FunctionTool(func=reasoning_coordinate_task)
+    adk_reasoning_coordinate_task.name = "reasoning_coordinate_task"
+
+    # Create a dedicated mathematical reasoning tool
+    def mathematical_solve(problem: str) -> str:
+        """🔢 Solve mathematical problems with step-by-step reasoning and verification."""
+        try:
+            math_engine = MathematicalReasoning()
+
+            # Use solve_arithmetic for all mathematical problems
+            result = math_engine.solve_arithmetic(problem)
+
+            return json.dumps(
+                {
+                    "answer": result.answer,
+                    "reasoning_steps": result.reasoning_steps,
+                    "confidence": result.confidence,
+                    "problem_type": result.problem_type,
+                    "solution_method": result.solution_method,
+                },
+                indent=2,
+            )
+
+        except Exception as e:
+            logger.error(f"Mathematical reasoning error: {e}")
+            return json.dumps(
+                {
+                    "error": f"Mathematical reasoning failed: {str(e)}",
+                    "answer": "Unable to solve",
+                    "confidence": 0.0,
+                },
+                indent=2,
+            )
+
+    adk_mathematical_solve = FunctionTool(func=mathematical_solve)
+    adk_mathematical_solve.name = "mathematical_solve"
+
+    # Create a dedicated logical reasoning tool
+    def logical_analyze(problem: str) -> str:
+        """🧠 Analyze logical problems with structured reasoning and validation."""
+        try:
+            logic_engine = LogicalReasoning()
+            result = logic_engine.analyze_logical_structure(problem)
+
+            return json.dumps(
+                {
+                    "conclusion": result.answer,
+                    "reasoning_steps": result.reasoning_steps,
+                    "confidence": result.confidence,
+                    "problem_type": result.problem_type,
+                    "solution_method": result.solution_method,
+                },
+                indent=2,
+            )
+
+        except Exception as e:
+            logger.error(f"Logical reasoning error: {e}")
+            return json.dumps(
+                {
+                    "error": f"Logical reasoning failed: {str(e)}",
+                    "conclusion": "Unable to analyze",
+                    "confidence": 0.0,
+                },
+                indent=2,
+            )
+
+    adk_logical_analyze = FunctionTool(func=logical_analyze)
+    adk_logical_analyze.name = "logical_analyze"
+
+    logger.info("✅ Enhanced reasoning tools successfully integrated")
+
+except ImportError as e:
+    logger.warning(f"Enhanced reasoning tools not available: {e}")
+    # Fallback to basic implementations if enhanced tools are not available
+
+    def basic_echo(message: str) -> str:
+        """Basic echo implementation as fallback"""
+        return f"Echo: {message}"
+
+    adk_intelligent_echo = FunctionTool(func=basic_echo)
+    adk_intelligent_echo.name = "intelligent_echo"
+
+    def basic_analyze_task(task: str, context: str = "") -> str:
+        """Basic task analysis as fallback"""
+        return f"Task analysis: {task[:100]}..."
+
+    adk_enhanced_analyze_task = FunctionTool(func=basic_analyze_task)
+    adk_enhanced_analyze_task.name = "enhanced_analyze_task"

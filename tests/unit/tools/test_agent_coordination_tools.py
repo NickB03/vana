@@ -13,13 +13,12 @@ FIXED: Updated to match actual function signatures and behavior.
 """
 
 import json
-
-# Import the actual tools from VANA codebase
 import sys
 from pathlib import Path
 
 import pytest
 
+# Import the actual tools from VANA codebase
 sys.path.append(str(Path(__file__).parent.parent.parent.parent))
 
 from lib._tools.adk_tools import adk_coordinate_task, adk_delegate_to_agent, adk_get_agent_status, adk_transfer_to_agent
@@ -90,22 +89,30 @@ class TestAgentCoordinationTools:
 
     @pytest.mark.unit
     def test_adk_coordinate_task_basic(self):
-        """Test basic task coordination functionality"""
+        """Test basic task coordination functionality with STRICT validation"""
         task_description = "Analyze data and create visualization"
 
         # coordinate_task is synchronous and uses ADK delegation pattern
         result = adk_coordinate_task.func(task_description)
 
-        assert isinstance(result, str)
-        assert len(result) > 0
+        assert isinstance(result, str), "Result must be string"
+        assert len(result) > 20, "Coordination result too short to be meaningful"
 
-        # Should contain ADK delegation information
-        result_lower = result.lower()
-        assert (
-            "adk_delegation_ready" in result_lower
-            or "sub_agents" in result_lower
-            or "specialist" in result_lower
-        )
+        # STRICT: Must be valid JSON response
+        parsed = json.loads(result)
+
+        # STRICT: Must have required coordination fields
+        assert "action" in parsed, "Missing action field"
+        assert parsed["action"] == "coordinate_task", "Incorrect action value"
+        assert "task_description" in parsed or task_description in str(
+            parsed
+        ), "Original task not preserved"
+
+        # STRICT: Must have delegation or coordination information
+        required_fields = ["delegation", "coordination", "specialist", "response"]
+        assert any(
+            field in str(parsed).lower() for field in required_fields
+        ), "Missing coordination information"
 
     @pytest.mark.unit
     def test_adk_coordinate_task_with_assigned_agent(self):

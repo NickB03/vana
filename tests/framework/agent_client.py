@@ -98,7 +98,7 @@ class AgentTestClient:
                 "appName": self.agent_name,
                 "userId": self.user_id,
                 "sessionId": session_id,
-                "newMessage": {"parts": [{"text": message}], "role": "user"},
+                "newMessage": {"parts": [{"text": message}]},
                 "streaming": False,
             }
 

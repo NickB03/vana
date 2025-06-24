@@ -10,14 +10,16 @@ from dotenv import load_dotenv
 from google.adk.agents import LlmAgent
 from google.adk.tools import FunctionTool
 
-from lib._tools import (  # File System Tools; Search Tools; System Tools; Agent Coordination Tools; Intelligent Task Analysis Tools; Multi-Agent Workflow Management Tools; MCP Integration Tools
-    adk_analyze_task,
+from lib._tools import adk_enhanced_analyze_task  # Enhanced reasoning version
+from lib._tools import adk_intelligent_echo  # Enhanced reasoning version
+from lib._tools import adk_logical_analyze  # New logical reasoning tool
+from lib._tools import adk_mathematical_solve  # New mathematical reasoning tool
+from lib._tools import adk_reasoning_coordinate_task  # Enhanced reasoning version
+from lib._tools import (  # File System Tools; Search Tools; System Tools; Agent Coordination Tools; Intelligent Task Analysis Tools; Multi-Agent Workflow Management Tools; MCP Integration Tools; Enhanced Reasoning Tools
     adk_cancel_workflow,
     adk_classify_task,
-    adk_coordinate_task,
     adk_create_workflow,
     adk_delegate_to_agent,
-    adk_echo,
     adk_file_exists,
     adk_get_agent_status,
     adk_get_health_status,
@@ -141,7 +143,27 @@ root_agent = LlmAgent(
     model=os.getenv("VANA_MODEL", "gemini-2.0-flash-exp"),
     description="🧠 VANA - Intelligent AI Assistant with Memory-First Decision Strategy",
     output_key="vana_results",
-    instruction="""You are VANA, an intelligent AI assistant with advanced data extraction capabilities.
+    instruction="""You are VANA, an intelligent AI assistant with advanced data extraction and reasoning capabilities.
+
+## 🧠 ENHANCED REASONING CAPABILITIES (NEW)
+You now have access to advanced reasoning tools for mathematical and logical problem solving:
+
+### Mathematical Reasoning
+- **adk_mathematical_solve**: Solve arithmetic expressions (2+2, 10*3+5), word problems ("John has 3 apples, gives away 1, how many left?")
+- **Use for**: All math problems, calculations, quantitative analysis
+- **Features**: Step-by-step reasoning, confidence scoring, multiple solution approaches
+
+### Logical Reasoning
+- **adk_logical_analyze**: Analyze logical problems, if-then statements, logical structures
+- **Use for**: Logic puzzles, reasoning problems, decision analysis
+- **Features**: Structured analysis, reasoning validation, confidence assessment
+
+### Enhanced Analysis
+- **adk_enhanced_analyze_task**: Enhanced task analysis with reasoning capabilities
+- **adk_reasoning_coordinate_task**: Task coordination with reasoning integration
+- **adk_intelligent_echo**: Enhanced echo with reasoning validation
+
+**IMPORTANT**: For any mathematical calculations or logical reasoning problems, ALWAYS use these specialized tools instead of trying to solve them yourself.
 
 ## 🎯 DATA EXTRACTION RULES (CRITICAL)
 When users ask for current information (time, weather, news, facts):
@@ -249,16 +271,19 @@ Remember: Your goal is to provide users with the actual information they request
             adk_web_search,
             adk_search_knowledge,
             # System Tools
-            adk_echo,
+            adk_intelligent_echo,  # Enhanced reasoning version
             adk_get_health_status,
             # Agent Coordination Tools
-            adk_coordinate_task,
+            adk_reasoning_coordinate_task,  # Enhanced reasoning version
             adk_delegate_to_agent,
             adk_get_agent_status,
             # Intelligent Task Analysis Tools
-            adk_analyze_task,
+            adk_enhanced_analyze_task,  # Enhanced reasoning version
             adk_match_capabilities,
             adk_classify_task,
+            # Enhanced Reasoning Tools
+            adk_mathematical_solve,  # New mathematical reasoning tool
+            adk_logical_analyze,  # New logical reasoning tool
             # Multi-Agent Workflow Management Tools
             adk_create_workflow,
             adk_start_workflow,

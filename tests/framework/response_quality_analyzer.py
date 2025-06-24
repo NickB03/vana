@@ -129,7 +129,7 @@ class ResponseQualityAnalyzer:
     ) -> float:
         """Measure factual accuracy of agent responses"""
         if not expected_data and not validation_criteria:
-            return 0.8  # Default score when no expected data available
+            return 0.5  # STRICT: Low score when no validation criteria - requires human review
 
         accuracy_score = 0.0
         total_checks = 0
@@ -167,7 +167,9 @@ class ResponseQualityAnalyzer:
                 if self._verify_fact_in_response(response, fact_type, expected_value):
                     accuracy_score += 1.0
 
-        return accuracy_score / total_checks if total_checks > 0 else 0.8
+        return (
+            accuracy_score / total_checks if total_checks > 0 else 0.5
+        )  # STRICT: Low score without validation
 
     def analyze_completeness(
         self,
@@ -207,7 +209,7 @@ class ResponseQualityAnalyzer:
         query_completeness = (
             addressed_requirements / len(query_requirements)
             if query_requirements
-            else 0.8
+            else 0.4  # STRICT: Low score for responses without clear structure
         )
 
         # Combine scores
@@ -219,7 +221,7 @@ class ResponseQualityAnalyzer:
         response_keywords = self._extract_keywords(response)
 
         if not query_keywords:
-            return 0.8  # Default if no keywords extracted
+            return 0.3  # STRICT: Very low score if no relevance can be determined
 
         # Calculate keyword overlap
         overlap = len(set(query_keywords) & set(response_keywords))
@@ -495,7 +497,7 @@ class ResponseQualityAnalyzer:
         if 5 <= avg_length <= 25:
             return 1.0
         elif avg_length < 5:
-            return 0.6  # Too short
+            return 0.2  # STRICT: Very low score for too short responses
         else:
             return 0.7  # Too long
 
@@ -519,7 +521,7 @@ class ResponseQualityAnalyzer:
         response_sentences = len(re.split(r"[.!?]+", response))
 
         if response_sentences <= 1:
-            return 0.8  # Single sentence, hard to judge flow
+            return 0.6  # STRICT: Lower score for single sentence responses
 
         connector_ratio = connector_count / response_sentences
 
