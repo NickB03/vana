@@ -62,30 +62,30 @@ steps:
         sleep 30
         
         # Get service URL
-        SERVICE_URL=$(gcloud run services describe vana-enhanced-dev \
+        SERVICE_URL=$$(gcloud run services describe vana-enhanced-dev \
           --region=us-central1 \
           --format='value(status.url)')
         
-        echo "Service URL: $SERVICE_URL"
+        echo "Service URL: $$SERVICE_URL"
         
         # Test health endpoint
         echo "Testing health endpoint..."
-        curl -f "$SERVICE_URL/health" || echo "Health check failed"
+        curl -f "$$SERVICE_URL/health" || echo "Health check failed"
         
         # Test enhanced features
         echo "Testing enhanced features..."
-        INFO_RESPONSE=$(curl -s "$SERVICE_URL/info")
+        INFO_RESPONSE=$$(curl -s "$$SERVICE_URL/info")
         echo "Info response received"
         
         # Validate enhanced reasoning features are present
-        if echo "$INFO_RESPONSE" | grep -q "enhanced_features"; then
+        if echo "$$INFO_RESPONSE" | grep -q "enhanced_features"; then
           echo "✅ Enhanced features detected in deployment"
         else
           echo "❌ Enhanced features not found in deployment"
           exit 1
         fi
         
-        if echo "$INFO_RESPONSE" | grep -q "reasoning_tools.*5"; then
+        if echo "$$INFO_RESPONSE" | grep -q "reasoning_tools.*5"; then
           echo "✅ All 5 reasoning tools confirmed"
         else
           echo "❌ Reasoning tools count incorrect"
