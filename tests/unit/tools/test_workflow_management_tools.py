@@ -412,8 +412,8 @@ class TestWorkflowManagementIntegration:
             execution_time = end_time - start_time
 
             # Should be reasonably fast (under 2 seconds)
-            assert (
-                execution_time < 2.0
-            ), f"Tool {tool.name} took too long: {execution_time:.2f}s"
+            assert execution_time < 2.0, (
+                f"Tool {tool.name} took too long: {execution_time:.2f}s"
+            )
             assert isinstance(result, str)
             assert len(result) > 0

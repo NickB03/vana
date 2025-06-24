@@ -79,8 +79,17 @@ class MCPServerRegistry:
                 server_type=MCPServerType.DOCKER,
                 package_name="ghcr.io/github/github-mcp-server",
                 command="docker",
-                args=["run", "-i", "--rm", "-e", "GITHUB_PERSONAL_ACCESS_TOKEN", "ghcr.io/github/github-mcp-server"],
-                env_vars={"GITHUB_PERSONAL_ACCESS_TOKEN": os.getenv("GITHUB_TOKEN", "")},
+                args=[
+                    "run",
+                    "-i",
+                    "--rm",
+                    "-e",
+                    "GITHUB_PERSONAL_ACCESS_TOKEN",
+                    "ghcr.io/github/github-mcp-server",
+                ],
+                env_vars={
+                    "GITHUB_PERSONAL_ACCESS_TOKEN": os.getenv("GITHUB_TOKEN", "")
+                },
                 description="Complete GitHub workflow automation",
                 category="development",
                 priority=1,
@@ -121,7 +130,10 @@ class MCPServerRegistry:
                 args=["-y", "@notionhq/notion-mcp-server"],
                 env_vars={
                     "OPENAPI_MCP_HEADERS": json.dumps(
-                        {"Authorization": f"Bearer {os.getenv('NOTION_API_TOKEN', '')}", "Notion-Version": "2022-06-28"}
+                        {
+                            "Authorization": f"Bearer {os.getenv('NOTION_API_TOKEN', '')}",
+                            "Notion-Version": "2022-06-28",
+                        }
                     )
                 },
                 description="Knowledge management and documentation automation",
@@ -141,7 +153,9 @@ class MCPServerRegistry:
                 command="npx",
                 args=["-y", "@mongodb-js/mongodb-mcp-server"],
                 env_vars={
-                    "MONGODB_CONNECTION_STRING": os.getenv("MONGODB_CONNECTION_STRING", ""),
+                    "MONGODB_CONNECTION_STRING": os.getenv(
+                        "MONGODB_CONNECTION_STRING", ""
+                    ),
                     "FASTMCP_LOG_LEVEL": "ERROR",
                 },
                 description="Database operations and management",
@@ -161,7 +175,9 @@ class MCPServerRegistry:
         """Get MCP server configuration by name"""
         return self.servers.get(name)
 
-    def list_servers(self, category: Optional[str] = None, priority: Optional[int] = None) -> List[MCPServerConfig]:
+    def list_servers(
+        self, category: Optional[str] = None, priority: Optional[int] = None
+    ) -> List[MCPServerConfig]:
         """List MCP servers with optional filtering"""
         servers = list(self.servers.values())
 
@@ -195,19 +211,27 @@ class MCPServerManager:
         try:
             if config.server_type == MCPServerType.NPM_GLOBAL:
                 result = subprocess.run(
-                    ["npm", "install", "-g", config.package_name], capture_output=True, text=True, check=True
+                    ["npm", "install", "-g", config.package_name],
+                    capture_output=True,
+                    text=True,
+                    check=True,
                 )
                 logger.info(f"Installed {server_name}: {result.stdout}")
 
             elif config.server_type == MCPServerType.DOCKER:
                 result = subprocess.run(
-                    ["docker", "pull", config.docker_image], capture_output=True, text=True, check=True
+                    ["docker", "pull", config.docker_image],
+                    capture_output=True,
+                    text=True,
+                    check=True,
                 )
                 logger.info(f"Pulled Docker image for {server_name}: {result.stdout}")
 
             elif config.server_type == MCPServerType.UVX:
                 # UVX handles installation automatically on first run
-                logger.info(f"UVX will handle installation for {server_name} on first run")
+                logger.info(
+                    f"UVX will handle installation for {server_name} on first run"
+                )
 
             return True
 

@@ -128,7 +128,14 @@ class SecurityManager:
                 ],
             },
             "javascript": {
-                "forbidden_functions": ["eval", "Function", "setTimeout", "setInterval", "require", "import"],
+                "forbidden_functions": [
+                    "eval",
+                    "Function",
+                    "setTimeout",
+                    "setInterval",
+                    "require",
+                    "import",
+                ],
                 "forbidden_patterns": [
                     r"require\s*\(",  # Node.js require
                     r"import\s+.*\s+from",  # ES6 imports
@@ -168,7 +175,14 @@ class SecurityManager:
                 "max_memory_mb": 512,
                 "max_cpu_cores": 1,
                 "max_file_size_mb": 10,
-                "allowed_file_extensions": [".txt", ".json", ".csv", ".py", ".js", ".sh"],
+                "allowed_file_extensions": [
+                    ".txt",
+                    ".json",
+                    ".csv",
+                    ".py",
+                    ".js",
+                    ".sh",
+                ],
             },
         }
 
@@ -199,7 +213,9 @@ class SecurityManager:
         if "forbidden_patterns" in policy:
             for pattern in policy["forbidden_patterns"]:
                 if re.search(pattern, code, re.IGNORECASE):
-                    raise SecurityViolationError(f"Code contains forbidden pattern: {pattern}")
+                    raise SecurityViolationError(
+                        f"Code contains forbidden pattern: {pattern}"
+                    )
 
         # Language-specific validation
         if language == "python":
@@ -232,7 +248,9 @@ class SecurityManager:
             elif isinstance(node, ast.Call):
                 if isinstance(node.func, ast.Name):
                     if node.func.id in policy.get("forbidden_functions", []):
-                        raise SecurityViolationError(f"Forbidden function: {node.func.id}")
+                        raise SecurityViolationError(
+                            f"Forbidden function: {node.func.id}"
+                        )
 
     def _validate_javascript_code(self, code: str, policy: Dict[str, Any]) -> None:
         """Validate JavaScript code."""
@@ -268,7 +286,9 @@ class SecurityManager:
                 "network_mode": "none",  # Disable network access
                 "read_only": True,  # Read-only filesystem
                 "tmpfs": {"/tmp": "size=100m,noexec"},  # Temporary filesystem
-                "security_opt": ["no-new-privileges:true"],  # Prevent privilege escalation
+                "security_opt": [
+                    "no-new-privileges:true"
+                ],  # Prevent privilege escalation
                 "cap_drop": ["ALL"],  # Drop all capabilities
                 "user": "sandbox:sandbox",  # Run as non-root user
             }
@@ -404,7 +424,9 @@ class SecurityManager:
                 is_safe=False,
                 risk_level=RiskLevel.HIGH,
                 violations=violations,
-                recommendations=[f"Use supported languages: {list(self.policies.keys())}"],
+                recommendations=[
+                    f"Use supported languages: {list(self.policies.keys())}"
+                ],
             )
 
         policy = self.policies[language]
@@ -439,15 +461,24 @@ class SecurityManager:
 
         # Generate recommendations
         if violations:
-            recommendations.extend([v.recommendation for v in violations if v.recommendation])
+            recommendations.extend(
+                [v.recommendation for v in violations if v.recommendation]
+            )
             if not recommendations:
-                recommendations.append("Review and fix security violations before execution")
+                recommendations.append(
+                    "Review and fix security violations before execution"
+                )
 
         return SecurityResult(
-            is_safe=is_safe, risk_level=risk_level, violations=violations, recommendations=recommendations
+            is_safe=is_safe,
+            risk_level=risk_level,
+            violations=violations,
+            recommendations=recommendations,
         )
 
-    def _validate_python_comprehensive(self, code: str, policy: Dict[str, Any]) -> List[SecurityViolation]:
+    def _validate_python_comprehensive(
+        self, code: str, policy: Dict[str, Any]
+    ) -> List[SecurityViolation]:
         """Comprehensive Python code validation."""
         violations = []
 
@@ -507,7 +538,9 @@ class SecurityManager:
 
         return violations
 
-    def _validate_javascript_comprehensive(self, code: str, policy: Dict[str, Any]) -> List[SecurityViolation]:
+    def _validate_javascript_comprehensive(
+        self, code: str, policy: Dict[str, Any]
+    ) -> List[SecurityViolation]:
         """Comprehensive JavaScript code validation."""
         violations = []
 
@@ -545,7 +578,9 @@ class SecurityManager:
 
         return violations
 
-    def _validate_shell_comprehensive(self, code: str, policy: Dict[str, Any]) -> List[SecurityViolation]:
+    def _validate_shell_comprehensive(
+        self, code: str, policy: Dict[str, Any]
+    ) -> List[SecurityViolation]:
         """Comprehensive shell code validation."""
         violations = []
 
@@ -556,7 +591,9 @@ class SecurityManager:
                     SecurityViolation(
                         violation_type=SecurityViolationType.FORBIDDEN_FUNCTION,
                         description=f"Forbidden shell command: {cmd}",
-                        severity=RiskLevel.CRITICAL if cmd in ["rm", "sudo", "su"] else RiskLevel.HIGH,
+                        severity=RiskLevel.CRITICAL
+                        if cmd in ["rm", "sudo", "su"]
+                        else RiskLevel.HIGH,
                         recommendation=f"Remove {cmd} command or use a safer alternative",
                     )
                 )

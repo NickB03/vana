@@ -119,10 +119,17 @@ class GitHubServer:
         )
 
     # Repository Management
-    def create_repository(self, name: str, description: str, private: bool = False) -> Repository:
+    def create_repository(
+        self, name: str, description: str, private: bool = False
+    ) -> Repository:
         """Create a new GitHub repository."""
         try:
-            data = {"name": name, "description": description, "private": private, "auto_init": True}
+            data = {
+                "name": name,
+                "description": description,
+                "private": private,
+                "auto_init": True,
+            }
 
             response = self.session.post(f"{self.base_url}/user/repos", json=data)
             response.raise_for_status()
@@ -158,9 +165,15 @@ class GitHubServer:
     def list_repositories(self, user: str, limit: int = 50) -> List[Repository]:
         """List user repositories."""
         try:
-            params = {"per_page": min(limit, 100), "sort": "updated", "direction": "desc"}
+            params = {
+                "per_page": min(limit, 100),
+                "sort": "updated",
+                "direction": "desc",
+            }
 
-            response = self.session.get(f"{self.base_url}/users/{user}/repos", params=params)
+            response = self.session.get(
+                f"{self.base_url}/users/{user}/repos", params=params
+            )
             response.raise_for_status()
 
             repos_data = response.json()
@@ -171,7 +184,9 @@ class GitHubServer:
             raise
 
     # Issue Management
-    def create_issue(self, repo: str, title: str, body: str, labels: List[str] = None) -> Issue:
+    def create_issue(
+        self, repo: str, title: str, body: str, labels: List[str] = None
+    ) -> Issue:
         """Create a new issue."""
         try:
             data = {"title": title, "body": body}
@@ -179,7 +194,9 @@ class GitHubServer:
             if labels:
                 data["labels"] = labels
 
-            response = self.session.post(f"{self.base_url}/repos/{repo}/issues", json=data)
+            response = self.session.post(
+                f"{self.base_url}/repos/{repo}/issues", json=data
+            )
             response.raise_for_status()
 
             issue_data = response.json()
@@ -196,7 +213,9 @@ class GitHubServer:
             valid_fields = ["title", "body", "state", "labels", "assignees"]
             data = {k: v for k, v in kwargs.items() if k in valid_fields}
 
-            response = self.session.patch(f"{self.base_url}/repos/{repo}/issues/{issue_number}", json=data)
+            response = self.session.patch(
+                f"{self.base_url}/repos/{repo}/issues/{issue_number}", json=data
+            )
             response.raise_for_status()
 
             issue_data = response.json()
@@ -213,7 +232,12 @@ class GitHubServer:
             if repo:
                 search_query = f"repo:{repo} {query}"
 
-            params = {"q": search_query, "sort": "updated", "order": "desc", "per_page": 50}
+            params = {
+                "q": search_query,
+                "sort": "updated",
+                "order": "desc",
+                "per_page": 50,
+            }
 
             response = self.session.get(f"{self.base_url}/search/issues", params=params)
             response.raise_for_status()
@@ -230,18 +254,25 @@ class GitHubServer:
         try:
             data = {"body": comment}
 
-            response = self.session.post(f"{self.base_url}/repos/{repo}/issues/{issue_number}/comments", json=data)
+            response = self.session.post(
+                f"{self.base_url}/repos/{repo}/issues/{issue_number}/comments",
+                json=data,
+            )
             response.raise_for_status()
 
             comment_data = response.json()
             return self._parse_comment(comment_data)
 
         except requests.exceptions.RequestException as e:
-            logger.error(f"Failed to add comment to issue {issue_number} in {repo}: {e}")
+            logger.error(
+                f"Failed to add comment to issue {issue_number} in {repo}: {e}"
+            )
             raise
 
     # Code Operations
-    def search_code(self, query: str, repo: str = None, language: str = None) -> List[CodeResult]:
+    def search_code(
+        self, query: str, repo: str = None, language: str = None
+    ) -> List[CodeResult]:
         """Search code in repositories."""
         try:
             search_query = query
@@ -250,24 +281,36 @@ class GitHubServer:
             if language:
                 search_query = f"{search_query} language:{language}"
 
-            params = {"q": search_query, "sort": "indexed", "order": "desc", "per_page": 30}
+            params = {
+                "q": search_query,
+                "sort": "indexed",
+                "order": "desc",
+                "per_page": 30,
+            }
 
             response = self.session.get(f"{self.base_url}/search/code", params=params)
             response.raise_for_status()
 
             search_data = response.json()
-            return [self._parse_code_result(result) for result in search_data.get("items", [])]
+            return [
+                self._parse_code_result(result)
+                for result in search_data.get("items", [])
+            ]
 
         except requests.exceptions.RequestException as e:
             logger.error(f"Failed to search code: {e}")
             raise
 
-    def get_file_content(self, repo: str, file_path: str, ref: str = "main") -> FileContent:
+    def get_file_content(
+        self, repo: str, file_path: str, ref: str = "main"
+    ) -> FileContent:
         """Get file content from repository."""
         try:
             params = {"ref": ref}
 
-            response = self.session.get(f"{self.base_url}/repos/{repo}/contents/{file_path}", params=params)
+            response = self.session.get(
+                f"{self.base_url}/repos/{repo}/contents/{file_path}", params=params
+            )
             response.raise_for_status()
 
             file_data = response.json()
@@ -277,12 +320,16 @@ class GitHubServer:
             logger.error(f"Failed to get file content {file_path} from {repo}: {e}")
             raise
 
-    def create_pull_request(self, repo: str, title: str, body: str, head: str, base: str) -> PullRequest:
+    def create_pull_request(
+        self, repo: str, title: str, body: str, head: str, base: str
+    ) -> PullRequest:
         """Create a pull request."""
         try:
             data = {"title": title, "body": body, "head": head, "base": base}
 
-            response = self.session.post(f"{self.base_url}/repos/{repo}/pulls", json=data)
+            response = self.session.post(
+                f"{self.base_url}/repos/{repo}/pulls", json=data
+            )
             response.raise_for_status()
 
             pr_data = response.json()
@@ -315,7 +362,10 @@ class GitHubServer:
             body=issue_data.get("body", ""),
             state=issue_data.get("state", ""),
             author=issue_data.get("user", {}).get("login", ""),
-            assignees=[assignee.get("login", "") for assignee in issue_data.get("assignees", [])],
+            assignees=[
+                assignee.get("login", "")
+                for assignee in issue_data.get("assignees", [])
+            ],
             labels=[label.get("name", "") for label in issue_data.get("labels", [])],
             created_at=issue_data.get("created_at", ""),
             updated_at=issue_data.get("updated_at", ""),

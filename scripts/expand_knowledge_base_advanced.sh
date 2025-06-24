@@ -69,23 +69,23 @@ python scripts/expand_knowledge_base_advanced.py \
 if [ $? -eq 0 ]; then
   echo "✅ Knowledge base expansion completed successfully!"
   echo "Statistics saved to: ${STATS_FILE}"
-  
+
   # Display summary statistics
   echo ""
   echo "===== Expansion Summary ====="
   python -c "import json; stats = json.load(open('${STATS_FILE}')); print(f'Documents Processed: {stats.get(\"documents_processed\", 0)}'); print(f'Chunks Created: {stats.get(\"chunks_created\", 0)}'); print(f'Entities Stored: {stats.get(\"entities_stored\", 0)}'); print(f'Relationships Stored: {stats.get(\"relationships_stored\", 0)}')"
-  
+
   # Run evaluation to measure improvement
   echo ""
   echo "===== Running Evaluation to Measure Improvement ====="
   EVAL_REPORT="logs/post_expansion_evaluation_${TIMESTAMP}.md"
-  
+
   python scripts/enhanced_evaluation.py \
     --queries tests/test_data/comprehensive_test_queries.json \
     --output "${EVAL_REPORT}" \
     --vector-search \
     --enhanced-hybrid-search
-  
+
   if [ $? -eq 0 ]; then
     echo "✅ Post-expansion evaluation completed successfully!"
     echo "Evaluation report saved to: ${EVAL_REPORT}"

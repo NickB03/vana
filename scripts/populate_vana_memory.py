@@ -28,7 +28,9 @@ from lib._shared_libraries.adk_memory_service import get_adk_memory_service
 from lib._shared_libraries.session_manager import get_adk_session_manager
 
 # Configure logging
-logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+)
 logger = logging.getLogger(__name__)
 
 
@@ -212,7 +214,12 @@ class VANAMemoryPopulator:
                     "agent": "coordination_manager",
                     "priority": "high",
                     "category": "agents",
-                    "tags": ["coordination", "communication", "orchestration", "performance"],
+                    "tags": [
+                        "coordination",
+                        "communication",
+                        "orchestration",
+                        "performance",
+                    ],
                 },
             },
             {
@@ -229,15 +236,21 @@ class VANAMemoryPopulator:
 
         return agent_knowledge
 
-    async def populate_memory_batch(self, knowledge_items: List[Dict[str, Any]], batch_name: str):
+    async def populate_memory_batch(
+        self, knowledge_items: List[Dict[str, Any]], batch_name: str
+    ):
         """Populate memory with a batch of knowledge items using ADK session pattern."""
 
         logger.info(f"📚 Populating {batch_name} ({len(knowledge_items)} items)")
 
         if self.dry_run:
-            logger.info(f"🔍 DRY RUN: Would populate {len(knowledge_items)} items for {batch_name}")
+            logger.info(
+                f"🔍 DRY RUN: Would populate {len(knowledge_items)} items for {batch_name}"
+            )
             for item in knowledge_items:
-                logger.info(f"  - {item['metadata']['type']}: {item['content'][:100]}...")
+                logger.info(
+                    f"  - {item['metadata']['type']}: {item['content'][:100]}..."
+                )
             return len(knowledge_items)
 
         success_count = 0
@@ -250,7 +263,9 @@ class VANAMemoryPopulator:
 
                 # Create session with knowledge content (let ADK generate session_id)
                 session = await self.session_manager.create_session(
-                    app_name="vana_knowledge_population", user_id="system", initial_state=item["metadata"]
+                    app_name="vana_knowledge_population",
+                    user_id="system",
+                    initial_state=item["metadata"],
                 )
 
                 # Add knowledge content as a message to the session
@@ -258,7 +273,9 @@ class VANAMemoryPopulator:
                 from google.genai.types import Content, Part
 
                 # Create content for the session
-                knowledge_content = Content(parts=[Part(text=item["content"])], role="assistant")
+                knowledge_content = Content(
+                    parts=[Part(text=item["content"])], role="assistant"
+                )
 
                 # Create an event with the knowledge content
                 knowledge_event = Event(
@@ -269,13 +286,17 @@ class VANAMemoryPopulator:
                 )
 
                 # Add event to session
-                await self.session_manager.session_service.append_event(session, knowledge_event)
+                await self.session_manager.session_service.append_event(
+                    session, knowledge_event
+                )
 
                 # Add the session to memory using ADK pattern
                 await self.memory_service.add_session_to_memory(session)
 
                 success_count += 1
-                logger.info(f"✅ Added: {item['metadata']['type']} (session: {session.id})")
+                logger.info(
+                    f"✅ Added: {item['metadata']['type']} (session: {session.id})"
+                )
 
             except Exception as e:
                 logger.error(f"❌ Failed to add {item['metadata']['type']}: {e}")
@@ -283,7 +304,9 @@ class VANAMemoryPopulator:
 
                 logger.debug(f"Full error: {traceback.format_exc()}")
 
-        logger.info(f"📊 {batch_name}: {success_count}/{len(knowledge_items)} items populated")
+        logger.info(
+            f"📊 {batch_name}: {success_count}/{len(knowledge_items)} items populated"
+        )
         return success_count
 
     async def populate_all_memory(self):
@@ -300,7 +323,9 @@ class VANAMemoryPopulator:
         try:
             # Populate system knowledge
             system_knowledge = self.get_vana_system_knowledge()
-            count = await self.populate_memory_batch(system_knowledge, "System Knowledge")
+            count = await self.populate_memory_batch(
+                system_knowledge, "System Knowledge"
+            )
             total_populated += count
 
             # Populate agent-specific knowledge
@@ -344,7 +369,9 @@ class VANAMemoryPopulator:
                     for i, result in enumerate(results[:2]):
                         content_preview = result.get("content", "")[:100]
                         score = result.get("score", 0)
-                        logger.info(f"  {i+1}. Score: {score:.2f} - {content_preview}...")
+                        logger.info(
+                            f"  {i + 1}. Score: {score:.2f} - {content_preview}..."
+                        )
                 else:
                     logger.warning(f"⚠️ No results found for: {query}")
 
@@ -360,9 +387,17 @@ async def main():
     import argparse
 
     parser = argparse.ArgumentParser(description="Populate VANA memory systems")
-    parser.add_argument("--dry-run", action="store_true", help="Show what would be populated without actually doing it")
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Show what would be populated without actually doing it",
+    )
     parser.add_argument("--verbose", action="store_true", help="Enable verbose logging")
-    parser.add_argument("--test-only", action="store_true", help="Only test memory search, do not populate")
+    parser.add_argument(
+        "--test-only",
+        action="store_true",
+        help="Only test memory search, do not populate",
+    )
 
     args = parser.parse_args()
 
@@ -386,7 +421,9 @@ async def main():
 
         logger.info("\n🎉 VANA Memory Population Completed Successfully!")
         logger.info(f"📊 Total items populated: {populator.populated_count}")
-        logger.info("🧠 Memory systems are now ready for intelligent agent interactions")
+        logger.info(
+            "🧠 Memory systems are now ready for intelligent agent interactions"
+        )
 
         if not args.dry_run:
             logger.info("\n🚀 Next steps:")

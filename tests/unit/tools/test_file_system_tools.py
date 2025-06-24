@@ -17,7 +17,12 @@ import pytest
 
 sys.path.append(str(Path(__file__).parent.parent.parent.parent))
 
-from lib._tools.adk_tools import adk_file_exists, adk_list_directory, adk_read_file, adk_write_file
+from lib._tools.adk_tools import (
+    adk_file_exists,
+    adk_list_directory,
+    adk_read_file,
+    adk_write_file,
+)
 from tests.framework import EnvironmentConfig, EnvironmentType, TestEnvironment
 
 
@@ -208,7 +213,7 @@ class TestFileSystemToolsEdgeCases:
     def test_read_file_binary_file(self, temp_dir):
         """Test reading binary file"""
         binary_file = os.path.join(temp_dir, "binary.bin")
-        binary_content = b"\x00\x01\x02\x03\xFF\xFE\xFD"
+        binary_content = b"\x00\x01\x02\x03\xff\xfe\xfd"
 
         with open(binary_file, "wb") as f:
             f.write(binary_content)

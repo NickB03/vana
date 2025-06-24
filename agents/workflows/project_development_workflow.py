@@ -7,7 +7,10 @@ from agents.specialists.ui_specialist import analyze_user_interface
 from agents.specialists.qa_specialist import analyze_testing_strategy
 from agents.specialists.devops_specialist import analyze_infrastructure
 from agents.specialists.architecture_specialist import analyze_system_architecture
-from agents.memory.specialist_memory_manager import get_specialist_knowledge_func, save_specialist_knowledge_func
+from agents.memory.specialist_memory_manager import (
+    get_specialist_knowledge_func,
+    save_specialist_knowledge_func,
+)
 from google.adk.tools import FunctionTool
 from google.adk.agents import LlmAgent, SequentialAgent
 import os

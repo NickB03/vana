@@ -9,7 +9,14 @@ import requests
 from tools.resilience import CircuitBreakerOpenError, circuit_breaker
 
 # Import security components
-from tools.security import AccessControlManager, AuditLogger, CredentialManager, Operation, Role, require_permission
+from tools.security import (
+    AccessControlManager,
+    AuditLogger,
+    CredentialManager,
+    Operation,
+    Role,
+    require_permission,
+)
 
 # Import environment configuration
 try:
@@ -21,7 +28,9 @@ except ImportError:
         @staticmethod
         def get_mcp_config():
             return {
-                "endpoint": os.environ.get("MCP_ENDPOINT", "https://mcp.community.augment.co"),
+                "endpoint": os.environ.get(
+                    "MCP_ENDPOINT", "https://mcp.community.augment.co"
+                ),
                 "namespace": os.environ.get("MCP_NAMESPACE", "vana-project"),
                 "api_key": os.environ.get("MCP_API_KEY", ""),
             }
@@ -34,7 +43,9 @@ logger = logging.getLogger(__name__)
 class MCPMemoryClient:
     """Client for interacting with MCP Knowledge Graph Memory Server."""
 
-    def __init__(self, endpoint: str = None, namespace: str = None, api_key: str = None):
+    def __init__(
+        self, endpoint: str = None, namespace: str = None, api_key: str = None
+    ):
         """
         Initialize the MCP Memory Client.
 
@@ -64,7 +75,10 @@ class MCPMemoryClient:
             api_key_to_use = api_key
 
         # Set up headers with secure credentials
-        self.headers = {"Content-Type": "application/json", "Authorization": f"Bearer {api_key_to_use}"}
+        self.headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {api_key_to_use}",
+        }
         self.last_sync_timestamp = None
         self.is_available = False
         self.last_connection_check = 0
@@ -95,7 +109,9 @@ class MCPMemoryClient:
                 logger.info(f"Successfully connected to MCP server at {self.endpoint}")
             else:
                 self.is_available = False
-                logger.warning(f"MCP server returned status code {response.status_code}")
+                logger.warning(
+                    f"MCP server returned status code {response.status_code}"
+                )
 
             self.last_connection_check = current_time
             return self.is_available
@@ -108,7 +124,9 @@ class MCPMemoryClient:
 
     @circuit_breaker("mcp_store_entity", failure_threshold=3, reset_timeout=60.0)
     @require_permission(Operation.STORE_ENTITY, entity_type_arg="entity_type")
-    def store_entity(self, entity_name: str, entity_type: str, observations: List[str]) -> Dict[str, Any]:
+    def store_entity(
+        self, entity_name: str, entity_type: str, observations: List[str]
+    ) -> Dict[str, Any]:
         """
         Store a new entity in the knowledge graph.
 
@@ -158,7 +176,11 @@ class MCPMemoryClient:
                 user_id=f"agent:{self.role.value}",
                 operation="store_entity",
                 resource_type="entity",
-                details={"entity_name": entity_name, "entity_type": entity_type, "error": str(e)},
+                details={
+                    "entity_name": entity_name,
+                    "entity_type": entity_type,
+                    "error": str(e),
+                },
                 status="error",
             )
 
@@ -211,7 +233,9 @@ class MCPMemoryClient:
 
             return {"error": str(e), "success": False}
 
-    def create_relationship(self, from_entity: str, relationship: str, to_entity: str) -> Dict[str, Any]:
+    def create_relationship(
+        self, from_entity: str, relationship: str, to_entity: str
+    ) -> Dict[str, Any]:
         """
         Create a relationship between entities.
 
@@ -269,7 +293,9 @@ class MCPMemoryClient:
 
         return result
 
-    def search_entities(self, query: str, entity_type: str = None, limit: int = 10) -> Dict[str, Any]:
+    def search_entities(
+        self, query: str, entity_type: str = None, limit: int = 10
+    ) -> Dict[str, Any]:
         """
         Search for entities in the knowledge graph.
 
@@ -331,11 +357,15 @@ class MCPMemoryClient:
         if "api_key" in safe_payload:
             safe_payload["api_key"] = "***"
 
-        logger.debug(f"Making request to MCP server: {url} (correlation_id: {correlation_id})")
+        logger.debug(
+            f"Making request to MCP server: {url} (correlation_id: {correlation_id})"
+        )
 
         try:
             # Make the request with timeout
-            response = requests.post(url, headers=self.headers, json=payload, timeout=10)
+            response = requests.post(
+                url, headers=self.headers, json=payload, timeout=10
+            )
 
             if response.status_code == 200:
                 # Log success
@@ -344,7 +374,9 @@ class MCPMemoryClient:
             else:
                 # Log error
                 error_msg = f"MCP server returned status code {response.status_code}"
-                logger.error(f"{error_msg}: {response.text} (correlation_id: {correlation_id})")
+                logger.error(
+                    f"{error_msg}: {response.text} (correlation_id: {correlation_id})"
+                )
 
                 # Record failure for circuit breaker
                 raise Exception(error_msg)

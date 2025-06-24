@@ -7,7 +7,9 @@ It integrates all dashboard components and provides a web interface
 for monitoring and managing the VANA system.
 """
 
-from dashboard.routes.vector_search_routes import register_routes as register_vector_search_routes
+from dashboard.routes.vector_search_routes import (
+    register_routes as register_vector_search_routes,
+)
 from dashboard.routes.auth_routes import register_routes as register_auth_routes
 from dashboard.routes.api_routes import register_routes as register_api_routes
 from dashboard.auth.dashboard_auth import DashboardAuth
@@ -27,7 +29,9 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # Configure logging
 logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s", handlers=[logging.StreamHandler()]
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+    handlers=[logging.StreamHandler()],
 )
 logger = logging.getLogger(__name__)
 
@@ -47,7 +51,9 @@ def create_app(config_name=None):
 
     # Configure app
     app.config.from_mapping(
-        SECRET_KEY=os.environ.get("DASHBOARD_SECRET_KEY", "dev-key-change-in-production"),
+        SECRET_KEY=os.environ.get(
+            "DASHBOARD_SECRET_KEY", "dev-key-change-in-production"
+        ),
         SESSION_TYPE="filesystem",
         SESSION_PERMANENT=False,
         SESSION_USE_SIGNER=True,
@@ -61,13 +67,18 @@ def create_app(config_name=None):
         logger.info("Loaded demo configuration from dashboard.config.demo")
     elif config_name:
         # Placeholder for other named configurations if needed in the future
-        logger.warning(f"Configuration '{config_name}' not explicitly handled, using defaults.")
+        logger.warning(
+            f"Configuration '{config_name}' not explicitly handled, using defaults."
+        )
 
     # Override with environment variables if they exist, as they take precedence
     app.config.from_prefixed_env(prefix="VANA_DASHBOARD")
 
     # Create authentication manager if enabled
-    auth_enabled = app.config.get("ENABLE_AUTH", os.environ.get("DASHBOARD_AUTH_ENABLED", "true").lower() == "true")
+    auth_enabled = app.config.get(
+        "ENABLE_AUTH",
+        os.environ.get("DASHBOARD_AUTH_ENABLED", "true").lower() == "true",
+    )
     auth_manager = None
 
     if auth_enabled:
@@ -80,30 +91,45 @@ def create_app(config_name=None):
             # This part might need DashboardAuth to be more flexible or to use a different auth mode
             auth_manager = DashboardAuth(
                 credentials_data={"users": {demo_username: demo_password}},
-                audit_log_file=app.config.get("LOG_FILE_PATH", os.path.join("logs", "audit", "dashboard_auth.log")),
-                token_expiry=int(app.config.get("TOKEN_EXPIRY", os.environ.get("DASHBOARD_TOKEN_EXPIRY", "86400"))),
+                audit_log_file=app.config.get(
+                    "LOG_FILE_PATH", os.path.join("logs", "audit", "dashboard_auth.log")
+                ),
+                token_expiry=int(
+                    app.config.get(
+                        "TOKEN_EXPIRY",
+                        os.environ.get("DASHBOARD_TOKEN_EXPIRY", "86400"),
+                    )
+                ),
                 enable_audit=app.config.get(
-                    "ENABLE_AUDIT", os.environ.get("DASHBOARD_AUDIT_ENABLED", "true").lower() == "true"
+                    "ENABLE_AUDIT",
+                    os.environ.get("DASHBOARD_AUDIT_ENABLED", "true").lower() == "true",
                 ),
             )
         else:
             # Get credentials file path
             credentials_file = os.environ.get(
-                "DASHBOARD_CREDENTIALS_FILE", os.path.join(os.path.dirname(__file__), "auth", "credentials.json")
+                "DASHBOARD_CREDENTIALS_FILE",
+                os.path.join(os.path.dirname(__file__), "auth", "credentials.json"),
             )
             # Get audit log file path
             audit_log_file = os.environ.get(
-                "DASHBOARD_AUDIT_LOG_FILE", os.path.join("logs", "audit", "dashboard_auth.log")
+                "DASHBOARD_AUDIT_LOG_FILE",
+                os.path.join("logs", "audit", "dashboard_auth.log"),
             )
             auth_manager = DashboardAuth(
                 credentials_file=credentials_file,
                 audit_log_file=audit_log_file,
                 token_expiry=int(os.environ.get("DASHBOARD_TOKEN_EXPIRY", "86400")),
-                enable_audit=os.environ.get("DASHBOARD_AUDIT_ENABLED", "true").lower() == "true",
+                enable_audit=os.environ.get("DASHBOARD_AUDIT_ENABLED", "true").lower()
+                == "true",
             )
-            logger.info(f"Authentication enabled with credentials file: {credentials_file}")
+            logger.info(
+                f"Authentication enabled with credentials file: {credentials_file}"
+            )
     else:
-        logger.warning("Authentication is DISABLED - this is not recommended for production!")
+        logger.warning(
+            "Authentication is DISABLED - this is not recommended for production!"
+        )
 
     # Register routes
     register_auth_routes(app, auth_manager)
@@ -134,11 +160,15 @@ def create_app(config_name=None):
 def main():
     """Main function"""
     parser = argparse.ArgumentParser(description="VANA Dashboard")
-    parser.add_argument("--host", type=str, default="127.0.0.1", help="Host to listen on")
+    parser.add_argument(
+        "--host", type=str, default="127.0.0.1", help="Host to listen on"
+    )
     parser.add_argument("--port", type=int, default=5000, help="Port to listen on")
     parser.add_argument("--debug", action="store_true", help="Enable debug mode")
     parser.add_argument("--no-auth", action="store_true", help="Disable authentication")
-    parser.add_argument("--config", type=str, default=None, help="Configuration to use (e.g., 'demo')")
+    parser.add_argument(
+        "--config", type=str, default=None, help="Configuration to use (e.g., 'demo')"
+    )
     args = parser.parse_args()
 
     # Set environment variables

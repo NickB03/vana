@@ -15,7 +15,7 @@ type: system_documentation
 - **Features**: Rate limit protection, intelligent caching
 - **Output**: Structured search results with URLs and snippets
 
-### search_knowledge  
+### search_knowledge
 - **Purpose**: Search VANA knowledge base using RAG pipeline
 - **Usage**: `search_knowledge("VANA capabilities")`
 - **Features**: Semantic search, VANA-specific knowledge

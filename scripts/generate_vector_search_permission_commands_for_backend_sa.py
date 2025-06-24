@@ -14,7 +14,9 @@ from dotenv import load_dotenv
 
 # Configure logging
 logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s", handlers=[logging.StreamHandler()]
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(message)s",
+    handlers=[logging.StreamHandler()],
 )
 logger = logging.getLogger(__name__)
 
@@ -38,7 +40,11 @@ def main():
     logger.info(f"  Service Account: {service_account_email}")
 
     # Define the roles to add
-    roles = ["roles/aiplatform.user", "roles/aiplatform.viewer", "roles/aiplatform.admin"]
+    roles = [
+        "roles/aiplatform.user",
+        "roles/aiplatform.viewer",
+        "roles/aiplatform.admin",
+    ]
 
     # Generate the commands
     logger.info("\n# Run these commands to add Vector Search permissions:")

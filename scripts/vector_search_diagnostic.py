@@ -22,14 +22,20 @@ from google.cloud import aiplatform
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 # Set up logging
-logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+)
 logger = logging.getLogger(__name__)
 
 # Import components
 try:
-    from tools.vector_search.enhanced_vector_search_client import EnhancedVectorSearchClient
+    from tools.vector_search.enhanced_vector_search_client import (
+        EnhancedVectorSearchClient,
+    )
 except ImportError:
-    logger.error("Enhanced Vector Search Client not found. Make sure you're running this script from the project root.")
+    logger.error(
+        "Enhanced Vector Search Client not found. Make sure you're running this script from the project root."
+    )
     sys.exit(1)
 
 
@@ -47,7 +53,9 @@ def check_environment_variables() -> Dict[str, Any]:
         "GOOGLE_CLOUD_LOCATION": os.environ.get("GOOGLE_CLOUD_LOCATION", ""),
         "VECTOR_SEARCH_ENDPOINT_ID": os.environ.get("VECTOR_SEARCH_ENDPOINT_ID", ""),
         "DEPLOYED_INDEX_ID": os.environ.get("DEPLOYED_INDEX_ID", "vanasharedindex"),
-        "GOOGLE_APPLICATION_CREDENTIALS": os.environ.get("GOOGLE_APPLICATION_CREDENTIALS", ""),
+        "GOOGLE_APPLICATION_CREDENTIALS": os.environ.get(
+            "GOOGLE_APPLICATION_CREDENTIALS", ""
+        ),
     }
 
     results = {}
@@ -116,7 +124,9 @@ def check_service_account_permissions() -> Dict[str, Any]:
 
         if not service_account_email:
             logger.error("❌ Service account email not found in credentials file")
-            results["errors"].append("Service account email not found in credentials file")
+            results["errors"].append(
+                "Service account email not found in credentials file"
+            )
             return results
 
         results["service_account_email"] = service_account_email
@@ -169,7 +179,9 @@ def check_service_account_permissions() -> Dict[str, Any]:
                 logger.info(f"✅ Project number: {project_number}")
         except Exception:
             logger.warning("⚠️ Could not get project number from metadata server")
-            results["errors"].append("Could not get project number from metadata server")
+            results["errors"].append(
+                "Could not get project number from metadata server"
+            )
 
         # Try to access Vector Search endpoint
         endpoint_id = os.environ.get("VECTOR_SEARCH_ENDPOINT_ID")
@@ -188,11 +200,19 @@ def check_service_account_permissions() -> Dict[str, Any]:
         else:
             error_info = client.get_error_info()
             if error_info["permission_error"]:
-                logger.error(f"❌ Permission denied for Vector Search: {error_info['last_error']}")
-                results["errors"].append(f"Permission denied for Vector Search: {error_info['last_error']}")
+                logger.error(
+                    f"❌ Permission denied for Vector Search: {error_info['last_error']}"
+                )
+                results["errors"].append(
+                    f"Permission denied for Vector Search: {error_info['last_error']}"
+                )
             else:
-                logger.error(f"❌ Vector Search not available: {error_info['last_error']}")
-                results["errors"].append(f"Vector Search not available: {error_info['last_error']}")
+                logger.error(
+                    f"❌ Vector Search not available: {error_info['last_error']}"
+                )
+                results["errors"].append(
+                    f"Vector Search not available: {error_info['last_error']}"
+                )
     except Exception as e:
         logger.error(f"❌ Error checking Vector Search permissions: {e}")
         results["errors"].append(f"Error checking Vector Search permissions: {e}")
@@ -222,7 +242,9 @@ def test_embedding_generation() -> Dict[str, Any]:
         if embedding and isinstance(embedding, list):
             results["success"] = True
             results["embedding_dimensions"] = len(embedding)
-            logger.info(f"✅ Successfully generated embedding with {len(embedding)} dimensions")
+            logger.info(
+                f"✅ Successfully generated embedding with {len(embedding)} dimensions"
+            )
         else:
             logger.error(f"❌ Failed to generate embedding: {embedding}")
             results["error"] = "Invalid embedding format"
@@ -250,7 +272,9 @@ def test_vector_search() -> Dict[str, Any]:
 
         # Check if Vector Search is available
         if not client.is_available():
-            logger.warning("⚠️ Vector Search not available, will use mock implementation")
+            logger.warning(
+                "⚠️ Vector Search not available, will use mock implementation"
+            )
             results["using_mock"] = True
 
         # Perform search
@@ -260,7 +284,9 @@ def test_vector_search() -> Dict[str, Any]:
         if search_results and isinstance(search_results, list):
             results["success"] = True
             results["results_count"] = len(search_results)
-            logger.info(f"✅ Successfully retrieved {len(search_results)} search results")
+            logger.info(
+                f"✅ Successfully retrieved {len(search_results)} search results"
+            )
 
             # Log first result
             if search_results:
@@ -293,7 +319,9 @@ def generate_permission_fix_instructions(results: Dict[str, Any]) -> str:
 
     instructions = []
 
-    service_account = results["service_account_permissions"].get("service_account_email")
+    service_account = results["service_account_permissions"].get(
+        "service_account_email"
+    )
     project_id = results["service_account_permissions"].get("project_id")
 
     if not service_account:
@@ -307,14 +335,20 @@ def generate_permission_fix_instructions(results: Dict[str, Any]) -> str:
     instructions.append("## Required Roles\n")
     instructions.append("The service account needs the following roles:\n")
     instructions.append("1. `roles/aiplatform.user` - For general Vertex AI access")
-    instructions.append("2. `roles/aiplatform.serviceAgent` - For Vertex AI service agent access")
+    instructions.append(
+        "2. `roles/aiplatform.serviceAgent` - For Vertex AI service agent access"
+    )
     instructions.append("3. `roles/matchingengine.admin` - For Vector Search access\n")
 
     instructions.append("## Fix using Google Cloud Console\n")
-    instructions.append("1. Go to [IAM & Admin > IAM](https://console.cloud.google.com/iam-admin/iam)")
+    instructions.append(
+        "1. Go to [IAM & Admin > IAM](https://console.cloud.google.com/iam-admin/iam)"
+    )
     instructions.append(f"2. Find the service account `{service_account}`")
     instructions.append("3. Click the pencil icon to edit permissions")
-    instructions.append("4. Click 'ADD ANOTHER ROLE' and add each of the required roles")
+    instructions.append(
+        "4. Click 'ADD ANOTHER ROLE' and add each of the required roles"
+    )
     instructions.append("5. Click 'SAVE'\n")
 
     instructions.append("## Fix using gcloud CLI\n")
@@ -355,12 +389,20 @@ def run_diagnostic() -> Dict[str, Any]:
 
     # Generate overall status
     all_env_vars_set = results["environment_variables"]["all_set"]
-    has_permissions = results["service_account_permissions"].get("has_vector_search_permissions", False)
+    has_permissions = results["service_account_permissions"].get(
+        "has_vector_search_permissions", False
+    )
     embedding_success = results["embedding_generation"]["success"]
     search_success = results["vector_search"]["success"]
     using_mock = results["vector_search"]["using_mock"]
 
-    if all_env_vars_set and has_permissions and embedding_success and search_success and not using_mock:
+    if (
+        all_env_vars_set
+        and has_permissions
+        and embedding_success
+        and search_success
+        and not using_mock
+    ):
         results["status"] = "healthy"
         results["message"] = "Vector Search is working correctly."
     elif search_success and using_mock:

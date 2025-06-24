@@ -257,7 +257,12 @@ def create_specialist_agent_tools() -> Dict[str, FunctionTool]:
     devops_tool = FunctionTool(devops_tool_func)
     qa_tool = FunctionTool(qa_tool_func)
 
-    return {"architecture_tool": architecture_tool, "ui_tool": ui_tool, "devops_tool": devops_tool, "qa_tool": qa_tool}
+    return {
+        "architecture_tool": architecture_tool,
+        "ui_tool": ui_tool,
+        "devops_tool": devops_tool,
+        "qa_tool": qa_tool,
+    }
 
 
 def get_specialist_tools_for_vana():

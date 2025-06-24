@@ -32,7 +32,10 @@ class WorkflowTemplates:
         return list(self.templates.keys())
 
     def create_workflow_from_template(
-        self, template_name: str, task_description: str, custom_params: Optional[Dict[str, Any]] = None
+        self,
+        template_name: str,
+        task_description: str,
+        custom_params: Optional[Dict[str, Any]] = None,
     ) -> str:
         """Create a workflow from a template."""
         if template_name not in self.templates:
@@ -48,7 +51,9 @@ class WorkflowTemplates:
         logger.info(f"Created workflow from template '{template_name}': {workflow_id}")
         return workflow_id
 
-    def _data_analysis_template(self, task_description: str, params: Dict[str, Any]) -> Dict[str, Any]:
+    def _data_analysis_template(
+        self, task_description: str, params: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """Template for data analysis workflows."""
         return {
             "name": f"Data Analysis: {task_description[:50]}...",
@@ -92,10 +97,16 @@ class WorkflowTemplates:
                     "timeout_seconds": 300,
                 },
             ],
-            "metadata": {"template": "data_analysis", "domain": "analytics", "complexity": "medium"},
+            "metadata": {
+                "template": "data_analysis",
+                "domain": "analytics",
+                "complexity": "medium",
+            },
         }
 
-    def _code_execution_template(self, task_description: str, params: Dict[str, Any]) -> Dict[str, Any]:
+    def _code_execution_template(
+        self, task_description: str, params: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """Template for code execution workflows."""
         return {
             "name": f"Code Execution: {task_description[:50]}...",
@@ -131,10 +142,16 @@ class WorkflowTemplates:
                     "timeout_seconds": 300,
                 },
             ],
-            "metadata": {"template": "code_execution", "domain": "development", "complexity": "medium"},
+            "metadata": {
+                "template": "code_execution",
+                "domain": "development",
+                "complexity": "medium",
+            },
         }
 
-    def _research_analysis_template(self, task_description: str, params: Dict[str, Any]) -> Dict[str, Any]:
+    def _research_analysis_template(
+        self, task_description: str, params: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """Template for research and analysis workflows."""
         return {
             "name": f"Research & Analysis: {task_description[:50]}...",
@@ -178,10 +195,16 @@ class WorkflowTemplates:
                     "timeout_seconds": 600,
                 },
             ],
-            "metadata": {"template": "research_and_analysis", "domain": "research", "complexity": "high"},
+            "metadata": {
+                "template": "research_and_analysis",
+                "domain": "research",
+                "complexity": "high",
+            },
         }
 
-    def _content_creation_template(self, task_description: str, params: Dict[str, Any]) -> Dict[str, Any]:
+    def _content_creation_template(
+        self, task_description: str, params: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """Template for content creation workflows."""
         return {
             "name": f"Content Creation: {task_description[:50]}...",
@@ -217,10 +240,16 @@ class WorkflowTemplates:
                     "timeout_seconds": 600,
                 },
             ],
-            "metadata": {"template": "content_creation", "domain": "content", "complexity": "medium"},
+            "metadata": {
+                "template": "content_creation",
+                "domain": "content",
+                "complexity": "medium",
+            },
         }
 
-    def _system_monitoring_template(self, task_description: str, params: Dict[str, Any]) -> Dict[str, Any]:
+    def _system_monitoring_template(
+        self, task_description: str, params: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """Template for system monitoring workflows."""
         return {
             "name": f"System Monitoring: {task_description[:50]}...",
@@ -264,10 +293,16 @@ class WorkflowTemplates:
                     "timeout_seconds": 300,
                 },
             ],
-            "metadata": {"template": "system_monitoring", "domain": "operations", "complexity": "medium"},
+            "metadata": {
+                "template": "system_monitoring",
+                "domain": "operations",
+                "complexity": "medium",
+            },
         }
 
-    def _multi_agent_collaboration_template(self, task_description: str, params: Dict[str, Any]) -> Dict[str, Any]:
+    def _multi_agent_collaboration_template(
+        self, task_description: str, params: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """Template for complex multi-agent collaboration workflows."""
         return {
             "name": f"Multi-Agent Collaboration: {task_description[:50]}...",
@@ -319,7 +354,11 @@ class WorkflowTemplates:
                     "timeout_seconds": 600,
                 },
             ],
-            "metadata": {"template": "multi_agent_collaboration", "domain": "orchestration", "complexity": "high"},
+            "metadata": {
+                "template": "multi_agent_collaboration",
+                "domain": "orchestration",
+                "complexity": "high",
+            },
         }
 
 

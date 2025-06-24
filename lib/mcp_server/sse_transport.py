@@ -62,7 +62,10 @@ class MCPSSETransport:
 
             # Validate JSON-RPC format
             if not isinstance(message, dict) or "jsonrpc" not in message:
-                return JSONResponse({"error": {"code": -32600, "message": "Invalid Request"}}, status_code=400)
+                return JSONResponse(
+                    {"error": {"code": -32600, "message": "Invalid Request"}},
+                    status_code=400,
+                )
 
             # Handle different MCP methods
             method = message.get("method", "")
@@ -88,7 +91,10 @@ class MCPSSETransport:
                     {
                         "jsonrpc": "2.0",
                         "id": message_id,
-                        "error": {"code": -32601, "message": f"Method not found: {method}"},
+                        "error": {
+                            "code": -32601,
+                            "message": f"Method not found: {method}",
+                        },
                     }
                 )
 
@@ -98,7 +104,9 @@ class MCPSSETransport:
             return JSONResponse(response)
 
         except json.JSONDecodeError:
-            return JSONResponse({"error": {"code": -32700, "message": "Parse error"}}, status_code=400)
+            return JSONResponse(
+                {"error": {"code": -32700, "message": "Parse error"}}, status_code=400
+            )
         except Exception as e:
             logger.error(f"Message handling error: {e}")
             return JSONResponse(
@@ -113,7 +121,12 @@ class MCPSSETransport:
         """Handle MCP initialize request"""
         return {
             "protocolVersion": "2024-11-05",
-            "capabilities": {"tools": {}, "resources": {}, "prompts": {}, "logging": {}},
+            "capabilities": {
+                "tools": {},
+                "resources": {},
+                "prompts": {},
+                "logging": {},
+            },
             "serverInfo": {
                 "name": "vana-mcp-server",
                 "version": "1.0.0",
@@ -152,7 +165,10 @@ class MCPSSETransport:
                     "inputSchema": {
                         "type": "object",
                         "properties": {
-                            "query": {"type": "string", "description": "Search query string"},
+                            "query": {
+                                "type": "string",
+                                "description": "Search query string",
+                            },
                             "max_results": {
                                 "type": "integer",
                                 "description": "Maximum number of results to return",
@@ -171,10 +187,22 @@ class MCPSSETransport:
                             "operation": {
                                 "type": "string",
                                 "description": "GitHub operation type",
-                                "enum": ["repos", "user_info", "issues", "pull_requests", "create_issue"],
+                                "enum": [
+                                    "repos",
+                                    "user_info",
+                                    "issues",
+                                    "pull_requests",
+                                    "create_issue",
+                                ],
                             },
-                            "owner": {"type": "string", "description": "Repository owner (for repo operations)"},
-                            "repo": {"type": "string", "description": "Repository name (for repo operations)"},
+                            "owner": {
+                                "type": "string",
+                                "description": "Repository owner (for repo operations)",
+                            },
+                            "repo": {
+                                "type": "string",
+                                "description": "Repository name (for repo operations)",
+                            },
                         },
                         "required": ["operation"],
                     },
@@ -197,21 +225,33 @@ class MCPSSETransport:
             elif tool_name == "brave_search_mcp":
                 from lib._tools.adk_mcp_tools import brave_search_mcp
 
-                result = brave_search_mcp(arguments.get("query", ""), arguments.get("max_results", 5))
+                result = brave_search_mcp(
+                    arguments.get("query", ""), arguments.get("max_results", 5)
+                )
             elif tool_name == "github_mcp_operations":
                 from lib._tools.adk_mcp_tools import github_mcp_operations
 
                 result = github_mcp_operations(
-                    arguments.get("operation", ""), **{k: v for k, v in arguments.items() if k != "operation"}
+                    arguments.get("operation", ""),
+                    **{k: v for k, v in arguments.items() if k != "operation"},
                 )
             else:
-                return {"content": [{"type": "text", "text": f"Unknown tool: {tool_name}"}], "isError": True}
+                return {
+                    "content": [{"type": "text", "text": f"Unknown tool: {tool_name}"}],
+                    "isError": True,
+                }
 
-            return {"content": [{"type": "text", "text": json.dumps(result, indent=2)}], "isError": False}
+            return {
+                "content": [{"type": "text", "text": json.dumps(result, indent=2)}],
+                "isError": False,
+            }
 
         except Exception as e:
             logger.error(f"Tool call error for {tool_name}: {e}")
-            return {"content": [{"type": "text", "text": f"Tool error: {str(e)}"}], "isError": True}
+            return {
+                "content": [{"type": "text", "text": f"Tool error: {str(e)}"}],
+                "isError": True,
+            }
 
     async def _handle_list_resources(self, params: Dict[str, Any]) -> Dict[str, Any]:
         """Handle resources/list request"""
@@ -246,7 +286,15 @@ class MCPSSETransport:
                 "status": "operational",
                 "cloud_platform": "Google Cloud Run",
             }
-            return {"contents": [{"uri": uri, "mimeType": "application/json", "text": json.dumps(status, indent=2)}]}
+            return {
+                "contents": [
+                    {
+                        "uri": uri,
+                        "mimeType": "application/json",
+                        "text": json.dumps(status, indent=2),
+                    }
+                ]
+            }
         elif uri == "vana://tools":
             tools_info = {
                 "available_tools": [
@@ -270,7 +318,13 @@ class MCPSSETransport:
                 "mcp_compliant": True,
             }
             return {
-                "contents": [{"uri": uri, "mimeType": "application/json", "text": json.dumps(tools_info, indent=2)}]
+                "contents": [
+                    {
+                        "uri": uri,
+                        "mimeType": "application/json",
+                        "text": json.dumps(tools_info, indent=2),
+                    }
+                ]
             }
         else:
             raise ValueError(f"Unknown resource: {uri}")
@@ -283,7 +337,11 @@ class MCPSSETransport:
                     "name": "vana_analysis",
                     "description": "Structured analysis prompt for complex problems",
                     "arguments": [
-                        {"name": "topic", "description": "Topic or problem to analyze", "required": True},
+                        {
+                            "name": "topic",
+                            "description": "Topic or problem to analyze",
+                            "required": True,
+                        },
                         {
                             "name": "depth",
                             "description": "Analysis depth (basic, detailed, comprehensive)",
@@ -318,6 +376,10 @@ Please provide:
 Use the Context7 sequential thinking framework for comprehensive analysis.
 """
 
-            return {"messages": [{"role": "user", "content": {"type": "text", "text": prompt_text}}]}
+            return {
+                "messages": [
+                    {"role": "user", "content": {"type": "text", "text": prompt_text}}
+                ]
+            }
         else:
             raise ValueError(f"Unknown prompt: {name}")

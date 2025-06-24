@@ -90,7 +90,9 @@ def process_document_advanced(
         if add_to_vector_search and vs_client.is_available():
             try:
                 for chunk in chunks:
-                    vs_client.add_document(text=chunk.get("text", ""), metadata=chunk.get("metadata", {}))
+                    vs_client.add_document(
+                        text=chunk.get("text", ""), metadata=chunk.get("metadata", {})
+                    )
 
                 results["vector_search"]["chunks_added"] = len(chunks)
                 logger.info(f"Added {len(chunks)} chunks to Vector Search")
@@ -105,10 +107,18 @@ def process_document_advanced(
                 kg_result = kg_manager.process_document(document)
 
                 # Update results
-                results["knowledge_graph"]["entities_extracted"] = kg_result.get("entities_extracted", 0)
-                results["knowledge_graph"]["entities_stored"] = kg_result.get("entities_stored", 0)
-                results["knowledge_graph"]["relationships_extracted"] = kg_result.get("relationships_extracted", 0)
-                results["knowledge_graph"]["relationships_stored"] = kg_result.get("relationships_stored", 0)
+                results["knowledge_graph"]["entities_extracted"] = kg_result.get(
+                    "entities_extracted", 0
+                )
+                results["knowledge_graph"]["entities_stored"] = kg_result.get(
+                    "entities_stored", 0
+                )
+                results["knowledge_graph"]["relationships_extracted"] = kg_result.get(
+                    "relationships_extracted", 0
+                )
+                results["knowledge_graph"]["relationships_stored"] = kg_result.get(
+                    "relationships_stored", 0
+                )
 
                 logger.info(f"Added document '{title}' to Knowledge Graph")
                 logger.info(
@@ -160,13 +170,17 @@ def process_directory_advanced(
     # Check if Vector Search is available
     vs_available = vs_client.is_available()
     if not vs_available and add_to_vector_search:
-        logger.warning("Vector Search is not available. Documents will not be added to Vector Search.")
+        logger.warning(
+            "Vector Search is not available. Documents will not be added to Vector Search."
+        )
         add_to_vector_search = False
 
     # Check if Knowledge Graph is available
     kg_available = kg_manager.is_available()
     if not kg_available and add_to_knowledge_graph:
-        logger.warning("Knowledge Graph is not available. Documents will not be added to Knowledge Graph.")
+        logger.warning(
+            "Knowledge Graph is not available. Documents will not be added to Knowledge Graph."
+        )
         add_to_knowledge_graph = False
 
     # Set default file types if not provided
@@ -178,7 +192,9 @@ def process_directory_advanced(
     if recursive:
         for root, _, filenames in os.walk(directory):
             for filename in filenames:
-                if any(filename.lower().endswith(f".{ft.lower()}") for ft in file_types):
+                if any(
+                    filename.lower().endswith(f".{ft.lower()}") for ft in file_types
+                ):
                     files.append(os.path.join(root, filename))
     else:
         for filename in os.listdir(directory):
@@ -217,11 +233,21 @@ def process_directory_advanced(
                 # Update statistics
                 stats["documents_processed"] += 1
                 stats["chunks_created"] += result["document"]["chunk_count"]
-                stats["chunks_added_to_vector_search"] += result["vector_search"].get("chunks_added", 0)
-                stats["entities_extracted"] += result["knowledge_graph"].get("entities_extracted", 0)
-                stats["entities_stored"] += result["knowledge_graph"].get("entities_stored", 0)
-                stats["relationships_extracted"] += result["knowledge_graph"].get("relationships_extracted", 0)
-                stats["relationships_stored"] += result["knowledge_graph"].get("relationships_stored", 0)
+                stats["chunks_added_to_vector_search"] += result["vector_search"].get(
+                    "chunks_added", 0
+                )
+                stats["entities_extracted"] += result["knowledge_graph"].get(
+                    "entities_extracted", 0
+                )
+                stats["entities_stored"] += result["knowledge_graph"].get(
+                    "entities_stored", 0
+                )
+                stats["relationships_extracted"] += result["knowledge_graph"].get(
+                    "relationships_extracted", 0
+                )
+                stats["relationships_stored"] += result["knowledge_graph"].get(
+                    "relationships_stored", 0
+                )
             else:
                 stats["documents_failed"] += 1
 
@@ -233,7 +259,9 @@ def process_directory_advanced(
     logger.info(f"  Documents Processed: {stats['documents_processed']}")
     logger.info(f"  Documents Failed: {stats['documents_failed']}")
     logger.info(f"  Chunks Created: {stats['chunks_created']}")
-    logger.info(f"  Chunks Added to Vector Search: {stats['chunks_added_to_vector_search']}")
+    logger.info(
+        f"  Chunks Added to Vector Search: {stats['chunks_added_to_vector_search']}"
+    )
     logger.info(f"  Entities Extracted: {stats['entities_extracted']}")
     logger.info(f"  Entities Stored: {stats['entities_stored']}")
     logger.info(f"  Relationships Extracted: {stats['relationships_extracted']}")
@@ -246,11 +274,25 @@ def main():
     """Main function"""
     # Parse command line arguments
     parser = argparse.ArgumentParser(description="Advanced Knowledge Base Expansion")
-    parser.add_argument("--directory", required=True, help="Directory containing documents to process")
-    parser.add_argument("--file-types", nargs="+", help="File types to process (e.g., pdf txt md)")
-    parser.add_argument("--recursive", action="store_true", help="Process subdirectories")
-    parser.add_argument("--no-vector-search", action="store_true", help="Don't add documents to Vector Search")
-    parser.add_argument("--no-knowledge-graph", action="store_true", help="Don't add documents to Knowledge Graph")
+    parser.add_argument(
+        "--directory", required=True, help="Directory containing documents to process"
+    )
+    parser.add_argument(
+        "--file-types", nargs="+", help="File types to process (e.g., pdf txt md)"
+    )
+    parser.add_argument(
+        "--recursive", action="store_true", help="Process subdirectories"
+    )
+    parser.add_argument(
+        "--no-vector-search",
+        action="store_true",
+        help="Don't add documents to Vector Search",
+    )
+    parser.add_argument(
+        "--no-knowledge-graph",
+        action="store_true",
+        help="Don't add documents to Knowledge Graph",
+    )
     parser.add_argument("--output", help="Output file for processing statistics")
 
     args = parser.parse_args()

@@ -145,7 +145,9 @@ class MCPClient:
             logger.error(f"Error disconnecting from MCP server {self.config.name}: {e}")
             return False
 
-    async def send_request(self, method: str, params: Dict[str, Any], timeout: int = 30) -> Response:
+    async def send_request(
+        self, method: str, params: Dict[str, Any], timeout: int = 30
+    ) -> Response:
         """Send JSON-RPC request with timeout and retry."""
         if self.status != ConnectionStatus.CONNECTED:
             if not await self.connect():
@@ -155,27 +157,38 @@ class MCPClient:
             try:
                 response = await self._send_request(method, params, timeout)
                 if response.error and attempt < self.config.retry_attempts - 1:
-                    logger.warning(f"Request failed (attempt {attempt + 1}), retrying: {response.error}")
+                    logger.warning(
+                        f"Request failed (attempt {attempt + 1}), retrying: {response.error}"
+                    )
                     await asyncio.sleep(self.config.retry_delay * (attempt + 1))
                     continue
                 return response
 
             except Exception as e:
                 if attempt < self.config.retry_attempts - 1:
-                    logger.warning(f"Request exception (attempt {attempt + 1}), retrying: {e}")
+                    logger.warning(
+                        f"Request exception (attempt {attempt + 1}), retrying: {e}"
+                    )
                     await asyncio.sleep(self.config.retry_delay * (attempt + 1))
                     continue
                 return Response(None, None, {"code": -2, "message": str(e)})
 
         return Response(None, None, {"code": -3, "message": "Max retries exceeded"})
 
-    async def _send_request(self, method: str, params: Dict[str, Any], timeout: int = 30) -> Response:
+    async def _send_request(
+        self, method: str, params: Dict[str, Any], timeout: int = 30
+    ) -> Response:
         """Internal method to send JSON-RPC request."""
         if not self.process or self.process.stdin.is_closing():
             raise RuntimeError("Process not available")
 
         self.request_id += 1
-        request = {"jsonrpc": "2.0", "id": self.request_id, "method": method, "params": params}
+        request = {
+            "jsonrpc": "2.0",
+            "id": self.request_id,
+            "method": method,
+            "params": params,
+        }
 
         # Send request
         request_data = json.dumps(request) + "\n"
@@ -184,7 +197,9 @@ class MCPClient:
 
         # Read response with timeout
         try:
-            response_line = await asyncio.wait_for(self.process.stdout.readline(), timeout=timeout)
+            response_line = await asyncio.wait_for(
+                self.process.stdout.readline(), timeout=timeout
+            )
 
             if not response_line:
                 raise RuntimeError("Empty response from server")
@@ -192,7 +207,9 @@ class MCPClient:
             response_data = json.loads(response_line.decode().strip())
 
             return Response(
-                id=response_data.get("id"), result=response_data.get("result"), error=response_data.get("error")
+                id=response_data.get("id"),
+                result=response_data.get("result"),
+                error=response_data.get("error"),
             )
 
         except asyncio.TimeoutError:
@@ -240,13 +257,20 @@ class MCPClient:
             logger.error(f"Error listing tools: {e}")
             return []
 
-    async def call_tool(self, tool_name: str, arguments: Dict[str, Any]) -> ToolResponse:
+    async def call_tool(
+        self, tool_name: str, arguments: Dict[str, Any]
+    ) -> ToolResponse:
         """Call a specific tool with arguments."""
         try:
-            response = await self.send_request("tools/call", {"name": tool_name, "arguments": arguments})
+            response = await self.send_request(
+                "tools/call", {"name": tool_name, "arguments": arguments}
+            )
 
             if response.error:
-                return ToolResponse(content=[{"type": "text", "text": f"Tool error: {response.error}"}], is_error=True)
+                return ToolResponse(
+                    content=[{"type": "text", "text": f"Tool error: {response.error}"}],
+                    is_error=True,
+                )
 
             result = response.result
             content = result.get("content", [])
@@ -256,7 +280,10 @@ class MCPClient:
 
         except Exception as e:
             logger.error(f"Error calling tool {tool_name}: {e}")
-            return ToolResponse(content=[{"type": "text", "text": f"Exception: {str(e)}"}], is_error=True)
+            return ToolResponse(
+                content=[{"type": "text", "text": f"Exception: {str(e)}"}],
+                is_error=True,
+            )
 
     async def health_check(self) -> bool:
         """Check if connection is healthy."""

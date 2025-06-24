@@ -71,7 +71,12 @@ class HybridSearch:
             Dictionary containing vector_search results, knowledge_graph results,
             combined results, and any error messages
         """
-        results = {"vector_search": [], "knowledge_graph": [], "combined": [], "error": None}
+        results = {
+            "vector_search": [],
+            "knowledge_graph": [],
+            "combined": [],
+            "error": None,
+        }
 
         if not query or not query.strip():
             results["error"] = "Empty query provided"
@@ -89,7 +94,9 @@ class HybridSearch:
             try:
                 if self.vector_search_client.is_available():
                     vs_available = True
-                    vector_results = self.vector_search_client.search(query, top_k=top_k)
+                    vector_results = self.vector_search_client.search(
+                        query, top_k=top_k
+                    )
                     results["vector_search"] = vector_results
                     logger.info(f"Vector Search returned {len(vector_results)} results")
                 else:
@@ -103,7 +110,9 @@ class HybridSearch:
                     kg_available = True
                     kg_results = self.kg_manager.query("*", query)
                     results["knowledge_graph"] = kg_results.get("entities", [])
-                    logger.info(f"Knowledge Graph returned {len(results['knowledge_graph'])} results")
+                    logger.info(
+                        f"Knowledge Graph returned {len(results['knowledge_graph'])} results"
+                    )
                 else:
                     logger.warning("Knowledge Graph is not available")
             except Exception as kg_error:
@@ -111,19 +120,28 @@ class HybridSearch:
 
             # Check if we have any results
             if not vs_available and not kg_available:
-                results["error"] = "Both Vector Search and Knowledge Graph are unavailable"
+                results["error"] = (
+                    "Both Vector Search and Knowledge Graph are unavailable"
+                )
                 logger.error("Both Vector Search and Knowledge Graph are unavailable")
                 return results
 
-            if len(results["vector_search"]) == 0 and len(results["knowledge_graph"]) == 0:
-                logger.info("No results found in either Vector Search or Knowledge Graph")
+            if (
+                len(results["vector_search"]) == 0
+                and len(results["knowledge_graph"]) == 0
+            ):
+                logger.info(
+                    "No results found in either Vector Search or Knowledge Graph"
+                )
 
             # Combine results
             results["combined"] = self._combine_results(
                 results["vector_search"], results["knowledge_graph"], top_k=top_k
             )
 
-            logger.info(f"Combined {len(results['combined'])} results from both sources")
+            logger.info(
+                f"Combined {len(results['combined'])} results from both sources"
+            )
             return results
         except Exception as e:
             error_msg = f"Error in hybrid search: {str(e)}"
@@ -132,7 +150,10 @@ class HybridSearch:
             return results
 
     def _combine_results(
-        self, vector_results: List[Dict[str, Any]], kg_results: List[Dict[str, Any]], top_k: int = 5
+        self,
+        vector_results: List[Dict[str, Any]],
+        kg_results: List[Dict[str, Any]],
+        top_k: int = 5,
     ) -> List[Dict[str, Any]]:
         """Combine and rank results from Vector Search and Knowledge Graph
 
@@ -172,7 +193,9 @@ class HybridSearch:
             length_factor = min(len(observation) / 500, 1.0) * 0.2
 
             # Adjust score based on entity type (can prioritize certain types)
-            type_factor = 0.1 if entity_type in ["project", "technology", "concept"] else 0
+            type_factor = (
+                0.1 if entity_type in ["project", "technology", "concept"] else 0
+            )
 
             # Calculate final score
             final_score = base_score + length_factor + type_factor
@@ -234,7 +257,9 @@ class HybridSearch:
                 formatted += f"Entity: {entity_name} (Type: {entity_type})\n"
                 formatted += f"{content}\n\n"
             else:
-                formatted += f"{i}. [{source.upper()}] (Score: {score:.2f})\n{content}\n\n"
+                formatted += (
+                    f"{i}. [{source.upper()}] (Score: {score:.2f})\n{content}\n\n"
+                )
 
         return formatted
 
@@ -268,8 +293,12 @@ class HybridSearch:
 
         try:
             if self.vector_search_client.is_available():
-                results["vector_search"] = self.vector_search_client.search(query, top_k=top_k)
-                logger.info(f"Vector Search returned {len(results['vector_search'])} results")
+                results["vector_search"] = self.vector_search_client.search(
+                    query, top_k=top_k
+                )
+                logger.info(
+                    f"Vector Search returned {len(results['vector_search'])} results"
+                )
             else:
                 results["error"] = "Vector Search is not available"
                 logger.warning("Vector Search is not available")
@@ -296,7 +325,9 @@ class HybridSearch:
             if self.kg_manager.is_available():
                 kg_results = self.kg_manager.query("*", query)
                 results["knowledge_graph"] = kg_results.get("entities", [])
-                logger.info(f"Knowledge Graph returned {len(results['knowledge_graph'])} results")
+                logger.info(
+                    f"Knowledge Graph returned {len(results['knowledge_graph'])} results"
+                )
             else:
                 results["error"] = "Knowledge Graph is not available"
                 logger.warning("Knowledge Graph is not available")

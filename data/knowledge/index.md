@@ -19,7 +19,7 @@ This knowledge base can be accessed by VANA agents through the `search_knowledge
 # Search for system information
 results = search_knowledge("VANA capabilities")
 
-# Search for agent information  
+# Search for agent information
 results = search_knowledge("Research Agent role")
 
 # Search for tool documentation

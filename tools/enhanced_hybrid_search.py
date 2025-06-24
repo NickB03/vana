@@ -45,7 +45,9 @@ logger = logging.getLogger(__name__)
 class EnhancedHybridSearch(HybridSearch):
     """Enhanced hybrid search combining Vector Search, Knowledge Graph, and Web Search"""
 
-    def __init__(self, vector_search_client=None, kg_manager=None, web_search_client=None):
+    def __init__(
+        self, vector_search_client=None, kg_manager=None, web_search_client=None
+    ):
         """Initialize the enhanced hybrid search
 
         Args:
@@ -65,7 +67,9 @@ class EnhancedHybridSearch(HybridSearch):
             f"Knowledge Graph available: {kg_available}, Web Search available: {web_available}"
         )
 
-    def search(self, query: str, top_k: int = 5, include_web: bool = True) -> Dict[str, Any]:
+    def search(
+        self, query: str, top_k: int = 5, include_web: bool = True
+    ) -> Dict[str, Any]:
         """Search for relevant information using Vector Search, Knowledge Graph, and Web Search
 
         Args:
@@ -77,7 +81,13 @@ class EnhancedHybridSearch(HybridSearch):
             Dictionary containing vector_search results, knowledge_graph results,
             web_search results, combined results, and any error messages
         """
-        results = {"vector_search": [], "knowledge_graph": [], "web_search": [], "combined": [], "error": None}
+        results = {
+            "vector_search": [],
+            "knowledge_graph": [],
+            "web_search": [],
+            "combined": [],
+            "error": None,
+        }
 
         if not query or not query.strip():
             results["error"] = "Empty query provided"
@@ -106,7 +116,9 @@ class EnhancedHybridSearch(HybridSearch):
                 if self.kg_manager.is_available():
                     kg_results = self.kg_manager.query("*", query)
                     results["knowledge_graph"] = kg_results.get("entities", [])
-                    logger.info(f"Knowledge Graph returned {len(results['knowledge_graph'])} results")
+                    logger.info(
+                        f"Knowledge Graph returned {len(results['knowledge_graph'])} results"
+                    )
                 else:
                     logger.warning("Knowledge Graph is not available")
             except Exception as kg_error:
@@ -116,7 +128,9 @@ class EnhancedHybridSearch(HybridSearch):
             if include_web:
                 try:
                     if self.web_search_client.is_available():
-                        web_results = self.web_search_client.search(query, num_results=top_k)
+                        web_results = self.web_search_client.search(
+                            query, num_results=top_k
+                        )
                         results["web_search"] = web_results
                         logger.info(f"Web Search returned {len(web_results)} results")
                     else:
@@ -134,7 +148,10 @@ class EnhancedHybridSearch(HybridSearch):
 
             # Combine results
             results["combined"] = self._combine_results(
-                results["vector_search"], results["knowledge_graph"], results["web_search"], top_k=top_k
+                results["vector_search"],
+                results["knowledge_graph"],
+                results["web_search"],
+                top_k=top_k,
             )
 
             logger.info(f"Combined {len(results['combined'])} results from all sources")
@@ -191,7 +208,9 @@ class EnhancedHybridSearch(HybridSearch):
             length_factor = min(len(observation) / 500, 1.0) * 0.2
 
             # Adjust score based on entity type (can prioritize certain types)
-            type_factor = 0.1 if entity_type in ["project", "technology", "concept"] else 0
+            type_factor = (
+                0.1 if entity_type in ["project", "technology", "concept"] else 0
+            )
 
             # Calculate final score
             final_score = base_score + length_factor + type_factor
@@ -235,7 +254,12 @@ class EnhancedHybridSearch(HybridSearch):
                     "content": content,
                     "score": final_score,
                     "source": "web_search",
-                    "metadata": {"title": title, "url": url, "source": source, "date": date},
+                    "metadata": {
+                        "title": title,
+                        "url": url,
+                        "source": source,
+                        "date": date,
+                    },
                 }
             )
 
@@ -291,7 +315,9 @@ class EnhancedHybridSearch(HybridSearch):
                 formatted += f"{i}. [WEB SEARCH] (Score: {score:.2f})\n"
                 formatted += f"{content}\n\n"
             else:
-                formatted += f"{i}. [{source.upper()}] (Score: {score:.2f})\n{content}\n\n"
+                formatted += (
+                    f"{i}. [{source.upper()}] (Score: {score:.2f})\n{content}\n\n"
+                )
 
         return formatted
 
@@ -310,7 +336,9 @@ class EnhancedHybridSearch(HybridSearch):
 
         try:
             if self.web_search_client.is_available():
-                results["web_search"] = self.web_search_client.search(query, num_results=num_results)
+                results["web_search"] = self.web_search_client.search(
+                    query, num_results=num_results
+                )
                 logger.info(f"Web Search returned {len(results['web_search'])} results")
             else:
                 results["error"] = "Web Search is not available"

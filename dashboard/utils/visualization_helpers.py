@@ -45,7 +45,9 @@ def create_line_chart(data, x_key, y_keys, title, height=None, width=None):
                 df[key] = data[key]
 
         # Melt the DataFrame for Altair
-        df_melted = df.melt(id_vars=[x_key], value_vars=y_keys, var_name="metric", value_name="value")
+        df_melted = df.melt(
+            id_vars=[x_key], value_vars=y_keys, var_name="metric", value_name="value"
+        )
 
         # Create the chart
         chart = (
@@ -94,7 +96,10 @@ def create_bar_chart(data, x_key, y_key, title, height=None, width=None):
         chart = (
             alt.Chart(df)
             .mark_bar()
-            .encode(x=alt.X(f"{x_key}:N", title=x_key.capitalize()), y=alt.Y(f"{y_key}:Q", title=y_key.capitalize()))
+            .encode(
+                x=alt.X(f"{x_key}:N", title=x_key.capitalize()),
+                y=alt.Y(f"{y_key}:Q", title=y_key.capitalize()),
+            )
             .properties(title=title, height=height, width=width)
         )
 
@@ -120,7 +125,9 @@ def create_pie_chart(data, labels, values, title):
     """
     try:
         # Create the chart
-        fig = go.Figure(data=[go.Pie(labels=data[labels], values=data[values], hole=0.3)])
+        fig = go.Figure(
+            data=[go.Pie(labels=data[labels], values=data[values], hole=0.3)]
+        )
 
         # Update layout
         fig.update_layout(
@@ -175,7 +182,11 @@ def create_gauge_chart(value, min_value, max_value, title, threshold=None):
                         {"range": [min_value, threshold], "color": "lightgreen"},
                         {"range": [threshold, max_value], "color": "lightcoral"},
                     ],
-                    "threshold": {"line": {"color": "red", "width": 4}, "thickness": 0.75, "value": threshold},
+                    "threshold": {
+                        "line": {"color": "red", "width": 4},
+                        "thickness": 0.75,
+                        "value": threshold,
+                    },
                 },
             )
         )
@@ -211,7 +222,13 @@ def create_timeline(events, title):
 
         # Create the chart
         fig = px.timeline(
-            df, x_start="start_time", x_end="end_time", y="agent", color="type", hover_name="id", title=title
+            df,
+            x_start="start_time",
+            x_end="end_time",
+            y="agent",
+            color="type",
+            hover_name="id",
+            title=title,
         )
 
         # Update layout
@@ -242,7 +259,13 @@ def create_status_indicator(status, label):
     """
     try:
         # Define colors for different statuses
-        status_colors = {"running": "green", "active": "green", "warning": "orange", "error": "red", "inactive": "gray"}
+        status_colors = {
+            "running": "green",
+            "active": "green",
+            "warning": "orange",
+            "error": "red",
+            "inactive": "gray",
+        }
 
         # Get color for the status
         color = status_colors.get(status.lower(), "gray")
@@ -287,7 +310,9 @@ def create_metric_card(title, value, delta=None, delta_suffix="", formatter=None
 
         # Display the metric
         if delta is not None:
-            st.metric(label=title, value=formatted_value, delta=f"{delta}{delta_suffix}")
+            st.metric(
+                label=title, value=formatted_value, delta=f"{delta}{delta_suffix}"
+            )
         else:
             st.metric(label=title, value=formatted_value)
     except Exception as e:

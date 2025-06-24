@@ -19,12 +19,15 @@ def generate_agent_status(num_agents=5) -> List[Dict[str, Any]]:
     agents = []
     for i in range(num_agents):
         agent = {
-            "id": f"agent_{i+1}",
-            "name": f"Agent {i+1}",
+            "id": f"agent_{i + 1}",
+            "name": f"Agent {i + 1}",
             "status": random.choice(["online", "offline", "degraded"]),
             "response_time_ms": random.randint(50, 500),
             "activity": random.choice(["idle", "processing", "error"]),
-            "last_active": (datetime.datetime.now() - datetime.timedelta(seconds=random.randint(0, 3600))).isoformat(),
+            "last_active": (
+                datetime.datetime.now()
+                - datetime.timedelta(seconds=random.randint(0, 3600))
+            ).isoformat(),
         }
         agents.append(agent)
     return agents
@@ -39,7 +42,10 @@ def generate_memory_usage(num_components=3) -> List[Dict[str, Any]]:
             "capacity_mb": 2048,
             "queries": random.randint(10, 1000),
             "errors": random.randint(0, 5),
-            "last_query": (datetime.datetime.now() - datetime.timedelta(seconds=random.randint(0, 600))).isoformat(),
+            "last_query": (
+                datetime.datetime.now()
+                - datetime.timedelta(seconds=random.randint(0, 600))
+            ).isoformat(),
         }
         components.append(component)
     return components
@@ -53,9 +59,15 @@ def generate_system_health() -> Dict[str, Any]:
         "network_in": random.randint(100, 10000),
         "network_out": random.randint(100, 10000),
         "services": [
-            {"name": "api", "status": random.choice(["running", "stopped", "degraded"])},
+            {
+                "name": "api",
+                "status": random.choice(["running", "stopped", "degraded"]),
+            },
             {"name": "db", "status": random.choice(["running", "stopped", "degraded"])},
-            {"name": "vector_search", "status": random.choice(["running", "stopped", "degraded"])},
+            {
+                "name": "vector_search",
+                "status": random.choice(["running", "stopped", "degraded"]),
+            },
         ],
         "timestamp": datetime.datetime.now().isoformat(),
     }
@@ -65,10 +77,13 @@ def generate_task_execution(num_tasks=10) -> List[Dict[str, Any]]:
     tasks = []
     for i in range(num_tasks):
         task = {
-            "id": f"task_{i+1}",
+            "id": f"task_{i + 1}",
             "type": random.choice(["ingest", "query", "maintenance", "alert"]),
             "status": random.choice(["pending", "running", "completed", "failed"]),
-            "start_time": (datetime.datetime.now() - datetime.timedelta(seconds=random.randint(0, 7200))).isoformat(),
+            "start_time": (
+                datetime.datetime.now()
+                - datetime.timedelta(seconds=random.randint(0, 7200))
+            ).isoformat(),
             "duration_sec": random.randint(1, 600),
             "agent_id": f"agent_{random.randint(1, 5)}",
         }

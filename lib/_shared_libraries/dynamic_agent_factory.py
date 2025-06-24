@@ -103,7 +103,9 @@ class DynamicAgentFactory:
         self.agent_templates[template.name] = template
         self.agent_pool[template.name] = []
 
-    async def get_agent(self, template_name: str, task_context: str = None) -> Optional[AgentInstance]:
+    async def get_agent(
+        self, template_name: str, task_context: str = None
+    ) -> Optional[AgentInstance]:
         """Get an available agent instance, creating one if necessary"""
         if template_name not in self.agent_templates:
             raise ValueError(f"Unknown agent template: {template_name}")
@@ -192,29 +194,37 @@ class DynamicAgentFactory:
 
         # Count by template
         for template_name in self.agent_templates:
-            template_agents = [a for a in self.active_agents.values() if a.template.name == template_name]
+            template_agents = [
+                a
+                for a in self.active_agents.values()
+                if a.template.name == template_name
+            ]
             stats["agents_by_template"][template_name] = len(template_agents)
 
         # Count by state
         for state in AgentState:
-            state_count = len([a for a in self.active_agents.values() if a.state == state])
+            state_count = len(
+                [a for a in self.active_agents.values() if a.state == state]
+            )
             stats["agents_by_state"][state.value] = state_count
 
         # Calculate resource utilization
         total_tasks = sum(len(a.current_tasks) for a in self.active_agents.values())
-        max_possible_tasks = sum(a.template.max_concurrent_tasks for a in self.active_agents.values())
+        max_possible_tasks = sum(
+            a.template.max_concurrent_tasks for a in self.active_agents.values()
+        )
         stats["resource_utilization"]["task_utilization"] = (
             total_tasks / max_possible_tasks if max_possible_tasks > 0 else 0.0
         )
 
         # Performance metrics
         if self.active_agents:
-            avg_tasks_completed = sum(a.total_tasks_completed for a in self.active_agents.values()) / len(
-                self.active_agents
-            )
-            avg_execution_time = sum(a.total_execution_time for a in self.active_agents.values()) / len(
-                self.active_agents
-            )
+            avg_tasks_completed = sum(
+                a.total_tasks_completed for a in self.active_agents.values()
+            ) / len(self.active_agents)
+            avg_execution_time = sum(
+                a.total_execution_time for a in self.active_agents.values()
+            ) / len(self.active_agents)
             stats["performance_metrics"]["avg_tasks_completed"] = avg_tasks_completed
             stats["performance_metrics"]["avg_execution_time"] = avg_execution_time
 
@@ -228,26 +238,39 @@ class DynamicAgentFactory:
         # Check for underutilized templates
         for template_name, count in stats["agents_by_template"].items():
             if count > 2:
-                template_agents = [a for a in self.active_agents.values() if a.template.name == template_name]
+                template_agents = [
+                    a
+                    for a in self.active_agents.values()
+                    if a.template.name == template_name
+                ]
                 idle_agents = [a for a in template_agents if a.state == AgentState.IDLE]
                 if len(idle_agents) > 1:
-                    recommendations.append(f"Consider reducing {template_name} agents - {len(idle_agents)} idle")
+                    recommendations.append(
+                        f"Consider reducing {template_name} agents - {len(idle_agents)} idle"
+                    )
 
         # Check for overutilization
         utilization = stats["resource_utilization"]["task_utilization"]
         if utilization > 0.8:
-            recommendations.append("High resource utilization - consider increasing max_agents")
+            recommendations.append(
+                "High resource utilization - consider increasing max_agents"
+            )
         elif utilization < 0.3:
-            recommendations.append("Low resource utilization - consider reducing agent pool")
+            recommendations.append(
+                "Low resource utilization - consider reducing agent pool"
+            )
 
         # Check for long-running idle agents
         current_time = time.time()
         for agent_instance in self.active_agents.values():
             if (
                 agent_instance.state == AgentState.IDLE
-                and current_time - agent_instance.last_used > agent_instance.template.idle_timeout
+                and current_time - agent_instance.last_used
+                > agent_instance.template.idle_timeout
             ):
-                recommendations.append(f"Agent {agent_instance.agent_id} idle for too long - consider termination")
+                recommendations.append(
+                    f"Agent {agent_instance.agent_id} idle for too long - consider termination"
+                )
 
         return recommendations
 
@@ -298,7 +321,9 @@ class DynamicAgentFactory:
 
         return agent_instance
 
-    async def _wait_for_available_agent(self, template_name: str, timeout: int = 30) -> Optional[AgentInstance]:
+    async def _wait_for_available_agent(
+        self, template_name: str, timeout: int = 30
+    ) -> Optional[AgentInstance]:
         """Wait for an agent to become available"""
         start_time = time.time()
 
@@ -338,12 +363,14 @@ class DynamicAgentFactory:
         for agent_id, agent_instance in self.active_agents.items():
             if (
                 agent_instance.state == AgentState.IDLE
-                and current_time - agent_instance.last_used > agent_instance.template.idle_timeout
+                and current_time - agent_instance.last_used
+                > agent_instance.template.idle_timeout
             ):
-
                 # Keep at least one agent per template
                 template_agents = [
-                    a for a in self.active_agents.values() if a.template.name == agent_instance.template.name
+                    a
+                    for a in self.active_agents.values()
+                    if a.template.name == agent_instance.template.name
                 ]
                 if len(template_agents) > 1:
                     agents_to_terminate.append(agent_id)

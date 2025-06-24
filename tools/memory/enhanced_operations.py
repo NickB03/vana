@@ -25,7 +25,9 @@ logger = logging.getLogger("memory-enhanced")
 try:
     from .ragie_client import query_memory
 except ImportError:
-    logger.warning("Could not import base memory operations. Some features may be limited.")
+    logger.warning(
+        "Could not import base memory operations. Some features may be limited."
+    )
 
     # Mock implementation for testing
     def query_memory(
@@ -48,7 +50,9 @@ class EnhancedMemoryOperations:
         """
         self.api_key = api_key or os.environ.get("RAGIE_API_KEY")
         if not self.api_key:
-            logger.warning("No Ragie API key provided. Set RAGIE_API_KEY environment variable or pass as parameter.")
+            logger.warning(
+                "No Ragie API key provided. Set RAGIE_API_KEY environment variable or pass as parameter."
+            )
 
     def filter_memories_by_date(
         self,
@@ -76,7 +80,9 @@ class EnhancedMemoryOperations:
             end_date = end_date.isoformat()
 
         # Get base results
-        results = query_memory(query, top_k=top_k * 2, api_key=self.api_key)  # Get more results for filtering
+        results = query_memory(
+            query, top_k=top_k * 2, api_key=self.api_key
+        )  # Get more results for filtering
 
         # Filter by date
         filtered_results = []
@@ -115,19 +121,26 @@ class EnhancedMemoryOperations:
             logger.error("No API key available")
             return False
 
-        headers = {"Authorization": f"Bearer {self.api_key}", "Content-Type": "application/json"}
+        headers = {
+            "Authorization": f"Bearer {self.api_key}",
+            "Content-Type": "application/json",
+        }
 
         payload = {"memory_id": memory_id, "tags": tags}
 
         try:
-            response = requests.post("https://api.ragie.ai/tag", json=payload, headers=headers)
+            response = requests.post(
+                "https://api.ragie.ai/tag", json=payload, headers=headers
+            )
             response.raise_for_status()
             return True
         except Exception as e:
             logger.error(f"Error tagging memory: {e}")
             return False
 
-    def filter_memories_by_tags(self, query: str, tags: List[str], top_k: int = 10) -> List[Dict[Any, Any]]:
+    def filter_memories_by_tags(
+        self, query: str, tags: List[str], top_k: int = 10
+    ) -> List[Dict[Any, Any]]:
         """
         Filter memories by tags
 
@@ -143,12 +156,17 @@ class EnhancedMemoryOperations:
             logger.error("No API key available")
             return []
 
-        headers = {"Authorization": f"Bearer {self.api_key}", "Content-Type": "application/json"}
+        headers = {
+            "Authorization": f"Bearer {self.api_key}",
+            "Content-Type": "application/json",
+        }
 
         payload = {"query": query, "tags": tags, "top_k": top_k}
 
         try:
-            response = requests.post("https://api.ragie.ai/retrievals/filter", json=payload, headers=headers)
+            response = requests.post(
+                "https://api.ragie.ai/retrievals/filter", json=payload, headers=headers
+            )
             response.raise_for_status()
 
             # Extract relevant data from response
@@ -169,7 +187,10 @@ class EnhancedMemoryOperations:
             logger.error("No API key available")
             return {"error": "No API key available"}
 
-        headers = {"Authorization": f"Bearer {self.api_key}", "Content-Type": "application/json"}
+        headers = {
+            "Authorization": f"Bearer {self.api_key}",
+            "Content-Type": "application/json",
+        }
 
         try:
             response = requests.get("https://api.ragie.ai/analytics", headers=headers)
@@ -180,7 +201,9 @@ class EnhancedMemoryOperations:
             logger.error(f"Error getting memory analytics: {e}")
             return {"error": str(e)}
 
-    def prioritize_memories(self, query: str, context: str, top_k: int = 5) -> List[Dict[Any, Any]]:
+    def prioritize_memories(
+        self, query: str, context: str, top_k: int = 5
+    ) -> List[Dict[Any, Any]]:
         """
         Prioritize memories based on relevance to both query and context
 
@@ -225,7 +248,9 @@ class EnhancedMemoryOperations:
             if memory_id in combined_results:
                 # Update existing entry
                 combined_results[memory_id]["context_score"] = score
-                combined_results[memory_id]["total_score"] = combined_results[memory_id]["query_score"] + score
+                combined_results[memory_id]["total_score"] = (
+                    combined_results[memory_id]["query_score"] + score
+                )
             else:
                 # Add new entry
                 combined_results[memory_id] = {
@@ -236,7 +261,9 @@ class EnhancedMemoryOperations:
                 }
 
         # Sort by total score and return top results
-        sorted_results = sorted(combined_results.values(), key=lambda x: x["total_score"], reverse=True)
+        sorted_results = sorted(
+            combined_results.values(), key=lambda x: x["total_score"], reverse=True
+        )
 
         return [item["result"] for item in sorted_results[:top_k]]
 

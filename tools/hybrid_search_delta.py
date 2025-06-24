@@ -14,8 +14,16 @@ async def search_knowledge(query: str, top_k: int = 5) -> Dict[str, Any]:
     # Return mock results
     return {
         "results": [
-            {"content": f"Mock result 1 for query: {query}", "score": 0.95, "metadata": {"source": "mock_source_1.md"}},
-            {"content": f"Mock result 2 for query: {query}", "score": 0.85, "metadata": {"source": "mock_source_2.md"}},
+            {
+                "content": f"Mock result 1 for query: {query}",
+                "score": 0.95,
+                "metadata": {"source": "mock_source_1.md"},
+            },
+            {
+                "content": f"Mock result 2 for query: {query}",
+                "score": 0.85,
+                "metadata": {"source": "mock_source_2.md"},
+            },
         ],
         "count": 2,
     }
@@ -109,7 +117,10 @@ class HybridSearchDelta:
         return {
             "results": limited_results,
             "count": len(limited_results),
-            "sources": {"vector_search": vector_results.get("count", 0), "knowledge_graph": kg_results.get("count", 0)},
+            "sources": {
+                "vector_search": vector_results.get("count", 0),
+                "knowledge_graph": kg_results.get("count", 0),
+            },
         }
 
     def format_results(self, results: Dict[str, Any]) -> str:
@@ -144,6 +155,8 @@ class HybridSearchDelta:
         # Add source statistics
         vs_count = results.get("sources", {}).get("vector_search", 0)
         kg_count = results.get("sources", {}).get("knowledge_graph", 0)
-        formatted += f"Sources: {vs_count} from Vector Search, {kg_count} from Knowledge Graph"
+        formatted += (
+            f"Sources: {vs_count} from Vector Search, {kg_count} from Knowledge Graph"
+        )
 
         return formatted

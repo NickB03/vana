@@ -53,7 +53,10 @@ class CapabilityMatcher:
         self.performance_cache = {}
 
     def match_capabilities(
-        self, task: str, context: str = "", required_capabilities: Optional[List[str]] = None
+        self,
+        task: str,
+        context: str = "",
+        required_capabilities: Optional[List[str]] = None,
     ) -> MatchingResult:
         """Match task requirements to available agent capabilities.
 
@@ -82,7 +85,9 @@ class CapabilityMatcher:
         # Score each agent
         agent_matches = []
         for agent_name, agent_info in available_agents.items():
-            match = self._score_agent_match(agent_name, agent_info, required_capabilities, task)
+            match = self._score_agent_match(
+                agent_name, agent_info, required_capabilities, task
+            )
             agent_matches.append(match)
 
         # Sort by overall score
@@ -96,7 +101,9 @@ class CapabilityMatcher:
         coverage_analysis = self._analyze_coverage(agent_matches, required_capabilities)
 
         # Generate recommendations
-        recommendations = self._generate_recommendations(agent_matches, required_capabilities, task)
+        recommendations = self._generate_recommendations(
+            agent_matches, required_capabilities, task
+        )
 
         result = MatchingResult(
             best_match=best_match,
@@ -106,7 +113,9 @@ class CapabilityMatcher:
         )
 
         if best_match:
-            logger.info(f"✅ Best capability match: {best_match.agent_name} (score: {best_match.overall_score:.2f})")
+            logger.info(
+                f"✅ Best capability match: {best_match.agent_name} (score: {best_match.overall_score:.2f})"
+            )
         else:
             logger.warning("⚠️ No suitable capability matches found")
 
@@ -132,7 +141,11 @@ class CapabilityMatcher:
         }
 
     def _score_agent_match(
-        self, agent_name: str, agent_info: AgentCapability, required_capabilities: List[str], task: str
+        self,
+        agent_name: str,
+        agent_info: AgentCapability,
+        required_capabilities: List[str],
+        task: str,
     ) -> CapabilityMatch:
         """Score how well an agent matches the required capabilities."""
 
@@ -157,17 +170,25 @@ class CapabilityMatcher:
                 matched_capabilities.append(req_cap)
                 capability_score += weight
             # Check for partial match (keywords)
-            elif any(keyword in cap for cap in all_agent_capabilities for keyword in req_cap_lower.split("_")):
+            elif any(
+                keyword in cap
+                for cap in all_agent_capabilities
+                for keyword in req_cap_lower.split("_")
+            ):
                 matched_capabilities.append(req_cap)
                 capability_score += weight * 0.7  # Partial match
             else:
                 missing_capabilities.append(req_cap)
 
         # Calculate coverage percentage
-        capability_coverage = len(matched_capabilities) / max(len(required_capabilities), 1)
+        capability_coverage = len(matched_capabilities) / max(
+            len(required_capabilities), 1
+        )
 
         # Normalize capability score
-        normalized_capability_score = capability_score / max(total_weight, 1) if total_weight > 0 else 0
+        normalized_capability_score = (
+            capability_score / max(total_weight, 1) if total_weight > 0 else 0
+        )
 
         # Calculate performance score (based on agent status and historical performance)
         performance_score = self._calculate_performance_score(agent_name, agent_info)
@@ -176,7 +197,11 @@ class CapabilityMatcher:
         availability_score = self._calculate_availability_score(agent_name, agent_info)
 
         # Calculate overall score (weighted combination)
-        overall_score = normalized_capability_score * 0.5 + performance_score * 0.3 + availability_score * 0.2
+        overall_score = (
+            normalized_capability_score * 0.5
+            + performance_score * 0.3
+            + availability_score * 0.2
+        )
 
         # Generate reasoning
         reasoning = self._generate_match_reasoning(
@@ -200,10 +225,18 @@ class CapabilityMatcher:
             reasoning=reasoning,
         )
 
-    def _calculate_performance_score(self, agent_name: str, agent_info: AgentCapability) -> float:
+    def _calculate_performance_score(
+        self, agent_name: str, agent_info: AgentCapability
+    ) -> float:
         """Calculate performance score for an agent."""
         # Base score from agent status
-        status_scores = {"active": 1.0, "idle": 0.9, "busy": 0.7, "offline": 0.0, "error": 0.3}
+        status_scores = {
+            "active": 1.0,
+            "idle": 0.9,
+            "busy": 0.7,
+            "offline": 0.0,
+            "error": 0.3,
+        }
 
         base_score = status_scores.get(agent_info.status.lower(), 0.5)
 
@@ -225,7 +258,9 @@ class CapabilityMatcher:
 
         return min(1.0, base_score)
 
-    def _calculate_availability_score(self, agent_name: str, agent_info: AgentCapability) -> float:
+    def _calculate_availability_score(
+        self, agent_name: str, agent_info: AgentCapability
+    ) -> float:
         """Calculate availability score for an agent."""
         # Base availability from status
         if agent_info.status.lower() == "active":
@@ -263,7 +298,9 @@ class CapabilityMatcher:
         total_coverage = len(all_covered) / max(len(required_capabilities), 1)
 
         # Find uncovered capabilities
-        uncovered_capabilities = [cap for cap in required_capabilities if cap not in all_covered]
+        uncovered_capabilities = [
+            cap for cap in required_capabilities if cap not in all_covered
+        ]
 
         return {
             "total_coverage": total_coverage,
@@ -274,13 +311,18 @@ class CapabilityMatcher:
         }
 
     def _generate_recommendations(
-        self, agent_matches: List[CapabilityMatch], required_capabilities: List[str], task: str
+        self,
+        agent_matches: List[CapabilityMatch],
+        required_capabilities: List[str],
+        task: str,
     ) -> List[str]:
         """Generate recommendations based on capability analysis."""
         recommendations = []
 
         if not agent_matches:
-            recommendations.append("No suitable agents found. Consider adding agents with required capabilities.")
+            recommendations.append(
+                "No suitable agents found. Consider adding agents with required capabilities."
+            )
             return recommendations
 
         best_match = agent_matches[0]
@@ -302,21 +344,29 @@ class CapabilityMatcher:
         # Recommendations for missing capabilities
         if best_match.missing_capabilities:
             missing_caps = ", ".join(best_match.missing_capabilities)
-            recommendations.append(f"Consider fallback for missing capabilities: {missing_caps}")
+            recommendations.append(
+                f"Consider fallback for missing capabilities: {missing_caps}"
+            )
 
         # Recommendations for multiple agents
         if len(agent_matches) > 1 and best_match.capability_coverage < 1.0:
             second_best = agent_matches[1]
             if second_best.overall_score >= 0.5:
-                recommendations.append(f"Consider multi-agent approach with {second_best.agent_name} as secondary")
+                recommendations.append(
+                    f"Consider multi-agent approach with {second_best.agent_name} as secondary"
+                )
 
         # Task-specific recommendations
         task_lower = task.lower()
         if "complex" in task_lower or "multiple" in task_lower:
-            recommendations.append("Consider task decomposition for complex requirements")
+            recommendations.append(
+                "Consider task decomposition for complex requirements"
+            )
 
         if len(required_capabilities) > 3:
-            recommendations.append("Multiple capabilities required - consider orchestrated execution")
+            recommendations.append(
+                "Multiple capabilities required - consider orchestrated execution"
+            )
 
         return recommendations
 
@@ -345,7 +395,7 @@ class CapabilityMatcher:
             if len(matched_capabilities) <= 3:
                 caps_str = ", ".join(matched_capabilities)
             else:
-                caps_str = f"{', '.join(matched_capabilities[:3])} and {len(matched_capabilities)-3} more"
+                caps_str = f"{', '.join(matched_capabilities[:3])} and {len(matched_capabilities) - 3} more"
             reasoning_parts.append(f"matches {caps_str}")
 
         # Missing capabilities
@@ -353,7 +403,7 @@ class CapabilityMatcher:
             if len(missing_capabilities) <= 2:
                 missing_str = ", ".join(missing_capabilities)
             else:
-                missing_str = f"{', '.join(missing_capabilities[:2])} and {len(missing_capabilities)-2} more"
+                missing_str = f"{', '.join(missing_capabilities[:2])} and {len(missing_capabilities) - 2} more"
             reasoning_parts.append(f"missing {missing_str}")
 
         # Performance and availability
@@ -381,7 +431,9 @@ class CapabilityMatcher:
     def update_performance_cache(self, agent_name: str, performance_score: float):
         """Update performance cache with historical data."""
         self.performance_cache[agent_name] = performance_score
-        logger.debug(f"Updated performance cache for {agent_name}: {performance_score:.2f}")
+        logger.debug(
+            f"Updated performance cache for {agent_name}: {performance_score:.2f}"
+        )
 
 
 # Global capability matcher instance

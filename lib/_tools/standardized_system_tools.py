@@ -57,7 +57,9 @@ try:
                     if isinstance(status_info, dict):
                         return f"System Status: {status_info.get('status', 'Unknown')} - Vector Search: Operational"
                     else:
-                        return f"System Status: {status_info} - Vector Search: Operational"
+                        return (
+                            f"System Status: {status_info} - Vector Search: Operational"
+                        )
                 else:
                     return f"System Status: Operational - Vector Search: {vector_health.get('error', 'Error')}"
             else:
@@ -86,7 +88,9 @@ class StandardizedSystemTools:
             StandardToolResponse with echoed message or error information
         """
         # Validate inputs
-        message = InputValidator.validate_string(message, "message", required=True, max_length=5000)
+        message = InputValidator.validate_string(
+            message, "message", required=True, max_length=5000
+        )
 
         # Record usage for analytics
         parameters = {"message_length": len(message)}
@@ -125,7 +129,9 @@ class StandardizedSystemTools:
             # Handle different result formats
             if isinstance(result, dict) and not result.get("success", True):
                 response = StandardToolResponse(
-                    success=False, error=result.get("error", "Health check failed"), tool_name="get_health_status"
+                    success=False,
+                    error=result.get("error", "Health check failed"),
+                    tool_name="get_health_status",
                 )
             else:
                 # Ensure result is properly formatted
@@ -154,7 +160,9 @@ class StandardizedCoordinationTools:
     """Standardized coordination tools with enhanced PLAN/ACT integration."""
 
     @standardized_tool_wrapper("coordinate_task")
-    def coordinate_task(self, task_description: str, assigned_agent: str = "") -> StandardToolResponse:
+    def coordinate_task(
+        self, task_description: str, assigned_agent: str = ""
+    ) -> StandardToolResponse:
         """🎯 Coordinate task assignment with enhanced PLAN/ACT routing.
 
         Args:
@@ -166,14 +174,21 @@ class StandardizedCoordinationTools:
         """
         # Validate inputs
         task_description = InputValidator.validate_string(
-            task_description, "task_description", required=True, min_length=5, max_length=2000
+            task_description,
+            "task_description",
+            required=True,
+            min_length=5,
+            max_length=2000,
         )
         assigned_agent = InputValidator.validate_string(
             assigned_agent, "assigned_agent", required=False, max_length=100
         )
 
         # Record usage for analytics
-        parameters = {"task_description_length": len(task_description), "assigned_agent": assigned_agent}
+        parameters = {
+            "task_description_length": len(task_description),
+            "assigned_agent": assigned_agent,
+        }
 
         try:
             # Import here to avoid circular imports
@@ -226,7 +241,9 @@ class StandardizedCoordinationTools:
         return response
 
     @standardized_tool_wrapper("delegate_to_agent")
-    def delegate_to_agent(self, agent_name: str, task: str, context: str = "") -> StandardToolResponse:
+    def delegate_to_agent(
+        self, agent_name: str, task: str, context: str = ""
+    ) -> StandardToolResponse:
         """🤝 Delegate task with confidence-based agent selection.
 
         Args:
@@ -241,11 +258,19 @@ class StandardizedCoordinationTools:
         agent_name = InputValidator.validate_string(
             agent_name, "agent_name", required=True, min_length=1, max_length=100
         )
-        task = InputValidator.validate_string(task, "task", required=True, min_length=5, max_length=2000)
-        context = InputValidator.validate_string(context, "context", required=False, max_length=1000)
+        task = InputValidator.validate_string(
+            task, "task", required=True, min_length=5, max_length=2000
+        )
+        context = InputValidator.validate_string(
+            context, "context", required=False, max_length=1000
+        )
 
         # Record usage for analytics
-        parameters = {"agent_name": agent_name, "task_length": len(task), "context_length": len(context)}
+        parameters = {
+            "agent_name": agent_name,
+            "task_length": len(task),
+            "context_length": len(context),
+        }
 
         try:
             # Import here to avoid circular imports
@@ -255,7 +280,9 @@ class StandardizedCoordinationTools:
 
             # Get confidence score for the specified agent
             task_analysis = scorer.analyze_task(task)
-            confidence_score = scorer.calculate_agent_confidence(agent_name, task_analysis)
+            confidence_score = scorer.calculate_agent_confidence(
+                agent_name, task_analysis
+            )
 
             # Updated agent responses with functional names
             agent_responses = {
@@ -266,7 +293,9 @@ class StandardizedCoordinationTools:
                 "vana": f"🎯 VANA Orchestrator: Coordinating multi-agent approach for '{task}'",
             }
 
-            base_response = agent_responses.get(agent_name.lower(), f"❓ Unknown agent: {agent_name}")
+            base_response = agent_responses.get(
+                agent_name.lower(), f"❓ Unknown agent: {agent_name}"
+            )
 
             delegation_result = {
                 "agent_name": agent_name,
@@ -282,9 +311,13 @@ class StandardizedCoordinationTools:
             # Add collaboration recommendations if needed
             if task_analysis.collaboration_needed:
                 collab_recs = scorer.get_collaboration_recommendations(task)
-                collab_agents = [agent for agent, _ in collab_recs if agent != agent_name]
+                collab_agents = [
+                    agent for agent, _ in collab_recs if agent != agent_name
+                ]
                 if collab_agents:
-                    delegation_result["collaboration_recommendations"] = collab_agents[:2]
+                    delegation_result["collaboration_recommendations"] = collab_agents[
+                        :2
+                    ]
 
             response = StandardToolResponse(
                 success=True,
@@ -308,7 +341,9 @@ class StandardizedCoordinationTools:
             fallback_result = {
                 "agent_name": agent_name,
                 "task": task,
-                "response": fallback_responses.get(agent_name.lower(), f"❓ Unknown agent: {agent_name}"),
+                "response": fallback_responses.get(
+                    agent_name.lower(), f"❓ Unknown agent: {agent_name}"
+                ),
                 "fallback_used": True,
             }
 
@@ -359,8 +394,16 @@ class StandardizedCoordinationTools:
                         "role": "interface_design",
                         "capabilities": "user_experience",
                     },
-                    "devops_specialist": {"status": "active", "role": "infrastructure", "capabilities": "deployment"},
-                    "qa_specialist": {"status": "active", "role": "testing", "capabilities": "quality_assurance"},
+                    "devops_specialist": {
+                        "status": "active",
+                        "role": "infrastructure",
+                        "capabilities": "deployment",
+                    },
+                    "qa_specialist": {
+                        "status": "active",
+                        "role": "testing",
+                        "capabilities": "quality_assurance",
+                    },
                 },
                 "enhanced_capabilities": {
                     "plan_act_mode_switching": True,
@@ -380,14 +423,21 @@ class StandardizedCoordinationTools:
                 success=True,
                 data=status_result,
                 tool_name="get_agent_status",
-                metadata={"total_agents": 5, "all_operational": True, "enhanced_features": True},
+                metadata={
+                    "total_agents": 5,
+                    "all_operational": True,
+                    "enhanced_features": True,
+                },
             )
         except Exception as e:
             # Fallback to simple status
             fallback_status = {
                 "agents": {
                     "vana": {"status": "active", "role": "orchestrator"},
-                    "architecture_specialist": {"status": "active", "role": "system_design"},
+                    "architecture_specialist": {
+                        "status": "active",
+                        "role": "system_design",
+                    },
                     "ui_specialist": {"status": "active", "role": "interface_design"},
                     "devops_specialist": {"status": "active", "role": "infrastructure"},
                     "qa_specialist": {"status": "active", "role": "testing"},
@@ -408,7 +458,9 @@ class StandardizedCoordinationTools:
         return response
 
     @standardized_tool_wrapper("transfer_to_agent")
-    def transfer_to_agent(self, agent_name: str, context: str = "") -> StandardToolResponse:
+    def transfer_to_agent(
+        self, agent_name: str, context: str = ""
+    ) -> StandardToolResponse:
         """🔄 Transfer conversation to specified agent (Google ADK Pattern).
 
         This implements the critical Google ADK transfer_to_agent() pattern for
@@ -425,7 +477,13 @@ class StandardizedCoordinationTools:
 
         try:
             # Validate agent name
-            valid_agents = ["vana", "architecture_specialist", "ui_specialist", "devops_specialist", "qa_specialist"]
+            valid_agents = [
+                "vana",
+                "architecture_specialist",
+                "ui_specialist",
+                "devops_specialist",
+                "qa_specialist",
+            ]
             if agent_name not in valid_agents:
                 return StandardToolResponse(
                     success=False,
@@ -440,7 +498,12 @@ class StandardizedCoordinationTools:
 
             # Get target agent capabilities
             agent_capabilities = {
-                "vana": ["task_orchestration", "agent_coordination", "context_management", "memory_integration"],
+                "vana": [
+                    "task_orchestration",
+                    "agent_coordination",
+                    "context_management",
+                    "memory_integration",
+                ],
                 "architecture_specialist": [
                     "system_architecture",
                     "design_patterns",
@@ -481,7 +544,9 @@ class StandardizedCoordinationTools:
 
             # Add context-specific guidance
             if context:
-                transfer_data["context_guidance"] = f"Agent {agent_name} should focus on: {context}"
+                transfer_data["context_guidance"] = (
+                    f"Agent {agent_name} should focus on: {context}"
+                )
 
             response = StandardToolResponse(
                 success=True,
@@ -499,7 +564,11 @@ class StandardizedCoordinationTools:
                 success=False,
                 error=f"Failed to transfer to agent '{agent_name}': {str(e)}",
                 tool_name="transfer_to_agent",
-                metadata={"error_type": "transfer_error", "target_agent": agent_name, "error_details": str(e)},
+                metadata={
+                    "error_type": "transfer_error",
+                    "target_agent": agent_name,
+                    "error_details": str(e),
+                },
             )
 
         # Record analytics
@@ -525,15 +594,23 @@ def standardized_get_health_status() -> str:
     return result.to_string()
 
 
-def standardized_coordinate_task(task_description: str, assigned_agent: str = "") -> str:
+def standardized_coordinate_task(
+    task_description: str, assigned_agent: str = ""
+) -> str:
     """🎯 Task coordination with standardized interface - returns string for ADK compatibility."""
-    result = standardized_coordination_tools.coordinate_task(task_description, assigned_agent)
+    result = standardized_coordination_tools.coordinate_task(
+        task_description, assigned_agent
+    )
     return result.to_string()
 
 
-def standardized_delegate_to_agent(agent_name: str, task: str, context: str = "") -> str:
+def standardized_delegate_to_agent(
+    agent_name: str, task: str, context: str = ""
+) -> str:
     """🤝 Agent delegation with standardized interface - returns string for ADK compatibility."""
-    result = standardized_coordination_tools.delegate_to_agent(agent_name, task, context)
+    result = standardized_coordination_tools.delegate_to_agent(
+        agent_name, task, context
+    )
     return result.to_string()
 
 

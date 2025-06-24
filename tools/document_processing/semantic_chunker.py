@@ -17,7 +17,12 @@ logger = logging.getLogger(__name__)
 class SemanticChunker:
     """Semantic document chunking implementation for VANA"""
 
-    def __init__(self, target_chunk_size: int = 3000, min_chunk_size: int = 500, overlap_size: int = 300):
+    def __init__(
+        self,
+        target_chunk_size: int = 3000,
+        min_chunk_size: int = 500,
+        overlap_size: int = 300,
+    ):
         """
         Initialize the semantic chunker
 
@@ -93,7 +98,9 @@ class SemanticChunker:
 
         # If no sections were found, treat the entire document as one section
         if not sections:
-            sections.append({"text": text.strip(), "path": "", "heading": document.get("title", "")})
+            sections.append(
+                {"text": text.strip(), "path": "", "heading": document.get("title", "")}
+            )
 
         return sections
 
@@ -113,7 +120,9 @@ class SemanticChunker:
         # Filter empty paragraphs
         return [p.strip() for p in paragraphs if p.strip()]
 
-    def get_overlap_paragraphs(self, paragraphs: List[str], target_tokens: int) -> List[str]:
+    def get_overlap_paragraphs(
+        self, paragraphs: List[str], target_tokens: int
+    ) -> List[str]:
         """
         Get paragraphs to use as overlap context
 
@@ -302,7 +311,10 @@ class SemanticChunker:
                         current_tokens = sent_tokens
 
                 # Normal paragraph processing
-                elif current_tokens + para_tokens > self.target_chunk_size and current_tokens >= self.min_chunk_size:
+                elif (
+                    current_tokens + para_tokens > self.target_chunk_size
+                    and current_tokens >= self.min_chunk_size
+                ):
                     # Create chunk
                     chunk_text = "\n\n".join(current_chunk)
                     chunks.append(
@@ -320,9 +332,14 @@ class SemanticChunker:
                     )
 
                     # Start new chunk with overlap
-                    overlap_paragraphs = self.get_overlap_paragraphs(current_chunk, self.overlap_size)
+                    overlap_paragraphs = self.get_overlap_paragraphs(
+                        current_chunk, self.overlap_size
+                    )
                     current_chunk = overlap_paragraphs + [paragraph]
-                    current_tokens = sum(self.count_tokens(p) for p in overlap_paragraphs) + para_tokens
+                    current_tokens = (
+                        sum(self.count_tokens(p) for p in overlap_paragraphs)
+                        + para_tokens
+                    )
                 else:
                     # Add paragraph to current chunk
                     current_chunk.append(paragraph)
@@ -355,7 +372,9 @@ class SemanticChunker:
                     if prev_tokens + current_tokens <= self.target_chunk_size * 1.2:
                         combined_text = prev_text + "\n\n" + "\n\n".join(current_chunk)
                         chunks[-1]["text"] = combined_text
-                        chunks[-1]["metadata"]["token_count"] = prev_tokens + current_tokens
+                        chunks[-1]["metadata"]["token_count"] = (
+                            prev_tokens + current_tokens
+                        )
                     else:
                         # Add as a separate chunk even though it's small
                         chunk_text = "\n\n".join(current_chunk)
@@ -398,7 +417,10 @@ class SemanticChunker:
             # Add document metadata if available
             if document.get("metadata"):
                 for key, value in document.get("metadata").items():
-                    if key not in chunk["metadata"] and key not in ["token_count", "chunk_id"]:
+                    if key not in chunk["metadata"] and key not in [
+                        "token_count",
+                        "chunk_id",
+                    ]:
                         chunk["metadata"][f"doc_{key}"] = value
 
         logger.info(f"Created {len(chunks)} semantic chunks from document")

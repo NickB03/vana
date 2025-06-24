@@ -12,7 +12,7 @@ type: system_documentation
 ### Import Hanging Issues
 - **Symptoms**: Python imports hang or timeout
 - **Causes**: Heavy dependency chains, blocking authentication
-- **Solutions**: 
+- **Solutions**:
   - Recreate Poetry environment
   - Use lazy loading patterns
   - Check authentication configuration

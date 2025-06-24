@@ -51,7 +51,12 @@ class VectorSearchHealthChecker:
         client = self._get_vector_search_client()
         if not client:
             result["status"] = "critical"
-            result["issues"].append({"severity": "critical", "message": "Failed to initialize Vector Search client"})
+            result["issues"].append(
+                {
+                    "severity": "critical",
+                    "message": "Failed to initialize Vector Search client",
+                }
+            )
             self._add_to_history(result)
             return result
 
@@ -68,7 +73,10 @@ class VectorSearchHealthChecker:
 
         # Calculate metrics
         duration = time.time() - start_time
-        result["metrics"] = {"response_time": duration, "success_rate": self._calculate_success_rate(result["checks"])}
+        result["metrics"] = {
+            "response_time": duration,
+            "success_rate": self._calculate_success_rate(result["checks"]),
+        }
 
         # Add to history
         self._add_to_history(result)
@@ -76,7 +84,9 @@ class VectorSearchHealthChecker:
 
         return result
 
-    def get_recommendations(self, health_result: Dict[str, Any]) -> List[Dict[str, Any]]:
+    def get_recommendations(
+        self, health_result: Dict[str, Any]
+    ) -> List[Dict[str, Any]]:
         """Generate recommendations based on health check results"""
         recommendations = []
         checks = health_result.get("checks", {})
@@ -186,8 +196,14 @@ class VectorSearchHealthChecker:
             return {}
 
         # Extract metrics over time
-        response_times = [check.get("metrics", {}).get("response_time", 0) for check in self.health_history]
-        success_rates = [check.get("metrics", {}).get("success_rate", 0) for check in self.health_history]
+        response_times = [
+            check.get("metrics", {}).get("response_time", 0)
+            for check in self.health_history
+        ]
+        success_rates = [
+            check.get("metrics", {}).get("success_rate", 0)
+            for check in self.health_history
+        ]
 
         # Calculate trends
         trends = {
@@ -200,7 +216,9 @@ class VectorSearchHealthChecker:
                     else (
                         "degrading"
                         if response_times[-1] > response_times[-2]
-                        else "stable" if len(response_times) > 1 else "unknown"
+                        else "stable"
+                        if len(response_times) > 1
+                        else "unknown"
                     )
                 ),
             },
@@ -213,7 +231,9 @@ class VectorSearchHealthChecker:
                     else (
                         "degrading"
                         if success_rates[-1] < success_rates[-2]
-                        else "stable" if len(success_rates) > 1 else "unknown"
+                        else "stable"
+                        if len(success_rates) > 1
+                        else "unknown"
                     )
                 ),
             },
@@ -238,8 +258,12 @@ class VectorSearchHealthChecker:
         return {
             "check_count": len(statuses),
             "status_counts": status_counts,
-            "first_check_time": self.health_history[0].get("timestamp") if self.health_history else None,
-            "last_check_time": self.health_history[-1].get("timestamp") if self.health_history else None,
+            "first_check_time": self.health_history[0].get("timestamp")
+            if self.health_history
+            else None,
+            "last_check_time": self.health_history[-1].get("timestamp")
+            if self.health_history
+            else None,
         }
 
     def _get_vector_search_client(self) -> Any:
@@ -255,7 +279,9 @@ class VectorSearchHealthChecker:
         try:
             # Try enhanced client first, fall back to standard client
             try:
-                from tools.vector_search.enhanced_vector_search_client import EnhancedVectorSearchClient
+                from tools.vector_search.enhanced_vector_search_client import (
+                    EnhancedVectorSearchClient,
+                )
 
                 return EnhancedVectorSearchClient()
             except (ImportError, Exception):
@@ -276,7 +302,10 @@ class VectorSearchHealthChecker:
         ]
         missing = [var for var in required_vars if not os.environ.get(var)]
 
-        return {"status": "ok" if not missing else "error", "details": {"missing_vars": missing}}
+        return {
+            "status": "ok" if not missing else "error",
+            "details": {"missing_vars": missing},
+        }
 
     def _check_authentication(self, client) -> Dict[str, Any]:
         """Check authentication status"""
@@ -284,10 +313,16 @@ class VectorSearchHealthChecker:
             # Check if client has auth token method or is_available
             if hasattr(client, "_get_auth_token"):
                 token = client._get_auth_token()
-                return {"status": "ok" if token else "error", "details": {"has_token": bool(token)}}
+                return {
+                    "status": "ok" if token else "error",
+                    "details": {"has_token": bool(token)},
+                }
             else:
                 available = client.is_available()
-                return {"status": "ok" if available else "error", "details": {"is_available": available}}
+                return {
+                    "status": "ok" if available else "error",
+                    "details": {"is_available": available},
+                }
         except Exception as e:
             return {"status": "error", "error": str(e)}
 
@@ -311,7 +346,11 @@ class VectorSearchHealthChecker:
             if not embedding or len(embedding) == 0:
                 return {
                     "status": "error",
-                    "details": {"dimensions": 0, "response_time": duration, "error": "Empty embedding returned"},
+                    "details": {
+                        "dimensions": 0,
+                        "response_time": duration,
+                        "error": "Empty embedding returned",
+                    },
                 }
 
             # Check if this is likely a mock implementation
@@ -321,12 +360,18 @@ class VectorSearchHealthChecker:
                 if all(e == embedding[0] for e in embedding):
                     is_mock = True
                 # Check if embedding has exactly 768 dimensions with mostly zeros or identical values
-                elif len(embedding) == 768 and (sum(embedding) < 0.1 or embedding.count(0.0) > 700):
+                elif len(embedding) == 768 and (
+                    sum(embedding) < 0.1 or embedding.count(0.0) > 700
+                ):
                     is_mock = True
 
             return {
                 "status": "ok",
-                "details": {"dimensions": len(embedding), "response_time": duration, "is_mock": is_mock},
+                "details": {
+                    "dimensions": len(embedding),
+                    "response_time": duration,
+                    "is_mock": is_mock,
+                },
             }
         except Exception as e:
             return {"status": "error", "error": str(e)}
@@ -363,7 +408,8 @@ class VectorSearchHealthChecker:
 
             # Check if results have expected fields
             has_expected_fields = all(
-                isinstance(r, dict) and "content" in r and "score" in r for r in results[: min(3, result_count)]
+                isinstance(r, dict) and "content" in r and "score" in r
+                for r in results[: min(3, result_count)]
             )
 
             return {
@@ -471,7 +517,9 @@ def main():
 
     recommendations = checker.get_recommendations(result)
     for i, rec in enumerate(recommendations):
-        logger.info("%s", f"{i+1}. [{rec['priority']}] {rec['title']}: {rec['action']}")
+        logger.info(
+            "%s", f"{i + 1}. [{rec['priority']}] {rec['title']}: {rec['action']}"
+        )
 
     report = checker.generate_report()
     logger.info("%s", f"Generated report with status: {report['current_status']}")

@@ -4,30 +4,30 @@ security:
     enabled: true
     methods: ["api_key", "jwt"]
     session_timeout: 3600
-    
+
   authorization:
     rbac_enabled: true
     default_role: "user"
-    
+
   input_validation:
     max_input_length: 10000
     sanitize_html: true
     validate_json: true
-    
+
   rate_limiting:
     enabled: true
     requests_per_minute: 100
     burst_limit: 10
-    
+
   encryption:
     algorithm: "AES-256-GCM"
     key_rotation_days: 90
-    
+
   logging:
     audit_enabled: true
     log_level: "INFO"
     sensitive_data_masking: true
-    
+
   headers:
     security_headers:
       X-Content-Type-Options: "nosniff"

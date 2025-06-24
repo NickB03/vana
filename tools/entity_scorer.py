@@ -50,7 +50,9 @@ class EntityScorer:
         try:
             # Parse the timestamp
             if isinstance(last_updated, str):
-                last_update_time = datetime.fromisoformat(last_updated.replace("Z", "+00:00"))
+                last_update_time = datetime.fromisoformat(
+                    last_updated.replace("Z", "+00:00")
+                )
             else:
                 last_update_time = last_updated
 

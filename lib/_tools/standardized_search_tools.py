@@ -30,13 +30,22 @@ try:
 except ImportError:
     # Fallback implementations to avoid circular imports during initialization
     def vector_search(query: str, max_results: int = 5):
-        return {"success": False, "error": "Vector search not available during initialization"}
+        return {
+            "success": False,
+            "error": "Vector search not available during initialization",
+        }
 
     def search_knowledge(query: str, max_results: int = 5):
-        return {"success": False, "error": "Knowledge search not available during initialization"}
+        return {
+            "success": False,
+            "error": "Knowledge search not available during initialization",
+        }
 
     def web_search(query: str, max_results: int = 5):
-        return {"success": False, "error": "Web search not available during initialization"}
+        return {
+            "success": False,
+            "error": "Web search not available during initialization",
+        }
 
 
 class StandardizedSearchTools:
@@ -54,7 +63,9 @@ class StandardizedSearchTools:
             StandardToolResponse with search results or error information
         """
         # Validate inputs with standardized parameter name
-        query = InputValidator.validate_string(query, "query", required=True, min_length=1, max_length=1000)
+        query = InputValidator.validate_string(
+            query, "query", required=True, min_length=1, max_length=1000
+        )
         max_results = InputValidator.validate_integer(
             max_results, "max_results", required=False, min_value=1, max_value=50
         )
@@ -69,7 +80,9 @@ class StandardizedSearchTools:
             # Handle different result formats
             if isinstance(results, dict) and not results.get("success", True):
                 response = StandardToolResponse(
-                    success=False, error=results.get("error", "Vector search failed"), tool_name="vector_search"
+                    success=False,
+                    error=results.get("error", "Vector search failed"),
+                    tool_name="vector_search",
                 )
             else:
                 # Ensure results is a list
@@ -82,7 +95,11 @@ class StandardizedSearchTools:
                     success=True,
                     data=results,
                     tool_name="vector_search",
-                    metadata={"query": query, "result_count": len(results), "max_results": max_results},
+                    metadata={
+                        "query": query,
+                        "result_count": len(results),
+                        "max_results": max_results,
+                    },
                 )
         except Exception as e:
             response = ErrorHandler.create_error_response("vector_search", e)
@@ -103,7 +120,9 @@ class StandardizedSearchTools:
             StandardToolResponse with search results or error information
         """
         # Validate inputs with standardized parameter name
-        query = InputValidator.validate_string(query, "query", required=True, min_length=1, max_length=1000)
+        query = InputValidator.validate_string(
+            query, "query", required=True, min_length=1, max_length=1000
+        )
         max_results = InputValidator.validate_integer(
             max_results, "max_results", required=False, min_value=1, max_value=10
         )
@@ -118,12 +137,16 @@ class StandardizedSearchTools:
             # Handle different result formats
             if isinstance(results, dict) and not results.get("success", True):
                 response = StandardToolResponse(
-                    success=False, error=results.get("error", "Web search failed"), tool_name="web_search"
+                    success=False,
+                    error=results.get("error", "Web search failed"),
+                    tool_name="web_search",
                 )
             else:
                 # Ensure results is a list
                 if isinstance(results, str):
-                    results = [{"title": "Web Search Result", "content": results, "link": ""}]
+                    results = [
+                        {"title": "Web Search Result", "content": results, "link": ""}
+                    ]
                 elif not isinstance(results, list):
                     results = []
 
@@ -146,7 +169,9 @@ class StandardizedSearchTools:
         return response
 
     @standardized_tool_wrapper("search_knowledge")
-    def search_knowledge(self, query: str, max_results: int = 5) -> StandardToolResponse:
+    def search_knowledge(
+        self, query: str, max_results: int = 5
+    ) -> StandardToolResponse:
         """🧠 Search the knowledge base for relevant information with context.
 
         Args:
@@ -157,7 +182,9 @@ class StandardizedSearchTools:
             StandardToolResponse with search results or error information
         """
         # Validate inputs
-        query = InputValidator.validate_string(query, "query", required=True, min_length=1, max_length=1000)
+        query = InputValidator.validate_string(
+            query, "query", required=True, min_length=1, max_length=1000
+        )
         max_results = InputValidator.validate_integer(
             max_results, "max_results", required=False, min_value=1, max_value=20
         )
@@ -172,7 +199,9 @@ class StandardizedSearchTools:
             # Handle different result formats
             if isinstance(results, dict) and not results.get("success", True):
                 response = StandardToolResponse(
-                    success=False, error=results.get("error", "Knowledge search failed"), tool_name="search_knowledge"
+                    success=False,
+                    error=results.get("error", "Knowledge search failed"),
+                    tool_name="search_knowledge",
                 )
             else:
                 # Ensure results is a list and limit to max_results
@@ -253,8 +282,12 @@ def get_unified_search_performance() -> Dict[str, Any]:
     if not search_metrics:
         return {"total_searches": 0, "avg_performance": 0.0}
 
-    total_searches = sum(m.success_count + m.error_count for m in search_metrics.values())
-    avg_performance = sum(m.average_execution_time for m in search_metrics.values()) / len(search_metrics)
+    total_searches = sum(
+        m.success_count + m.error_count for m in search_metrics.values()
+    )
+    avg_performance = sum(
+        m.average_execution_time for m in search_metrics.values()
+    ) / len(search_metrics)
 
     return {
         "total_searches": total_searches,
@@ -264,7 +297,9 @@ def get_unified_search_performance() -> Dict[str, Any]:
                 "executions": m.success_count + m.error_count,
                 "avg_time": m.average_execution_time,
                 "success_rate": (
-                    m.success_count / (m.success_count + m.error_count) if (m.success_count + m.error_count) > 0 else 0
+                    m.success_count / (m.success_count + m.error_count)
+                    if (m.success_count + m.error_count) > 0
+                    else 0
                 ),
             }
             for name, m in search_metrics.items()

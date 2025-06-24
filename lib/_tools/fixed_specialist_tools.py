@@ -34,7 +34,10 @@ def competitive_intelligence_tool(context: str) -> str:
             LongRunningTaskStatus.IN_PROGRESS,
             result=result,
             progress=0.2,
-            metadata={"current_stage": "Gathering competitive data", "analysis_type": "competitive_intelligence"},
+            metadata={
+                "current_stage": "Gathering competitive data",
+                "analysis_type": "competitive_intelligence",
+            },
         )
 
         return f"""🔍 Competitive Intelligence Analysis Started:
@@ -75,7 +78,10 @@ def web_research_tool(context: str) -> str:
             LongRunningTaskStatus.IN_PROGRESS,
             result=result,
             progress=0.15,
-            metadata={"current_stage": "Initiating web research", "research_type": "web_research"},
+            metadata={
+                "current_stage": "Initiating web research",
+                "research_type": "web_research",
+            },
         )
 
         return f"""🌐 Web Research Started:
@@ -113,7 +119,10 @@ def data_analysis_tool(context: str) -> str:
             LongRunningTaskStatus.IN_PROGRESS,
             result=result,
             progress=0.1,
-            metadata={"current_stage": "Preparing data analysis", "analysis_type": "data_analysis"},
+            metadata={
+                "current_stage": "Preparing data analysis",
+                "analysis_type": "data_analysis",
+            },
         )
 
         return f"""📊 Data Analysis Started:
@@ -154,7 +163,10 @@ def itinerary_planning_tool(context: str) -> str:
             LongRunningTaskStatus.IN_PROGRESS,
             result=result,
             progress=0.1,
-            metadata={"current_stage": "Analyzing travel requirements", "planning_type": "itinerary_planning"},
+            metadata={
+                "current_stage": "Analyzing travel requirements",
+                "planning_type": "itinerary_planning",
+            },
         )
 
         return f"""🗓️ Itinerary Planning Started:
@@ -192,7 +204,10 @@ def hotel_search_tool(context: str) -> str:
             LongRunningTaskStatus.IN_PROGRESS,
             result=result,
             progress=0.2,
-            metadata={"current_stage": "Searching hotel databases", "search_type": "hotel_search"},
+            metadata={
+                "current_stage": "Searching hotel databases",
+                "search_type": "hotel_search",
+            },
         )
 
         return f"""🏨 Hotel Search Started:
@@ -230,7 +245,10 @@ def flight_search_tool(context: str) -> str:
             LongRunningTaskStatus.IN_PROGRESS,
             result=result,
             progress=0.2,
-            metadata={"current_stage": "Searching flight databases", "search_type": "flight_search"},
+            metadata={
+                "current_stage": "Searching flight databases",
+                "search_type": "flight_search",
+            },
         )
 
         return f"""✈️ Flight Search Started:
@@ -268,7 +286,10 @@ def payment_processing_tool(context: str) -> str:
             LongRunningTaskStatus.IN_PROGRESS,
             result=result,
             progress=0.3,
-            metadata={"current_stage": "Validating payment information", "processing_type": "payment_processing"},
+            metadata={
+                "current_stage": "Validating payment information",
+                "processing_type": "payment_processing",
+            },
         )
 
         return f"""💳 Payment Processing Started:
@@ -309,7 +330,10 @@ def code_generation_tool(context: str) -> str:
             LongRunningTaskStatus.IN_PROGRESS,
             result=result,
             progress=0.15,
-            metadata={"current_stage": "Analyzing code requirements", "generation_type": "code_generation"},
+            metadata={
+                "current_stage": "Analyzing code requirements",
+                "generation_type": "code_generation",
+            },
         )
 
         return f"""💻 Code Generation Started:
@@ -347,7 +371,10 @@ def testing_tool(context: str) -> str:
             LongRunningTaskStatus.IN_PROGRESS,
             result=result,
             progress=0.2,
-            metadata={"current_stage": "Preparing test strategy", "testing_type": "quality_assurance"},
+            metadata={
+                "current_stage": "Preparing test strategy",
+                "testing_type": "quality_assurance",
+            },
         )
 
         return f"""🧪 Testing Started:
@@ -426,7 +453,10 @@ def security_tool(context: str) -> str:
             LongRunningTaskStatus.IN_PROGRESS,
             result=result,
             progress=0.25,
-            metadata={"current_stage": "Initiating security analysis", "security_type": "vulnerability_assessment"},
+            metadata={
+                "current_stage": "Initiating security analysis",
+                "security_type": "vulnerability_assessment",
+            },
         )
 
         return f"""🔒 Security Analysis Started:
@@ -467,7 +497,10 @@ def memory_management_tool(context: str) -> str:
             LongRunningTaskStatus.IN_PROGRESS,
             result=result,
             progress=0.15,
-            metadata={"current_stage": "Analyzing memory requirements", "management_type": "memory_operations"},
+            metadata={
+                "current_stage": "Analyzing memory requirements",
+                "management_type": "memory_operations",
+            },
         )
 
         return f"""🧠 Memory Management Started:
@@ -505,7 +538,10 @@ def decision_engine_tool(context: str) -> str:
             LongRunningTaskStatus.IN_PROGRESS,
             result=result,
             progress=0.2,
-            metadata={"current_stage": "Analyzing decision parameters", "engine_type": "decision_optimization"},
+            metadata={
+                "current_stage": "Analyzing decision parameters",
+                "engine_type": "decision_optimization",
+            },
         )
 
         return f"""⚡ Decision Engine Started:
@@ -543,7 +579,10 @@ def learning_systems_tool(context: str) -> str:
             LongRunningTaskStatus.IN_PROGRESS,
             result=result,
             progress=0.1,
-            metadata={"current_stage": "Initializing learning analysis", "learning_type": "performance_optimization"},
+            metadata={
+                "current_stage": "Initializing learning analysis",
+                "learning_type": "performance_optimization",
+            },
         )
 
         return f"""📈 Learning Systems Started:
@@ -584,7 +623,10 @@ def monitoring_tool(context: str) -> str:
             LongRunningTaskStatus.IN_PROGRESS,
             result=result,
             progress=0.25,
-            metadata={"current_stage": "Initializing system monitoring", "monitoring_type": "performance_tracking"},
+            metadata={
+                "current_stage": "Initializing system monitoring",
+                "monitoring_type": "performance_tracking",
+            },
         )
 
         return f"""📊 System Monitoring Started:

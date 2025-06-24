@@ -83,11 +83,11 @@ graph TB
         WORKFLOW --> WRAPPER
         SPECIALIST -.-> WRAPPER
         ORCHESTRATION -.-> WRAPPER
-        
+
         WRAPPER --> MONITOR[Performance Monitoring]
         WRAPPER --> VALIDATE[Input Validation]
         WRAPPER --> EXECUTE[Secure Execution]
-        
+
         EXECUTE --> RESULT[Standardized Response]
     end
 
@@ -150,23 +150,23 @@ stateDiagram-v2
     [*] --> Create: adk_create_workflow
     Create --> Start: adk_start_workflow
     Start --> Running
-    
+
     Running --> Pause: adk_pause_workflow
     Pause --> Resume: adk_resume_workflow
     Resume --> Running
-    
+
     Running --> Cancel: adk_cancel_workflow
     Cancel --> [*]
-    
+
     Running --> Complete
     Complete --> [*]
-    
+
     note right of Running
         Monitor with:
         - adk_get_workflow_status
         - adk_list_workflows
     end note
-    
+
     note left of Create
         Templates available:
         - adk_get_workflow_templates
@@ -181,10 +181,10 @@ graph TB
         IMPORT{Try Import} --> SUCCESS{Import Success?}
         SUCCESS -->|Yes| LOAD[Load Tools]
         SUCCESS -->|No| FALLBACK[Graceful Degradation]
-        
+
         LOAD --> SPECIALIST[Specialist Tools Available]
         LOAD --> ORCHESTRATION[Orchestration Tools Available]
-        
+
         FALLBACK --> CORE[Core Tools Only]
     end
 

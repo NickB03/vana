@@ -8,7 +8,7 @@ set -e
 echo "🧠 Starting VANA Enhanced Development Deployment..."
 echo "✨ Enhanced Reasoning Features Included:"
 echo "   • Mathematical problem solving"
-echo "   • Logical reasoning analysis" 
+echo "   • Logical reasoning analysis"
 echo "   • Enhanced echo with reasoning"
 echo "   • Enhanced task analysis"
 echo "   • Reasoning-based coordination"
@@ -68,7 +68,7 @@ if [ -n "$SERVICE_URL" ]; then
     echo "🌐 Service URL: $SERVICE_URL"
     echo "🔍 Health check: $SERVICE_URL/health"
     echo "📊 Version info: $SERVICE_URL/info"
-    
+
     # Test health endpoint
     echo "🏥 Testing health endpoint..."
     if curl -s -f "$SERVICE_URL/health" > /dev/null; then
@@ -76,23 +76,23 @@ if [ -n "$SERVICE_URL" ]; then
     else
         echo "⚠️  Health check failed - please verify manually"
     fi
-    
+
     # Test enhanced features
     echo "🧠 Testing enhanced reasoning features..."
     INFO_RESPONSE=$(curl -s "$SERVICE_URL/info" 2>/dev/null || echo "{}")
-    
+
     if echo "$INFO_RESPONSE" | grep -q "enhanced_features"; then
         echo "✅ Enhanced features detected"
-        
+
         # Extract and display enhanced features
         REASONING_TOOLS=$(echo "$INFO_RESPONSE" | jq -r '.enhanced_features.reasoning_tools // "unknown"' 2>/dev/null || echo "unknown")
         MATH_REASONING=$(echo "$INFO_RESPONSE" | jq -r '.enhanced_features.mathematical_reasoning // false' 2>/dev/null || echo "false")
         LOGIC_REASONING=$(echo "$INFO_RESPONSE" | jq -r '.enhanced_features.logical_reasoning // false' 2>/dev/null || echo "false")
-        
+
         echo "   • Reasoning tools: $REASONING_TOOLS"
         echo "   • Mathematical reasoning: $MATH_REASONING"
         echo "   • Logical reasoning: $LOGIC_REASONING"
-        
+
         if [ "$REASONING_TOOLS" = "5" ] && [ "$MATH_REASONING" = "true" ] && [ "$LOGIC_REASONING" = "true" ]; then
             echo "🎉 All enhanced reasoning features confirmed!"
         else
@@ -101,7 +101,7 @@ if [ -n "$SERVICE_URL" ]; then
     else
         echo "⚠️  Enhanced features not detected in response"
     fi
-    
+
     echo ""
     echo "🎉 VANA Enhanced Development deployment successful!"
     echo "🧠 Enhanced reasoning capabilities are now available"
@@ -109,7 +109,7 @@ if [ -n "$SERVICE_URL" ]; then
     echo "📋 Quick test commands:"
     echo "   curl $SERVICE_URL/health"
     echo "   curl $SERVICE_URL/info | jq '.enhanced_features'"
-    
+
 else
     echo "❌ Failed to get service URL. Check deployment logs."
     exit 1

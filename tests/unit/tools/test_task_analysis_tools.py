@@ -18,7 +18,11 @@ import pytest
 
 sys.path.append(str(Path(__file__).parent.parent.parent.parent))
 
-from lib._tools.adk_tools import adk_analyze_task, adk_classify_task, adk_match_capabilities
+from lib._tools.adk_tools import (
+    adk_analyze_task,
+    adk_classify_task,
+    adk_match_capabilities,
+)
 from tests.framework import EnvironmentConfig, EnvironmentType, TestEnvironment
 
 
@@ -346,8 +350,8 @@ class TestTaskAnalysisToolsIntegration:
             execution_time = end_time - start_time
 
             # Should be reasonably fast (under 5 seconds)
-            assert (
-                execution_time < 5.0
-            ), f"Tool {tool.name} took too long: {execution_time:.2f}s"
+            assert execution_time < 5.0, (
+                f"Tool {tool.name} took too long: {execution_time:.2f}s"
+            )
             assert isinstance(result, str)
             assert len(result) > 0

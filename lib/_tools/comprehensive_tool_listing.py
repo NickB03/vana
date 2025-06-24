@@ -30,7 +30,12 @@ def list_all_agent_tools() -> str:
         ]
 
         # Long-Running Tools
-        long_running_tools = ["ask_for_approval", "process_large_dataset", "generate_report", "check_task_status"]
+        long_running_tools = [
+            "ask_for_approval",
+            "process_large_dataset",
+            "generate_report",
+            "check_task_status",
+        ]
 
         # MCP Tools - Time Operations
         mcp_time_tools = [
@@ -70,16 +75,34 @@ def list_all_agent_tools() -> str:
         ]
 
         # Specialist Agent Tools - Research
-        research_specialist_tools = ["web_research_tool", "data_analysis_tool", "competitive_intelligence_tool"]
+        research_specialist_tools = [
+            "web_research_tool",
+            "data_analysis_tool",
+            "competitive_intelligence_tool",
+        ]
 
         # Specialist Agent Tools - Development
-        development_specialist_tools = ["code_generation_tool", "testing_tool", "documentation_tool", "security_tool"]
+        development_specialist_tools = [
+            "code_generation_tool",
+            "testing_tool",
+            "documentation_tool",
+            "security_tool",
+        ]
 
         # Specialist Agent Tools - Core
-        core_specialist_tools = ["architecture_tool", "ui_tool", "devops_tool", "qa_tool"]
+        core_specialist_tools = [
+            "architecture_tool",
+            "ui_tool",
+            "devops_tool",
+            "qa_tool",
+        ]
 
         # Intelligence Agent Tools
-        intelligence_tools = ["memory_management_tool", "decision_engine_tool", "learning_systems_tool"]
+        intelligence_tools = [
+            "memory_management_tool",
+            "decision_engine_tool",
+            "learning_systems_tool",
+        ]
 
         # Utility Agent Tools
         utility_tools = ["monitoring_tool", "coordination_tool"]
@@ -128,40 +151,40 @@ def list_all_agent_tools() -> str:
 ## **TOOL CATEGORIES & COUNTS**
 
 ### **🔧 Base ADK Tools ({total_base})**
-{', '.join(base_tools)}
+{", ".join(base_tools)}
 
 ### **⏳ Long-Running Tools ({total_long_running})**
-{', '.join(long_running_tools)}
+{", ".join(long_running_tools)}
 
 ### **🕐 MCP Time Tools ({total_mcp_time})**
-{', '.join(mcp_time_tools)}
+{", ".join(mcp_time_tools)}
 
 ### **📁 MCP Filesystem Tools ({total_mcp_filesystem})**
-{', '.join(mcp_filesystem_tools)}
+{", ".join(mcp_filesystem_tools)}
 
 ### **🔗 MCP Core Integration ({total_mcp_core})**
-{', '.join(mcp_core_tools)}
+{", ".join(mcp_core_tools)}
 
 ### **✈️ Travel Specialist Tools ({total_travel})**
-{', '.join(travel_specialist_tools)}
+{", ".join(travel_specialist_tools)}
 
 ### **🔍 Research Specialist Tools ({total_research})**
-{', '.join(research_specialist_tools)}
+{", ".join(research_specialist_tools)}
 
 ### **💻 Development Specialist Tools ({total_development})**
-{', '.join(development_specialist_tools)}
+{", ".join(development_specialist_tools)}
 
 ### **🏗️ Core Specialist Tools ({total_core})**
-{', '.join(core_specialist_tools)}
+{", ".join(core_specialist_tools)}
 
 ### **🧠 Intelligence Agent Tools ({total_intelligence})**
-{', '.join(intelligence_tools)}
+{", ".join(intelligence_tools)}
 
 ### **⚙️ Utility Agent Tools ({total_utility})**
-{', '.join(utility_tools)}
+{", ".join(utility_tools)}
 
 ### **🔌 Third-Party Tools ({total_third_party})**
-{', '.join(third_party_tools)}
+{", ".join(third_party_tools)}
 
 ## **📊 SUMMARY**
 - **Total Tools Available**: {grand_total}
@@ -240,7 +263,13 @@ def get_tool_status_summary() -> str:
 def validate_tool_functionality() -> Dict[str, Any]:
     """🧪 Validate that key tools are working correctly."""
     try:
-        results = {"timestamp": "now", "tests_run": 0, "tests_passed": 0, "tests_failed": 0, "details": []}
+        results = {
+            "timestamp": "now",
+            "tests_run": 0,
+            "tests_passed": 0,
+            "tests_failed": 0,
+            "details": [],
+        }
 
         # Test 1: Basic echo tool
         try:
@@ -272,15 +301,21 @@ def validate_tool_functionality() -> Dict[str, Any]:
             results["tests_run"] += 1
             if intel_working:
                 results["tests_passed"] += 1
-                results["details"].append("✅ Competitive Intelligence tool: Creating task IDs")
+                results["details"].append(
+                    "✅ Competitive Intelligence tool: Creating task IDs"
+                )
             else:
                 results["tests_failed"] += 1
-                results["details"].append("❌ Competitive Intelligence tool: Not creating task IDs")
+                results["details"].append(
+                    "❌ Competitive Intelligence tool: Not creating task IDs"
+                )
 
         except Exception as e:
             results["tests_run"] += 1
             results["tests_failed"] += 1
-            results["details"].append(f"❌ Competitive Intelligence tool: Exception - {e}")
+            results["details"].append(
+                f"❌ Competitive Intelligence tool: Exception - {e}"
+            )
 
         # Test 3: Task status checking
         try:
@@ -296,7 +331,9 @@ def validate_tool_functionality() -> Dict[str, Any]:
                 results["details"].append("✅ Task status checking: Working")
             else:
                 results["tests_failed"] += 1
-                results["details"].append("❌ Task status checking: Unexpected response")
+                results["details"].append(
+                    "❌ Task status checking: Unexpected response"
+                )
 
         except Exception as e:
             results["tests_run"] += 1
@@ -314,4 +351,10 @@ def validate_tool_functionality() -> Dict[str, Any]:
 
     except Exception as e:
         logger.error(f"Error validating tool functionality: {e}")
-        return {"error": str(e), "tests_run": 0, "tests_passed": 0, "tests_failed": 1, "success_rate": "0%"}
+        return {
+            "error": str(e),
+            "tests_run": 0,
+            "tests_passed": 0,
+            "tests_failed": 1,
+            "success_rate": "0%",
+        }

@@ -284,7 +284,7 @@ resource_limits:
   max_processes: 10           # Maximum number of processes
   max_open_files: 100         # Maximum number of open files
   max_network_connections: 0  # Maximum network connections (0 = disabled)
-  
+
   allowed_file_extensions:
     - .txt
     - .json
@@ -323,15 +323,15 @@ container_security:
   no_new_privileges: true     # Prevent privilege escalation
   drop_capabilities: all      # Drop all Linux capabilities
   user: "sandbox:sandbox"     # Run as non-root user
-  
+
   tmpfs_mounts:
     /tmp: "size=100m,noexec"  # Temporary filesystem with no execution
     /var/tmp: "size=50m,noexec"
-    
+
   security_options:
     - no-new-privileges:true
     - seccomp:unconfined      # May need adjustment based on requirements
-    
+
   environment_variables:
     PATH: "/usr/local/bin:/usr/bin:/bin"
     HOME: "/workspace"

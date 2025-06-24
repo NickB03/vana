@@ -58,7 +58,9 @@ class EnhancedVectorSearchClient:
                 aiplatform.init(project=self.project, location=self.location)
 
                 # Get the index endpoint
-                self.index_endpoint = aiplatform.MatchingEngineIndexEndpoint(index_endpoint_name=self.endpoint_id)
+                self.index_endpoint = aiplatform.MatchingEngineIndexEndpoint(
+                    index_endpoint_name=self.endpoint_id
+                )
                 self.is_initialized = True
                 logger.info("Vector Search client initialized successfully")
             except PermissionDenied as e:
@@ -71,7 +73,9 @@ class EnhancedVectorSearchClient:
                 self.last_error = str(e)
                 self.index_endpoint = None
         else:
-            logger.warning("GOOGLE_APPLICATION_CREDENTIALS not set, Vector Search unavailable")
+            logger.warning(
+                "GOOGLE_APPLICATION_CREDENTIALS not set, Vector Search unavailable"
+            )
             self.last_error = "GOOGLE_APPLICATION_CREDENTIALS not set"
             self.index_endpoint = None
 
@@ -99,7 +103,9 @@ class EnhancedVectorSearchClient:
 
             # Simple test query with the test vector
             self.index_endpoint.match(
-                deployed_index_id=self.deployed_index_id, queries=[{"datapoint": test_vector}], num_neighbors=1
+                deployed_index_id=self.deployed_index_id,
+                queries=[{"datapoint": test_vector}],
+                num_neighbors=1,
             )
             logger.info("Vector Search is available")
             return True
@@ -187,7 +193,9 @@ class EnhancedVectorSearchClient:
                 return self._use_mock_embedding(text)
 
             response = requests.post(
-                endpoint, headers={"Authorization": f"Bearer {auth_token}"}, json={"instances": [{"content": text}]}
+                endpoint,
+                headers={"Authorization": f"Bearer {auth_token}"},
+                json={"instances": [{"content": text}]},
             )
 
             if response.status_code == 403:
@@ -210,7 +218,9 @@ class EnhancedVectorSearchClient:
             if isinstance(embedding_values, list) and embedding_values:
                 # Convert all values to float
                 embedding_values = [float(value) for value in embedding_values]
-                logger.info(f"Generated embedding with {len(embedding_values)} dimensions")
+                logger.info(
+                    f"Generated embedding with {len(embedding_values)} dimensions"
+                )
 
                 # Cache the embedding if enabled
                 if self.use_cache:
@@ -219,7 +229,9 @@ class EnhancedVectorSearchClient:
                 return embedding_values
             else:
                 logger.error(f"Invalid embedding format: {type(embedding_values)}")
-                raise Exception(f"Invalid embedding format received: {type(embedding_values)}")
+                raise Exception(
+                    f"Invalid embedding format received: {type(embedding_values)}"
+                )
         except requests.exceptions.HTTPError as e:
             if e.response.status_code == 403:
                 logger.error("Permission denied accessing embedding API")
@@ -258,7 +270,11 @@ class EnhancedVectorSearchClient:
                 query_embedding = query_embedding["values"]
 
             # Convert all values to float if they're strings
-            if isinstance(query_embedding, list) and query_embedding and isinstance(query_embedding[0], str):
+            if (
+                isinstance(query_embedding, list)
+                and query_embedding
+                and isinstance(query_embedding[0], str)
+            ):
                 query_embedding = [float(x) for x in query_embedding]
 
             # Try primary API first
@@ -273,7 +289,9 @@ class EnhancedVectorSearchClient:
                 # Try alternative API if primary fails
                 logger.warning(f"Primary API failed, trying alternative: {e}")
                 response = self.index_endpoint.find_neighbors(
-                    deployed_index_id=self.deployed_index_id, queries=[query_embedding], num_neighbors=top_k
+                    deployed_index_id=self.deployed_index_id,
+                    queries=[query_embedding],
+                    num_neighbors=top_k,
                 )
 
             # Format results
@@ -295,7 +313,9 @@ class EnhancedVectorSearchClient:
                     logger.warning(f"Unknown match format: {match}")
                     continue
 
-                results.append({"content": content, "score": score, "metadata": metadata})
+                results.append(
+                    {"content": content, "score": score, "metadata": metadata}
+                )
 
             return results
         except PermissionDenied as e:
@@ -334,14 +354,24 @@ class EnhancedVectorSearchClient:
                 embedding = embedding["values"]
 
             # Convert all values to float if they're strings
-            if isinstance(embedding, list) and embedding and isinstance(embedding[0], str):
+            if (
+                isinstance(embedding, list)
+                and embedding
+                and isinstance(embedding[0], str)
+            ):
                 embedding = [float(x) for x in embedding]
 
             # Create datapoint
-            datapoint = {"id": str(uuid.uuid4()), "feature_vector": embedding, "restricts": metadata or {}}
+            datapoint = {
+                "id": str(uuid.uuid4()),
+                "feature_vector": embedding,
+                "restricts": metadata or {},
+            }
 
             # Upload to Vector Search
-            self.index_endpoint.upsert_datapoints(deployed_index_id=self.deployed_index_id, datapoints=[datapoint])
+            self.index_endpoint.upsert_datapoints(
+                deployed_index_id=self.deployed_index_id, datapoints=[datapoint]
+            )
 
             return True
         except PermissionDenied as e:
@@ -381,7 +411,9 @@ class EnhancedVectorSearchClient:
                 embedding = self.generate_embedding(content)
 
                 if not embedding:
-                    logger.warning(f"Skipping item, failed to generate embedding: {content[:50]}...")
+                    logger.warning(
+                        f"Skipping item, failed to generate embedding: {content[:50]}..."
+                    )
                     continue
 
                 # Ensure embedding is a list of floats
@@ -389,7 +421,11 @@ class EnhancedVectorSearchClient:
                     embedding = embedding["values"]
 
                 # Convert all values to float if they're strings
-                if isinstance(embedding, list) and embedding and isinstance(embedding[0], str):
+                if (
+                    isinstance(embedding, list)
+                    and embedding
+                    and isinstance(embedding[0], str)
+                ):
                     embedding = [float(x) for x in embedding]
 
                 # Create datapoint
@@ -409,7 +445,9 @@ class EnhancedVectorSearchClient:
             batch_size = 100
             for i in range(0, len(datapoints), batch_size):
                 batch = datapoints[i : i + batch_size]
-                self.index_endpoint.upsert_datapoints(deployed_index_id=self.deployed_index_id, datapoints=batch)
+                self.index_endpoint.upsert_datapoints(
+                    deployed_index_id=self.deployed_index_id, datapoints=batch
+                )
 
             return True
         except PermissionDenied as e:

@@ -127,7 +127,6 @@ class ProgressTracker:
             or self.processed_files == self.total_files
             or (now - self.last_update_time).total_seconds() >= 30
         ):
-
             self._send_update()
             self.last_update_time = now
 
@@ -158,9 +157,13 @@ class ProgressTracker:
             "processed_files": self.processed_files,
             "successful_files": self.successful_files,
             "failed_files": self.failed_files,
-            "success_rate": self.successful_files / self.processed_files if self.processed_files > 0 else 0,
+            "success_rate": self.successful_files / self.processed_files
+            if self.processed_files > 0
+            else 0,
             "duration_seconds": duration,
-            "throughput_files_per_second": self.processed_files / duration if duration > 0 else 0,
+            "throughput_files_per_second": self.processed_files / duration
+            if duration > 0
+            else 0,
             "start_time": self.start_time.isoformat(),
             "end_time": end_time.isoformat(),
         }
@@ -208,7 +211,9 @@ class RetryManager:
                     )
                     await asyncio.sleep(delay)
                 else:
-                    logger.error(f"Operation {operation_id} failed after {retry_count} attempts: {e}")
+                    logger.error(
+                        f"Operation {operation_id} failed after {retry_count} attempts: {e}"
+                    )
 
         return False, last_error, retry_count
 
@@ -216,7 +221,11 @@ class RetryManager:
 class BatchDocumentProcessor:
     """High-level batch document processor with advanced features"""
 
-    def __init__(self, adk_processor: ADKDocumentProcessor, config: Optional[BatchProcessingConfig] = None):
+    def __init__(
+        self,
+        adk_processor: ADKDocumentProcessor,
+        config: Optional[BatchProcessingConfig] = None,
+    ):
         """
         Initialize batch processor
 
@@ -233,7 +242,9 @@ class BatchDocumentProcessor:
         self.current_batch_id = None
         self.processing_history = []
 
-    def validate_batch(self, file_paths: List[str]) -> Tuple[List[str], List[str], Dict[str, Any]]:
+    def validate_batch(
+        self, file_paths: List[str]
+    ) -> Tuple[List[str], List[str], Dict[str, Any]]:
         """
         Validate a batch of files before processing
 
@@ -292,7 +303,9 @@ class BatchDocumentProcessor:
 
         # Execute with retry
         success, result, retry_count = await self.retry_manager.execute_with_retry(
-            self.adk_processor.upload_file_to_rag_corpus, f"upload_{os.path.basename(file_path)}", file_path
+            self.adk_processor.upload_file_to_rag_corpus,
+            f"upload_{os.path.basename(file_path)}",
+            file_path,
         )
 
         processing_time = time.time() - start_time
@@ -308,7 +321,9 @@ class BatchDocumentProcessor:
                 file_size_mb=file_size_mb,
             )
         else:
-            error_msg = str(result) if not success else result.get("error", "Unknown error")
+            error_msg = (
+                str(result) if not success else result.get("error", "Unknown error")
+            )
             return ProcessingResult(
                 file_path=file_path,
                 success=False,
@@ -319,7 +334,10 @@ class BatchDocumentProcessor:
             )
 
     async def process_batch(
-        self, file_paths: List[str], progress_callback: Optional[Callable] = None, validate_first: bool = True
+        self,
+        file_paths: List[str],
+        progress_callback: Optional[Callable] = None,
+        validate_first: bool = True,
     ) -> Dict[str, Any]:
         """
         Process a batch of files with advanced features
@@ -342,8 +360,12 @@ class BatchDocumentProcessor:
         try:
             # Validate files if requested
             if validate_first:
-                valid_files, invalid_files, validation_summary = self.validate_batch(file_paths)
-                logger.info(f"Validation: {len(valid_files)} valid, {len(invalid_files)} invalid files")
+                valid_files, invalid_files, validation_summary = self.validate_batch(
+                    file_paths
+                )
+                logger.info(
+                    f"Validation: {len(valid_files)} valid, {len(invalid_files)} invalid files"
+                )
 
                 if not valid_files:
                     return {
@@ -358,7 +380,9 @@ class BatchDocumentProcessor:
                 validation_summary = {"validation_skipped": True}
 
             # Initialize progress tracking
-            progress_tracker = ProgressTracker(len(files_to_process), self.config.progress_update_interval)
+            progress_tracker = ProgressTracker(
+                len(files_to_process), self.config.progress_update_interval
+            )
 
             if progress_callback:
                 progress_tracker.add_callback(progress_callback)
@@ -370,7 +394,7 @@ class BatchDocumentProcessor:
             for i in range(0, len(files_to_process), chunk_size):
                 chunk = files_to_process[i : i + chunk_size]
                 logger.info(
-                    f"Processing chunk {i//chunk_size + 1}/{(len(files_to_process) + chunk_size - 1)//chunk_size}"
+                    f"Processing chunk {i // chunk_size + 1}/{(len(files_to_process) + chunk_size - 1) // chunk_size}"
                 )
 
                 # Create semaphore for this chunk
@@ -387,24 +411,31 @@ class BatchDocumentProcessor:
 
                 try:
                     chunk_results = await asyncio.wait_for(
-                        asyncio.gather(*chunk_tasks, return_exceptions=True), timeout=self.config.timeout_seconds
+                        asyncio.gather(*chunk_tasks, return_exceptions=True),
+                        timeout=self.config.timeout_seconds,
                     )
 
                     # Handle any exceptions in results
                     for j, result in enumerate(chunk_results):
                         if isinstance(result, Exception):
                             error_result = ProcessingResult(
-                                file_path=chunk[j], success=False, error=f"Processing exception: {str(result)}"
+                                file_path=chunk[j],
+                                success=False,
+                                error=f"Processing exception: {str(result)}",
                             )
                             all_results.append(error_result)
                         else:
                             all_results.append(result)
 
                 except asyncio.TimeoutError:
-                    logger.error(f"Chunk processing timed out after {self.config.timeout_seconds} seconds")
+                    logger.error(
+                        f"Chunk processing timed out after {self.config.timeout_seconds} seconds"
+                    )
                     # Add timeout results for remaining files in chunk
                     for fp in chunk:
-                        timeout_result = ProcessingResult(file_path=fp, success=False, error="Processing timeout")
+                        timeout_result = ProcessingResult(
+                            file_path=fp, success=False, error="Processing timeout"
+                        )
                         all_results.append(timeout_result)
 
             # Calculate final statistics
@@ -415,7 +446,9 @@ class BatchDocumentProcessor:
             failed_results = [r for r in all_results if not r.success]
 
             total_size_mb = sum(r.file_size_mb for r in all_results)
-            total_processing_time = sum(r.processing_time_seconds for r in successful_results)
+            total_processing_time = sum(
+                r.processing_time_seconds for r in successful_results
+            )
 
             batch_stats = BatchProcessingStats(
                 total_files=len(files_to_process),
@@ -436,7 +469,9 @@ class BatchDocumentProcessor:
                 "processing_stats": asdict(batch_stats),
                 "results": [asdict(r) for r in all_results],
                 "successful_files": [r.file_path for r in successful_results],
-                "failed_files": [{"file": r.file_path, "error": r.error} for r in failed_results],
+                "failed_files": [
+                    {"file": r.file_path, "error": r.error} for r in failed_results
+                ],
                 "performance_metrics": {
                     "duration_seconds": processing_duration,
                     "throughput_files_per_second": batch_stats.throughput_files_per_second,
@@ -448,14 +483,20 @@ class BatchDocumentProcessor:
             # Store in processing history
             self.processing_history.append(batch_result)
 
-            logger.info(f"Batch processing completed: {len(successful_results)}/{len(all_results)} files successful")
+            logger.info(
+                f"Batch processing completed: {len(successful_results)}/{len(all_results)} files successful"
+            )
             return batch_result
 
         except Exception as e:
             error_msg = f"Batch processing error: {str(e)}"
             logger.error(error_msg)
 
-            return {"success": False, "error": error_msg, "batch_id": self.current_batch_id}
+            return {
+                "success": False,
+                "error": error_msg,
+                "batch_id": self.current_batch_id,
+            }
 
         finally:
             self.is_processing = False
@@ -508,7 +549,9 @@ class BatchDocumentProcessor:
 
 
 # Utility functions
-def create_batch_processor(adk_processor: ADKDocumentProcessor, **config_kwargs) -> BatchDocumentProcessor:
+def create_batch_processor(
+    adk_processor: ADKDocumentProcessor, **config_kwargs
+) -> BatchDocumentProcessor:
     """Create a batch processor with custom configuration"""
     config = BatchProcessingConfig(**config_kwargs)
     return BatchDocumentProcessor(adk_processor, config)
@@ -533,4 +576,6 @@ def default_progress_callback(progress_info: Dict[str, Any]):
     successful = progress_info["successful_files"]
     failed = progress_info["failed_files"]
 
-    logger.info(f"Progress: {percentage:.1f}% ({processed}/{total}) - Success: {successful}, Failed: {failed}")
+    logger.info(
+        f"Progress: {percentage:.1f}% ({processed}/{total}) - Success: {successful}, Failed: {failed}"
+    )

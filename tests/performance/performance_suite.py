@@ -74,7 +74,9 @@ class PerformanceBenchmark:
         """Add a performance metric to the benchmark."""
         self.metrics.append(metric)
 
-    def measure_response_time(self, func: Callable, *args, **kwargs) -> PerformanceMetric:
+    def measure_response_time(
+        self, func: Callable, *args, **kwargs
+    ) -> PerformanceMetric:
         """Measure function execution time with detailed metadata."""
         start_time = time.time()
         start_memory = psutil.Process().memory_info().rss
@@ -111,7 +113,9 @@ class PerformanceBenchmark:
         self.add_metric(metric)
         return metric
 
-    def measure_memory_usage(self, func: Callable, *args, **kwargs) -> PerformanceMetric:
+    def measure_memory_usage(
+        self, func: Callable, *args, **kwargs
+    ) -> PerformanceMetric:
         """Measure memory usage during function execution."""
         process = psutil.Process()
         start_memory = process.memory_info().rss
@@ -146,7 +150,9 @@ class PerformanceBenchmark:
         self.add_metric(metric)
         return metric
 
-    def measure_throughput(self, func: Callable, iterations: int = 100, *args, **kwargs) -> PerformanceMetric:
+    def measure_throughput(
+        self, func: Callable, iterations: int = 100, *args, **kwargs
+    ) -> PerformanceMetric:
         """Measure function throughput (operations per second)."""
         start_time = time.time()
         successful_operations = 0
@@ -173,7 +179,9 @@ class PerformanceBenchmark:
                 "iterations": iterations,
                 "successful_operations": successful_operations,
                 "error_count": len(errors),
-                "success_rate": successful_operations / iterations if iterations > 0 else 0,
+                "success_rate": successful_operations / iterations
+                if iterations > 0
+                else 0,
                 "total_time": total_time,
                 "errors": errors[:5],  # Store first 5 errors for analysis
             },
@@ -206,8 +214,12 @@ class PerformanceBenchmark:
                     "mean": statistics.mean(values),
                     "median": statistics.median(values),
                     "std_dev": statistics.stdev(values) if len(values) > 1 else 0,
-                    "p95": statistics.quantiles(values, n=20)[18] if len(values) >= 20 else max(values),
-                    "p99": statistics.quantiles(values, n=100)[98] if len(values) >= 100 else max(values),
+                    "p95": statistics.quantiles(values, n=20)[18]
+                    if len(values) >= 20
+                    else max(values),
+                    "p99": statistics.quantiles(values, n=100)[98]
+                    if len(values) >= 100
+                    else max(values),
                 }
 
         return stats
@@ -218,7 +230,9 @@ class PerformanceBenchmark:
             "benchmark_name": self.name,
             "start_time": self.start_time,
             "end_time": self.end_time,
-            "duration": self.end_time - self.start_time if self.start_time and self.end_time else None,
+            "duration": self.end_time - self.start_time
+            if self.start_time and self.end_time
+            else None,
             "metrics": [metric.to_dict() for metric in self.metrics],
             "statistics": self.get_statistics(),
         }
@@ -239,8 +253,12 @@ class PerformanceBenchmark:
             output.append(f"  {metric_name}:")
             output.append(f"    Count: {metric_stats['count']}")
             output.append(f"    Mean: {metric_stats['mean']:.3f}")
-            output.append(f"    Min/Max: {metric_stats['min']:.3f}/{metric_stats['max']:.3f}")
-            output.append(f"    P95/P99: {metric_stats['p95']:.3f}/{metric_stats['p99']:.3f}")
+            output.append(
+                f"    Min/Max: {metric_stats['min']:.3f}/{metric_stats['max']:.3f}"
+            )
+            output.append(
+                f"    P95/P99: {metric_stats['p95']:.3f}/{metric_stats['p99']:.3f}"
+            )
 
         return "\n".join(output)
 
@@ -248,7 +266,9 @@ class PerformanceBenchmark:
 class AsyncPerformanceBenchmark(PerformanceBenchmark):
     """Async version of performance benchmark for async operations."""
 
-    async def measure_async_response_time(self, func: Callable, *args, **kwargs) -> PerformanceMetric:
+    async def measure_async_response_time(
+        self, func: Callable, *args, **kwargs
+    ) -> PerformanceMetric:
         """Measure async function execution time."""
         start_time = time.time()
         start_memory = psutil.Process().memory_info().rss
@@ -302,7 +322,10 @@ class AsyncPerformanceBenchmark(PerformanceBenchmark):
         else:
             # For non-async functions, run in executor
             loop = asyncio.get_event_loop()
-            tasks = [loop.run_in_executor(None, func, *args, **kwargs) for _ in range(concurrency)]
+            tasks = [
+                loop.run_in_executor(None, func, *args, **kwargs)
+                for _ in range(concurrency)
+            ]
             results = await asyncio.gather(*tasks, return_exceptions=True)
 
         end_time = time.time()
@@ -322,7 +345,9 @@ class AsyncPerformanceBenchmark(PerformanceBenchmark):
                 "concurrency": concurrency,
                 "successful_operations": successful_operations,
                 "error_count": len(errors),
-                "success_rate": successful_operations / concurrency if concurrency > 0 else 0,
+                "success_rate": successful_operations / concurrency
+                if concurrency > 0
+                else 0,
                 "total_time": total_time,
                 "errors": errors[:5],  # Store first 5 errors
             },

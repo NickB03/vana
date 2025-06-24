@@ -94,7 +94,10 @@ class VANAMCPServer:
                     inputSchema={
                         "type": "object",
                         "properties": {
-                            "query": {"type": "string", "description": "Search query string"},
+                            "query": {
+                                "type": "string",
+                                "description": "Search query string",
+                            },
                             "max_results": {
                                 "type": "integer",
                                 "description": "Maximum number of results to return",
@@ -113,10 +116,22 @@ class VANAMCPServer:
                             "operation": {
                                 "type": "string",
                                 "description": "GitHub operation type",
-                                "enum": ["repos", "user_info", "issues", "pull_requests", "create_issue"],
+                                "enum": [
+                                    "repos",
+                                    "user_info",
+                                    "issues",
+                                    "pull_requests",
+                                    "create_issue",
+                                ],
                             },
-                            "owner": {"type": "string", "description": "Repository owner (for repo operations)"},
-                            "repo": {"type": "string", "description": "Repository name (for repo operations)"},
+                            "owner": {
+                                "type": "string",
+                                "description": "Repository owner (for repo operations)",
+                            },
+                            "repo": {
+                                "type": "string",
+                                "description": "Repository name (for repo operations)",
+                            },
                         },
                         "required": ["operation"],
                     },
@@ -135,16 +150,25 @@ class VANAMCPServer:
                     result = await self._handle_github_tool(arguments)
                 else:
                     return CallToolResult(
-                        content=[TextContent(type="text", text=f"Unknown tool: {name}")], isError=True
+                        content=[
+                            TextContent(type="text", text=f"Unknown tool: {name}")
+                        ],
+                        isError=True,
                     )
 
                 return CallToolResult(
-                    content=[TextContent(type="text", text=json.dumps(result, indent=2))], isError=False
+                    content=[
+                        TextContent(type="text", text=json.dumps(result, indent=2))
+                    ],
+                    isError=False,
                 )
 
             except Exception as e:
                 logger.error(f"Tool call error for {name}: {e}")
-                return CallToolResult(content=[TextContent(type="text", text=f"Tool error: {str(e)}")], isError=True)
+                return CallToolResult(
+                    content=[TextContent(type="text", text=f"Tool error: {str(e)}")],
+                    isError=True,
+                )
 
     async def _handle_context7_tool(self, arguments: Dict[str, Any]) -> Dict[str, Any]:
         """Handle Context7 sequential thinking tool"""
@@ -165,7 +189,9 @@ class VANAMCPServer:
             "transport": "sse",
         }
 
-    async def _handle_brave_search_tool(self, arguments: Dict[str, Any]) -> Dict[str, Any]:
+    async def _handle_brave_search_tool(
+        self, arguments: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """Handle Brave Search MCP tool"""
         query = arguments.get("query", "")
         max_results = arguments.get("max_results", 5)
@@ -238,7 +264,9 @@ class VANAMCPServer:
                 return ReadResourceResult(
                     contents=[
                         types.TextResourceContents(
-                            uri=uri, mimeType="application/json", text=json.dumps(status, indent=2)
+                            uri=uri,
+                            mimeType="application/json",
+                            text=json.dumps(status, indent=2),
                         )
                     ]
                 )
@@ -267,7 +295,9 @@ class VANAMCPServer:
                 return ReadResourceResult(
                     contents=[
                         types.TextResourceContents(
-                            uri=uri, mimeType="application/json", text=json.dumps(tools_info, indent=2)
+                            uri=uri,
+                            mimeType="application/json",
+                            text=json.dumps(tools_info, indent=2),
                         )
                     ]
                 )
@@ -284,16 +314,24 @@ class VANAMCPServer:
                     name="vana_analysis",
                     description="Structured analysis prompt for complex problems",
                     arguments=[
-                        types.PromptArgument(name="topic", description="Topic or problem to analyze", required=True),
                         types.PromptArgument(
-                            name="depth", description="Analysis depth (basic, detailed, comprehensive)", required=False
+                            name="topic",
+                            description="Topic or problem to analyze",
+                            required=True,
+                        ),
+                        types.PromptArgument(
+                            name="depth",
+                            description="Analysis depth (basic, detailed, comprehensive)",
+                            required=False,
                         ),
                     ],
                 )
             ]
 
         @self.server.get_prompt()
-        async def get_prompt(name: str, arguments: Optional[Dict[str, str]] = None) -> GetPromptResult:
+        async def get_prompt(
+            name: str, arguments: Optional[Dict[str, str]] = None
+        ) -> GetPromptResult:
             """Handle prompt requests"""
             if name == "vana_analysis":
                 topic = arguments.get("topic", "") if arguments else ""
@@ -316,7 +354,10 @@ Use the Context7 sequential thinking framework for comprehensive analysis.
 
                 return GetPromptResult(
                     messages=[
-                        types.PromptMessage(role="user", content=types.TextContent(type="text", text=prompt_text))
+                        types.PromptMessage(
+                            role="user",
+                            content=types.TextContent(type="text", text=prompt_text),
+                        )
                     ]
                 )
             else:

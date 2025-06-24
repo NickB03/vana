@@ -310,24 +310,24 @@ class TestInfrastructureSetup:
         if self.setup_complete:
             # Collect component statistics
             if self.test_environment:
-                health_status["component_stats"][
-                    "test_environment"
-                ] = self.test_environment.get_environment_stats()
+                health_status["component_stats"]["test_environment"] = (
+                    self.test_environment.get_environment_stats()
+                )
 
             if self.mock_service_manager:
-                health_status["component_stats"][
-                    "mock_services"
-                ] = self.mock_service_manager.get_manager_stats()
+                health_status["component_stats"]["mock_services"] = (
+                    self.mock_service_manager.get_manager_stats()
+                )
 
             if self.fixture_manager:
-                health_status["component_stats"][
-                    "fixture_manager"
-                ] = self.fixture_manager.get_manager_stats()
+                health_status["component_stats"]["fixture_manager"] = (
+                    self.fixture_manager.get_manager_stats()
+                )
 
             if self.performance_monitor:
-                health_status["component_stats"][
-                    "performance_monitor"
-                ] = self.performance_monitor.get_monitor_stats()
+                health_status["component_stats"]["performance_monitor"] = (
+                    self.performance_monitor.get_monitor_stats()
+                )
 
         # Determine overall health
         if self.setup_complete and all(self.validation_results.values()):

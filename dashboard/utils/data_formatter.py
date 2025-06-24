@@ -35,11 +35,15 @@ def format_timestamps(data, timestamp_key="timestamps"):
         timestamps = [datetime.fromisoformat(ts) for ts in data[timestamp_key]]
 
         # Format timestamps for display
-        formatted_data[timestamp_key] = [ts.strftime("%Y-%m-%d %H:%M:%S") for ts in timestamps]
+        formatted_data[timestamp_key] = [
+            ts.strftime("%Y-%m-%d %H:%M:%S") for ts in timestamps
+        ]
 
         # Add a shorter format for charts
         formatted_data["short_timestamps"] = [
-            ts.strftime("%H:%M") if ts.date() == datetime.now().date() else ts.strftime("%m-%d %H:%M")
+            ts.strftime("%H:%M")
+            if ts.date() == datetime.now().date()
+            else ts.strftime("%m-%d %H:%M")
             for ts in timestamps
         ]
     except Exception as e:
@@ -69,7 +73,11 @@ def create_dataframe(data, timestamp_key="timestamps"):
 
         # Add all other keys except 'short_timestamps'
         for key in data:
-            if key != timestamp_key and key != "short_timestamps" and len(data[key]) == len(data[timestamp_key]):
+            if (
+                key != timestamp_key
+                and key != "short_timestamps"
+                and len(data[key]) == len(data[timestamp_key])
+            ):
                 df_dict[key] = data[key]
 
         # Create DataFrame
@@ -125,9 +133,9 @@ def format_bytes(bytes_value):
     elif bytes_value < 1024**2:
         return f"{bytes_value / 1024:.2f} KB"
     elif bytes_value < 1024**3:
-        return f"{bytes_value / (1024 ** 2):.2f} MB"
+        return f"{bytes_value / (1024**2):.2f} MB"
     else:
-        return f"{bytes_value / (1024 ** 3):.2f} GB"
+        return f"{bytes_value / (1024**3):.2f} GB"
 
 
 def format_duration(seconds):

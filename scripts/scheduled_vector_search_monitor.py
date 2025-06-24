@@ -34,7 +34,9 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # Configure logging
 logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s", handlers=[logging.StreamHandler()]
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(message)s",
+    handlers=[logging.StreamHandler()],
 )
 logger = logging.getLogger(__name__)
 
@@ -55,11 +57,19 @@ def setup_logging(log_file=None):
 
         handlers.append(logging.FileHandler(log_file))
 
-    logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s", handlers=handlers)
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s [%(levelname)s] %(message)s",
+        handlers=handlers,
+    )
 
 
 def run_health_check(
-    store_history=True, history_dir="health_history", alert_level="error", alert_method="log", degraded_mode=False
+    store_history=True,
+    history_dir="health_history",
+    alert_level="error",
+    alert_method="log",
+    degraded_mode=False,
 ):
     """
     Run health check and store results if needed
@@ -79,7 +89,9 @@ def run_health_check(
 
     # Create circuit breaker for health check
     health_check_cb = CircuitBreaker(
-        failure_threshold=3, recovery_timeout=300, name="vector-search-health-check"  # 5 minutes
+        failure_threshold=3,
+        recovery_timeout=300,
+        name="vector-search-health-check",  # 5 minutes
     )
 
     # Fallback function for degraded mode
@@ -90,10 +102,18 @@ def run_health_check(
         result = {
             "timestamp": datetime.now().isoformat(),
             "status": "unknown",
-            "checks": {"environment": {"status": "unknown", "details": {"message": "Running in degraded mode"}}},
+            "checks": {
+                "environment": {
+                    "status": "unknown",
+                    "details": {"message": "Running in degraded mode"},
+                }
+            },
             "metrics": {},
             "issues": [
-                {"severity": "warn", "message": "Health check running in degraded mode due to previous failures"}
+                {
+                    "severity": "warn",
+                    "message": "Health check running in degraded mode due to previous failures",
+                }
             ],
         }
 
@@ -112,7 +132,12 @@ def run_health_check(
         except Exception as e:
             logger.error(f"Error in degraded health check: {e}")
             result["status"] = "error"
-            result["issues"].append({"severity": "error", "message": f"Error in degraded health check: {str(e)}"})
+            result["issues"].append(
+                {
+                    "severity": "error",
+                    "message": f"Error in degraded health check: {str(e)}",
+                }
+            )
 
         return result, None  # No checker object in degraded mode
 
@@ -179,7 +204,12 @@ def run_health_check(
             "status": "error",
             "checks": {},
             "metrics": {},
-            "issues": [{"severity": "error", "message": f"Unexpected error in health check: {str(e)}"}],
+            "issues": [
+                {
+                    "severity": "error",
+                    "message": f"Unexpected error in health check: {str(e)}",
+                }
+            ],
         }
 
         # Trigger alert for the error
@@ -208,7 +238,9 @@ def trigger_alert(result, checker, alert_method="log"):
     if issues:
         alert_message += "\nIssues:\n"
         for i, issue in enumerate(issues, 1):
-            alert_message += f"{i}. [{issue.get('severity', 'unknown')}] {issue.get('message')}\n"
+            alert_message += (
+                f"{i}. [{issue.get('severity', 'unknown')}] {issue.get('message')}\n"
+            )
 
     # Get recommendations if checker is available
     if checker is not None:
@@ -236,7 +268,10 @@ def trigger_alert(result, checker, alert_method="log"):
             alerts_dir = Path("alerts")
             alerts_dir.mkdir(exist_ok=True)
 
-            alert_file = alerts_dir / f"vector_search_alert_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
+            alert_file = (
+                alerts_dir
+                / f"vector_search_alert_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
+            )
 
             with open(alert_file, "w") as f:
                 f.write(alert_message)
@@ -312,14 +347,18 @@ def analyze_history(history_dir="health_history", days=7):
             logger.error(f"Error processing history file {file_path}: {e}")
 
     # Calculate averages
-    avg_response_time = sum(response_times) / len(response_times) if response_times else 0
+    avg_response_time = (
+        sum(response_times) / len(response_times) if response_times else 0
+    )
     avg_success_rate = sum(success_rates) / len(success_rates) if success_rates else 0
 
     # Create analysis result
     analysis = {
         "total_checks": len(recent_files),
         "status_counts": status_counts,
-        "health_percentage": (status_counts.get("ok", 0) / len(recent_files)) * 100 if recent_files else 0,
+        "health_percentage": (status_counts.get("ok", 0) / len(recent_files)) * 100
+        if recent_files
+        else 0,
         "avg_response_time": avg_response_time,
         "avg_success_rate": avg_success_rate,
         "analyzed_days": days,
@@ -331,32 +370,59 @@ def analyze_history(history_dir="health_history", days=7):
 
 def main():
     """Main function"""
-    parser = argparse.ArgumentParser(description="Scheduled Vector Search Health Monitoring")
-    parser.add_argument("--interval", type=int, default=15, help="Monitoring interval in minutes")
-    parser.add_argument("--no-store", action="store_true", help="Don't store historical reports")
+    parser = argparse.ArgumentParser(
+        description="Scheduled Vector Search Health Monitoring"
+    )
+    parser.add_argument(
+        "--interval", type=int, default=15, help="Monitoring interval in minutes"
+    )
+    parser.add_argument(
+        "--no-store", action="store_true", help="Don't store historical reports"
+    )
     parser.add_argument(
         "--alert-level",
         choices=["ok", "warn", "error", "critical"],
         default="error",
         help="Minimum level to trigger alerts",
     )
-    parser.add_argument("--alert-method", choices=["log", "file", "both"], default="log", help="Alert method")
     parser.add_argument(
-        "--history-dir", type=str, default="health_history", help="Directory to store historical reports"
+        "--alert-method",
+        choices=["log", "file", "both"],
+        default="log",
+        help="Alert method",
+    )
+    parser.add_argument(
+        "--history-dir",
+        type=str,
+        default="health_history",
+        help="Directory to store historical reports",
     )
     parser.add_argument("--log-file", type=str, default=None, help="Log file path")
-    parser.add_argument("--degraded-mode", action="store_true", help="Start in degraded mode (limited functionality)")
     parser.add_argument(
-        "--adaptive-interval", action="store_true", help="Use adaptive monitoring intervals based on system health"
+        "--degraded-mode",
+        action="store_true",
+        help="Start in degraded mode (limited functionality)",
     )
-    parser.add_argument("--retention-days", type=int, default=30, help="Number of days to retain historical data")
+    parser.add_argument(
+        "--adaptive-interval",
+        action="store_true",
+        help="Use adaptive monitoring intervals based on system health",
+    )
+    parser.add_argument(
+        "--retention-days",
+        type=int,
+        default=30,
+        help="Number of days to retain historical data",
+    )
     args = parser.parse_args()
 
     # Set up logging
     setup_logging(args.log_file)
 
     # Run initial health check
-    logger.info(f"Starting Vector Search health monitoring (interval: {args.interval} minutes)")
+    logger.info(
+        f"Starting Vector Search health monitoring (interval: {args.interval} minutes)"
+    )
 
     # Track consecutive failures for adaptive monitoring
     consecutive_failures = 0
@@ -412,7 +478,9 @@ def main():
 
                     # Reschedule with new interval
                     schedule.clear(tag="health_check")
-                    schedule.every(current_interval).minutes.do(scheduled_health_check).tag("health_check")
+                    schedule.every(current_interval).minutes.do(
+                        scheduled_health_check
+                    ).tag("health_check")
             elif consecutive_failures == 0 and current_interval < args.interval:
                 # Gradually return to normal interval
                 new_interval = min(args.interval, current_interval * 2)
@@ -424,21 +492,27 @@ def main():
 
                     # Reschedule with new interval
                     schedule.clear(tag="health_check")
-                    schedule.every(current_interval).minutes.do(scheduled_health_check).tag("health_check")
+                    schedule.every(current_interval).minutes.do(
+                        scheduled_health_check
+                    ).tag("health_check")
 
         return result
 
     # Schedule the health check
-    schedule.every(current_interval).minutes.do(scheduled_health_check).tag("health_check")
+    schedule.every(current_interval).minutes.do(scheduled_health_check).tag(
+        "health_check"
+    )
 
     # Schedule daily analysis
-    schedule.every().day.at("00:00").do(lambda: analyze_and_report_history(args.history_dir)).tag("analysis")
+    schedule.every().day.at("00:00").do(
+        lambda: analyze_and_report_history(args.history_dir)
+    ).tag("analysis")
 
     # Schedule data retention cleanup
     if args.retention_days > 0:
-        schedule.every().day.at("01:00").do(lambda: cleanup_old_data(args.history_dir, args.retention_days)).tag(
-            "cleanup"
-        )
+        schedule.every().day.at("01:00").do(
+            lambda: cleanup_old_data(args.history_dir, args.retention_days)
+        ).tag("cleanup")
 
     # Run the scheduling loop
     try:
@@ -460,7 +534,9 @@ def cleanup_old_data(history_dir="health_history", retention_days=30):
     Returns:
         Number of files deleted
     """
-    logger.info(f"Running data retention cleanup (keeping {retention_days} days of data)...")
+    logger.info(
+        f"Running data retention cleanup (keeping {retention_days} days of data)..."
+    )
 
     try:
         history_path = Path(history_dir)
@@ -473,7 +549,11 @@ def cleanup_old_data(history_dir="health_history", retention_days=30):
         cutoff_time = time.time() - (retention_days * 24 * 60 * 60)
 
         # Find files older than cutoff
-        old_files = [f for f in history_path.glob("vector_search_health_*.json") if f.stat().st_mtime < cutoff_time]
+        old_files = [
+            f
+            for f in history_path.glob("vector_search_health_*.json")
+            if f.stat().st_mtime < cutoff_time
+        ]
 
         # Delete old files
         deleted_count = 0
@@ -490,7 +570,9 @@ def cleanup_old_data(history_dir="health_history", retention_days=30):
         analysis_path = Path("analysis")
         if analysis_path.exists():
             old_analysis_files = [
-                f for f in analysis_path.glob("vector_search_analysis_*.json") if f.stat().st_mtime < cutoff_time
+                f
+                for f in analysis_path.glob("vector_search_analysis_*.json")
+                if f.stat().st_mtime < cutoff_time
             ]
 
             analysis_deleted = 0
@@ -521,7 +603,10 @@ def analyze_and_report_history(history_dir="health_history"):
         analysis_dir = Path("analysis")
         analysis_dir.mkdir(exist_ok=True)
 
-        filename = analysis_dir / f"vector_search_analysis_{datetime.now().strftime('%Y%m%d')}.json"
+        filename = (
+            analysis_dir
+            / f"vector_search_analysis_{datetime.now().strftime('%Y%m%d')}.json"
+        )
 
         with open(filename, "w") as f:
             json.dump(analysis, f, indent=2)

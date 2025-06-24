@@ -33,7 +33,11 @@ class OrchestrationResult:
     """
 
     def __init__(
-        self, success: bool, result_data: Dict[str, Any], user_message: str, internal_task_id: Optional[str] = None
+        self,
+        success: bool,
+        result_data: Dict[str, Any],
+        user_message: str,
+        internal_task_id: Optional[str] = None,
     ):
         self.success = success
         self.result_data = result_data
@@ -147,7 +151,7 @@ def hotel_search_tool(context: str) -> str:
         )
 
         # Return user-friendly response WITHOUT task ID
-        user_response = f"""🏨 I found excellent hotel options for your stay!
+        user_response = """🏨 I found excellent hotel options for your stay!
 
 **Top Recommendations:**
 🌟 **Grand Plaza Hotel** - $180/night - 4.5★
@@ -171,7 +175,7 @@ Would you like more details about any of these hotels or see additional options?
 
     except Exception as e:
         logger.error(f"Error in hotel search: {e}")
-        return f"I had trouble accessing hotel databases. Let me search for accommodations using alternative methods."
+        return "I had trouble accessing hotel databases. Let me search for accommodations using alternative methods."
 
 
 def flight_search_tool(context: str) -> str:
@@ -206,7 +210,7 @@ def flight_search_tool(context: str) -> str:
         )
 
         # Return user-friendly response WITHOUT task ID
-        user_response = f"""✈️ I found great flight options for your journey!
+        user_response = """✈️ I found great flight options for your journey!
 
 **Best Flight Options:**
 🛫 **Direct Flight** - $650 - 8h 30m
@@ -230,7 +234,7 @@ I can help you book any of these flights or find alternatives with different dat
 
     except Exception as e:
         logger.error(f"Error in flight search: {e}")
-        return f"I encountered an issue searching flights. Let me try alternative flight search methods to find you the best options."
+        return "I encountered an issue searching flights. Let me try alternative flight search methods to find you the best options."
 
 
 # Development Specialist Tools - FIXED ORCHESTRATION PATTERN
@@ -264,7 +268,7 @@ def code_generation_tool(context: str) -> str:
         )
 
         # Return user-friendly response WITHOUT task ID
-        user_response = f"""💻 I've generated the code solution for your project!
+        user_response = """💻 I've generated the code solution for your project!
 
 **Code Generation Complete:**
 ✅ **Architecture Design** - Modular structure with clean separation
@@ -286,9 +290,7 @@ The code is production-ready with proper error handling, logging, and security c
 
     except Exception as e:
         logger.error(f"Error in code generation: {e}")
-        return (
-            f"I encountered an issue during code generation. Let me try a different approach to create your solution."
-        )
+        return "I encountered an issue during code generation. Let me try a different approach to create your solution."
 
 
 def testing_tool(context: str) -> str:
@@ -319,7 +321,7 @@ def testing_tool(context: str) -> str:
         )
 
         # Return user-friendly response WITHOUT task ID
-        user_response = f"""🧪 I've created a comprehensive testing strategy for your project!
+        user_response = """🧪 I've created a comprehensive testing strategy for your project!
 
 **Testing Strategy Complete:**
 ✅ **Test Plan** - Multi-layered testing approach designed
@@ -346,7 +348,7 @@ Your testing framework is ready to ensure high-quality, reliable software delive
 
     except Exception as e:
         logger.error(f"Error in testing: {e}")
-        return f"I had an issue setting up the testing framework. Let me create an alternative testing approach for your project."
+        return "I had an issue setting up the testing framework. Let me create an alternative testing approach for your project."
 
 
 # Research Specialist Tools - FIXED ORCHESTRATION PATTERN
@@ -365,7 +367,10 @@ def competitive_intelligence_tool(context: str) -> str:
         analysis_result = {
             "competitors_analyzed": 12,
             "market_position": "Strong competitive position identified",
-            "opportunities": ["Market gap in premium segment", "Underserved customer needs"],
+            "opportunities": [
+                "Market gap in premium segment",
+                "Underserved customer needs",
+            ],
             "threats": ["New market entrants", "Price competition"],
             "recommendations": "Strategic positioning recommendations developed",
         }
@@ -380,7 +385,7 @@ def competitive_intelligence_tool(context: str) -> str:
         )
 
         # Return user-friendly response WITHOUT task ID
-        user_response = f"""🔍 I've completed a comprehensive competitive intelligence analysis!
+        user_response = """🔍 I've completed a comprehensive competitive intelligence analysis!
 
 **Market Analysis Complete:**
 ✅ **Competitor Landscape** - 12 key competitors analyzed in detail
@@ -411,4 +416,4 @@ The analysis provides actionable insights for strategic decision-making. Would y
 
     except Exception as e:
         logger.error(f"Error in competitive intelligence: {e}")
-        return f"I encountered an issue during the competitive analysis. Let me gather market intelligence using alternative research methods."
+        return "I encountered an issue during the competitive analysis. Let me gather market intelligence using alternative research methods."

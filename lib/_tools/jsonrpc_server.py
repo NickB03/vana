@@ -124,9 +124,13 @@ class JsonRpcServer:
 
                 # Create success response
                 execution_time = (time.time() - start_time) * 1000
-                logger.info(f"✅ Method executed: {request.method} ({execution_time:.1f}ms)")
+                logger.info(
+                    f"✅ Method executed: {request.method} ({execution_time:.1f}ms)"
+                )
 
-                success_response = MessageProtocol.create_success_response(result, request.id)
+                success_response = MessageProtocol.create_success_response(
+                    result, request.id
+                )
                 return success_response.to_json()
 
             except TypeError as e:
@@ -189,7 +193,11 @@ class JsonRpcServer:
 
         async def health_check() -> Dict[str, Any]:
             """Perform health check."""
-            return {"agent_name": self.agent_name, "status": "healthy", "timestamp": time.time()}
+            return {
+                "agent_name": self.agent_name,
+                "status": "healthy",
+                "timestamp": time.time(),
+            }
 
         # Register default methods
         self.register_method(AgentMethods.GET_STATUS, get_status)
@@ -197,7 +205,9 @@ class JsonRpcServer:
         self.register_method(AgentMethods.HEALTH_CHECK, health_check)
 
 
-def create_agent_rpc_endpoint(app: FastAPI, agent_name: str, server: JsonRpcServer) -> None:
+def create_agent_rpc_endpoint(
+    app: FastAPI, agent_name: str, server: JsonRpcServer
+) -> None:
     """Create RPC endpoint for an agent in FastAPI app.
 
     Args:
@@ -239,7 +249,9 @@ class AgentRpcHandler:
         self.agent_name = agent_name
         self.server = JsonRpcServer(agent_name)
 
-    def register_execute_task(self, handler: Callable[[str, str, str, str, int], Awaitable[AgentTaskResponse]]) -> None:
+    def register_execute_task(
+        self, handler: Callable[[str, str, str, str, int], Awaitable[AgentTaskResponse]]
+    ) -> None:
         """Register task execution handler.
 
         Args:
@@ -248,15 +260,23 @@ class AgentRpcHandler:
         """
 
         async def execute_task_wrapper(
-            task: str, context: str = "", agent_id: str = "", priority: str = "normal", timeout_seconds: int = 30
+            task: str,
+            context: str = "",
+            agent_id: str = "",
+            priority: str = "normal",
+            timeout_seconds: int = 30,
         ) -> Dict[str, Any]:
             """Wrapper for task execution."""
             try:
-                response = await handler(task, context, agent_id, priority, timeout_seconds)
+                response = await handler(
+                    task, context, agent_id, priority, timeout_seconds
+                )
                 return response.to_dict()
             except Exception as e:
                 logger.error(f"❌ Task execution failed: {e}")
-                error_response = AgentTaskResponse(status="error", agent_id=self.agent_name, error=str(e))
+                error_response = AgentTaskResponse(
+                    status="error", agent_id=self.agent_name, error=str(e)
+                )
                 return error_response.to_dict()
 
         self.server.register_method(AgentMethods.EXECUTE_TASK, execute_task_wrapper)

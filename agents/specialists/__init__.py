@@ -23,6 +23,7 @@ agent = SpecialistAgentProxy()
 # ADK expects root_agent specifically
 root_agent = SpecialistAgentProxy()
 
+
 # Function to get root_agent for backward compatibility
 def get_agent():
     """Get the root agent instance."""

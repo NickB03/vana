@@ -61,7 +61,9 @@ class AgentCoordinationService:
                 )
 
             # Determine best agent for the task
-            selected_agent = self._select_best_agent(task_description, assigned_agent, available_agents)
+            selected_agent = self._select_best_agent(
+                task_description, assigned_agent, available_agents
+            )
 
             if not selected_agent:
                 return json.dumps(
@@ -82,7 +84,9 @@ class AgentCoordinationService:
                 "assigned_agent": selected_agent.name,
                 "coordination_time": datetime.now().isoformat(),
                 "status": "coordinated",
-                "reasoning": self._get_selection_reasoning(task_description, selected_agent),
+                "reasoning": self._get_selection_reasoning(
+                    task_description, selected_agent
+                ),
             }
 
             self.coordination_history.append(coordination_record)
@@ -99,7 +103,9 @@ class AgentCoordinationService:
                 "timestamp": datetime.now().isoformat(),
             }
 
-            logger.info(f"✅ Task coordinated to {selected_agent.name}: {task_description}")
+            logger.info(
+                f"✅ Task coordinated to {selected_agent.name}: {task_description}"
+            )
             return json.dumps(result, indent=2)
 
         except Exception as e:
@@ -114,7 +120,9 @@ class AgentCoordinationService:
                 }
             )
 
-    async def delegate_to_agent(self, agent_name: str, task: str, context: str = "") -> str:
+    async def delegate_to_agent(
+        self, agent_name: str, task: str, context: str = ""
+    ) -> str:
         """Delegate task to a specific agent with real JSON-RPC communication.
 
         Args:
@@ -162,7 +170,9 @@ class AgentCoordinationService:
 
             # Use communication service to send task via JSON-RPC
             communication_service = get_communication_service()
-            communication_result = await communication_service.send_task_to_agent(agent_name, task, context)
+            communication_result = await communication_service.send_task_to_agent(
+                agent_name, task, context
+            )
 
             # Update delegation record with result
             delegation_record["status"] = communication_result.get("status", "unknown")
@@ -282,7 +292,11 @@ class AgentCoordinationService:
             )
 
     async def orchestrate_complex_task(
-        self, task: str, context: str = "", max_agents: int = 3, timeout_seconds: int = 300
+        self,
+        task: str,
+        context: str = "",
+        max_agents: int = 3,
+        timeout_seconds: int = 300,
     ) -> str:
         """Orchestrate complex task across multiple agents with coordination.
 
@@ -301,7 +315,10 @@ class AgentCoordinationService:
             # Use task orchestrator for complex multi-agent coordination
             task_orchestrator = get_task_orchestrator()
             orchestration_result = await task_orchestrator.orchestrate_task(
-                task, context, max_parallel_tasks=max_agents, timeout_seconds=timeout_seconds
+                task,
+                context,
+                max_parallel_tasks=max_agents,
+                timeout_seconds=timeout_seconds,
             )
 
             # Create orchestration record
@@ -334,14 +351,20 @@ class AgentCoordinationService:
                 "aggregated_result": orchestration_result.aggregated_result,
                 "errors": orchestration_result.errors,
                 "performance_metrics": orchestration_result.performance_metrics,
-                "next_steps": self._generate_orchestration_next_steps(orchestration_result),
+                "next_steps": self._generate_orchestration_next_steps(
+                    orchestration_result
+                ),
                 "timestamp": datetime.now().isoformat(),
             }
 
             if orchestration_result.success:
-                logger.info(f"✅ Complex task orchestration successful: {orchestration_id}")
+                logger.info(
+                    f"✅ Complex task orchestration successful: {orchestration_id}"
+                )
             else:
-                logger.warning(f"⚠️ Complex task orchestration had issues: {orchestration_id}")
+                logger.warning(
+                    f"⚠️ Complex task orchestration had issues: {orchestration_id}"
+                )
 
             return json.dumps(result, indent=2)
 
@@ -421,7 +444,9 @@ class AgentCoordinationService:
                     "total_coordinations": len(self.coordination_history),
                     "active_delegations": len(self.active_delegations),
                     "last_coordination": (
-                        self.coordination_history[-1]["coordination_time"] if self.coordination_history else None
+                        self.coordination_history[-1]["coordination_time"]
+                        if self.coordination_history
+                        else None
                     ),
                 },
                 "status": "operational",
@@ -443,7 +468,10 @@ class AgentCoordinationService:
             )
 
     def _select_best_agent(
-        self, task_description: str, assigned_agent: str, available_agents: Dict[str, AgentCapability]
+        self,
+        task_description: str,
+        assigned_agent: str,
+        available_agents: Dict[str, AgentCapability],
     ) -> Optional[AgentCapability]:
         """Select the best agent for a given task.
 
@@ -463,30 +491,50 @@ class AgentCoordinationService:
         task_lower = task_description.lower()
 
         # Task type analysis
-        if any(keyword in task_lower for keyword in ["code", "execute", "run", "script", "python", "javascript"]):
+        if any(
+            keyword in task_lower
+            for keyword in ["code", "execute", "run", "script", "python", "javascript"]
+        ):
             # Look for code execution agent
             for agent in available_agents.values():
                 if "code" in agent.name.lower() or "execution" in agent.capabilities:
                     return agent
 
         elif any(
-            keyword in task_lower for keyword in ["data", "analyze", "visualization", "chart", "graph", "statistics"]
+            keyword in task_lower
+            for keyword in [
+                "data",
+                "analyze",
+                "visualization",
+                "chart",
+                "graph",
+                "statistics",
+            ]
         ):
             # Look for data science agent
             for agent in available_agents.values():
                 if "data" in agent.name.lower() or "analysis" in agent.capabilities:
                     return agent
 
-        elif any(keyword in task_lower for keyword in ["search", "find", "knowledge", "information", "research"]):
+        elif any(
+            keyword in task_lower
+            for keyword in ["search", "find", "knowledge", "information", "research"]
+        ):
             # Look for memory/search agent
             for agent in available_agents.values():
                 if "memory" in agent.name.lower() or "search" in agent.capabilities:
                     return agent
 
-        elif any(keyword in task_lower for keyword in ["coordinate", "manage", "orchestrate", "delegate"]):
+        elif any(
+            keyword in task_lower
+            for keyword in ["coordinate", "manage", "orchestrate", "delegate"]
+        ):
             # Look for orchestration agent (VANA)
             for agent in available_agents.values():
-                if "vana" in agent.name.lower() or "orchestration" in agent.capabilities:
+                if (
+                    "vana" in agent.name.lower()
+                    or "orchestration" in agent.capabilities
+                ):
                     return agent
 
         # Default to VANA if available
@@ -496,7 +544,9 @@ class AgentCoordinationService:
         # Return first available agent as fallback
         return next(iter(available_agents.values())) if available_agents else None
 
-    def _get_selection_reasoning(self, task_description: str, selected_agent: AgentCapability) -> str:
+    def _get_selection_reasoning(
+        self, task_description: str, selected_agent: AgentCapability
+    ) -> str:
         """Get reasoning for agent selection.
 
         Args:
@@ -551,11 +601,15 @@ def real_delegate_to_agent(agent_name: str, task: str, context: str = "") -> str
             import concurrent.futures
 
             with concurrent.futures.ThreadPoolExecutor() as executor:
-                future = executor.submit(asyncio.run, service.delegate_to_agent(agent_name, task, context))
+                future = executor.submit(
+                    asyncio.run, service.delegate_to_agent(agent_name, task, context)
+                )
                 return future.result(timeout=30)
         else:
             # Run in the existing loop
-            return loop.run_until_complete(service.delegate_to_agent(agent_name, task, context))
+            return loop.run_until_complete(
+                service.delegate_to_agent(agent_name, task, context)
+            )
     except RuntimeError:
         # No event loop, create one
         return asyncio.run(service.delegate_to_agent(agent_name, task, context))
@@ -579,17 +633,23 @@ def real_intelligent_route_task(task: str, context: str = "") -> str:
             import concurrent.futures
 
             with concurrent.futures.ThreadPoolExecutor() as executor:
-                future = executor.submit(asyncio.run, service.intelligent_route_task(task, context))
+                future = executor.submit(
+                    asyncio.run, service.intelligent_route_task(task, context)
+                )
                 return future.result(timeout=60)
         else:
             # Run in the existing loop
-            return loop.run_until_complete(service.intelligent_route_task(task, context))
+            return loop.run_until_complete(
+                service.intelligent_route_task(task, context)
+            )
     except RuntimeError:
         # No event loop, create one
         return asyncio.run(service.intelligent_route_task(task, context))
 
 
-def real_orchestrate_complex_task(task: str, context: str = "", max_agents: int = 3, timeout_seconds: int = 300) -> str:
+def real_orchestrate_complex_task(
+    task: str, context: str = "", max_agents: int = 3, timeout_seconds: int = 300
+) -> str:
     """Real implementation of complex task orchestration."""
     service = get_coordination_service()
 
@@ -602,12 +662,21 @@ def real_orchestrate_complex_task(task: str, context: str = "", max_agents: int 
 
             with concurrent.futures.ThreadPoolExecutor() as executor:
                 future = executor.submit(
-                    asyncio.run, service.orchestrate_complex_task(task, context, max_agents, timeout_seconds)
+                    asyncio.run,
+                    service.orchestrate_complex_task(
+                        task, context, max_agents, timeout_seconds
+                    ),
                 )
                 return future.result(timeout=timeout_seconds + 30)
         else:
             # Run in the existing loop
-            return loop.run_until_complete(service.orchestrate_complex_task(task, context, max_agents, timeout_seconds))
+            return loop.run_until_complete(
+                service.orchestrate_complex_task(
+                    task, context, max_agents, timeout_seconds
+                )
+            )
     except RuntimeError:
         # No event loop, create one
-        return asyncio.run(service.orchestrate_complex_task(task, context, max_agents, timeout_seconds))
+        return asyncio.run(
+            service.orchestrate_complex_task(task, context, max_agents, timeout_seconds)
+        )

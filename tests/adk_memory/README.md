@@ -8,7 +8,7 @@ This comprehensive test suite validates the migration from VANA's custom knowled
 ```
 tests/adk_memory/
 ├── unit/                    # Unit tests for individual components
-├── integration/             # Integration tests for component interactions  
+├── integration/             # Integration tests for component interactions
 ├── performance/             # Performance tests and benchmarks
 ├── conftest.py             # Shared fixtures and configuration
 └── README.md               # This documentation

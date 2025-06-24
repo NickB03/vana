@@ -6,23 +6,23 @@ input_validation:
     - '\.\.\/'
     - 'eval\s*\('
     - 'exec\s*\('
-  
+
 rate_limiting:
   default_limit: 100
   window_seconds: 60
   burst_limit: 10
-  
+
 ip_blocking:
   auto_block_on_critical: true
   block_duration_hours: 24
   whitelist:
     - "127.0.0.1"
     - "::1"
-  
+
 csrf_protection:
   token_max_age: 3600
   require_csrf: true
-  
+
 headers:
   security_headers:
     X-Content-Type-Options: "nosniff"

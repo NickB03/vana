@@ -11,7 +11,9 @@ import random
 import sys
 
 # Add the parent directory to the path so we can import our modules
-sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+sys.path.append(
+    os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+)
 
 logger = logging.getLogger(__name__)
 
@@ -50,7 +52,13 @@ def generate_mock_memory_data():
         "query_count_24h": random.randint(50, 1000),
         "average_latency_ms": round(random.uniform(30, 150), 1),
         "entity_types": ["Person", "Organization", "Concept", "Document", "Event"],
-        "relationship_types": ["KNOWS", "PART_OF", "RELATES_TO", "CREATED_BY", "MENTIONS"],
+        "relationship_types": [
+            "KNOWS",
+            "PART_OF",
+            "RELATES_TO",
+            "CREATED_BY",
+            "MENTIONS",
+        ],
     }
 
     # Generate cache data
@@ -212,7 +220,7 @@ def generate_mock_recent_queries(limit=10):
 
         # Create query object
         query = {
-            "id": f"q-{i+1}",
+            "id": f"q-{i + 1}",
             "timestamp": timestamp.isoformat(),
             "query": query_text,
             "search_type": search_type,

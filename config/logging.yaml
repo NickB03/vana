@@ -5,11 +5,11 @@ formatters:
   standard:
     format: "%(asctime)s [%(levelname)s] %(name)s: %(message)s"
     datefmt: "%Y-%m-%d %H:%M:%S"
-  
+
   detailed:
     format: "%(asctime)s [%(levelname)s] %(name)s:%(lineno)d: %(message)s"
     datefmt: "%Y-%m-%d %H:%M:%S"
-  
+
   json:
     class: "pythonjsonlogger.jsonlogger.JsonFormatter"
     format: "%(asctime)s %(name)s %(levelname)s %(message)s"
@@ -20,7 +20,7 @@ handlers:
     level: "INFO"
     formatter: "standard"
     stream: "ext://sys.stdout"
-  
+
   file_all:
     class: "logging.handlers.RotatingFileHandler"
     level: "DEBUG"
@@ -28,7 +28,7 @@ handlers:
     filename: "logs/vana.log"
     maxBytes: 10485760  # 10MB
     backupCount: 5
-  
+
   file_errors:
     class: "logging.handlers.RotatingFileHandler"
     level: "ERROR"
@@ -36,7 +36,7 @@ handlers:
     filename: "logs/vana_errors.log"
     maxBytes: 10485760  # 10MB
     backupCount: 5
-  
+
   file_json:
     class: "logging.handlers.RotatingFileHandler"
     level: "INFO"
@@ -50,17 +50,17 @@ loggers:
     level: "DEBUG"
     handlers: ["console", "file_all", "file_errors", "file_json"]
     propagate: false
-  
+
   agents:
     level: "DEBUG"
     handlers: ["console", "file_all", "file_errors", "file_json"]
     propagate: false
-  
+
   lib:
     level: "DEBUG"
     handlers: ["console", "file_all", "file_errors", "file_json"]
     propagate: false
-  
+
   tools:
     level: "DEBUG"
     handlers: ["console", "file_all", "file_errors", "file_json"]

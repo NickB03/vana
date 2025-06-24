@@ -15,14 +15,21 @@ from dotenv import load_dotenv
 
 # Configure logging
 logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s", handlers=[logging.StreamHandler()]
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(message)s",
+    handlers=[logging.StreamHandler()],
 )
 logger = logging.getLogger(__name__)
 
 
 def validate_env_variables():
     """Validate required environment variables"""
-    required_vars = ["GOOGLE_CLOUD_PROJECT", "GOOGLE_CLOUD_LOCATION", "GOOGLE_APPLICATION_CREDENTIALS", "MODEL"]
+    required_vars = [
+        "GOOGLE_CLOUD_PROJECT",
+        "GOOGLE_CLOUD_LOCATION",
+        "GOOGLE_APPLICATION_CREDENTIALS",
+        "MODEL",
+    ]
 
     missing_vars = []
     for var in required_vars:
@@ -30,7 +37,9 @@ def validate_env_variables():
             missing_vars.append(var)
 
     if missing_vars:
-        logger.error(f"Missing required environment variables: {', '.join(missing_vars)}")
+        logger.error(
+            f"Missing required environment variables: {', '.join(missing_vars)}"
+        )
         return False
 
     logger.info("All required environment variables are set")
@@ -58,14 +67,22 @@ def validate_service_account():
             creds_data = json.load(f)
 
         # Check for required fields
-        required_fields = ["type", "project_id", "private_key_id", "private_key", "client_email"]
+        required_fields = [
+            "type",
+            "project_id",
+            "private_key_id",
+            "private_key",
+            "client_email",
+        ]
         missing_fields = []
         for field in required_fields:
             if field not in creds_data:
                 missing_fields.append(field)
 
         if missing_fields:
-            logger.error(f"Service account credentials file missing required fields: {', '.join(missing_fields)}")
+            logger.error(
+                f"Service account credentials file missing required fields: {', '.join(missing_fields)}"
+            )
             return False
 
         # Verify project ID matches
@@ -79,7 +96,9 @@ def validate_service_account():
         return True
 
     except json.JSONDecodeError:
-        logger.error(f"Service account credentials file is not valid JSON: {creds_path}")
+        logger.error(
+            f"Service account credentials file is not valid JSON: {creds_path}"
+        )
         return False
     except Exception as e:
         logger.error(f"Error validating service account credentials: {str(e)}")
@@ -125,7 +144,9 @@ def validate_adk_structure():
 
     # Check for agent.py file
     if not os.path.isfile("adk-setup/vana/agent.py"):
-        logger.warning("Missing agent.py file in adk-setup/vana/ - this is required for ADK to find the root agent")
+        logger.warning(
+            "Missing agent.py file in adk-setup/vana/ - this is required for ADK to find the root agent"
+        )
         return False
 
     logger.info("ADK project structure validated")

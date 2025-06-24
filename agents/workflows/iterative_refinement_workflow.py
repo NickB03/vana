@@ -30,7 +30,9 @@ class QualityGateAgent(BaseAgent):
         # Store quality threshold in session state instead of as instance variable
         self._quality_threshold = 0.8
 
-    async def _run_async_impl(self, ctx: InvocationContext) -> AsyncGenerator[Event, None]:
+    async def _run_async_impl(
+        self, ctx: InvocationContext
+    ) -> AsyncGenerator[Event, None]:
         """Evaluate current solution quality and decide whether to continue refinement."""
 
         # Get current solution and quality metrics from state
@@ -57,18 +59,20 @@ class QualityGateAgent(BaseAgent):
         }
 
         # Determine if quality threshold is met
-        should_stop = (overall_quality >= self._quality_threshold) or (iteration_count >= 5)
+        should_stop = (overall_quality >= self._quality_threshold) or (
+            iteration_count >= 5
+        )
 
         # Create quality assessment content
         quality_report = f"""
 Quality Assessment (Iteration {iteration_count + 1}):
 - Overall Quality Score: {overall_quality:.2f} (Threshold: {self._quality_threshold})
-- Completeness: {quality_criteria['completeness']:.2f}
-- Technical Depth: {quality_criteria['technical_depth']:.2f}
-- Integration: {quality_criteria['integration']:.2f}
-- Feasibility: {quality_criteria['feasibility']:.2f}
+- Completeness: {quality_criteria["completeness"]:.2f}
+- Technical Depth: {quality_criteria["technical_depth"]:.2f}
+- Integration: {quality_criteria["integration"]:.2f}
+- Feasibility: {quality_criteria["feasibility"]:.2f}
 
-Decision: {'APPROVED - Quality threshold met' if should_stop else 'CONTINUE - Refinement needed'}
+Decision: {"APPROVED - Quality threshold met" if should_stop else "CONTINUE - Refinement needed"}
 """
 
         # Yield quality assessment event
@@ -77,14 +81,26 @@ Decision: {'APPROVED - Quality threshold met' if should_stop else 'CONTINUE - Re
         yield Event(
             author=self.name,
             content=types.Content(parts=[types.Part(text=quality_report)]),
-            actions=EventActions(state_delta=state_update, escalate=should_stop),  # Stop loop if quality is sufficient
+            actions=EventActions(
+                state_delta=state_update, escalate=should_stop
+            ),  # Stop loop if quality is sufficient
         )
 
     def _evaluate_completeness(self, solution: str) -> float:
         """Evaluate solution completeness (0.0 to 1.0)."""
-        required_sections = ["architecture", "ui", "devops", "testing", "implementation", "timeline", "resources"]
+        required_sections = [
+            "architecture",
+            "ui",
+            "devops",
+            "testing",
+            "implementation",
+            "timeline",
+            "resources",
+        ]
 
-        found_sections = sum(1 for section in required_sections if section.lower() in solution.lower())
+        found_sections = sum(
+            1 for section in required_sections if section.lower() in solution.lower()
+        )
         return found_sections / len(required_sections)
 
     def _evaluate_technical_depth(self, solution: str) -> float:
@@ -100,7 +116,11 @@ Decision: {'APPROVED - Quality threshold met' if should_stop else 'CONTINUE - Re
             "performance",
         ]
 
-        found_indicators = sum(1 for indicator in technical_indicators if indicator.lower() in solution.lower())
+        found_indicators = sum(
+            1
+            for indicator in technical_indicators
+            if indicator.lower() in solution.lower()
+        )
         return min(found_indicators / len(technical_indicators), 1.0)
 
     def _evaluate_integration(self, solution: str) -> float:
@@ -115,7 +135,9 @@ Decision: {'APPROVED - Quality threshold met' if should_stop else 'CONTINUE - Re
             "communication",
         ]
 
-        found_keywords = sum(1 for keyword in integration_keywords if keyword.lower() in solution.lower())
+        found_keywords = sum(
+            1 for keyword in integration_keywords if keyword.lower() in solution.lower()
+        )
         return min(found_keywords / len(integration_keywords), 1.0)
 
     def _evaluate_feasibility(self, solution: str) -> float:
@@ -131,11 +153,17 @@ Decision: {'APPROVED - Quality threshold met' if should_stop else 'CONTINUE - Re
             "assumption",
         ]
 
-        found_indicators = sum(1 for indicator in feasibility_indicators if indicator.lower() in solution.lower())
+        found_indicators = sum(
+            1
+            for indicator in feasibility_indicators
+            if indicator.lower() in solution.lower()
+        )
         return min(found_indicators / len(feasibility_indicators), 1.0)
 
 
-def create_iterative_refinement_workflow(max_iterations: int = 5, quality_threshold: float = 0.8) -> LoopAgent:
+def create_iterative_refinement_workflow(
+    max_iterations: int = 5, quality_threshold: float = 0.8
+) -> LoopAgent:
     """
     Create an iterative refinement workflow for solution improvement.
 
@@ -222,4 +250,8 @@ Provide specific feedback for improvement in each area.""",
 # Export for VANA integration
 iterative_refinement_workflow = create_iterative_refinement_workflow()
 
-__all__ = ["create_iterative_refinement_workflow", "iterative_refinement_workflow", "QualityGateAgent"]
+__all__ = [
+    "create_iterative_refinement_workflow",
+    "iterative_refinement_workflow",
+    "QualityGateAgent",
+]

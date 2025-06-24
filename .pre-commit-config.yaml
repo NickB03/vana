@@ -2,27 +2,16 @@
 # See https://pre-commit.com for more information
 
 repos:
-  # Ruff - Fast Python linter and formatter
+  # Ruff - Fast Python linter and formatter (minimal config)
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.1.9
+    rev: v0.12.0
     hooks:
-      - id: ruff
-        args: [--fix]
-        description: "Run ruff linter with auto-fix"
       - id: ruff-format
-        description: "Run ruff formatter"
+        description: "Run ruff formatter only"
 
-  # Black - Python code formatter
-  - repo: https://github.com/psf/black
-    rev: 24.3.0
-    hooks:
-      - id: black
-        language_version: python3.13
-        description: "Format Python code with black"
-
-  # Additional useful hooks
+  # Essential file checks only
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.5.0
+    rev: v5.0.0
     hooks:
       - id: trailing-whitespace
         description: "Remove trailing whitespace"
@@ -39,14 +28,6 @@ repos:
       - id: check-added-large-files
         description: "Prevent large files from being committed"
         args: ['--maxkb=1000']
-
-  # Python import sorting
-  - repo: https://github.com/pycqa/isort
-    rev: 5.13.2
-    hooks:
-      - id: isort
-        args: ["--profile", "black"]
-        description: "Sort Python imports"
 
 # Configuration for specific hooks
 ci:

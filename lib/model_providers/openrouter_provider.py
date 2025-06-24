@@ -46,7 +46,9 @@ class OpenRouterProvider:
 
         logger.info(f"Initialized OpenRouter provider with model: {config.model}")
 
-    def generate_content(self, messages: List[Dict[str, Any]], **kwargs) -> Dict[str, Any]:
+    def generate_content(
+        self, messages: List[Dict[str, Any]], **kwargs
+    ) -> Dict[str, Any]:
         """
         Generate content using OpenRouter API.
 
@@ -75,13 +77,19 @@ class OpenRouterProvider:
             if "presence_penalty" in kwargs:
                 payload["presence_penalty"] = kwargs["presence_penalty"]
 
-            logger.debug(f"Making request to OpenRouter with model: {self.config.model}")
+            logger.debug(
+                f"Making request to OpenRouter with model: {self.config.model}"
+            )
 
             # Make the API call
-            response = self.session.post(f"{self.config.base_url}/chat/completions", json=payload, timeout=60)
+            response = self.session.post(
+                f"{self.config.base_url}/chat/completions", json=payload, timeout=60
+            )
 
             if response.status_code != 200:
-                error_msg = f"OpenRouter API error: {response.status_code} - {response.text}"
+                error_msg = (
+                    f"OpenRouter API error: {response.status_code} - {response.text}"
+                )
                 logger.error(error_msg)
                 raise Exception(error_msg)
 
@@ -94,7 +102,9 @@ class OpenRouterProvider:
             logger.error(f"Error calling OpenRouter API: {e}")
             raise
 
-    def _convert_response_to_adk_format(self, openrouter_response: Dict[str, Any]) -> Dict[str, Any]:
+    def _convert_response_to_adk_format(
+        self, openrouter_response: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """
         Convert OpenRouter response to Google ADK compatible format.
 
@@ -106,7 +116,10 @@ class OpenRouterProvider:
         """
         try:
             # Extract the content from OpenRouter response
-            if "choices" in openrouter_response and len(openrouter_response["choices"]) > 0:
+            if (
+                "choices" in openrouter_response
+                and len(openrouter_response["choices"]) > 0
+            ):
                 choice = openrouter_response["choices"][0]
                 content = choice.get("message", {}).get("content", "")
 
@@ -121,9 +134,15 @@ class OpenRouterProvider:
                         }
                     ],
                     "usageMetadata": {
-                        "promptTokenCount": openrouter_response.get("usage", {}).get("prompt_tokens", 0),
-                        "candidatesTokenCount": openrouter_response.get("usage", {}).get("completion_tokens", 0),
-                        "totalTokenCount": openrouter_response.get("usage", {}).get("total_tokens", 0),
+                        "promptTokenCount": openrouter_response.get("usage", {}).get(
+                            "prompt_tokens", 0
+                        ),
+                        "candidatesTokenCount": openrouter_response.get(
+                            "usage", {}
+                        ).get("completion_tokens", 0),
+                        "totalTokenCount": openrouter_response.get("usage", {}).get(
+                            "total_tokens", 0
+                        ),
                     },
                 }
             else:
@@ -135,13 +154,20 @@ class OpenRouterProvider:
             return {
                 "candidates": [
                     {
-                        "content": {"parts": [{"text": f"Error processing response: {str(e)}"}], "role": "model"},
+                        "content": {
+                            "parts": [{"text": f"Error processing response: {str(e)}"}],
+                            "role": "model",
+                        },
                         "finishReason": "ERROR",
                         "index": 0,
                         "safetyRatings": [],
                     }
                 ],
-                "usageMetadata": {"promptTokenCount": 0, "candidatesTokenCount": 0, "totalTokenCount": 0},
+                "usageMetadata": {
+                    "promptTokenCount": 0,
+                    "candidatesTokenCount": 0,
+                    "totalTokenCount": 0,
+                },
             }
 
 

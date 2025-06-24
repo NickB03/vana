@@ -21,7 +21,9 @@ except ImportError:
     logging.warning("psutil not available. Using mock data for system metrics.")
 
 # Add the parent directory to the path so we can import our modules
-sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+sys.path.append(
+    os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+)
 
 logger = logging.getLogger(__name__)
 
@@ -113,7 +115,8 @@ def get_real_system_health():
         "architecture": platform.architecture()[0],
         "processor": platform.processor(),
         "hostname": platform.node(),
-        "uptime": datetime.datetime.now() - datetime.datetime.fromtimestamp(psutil.boot_time()),
+        "uptime": datetime.datetime.now()
+        - datetime.datetime.fromtimestamp(psutil.boot_time()),
     }
 
     return {
@@ -121,7 +124,9 @@ def get_real_system_health():
         "cpu": {
             "usage_percent": cpu_percent,
             "count": cpu_count,
-            "load_avg": psutil.getloadavg() if hasattr(psutil, "getloadavg") else [0, 0, 0],
+            "load_avg": psutil.getloadavg()
+            if hasattr(psutil, "getloadavg")
+            else [0, 0, 0],
         },
         "memory": {
             "total_mb": memory.total / (1024 * 1024),
@@ -184,7 +189,9 @@ def generate_mock_system_health():
         "processor": "Intel(R) Core(TM) i7-10700K CPU @ 3.80GHz",
         "hostname": "vana-server",
         "uptime": datetime.timedelta(
-            days=random.randint(1, 30), hours=random.randint(0, 23), minutes=random.randint(0, 59)
+            days=random.randint(1, 30),
+            hours=random.randint(0, 23),
+            minutes=random.randint(0, 59),
         ),
     }
 
@@ -201,7 +208,12 @@ def generate_mock_system_health():
             "used_mb": memory_used,
             "percent": memory_percent,
         },
-        "disk": {"total_gb": disk_total, "free_gb": disk_free, "used_gb": disk_used, "percent": disk_percent},
+        "disk": {
+            "total_gb": disk_total,
+            "free_gb": disk_free,
+            "used_gb": disk_used,
+            "percent": disk_percent,
+        },
         "network": {
             "bytes_sent": bytes_sent,
             "bytes_recv": bytes_recv,
@@ -256,8 +268,12 @@ def generate_mock_system_health_history(hours=24):
 
         # Add some random variation
         cpu_percent = min(95, max(5, cpu_base * time_factor + random.uniform(-15, 15)))
-        memory_percent = min(95, max(30, memory_base * time_factor + random.uniform(-10, 10)))
-        disk_percent = min(90, max(40, disk_base + random.uniform(-2, 2)))  # Disk usage changes slowly
+        memory_percent = min(
+            95, max(30, memory_base * time_factor + random.uniform(-10, 10))
+        )
+        disk_percent = min(
+            90, max(40, disk_base + random.uniform(-2, 2))
+        )  # Disk usage changes slowly
 
         # Network traffic with time pattern
         network_send = network_send_base * time_factor * random.uniform(0.8, 1.2)
@@ -296,16 +312,56 @@ def generate_mock_system_alerts(limit=10):
 
     # Alert templates
     alert_templates = [
-        {"type": "cpu", "level": "warning", "message": "CPU usage above {threshold}% for {duration} minutes"},
-        {"type": "cpu", "level": "critical", "message": "CPU usage critically high at {value}%"},
-        {"type": "memory", "level": "warning", "message": "Memory usage above {threshold}% for {duration} minutes"},
-        {"type": "memory", "level": "critical", "message": "Memory usage critically high at {value}%"},
-        {"type": "disk", "level": "warning", "message": "Disk usage above {threshold}%"},
-        {"type": "disk", "level": "critical", "message": "Disk space critically low ({free_gb} GB free)"},
-        {"type": "network", "level": "warning", "message": "Network packet loss detected ({loss_rate}%)"},
-        {"type": "system", "level": "info", "message": "System updated to version {version}"},
-        {"type": "system", "level": "warning", "message": "System restart required for updates"},
-        {"type": "application", "level": "error", "message": "Application crashed: {error_message}"},
+        {
+            "type": "cpu",
+            "level": "warning",
+            "message": "CPU usage above {threshold}% for {duration} minutes",
+        },
+        {
+            "type": "cpu",
+            "level": "critical",
+            "message": "CPU usage critically high at {value}%",
+        },
+        {
+            "type": "memory",
+            "level": "warning",
+            "message": "Memory usage above {threshold}% for {duration} minutes",
+        },
+        {
+            "type": "memory",
+            "level": "critical",
+            "message": "Memory usage critically high at {value}%",
+        },
+        {
+            "type": "disk",
+            "level": "warning",
+            "message": "Disk usage above {threshold}%",
+        },
+        {
+            "type": "disk",
+            "level": "critical",
+            "message": "Disk space critically low ({free_gb} GB free)",
+        },
+        {
+            "type": "network",
+            "level": "warning",
+            "message": "Network packet loss detected ({loss_rate}%)",
+        },
+        {
+            "type": "system",
+            "level": "info",
+            "message": "System updated to version {version}",
+        },
+        {
+            "type": "system",
+            "level": "warning",
+            "message": "System restart required for updates",
+        },
+        {
+            "type": "application",
+            "level": "error",
+            "message": "Application crashed: {error_message}",
+        },
     ]
 
     # Generate alerts
@@ -333,7 +389,9 @@ def generate_mock_system_alerts(limit=10):
         if "loss_rate" in message_template:
             message_params["loss_rate"] = random.uniform(1, 5)
         if "version" in message_template:
-            message_params["version"] = f"1.{random.randint(0, 9)}.{random.randint(0, 99)}"
+            message_params["version"] = (
+                f"1.{random.randint(0, 9)}.{random.randint(0, 99)}"
+            )
         if "error_message" in message_template:
             error_messages = [
                 "OutOfMemoryError",
@@ -348,7 +406,7 @@ def generate_mock_system_alerts(limit=10):
 
         # Create alert object
         alert = {
-            "id": f"alert-{i+1}",
+            "id": f"alert-{i + 1}",
             "timestamp": timestamp.isoformat(),
             "type": alert_type,
             "level": level,

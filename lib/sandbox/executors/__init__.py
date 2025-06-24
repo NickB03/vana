@@ -10,6 +10,12 @@ from .javascript_executor import JavaScriptExecutor
 from .python_executor import PythonExecutor
 from .shell_executor import ShellExecutor
 
-__all__ = ["PythonExecutor", "JavaScriptExecutor", "ShellExecutor", "BaseExecutor", "ExecutorResult"]
+__all__ = [
+    "PythonExecutor",
+    "JavaScriptExecutor",
+    "ShellExecutor",
+    "BaseExecutor",
+    "ExecutorResult",
+]
 
 __version__ = "1.0.0"

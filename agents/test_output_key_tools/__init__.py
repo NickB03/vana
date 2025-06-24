@@ -12,5 +12,5 @@ root_agent = LlmAgent(
     description="Test agent with output_key + tools combination",
     instruction="You are a test agent for validating output_key + tools combination. You have access to an echo tool.",
     output_key="test_results",  # Advanced property 1
-    tools=[adk_echo]  # Advanced property 2
+    tools=[adk_echo],  # Advanced property 2
 )

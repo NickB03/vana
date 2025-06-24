@@ -72,12 +72,12 @@ agent:
   max_iterations: 10
   confidence_threshold: 0.8
   enable_memory: true
-  
+
 tools:
   default_timeout: 30
   retry_attempts: 3
   enable_caching: true
-  
+
 performance:
   max_concurrent_tools: 5
   tool_execution_timeout: 60
@@ -102,7 +102,7 @@ search:
     rate_limit: 100  # requests per hour
     safe_search: "moderate"
     country: "US"
-    
+
   vector_search:
     similarity_threshold: 0.7
     max_results: 10
@@ -127,18 +127,18 @@ server:
   port: 8080
   workers: 4
   timeout: 300
-  
+
 cors:
   enabled: true
   origins: ["*"]
   methods: ["GET", "POST", "PUT", "DELETE"]
   headers: ["*"]
-  
+
 rate_limiting:
   enabled: true
   requests_per_minute: 100
   burst_size: 20
-  
+
 authentication:
   enabled: true
   method: "api_key"  # or "oauth", "jwt"
@@ -181,7 +181,7 @@ handlers:
     level: "INFO"
     formatter: "standard"
     stream: "ext://sys.stdout"
-    
+
   file:
     class: "logging.handlers.RotatingFileHandler"
     level: "DEBUG"
@@ -195,12 +195,12 @@ loggers:
     level: "DEBUG"
     handlers: ["console", "file"]
     propagate: false
-    
+
   tools:
     level: "INFO"
     handlers: ["console", "file"]
     propagate: false
-    
+
   api:
     level: "INFO"
     handlers: ["console", "file"]
@@ -220,19 +220,19 @@ metrics:
   enabled: true
   port: 9090
   path: "/metrics"
-  
+
   collectors:
     - system_metrics
     - agent_metrics
     - tool_metrics
     - api_metrics
-    
+
   custom_metrics:
     - name: "vana_requests_total"
       type: "counter"
       description: "Total number of requests"
       labels: ["agent", "tool", "status"]
-      
+
     - name: "vana_request_duration_seconds"
       type: "histogram"
       description: "Request duration in seconds"
@@ -252,35 +252,35 @@ security:
       - api_key
       - oauth2
       - jwt
-      
+
     api_key:
       header_name: "X-API-Key"
       query_param: "api_key"
-      
+
     oauth2:
       provider: "google"
       client_id: "${OAUTH_CLIENT_ID}"
       client_secret: "${OAUTH_CLIENT_SECRET}"
-      
+
     jwt:
       secret_key: "${JWT_SECRET_KEY}"
       algorithm: "HS256"
       expiration: 3600  # 1 hour
-      
+
   authorization:
     enabled: true
     default_role: "user"
-    
+
     roles:
       admin:
         permissions: ["*"]
-        
+
       user:
         permissions:
           - "chat:read"
           - "chat:write"
           - "health:read"
-          
+
       readonly:
         permissions:
           - "health:read"
@@ -292,18 +292,18 @@ security:
 ```yaml
 validation:
   enabled: true
-  
+
   input_limits:
     max_message_length: 10000
     max_file_size: "10MB"
     max_request_size: "50MB"
-    
+
   sanitization:
     enabled: true
     remove_html: true
     escape_sql: true
     validate_json: true
-    
+
   rate_limiting:
     enabled: true
     window_size: 60  # seconds
@@ -319,27 +319,27 @@ validation:
 caching:
   enabled: true
   backend: "redis"  # or "memory", "file"
-  
+
   redis:
     host: "localhost"
     port: 6379
     db: 0
     password: "${REDIS_PASSWORD}"
-    
+
   settings:
     default_ttl: 3600  # 1 hour
     max_memory: "1GB"
     eviction_policy: "allkeys-lru"
-    
+
   cache_policies:
     vector_search:
       ttl: 7200  # 2 hours
       max_size: 1000
-      
+
     web_search:
       ttl: 1800  # 30 minutes
       max_size: 500
-      
+
     file_operations:
       ttl: 300  # 5 minutes
       max_size: 100
@@ -353,12 +353,12 @@ connection_pools:
     max_connections: 10
     timeout: 30
     retry_attempts: 3
-    
+
   brave_search:
     max_connections: 5
     timeout: 15
     retry_attempts: 2
-    
+
   database:
     max_connections: 20
     min_connections: 5
@@ -431,12 +431,12 @@ from lib._tools.base_tool import BaseTool
 
 def register_custom_tools():
     """Register custom tools for your deployment."""
-    
+
     @tool
     def custom_tool(parameters):
         """Your custom tool implementation."""
         pass
-    
+
     return {
         "custom_tool": custom_tool
     }
@@ -450,11 +450,11 @@ from agents.base_agent import BaseAgent
 
 class CustomAgent(BaseAgent):
     """Custom agent for specific use cases."""
-    
+
     def __init__(self, config):
         super().__init__(config)
         self.name = "custom_agent"
-        
+
     def process_request(self, message, context=None):
         """Custom request processing logic."""
         pass
@@ -471,13 +471,13 @@ def register_custom_agents():
 # config/middleware.py
 def custom_middleware(request, response):
     """Custom middleware for request/response processing."""
-    
+
     # Add custom headers
     response.headers["X-Custom-Header"] = "VANA"
-    
+
     # Log requests
     logger.info(f"Request: {request.method} {request.url}")
-    
+
     return response
 ```
 
@@ -493,19 +493,19 @@ from pathlib import Path
 
 def validate_configuration():
     """Validate all configuration files."""
-    
+
     config_files = [
         ".env.local",
         "agents/vana/config.yaml",
         "lib/_tools/config.yaml",
         "api/config.yaml"
     ]
-    
+
     for config_file in config_files:
         if not Path(config_file).exists():
             print(f"❌ Missing config file: {config_file}")
             continue
-            
+
         try:
             if config_file.endswith('.yaml'):
                 with open(config_file) as f:

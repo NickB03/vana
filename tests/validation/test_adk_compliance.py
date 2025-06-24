@@ -3,6 +3,7 @@
 GOOGLE ADK COMPLIANCE VALIDATION
 Check if VANA follows proper Google ADK patterns
 """
+
 import sys
 import traceback
 

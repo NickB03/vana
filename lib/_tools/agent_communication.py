@@ -61,7 +61,11 @@ class AgentCommunicationService:
         else:
             # Default task handler
             async def default_task_handler(
-                task: str, context: str = "", agent_id: str = "", priority: str = "normal", timeout_seconds: int = 30
+                task: str,
+                context: str = "",
+                agent_id: str = "",
+                priority: str = "normal",
+                timeout_seconds: int = 30,
             ) -> AgentTaskResponse:
                 """Default task handler that returns a placeholder response."""
                 return AgentTaskResponse(
@@ -88,11 +92,18 @@ class AgentCommunicationService:
             "average_response_time": 0.0,
         }
 
-        logger.info(f"✅ Agent {agent_name} RPC endpoint registered at /agent/{agent_name}/rpc")
+        logger.info(
+            f"✅ Agent {agent_name} RPC endpoint registered at /agent/{agent_name}/rpc"
+        )
         return rpc_handler
 
     async def send_task_to_agent(
-        self, agent_name: str, task: str, context: str = "", priority: str = "normal", timeout_seconds: int = 30
+        self,
+        agent_name: str,
+        task: str,
+        context: str = "",
+        priority: str = "normal",
+        timeout_seconds: int = 30,
     ) -> Dict[str, Any]:
         """Send a task to a specific agent.
 
@@ -117,19 +128,27 @@ class AgentCommunicationService:
                 return {
                     "status": "error",
                     "error": f"Agent '{agent_name}' not found",
-                    "available_agents": list(self.discovery_service.discover_agents().keys()),
+                    "available_agents": list(
+                        self.discovery_service.discover_agents().keys()
+                    ),
                 }
 
             # Send task using JSON-RPC client
             async with JsonRpcClient(base_url=self.base_url) as client:
-                response = await client.execute_task(agent_name, task, context, priority, timeout_seconds)
+                response = await client.execute_task(
+                    agent_name, task, context, priority, timeout_seconds
+                )
 
             # Update stats
             execution_time = (time.time() - start_time) * 1000
-            self._update_communication_stats(agent_name, "sent", execution_time, response.error is None)
+            self._update_communication_stats(
+                agent_name, "sent", execution_time, response.error is None
+            )
 
             if response.error:
-                logger.warning(f"⚠️ Task failed for {agent_name}: {response.error.message}")
+                logger.warning(
+                    f"⚠️ Task failed for {agent_name}: {response.error.message}"
+                )
                 return {
                     "status": "error",
                     "error": response.error.message,
@@ -137,7 +156,9 @@ class AgentCommunicationService:
                     "agent_name": agent_name,
                 }
             else:
-                logger.info(f"✅ Task completed by {agent_name} ({execution_time:.1f}ms)")
+                logger.info(
+                    f"✅ Task completed by {agent_name} ({execution_time:.1f}ms)"
+                )
                 return {
                     "status": "success",
                     "result": response.result,
@@ -150,7 +171,12 @@ class AgentCommunicationService:
             self._update_communication_stats(agent_name, "sent", execution_time, False)
 
             logger.error(f"❌ Error sending task to {agent_name}: {e}")
-            return {"status": "error", "error": str(e), "agent_name": agent_name, "execution_time_ms": execution_time}
+            return {
+                "status": "error",
+                "error": str(e),
+                "agent_name": agent_name,
+                "execution_time_ms": execution_time,
+            }
 
     async def broadcast_task(
         self, task: str, context: str = "", agent_filter: Optional[List[str]] = None
@@ -172,7 +198,11 @@ class AgentCommunicationService:
 
         # Filter agents if specified
         if agent_filter:
-            target_agents = {name: info for name, info in available_agents.items() if name in agent_filter}
+            target_agents = {
+                name: info
+                for name, info in available_agents.items()
+                if name in agent_filter
+            }
         else:
             target_agents = available_agents
 
@@ -192,7 +222,11 @@ class AgentCommunicationService:
                 result = await task_coroutine
                 results[agent_name] = result
             except Exception as e:
-                results[agent_name] = {"status": "error", "error": str(e), "agent_name": agent_name}
+                results[agent_name] = {
+                    "status": "error",
+                    "error": str(e),
+                    "agent_name": agent_name,
+                }
 
         logger.info(f"✅ Broadcast completed to {len(results)} agents")
         return results
@@ -282,7 +316,9 @@ class AgentCommunicationService:
             "last_updated": datetime.now().isoformat(),
         }
 
-    def _update_communication_stats(self, agent_name: str, direction: str, response_time: float, success: bool) -> None:
+    def _update_communication_stats(
+        self, agent_name: str, direction: str, response_time: float, success: bool
+    ) -> None:
         """Update communication statistics.
 
         Args:
@@ -313,7 +349,9 @@ class AgentCommunicationService:
         # Update average response time
         current_avg = stats["average_response_time"]
         total_requests = stats["requests_sent"] + stats["requests_received"]
-        stats["average_response_time"] = ((current_avg * (total_requests - 1)) + response_time) / total_requests
+        stats["average_response_time"] = (
+            (current_avg * (total_requests - 1)) + response_time
+        ) / total_requests
 
         stats["last_communication"] = datetime.now().isoformat()
 
@@ -322,7 +360,9 @@ class AgentCommunicationService:
 _communication_service = None
 
 
-def get_communication_service(base_url: str = "http://localhost:8000") -> AgentCommunicationService:
+def get_communication_service(
+    base_url: str = "http://localhost:8000",
+) -> AgentCommunicationService:
     """Get the global agent communication service instance."""
     global _communication_service
     if _communication_service is None:

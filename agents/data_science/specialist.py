@@ -131,7 +131,9 @@ for column in data.columns:
 """
 
         # Execute the analysis using Code Execution Specialist
-        result = execute_code("python", python_code, description=f"Data analysis: {analysis_type}")
+        result = execute_code(
+            "python", python_code, description=f"Data analysis: {analysis_type}"
+        )
 
         # Add insights to the result
         insights = f"""
@@ -156,7 +158,9 @@ for column in data.columns:
         return f"❌ Analysis failed: {str(e)}"
 
 
-def visualize_data(data_source: str, chart_type: str = "histogram", columns: str = "all") -> str:
+def visualize_data(
+    data_source: str, chart_type: str = "histogram", columns: str = "all"
+) -> str:
     """
     Generate data visualizations.
 
@@ -282,7 +286,9 @@ logger.info("💡 Consider specific chart types: histogram, scatter, bar, line, 
 """
 
         # Execute the visualization using Code Execution Specialist
-        result = execute_code("python", python_code, description=f"Data visualization: {chart_type}")
+        result = execute_code(
+            "python", python_code, description=f"Data visualization: {chart_type}"
+        )
 
         # Add visualization insights
         insights = f"""
@@ -456,7 +462,9 @@ logger.info("\\n✅ Basic cleaning completed")
 """
 
         # Execute the cleaning using Code Execution Specialist
-        result = execute_code("python", python_code, description=f"Data cleaning: {operations}")
+        result = execute_code(
+            "python", python_code, description=f"Data cleaning: {operations}"
+        )
 
         # Add cleaning insights
         insights = f"""
@@ -481,7 +489,9 @@ logger.info("\\n✅ Basic cleaning completed")
         return f"❌ Cleaning failed: {str(e)}"
 
 
-def model_data(data_source: str, target_column: str = "target", model_type: str = "regression") -> str:
+def model_data(
+    data_source: str, target_column: str = "target", model_type: str = "regression"
+) -> str:
     """
     Perform basic machine learning modeling.
 
@@ -688,7 +698,9 @@ logger.info(f"\\nInertia (WCSS): {{kmeans.inertia_:.3f}}")
 """
 
         # Execute the modeling using Code Execution Specialist
-        result = execute_code("python", python_code, description=f"Machine learning: {model_type}")
+        result = execute_code(
+            "python", python_code, description=f"Machine learning: {model_type}"
+        )
 
         # Add modeling insights
         insights = f"""

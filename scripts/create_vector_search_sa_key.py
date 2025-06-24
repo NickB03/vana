@@ -14,7 +14,9 @@ from dotenv import load_dotenv
 
 # Configure logging
 logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s", handlers=[logging.StreamHandler()]
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(message)s",
+    handlers=[logging.StreamHandler()],
 )
 logger = logging.getLogger(__name__)
 
@@ -32,7 +34,9 @@ def main():
         return 1
 
     # Service account email
-    service_account_email = f"vana-vector-search-sa@{project_id}.iam.gserviceaccount.com"
+    service_account_email = (
+        f"vana-vector-search-sa@{project_id}.iam.gserviceaccount.com"
+    )
 
     logger.info("Generating commands for creating a service account key for:")
     logger.info(f"  Project: {project_id}")

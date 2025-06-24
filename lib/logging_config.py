@@ -121,10 +121,26 @@ class VanaLoggingConfig:
                 }
             },
             "loggers": {
-                "vana": {"level": self.log_level, "handlers": ["console"], "propagate": False},
-                "agents": {"level": self.log_level, "handlers": ["console"], "propagate": False},
-                "lib": {"level": self.log_level, "handlers": ["console"], "propagate": False},
-                "tools": {"level": self.log_level, "handlers": ["console"], "propagate": False},
+                "vana": {
+                    "level": self.log_level,
+                    "handlers": ["console"],
+                    "propagate": False,
+                },
+                "agents": {
+                    "level": self.log_level,
+                    "handlers": ["console"],
+                    "propagate": False,
+                },
+                "lib": {
+                    "level": self.log_level,
+                    "handlers": ["console"],
+                    "propagate": False,
+                },
+                "tools": {
+                    "level": self.log_level,
+                    "handlers": ["console"],
+                    "propagate": False,
+                },
             },
             "root": {"level": self.log_level, "handlers": ["console"]},
         }
@@ -177,7 +193,9 @@ class VanaLoggingConfig:
 
         # Update loggers to use file handlers
         for logger_name in ["vana", "agents", "lib", "tools"]:
-            config["loggers"][logger_name]["handlers"].extend(["file_all", "file_errors", "file_json"])
+            config["loggers"][logger_name]["handlers"].extend(
+                ["file_all", "file_errors", "file_json"]
+            )
 
         # Update root logger
         config["root"]["handlers"].extend(["file_all", "file_errors", "file_json"])
@@ -203,7 +221,8 @@ class VanaLoggingConfig:
         except Exception as e:
             # Fallback to basic configuration
             logging.basicConfig(
-                level=getattr(logging, self.log_level), format="%(asctime)s [%(levelname)s] %(name)s: %(message)s"
+                level=getattr(logging, self.log_level),
+                format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
             )
             logger = logging.getLogger("vana.logging_config")
             logger.error(f"Failed to configure advanced logging: {e}")

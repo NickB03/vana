@@ -112,7 +112,9 @@ class DashboardAuth:
                 with open(self.credentials_file, "w") as f:
                     json.dump(default_credentials, f, indent=2)
 
-                logger.warning(f"Created default credentials file at {self.credentials_file}")
+                logger.warning(
+                    f"Created default credentials file at {self.credentials_file}"
+                )
                 logger.warning("Default username: admin, password: admin")
                 logger.warning("Please change the default password immediately!")
 
@@ -196,7 +198,13 @@ class DashboardAuth:
         """
         return hashlib.sha256(password.encode()).hexdigest()
 
-    def _audit_log(self, event: str, username: str, success: bool, details: Optional[Dict[str, Any]] = None) -> None:
+    def _audit_log(
+        self,
+        event: str,
+        username: str,
+        success: bool,
+        details: Optional[Dict[str, Any]] = None,
+    ) -> None:
         """
         Log an audit event
 
@@ -217,7 +225,9 @@ class DashboardAuth:
                 "username": username,
                 "success": success,
                 "ip": request.remote_addr if request else "unknown",
-                "user_agent": request.user_agent.string if request and request.user_agent else "unknown",
+                "user_agent": request.user_agent.string
+                if request and request.user_agent
+                else "unknown",
                 "details": details or {},
             }
 
@@ -269,7 +279,9 @@ class DashboardAuth:
         self.active_tokens[token] = {
             "username": username,
             "created_at": datetime.now().isoformat(),
-            "expires_at": (datetime.now() + timedelta(seconds=self.token_expiry)).isoformat(),
+            "expires_at": (
+                datetime.now() + timedelta(seconds=self.token_expiry)
+            ).isoformat(),
             "roles": self.credentials[username]["roles"],
         }
 
@@ -361,7 +373,9 @@ class DashboardAuth:
         """
         # Check if user exists
         if username not in self.credentials:
-            self._audit_log("password_change", username, False, {"reason": "user_not_found"})
+            self._audit_log(
+                "password_change", username, False, {"reason": "user_not_found"}
+            )
             return False
 
         # Update password
@@ -393,7 +407,9 @@ class DashboardAuth:
         """
         # Check if API key exists
         if api_key not in self.api_keys:
-            self._audit_log("api_key_validation", "unknown", False, {"reason": "invalid_api_key"})
+            self._audit_log(
+                "api_key_validation", "unknown", False, {"reason": "invalid_api_key"}
+            )
             return None
 
         # Get API key data
@@ -404,7 +420,10 @@ class DashboardAuth:
             expires_at = datetime.fromisoformat(api_key_data["expires_at"])
             if datetime.now() > expires_at:
                 self._audit_log(
-                    "api_key_validation", api_key_data.get("name", "unknown"), False, {"reason": "expired_api_key"}
+                    "api_key_validation",
+                    api_key_data.get("name", "unknown"),
+                    False,
+                    {"reason": "expired_api_key"},
                 )
                 return None
 
@@ -414,7 +433,11 @@ class DashboardAuth:
         return api_key_data
 
     def create_api_key(
-        self, name: str, roles: List[str], created_by: str, expires_in_days: Optional[int] = None
+        self,
+        name: str,
+        roles: List[str],
+        created_by: str,
+        expires_in_days: Optional[int] = None,
     ) -> str:
         """
         Create a new API key
@@ -441,7 +464,9 @@ class DashboardAuth:
 
         # Add expiry if specified
         if expires_in_days is not None:
-            api_key_data["expires_at"] = (datetime.now() + timedelta(days=expires_in_days)).isoformat()
+            api_key_data["expires_at"] = (
+                datetime.now() + timedelta(days=expires_in_days)
+            ).isoformat()
 
         # Add API key to dictionary
         self.api_keys[api_key] = api_key_data

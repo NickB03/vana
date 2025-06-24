@@ -11,7 +11,9 @@ def safe_tool(func: Callable[..., Any]) -> Callable[..., Any]:
         try:
             return func(*args, **kwargs)
         except Exception as e:  # pragma: no cover - log then return str
-            logger.exception("Error executing tool %s", getattr(func, "__name__", str(func)))
+            logger.exception(
+                "Error executing tool %s", getattr(func, "__name__", str(func))
+            )
             return str(e)
 
     return wrapper

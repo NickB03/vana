@@ -106,11 +106,12 @@ async def mcp_messages_endpoint(request: Request):
 async def health_check():
     """Health check endpoint."""
     from lib.version import get_version_summary
+
     return {
-        "status": "healthy", 
-        "agent": "vana", 
+        "status": "healthy",
+        "agent": "vana",
         "mcp_enabled": True,
-        "version": get_version_summary()
+        "version": get_version_summary(),
     }
 
 
@@ -118,6 +119,7 @@ async def health_check():
 async def version_info():
     """Detailed version information endpoint."""
     from lib.version import get_runtime_version_info
+
     return get_runtime_version_info()
 
 
@@ -142,7 +144,7 @@ async def agent_info():
             "branch": version_info["git"]["branch"],
             "build_id": version_info["build"]["build_id"],
             "build_timestamp": version_info["build"]["build_timestamp"],
-            "deployment_timestamp": version_info["deployment"]["timestamp"]
+            "deployment_timestamp": version_info["deployment"]["timestamp"],
         },
         "adk_integrated": True,
         "mcp_server": True,
@@ -160,8 +162,8 @@ async def agent_info():
             "logical_reasoning": True,
             "enhanced_echo": True,
             "enhanced_task_analysis": True,
-            "reasoning_coordination": True
-        }
+            "reasoning_coordination": True,
+        },
     }
 
 

@@ -52,20 +52,20 @@ class MyAgent:
     def __init__(self):
         self.memory_buffer = MemoryBufferManager()
         self.memory_mcp = MemoryMCP(self.memory_buffer)
-        
+
     def process_message(self, message):
         # Check if it's a memory command
         if message.startswith("!"):
             return self.memory_mcp.handle_command(message)
-            
+
         # Process normal message
         response = self.generate_response(message)
-        
+
         # Add to memory buffer if recording is on
         if self.memory_buffer.memory_on:
             self.memory_buffer.add_message("user", message)
             self.memory_buffer.add_message("assistant", response)
-            
+
         return response
 ```
 

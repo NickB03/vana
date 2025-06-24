@@ -18,7 +18,9 @@ from flask import Blueprint, jsonify, render_template, request
 from dashboard.auth.dashboard_auth import requires_auth
 
 # Add the project root to the Python path
-sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+sys.path.append(
+    os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+)
 
 # Import the Vector Search Monitor
 
@@ -69,14 +71,17 @@ def health_dashboard():
         "response_times": json.dumps(historical_data.get("response_times", [])),
         "success_rates": json.dumps(historical_data.get("success_rates", [])),
         "status_counts": historical_data.get(
-            "status_counts", {"ok": 0, "warn": 0, "error": 0, "critical": 0, "unknown": 0}
+            "status_counts",
+            {"ok": 0, "warn": 0, "error": 0, "critical": 0, "unknown": 0},
         ),
         "recommendations": recommendations,
     }
 
     # Add component status
     for check_name, check_result in result.get("checks", {}).items():
-        template_data["component_status"][check_name] = check_result.get("status", "unknown")
+        template_data["component_status"][check_name] = check_result.get(
+            "status", "unknown"
+        )
 
         # Add component details
         details = check_result.get("details", {})
@@ -156,7 +161,9 @@ def run_check_api():
     # Run health check
     result = monitor.run_health_check()
 
-    return jsonify({"status": "success", "result": result, "timestamp": datetime.now().isoformat()})
+    return jsonify(
+        {"status": "success", "result": result, "timestamp": datetime.now().isoformat()}
+    )
 
 
 def register_routes(app):

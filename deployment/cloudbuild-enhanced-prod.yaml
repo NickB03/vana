@@ -14,27 +14,27 @@ steps:
         echo "Build ID: $BUILD_ID"
         echo "Project: $PROJECT_ID"
         echo "Environment: PRODUCTION"
-        
+
         # Validate we're building from main branch for production
         BRANCH=$(git rev-parse --abbrev-ref HEAD)
         if [ "$BRANCH" != "main" ]; then
           echo "❌ Production builds must be from main branch. Current: $BRANCH"
           exit 1
         fi
-        
+
         # Export version info
         export COMMIT_SHA=$(git rev-parse HEAD)
         export COMMIT_SHORT=$(git rev-parse --short HEAD)
         export BRANCH_NAME=$BRANCH
         export BUILD_TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
         export PRODUCTION_TAG="prod-$(date +%Y%m%d)-$COMMIT_SHORT"
-        
+
         echo "COMMIT_SHA=$COMMIT_SHA" >> /workspace/build.env
         echo "COMMIT_SHORT=$COMMIT_SHORT" >> /workspace/build.env
         echo "BRANCH_NAME=$BRANCH_NAME" >> /workspace/build.env
         echo "BUILD_TIMESTAMP=$BUILD_TIMESTAMP" >> /workspace/build.env
         echo "PRODUCTION_TAG=$PRODUCTION_TAG" >> /workspace/build.env
-        
+
         echo "=== Production Environment Validated ==="
 
   # Build production Docker image with enhanced security
@@ -44,14 +44,14 @@ steps:
       - '-c'
       - |
         source /workspace/build.env
-        
+
         echo "=== Building Enhanced VANA Production Image ==="
         echo "Production tag: $PRODUCTION_TAG"
         echo "Image tags:"
         echo "  - gcr.io/$PROJECT_ID/vana-enhanced-prod:$PRODUCTION_TAG"
         echo "  - gcr.io/$PROJECT_ID/vana-enhanced-prod:$COMMIT_SHA"
         echo "  - gcr.io/$PROJECT_ID/vana-enhanced-prod:latest"
-        
+
         # Build production image with security hardening
         docker build \
           -f deployment/Dockerfile \
@@ -74,9 +74,9 @@ steps:
       - '-c'
       - |
         source /workspace/build.env
-        
+
         echo "=== Security Scanning Production Image ==="
-        
+
         # Enable vulnerability scanning (if available)
         gcloud container images scan gcr.io/$PROJECT_ID/vana-enhanced-prod:$PRODUCTION_TAG \
           --remote || echo "Vulnerability scanning not available, proceeding..."
@@ -88,12 +88,12 @@ steps:
       - '-c'
       - |
         source /workspace/build.env
-        
+
         echo "=== Pushing Enhanced VANA Production Images ==="
         docker push gcr.io/$PROJECT_ID/vana-enhanced-prod:$PRODUCTION_TAG
         docker push gcr.io/$PROJECT_ID/vana-enhanced-prod:$COMMIT_SHA
         docker push gcr.io/$PROJECT_ID/vana-enhanced-prod:latest
-        
+
         echo "Production images pushed successfully"
 
   # Deploy to production with enhanced configuration
@@ -103,13 +103,13 @@ steps:
       - '-c'
       - |
         source /workspace/build.env
-        
+
         echo "=== Deploying Enhanced VANA to Production ==="
         echo "Service: vana-enhanced-prod"
         echo "Image: gcr.io/$PROJECT_ID/vana-enhanced-prod:$PRODUCTION_TAG"
         echo "Enhanced Reasoning: Enabled"
         echo "Environment: PRODUCTION"
-        
+
         gcloud run deploy vana-enhanced-prod \
           --image=gcr.io/$PROJECT_ID/vana-enhanced-prod:$PRODUCTION_TAG \
           --platform=managed \
@@ -127,7 +127,7 @@ steps:
           --set-secrets="BRAVE_API_KEY=brave-api-key:latest,OPENROUTER_API_KEY=openrouter-api-key:latest" \
           --add-cloudsql-instances="$PROJECT_ID:us-central1:vana-prod-db" \
           --revision-suffix="$(echo $PRODUCTION_TAG | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9-]/-/g')"
-        
+
         echo "=== Production Deployment Completed ==="
 
   # Generate production version manifest
@@ -137,14 +137,14 @@ steps:
       - '-c'
       - |
         source /workspace/build.env
-        
+
         echo "=== Generating Production Version Manifest ==="
-        
+
         # Get service URL for manifest
         SERVICE_URL=$(gcloud run services describe vana-enhanced-prod \
           --region=us-central1 \
           --format='value(status.url)')
-        
+
         # Create comprehensive production manifest
         cat > production_manifest.json << EOF
         {
@@ -196,15 +196,15 @@ steps:
           }
         }
         EOF
-        
+
         echo "Production manifest generated:"
         cat production_manifest.json
-        
+
         # Store in multiple locations for redundancy
         gsutil cp production_manifest.json gs://$PROJECT_ID-vana-builds/production/manifests/build-$BUILD_ID-manifest.json
         gsutil cp production_manifest.json gs://$PROJECT_ID-vana-builds/production/manifests/latest-manifest.json
         gsutil cp production_manifest.json gs://$PROJECT_ID-vana-builds/production/manifests/$PRODUCTION_TAG-manifest.json
-        
+
         echo "Production manifest stored with redundancy"
 
   # Comprehensive production validation
@@ -214,19 +214,19 @@ steps:
       - '-c'
       - |
         source /workspace/build.env
-        
+
         echo "=== Comprehensive Production Validation ==="
-        
+
         # Wait for production deployment to be ready
         sleep 60
-        
+
         # Get service URL
         SERVICE_URL=$(gcloud run services describe vana-enhanced-prod \
           --region=us-central1 \
           --format='value(status.url)')
-        
+
         echo "Production Service URL: $SERVICE_URL"
-        
+
         # Comprehensive health validation
         echo "1. Testing health endpoint..."
         HEALTH_RESPONSE=$(curl -f -s "$SERVICE_URL/health" || echo "FAILED")
@@ -236,44 +236,44 @@ steps:
           echo "❌ Health check failed: $HEALTH_RESPONSE"
           exit 1
         fi
-        
+
         # Enhanced features validation
         echo "2. Testing enhanced features..."
         INFO_RESPONSE=$(curl -s "$SERVICE_URL/info")
         echo "Info response summary:"
         echo "$INFO_RESPONSE" | jq -r '.version, .version_details.commit_hash, .enhanced_features'
-        
+
         # Validate all enhanced reasoning features
         VALIDATION_ERRORS=0
-        
+
         if echo "$INFO_RESPONSE" | grep -q "enhanced_features"; then
           echo "✅ Enhanced features section found"
         else
           echo "❌ Enhanced features section missing"
           VALIDATION_ERRORS=$((VALIDATION_ERRORS + 1))
         fi
-        
+
         if echo "$INFO_RESPONSE" | grep -q "reasoning_tools.*5"; then
           echo "✅ All 5 reasoning tools confirmed"
         else
           echo "❌ Reasoning tools count incorrect"
           VALIDATION_ERRORS=$((VALIDATION_ERRORS + 1))
         fi
-        
+
         if echo "$INFO_RESPONSE" | grep -q "mathematical_reasoning.*true"; then
           echo "✅ Mathematical reasoning enabled"
         else
           echo "❌ Mathematical reasoning not enabled"
           VALIDATION_ERRORS=$((VALIDATION_ERRORS + 1))
         fi
-        
+
         if echo "$INFO_RESPONSE" | grep -q "logical_reasoning.*true"; then
           echo "✅ Logical reasoning enabled"
         else
           echo "❌ Logical reasoning not enabled"
           VALIDATION_ERRORS=$((VALIDATION_ERRORS + 1))
         fi
-        
+
         # Version validation
         echo "3. Testing version tracking..."
         if echo "$INFO_RESPONSE" | grep -q "$COMMIT_SHORT"; then
@@ -282,7 +282,7 @@ steps:
           echo "❌ Incorrect commit hash in version"
           VALIDATION_ERRORS=$((VALIDATION_ERRORS + 1))
         fi
-        
+
         # Final validation result
         if [ $VALIDATION_ERRORS -eq 0 ]; then
           echo "=== ✅ Production Deployment Validation Successful ==="
@@ -300,11 +300,11 @@ steps:
       - '-c'
       - |
         source /workspace/build.env
-        
+
         SERVICE_URL=$(gcloud run services describe vana-enhanced-prod \
           --region=us-central1 \
           --format='value(status.url)')
-        
+
         echo "=== Enhanced VANA Production Deployment Complete ==="
         echo "🚀 Service URL: $SERVICE_URL"
         echo "📋 Version: 1.0.0-$COMMIT_SHORT"

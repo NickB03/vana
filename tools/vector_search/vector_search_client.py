@@ -733,9 +733,9 @@ class VectorSearchClient:
                         # Extract metadata from the neighbor
                         try:
                             for attr in neighbor.datapoint.restricts:
-                                result["metadata"][
-                                    attr.namespace + "." + attr.name
-                                ] = attr.value
+                                result["metadata"][attr.namespace + "." + attr.name] = (
+                                    attr.value
+                                )
                         except AttributeError:
                             pass
 
@@ -1494,7 +1494,7 @@ class SimpleMockVectorSearchClient:
                 {
                     "id": f"mock-id-{i}",
                     "score": 0.9 - (i * 0.1),
-                    "content": f"Mock content for query '{query}' (result {i+1})",
+                    "content": f"Mock content for query '{query}' (result {i + 1})",
                     "metadata": {"source": f"mock-source-{i}"},
                 }
             )
@@ -1524,7 +1524,7 @@ class SimpleMockVectorSearchClient:
                 {
                     "id": f"mock-id-{i}",
                     "score": 0.9 - (i * 0.1),
-                    "content": f"Mock content for vector search (result {i+1})",
+                    "content": f"Mock content for vector search (result {i + 1})",
                     "metadata": {"source": f"mock-source-{i}"},
                 }
             )
@@ -1550,7 +1550,7 @@ class SimpleMockVectorSearchClient:
                 {
                     "id": f"mock-id-{i}",
                     "score": 0.9 - (i * 0.1),
-                    "content": f"Mock knowledge content for query '{query}' (result {i+1})",
+                    "content": f"Mock knowledge content for query '{query}' (result {i + 1})",
                     "source": f"mock-source-{i}",
                     "metadata": {"source": f"mock-source-{i}"},
                     "vector_source": False,  # Indicate this is from mock

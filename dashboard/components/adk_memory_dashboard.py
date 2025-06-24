@@ -24,7 +24,9 @@ def display_adk_memory_overview():
     cost_data = adk_memory_api.get_cost_metrics()
 
     if status_data.get("status") == "error":
-        st.error(f"❌ Error getting ADK memory status: {status_data.get('message', 'Unknown error')}")
+        st.error(
+            f"❌ Error getting ADK memory status: {status_data.get('message', 'Unknown error')}"
+        )
         return
 
     # Status indicator
@@ -64,7 +66,11 @@ def display_adk_memory_overview():
 
     with col3:
         latency = metrics["performance"]["average_query_latency_ms"]
-        st.metric("Avg Query Latency", f"{latency:.1f}ms", delta="Good" if latency < 200 else "High")
+        st.metric(
+            "Avg Query Latency",
+            f"{latency:.1f}ms",
+            delta="Good" if latency < 200 else "High",
+        )
 
     with col4:
         if cost_data.get("status") == "success":
@@ -90,14 +96,20 @@ def display_adk_performance_metrics():
     metrics = metrics_data["data"]
 
     # Performance metrics in tabs
-    perf_tabs = st.tabs(["Query Performance", "Memory Usage", "Reliability", "Configuration"])
+    perf_tabs = st.tabs(
+        ["Query Performance", "Memory Usage", "Reliability", "Configuration"]
+    )
 
     with perf_tabs[0]:
         # Query performance metrics
         col1, col2 = st.columns(2)
 
         with col1:
-            st.metric("Memory Operations (24h)", f"{metrics['performance']['memory_operations_count']:,}", delta=None)
+            st.metric(
+                "Memory Operations (24h)",
+                f"{metrics['performance']['memory_operations_count']:,}",
+                delta=None,
+            )
             st.metric(
                 "Error Rate",
                 f"{metrics['performance']['error_rate']:.2%}",
@@ -108,7 +120,9 @@ def display_adk_performance_metrics():
             st.metric(
                 "Cache Hit Rate",
                 f"{metrics['performance']['cache_hit_rate']:.1%}",
-                delta="Good" if metrics["performance"]["cache_hit_rate"] > 0.8 else "Low",
+                delta="Good"
+                if metrics["performance"]["cache_hit_rate"] > 0.8
+                else "Low",
             )
             st.metric(
                 "Uptime",
@@ -121,7 +135,11 @@ def display_adk_performance_metrics():
         col1, col2 = st.columns(2)
 
         with col1:
-            st.metric("Total Memory Storage", f"{metrics['storage']['memory_storage_mb']:.1f} MB", delta=None)
+            st.metric(
+                "Total Memory Storage",
+                f"{metrics['storage']['memory_storage_mb']:.1f} MB",
+                delta=None,
+            )
             st.metric(
                 "Session State Size",
                 f"{metrics['storage']['session_state_size_mb']:.1f} MB",
@@ -133,12 +151,16 @@ def display_adk_performance_metrics():
                 metrics["storage"]["active_sessions"], 1
             )
             st.metric(
-                "Avg Session Size", f"{avg_session_size:.2f} MB", delta="Efficient" if avg_session_size < 5 else "Large"
+                "Avg Session Size",
+                f"{avg_session_size:.2f} MB",
+                delta="Efficient" if avg_session_size < 5 else "Large",
             )
             st.metric(
                 "Session Persistence",
                 f"{metrics['reliability']['session_persistence_rate']:.1%}",
-                delta="Good" if metrics["reliability"]["session_persistence_rate"] > 0.95 else "Low",
+                delta="Good"
+                if metrics["reliability"]["session_persistence_rate"] > 0.95
+                else "Low",
             )
 
     with perf_tabs[2]:
@@ -146,16 +168,27 @@ def display_adk_performance_metrics():
         col1, col2 = st.columns(2)
 
         with col1:
-            st.metric("Errors (24h)", metrics["reliability"]["error_count_24h"], delta=None)
+            st.metric(
+                "Errors (24h)", metrics["reliability"]["error_count_24h"], delta=None
+            )
             st.metric(
                 "Success Rate",
                 f"{(metrics['reliability']['success_count_24h'] / max(metrics['reliability']['success_count_24h'] + metrics['reliability']['error_count_24h'], 1)):.2%}",
-                delta="Good" if metrics["reliability"]["error_count_24h"] < 10 else "High errors",
+                delta="Good"
+                if metrics["reliability"]["error_count_24h"] < 10
+                else "High errors",
             )
 
         with col2:
-            st.metric("Successful Operations (24h)", f"{metrics['reliability']['success_count_24h']:,}", delta=None)
-            sla_compliance = metrics["performance"]["uptime_percentage"] >= metrics["reliability"]["availability_sla"]
+            st.metric(
+                "Successful Operations (24h)",
+                f"{metrics['reliability']['success_count_24h']:,}",
+                delta=None,
+            )
+            sla_compliance = (
+                metrics["performance"]["uptime_percentage"]
+                >= metrics["reliability"]["availability_sla"]
+            )
             st.metric(
                 "SLA Compliance",
                 "✅ Met" if sla_compliance else "❌ Missed",
@@ -169,9 +202,15 @@ def display_adk_performance_metrics():
 
         col1, col2 = st.columns(2)
         with col1:
-            st.metric("Similarity Threshold", metrics["configuration"]["similarity_threshold"], delta=None)
+            st.metric(
+                "Similarity Threshold",
+                metrics["configuration"]["similarity_threshold"],
+                delta=None,
+            )
         with col2:
-            st.metric("Top K Results", metrics["configuration"]["top_k_results"], delta=None)
+            st.metric(
+                "Top K Results", metrics["configuration"]["top_k_results"], delta=None
+            )
 
         st.write("**RAG Corpus ID:**")
         st.code(metrics["rag_corpus_id"])
@@ -192,22 +231,39 @@ def display_adk_cost_analysis():
     col1, col2, col3 = st.columns(3)
 
     with col1:
-        st.metric("Daily Total", f"${costs['daily_costs']['total_cost_usd']:.2f}", delta=None)
+        st.metric(
+            "Daily Total", f"${costs['daily_costs']['total_cost_usd']:.2f}", delta=None
+        )
 
     with col2:
-        st.metric("Cost per Query", f"${costs['usage']['cost_per_query_usd']:.4f}", delta=None)
+        st.metric(
+            "Cost per Query", f"${costs['usage']['cost_per_query_usd']:.4f}", delta=None
+        )
 
     with col3:
-        st.metric("Monthly Projection", f"${costs['projections']['monthly_projection_usd']:.0f}", delta=None)
+        st.metric(
+            "Monthly Projection",
+            f"${costs['projections']['monthly_projection_usd']:.0f}",
+            delta=None,
+        )
 
     # Cost breakdown chart
     st.write("**Daily Cost Breakdown**")
 
     cost_breakdown = pd.DataFrame(
         [
-            {"Component": "RAG Corpus", "Cost": costs["daily_costs"]["rag_corpus_cost_usd"]},
-            {"Component": "Session Storage", "Cost": costs["daily_costs"]["session_storage_cost_usd"]},
-            {"Component": "Vertex AI", "Cost": costs["daily_costs"]["vertex_ai_cost_usd"]},
+            {
+                "Component": "RAG Corpus",
+                "Cost": costs["daily_costs"]["rag_corpus_cost_usd"],
+            },
+            {
+                "Component": "Session Storage",
+                "Cost": costs["daily_costs"]["session_storage_cost_usd"],
+            },
+            {
+                "Component": "Vertex AI",
+                "Cost": costs["daily_costs"]["vertex_ai_cost_usd"],
+            },
         ]
     )
 
@@ -225,10 +281,16 @@ def display_adk_cost_analysis():
     col1, col2 = st.columns(2)
 
     with col1:
-        st.metric("RAG Corpus Queries", f"{costs['usage']['rag_corpus_queries']:,}", delta=None)
+        st.metric(
+            "RAG Corpus Queries",
+            f"{costs['usage']['rag_corpus_queries']:,}",
+            delta=None,
+        )
 
     with col2:
-        st.metric("Vertex AI Calls", f"{costs['usage']['vertex_ai_calls']:,}", delta=None)
+        st.metric(
+            "Vertex AI Calls", f"{costs['usage']['vertex_ai_calls']:,}", delta=None
+        )
 
 
 def display_adk_session_monitoring():
@@ -254,18 +316,26 @@ def display_adk_session_monitoring():
 
     with col1:
         st.metric(
-            "Active Sessions", session_metrics["active_sessions"], delta=f"{session_metrics['total_sessions']} total"
+            "Active Sessions",
+            session_metrics["active_sessions"],
+            delta=f"{session_metrics['total_sessions']} total",
         )
 
     with col2:
         st.metric(
             "Persistence Rate",
             f"{session_metrics['session_persistence_rate']:.1%}",
-            delta="Good" if session_metrics["session_persistence_rate"] > 0.95 else "Low",
+            delta="Good"
+            if session_metrics["session_persistence_rate"] > 0.95
+            else "Low",
         )
 
     with col3:
-        st.metric("Avg Session Duration", f"{session_metrics['average_session_duration_minutes']:.0f} min", delta=None)
+        st.metric(
+            "Avg Session Duration",
+            f"{session_metrics['average_session_duration_minutes']:.0f} min",
+            delta=None,
+        )
 
     with col4:
         st.metric(
@@ -279,7 +349,11 @@ def display_adk_session_monitoring():
 
     activity_data = pd.DataFrame(
         [
-            {"Metric": "Creation Rate", "Value": session_metrics["session_creation_rate_per_hour"], "Unit": "/hour"},
+            {
+                "Metric": "Creation Rate",
+                "Value": session_metrics["session_creation_rate_per_hour"],
+                "Unit": "/hour",
+            },
             {
                 "Metric": "Termination Rate",
                 "Value": session_metrics["session_termination_rate_per_hour"],
@@ -359,7 +433,10 @@ def display_adk_historical_charts():
 
     # Time range selector
     time_range = st.selectbox(
-        "Select time range:", options=[1, 6, 12, 24], index=3, format_func=lambda x: f"Last {x} hours"
+        "Select time range:",
+        options=[1, 6, 12, 24],
+        index=3,
+        format_func=lambda x: f"Last {x} hours",
     )
 
     # Get historical data
@@ -381,11 +458,18 @@ def display_adk_historical_charts():
     df["timestamp"] = pd.to_datetime(df["timestamp"])
 
     # Performance charts
-    chart_tabs = st.tabs(["Latency & Errors", "Memory Usage", "Costs", "Session Activity"])
+    chart_tabs = st.tabs(
+        ["Latency & Errors", "Memory Usage", "Costs", "Session Activity"]
+    )
 
     with chart_tabs[0]:
         # Latency and error rate chart
-        fig = make_subplots(rows=2, cols=1, subplot_titles=("Query Latency", "Error Rate"), vertical_spacing=0.1)
+        fig = make_subplots(
+            rows=2,
+            cols=1,
+            subplot_titles=("Query Latency", "Error Rate"),
+            vertical_spacing=0.1,
+        )
 
         fig.add_trace(
             go.Scatter(
@@ -490,9 +574,13 @@ def display_adk_alerts_and_health():
     # SLA compliance
     sla_status = reliability["sla_status"]
     if sla_status["compliant"]:
-        st.success(f"✅ SLA Compliance: Met ({sla_status['actual']:.2f}% vs {sla_status['target']:.1f}% target)")
+        st.success(
+            f"✅ SLA Compliance: Met ({sla_status['actual']:.2f}% vs {sla_status['target']:.1f}% target)"
+        )
     else:
-        st.error(f"❌ SLA Compliance: Missed ({sla_status['actual']:.2f}% vs {sla_status['target']:.1f}% target)")
+        st.error(
+            f"❌ SLA Compliance: Missed ({sla_status['actual']:.2f}% vs {sla_status['target']:.1f}% target)"
+        )
 
     # Reliability metrics
     col1, col2, col3 = st.columns(3)
@@ -531,7 +619,9 @@ def display_adk_diagnostic_panel():
     diagnostic = diagnostic_data["data"]
 
     # Diagnostic tabs
-    diag_tabs = st.tabs(["System Status", "Configuration", "Environment", "Data Availability"])
+    diag_tabs = st.tabs(
+        ["System Status", "Configuration", "Environment", "Data Availability"]
+    )
 
     with diag_tabs[0]:
         st.write("**System Health:**")
@@ -564,7 +654,12 @@ def display_adk_diagnostic_panel():
             st.metric("Cost History", data_avail["cost_history_count"])
 
         with col2:
-            st.metric("Memory Service", "✅ OK" if service_health["memory_service_initialized"] else "❌ Failed")
+            st.metric(
+                "Memory Service",
+                "✅ OK"
+                if service_health["memory_service_initialized"]
+                else "❌ Failed",
+            )
             st.metric("Check Interval", f"{service_health['check_interval']}s")
 
 
@@ -579,7 +674,14 @@ def display_adk_memory_dashboard():
 
     # Main dashboard tabs
     main_tabs = st.tabs(
-        ["Performance", "Cost Analysis", "Session Monitoring", "Historical Data", "Alerts & Health", "Diagnostics"]
+        [
+            "Performance",
+            "Cost Analysis",
+            "Session Monitoring",
+            "Historical Data",
+            "Alerts & Health",
+            "Diagnostics",
+        ]
     )
 
     with main_tabs[0]:

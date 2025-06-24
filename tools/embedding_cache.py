@@ -16,7 +16,9 @@ from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional
 
 # Set up logging
-logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s"
+)
 logger = logging.getLogger(__name__)
 
 # Simple in-memory cache
@@ -85,7 +87,9 @@ class EmbeddingCache:
 
         logger.info(f"Initialized persistent embedding cache at {self.cache_dir}")
 
-    def get(self, text: str, model: str = "text-embedding-004") -> Optional[List[float]]:
+    def get(
+        self, text: str, model: str = "text-embedding-004"
+    ) -> Optional[List[float]]:
         """
         Get embedding for text from cache.
 
@@ -123,7 +127,9 @@ class EmbeddingCache:
             self.miss_count += 1
             return None
 
-    def set(self, text: str, embedding: List[float], model: str = "text-embedding-004") -> None:
+    def set(
+        self, text: str, embedding: List[float], model: str = "text-embedding-004"
+    ) -> None:
         """
         Store embedding in cache.
 
@@ -137,7 +143,12 @@ class EmbeddingCache:
 
         try:
             # Store embedding in cache
-            cache_data = {"text": text, "model": model, "embedding": embedding, "timestamp": time.time()}
+            cache_data = {
+                "text": text,
+                "model": model,
+                "embedding": embedding,
+                "timestamp": time.time(),
+            }
 
             with open(cache_file, "w") as f:
                 json.dump(cache_data, f)
@@ -162,7 +173,10 @@ class EmbeddingCache:
             for cache_file in Path(self.cache_dir).glob("*.json"):
                 if older_than_days is not None:
                     # Only clear entries older than specified days
-                    if time.time() - os.path.getmtime(cache_file) < older_than_days * 24 * 60 * 60:
+                    if (
+                        time.time() - os.path.getmtime(cache_file)
+                        < older_than_days * 24 * 60 * 60
+                    ):
                         continue
 
                 os.remove(cache_file)
@@ -203,7 +217,11 @@ class EmbeddingCache:
             }
         except Exception as e:
             logger.error(f"Error getting cache stats: {e}")
-            return {"error": str(e), "hit_count": self.hit_count, "miss_count": self.miss_count}
+            return {
+                "error": str(e),
+                "hit_count": self.hit_count,
+                "miss_count": self.miss_count,
+            }
 
     def _generate_cache_key(self, text: str, model: str) -> str:
         """

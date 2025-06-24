@@ -48,26 +48,38 @@ class SecurityIntegration:
         # Add any additional patterns from config
         input_config = self.config.get("input_validation", {})
         if "forbidden_patterns" in input_config:
-            self.security_manager.suspicious_patterns.extend(input_config["forbidden_patterns"])
+            self.security_manager.suspicious_patterns.extend(
+                input_config["forbidden_patterns"]
+            )
 
     def get_security_manager(self) -> SecurityManager:
         """Get the security manager instance."""
         return self.security_manager
 
-    def validate_agent_input(self, input_data: str, source_ip: str = "unknown") -> Tuple[bool, str]:
+    def validate_agent_input(
+        self, input_data: str, source_ip: str = "unknown"
+    ) -> Tuple[bool, str]:
         """Validate input for agent processing."""
-        max_length = self.config.get("input_validation", {}).get("max_input_length", 10000)
+        max_length = self.config.get("input_validation", {}).get(
+            "max_input_length", 10000
+        )
 
         is_valid, message = self.security_manager.validate_input(input_data, max_length)
 
         if not is_valid:
             self.security_manager.log_security_event(
-                "input_validation_failed", "medium", source_ip, "", {"input_length": len(input_data), "reason": message}
+                "input_validation_failed",
+                "medium",
+                source_ip,
+                "",
+                {"input_length": len(input_data), "reason": message},
             )
 
         return is_valid, message
 
-    def check_request_rate_limit(self, identifier: str, source_ip: str = "unknown") -> bool:
+    def check_request_rate_limit(
+        self, identifier: str, source_ip: str = "unknown"
+    ) -> bool:
         """Check rate limit for requests."""
         rate_config = self.config.get("rate_limiting", {})
         limit = rate_config.get("default_limit", 100)
@@ -101,7 +113,9 @@ class SecurityIntegration:
         return {
             "blocked_ips": len(self.security_manager.blocked_ips),
             "recent_security_events": len(recent_events),
-            "critical_events": len([e for e in recent_events if e.severity == "critical"]),
+            "critical_events": len(
+                [e for e in recent_events if e.severity == "critical"]
+            ),
             "rate_limit_active_sessions": len(self.security_manager.rate_limits),
         }
 

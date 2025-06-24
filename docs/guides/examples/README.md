@@ -40,15 +40,15 @@ from agents.vana.team import vana
 
 async def basic_example():
     """Basic VANA interaction example."""
-    
+
     # Simple echo test
     response = await vana.execute("echo 'Hello VANA'")
     print(f"Echo response: {response}")
-    
+
     # File operation
     response = await vana.execute("list_directory '.'")
     print(f"Directory listing: {response}")
-    
+
     # Web search
     response = await vana.execute("web_search 'latest AI developments'")
     print(f"Search results: {response}")
@@ -66,19 +66,19 @@ from agents.vana.team import vana
 
 async def agent_tools_example():
     """Demonstrate agent-as-tools orchestration."""
-    
+
     # Architecture analysis
     arch_response = await vana.execute(
         "architecture_tool 'Design a microservices API for e-commerce'"
     )
     print(f"Architecture analysis: {arch_response}")
-    
+
     # UI design based on architecture
     ui_response = await vana.execute(
         "ui_tool 'Create user interface for the e-commerce API'"
     )
     print(f"UI design: {ui_response}")
-    
+
     # DevOps planning
     devops_response = await vana.execute(
         "devops_tool 'Plan deployment for the e-commerce system'"
@@ -99,24 +99,24 @@ from agents.vana.team import vana
 
 async def long_running_example():
     """Demonstrate long-running task management."""
-    
+
     # Start a long-running task
     response = await vana.execute(
         "competitive_intelligence_tool 'Analyze AI market trends 2024'"
     )
     print(f"Task started: {response}")
-    
+
     # Extract task ID from response
     task_id = extract_task_id(response)
-    
+
     # Monitor progress
     while True:
         status_response = await vana.execute(f"check_task_status '{task_id}'")
         print(f"Task status: {status_response}")
-        
+
         if "completed" in status_response.lower():
             break
-        
+
         await asyncio.sleep(10)  # Check every 10 seconds
 
 def extract_task_id(response: str) -> str:
@@ -141,13 +141,13 @@ if __name__ == "__main__":
 async def sequential_workflow():
     # Step 1: Research
     research = await vana.execute("web_research_tool 'Python async best practices'")
-    
+
     # Step 2: Analysis (uses research results from session state)
     analysis = await vana.execute("data_analysis_tool 'Analyze research findings'")
-    
+
     # Step 3: Documentation (uses both previous results)
     docs = await vana.execute("documentation_tool 'Create best practices guide'")
-    
+
     return docs
 ```
 
@@ -161,14 +161,14 @@ async def parallel_workflow():
         vana.execute("flight_search_tool 'Flights to Tokyo'"),
         vana.execute("web_research_tool 'Tokyo travel guide'")
     ]
-    
+
     results = await asyncio.gather(*tasks)
-    
+
     # Combine results for itinerary planning
     itinerary = await vana.execute(
         "itinerary_planning_tool 'Plan Tokyo trip with search results'"
     )
-    
+
     return itinerary
 ```
 
@@ -180,14 +180,14 @@ async def robust_workflow():
     try:
         # Primary approach
         result = await vana.execute("code_generation_tool 'Create REST API'")
-        
+
         if "error" in result.lower():
             # Fallback approach
             result = await vana.execute("web_search 'REST API examples Python'")
             result = await vana.execute(f"architecture_tool 'Design API based on: {result}'")
-        
+
         return result
-        
+
     except Exception as e:
         # Final fallback
         return await vana.execute(f"echo 'Error occurred: {e}'")
@@ -209,12 +209,12 @@ custom_agent = LlmAgent(
     description="📊 Data Science Specialist",
     output_key="data_science_results",
     instruction="""You are a Data Science Specialist...
-    
+
     ## Core Expertise:
     - Statistical analysis and modeling
     - Data visualization and reporting
     - Machine learning implementation
-    
+
     ## Tools Available:
     - File operations for data access
     - Web search for research
@@ -285,7 +285,7 @@ async def test_file_operations():
     # Test directory listing
     response = await vana.execute("list_directory '.'")
     assert "main.py" in response or "agents" in response
-    
+
     # Test file existence check
     response = await vana.execute("file_exists 'main.py'")
     assert "exists" in response.lower()
@@ -306,23 +306,23 @@ from agents.vana.team import vana
 
 async def test_full_workflow():
     """Test complete multi-agent workflow."""
-    
+
     # Research phase
     research = await vana.execute("web_research_tool 'Python FastAPI tutorial'")
     assert "Task ID" in research
-    
+
     # Development phase
     code = await vana.execute("code_generation_tool 'Create FastAPI hello world'")
     assert "Task ID" in code
-    
+
     # Testing phase
     tests = await vana.execute("testing_tool 'Create tests for FastAPI app'")
     assert "Task ID" in tests
-    
+
     # Documentation phase
     docs = await vana.execute("documentation_tool 'Document FastAPI application'")
     assert "Task ID" in docs
-    
+
     print("✅ Full workflow test completed successfully")
 
 if __name__ == "__main__":
@@ -341,9 +341,9 @@ from agents.vana.team import vana
 
 async def performance_test():
     """Monitor VANA performance metrics."""
-    
+
     start_time = time.time()
-    
+
     # Test multiple operations
     operations = [
         "echo 'performance test'",
@@ -351,27 +351,27 @@ async def performance_test():
         "list_directory '.'",
         "web_search 'AI news'"
     ]
-    
+
     results = []
     for operation in operations:
         op_start = time.time()
         response = await vana.execute(operation)
         op_time = time.time() - op_start
-        
+
         results.append({
             "operation": operation,
             "time": op_time,
             "success": not response.startswith("❌")
         })
-    
+
     total_time = time.time() - start_time
-    
+
     # Print performance report
     print(f"Performance Test Results:")
     print(f"Total time: {total_time:.2f}s")
     print(f"Operations: {len(operations)}")
     print(f"Average time per operation: {total_time/len(operations):.2f}s")
-    
+
     for result in results:
         status = "✅" if result["success"] else "❌"
         print(f"{status} {result['operation']}: {result['time']:.2f}s")
@@ -392,16 +392,16 @@ from agents.vana.team import vana
 
 async def health_check():
     """Comprehensive health check example."""
-    
+
     health_checks = [
         ("System Health", "get_health_status"),
         ("Tool Validation", "echo 'health check'"),
         ("File System", "list_directory '.'"),
         ("Search Capability", "web_search 'test query'")
     ]
-    
+
     results = {}
-    
+
     for check_name, command in health_checks:
         try:
             response = await vana.execute(command)
@@ -414,14 +414,14 @@ async def health_check():
                 "status": "error",
                 "error": str(e)
             }
-    
+
     # Generate health report
     print(json.dumps(results, indent=2))
-    
+
     # Overall health status
     healthy_count = sum(1 for r in results.values() if r.get("status") == "healthy")
     overall_health = "HEALTHY" if healthy_count == len(health_checks) else "DEGRADED"
-    
+
     print(f"\nOverall System Health: {overall_health}")
     print(f"Healthy Components: {healthy_count}/{len(health_checks)}")
 

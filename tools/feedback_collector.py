@@ -148,7 +148,9 @@ class FeedbackCollector:
             logger.error(f"Error recording feedback: {e}")
             return None
 
-    def record_result_feedback(self, feedback_id: int, result_id: int, relevance_rating: int):
+    def record_result_feedback(
+        self, feedback_id: int, result_id: int, relevance_rating: int
+    ):
         """
         Record feedback for a specific result
 
@@ -173,7 +175,9 @@ class FeedbackCollector:
             conn.commit()
             conn.close()
 
-            logger.info(f"Recorded result feedback for feedback_id: {feedback_id}, result_id: {result_id}")
+            logger.info(
+                f"Recorded result feedback for feedback_id: {feedback_id}, result_id: {result_id}"
+            )
             return True
         except Exception as e:
             logger.error(f"Error recording result feedback: {e}")
@@ -195,7 +199,9 @@ class FeedbackCollector:
             cursor = conn.cursor()
 
             # Get feedback
-            cursor.execute("SELECT * FROM feedback ORDER BY timestamp DESC LIMIT ?", (limit,))
+            cursor.execute(
+                "SELECT * FROM feedback ORDER BY timestamp DESC LIMIT ?", (limit,)
+            )
 
             feedback_entries = []
             for row in cursor.fetchall():
@@ -203,7 +209,8 @@ class FeedbackCollector:
 
                 # Get result feedback
                 cursor.execute(
-                    "SELECT * FROM result_feedback WHERE feedback_id = ? ORDER BY result_id", (feedback["id"],)
+                    "SELECT * FROM result_feedback WHERE feedback_id = ? ORDER BY result_id",
+                    (feedback["id"],),
                 )
 
                 feedback["result_feedback"] = [dict(row) for row in cursor.fetchall()]
@@ -242,7 +249,10 @@ class FeedbackCollector:
             implementation_stats = {}
             for row in cursor.fetchall():
                 implementation, count, avg_rating = row
-                implementation_stats[implementation] = {"count": count, "avg_rating": avg_rating or 0}
+                implementation_stats[implementation] = {
+                    "count": count,
+                    "avg_rating": avg_rating or 0,
+                }
 
             # Get statistics by result position
             cursor.execute(
@@ -264,7 +274,12 @@ class FeedbackCollector:
             }
         except Exception as e:
             logger.error(f"Error getting statistics: {e}")
-            return {"total_feedback": 0, "avg_rating": 0, "implementation_stats": {}, "position_stats": {}}
+            return {
+                "total_feedback": 0,
+                "avg_rating": 0,
+                "implementation_stats": {},
+                "position_stats": {},
+            }
 
     def analyze_feedback(self, min_count: int = 10) -> Dict[str, Any]:
         """
@@ -299,7 +314,9 @@ class FeedbackCollector:
             problematic_queries = []
             for row in cursor.fetchall():
                 query, avg_rating, count = row
-                problematic_queries.append({"query": query, "avg_rating": avg_rating, "count": count})
+                problematic_queries.append(
+                    {"query": query, "avg_rating": avg_rating, "count": count}
+                )
 
             # Get implementation comparison
             cursor.execute(
@@ -310,7 +327,11 @@ class FeedbackCollector:
             for row in cursor.fetchall():
                 implementation, avg_rating, count = row
                 implementation_comparison.append(
-                    {"implementation": implementation, "avg_rating": avg_rating, "count": count}
+                    {
+                        "implementation": implementation,
+                        "avg_rating": avg_rating,
+                        "count": count,
+                    }
                 )
 
             # Get position analysis
@@ -321,7 +342,13 @@ class FeedbackCollector:
             position_analysis = []
             for row in cursor.fetchall():
                 result_id, avg_relevance, count = row
-                position_analysis.append({"position": result_id + 1, "avg_relevance": avg_relevance, "count": count})
+                position_analysis.append(
+                    {
+                        "position": result_id + 1,
+                        "avg_relevance": avg_relevance,
+                        "count": count,
+                    }
+                )
 
             conn.close()
 

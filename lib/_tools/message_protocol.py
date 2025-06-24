@@ -109,7 +109,9 @@ class MessageProtocol:
 
     @staticmethod
     def create_request(
-        method: str, params: Optional[Dict[str, Any]] = None, request_id: Optional[Union[str, int]] = None
+        method: str,
+        params: Optional[Dict[str, Any]] = None,
+        request_id: Optional[Union[str, int]] = None,
     ) -> JsonRpcRequest:
         """Create a JSON-RPC 2.0 request.
 
@@ -124,7 +126,9 @@ class MessageProtocol:
         return JsonRpcRequest(method=method, params=params, id=request_id)
 
     @staticmethod
-    def create_success_response(result: Any, request_id: Optional[Union[str, int]] = None) -> JsonRpcResponse:
+    def create_success_response(
+        result: Any, request_id: Optional[Union[str, int]] = None
+    ) -> JsonRpcResponse:
         """Create a successful JSON-RPC 2.0 response.
 
         Args:
@@ -186,7 +190,10 @@ class MessageProtocol:
             raise ValueError("Missing required 'method' field")
 
         return JsonRpcRequest(
-            jsonrpc=data["jsonrpc"], method=data["method"], params=data.get("params"), id=data.get("id")
+            jsonrpc=data["jsonrpc"],
+            method=data["method"],
+            params=data.get("params"),
+            id=data.get("id"),
         )
 
     @staticmethod
@@ -222,10 +229,17 @@ class MessageProtocol:
                 raise ValueError("Error must be an object")
 
             error = JsonRpcError(
-                code=error_data.get("code"), message=error_data.get("message", ""), data=error_data.get("data")
+                code=error_data.get("code"),
+                message=error_data.get("message", ""),
+                data=error_data.get("data"),
             )
 
-        return JsonRpcResponse(jsonrpc=data["jsonrpc"], result=data.get("result"), error=error, id=data.get("id"))
+        return JsonRpcResponse(
+            jsonrpc=data["jsonrpc"],
+            result=data.get("result"),
+            error=error,
+            id=data.get("id"),
+        )
 
     @staticmethod
     def validate_request(request: JsonRpcRequest) -> Optional[JsonRpcError]:
@@ -238,13 +252,22 @@ class MessageProtocol:
             JsonRpcError if validation fails, None if valid
         """
         if request.jsonrpc != "2.0":
-            return JsonRpcError(code=JsonRpcErrorCode.INVALID_REQUEST.value, message="Invalid jsonrpc version")
+            return JsonRpcError(
+                code=JsonRpcErrorCode.INVALID_REQUEST.value,
+                message="Invalid jsonrpc version",
+            )
 
         if not request.method:
-            return JsonRpcError(code=JsonRpcErrorCode.INVALID_REQUEST.value, message="Missing or empty method")
+            return JsonRpcError(
+                code=JsonRpcErrorCode.INVALID_REQUEST.value,
+                message="Missing or empty method",
+            )
 
         if request.params is not None and not isinstance(request.params, dict):
-            return JsonRpcError(code=JsonRpcErrorCode.INVALID_PARAMS.value, message="Params must be an object")
+            return JsonRpcError(
+                code=JsonRpcErrorCode.INVALID_PARAMS.value,
+                message="Params must be an object",
+            )
 
         return None
 

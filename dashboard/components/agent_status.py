@@ -35,7 +35,9 @@ def display_agent_status():
     st.write(f"- Agent data length: {len(agent_data) if agent_data else 0}")
     if agent_data and len(agent_data) > 0:
         st.write(f"- First agent: {agent_data[0]}")
-        st.write(f"- Agent names: {[agent.get('name', 'NO_NAME') for agent in agent_data]}")
+        st.write(
+            f"- Agent names: {[agent.get('name', 'NO_NAME') for agent in agent_data]}"
+        )
 
     st.session_state.agent_data = agent_data
 
@@ -50,9 +52,13 @@ def display_agent_status():
         col_index = i % 3
         with cols[col_index]:
             # Determine card color based on status
-            card_color = {"Active": "green", "Idle": "blue", "Busy": "orange", "Error": "red", "Offline": "gray"}.get(
-                agent["status"], "blue"
-            )
+            card_color = {
+                "Active": "green",
+                "Idle": "blue",
+                "Busy": "orange",
+                "Error": "red",
+                "Offline": "gray",
+            }.get(agent["status"], "blue")
 
             # Create card with colored header
             st.markdown(
@@ -105,12 +111,24 @@ def display_agent_status():
 
     with tabs[0]:
         # Response time bar chart
-        fig = px.bar(metrics_df, x="Agent", y="Response Time (ms)", color="Agent", title="Agent Response Times")
+        fig = px.bar(
+            metrics_df,
+            x="Agent",
+            y="Response Time (ms)",
+            color="Agent",
+            title="Agent Response Times",
+        )
         st.plotly_chart(fig, use_container_width=True)
 
     with tabs[1]:
         # Error rate bar chart
-        fig = px.bar(metrics_df, x="Agent", y="Error Rate (%)", color="Agent", title="Agent Error Rates")
+        fig = px.bar(
+            metrics_df,
+            x="Agent",
+            y="Error Rate (%)",
+            color="Agent",
+            title="Agent Error Rates",
+        )
         st.plotly_chart(fig, use_container_width=True)
 
     with tabs[2]:
@@ -119,7 +137,12 @@ def display_agent_status():
 
         # Add CPU usage bars
         fig.add_trace(
-            go.Bar(x=metrics_df["Agent"], y=metrics_df["CPU Usage (%)"], name="CPU Usage (%)", marker_color="indianred")
+            go.Bar(
+                x=metrics_df["Agent"],
+                y=metrics_df["CPU Usage (%)"],
+                name="CPU Usage (%)",
+                marker_color="indianred",
+            )
         )
 
         # Add Memory usage bars
@@ -133,7 +156,12 @@ def display_agent_status():
         )
 
         # Update layout
-        fig.update_layout(title="Agent Resource Usage", xaxis_title="Agent", yaxis_title="Usage", barmode="group")
+        fig.update_layout(
+            title="Agent Resource Usage",
+            xaxis_title="Agent",
+            yaxis_title="Usage",
+            barmode="group",
+        )
 
         st.plotly_chart(fig, use_container_width=True)
 
@@ -149,7 +177,9 @@ def display_agent_status():
         selected_agent = "vana"  # fallback
 
     # Time period selection
-    time_period = st.radio("Time Period", ["Last 24 Hours", "Last Week"], horizontal=True)
+    time_period = st.radio(
+        "Time Period", ["Last 24 Hours", "Last Week"], horizontal=True
+    )
     hours = 24 if time_period == "Last 24 Hours" else 168
 
     # Fetch historical data
@@ -163,7 +193,9 @@ def display_agent_status():
         history_df["timestamp"] = pd.to_datetime(history_df["timestamp"])
 
         # Create tabs for different metrics
-        hist_tabs = st.tabs(["Requests", "Response Time", "Error Rate", "Resource Usage"])
+        hist_tabs = st.tabs(
+            ["Requests", "Response Time", "Error Rate", "Resource Usage"]
+        )
 
         with hist_tabs[0]:
             # Requests line chart
@@ -225,16 +257,22 @@ def display_agent_status():
 
             # CPU usage line
             cpu_line = base.mark_line(color="red").encode(
-                y=alt.Y("cpu_usage:Q", title="CPU Usage (%)"), tooltip=["timestamp:T", "cpu_usage:Q"]
+                y=alt.Y("cpu_usage:Q", title="CPU Usage (%)"),
+                tooltip=["timestamp:T", "cpu_usage:Q"],
             )
 
             # Memory usage line
             memory_line = base.mark_line(color="blue").encode(
-                y=alt.Y("memory_usage_mb:Q", title="Memory Usage (MB)"), tooltip=["timestamp:T", "memory_usage_mb:Q"]
+                y=alt.Y("memory_usage_mb:Q", title="Memory Usage (MB)"),
+                tooltip=["timestamp:T", "memory_usage_mb:Q"],
             )
 
             # Combine both lines
-            chart = alt.layer(cpu_line, memory_line).resolve_scale(y="independent").interactive()
+            chart = (
+                alt.layer(cpu_line, memory_line)
+                .resolve_scale(y="independent")
+                .interactive()
+            )
 
             st.altair_chart(chart, use_container_width=True)
     else:

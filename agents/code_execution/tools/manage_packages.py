@@ -11,7 +11,10 @@ logger = logging.getLogger(__name__)
 
 
 async def manage_packages_tool(
-    action: str, language: str, packages: Optional[List[str]] = None, package_name: Optional[str] = None
+    action: str,
+    language: str,
+    packages: Optional[List[str]] = None,
+    package_name: Optional[str] = None,
 ) -> Dict[str, Any]:
     """
     Manage packages and dependencies in the sandbox environment.
@@ -46,7 +49,11 @@ async def manage_packages_tool(
 
     except Exception as e:
         logger.error(f"Package management failed: {str(e)}")
-        return {"error": f"Package management failed: {str(e)}", "action": action, "language": language}
+        return {
+            "error": f"Package management failed: {str(e)}",
+            "action": action,
+            "language": language,
+        }
 
 
 async def _list_available_packages(language: str) -> Dict[str, Any]:
@@ -76,7 +83,14 @@ async def _list_available_packages(language: str) -> Dict[str, Any]:
                 "logging",
                 "unittest",
             ],
-            "data_science": ["numpy", "pandas", "matplotlib", "seaborn", "scipy", "scikit-learn"],
+            "data_science": [
+                "numpy",
+                "pandas",
+                "matplotlib",
+                "seaborn",
+                "scipy",
+                "scikit-learn",
+            ],
             "web_development": ["requests", "flask", "fastapi", "aiohttp"],
             "utilities": ["pyyaml", "python-dotenv", "click", "tqdm", "pillow"],
             "restricted": ["subprocess", "socket", "multiprocessing", "threading"],
@@ -119,7 +133,15 @@ async def _list_available_packages(language: str) -> Dict[str, Any]:
                 "uniq",
             ],
             "text_processing": ["cut", "tr", "wc", "diff", "comm", "join", "paste"],
-            "file_operations": ["find", "locate", "which", "file", "stat", "touch", "chmod"],
+            "file_operations": [
+                "find",
+                "locate",
+                "which",
+                "file",
+                "stat",
+                "touch",
+                "chmod",
+            ],
             "restricted": [
                 "sudo",
                 "su",
@@ -138,14 +160,21 @@ async def _list_available_packages(language: str) -> Dict[str, Any]:
     }
 
     if language not in package_info:
-        return {"error": f"Unsupported language: {language}", "supported_languages": list(package_info.keys())}
+        return {
+            "error": f"Unsupported language: {language}",
+            "supported_languages": list(package_info.keys()),
+        }
 
     lang_packages = package_info[language]
 
     return {
         "language": language,
         "available_packages": lang_packages,
-        "total_available": sum(len(category) for category in lang_packages.values() if category != "restricted"),
+        "total_available": sum(
+            len(category)
+            for category in lang_packages.values()
+            if category != "restricted"
+        ),
         "restricted_packages": lang_packages.get("restricted", []),
         "package_categories": list(lang_packages.keys()),
     }
@@ -196,7 +225,11 @@ async def _get_package_info(language: str, package_name: str) -> Dict[str, Any]:
                 "description": "Utility library for JavaScript",
                 "version": "4.17+",
                 "category": "utilities",
-                "capabilities": ["array manipulation", "object utilities", "functional programming"],
+                "capabilities": [
+                    "array manipulation",
+                    "object utilities",
+                    "functional programming",
+                ],
                 "common_imports": ["const _ = require('lodash')"],
                 "example_usage": "_.chunk([1, 2, 3, 4], 2)",
             },
@@ -212,7 +245,11 @@ async def _get_package_info(language: str, package_name: str) -> Dict[str, Any]:
                 "description": "File system operations",
                 "version": "built-in",
                 "category": "core_modules",
-                "capabilities": ["file reading", "file writing", "directory operations"],
+                "capabilities": [
+                    "file reading",
+                    "file writing",
+                    "directory operations",
+                ],
                 "common_imports": ["const fs = require('fs')"],
                 "example_usage": "fs.readFileSync('file.txt', 'utf8')",
                 "security_note": "File access limited to workspace directory",
@@ -223,23 +260,43 @@ async def _get_package_info(language: str, package_name: str) -> Dict[str, Any]:
                 "description": "Search text patterns in files",
                 "version": "GNU grep",
                 "category": "text_processing",
-                "capabilities": ["pattern matching", "regular expressions", "file searching"],
+                "capabilities": [
+                    "pattern matching",
+                    "regular expressions",
+                    "file searching",
+                ],
                 "example_usage": "grep 'pattern' file.txt",
-                "common_options": ["-i (ignore case)", "-r (recursive)", "-n (line numbers)"],
+                "common_options": [
+                    "-i (ignore case)",
+                    "-r (recursive)",
+                    "-n (line numbers)",
+                ],
             },
             "awk": {
                 "description": "Text processing and pattern scanning",
                 "version": "GNU awk",
                 "category": "text_processing",
-                "capabilities": ["field processing", "calculations", "report generation"],
+                "capabilities": [
+                    "field processing",
+                    "calculations",
+                    "report generation",
+                ],
                 "example_usage": "awk '{print $1}' file.txt",
-                "common_patterns": ["field extraction", "sum calculations", "conditional processing"],
+                "common_patterns": [
+                    "field extraction",
+                    "sum calculations",
+                    "conditional processing",
+                ],
             },
             "sed": {
                 "description": "Stream editor for filtering and transforming text",
                 "version": "GNU sed",
                 "category": "text_processing",
-                "capabilities": ["text substitution", "line deletion", "text insertion"],
+                "capabilities": [
+                    "text substitution",
+                    "line deletion",
+                    "text insertion",
+                ],
                 "example_usage": "sed 's/old/new/g' file.txt",
                 "common_operations": ["substitution", "deletion", "insertion"],
             },
@@ -247,7 +304,10 @@ async def _get_package_info(language: str, package_name: str) -> Dict[str, Any]:
     }
 
     if language not in package_details:
-        return {"error": f"No package information available for language: {language}", "package_name": package_name}
+        return {
+            "error": f"No package information available for language: {language}",
+            "package_name": package_name,
+        }
 
     lang_packages = package_details[language]
 
@@ -272,7 +332,9 @@ async def _get_package_info(language: str, package_name: str) -> Dict[str, Any]:
     return package_info
 
 
-async def _check_package_availability(language: str, package_name: str) -> Dict[str, Any]:
+async def _check_package_availability(
+    language: str, package_name: str
+) -> Dict[str, Any]:
     """Check if a specific package is available."""
 
     # Get available packages
@@ -304,8 +366,12 @@ async def _check_package_availability(language: str, package_name: str) -> Dict[
     if is_available:
         result["category"] = category
         if is_restricted:
-            result["message"] = f"Package '{package_name}' is restricted in sandbox environment"
-            result["alternatives"] = await _get_package_alternatives(language, package_name)
+            result["message"] = (
+                f"Package '{package_name}' is restricted in sandbox environment"
+            )
+            result["alternatives"] = await _get_package_alternatives(
+                language, package_name
+            )
         else:
             result["message"] = f"Package '{package_name}' is available"
     else:
@@ -337,8 +403,12 @@ async def _check_packages_batch(language: str, packages: List[str]) -> Dict[str,
         "unavailable": total_packages - available_packages,
         "results": results,
         "summary": {
-            "availability_rate": round(available_packages / total_packages * 100, 1) if total_packages > 0 else 0,
-            "restriction_rate": round(restricted_packages / total_packages * 100, 1) if total_packages > 0 else 0,
+            "availability_rate": round(available_packages / total_packages * 100, 1)
+            if total_packages > 0
+            else 0,
+            "restriction_rate": round(restricted_packages / total_packages * 100, 1)
+            if total_packages > 0
+            else 0,
         },
     }
 
@@ -386,7 +456,9 @@ async def _get_installation_info(language: str) -> Dict[str, Any]:
     }
 
     if language not in installation_info:
-        return {"error": f"Installation information not available for language: {language}"}
+        return {
+            "error": f"Installation information not available for language: {language}"
+        }
 
     info = installation_info[language]
     info["language"] = language
@@ -394,26 +466,37 @@ async def _get_installation_info(language: str) -> Dict[str, Any]:
     return info
 
 
-async def _check_restricted_package(language: str, package_name: str) -> Optional[Dict[str, Any]]:
+async def _check_restricted_package(
+    language: str, package_name: str
+) -> Optional[Dict[str, Any]]:
     """Check if package is restricted and provide information."""
 
     restricted_info = {
         "python": {
             "subprocess": {
                 "reason": "Security risk - can execute system commands",
-                "alternatives": ["Use sandbox execution tools", "Use built-in functions"],
+                "alternatives": [
+                    "Use sandbox execution tools",
+                    "Use built-in functions",
+                ],
                 "security_impact": "High - could compromise sandbox security",
             },
             "socket": {
                 "reason": "Network access restricted in sandbox",
-                "alternatives": ["Use requests library for HTTP", "Use provided web tools"],
+                "alternatives": [
+                    "Use requests library for HTTP",
+                    "Use provided web tools",
+                ],
                 "security_impact": "Medium - could bypass network restrictions",
             },
         },
         "javascript": {
             "child_process": {
                 "reason": "Security risk - can execute system commands",
-                "alternatives": ["Use sandbox execution tools", "Use built-in functions"],
+                "alternatives": [
+                    "Use sandbox execution tools",
+                    "Use built-in functions",
+                ],
                 "security_impact": "High - could compromise sandbox security",
             }
         },
@@ -464,7 +547,9 @@ async def _get_package_alternatives(language: str, package_name: str) -> List[st
         },
     }
 
-    return alternatives.get(language, {}).get(package_name, ["Check available packages for alternatives"])
+    return alternatives.get(language, {}).get(
+        package_name, ["Check available packages for alternatives"]
+    )
 
 
 async def _get_package_suggestions(language: str, package_name: str) -> List[str]:

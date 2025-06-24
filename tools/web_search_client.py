@@ -34,7 +34,9 @@ class WebSearchClient:
         self.available = self.brave_client.is_available()
 
         if not self.available:
-            logger.error("WebSearchClient: BRAVE_API_KEY is not configured. Web search will not be available.")
+            logger.error(
+                "WebSearchClient: BRAVE_API_KEY is not configured. Web search will not be available."
+            )
         else:
             logger.info("WebSearchClient initialized successfully with Brave Search.")
 
@@ -52,8 +54,13 @@ class WebSearchClient:
             or an 'error' message and 'details'.
         """
         if not self.available:
-            logger.warning("WebSearchClient not available due to missing configuration. Returning empty result.")
-            return {"error": "Web search client not available or not configured.", "items": []}
+            logger.warning(
+                "WebSearchClient not available due to missing configuration. Returning empty result."
+            )
+            return {
+                "error": "Web search client not available or not configured.",
+                "items": [],
+            }
 
         try:
             # Use Brave Search client to get results
@@ -67,15 +74,23 @@ class WebSearchClient:
                     "link": result.get("url", ""),
                     "snippet": result.get("snippet", ""),
                     "displayLink": result.get("source", ""),
-                    "pagemap": {"metatags": [{"article:published_time": result.get("date", "")}]},
+                    "pagemap": {
+                        "metatags": [{"article:published_time": result.get("date", "")}]
+                    },
                 }
                 items.append(item)
 
             return {"items": items}
 
         except Exception as e:
-            logger.error(f"Unexpected error during web search for '{query}': {e}", exc_info=True)
-            return {"error": "An unexpected error occurred during web search.", "details": str(e), "items": []}
+            logger.error(
+                f"Unexpected error during web search for '{query}': {e}", exc_info=True
+            )
+            return {
+                "error": "An unexpected error occurred during web search.",
+                "details": str(e),
+                "items": [],
+            }
 
 
 class MockWebSearchClient:
@@ -100,7 +115,9 @@ class MockWebSearchClient:
                     "link": result.get("url", ""),
                     "snippet": result.get("snippet", ""),
                     "displayLink": result.get("source", ""),
-                    "pagemap": {"metatags": [{"article:published_time": result.get("date", "")}]},
+                    "pagemap": {
+                        "metatags": [{"article:published_time": result.get("date", "")}]
+                    },
                 }
                 items.append(item)
 

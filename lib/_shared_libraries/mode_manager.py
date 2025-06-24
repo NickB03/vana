@@ -135,13 +135,19 @@ class ModeManager:
         complexity_scores.sort(reverse=True)
         if len(complexity_scores) >= 3:
             # Weight: 50% highest, 30% second, 20% third
-            return complexity_scores[0] * 0.5 + complexity_scores[1] * 0.3 + complexity_scores[2] * 0.2
+            return (
+                complexity_scores[0] * 0.5
+                + complexity_scores[1] * 0.3
+                + complexity_scores[2] * 0.2
+            )
         elif len(complexity_scores) == 2:
             return complexity_scores[0] * 0.7 + complexity_scores[1] * 0.3
         else:
             return complexity_scores[0]
 
-    def should_plan_first(self, task_description: str, agent_confidence: float = 0.5) -> bool:
+    def should_plan_first(
+        self, task_description: str, agent_confidence: float = 0.5
+    ) -> bool:
         """
         Determine if task requires planning phase before execution.
 
@@ -172,7 +178,9 @@ class ModeManager:
 
         return sum(plan_indicators) >= 2
 
-    def create_execution_plan(self, task_description: str, context: Dict[str, Any] = None) -> TaskPlan:
+    def create_execution_plan(
+        self, task_description: str, context: Dict[str, Any] = None
+    ) -> TaskPlan:
         """
         Create a detailed execution plan for the given task.
 
@@ -191,7 +199,9 @@ class ModeManager:
         success_criteria = self._define_success_criteria(task_description, steps)
 
         # Create fallback strategies
-        fallback_strategies = self._create_fallback_strategies(task_description, complexity)
+        fallback_strategies = self._create_fallback_strategies(
+            task_description, complexity
+        )
 
         plan = TaskPlan(
             task_id=task_id,
@@ -207,7 +217,9 @@ class ModeManager:
         self.active_plans[task_id] = plan
         return plan
 
-    def _decompose_task(self, task_description: str, context: Dict[str, Any]) -> List[Dict[str, Any]]:
+    def _decompose_task(
+        self, task_description: str, context: Dict[str, Any]
+    ) -> List[Dict[str, Any]]:
         """Decompose task into executable steps."""
         # This is a simplified decomposition - in practice, this would use
         # more sophisticated NLP and task analysis
@@ -274,15 +286,29 @@ class ModeManager:
 
         return steps
 
-    def _identify_required_agents(self, task_description: str, steps: List[Dict[str, Any]]) -> List[str]:
+    def _identify_required_agents(
+        self, task_description: str, steps: List[Dict[str, Any]]
+    ) -> List[str]:
         """Identify which specialist agents are needed for this task."""
         required_agents = ["vana"]  # Orchestrator always involved
 
         # Agent specialization keywords
         agent_keywords = {
-            "architecture_specialist": ["design", "architect", "structure", "system", "pattern"],
+            "architecture_specialist": [
+                "design",
+                "architect",
+                "structure",
+                "system",
+                "pattern",
+            ],
             "ui_specialist": ["interface", "ui", "ux", "frontend", "design", "user"],
-            "devops_specialist": ["deploy", "infrastructure", "server", "production", "monitoring"],
+            "devops_specialist": [
+                "deploy",
+                "infrastructure",
+                "server",
+                "production",
+                "monitoring",
+            ],
             "qa_specialist": ["test", "quality", "validate", "verify", "check"],
         }
 
@@ -294,7 +320,9 @@ class ModeManager:
 
         return required_agents
 
-    def _define_success_criteria(self, task_description: str, steps: List[Dict[str, Any]]) -> List[str]:
+    def _define_success_criteria(
+        self, task_description: str, steps: List[Dict[str, Any]]
+    ) -> List[str]:
         """Define success criteria for task validation."""
         criteria = [
             "All planned steps completed successfully",
@@ -314,7 +342,9 @@ class ModeManager:
 
         return criteria
 
-    def _create_fallback_strategies(self, task_description: str, complexity: float) -> List[str]:
+    def _create_fallback_strategies(
+        self, task_description: str, complexity: float
+    ) -> List[str]:
         """Create fallback strategies for error recovery."""
         strategies = [
             "Retry with exponential backoff",

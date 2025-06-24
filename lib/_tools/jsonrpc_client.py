@@ -26,7 +26,12 @@ logger = logging.getLogger(__name__)
 class JsonRpcClient:
     """JSON-RPC 2.0 client for agent communication."""
 
-    def __init__(self, base_url: str = "http://localhost:8000", timeout: float = 30.0, max_retries: int = 3):
+    def __init__(
+        self,
+        base_url: str = "http://localhost:8000",
+        timeout: float = 30.0,
+        max_retries: int = 3,
+    ):
         """Initialize the JSON-RPC client.
 
         Args:
@@ -41,7 +46,9 @@ class JsonRpcClient:
 
     async def __aenter__(self):
         """Async context manager entry."""
-        self.session = aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=self.timeout))
+        self.session = aiohttp.ClientSession(
+            timeout=aiohttp.ClientTimeout(total=self.timeout)
+        )
         return self
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
@@ -85,10 +92,14 @@ class JsonRpcClient:
                 start_time = time.time()
 
                 if not self.session:
-                    raise RuntimeError("Client session not initialized. Use async context manager.")
+                    raise RuntimeError(
+                        "Client session not initialized. Use async context manager."
+                    )
 
                 async with self.session.post(
-                    endpoint_url, json=request.to_dict(), headers={"Content-Type": "application/json"}
+                    endpoint_url,
+                    json=request.to_dict(),
+                    headers={"Content-Type": "application/json"},
                 ) as response:
                     response_time = (time.time() - start_time) * 1000
 
@@ -96,7 +107,9 @@ class JsonRpcClient:
                         response_text = await response.text()
                         json_response = MessageProtocol.parse_response(response_text)
 
-                        logger.info(f"✅ Agent call successful: {agent_name}.{method} ({response_time:.1f}ms)")
+                        logger.info(
+                            f"✅ Agent call successful: {agent_name}.{method} ({response_time:.1f}ms)"
+                        )
                         return json_response
 
                     elif response.status == 404:
@@ -124,7 +137,9 @@ class JsonRpcClient:
                     else:
                         # Other HTTP errors
                         error_text = await response.text()
-                        logger.warning(f"⚠️ HTTP error {response.status} for {agent_name}: {error_text}")
+                        logger.warning(
+                            f"⚠️ HTTP error {response.status} for {agent_name}: {error_text}"
+                        )
 
                         if attempt < self.max_retries:
                             await self._wait_for_retry(attempt)
@@ -139,7 +154,9 @@ class JsonRpcClient:
                         return error_response
 
             except asyncio.TimeoutError:
-                logger.warning(f"⚠️ Timeout calling {agent_name}.{method} (attempt {attempt + 1})")
+                logger.warning(
+                    f"⚠️ Timeout calling {agent_name}.{method} (attempt {attempt + 1})"
+                )
 
                 if attempt < self.max_retries:
                     await self._wait_for_retry(attempt)
@@ -168,11 +185,18 @@ class JsonRpcClient:
 
         # Should not reach here, but just in case
         return MessageProtocol.create_error_response(
-            JsonRpcErrorCode.INTERNAL_ERROR, "Unexpected error in client", request_id=request.id
+            JsonRpcErrorCode.INTERNAL_ERROR,
+            "Unexpected error in client",
+            request_id=request.id,
         )
 
     async def execute_task(
-        self, agent_name: str, task: str, context: str = "", priority: str = "normal", timeout_seconds: int = 30
+        self,
+        agent_name: str,
+        task: str,
+        context: str = "",
+        priority: str = "normal",
+        timeout_seconds: int = 30,
     ) -> JsonRpcResponse:
         """Execute a task on a specific agent.
 
@@ -187,10 +211,16 @@ class JsonRpcClient:
             JsonRpcResponse with AgentTaskResponse result
         """
         task_request = AgentTaskRequest(
-            task=task, context=context, agent_id=agent_name, priority=priority, timeout_seconds=timeout_seconds
+            task=task,
+            context=context,
+            agent_id=agent_name,
+            priority=priority,
+            timeout_seconds=timeout_seconds,
         )
 
-        return await self.call_agent(agent_name, AgentMethods.EXECUTE_TASK, task_request.to_dict())
+        return await self.call_agent(
+            agent_name, AgentMethods.EXECUTE_TASK, task_request.to_dict()
+        )
 
     async def get_agent_status(self, agent_name: str) -> JsonRpcResponse:
         """Get status of a specific agent.

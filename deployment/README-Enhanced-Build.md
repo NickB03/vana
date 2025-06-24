@@ -55,7 +55,7 @@ This directory contains enhanced Cloud Build configurations for VANA with compre
 # Enhanced production deployment (recommended)
 ./deployment/deploy-enhanced-prod.sh
 
-# Standard production deployment  
+# Standard production deployment
 ./deployment/deploy-prod.sh
 ```
 
@@ -77,7 +77,7 @@ This directory contains enhanced Cloud Build configurations for VANA with compre
 ```json
 {
   "version": "1.0.0-a1b2c3d",
-  "base_version": "1.0.0", 
+  "base_version": "1.0.0",
   "git": {
     "commit_hash": "a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0",
     "commit_short": "a1b2c3d",

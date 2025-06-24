@@ -38,7 +38,7 @@ COPY . .
 
 # Build arguments for version tracking
 ARG BUILD_ID="unknown"
-ARG COMMIT_SHA="unknown" 
+ARG COMMIT_SHA="unknown"
 ARG BUILD_TIMESTAMP="unknown"
 ARG ENVIRONMENT="development"
 ARG ENHANCED_REASONING="true"

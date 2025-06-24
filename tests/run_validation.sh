@@ -62,7 +62,7 @@ cd ../..
 echo ""
 echo "🎯 Validation Summary:"
 echo "- Infrastructure tests completed"
-echo "- Multi-agent orchestration tests completed"  
+echo "- Multi-agent orchestration tests completed"
 echo "- Security validation completed"
 echo "- Results saved in tests/results/"
 echo ""

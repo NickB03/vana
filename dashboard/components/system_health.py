@@ -13,7 +13,12 @@ import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
 
-from dashboard.api.system_api import get_service_status, get_system_alerts, get_system_health, get_system_health_history
+from dashboard.api.system_api import (
+    get_service_status,
+    get_system_alerts,
+    get_system_health,
+    get_system_health_history,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -81,7 +86,11 @@ def display_system_health():
                         {"range": [60, 85], "color": "orange"},
                         {"range": [85, 100], "color": "red"},
                     ],
-                    "threshold": {"line": {"color": "red", "width": 4}, "thickness": 0.75, "value": 90},
+                    "threshold": {
+                        "line": {"color": "red", "width": 4},
+                        "thickness": 0.75,
+                        "value": 90,
+                    },
                 },
             )
         )
@@ -111,7 +120,11 @@ def display_system_health():
                         {"range": [60, 85], "color": "orange"},
                         {"range": [85, 100], "color": "red"},
                     ],
-                    "threshold": {"line": {"color": "red", "width": 4}, "thickness": 0.75, "value": 90},
+                    "threshold": {
+                        "line": {"color": "red", "width": 4},
+                        "thickness": 0.75,
+                        "value": 90,
+                    },
                 },
             )
         )
@@ -142,7 +155,11 @@ def display_system_health():
                         {"range": [70, 90], "color": "orange"},
                         {"range": [90, 100], "color": "red"},
                     ],
-                    "threshold": {"line": {"color": "red", "width": 4}, "thickness": 0.75, "value": 95},
+                    "threshold": {
+                        "line": {"color": "red", "width": 4},
+                        "thickness": 0.75,
+                        "value": 95,
+                    },
                 },
             )
         )
@@ -177,7 +194,9 @@ def display_system_health():
     st.subheader("Historical Performance")
 
     # Time period selection
-    time_period = st.radio("Time Period", ["Last 24 Hours", "Last Week"], horizontal=True)
+    time_period = st.radio(
+        "Time Period", ["Last 24 Hours", "Last Week"], horizontal=True
+    )
     hours = 24 if time_period == "Last 24 Hours" else 168
 
     # Fetch historical data
@@ -206,7 +225,10 @@ def display_system_health():
             # Resource usage over time
             resource_chart = (
                 alt.Chart(history_df)
-                .transform_fold(["cpu_percent", "memory_percent", "disk_percent"], as_=["Resource", "Usage (%)"])
+                .transform_fold(
+                    ["cpu_percent", "memory_percent", "disk_percent"],
+                    as_=["Resource", "Usage (%)"],
+                )
                 .mark_line()
                 .encode(
                     x=alt.X("timestamp:T", title="Time"),
@@ -228,20 +250,30 @@ def display_system_health():
 
         with hist_tabs[1]:
             # Format network data for better visualization
-            history_df["network_send_mb"] = history_df["network_send_bytes"] / (1024 * 1024)
-            history_df["network_recv_mb"] = history_df["network_recv_bytes"] / (1024 * 1024)
+            history_df["network_send_mb"] = history_df["network_send_bytes"] / (
+                1024 * 1024
+            )
+            history_df["network_recv_mb"] = history_df["network_recv_bytes"] / (
+                1024 * 1024
+            )
 
             # Network traffic over time
             network_chart = (
                 alt.Chart(history_df)
-                .transform_fold(["network_send_mb", "network_recv_mb"], as_=["Direction", "Traffic (MB)"])
+                .transform_fold(
+                    ["network_send_mb", "network_recv_mb"],
+                    as_=["Direction", "Traffic (MB)"],
+                )
                 .mark_line()
                 .encode(
                     x=alt.X("timestamp:T", title="Time"),
                     y=alt.Y("Traffic (MB):Q"),
                     color=alt.Color(
                         "Direction:N",
-                        scale=alt.Scale(domain=["network_send_mb", "network_recv_mb"], range=["#FF9900", "#0099FF"]),
+                        scale=alt.Scale(
+                            domain=["network_send_mb", "network_recv_mb"],
+                            range=["#FF9900", "#0099FF"],
+                        ),
                     ),
                     tooltip=["timestamp:T", "Traffic (MB):Q", "Direction:N"],
                 )
@@ -267,7 +299,11 @@ def display_system_health():
         col_index = i % 3
         with cols[col_index]:
             # Determine card color based on status
-            status_color = {"running": "green", "warning": "orange", "error": "red"}.get(service["status"], "gray")
+            status_color = {
+                "running": "green",
+                "warning": "orange",
+                "error": "red",
+            }.get(service["status"], "gray")
 
             # Create card with colored header
             st.markdown(
@@ -308,11 +344,15 @@ def display_system_health():
         alerts_df = pd.DataFrame(
             [
                 {
-                    "Time": datetime.fromisoformat(alert["timestamp"]).strftime("%Y-%m-%d %H:%M:%S"),
+                    "Time": datetime.fromisoformat(alert["timestamp"]).strftime(
+                        "%Y-%m-%d %H:%M:%S"
+                    ),
                     "Type": alert["type"].capitalize(),
                     "Level": alert["level"].upper(),
                     "Message": alert["message"],
-                    "Status": "Acknowledged" if alert["acknowledged"] else "Unacknowledged",
+                    "Status": "Acknowledged"
+                    if alert["acknowledged"]
+                    else "Unacknowledged",
                 }
                 for alert in alerts
             ]

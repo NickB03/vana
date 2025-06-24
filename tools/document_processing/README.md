@@ -73,7 +73,7 @@ import asyncio
 async def process_single_document():
     # Validate document first
     validation_report = validator.validate_document("document.pdf")
-    
+
     if validation_report.is_valid:
         # Process document
         result = await adk_processor.upload_file_to_rag_corpus(
@@ -81,7 +81,7 @@ async def process_single_document():
             display_name="My Document",
             description="Important document for processing"
         )
-        
+
         if result["success"]:
             print(f"Document uploaded: {result['rag_file_name']}")
         else:
@@ -99,18 +99,18 @@ asyncio.run(process_single_document())
 async def process_batch():
     # Get list of files
     file_paths = adk_processor.process_directory("documents/", recursive=True)
-    
+
     # Process batch with progress tracking
     def progress_callback(progress_info):
         percentage = progress_info["progress_percentage"]
         print(f"Progress: {percentage:.1f}%")
-    
+
     result = await batch_processor.process_batch(
         file_paths,
         progress_callback=progress_callback,
         validate_first=True
     )
-    
+
     if result["success"]:
         stats = result["processing_stats"]
         print(f"Processed {stats['successful_files']}/{stats['total_files']} files")
@@ -125,12 +125,12 @@ from tools.document_processing import create_migration_manager
 
 async def migrate_documents():
     migration_manager = create_migration_manager(adk_processor)
-    
+
     result = await migration_manager.migrate_documents_from_filesystem(
         "legacy_documents/",
         progress_callback=lambda info: print(f"Migration: {info['progress_percentage']:.1f}%")
     )
-    
+
     if result["success"]:
         summary = result["migration_summary"]
         print(f"Migrated {summary['successful_migrations']} documents")
