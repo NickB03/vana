@@ -78,7 +78,11 @@ class MemoryMCP:
                 self.buffer_manager.clear()
                 return response.get("message", "Memory saved to knowledge base.")
             else:
-                error_msg = response.get("message", "Unknown error") if response else "Failed to connect to webhook"
+                error_msg = (
+                    response.get("message", "Unknown error")
+                    if response
+                    else "Failed to connect to webhook"
+                )
                 return f"Error saving memory: {error_msg}"
 
         # Enhanced memory commands
@@ -97,9 +101,12 @@ class MemoryMCP:
                 end_date = args[3]
 
                 try:
-                    results = self.enhanced_memory.filter_memories_by_date(query, start_date, end_date)
+                    results = self.enhanced_memory.filter_memories_by_date(
+                        query, start_date, end_date
+                    )
                     return self._format_memory_results(
-                        results, f"Memories for '{query}' between {start_date} and {end_date}"
+                        results,
+                        f"Memories for '{query}' between {start_date} and {end_date}",
                     )
                 except Exception as e:
                     logger.error(f"Error filtering memories by date: {e}")
@@ -113,13 +120,17 @@ class MemoryMCP:
 
                 try:
                     results = self.enhanced_memory.filter_memories_by_tags(query, tags)
-                    return self._format_memory_results(results, f"Memories for '{query}' with tags: {', '.join(tags)}")
+                    return self._format_memory_results(
+                        results, f"Memories for '{query}' with tags: {', '.join(tags)}"
+                    )
                 except Exception as e:
                     logger.error(f"Error filtering memories by tags: {e}")
                     return f"Error filtering memories: {str(e)}"
 
             else:
-                return f"Unknown filter type: {filter_type}. Supported types: date, tags"
+                return (
+                    f"Unknown filter type: {filter_type}. Supported types: date, tags"
+                )
 
         elif base_command == "!memory_analytics":
             try:
@@ -146,7 +157,7 @@ class MemoryMCP:
             source = result.get("metadata", {}).get("source", "Unknown")
             timestamp = result.get("metadata", {}).get("timestamp", "Unknown date")
 
-            formatted += f"{i+1}. [{timestamp}] (Score: {score:.2f})\n"
+            formatted += f"{i + 1}. [{timestamp}] (Score: {score:.2f})\n"
             formatted += f"   Source: {source}\n"
             formatted += f"   {text[:200]}...\n\n"
 
@@ -229,7 +240,9 @@ Enhanced Commands:
 
         try:
             logger.info(f"Triggering webhook at {self.webhook_url}")
-            response = requests.post(self.webhook_url, json=payload, auth=self.webhook_auth, timeout=10)
+            response = requests.post(
+                self.webhook_url, json=payload, auth=self.webhook_auth, timeout=10
+            )
             response.raise_for_status()
             return response.json()
         except requests.exceptions.RequestException as e:

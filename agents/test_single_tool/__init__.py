@@ -11,5 +11,5 @@ root_agent = LlmAgent(
     model="gemini-2.0-flash",
     description="Test agent with only single tool property",
     instruction="You are a test agent for validating tools property. You have access to an echo tool.",
-    tools=[adk_echo]  # Only one simple tool added
+    tools=[adk_echo],  # Only one simple tool added
 )

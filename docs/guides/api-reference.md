@@ -528,19 +528,19 @@ class VanaClient:
     def __init__(self, base_url, api_key=None):
         self.base_url = base_url
         self.api_key = api_key
-    
+
     def chat(self, message, session_id=None):
         headers = {}
         if self.api_key:
             headers['X-API-Key'] = self.api_key
-        
+
         response = requests.post(
             f"{self.base_url}/api/chat",
             json={"message": message, "session_id": session_id},
             headers=headers
         )
         return response.json()
-    
+
     def get_health(self):
         response = requests.get(f"{self.base_url}/api/health")
         return response.json()
@@ -558,13 +558,13 @@ class VanaClient {
         this.baseUrl = baseUrl;
         this.apiKey = apiKey;
     }
-    
+
     async chat(message, sessionId = null) {
         const headers = {'Content-Type': 'application/json'};
         if (this.apiKey) {
             headers['X-API-Key'] = this.apiKey;
         }
-        
+
         const response = await fetch(`${this.baseUrl}/api/chat`, {
             method: 'POST',
             headers: headers,
@@ -573,10 +573,10 @@ class VanaClient {
                 session_id: sessionId
             })
         });
-        
+
         return await response.json();
     }
-    
+
     async getHealth() {
         const response = await fetch(`${this.baseUrl}/api/health`);
         return await response.json();
@@ -625,4 +625,3 @@ All inputs are validated for:
 ---
 
 **Need help?** Check our [troubleshooting guide](../troubleshooting/common-issues.md) or [create an issue](https://github.com/NickB03/vana/issues).
-

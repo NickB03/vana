@@ -26,7 +26,10 @@ from tools.vector_search.vector_search_client import VectorSearchClient
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(message)s",
-    handlers=[logging.FileHandler("expand_knowledge_base.log"), logging.StreamHandler()],
+    handlers=[
+        logging.FileHandler("expand_knowledge_base.log"),
+        logging.StreamHandler(),
+    ],
 )
 logger = logging.getLogger(__name__)
 
@@ -66,11 +69,15 @@ def process_directory(
 
     # Check if tools are available
     if add_to_knowledge_graph and not kg_manager.is_available():
-        logger.warning("Knowledge Graph is not available. Documents will not be added to Knowledge Graph.")
+        logger.warning(
+            "Knowledge Graph is not available. Documents will not be added to Knowledge Graph."
+        )
         add_to_knowledge_graph = False
 
     if add_to_vector_search and not vs_client.is_available():
-        logger.warning("Vector Search is not available. Documents will not be added to Vector Search.")
+        logger.warning(
+            "Vector Search is not available. Documents will not be added to Vector Search."
+        )
         add_to_vector_search = False
 
     # Initialize statistics
@@ -131,10 +138,16 @@ def process_directory(
                     kg_result = kg_manager.process_document(document)
 
                     # Update statistics
-                    stats["entities_extracted"] += kg_result.get("entities_extracted", 0)
+                    stats["entities_extracted"] += kg_result.get(
+                        "entities_extracted", 0
+                    )
                     stats["entities_stored"] += kg_result.get("entities_stored", 0)
-                    stats["relationships_extracted"] += kg_result.get("relationships_extracted", 0)
-                    stats["relationships_stored"] += kg_result.get("relationships_stored", 0)
+                    stats["relationships_extracted"] += kg_result.get(
+                        "relationships_extracted", 0
+                    )
+                    stats["relationships_stored"] += kg_result.get(
+                        "relationships_stored", 0
+                    )
 
                     logger.info(f"Added document '{title}' to Knowledge Graph")
                 except Exception as e:
@@ -149,12 +162,16 @@ def process_directory(
                         chunk_metadata = chunk.get("metadata", {})
 
                         # Add chunk to Vector Search
-                        result = vs_client.add_document(text=chunk_text, metadata=chunk_metadata)
+                        result = vs_client.add_document(
+                            text=chunk_text, metadata=chunk_metadata
+                        )
 
                         if result.get("success", False):
                             stats["chunks_added_to_vector_search"] += 1
 
-                    logger.info(f"Added {len(chunks)} chunks from document '{title}' to Vector Search")
+                    logger.info(
+                        f"Added {len(chunks)} chunks from document '{title}' to Vector Search"
+                    )
                 except Exception as e:
                     logger.error(f"Error adding document to Vector Search: {str(e)}")
 
@@ -170,13 +187,19 @@ def process_directory(
         stats["success_rate"] = 0
 
     # Log summary
-    logger.info(f"Processed {stats['documents_processed']} documents ({stats['documents_failed']} failed)")
+    logger.info(
+        f"Processed {stats['documents_processed']} documents ({stats['documents_failed']} failed)"
+    )
     logger.info(f"Created {stats['chunks_created']} chunks")
-    logger.info(f"Extracted {stats['entities_extracted']} entities and stored {stats['entities_stored']}")
+    logger.info(
+        f"Extracted {stats['entities_extracted']} entities and stored {stats['entities_stored']}"
+    )
     logger.info(
         f"Extracted {stats['relationships_extracted']} relationships and stored {stats['relationships_stored']}"
     )
-    logger.info(f"Added {stats['chunks_added_to_vector_search']} chunks to Vector Search")
+    logger.info(
+        f"Added {stats['chunks_added_to_vector_search']} chunks to Vector Search"
+    )
 
     return {"success": True, "stats": stats}
 
@@ -192,9 +215,19 @@ def main():
         default=["pd", "txt", "md", "markdown"],
         help="File types to process (default: pdf, txt, md, markdown)",
     )
-    parser.add_argument("--recursive", action="store_true", help="Process subdirectories")
-    parser.add_argument("--no-vector-search", action="store_true", help="Don't add documents to Vector Search")
-    parser.add_argument("--no-knowledge-graph", action="store_true", help="Don't add documents to Knowledge Graph")
+    parser.add_argument(
+        "--recursive", action="store_true", help="Process subdirectories"
+    )
+    parser.add_argument(
+        "--no-vector-search",
+        action="store_true",
+        help="Don't add documents to Vector Search",
+    )
+    parser.add_argument(
+        "--no-knowledge-graph",
+        action="store_true",
+        help="Don't add documents to Knowledge Graph",
+    )
     parser.add_argument("--output", help="Output file for processing statistics")
 
     args = parser.parse_args()

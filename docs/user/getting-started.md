@@ -81,7 +81,7 @@ df = pd.DataFrame(data)
 print(df.describe())
 "
 
-VANA Response: 
+VANA Response:
 - Executes the code in a secure sandbox
 - Shows the statistical summary output
 - Explains that the code creates a DataFrame and generates descriptive statistics

@@ -28,37 +28,68 @@ class PerformanceMonitor:
         self.thresholds: Dict[str, Dict] = {}
 
     def record_metric(
-        self, name: str, value: float, unit: str = "", tags: Dict[str, str] = None, metadata: Dict = None
+        self,
+        name: str,
+        value: float,
+        unit: str = "",
+        tags: Dict[str, str] = None,
+        metadata: Dict = None,
     ):
         """Record a performance metric."""
         metric = PerformanceMetric(
-            timestamp=time.time(), metric_name=name, value=value, unit=unit, tags=tags or {}, metadata=metadata or {}
+            timestamp=time.time(),
+            metric_name=name,
+            value=value,
+            unit=unit,
+            tags=tags or {},
+            metadata=metadata or {},
         )
 
         self.metrics[name].append(metric)
         self._check_thresholds(metric)
 
-    def record_response_time(self, operation: str, duration: float, success: bool = True, **kwargs):
+    def record_response_time(
+        self, operation: str, duration: float, success: bool = True, **kwargs
+    ):
         """Record response time for an operation."""
-        self.record_metric(f"response_time.{operation}", duration, "seconds", tags={"success": str(success), **kwargs})
+        self.record_metric(
+            f"response_time.{operation}",
+            duration,
+            "seconds",
+            tags={"success": str(success), **kwargs},
+        )
 
     def record_memory_usage(self, component: str = "system"):
         """Record current memory usage."""
         process = psutil.Process()
         memory_info = process.memory_info()
 
-        self.record_metric(f"memory.{component}.rss", memory_info.rss / 1024 / 1024, "MB")
+        self.record_metric(
+            f"memory.{component}.rss", memory_info.rss / 1024 / 1024, "MB"
+        )
 
-        self.record_metric(f"memory.{component}.vms", memory_info.vms / 1024 / 1024, "MB")
+        self.record_metric(
+            f"memory.{component}.vms", memory_info.vms / 1024 / 1024, "MB"
+        )
 
     def record_cpu_usage(self, component: str = "system"):
         """Record current CPU usage."""
         cpu_percent = psutil.cpu_percent(interval=1)
         self.record_metric(f"cpu.{component}.usage", cpu_percent, "percent")
 
-    def set_threshold(self, metric_name: str, warning: float, critical: float, comparison: str = "greater"):
+    def set_threshold(
+        self,
+        metric_name: str,
+        warning: float,
+        critical: float,
+        comparison: str = "greater",
+    ):
         """Set alert thresholds for a metric."""
-        self.thresholds[metric_name] = {"warning": warning, "critical": critical, "comparison": comparison}
+        self.thresholds[metric_name] = {
+            "warning": warning,
+            "critical": critical,
+            "comparison": comparison,
+        }
 
     def _check_thresholds(self, metric: PerformanceMetric):
         """Check if metric exceeds thresholds and generate alerts."""
@@ -104,7 +135,9 @@ class PerformanceMonitor:
                 }
             )
 
-    def get_metrics(self, metric_name: str, since: Optional[float] = None) -> List[PerformanceMetric]:
+    def get_metrics(
+        self, metric_name: str, since: Optional[float] = None
+    ) -> List[PerformanceMetric]:
         """Get metrics for a specific metric name."""
         metrics = list(self.metrics.get(metric_name, []))
 

@@ -123,7 +123,13 @@ class ConfidenceScorer:
                     "usability_analysis",
                     "interaction_design",
                 ],
-                "tools": ["adk_read_file", "adk_write_file", "adk_web_search", "adk_search_knowledge", "adk_kg_query"],
+                "tools": [
+                    "adk_read_file",
+                    "adk_write_file",
+                    "adk_web_search",
+                    "adk_search_knowledge",
+                    "adk_kg_query",
+                ],
             },
             "devops_specialist": {
                 "specialty": AgentSpecialty.DEVOPS,
@@ -267,7 +273,9 @@ class ConfidenceScorer:
 
         # Determine secondary domains (scores > 0 but not primary)
         secondary_domains = [
-            domain for domain, score in domain_scores.items() if score > 0 and domain != primary_domain
+            domain
+            for domain, score in domain_scores.items()
+            if score > 0 and domain != primary_domain
         ]
 
         # Calculate complexity
@@ -284,7 +292,9 @@ class ConfidenceScorer:
             "optimize": 0.7,
         }
 
-        complexity_scores = [score for word, score in complexity_indicators.items() if word in task_lower]
+        complexity_scores = [
+            score for word, score in complexity_indicators.items() if word in task_lower
+        ]
         complexity_score = max(complexity_scores) if complexity_scores else 0.5
 
         # Determine required tools
@@ -327,7 +337,9 @@ class ConfidenceScorer:
             collaboration_needed=collaboration_needed,
         )
 
-    def calculate_agent_confidence(self, agent_name: str, task_analysis: TaskAnalysis) -> CapabilityScore:
+    def calculate_agent_confidence(
+        self, agent_name: str, task_analysis: TaskAnalysis
+    ) -> CapabilityScore:
         """
         Calculate confidence score for specific agent on given task with optimization.
 
@@ -353,7 +365,9 @@ class ConfidenceScorer:
         self._confidence_cache[cache_key] = result
         return result
 
-    def _calculate_agent_confidence_optimized(self, agent_name: str, task_analysis: TaskAnalysis) -> CapabilityScore:
+    def _calculate_agent_confidence_optimized(
+        self, agent_name: str, task_analysis: TaskAnalysis
+    ) -> CapabilityScore:
         """
         Calculate confidence score for specific agent on given task.
 
@@ -385,10 +399,14 @@ class ConfidenceScorer:
         experience_bonus = self._calculate_experience_bonus(agent_name, task_analysis)
 
         # Calculate final confidence
-        final_confidence = min(1.0, base_confidence * task_match_score + experience_bonus)
+        final_confidence = min(
+            1.0, base_confidence * task_match_score + experience_bonus
+        )
 
         # Generate reasoning
-        reasoning = self._generate_confidence_reasoning(agent_info, task_analysis, task_match_score, experience_bonus)
+        reasoning = self._generate_confidence_reasoning(
+            agent_info, task_analysis, task_match_score, experience_bonus
+        )
 
         return CapabilityScore(
             agent_name=agent_name,
@@ -400,7 +418,9 @@ class ConfidenceScorer:
             reasoning=reasoning,
         )
 
-    def _calculate_task_match(self, agent_info: Dict[str, Any], task_analysis: TaskAnalysis) -> float:
+    def _calculate_task_match(
+        self, agent_info: Dict[str, Any], task_analysis: TaskAnalysis
+    ) -> float:
         """Calculate how well agent capabilities match task requirements."""
         # Primary domain match
         if agent_info["specialty"] == task_analysis.primary_domain:
@@ -427,14 +447,18 @@ class ConfidenceScorer:
         required_tools = set(task_analysis.required_tools)
 
         if required_tools:
-            tool_coverage = len(agent_tools.intersection(required_tools)) / len(required_tools)
+            tool_coverage = len(agent_tools.intersection(required_tools)) / len(
+                required_tools
+            )
         else:
             tool_coverage = 1.0
 
         # Weighted combination
         return domain_match * 0.5 + strength_score * 0.3 + tool_coverage * 0.2
 
-    def _calculate_experience_bonus(self, agent_name: str, task_analysis: TaskAnalysis) -> float:
+    def _calculate_experience_bonus(
+        self, agent_name: str, task_analysis: TaskAnalysis
+    ) -> float:
         """Calculate experience bonus based on historical performance."""
         if agent_name not in self.performance_history:
             return 0.0
@@ -450,7 +474,11 @@ class ConfidenceScorer:
         return min(0.2, (avg_performance - 0.5) * 0.4) if avg_performance > 0.5 else 0.0
 
     def _generate_confidence_reasoning(
-        self, agent_info: Dict[str, Any], task_analysis: TaskAnalysis, task_match_score: float, experience_bonus: float
+        self,
+        agent_info: Dict[str, Any],
+        task_analysis: TaskAnalysis,
+        task_match_score: float,
+        experience_bonus: float,
     ) -> str:
         """Generate human-readable reasoning for confidence score."""
         specialty = agent_info["specialty"].value
@@ -476,7 +504,9 @@ class ConfidenceScorer:
 
         return "; ".join(reasoning_parts)
 
-    def get_best_agent_for_task(self, task_description: str) -> Tuple[str, CapabilityScore]:
+    def get_best_agent_for_task(
+        self, task_description: str
+    ) -> Tuple[str, CapabilityScore]:
         """
         Determine the best agent for a given task.
 
@@ -493,11 +523,15 @@ class ConfidenceScorer:
             score = self.calculate_agent_confidence(agent_name, task_analysis)
             agent_scores[agent_name] = score
 
-        best_agent = max(agent_scores.keys(), key=lambda x: agent_scores[x].final_confidence)
+        best_agent = max(
+            agent_scores.keys(), key=lambda x: agent_scores[x].final_confidence
+        )
 
         return best_agent, agent_scores[best_agent]
 
-    def get_collaboration_recommendations(self, task_description: str) -> List[Tuple[str, CapabilityScore]]:
+    def get_collaboration_recommendations(
+        self, task_description: str
+    ) -> List[Tuple[str, CapabilityScore]]:
         """
         Get recommendations for multi-agent collaboration.
 
@@ -542,15 +576,22 @@ class ConfidenceScorer:
 
         # Keep only last 20 scores to prevent memory bloat
         if len(self.performance_history[agent_name]) > 20:
-            self.performance_history[agent_name] = self.performance_history[agent_name][-20:]
+            self.performance_history[agent_name] = self.performance_history[agent_name][
+                -20:
+            ]
 
     def get_confidence_summary(self) -> Dict[str, Any]:
         """Get summary of confidence scoring system status."""
         return {
             "total_agents": len(self.agent_capabilities),
             "agents_with_history": len(self.performance_history),
-            "total_performance_records": sum(len(scores) for scores in self.performance_history.values()),
-            "agent_specialties": {name: info["specialty"].value for name, info in self.agent_capabilities.items()},
+            "total_performance_records": sum(
+                len(scores) for scores in self.performance_history.values()
+            ),
+            "agent_specialties": {
+                name: info["specialty"].value
+                for name, info in self.agent_capabilities.items()
+            },
         }
 
     # ========== PERFORMANCE OPTIMIZATION METHODS ==========
@@ -572,9 +613,16 @@ class ConfidenceScorer:
 
             # Pre-compute tool compatibility scores
             agent_tools = set(agent_info["tools"])
-            for tool_category in ["file_operations", "search", "knowledge_graph", "coordination"]:
+            for tool_category in [
+                "file_operations",
+                "search",
+                "knowledge_graph",
+                "coordination",
+            ]:
                 tool_overlap = len([t for t in agent_tools if tool_category in t])
-                compatibility_matrix[agent_name][f"tools_{tool_category}"] = min(1.0, tool_overlap * 0.25)
+                compatibility_matrix[agent_name][f"tools_{tool_category}"] = min(
+                    1.0, tool_overlap * 0.25
+                )
 
         return compatibility_matrix
 
@@ -587,7 +635,9 @@ class ConfidenceScorer:
         return hashlib.sha256(normalized.encode()).hexdigest()
 
     @lru_cache(maxsize=1000)
-    def _analyze_task_cached(self, task_hash: str, task_description: str) -> TaskAnalysis:
+    def _analyze_task_cached(
+        self, task_hash: str, task_description: str
+    ) -> TaskAnalysis:
         """Cached version of task analysis for performance optimization."""
         # This is the actual implementation - the cache is on the hash
         return self._analyze_task_uncached(task_description)
@@ -601,10 +651,39 @@ class ConfidenceScorer:
         primary_domain = AgentSpecialty.ORCHESTRATION  # Default
 
         domain_keywords = {
-            AgentSpecialty.ARCHITECTURE: ["design", "architect", "structure", "system", "pattern", "framework"],
-            AgentSpecialty.UI_UX: ["interface", "ui", "ux", "frontend", "design", "user", "visual"],
-            AgentSpecialty.DEVOPS: ["deploy", "infrastructure", "server", "production", "monitoring", "ci/cd"],
-            AgentSpecialty.QA_TESTING: ["test", "quality", "validate", "verify", "check", "bug"],
+            AgentSpecialty.ARCHITECTURE: [
+                "design",
+                "architect",
+                "structure",
+                "system",
+                "pattern",
+                "framework",
+            ],
+            AgentSpecialty.UI_UX: [
+                "interface",
+                "ui",
+                "ux",
+                "frontend",
+                "design",
+                "user",
+                "visual",
+            ],
+            AgentSpecialty.DEVOPS: [
+                "deploy",
+                "infrastructure",
+                "server",
+                "production",
+                "monitoring",
+                "ci/cd",
+            ],
+            AgentSpecialty.QA_TESTING: [
+                "test",
+                "quality",
+                "validate",
+                "verify",
+                "check",
+                "bug",
+            ],
         }
 
         max_matches = 0
@@ -626,7 +705,14 @@ class ConfidenceScorer:
         complexity_indicators = {
             "simple": ["read", "write", "list", "check", "get", "show"],
             "medium": ["search", "find", "analyze", "create", "update", "process"],
-            "complex": ["design", "implement", "optimize", "coordinate", "integrate", "architect"],
+            "complex": [
+                "design",
+                "implement",
+                "optimize",
+                "coordinate",
+                "integrate",
+                "architect",
+            ],
         }
 
         complexity_score = 0.3  # Default

@@ -62,7 +62,9 @@ class StrategyOrchestrator:
         self.agent_status: Dict[str, str] = {}
         self.task_queue: List[Dict[str, Any]] = []
 
-    def select_strategy(self, task_description: str, context: Dict[str, Any] = None) -> StrategyConfig:
+    def select_strategy(
+        self, task_description: str, context: Dict[str, Any] = None
+    ) -> StrategyConfig:
         """
         Automatically select optimal strategy based on task analysis
 
@@ -81,13 +83,21 @@ class StrategyOrchestrator:
         # Strategy selection logic based on AGOR patterns
         if complexity == "low" and agent_count == 1:
             strategy_type = StrategyType.SINGLE_AGENT
-        elif "design" in task_description.lower() and "multiple" in task_description.lower():
+        elif (
+            "design" in task_description.lower()
+            and "multiple" in task_description.lower()
+        ):
             strategy_type = StrategyType.PARALLEL_DIVERGENT
-        elif "security" in task_description.lower() or "test" in task_description.lower():
+        elif (
+            "security" in task_description.lower() or "test" in task_description.lower()
+        ):
             strategy_type = StrategyType.RED_TEAM
         elif complexity == "high" and agent_count > 3:
             strategy_type = StrategyType.MOB_PROGRAMMING
-        elif "workflow" in task_description.lower() or "pipeline" in task_description.lower():
+        elif (
+            "workflow" in task_description.lower()
+            or "pipeline" in task_description.lower()
+        ):
             strategy_type = StrategyType.PIPELINE
         else:
             strategy_type = StrategyType.SWARM
@@ -123,7 +133,14 @@ class StrategyOrchestrator:
     def _analyze_task_complexity(self, task_description: str) -> str:
         """Analyze task complexity based on keywords and structure"""
         complexity_indicators = {
-            "high": ["architecture", "system", "complex", "multiple", "integration", "enterprise"],
+            "high": [
+                "architecture",
+                "system",
+                "complex",
+                "multiple",
+                "integration",
+                "enterprise",
+            ],
             "medium": ["design", "implement", "optimize", "refactor", "enhance"],
             "low": ["simple", "basic", "quick", "minor", "fix"],
         }
@@ -138,7 +155,13 @@ class StrategyOrchestrator:
         """Identify the primary domain for the task"""
         domain_keywords = {
             "travel": ["hotel", "flight", "booking", "travel", "itinerary"],
-            "development": ["code", "programming", "development", "testing", "deployment"],
+            "development": [
+                "code",
+                "programming",
+                "development",
+                "testing",
+                "deployment",
+            ],
             "research": ["research", "analysis", "data", "intelligence"],
             "core": ["architecture", "ui", "devops", "qa", "system"],
         }
@@ -152,7 +175,12 @@ class StrategyOrchestrator:
     def _estimate_agent_count(self, complexity: str, domain: str) -> int:
         """Estimate optimal agent count based on complexity and domain"""
         base_counts = {"low": 1, "medium": 2, "high": 4}
-        domain_multipliers = {"travel": 1.5, "development": 1.2, "research": 1.0, "core": 1.0}
+        domain_multipliers = {
+            "travel": 1.5,
+            "development": 1.2,
+            "research": 1.0,
+            "core": 1.0,
+        }
 
         base_count = base_counts[complexity]
         multiplier = domain_multipliers[domain]
@@ -181,7 +209,11 @@ class StrategyOrchestrator:
 
     def _initialize_parallel_divergent(self, config: StrategyConfig) -> Dict[str, Any]:
         """Initialize Parallel Divergent strategy - multiple independent solutions"""
-        return {"strategy": "parallel_divergent", "status": "initialized", "phase": "divergent"}
+        return {
+            "strategy": "parallel_divergent",
+            "status": "initialized",
+            "phase": "divergent",
+        }
 
     def _initialize_swarm(self, config: StrategyConfig) -> Dict[str, Any]:
         """Initialize Swarm strategy - dynamic task queue"""
@@ -189,12 +221,26 @@ class StrategyOrchestrator:
 
     def _initialize_red_team(self, config: StrategyConfig) -> Dict[str, Any]:
         """Initialize Red Team strategy - adversarial validation"""
-        return {"strategy": "red_team", "status": "initialized", "blue_team": [], "red_team": []}
+        return {
+            "strategy": "red_team",
+            "status": "initialized",
+            "blue_team": [],
+            "red_team": [],
+        }
 
     def _initialize_mob_programming(self, config: StrategyConfig) -> Dict[str, Any]:
         """Initialize Mob Programming strategy - collaborative development"""
-        return {"strategy": "mob_programming", "status": "initialized", "driver": None, "navigator": None}
+        return {
+            "strategy": "mob_programming",
+            "status": "initialized",
+            "driver": None,
+            "navigator": None,
+        }
 
     def _initialize_single_agent(self, config: StrategyConfig) -> Dict[str, Any]:
         """Initialize Single Agent strategy - direct execution"""
-        return {"strategy": "single_agent", "status": "initialized", "assigned_agent": None}
+        return {
+            "strategy": "single_agent",
+            "status": "initialized",
+            "assigned_agent": None,
+        }

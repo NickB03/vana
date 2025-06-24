@@ -15,7 +15,9 @@ import uuid
 from typing import Any, Dict, Optional
 
 # Configure default logging
-logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s"
+)
 
 
 class StructuredLogger:
@@ -93,7 +95,11 @@ class StructuredLogger:
         self.context.clear()
 
     def _format_log_data(
-        self, level: int, message: str, operation: Optional[str] = None, extra: Optional[Dict[str, Any]] = None
+        self,
+        level: int,
+        message: str,
+        operation: Optional[str] = None,
+        extra: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
         """
         Format log data in a standardized structure.
@@ -133,7 +139,12 @@ class StructuredLogger:
 
         return log_data
 
-    def debug(self, message: str, operation: Optional[str] = None, extra: Optional[Dict[str, Any]] = None) -> None:
+    def debug(
+        self,
+        message: str,
+        operation: Optional[str] = None,
+        extra: Optional[Dict[str, Any]] = None,
+    ) -> None:
         """
         Log a debug message.
 
@@ -145,7 +156,12 @@ class StructuredLogger:
         log_data = self._format_log_data(logging.DEBUG, message, operation, extra)
         self.logger.debug(message, extra={"structured": log_data})
 
-    def info(self, message: str, operation: Optional[str] = None, extra: Optional[Dict[str, Any]] = None) -> None:
+    def info(
+        self,
+        message: str,
+        operation: Optional[str] = None,
+        extra: Optional[Dict[str, Any]] = None,
+    ) -> None:
         """
         Log an info message.
 
@@ -157,7 +173,12 @@ class StructuredLogger:
         log_data = self._format_log_data(logging.INFO, message, operation, extra)
         self.logger.info(message, extra={"structured": log_data})
 
-    def warning(self, message: str, operation: Optional[str] = None, extra: Optional[Dict[str, Any]] = None) -> None:
+    def warning(
+        self,
+        message: str,
+        operation: Optional[str] = None,
+        extra: Optional[Dict[str, Any]] = None,
+    ) -> None:
         """
         Log a warning message.
 
@@ -194,7 +215,9 @@ class StructuredLogger:
                 log_data["exception"] = {
                     "type": exc_type.__name__,
                     "message": str(exc_value),
-                    "traceback": traceback.format_exception(exc_type, exc_value, exc_traceback),
+                    "traceback": traceback.format_exception(
+                        exc_type, exc_value, exc_traceback
+                    ),
                 }
 
         self.logger.error(message, extra={"structured": log_data}, exc_info=exc_info)
@@ -224,12 +247,16 @@ class StructuredLogger:
                 log_data["exception"] = {
                     "type": exc_type.__name__,
                     "message": str(exc_value),
-                    "traceback": traceback.format_exception(exc_type, exc_value, exc_traceback),
+                    "traceback": traceback.format_exception(
+                        exc_type, exc_value, exc_traceback
+                    ),
                 }
 
         self.logger.critical(message, extra={"structured": log_data}, exc_info=exc_info)
 
-    def log_memory_operation(self, operation: str, status: str, details: Optional[Dict[str, Any]] = None) -> None:
+    def log_memory_operation(
+        self, operation: str, status: str, details: Optional[Dict[str, Any]] = None
+    ) -> None:
         """
         Log a memory operation.
 
@@ -244,11 +271,15 @@ class StructuredLogger:
             extra.update(details)
 
         if status == "success":
-            self.info(f"Memory operation {operation} completed successfully", operation, extra)
+            self.info(
+                f"Memory operation {operation} completed successfully", operation, extra
+            )
         elif status == "failure":
             self.error(f"Memory operation {operation} failed", operation, extra)
         else:
-            self.info(f"Memory operation {operation} status: {status}", operation, extra)
+            self.info(
+                f"Memory operation {operation} status: {status}", operation, extra
+            )
 
 
 class JsonLogHandler(logging.FileHandler):
@@ -258,7 +289,13 @@ class JsonLogHandler(logging.FileHandler):
     This handler formats log records as JSON and writes them to a file.
     """
 
-    def __init__(self, filename: str, mode: str = "a", encoding: Optional[str] = None, delay: bool = False):
+    def __init__(
+        self,
+        filename: str,
+        mode: str = "a",
+        encoding: Optional[str] = None,
+        delay: bool = False,
+    ):
         """
         Initialize the JSON log handler.
 
@@ -297,7 +334,9 @@ class JsonLogHandler(logging.FileHandler):
                     log_data["exception"] = {
                         "type": exc_type.__name__,
                         "message": str(exc_value),
-                        "traceback": traceback.format_exception(exc_type, exc_value, exc_traceback),
+                        "traceback": traceback.format_exception(
+                            exc_type, exc_value, exc_traceback
+                        ),
                     }
 
             # Convert to JSON

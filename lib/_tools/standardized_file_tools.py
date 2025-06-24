@@ -28,16 +28,28 @@ except ImportError:
     # Fallback implementation to avoid circular imports during initialization
     class FileSystemTool:
         def read_file(self, file_path: str):
-            return {"success": False, "error": "FileSystemTool not available during initialization"}
+            return {
+                "success": False,
+                "error": "FileSystemTool not available during initialization",
+            }
 
         def write_file(self, file_path: str, content: str, append: bool = False):
-            return {"success": False, "error": "FileSystemTool not available during initialization"}
+            return {
+                "success": False,
+                "error": "FileSystemTool not available during initialization",
+            }
 
         def list_directory(self, directory_path: str):
-            return {"success": False, "error": "FileSystemTool not available during initialization"}
+            return {
+                "success": False,
+                "error": "FileSystemTool not available during initialization",
+            }
 
         def file_exists(self, file_path: str):
-            return {"success": False, "error": "FileSystemTool not available during initialization"}
+            return {
+                "success": False,
+                "error": "FileSystemTool not available during initialization",
+            }
 
 
 class StandardizedFileSystemTools:
@@ -74,14 +86,18 @@ class StandardizedFileSystemTools:
                 metadata={"file_size": len(result["content"]), "file_path": file_path},
             )
         else:
-            response = StandardToolResponse(success=False, error=result["error"], tool_name="read_file")
+            response = StandardToolResponse(
+                success=False, error=result["error"], tool_name="read_file"
+            )
 
         # Record analytics
         tool_analytics.record_usage("read_file", parameters, response)
         return response
 
     @standardized_tool_wrapper("write_file")
-    def write_file(self, file_path: str, content: str, append: bool = False) -> StandardToolResponse:
+    def write_file(
+        self, file_path: str, content: str, append: bool = False
+    ) -> StandardToolResponse:
         """✍️ Write content to a file with backup and validation.
 
         Args:
@@ -94,10 +110,16 @@ class StandardizedFileSystemTools:
         """
         # Validate inputs
         file_path = InputValidator.validate_path(file_path, "file_path")
-        content = InputValidator.validate_string(content, "content", required=True, max_length=1000000)
+        content = InputValidator.validate_string(
+            content, "content", required=True, max_length=1000000
+        )
 
         # Record usage for analytics
-        parameters = {"file_path": file_path, "content_length": len(content), "append": append}
+        parameters = {
+            "file_path": file_path,
+            "content_length": len(content),
+            "append": append,
+        }
 
         # Execute original tool
         result = self.fs_tool.write_file(file_path, content, append)
@@ -108,10 +130,16 @@ class StandardizedFileSystemTools:
                 success=True,
                 data=f"Successfully {'appended to' if append else 'wrote'} file: {file_path}",
                 tool_name="write_file",
-                metadata={"file_path": file_path, "content_length": len(content), "append_mode": append},
+                metadata={
+                    "file_path": file_path,
+                    "content_length": len(content),
+                    "append_mode": append,
+                },
             )
         else:
-            response = StandardToolResponse(success=False, error=result["error"], tool_name="write_file")
+            response = StandardToolResponse(
+                success=False, error=result["error"], tool_name="write_file"
+            )
 
         # Record analytics
         tool_analytics.record_usage("write_file", parameters, response)
@@ -146,12 +174,18 @@ class StandardizedFileSystemTools:
                 metadata={
                     "directory_path": directory_path,
                     "item_count": len(contents),
-                    "file_count": sum(1 for item in contents if item.get("type") == "file"),
-                    "directory_count": sum(1 for item in contents if item.get("type") == "directory"),
+                    "file_count": sum(
+                        1 for item in contents if item.get("type") == "file"
+                    ),
+                    "directory_count": sum(
+                        1 for item in contents if item.get("type") == "directory"
+                    ),
                 },
             )
         else:
-            response = StandardToolResponse(success=False, error=result["error"], tool_name="list_directory")
+            response = StandardToolResponse(
+                success=False, error=result["error"], tool_name="list_directory"
+            )
 
         # Record analytics
         tool_analytics.record_usage("list_directory", parameters, response)
@@ -181,12 +215,18 @@ class StandardizedFileSystemTools:
             exists = result["exists"]
             response = StandardToolResponse(
                 success=True,
-                data={"exists": exists, "path": file_path, "type": result.get("type", "unknown") if exists else None},
+                data={
+                    "exists": exists,
+                    "path": file_path,
+                    "type": result.get("type", "unknown") if exists else None,
+                },
                 tool_name="file_exists",
                 metadata={"file_path": file_path, "exists": exists},
             )
         else:
-            response = StandardToolResponse(success=False, error=result["error"], tool_name="file_exists")
+            response = StandardToolResponse(
+                success=False, error=result["error"], tool_name="file_exists"
+            )
 
         # Record analytics
         tool_analytics.record_usage("file_exists", parameters, response)

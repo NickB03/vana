@@ -15,14 +15,18 @@ from dotenv import load_dotenv
 
 # Configure logging
 logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s", handlers=[logging.StreamHandler()]
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(message)s",
+    handlers=[logging.StreamHandler()],
 )
 logger = logging.getLogger(__name__)
 
 
 def main():
     """Main function to generate Vector Search permission commands."""
-    parser = argparse.ArgumentParser(description="Generate Vector Search Permission Commands")
+    parser = argparse.ArgumentParser(
+        description="Generate Vector Search Permission Commands"
+    )
     parser.add_argument(
         "--service-account",
         type=str,

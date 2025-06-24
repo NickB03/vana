@@ -20,7 +20,7 @@ tools:
       - name: "analysis_type"
         type: "string"
         default: "descriptive"
-        
+
   - name: "visualize_data"
     description: "Generate data visualizations"
     parameters:
@@ -33,7 +33,7 @@ tools:
       - name: "columns"
         type: "string"
         default: "all"
-        
+
   - name: "clean_data"
     description: "Clean and preprocess data"
     parameters:
@@ -43,7 +43,7 @@ tools:
       - name: "operations"
         type: "string"
         default: "basic"
-        
+
   - name: "model_data"
     description: "Perform machine learning modeling"
     parameters:
@@ -68,7 +68,7 @@ integration:
   execution_engine: "code_execution_specialist"
   security_validation: true
   sandbox_environment: true
-  
+
 performance:
   timeout: 30
   memory_limit: "512MB"

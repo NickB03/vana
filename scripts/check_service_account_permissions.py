@@ -16,7 +16,9 @@ from google.oauth2 import service_account
 
 # Configure logging
 logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s", handlers=[logging.StreamHandler()]
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(message)s",
+    handlers=[logging.StreamHandler()],
 )
 logger = logging.getLogger(__name__)
 
@@ -37,7 +39,9 @@ def main():
 
     # Get service account email from credentials file
     try:
-        credentials = service_account.Credentials.from_service_account_file(credentials_path)
+        credentials = service_account.Credentials.from_service_account_file(
+            credentials_path
+        )
         service_account_email = credentials.service_account_email
         logger.info(f"Service account email: {service_account_email}")
     except Exception as e:
@@ -77,10 +81,16 @@ def main():
                     logger.info(f"  - {binding.role}")
 
             if not found_roles:
-                logger.warning(f"No roles found for service account {service_account_email}")
+                logger.warning(
+                    f"No roles found for service account {service_account_email}"
+                )
 
             # Check for specific Vertex AI roles
-            vertex_ai_roles = ["roles/aiplatform.user", "roles/aiplatform.viewer", "roles/aiplatform.admin"]
+            vertex_ai_roles = [
+                "roles/aiplatform.user",
+                "roles/aiplatform.viewer",
+                "roles/aiplatform.admin",
+            ]
 
             logger.info("Checking for required Vertex AI roles:")
             for role in vertex_ai_roles:
@@ -104,7 +114,9 @@ def main():
 
         except Exception as e:
             logger.error(f"Error getting IAM policy: {e}")
-            logger.warning("The service account may not have permission to view IAM policies")
+            logger.warning(
+                "The service account may not have permission to view IAM policies"
+            )
             logger.warning("Try running this script with your user account instead")
             return 1
 

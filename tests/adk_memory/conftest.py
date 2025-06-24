@@ -17,7 +17,12 @@ import pytest
 class MockVertexAiRagMemoryService:
     """Mock implementation of VertexAiRagMemoryService for testing."""
 
-    def __init__(self, rag_corpus: str, similarity_top_k: int = 5, vector_distance_threshold: float = 0.7):
+    def __init__(
+        self,
+        rag_corpus: str,
+        similarity_top_k: int = 5,
+        vector_distance_threshold: float = 0.7,
+    ):
         self.rag_corpus = rag_corpus
         self.similarity_top_k = similarity_top_k
         self.vector_distance_threshold = vector_distance_threshold
@@ -41,7 +46,9 @@ class MockVertexAiRagMemoryService:
         for session_id, session_data in self.session_store.items():
             if app_name in session_id and user_id in session_id:
                 # Simple keyword matching for mock
-                if any(word.lower() in str(session_data).lower() for word in query.split()):
+                if any(
+                    word.lower() in str(session_data).lower() for word in query.split()
+                ):
                     results.append(
                         {
                             "session_id": session_id,
@@ -99,13 +106,17 @@ class MockSessionService:
 @pytest.fixture
 def mock_rag_corpus():
     """Provide mock RAG corpus resource name."""
-    return "projects/${GOOGLE_CLOUD_PROJECT}/locations/us-central1/ragCorpora/test-corpus"
+    return (
+        "projects/${GOOGLE_CLOUD_PROJECT}/locations/us-central1/ragCorpora/test-corpus"
+    )
 
 
 @pytest.fixture
 def mock_memory_service(mock_rag_corpus):
     """Provide mock VertexAiRagMemoryService."""
-    return MockVertexAiRagMemoryService(rag_corpus=mock_rag_corpus, similarity_top_k=5, vector_distance_threshold=0.7)
+    return MockVertexAiRagMemoryService(
+        rag_corpus=mock_rag_corpus, similarity_top_k=5, vector_distance_threshold=0.7
+    )
 
 
 @pytest.fixture
@@ -124,7 +135,11 @@ def mock_session(mock_session_service):
 def sample_conversation_data():
     """Provide sample conversation data for testing."""
     return [
-        {"role": "user", "content": "How do I implement ADK memory in VANA?", "timestamp": "2025-01-27T10:00:00Z"},
+        {
+            "role": "user",
+            "content": "How do I implement ADK memory in VANA?",
+            "timestamp": "2025-01-27T10:00:00Z",
+        },
         {
             "role": "assistant",
             "content": "To implement ADK memory, you need to use VertexAiRagMemoryService...",

@@ -67,7 +67,9 @@ def get_vector_search_endpoint():
         # Approach 1: Use the known endpoint resource name
         try:
             logger.info(f"Using known endpoint resource name: {ENDPOINT_RESOURCE_NAME}")
-            endpoint = aiplatform.MatchingEngineIndexEndpoint(index_endpoint_name=ENDPOINT_RESOURCE_NAME)
+            endpoint = aiplatform.MatchingEngineIndexEndpoint(
+                index_endpoint_name=ENDPOINT_RESOURCE_NAME
+            )
             return endpoint, DEPLOYED_INDEX_ID
         except Exception as e:
             logger.warning(f"Error using known endpoint resource name: {str(e)}")
@@ -75,7 +77,9 @@ def get_vector_search_endpoint():
         # Approach 2: Find index by display name
         try:
             logger.info(f"Finding index by display name: {INDEX_NAME}")
-            indexes = aiplatform.MatchingEngineIndex.list(filter=f"display_name={INDEX_NAME}")
+            indexes = aiplatform.MatchingEngineIndex.list(
+                filter=f"display_name={INDEX_NAME}"
+            )
 
             if indexes:
                 index = indexes[0]
@@ -91,7 +95,9 @@ def get_vector_search_endpoint():
                     logger.info(f"Found endpoint: {endpoint_resource_name}")
 
                     # Initialize the endpoint object
-                    endpoint = aiplatform.MatchingEngineIndexEndpoint(index_endpoint_name=endpoint_resource_name)
+                    endpoint = aiplatform.MatchingEngineIndexEndpoint(
+                        index_endpoint_name=endpoint_resource_name
+                    )
 
                     return endpoint, deployed_index_id
         except Exception as e:
@@ -104,7 +110,9 @@ def get_vector_search_endpoint():
 
             if endpoints:
                 endpoint = endpoints[0]
-                logger.info(f"Found endpoint: {endpoint.display_name} ({endpoint.name})")
+                logger.info(
+                    f"Found endpoint: {endpoint.display_name} ({endpoint.name})"
+                )
 
                 # Use the known deployed index ID
                 logger.info(f"Using deployed index ID: {DEPLOYED_INDEX_ID}")
@@ -142,13 +150,17 @@ def search_knowledge_tool(query, top_k=5):
         endpoint, deployed_index_id = get_vector_search_endpoint()
 
         if not endpoint or not deployed_index_id:
-            return "Could not find Vector Search endpoint. Please check the configuration."
+            return (
+                "Could not find Vector Search endpoint. Please check the configuration."
+            )
 
         # Search the index
         try:
             logger.info(f"Searching index with deployed_index_id: {deployed_index_id}")
             response = endpoint.find_neighbors(
-                deployed_index_id=deployed_index_id, queries=[query_embedding], num_neighbors=top_k
+                deployed_index_id=deployed_index_id,
+                queries=[query_embedding],
+                num_neighbors=top_k,
             )
 
             # Process the results
@@ -157,16 +169,20 @@ def search_knowledge_tool(query, top_k=5):
                 logger.info(f"Found {len(results)} results")
 
                 # Format the results
-                formatted_results = f"Found {len(results)} results for query: '{query}'\n\n"
+                formatted_results = (
+                    f"Found {len(results)} results for query: '{query}'\n\n"
+                )
 
                 for i, result in enumerate(results):
-                    formatted_results += f"Result {i+1}:\n"
+                    formatted_results += f"Result {i + 1}:\n"
                     formatted_results += f"  Relevance: {result.distance:.4f}\n"
 
                     # Extract metadata if available
                     if hasattr(result, "metadata") and result.metadata:
                         if "source" in result.metadata:
-                            formatted_results += f"  Source: {result.metadata['source']}\n"
+                            formatted_results += (
+                                f"  Source: {result.metadata['source']}\n"
+                            )
 
                         if "text" in result.metadata:
                             # Truncate long text

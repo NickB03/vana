@@ -15,7 +15,7 @@ sequenceDiagram
     User->>VANA: Task Request
     VANA->>VANA: Analyze Task (adk_analyze_task)
     VANA->>VANA: Match Capabilities (adk_match_capabilities)
-    
+
     alt Code Execution Needed
         VANA->>CODE: Delegate Code Task
         CODE->>CODE: Execute in Sandbox
@@ -29,7 +29,7 @@ sequenceDiagram
         VANA->>VAI: Vector Search Query
         VAI->>VANA: Return Results
     end
-    
+
     VANA->>User: Final Response
 ```
 
@@ -77,7 +77,7 @@ graph LR
 ```mermaid
 flowchart TD
     START([User Request]) --> ANALYZE{Analyze Task Type}
-    
+
     ANALYZE -->|File Operations| FILE[📁 File System Tools<br/>read_file, write_file<br/>list_directory, file_exists]
     ANALYZE -->|Search Needed| SEARCH[🔍 Search Tools<br/>vector_search, web_search<br/>search_knowledge]
     ANALYZE -->|System Check| SYSTEM[⚙️ System Tools<br/>echo, get_health_status]
@@ -106,18 +106,18 @@ graph TB
     REQUEST[Incoming Request] --> VALIDATE{Input Validation}
     VALIDATE -->|Invalid| ERROR[Return Error Response]
     VALIDATE -->|Valid| AUTH{Authentication Check}
-    
+
     AUTH -->|Unauthorized| ERROR
     AUTH -->|Authorized| EXECUTE[Execute Tool/Agent]
-    
+
     EXECUTE --> MONITOR{Resource Monitoring}
     MONITOR -->|Timeout/Limit| TERMINATE[Terminate & Log]
     MONITOR -->|Normal| SUCCESS[Return Results]
-    
+
     TERMINATE --> LOG[Security Logging]
     SUCCESS --> LOG
     ERROR --> LOG
-    
+
     LOG --> RESPONSE[Send Response to User]
 
     classDef security fill:#ffebee,stroke:#c62828,stroke-width:2px

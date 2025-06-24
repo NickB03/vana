@@ -94,7 +94,13 @@ class AlertManager:
         alerts = self._load_alerts()
         return sorted(alerts, key=lambda a: a["timestamp"], reverse=True)[:limit]
 
-    def log_external_alert(self, message: str, severity: str, source: str, details: Optional[Dict[str, Any]] = None):
+    def log_external_alert(
+        self,
+        message: str,
+        severity: str,
+        source: str,
+        details: Optional[Dict[str, Any]] = None,
+    ):
         """
         Log an alert from an external source (e.g., security, audit, test).
         """
@@ -130,5 +136,9 @@ class AlertManager:
 # Example usage:
 if __name__ == "__main__":
     am = AlertManager()
-    am.create_alert("Test alert: system health degraded", severity=AlertSeverity.WARNING, source="health_check")
+    am.create_alert(
+        "Test alert: system health degraded",
+        severity=AlertSeverity.WARNING,
+        source="health_check",
+    )
     logger.info("Active alerts:", am.get_active_alerts())

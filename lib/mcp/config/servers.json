@@ -10,7 +10,7 @@
     },
     "capabilities": [
       "repositories",
-      "issues", 
+      "issues",
       "pull_requests",
       "search",
       "code_search",
@@ -18,7 +18,7 @@
     ],
     "tools": [
       "create_repository",
-      "clone_repository", 
+      "clone_repository",
       "list_repositories",
       "create_issue",
       "update_issue",
@@ -44,7 +44,7 @@
     },
     "capabilities": [
       "web_search",
-      "news_search", 
+      "news_search",
       "image_search",
       "video_search",
       "local_search",
@@ -53,7 +53,7 @@
     "tools": [
       "web_search",
       "news_search",
-      "image_search", 
+      "image_search",
       "video_search",
       "local_search",
       "get_suggestions"
@@ -74,7 +74,7 @@
     "env": {},
     "capabilities": [
       "http_get",
-      "http_post", 
+      "http_post",
       "http_put",
       "http_delete",
       "web_scraping",
@@ -84,7 +84,7 @@
     "tools": [
       "http_get",
       "http_post",
-      "http_put", 
+      "http_put",
       "http_delete",
       "scrape_content",
       "download_file",

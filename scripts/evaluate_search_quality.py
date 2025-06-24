@@ -39,7 +39,9 @@ try:
     from tools.vector_search.vector_search_client import VectorSearchClient
 except ImportError as e:
     logger.error(f"Error importing required modules: {e}")
-    logger.info("Make sure you run this script from the project root or scripts directory.")
+    logger.info(
+        "Make sure you run this script from the project root or scripts directory."
+    )
     sys.exit(1)
 
 # Default test queries
@@ -78,7 +80,14 @@ DEFAULT_TEST_QUERIES = [
         "query": "What is the difference between Vector Search and Knowledge Graph?",
         "category": "comparative",
         "difficulty": "hard",
-        "expected_keywords": ["vector", "search", "knowledge", "graph", "difference", "comparison"],
+        "expected_keywords": [
+            "vector",
+            "search",
+            "knowledge",
+            "graph",
+            "difference",
+            "comparison",
+        ],
     },
     {
         "query": "How to integrate VANA with external systems?",
@@ -110,12 +119,27 @@ DEFAULT_TEST_QUERIES = [
 def parse_arguments():
     """Parse command line arguments."""
     parser = argparse.ArgumentParser(description="Evaluate search quality for VANA")
-    parser.add_argument("--queries", type=str, help="Path to JSON file with test queries")
-    parser.add_argument("--output", type=str, default="search_quality_report.md", help="Output file for the report")
-    parser.add_argument("--top-k", type=int, default=5, help="Number of results to retrieve")
-    parser.add_argument("--include-web", action="store_true", help="Include web search results")
-    parser.add_argument("--mock-web", action="store_true", help="Use mock web search client")
-    parser.add_argument("--verbose", "-v", action="store_true", help="Print verbose output")
+    parser.add_argument(
+        "--queries", type=str, help="Path to JSON file with test queries"
+    )
+    parser.add_argument(
+        "--output",
+        type=str,
+        default="search_quality_report.md",
+        help="Output file for the report",
+    )
+    parser.add_argument(
+        "--top-k", type=int, default=5, help="Number of results to retrieve"
+    )
+    parser.add_argument(
+        "--include-web", action="store_true", help="Include web search results"
+    )
+    parser.add_argument(
+        "--mock-web", action="store_true", help="Use mock web search client"
+    )
+    parser.add_argument(
+        "--verbose", "-v", action="store_true", help="Print verbose output"
+    )
     return parser.parse_args()
 
 
@@ -134,7 +158,9 @@ def load_test_queries(file_path: Optional[str] = None) -> List[Dict[str, Any]]:
     return DEFAULT_TEST_QUERIES
 
 
-def calculate_keyword_coverage(result: Dict[str, Any], expected_keywords: List[str]) -> float:
+def calculate_keyword_coverage(
+    result: Dict[str, Any], expected_keywords: List[str]
+) -> float:
     """Calculate keyword coverage for a result."""
     if not expected_keywords:
         return 0.0
@@ -150,13 +176,22 @@ def calculate_keyword_coverage(result: Dict[str, Any], expected_keywords: List[s
     return coverage
 
 
-def calculate_result_quality(results: List[Dict[str, Any]], expected_keywords: List[str]) -> Dict[str, float]:
+def calculate_result_quality(
+    results: List[Dict[str, Any]], expected_keywords: List[str]
+) -> Dict[str, float]:
     """Calculate quality metrics for search results."""
     if not results:
-        return {"keyword_coverage": 0.0, "average_score": 0.0, "top_result_coverage": 0.0, "overall_quality": 0.0}
+        return {
+            "keyword_coverage": 0.0,
+            "average_score": 0.0,
+            "top_result_coverage": 0.0,
+            "overall_quality": 0.0,
+        }
 
     # Calculate keyword coverage for all results
-    coverages = [calculate_keyword_coverage(result, expected_keywords) for result in results]
+    coverages = [
+        calculate_keyword_coverage(result, expected_keywords) for result in results
+    ]
     avg_coverage = sum(coverages) / len(coverages) if coverages else 0.0
 
     # Calculate average score
@@ -194,11 +229,15 @@ def evaluate_search_implementations(
 
     # Initialize hybrid search implementations
     enhanced_hybrid_search = EnhancedHybridSearch(
-        vector_search_client=vector_search, kg_manager=kg_manager, web_search_client=web_search_client
+        vector_search_client=vector_search,
+        kg_manager=kg_manager,
+        web_search_client=web_search_client,
     )
 
     enhanced_hybrid_search_optimized = EnhancedHybridSearchOptimized(
-        vector_search_client=vector_search, kg_manager=kg_manager, web_search_client=web_search_client
+        vector_search_client=vector_search,
+        kg_manager=kg_manager,
+        web_search_client=web_search_client,
     )
 
     # Check availability
@@ -217,11 +256,25 @@ def evaluate_search_implementations(
         "top_k": top_k,
         "include_web": include_web,
         "mock_web": mock_web,
-        "availability": {"vector_search": vs_available, "knowledge_graph": kg_available, "web_search": web_available},
+        "availability": {
+            "vector_search": vs_available,
+            "knowledge_graph": kg_available,
+            "web_search": web_available,
+        },
         "query_results": [],
         "summary": {
-            "vector_search": {"average_quality": 0.0, "average_time": 0.0, "by_category": {}, "by_difficulty": {}},
-            "knowledge_graph": {"average_quality": 0.0, "average_time": 0.0, "by_category": {}, "by_difficulty": {}},
+            "vector_search": {
+                "average_quality": 0.0,
+                "average_time": 0.0,
+                "by_category": {},
+                "by_difficulty": {},
+            },
+            "knowledge_graph": {
+                "average_quality": 0.0,
+                "average_time": 0.0,
+                "by_category": {},
+                "by_difficulty": {},
+            },
             "enhanced_hybrid_search": {
                 "average_quality": 0.0,
                 "average_time": 0.0,
@@ -269,7 +322,9 @@ def evaluate_search_implementations(
             }
 
             if verbose:
-                logger.info(f"Vector Search: {len(vs_results)} results, quality: {quality['overall_quality']:.2f}")
+                logger.info(
+                    f"Vector Search: {len(vs_results)} results, quality: {quality['overall_quality']:.2f}"
+                )
 
         # Test Knowledge Graph
         if kg_available:
@@ -308,7 +363,9 @@ def evaluate_search_implementations(
 
         # Test Enhanced Hybrid Search
         start_time = time.time()
-        ehs_results = enhanced_hybrid_search.search(query, top_k=top_k, include_web=include_web)
+        ehs_results = enhanced_hybrid_search.search(
+            query, top_k=top_k, include_web=include_web
+        )
         end_time = time.time()
 
         combined_results = ehs_results.get("combined", [])
@@ -332,7 +389,9 @@ def evaluate_search_implementations(
 
         # Test Enhanced Hybrid Search Optimized
         start_time = time.time()
-        ehso_results = enhanced_hybrid_search_optimized.search(query, top_k=top_k, include_web=include_web)
+        ehso_results = enhanced_hybrid_search_optimized.search(
+            query, top_k=top_k, include_web=include_web
+        )
         end_time = time.time()
 
         combined_results = ehso_results.get("combined", [])
@@ -412,12 +471,16 @@ def evaluate_search_implementations(
         # Calculate category averages
         for category, data in category_data.items():
             if data["count"] > 0:
-                results["summary"][implementation]["by_category"][category] = data["quality_sum"] / data["count"]
+                results["summary"][implementation]["by_category"][category] = (
+                    data["quality_sum"] / data["count"]
+                )
 
         # Calculate difficulty averages
         for difficulty, data in difficulty_data.items():
             if data["count"] > 0:
-                results["summary"][implementation]["by_difficulty"][difficulty] = data["quality_sum"] / data["count"]
+                results["summary"][implementation]["by_difficulty"][difficulty] = (
+                    data["quality_sum"] / data["count"]
+                )
 
     return results
 
@@ -443,8 +506,12 @@ def generate_report(evaluation_results: Dict[str, Any], output_file: str):
 
         # Write category breakdown
         f.write("## Quality by Category\n\n")
-        f.write("| Category | Vector Search | Knowledge Graph | Enhanced Hybrid | Enhanced Hybrid Optimized |\n")
-        f.write("|----------|---------------|-----------------|-----------------|---------------------------|\n")
+        f.write(
+            "| Category | Vector Search | Knowledge Graph | Enhanced Hybrid | Enhanced Hybrid Optimized |\n"
+        )
+        f.write(
+            "|----------|---------------|-----------------|-----------------|---------------------------|\n"
+        )
 
         # Collect all categories
         categories = set()
@@ -460,7 +527,9 @@ def generate_report(evaluation_results: Dict[str, Any], output_file: str):
                 "enhanced_hybrid_search",
                 "enhanced_hybrid_search_optimized",
             ]:
-                quality = evaluation_results["summary"][implementation]["by_category"].get(category, 0.0)
+                quality = evaluation_results["summary"][implementation][
+                    "by_category"
+                ].get(category, 0.0)
                 f.write(f"{quality:.2f} | ")
 
             f.write("\n")
@@ -469,8 +538,12 @@ def generate_report(evaluation_results: Dict[str, Any], output_file: str):
 
         # Write difficulty breakdown
         f.write("## Quality by Difficulty\n\n")
-        f.write("| Difficulty | Vector Search | Knowledge Graph | Enhanced Hybrid | Enhanced Hybrid Optimized |\n")
-        f.write("|------------|---------------|-----------------|-----------------|---------------------------|\n")
+        f.write(
+            "| Difficulty | Vector Search | Knowledge Graph | Enhanced Hybrid | Enhanced Hybrid Optimized |\n"
+        )
+        f.write(
+            "|------------|---------------|-----------------|-----------------|---------------------------|\n"
+        )
 
         # Collect all difficulties
         difficulties = set()
@@ -487,7 +560,9 @@ def generate_report(evaluation_results: Dict[str, Any], output_file: str):
                     "enhanced_hybrid_search",
                     "enhanced_hybrid_search_optimized",
                 ]:
-                    quality = evaluation_results["summary"][implementation]["by_difficulty"].get(difficulty, 0.0)
+                    quality = evaluation_results["summary"][implementation][
+                        "by_difficulty"
+                    ].get(difficulty, 0.0)
                     f.write(f"{quality:.2f} | ")
 
                 f.write("\n")
@@ -505,10 +580,16 @@ def generate_report(evaluation_results: Dict[str, Any], output_file: str):
             f.write(f"### {i}. {query}\n\n")
             f.write(f"- Category: {category}\n")
             f.write(f"- Difficulty: {difficulty}\n")
-            f.write(f"- Expected Keywords: {', '.join(query_result['expected_keywords'])}\n\n")
+            f.write(
+                f"- Expected Keywords: {', '.join(query_result['expected_keywords'])}\n\n"
+            )
 
-            f.write("| Implementation | Results | Time (s) | Keyword Coverage | Overall Quality |\n")
-            f.write("|----------------|---------|----------|------------------|----------------|\n")
+            f.write(
+                "| Implementation | Results | Time (s) | Keyword Coverage | Overall Quality |\n"
+            )
+            f.write(
+                "|----------------|---------|----------|------------------|----------------|\n"
+            )
 
             for implementation, data in query_result["implementations"].items():
                 result_count = data["result_count"]

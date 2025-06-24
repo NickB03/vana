@@ -10,5 +10,5 @@ root_agent = LlmAgent(
     model="gemini-2.0-flash",
     description="Test agent with only output_key property",
     instruction="You are a test agent for validating output_key property.",
-    output_key="test_results"  # Only advanced property added
+    output_key="test_results",  # Only advanced property added
 )

@@ -63,25 +63,25 @@ from lib.mcp.core.mcp_manager import MCPManager
 async def main():
     # Create manager with configuration
     manager = MCPManager("lib/mcp/config/servers.json")
-    
+
     try:
         # Start GitHub server
         github_instance = await manager.start_server("github")
-        
+
         # Discover available tools
         tools = await manager.discover_tools("github")
         print(f"Available tools: {[tool.name for tool in tools]}")
-        
+
         # Execute a tool
         result = await manager.execute_tool(
-            "github", 
-            "list_repositories", 
+            "github",
+            "list_repositories",
             {"user": "octocat", "limit": 5}
         )
-        
+
         if result.success:
             print("Tool executed successfully!")
-        
+
     finally:
         await manager.shutdown()
 

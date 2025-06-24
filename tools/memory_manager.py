@@ -21,8 +21,12 @@ except ImportError:
                 "sync_interval": int(os.environ.get("MEMORY_SYNC_INTERVAL", "300")),
                 "cache_size": int(os.environ.get("MEMORY_CACHE_SIZE", "1000")),
                 "cache_ttl": int(os.environ.get("MEMORY_CACHE_TTL", "3600")),
-                "entity_half_life_days": int(os.environ.get("ENTITY_HALF_LIFE_DAYS", "30")),
-                "local_db_path": os.path.join(os.environ.get("VANA_DATA_DIR", "."), "memory_cache.db"),
+                "entity_half_life_days": int(
+                    os.environ.get("ENTITY_HALF_LIFE_DAYS", "30")
+                ),
+                "local_db_path": os.path.join(
+                    os.environ.get("VANA_DATA_DIR", "."), "memory_cache.db"
+                ),
             }
 
 
@@ -91,10 +95,18 @@ class MemoryManager:
             )
 
             # Create indexes for better performance
-            cursor.execute("CREATE INDEX IF NOT EXISTS idx_entities_name ON entities (name)")
-            cursor.execute("CREATE INDEX IF NOT EXISTS idx_entities_type ON entities (type)")
-            cursor.execute("CREATE INDEX IF NOT EXISTS idx_relationships_from ON relationships (from_entity)")
-            cursor.execute("CREATE INDEX IF NOT EXISTS idx_relationships_to ON relationships (to_entity)")
+            cursor.execute(
+                "CREATE INDEX IF NOT EXISTS idx_entities_name ON entities (name)"
+            )
+            cursor.execute(
+                "CREATE INDEX IF NOT EXISTS idx_entities_type ON entities (type)"
+            )
+            cursor.execute(
+                "CREATE INDEX IF NOT EXISTS idx_relationships_from ON relationships (from_entity)"
+            )
+            cursor.execute(
+                "CREATE INDEX IF NOT EXISTS idx_relationships_to ON relationships (to_entity)"
+            )
 
             conn.commit()
             conn.close()
@@ -116,7 +128,9 @@ class MemoryManager:
                 initial_data = self.mcp_client.get_initial_data()
 
                 if "error" in initial_data:
-                    logger.warning("Error getting data from MCP server: %s", initial_data["error"])
+                    logger.warning(
+                        "Error getting data from MCP server: %s", initial_data["error"]
+                    )
                     self.mcp_available = False
                     # Load from local database instead
                     self._load_from_local_db()
@@ -188,7 +202,9 @@ class MemoryManager:
             self.mcp_available = False
             return False
 
-    def store_entity(self, entity_name: str, entity_type: str, observations: List[str]) -> Dict[str, Any]:
+    def store_entity(
+        self, entity_name: str, entity_type: str, observations: List[str]
+    ) -> Dict[str, Any]:
         """
         Store an entity in memory.
 
@@ -203,7 +219,9 @@ class MemoryManager:
         try:
             # Try to store in MCP server first
             if self.mcp_client.is_available:
-                result = self.mcp_client.store_entity(entity_name, entity_type, observations)
+                result = self.mcp_client.store_entity(
+                    entity_name, entity_type, observations
+                )
 
                 if "error" not in result:
                     # If successful, update local cache and database
@@ -232,7 +250,11 @@ class MemoryManager:
             self.local_cache[entity_id] = entity
             self._store_entity_in_db(entity)
 
-            return {"success": True, "entity": entity, "message": "Entity stored locally (MCP server not available)"}
+            return {
+                "success": True,
+                "entity": entity,
+                "message": "Entity stored locally (MCP server not available)",
+            }
         except Exception as e:
             logger.error("Error storing entity: %s", e)
             return {"error": str(e), "success": False}
@@ -276,7 +298,9 @@ class MemoryManager:
             logger.error("Error retrieving entity: %s", e)
             return {"error": str(e), "success": False}
 
-    def search_entities(self, query: str, entity_type: str = None, limit: int = 10) -> Dict[str, Any]:
+    def search_entities(
+        self, query: str, entity_type: str = None, limit: int = 10
+    ) -> Dict[str, Any]:
         """
         Search for entities in memory.
 
@@ -311,7 +335,9 @@ class MemoryManager:
 
             # If not enough results, search in local database
             if len(results) < limit:
-                db_results = self._search_entities_in_db(query, entity_type, limit - len(results))
+                db_results = self._search_entities_in_db(
+                    query, entity_type, limit - len(results)
+                )
 
                 for entity in db_results:
                     # Add to cache
@@ -365,7 +391,12 @@ class MemoryManager:
             if entity_id in self.local_cache:
                 del self.local_cache[entity_id]
 
-        logger.info("Processed delta: %d added, %d modified, %d deleted", len(added), len(modified), len(deleted))
+        logger.info(
+            "Processed delta: %d added, %d modified, %d deleted",
+            len(added),
+            len(modified),
+            len(deleted),
+        )
 
     def _load_from_local_db(self) -> None:
         """Load data from local SQLite database."""
@@ -414,7 +445,9 @@ class MemoryManager:
 
             conn.commit()
             conn.close()
-            logger.info("Updated local database with %d entities", len(self.local_cache))
+            logger.info(
+                "Updated local database with %d entities", len(self.local_cache)
+            )
         except Exception as e:
             logger.error("Error updating local database: %s", e)
 
@@ -473,7 +506,9 @@ class MemoryManager:
             logger.error("Error retrieving entity from local database: %s", e)
             return None
 
-    def _search_entities_in_db(self, query: str, entity_type: str = None, limit: int = 10) -> List[Dict[str, Any]]:
+    def _search_entities_in_db(
+        self, query: str, entity_type: str = None, limit: int = 10
+    ) -> List[Dict[str, Any]]:
         """
         Search for entities in the local database.
 
@@ -496,7 +531,10 @@ class MemoryManager:
                     (f"%{query}%", entity_type, limit),
                 )
             else:
-                cursor.execute("SELECT data FROM entities WHERE name LIKE ? LIMIT ?", (f"%{query}%", limit))
+                cursor.execute(
+                    "SELECT data FROM entities WHERE name LIKE ? LIMIT ?",
+                    (f"%{query}%", limit),
+                )
 
             results = cursor.fetchall()
 
@@ -507,7 +545,9 @@ class MemoryManager:
             logger.error("Error searching entities in local database: %s", e)
             return []
 
-    def _entity_matches_query(self, entity: Dict[str, Any], query: str, entity_type: str = None) -> bool:
+    def _entity_matches_query(
+        self, entity: Dict[str, Any], query: str, entity_type: str = None
+    ) -> bool:
         """
         Check if an entity matches a search query.
 

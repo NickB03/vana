@@ -11,7 +11,9 @@ import sys
 from datetime import datetime, timedelta
 
 # Add the parent directory to the path so we can import our modules
-sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+sys.path.append(
+    os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+)
 
 logger = logging.getLogger(__name__)
 
@@ -100,7 +102,13 @@ def generate_mock_task_details(task_id=None):
     task_statuses = ["completed", "failed", "pending", "in_progress"]
 
     # Define agents - Updated to functional naming
-    agents = ["vana", "architecture_specialist", "ui_specialist", "devops_specialist", "qa_specialist"]
+    agents = [
+        "vana",
+        "architecture_specialist",
+        "ui_specialist",
+        "devops_specialist",
+        "qa_specialist",
+    ]
 
     # If task_id is specified, return details for that task only
     if task_id:
@@ -108,7 +116,9 @@ def generate_mock_task_details(task_id=None):
             "id": task_id,
             "type": random.choice(task_types),
             "status": random.choice(task_statuses),
-            "created_at": (datetime.now() - timedelta(minutes=random.randint(0, 60))).isoformat(),
+            "created_at": (
+                datetime.now() - timedelta(minutes=random.randint(0, 60))
+            ).isoformat(),
             "updated_at": datetime.now().isoformat(),
             "duration": random.uniform(0.1, 10.0),
             "agent": random.choice(agents),
@@ -127,7 +137,9 @@ def generate_mock_task_details(task_id=None):
             "id": task_id,
             "type": random.choice(task_types),
             "status": random.choice(task_statuses),
-            "created_at": (datetime.now() - timedelta(minutes=random.randint(0, 60))).isoformat(),
+            "created_at": (
+                datetime.now() - timedelta(minutes=random.randint(0, 60))
+            ).isoformat(),
             "updated_at": datetime.now().isoformat(),
             "duration": random.uniform(0.1, 10.0),
             "agent": random.choice(agents),
@@ -191,7 +203,13 @@ def generate_mock_task_timeline(time_range="day"):
     task_statuses = ["completed", "failed"]
 
     # Define agents - Updated to functional naming
-    agents = ["vana", "architecture_specialist", "ui_specialist", "devops_specialist", "qa_specialist"]
+    agents = [
+        "vana",
+        "architecture_specialist",
+        "ui_specialist",
+        "devops_specialist",
+        "qa_specialist",
+    ]
 
     # Generate random tasks
     tasks = []

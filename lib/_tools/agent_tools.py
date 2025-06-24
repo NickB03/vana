@@ -38,7 +38,11 @@ class AgentTool:
     """
 
     def __init__(
-        self, agent: Any, name: Optional[str] = None, description: Optional[str] = None, timeout: float = 60.0
+        self,
+        agent: Any,
+        name: Optional[str] = None,
+        description: Optional[str] = None,
+        timeout: float = 60.0,
     ):
         """
         Initialize Agent Tool.
@@ -51,13 +55,17 @@ class AgentTool:
         """
         self.agent = agent
         self.name = name or getattr(agent, "name", "unknown_agent")
-        self.description = description or getattr(agent, "description", f"Agent tool for {self.name}")
+        self.description = description or getattr(
+            agent, "description", f"Agent tool for {self.name}"
+        )
         self.timeout = timeout
 
         # Extract agent capabilities
         self.capabilities = self._extract_capabilities()
 
-        logger.info(f"AgentTool created for '{self.name}' with capabilities: {self.capabilities}")
+        logger.info(
+            f"AgentTool created for '{self.name}' with capabilities: {self.capabilities}"
+        )
 
     def _extract_capabilities(self) -> list:
         """Extract capabilities from the agent's instruction or description."""
@@ -66,9 +74,19 @@ class AgentTool:
 
         # Extract capabilities based on agent type
         if "architecture" in self.name.lower():
-            return ["system_design", "architecture_planning", "performance_optimization", "scalability_analysis"]
+            return [
+                "system_design",
+                "architecture_planning",
+                "performance_optimization",
+                "scalability_analysis",
+            ]
         elif "ui" in self.name.lower():
-            return ["interface_design", "user_experience", "frontend_development", "responsive_design"]
+            return [
+                "interface_design",
+                "user_experience",
+                "frontend_development",
+                "responsive_design",
+            ]
         elif "devops" in self.name.lower():
             return ["infrastructure", "deployment", "monitoring", "ci_cd", "security"]
         elif "qa" in self.name.lower():
@@ -104,7 +122,9 @@ class AgentTool:
         start_time = time.time()
 
         try:
-            logger.info(f"Executing agent tool '{self.name}' with context: {context[:100]}...")
+            logger.info(
+                f"Executing agent tool '{self.name}' with context: {context[:100]}..."
+            )
 
             # For now, simulate agent execution since we don't have full LLM integration in tests
             # In practice, this would call the actual agent's run/execute method
@@ -350,13 +370,23 @@ def create_specialist_agent_tools(
     """
     return {
         "architecture_tool": create_agent_tool(
-            architecture_specialist, name="architecture_tool", description="🏗️ Architecture & Design Specialist Tool"
+            architecture_specialist,
+            name="architecture_tool",
+            description="🏗️ Architecture & Design Specialist Tool",
         ),
-        "ui_tool": create_agent_tool(ui_specialist, name="ui_tool", description="🎨 UI/UX & Interface Specialist Tool"),
+        "ui_tool": create_agent_tool(
+            ui_specialist,
+            name="ui_tool",
+            description="🎨 UI/UX & Interface Specialist Tool",
+        ),
         "devops_tool": create_agent_tool(
-            devops_specialist, name="devops_tool", description="⚙️ DevOps & Infrastructure Specialist Tool"
+            devops_specialist,
+            name="devops_tool",
+            description="⚙️ DevOps & Infrastructure Specialist Tool",
         ),
-        "qa_tool": create_agent_tool(qa_specialist, name="qa_tool", description="🧪 QA & Testing Specialist Tool"),
+        "qa_tool": create_agent_tool(
+            qa_specialist, name="qa_tool", description="🧪 QA & Testing Specialist Tool"
+        ),
     }
 
 

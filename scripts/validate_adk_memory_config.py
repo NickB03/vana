@@ -31,16 +31,16 @@ logger = get_logger("vana.validate_adk_memory_config")
 
 def print_header(title):
     """Print a formatted header"""
-    logger.info("%s", f"\n{'='*60}")
+    logger.info("%s", f"\n{'=' * 60}")
     logger.info(f" {title}")
-    logger.info("%s", f"{'='*60}")
+    logger.info("%s", f"{'=' * 60}")
 
 
 def print_section(title):
     """Print a formatted section header"""
-    logger.info("%s", f"\n{'-'*40}")
+    logger.info("%s", f"\n{'-' * 40}")
     logger.info(f" {title}")
-    logger.info("%s", f"{'-'*40}")
+    logger.info("%s", f"{'-' * 40}")
 
 
 def print_status(status, message):
@@ -77,7 +77,10 @@ def validate_environment_file():
             print_status("info", f"Environment file not found: {env_file}")
 
     if not found_env:
-        print_status("warning", "No environment file found. Using system environment variables only.")
+        print_status(
+            "warning",
+            "No environment file found. Using system environment variables only.",
+        )
 
     return True
 
@@ -172,9 +175,18 @@ def check_migration_status():
 
         # Print status details
         logger.info("\nStatus Details:")
-        logger.info("%s", f"  ADK Memory Configured: {'✅' if status.get('adk_memory_configured') else '❌'}")
-        logger.info("%s", f"  MCP Variables Present: {'⚠️' if status.get('mcp_variables_present') else '✅'}")
-        logger.info("%s", f"  Configuration Valid: {'✅' if status.get('configuration_valid') else '❌'}")
+        logger.info(
+            "%s",
+            f"  ADK Memory Configured: {'✅' if status.get('adk_memory_configured') else '❌'}",
+        )
+        logger.info(
+            "%s",
+            f"  MCP Variables Present: {'⚠️' if status.get('mcp_variables_present') else '✅'}",
+        )
+        logger.info(
+            "%s",
+            f"  Configuration Valid: {'✅' if status.get('configuration_valid') else '❌'}",
+        )
 
         # Print recommendations
         recommendations = status.get("recommendations", [])
@@ -277,14 +289,16 @@ def generate_summary_report(results):
     logger.info(f"Total Checks: {total_checks}")
     logger.info(f"Passed: {passed_checks}")
     logger.error(f"Failed: {total_checks - passed_checks}")
-    logger.info(f"Success Rate: {(passed_checks/total_checks)*100:.1f}%")
+    logger.info(f"Success Rate: {(passed_checks / total_checks) * 100:.1f}%")
 
     if passed_checks == total_checks:
         print_status("success", "All validation checks passed!")
         logger.info("\n🎉 Your ADK memory configuration is ready for use!")
     else:
         print_status("warning", "Some validation checks failed")
-        logger.error("\n📋 Please review the errors above and update your configuration")
+        logger.error(
+            "\n📋 Please review the errors above and update your configuration"
+        )
 
     return passed_checks == total_checks
 
@@ -292,9 +306,15 @@ def generate_summary_report(results):
 def main():
     """Main validation function"""
     parser = argparse.ArgumentParser(description="Validate ADK Memory Configuration")
-    parser.add_argument("--detailed", action="store_true", help="Show detailed configuration")
-    parser.add_argument("--fix-permissions", action="store_true", help="Fix file permissions")
-    parser.add_argument("--json", action="store_true", help="Output results in JSON format")
+    parser.add_argument(
+        "--detailed", action="store_true", help="Show detailed configuration"
+    )
+    parser.add_argument(
+        "--fix-permissions", action="store_true", help="Fix file permissions"
+    )
+    parser.add_argument(
+        "--json", action="store_true", help="Output results in JSON format"
+    )
 
     args = parser.parse_args()
 

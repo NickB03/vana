@@ -36,7 +36,9 @@ async def demonstrate_mcp_manager():
         if os.getenv("GITHUB_TOKEN"):
             logger.info("Starting GitHub server...")
             github_instance = await manager.start_server("github")
-            logger.info(f"GitHub server started with {len(github_instance.tools)} tools")
+            logger.info(
+                f"GitHub server started with {len(github_instance.tools)} tools"
+            )
 
             # Discover tools
             tools = await manager.discover_tools("github")
@@ -44,7 +46,9 @@ async def demonstrate_mcp_manager():
 
             # Execute a tool (example)
             if tools:
-                result = await manager.execute_tool("github", "list_repositories", {"user": "octocat", "limit": 5})
+                result = await manager.execute_tool(
+                    "github", "list_repositories", {"user": "octocat", "limit": 5}
+                )
                 logger.info(f"Tool execution result: {result.success}")
 
             # Check health
@@ -55,7 +59,9 @@ async def demonstrate_mcp_manager():
         if os.getenv("BRAVE_API_KEY"):
             logger.info("Starting Brave Search server...")
             brave_instance = await manager.start_server("brave_search")
-            logger.info(f"Brave Search server started with {len(brave_instance.tools)} tools")
+            logger.info(
+                f"Brave Search server started with {len(brave_instance.tools)} tools"
+            )
 
         # Start Fetch server (always available)
         logger.info("Starting Fetch server...")
@@ -67,7 +73,9 @@ async def demonstrate_mcp_manager():
         all_tools = manager.get_all_tools()
 
         logger.info(f"Total servers running: {len(all_servers)}")
-        logger.info(f"Total tools available: {sum(len(tools) for tools in all_tools.values())}")
+        logger.info(
+            f"Total tools available: {sum(len(tools) for tools in all_tools.values())}"
+        )
 
     finally:
         # Shutdown all servers
@@ -119,17 +127,23 @@ def demonstrate_mcp_registry():
 
     # Demonstrate tool discovery
     repo_servers = registry.find_tool("create_repository")
-    logger.info(f"Servers with 'create_repository' tool: {[s.name for s in repo_servers]}")
+    logger.info(
+        f"Servers with 'create_repository' tool: {[s.name for s in repo_servers]}"
+    )
 
     search_servers = registry.find_tool("web_search")
     logger.info(f"Servers with 'web_search' tool: {[s.name for s in search_servers]}")
 
     # Demonstrate capability discovery
     dev_servers = registry.find_by_capability("repositories")
-    logger.info(f"Servers with 'repositories' capability: {[s.name for s in dev_servers]}")
+    logger.info(
+        f"Servers with 'repositories' capability: {[s.name for s in dev_servers]}"
+    )
 
     search_cap_servers = registry.find_by_capability("web_search")
-    logger.info(f"Servers with 'web_search' capability: {[s.name for s in search_cap_servers]}")
+    logger.info(
+        f"Servers with 'web_search' capability: {[s.name for s in search_cap_servers]}"
+    )
 
     # Demonstrate tag discovery
     dev_tagged = registry.find_by_tag("development")
@@ -163,7 +177,9 @@ def demonstrate_github_server():
 
         if repos:
             repo = repos[0]
-            logger.info(f"First repo: {repo.name} ({repo.language}) - {repo.stars} stars")
+            logger.info(
+                f"First repo: {repo.name} ({repo.language}) - {repo.stars} stars"
+            )
 
         # Search for issues
         issues = github.search_issues("bug", repo="octocat/Hello-World")
@@ -226,7 +242,9 @@ def demonstrate_fetch_server():
 
         # Check URL status
         status = fetch.check_url_status("https://github.com")
-        logger.info(f"GitHub status: {status.status_code} - accessible: {status.accessible}")
+        logger.info(
+            f"GitHub status: {status.status_code} - accessible: {status.accessible}"
+        )
         logger.info(f"Response time: {status.response_time:.3f} seconds")
 
         # Scrape content (simple example)

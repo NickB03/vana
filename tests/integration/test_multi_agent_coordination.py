@@ -71,9 +71,9 @@ class TestMultiAgentCoordination:
             )
 
             # Should either show delegation or contain actual code
-            assert (
-                has_delegation_indicator or "def " in response.content
-            ), "Should show delegation or contain code"
+            assert has_delegation_indicator or "def " in response.content, (
+                "Should show delegation or contain code"
+            )
 
         # Verify tool usage
         tools_used = response.tools_used
@@ -105,9 +105,9 @@ class TestMultiAgentCoordination:
             # Should contain data analysis related content
             response_lower = response.content.lower()
             data_keywords = ["analyz", "dataset", "visualization", "trend", "data"]
-            assert any(
-                keyword in response_lower for keyword in data_keywords
-            ), "Response should contain data analysis content"
+            assert any(keyword in response_lower for keyword in data_keywords), (
+                "Response should contain data analysis content"
+            )
 
             # Check for delegation or analysis content
             has_analysis_content = any(
@@ -119,9 +119,9 @@ class TestMultiAgentCoordination:
                 for keyword in ["delegat", "transfer", "data science", "specialist"]
             )
 
-            assert (
-                has_analysis_content or has_delegation_content
-            ), "Should contain analysis content or delegation indicators"
+            assert has_analysis_content or has_delegation_content, (
+                "Should contain analysis content or delegation indicators"
+            )
 
     @pytest.mark.integration
     @pytest.mark.asyncio
@@ -152,14 +152,14 @@ class TestMultiAgentCoordination:
                 "system",
                 "platform",
             ]
-            assert any(
-                keyword in response_lower for keyword in arch_keywords
-            ), "Response should contain architecture content"
+            assert any(keyword in response_lower for keyword in arch_keywords), (
+                "Response should contain architecture content"
+            )
 
             # Should be substantial response for complex architectural question
-            assert (
-                len(response.content) > 100
-            ), "Architecture response should be substantial"
+            assert len(response.content) > 100, (
+                "Architecture response should be substantial"
+            )
 
     @pytest.mark.integration
     @pytest.mark.asyncio
@@ -193,19 +193,19 @@ class TestMultiAgentCoordination:
                 1 for aspect in required_aspects if aspect in response_lower
             )
 
-            assert (
-                addressed_aspects >= 2
-            ), f"Should address multiple aspects, only found {addressed_aspects}"
+            assert addressed_aspects >= 2, (
+                f"Should address multiple aspects, only found {addressed_aspects}"
+            )
 
             # Should be comprehensive response
-            assert (
-                len(response.content) > 200
-            ), "Complex task should generate comprehensive response"
+            assert len(response.content) > 200, (
+                "Complex task should generate comprehensive response"
+            )
 
         # Check execution time is reasonable for complex task
-        assert (
-            response.execution_time < 60.0
-        ), f"Complex task took too long: {response.execution_time:.2f}s"
+        assert response.execution_time < 60.0, (
+            f"Complex task took too long: {response.execution_time:.2f}s"
+        )
 
     @pytest.mark.integration
     @pytest.mark.asyncio
@@ -261,9 +261,9 @@ class TestMultiAgentCoordination:
                     1 for keyword in scenario["keywords"] if keyword in response_lower
                 )
 
-                assert (
-                    keyword_matches >= 1
-                ), f"Response should contain relevant keywords for: {scenario['query']}"
+                assert keyword_matches >= 1, (
+                    f"Response should contain relevant keywords for: {scenario['query']}"
+                )
 
     @pytest.mark.integration
     @pytest.mark.asyncio
@@ -289,17 +289,17 @@ class TestMultiAgentCoordination:
             ], f"Invalid status for error scenario: {response.status}"
 
             # Should not crash or hang
-            assert (
-                response.execution_time < 30.0
-            ), f"Error scenario took too long: {response.execution_time:.2f}s"
+            assert response.execution_time < 30.0, (
+                f"Error scenario took too long: {response.execution_time:.2f}s"
+            )
 
             # Should provide some response or error message
             has_content = bool(response.content and response.content.strip())
             has_error = bool(response.error)
 
-            assert (
-                has_content or has_error
-            ), f"No response or error for scenario: {scenario}"
+            assert has_content or has_error, (
+                f"No response or error for scenario: {scenario}"
+            )
 
     @pytest.mark.integration
     @pytest.mark.asyncio
@@ -324,9 +324,9 @@ class TestMultiAgentCoordination:
         total_time = end_time - start_time
 
         # Verify all requests completed
-        assert len(responses) == len(
-            concurrent_queries
-        ), "Not all concurrent requests completed"
+        assert len(responses) == len(concurrent_queries), (
+            "Not all concurrent requests completed"
+        )
 
         # Check individual responses
         successful_responses = 0
@@ -336,9 +336,9 @@ class TestMultiAgentCoordination:
                 assert False, f"Query {i} failed with exception: {response}"
             else:
                 # Normal response
-                assert hasattr(
-                    response, "status"
-                ), f"Invalid response object for query {i}"
+                assert hasattr(response, "status"), (
+                    f"Invalid response object for query {i}"
+                )
                 if response.status == "success":
                     successful_responses += 1
 
@@ -348,9 +348,9 @@ class TestMultiAgentCoordination:
 
         # Concurrent processing should be reasonably efficient
         # (Not necessarily faster due to agent processing overhead)
-        assert (
-            total_time < 120.0
-        ), f"Concurrent requests took too long: {total_time:.2f}s"
+        assert total_time < 120.0, (
+            f"Concurrent requests took too long: {total_time:.2f}s"
+        )
 
     @pytest.mark.integration
     @pytest.mark.asyncio
@@ -391,9 +391,9 @@ class TestMultiAgentCoordination:
             assert status in ["success", "error"], f"Invalid status for query: {query}"
 
             if status == "success":
-                assert (
-                    response and response.strip()
-                ), f"Empty response for query: {query}"
+                assert response and response.strip(), (
+                    f"Empty response for query: {query}"
+                )
 
     @pytest.mark.integration
     @pytest.mark.slow
@@ -438,9 +438,9 @@ class TestMultiAgentCoordination:
         successful_responses = [r for r in all_responses if r["status"] == "success"]
         success_rate = len(successful_responses) / len(all_responses)
 
-        assert (
-            success_rate >= 0.7
-        ), f"Success rate under load too low: {success_rate:.2%}"
+        assert success_rate >= 0.7, (
+            f"Success rate under load too low: {success_rate:.2%}"
+        )
 
         # Check response time consistency
         response_times = [r["response_time"] for r in successful_responses]
@@ -448,18 +448,18 @@ class TestMultiAgentCoordination:
             avg_response_time = sum(response_times) / len(response_times)
             max_response_time = max(response_times)
 
-            assert (
-                avg_response_time < 15.0
-            ), f"Average response time under load too high: {avg_response_time:.2f}s"
-            assert (
-                max_response_time < 45.0
-            ), f"Maximum response time under load too high: {max_response_time:.2f}s"
+            assert avg_response_time < 15.0, (
+                f"Average response time under load too high: {avg_response_time:.2f}s"
+            )
+            assert max_response_time < 45.0, (
+                f"Maximum response time under load too high: {max_response_time:.2f}s"
+            )
 
         # Overall test should complete in reasonable time
         expected_max_time = num_iterations * len(load_queries) * 10  # 10s per query max
-        assert (
-            total_test_time < expected_max_time
-        ), f"Load test took too long: {total_test_time:.2f}s"
+        assert total_test_time < expected_max_time, (
+            f"Load test took too long: {total_test_time:.2f}s"
+        )
 
 
 class TestAgentCoordinationTools:
@@ -491,9 +491,9 @@ class TestAgentCoordinationTools:
             response_lower = response.content.lower()
             # Should mention agents or capabilities
             agent_indicators = ["agent", "available", "capabilit", "data", "analysis"]
-            assert any(
-                indicator in response_lower for indicator in agent_indicators
-            ), "Response should mention agents or capabilities"
+            assert any(indicator in response_lower for indicator in agent_indicators), (
+                "Response should mention agents or capabilities"
+            )
 
     @pytest.mark.integration
     @pytest.mark.asyncio

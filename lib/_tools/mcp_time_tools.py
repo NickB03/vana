@@ -32,7 +32,9 @@ TIMEZONE_MAPPINGS = {
 }
 
 
-def get_current_time(timezone: str = "UTC", format_string: str = "%Y-%m-%d %H:%M:%S %Z") -> str:
+def get_current_time(
+    timezone: str = "UTC", format_string: str = "%Y-%m-%d %H:%M:%S %Z"
+) -> str:
     """
     Get the current time in the specified timezone.
 
@@ -62,7 +64,10 @@ def get_current_time(timezone: str = "UTC", format_string: str = "%Y-%m-%d %H:%M
 
 
 def convert_timezone(
-    datetime_str: str, from_timezone: str, to_timezone: str, input_format: str = "%Y-%m-%d %H:%M:%S"
+    datetime_str: str,
+    from_timezone: str,
+    to_timezone: str,
+    input_format: str = "%Y-%m-%d %H:%M:%S",
 ) -> str:
     """
     Convert a datetime from one timezone to another.
@@ -100,7 +105,13 @@ def convert_timezone(
         return f"Error converting timezone: {str(e)}"
 
 
-def calculate_date(base_date: str, operation: str, amount: int, unit: str, date_format: str = "%Y-%m-%d") -> str:
+def calculate_date(
+    base_date: str,
+    operation: str,
+    amount: int,
+    unit: str,
+    date_format: str = "%Y-%m-%d",
+) -> str:
     """
     Perform date arithmetic operations.
 
@@ -188,7 +199,9 @@ def format_datetime(datetime_str: str, input_format: str, output_format: str) ->
 
 
 def get_time_until(
-    target_datetime: str, target_timezone: str = "UTC", datetime_format: str = "%Y-%m-%d %H:%M:%S"
+    target_datetime: str,
+    target_timezone: str = "UTC",
+    datetime_format: str = "%Y-%m-%d %H:%M:%S",
 ) -> str:
     """
     Calculate time remaining until a target datetime.
@@ -220,7 +233,9 @@ def get_time_until(
         time_diff = target_dt - current_dt
 
         if time_diff.total_seconds() < 0:
-            return f"Target time was {abs(time_diff.total_seconds() / 3600):.1f} hours ago"
+            return (
+                f"Target time was {abs(time_diff.total_seconds() / 3600):.1f} hours ago"
+            )
 
         # Format human-readable output
         days = time_diff.days

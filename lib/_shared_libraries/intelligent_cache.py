@@ -94,7 +94,12 @@ class IntelligentCache:
 
             # Create cache entry
             entry = CacheEntry(
-                key=key, value=value, created_at=time.time(), last_accessed=time.time(), access_count=1, ttl=ttl
+                key=key,
+                value=value,
+                created_at=time.time(),
+                last_accessed=time.time(),
+                access_count=1,
+                ttl=ttl,
             )
 
             # Check if we need to evict
@@ -116,7 +121,9 @@ class IntelligentCache:
     def clear_expired(self) -> int:
         """Clear all expired entries and return count."""
         with self._lock:
-            expired_keys = [key for key, entry in self._cache.items() if entry.is_expired()]
+            expired_keys = [
+                key for key, entry in self._cache.items() if entry.is_expired()
+            ]
 
             for key in expired_keys:
                 del self._cache[key]
@@ -142,7 +149,9 @@ class IntelligentCache:
     def _get_most_accessed_keys(self, limit: int) -> List[Tuple[str, int]]:
         """Get most accessed cache keys."""
         return sorted(
-            [(key, entry.access_count) for key, entry in self._cache.items()], key=lambda x: x[1], reverse=True
+            [(key, entry.access_count) for key, entry in self._cache.items()],
+            key=lambda x: x[1],
+            reverse=True,
         )[:limit]
 
 
@@ -157,10 +166,22 @@ class ToolResultCache(IntelligentCache):
     def _initialize_tool_patterns(self) -> Dict[str, Dict[str, Any]]:
         """Initialize caching patterns for different tools."""
         return {
-            "search_tools": {"ttl": 1800, "similarity_threshold": 0.8},  # 30 minutes for search results
-            "file_tools": {"ttl": 3600, "similarity_threshold": 0.9},  # 1 hour for file operations
-            "kg_tools": {"ttl": 7200, "similarity_threshold": 0.85},  # 2 hours for knowledge graph
-            "system_tools": {"ttl": 300, "similarity_threshold": 0.95},  # 5 minutes for system status
+            "search_tools": {
+                "ttl": 1800,
+                "similarity_threshold": 0.8,
+            },  # 30 minutes for search results
+            "file_tools": {
+                "ttl": 3600,
+                "similarity_threshold": 0.9,
+            },  # 1 hour for file operations
+            "kg_tools": {
+                "ttl": 7200,
+                "similarity_threshold": 0.85,
+            },  # 2 hours for knowledge graph
+            "system_tools": {
+                "ttl": 300,
+                "similarity_threshold": 0.95,
+            },  # 5 minutes for system status
         }
 
     def get_tool_cache_key(self, tool_name: str, parameters: Dict[str, Any]) -> str:
@@ -188,7 +209,9 @@ class ToolResultCache(IntelligentCache):
             return True
 
         # Always cache search and knowledge graph results
-        if any(pattern in tool_name.lower() for pattern in ["search", "kg", "knowledge"]):
+        if any(
+            pattern in tool_name.lower() for pattern in ["search", "kg", "knowledge"]
+        ):
             return True
 
         return False
@@ -201,7 +224,9 @@ class AgentDecisionCache(IntelligentCache):
         # Agent decisions can be cached for shorter periods
         super().__init__(max_size=300, default_ttl=1800)  # 30 minutes
 
-    def get_decision_cache_key(self, task_description: str, context: Dict[str, Any]) -> str:
+    def get_decision_cache_key(
+        self, task_description: str, context: Dict[str, Any]
+    ) -> str:
         """Generate cache key for agent decisions."""
         # Create similarity-based key for better cache hits
         task_signature = self._get_task_signature(task_description)
@@ -213,7 +238,22 @@ class AgentDecisionCache(IntelligentCache):
         # Extract key words and create signature
         words = task_description.lower().split()
         # Filter out common words
-        stop_words = {"the", "a", "an", "and", "or", "but", "in", "on", "at", "to", "for", "of", "with", "by"}
+        stop_words = {
+            "the",
+            "a",
+            "an",
+            "and",
+            "or",
+            "but",
+            "in",
+            "on",
+            "at",
+            "to",
+            "for",
+            "of",
+            "with",
+            "by",
+        }
         key_words = [w for w in words if w not in stop_words and len(w) > 2]
 
         # Sort for consistent signatures
@@ -298,4 +338,6 @@ def clear_all_caches():
     tool_result_cache._cache.clear()
     agent_decision_cache._cache.clear()
     tool_result_cache.hits = tool_result_cache.misses = tool_result_cache.evictions = 0
-    agent_decision_cache.hits = agent_decision_cache.misses = agent_decision_cache.evictions = 0
+    agent_decision_cache.hits = agent_decision_cache.misses = (
+        agent_decision_cache.evictions
+    ) = 0

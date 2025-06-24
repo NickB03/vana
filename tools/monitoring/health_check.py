@@ -47,7 +47,9 @@ class HealthCheck:
 
         logger.info("Health Check initialized")
 
-    def register_component(self, component_name: str, check_function: Callable[[], Dict[str, Any]]) -> None:
+    def register_component(
+        self, component_name: str, check_function: Callable[[], Dict[str, Any]]
+    ) -> None:
         """
         Register a component health check function.
 
@@ -87,10 +89,15 @@ class HealthCheck:
                 component_status = result.get("status", HealthStatus.UNKNOWN)
                 if component_status == HealthStatus.ERROR:
                     overall_status = HealthStatus.ERROR
-                elif component_status == HealthStatus.WARNING and overall_status != HealthStatus.ERROR:
+                elif (
+                    component_status == HealthStatus.WARNING
+                    and overall_status != HealthStatus.ERROR
+                ):
                     overall_status = HealthStatus.WARNING
             except Exception as e:
-                logger.error(f"Error checking health for component {component_name}: {str(e)}")
+                logger.error(
+                    f"Error checking health for component {component_name}: {str(e)}"
+                )
                 component_results[component_name] = {
                     "status": HealthStatus.ERROR,
                     "message": f"Error checking health: {str(e)}",
@@ -133,7 +140,9 @@ class HealthCheck:
             result = check_function()
             return result
         except Exception as e:
-            logger.error(f"Error checking health for component {component_name}: {str(e)}")
+            logger.error(
+                f"Error checking health for component {component_name}: {str(e)}"
+            )
             return {
                 "status": HealthStatus.ERROR,
                 "message": f"Error checking health: {str(e)}",
@@ -205,7 +214,10 @@ class MemorySystemHealthCheck:
                 "status": HealthStatus.OK,
                 "message": "MCP server is healthy",
                 "timestamp": datetime.datetime.now().isoformat(),
-                "details": {"endpoint": mcp_client.endpoint, "namespace": mcp_client.namespace},
+                "details": {
+                    "endpoint": mcp_client.endpoint,
+                    "namespace": mcp_client.namespace,
+                },
             }
         except Exception as e:
             logger.error(f"Error checking MCP server health: {str(e)}")
@@ -265,7 +277,9 @@ class MemorySystemHealthCheck:
                 "details": {
                     "mcp_available": mcp_available,
                     "cache_size": cache_size,
-                    "last_sync_time": datetime.datetime.fromtimestamp(last_sync_time).isoformat(),
+                    "last_sync_time": datetime.datetime.fromtimestamp(
+                        last_sync_time
+                    ).isoformat(),
                     "time_since_last_sync": int(time_since_last_sync),
                     "sync_interval": sync_interval,
                 },
@@ -408,7 +422,9 @@ class MemorySystemHealthCheck:
             }
 
 
-def register_memory_system_health_checks(health_check: HealthCheck, memory_system) -> None:
+def register_memory_system_health_checks(
+    health_check: HealthCheck, memory_system
+) -> None:
     """
     Register health checks for the memory system.
 
@@ -418,22 +434,32 @@ def register_memory_system_health_checks(health_check: HealthCheck, memory_syste
     """
     # Register MCP server health check
     health_check.register_component(
-        "mcp_server", lambda: MemorySystemHealthCheck.check_mcp_server(memory_system.mcp_client)
+        "mcp_server",
+        lambda: MemorySystemHealthCheck.check_mcp_server(memory_system.mcp_client),
     )
 
     # Register memory manager health check
     health_check.register_component(
-        "memory_manager", lambda: MemorySystemHealthCheck.check_memory_manager(memory_system.memory_manager)
+        "memory_manager",
+        lambda: MemorySystemHealthCheck.check_memory_manager(
+            memory_system.memory_manager
+        ),
     )
 
     # Register vector search health check if available
     if hasattr(memory_system, "vector_search_client"):
         health_check.register_component(
-            "vector_search", lambda: MemorySystemHealthCheck.check_vector_search(memory_system.vector_search_client)
+            "vector_search",
+            lambda: MemorySystemHealthCheck.check_vector_search(
+                memory_system.vector_search_client
+            ),
         )
 
     # Register hybrid search health check if available
     if hasattr(memory_system, "hybrid_search"):
         health_check.register_component(
-            "hybrid_search", lambda: MemorySystemHealthCheck.check_hybrid_search(memory_system.hybrid_search)
+            "hybrid_search",
+            lambda: MemorySystemHealthCheck.check_hybrid_search(
+                memory_system.hybrid_search
+            ),
         )

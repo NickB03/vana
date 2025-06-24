@@ -104,7 +104,9 @@ class MemoryCache:
 
         return results
 
-    def search(self, query: str, entity_type: Optional[str] = None, limit: int = 10) -> List[Any]:
+    def search(
+        self, query: str, entity_type: Optional[str] = None, limit: int = 10
+    ) -> List[Any]:
         """
         Search for items in the cache.
 
@@ -117,7 +119,11 @@ class MemoryCache:
             List of matching cached values
         """
         results = []
-        keys_to_search = self.type_index.get(entity_type, self.cache.keys()) if entity_type else self.cache.keys()
+        keys_to_search = (
+            self.type_index.get(entity_type, self.cache.keys())
+            if entity_type
+            else self.cache.keys()
+        )
 
         for key in keys_to_search:
             if key in self.cache:

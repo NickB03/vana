@@ -43,7 +43,9 @@ class HealthCheck:
         if ADK_MONITOR_AVAILABLE:
             self.register_component("adk_memory", self._check_adk_memory)
 
-    def register_component(self, component_name: str, check_function: Callable[[], Dict[str, Any]]) -> None:
+    def register_component(
+        self, component_name: str, check_function: Callable[[], Dict[str, Any]]
+    ) -> None:
         self.component_checks[component_name] = check_function
         logger.info(f"Registered health check for component: {component_name}")
 
@@ -63,18 +65,27 @@ class HealthCheck:
                 if component_status == HealthStatus.ERROR:
                     overall_status = HealthStatus.ERROR
                     self._alert(component_name, result, AlertSeverity.CRITICAL)
-                elif component_status == HealthStatus.WARNING and overall_status != HealthStatus.ERROR:
+                elif (
+                    component_status == HealthStatus.WARNING
+                    and overall_status != HealthStatus.ERROR
+                ):
                     overall_status = HealthStatus.WARNING
                     self._alert(component_name, result, AlertSeverity.WARNING)
             except Exception as e:
-                logger.error(f"Error checking health for component {component_name}: {str(e)}")
+                logger.error(
+                    f"Error checking health for component {component_name}: {str(e)}"
+                )
                 component_results[component_name] = {
                     "status": HealthStatus.ERROR,
                     "message": f"Error checking health: {str(e)}",
                     "timestamp": datetime.datetime.now().isoformat(),
                 }
                 overall_status = HealthStatus.ERROR
-                self._alert(component_name, component_results[component_name], AlertSeverity.CRITICAL)
+                self._alert(
+                    component_name,
+                    component_results[component_name],
+                    AlertSeverity.CRITICAL,
+                )
 
         results = {
             "status": overall_status,
@@ -88,7 +99,10 @@ class HealthCheck:
     def _alert(self, component_name: str, result: Dict[str, Any], severity: str):
         message = f"Health check {severity.upper()} for {component_name}: {result.get('message', '')}"
         self.alert_manager.create_alert(
-            message=message, severity=severity, source=f"health_check.{component_name}", details=result
+            message=message,
+            severity=severity,
+            source=f"health_check.{component_name}",
+            details=result,
         )
 
     def check_component(self, component_name: str) -> Dict[str, Any]:
@@ -105,11 +119,15 @@ class HealthCheck:
                 self._alert(
                     component_name,
                     result,
-                    AlertSeverity.CRITICAL if result["status"] == HealthStatus.ERROR else AlertSeverity.WARNING,
+                    AlertSeverity.CRITICAL
+                    if result["status"] == HealthStatus.ERROR
+                    else AlertSeverity.WARNING,
                 )
             return result
         except Exception as e:
-            logger.error(f"Error checking health for component {component_name}: {str(e)}")
+            logger.error(
+                f"Error checking health for component {component_name}: {str(e)}"
+            )
             error_result = {
                 "status": HealthStatus.ERROR,
                 "message": f"Error checking health: {str(e)}",
@@ -149,7 +167,9 @@ class HealthCheck:
             return {
                 "status": status,
                 "message": health_result.get("message", "ADK memory check completed"),
-                "timestamp": health_result.get("timestamp", datetime.datetime.now().isoformat()),
+                "timestamp": health_result.get(
+                    "timestamp", datetime.datetime.now().isoformat()
+                ),
                 "details": {
                     "adk_available": health_result.get("adk_available", False),
                     "metrics": health_result.get("metrics", {}),

@@ -15,7 +15,7 @@ type: system_documentation
 - **Capabilities**: Web research, source validation, comprehensive reporting
 - **Output**: Structured research reports with citations
 
-### Analysis Agent  
+### Analysis Agent
 - **Purpose**: Data processing and insight generation
 - **Tools**: Analytical tools, data processing, visualization
 - **Capabilities**: Statistical analysis, pattern recognition, report generation

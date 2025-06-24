@@ -118,7 +118,9 @@ class RegressionDetector:
 
         # Calculate current performance statistics
         current_mean = statistics.mean(current_values)
-        current_std_dev = statistics.stdev(current_values) if len(current_values) > 1 else 0
+        current_std_dev = (
+            statistics.stdev(current_values) if len(current_values) > 1 else 0
+        )
 
         # Calculate regression percentage (assuming higher values are worse)
         if baseline_value == 0:
@@ -131,7 +133,9 @@ class RegressionDetector:
             return None  # Performance improved or stayed the same
 
         # Calculate confidence in regression detection
-        confidence = self._calculate_confidence(baseline_value, current_values, baseline_std_dev, current_std_dev)
+        confidence = self._calculate_confidence(
+            baseline_value, current_values, baseline_std_dev, current_std_dev
+        )
 
         # Check if confidence meets threshold
         if confidence < self.confidence_threshold:
@@ -182,28 +186,42 @@ class RegressionDetector:
         """Calculate confidence in regression detection using statistical analysis."""
 
         # Base confidence on sample size
-        sample_size_factor = min(len(current_values) / 10.0, 1.0)  # Max factor of 1.0 at 10+ samples
+        sample_size_factor = min(
+            len(current_values) / 10.0, 1.0
+        )  # Max factor of 1.0 at 10+ samples
 
         # Factor in variability
         if baseline_std_dev is not None and baseline_std_dev > 0:
             # Compare variability between baseline and current
             variability_ratio = current_std_dev / baseline_std_dev
-            variability_factor = 1.0 / (1.0 + variability_ratio)  # Lower variability = higher confidence
+            variability_factor = 1.0 / (
+                1.0 + variability_ratio
+            )  # Lower variability = higher confidence
         else:
             # Use current variability relative to mean
             if len(current_values) > 1 and statistics.mean(current_values) > 0:
-                cv = current_std_dev / statistics.mean(current_values)  # Coefficient of variation
+                cv = current_std_dev / statistics.mean(
+                    current_values
+                )  # Coefficient of variation
                 variability_factor = 1.0 / (1.0 + cv)
             else:
                 variability_factor = 0.5  # Neutral factor
 
         # Factor in magnitude of change
         current_mean = statistics.mean(current_values)
-        change_magnitude = abs(current_mean - baseline_value) / baseline_value if baseline_value > 0 else 0
-        magnitude_factor = min(change_magnitude / 0.1, 1.0)  # Max factor of 1.0 at 10% change
+        change_magnitude = (
+            abs(current_mean - baseline_value) / baseline_value
+            if baseline_value > 0
+            else 0
+        )
+        magnitude_factor = min(
+            change_magnitude / 0.1, 1.0
+        )  # Max factor of 1.0 at 10% change
 
         # Combine factors
-        confidence = sample_size_factor * 0.4 + variability_factor * 0.4 + magnitude_factor * 0.2
+        confidence = (
+            sample_size_factor * 0.4 + variability_factor * 0.4 + magnitude_factor * 0.2
+        )
 
         return min(confidence, 1.0)
 
@@ -255,7 +273,9 @@ class RegressionDetector:
 
         # Calculate baseline statistics
         baseline_mean = statistics.mean(baseline_values)
-        baseline_std_dev = statistics.stdev(baseline_values) if len(baseline_values) > 1 else 0
+        baseline_std_dev = (
+            statistics.stdev(baseline_values) if len(baseline_values) > 1 else 0
+        )
 
         # Use standard regression detection
         regression = self.detect_regression(
@@ -291,7 +311,10 @@ class RegressionDetector:
             "severity_breakdown": severity_counts,
             "affected_benchmarks": len(by_benchmark),
             "benchmarks": {
-                name: {"regression_count": len(regressions), "regressions": [r.to_dict() for r in regressions]}
+                name: {
+                    "regression_count": len(regressions),
+                    "regressions": [r.to_dict() for r in regressions],
+                }
                 for name, regressions in by_benchmark.items()
             },
         }
@@ -365,7 +388,9 @@ class RegressionDetector:
         for severity in severity_order:
             if severity in by_severity:
                 regressions = by_severity[severity]
-                report_lines.append(f"{severity.value.upper()} Regressions ({len(regressions)}):")
+                report_lines.append(
+                    f"{severity.value.upper()} Regressions ({len(regressions)}):"
+                )
                 report_lines.append("-" * 20)
 
                 for regression in regressions:

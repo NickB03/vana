@@ -86,7 +86,9 @@ async def validate_code_security(code: str, language: str) -> str:
 **Risk Level**: Low
 **Message**: Code passed security validation"""
         except Exception as security_error:
-            recommendations = _get_security_recommendations(str(security_error), language)
+            recommendations = _get_security_recommendations(
+                str(security_error), language
+            )
             rec_text = "\n".join([f"- {rec}" for rec in recommendations])
 
             return f"""⚠️ Security Validation Failed
@@ -116,12 +118,16 @@ def _get_security_recommendations(error: str, language: str) -> List[str]:
         recommendations.append("Use relative paths within the sandbox environment")
 
     if "network" in error_lower:
-        recommendations.append("Remove network operations (HTTP requests, socket connections)")
+        recommendations.append(
+            "Remove network operations (HTTP requests, socket connections)"
+        )
         recommendations.append("Use provided tools for external data access")
 
     if "subprocess" in error_lower or "exec" in error_lower:
         recommendations.append("Avoid subprocess execution and dynamic code evaluation")
-        recommendations.append("Use language-specific alternatives for the desired functionality")
+        recommendations.append(
+            "Use language-specific alternatives for the desired functionality"
+        )
 
     if not recommendations:
         recommendations.append("Review the security policies for the specific language")
@@ -152,8 +158,14 @@ async def get_execution_history(limit: int = 10) -> str:
 
         # Calculate summary statistics
         total_executions = len(_execution_history)
-        successful_executions = sum(1 for r in _execution_history if r.get("success", False))
-        success_rate = round(successful_executions / total_executions * 100, 1) if total_executions > 0 else 0
+        successful_executions = sum(
+            1 for r in _execution_history if r.get("success", False)
+        )
+        success_rate = (
+            round(successful_executions / total_executions * 100, 1)
+            if total_executions > 0
+            else 0
+        )
 
         # Format recent executions
         history_text = []
@@ -184,15 +196,15 @@ async def get_supported_languages() -> str:
         language_details = []
         for lang_name, executor in _executors.items():
             lang_info = executor.get_language_info()
-            details = f"""**{lang_info['name'].title()}**:
-- Version: {lang_info['version']}
-- Features: {', '.join(lang_info['features'])}
-- Restrictions: {', '.join(lang_info['restrictions'])}"""
+            details = f"""**{lang_info["name"].title()}**:
+- Version: {lang_info["version"]}
+- Features: {", ".join(lang_info["features"])}
+- Restrictions: {", ".join(lang_info["restrictions"])}"""
             language_details.append(details)
 
         return f"""🔧 Supported Languages
 
-**Available Languages**: {', '.join(languages)}
+**Available Languages**: {", ".join(languages)}
 
 {chr(10).join(language_details)}
 
@@ -236,14 +248,10 @@ code_execution_specialist = LlmAgent(
 
 Always prioritize security and provide comprehensive explanations of execution results.""",
     tools=[
-        FunctionTool(
-            func=execute_code),
-        FunctionTool(
-            func=validate_code_security),
-        FunctionTool(
-            func=get_execution_history),
-        FunctionTool(
-            func=get_supported_languages),
+        FunctionTool(func=execute_code),
+        FunctionTool(func=validate_code_security),
+        FunctionTool(func=get_execution_history),
+        FunctionTool(func=get_supported_languages),
     ],
 )
 
@@ -259,9 +267,7 @@ def _analyze_error(error: str, language: str) -> str:
     if "timeout" in error_lower:
         return "Code execution timed out. Consider optimizing the algorithm or increasing the timeout."
     elif "security violation" in error_lower:
-        return (
-            f"Code contains security violations. Review {language} security policies and remove restricted operations."
-        )
+        return f"Code contains security violations. Review {language} security policies and remove restricted operations."
     elif "resource limit exceeded" in error_lower:
         return "Code exceeded resource limits. Optimize memory usage or reduce computational complexity."
     elif "syntax" in error_lower:
@@ -269,6 +275,4 @@ def _analyze_error(error: str, language: str) -> str:
     elif "import" in error_lower or "module" in error_lower:
         return f"Module import error. Ensure the required packages are available in the {language} sandbox environment."
     else:
-        return (
-            "Review the error message and check the code logic. Consider adding error handling or debugging statements."
-        )
+        return "Review the error message and check the code logic. Consider adding error handling or debugging statements."

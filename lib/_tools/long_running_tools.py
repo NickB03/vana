@@ -122,7 +122,9 @@ class LongRunningTaskManager:
         if task_id is None:
             task_id = str(uuid.uuid4())
 
-        self.tasks[task_id] = LongRunningTaskResult(task_id=task_id, status=LongRunningTaskStatus.PENDING)
+        self.tasks[task_id] = LongRunningTaskResult(
+            task_id=task_id, status=LongRunningTaskStatus.PENDING
+        )
 
         logger.info(f"Created long-running task: {task_id}")
         return task_id
@@ -170,7 +172,11 @@ class LongRunningTaskManager:
         for task_id, task in self.tasks.items():
             if (
                 task.status
-                in [LongRunningTaskStatus.COMPLETED, LongRunningTaskStatus.FAILED, LongRunningTaskStatus.CANCELLED]
+                in [
+                    LongRunningTaskStatus.COMPLETED,
+                    LongRunningTaskStatus.FAILED,
+                    LongRunningTaskStatus.CANCELLED,
+                ]
                 and current_time - task.updated_at > max_age_seconds
             ):
                 to_remove.append(task_id)
@@ -196,7 +202,13 @@ class LongRunningFunctionTool:
     progress updates, and event handling capabilities.
     """
 
-    def __init__(self, func: Callable, name: str = None, description: str = None, timeout: float = 300.0):
+    def __init__(
+        self,
+        func: Callable,
+        name: str = None,
+        description: str = None,
+        timeout: float = 300.0,
+    ):
         """
         Initialize Long Running Function Tool.
 
@@ -208,12 +220,16 @@ class LongRunningFunctionTool:
         """
         self.func = func
         self.name = name or func.__name__
-        self.description = description or func.__doc__ or f"Long running tool: {self.name}"
+        self.description = (
+            description or func.__doc__ or f"Long running tool: {self.name}"
+        )
         self.timeout = timeout
 
         logger.info(f"Created LongRunningFunctionTool: {self.name}")
 
-    async def run_async(self, args: Dict[str, Any], tool_context: Any = None) -> Dict[str, Any]:
+    async def run_async(
+        self, args: Dict[str, Any], tool_context: Any = None
+    ) -> Dict[str, Any]:
         """
         Execute the long-running function asynchronously.
 
@@ -236,16 +252,24 @@ class LongRunningFunctionTool:
             # Execute the function
             if asyncio.iscoroutinefunction(self.func):
                 # Async function
-                result = await asyncio.wait_for(self.func(task_id=task_id, **args), timeout=self.timeout)
+                result = await asyncio.wait_for(
+                    self.func(task_id=task_id, **args), timeout=self.timeout
+                )
             else:
                 # Sync function - run in executor
                 loop = asyncio.get_event_loop()
-                result = await loop.run_in_executor(None, lambda: self.func(task_id=task_id, **args))
+                result = await loop.run_in_executor(
+                    None, lambda: self.func(task_id=task_id, **args)
+                )
 
             # Update task as completed
-            task_manager.update_task(task_id, LongRunningTaskStatus.COMPLETED, result=result)
+            task_manager.update_task(
+                task_id, LongRunningTaskStatus.COMPLETED, result=result
+            )
 
-            execution_time = performance_monitor.end_execution(self.name, start_time, success=True)
+            execution_time = performance_monitor.end_execution(
+                self.name, start_time, success=True
+            )
 
             return {
                 "task_id": task_id,
@@ -255,8 +279,12 @@ class LongRunningFunctionTool:
             }
 
         except asyncio.TimeoutError:
-            task_manager.update_task(task_id, LongRunningTaskStatus.FAILED, error="Task timed out")
-            execution_time = performance_monitor.end_execution(self.name, start_time, success=False)
+            task_manager.update_task(
+                task_id, LongRunningTaskStatus.FAILED, error="Task timed out"
+            )
+            execution_time = performance_monitor.end_execution(
+                self.name, start_time, success=False
+            )
 
             return {
                 "task_id": task_id,
@@ -266,8 +294,12 @@ class LongRunningFunctionTool:
             }
 
         except Exception as e:
-            task_manager.update_task(task_id, LongRunningTaskStatus.FAILED, error=str(e))
-            execution_time = performance_monitor.end_execution(self.name, start_time, success=False)
+            task_manager.update_task(
+                task_id, LongRunningTaskStatus.FAILED, error=str(e)
+            )
+            execution_time = performance_monitor.end_execution(
+                self.name, start_time, success=False
+            )
 
             logger.error(f"Long-running task {task_id} failed: {e}")
 
@@ -346,7 +378,12 @@ async def ask_for_approval(
         task_id,
         LongRunningTaskStatus.WAITING_APPROVAL,
         progress=0.5,
-        metadata={"ticket_id": ticket_id, "approver": approver, "purpose": purpose, "amount": amount},
+        metadata={
+            "ticket_id": ticket_id,
+            "approver": approver,
+            "purpose": purpose,
+            "amount": amount,
+        },
     )
 
     # Simulate approval process (in real implementation, this would be external)
@@ -376,7 +413,9 @@ async def ask_for_approval(
     return result
 
 
-async def process_large_dataset(task_id: str, dataset_name: str, operation: str = "analyze") -> Dict[str, Any]:
+async def process_large_dataset(
+    task_id: str, dataset_name: str, operation: str = "analyze"
+) -> Dict[str, Any]:
     """
     Example long-running tool for data processing.
 
@@ -412,13 +451,18 @@ async def process_large_dataset(task_id: str, dataset_name: str, operation: str 
 
         # Update progress
         task_manager.update_task(
-            task_id, LongRunningTaskStatus.IN_PROGRESS, progress=progress, metadata={"current_stage": stage_name}
+            task_id,
+            LongRunningTaskStatus.IN_PROGRESS,
+            progress=progress,
+            metadata={"current_stage": stage_name},
         )
 
         # Simulate processing time
         await asyncio.sleep(1)
 
-        results["stages"].append({"stage": stage_name, "completed_at": time.time(), "progress": progress})
+        results["stages"].append(
+            {"stage": stage_name, "completed_at": time.time(), "progress": progress}
+        )
 
     # Final results
     final_result = {
@@ -432,7 +476,9 @@ async def process_large_dataset(task_id: str, dataset_name: str, operation: str 
     return final_result
 
 
-def generate_report(task_id: str, report_type: str, data_sources: list = None) -> Dict[str, Any]:
+def generate_report(
+    task_id: str, report_type: str, data_sources: list = None
+) -> Dict[str, Any]:
     """
     Example synchronous long-running tool for report generation.
 
@@ -458,19 +504,28 @@ def generate_report(task_id: str, report_type: str, data_sources: list = None) -
 
     # Stage 1: Data collection
     task_manager.update_task(
-        task_id, LongRunningTaskStatus.IN_PROGRESS, progress=0.3, metadata={"stage": "Collecting data"}
+        task_id,
+        LongRunningTaskStatus.IN_PROGRESS,
+        progress=0.3,
+        metadata={"stage": "Collecting data"},
     )
     sync_time.sleep(1)
 
     # Stage 2: Analysis
     task_manager.update_task(
-        task_id, LongRunningTaskStatus.IN_PROGRESS, progress=0.6, metadata={"stage": "Analyzing data"}
+        task_id,
+        LongRunningTaskStatus.IN_PROGRESS,
+        progress=0.6,
+        metadata={"stage": "Analyzing data"},
     )
     sync_time.sleep(2)
 
     # Stage 3: Report formatting
     task_manager.update_task(
-        task_id, LongRunningTaskStatus.IN_PROGRESS, progress=0.9, metadata={"stage": "Formatting report"}
+        task_id,
+        LongRunningTaskStatus.IN_PROGRESS,
+        progress=0.9,
+        metadata={"stage": "Formatting report"},
     )
     sync_time.sleep(1)
 

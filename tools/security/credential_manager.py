@@ -147,14 +147,18 @@ class CredentialManager:
             # Decrypt the value
             value = self.decrypt(encrypted_value)
             self._credential_cache[key] = value
-            logger.debug(f"Retrieved encrypted credential: {self._mask_credential_key(key)}")
+            logger.debug(
+                f"Retrieved encrypted credential: {self._mask_credential_key(key)}"
+            )
             return value
 
         # Check for regular environment variable
         value = os.environ.get(key, default)
         if value:
             self._credential_cache[key] = value
-            logger.debug(f"Retrieved unencrypted credential: {self._mask_credential_key(key)}")
+            logger.debug(
+                f"Retrieved unencrypted credential: {self._mask_credential_key(key)}"
+            )
             return value
 
         logger.warning(f"Credential not found: {self._mask_credential_key(key)}")
@@ -182,10 +186,14 @@ class CredentialManager:
             # Return the encrypted value for persistent storage
             if encrypt:
                 encrypted_value = self.encrypt(value)
-                logger.debug(f"Stored encrypted credential: {self._mask_credential_key(key)}")
+                logger.debug(
+                    f"Stored encrypted credential: {self._mask_credential_key(key)}"
+                )
                 return encrypted_value
 
-            logger.debug(f"Stored unencrypted credential: {self._mask_credential_key(key)}")
+            logger.debug(
+                f"Stored unencrypted credential: {self._mask_credential_key(key)}"
+            )
             return value
         except Exception as e:
             logger.error(f"Error storing credential: {str(e)}")
@@ -223,7 +231,9 @@ class CredentialManager:
             Dictionary with MCP credentials
         """
         return {
-            "endpoint": self.get_credential("MCP_ENDPOINT", "https://mcp.community.augment.co"),
+            "endpoint": self.get_credential(
+                "MCP_ENDPOINT", "https://mcp.community.augment.co"
+            ),
             "namespace": self.get_credential("MCP_NAMESPACE", "vana-project"),
             "api_key": self.get_credential("MCP_API_KEY", ""),
         }
@@ -239,7 +249,9 @@ class CredentialManager:
             "project_id": self.get_credential("GOOGLE_CLOUD_PROJECT", ""),
             "location": self.get_credential("GOOGLE_CLOUD_LOCATION", "us-central1"),
             "endpoint_id": self.get_credential("VECTOR_SEARCH_ENDPOINT_ID", ""),
-            "deployed_index_id": self.get_credential("DEPLOYED_INDEX_ID", "vanasharedindex"),
+            "deployed_index_id": self.get_credential(
+                "DEPLOYED_INDEX_ID", "vanasharedindex"
+            ),
         }
 
     def get_web_search_credentials(self) -> Dict[str, str]:

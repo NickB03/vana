@@ -11,7 +11,9 @@ import random
 import sys
 
 # Add the parent directory to the path so we can import our modules
-sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+sys.path.append(
+    os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+)
 
 logger = logging.getLogger(__name__)
 
@@ -34,7 +36,13 @@ def get_agent_statuses():
 def generate_mock_agent_data():
     """Generate realistic mock agent status data."""
     # List of agent names - Updated to functional naming
-    agent_names = ["vana", "architecture_specialist", "ui_specialist", "devops_specialist", "qa_specialist"]
+    agent_names = [
+        "vana",
+        "architecture_specialist",
+        "ui_specialist",
+        "devops_specialist",
+        "qa_specialist",
+    ]
 
     # Status options
     status_options = ["Active", "Idle", "Busy", "Error", "Offline"]
@@ -60,21 +68,36 @@ def generate_mock_agent_data():
 
         # Standard capabilities for each agent based on their role - Updated to functional roles
         capabilities = {
-            "vana": ["Task Orchestration", "Agent Coordination", "Context Management", "Memory Integration"],
+            "vana": [
+                "Task Orchestration",
+                "Agent Coordination",
+                "Context Management",
+                "Memory Integration",
+            ],
             "architecture_specialist": [
                 "System Architecture",
                 "Design Patterns",
                 "Component Integration",
                 "Scalability Planning",
             ],
-            "ui_specialist": ["User Interface Design", "User Experience", "Frontend Development", "Responsive Design"],
+            "ui_specialist": [
+                "User Interface Design",
+                "User Experience",
+                "Frontend Development",
+                "Responsive Design",
+            ],
             "devops_specialist": [
                 "Deployment Automation",
                 "Infrastructure Management",
                 "CI/CD Pipelines",
                 "Monitoring",
             ],
-            "qa_specialist": ["Quality Assurance", "Testing Strategies", "Error Detection", "Performance Validation"],
+            "qa_specialist": [
+                "Quality Assurance",
+                "Testing Strategies",
+                "Error Detection",
+                "Performance Validation",
+            ],
         }
 
         # Construct agent data object

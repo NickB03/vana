@@ -10,7 +10,11 @@ import time
 
 import pytest
 
-from tests.framework import PerformanceBenchmarker, ResponseQualityAnalyzer, create_test_agent_client
+from tests.framework import (
+    PerformanceBenchmarker,
+    ResponseQualityAnalyzer,
+    create_test_agent_client,
+)
 
 
 class TestCompleteUserWorkflows:
@@ -78,9 +82,9 @@ class TestCompleteUserWorkflows:
             await asyncio.sleep(2)
 
         # Validate workflow completion
-        assert len(workflow_results) == len(
-            research_workflow
-        ), "Not all workflow steps completed"
+        assert len(workflow_results) == len(research_workflow), (
+            "Not all workflow steps completed"
+        )
 
         # Check overall workflow success
         successful_steps = [r for r in workflow_results if r["status"] == "success"]
@@ -91,9 +95,9 @@ class TestCompleteUserWorkflows:
         quality_scores = [r["quality_metrics"].overall_score for r in successful_steps]
         if quality_scores:
             avg_quality = sum(quality_scores) / len(quality_scores)
-            assert (
-                avg_quality >= 0.6
-            ), f"Average response quality too low: {avg_quality:.2f}"
+            assert avg_quality >= 0.6, (
+                f"Average response quality too low: {avg_quality:.2f}"
+            )
 
         # Check for information research indicators
         all_responses = " ".join([r["response"] for r in successful_steps])
@@ -112,9 +116,9 @@ class TestCompleteUserWorkflows:
 
         # Validate workflow performance
         total_workflow_time = sum(r["execution_time"] for r in workflow_results)
-        assert (
-            total_workflow_time < 120.0
-        ), f"Total workflow time too long: {total_workflow_time:.2f}s"
+        assert total_workflow_time < 120.0, (
+            f"Total workflow time too long: {total_workflow_time:.2f}s"
+        )
 
     @pytest.mark.e2e
     @pytest.mark.asyncio
@@ -161,18 +165,18 @@ class TestCompleteUserWorkflows:
         # Validate development workflow
         successful_steps = [r for r in workflow_results if r["status"] == "success"]
         success_rate = len(successful_steps) / len(workflow_results)
-        assert (
-            success_rate >= 0.7
-        ), f"Development workflow success rate too low: {success_rate:.2%}"
+        assert success_rate >= 0.7, (
+            f"Development workflow success rate too low: {success_rate:.2%}"
+        )
 
         # Check for development-specific content
         code_responses = [r for r in successful_steps if r["contains_code"]]
         arch_responses = [r for r in successful_steps if r["contains_architecture"]]
 
         # Should have some technical content
-        assert (
-            len(code_responses) > 0 or len(arch_responses) > 0
-        ), "Should contain code or architecture content"
+        assert len(code_responses) > 0 or len(arch_responses) > 0, (
+            "Should contain code or architecture content"
+        )
 
         # Check tool usage patterns
         all_tools_used = []
@@ -182,9 +186,9 @@ class TestCompleteUserWorkflows:
         # Should use appropriate tools for development queries
         expected_tools = ["delegate_to_agent", "adk_web_search"]
         tool_usage = any(tool in all_tools_used for tool in expected_tools)
-        assert (
-            tool_usage or len(all_tools_used) == 0
-        ), "Should use appropriate tools for development assistance"
+        assert tool_usage or len(all_tools_used) == 0, (
+            "Should use appropriate tools for development assistance"
+        )
 
     @pytest.mark.e2e
     @pytest.mark.asyncio
@@ -232,9 +236,9 @@ class TestCompleteUserWorkflows:
         # Validate data analysis workflow
         successful_steps = [r for r in workflow_results if r["status"] == "success"]
         success_rate = len(successful_steps) / len(workflow_results)
-        assert (
-            success_rate >= 0.7
-        ), f"Data analysis workflow success rate too low: {success_rate:.2%}"
+        assert success_rate >= 0.7, (
+            f"Data analysis workflow success rate too low: {success_rate:.2%}"
+        )
 
         # Check for data analysis content
         data_tool_mentions = sum(
@@ -243,9 +247,9 @@ class TestCompleteUserWorkflows:
         analysis_mentions = sum(1 for r in successful_steps if r["mentions_analysis"])
 
         # Should contain relevant data analysis content
-        assert (
-            data_tool_mentions > 0 or analysis_mentions > 0
-        ), "Should contain data analysis related content"
+        assert data_tool_mentions > 0 or analysis_mentions > 0, (
+            "Should contain data analysis related content"
+        )
 
         # Check for delegation to data science agent
         delegation_tools = ["delegate_to_agent"]
@@ -301,9 +305,9 @@ class TestCompleteUserWorkflows:
         # Validate problem-solving workflow
         successful_steps = [r for r in workflow_results if r["status"] == "success"]
         success_rate = len(successful_steps) / len(workflow_results)
-        assert (
-            success_rate >= 0.7
-        ), f"Problem-solving workflow success rate too low: {success_rate:.2%}"
+        assert success_rate >= 0.7, (
+            f"Problem-solving workflow success rate too low: {success_rate:.2%}"
+        )
 
         # Check for problem-solving content
         performance_mentions = sum(
@@ -318,9 +322,9 @@ class TestCompleteUserWorkflows:
         substantial_responses = [
             r for r in successful_steps if len(r["response"]) > 100
         ]
-        assert (
-            len(substantial_responses) >= len(successful_steps) // 2
-        ), "Should provide substantial responses for complex problems"
+        assert len(substantial_responses) >= len(successful_steps) // 2, (
+            "Should provide substantial responses for complex problems"
+        )
 
     @pytest.mark.e2e
     @pytest.mark.slow
@@ -381,17 +385,17 @@ class TestCompleteUserWorkflows:
         # Validate extended conversation
         successful_steps = [r for r in workflow_results if r["status"] == "success"]
         success_rate = len(successful_steps) / len(workflow_results)
-        assert (
-            success_rate >= 0.7
-        ), f"Extended conversation success rate too low: {success_rate:.2%}"
+        assert success_rate >= 0.7, (
+            f"Extended conversation success rate too low: {success_rate:.2%}"
+        )
 
         # Check context preservation
         context_scores = [r["context_awareness_score"] for r in successful_steps]
         if context_scores:
             avg_context_score = sum(context_scores) / len(context_scores)
-            assert (
-                avg_context_score >= 0.3
-            ), f"Context awareness too low: {avg_context_score:.2f}"
+            assert avg_context_score >= 0.3, (
+                f"Context awareness too low: {avg_context_score:.2f}"
+            )
 
         # Later responses should maintain context from earlier conversation
         later_responses = successful_steps[len(successful_steps) // 2 :]
@@ -400,17 +404,17 @@ class TestCompleteUserWorkflows:
                 r["context_awareness_score"] for r in later_responses
             ]
             avg_later_context = sum(later_context_scores) / len(later_context_scores)
-            assert (
-                avg_later_context >= 0.2
-            ), "Later responses should maintain some context awareness"
+            assert avg_later_context >= 0.2, (
+                "Later responses should maintain some context awareness"
+            )
 
         # Check overall conversation quality
         quality_scores = [r["quality_metrics"].overall_score for r in successful_steps]
         if quality_scores:
             avg_quality = sum(quality_scores) / len(quality_scores)
-            assert (
-                avg_quality >= 0.6
-            ), f"Extended conversation quality too low: {avg_quality:.2f}"
+            assert avg_quality >= 0.6, (
+                f"Extended conversation quality too low: {avg_quality:.2f}"
+            )
 
     @pytest.mark.e2e
     @pytest.mark.performance
@@ -459,12 +463,12 @@ class TestCompleteUserWorkflows:
             avg_response_time = sum(response_times) / len(response_times)
             max_response_time = max(response_times)
 
-            assert (
-                avg_response_time < 15.0
-            ), f"Average workflow response time too slow: {avg_response_time:.2f}s"
-            assert (
-                max_response_time < 30.0
-            ), f"Maximum workflow response time too slow: {max_response_time:.2f}s"
+            assert avg_response_time < 15.0, (
+                f"Average workflow response time too slow: {avg_response_time:.2f}s"
+            )
+            assert max_response_time < 30.0, (
+                f"Maximum workflow response time too slow: {max_response_time:.2f}s"
+            )
 
         # Check success rate
         successful_queries = [
@@ -506,9 +510,9 @@ class TestCompleteUserWorkflows:
             await asyncio.sleep(1)
 
         # Validate error recovery
-        assert len(workflow_results) == len(
-            error_recovery_workflow
-        ), "Not all workflow steps completed"
+        assert len(workflow_results) == len(error_recovery_workflow), (
+            "Not all workflow steps completed"
+        )
 
         # Should handle errors gracefully
         for result in workflow_results:
@@ -519,9 +523,9 @@ class TestCompleteUserWorkflows:
             ], f"Invalid status: {result['status']}"
 
             # Should not hang on errors
-            assert (
-                result["execution_time"] < 30.0
-            ), f"Step took too long: {result['execution_time']:.2f}s"
+            assert result["execution_time"] < 30.0, (
+                f"Step took too long: {result['execution_time']:.2f}s"
+            )
 
         # Should recover from errors
         recovery_steps = [r for r in workflow_results[-2:] if r["recovered"]]

@@ -21,7 +21,12 @@ import pytest
 # Import the actual tools from VANA codebase
 sys.path.append(str(Path(__file__).parent.parent.parent.parent))
 
-from lib._tools.adk_tools import adk_coordinate_task, adk_delegate_to_agent, adk_get_agent_status, adk_transfer_to_agent
+from lib._tools.adk_tools import (
+    adk_coordinate_task,
+    adk_delegate_to_agent,
+    adk_get_agent_status,
+    adk_transfer_to_agent,
+)
 from tests.framework import EnvironmentConfig, EnvironmentType, TestEnvironment
 
 
@@ -104,15 +109,15 @@ class TestAgentCoordinationTools:
         # STRICT: Must have required coordination fields
         assert "action" in parsed, "Missing action field"
         assert parsed["action"] == "coordinate_task", "Incorrect action value"
-        assert "task_description" in parsed or task_description in str(
-            parsed
-        ), "Original task not preserved"
+        assert "task_description" in parsed or task_description in str(parsed), (
+            "Original task not preserved"
+        )
 
         # STRICT: Must have delegation or coordination information
         required_fields = ["delegation", "coordination", "specialist", "response"]
-        assert any(
-            field in str(parsed).lower() for field in required_fields
-        ), "Missing coordination information"
+        assert any(field in str(parsed).lower() for field in required_fields), (
+            "Missing coordination information"
+        )
 
     @pytest.mark.unit
     def test_adk_coordinate_task_with_assigned_agent(self):
@@ -409,9 +414,9 @@ class TestAgentCoordinationEdgeCases:
         execution_time = end_time - start_time
 
         # Should be fast (under 1 second)
-        assert (
-            execution_time < 1.0
-        ), f"Agent status took too long: {execution_time:.2f}s"
+        assert execution_time < 1.0, (
+            f"Agent status took too long: {execution_time:.2f}s"
+        )
         assert isinstance(result, str)
         assert len(result) > 0
 

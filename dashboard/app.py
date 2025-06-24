@@ -21,12 +21,20 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-    handlers=[logging.StreamHandler(), logging.FileHandler(os.path.join(os.path.dirname(__file__), "dashboard.log"))],
+    handlers=[
+        logging.StreamHandler(),
+        logging.FileHandler(os.path.join(os.path.dirname(__file__), "dashboard.log")),
+    ],
 )
 logger = logging.getLogger(__name__)
 
 # Dashboard configuration
-st.set_page_config(page_title="VANA Dashboard", page_icon="🧠", layout="wide", initial_sidebar_state="expanded")
+st.set_page_config(
+    page_title="VANA Dashboard",
+    page_icon="🧠",
+    layout="wide",
+    initial_sidebar_state="expanded",
+)
 
 
 def main():
@@ -38,7 +46,14 @@ def main():
     # Sidebar navigation
     st.sidebar.title("Navigation")
     page = st.sidebar.radio(
-        "Select a page", ["Agent Status", "Memory Usage", "ADK Memory", "System Health", "Task Execution"]
+        "Select a page",
+        [
+            "Agent Status",
+            "Memory Usage",
+            "ADK Memory",
+            "System Health",
+            "Task Execution",
+        ],
     )
 
     # Add version information
@@ -48,7 +63,9 @@ def main():
     st.sidebar.markdown("Build: " + datetime.now().strftime("%Y%m%d"))
 
     # Display timestamp
-    st.sidebar.markdown(f"**Last updated:** {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    st.sidebar.markdown(
+        f"**Last updated:** {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
+    )
 
     # Display selected page
     if page == "Agent Status":
@@ -73,7 +90,9 @@ def main():
 
     elif page == "ADK Memory":
         try:
-            from dashboard.components.adk_memory_dashboard import display_adk_memory_dashboard
+            from dashboard.components.adk_memory_dashboard import (
+                display_adk_memory_dashboard,
+            )
 
             display_adk_memory_dashboard()
         except Exception as e:

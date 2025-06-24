@@ -53,7 +53,9 @@ def create_llm_agent(*args, **kwargs) -> LlmAgent:
         # Extract the actual model name and format correctly for OpenRouter
         # Convert from 'openrouter/deepseek/deepseek-r1-0528:free'
         # to 'openrouter/openrouter/deepseek/deepseek-r1-0528:free'
-        if model.startswith("openrouter/") and not model.startswith("openrouter/openrouter/"):
+        if model.startswith("openrouter/") and not model.startswith(
+            "openrouter/openrouter/"
+        ):
             actual_model = model.replace("openrouter/", "openrouter/openrouter/")
         else:
             actual_model = model
@@ -63,7 +65,9 @@ def create_llm_agent(*args, **kwargs) -> LlmAgent:
         # Create LiteLlm instance using the correct pattern from BitDoze article
         if LITELLM_AVAILABLE:
             litellm_model = LiteLlm(
-                model=actual_model, api_key=openrouter_api_key, api_base="https://openrouter.ai/api/v1"
+                model=actual_model,
+                api_key=openrouter_api_key,
+                api_base="https://openrouter.ai/api/v1",
             )
         else:
             logger.error("LiteLlm not available, falling back to Gemini")
@@ -76,7 +80,9 @@ def create_llm_agent(*args, **kwargs) -> LlmAgent:
         return LlmAgent(*args, **kwargs)
     else:
         if is_openrouter_model(model) and not LITELLM_AVAILABLE:
-            logger.error("OpenRouter model requested but LiteLLM not available. Falling back to Gemini.")
+            logger.error(
+                "OpenRouter model requested but LiteLLM not available. Falling back to Gemini."
+            )
             kwargs["model"] = "gemini-2.0-flash"
         else:
             logger.info(f"Creating standard ADK agent for model: {model}")

@@ -22,7 +22,10 @@ from dotenv import load_dotenv
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(message)s",
-    handlers=[logging.FileHandler("vector_search_permissions.log"), logging.StreamHandler()],
+    handlers=[
+        logging.FileHandler("vector_search_permissions.log"),
+        logging.StreamHandler(),
+    ],
 )
 logger = logging.getLogger(__name__)
 
@@ -35,14 +38,18 @@ def load_environment_variables():
     env_vars = {
         "GOOGLE_CLOUD_PROJECT": os.environ.get("GOOGLE_CLOUD_PROJECT"),
         "GOOGLE_CLOUD_LOCATION": os.environ.get("GOOGLE_CLOUD_LOCATION"),
-        "GOOGLE_APPLICATION_CREDENTIALS": os.environ.get("GOOGLE_APPLICATION_CREDENTIALS"),
+        "GOOGLE_APPLICATION_CREDENTIALS": os.environ.get(
+            "GOOGLE_APPLICATION_CREDENTIALS"
+        ),
         "VECTOR_SEARCH_ENDPOINT_ID": os.environ.get("VECTOR_SEARCH_ENDPOINT_ID"),
     }
 
     # Check for missing variables
     missing_vars = [var for var, value in env_vars.items() if not value]
     if missing_vars:
-        logger.error(f"❌ Missing required environment variables: {', '.join(missing_vars)}")
+        logger.error(
+            f"❌ Missing required environment variables: {', '.join(missing_vars)}"
+        )
         logger.error("Please set these variables in your .env file or environment.")
         return None
 
@@ -53,7 +60,9 @@ def load_environment_variables():
 def get_service_account_email():
     """Get the service account email from the credentials file or use the known one."""
     # Use the known service account email from the IAM console
-    known_service_account = "vana-vector-search-sa@${GOOGLE_CLOUD_PROJECT}.iam.gserviceaccount.com"
+    known_service_account = (
+        "vana-vector-search-sa@${GOOGLE_CLOUD_PROJECT}.iam.gserviceaccount.com"
+    )
 
     # Try to get from credentials file first
     credentials_path = os.environ.get("GOOGLE_APPLICATION_CREDENTIALS")
@@ -72,14 +81,18 @@ def get_service_account_email():
             return known_service_account
 
         service_account_email = credentials["client_email"]
-        logger.info(f"✅ Service account email from credentials: {service_account_email}")
+        logger.info(
+            f"✅ Service account email from credentials: {service_account_email}"
+        )
 
         # Check if the service account from credentials matches the known one
         if service_account_email != known_service_account:
             logger.warning(
                 f"⚠️ Service account in credentials ({service_account_email}) does not match the known service account ({known_service_account})"
             )
-            logger.info(f"Using service account from credentials: {service_account_email}")
+            logger.info(
+                f"Using service account from credentials: {service_account_email}"
+            )
 
         return service_account_email
     except Exception as e:
@@ -151,8 +164,14 @@ def update_vector_search_client():
 
 def main():
     """Main function."""
-    parser = argparse.ArgumentParser(description="Fix Vector Search Permissions for VANA")
-    parser.add_argument("--mock", action="store_true", help="Use mock implementation instead of fixing permissions")
+    parser = argparse.ArgumentParser(
+        description="Fix Vector Search Permissions for VANA"
+    )
+    parser.add_argument(
+        "--mock",
+        action="store_true",
+        help="Use mock implementation instead of fixing permissions",
+    )
     args = parser.parse_args()
 
     # Load environment variables
@@ -228,7 +247,9 @@ if __name__ == "__main__":
         logger.info(f"python {test_script_path}")
     else:
         logger.info("Since we can't use gcloud directly, we'll need to:")
-        logger.info("1. Go to the Google Cloud Console: https://console.cloud.google.com/")
+        logger.info(
+            "1. Go to the Google Cloud Console: https://console.cloud.google.com/"
+        )
         logger.info("2. Navigate to IAM & Admin > IAM")
         logger.info("3. Find the service account: " + service_account_email)
         logger.info("4. Add the following roles:")

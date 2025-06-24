@@ -401,12 +401,12 @@ def _format_extracted_data(
             response = f"""[REAL-TIME SEARCH RESULT]
 Query: {query}
 CURRENT TIME INFORMATION:
-- Location: {time_data.get('location', 'Unknown')}
-- Current Time: {time_data['time']}
+- Location: {time_data.get("location", "Unknown")}
+- Current Time: {time_data["time"]}
 - Data Source: Live web search
 [END REAL-TIME DATA]
 
-Based on the real-time search data above, the current time in {time_data.get('location', 'the requested location')} is {time_data['time']}."""
+Based on the real-time search data above, the current time in {time_data.get("location", "the requested location")} is {time_data["time"]}."""
             return response
 
     elif is_weather_query and extracted_info:
@@ -418,7 +418,7 @@ Based on the real-time search data above, the current time in {time_data.get('lo
         response = f"""[REAL-TIME SEARCH RESULT]
 Query: {query}
 CURRENT WEATHER INFORMATION:
-- Location: {weather_data.get('location', 'Unknown')}"""
+- Location: {weather_data.get("location", "Unknown")}"""
 
         if temp:
             response += f"\n- Temperature: {temp}"
@@ -429,7 +429,7 @@ CURRENT WEATHER INFORMATION:
 - Data Source: Live web search
 [END REAL-TIME DATA]
 
-Based on the real-time search data above, the weather in {weather_data.get('location', 'the requested location')}"""
+Based on the real-time search data above, the weather in {weather_data.get("location", "the requested location")}"""
 
         if temp and condition:
             response += f" is {temp} with {condition} conditions."

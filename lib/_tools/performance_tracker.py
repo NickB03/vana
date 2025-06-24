@@ -113,7 +113,9 @@ class PerformanceTracker:
         # Invalidate cache
         self.performance_cache.clear()
 
-        logger.debug(f"📊 Recorded performance: {agent_name} ({routing_strategy}) - {success} in {execution_time:.2f}s")
+        logger.debug(
+            f"📊 Recorded performance: {agent_name} ({routing_strategy}) - {success} in {execution_time:.2f}s"
+        )
 
     async def _update_agent_stats(self, metric: PerformanceMetric):
         """Update agent performance statistics."""
@@ -175,24 +177,36 @@ class PerformanceTracker:
         stats = self.routing_stats[strategy]
 
         # Get all metrics for this strategy
-        strategy_metrics = [m for m in self.metrics_history if m.routing_strategy == strategy]
+        strategy_metrics = [
+            m for m in self.metrics_history if m.routing_strategy == strategy
+        ]
 
         # Update statistics
         stats.usage_count = len(strategy_metrics)
         successful_metrics = [m for m in strategy_metrics if m.success]
-        stats.success_rate = len(successful_metrics) / len(strategy_metrics) if strategy_metrics else 0.0
+        stats.success_rate = (
+            len(successful_metrics) / len(strategy_metrics) if strategy_metrics else 0.0
+        )
 
         if strategy_metrics:
-            stats.average_execution_time = sum(m.execution_time for m in strategy_metrics) / len(strategy_metrics)
-            stats.average_agent_count = sum(m.agent_count for m in strategy_metrics) / len(strategy_metrics)
+            stats.average_execution_time = sum(
+                m.execution_time for m in strategy_metrics
+            ) / len(strategy_metrics)
+            stats.average_agent_count = sum(
+                m.agent_count for m in strategy_metrics
+            ) / len(strategy_metrics)
 
             # Calculate efficiency score (success rate / average execution time)
-            stats.efficiency_score = stats.success_rate / max(stats.average_execution_time, 0.1)
+            stats.efficiency_score = stats.success_rate / max(
+                stats.average_execution_time, 0.1
+            )
 
     def _calculate_performance_trend(self, agent_name: str) -> str:
         """Calculate performance trend for an agent."""
         # Get recent metrics for this agent
-        recent_metrics = [m for m in list(self.metrics_history)[-50:] if m.agent_name == agent_name]
+        recent_metrics = [
+            m for m in list(self.metrics_history)[-50:] if m.agent_name == agent_name
+        ]
 
         if len(recent_metrics) < 10:
             return "stable"
@@ -203,7 +217,9 @@ class PerformanceTracker:
         second_half = recent_metrics[mid_point:]
 
         first_success_rate = sum(1 for m in first_half if m.success) / len(first_half)
-        second_success_rate = sum(1 for m in second_half if m.success) / len(second_half)
+        second_success_rate = sum(1 for m in second_half if m.success) / len(
+            second_half
+        )
 
         if second_success_rate > first_success_rate + 0.1:
             return "improving"
@@ -220,7 +236,9 @@ class PerformanceTracker:
         """Get performance statistics for all agents."""
         return self.agent_stats.copy()
 
-    def get_routing_performance(self, strategy: str) -> Optional[RoutingPerformanceStats]:
+    def get_routing_performance(
+        self, strategy: str
+    ) -> Optional[RoutingPerformanceStats]:
         """Get performance statistics for a specific routing strategy."""
         return self.routing_stats.get(strategy)
 
@@ -246,19 +264,29 @@ class PerformanceTracker:
 
         # Overall statistics
         overall_success_rate = len(successful_metrics) / total_metrics
-        overall_avg_time = sum(m.execution_time for m in self.metrics_history) / total_metrics
+        overall_avg_time = (
+            sum(m.execution_time for m in self.metrics_history) / total_metrics
+        )
 
         # Top performing agents
         top_agents = sorted(
-            self.agent_stats.values(), key=lambda x: (x.success_rate, -x.average_execution_time), reverse=True
+            self.agent_stats.values(),
+            key=lambda x: (x.success_rate, -x.average_execution_time),
+            reverse=True,
         )[:5]
 
         # Best routing strategies
-        best_strategies = sorted(self.routing_stats.values(), key=lambda x: x.efficiency_score, reverse=True)[:5]
+        best_strategies = sorted(
+            self.routing_stats.values(), key=lambda x: x.efficiency_score, reverse=True
+        )[:5]
 
         # Recent performance (last 24 hours)
         recent_cutoff = datetime.now() - timedelta(hours=24)
-        recent_metrics = [m for m in self.metrics_history if datetime.fromisoformat(m.timestamp) > recent_cutoff]
+        recent_metrics = [
+            m
+            for m in self.metrics_history
+            if datetime.fromisoformat(m.timestamp) > recent_cutoff
+        ]
 
         recent_success_rate = 0.0
         if recent_metrics:
@@ -315,11 +343,19 @@ class PerformanceTracker:
 
         trends = {}
         for period_name, cutoff_time in periods.items():
-            period_metrics = [m for m in self.metrics_history if datetime.fromisoformat(m.timestamp) > cutoff_time]
+            period_metrics = [
+                m
+                for m in self.metrics_history
+                if datetime.fromisoformat(m.timestamp) > cutoff_time
+            ]
 
             if period_metrics:
-                success_rate = sum(1 for m in period_metrics if m.success) / len(period_metrics)
-                avg_time = sum(m.execution_time for m in period_metrics) / len(period_metrics)
+                success_rate = sum(1 for m in period_metrics if m.success) / len(
+                    period_metrics
+                )
+                avg_time = sum(m.execution_time for m in period_metrics) / len(
+                    period_metrics
+                )
 
                 trends[period_name] = {
                     "success_rate": success_rate,
@@ -377,8 +413,12 @@ class PerformanceTracker:
         if format == "json":
             return {
                 "metrics": [asdict(metric) for metric in self.metrics_history],
-                "agent_stats": {name: asdict(stats) for name, stats in self.agent_stats.items()},
-                "routing_stats": {name: asdict(stats) for name, stats in self.routing_stats.items()},
+                "agent_stats": {
+                    name: asdict(stats) for name, stats in self.agent_stats.items()
+                },
+                "routing_stats": {
+                    name: asdict(stats) for name, stats in self.routing_stats.items()
+                },
                 "export_timestamp": datetime.now().isoformat(),
             }
         else:
@@ -389,7 +429,11 @@ class PerformanceTracker:
         cutoff_time = datetime.now() - timedelta(days=days)
 
         # Filter metrics
-        filtered_metrics = [m for m in self.metrics_history if datetime.fromisoformat(m.timestamp) > cutoff_time]
+        filtered_metrics = [
+            m
+            for m in self.metrics_history
+            if datetime.fromisoformat(m.timestamp) > cutoff_time
+        ]
 
         # Update history
         self.metrics_history.clear()
@@ -398,7 +442,9 @@ class PerformanceTracker:
         # Clear cache
         self.performance_cache.clear()
 
-        logger.info(f"🧹 Cleared metrics older than {days} days. Kept {len(filtered_metrics)} metrics.")
+        logger.info(
+            f"🧹 Cleared metrics older than {days} days. Kept {len(filtered_metrics)} metrics."
+        )
 
 
 # Global performance tracker instance

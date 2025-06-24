@@ -29,7 +29,11 @@ from .long_running_tools import (
 )
 
 try:
-    from lib._shared_libraries.tool_standards import InputValidator, StandardToolResponse, performance_monitor
+    from lib._shared_libraries.tool_standards import (
+        InputValidator,
+        StandardToolResponse,
+        performance_monitor,
+    )
 except ImportError:
     # Fallback for development
     class StandardToolResponse:
@@ -52,7 +56,9 @@ logger = logging.getLogger(__name__)
 # Standardized Long-Running Tool Wrappers
 
 
-def ask_for_approval(purpose: str, amount: float, approver: str = "System Administrator") -> str:
+def ask_for_approval(
+    purpose: str, amount: float, approver: str = "System Administrator"
+) -> str:
     """
     🎫 Request approval for an action requiring authorization.
 
@@ -69,12 +75,20 @@ def ask_for_approval(purpose: str, amount: float, approver: str = "System Admini
     """
     try:
         # Validate inputs
-        purpose = InputValidator.validate_string(purpose, "purpose", required=True, max_length=500)
-        amount = InputValidator.validate_integer(amount, "amount", required=True, min_value=0, max_value=1000000)
-        approver = InputValidator.validate_string(approver, "approver", required=False, max_length=100)
+        purpose = InputValidator.validate_string(
+            purpose, "purpose", required=True, max_length=500
+        )
+        amount = InputValidator.validate_integer(
+            amount, "amount", required=True, min_value=0, max_value=1000000
+        )
+        approver = InputValidator.validate_string(
+            approver, "approver", required=False, max_length=100
+        )
 
         # Create long-running tool and execute
-        approval_tool = create_long_running_tool(ask_for_approval, name="approval_request")
+        approval_tool = create_long_running_tool(
+            ask_for_approval, name="approval_request"
+        )
 
         # Since we can't use async in ADK function tools directly, we'll simulate
         # the long-running behavior by creating a task and returning task info
@@ -91,7 +105,9 @@ def ask_for_approval(purpose: str, amount: float, approver: str = "System Admini
                 "approved_amount": amount,
                 "message": f"Auto-approved: {purpose} for ${amount}",
             }
-            task_manager.update_task(task_id, LongRunningTaskStatus.APPROVED, result=result)
+            task_manager.update_task(
+                task_id, LongRunningTaskStatus.APPROVED, result=result
+            )
         else:
             result = {
                 "task_id": task_id,
@@ -100,18 +116,20 @@ def ask_for_approval(purpose: str, amount: float, approver: str = "System Admini
                 "approver": approver,
                 "message": f"Approval required from {approver} for {purpose}: ${amount}",
             }
-            task_manager.update_task(task_id, LongRunningTaskStatus.WAITING_APPROVAL, result=result)
+            task_manager.update_task(
+                task_id, LongRunningTaskStatus.WAITING_APPROVAL, result=result
+            )
 
         return f"""✅ Approval request created successfully:
 
 **Task ID**: {task_id}
-**Status**: {result['status']}
-**Ticket ID**: {result['ticket_id']}
+**Status**: {result["status"]}
+**Ticket ID**: {result["ticket_id"]}
 **Purpose**: {purpose}
 **Amount**: ${amount}
 **Approver**: {approver}
 
-{result['message']}
+{result["message"]}
 
 Use `check_task_status("{task_id}")` to monitor progress."""
 
@@ -136,8 +154,12 @@ def process_large_dataset(dataset_name: str, operation: str = "analyze") -> str:
     """
     try:
         # Validate inputs
-        dataset_name = InputValidator.validate_string(dataset_name, "dataset_name", required=True, max_length=200)
-        operation = InputValidator.validate_string(operation, "operation", required=False, max_length=50)
+        dataset_name = InputValidator.validate_string(
+            dataset_name, "dataset_name", required=True, max_length=200
+        )
+        operation = InputValidator.validate_string(
+            operation, "operation", required=False, max_length=50
+        )
 
         # Create task
         task_id = task_manager.create_task()
@@ -195,11 +217,17 @@ def generate_report(report_type: str, data_sources: str = "default") -> str:
     """
     try:
         # Validate inputs
-        report_type = InputValidator.validate_string(report_type, "report_type", required=True, max_length=100)
-        data_sources_str = InputValidator.validate_string(data_sources, "data_sources", required=False, max_length=500)
+        report_type = InputValidator.validate_string(
+            report_type, "report_type", required=True, max_length=100
+        )
+        data_sources_str = InputValidator.validate_string(
+            data_sources, "data_sources", required=False, max_length=500
+        )
 
         # Parse data sources
-        data_sources_list = [s.strip() for s in data_sources_str.split(",") if s.strip()]
+        data_sources_list = [
+            s.strip() for s in data_sources_str.split(",") if s.strip()
+        ]
         if not data_sources_list:
             data_sources_list = ["default_source"]
 
@@ -230,7 +258,7 @@ def generate_report(report_type: str, data_sources: str = "default") -> str:
 
 **Task ID**: {task_id}
 **Report Type**: {report_type}
-**Data Sources**: {', '.join(data_sources_list)}
+**Data Sources**: {", ".join(data_sources_list)}
 **Status**: Generating report
 **Progress**: 20%
 **Current Stage**: Collecting data
@@ -259,7 +287,9 @@ def check_task_status(task_id: str) -> str:
         Current status and progress information for the task
     """
     try:
-        task_id = InputValidator.validate_string(task_id, "task_id", required=True, max_length=100)
+        task_id = InputValidator.validate_string(
+            task_id, "task_id", required=True, max_length=100
+        )
 
         task = task_manager.get_task(task_id)
         if not task:
@@ -278,14 +308,16 @@ def check_task_status(task_id: str) -> str:
         }
 
         emoji = status_emoji.get(task.status, "❓")
-        progress_bar = "█" * int(task.progress * 10) + "░" * (10 - int(task.progress * 10))
+        progress_bar = "█" * int(task.progress * 10) + "░" * (
+            10 - int(task.progress * 10)
+        )
 
-        status_info = f"""{emoji} **Task Status**: {task.status.value.replace('_', ' ').title()}
+        status_info = f"""{emoji} **Task Status**: {task.status.value.replace("_", " ").title()}
 
 **Task ID**: {task_id}
 **Progress**: {progress_bar} {int(task.progress * 100)}%
-**Created**: {time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(task.created_at))}
-**Updated**: {time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(task.updated_at))}"""
+**Created**: {time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(task.created_at))}
+**Updated**: {time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(task.updated_at))}"""
 
         if task.metadata:
             if "current_stage" in task.metadata:

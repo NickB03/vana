@@ -9,5 +9,5 @@ root_agent = LlmAgent(
     name="test_minimal",
     model="gemini-2.0-flash",
     description="Minimal test agent for validation debugging",
-    instruction="You are a minimal test agent."
+    instruction="You are a minimal test agent.",
 )

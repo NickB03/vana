@@ -72,7 +72,12 @@ class FeedbackClient:
         """
         try:
             # Prepare request data
-            data = {"query": query, "rating": rating, "comments": comments, "implementation": implementation}
+            data = {
+                "query": query,
+                "rating": rating,
+                "comments": comments,
+                "implementation": implementation,
+            }
 
             if result_ratings:
                 data["result_ratings"] = result_ratings
@@ -162,7 +167,9 @@ class FeedbackClient:
         """
         try:
             # Send request
-            response = requests.get(f"{self.api_url}/feedback/analysis", params={"min_count": min_count})
+            response = requests.get(
+                f"{self.api_url}/feedback/analysis", params={"min_count": min_count}
+            )
 
             # Check response
             if response.status_code == 200:
@@ -182,25 +189,46 @@ class FeedbackClient:
 def parse_arguments():
     """Parse command line arguments"""
     parser = argparse.ArgumentParser(description="VANA Feedback Client")
-    parser.add_argument("--api-url", type=str, default="http://localhost:5000", help="URL of the feedback API")
+    parser.add_argument(
+        "--api-url",
+        type=str,
+        default="http://localhost:5000",
+        help="URL of the feedback API",
+    )
 
     subparsers = parser.add_subparsers(dest="command", help="Command to execute")
 
     # Submit feedback command
     submit_parser = subparsers.add_parser("submit", help="Submit feedback")
     submit_parser.add_argument("--query", type=str, required=True, help="Search query")
-    submit_parser.add_argument("--rating", type=int, required=True, choices=range(1, 6), help="Overall rating (1-5)")
+    submit_parser.add_argument(
+        "--rating",
+        type=int,
+        required=True,
+        choices=range(1, 6),
+        help="Overall rating (1-5)",
+    )
     submit_parser.add_argument("--comments", type=str, default="", help="User comments")
     submit_parser.add_argument(
-        "--result-ratings", type=str, help='Ratings for individual results (comma-separated, e.g., "5,4,3,2,1")'
+        "--result-ratings",
+        type=str,
+        help='Ratings for individual results (comma-separated, e.g., "5,4,3,2,1")',
     )
     submit_parser.add_argument(
-        "--implementation", type=str, default="enhanced_hybrid_search_optimized", help="Search implementation used"
+        "--implementation",
+        type=str,
+        default="enhanced_hybrid_search_optimized",
+        help="Search implementation used",
     )
 
     # Get feedback command
     get_parser = subparsers.add_parser("get", help="Get feedback entries")
-    get_parser.add_argument("--limit", type=int, default=100, help="Maximum number of feedback entries to return")
+    get_parser.add_argument(
+        "--limit",
+        type=int,
+        default=100,
+        help="Maximum number of feedback entries to return",
+    )
 
     # Get statistics command
     subparsers.add_parser("stats", help="Get feedback statistics")
@@ -208,7 +236,10 @@ def parse_arguments():
     # Analyze feedback command
     analyze_parser = subparsers.add_parser("analyze", help="Analyze feedback")
     analyze_parser.add_argument(
-        "--min-count", type=int, default=10, help="Minimum number of feedback entries required for analysis"
+        "--min-count",
+        type=int,
+        default=10,
+        help="Minimum number of feedback entries required for analysis",
     )
 
     return parser.parse_args()
@@ -229,7 +260,9 @@ def main():
             try:
                 result_ratings = [int(r) for r in args.result_ratings.split(",")]
             except ValueError:
-                logger.error("Invalid result ratings format. Use comma-separated integers (e.g., '5,4,3,2,1')")
+                logger.error(
+                    "Invalid result ratings format. Use comma-separated integers (e.g., '5,4,3,2,1')"
+                )
                 sys.exit(1)
 
         # Submit feedback

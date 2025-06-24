@@ -13,7 +13,12 @@ Specializations:
 - Mobile-first and responsive design patterns
 """
 
-from lib._tools import adk_list_directory, adk_read_file, adk_search_knowledge, adk_vector_search
+from lib._tools import (
+    adk_list_directory,
+    adk_read_file,
+    adk_search_knowledge,
+    adk_vector_search,
+)
 from google.adk.tools import FunctionTool
 from google.adk.agents import LlmAgent
 import os
@@ -143,10 +148,8 @@ ui_specialist = LlmAgent(
 
 Always provide expert-level UI/UX guidance that balances user needs, business goals, technical constraints, and accessibility requirements.""",
     tools=[
-        FunctionTool(
-            func=analyze_user_interface),
-        FunctionTool(
-            func=evaluate_user_experience),
+        FunctionTool(func=analyze_user_interface),
+        FunctionTool(func=evaluate_user_experience),
         adk_vector_search,
         adk_search_knowledge,
         adk_read_file,

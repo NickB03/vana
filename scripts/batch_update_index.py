@@ -42,10 +42,23 @@ INDEX_ID = os.getenv("INDEX_ID", "4167591072945405952")  # From project_handoff.
 def parse_arguments():
     """Parse command line arguments."""
     parser = argparse.ArgumentParser(description="Batch update Vector Search index")
-    parser.add_argument("--embeddings-file", required=True, help="Path to the embeddings file")
-    parser.add_argument("--gcs-directory", default="embeddings", help="Directory in GCS bucket to store embeddings")
-    parser.add_argument("--wait", action="store_true", help="Wait for the update operation to complete")
-    parser.add_argument("--timeout", type=int, default=3600, help="Timeout in seconds for the update operation")
+    parser.add_argument(
+        "--embeddings-file", required=True, help="Path to the embeddings file"
+    )
+    parser.add_argument(
+        "--gcs-directory",
+        default="embeddings",
+        help="Directory in GCS bucket to store embeddings",
+    )
+    parser.add_argument(
+        "--wait", action="store_true", help="Wait for the update operation to complete"
+    )
+    parser.add_argument(
+        "--timeout",
+        type=int,
+        default=3600,
+        help="Timeout in seconds for the update operation",
+    )
     return parser.parse_args()
 
 
@@ -103,7 +116,9 @@ def create_update_operation(index_id: str, gcs_uri: str):
         index = aiplatform.MatchingEngineIndex(index_name=index_name)
 
         # Create the update operation
-        operation = index.update_embeddings(contents_delta_uri=gcs_uri, is_complete_overwrite=False)
+        operation = index.update_embeddings(
+            contents_delta_uri=gcs_uri, is_complete_overwrite=False
+        )
 
         logger.info(f"Created update operation: {operation.operation.name}")
         return operation
@@ -142,7 +157,9 @@ def monitor_operation(operation, timeout: int = 3600) -> bool:
             logger.error(f"Operation failed: {operation.error.message}")
             return False
 
-        logger.info(f"Operation completed successfully in {time.time() - start_time:.1f} seconds")
+        logger.info(
+            f"Operation completed successfully in {time.time() - start_time:.1f} seconds"
+        )
         return True
     except Exception as e:
         logger.error(f"Error monitoring operation: {str(e)}")
@@ -167,7 +184,8 @@ def prepare_embeddings_file(embeddings_file: str) -> str:
 
         # Check if the file is already in the correct format
         if isinstance(embeddings_data, list) and all(
-            isinstance(item, dict) and "id" in item and "embedding" in item for item in embeddings_data
+            isinstance(item, dict) and "id" in item and "embedding" in item
+            for item in embeddings_data
         ):
             logger.info("Embeddings file is already in the correct format")
             return embeddings_file
@@ -223,7 +241,9 @@ def main():
                 logger.error("Batch update failed")
                 return 1
         else:
-            logger.info("Batch update operation started. Check the operation status manually.")
+            logger.info(
+                "Batch update operation started. Check the operation status manually."
+            )
 
         return 0
     except Exception as e:

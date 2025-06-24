@@ -33,7 +33,9 @@ class AuditLogger:
             log_dir: Directory to store audit logs (optional)
         """
         # Set log directory
-        self.log_dir = log_dir or os.path.join(os.environ.get("VANA_DATA_DIR", "."), "audit_logs")
+        self.log_dir = log_dir or os.path.join(
+            os.environ.get("VANA_DATA_DIR", "."), "audit_logs"
+        )
 
         # Create log directory if it doesn't exist
         os.makedirs(self.log_dir, exist_ok=True)
@@ -172,7 +174,9 @@ class AuditLogger:
             with open(self.current_log_file, "a") as f:
                 f.write(json.dumps(log_data) + "\n")
 
-            logger.debug(f"Audit log entry created: {event_type} {operation} on {resource_type}")
+            logger.debug(
+                f"Audit log entry created: {event_type} {operation} on {resource_type}"
+            )
             return True
         except Exception as e:
             logger.error(f"Error creating audit log: {str(e)}")
@@ -277,7 +281,13 @@ class AuditLogger:
 
                             # Apply filters
                             if not self._matches_filters(
-                                log_entry, start_datetime, end_datetime, event_types, user_id, resource_type, operation
+                                log_entry,
+                                start_datetime,
+                                end_datetime,
+                                event_types,
+                                user_id,
+                                resource_type,
+                                operation,
                             ):
                                 continue
 
@@ -299,7 +309,9 @@ class AuditLogger:
             return []
 
     def _get_log_files_for_time_range(
-        self, start_datetime: Optional[datetime.datetime], end_datetime: Optional[datetime.datetime]
+        self,
+        start_datetime: Optional[datetime.datetime],
+        end_datetime: Optional[datetime.datetime],
     ) -> List[str]:
         """
         Get log files for a time range.
@@ -336,10 +348,14 @@ class AuditLogger:
                     file_date = datetime.datetime.strptime(date_str, "%Y-%m-%d")
 
                     # Check if file is in range
-                    if start_datetime and file_date < start_datetime.replace(hour=0, minute=0, second=0, microsecond=0):
+                    if start_datetime and file_date < start_datetime.replace(
+                        hour=0, minute=0, second=0, microsecond=0
+                    ):
                         continue
 
-                    if end_datetime and file_date > end_datetime.replace(hour=0, minute=0, second=0, microsecond=0):
+                    if end_datetime and file_date > end_datetime.replace(
+                        hour=0, minute=0, second=0, microsecond=0
+                    ):
                         continue
 
                     filtered_files.append(log_file)
@@ -414,7 +430,12 @@ class AuditLogger:
         Returns:
             Dictionary with verification results
         """
-        results = {"verified": True, "errors": [], "files_checked": 0, "entries_checked": 0}
+        results = {
+            "verified": True,
+            "errors": [],
+            "files_checked": 0,
+            "entries_checked": 0,
+        }
 
         try:
             # Get all log files
@@ -456,7 +477,9 @@ class AuditLogger:
                             # Compute the expected hash
                             log_str = json.dumps(verification_entry, sort_keys=True)
                             combined = f"{previous_hash}:{log_str}"
-                            expected_hash = hashlib.sha256(combined.encode("utf-8")).hexdigest()
+                            expected_hash = hashlib.sha256(
+                                combined.encode("utf-8")
+                            ).hexdigest()
 
                             # Compare hashes
                             if log_hash != expected_hash:
@@ -475,7 +498,13 @@ class AuditLogger:
                             previous_hash = log_hash
                         except json.JSONDecodeError:
                             results["verified"] = False
-                            results["errors"].append({"file": log_file, "line": line_num, "error": "Invalid JSON"})
+                            results["errors"].append(
+                                {
+                                    "file": log_file,
+                                    "line": line_num,
+                                    "error": "Invalid JSON",
+                                }
+                            )
 
             return results
         except Exception as e:

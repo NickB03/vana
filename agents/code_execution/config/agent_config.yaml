@@ -4,13 +4,13 @@ agent:
   name: "code_execution_specialist"
   description: "Specialist for secure code execution and debugging across multiple programming languages"
   version: "1.0.0"
-  
+
 capabilities:
   languages:
     - python
     - javascript
     - shell
-  
+
   features:
     - secure_execution
     - resource_monitoring
@@ -27,7 +27,7 @@ execution:
     memory_mb: 512
     cpu_cores: 1
     max_execution_time: 30
-  
+
   security:
     enable_validation: true
     strict_mode: true
@@ -40,16 +40,16 @@ tools:
     description: "Execute code in secure sandbox environment"
     timeout_range: [1, 300]
     supported_languages: ["python", "javascript", "shell"]
-    
+
   validate_code_security:
     description: "Validate code for security issues"
     strict_validation: true
-    
+
   get_execution_history:
     description: "Retrieve execution history and statistics"
     max_results: 100
     default_limit: 10
-    
+
   get_supported_languages:
     description: "Get information about supported languages"
     include_capabilities: true
@@ -59,16 +59,16 @@ sandbox:
   resource_monitoring: true
   security_policies: true
   execution_logging: true
-  
+
   containers:
     python:
       image: "python:3.13-slim"
       packages: ["numpy", "pandas", "requests", "matplotlib"]
-      
+
     javascript:
       image: "node:20-slim"
       packages: ["lodash", "moment", "axios"]
-      
+
     shell:
       image: "ubuntu:22.04"
       commands: ["basic_utilities", "text_processing"]
@@ -78,7 +78,7 @@ monitoring:
   track_performance: true
   security_alerts: true
   resource_usage: true
-  
+
   metrics:
     - execution_time
     - memory_usage
@@ -91,7 +91,7 @@ integration:
     - github
     - brave_search
     - fetch
-    
+
   agent_coordination:
     - vana
     - architecture_specialist
@@ -103,7 +103,7 @@ error_handling:
   provide_suggestions: true
   debug_assistance: true
   security_analysis: true
-  
+
   error_types:
     - syntax_error
     - runtime_error

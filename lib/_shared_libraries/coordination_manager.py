@@ -93,7 +93,9 @@ class CoordinationManager:
                 else:
                     file_path.write_text(f"# {file_name.replace('_', ' ').title()}\n\n")
 
-    async def log_agent_communication(self, agent_id: str, message: str, message_type: str = "info"):
+    async def log_agent_communication(
+        self, agent_id: str, message: str, message_type: str = "info"
+    ):
         """Log agent communication to shared conversation file"""
         timestamp = datetime.now().isoformat()
         log_entry = f"\n## {timestamp} - {agent_id} ({message_type})\n{message}\n"
@@ -102,7 +104,9 @@ class CoordinationManager:
         with open(conversation_file, "a", encoding="utf-8") as f:
             f.write(log_entry)
 
-    async def update_agent_memory(self, agent_id: str, memory_content: str, append: bool = True):
+    async def update_agent_memory(
+        self, agent_id: str, memory_content: str, append: bool = True
+    ):
         """Update individual agent memory file"""
         memory_file = self.coordination_dir / "agent_memories" / f"{agent_id}_memory.md"
 
@@ -115,7 +119,9 @@ class CoordinationManager:
             with open(memory_file, "w", encoding="utf-8") as f:
                 f.write(f"# {agent_id} Memory\n\n{memory_content}\n")
 
-    async def update_session_memory(self, key: str, value: Any, category: str = "general"):
+    async def update_session_memory(
+        self, key: str, value: Any, category: str = "general"
+    ):
         """Update project-level session memory"""
         session_file = self.coordination_dir / "session_memory.md"
         timestamp = datetime.now().isoformat()
@@ -126,7 +132,12 @@ class CoordinationManager:
             f.write(memory_entry)
 
     async def update_agent_status(
-        self, agent_id: str, status: str, task: str = None, confidence: float = None, estimated_completion: str = None
+        self,
+        agent_id: str,
+        status: str,
+        task: str = None,
+        confidence: float = None,
+        estimated_completion: str = None,
     ):
         """Update agent status with real-time tracking"""
         self.agent_statuses[agent_id] = AgentStatus(
@@ -143,11 +154,17 @@ class CoordinationManager:
 
         # Log status change
         await self.log_agent_communication(
-            agent_id, f"Status updated: {status}" + (f" (Task: {task})" if task else ""), "status"
+            agent_id,
+            f"Status updated: {status}" + (f" (Task: {task})" if task else ""),
+            "status",
         )
 
     async def create_task(
-        self, task_id: str, description: str, assigned_agents: List[str], dependencies: List[str] = None
+        self,
+        task_id: str,
+        description: str,
+        assigned_agents: List[str],
+        dependencies: List[str] = None,
     ) -> TaskProgress:
         """Create new task with progress tracking"""
         task = TaskProgress(
@@ -166,12 +183,16 @@ class CoordinationManager:
 
         # Log task creation
         await self.log_agent_communication(
-            "system", f"Task created: {task_id} - {description}\nAssigned to: {', '.join(assigned_agents)}", "task"
+            "system",
+            f"Task created: {task_id} - {description}\nAssigned to: {', '.join(assigned_agents)}",
+            "task",
         )
 
         return task
 
-    async def update_task_progress(self, task_id: str, status: str, results: Dict[str, Any] = None):
+    async def update_task_progress(
+        self, task_id: str, status: str, results: Dict[str, Any] = None
+    ):
         """Update task progress and results"""
         if task_id in self.task_progress:
             task = self.task_progress[task_id]
@@ -184,14 +205,20 @@ class CoordinationManager:
             await self._save_task_progress()
 
             # Log progress update
-            await self.log_agent_communication("system", f"Task {task_id} status updated: {status}", "progress")
+            await self.log_agent_communication(
+                "system", f"Task {task_id} status updated: {status}", "progress"
+            )
 
     async def get_agent_coordination_context(self, agent_id: str) -> Dict[str, Any]:
         """Get comprehensive coordination context for an agent"""
         context = {
             "agent_status": self.agent_statuses.get(agent_id),
             "all_agent_statuses": self.agent_statuses,
-            "active_tasks": [task for task in self.task_progress.values() if agent_id in task.assigned_agents],
+            "active_tasks": [
+                task
+                for task in self.task_progress.values()
+                if agent_id in task.assigned_agents
+            ],
             "recent_communications": await self._get_recent_communications(limit=10),
             "session_memory": await self._get_session_memory_summary(),
             "agent_memory": await self._get_agent_memory(agent_id),

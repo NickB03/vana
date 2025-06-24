@@ -77,7 +77,9 @@ class TaskClassifier:
         primary_recommendation = self._get_primary_recommendation(analysis, task)
 
         # Get alternative recommendations
-        alternative_recommendations = self._get_alternative_recommendations(analysis, task, primary_recommendation)
+        alternative_recommendations = self._get_alternative_recommendations(
+            analysis, task, primary_recommendation
+        )
 
         # Determine if decomposition is suggested
         decomposition_suggested = self._should_decompose_task(analysis, task)
@@ -86,10 +88,14 @@ class TaskClassifier:
         parallel_execution = self._should_execute_parallel(analysis, task)
 
         # Estimate number of agents needed
-        estimated_agents_needed = self._estimate_agents_needed(analysis, decomposition_suggested, parallel_execution)
+        estimated_agents_needed = self._estimate_agents_needed(
+            analysis, decomposition_suggested, parallel_execution
+        )
 
         # Determine routing strategy
-        routing_strategy = self._determine_routing_strategy(analysis, decomposition_suggested, parallel_execution)
+        routing_strategy = self._determine_routing_strategy(
+            analysis, decomposition_suggested, parallel_execution
+        )
 
         classification = TaskClassification(
             primary_recommendation=primary_recommendation,
@@ -110,45 +116,119 @@ class TaskClassifier:
         return {
             AgentCategory.ORCHESTRATION: {
                 "name": "vana",
-                "capabilities": ["coordination", "workflow_automation", "task_management", "agent_coordination"],
+                "capabilities": [
+                    "coordination",
+                    "workflow_automation",
+                    "task_management",
+                    "agent_coordination",
+                ],
                 "task_types": [TaskType.COORDINATION, TaskType.COMMUNICATION],
-                "complexity_preference": [TaskComplexity.COMPLEX, TaskComplexity.VERY_COMPLEX],
-                "specialties": ["multi-agent coordination", "task orchestration", "workflow management"],
+                "complexity_preference": [
+                    TaskComplexity.COMPLEX,
+                    TaskComplexity.VERY_COMPLEX,
+                ],
+                "specialties": [
+                    "multi-agent coordination",
+                    "task orchestration",
+                    "workflow management",
+                ],
             },
             AgentCategory.CODE_EXECUTION: {
                 "name": "code_execution",
-                "capabilities": ["code_execution", "python", "javascript", "shell", "debugging"],
+                "capabilities": [
+                    "code_execution",
+                    "python",
+                    "javascript",
+                    "shell",
+                    "debugging",
+                ],
                 "task_types": [TaskType.CODE_EXECUTION],
-                "complexity_preference": [TaskComplexity.SIMPLE, TaskComplexity.MODERATE, TaskComplexity.COMPLEX],
-                "specialties": ["code execution", "script running", "programming tasks", "debugging"],
+                "complexity_preference": [
+                    TaskComplexity.SIMPLE,
+                    TaskComplexity.MODERATE,
+                    TaskComplexity.COMPLEX,
+                ],
+                "specialties": [
+                    "code execution",
+                    "script running",
+                    "programming tasks",
+                    "debugging",
+                ],
             },
             AgentCategory.DATA_SCIENCE: {
                 "name": "data_science",
-                "capabilities": ["data_analysis", "visualization", "statistics", "machine_learning"],
+                "capabilities": [
+                    "data_analysis",
+                    "visualization",
+                    "statistics",
+                    "machine_learning",
+                ],
                 "task_types": [TaskType.DATA_ANALYSIS],
-                "complexity_preference": [TaskComplexity.MODERATE, TaskComplexity.COMPLEX, TaskComplexity.VERY_COMPLEX],
-                "specialties": ["data analysis", "visualization", "statistical analysis", "machine learning"],
+                "complexity_preference": [
+                    TaskComplexity.MODERATE,
+                    TaskComplexity.COMPLEX,
+                    TaskComplexity.VERY_COMPLEX,
+                ],
+                "specialties": [
+                    "data analysis",
+                    "visualization",
+                    "statistical analysis",
+                    "machine learning",
+                ],
             },
             AgentCategory.MEMORY: {
                 "name": "memory",
-                "capabilities": ["knowledge_search", "memory_management", "information_retrieval"],
+                "capabilities": [
+                    "knowledge_search",
+                    "memory_management",
+                    "information_retrieval",
+                ],
                 "task_types": [TaskType.KNOWLEDGE_SEARCH],
-                "complexity_preference": [TaskComplexity.SIMPLE, TaskComplexity.MODERATE],
-                "specialties": ["knowledge retrieval", "information search", "memory management"],
+                "complexity_preference": [
+                    TaskComplexity.SIMPLE,
+                    TaskComplexity.MODERATE,
+                ],
+                "specialties": [
+                    "knowledge retrieval",
+                    "information search",
+                    "memory management",
+                ],
             },
             AgentCategory.SPECIALISTS: {
                 "name": "specialists",
-                "capabilities": ["specialized_tasks", "domain_expertise", "complex_analysis"],
+                "capabilities": [
+                    "specialized_tasks",
+                    "domain_expertise",
+                    "complex_analysis",
+                ],
                 "task_types": [TaskType.GENERAL],
-                "complexity_preference": [TaskComplexity.COMPLEX, TaskComplexity.VERY_COMPLEX],
-                "specialties": ["specialized tasks", "domain expertise", "complex problem solving"],
+                "complexity_preference": [
+                    TaskComplexity.COMPLEX,
+                    TaskComplexity.VERY_COMPLEX,
+                ],
+                "specialties": [
+                    "specialized tasks",
+                    "domain expertise",
+                    "complex problem solving",
+                ],
             },
             AgentCategory.WORKFLOWS: {
                 "name": "workflows",
-                "capabilities": ["workflow_automation", "process_management", "pipeline_execution"],
+                "capabilities": [
+                    "workflow_automation",
+                    "process_management",
+                    "pipeline_execution",
+                ],
                 "task_types": [TaskType.COORDINATION, TaskType.COMMUNICATION],
-                "complexity_preference": [TaskComplexity.MODERATE, TaskComplexity.COMPLEX],
-                "specialties": ["workflow automation", "process management", "pipeline execution"],
+                "complexity_preference": [
+                    TaskComplexity.MODERATE,
+                    TaskComplexity.COMPLEX,
+                ],
+                "specialties": [
+                    "workflow automation",
+                    "process management",
+                    "pipeline execution",
+                ],
             },
         }
 
@@ -194,7 +274,9 @@ class TaskClassifier:
             },
         }
 
-    def _get_primary_recommendation(self, analysis: TaskAnalysis, task: str) -> AgentRecommendation:
+    def _get_primary_recommendation(
+        self, analysis: TaskAnalysis, task: str
+    ) -> AgentRecommendation:
         """Get the primary agent recommendation."""
         # Score each agent category
         agent_scores = {}
@@ -239,7 +321,9 @@ class TaskClassifier:
 
             # Only include if score is reasonable
             if score > 0.3:
-                reasoning = self._generate_agent_reasoning(analysis, capabilities, score)
+                reasoning = self._generate_agent_reasoning(
+                    analysis, capabilities, score
+                )
                 fallback_agents = self._get_fallback_agents(category, {})
 
                 alternatives.append(
@@ -256,7 +340,9 @@ class TaskClassifier:
         alternatives.sort(key=lambda x: x.confidence, reverse=True)
         return alternatives[:3]
 
-    def _calculate_agent_score(self, analysis: TaskAnalysis, agent_capabilities: Dict[str, Any], task: str) -> float:
+    def _calculate_agent_score(
+        self, analysis: TaskAnalysis, agent_capabilities: Dict[str, Any], task: str
+    ) -> float:
         """Calculate score for an agent based on task analysis."""
         score = 0.0
 
@@ -297,10 +383,15 @@ class TaskClassifier:
 
         # Check for decomposition triggers
         decomposition_triggers = self.routing_rules["decomposition_triggers"]
-        trigger_count = sum(1 for trigger in decomposition_triggers if trigger in task_lower)
+        trigger_count = sum(
+            1 for trigger in decomposition_triggers if trigger in task_lower
+        )
 
         # Check complexity
-        complex_enough = analysis.complexity in [TaskComplexity.COMPLEX, TaskComplexity.VERY_COMPLEX]
+        complex_enough = analysis.complexity in [
+            TaskComplexity.COMPLEX,
+            TaskComplexity.VERY_COMPLEX,
+        ]
 
         # Check for multiple requirements
         multiple_capabilities = len(analysis.required_capabilities) > 2
@@ -313,7 +404,9 @@ class TaskClassifier:
 
         # Check for parallel triggers
         parallel_triggers = self.routing_rules["parallel_triggers"]
-        has_parallel_triggers = any(trigger in task_lower for trigger in parallel_triggers)
+        has_parallel_triggers = any(
+            trigger in task_lower for trigger in parallel_triggers
+        )
 
         # Check if task is parallel capable
         parallel_capable = analysis.resource_requirements.get("parallel_capable", False)
@@ -327,7 +420,9 @@ class TaskClassifier:
 
         return has_parallel_triggers or (parallel_capable and complex_enough)
 
-    def _estimate_agents_needed(self, analysis: TaskAnalysis, decompose: bool, parallel: bool) -> int:
+    def _estimate_agents_needed(
+        self, analysis: TaskAnalysis, decompose: bool, parallel: bool
+    ) -> int:
         """Estimate number of agents needed for the task."""
         base_agents = 1
 
@@ -346,7 +441,9 @@ class TaskClassifier:
 
         return max(1, base_agents)
 
-    def _determine_routing_strategy(self, analysis: TaskAnalysis, decompose: bool, parallel: bool) -> str:
+    def _determine_routing_strategy(
+        self, analysis: TaskAnalysis, decompose: bool, parallel: bool
+    ) -> str:
         """Determine the best routing strategy."""
         if decompose and parallel:
             return "decompose_and_parallel"
@@ -359,16 +456,24 @@ class TaskClassifier:
         else:
             return "direct_routing"
 
-    def _generate_agent_reasoning(self, analysis: TaskAnalysis, agent_info: Dict[str, Any], score: float) -> str:
+    def _generate_agent_reasoning(
+        self, analysis: TaskAnalysis, agent_info: Dict[str, Any], score: float
+    ) -> str:
         """Generate reasoning for agent selection."""
         reasons = []
 
         if analysis.task_type.value in [t.value for t in agent_info["task_types"]]:
             reasons.append(f"matches task type ({analysis.task_type.value})")
 
-        capability_matches = [cap for cap in analysis.required_capabilities if cap in agent_info["capabilities"]]
+        capability_matches = [
+            cap
+            for cap in analysis.required_capabilities
+            if cap in agent_info["capabilities"]
+        ]
         if capability_matches:
-            reasons.append(f"has required capabilities ({', '.join(capability_matches)})")
+            reasons.append(
+                f"has required capabilities ({', '.join(capability_matches)})"
+            )
 
         if analysis.complexity in agent_info["complexity_preference"]:
             reasons.append(f"suitable for {analysis.complexity.value} tasks")
@@ -376,7 +481,11 @@ class TaskClassifier:
         if not reasons:
             reasons.append("general capability match")
 
-        return f"Selected {agent_info['name']} because it " + " and ".join(reasons) + f" (score: {score:.2f})"
+        return (
+            f"Selected {agent_info['name']} because it "
+            + " and ".join(reasons)
+            + f" (score: {score:.2f})"
+        )
 
     def _get_fallback_agents(
         self, primary_category: AgentCategory, all_scores: Dict[AgentCategory, float]

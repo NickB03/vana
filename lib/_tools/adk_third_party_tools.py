@@ -84,7 +84,11 @@ def execute_third_party_tool(tool_id: str, *args, **kwargs) -> str:
             if hasattr(tool, "name") and tool.name == tool_id:
                 target_tool = tool
                 break
-            elif hasattr(tool, "tool") and hasattr(tool.tool, "name") and tool.tool.name == tool_id:
+            elif (
+                hasattr(tool, "tool")
+                and hasattr(tool.tool, "name")
+                and tool.tool.name == tool_id
+            ):
                 target_tool = tool
                 break
 
@@ -96,7 +100,9 @@ def execute_third_party_tool(tool_id: str, *args, **kwargs) -> str:
         if hasattr(target_tool, "tool"):
             # This is a wrapped tool (LangchainTool or CrewaiTool)
             if hasattr(target_tool.tool, "invoke"):
-                result = target_tool.tool.invoke(kwargs if kwargs else args[0] if args else "")
+                result = target_tool.tool.invoke(
+                    kwargs if kwargs else args[0] if args else ""
+                )
             elif hasattr(target_tool.tool, "run"):
                 result = target_tool.tool.run(*args, **kwargs)
             elif callable(target_tool.tool):
@@ -136,7 +142,11 @@ def list_third_party_tools() -> str:
             result_lines.append(f"**LANGCHAIN Tools ({langchain_count})**:")
             for tool in _registered_langchain_tools:
                 tool_name = getattr(tool, "name", getattr(tool.tool, "name", "unknown"))
-                tool_desc = getattr(tool, "description", getattr(tool.tool, "description", "No description"))
+                tool_desc = getattr(
+                    tool,
+                    "description",
+                    getattr(tool.tool, "description", "No description"),
+                )
                 result_lines.append(f"• `{tool_name}`: {tool_desc}")
             result_lines.append("")
 
@@ -144,7 +154,11 @@ def list_third_party_tools() -> str:
             result_lines.append(f"**CREWAI Tools ({crewai_count})**:")
             for tool in _registered_crewai_tools:
                 tool_name = getattr(tool, "name", getattr(tool.tool, "name", "unknown"))
-                tool_desc = getattr(tool, "description", getattr(tool.tool, "description", "No description"))
+                tool_desc = getattr(
+                    tool,
+                    "description",
+                    getattr(tool.tool, "description", "No description"),
+                )
                 result_lines.append(f"• `{tool_name}`: {tool_desc}")
             result_lines.append("")
 
@@ -183,9 +197,7 @@ def register_langchain_tools() -> str:
             """Analyze text and provide statistics using LangChain."""
             words = text.split()
             sentences = text.split(".")
-            return (
-                f"Analysis: {len(text)} chars, {len(words)} words, {len([s for s in sentences if s.strip()])} sentences"
-            )
+            return f"Analysis: {len(text)} chars, {len(words)} words, {len([s for s in sentences if s.strip()])} sentences"
 
         # Create mock LangChain-style tools
         class MockLangChainTool:
@@ -197,9 +209,15 @@ def register_langchain_tools() -> str:
                 self.run = func
 
         mock_calculator = MockLangChainTool(
-            calculator_langchain, "calculator_langchain", "Calculate mathematical expressions"
+            calculator_langchain,
+            "calculator_langchain",
+            "Calculate mathematical expressions",
         )
-        mock_analyzer = MockLangChainTool(text_analyzer_langchain, "text_analyzer_langchain", "Analyze text statistics")
+        mock_analyzer = MockLangChainTool(
+            text_analyzer_langchain,
+            "text_analyzer_langchain",
+            "Analyze text statistics",
+        )
 
         # Create ADK LangchainTool wrappers following Google ADK documentation
         adk_calculator = LangchainTool(tool=mock_calculator)
@@ -209,7 +227,11 @@ def register_langchain_tools() -> str:
         global _registered_langchain_tools
         _registered_langchain_tools = [adk_calculator, adk_text_analyzer]
 
-        availability_note = " (using mock wrapper - LangChain not available)" if not LANGCHAIN_AVAILABLE else ""
+        availability_note = (
+            " (using mock wrapper - LangChain not available)"
+            if not LANGCHAIN_AVAILABLE
+            else ""
+        )
         return f"✅ **LangChain Tools Registered**: 2 tools registered successfully using Google ADK LangchainTool wrapper{availability_note}.\n\nRegistered tools: calculator_langchain, text_analyzer_langchain"
 
     except Exception as e:
@@ -262,10 +284,14 @@ def register_crewai_tools() -> str:
                 self._run = func
 
         mock_formatter = MockCrewAITool(
-            format_string_crewai, "StringFormatterCrewAI", "Format strings using various formatting options"
+            format_string_crewai,
+            "StringFormatterCrewAI",
+            "Format strings using various formatting options",
         )
         mock_processor = MockCrewAITool(
-            process_list_crewai, "ListProcessorCrewAI", "Process and manipulate comma-separated lists"
+            process_list_crewai,
+            "ListProcessorCrewAI",
+            "Process and manipulate comma-separated lists",
         )
 
         # Create ADK CrewaiTool wrappers following Google ADK documentation
@@ -284,7 +310,11 @@ def register_crewai_tools() -> str:
         global _registered_crewai_tools
         _registered_crewai_tools = [adk_formatter, adk_processor]
 
-        availability_note = " (using mock wrapper - CrewAI not available)" if not CREWAI_AVAILABLE else ""
+        availability_note = (
+            " (using mock wrapper - CrewAI not available)"
+            if not CREWAI_AVAILABLE
+            else ""
+        )
         return f"✅ **CrewAI Tools Registered**: 2 tools registered successfully using Google ADK CrewaiTool wrapper{availability_note}.\n\nRegistered tools: StringFormatterCrewAI, ListProcessorCrewAI"
 
     except Exception as e:
@@ -314,7 +344,11 @@ def get_third_party_tool_info(tool_id: str) -> str:
                 target_tool = tool
                 tool_type = "LangChain"
                 break
-            elif hasattr(tool, "tool") and hasattr(tool.tool, "name") and tool.tool.name == tool_id:
+            elif (
+                hasattr(tool, "tool")
+                and hasattr(tool.tool, "name")
+                and tool.tool.name == tool_id
+            ):
                 target_tool = tool
                 tool_type = "LangChain"
                 break
@@ -325,7 +359,11 @@ def get_third_party_tool_info(tool_id: str) -> str:
                     target_tool = tool
                     tool_type = "CrewAI"
                     break
-                elif hasattr(tool, "tool") and hasattr(tool.tool, "name") and tool.tool.name == tool_id:
+                elif (
+                    hasattr(tool, "tool")
+                    and hasattr(tool.tool, "name")
+                    and tool.tool.name == tool_id
+                ):
                     target_tool = tool
                     tool_type = "CrewAI"
                     break
@@ -335,8 +373,14 @@ def get_third_party_tool_info(tool_id: str) -> str:
             return f"❌ Tool '{tool_id}' not found. Available tools: {', '.join(available_tools) if available_tools else 'None'}"
 
         # Format detailed information
-        tool_name = getattr(target_tool, "name", getattr(target_tool.tool, "name", tool_id))
-        tool_desc = getattr(target_tool, "description", getattr(target_tool.tool, "description", "No description"))
+        tool_name = getattr(
+            target_tool, "name", getattr(target_tool.tool, "name", tool_id)
+        )
+        tool_desc = getattr(
+            target_tool,
+            "description",
+            getattr(target_tool.tool, "description", "No description"),
+        )
 
         info_lines = [
             f"🔧 **Tool Information: {tool_name}** (Google ADK Pattern)\n",
@@ -353,7 +397,10 @@ def get_third_party_tool_info(tool_id: str) -> str:
             info_lines.append(f"**Underlying Tool**: {type(target_tool.tool).__name__}")
 
             # Try to get parameters from the underlying tool
-            if hasattr(target_tool.tool, "args_schema") and target_tool.tool.args_schema:
+            if (
+                hasattr(target_tool.tool, "args_schema")
+                and target_tool.tool.args_schema
+            ):
                 info_lines.append("\n**Parameters**:")
                 try:
                     schema = target_tool.tool.args_schema

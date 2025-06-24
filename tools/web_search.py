@@ -1,4 +1,5 @@
 import os
+
 """
 Web Search Tool for VANA
 
@@ -51,13 +52,17 @@ class WebSearchClient:
             List of search results with title, snippet, and URL
         """
         if not self.is_available():
-            logger.error("Web search not available - missing API key or Search Engine ID")
+            logger.error(
+                "Web search not available - missing API key or Search Engine ID"
+            )
             return []
 
         # Ensure num_results is within limits
         if num_results > 10:
             num_results = 10
-            logger.warning("Requested result count exceeded maximum (10), limiting to 10 results")
+            logger.warning(
+                "Requested result count exceeded maximum (10), limiting to 10 results"
+            )
 
         try:
             # Construct request parameters
@@ -90,7 +95,9 @@ class WebSearchClient:
                     "url": item.get("link", ""),
                     "snippet": item.get("snippet", ""),
                     "source": item.get("displayLink", ""),
-                    "date": item.get("pagemap", {}).get("metatags", [{}])[0].get("article:published_time", ""),
+                    "date": item.get("pagemap", {})
+                    .get("metatags", [{}])[0]
+                    .get("article:published_time", ""),
                 }
                 results.append(result)
 

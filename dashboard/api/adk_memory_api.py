@@ -13,7 +13,9 @@ import sys
 from typing import Any, Dict
 
 # Add the parent directory to the path so we can import our modules
-sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+sys.path.append(
+    os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+)
 
 
 logger = logging.getLogger(__name__)
@@ -111,7 +113,9 @@ def get_adk_cost_metrics() -> Dict[str, Any]:
                     "vertex_ai_calls": cost_metrics.vertex_ai_calls,
                     "cost_per_query_usd": cost_metrics.cost_per_query_usd,
                 },
-                "projections": {"monthly_projection_usd": cost_metrics.monthly_projection_usd},
+                "projections": {
+                    "monthly_projection_usd": cost_metrics.monthly_projection_usd
+                },
             },
         }
     except Exception as e:
@@ -135,7 +139,14 @@ def get_adk_metrics_history(hours: int = 24) -> Dict[str, Any]:
     """
     try:
         history = adk_memory_monitor.get_metrics_history(hours)
-        return {"status": "success", "data": {"period_hours": hours, "data_points": len(history), "metrics": history}}
+        return {
+            "status": "success",
+            "data": {
+                "period_hours": hours,
+                "data_points": len(history),
+                "metrics": history,
+            },
+        }
     except Exception as e:
         logger.error(f"Error getting ADK metrics history: {e}")
         return {
@@ -157,7 +168,14 @@ def get_adk_cost_history(hours: int = 24) -> Dict[str, Any]:
     """
     try:
         history = adk_memory_monitor.get_cost_history(hours)
-        return {"status": "success", "data": {"period_hours": hours, "data_points": len(history), "costs": history}}
+        return {
+            "status": "success",
+            "data": {
+                "period_hours": hours,
+                "data_points": len(history),
+                "costs": history,
+            },
+        }
     except Exception as e:
         logger.error(f"Error getting ADK cost history: {e}")
         return {
@@ -203,7 +221,8 @@ def get_adk_session_metrics() -> Dict[str, Any]:
             "session_state_size_mb": metrics.session_state_size_mb,
             "session_persistence_rate": metrics.session_persistence_rate,
             "average_session_duration_minutes": _get_average_session_duration(),
-            "session_memory_usage_per_session_mb": metrics.session_state_size_mb / max(metrics.active_sessions, 1),
+            "session_memory_usage_per_session_mb": metrics.session_state_size_mb
+            / max(metrics.active_sessions, 1),
             "session_creation_rate_per_hour": _get_session_creation_rate(),
             "session_termination_rate_per_hour": _get_session_termination_rate(),
         }
@@ -214,9 +233,13 @@ def get_adk_session_metrics() -> Dict[str, Any]:
                 "timestamp": metrics.timestamp,
                 "session_metrics": session_data,
                 "session_health": {
-                    "status": "healthy" if metrics.session_persistence_rate > 0.95 else "degraded",
+                    "status": "healthy"
+                    if metrics.session_persistence_rate > 0.95
+                    else "degraded",
                     "persistence_rate": metrics.session_persistence_rate,
-                    "memory_efficiency": "good" if session_data["session_memory_usage_per_session_mb"] < 10 else "poor",
+                    "memory_efficiency": "good"
+                    if session_data["session_memory_usage_per_session_mb"] < 10
+                    else "poor",
                 },
             },
         }
@@ -314,7 +337,8 @@ def get_adk_diagnostic_info() -> Dict[str, Any]:
                 "vertex_ai_region": os.getenv("VERTEX_AI_REGION", "us-central1"),
             },
             "service_health": {
-                "memory_service_initialized": adk_memory_monitor.memory_service is not None,
+                "memory_service_initialized": adk_memory_monitor.memory_service
+                is not None,
                 "last_check_time": adk_memory_monitor.last_check_time,
                 "check_interval": adk_memory_monitor.check_interval,
             },

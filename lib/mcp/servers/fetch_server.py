@@ -81,9 +81,13 @@ class FetchServer:
         self.timeout = timeout
         self.max_size = max_size  # 10MB default
         self.session = requests.Session()
-        self.session.headers.update({"User-Agent": "VANA-MCP-Fetch/1.0 (Web Content Fetcher)"})
+        self.session.headers.update(
+            {"User-Agent": "VANA-MCP-Fetch/1.0 (Web Content Fetcher)"}
+        )
 
-    def http_get(self, url: str, headers: Dict[str, str] = None, params: Dict[str, Any] = None) -> HttpResponse:
+    def http_get(
+        self, url: str, headers: Dict[str, str] = None, params: Dict[str, Any] = None
+    ) -> HttpResponse:
         """Perform HTTP GET request."""
         try:
             start_time = time.time()
@@ -93,12 +97,20 @@ class FetchServer:
             if headers:
                 request_headers.update(headers)
 
-            response = self.session.get(url, headers=request_headers, params=params, timeout=self.timeout, stream=True)
+            response = self.session.get(
+                url,
+                headers=request_headers,
+                params=params,
+                timeout=self.timeout,
+                stream=True,
+            )
 
             # Check content size
             content_length = response.headers.get("content-length")
             if content_length and int(content_length) > self.max_size:
-                raise ValueError(f"Content too large: {content_length} bytes (max: {self.max_size})")
+                raise ValueError(
+                    f"Content too large: {content_length} bytes (max: {self.max_size})"
+                )
 
             # Read content with size limit
             content = ""
@@ -107,7 +119,9 @@ class FetchServer:
                 if chunk:
                     size += len(chunk.encode("utf-8"))
                     if size > self.max_size:
-                        raise ValueError(f"Content too large: {size} bytes (max: {self.max_size})")
+                        raise ValueError(
+                            f"Content too large: {size} bytes (max: {self.max_size})"
+                        )
                     content += chunk
 
             elapsed = time.time() - start_time
@@ -130,7 +144,11 @@ class FetchServer:
             raise
 
     def http_post(
-        self, url: str, data: Dict[str, Any] = None, json: Dict[str, Any] = None, headers: Dict[str, str] = None
+        self,
+        url: str,
+        data: Dict[str, Any] = None,
+        json: Dict[str, Any] = None,
+        headers: Dict[str, str] = None,
     ) -> HttpResponse:
         """Perform HTTP POST request."""
         try:
@@ -145,7 +163,9 @@ class FetchServer:
             if json and "Content-Type" not in request_headers:
                 request_headers["Content-Type"] = "application/json"
 
-            response = self.session.post(url, headers=request_headers, data=data, json=json, timeout=self.timeout)
+            response = self.session.post(
+                url, headers=request_headers, data=data, json=json, timeout=self.timeout
+            )
 
             elapsed = time.time() - start_time
             content = response.text
@@ -168,7 +188,11 @@ class FetchServer:
             raise
 
     def http_put(
-        self, url: str, data: Dict[str, Any] = None, json: Dict[str, Any] = None, headers: Dict[str, str] = None
+        self,
+        url: str,
+        data: Dict[str, Any] = None,
+        json: Dict[str, Any] = None,
+        headers: Dict[str, str] = None,
     ) -> HttpResponse:
         """Perform HTTP PUT request."""
         try:
@@ -183,7 +207,9 @@ class FetchServer:
             if json and "Content-Type" not in request_headers:
                 request_headers["Content-Type"] = "application/json"
 
-            response = self.session.put(url, headers=request_headers, data=data, json=json, timeout=self.timeout)
+            response = self.session.put(
+                url, headers=request_headers, data=data, json=json, timeout=self.timeout
+            )
 
             elapsed = time.time() - start_time
             content = response.text
@@ -215,7 +241,9 @@ class FetchServer:
             if headers:
                 request_headers.update(headers)
 
-            response = self.session.delete(url, headers=request_headers, timeout=self.timeout)
+            response = self.session.delete(
+                url, headers=request_headers, timeout=self.timeout
+            )
 
             elapsed = time.time() - start_time
             content = response.text
@@ -261,7 +289,9 @@ class FetchServer:
                 # Extract content based on selector or default
                 if selector:
                     content_elements = soup.select(selector)
-                    content = "\n".join([elem.get_text().strip() for elem in content_elements])
+                    content = "\n".join(
+                        [elem.get_text().strip() for elem in content_elements]
+                    )
                 else:
                     # Remove script and style elements
                     for script in soup(["script", "style"]):
@@ -323,7 +353,10 @@ class FetchServer:
             raise
 
     def download_file(
-        self, url: str, local_path: str, progress_callback: Callable[[int, int], None] = None
+        self,
+        url: str,
+        local_path: str,
+        progress_callback: Callable[[int, int], None] = None,
     ) -> DownloadResult:
         """Download file with progress tracking."""
         try:
@@ -335,13 +368,17 @@ class FetchServer:
             response = self.session.get(url, stream=True, timeout=self.timeout)
             response.raise_for_status()
 
-            content_type = response.headers.get("content-type", "application/octet-stream")
+            content_type = response.headers.get(
+                "content-type", "application/octet-stream"
+            )
             content_length = response.headers.get("content-length")
             total_size = int(content_length) if content_length else None
 
             # Check size limit
             if total_size and total_size > self.max_size:
-                raise ValueError(f"File too large: {total_size} bytes (max: {self.max_size})")
+                raise ValueError(
+                    f"File too large: {total_size} bytes (max: {self.max_size})"
+                )
 
             downloaded = 0
             with open(local_path, "wb") as f:
@@ -353,7 +390,9 @@ class FetchServer:
                         # Check size limit during download
                         if downloaded > self.max_size:
                             os.remove(local_path)
-                            raise ValueError(f"File too large: {downloaded} bytes (max: {self.max_size})")
+                            raise ValueError(
+                                f"File too large: {downloaded} bytes (max: {self.max_size})"
+                            )
 
                         # Progress callback
                         if progress_callback and total_size:
@@ -387,7 +426,9 @@ class FetchServer:
         try:
             start_time = time.time()
 
-            response = self.session.head(url, timeout=self.timeout, allow_redirects=True)
+            response = self.session.head(
+                url, timeout=self.timeout, allow_redirects=True
+            )
             elapsed = time.time() - start_time
 
             return UrlStatus(

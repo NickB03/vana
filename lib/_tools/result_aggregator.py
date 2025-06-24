@@ -58,7 +58,10 @@ class ResultAggregator:
         self.agent_reliability_scores: Dict[str, float] = {}
 
     async def aggregate_results(
-        self, results: List[Dict[str, Any]], original_task: str, strategy: str = "adaptive"
+        self,
+        results: List[Dict[str, Any]],
+        original_task: str,
+        strategy: str = "adaptive",
     ) -> Dict[str, Any]:
         """Aggregate multiple agent results into a coherent response.
 
@@ -73,7 +76,11 @@ class ResultAggregator:
         logger.info(f"🔄 Aggregating {len(results)} results using {strategy} strategy")
 
         if not results:
-            return {"status": "error", "message": "No results to aggregate", "aggregated_result": None}
+            return {
+                "status": "error",
+                "message": "No results to aggregate",
+                "aggregated_result": None,
+            }
 
         if len(results) == 1:
             return {
@@ -87,10 +94,16 @@ class ResultAggregator:
             valid_results = self._filter_valid_results(results)
 
             if not valid_results:
-                return {"status": "error", "message": "No valid results to aggregate", "aggregated_result": None}
+                return {
+                    "status": "error",
+                    "message": "No valid results to aggregate",
+                    "aggregated_result": None,
+                }
 
             # Determine aggregation strategy
-            aggregation_strategy = self._determine_aggregation_strategy(valid_results, original_task, strategy)
+            aggregation_strategy = self._determine_aggregation_strategy(
+                valid_results, original_task, strategy
+            )
 
             # Calculate result weights
             result_weights = self._calculate_result_weights(valid_results)
@@ -101,9 +114,13 @@ class ResultAggregator:
             )
 
             # Record aggregation history
-            self._record_aggregation_history(valid_results, aggregated_result, aggregation_strategy)
+            self._record_aggregation_history(
+                valid_results, aggregated_result, aggregation_strategy
+            )
 
-            logger.info(f"✅ Results aggregated successfully using {aggregation_strategy.value} strategy")
+            logger.info(
+                f"✅ Results aggregated successfully using {aggregation_strategy.value} strategy"
+            )
 
             return {
                 "status": "success",
@@ -113,9 +130,15 @@ class ResultAggregator:
 
         except Exception as e:
             logger.error(f"❌ Result aggregation failed: {e}")
-            return {"status": "error", "message": f"Aggregation failed: {str(e)}", "aggregated_result": None}
+            return {
+                "status": "error",
+                "message": f"Aggregation failed: {str(e)}",
+                "aggregated_result": None,
+            }
 
-    def _filter_valid_results(self, results: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    def _filter_valid_results(
+        self, results: List[Dict[str, Any]]
+    ) -> List[Dict[str, Any]]:
         """Filter out invalid or empty results."""
         valid_results = []
 
@@ -131,7 +154,9 @@ class ResultAggregator:
             elif result.get("output"):  # Direct output format
                 valid_results.append(result)
 
-        logger.debug(f"📊 Filtered {len(valid_results)} valid results from {len(results)} total")
+        logger.debug(
+            f"📊 Filtered {len(valid_results)} valid results from {len(results)} total"
+        )
         return valid_results
 
     def _determine_aggregation_strategy(
@@ -154,25 +179,37 @@ class ResultAggregator:
         task_lower = original_task.lower()
 
         # For analysis tasks, synthesize results
-        if any(keyword in task_lower for keyword in ["analyze", "analysis", "compare", "evaluate"]):
+        if any(
+            keyword in task_lower
+            for keyword in ["analyze", "analysis", "compare", "evaluate"]
+        ):
             return AggregationStrategy.SYNTHESIZE
 
         # For search tasks, merge and prioritize
-        if any(keyword in task_lower for keyword in ["search", "find", "lookup", "research"]):
+        if any(
+            keyword in task_lower
+            for keyword in ["search", "find", "lookup", "research"]
+        ):
             return AggregationStrategy.MERGE
 
         # For code execution, prioritize successful results
-        if any(keyword in task_lower for keyword in ["execute", "run", "code", "script"]):
+        if any(
+            keyword in task_lower for keyword in ["execute", "run", "code", "script"]
+        ):
             return AggregationStrategy.PRIORITIZE
 
         # For summary tasks, concatenate and summarize
-        if any(keyword in task_lower for keyword in ["summary", "summarize", "overview"]):
+        if any(
+            keyword in task_lower for keyword in ["summary", "summarize", "overview"]
+        ):
             return AggregationStrategy.SUMMARIZE
 
         # Default to synthesis for complex tasks
         return AggregationStrategy.SYNTHESIZE
 
-    def _calculate_result_weights(self, results: List[Dict[str, Any]]) -> List[ResultWeight]:
+    def _calculate_result_weights(
+        self, results: List[Dict[str, Any]]
+    ) -> List[ResultWeight]:
         """Calculate weights for result prioritization."""
         weights = []
 
@@ -194,7 +231,9 @@ class ResultAggregator:
             reliability = self.agent_reliability_scores.get(agent_name, 0.7)
 
             # Calculate overall weight
-            overall_weight = confidence * 0.3 + relevance * 0.3 + quality * 0.2 + reliability * 0.2
+            overall_weight = (
+                confidence * 0.3 + relevance * 0.3 + quality * 0.2 + reliability * 0.2
+            )
 
             weights.append(
                 ResultWeight(
@@ -299,7 +338,9 @@ class ResultAggregator:
     ) -> AggregatedResult:
         """Concatenate results in order of weight."""
         # Sort results by weight
-        sorted_pairs = sorted(zip(results, weights), key=lambda x: x[1].overall_weight, reverse=True)
+        sorted_pairs = sorted(
+            zip(results, weights), key=lambda x: x[1].overall_weight, reverse=True
+        )
 
         concatenated_output = []
         sources = []
@@ -315,7 +356,9 @@ class ResultAggregator:
         supporting_results = [pair[0] for pair in sorted_pairs[1:]]
 
         synthesis = "\n\n".join(concatenated_output)
-        confidence = sum(w.overall_weight for w in weights) / len(weights) if weights else 0.0
+        confidence = (
+            sum(w.overall_weight for w in weights) / len(weights) if weights else 0.0
+        )
 
         return AggregatedResult(
             primary_result=primary_result,
@@ -328,11 +371,16 @@ class ResultAggregator:
         )
 
     async def _synthesize_results(
-        self, results: List[Dict[str, Any]], weights: List[ResultWeight], original_task: str
+        self,
+        results: List[Dict[str, Any]],
+        weights: List[ResultWeight],
+        original_task: str,
     ) -> AggregatedResult:
         """Synthesize results into a coherent response."""
         # Sort results by weight
-        sorted_pairs = sorted(zip(results, weights), key=lambda x: x[1].overall_weight, reverse=True)
+        sorted_pairs = sorted(
+            zip(results, weights), key=lambda x: x[1].overall_weight, reverse=True
+        )
 
         # Extract key information from each result
         key_points = []
@@ -352,16 +400,20 @@ class ResultAggregator:
         synthesis_parts.append(f"Based on analysis from {len(sources)} agents:")
 
         # Group similar points and create coherent narrative
-        unique_points = list(set(point.strip() for point in key_points if point.strip()))
+        unique_points = list(
+            set(point.strip() for point in key_points if point.strip())
+        )
         for i, point in enumerate(unique_points[:5]):  # Limit to top 5 points
             if point and len(point) > 10:
-                synthesis_parts.append(f"{i+1}. {point}")
+                synthesis_parts.append(f"{i + 1}. {point}")
 
         synthesis = "\n".join(synthesis_parts)
 
         primary_result = sorted_pairs[0][0] if sorted_pairs else {}
         supporting_results = [pair[0] for pair in sorted_pairs[1:]]
-        confidence = sum(w.overall_weight for w in weights) / len(weights) if weights else 0.0
+        confidence = (
+            sum(w.overall_weight for w in weights) / len(weights) if weights else 0.0
+        )
 
         return AggregatedResult(
             primary_result=primary_result,
@@ -370,13 +422,20 @@ class ResultAggregator:
             confidence=confidence,
             sources=sources,
             aggregation_strategy="synthesize",
-            metadata={"result_count": len(results), "key_points_extracted": len(unique_points)},
+            metadata={
+                "result_count": len(results),
+                "key_points_extracted": len(unique_points),
+            },
         )
 
-    async def _prioritize_results(self, results: List[Dict[str, Any]], weights: List[ResultWeight]) -> AggregatedResult:
+    async def _prioritize_results(
+        self, results: List[Dict[str, Any]], weights: List[ResultWeight]
+    ) -> AggregatedResult:
         """Prioritize results based on weights and return the best one."""
         # Sort results by weight
-        sorted_pairs = sorted(zip(results, weights), key=lambda x: x[1].overall_weight, reverse=True)
+        sorted_pairs = sorted(
+            zip(results, weights), key=lambda x: x[1].overall_weight, reverse=True
+        )
 
         if not sorted_pairs:
             return AggregatedResult(
@@ -404,10 +463,15 @@ class ResultAggregator:
             confidence=best_weight.overall_weight,
             sources=[best_weight.agent_name],
             aggregation_strategy="prioritize",
-            metadata={"selected_agent": best_weight.agent_name, "selection_confidence": best_weight.overall_weight},
+            metadata={
+                "selected_agent": best_weight.agent_name,
+                "selection_confidence": best_weight.overall_weight,
+            },
         )
 
-    async def _merge_results(self, results: List[Dict[str, Any]], weights: List[ResultWeight]) -> AggregatedResult:
+    async def _merge_results(
+        self, results: List[Dict[str, Any]], weights: List[ResultWeight]
+    ) -> AggregatedResult:
         """Merge results by combining unique information."""
         merged_data = {}
         all_outputs = []
@@ -429,11 +493,14 @@ class ResultAggregator:
         unique_outputs = list(set(all_outputs))
         synthesis = "Merged information from multiple sources:\n"
         synthesis += "\n".join(
-            f"• {output[:200]}..." if len(output) > 200 else f"• {output}" for output in unique_outputs[:5]
+            f"• {output[:200]}..." if len(output) > 200 else f"• {output}"
+            for output in unique_outputs[:5]
         )
 
         primary_result = {"merged_data": merged_data, "all_outputs": unique_outputs}
-        confidence = sum(w.overall_weight for w in weights) / len(weights) if weights else 0.0
+        confidence = (
+            sum(w.overall_weight for w in weights) / len(weights) if weights else 0.0
+        )
 
         return AggregatedResult(
             primary_result=primary_result,
@@ -442,11 +509,17 @@ class ResultAggregator:
             confidence=confidence,
             sources=sources,
             aggregation_strategy="merge",
-            metadata={"unique_outputs": len(unique_outputs), "merged_fields": len(merged_data)},
+            metadata={
+                "unique_outputs": len(unique_outputs),
+                "merged_fields": len(merged_data),
+            },
         )
 
     async def _summarize_results(
-        self, results: List[Dict[str, Any]], weights: List[ResultWeight], original_task: str
+        self,
+        results: List[Dict[str, Any]],
+        weights: List[ResultWeight],
+        original_task: str,
     ) -> AggregatedResult:
         """Summarize results into a concise overview."""
         all_outputs = []
@@ -460,7 +533,9 @@ class ResultAggregator:
 
         # Create summary
         summary_parts = []
-        summary_parts.append(f"Summary of {len(all_outputs)} agent responses for: {original_task}")
+        summary_parts.append(
+            f"Summary of {len(all_outputs)} agent responses for: {original_task}"
+        )
 
         # Extract key themes (simple keyword-based approach)
         all_text = " ".join(all_outputs).lower()
@@ -479,11 +554,15 @@ class ResultAggregator:
         # Add brief conclusion
         if all_outputs:
             first_output = all_outputs[0]
-            conclusion = first_output[:200] + "..." if len(first_output) > 200 else first_output
+            conclusion = (
+                first_output[:200] + "..." if len(first_output) > 200 else first_output
+            )
             summary_parts.append(f"Primary finding: {conclusion}")
 
         synthesis = "\n".join(summary_parts)
-        confidence = sum(w.overall_weight for w in weights) / len(weights) if weights else 0.0
+        confidence = (
+            sum(w.overall_weight for w in weights) / len(weights) if weights else 0.0
+        )
 
         return AggregatedResult(
             primary_result={"summary": synthesis, "themes": dict(top_themes)},
@@ -492,10 +571,15 @@ class ResultAggregator:
             confidence=confidence,
             sources=sources,
             aggregation_strategy="summarize",
-            metadata={"themes_identified": len(top_themes), "total_text_length": len(all_text)},
+            metadata={
+                "themes_identified": len(top_themes),
+                "total_text_length": len(all_text),
+            },
         )
 
-    async def _vote_on_results(self, results: List[Dict[str, Any]], weights: List[ResultWeight]) -> AggregatedResult:
+    async def _vote_on_results(
+        self, results: List[Dict[str, Any]], weights: List[ResultWeight]
+    ) -> AggregatedResult:
         """Use voting mechanism to select best result."""
         # Simple voting based on similarity and weights
         vote_scores = {}
@@ -551,7 +635,10 @@ class ResultAggregator:
         return len(intersection) / len(union) if union else 0.0
 
     def _record_aggregation_history(
-        self, results: List[Dict[str, Any]], aggregated_result: AggregatedResult, strategy: AggregationStrategy
+        self,
+        results: List[Dict[str, Any]],
+        aggregated_result: AggregatedResult,
+        strategy: AggregationStrategy,
     ):
         """Record aggregation history for analysis."""
         history_entry = {
@@ -583,7 +670,10 @@ class ResultAggregator:
             strategy_counts[strategy] = strategy_counts.get(strategy, 0) + 1
 
         # Average confidence
-        avg_confidence = sum(entry["confidence"] for entry in self.aggregation_history) / total_aggregations
+        avg_confidence = (
+            sum(entry["confidence"] for entry in self.aggregation_history)
+            / total_aggregations
+        )
 
         return {
             "total_aggregations": total_aggregations,
@@ -594,7 +684,9 @@ class ResultAggregator:
 
     def update_agent_reliability(self, agent_name: str, reliability_score: float):
         """Update agent reliability score based on performance."""
-        self.agent_reliability_scores[agent_name] = max(0.0, min(1.0, reliability_score))
+        self.agent_reliability_scores[agent_name] = max(
+            0.0, min(1.0, reliability_score)
+        )
 
 
 # Global result aggregator instance

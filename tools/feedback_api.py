@@ -64,7 +64,12 @@ def submit_feedback():
             return jsonify({"status": "error", "message": "Query is required"}), 400
 
         if not rating or not isinstance(rating, int) or rating < 1 or rating > 5:
-            return jsonify({"status": "error", "message": "Rating must be an integer between 1 and 5"}), 400
+            return jsonify(
+                {
+                    "status": "error",
+                    "message": "Rating must be an integer between 1 and 5",
+                }
+            ), 400
 
         # Create mock results structure if not provided
         results = data.get("results", {})
@@ -73,7 +78,11 @@ def submit_feedback():
 
         # Record feedback
         feedback_id = feedback_collector.record_feedback(
-            query=query, results=results, rating=rating, comments=comments, implementation=implementation
+            query=query,
+            results=results,
+            rating=rating,
+            comments=comments,
+            implementation=implementation,
         )
 
         # Record result ratings if provided
@@ -81,10 +90,18 @@ def submit_feedback():
             for i, relevance_rating in enumerate(result_ratings):
                 if isinstance(relevance_rating, int) and 1 <= relevance_rating <= 5:
                     feedback_collector.record_result_feedback(
-                        feedback_id=feedback_id, result_id=i, relevance_rating=relevance_rating
+                        feedback_id=feedback_id,
+                        result_id=i,
+                        relevance_rating=relevance_rating,
                     )
 
-        return jsonify({"status": "success", "message": "Feedback recorded successfully", "feedback_id": feedback_id})
+        return jsonify(
+            {
+                "status": "success",
+                "message": "Feedback recorded successfully",
+                "feedback_id": feedback_id,
+            }
+        )
 
     except Exception as e:
         logger.error(f"Error processing feedback: {e}")
@@ -98,7 +115,9 @@ def get_feedback():
         limit = request.args.get("limit", default=100, type=int)
         feedback = feedback_collector.get_feedback(limit=limit)
 
-        return jsonify({"status": "success", "count": len(feedback), "feedback": feedback})
+        return jsonify(
+            {"status": "success", "count": len(feedback), "feedback": feedback}
+        )
 
     except Exception as e:
         logger.error(f"Error getting feedback: {e}")
@@ -135,8 +154,12 @@ def analyze_feedback():
 def parse_arguments():
     """Parse command line arguments"""
     parser = argparse.ArgumentParser(description="VANA Feedback API Server")
-    parser.add_argument("--host", type=str, default="127.0.0.1", help="Host to bind the server to")
-    parser.add_argument("--port", type=int, default=5000, help="Port to bind the server to")
+    parser.add_argument(
+        "--host", type=str, default="127.0.0.1", help="Host to bind the server to"
+    )
+    parser.add_argument(
+        "--port", type=int, default=5000, help="Port to bind the server to"
+    )
     parser.add_argument("--debug", action="store_true", help="Run in debug mode")
     return parser.parse_args()
 

@@ -38,7 +38,9 @@ class AlertManager:
             data_dir: Directory for alert data (optional, defaults to data/alerts)
         """
         # Create data directory if it doesn't exist
-        self.data_dir = data_dir or os.path.join(os.environ.get("VANA_DATA_DIR", "data"), "alerts")
+        self.data_dir = data_dir or os.path.join(
+            os.environ.get("VANA_DATA_DIR", "data"), "alerts"
+        )
         os.makedirs(self.data_dir, exist_ok=True)
 
         # Alert handlers
@@ -49,7 +51,9 @@ class AlertManager:
         self.last_update_time = 0
         self.update_interval = 60  # 1 minute
 
-    def register_handler(self, alert_type: str, handler_function: Callable[[Dict[str, Any]], None]) -> None:
+    def register_handler(
+        self, alert_type: str, handler_function: Callable[[Dict[str, Any]], None]
+    ) -> None:
         """
         Register an alert handler.
 
@@ -106,7 +110,11 @@ class AlertManager:
         return alert
 
     def update_alert(
-        self, alert_id: str, status: str, message: Optional[str] = None, details: Optional[Dict[str, Any]] = None
+        self,
+        alert_id: str,
+        status: str,
+        message: Optional[str] = None,
+        details: Optional[Dict[str, Any]] = None,
     ) -> Optional[Dict[str, Any]]:
         """
         Update an existing alert.
@@ -187,7 +195,9 @@ class AlertManager:
         filtered_alerts = self.active_alerts
 
         if component:
-            filtered_alerts = [a for a in filtered_alerts if a["component"] == component]
+            filtered_alerts = [
+                a for a in filtered_alerts if a["component"] == component
+            ]
 
         if severity:
             filtered_alerts = [a for a in filtered_alerts if a["severity"] == severity]

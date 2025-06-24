@@ -13,7 +13,12 @@ Specializations:
 - Security and compliance automation
 """
 
-from lib._tools import adk_list_directory, adk_read_file, adk_search_knowledge, adk_vector_search
+from lib._tools import (
+    adk_list_directory,
+    adk_read_file,
+    adk_search_knowledge,
+    adk_vector_search,
+)
 from google.adk.tools import FunctionTool
 from google.adk.agents import LlmAgent
 import os
@@ -155,10 +160,8 @@ devops_specialist = LlmAgent(
 
 Always provide expert-level DevOps guidance that emphasizes automation, security, reliability, and operational efficiency.""",
     tools=[
-        FunctionTool(
-            func=analyze_infrastructure),
-        FunctionTool(
-            func=optimize_cicd_pipeline),
+        FunctionTool(func=analyze_infrastructure),
+        FunctionTool(func=optimize_cicd_pipeline),
         adk_vector_search,
         adk_search_knowledge,
         adk_read_file,

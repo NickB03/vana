@@ -65,7 +65,9 @@ class VANAOptimizer:
         # Initialize default agent templates
         self._initialize_default_templates()
 
-    async def optimize_task_execution(self, task_description: str, context: Dict[str, Any] = None) -> Dict[str, Any]:
+    async def optimize_task_execution(
+        self, task_description: str, context: Dict[str, Any] = None
+    ) -> Dict[str, Any]:
         """
         Optimize and execute a task using the best strategy and agents
 
@@ -77,7 +79,9 @@ class VANAOptimizer:
             Dict containing execution results and optimization metrics
         """
         # Step 1: Select optimal strategy
-        strategy_config = self.strategy_orchestrator.select_strategy(task_description, context)
+        strategy_config = self.strategy_orchestrator.select_strategy(
+            task_description, context
+        )
 
         # Step 2: Initialize strategy coordination
         self.strategy_orchestrator.initialize_strategy(strategy_config)
@@ -86,7 +90,9 @@ class VANAOptimizer:
         required_agents = await self._get_strategy_agents(strategy_config)
 
         # Step 4: Execute strategy with optimized coordination
-        execution_result = await self._execute_optimized_strategy(strategy_config, required_agents, task_description)
+        execution_result = await self._execute_optimized_strategy(
+            strategy_config, required_agents, task_description
+        )
 
         # Step 5: Update coordination and metrics
         await self._update_coordination_state(strategy_config, execution_result)
@@ -127,18 +133,25 @@ class VANAOptimizer:
 
         return report
 
-    async def apply_optimization_recommendations(self, auto_apply: bool = False) -> List[str]:
+    async def apply_optimization_recommendations(
+        self, auto_apply: bool = False
+    ) -> List[str]:
         """Apply system optimization recommendations"""
         applied_optimizations = []
 
         # Get recommendations from all components
         agent_recommendations = self.agent_factory.get_optimization_recommendations()
-        tool_recommendations = self.tool_optimizer.generate_optimization_report()["optimization_opportunities"]
+        tool_recommendations = self.tool_optimizer.generate_optimization_report()[
+            "optimization_opportunities"
+        ]
 
         if auto_apply:
             # Apply safe optimizations automatically
             for recommendation in agent_recommendations:
-                if "reducing" in recommendation.lower() and "idle" in recommendation.lower():
+                if (
+                    "reducing" in recommendation.lower()
+                    and "idle" in recommendation.lower()
+                ):
                     # Auto-apply idle agent cleanup
                     await self._apply_agent_optimization(recommendation)
                     applied_optimizations.append(f"Applied: {recommendation}")
@@ -165,11 +178,23 @@ class VANAOptimizer:
 
         # Determine agent requirements based on strategy and domain
         if strategy_config.domain == "travel":
-            agent_templates = ["hotel_search_agent", "flight_search_agent", "itinerary_planning_agent"]
+            agent_templates = [
+                "hotel_search_agent",
+                "flight_search_agent",
+                "itinerary_planning_agent",
+            ]
         elif strategy_config.domain == "development":
-            agent_templates = ["code_generation_agent", "testing_agent", "documentation_agent"]
+            agent_templates = [
+                "code_generation_agent",
+                "testing_agent",
+                "documentation_agent",
+            ]
         elif strategy_config.domain == "core":
-            agent_templates = ["architecture_specialist", "ui_specialist", "devops_specialist"]
+            agent_templates = [
+                "architecture_specialist",
+                "ui_specialist",
+                "devops_specialist",
+            ]
         else:
             agent_templates = ["architecture_specialist"]  # Default
 
@@ -199,18 +224,24 @@ class VANAOptimizer:
 
         # Log strategy execution start
         await self.coordination_manager.log_agent_communication(
-            "system", f"Starting {strategy_config.strategy_type.value} strategy for: {task_description}", "strategy"
+            "system",
+            f"Starting {strategy_config.strategy_type.value} strategy for: {task_description}",
+            "strategy",
         )
 
         # Execute based on strategy type
         if strategy_config.strategy_type == StrategyType.PIPELINE:
             result = await self._execute_pipeline_strategy(agents, task_description)
         elif strategy_config.strategy_type == StrategyType.PARALLEL_DIVERGENT:
-            result = await self._execute_parallel_divergent_strategy(agents, task_description)
+            result = await self._execute_parallel_divergent_strategy(
+                agents, task_description
+            )
         elif strategy_config.strategy_type == StrategyType.SWARM:
             result = await self._execute_swarm_strategy(agents, task_description)
         else:
-            result = await self._execute_single_agent_strategy(agents[0] if agents else None, task_description)
+            result = await self._execute_single_agent_strategy(
+                agents[0] if agents else None, task_description
+            )
 
         execution_time = time.time() - execution_start
 
@@ -225,73 +256,103 @@ class VANAOptimizer:
             "result": result,
         }
 
-    async def _execute_pipeline_strategy(self, agents: List[Any], task: str) -> Dict[str, Any]:
+    async def _execute_pipeline_strategy(
+        self, agents: List[Any], task: str
+    ) -> Dict[str, Any]:
         """Execute pipeline strategy - sequential handoffs"""
         results = {}
         current_input = task
 
         for i, agent in enumerate(agents):
-            stage_result = f"Stage {i+1} result for: {current_input}"
-            results[f"stage_{i+1}"] = stage_result
+            stage_result = f"Stage {i + 1} result for: {current_input}"
+            results[f"stage_{i + 1}"] = stage_result
             current_input = stage_result
 
             # Update coordination
-            await self.coordination_manager.update_agent_status(agent.agent_id, "working", f"Pipeline stage {i+1}")
+            await self.coordination_manager.update_agent_status(
+                agent.agent_id, "working", f"Pipeline stage {i + 1}"
+            )
 
         return {"pipeline_result": results, "final_output": current_input}
 
-    async def _execute_parallel_divergent_strategy(self, agents: List[Any], task: str) -> Dict[str, Any]:
+    async def _execute_parallel_divergent_strategy(
+        self, agents: List[Any], task: str
+    ) -> Dict[str, Any]:
         """Execute parallel divergent strategy - multiple independent solutions"""
 
         # Phase 1: Divergent (parallel execution)
         divergent_results = {}
         for i, agent in enumerate(agents):
-            solution = f"Independent solution {i+1} for: {task}"
-            divergent_results[f"solution_{i+1}"] = solution
+            solution = f"Independent solution {i + 1} for: {task}"
+            divergent_results[f"solution_{i + 1}"] = solution
 
-            await self.coordination_manager.update_agent_status(agent.agent_id, "working", f"Divergent solution {i+1}")
+            await self.coordination_manager.update_agent_status(
+                agent.agent_id, "working", f"Divergent solution {i + 1}"
+            )
 
         # Phase 2: Convergent (synthesis)
-        convergent_result = f"Synthesized solution combining: {', '.join(divergent_results.values())}"
+        convergent_result = (
+            f"Synthesized solution combining: {', '.join(divergent_results.values())}"
+        )
 
-        return {"divergent_solutions": divergent_results, "convergent_solution": convergent_result}
+        return {
+            "divergent_solutions": divergent_results,
+            "convergent_solution": convergent_result,
+        }
 
-    async def _execute_swarm_strategy(self, agents: List[Any], task: str) -> Dict[str, Any]:
+    async def _execute_swarm_strategy(
+        self, agents: List[Any], task: str
+    ) -> Dict[str, Any]:
         """Execute swarm strategy - dynamic task queue"""
         # Break task into subtasks
-        subtasks = [f"Subtask {i+1} of: {task}" for i in range(len(agents))]
+        subtasks = [f"Subtask {i + 1} of: {task}" for i in range(len(agents))]
         results = {}
 
         # Agents claim tasks dynamically
         for i, (agent, subtask) in enumerate(zip(agents, subtasks)):
             result = f"Completed {subtask}"
-            results[f"subtask_{i+1}"] = result
+            results[f"subtask_{i + 1}"] = result
 
-            await self.coordination_manager.update_agent_status(agent.agent_id, "working", subtask)
+            await self.coordination_manager.update_agent_status(
+                agent.agent_id, "working", subtask
+            )
 
-        return {"swarm_results": results, "combined_output": f"Swarm completion of: {task}"}
+        return {
+            "swarm_results": results,
+            "combined_output": f"Swarm completion of: {task}",
+        }
 
-    async def _execute_single_agent_strategy(self, agent: Any, task: str) -> Dict[str, Any]:
+    async def _execute_single_agent_strategy(
+        self, agent: Any, task: str
+    ) -> Dict[str, Any]:
         """Execute single agent strategy"""
         if not agent:
             return {"error": "No agent available"}
 
         result = f"Single agent completion of: {task}"
 
-        await self.coordination_manager.update_agent_status(agent.agent_id, "working", task)
+        await self.coordination_manager.update_agent_status(
+            agent.agent_id, "working", task
+        )
 
         return {"single_agent_result": result}
 
-    async def _update_coordination_state(self, strategy_config: StrategyConfig, execution_result: Dict[str, Any]):
+    async def _update_coordination_state(
+        self, strategy_config: StrategyConfig, execution_result: Dict[str, Any]
+    ):
         """Update coordination state after strategy execution"""
         # Update session memory
         await self.coordination_manager.update_session_memory(
-            f"strategy_{strategy_config.strategy_type.value}", execution_result, "strategy_execution"
+            f"strategy_{strategy_config.strategy_type.value}",
+            execution_result,
+            "strategy_execution",
         )
 
         # Log completion
         await self.coordination_manager.log_agent_communication(
-            "system", f"Completed {strategy_config.strategy_type.value} strategy", "completion"
+            "system",
+            f"Completed {strategy_config.strategy_type.value} strategy",
+            "completion",
         )
 
     async def _calculate_optimization_metrics(self) -> OptimizationMetrics:
@@ -301,10 +362,14 @@ class VANAOptimizer:
         tool_report = self.tool_optimizer.generate_optimization_report()
 
         # Calculate scores (0.0 to 1.0)
-        agent_utilization = agent_stats["resource_utilization"].get("task_utilization", 0.0)
+        agent_utilization = agent_stats["resource_utilization"].get(
+            "task_utilization", 0.0
+        )
         tool_performance = min(tool_report["summary"]["cache_hit_rate"], 1.0)
         strategy_efficiency = 0.8  # Placeholder - would calculate from strategy metrics
-        coordination_overhead = 0.1  # Placeholder - would calculate from coordination metrics
+        coordination_overhead = (
+            0.1  # Placeholder - would calculate from coordination metrics
+        )
 
         # Overall score (weighted average)
         overall_score = (
@@ -341,7 +406,9 @@ class VANAOptimizer:
         """Get strategy performance metrics"""
         return {
             "active_strategies": len(self.active_strategies),
-            "strategy_types_used": list(set(s.strategy_type.value for s in self.active_strategies.values())),
+            "strategy_types_used": list(
+                set(s.strategy_type.value for s in self.active_strategies.values())
+            ),
             "average_strategy_duration": 45.0,  # Placeholder
         }
 
@@ -363,7 +430,11 @@ class VANAOptimizer:
 
         trend = "improving" if scores[-1] > scores[0] else "declining"
 
-        return {"trend": trend, "score_history": scores, "average_score": sum(scores) / len(scores)}
+        return {
+            "trend": trend,
+            "score_history": scores,
+            "average_score": sum(scores) / len(scores),
+        }
 
     async def _apply_agent_optimization(self, recommendation: str):
         """Apply agent-related optimization"""

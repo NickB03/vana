@@ -69,9 +69,9 @@ class TestVanaIntelligence:
             expected_pattern = individual_result.get("expected_pattern", "")
 
             if expected_pattern == "web_search_then_extract":
-                assert (
-                    "adk_web_search" in tools_used or len(tools_used) == 0
-                ), f"Expected web search for factual query: {individual_result['query']}"
+                assert "adk_web_search" in tools_used or len(tools_used) == 0, (
+                    f"Expected web search for factual query: {individual_result['query']}"
+                )
 
         # Test should pass if score is reasonable
         if result.score >= 0.8:
@@ -89,9 +89,9 @@ class TestVanaIntelligence:
 
         # Verify test execution
         assert result.scenarios_tested > 0, "No scenarios were tested"
-        assert (
-            result.score >= 0.75
-        ), f"Tool selection intelligence too low: {result.score:.2f}"
+        assert result.score >= 0.75, (
+            f"Tool selection intelligence too low: {result.score:.2f}"
+        )
 
         # Analyze tool usage patterns
         tool_usage_analysis = result.details.get("tool_usage_analysis", {})
@@ -104,9 +104,9 @@ class TestVanaIntelligence:
         # Factual queries should primarily use web search
         if "factual" in tools_by_type:
             factual_tools = tools_by_type["factual"]
-            assert (
-                "adk_web_search" in factual_tools or len(factual_tools) == 0
-            ), "Factual queries should use web search"
+            assert "adk_web_search" in factual_tools or len(factual_tools) == 0, (
+                "Factual queries should use web search"
+            )
 
         # Procedural queries should use delegation
         if "procedural" in tools_by_type:
@@ -163,9 +163,9 @@ class TestVanaIntelligence:
         assert len(quality_scores) > 0, "No quality scores calculated"
 
         avg_quality = sum(quality_scores) / len(quality_scores)
-        assert (
-            avg_quality >= 0.6
-        ), f"Average response quality too low: {avg_quality:.2f}"
+        assert avg_quality >= 0.6, (
+            f"Average response quality too low: {avg_quality:.2f}"
+        )
 
         # Check individual quality components
         for analysis in response_analyses:
@@ -179,9 +179,9 @@ class TestVanaIntelligence:
 
             # Response should not be empty for successful queries
             if analysis["response"]:
-                assert (
-                    len(analysis["response"]) > 10
-                ), f"Response too short for query: {analysis['query']}"
+                assert len(analysis["response"]) > 10, (
+                    f"Response too short for query: {analysis['query']}"
+                )
 
     @pytest.mark.agent
     @pytest.mark.asyncio
@@ -203,9 +203,9 @@ class TestVanaIntelligence:
 
         # At least some scenarios should show good context usage
         good_usage_count = context_analysis.get("scenarios_with_good_context_usage", 0)
-        assert (
-            good_usage_count >= 0
-        ), "Should have some scenarios with good context usage"
+        assert good_usage_count >= 0, (
+            "Should have some scenarios with good context usage"
+        )
 
     @pytest.mark.agent
     @pytest.mark.asyncio
@@ -247,14 +247,14 @@ class TestVanaIntelligence:
             )
             has_error = bool(error_response["error"])
 
-            assert (
-                has_content or has_error
-            ), f"No response or error for query: {error_response['query']}"
+            assert has_content or has_error, (
+                f"No response or error for query: {error_response['query']}"
+            )
 
             # Execution time should be reasonable
-            assert (
-                error_response["execution_time"] < 30.0
-            ), f"Response time too long: {error_response['execution_time']:.2f}s"
+            assert error_response["execution_time"] < 30.0, (
+                f"Response time too long: {error_response['execution_time']:.2f}s"
+            )
 
     @pytest.mark.agent
     @pytest.mark.asyncio
@@ -297,9 +297,9 @@ class TestVanaIntelligence:
             if total_unique_tools:
                 consistency_ratio = len(common_tools) / len(total_unique_tools)
                 # Allow some variation but expect some consistency
-                assert (
-                    consistency_ratio >= 0.3 or len(total_unique_tools) <= 2
-                ), f"Tool usage too inconsistent: {consistency_ratio:.2f}"
+                assert consistency_ratio >= 0.3 or len(total_unique_tools) <= 2, (
+                    f"Tool usage too inconsistent: {consistency_ratio:.2f}"
+                )
 
         # Check response pattern consistency
         response_lengths = [len(r["response"]) for r in responses if r["response"]]
@@ -308,9 +308,9 @@ class TestVanaIntelligence:
             # Responses should be reasonably similar in length
             for length in response_lengths:
                 ratio = length / avg_length if avg_length > 0 else 1
-                assert (
-                    0.3 <= ratio <= 3.0
-                ), f"Response length too inconsistent: {length} vs avg {avg_length:.1f}"
+                assert 0.3 <= ratio <= 3.0, (
+                    f"Response length too inconsistent: {length} vs avg {avg_length:.1f}"
+                )
 
     @pytest.mark.agent
     @pytest.mark.asyncio
@@ -344,15 +344,15 @@ class TestVanaIntelligence:
 
         # Response times should be reasonable
         avg_response_time = sum(response_times) / len(response_times)
-        assert (
-            avg_response_time < 10.0
-        ), f"Average response time too slow: {avg_response_time:.2f}s"
+        assert avg_response_time < 10.0, (
+            f"Average response time too slow: {avg_response_time:.2f}s"
+        )
 
         # No response should be extremely slow
         max_response_time = max(response_times)
-        assert (
-            max_response_time < 30.0
-        ), f"Maximum response time too slow: {max_response_time:.2f}s"
+        assert max_response_time < 30.0, (
+            f"Maximum response time too slow: {max_response_time:.2f}s"
+        )
 
         # Should have successful responses
         successful_responses = [p for p in performance_data if p["status"] == "success"]
@@ -380,20 +380,20 @@ class TestVanaIntelligence:
         overall_intelligence = sum(intelligence_scores) / len(intelligence_scores)
 
         # Verify overall intelligence meets threshold
-        assert (
-            overall_intelligence >= 0.7
-        ), f"Overall intelligence score too low: {overall_intelligence:.2f}"
+        assert overall_intelligence >= 0.7, (
+            f"Overall intelligence score too low: {overall_intelligence:.2f}"
+        )
 
         # Individual components should meet minimum thresholds
-        assert (
-            reasoning_result.score >= 0.6
-        ), f"Reasoning consistency below threshold: {reasoning_result.score:.2f}"
-        assert (
-            tool_result.score >= 0.7
-        ), f"Tool selection intelligence below threshold: {tool_result.score:.2f}"
-        assert (
-            context_result.score >= 0.6
-        ), f"Context utilization below threshold: {context_result.score:.2f}"
+        assert reasoning_result.score >= 0.6, (
+            f"Reasoning consistency below threshold: {reasoning_result.score:.2f}"
+        )
+        assert tool_result.score >= 0.7, (
+            f"Tool selection intelligence below threshold: {tool_result.score:.2f}"
+        )
+        assert context_result.score >= 0.6, (
+            f"Context utilization below threshold: {context_result.score:.2f}"
+        )
 
         # Log intelligence metrics for monitoring
         intelligence_metrics = {
@@ -460,9 +460,9 @@ class TestVanaSpecializedBehavior:
 
             # Weather queries should use web search, not delegation
             if "weather" in query.lower():
-                assert (
-                    "adk_web_search" in tools_used or len(tools_used) == 0
-                ), "Weather queries should use web search"
+                assert "adk_web_search" in tools_used or len(tools_used) == 0, (
+                    "Weather queries should use web search"
+                )
 
     @pytest.mark.agent
     @pytest.mark.asyncio
@@ -479,12 +479,12 @@ class TestVanaSpecializedBehavior:
             response = await agent_client.query(scenario)
 
             # Should proactively use tools for current information
-            assert (
-                len(response.tools_used) > 0 or response.status != "success"
-            ), f"Should use tools proactively for: {scenario}"
+            assert len(response.tools_used) > 0 or response.status != "success", (
+                f"Should use tools proactively for: {scenario}"
+            )
 
             # Response should contain relevant information
             if response.status == "success" and response.content:
-                assert (
-                    len(response.content) > 50
-                ), f"Response too brief for complex query: {scenario}"
+                assert len(response.content) > 50, (
+                    f"Response too brief for complex query: {scenario}"
+                )

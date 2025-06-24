@@ -84,10 +84,13 @@ class ADKMemoryMonitor:
 
         # ADK configuration
         self.rag_corpus = os.getenv(
-            "RAG_CORPUS_RESOURCE_NAME", "projects/analystai-454200/locations/us-central1/ragCorpora/vana-corpus"
+            "RAG_CORPUS_RESOURCE_NAME",
+            "projects/analystai-454200/locations/us-central1/ragCorpora/vana-corpus",
         )
         self.similarity_top_k = int(os.getenv("SIMILARITY_TOP_K", "5"))
-        self.vector_distance_threshold = float(os.getenv("VECTOR_DISTANCE_THRESHOLD", "0.7"))
+        self.vector_distance_threshold = float(
+            os.getenv("VECTOR_DISTANCE_THRESHOLD", "0.7")
+        )
 
         # Initialize ADK memory service if available
         self.memory_service = None
@@ -100,7 +103,9 @@ class ADKMemoryMonitor:
                     similarity_top_k=self.similarity_top_k,
                     vector_distance_threshold=self.vector_distance_threshold,
                 )
-                logger.info(f"ADK Memory Monitor initialized with RAG Corpus: {self.rag_corpus}")
+                logger.info(
+                    f"ADK Memory Monitor initialized with RAG Corpus: {self.rag_corpus}"
+                )
             except Exception as e:
                 logger.error(f"Failed to initialize ADK Memory Service: {e}")
                 self.adk_available = False
@@ -306,7 +311,9 @@ class ADKMemoryMonitor:
             elif metrics.average_query_latency_ms > 300:  # 300ms warning
                 if status == "ok":
                     status = "warning"
-                issues.append(f"Elevated latency: {metrics.average_query_latency_ms:.1f}ms")
+                issues.append(
+                    f"Elevated latency: {metrics.average_query_latency_ms:.1f}ms"
+                )
 
             # Check uptime
             if metrics.uptime_percentage < 99.0:
@@ -331,13 +338,19 @@ class ADKMemoryMonitor:
             cutoff_time = datetime.datetime.now() - datetime.timedelta(hours=24)
             cutoff_iso = cutoff_time.isoformat()
 
-            self.metrics_history = [m for m in self.metrics_history if m["timestamp"] > cutoff_iso]
-            self.cost_history = [c for c in self.cost_history if c["timestamp"] > cutoff_iso]
+            self.metrics_history = [
+                m for m in self.metrics_history if m["timestamp"] > cutoff_iso
+            ]
+            self.cost_history = [
+                c for c in self.cost_history if c["timestamp"] > cutoff_iso
+            ]
 
             return {
                 "status": status,
                 "message": (
-                    "ADK Memory system operational" if status == "ok" else f"Issues detected: {', '.join(issues)}"
+                    "ADK Memory system operational"
+                    if status == "ok"
+                    else f"Issues detected: {', '.join(issues)}"
                 ),
                 "timestamp": metrics.timestamp,
                 "metrics": asdict(metrics),
@@ -378,13 +391,17 @@ class ADKMemoryMonitor:
         # Get recent metrics (last hour)
         recent_cutoff = datetime.datetime.now() - datetime.timedelta(hours=1)
         recent_cutoff_iso = recent_cutoff.isoformat()
-        recent_metrics = [m for m in self.metrics_history if m["timestamp"] > recent_cutoff_iso]
+        recent_metrics = [
+            m for m in self.metrics_history if m["timestamp"] > recent_cutoff_iso
+        ]
 
         # Get baseline metrics (previous 24 hours, excluding last hour)
         baseline_cutoff = datetime.datetime.now() - datetime.timedelta(hours=24)
         baseline_cutoff_iso = baseline_cutoff.isoformat()
         baseline_metrics = [
-            m for m in self.metrics_history if baseline_cutoff_iso < m["timestamp"] <= recent_cutoff_iso
+            m
+            for m in self.metrics_history
+            if baseline_cutoff_iso < m["timestamp"] <= recent_cutoff_iso
         ]
 
         if not recent_metrics or not baseline_metrics:
@@ -417,19 +434,27 @@ class ADKMemoryMonitor:
                 "recent_ms": recent_avg_latency,
                 "baseline_ms": baseline_avg_latency,
                 "change_percent": pct_change(recent_avg_latency, baseline_avg_latency),
-                "status": "improved" if recent_avg_latency < baseline_avg_latency else "degraded",
+                "status": "improved"
+                if recent_avg_latency < baseline_avg_latency
+                else "degraded",
             },
             "error_rate": {
                 "recent": recent_error_rate,
                 "baseline": baseline_error_rate,
                 "change_percent": pct_change(recent_error_rate, baseline_error_rate),
-                "status": "improved" if recent_error_rate < baseline_error_rate else "degraded",
+                "status": "improved"
+                if recent_error_rate < baseline_error_rate
+                else "degraded",
             },
             "cache_hit_rate": {
                 "recent": recent_cache_hit_rate,
                 "baseline": baseline_cache_hit_rate,
-                "change_percent": pct_change(recent_cache_hit_rate, baseline_cache_hit_rate),
-                "status": "improved" if recent_cache_hit_rate > baseline_cache_hit_rate else "degraded",
+                "change_percent": pct_change(
+                    recent_cache_hit_rate, baseline_cache_hit_rate
+                ),
+                "status": "improved"
+                if recent_cache_hit_rate > baseline_cache_hit_rate
+                else "degraded",
             },
         }
 

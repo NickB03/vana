@@ -124,7 +124,9 @@ class ADKMemoryLogger:
             self.operations_logger.info(json.dumps(operation_data))
 
             # Also log to trace for debugging
-            self.trace_logger.debug(f"Memory operation: {operation.operation_type} - {operation.operation_id}")
+            self.trace_logger.debug(
+                f"Memory operation: {operation.operation_type} - {operation.operation_id}"
+            )
 
         except Exception as e:
             logger.error(f"Error logging memory operation: {e}")
@@ -145,12 +147,19 @@ class ADKMemoryLogger:
                 }
 
             # Also log to trace
-            self.trace_logger.debug(f"Session event: {event.event_type} - {event.session_id}")
+            self.trace_logger.debug(
+                f"Session event: {event.event_type} - {event.session_id}"
+            )
 
         except Exception as e:
             logger.error(f"Error logging session event: {e}")
 
-    def log_error(self, error_type: str, error_message: str, context: Optional[Dict[str, Any]] = None):
+    def log_error(
+        self,
+        error_type: str,
+        error_message: str,
+        context: Optional[Dict[str, Any]] = None,
+    ):
         """Log an error with context."""
         try:
             error_data = {
@@ -166,7 +175,12 @@ class ADKMemoryLogger:
         except Exception as e:
             logger.error(f"Error logging error: {e}")
 
-    def start_operation_trace(self, operation_id: str, operation_type: str, context: Optional[Dict[str, Any]] = None):
+    def start_operation_trace(
+        self,
+        operation_id: str,
+        operation_type: str,
+        context: Optional[Dict[str, Any]] = None,
+    ):
         """Start tracing an operation with thread safety."""
         try:
             trace_data = {
@@ -179,12 +193,19 @@ class ADKMemoryLogger:
             with self._operations_lock:
                 self.active_operations[operation_id] = trace_data
 
-            self.trace_logger.debug(f"Started operation trace: {operation_id} - {operation_type}")
+            self.trace_logger.debug(
+                f"Started operation trace: {operation_id} - {operation_type}"
+            )
 
         except Exception as e:
             logger.error(f"Error starting operation trace: {e}")
 
-    def end_operation_trace(self, operation_id: str, success: bool = True, result: Optional[Dict[str, Any]] = None):
+    def end_operation_trace(
+        self,
+        operation_id: str,
+        success: bool = True,
+        result: Optional[Dict[str, Any]] = None,
+    ):
         """End tracing an operation with thread safety."""
         try:
             with self._operations_lock:
@@ -206,7 +227,9 @@ class ADKMemoryLogger:
                     }
                 )
 
-                self.trace_logger.debug(f"Completed operation trace: {operation_id} - {duration_ms:.1f}ms")
+                self.trace_logger.debug(
+                    f"Completed operation trace: {operation_id} - {duration_ms:.1f}ms"
+                )
 
                 # Remove from active operations
                 del self.active_operations[operation_id]
@@ -214,7 +237,9 @@ class ADKMemoryLogger:
         except Exception as e:
             logger.error(f"Error ending operation trace: {e}")
 
-    def get_operation_logs(self, hours: int = 24, operation_type: Optional[str] = None) -> List[Dict[str, Any]]:
+    def get_operation_logs(
+        self, hours: int = 24, operation_type: Optional[str] = None
+    ) -> List[Dict[str, Any]]:
         """Get operation logs for analysis."""
         try:
             cutoff_time = datetime.datetime.now() - datetime.timedelta(hours=hours)
@@ -228,10 +253,16 @@ class ADKMemoryLogger:
                             # Parse the message field which contains the actual operation data
                             if "message" in log_entry:
                                 operation_data = json.loads(log_entry["message"])
-                                operation_time = datetime.datetime.fromisoformat(operation_data["timestamp"])
+                                operation_time = datetime.datetime.fromisoformat(
+                                    operation_data["timestamp"]
+                                )
 
                                 if operation_time >= cutoff_time:
-                                    if operation_type is None or operation_data.get("operation_type") == operation_type:
+                                    if (
+                                        operation_type is None
+                                        or operation_data.get("operation_type")
+                                        == operation_type
+                                    ):
                                         operations.append(operation_data)
                         except (json.JSONDecodeError, KeyError, ValueError):
                             continue
@@ -242,7 +273,9 @@ class ADKMemoryLogger:
             logger.error(f"Error getting operation logs: {e}")
             return []
 
-    def get_session_logs(self, hours: int = 24, session_id: Optional[str] = None) -> List[Dict[str, Any]]:
+    def get_session_logs(
+        self, hours: int = 24, session_id: Optional[str] = None
+    ) -> List[Dict[str, Any]]:
         """Get session logs for analysis."""
         try:
             cutoff_time = datetime.datetime.now() - datetime.timedelta(hours=hours)
@@ -255,10 +288,15 @@ class ADKMemoryLogger:
                             log_entry = json.loads(line)
                             if "message" in log_entry:
                                 session_data = json.loads(log_entry["message"])
-                                session_time = datetime.datetime.fromisoformat(session_data["timestamp"])
+                                session_time = datetime.datetime.fromisoformat(
+                                    session_data["timestamp"]
+                                )
 
                                 if session_time >= cutoff_time:
-                                    if session_id is None or session_data.get("session_id") == session_id:
+                                    if (
+                                        session_id is None
+                                        or session_data.get("session_id") == session_id
+                                    ):
                                         sessions.append(session_data)
                         except (json.JSONDecodeError, KeyError, ValueError):
                             continue
@@ -282,7 +320,9 @@ class ADKMemoryLogger:
                             log_entry = json.loads(line)
                             if "message" in log_entry:
                                 error_data = json.loads(log_entry["message"])
-                                error_time = datetime.datetime.fromisoformat(error_data["timestamp"])
+                                error_time = datetime.datetime.fromisoformat(
+                                    error_data["timestamp"]
+                                )
 
                                 if error_time >= cutoff_time:
                                     errors.append(error_data)
@@ -305,10 +345,14 @@ class ADKMemoryLogger:
 
             # Calculate metrics
             total_operations = len(operations)
-            successful_operations = sum(1 for op in operations if op.get("success", False))
+            successful_operations = sum(
+                1 for op in operations if op.get("success", False)
+            )
             failed_operations = total_operations - successful_operations
 
-            latencies = [op.get("latency_ms", 0) for op in operations if op.get("latency_ms")]
+            latencies = [
+                op.get("latency_ms", 0) for op in operations if op.get("latency_ms")
+            ]
             avg_latency = sum(latencies) / len(latencies) if latencies else 0
 
             # Group by operation type
@@ -316,7 +360,12 @@ class ADKMemoryLogger:
             for op in operations:
                 op_type = op.get("operation_type", "unknown")
                 if op_type not in operation_types:
-                    operation_types[op_type] = {"count": 0, "success_count": 0, "total_latency": 0, "total_cost": 0}
+                    operation_types[op_type] = {
+                        "count": 0,
+                        "success_count": 0,
+                        "total_latency": 0,
+                        "total_cost": 0,
+                    }
 
                 operation_types[op_type]["count"] += 1
                 if op.get("success", False):
@@ -326,16 +375,24 @@ class ADKMemoryLogger:
 
             # Calculate averages for each operation type
             for op_type, stats in operation_types.items():
-                stats["success_rate"] = stats["success_count"] / stats["count"] if stats["count"] > 0 else 0
-                stats["avg_latency"] = stats["total_latency"] / stats["count"] if stats["count"] > 0 else 0
-                stats["avg_cost"] = stats["total_cost"] / stats["count"] if stats["count"] > 0 else 0
+                stats["success_rate"] = (
+                    stats["success_count"] / stats["count"] if stats["count"] > 0 else 0
+                )
+                stats["avg_latency"] = (
+                    stats["total_latency"] / stats["count"] if stats["count"] > 0 else 0
+                )
+                stats["avg_cost"] = (
+                    stats["total_cost"] / stats["count"] if stats["count"] > 0 else 0
+                )
 
             return {
                 "analysis_period_hours": hours,
                 "total_operations": total_operations,
                 "successful_operations": successful_operations,
                 "failed_operations": failed_operations,
-                "success_rate": successful_operations / total_operations if total_operations > 0 else 0,
+                "success_rate": successful_operations / total_operations
+                if total_operations > 0
+                else 0,
                 "average_latency_ms": avg_latency,
                 "operation_types": operation_types,
                 "timestamp": datetime.datetime.now().isoformat(),
@@ -375,7 +432,11 @@ class ADKMemoryLogger:
             total_sessions = len(session_ids)
             total_events = len(sessions)
             avg_state_size = total_state_size / total_events if total_events > 0 else 0
-            persistence_success_rate = (total_events - persistence_failures) / total_events if total_events > 0 else 0
+            persistence_success_rate = (
+                (total_events - persistence_failures) / total_events
+                if total_events > 0
+                else 0
+            )
 
             return {
                 "analysis_period_hours": hours,
@@ -409,7 +470,12 @@ class ADKMemoryLogger:
 
             # Check log file sizes
             log_sizes = {}
-            for log_file in [self.operations_log, self.session_log, self.trace_log, self.error_log]:
+            for log_file in [
+                self.operations_log,
+                self.session_log,
+                self.trace_log,
+                self.error_log,
+            ]:
                 if log_file.exists():
                     log_sizes[log_file.name] = log_file.stat().st_size
                 else:
@@ -417,13 +483,18 @@ class ADKMemoryLogger:
 
             return {
                 "timestamp": datetime.datetime.now().isoformat(),
-                "recent_errors": {"count": len(recent_errors), "errors": recent_errors[:10]},  # Last 10 errors
+                "recent_errors": {
+                    "count": len(recent_errors),
+                    "errors": recent_errors[:10],
+                },  # Last 10 errors
                 "performance_analysis": performance,
                 "session_health_analysis": session_health,
                 "active_operations": active_ops,
                 "log_file_sizes": log_sizes,
                 "log_directory": str(self.log_dir),
-                "recommendations": self._generate_recommendations(recent_errors, performance, session_health),
+                "recommendations": self._generate_recommendations(
+                    recent_errors, performance, session_health
+                ),
             }
 
         except Exception as e:
@@ -433,26 +504,39 @@ class ADKMemoryLogger:
                 "timestamp": datetime.datetime.now().isoformat(),
             }
 
-    def _generate_recommendations(self, errors: List[Dict], performance: Dict, session_health: Dict) -> List[str]:
+    def _generate_recommendations(
+        self, errors: List[Dict], performance: Dict, session_health: Dict
+    ) -> List[str]:
         """Generate troubleshooting recommendations."""
         recommendations = []
 
         # Check error rate
         if len(errors) > 10:
-            recommendations.append("High error rate detected. Check error logs for patterns.")
+            recommendations.append(
+                "High error rate detected. Check error logs for patterns."
+            )
 
         # Check performance
         if isinstance(performance, dict) and "success_rate" in performance:
             if performance["success_rate"] < 0.95:
-                recommendations.append("Low success rate detected. Investigate failed operations.")
+                recommendations.append(
+                    "Low success rate detected. Investigate failed operations."
+                )
 
             if performance.get("average_latency_ms", 0) > 500:
-                recommendations.append("High average latency detected. Check system resources and network.")
+                recommendations.append(
+                    "High average latency detected. Check system resources and network."
+                )
 
         # Check session health
-        if isinstance(session_health, dict) and "persistence_success_rate" in session_health:
+        if (
+            isinstance(session_health, dict)
+            and "persistence_success_rate" in session_health
+        ):
             if session_health["persistence_success_rate"] < 0.95:
-                recommendations.append("Session persistence issues detected. Check session storage.")
+                recommendations.append(
+                    "Session persistence issues detected. Check session storage."
+                )
 
         # Check for specific error patterns
         error_types = {}
@@ -462,7 +546,9 @@ class ADKMemoryLogger:
 
         for error_type, count in error_types.items():
             if count > 5:
-                recommendations.append(f"Frequent {error_type} errors detected. Investigate root cause.")
+                recommendations.append(
+                    f"Frequent {error_type} errors detected. Investigate root cause."
+                )
 
         if not recommendations:
             recommendations.append("No issues detected. System appears healthy.")

@@ -20,7 +20,9 @@ from pathlib import Path
 from typing import Any, Dict
 
 # Add the project root to the Python path
-sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+sys.path.append(
+    os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+)
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -87,9 +89,15 @@ class VectorSearchMonitor:
         # Extract metrics from last check
         metrics = {
             "status": self.last_check_result.get("status", "unknown"),
-            "last_check_time": self.last_check_time.isoformat() if self.last_check_time else None,
-            "response_time": self.last_check_result.get("metrics", {}).get("response_time", 0),
-            "success_rate": self.last_check_result.get("metrics", {}).get("success_rate", 0),
+            "last_check_time": self.last_check_time.isoformat()
+            if self.last_check_time
+            else None,
+            "response_time": self.last_check_result.get("metrics", {}).get(
+                "response_time", 0
+            ),
+            "success_rate": self.last_check_result.get("metrics", {}).get(
+                "success_rate", 0
+            ),
             "checks": self.last_check_result.get("checks", {}),
             "issues_count": len(self.last_check_result.get("issues", [])),
             "history_count": len(self.history_cache),
@@ -113,13 +121,19 @@ class VectorSearchMonitor:
         # Create summary
         summary = {
             "status": self.last_check_result.get("status", "unknown"),
-            "last_check_time": self.last_check_time.isoformat() if self.last_check_time else None,
+            "last_check_time": self.last_check_time.isoformat()
+            if self.last_check_time
+            else None,
             "checks_summary": {},
         }
 
         # Summarize individual checks
-        for check_name, check_result in self.last_check_result.get("checks", {}).items():
-            summary["checks_summary"][check_name] = check_result.get("status", "unknown")
+        for check_name, check_result in self.last_check_result.get(
+            "checks", {}
+        ).items():
+            summary["checks_summary"][check_name] = check_result.get(
+                "status", "unknown"
+            )
 
         # Add recommendations count
         from tools.vector_search.health_checker import VectorSearchHealthChecker
@@ -129,9 +143,13 @@ class VectorSearchMonitor:
         summary["recommendations_count"] = len(recommendations)
 
         # Add high priority recommendations
-        high_priority_recs = [rec for rec in recommendations if rec.get("priority") == "high"]
+        high_priority_recs = [
+            rec for rec in recommendations if rec.get("priority") == "high"
+        ]
         if high_priority_recs:
-            summary["high_priority_recommendations"] = [rec.get("title") for rec in high_priority_recs]
+            summary["high_priority_recommendations"] = [
+                rec.get("title") for rec in high_priority_recs
+            ]
 
         return summary
 
@@ -190,7 +208,10 @@ class VectorSearchMonitor:
             "timestamps": timestamps,
             "response_times": response_times,
             "success_rates": success_rates,
-            "health_percentage": (status_counts.get("ok", 0) / len(filtered_history)) * 100 if filtered_history else 0,
+            "health_percentage": (status_counts.get("ok", 0) / len(filtered_history))
+            * 100
+            if filtered_history
+            else 0,
         }
 
         return historical_data
@@ -277,13 +298,21 @@ class VectorSearchMonitor:
         previous_rt = previous_metrics.get("response_time", 0)
 
         if current_rt != 0 and previous_rt != 0:
-            rt_change = ((current_rt - previous_rt) / previous_rt) * 100 if previous_rt != 0 else 0
+            rt_change = (
+                ((current_rt - previous_rt) / previous_rt) * 100
+                if previous_rt != 0
+                else 0
+            )
             trends["response_time"] = {
                 "current": current_rt,
                 "previous": previous_rt,
                 "change_percent": rt_change,
                 "trend": (
-                    "improving" if current_rt < previous_rt else "degrading" if current_rt > previous_rt else "stable"
+                    "improving"
+                    if current_rt < previous_rt
+                    else "degrading"
+                    if current_rt > previous_rt
+                    else "stable"
                 ),
             }
 
@@ -298,7 +327,11 @@ class VectorSearchMonitor:
                 "previous": previous_sr,
                 "change": sr_change,
                 "trend": (
-                    "improving" if current_sr > previous_sr else "degrading" if current_sr < previous_sr else "stable"
+                    "improving"
+                    if current_sr > previous_sr
+                    else "degrading"
+                    if current_sr < previous_sr
+                    else "stable"
                 ),
             }
 

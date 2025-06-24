@@ -8,7 +8,7 @@ set -e
 echo "🏭 Starting VANA Enhanced Production Deployment..."
 echo "✨ Enhanced Reasoning Features for Production:"
 echo "   • Mathematical problem solving"
-echo "   • Logical reasoning analysis" 
+echo "   • Logical reasoning analysis"
 echo "   • Enhanced echo with reasoning"
 echo "   • Enhanced task analysis"
 echo "   • Reasoning-based coordination"
@@ -109,14 +109,14 @@ if [ -n "$SERVICE_URL" ]; then
     echo "🌐 Production Service URL: $SERVICE_URL"
     echo "🔍 Health check: $SERVICE_URL/health"
     echo "📊 Version info: $SERVICE_URL/info"
-    
+
     # Wait for production service to be fully ready
     echo "⏳ Waiting for production service to be fully ready..."
     sleep 30
-    
+
     # Comprehensive production validation
     echo "🔍 Running comprehensive production validation..."
-    
+
     # Test health endpoint
     echo "1. Testing health endpoint..."
     HEALTH_STATUS=$(curl -s -f "$SERVICE_URL/health" 2>/dev/null || echo "FAILED")
@@ -126,42 +126,42 @@ if [ -n "$SERVICE_URL" ]; then
         echo "   ❌ Health check failed: $HEALTH_STATUS"
         exit 1
     fi
-    
+
     # Test enhanced features in production
     echo "2. Validating enhanced reasoning features..."
     INFO_RESPONSE=$(curl -s "$SERVICE_URL/info" 2>/dev/null || echo "{}")
-    
+
     if echo "$INFO_RESPONSE" | grep -q "enhanced_features"; then
         echo "   ✅ Enhanced features detected in production"
-        
+
         # Extract and validate enhanced features
         REASONING_TOOLS=$(echo "$INFO_RESPONSE" | jq -r '.enhanced_features.reasoning_tools // "unknown"' 2>/dev/null || echo "unknown")
         MATH_REASONING=$(echo "$INFO_RESPONSE" | jq -r '.enhanced_features.mathematical_reasoning // false' 2>/dev/null || echo "false")
         LOGIC_REASONING=$(echo "$INFO_RESPONSE" | jq -r '.enhanced_features.logical_reasoning // false' 2>/dev/null || echo "false")
         PRODUCTION_READY=$(echo "$INFO_RESPONSE" | jq -r '.enhanced_features.production_ready // false' 2>/dev/null || echo "false")
-        
+
         echo "   • Reasoning tools: $REASONING_TOOLS"
         echo "   • Mathematical reasoning: $MATH_REASONING"
         echo "   • Logical reasoning: $LOGIC_REASONING"
         echo "   • Production ready: $PRODUCTION_READY"
-        
+
         # Validate all features are active
         VALIDATION_ERRORS=0
         if [ "$REASONING_TOOLS" != "5" ]; then
             echo "   ❌ Expected 5 reasoning tools, found: $REASONING_TOOLS"
             VALIDATION_ERRORS=$((VALIDATION_ERRORS + 1))
         fi
-        
+
         if [ "$MATH_REASONING" != "true" ]; then
             echo "   ❌ Mathematical reasoning not enabled"
             VALIDATION_ERRORS=$((VALIDATION_ERRORS + 1))
         fi
-        
+
         if [ "$LOGIC_REASONING" != "true" ]; then
             echo "   ❌ Logical reasoning not enabled"
             VALIDATION_ERRORS=$((VALIDATION_ERRORS + 1))
         fi
-        
+
         if [ $VALIDATION_ERRORS -eq 0 ]; then
             echo "   🎉 All enhanced reasoning features validated!"
         else
@@ -172,19 +172,19 @@ if [ -n "$SERVICE_URL" ]; then
         echo "   ❌ Enhanced features not detected in production"
         exit 1
     fi
-    
+
     # Test version tracking
     echo "3. Validating version tracking..."
     VERSION=$(echo "$INFO_RESPONSE" | jq -r '.version // "unknown"' 2>/dev/null || echo "unknown")
     COMMIT_IN_RESPONSE=$(echo "$INFO_RESPONSE" | jq -r '.version_details.commit_hash // "unknown"' 2>/dev/null || echo "unknown")
-    
+
     if [ "$COMMIT_IN_RESPONSE" = "$COMMIT_SHORT" ]; then
         echo "   ✅ Correct version deployed: $VERSION"
     else
         echo "   ❌ Version mismatch. Expected: $COMMIT_SHORT, Found: $COMMIT_IN_RESPONSE"
         exit 1
     fi
-    
+
     # Get production manifest
     echo "4. Retrieving production manifest..."
     MANIFEST_URL="gs://$PROJECT_ID-vana-builds/production/manifests/latest-manifest.json"
@@ -194,7 +194,7 @@ if [ -n "$SERVICE_URL" ]; then
     else
         echo "   ⚠️  Production manifest not found"
     fi
-    
+
     echo ""
     echo "🎉 VANA Enhanced Production deployment successful!"
     echo "🏭 Production URL: $SERVICE_URL"
@@ -209,7 +209,7 @@ if [ -n "$SERVICE_URL" ]; then
     echo ""
     echo "🔄 To rollback if needed:"
     echo "   gcloud run services update-traffic vana-enhanced-prod --to-revisions=PREVIOUS_REVISION=100 --region=us-central1"
-    
+
 else
     echo "❌ Failed to get production service URL. Check deployment logs."
     exit 1

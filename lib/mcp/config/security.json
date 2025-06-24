@@ -2,7 +2,7 @@
   "domain_restrictions": {
     "allowed_domains": [
       "github.com",
-      "api.github.com", 
+      "api.github.com",
       "search.brave.com",
       "api.search.brave.com",
       "*.googleapis.com",
@@ -50,7 +50,7 @@
   "content_filtering": {
     "allowed_content_types": [
       "text/html",
-      "text/plain", 
+      "text/plain",
       "application/json",
       "application/xml",
       "text/xml",

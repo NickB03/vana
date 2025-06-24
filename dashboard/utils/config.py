@@ -10,15 +10,33 @@ import os
 
 # Default configuration
 DEFAULT_CONFIG = {
-    "dashboard": {"title": "VANA Dashboard", "refresh_interval": 30, "theme": "light", "debug": False},
+    "dashboard": {
+        "title": "VANA Dashboard",
+        "refresh_interval": 30,
+        "theme": "light",
+        "debug": False,
+    },
     "data_sources": {
         "use_mock_data": False,
-        "memory_api_url": os.environ.get("VANA_MEMORY_API_URL", "http://localhost:8000/api/memory"),
-        "agent_api_url": os.environ.get("VANA_AGENT_API_URL", "http://localhost:8000/api/agents"),
-        "system_api_url": os.environ.get("VANA_SYSTEM_API_URL", "http://localhost:8000/api/system"),
-        "task_api_url": os.environ.get("VANA_TASK_API_URL", "http://localhost:8000/api/tasks"),
+        "memory_api_url": os.environ.get(
+            "VANA_MEMORY_API_URL", "http://localhost:8000/api/memory"
+        ),
+        "agent_api_url": os.environ.get(
+            "VANA_AGENT_API_URL", "http://localhost:8000/api/agents"
+        ),
+        "system_api_url": os.environ.get(
+            "VANA_SYSTEM_API_URL", "http://localhost:8000/api/system"
+        ),
+        "task_api_url": os.environ.get(
+            "VANA_TASK_API_URL", "http://localhost:8000/api/tasks"
+        ),
     },
-    "visualization": {"chart_height": 400, "chart_width": 800, "color_scheme": "blues", "animation": True},
+    "visualization": {
+        "chart_height": 400,
+        "chart_width": 800,
+        "color_scheme": "blues",
+        "animation": True,
+    },
     "alerts": {
         "enabled": True,
         "cpu_threshold": 80,

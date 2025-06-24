@@ -3,6 +3,7 @@
 INFRASTRUCTURE REALITY CHECK
 Test what infrastructure actually exists vs documentation claims
 """
+
 import os
 import sys
 import traceback
@@ -254,7 +255,9 @@ def main():
     total_components = len(tests)
 
     print(f"Working components: {working_components}/{total_components}")
-    print(f"Infrastructure readiness: {(working_components/total_components)*100:.1f}%")
+    print(
+        f"Infrastructure readiness: {(working_components / total_components) * 100:.1f}%"
+    )
 
     if working_components >= total_components * 0.75:
         print("✅ INFRASTRUCTURE MOSTLY FUNCTIONAL")

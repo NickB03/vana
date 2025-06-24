@@ -128,10 +128,14 @@ class DocumentProcessor:
 
         return document
 
-    def _process_pdf(self, file_path: str, content: bytes, document: Dict[str, Any]) -> None:
+    def _process_pdf(
+        self, file_path: str, content: bytes, document: Dict[str, Any]
+    ) -> None:
         """Process a PDF document"""
         if not PDF_SUPPORT:
-            logger.warning("PDF support not available. Install PyPDF2 for PDF processing.")
+            logger.warning(
+                "PDF support not available. Install PyPDF2 for PDF processing."
+            )
             document["text"] = "PDF processing not available. Install PyPDF2."
             return
 
@@ -186,7 +190,9 @@ class DocumentProcessor:
             logger.error(f"Error processing PDF: {str(e)}")
             document["text"] = f"Error processing PDF: {str(e)}"
 
-    def _process_text(self, file_path: str, content: Union[str, bytes], document: Dict[str, Any]) -> None:
+    def _process_text(
+        self, file_path: str, content: Union[str, bytes], document: Dict[str, Any]
+    ) -> None:
         """Process a text document"""
         try:
             # Get text content
@@ -215,11 +221,17 @@ class DocumentProcessor:
             logger.error(f"Error processing text: {str(e)}")
             document["text"] = f"Error processing text: {str(e)}"
 
-    def _process_image(self, file_path: str, content: bytes, document: Dict[str, Any]) -> None:
+    def _process_image(
+        self, file_path: str, content: bytes, document: Dict[str, Any]
+    ) -> None:
         """Process an image document"""
         if not IMAGE_SUPPORT:
-            logger.warning("Image support not available. Install PIL and pytesseract for image processing.")
-            document["text"] = "Image processing not available. Install PIL and pytesseract."
+            logger.warning(
+                "Image support not available. Install PIL and pytesseract for image processing."
+            )
+            document["text"] = (
+                "Image processing not available. Install PIL and pytesseract."
+            )
             return
 
         try:
@@ -233,7 +245,12 @@ class DocumentProcessor:
 
             # Add image to document
             document["images"].append(
-                {"width": image.width, "height": image.height, "format": image.format, "mode": image.mode}
+                {
+                    "width": image.width,
+                    "height": image.height,
+                    "format": image.format,
+                    "mode": image.mode,
+                }
             )
 
             # Perform OCR if enabled
@@ -283,7 +300,20 @@ class DocumentProcessor:
         words = re.findall(r"\b[a-zA-Z]{3,}\b", text.lower())
 
         # Remove common stop words
-        stop_words = {"the", "and", "is", "in", "to", "of", "for", "with", "on", "at", "from", "by"}
+        stop_words = {
+            "the",
+            "and",
+            "is",
+            "in",
+            "to",
+            "of",
+            "for",
+            "with",
+            "on",
+            "at",
+            "from",
+            "by",
+        }
         filtered_words = [w for w in words if w not in stop_words]
 
         # Count word frequency
@@ -305,9 +335,31 @@ class DocumentProcessor:
         sample = text[:1000].lower()
 
         # Count common words in different languages
-        english_words = {"the", "and", "is", "in", "to", "of", "for", "with", "on", "at"}
+        english_words = {
+            "the",
+            "and",
+            "is",
+            "in",
+            "to",
+            "of",
+            "for",
+            "with",
+            "on",
+            "at",
+        }
         spanish_words = {"el", "la", "es", "en", "y", "de", "para", "con", "por", "un"}
-        french_words = {"le", "la", "est", "en", "et", "de", "pour", "avec", "sur", "un"}
+        french_words = {
+            "le",
+            "la",
+            "est",
+            "en",
+            "et",
+            "de",
+            "pour",
+            "avec",
+            "sur",
+            "un",
+        }
 
         english_count = sum(1 for word in sample.split() if word in english_words)
         spanish_count = sum(1 for word in sample.split() if word in spanish_words)
@@ -360,7 +412,10 @@ class DocumentProcessor:
         return structure
 
     def batch_process_documents(
-        self, file_paths: List[str] = None, directory: str = None, file_types: List[str] = None
+        self,
+        file_paths: List[str] = None,
+        directory: str = None,
+        file_types: List[str] = None,
     ) -> List[Dict[str, Any]]:
         """
         Process multiple documents
