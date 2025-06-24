@@ -58,7 +58,6 @@ gsutil mb -p "$PROJECT_ID" "gs://$PROJECT_ID-vana-builds" 2>/dev/null || echo "B
 echo "🔨 Building and deploying enhanced VANA..."
 gcloud builds submit \
     --config=deployment/cloudbuild-enhanced.yaml \
-    --substitutions=_COMMIT_SHA="$COMMIT_SHA",_BRANCH_NAME="$BRANCH_NAME" \
     .
 
 # Get the service URL
