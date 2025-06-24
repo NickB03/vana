@@ -1582,3 +1582,118 @@ except ImportError as e:
 
     adk_enhanced_analyze_task = FunctionTool(func=basic_analyze_task)
     adk_enhanced_analyze_task.name = "enhanced_analyze_task"
+
+
+# Simple Code Execution Tool (lightweight alternative to complex sandbox)
+def simple_execute_code(code: str, language: str = "python") -> str:
+    """🐍 Execute simple Python code with basic security measures."""
+    import os
+    import subprocess
+    import sys
+    import tempfile
+
+    if language.lower() != "python":
+        return json.dumps(
+            {
+                "error": f"Only Python execution supported in simple mode. Requested: {language}",
+                "success": False,
+            },
+            indent=2,
+        )
+
+    # Basic security check - reject dangerous imports/commands
+    dangerous_patterns = [
+        "import os",
+        "import subprocess",
+        "import sys",
+        "__import__",
+        "eval(",
+        "exec(",
+        "open(",
+        "file(",
+        "input(",
+        "raw_input(",
+        "compile(",
+        "globals(",
+        "locals(",
+        "import socket",
+        "import urllib",
+        "import requests",
+        "import shutil",
+    ]
+
+    code_lower = code.lower()
+    for pattern in dangerous_patterns:
+        if pattern in code_lower:
+            return json.dumps(
+                {
+                    "error": f"Code contains potentially dangerous pattern: {pattern}",
+                    "success": False,
+                    "security_note": "Simple execution mode blocks potentially unsafe operations",
+                },
+                indent=2,
+            )
+
+    try:
+        # Create temporary file
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as f:
+            f.write(code)
+            temp_path = f.name
+
+        # Execute with timeout
+        result = subprocess.run(
+            [sys.executable, temp_path],
+            capture_output=True,
+            text=True,
+            timeout=10,
+            cwd=tempfile.gettempdir(),
+        )
+
+        # Clean up
+        os.unlink(temp_path)
+
+        if result.returncode == 0:
+            return json.dumps(
+                {
+                    "output": result.stdout,
+                    "error": result.stderr if result.stderr else None,
+                    "success": True,
+                    "exit_code": result.returncode,
+                    "execution_mode": "simple_subprocess",
+                },
+                indent=2,
+            )
+        else:
+            return json.dumps(
+                {
+                    "output": result.stdout if result.stdout else None,
+                    "error": result.stderr,
+                    "success": False,
+                    "exit_code": result.returncode,
+                    "execution_mode": "simple_subprocess",
+                },
+                indent=2,
+            )
+
+    except subprocess.TimeoutExpired:
+        return json.dumps(
+            {
+                "error": "Code execution timed out (10 second limit)",
+                "success": False,
+                "execution_mode": "simple_subprocess",
+            },
+            indent=2,
+        )
+    except Exception as e:
+        return json.dumps(
+            {
+                "error": f"Execution failed: {str(e)}",
+                "success": False,
+                "execution_mode": "simple_subprocess",
+            },
+            indent=2,
+        )
+
+
+adk_simple_execute_code = FunctionTool(func=simple_execute_code)
+adk_simple_execute_code.name = "simple_execute_code"

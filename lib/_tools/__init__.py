@@ -32,6 +32,7 @@ from .adk_tools import (  # File System Tools; Search Tools; System Tools; Agent
     adk_reasoning_coordinate_task,
     adk_resume_workflow,
     adk_search_knowledge,
+    adk_simple_execute_code,
     adk_start_workflow,
     adk_transfer_to_agent,
     adk_vector_search,
@@ -81,4 +82,5 @@ __all__ = [
     "adk_reasoning_coordinate_task",
     "adk_mathematical_solve",
     "adk_logical_analyze",
+    "adk_simple_execute_code",
 ]

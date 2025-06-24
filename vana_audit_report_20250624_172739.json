@@ -1,0 +1,117 @@
+{
+  "summary": {
+    "total_tests": 15,
+    "passed_tests": 14,
+    "failed_tests": 1,
+    "success_rate": 93.33333333333333,
+    "total_duration": 10.731364011764526,
+    "timestamp": "2025-06-24T17:27:39.681741"
+  },
+  "results": [
+    {
+      "name": "Health Check",
+      "passed": true,
+      "details": "Status: healthy, Agent: vana, Version: VANA 1.0.0-local (build local) on development",
+      "duration": 0.6720938682556152,
+      "timestamp": "2025-06-24T17:27:29.620040"
+    },
+    {
+      "name": "Version Endpoint",
+      "passed": true,
+      "details": "Build: unknown",
+      "duration": 0.17830824851989746,
+      "timestamp": "2025-06-24T17:27:29.798456"
+    },
+    {
+      "name": "Response Time Consistency",
+      "passed": true,
+      "details": "Avg: 0.22s, Max: 0.24s",
+      "duration": 0.0,
+      "timestamp": "2025-06-24T17:27:30.915066"
+    },
+    {
+      "name": "Math Tool: 15 + 25 * 2...",
+      "passed": true,
+      "details": "Problem: 15 + 25 * 2 | Expected: 65 | Got: {\n  \"answer\": 65,\n  \"reasoning_steps\": [\n    \"Analyzing problem: '15 + 25 * 2'\",\n    \"Identified mat...",
+      "duration": 4.101154088973999,
+      "timestamp": "2025-06-24T17:27:35.016567"
+    },
+    {
+      "name": "Math Tool: What is 10% of 200?...",
+      "passed": true,
+      "details": "Problem: What is 10% of 200? | Expected: 20 | Got: {\n  \"answer\": \"Unable to solve - no mathematical pattern identified\",\n  \"reasoning_steps\": [\n    \"An...",
+      "duration": 0.2410128116607666,
+      "timestamp": "2025-06-24T17:27:35.257619"
+    },
+    {
+      "name": "Math Tool: If I have 3 apples a...",
+      "passed": false,
+      "details": "Problem: If I have 3 apples and buy 5 more, how many do I have? | Expected: 8 | Got: {\n  \"answer\": \"Unable to solve - no mathematical pattern identified\",\n  \"reasoning_steps\": [\n    \"An...",
+      "duration": 0.22058987617492676,
+      "timestamp": "2025-06-24T17:27:35.478238"
+    },
+    {
+      "name": "Logic Tool: If it rains, then th...",
+      "passed": true,
+      "details": "Problem: If it rains, then the ground g... | Expected concept: ground gets wet | Got: {\n  \"conclusion\": \"Logical structure contains: conditional\",\n  \"reasoning_steps\": [\n    \"Analyzing l...",
+      "duration": 0.27591490745544434,
+      "timestamp": "2025-06-24T17:27:35.754457"
+    },
+    {
+      "name": "Logic Tool: All cats are mammals...",
+      "passed": true,
+      "details": "Problem: All cats are mammals. Fluffy i... | Expected concept: mammal | Got: {\n  \"conclusion\": \"Logical structure contains: quantifier\",\n  \"reasoning_steps\": [\n    \"Analyzing lo...",
+      "duration": 0.21112704277038574,
+      "timestamp": "2025-06-24T17:27:35.965617"
+    },
+    {
+      "name": "Web Search: current time in New ...",
+      "passed": true,
+      "details": "Query: current time in New York | Expected terms: ['time', 'new york'] | Result length: 2123 chars",
+      "duration": 1.4476442337036133,
+      "timestamp": "2025-06-24T17:27:37.413344"
+    },
+    {
+      "name": "Web Search: weather in San Franc...",
+      "passed": true,
+      "details": "Query: weather in San Francisco | Expected terms: ['weather', 'san francisco'] | Result length: 280 chars",
+      "duration": 1.0255815982818604,
+      "timestamp": "2025-06-24T17:27:38.439003"
+    },
+    {
+      "name": "File Operations",
+      "passed": true,
+      "details": "Write result: \u2705 Successfully wrote 93 characters to /tmp/vana_te... | Read length: 93 | Content matches: True",
+      "duration": 0.23958516120910645,
+      "timestamp": "2025-06-24T17:27:38.678655"
+    },
+    {
+      "name": "Agent Loading",
+      "passed": true,
+      "details": "Tools: 5, Sub-agents: 2, Instruction: 281 chars",
+      "duration": 0.27870607376098633,
+      "timestamp": "2025-06-24T17:27:38.957695"
+    },
+    {
+      "name": "Tool Configuration",
+      "passed": true,
+      "details": "Expected: ['web_search', 'mathematical_solve', 'logical_analyze', 'read_file', 'write_file'] | Found: ['web_search', 'mathematical_solve', 'logical_analyze', 'read_file', 'write_file']",
+      "duration": 0.0,
+      "timestamp": "2025-06-24T17:27:38.957760"
+    },
+    {
+      "name": "Concurrent Load Test",
+      "passed": true,
+      "details": "Success: 10/10, Avg time: 0.24s, Total: 0.49s",
+      "duration": 0.48987889289855957,
+      "timestamp": "2025-06-24T17:27:39.447697"
+    },
+    {
+      "name": "Invalid Endpoint Handling",
+      "passed": true,
+      "details": "HTTP 404 for invalid endpoint",
+      "duration": 0.2283468246459961,
+      "timestamp": "2025-06-24T17:27:39.676125"
+    }
+  ]
+}
