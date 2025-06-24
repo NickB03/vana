@@ -39,6 +39,11 @@ def main():
             'builder': 'docker',
             'environment': os.environ.get('ENVIRONMENT', 'development')
         },
+        'deployment': {
+            'timestamp': datetime.now().isoformat(),
+            'environment': os.environ.get('ENVIRONMENT', 'development'),
+            'region': os.environ.get('GOOGLE_CLOUD_REGION', 'unknown')
+        },
         'enhanced_features': {
             'reasoning_tools': 5,
             'mathematical_reasoning': True,
