@@ -316,7 +316,6 @@ steps:
 
 # Container images for production registry
 images:
-  - 'gcr.io/${PROJECT_ID}/vana-enhanced-prod:${COMMIT_SHA}'
   - 'gcr.io/${PROJECT_ID}/vana-enhanced-prod:latest'
 
 # Production substitutions

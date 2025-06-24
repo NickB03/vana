@@ -211,7 +211,6 @@ steps:
 
 # Container images to be pushed to registry
 images:
-  - 'gcr.io/${PROJECT_ID}/vana-enhanced:${COMMIT_SHA}'
   - 'gcr.io/${PROJECT_ID}/vana-enhanced:latest'
 
 # Substitutions for dynamic values
