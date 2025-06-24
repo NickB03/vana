@@ -105,7 +105,20 @@ async def mcp_messages_endpoint(request: Request):
 @app.get("/health")
 async def health_check():
     """Health check endpoint."""
-    return {"status": "healthy", "agent": "vana", "mcp_enabled": True}
+    from lib.version import get_version_summary
+    return {
+        "status": "healthy", 
+        "agent": "vana", 
+        "mcp_enabled": True,
+        "version": get_version_summary()
+    }
+
+
+@app.get("/version")
+async def version_info():
+    """Detailed version information endpoint."""
+    from lib.version import get_runtime_version_info
+    return get_runtime_version_info()
 
 
 @app.get("/info")
@@ -113,14 +126,24 @@ async def agent_info():
     """Get agent information."""
     # Get current memory service info (lazy initialization)
     from lib._shared_libraries.lazy_initialization import get_adk_memory_service
+    from lib.version import get_runtime_version_info
 
     memory_service = get_adk_memory_service()
     current_memory_info = memory_service.get_service_info()
+    version_info = get_runtime_version_info()
 
     return {
         "name": "VANA",
-        "description": "AI assistant with memory, knowledge graph, and search capabilities",
-        "version": "1.0.0",
+        "description": "AI assistant with enhanced reasoning capabilities, memory, knowledge graph, and search",
+        "version": version_info["version"],
+        "version_details": {
+            "base_version": version_info["base_version"],
+            "commit_hash": version_info["git"]["commit_short"],
+            "branch": version_info["git"]["branch"],
+            "build_id": version_info["build"]["build_id"],
+            "build_timestamp": version_info["build"]["build_timestamp"],
+            "deployment_timestamp": version_info["deployment"]["timestamp"]
+        },
         "adk_integrated": True,
         "mcp_server": True,
         "mcp_endpoints": {"sse": "/mcp/sse", "messages": "/mcp/messages"},
@@ -131,6 +154,14 @@ async def agent_info():
             "supports_semantic_search": current_memory_info["supports_semantic_search"],
         },
         "environment": environment_type,
+        "enhanced_features": {
+            "reasoning_tools": 5,
+            "mathematical_reasoning": True,
+            "logical_reasoning": True,
+            "enhanced_echo": True,
+            "enhanced_task_analysis": True,
+            "reasoning_coordination": True
+        }
     }
 
 
