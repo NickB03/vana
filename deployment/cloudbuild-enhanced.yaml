@@ -26,6 +26,11 @@ steps:
         echo "BUILD_TIMESTAMP=$BUILD_TIMESTAMP" >> /workspace/build.env
         echo "ENHANCED_REASONING_VERSION=1.0.0" >> /workspace/build.env
         
+        # Make variables available to Cloud Build
+        echo "COMMIT_SHA: $COMMIT_SHA"
+        echo "COMMIT_SHORT: $COMMIT_SHORT"
+        echo "BRANCH_NAME: $BRANCH_NAME"
+        
         echo "=== Version Environment Prepared ==="
 
   # Build Docker image with enhanced tagging
