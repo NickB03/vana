@@ -176,3 +176,6 @@ tests/test_agent_communication.py
 credentials/
 security_audit_*.json
 vana-user-guidelines-6.21.25-final.md
+
+# ADK evaluation history
+.adk/
