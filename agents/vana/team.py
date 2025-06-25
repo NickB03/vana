@@ -6,6 +6,10 @@ Based on research of ADK documentation and sample agents.
 """
 
 import os
+import sys
+
+# Add project root to Python path for ADK compatibility
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
 
 from dotenv import load_dotenv
 from google.adk.agents import LlmAgent
@@ -16,6 +20,7 @@ from lib._tools import adk_logical_analyze  # Logical reasoning tool
 from lib._tools import adk_mathematical_solve  # Mathematical reasoning tool
 from lib._tools import adk_read_file  # Basic file operations
 from lib._tools import adk_simple_execute_code  # Simple code execution
+from lib._tools import adk_transfer_to_agent  # Agent delegation
 from lib._tools import adk_web_search  # Current information
 from lib._tools import adk_write_file  # Basic file operations
 from lib.logging_config import get_logger
@@ -46,11 +51,22 @@ root_agent = LlmAgent(
     name="vana",
     model=os.getenv("VANA_MODEL", "gemini-2.0-flash-exp"),
     description="Intelligent AI assistant with core capabilities",
-    instruction="""You are VANA, an intelligent AI assistant.
-Use web_search for current information, mathematical_solve for math problems,
-logical_analyze for reasoning tasks, file tools for basic file operations,
-simple_execute_code for basic Python execution, and analyze_task for intelligent task analysis.
-Delegate complex code tasks to code_execution agent and data tasks to data_science agent.""",
+    instruction="""You are VANA, an intelligent AI assistant with automatic task routing.
+
+AUTOMATIC ROUTING PROTOCOL - FOLLOW THIS FOR EVERY USER REQUEST:
+1. First, use analyze_task to classify the user's request
+2. If the task_type is "code_execution", immediately use transfer_to_agent with agent_name="code_execution_specialist"
+3. If the task_type is "data_analysis", immediately use transfer_to_agent with agent_name="data_science_specialist"
+4. For all other task types, handle the request directly using the appropriate tools below
+
+AVAILABLE TOOLS:
+- web_search: For current information and research
+- mathematical_solve: For mathematical problems and calculations
+- logical_analyze: For logical reasoning tasks
+- read_file/write_file: For file operations
+- simple_execute_code: For basic Python execution (only for simple tasks, not complex code)
+
+Remember: Always analyze first, then route if needed, then execute.""",
     tools=[
         # Essential tools only (following ADK best practices)
         adk_web_search,  # Current information
@@ -59,6 +75,7 @@ Delegate complex code tasks to code_execution agent and data tasks to data_scien
         adk_read_file,  # Basic file operations
         adk_write_file,  # Basic file operations
         adk_analyze_task,  # Intelligent task analysis
+        adk_transfer_to_agent,  # Agent delegation for automatic routing
         adk_simple_execute_code,  # Simple code execution
     ],
     # Simple ADK delegation pattern
