@@ -8,7 +8,7 @@
 [![Agents](https://img.shields.io/badge/Agents-Multi--Agent%20System-blue)](docs/architecture/agents.md)
 [![Tools](https://img.shields.io/badge/Tools-Comprehensive%20Toolset-blue)](docs/architecture/tools.md)
 
-> **VANA** is an advanced multi-agent AI system built on Google's Agent Development Kit (ADK), featuring a discoverable multi-agent architecture with comprehensive toolset and infrastructure for intelligent task orchestration. The system uses a simplified multi-agent architecture with proxy pattern for optimal performance and maintainability.
+> **VANA** is an advanced multi-agent AI system built on Google's Agent Development Kit (ADK), featuring a discoverable multi-agent architecture with comprehensive toolset and infrastructure for intelligent task orchestration. The system uses a simplified multi-agent architecture for optimal performance and maintainability.
 
 ## 🚨 CRITICAL REQUIREMENTS
 
@@ -38,8 +38,8 @@ poetry install
 poetry run python scripts/validate_python_version.py
 
 # Configure environment
-cp .env.template .env.local
-# Edit `.env.local` with your configuration (see `.env.template` for required variables)
+cp .env.example .env.local
+# Edit `.env.local` with your configuration (see `.env.example` for required variables)
 # API keys are automatically loaded from Google Secret Manager
 # The `VANA_MODEL` variable controls the default model
 # (defaults to `gemini-2.0-flash`)
@@ -129,7 +129,7 @@ VANA is an enterprise-grade multi-agent AI system designed for complex task orch
 
 ### ✨ Key Features
 
-- **🤖 Multi-Agent System** - Discoverable agents with simplified architecture (real agents + proxy pattern)
+- **🤖 Multi-Agent System** - Discoverable agents with simplified architecture
 - **🛠️ Comprehensive Toolset** - Core tools plus conditional tools for diverse capabilities
 - **🔍 Advanced Search** - Vector search via Vertex AI, web search, and knowledge base integration
 - **☁️ Cloud-Native** - Deployed on Google Cloud Run with auto-scaling infrastructure
@@ -144,7 +144,7 @@ VANA is an enterprise-grade multi-agent AI system designed for complex task orch
 - **Secure Code Execution** - Python, JavaScript, and Shell execution in sandboxed environment
 - **Data Science Operations** - Data analysis, visualization, and machine learning workflows
 - **Knowledge Management** - Semantic search, document processing, and information retrieval
-- **Agent Coordination** - Seamless delegation between real agents and proxy pattern discovery
+- **Agent Coordination** - Seamless delegation between real agents and specialized agents
 - **Production Deployment** - Operational on Google Cloud Run with dev/prod environments
 
 ## 🏗️ Architecture
@@ -158,13 +158,7 @@ graph TB
             DATA[📊 Data Science Specialist<br/>Analysis & ML]
         end
 
-        subgraph "Proxy Agents - Discovery Pattern"
-            MEM[🧠 Memory Proxy]
-            ORCH[🔄 Orchestration Proxy]
-            SPEC[🛠️ Specialists Proxy]
-            WORK[⚡ Workflows Proxy]
-        end
-
+        
         subgraph "Google Cloud Infrastructure"
             VAI[🤖 Vertex AI<br/>Vector Search & Embeddings]
             CR[☁️ Cloud Run<br/>Dev & Prod Environments]
@@ -177,13 +171,6 @@ graph TB
     VANA -.-> DATA
     CODE -.-> VANA
     DATA -.-> VANA
-
-    %% Proxy redirections
-    MEM --> VANA
-    ORCH --> VANA
-    SPEC --> VANA
-    WORK --> VANA
-
     %% Cloud service connections
     VANA --> VAI
     VANA --> RAG
@@ -191,25 +178,20 @@ graph TB
     DATA --> CR
     VANA --> CR
 
-    classDef realAgent fill:#e1f5fe,stroke:#01579b,stroke-width:2px
-    classDef proxyAgent fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
-    classDef cloudService fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
+    classDef realAgent fill:#e1f5fe,stroke:#01579b,stroke-width:2px    classDef cloudService fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
 
-    class VANA,CODE,DATA realAgent
-    class MEM,ORCH,SPEC,WORK proxyAgent
-    class VAI,CR,RAG cloudService
+    class VANA,CODE,DATA realAgent    class VAI,CR,RAG cloudService
 ```
 
 ### 🔧 Core Components
 
 - **VANA Orchestrator** - Central coordination with core tools plus conditional tools
 - **Specialist Agents** - Code execution and data science capabilities
-- **Proxy Pattern** - Proxy agents for discovery compatibility
 - **Google Cloud Services** - Vertex AI, Cloud Run, and RAG corpus integration
 
 ## 🤖 Agent System
 
-VANA features a discoverable multi-agent system using a simplified architecture with proxy pattern:
+VANA features a discoverable multi-agent system using a simplified architecture:
 
 ### 🎯 Real Agents
 
@@ -230,16 +212,9 @@ VANA features a discoverable multi-agent system using a simplified architecture 
 - **Integration**: Leverages Code Execution Specialist for secure Python execution
 - **Capabilities**: Data processing, analysis, visualization, statistical computing
 
-### 🔄 Proxy Agents - Discovery Pattern
-
-- **Memory Agent** - Delegates to VANA (`agents/memory/__init__.py`)
-- **Orchestration Agent** - Delegates to VANA (`agents/orchestration/__init__.py`)
-- **Specialists Agent** - Delegates to VANA (`agents/specialists/__init__.py`)
-- **Workflows Agent** - Delegates to VANA (`agents/workflows/__init__.py`)
-
 ### 📊 Current System Status
-- **Discoverable Agents**: Multi-agent system with real agents and proxy pattern
-- **Architecture**: Simplified multi-agent with proxy pattern (not complex orchestration)
+- **Discoverable Agents**: Multi-agent system
+- **Architecture**: Simplified multi-agent (not complex orchestration)
 - **Infrastructure**: Operational on Google Cloud Run with excellent performance
 - **Coordination**: Real agent discovery and delegation working correctly
 
@@ -340,7 +315,7 @@ Comprehensive documentation is available in the `/docs` directory:
 poetry install
 
 # Configure environment
-cp .env.template .env.local
+cp .env.example .env.local
 # API keys are automatically loaded from Google Secret Manager
 # Ensure you have gcloud SDK authenticated
 
@@ -375,7 +350,7 @@ cd vana
 poetry install
 
 # Configure environment with Secret Manager
-cp .env.template .env.local
+cp .env.example .env.local
 # Authenticate with Google Cloud (required for Secret Manager)
 gcloud auth application-default login
 

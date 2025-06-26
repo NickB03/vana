@@ -69,7 +69,7 @@ tools = [adk_read_file, adk_web_search]
 ## 🚀 Development Setup
 
 ### Prerequisites
-- **Python 3.11+** (Python 3.13 recommended)
+- **Python 3.13+**
 - **Poetry** for dependency management
 - **Google Cloud SDK** with appropriate permissions
 - **Git** for version control

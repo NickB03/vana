@@ -1,12 +1,12 @@
-# 🛠️ VANA Tool Organization
+| **variable** |# 🛠️ VANA Tool Organization
 
-This document provides visual breakdowns of VANA's 19 core tools plus conditional tools, organized by category and functionality.
+This document provides visual breakdowns of VANA's core tools plus conditional tools, organized by category and functionality.
 
-## 📊 Core Tools Overview (19 Total)
+## 📊 Core Tools Overview ()
 
 ```mermaid
 mindmap
-  root((VANA Tools<br/>19 Core + Conditional))
+  root((VANA Tools<br/>core and conditional))
     File System (4)
       adk_read_file
       adk_write_file
@@ -42,7 +42,7 @@ mindmap
 ## 🔧 Tool Categories Breakdown
 
 ```mermaid
-pie title VANA Core Tools Distribution (19 Total)
+pie title VANA Core Tools Distribution ()
     "Workflow Management" : 8
     "File System" : 4
     "Agent Coordination" : 4
@@ -214,7 +214,7 @@ graph TB
 | Coordination | 4 | <100ms | 100% |
 | Task Analysis | 3 | <150ms | 100% |
 | Workflows | 8 | <300ms | 100% |
-| **Core Total** | **19** | **<100ms avg** | **99.9%** |
+| **Core Total** | **variable** | **<100ms avg** | **99.9%** |
 | Conditional | Variable | Variable | Depends on imports |
 
 ## 🎯 Tool Usage Patterns

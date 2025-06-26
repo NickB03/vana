@@ -1,14 +1,14 @@
 # 🏗️ VANA System Architecture
 
 ## 📊 Overview
-VANA is an advanced multi-agent AI system built on Google's Agent Development Kit (ADK), featuring a discoverable multi-agent system with core tools plus conditional tools. The system uses a simplified multi-agent architecture with proxy pattern for optimal performance and maintainability.
+VANA is an advanced multi-agent AI system built on Google's Agent Development Kit (ADK), featuring a discoverable multi-agent system with core tools plus conditional tools. The system uses a simplified multi-agent architecture for optimal performance and maintainability.
 
 > **📊 Visual Architecture**: See our [complete system architecture diagram](../assets/diagrams/system-architecture.md) for a visual overview.
 
 ## ✅ Verified System Status (2025-06-21)
-- **Agents**: Discoverable multi-agent system (real agents + proxy pattern)
+- **Agents**: Discoverable multi-agent system
 - **Tools**: Core tools plus conditional tools
-- **Architecture**: Simplified multi-agent with proxy pattern
+- **Architecture**: Simplified multi-agent
 - **Deployment**: Google Cloud Run (dev & prod environments)
 - **Status**: ✅ Operational
 
@@ -237,7 +237,7 @@ Response: {
 GET /info
 Response: {
   "system_status": "operational",
-  "agent_architecture": "multi-agent with proxy pattern",
+  "agent_architecture": "multi-agent",
   "tool_categories": ["file_system", "search", "system", "coordination", "task_analysis", "workflow_management"],
   "conditional_tools": "variable",
   "memory_systems": ["adk_session", "vertex_ai_rag", "vector_search"]

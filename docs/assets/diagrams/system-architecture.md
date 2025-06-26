@@ -6,9 +6,9 @@ This diagram shows the complete VANA multi-agent system architecture with accura
 
 ```mermaid
 graph TB
-    subgraph "VANA Multi-Agent System - 7 Discoverable Agents"
+    subgraph "VANA Multi-Agent System"
         subgraph "Real Agents (3)"
-            VANA[🎯 VANA Orchestrator<br/>19 Core Tools<br/>gemini-2.0-flash-exp]
+            VANA[🎯 VANA Orchestrator<br/>core tools<br/>gemini-2.0-flash-exp]
             CODE[💻 Code Execution Specialist<br/>Python, JavaScript, Shell<br/>Secure Sandbox]
             DATA[📊 Data Science Specialist<br/>Analysis & ML<br/>Visualization]
         end
@@ -61,7 +61,7 @@ graph TB
 ## 🔧 Architecture Components
 
 ### Real Agents (3)
-- **VANA Orchestrator**: Central coordinator with 19 core tools
+- **VANA Orchestrator**: Central coordinator with core tools
 - **Code Execution Specialist**: Secure multi-language code execution
 - **Data Science Specialist**: Data analysis and machine learning
 
@@ -82,7 +82,7 @@ graph TB
 ### Simplified Multi-Agent Pattern
 - **Single Main Orchestrator**: VANA handles most coordination
 - **Specialized Execution**: Code and data science specialists for specific tasks
-- **Proxy Discovery**: 4 proxy agents for agent discovery compatibility
+- **Proxy Discovery**: multiple discovery aliases for agent discovery compatibility
 
 ### Google ADK Integration
 - **Native Tools**: All tools follow ADK FunctionTool pattern
@@ -96,8 +96,7 @@ graph TB
 
 ## 📊 System Metrics
 
-- **Total Discoverable Agents**: 7 (3 real + 4 proxy)
-- **Core Tools**: 19 always available
+- **Core Tools**: available by default
 - **Conditional Tools**: Variable count based on dependencies
 - **Deployment Environments**: 2 (development + production)
 - **Response Time**: Sub-second for most operations
