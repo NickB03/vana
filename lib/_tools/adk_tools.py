@@ -30,7 +30,7 @@ async def read_file(file_path: str) -> str:
         def _read_file_sync():
             with open(file_path, "r", encoding="utf-8") as f:
                 return f.read()
-        
+
         content = await asyncio.to_thread(_read_file_sync)
         logger.info(f"Successfully read file: {file_path}")
         return content
@@ -120,15 +120,73 @@ def file_exists(file_path: str) -> str:
         return error_msg
 
 
-# Create FunctionTool instances with explicit names and async support
-adk_read_file = FunctionTool(func=read_file)
+# Wrapper functions for backward compatibility with synchronous calls
+def sync_read_file(file_path: str) -> str:
+    """Synchronous wrapper for async read_file function."""
+    import asyncio
+    try:
+        loop = asyncio.get_event_loop()
+        if loop.is_running():
+            # If already in an event loop, use asyncio.create_task
+            return asyncio.run_coroutine_threadsafe(read_file(file_path), loop).result()
+        else:
+            return loop.run_until_complete(read_file(file_path))
+    except RuntimeError:
+        # No event loop exists, create a new one
+        return asyncio.run(read_file(file_path))
+
+def sync_write_file(file_path: str, content: str) -> str:
+    """Synchronous wrapper for async write_file function."""
+    import asyncio
+    try:
+        loop = asyncio.get_event_loop()
+        if loop.is_running():
+            return asyncio.run_coroutine_threadsafe(write_file(file_path, content), loop).result()
+        else:
+            return loop.run_until_complete(write_file(file_path, content))
+    except RuntimeError:
+        return asyncio.run(write_file(file_path, content))
+
+def sync_web_search(query: str, max_results: int = 5) -> str:
+    """Synchronous wrapper for async web_search function."""
+    import asyncio
+    try:
+        loop = asyncio.get_event_loop()
+        if loop.is_running():
+            return asyncio.run_coroutine_threadsafe(web_search(query, max_results), loop).result()
+        else:
+            return loop.run_until_complete(web_search(query, max_results))
+    except RuntimeError:
+        return asyncio.run(web_search(query, max_results))
+
+def sync_vector_search(query: str, max_results: int = 5) -> str:
+    """Synchronous wrapper for async vector_search function."""
+    import asyncio
+    try:
+        loop = asyncio.get_event_loop()
+        if loop.is_running():
+            return asyncio.run_coroutine_threadsafe(vector_search(query, max_results), loop).result()
+        else:
+            return loop.run_until_complete(vector_search(query, max_results))
+    except RuntimeError:
+        return asyncio.run(vector_search(query, max_results))
+
+# Create FunctionTool instances with explicit names and backward compatibility
+# Use sync wrappers for ADK tools to maintain compatibility
+adk_read_file = FunctionTool(func=sync_read_file)
 adk_read_file.name = "read_file"
-adk_write_file = FunctionTool(func=write_file)
+adk_write_file = FunctionTool(func=sync_write_file)
 adk_write_file.name = "write_file"
 adk_list_directory = FunctionTool(func=list_directory)
 adk_list_directory.name = "list_directory"
 adk_file_exists = FunctionTool(func=file_exists)
 adk_file_exists.name = "file_exists"
+
+# Search tools with sync wrappers
+adk_web_search = FunctionTool(func=sync_web_search)
+adk_web_search.name = "web_search"
+adk_vector_search = FunctionTool(func=sync_vector_search)
+adk_vector_search.name = "vector_search"
 
 
 # Search Tools - Real production implementations with ADK integration
@@ -204,7 +262,7 @@ async def web_search(query: str, max_results: int = 5) -> str:
             return json.dumps({"error": "Brave API key not configured"}, indent=2)
 
         url = "https://api.search.brave.com/res/v1/web/search"
-        
+
         # Use async HTTP client for better performance
         headers = {"X-Subscription-Token": api_key}
         params = {
@@ -243,9 +301,7 @@ async def web_search(query: str, max_results: int = 5) -> str:
                     # INTELLIGENT DATA PROCESSING: Extract and format data for clear agent interpretation
                     processed_data = _process_search_results(query, results, data)
 
-                    logger.info(
-                        f"Enhanced web search completed: {len(results)} results with intelligent processing"
-                    )
+                    logger.info(f"Enhanced web search completed: {len(results)} results with intelligent processing")
                     return processed_data
                 else:
                     error_msg = f"Web search failed: HTTP {response.status}"
@@ -262,13 +318,8 @@ def _process_search_results(query: str, results: list, raw_data: dict) -> str:
 
     # Detect query type for specialized processing
     query_lower = query.lower()
-    is_time_query = any(
-        word in query_lower for word in ["time", "clock", "timezone", "what time"]
-    )
-    is_weather_query = any(
-        word in query_lower
-        for word in ["weather", "temperature", "forecast", "climate"]
-    )
+    is_time_query = any(word in query_lower for word in ["time", "clock", "timezone", "what time"])
+    is_weather_query = any(word in query_lower for word in ["weather", "temperature", "forecast", "climate"])
 
     # Extract location from query
     location = _extract_location_from_query(query)
@@ -278,17 +329,13 @@ def _process_search_results(query: str, results: list, raw_data: dict) -> str:
 
     for result in results:
         # Try multiple extraction strategies
-        extracted_data = _extract_specific_data(
-            result, is_time_query, is_weather_query, location
-        )
+        extracted_data = _extract_specific_data(result, is_time_query, is_weather_query, location)
         if extracted_data:
             extracted_info.append(extracted_data)
 
     # Format response with explicit context
     if extracted_info:
-        formatted_response = _format_extracted_data(
-            query, extracted_info, is_time_query, is_weather_query, location
-        )
+        formatted_response = _format_extracted_data(query, extracted_info, is_time_query, is_weather_query, location)
         return formatted_response
     else:
         # Fallback to enhanced raw data with clear instructions
@@ -314,9 +361,7 @@ def _extract_location_from_query(query: str) -> str:
     return ""
 
 
-def _extract_specific_data(
-    result: dict, is_time_query: bool, is_weather_query: bool, location: str
-):
+def _extract_specific_data(result: dict, is_time_query: bool, is_weather_query: bool, location: str):
     """Extract specific data based on query type."""
     import re
 
@@ -356,9 +401,7 @@ def _extract_specific_data(
                 # Clean up common extraction issues
                 time_str = re.sub(r"[,.]$", "", time_str)  # Remove trailing punctuation
                 # Validate that we have a reasonable time format
-                if len(time_str) > 2 and (
-                    ":" in time_str or any(x in time_str.upper() for x in ["AM", "PM"])
-                ):
+                if len(time_str) > 2 and (":" in time_str or any(x in time_str.upper() for x in ["AM", "PM"])):
                     extracted["time"] = time_str
                     extracted["location"] = location
                     extracted["source"] = "extracted"
@@ -501,8 +544,7 @@ def search_knowledge(query: str) -> str:
                 # Check if we got real results (not fallback)
                 if search_results and len(search_results) > 0:
                     has_real_content = any(
-                        "fallback" not in result.get("content", "").lower()
-                        for result in search_results
+                        "fallback" not in result.get("content", "").lower() for result in search_results
                     )
 
                     if has_real_content:
@@ -525,9 +567,7 @@ def search_knowledge(query: str) -> str:
                             "service": "adk_memory_rag",
                         }
 
-                        logger.info(
-                            f"ADK memory search completed: {len(formatted_results)} results"
-                        )
+                        logger.info(f"ADK memory search completed: {len(formatted_results)} results")
                         return json.dumps(result, indent=2)
         except Exception as e:
             logger.warning(f"ADK memory search failed: {e}")
@@ -586,9 +626,7 @@ def search_knowledge(query: str) -> str:
                             relevant_lines.append(context)
 
                     if relevant_lines:
-                        content_excerpt = "\n\n".join(
-                            relevant_lines[:3]
-                        )  # Limit to 3 sections
+                        content_excerpt = "\n\n".join(relevant_lines[:3])  # Limit to 3 sections
 
                         search_results.append(
                             {
@@ -619,9 +657,7 @@ def search_knowledge(query: str) -> str:
                 "service": "vana_knowledge_base",
             }
 
-            logger.info(
-                f"File-based knowledge search completed: {len(search_results)} results"
-            )
+            logger.info(f"File-based knowledge search completed: {len(search_results)} results")
             return json.dumps(result, indent=2)
         else:
             logger.info("No relevant knowledge found in file-based search")
@@ -652,9 +688,10 @@ def _create_fallback_result(query: str, error_msg: str) -> str:
 
 
 # Create FunctionTool instances with explicit names (NO underscore prefix - standardized naming)
-adk_vector_search = FunctionTool(func=vector_search)
+# Using sync wrappers for backward compatibility
+adk_vector_search = FunctionTool(func=sync_vector_search)
 adk_vector_search.name = "vector_search"
-adk_web_search = FunctionTool(func=web_search)
+adk_web_search = FunctionTool(func=sync_web_search)
 adk_web_search.name = "web_search"
 adk_search_knowledge = FunctionTool(func=search_knowledge)
 adk_search_knowledge.name = "search_knowledge"
@@ -707,9 +744,7 @@ def get_health_status() -> str:
                 "adk": "operational",
                 "agents": "24 agents active",
                 "tools": "59+ tools available",
-                "web_search": "brave api configured"
-                if os.getenv("BRAVE_API_KEY")
-                else "not configured",
+                "web_search": "brave api configured" if os.getenv("BRAVE_API_KEY") else "not configured",
                 "vector_search": vector_search_status,
                 "adk_memory": {
                     "service_type": memory_info["service_type"],
@@ -923,9 +958,7 @@ def analyze_task(task: str, context: str = "") -> str:
         return json.dumps({"error": error_msg}, indent=2)
 
 
-def match_capabilities(
-    task: str, context: str = "", required_capabilities: str = ""
-) -> str:
+def match_capabilities(task: str, context: str = "", required_capabilities: str = "") -> str:
     """🎯 Match task requirements to available agent capabilities using intelligent capability matcher."""
     try:
         from lib._tools.capability_matcher import get_capability_matcher
@@ -937,9 +970,7 @@ def match_capabilities(
         if required_capabilities:
             req_caps = [cap.strip() for cap in required_capabilities.split(",")]
 
-        matching_result = matcher.match_capabilities(
-            task, context, req_caps if req_caps else None
-        )
+        matching_result = matcher.match_capabilities(task, context, req_caps if req_caps else None)
 
         # Format result for ADK compatibility
         result = {
@@ -947,31 +978,19 @@ def match_capabilities(
             "matching_result": {
                 "best_match": (
                     {
-                        "agent_name": matching_result.best_match.agent_name
-                        if matching_result.best_match
-                        else None,
-                        "match_score": matching_result.best_match.match_score
-                        if matching_result.best_match
-                        else 0.0,
+                        "agent_name": matching_result.best_match.agent_name if matching_result.best_match else None,
+                        "match_score": matching_result.best_match.match_score if matching_result.best_match else 0.0,
                         "matched_capabilities": (
-                            matching_result.best_match.matched_capabilities
-                            if matching_result.best_match
-                            else []
+                            matching_result.best_match.matched_capabilities if matching_result.best_match else []
                         ),
                         "missing_capabilities": (
-                            matching_result.best_match.missing_capabilities
-                            if matching_result.best_match
-                            else []
+                            matching_result.best_match.missing_capabilities if matching_result.best_match else []
                         ),
                         "capability_coverage": (
-                            matching_result.best_match.capability_coverage
-                            if matching_result.best_match
-                            else 0.0
+                            matching_result.best_match.capability_coverage if matching_result.best_match else 0.0
                         ),
                         "overall_score": (
-                            matching_result.best_match.overall_score
-                            if matching_result.best_match
-                            else 0.0
+                            matching_result.best_match.overall_score if matching_result.best_match else 0.0
                         ),
                         "reasoning": (
                             matching_result.best_match.reasoning
@@ -997,19 +1016,9 @@ def match_capabilities(
             "service": "capability_matcher",
         }
 
-        best_agent = (
-            matching_result.best_match.agent_name
-            if matching_result.best_match
-            else "none"
-        )
-        best_score = (
-            matching_result.best_match.overall_score
-            if matching_result.best_match
-            else 0.0
-        )
-        logger.info(
-            f"Capability matching completed: {best_agent} (score: {best_score:.2f})"
-        )
+        best_agent = matching_result.best_match.agent_name if matching_result.best_match else "none"
+        best_score = matching_result.best_match.overall_score if matching_result.best_match else 0.0
+        logger.info(f"Capability matching completed: {best_agent} (score: {best_score:.2f})")
         return json.dumps(result, indent=2)
 
     except Exception as e:
@@ -1056,9 +1065,7 @@ def classify_task(task: str, context: str = "") -> str:
 
         primary_agent = classification.primary_recommendation.agent_name
         confidence = classification.primary_recommendation.confidence
-        logger.info(
-            f"Task classification completed: {primary_agent} ({confidence:.2f} confidence)"
-        )
+        logger.info(f"Task classification completed: {primary_agent} ({confidence:.2f} confidence)")
         return json.dumps(result, indent=2)
 
     except Exception as e:
@@ -1096,9 +1103,7 @@ def create_workflow(
         steps = []
         description_lower = description.lower()
 
-        if template_name == "data_analysis" or (
-            "data" in description_lower and "analysis" in description_lower
-        ):
+        if template_name == "data_analysis" or ("data" in description_lower and "analysis" in description_lower):
             steps = [
                 {
                     "name": "Data Validation",
@@ -1139,9 +1144,7 @@ def create_workflow(
                     "agent_name": "vana",
                 },
             ]
-        elif (
-            template_name == "research_and_analysis" or "research" in description_lower
-        ):
+        elif template_name == "research_and_analysis" or "research" in description_lower:
             steps = [
                 {
                     "name": "Information Gathering",
@@ -1325,9 +1328,7 @@ def list_workflows(state_filter: str = "") -> str:
 
         # Apply state filter if provided
         if state_filter:
-            filtered_workflows = [
-                w for w in sample_workflows if w["state"] == state_filter
-            ]
+            filtered_workflows = [w for w in sample_workflows if w["state"] == state_filter]
         else:
             filtered_workflows = sample_workflows
 

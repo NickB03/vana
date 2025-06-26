@@ -8,8 +8,6 @@ Based on research of ADK documentation and sample agents.
 import os
 import sys
 
-# Removed sys.path.insert - using proper package imports
-
 from dotenv import load_dotenv
 from google.adk.agents import LlmAgent
 
@@ -24,14 +22,18 @@ from lib._tools import adk_web_search  # Current information
 from lib._tools import adk_write_file  # Basic file operations
 from lib.logging_config import get_logger
 
+# Removed sys.path.insert - using proper package imports
+
+
 # Load environment variables
 load_dotenv()
 
 # Import ADK memory service for persistent memory
 try:
-    from lib._shared_libraries.adk_memory_service import get_adk_memory_service
     from google.adk.tools import load_memory
-    
+
+    from lib._shared_libraries.adk_memory_service import get_adk_memory_service
+
     # Initialize memory service
     memory_service = get_adk_memory_service()
     MEMORY_AVAILABLE = memory_service.is_available()
@@ -89,7 +91,8 @@ Remember: Always analyze first, then route if needed, then execute.""",
         adk_analyze_task,  # Intelligent task analysis
         adk_transfer_to_agent,  # Agent delegation for automatic routing
         adk_simple_execute_code,  # Simple code execution
-    ] + ([load_memory] if MEMORY_AVAILABLE and load_memory else []),  # Add memory if available
+    ]
+    + ([load_memory] if MEMORY_AVAILABLE and load_memory else []),  # Add memory if available
     # Simple ADK delegation pattern
     sub_agents=specialist_agents,
 )

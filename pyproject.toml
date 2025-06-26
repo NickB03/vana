@@ -58,7 +58,7 @@ Documentation = "https://github.com/NickB03/vana/blob/main/README.md"
 
 [tool.black]
 line-length = 120
-target-version = ['py313']
+target-version = ['py312']  # Black doesn't support py313 yet, use py312 for now
 include = '\.pyi?$'
 extend-exclude = '''
 /(
