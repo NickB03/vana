@@ -5,13 +5,13 @@ This directory contains visual diagrams and charts that illustrate the VANA syst
 ## 🎯 System Overview Diagrams
 
 ### [System Architecture](system-architecture.md)
-Complete system overview showing the 7-agent architecture with real and proxy agents.
+Complete system overview showing the architecture with specialized agents.
 
 ### [Agent Interaction Flow](agent-interactions.md)
 Detailed flow diagrams showing how agents coordinate and delegate tasks.
 
 ### [Tool Organization](tool-organization.md)
-Visual breakdown of the 19 core tools organized by category.
+Visual breakdown of the core tools organized by category.
 
 ### [Deployment Architecture](deployment-architecture.md)
 Infrastructure diagrams showing Google Cloud Run deployment setup.
@@ -28,14 +28,14 @@ All diagrams in this directory use Mermaid syntax for:
 
 | Diagram | Type | Description | Status |
 |---------|------|-------------|--------|
-| System Architecture | Overview | 7-agent system with proxy pattern | ✅ Ready |
+| System Architecture | Overview | system | ✅ Ready |
 | Agent Interactions | Flow | Task delegation and coordination | ✅ Ready |
-| Tool Categories | Chart | 19 core tools by category | ✅ Ready |
+| Tool Categories | Chart | core tools by category | ✅ Ready |
 | Deployment Flow | Infrastructure | Dev/prod deployment pipeline | ✅ Ready |
 
 ## 🎨 Visual Standards
 
-- **Consistent Colors** - Real agents (blue), proxy agents (purple), cloud services (green)
+- **Consistent Colors** - Real agents (blue), additional agents (purple), cloud services (green)
 - **Clear Labels** - Descriptive names and tool counts
 - **Logical Flow** - Left-to-right or top-to-bottom information flow
 - **Professional Style** - Clean, enterprise-ready presentation

@@ -95,7 +95,7 @@ graph TB
         subgraph "Application Layer"
             MAIN[main.py<br/>FastAPI Server<br/>Port 8000]
             AGENTS[agents/<br/>VANA, Code, Data<br/>Proxy Agents]
-            TOOLS[lib/_tools/<br/>19 Core Tools<br/>ADK Wrappers]
+            TOOLS[lib/_tools/<br/>core tools<br/>ADK Wrappers]
         end
 
         subgraph "Runtime Environment"

@@ -4,8 +4,8 @@ Welcome to VANA! This comprehensive guide will help you understand and effective
 
 ## 🎯 What is VANA?
 
-VANA is an advanced multi-agent AI system featuring **7 discoverable agents** (3 real + 4 proxy) that can help you with:
-- **Task Coordination** - Central coordination using 19 core tools + conditional tools
+VANA is an advanced multi-agent AI system featuring **multiple discoverable agents** that can help you with:
+- **Task Coordination** - Central coordination using a comprehensive toolset
 - **Code Execution** - Secure multi-language code execution (Python, JavaScript, Shell)
 - **Data Science** - Data analysis, visualization, cleaning, and machine learning
 - **File Operations** - Reading, writing, and managing files securely
@@ -14,12 +14,12 @@ VANA is an advanced multi-agent AI system featuring **7 discoverable agents** (3
 - **Workflow Management** - Multi-step task coordination and execution
 
 ### 📊 Current System Status (Verified 2025-06-15)
-- **Discoverable Agents**: 7 (3 real + 4 proxy using simplified architecture)
-- **Core Tools**: 19 always available + conditional tools when dependencies available
+- **Discoverable Agents**: multiple specialized agents
+- **Core Tools**: a comprehensive suite of core and optional tools
 - **Real Agents**: VANA Orchestrator, Code Execution Specialist, Data Science Specialist
 - **Proxy Agents**: Memory, Orchestration, Specialists, Workflows (all delegate to VANA)
 - **Infrastructure**: Google Cloud Run with excellent performance and auto-scaling
-- **Architecture**: Simplified multi-agent with proxy pattern (not complex orchestration)
+- **Architecture**: Simplified multi-agent  (not complex orchestration)
 
 ## 🚀 Getting Started
 
@@ -325,12 +325,12 @@ VANA is built as a multi-agent AI system using Google's Agent Development Kit (A
 - Shared state management across agent interactions
 
 **Extensible Tool System:**
-- 50+ built-in tools for common operations
+- dozens of built-in tools for common operations
 - Easy integration of new tools and capabilities
 - ADK-compatible tool framework
 
 **Production Ready:**
-- Comprehensive testing framework (90%+ success rate)
+- Comprehensive testing framework (high success rate)
 - Cloud deployment with monitoring
 - Security and performance optimizations
 

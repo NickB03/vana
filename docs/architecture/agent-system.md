@@ -31,7 +31,7 @@ VANA Multi-Agent System
 │   ├── vana (primary orchestrator)
 │   ├── code_execution (specialist)
 │   └── data_science (specialist)
-└── Proxy Agents (Discovery Pattern)
+└── Additional agents for discovery
     ├── memory → delegates to vana
     ├── orchestration → delegates to vana
     ├── specialists → delegates to vana
@@ -44,7 +44,7 @@ VANA Multi-Agent System
 - **Code Execution Specialist**: Secure multi-language code execution
 - **Data Science Specialist**: Data analysis and visualization capabilities
 
-**Proxy Agents**: Discovery pattern for user interface compatibility
+**Additional agents**: discovery aliases for the orchestrator
 - Provide discoverable agent names for user selection
 - Delegate all actual work to appropriate real agents
 - Maintain clean separation between interface and implementation
@@ -76,7 +76,7 @@ This simplified approach provides:
 - **Capabilities**: Statistical computing and data processing workflows
 - **Integration**: Leverages Code Execution Specialist for secure Python execution
 
-### Proxy Agents
+### Additional Agents
 **Purpose**: Discovery pattern for user interface compatibility
 
 #### Discovery Pattern Implementation
@@ -85,7 +85,7 @@ This simplified approach provides:
 - **Specialists Agent** → Delegates to VANA (`agents/specialists/__init__.py`)
 - **Workflows Agent** → Delegates to VANA (`agents/workflows/__init__.py`)
 
-These proxy agents provide discoverable names in the UI while maintaining a clean, simplified backend architecture.
+These additional agents provide discoverable names in the UI while maintaining a clean, simplified backend architecture.
 
 ## Tool Integration
 
@@ -130,13 +130,13 @@ This hierarchy ensures:
 ### Agent-as-Tool Pattern
 VANA implements Google ADK's agent delegation patterns:
 - **Transfer Pattern**: Uses `transfer_to_agent()` for actual delegation
-- **Proxy Pattern**: Proxy agents delegate to real agents seamlessly
+- **Delegation Pattern**: Tasks are delegated to specialized agents seamlessly
 - **Unified Interface**: Users interact with discoverable agents
 - **Background Processing**: Real agents handle actual work execution
 
 ### Orchestration Flow
 ```
-User Request → Proxy Agent → transfer_to_agent() → Real Agent →
+User Request → entry agent → transfer_to_agent() → Real Agent →
 Tool Execution → Result Processing → Response → User
 ```
 
@@ -150,7 +150,7 @@ Tool Execution → Result Processing → Response → User
 
 ### Current Metrics
 - **Response Time**: Target <5.0s for most operations
-- **Tool Success Rate**: 90.3% (112/124 tests passing)
+- **Tool Success Rate**: high
 - **Agent Discovery**: 100% success rate for all discoverable agents
 - **Memory Retrieval**: Sub-second for most queries
 

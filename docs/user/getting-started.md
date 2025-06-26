@@ -25,12 +25,12 @@ The VANA interface consists of:
 - **Tool Indicators**: Visual feedback showing which tools are being used
 
 ### 3. Select an Agent
-VANA features **7 discoverable agents** using a simplified multi-agent architecture with proxy pattern:
+VANA features multiple discoverable agents using a simplified multi-agent architecture:
 
 #### Real Agents (3)
 | Agent | Type | Best For | Example Use Cases |
 |-------|------|----------|-------------------|
-| **VANA Orchestrator** | Real | Central coordination, task routing, 19 core tools | "Help me analyze data and create a report" |
+| **VANA Orchestrator** | Real | Central coordination, task routing, core tools | "Help me analyze data and create a report" |
 | **Code Execution** | Real | Secure multi-language code execution (Python, JS, Shell) | "Execute this Python script safely in sandbox" |
 | **Data Science** | Real | Data analysis, visualization, machine learning | "Analyze this dataset and create visualizations" |
 
@@ -191,7 +191,7 @@ VANA remembers context across conversations:
 - Integrates with Google's RAG (Retrieval Augmented Generation) system
 
 ### Multi-Step Workflows
-VANA can handle complex, multi-step tasks using its 19 core tools and specialist agents:
+VANA can handle complex, multi-step tasks using its core tools and specialist agents:
 
 ```
 User: "I need to process a dataset, clean it, analyze it, create visualizations, and generate a report"
