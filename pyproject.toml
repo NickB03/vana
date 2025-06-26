@@ -1,71 +1,56 @@
-[build-system]
-requires = ["setuptools>=45", "wheel"]
-build-backend = "setuptools.build_meta"
-
-[project]
+[tool.poetry]
 name = "vana"
 version = "0.1.0"
 description = "VANA - Advanced AI Agent System with Google ADK Integration"
-authors = [
-    {name = "Nick", email = "110638609+NickB03@users.noreply.github.com"}
-]
+authors = ["Nick <110638609+NickB03@users.noreply.github.com>"]
 readme = "README.md"
-license = {text = "MIT"}
-requires-python = ">=3.13"
-keywords = ["ai", "agents", "google-adk", "automation", "orchestration"]
-classifiers = [
-    "Development Status :: 4 - Beta",
-    "Intended Audience :: Developers",
-    "License :: OSI Approved :: MIT License",
-    "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.13",
-    "Topic :: Software Development :: Libraries :: Python Modules",
-    "Topic :: Scientific/Engineering :: Artificial Intelligence",
-]
-dependencies = [
-    "fastapi>=0.115.12",
-    "uvicorn>=0.34.2",
-    "aiohttp>=3.9.0",
-    "google-adk>=1.1.1",
-    "google-cloud-aiplatform>=1.95.1",
-    "google-genai>=1.18.0",
-    "pydantic>=2.11.5",
-    "pydantic-settings>=2.9.1",
-    "python-dotenv>=1.1.0",
-    "mcp>=1.9.2",
-    "typer>=0.16.0",
-    "rich>=14.0.0",
-    "httpx>=0.28.1",
-    "requests>=2.32.3",
-    "pyyaml>=6.0.2",
-    "python-multipart>=0.0.20",
-    "psutil>=7.0.0",
-    "playwright (>=1.52.0,<2.0.0)",
-]
+license = "MIT"
+packages = [{include = "agents"}, {include = "lib"}, {include = "tools"}]
 
-[project.urls]
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.dependencies]
+python = "^3.13"
+fastapi = "^0.115.12"
+uvicorn = "^0.34.2"
+aiohttp = "^3.9.0"
+google-adk = "^1.1.1"
+google-cloud-aiplatform = "^1.95.1"
+google-genai = "^1.18.0"
+pydantic = "^2.11.5"
+pydantic-settings = "^2.9.1"
+python-dotenv = "^1.1.0"
+mcp = "^1.9.2"
+typer = "^0.16.0"
+rich = "^14.0.0"
+httpx = "^0.28.1"
+requests = "^2.32.3"
+pyyaml = "^6.0.2"
+python-multipart = "^0.0.20"
+psutil = "^7.0.0"
+playwright = "^1.52.0"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.0.0"
+pytest-asyncio = "^0.23.0"
+pytest-cov = "^4.0.0"
+black = "^23.0.0"
+isort = "^5.12.0"
+flake8 = "^6.0.0"
+mypy = "^1.5.0"
+bandit = "^1.7.0"
+pre-commit = "^3.0.0"
+
+[tool.poetry.extras]
+document-processing = ["PyPDF2", "Pillow", "pytesseract"]
+
+[tool.poetry.urls]
 Homepage = "https://github.com/NickB03/vana"
 Repository = "https://github.com/NickB03/vana.git"
 Documentation = "https://github.com/NickB03/vana/blob/main/README.md"
 "Bug Tracker" = "https://github.com/NickB03/vana/issues"
-
-[project.optional-dependencies]
-dev = [
-    "pytest>=8.0.0",
-    "pytest-asyncio>=0.23.0",
-    "pytest-cov>=4.0.0",
-    "black>=23.0.0",
-    "isort>=5.12.0",
-    "flake8>=6.0.0",
-    "mypy>=1.5.0",
-    "bandit>=1.7.0",
-    "pre-commit>=3.0.0",
-]
-document-processing = [
-    "PyPDF2>=3.0.0",
-    "Pillow>=10.0.0",
-    "pytesseract>=0.3.10",
-]
 
 # Code Quality Tools Configuration
 

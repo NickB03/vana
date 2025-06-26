@@ -85,11 +85,8 @@ dist/
 *.swo
 *~
 
-# Git internals (prevent accidental commits)
-.git/objects/
-.git/logs/
-.git/refs/
-.git/hooks/
+# Git internals - REMOVED: These entries cause repository corruption
+# by telling git to ignore its own database files
 
 # OS generated files
 Thumbs.db
