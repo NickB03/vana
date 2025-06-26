@@ -373,6 +373,38 @@ class VectorSearchService:
             True if available, False otherwise
         """
         return VERTEX_AI_AVAILABLE and bool(self.project_id) and bool(self.region)
+    
+    async def semantic_search_simple(self, query: str, top_k: int = 5) -> List[Dict[str, Any]]:
+        """
+        Simplified semantic search for search coordinator integration.
+        
+        Args:
+            query: Search query text
+            top_k: Number of results to return
+            
+        Returns:
+            List of search results with simplified format for coordinator
+        """
+        try:
+            # Use the full semantic_search method
+            full_results = await self.semantic_search(query, top_k)
+            
+            # Simplify format for search coordinator
+            simplified_results = []
+            for result in full_results:
+                simplified_results.append({
+                    "content": result.get("content", ""),
+                    "similarity_score": result.get("similarity_score", 0.7),
+                    "metadata": result.get("metadata", {}),
+                    "source": "vector_search"
+                })
+            
+            logger.info(f"Simplified semantic search returned {len(simplified_results)} results")
+            return simplified_results
+            
+        except Exception as e:
+            logger.error(f"Simplified semantic search failed: {e}")
+            return []
 
     def get_service_info(self) -> Dict[str, Any]:
         """

@@ -20,6 +20,7 @@ from lib._tools import adk_simple_execute_code  # Simple code execution
 from lib._tools import adk_transfer_to_agent  # Agent delegation
 from lib._tools import adk_web_search  # Current information
 from lib._tools import adk_write_file  # Basic file operations
+from lib._tools.search_coordinator import create_coordinated_search_tool  # Memory-first search
 from lib.logging_config import get_logger
 
 # Removed sys.path.insert - using proper package imports
@@ -44,6 +45,16 @@ except ImportError as e:
     logger.warning(f"Memory service not available: {e}")
     load_memory = None
     MEMORY_AVAILABLE = False
+
+# Initialize coordinated search tool
+try:
+    coordinated_search = create_coordinated_search_tool()
+    COORDINATED_SEARCH_AVAILABLE = True
+    logger.info("Coordinated search tool initialized successfully")
+except Exception as e:
+    logger.warning(f"Coordinated search tool not available: {e}")
+    coordinated_search = None
+    COORDINATED_SEARCH_AVAILABLE = False
 
 # Import specialist agents for simple ADK delegation (following ADK patterns)
 try:
@@ -73,16 +84,39 @@ AUTOMATIC ROUTING PROTOCOL - FOLLOW THIS FOR EVERY USER REQUEST:
 4. For all other task types, handle the request directly using the appropriate tools below
 
 AVAILABLE TOOLS:
-- web_search: For current information and research
+- coordinated_search: 🔍 ALWAYS USE THIS FOR ANY INFORMATION QUERIES - automatically checks memory → vector → web in optimal order
 - mathematical_solve: For mathematical problems and calculations
 - logical_analyze: For logical reasoning tasks
 - read_file/write_file: For file operations
 - simple_execute_code: For basic Python execution (only for simple tasks, not complex code)
-- load_memory: For accessing persistent knowledge and previous conversations (use with relevant queries)
+- load_memory: For direct memory queries (prefer coordinated_search for general information)
+- web_search: For direct web queries (prefer coordinated_search for comprehensive results)
+
+SEARCH STRATEGY:
+ALWAYS use coordinated_search for information queries instead of individual search tools:
+- "What is VANA?" → coordinated_search (checks memory + knowledge first)
+- "How do I do X?" → coordinated_search (checks stored solutions first)
+- "Current weather" → coordinated_search (intelligently routes to web for current data)
+- "User preferences" → coordinated_search (prioritizes memory for personal context)
 
 Remember: Always analyze first, then route if needed, then execute.""",
     tools=[
-        # Essential tools only (following ADK best practices)
+        # Memory-first coordinated search (highest priority)
+        coordinated_search,  # Intelligent search with memory → vector → web priority
+        # Essential tools (following ADK best practices)
+        adk_mathematical_solve,  # Math problems
+        adk_logical_analyze,  # Logical reasoning
+        adk_read_file,  # Basic file operations
+        adk_write_file,  # Basic file operations
+        adk_analyze_task,  # Intelligent task analysis
+        adk_transfer_to_agent,  # Agent delegation for automatic routing
+        adk_simple_execute_code,  # Simple code execution
+        # Legacy tools (lower priority - prefer coordinated_search)
+        adk_web_search,  # Direct web search (use coordinated_search instead)
+    ]
+    + ([load_memory] if MEMORY_AVAILABLE and load_memory else [])  # Direct memory (use coordinated_search instead)
+    if COORDINATED_SEARCH_AVAILABLE else [
+        # Fallback to original tools if coordinated search unavailable
         adk_web_search,  # Current information
         adk_mathematical_solve,  # Math problems
         adk_logical_analyze,  # Logical reasoning
@@ -91,8 +125,7 @@ Remember: Always analyze first, then route if needed, then execute.""",
         adk_analyze_task,  # Intelligent task analysis
         adk_transfer_to_agent,  # Agent delegation for automatic routing
         adk_simple_execute_code,  # Simple code execution
-    ]
-    + ([load_memory] if MEMORY_AVAILABLE and load_memory else []),  # Add memory if available
+    ] + ([load_memory] if MEMORY_AVAILABLE and load_memory else []),
     # Simple ADK delegation pattern
     sub_agents=specialist_agents,
 )
