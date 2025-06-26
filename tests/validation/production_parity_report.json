@@ -17,12 +17,12 @@
     "endpoints": {
       "/health": {
         "status_code": 200,
-        "response_time": 0.189173,
+        "response_time": 0.223935,
         "working": true
       },
       "/info": {
         "status_code": 200,
-        "response_time": 0.139344,
+        "response_time": 0.176817,
         "working": true
       }
     },
