@@ -218,6 +218,49 @@ async def get_supported_languages() -> str:
         return f"❌ Failed to retrieve language information: {str(e)}"
 
 
+# Synchronous wrappers for async functions (for ADK compatibility)
+def sync_execute_code(code: str, language: str, timeout: int = 30) -> str:
+    """Synchronous wrapper for async execute_code function."""
+    import asyncio
+    try:
+        loop = asyncio.get_event_loop()
+        if loop.is_running():
+            # We're already in an async context, need to use different approach
+            import concurrent.futures
+            with concurrent.futures.ThreadPoolExecutor() as executor:
+                future = executor.submit(asyncio.run, execute_code(code, language, timeout))
+                return future.result()
+        else:
+            return loop.run_until_complete(execute_code(code, language, timeout))
+    except RuntimeError:
+        return asyncio.run(execute_code(code, language, timeout))
+
+
+def sync_validate_code_security(code: str, language: str) -> str:
+    """Synchronous wrapper for async validate_code_security function."""
+    import asyncio
+    try:
+        loop = asyncio.get_event_loop()
+        if loop.is_running():
+            # We're already in an async context, need to use different approach
+            import concurrent.futures
+            with concurrent.futures.ThreadPoolExecutor() as executor:
+                future = executor.submit(asyncio.run, validate_code_security(code, language))
+                return future.result()
+        else:
+            return loop.run_until_complete(validate_code_security(code, language))
+    except RuntimeError:
+        return asyncio.run(validate_code_security(code, language))
+
+
+# Helper function to create named tools
+def _create_named_tool(func, name):
+    """Create a FunctionTool with explicit name."""
+    tool = FunctionTool(func=func)
+    tool.name = name
+    return tool
+
+
 # Create the Code Execution Specialist Agent
 code_execution_specialist = LlmAgent(
     name="code_execution_specialist",
@@ -248,8 +291,8 @@ code_execution_specialist = LlmAgent(
 
 Always prioritize security and provide comprehensive explanations of execution results.""",
     tools=[
-        FunctionTool(func=execute_code),
-        FunctionTool(func=validate_code_security),
+        _create_named_tool(sync_execute_code, "execute_code"),
+        _create_named_tool(sync_validate_code_security, "validate_code_security"),
         FunctionTool(func=get_execution_history),
         FunctionTool(func=get_supported_languages),
     ],

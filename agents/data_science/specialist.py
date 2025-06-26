@@ -709,6 +709,79 @@ logger.info(f"\\nInertia (WCSS): {{kmeans.inertia_:.3f}}")
         return f"❌ Modeling failed: {str(e)}"
 
 
+# Synchronous wrappers for async functions (for ADK compatibility)
+def sync_analyze_data(data_source: str, analysis_type: str = "descriptive") -> str:
+    """Synchronous wrapper for async analyze_data function."""
+    import asyncio
+    try:
+        loop = asyncio.get_event_loop()
+        if loop.is_running():
+            import concurrent.futures
+            with concurrent.futures.ThreadPoolExecutor() as executor:
+                future = executor.submit(asyncio.run, analyze_data(data_source, analysis_type))
+                return future.result()
+        else:
+            return loop.run_until_complete(analyze_data(data_source, analysis_type))
+    except RuntimeError:
+        return asyncio.run(analyze_data(data_source, analysis_type))
+
+
+def sync_visualize_data(data_source: str, chart_type: str = "auto", title: str = "Data Visualization") -> str:
+    """Synchronous wrapper for async visualize_data function."""
+    import asyncio
+    try:
+        loop = asyncio.get_event_loop()
+        if loop.is_running():
+            import concurrent.futures
+            with concurrent.futures.ThreadPoolExecutor() as executor:
+                future = executor.submit(asyncio.run, visualize_data(data_source, chart_type, title))
+                return future.result()
+        else:
+            return loop.run_until_complete(visualize_data(data_source, chart_type, title))
+    except RuntimeError:
+        return asyncio.run(visualize_data(data_source, chart_type, title))
+
+
+def sync_clean_data(data_source: str, operations: str = "basic") -> str:
+    """Synchronous wrapper for async clean_data function."""
+    import asyncio
+    try:
+        loop = asyncio.get_event_loop()
+        if loop.is_running():
+            import concurrent.futures
+            with concurrent.futures.ThreadPoolExecutor() as executor:
+                future = executor.submit(asyncio.run, clean_data(data_source, operations))
+                return future.result()
+        else:
+            return loop.run_until_complete(clean_data(data_source, operations))
+    except RuntimeError:
+        return asyncio.run(clean_data(data_source, operations))
+
+
+def sync_model_data(data_source: str, model_type: str = "auto", target_column: str = "target") -> str:
+    """Synchronous wrapper for async model_data function."""
+    import asyncio
+    try:
+        loop = asyncio.get_event_loop()
+        if loop.is_running():
+            import concurrent.futures
+            with concurrent.futures.ThreadPoolExecutor() as executor:
+                future = executor.submit(asyncio.run, model_data(data_source, model_type, target_column))
+                return future.result()
+        else:
+            return loop.run_until_complete(model_data(data_source, model_type, target_column))
+    except RuntimeError:
+        return asyncio.run(model_data(data_source, model_type, target_column))
+
+
+# Helper function to create named tools  
+def _create_named_tool(func, name):
+    """Create a FunctionTool with explicit name."""
+    tool = FunctionTool(func=func)
+    tool.name = name
+    return tool
+
+
 # Create the Data Science Specialist Agent
 data_science_specialist = LlmAgent(
     name="data_science_specialist",
@@ -753,9 +826,9 @@ data_science_specialist = LlmAgent(
 
 Focus on generating high-quality Python code that leverages the full power of data science libraries while maintaining security and performance standards.""",
     tools=[
-        FunctionTool(func=analyze_data),
-        FunctionTool(func=visualize_data),
-        FunctionTool(func=clean_data),
-        FunctionTool(func=model_data),
+        _create_named_tool(sync_analyze_data, "analyze_data"),
+        _create_named_tool(sync_visualize_data, "visualize_data"),
+        _create_named_tool(sync_clean_data, "clean_data"),
+        _create_named_tool(sync_model_data, "model_data"),
     ],
 )
