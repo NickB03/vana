@@ -8,8 +8,7 @@ Based on research of ADK documentation and sample agents.
 import os
 import sys
 
-# Add project root to Python path for ADK compatibility
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
+# Removed sys.path.insert - using proper package imports
 
 from dotenv import load_dotenv
 from google.adk.agents import LlmAgent

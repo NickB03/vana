@@ -4,14 +4,30 @@ VANA Agent - FastAPI Entry Point
 This module provides the FastAPI entry point for the VANA agent using Google ADK.
 Automatically detects environment and configures authentication appropriately.
 Includes proper ADK memory service initialization for vector search and RAG pipeline.
+
+CRITICAL: Requires Python 3.13+ for production stability.
 """
 
 import logging
 import os
+import sys
 
 import uvicorn
 from fastapi import FastAPI, Request
 from google.adk.cli.fast_api import get_fast_api_app
+
+# CRITICAL: Validate Python version before any imports
+def validate_python_version():
+    """Ensure Python 3.13+ is being used for production stability"""
+    if sys.version_info.major != 3 or sys.version_info.minor < 13:
+        print(f"🚨 CRITICAL ERROR: Python 3.13+ required, got {sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}")
+        print("❌ VANA system will not function correctly with this Python version")
+        print("✅ Fix: poetry env use python3.13 && poetry install")
+        sys.exit(1)
+    print(f"✅ Python version validated: {sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}")
+
+# Validate environment before proceeding
+validate_python_version()
 
 # Configure centralized logging first
 from lib.logging_config import setup_logging

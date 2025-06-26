@@ -3,7 +3,10 @@
 VANA System Validation Environment Setup
 Configures comprehensive testing environment for system validation after code quality improvements.
 
+CRITICAL: Requires Python 3.13+ for production stability.
+
 This module sets up:
+- Python version validation (MANDATORY)
 - Performance monitoring and baseline establishment
 - Agent functionality testing framework
 - Deployment validation tools
@@ -17,6 +20,19 @@ import sys
 import time
 from pathlib import Path
 from typing import Dict, Any
+
+# CRITICAL: Validate Python version before any operations
+def validate_python_version():
+    """Ensure Python 3.13+ is being used"""
+    if sys.version_info.major != 3 or sys.version_info.minor < 13:
+        print(f"🚨 CRITICAL ERROR: Python 3.13+ required for validation, got {sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}")
+        print("❌ VANA validation environment will not function correctly")
+        print("✅ Fix: poetry env use python3.13 && poetry install")
+        sys.exit(1)
+    print(f"✅ Python version validated for validation environment: {sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}")
+
+# Validate environment before proceeding
+validate_python_version()
 
 # Add project root to path
 project_root = Path(__file__).parent.parent.parent

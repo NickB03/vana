@@ -3,11 +3,14 @@
 ## Prerequisites
 
 ### Required Software
-- **Python 3.13+** (VANA requires Python 3.13 for optimal performance)
+- **Python 3.13+** ⚠️ **MANDATORY** - VANA enforces Python 3.13+ at runtime for production stability
 - **Poetry** (for dependency management)
 - **Docker** (for sandbox features and containerized services)
 - **Git** (for version control)
 - **Google Cloud CLI** (for cloud service integration)
+
+### 🚨 CRITICAL: Python 3.13+ Requirement
+**VANA will NOT START with Python < 3.13**. The system performs runtime validation and exits immediately if the requirement is not met.
 
 ### System Requirements
 - **Memory**: Minimum 8GB RAM (16GB recommended for full sandbox features)
