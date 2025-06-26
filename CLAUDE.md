@@ -29,13 +29,18 @@ poetry install
 ## Common Development Commands
 
 ### Testing
-```bash
-# Run all tests
-poetry run pytest
 
-# Run specific test categories
+⚠️ **CRITICAL**: Always use the new Production Parity Testing Framework to ensure tests match production environment.
+
+```bash
+# NEW: Production Parity Testing (RECOMMENDED)
+poetry run python tests/run_production_parity_tests.py --smoke-only  # Critical smoke tests
+poetry run python tests/run_production_parity_tests.py --full        # Full test suite
+poetry run python tests/framework/production_parity_validator.py     # Environment validation
+
+# Legacy pytest (use with caution - may not reflect production)
 poetry run pytest -m unit          # Unit tests
-poetry run pytest -m agent         # Agent intelligence tests
+poetry run pytest -m agent         # Agent intelligence tests  
 poetry run pytest -m integration   # Integration tests
 poetry run pytest -m e2e           # End-to-end tests
 poetry run pytest -m security      # Security tests
@@ -43,10 +48,14 @@ poetry run pytest -m performance   # Performance tests
 
 # Run with coverage
 poetry run pytest --cov=agents --cov=lib --cov=tools
-
-# Comprehensive test runner
-python tests/run_comprehensive_tests.py
 ```
+
+**Production Parity Testing Features:**
+- ✅ Tests run in Poetry environment (matches production Docker)
+- ✅ Validates all critical dependencies are available
+- ✅ Tests against actual production endpoints
+- ✅ Smoke tests for critical functionality
+- ✅ Environment validation ensures test reliability
 
 ### Code Quality
 ```bash

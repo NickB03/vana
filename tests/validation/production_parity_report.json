@@ -1,0 +1,61 @@
+{
+  "environment_parity": {
+    "python_version": "3.13.2",
+    "python_path": "/Users/nick/Development/vana/.venv/bin/python",
+    "is_poetry_environment": true,
+    "poetry_env_info": "\nVirtualenv\nPython:         3.13.2\nImplementation: CPython\nPath:           /Users/nick/Development/vana/.venv\nExecutable:     /Users/nick/Development/vana/.venv/bin/python\nValid:          True\n\nBase\nPlatform:   darwin\nOS:         posix\nPython:     3.13.2\nPath:       /opt/homebrew/opt/python@3.13/Frameworks/Python.framework/Versions/3.13\nExecutable: /opt/homebrew/opt/python@3.13/Frameworks/Python.framework/Versions/3.13/bin/python3.13\n"
+  },
+  "dependency_validation": {
+    "psutil": "available",
+    "aiohttp": "available",
+    "google-adk": "available",
+    "fastapi": "available",
+    "requirements_file_exists": true,
+    "poetry_packages_count": 126
+  },
+  "production_mirror": {
+    "endpoints": {
+      "/health": {
+        "status_code": 200,
+        "response_time": 0.168919,
+        "working": true
+      },
+      "/info": {
+        "status_code": 200,
+        "response_time": 0.141723,
+        "working": true
+      }
+    },
+    "agent_functionality": {
+      "agent_loaded": true,
+      "tool_count": 9,
+      "tools": [
+        "web_search",
+        "mathematical_solve",
+        "logical_analyze",
+        "read_file",
+        "write_file",
+        "analyze_task",
+        "transfer_to_agent",
+        "simple_execute_code",
+        "load_memory"
+      ],
+      "tool_tests": {
+        "web_search": {
+          "working": true,
+          "result_length": 45
+        },
+        "mathematical_solve": {
+          "working": true,
+          "result_length": 257
+        },
+        "logical_analyze": {
+          "working": true,
+          "skipped": "no test implemented"
+        }
+      }
+    }
+  },
+  "errors": [],
+  "warnings": []
+}
