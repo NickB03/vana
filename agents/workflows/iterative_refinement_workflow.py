@@ -16,7 +16,6 @@ import sys
 from typing import AsyncGenerator
 
 # Add project root to Python path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
 
 
 # Import specialist functions
