@@ -2,6 +2,30 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## 🚨 CRITICAL PYTHON VERSION REQUIREMENT
+
+**PYTHON 3.13 IS MANDATORY FOR VANA SYSTEM**
+
+⚠️ **PRODUCTION CRITICAL**: VANA requires Python 3.13+ for proper functionality. Using any version less than 3.13 will cause production errors and system instability.
+
+**Environment Verification:**
+```bash
+# Verify Python version (MUST be 3.13+)
+python3 --version  # Should show Python 3.13.x
+poetry env info    # Virtualenv Python should be 3.13.x
+
+# If not Python 3.13, fix immediately:
+poetry env use python3.13
+poetry install
+```
+
+**Why Python 3.13 is Required:**
+- Modern async patterns required by Google ADK
+- SSL/TLS compatibility for production services  
+- Type hints and syntax features used throughout codebase
+- Performance optimizations critical for agent coordination
+- Memory management improvements for multi-agent operations
+
 ## Common Development Commands
 
 ### Testing

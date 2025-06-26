@@ -10,6 +10,19 @@
 
 > **VANA** is an advanced multi-agent AI system built on Google's Agent Development Kit (ADK), featuring a discoverable multi-agent architecture with comprehensive toolset and infrastructure for intelligent task orchestration. The system uses a simplified multi-agent architecture with proxy pattern for optimal performance and maintainability.
 
+## 🚨 CRITICAL REQUIREMENTS
+
+**⚠️ PYTHON 3.13+ MANDATORY**: VANA requires Python 3.13+ for production stability. Using any lower version will cause production errors.
+
+```bash
+# Verify Python version (MUST be 3.13+)
+python3 --version  # Should show Python 3.13.x
+
+# If not Python 3.13+, install it first:
+# macOS: brew install python@3.13
+# Ubuntu: sudo apt install python3.13
+```
+
 ## 🚀 Quick Start
 
 ```bash
@@ -17,8 +30,12 @@
 git clone https://github.com/NickB03/vana.git
 cd vana
 
-# Install dependencies
+# CRITICAL: Ensure Python 3.13+ is used
+poetry env use python3.13
 poetry install
+
+# Validate environment (recommended)
+poetry run python scripts/validate_python_version.py
 
 # Configure environment
 cp .env.template .env.local

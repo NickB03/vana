@@ -17,7 +17,7 @@ from typing import List
 from dotenv import load_dotenv
 
 # Add project root to Python path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
+# Removed sys.path.insert - using proper package imports
 
 # Load environment variables
 load_dotenv()

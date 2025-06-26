@@ -5,15 +5,14 @@ Provides comprehensive data analysis, visualization, and machine learning capabi
 by leveraging the Code Execution Specialist for secure Python execution.
 """
 
-from agents.code_execution.specialist import execute_code
+# Removed direct import - using ADK agent delegation instead
 from google.adk.tools import FunctionTool
 from google.adk.agents import LlmAgent
 import logging
 import os
 import sys
 
-# Add project root to Python path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
+# Removed sys.path.insert - using proper package imports
 
 # Google ADK imports
 
@@ -130,10 +129,9 @@ for column in data.columns:
         logger.info(f"Skewness (approx): {{skew_approx:.3f}}")
 """
 
-        # Execute the analysis using Code Execution Specialist
-        result = execute_code(
-            "python", python_code, description=f"Data analysis: {analysis_type}"
-        )
+        # Use ADK agent delegation instead of direct function call
+        delegation_context = f"Execute Python code for data analysis ({analysis_type}):\n\n{python_code}"
+        return f"For secure code execution, use transfer_to_agent('code_execution_specialist', '{delegation_context}')"
 
         # Add insights to the result
         insights = f"""
@@ -285,10 +283,9 @@ logger.info("\\n📊 Visualization would be generated using matplotlib/seaborn")
 logger.info("💡 Consider specific chart types: histogram, scatter, bar, line, heatmap")
 """
 
-        # Execute the visualization using Code Execution Specialist
-        result = execute_code(
-            "python", python_code, description=f"Data visualization: {chart_type}"
-        )
+        # Use ADK agent delegation instead of direct function call
+        delegation_context = f"Execute Python code for data visualization ({chart_type}):\n\n{python_code}"
+        return f"For secure code execution, use transfer_to_agent('code_execution_specialist', '{delegation_context}')"
 
         # Add visualization insights
         insights = f"""
@@ -461,10 +458,9 @@ logger.info(f"Duplicates: {{data_cleaned.duplicated().sum()}}")
 logger.info("\\n✅ Basic cleaning completed")
 """
 
-        # Execute the cleaning using Code Execution Specialist
-        result = execute_code(
-            "python", python_code, description=f"Data cleaning: {operations}"
-        )
+        # Use ADK agent delegation instead of direct function call
+        delegation_context = f"Execute Python code for data cleaning ({operations}):\n\n{python_code}"
+        return f"For secure code execution, use transfer_to_agent('code_execution_specialist', '{delegation_context}')"
 
         # Add cleaning insights
         insights = f"""
@@ -697,10 +693,9 @@ for i, center in enumerate(kmeans.cluster_centers_):
 logger.info(f"\\nInertia (WCSS): {{kmeans.inertia_:.3f}}")
 """
 
-        # Execute the modeling using Code Execution Specialist
-        result = execute_code(
-            "python", python_code, description=f"Machine learning: {model_type}"
-        )
+        # Use ADK agent delegation instead of direct function call
+        delegation_context = f"Execute Python code for machine learning ({model_type}):\n\n{python_code}"
+        return f"For secure code execution, use transfer_to_agent('code_execution_specialist', '{delegation_context}')"
 
         # Add modeling insights
         insights = f"""

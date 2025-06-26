@@ -12,7 +12,9 @@ requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.poetry.dependencies]
-python = "^3.13"
+# CRITICAL: Python 3.13+ required for production stability
+# DO NOT downgrade - will cause production errors
+python = ">=3.13,<3.14"
 fastapi = "^0.115.12"
 uvicorn = "^0.34.2"
 aiohttp = "^3.9.0"
