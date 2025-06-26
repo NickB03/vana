@@ -78,7 +78,7 @@ List all available agents and their status.
       "name": "vana",
       "type": "orchestrator",
       "status": "healthy",
-      "description": "VANA Orchestrator with 19 core tools",
+      "description": "VANA Orchestrator with core tools",
       "capabilities": ["coordination", "task_routing", "file_operations", "search", "workflows"],
       "tools": ["adk_echo", "adk_coordinate_task", "adk_delegate_to_agent", "adk_read_file", "adk_web_search"]
     },

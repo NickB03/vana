@@ -35,10 +35,6 @@ Welcome to the comprehensive documentation for **VANA** - an advanced multi-agen
 - **[AI Agent Development Guide](guides/ai-agent-development-guide.md)** - Guide for AI agents working with VANA
 - **[Monitoring](guides/monitoring.md)** - System monitoring and observability
 
-### 🛠️ Implementation
-- **[Comprehensive Implementation Plan](implementation/comprehensive-implementation-plan.md)** - Detailed 16-week implementation roadmap
-- **[Technical Implementation Templates](implementation/technical-implementation-templates.md)** - Standardized patterns and templates
-- **[Implementation Coordination Guide](implementation/implementation-coordination-guide.md)** - Project coordination and quality assurance
 
 ### 📋 Planning
 - **[Agent Roadmap](planning/agent-roadmap.md)** - Strategic agent development roadmap
@@ -81,14 +77,11 @@ Welcome to the comprehensive documentation for **VANA** - an advanced multi-agen
 ### 🤖 For AI Agents
 1. **[🤖 AI Agent Development Guide](guides/ai-agent-development-guide.md)** - Guide for AI agents working with VANA
 2. **[🔄 Agent Interactions](assets/diagrams/agent-interactions.md)** - Visual interaction flows
-3. **[🛠️ Implementation Templates](implementation/technical-implementation-templates.md)** - Standardized patterns
 
 ## 📊 System Status
 
 - **Status**: ✅ Operational
-- **Agent Count**: Discoverable multi-agent system (real agents + proxy pattern)
-- **Tool Count**: Core tools plus conditional tools
-- **Architecture**: Simplified multi-agent with proxy pattern
+- **Architecture**: Simplified multi-agent
 - **Deployment**: Google Cloud Run (dev & prod environments)
 - **Memory Systems**: Vertex AI RAG corpus, ADK session management
 - **Security Features**: Zero hardcoded credentials, Google Cloud IAM, Secret Manager
@@ -98,9 +91,7 @@ Welcome to the comprehensive documentation for **VANA** - an advanced multi-agen
 
 To contribute to VANA documentation:
 
-1. Follow the [Developer Guide](guides/developer-guide.md)
-2. Use the [Implementation Templates](implementation/technical-implementation-templates.md)
-3. Submit pull requests with clear descriptions
+1. Follow the [Developer Guide](guides/developer-guide.md)3. Submit pull requests with clear descriptions
 4. Ensure all examples are tested and functional
 5. Update relevant documentation when adding features
 

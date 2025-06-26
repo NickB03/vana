@@ -63,7 +63,7 @@ GET /list-apps
       "status": "active"
     }
   ],
-  "architecture": "multi-agent with proxy pattern",
+  "architecture": "multi-agent",
   "real_agents": 3,
   "proxy_agents": 4,
   "system_status": "operational"
