@@ -47,26 +47,30 @@ jobs:
         poetry run python --version
         echo "✅ Python version validated for CI environment"
         echo "📦 Checking critical dependencies..."
+        poetry run python -c "import sys; print(f'Python: {sys.version_info.major}.{sys.version_info.minor}')"
+        
+    - name: Test Core Dependencies
+      run: |
+        echo "Testing core dependencies..."
         poetry run python -c "
-import sys
-try:
-    import fastapi
-    print('✅ FastAPI available')
-except ImportError:
-    print('❌ FastAPI missing')
-    
-try:
-    import google.adk
-    print('✅ Google ADK available') 
-except ImportError:
-    print('❌ Google ADK missing')
+        try:
+            import fastapi
+            print('✅ FastAPI available')
+        except ImportError:
+            print('❌ FastAPI missing')
+            
+        try:
+            import google.adk
+            print('✅ Google ADK available') 
+        except ImportError:
+            print('❌ Google ADK missing')
 
-try:
-    from agents.vana.team import root_agent
-    print(f'✅ VANA agent loads with {len(root_agent.tools)} tools')
-except Exception as e:
-    print(f'❌ VANA agent failed: {e}')
-"
+        try:
+            from agents.vana.team import root_agent
+            print(f'✅ VANA agent loads with {len(root_agent.tools)} tools')
+        except Exception as e:
+            print(f'❌ VANA agent failed: {e}')
+        "
     
     - name: Run code quality checks
       run: |
