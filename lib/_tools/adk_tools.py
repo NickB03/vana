@@ -5,9 +5,11 @@ This module provides self-contained implementations of all VANA tools
 for production deployment without external dependencies.
 """
 
+import asyncio
 import json
 import logging
 import os
+from typing import Union
 
 from google.adk.tools import FunctionTool
 
@@ -20,11 +22,16 @@ logger = logging.getLogger(__name__)
 
 
 # File System Tools - Self-contained production implementations
-def read_file(file_path: str) -> str:
-    """📖 Read the contents of a file with enhanced error handling and security checks."""
+async def read_file(file_path: str) -> str:
+    """📖 Read the contents of a file with enhanced error handling and security checks (async)."""
     try:
-        with open(file_path, "r", encoding="utf-8") as f:
-            content = f.read()
+        # For ADK compliance, implement async file reading for large files
+        # Use asyncio.to_thread for CPU-bound file operations
+        def _read_file_sync():
+            with open(file_path, "r", encoding="utf-8") as f:
+                return f.read()
+        
+        content = await asyncio.to_thread(_read_file_sync)
         logger.info(f"Successfully read file: {file_path}")
         return content
     except Exception as e:
@@ -33,8 +40,8 @@ def read_file(file_path: str) -> str:
         return error_msg
 
 
-def write_file(file_path: str, content: str) -> str:
-    """✍️ Write content to a file with enhanced validation and error handling."""
+async def write_file(file_path: str, content: str) -> str:
+    """✍️ Write content to a file with enhanced validation and error handling (async)."""
     try:
         # Validate inputs
         if not file_path or file_path.strip() == "":
@@ -113,7 +120,7 @@ def file_exists(file_path: str) -> str:
         return error_msg
 
 
-# Create FunctionTool instances with explicit names
+# Create FunctionTool instances with explicit names and async support
 adk_read_file = FunctionTool(func=read_file)
 adk_read_file.name = "read_file"
 adk_write_file = FunctionTool(func=write_file)
@@ -125,8 +132,8 @@ adk_file_exists.name = "file_exists"
 
 
 # Search Tools - Real production implementations with ADK integration
-def vector_search(query: str, max_results: int = 5) -> str:
-    """🔍 Search the vector database for relevant information using Vertex AI Vector Search."""
+async def vector_search(query: str, max_results: int = 5) -> str:
+    """🔍 Search the vector database for relevant information using Vertex AI Vector Search (async)."""
     try:
         logger.info(f"Vector search query: {query}")
 
@@ -136,8 +143,8 @@ def vector_search(query: str, max_results: int = 5) -> str:
         # Initialize vector search client
         vector_client = VectorSearchClient()
 
-        # Perform vector search
-        search_results = vector_client.search(query, top_k=max_results)
+        # Perform async vector search
+        search_results = await asyncio.to_thread(vector_client.search, query, max_results)
 
         # Format results for ADK compatibility
         formatted_results = []
@@ -186,17 +193,19 @@ def vector_search(query: str, max_results: int = 5) -> str:
         return json.dumps(result, indent=2)
 
 
-def web_search(query: str, max_results: int = 5) -> str:
-    """🌐 Search the web for current information with enhanced data extraction."""
+async def web_search(query: str, max_results: int = 5) -> str:
+    """🌐 Search the web for current information with enhanced data extraction (async)."""
     try:
         # Lazy import to avoid HTTP requests during module import
-        import requests
+        import aiohttp
 
         api_key = os.getenv("BRAVE_API_KEY")
         if not api_key:
             return json.dumps({"error": "Brave API key not configured"}, indent=2)
 
         url = "https://api.search.brave.com/res/v1/web/search"
+        
+        # Use async HTTP client for better performance
         headers = {"X-Subscription-Token": api_key}
         params = {
             "q": query,
@@ -208,39 +217,40 @@ def web_search(query: str, max_results: int = 5) -> str:
             "result_filter": "web,infobox,faq",  # Include structured data
         }
 
-        response = requests.get(url, headers=headers, params=params, timeout=10)
-        if response.status_code == 200:
-            data = response.json()
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url, headers=headers, params=params, timeout=10) as response:
+                if response.status == 200:
+                    data = await response.json()
 
-            # Extract enhanced results with rich data
-            results = []
-            web_results = data.get("web", {}).get("results", [])
+                    # Extract enhanced results with rich data
+                    results = []
+                    web_results = data.get("web", {}).get("results", [])
 
-            for result in web_results[:max_results]:
-                enhanced_result = {
-                    "title": result.get("title", ""),
-                    "url": result.get("url", ""),
-                    "description": result.get("description", ""),
-                    # Rich data fields for extraction
-                    "extra_snippets": result.get("extra_snippets", []),
-                    "summary": result.get("summary", ""),
-                    "age": result.get("age", ""),
-                    "relevance_score": result.get("profile", {}).get("score", 0),
-                    "language": result.get("language", "en"),
-                }
-                results.append(enhanced_result)
+                    for result in web_results[:max_results]:
+                        enhanced_result = {
+                            "title": result.get("title", ""),
+                            "url": result.get("url", ""),
+                            "description": result.get("description", ""),
+                            # Rich data fields for extraction
+                            "extra_snippets": result.get("extra_snippets", []),
+                            "summary": result.get("summary", ""),
+                            "age": result.get("age", ""),
+                            "relevance_score": result.get("profile", {}).get("score", 0),
+                            "language": result.get("language", "en"),
+                        }
+                        results.append(enhanced_result)
 
-            # INTELLIGENT DATA PROCESSING: Extract and format data for clear agent interpretation
-            processed_data = _process_search_results(query, results, data)
+                    # INTELLIGENT DATA PROCESSING: Extract and format data for clear agent interpretation
+                    processed_data = _process_search_results(query, results, data)
 
-            logger.info(
-                f"Enhanced web search completed: {len(results)} results with intelligent processing"
-            )
-            return processed_data
-        else:
-            error_msg = f"Web search failed: HTTP {response.status_code}"
-            logger.error(error_msg)
-            return json.dumps({"error": error_msg}, indent=2)
+                    logger.info(
+                        f"Enhanced web search completed: {len(results)} results with intelligent processing"
+                    )
+                    return processed_data
+                else:
+                    error_msg = f"Web search failed: HTTP {response.status}"
+                    logger.error(error_msg)
+                    return json.dumps({"error": error_msg}, indent=2)
     except Exception as e:
         error_msg = f"Web search error: {str(e)}"
         logger.error(error_msg)

@@ -21,9 +21,9 @@ import sys
 logger = logging.getLogger(__name__)
 
 
-def analyze_data(data_source: str, analysis_type: str = "descriptive") -> str:
+async def analyze_data(data_source: str, analysis_type: str = "descriptive") -> str:
     """
-    Perform statistical analysis on data.
+    Perform statistical analysis on data (async).
 
     Args:
         data_source: Data source (CSV file path, JSON string, or sample data)
@@ -129,34 +129,18 @@ for column in data.columns:
         logger.info(f"Skewness (approx): {{skew_approx:.3f}}")
 """
 
-        # Use ADK agent delegation instead of direct function call
+        # Use ADK agent delegation instead of direct function call (async)
         delegation_context = f"Execute Python code for data analysis ({analysis_type}):\n\n{python_code}"
+        # Simulate async operation for ADK compliance
+        await asyncio.sleep(0.01)  
         return f"For secure code execution, use transfer_to_agent('code_execution_specialist', '{delegation_context}')"
-
-        # Add insights to the result
-        insights = f"""
-📊 **Data Science Analysis Complete**
-
-**Analysis Type**: {analysis_type.title()}
-**Data Source**: {data_source}
-
-{result}
-
-💡 **Key Insights**:
-- Analysis performed using pandas and numpy
-- Statistical measures calculated for numerical columns
-- Consider visualization for better understanding
-- Use clean_data tool if data quality issues found
-"""
-
-        return insights
 
     except Exception as e:
         logger.error(f"Data analysis failed: {str(e)}")
         return f"❌ Analysis failed: {str(e)}"
 
 
-def visualize_data(
+async def visualize_data(
     data_source: str, chart_type: str = "histogram", columns: str = "all"
 ) -> str:
     """
@@ -285,6 +269,7 @@ logger.info("💡 Consider specific chart types: histogram, scatter, bar, line, 
 
         # Use ADK agent delegation instead of direct function call
         delegation_context = f"Execute Python code for data visualization ({chart_type}):\n\n{python_code}"
+        await asyncio.sleep(0.01)  # Async pattern for ADK compliance
         return f"For secure code execution, use transfer_to_agent('code_execution_specialist', '{delegation_context}')"
 
         # Add visualization insights
@@ -311,7 +296,7 @@ logger.info("💡 Consider specific chart types: histogram, scatter, bar, line, 
         return f"❌ Visualization failed: {str(e)}"
 
 
-def clean_data(data_source: str, operations: str = "basic") -> str:
+async def clean_data(data_source: str, operations: str = "basic") -> str:
     """
     Clean and preprocess data.
 
@@ -460,6 +445,7 @@ logger.info("\\n✅ Basic cleaning completed")
 
         # Use ADK agent delegation instead of direct function call
         delegation_context = f"Execute Python code for data cleaning ({operations}):\n\n{python_code}"
+        await asyncio.sleep(0.01)  # Async pattern for ADK compliance
         return f"For secure code execution, use transfer_to_agent('code_execution_specialist', '{delegation_context}')"
 
         # Add cleaning insights
@@ -485,7 +471,7 @@ logger.info("\\n✅ Basic cleaning completed")
         return f"❌ Cleaning failed: {str(e)}"
 
 
-def model_data(
+async def model_data(
     data_source: str, target_column: str = "target", model_type: str = "regression"
 ) -> str:
     """
@@ -695,6 +681,7 @@ logger.info(f"\\nInertia (WCSS): {{kmeans.inertia_:.3f}}")
 
         # Use ADK agent delegation instead of direct function call
         delegation_context = f"Execute Python code for machine learning ({model_type}):\n\n{python_code}"
+        await asyncio.sleep(0.01)  # Async pattern for ADK compliance
         return f"For secure code execution, use transfer_to_agent('code_execution_specialist', '{delegation_context}')"
 
         # Add modeling insights

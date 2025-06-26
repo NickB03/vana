@@ -27,9 +27,21 @@ from lib.logging_config import get_logger
 # Load environment variables
 load_dotenv()
 
-# Logging configuration
-
-logger = get_logger("vana.agents.vana.team")
+# Import ADK memory service for persistent memory
+try:
+    from lib._shared_libraries.adk_memory_service import get_adk_memory_service
+    from google.adk.tools import load_memory
+    
+    # Initialize memory service
+    memory_service = get_adk_memory_service()
+    MEMORY_AVAILABLE = memory_service.is_available()
+    logger = get_logger("vana.agents.vana.team")
+    logger.info(f"Memory service status: {'Available' if MEMORY_AVAILABLE else 'Not Available'}")
+except ImportError as e:
+    logger = get_logger("vana.agents.vana.team")
+    logger.warning(f"Memory service not available: {e}")
+    load_memory = None
+    MEMORY_AVAILABLE = False
 
 # Import specialist agents for simple ADK delegation (following ADK patterns)
 try:
@@ -64,6 +76,7 @@ AVAILABLE TOOLS:
 - logical_analyze: For logical reasoning tasks
 - read_file/write_file: For file operations
 - simple_execute_code: For basic Python execution (only for simple tasks, not complex code)
+- load_memory: For accessing persistent knowledge and previous conversations (use with relevant queries)
 
 Remember: Always analyze first, then route if needed, then execute.""",
     tools=[
@@ -76,7 +89,7 @@ Remember: Always analyze first, then route if needed, then execute.""",
         adk_analyze_task,  # Intelligent task analysis
         adk_transfer_to_agent,  # Agent delegation for automatic routing
         adk_simple_execute_code,  # Simple code execution
-    ],
+    ] + ([load_memory] if MEMORY_AVAILABLE and load_memory else []),  # Add memory if available
     # Simple ADK delegation pattern
     sub_agents=specialist_agents,
 )
