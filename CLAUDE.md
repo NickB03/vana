@@ -324,10 +324,17 @@ VANA uses dual memory systems for optimal performance:
 
 **Memory Usage Protocol:**
 1. **Session Start**: MANDATORY - Always begin with memory retrieval and explicit status confirmation:
-   - Attempt memory retrieval: "What do you remember about the VANA project and Nick's preferences?"
-   - **SUCCESS**: Report "✅ Memory loaded: [brief summary of key context retrieved]"
-   - **FAILURE**: Report "❌ Memory MCP server unavailable - operating without persistent context"
+   - Attempt memory retrieval using `mcp__memory__search_memory` with query: "VANA project Nick recent work development tasks"
+   - **SUCCESS**: Report "✅ Custom ChromaDB Memory loaded: [brief summary of key context retrieved]"
+   - **FAILURE**: Report "❌ Custom ChromaDB Memory server unavailable - operating without persistent context"
    - Read `.claude/` files for current project state regardless of memory status
+   
+**CRITICAL Memory Tool Names:**
+- **ALWAYS use**: `mcp__memory__search_memory` (NOT `memory:search_memory`)
+- **ALWAYS use**: `mcp__memory__store_memory` (NOT `memory:store_memory`)
+- **ALWAYS use**: `mcp__memory__memory_stats` for database status
+- **ALWAYS use**: `mcp__memory__operation_status` for operation tracking
+- **ALWAYS use**: `mcp__memory__index_files` for indexing directories
 
 **Pieces MCP Integration Protocol:**
 - **Proactive Pieces Usage**: When user asks about implementation patterns, deployment, testing, or cross-project solutions, AUTOMATICALLY use Pieces MCP tools to search relevant context
@@ -339,7 +346,7 @@ VANA uses dual memory systems for optimal performance:
 - **Pieces Query Patterns**: Use specific, targeted searches like "authentication implementation", "deployment patterns", "testing strategies"
 - **Context Enhancement**: Always combine Pieces results with current project context from CLAUDE.md
 - **Fallback Protocol**: If Pieces MCP fails or returns no results, proceed with .claude/ file context
-2. **Autonomous Memory Management**: Proactively identify and store important information without being asked:
+2. **Autonomous Memory Management**: Proactively identify and store important information using `mcp__memory__store_memory` without being asked:
    - Technical decisions and their rationale
    - Code patterns and architectural choices
    - User feedback and preferences (communication style, workflow preferences)
@@ -347,7 +354,7 @@ VANA uses dual memory systems for optimal performance:
    - Performance insights and optimization opportunities
    - Deployment results and system health status
    - Error patterns and resolution strategies
-3. **Real-Time Updates**: Store observations immediately when encountering:
+3. **Real-Time Updates**: Store observations immediately using `mcp__memory__store_memory` when encountering:
    - New requirements or constraints
    - Changed user preferences or feedback
    - Technical insights or best practices
@@ -363,20 +370,20 @@ VANA uses dual memory systems for optimal performance:
 
 ### Documentation & Evidence Standards
 
-- **Memory First:** Autonomously store ALL important decisions, patterns, and learnings in Memory MCP without being prompted
-- **Proactive Evidence Capture:** Automatically document test results, deployment status, and validation evidence as observations
-- **Automatic Relationship Mapping:** Continuously update relations to track dependencies between components, tools, and processes
-- **Continuous Status Updates:** Maintain real-time project status through persistent memory entities
-- **User Correction Protocol:** When Nick provides corrections or additional context, immediately update relevant memory entities
+- **Memory First:** Autonomously store ALL important decisions, patterns, and learnings using `mcp__memory__store_memory` without being prompted
+- **Proactive Evidence Capture:** Automatically document test results, deployment status, and validation evidence using `mcp__memory__store_memory`
+- **Automatic Relationship Mapping:** Continuously update relations to track dependencies between components, tools, and processes in custom ChromaDB
+- **Continuous Status Updates:** Maintain real-time project status through persistent memory using `mcp__memory__store_memory`
+- **User Correction Protocol:** When Nick provides corrections or additional context, immediately update relevant memory using `mcp__memory__store_memory`
 
 ### Design Impact Assessment Protocol
 
 Before any code changes:
 1. Use TodoWrite to systematically identify affected functions, modules, tools
-2. **Automatically store** assumptions, risks, and intended impacts as memory observations
-3. **Autonomously create/update** memory relations to show system dependencies
-4. **Proactively update** relevant memory entities during and immediately after making changes
-5. **Store rationale** for technical decisions in memory without being asked
+2. **Automatically store** assumptions, risks, and intended impacts using `mcp__memory__store_memory`
+3. **Autonomously create/update** memory relations to show system dependencies using `mcp__memory__store_memory`
+4. **Proactively update** relevant memory entities during and immediately after making changes using `mcp__memory__store_memory`
+5. **Store rationale** for technical decisions using `mcp__memory__store_memory` without being asked
 6. For large refactors or high-impact edits, confirm with user before execution
 
 **Memory Decision Framework:**
@@ -396,15 +403,16 @@ Before any code changes:
   - `/deploy-prep` - Prepare for deployment with memory checkpoint
   - `/session-handoff` - End session with complete memory update
 
-**Local Vector Memory (Optional High-Performance):**
-- **Setup**: Run `./deploy_local_memory.sh` for 50x faster semantic search
+**Custom ChromaDB Memory (Production System):**
+- **Setup**: Custom ChromaDB server automatically running at startup
 - **Commands**: 
-  - `search_memory` - Semantic search of local memory database
-  - `store_memory` - Add new information to local vector database
-  - `index_files` - Index .claude/ files for fast retrieval
-  - `memory_stats` - View local memory database statistics
-- **Optimal Workflow**: `/memory-consolidate` → `/compact` → continue session with preserved knowledge
-- **Autonomous Pattern**: I continuously store important information during conversations, not just at consolidation points
+  - `mcp__memory__search_memory` - Semantic search of ChromaDB with visual feedback
+  - `mcp__memory__store_memory` - Add new information to ChromaDB vector database
+  - `mcp__memory__index_files` - Index directory contents
+  - `mcp__memory__memory_stats` - View database statistics (current: 2,322+ chunks)
+  - `mcp__memory__operation_status` - Real-time operation dashboard with progress tracking
+- **Optimal Workflow**: Continuous autonomous storage → `/compact` → session continues with preserved knowledge
+- **Autonomous Pattern**: I continuously store important information during conversations using `mcp__memory__store_memory`, not just at consolidation points
 
 ## Important Implementation Notes
 

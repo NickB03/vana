@@ -46,19 +46,46 @@ class AutoMemoryFileHandler(FileSystemEventHandler):
         self.on_modified(event)
     
     def _should_process_file(self, file_path: Path) -> bool:
-        """Determine if file should trigger memory update"""
+        """Determine if file should trigger memory update - Phase 1 Tiered Indexing"""
         
-        # Process .claude/ directory files
+        # Always process .claude/ directory files
         if '.claude' in str(file_path):
             return file_path.suffix in ['.md', '.json']
         
-        # Process specific memory-related files
-        memory_files = ['CLAUDE.md', 'README.md', 'requirements.txt']
-        if file_path.name in memory_files:
+        # Core project files (always index)
+        core_files = ['CLAUDE.md', 'README.md', 'requirements.txt', 'pyproject.toml', 
+                     'setup.py', 'main.py', '__init__.py']
+        if file_path.name in core_files:
             return True
             
-        # Process documentation files
+        # Documentation files (critical for agents)
         if 'docs/' in str(file_path) and file_path.suffix == '.md':
+            return True
+            
+        # Phase 1: Core source directories (~500 files vs 18,900 total)
+        core_dirs = ['agents/', 'lib/', 'tools/', 'config/', 'scripts/', 'tests/framework/']
+        
+        for core_dir in core_dirs:
+            if core_dir in str(file_path):
+                # Python files in core directories
+                if file_path.suffix in ['.py']:
+                    return True
+                # Configuration files
+                elif file_path.suffix in ['.json', '.yaml', '.yml', '.toml', '.env']:
+                    return True
+                # Shell scripts and deployment files
+                elif file_path.suffix in ['.sh', '.dockerfile'] or file_path.name in ['Dockerfile']:
+                    return True
+        
+        # Archive and large directories to exclude (save resources)
+        exclude_dirs = ['archive/', 'memory-bank/', 'node_modules/', '.git/', '__pycache__/', '.pytest_cache/']
+        for exclude_dir in exclude_dirs:
+            if exclude_dir in str(file_path):
+                return False
+        
+        # Additional high-value files by name pattern
+        high_value_patterns = ['docker-compose', 'requirements', 'Makefile', 'Dockerfile']
+        if any(pattern in file_path.name.lower() for pattern in high_value_patterns):
             return True
             
         return False

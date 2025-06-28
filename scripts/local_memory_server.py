@@ -140,6 +140,81 @@ class VanaLocalMemory:
             print(f"❌ Error storing chunk: {e}")
             return ""
     
+    def update_file_embeddings(self, file_path: Path, content: str) -> Dict[str, Any]:
+        """
+        CRITICAL: Update embeddings for a file - removes old chunks, adds new ones
+        This prevents conflicting information in the vector DB
+        """
+        
+        results = {
+            "file_path": str(file_path),
+            "action": "update",
+            "old_chunks_removed": 0,
+            "new_chunks_added": 0,
+            "success": True,
+            "timestamp": datetime.utcnow().isoformat()
+        }
+        
+        try:
+            # Step 1: Remove existing chunks for this file to prevent conflicts
+            old_chunk_ids = self._remove_file_chunks(file_path)
+            results["old_chunks_removed"] = len(old_chunk_ids)
+            
+            # Step 2: Generate new chunks from current content
+            new_chunks = self.smart_chunk_markdown(content, file_path) if file_path.suffix == '.md' else []
+            
+            # Step 3: Add new chunks to vector DB
+            new_chunk_ids = []
+            for chunk in new_chunks:
+                metadata = {
+                    "file_path": str(file_path),
+                    "file_name": file_path.name,
+                    "section": chunk['section'],
+                    "headers": " → ".join(chunk['headers']) if chunk['headers'] else "",
+                    "line_start": chunk.get('line_start', 0),
+                    "line_end": chunk.get('line_end', 0),
+                    "last_updated": datetime.utcnow().isoformat()
+                }
+                
+                chunk_id = self.store_chunk(chunk['content'], metadata)
+                if chunk_id:
+                    new_chunk_ids.append(chunk_id)
+            
+            results["new_chunks_added"] = len(new_chunk_ids)
+            print(f"🔄 Updated {file_path.name}: -{results['old_chunks_removed']} +{results['new_chunks_added']} chunks")
+            
+        except Exception as e:
+            results["success"] = False
+            results["error"] = str(e)
+            print(f"❌ Error updating {file_path}: {e}")
+        
+        return results
+    
+    def _remove_file_chunks(self, file_path: Path) -> List[str]:
+        """Remove all chunks associated with a file to prevent stale information"""
+        
+        try:
+            collection = self.get_collection("vana_memory")
+            
+            # Get all chunks and find ones for this file
+            all_chunks = collection.get()
+            chunk_ids_to_remove = []
+            
+            for i, metadata in enumerate(all_chunks['metadatas']):
+                if metadata.get('file_path') == str(file_path):
+                    chunk_ids_to_remove.append(all_chunks['ids'][i])
+            
+            # Remove the chunks
+            if chunk_ids_to_remove:
+                collection.delete(ids=chunk_ids_to_remove)
+                print(f"🗑️ Removed {len(chunk_ids_to_remove)} old chunks for {file_path.name}")
+            
+            return chunk_ids_to_remove
+            
+        except Exception as e:
+            print(f"❌ Error removing chunks for {file_path}: {e}")
+            return []
+    
     def search(self, query: str, n_results: int = 5, collection_name: str = "vana_memory") -> List[Dict]:
         """Search for similar content"""
         op_id = self._start_operation("SEARCH", f"Query: '{query[:50]}...' (max {n_results} results)")
