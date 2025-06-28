@@ -177,4 +177,16 @@ vana-user-guidelines-6.21.25-final.md
 # ADK evaluation history
 .adk/
 tests/results/
+
+# AI Assistant Configuration Files (contain API keys and secrets)
+.gemini/
+.gemini/config.json
 .gemini/settings.json
+.gemini/extensions/
+gemini-extension.json
+claude_desktop_config.json
+claude_memory_config.json
+
+# MCP Server configurations with potential secrets
+**/mcp-servers/*.json
+**/extensions/**/*.json

@@ -157,7 +157,7 @@ vana/
 ├── tools/                   # External tool integrations
 ├── scripts/                # Utility and deployment scripts
 ├── config/                 # Configuration files
-├── memory-bank/            # AI agent working knowledge (continuity between tasks)
+├── memory-bank/            # Legacy file-based memory (deprecated - use Claude Code memory system)
 ├── dashboard/              # Unused - available for Streamlit admin dashboard
 └── archive/                # Historical artifacts (ignore for current development)
 ```
@@ -304,11 +304,107 @@ logger.info("Operation started",
            extra={"operation": "example", "user_id": "123"})
 ```
 
-### Working Knowledge Management
-The `memory-bank/` directory contains working knowledge for AI agents:
-- **`memory-bank/00-core/`** - Core system status and documentation
-- **`memory-bank/project-docs/`** - Implementation guides and architectural decisions
-- **Update this when making significant changes to maintain AI agent continuity**
+### Memory Management Protocol
+
+VANA uses dual memory systems for optimal performance:
+- **Memory MCP Server**: `@modelcontextprotocol/server-memory` for persistent knowledge graph-based memory
+- **Pieces Desktop**: Cross-project persistent memory with 9-month context retention and semantic search (Nick's primary memory system)
+
+**Memory System Structure:**
+- **Entities**: People, organizations, events, concepts (e.g., "Nick", "VANA_Project", "Python_3.13_Requirement")
+- **Relations**: Directed connections between entities (e.g., "Nick manages VANA_Project")
+- **Observations**: Discrete facts about entities (e.g., "Prefers concise responses", "Requires Python 3.13+")
+
+**Memory Categories to Track:**
+- **Project Status**: Current state, priorities, blockers, next steps
+- **Technical Decisions**: Architecture choices, tool preferences, patterns
+- **User Preferences**: Communication style, workflow preferences, pain points
+- **System Knowledge**: Deployment URLs, testing patterns, known issues
+- **Relationships**: Team connections, tool dependencies, service relationships
+
+**Memory Usage Protocol:**
+1. **Session Start**: MANDATORY - Always begin with memory retrieval and explicit status confirmation:
+   - Attempt memory retrieval: "What do you remember about the VANA project and Nick's preferences?"
+   - **SUCCESS**: Report "✅ Memory loaded: [brief summary of key context retrieved]"
+   - **FAILURE**: Report "❌ Memory MCP server unavailable - operating without persistent context"
+   - Read `.claude/` files for current project state regardless of memory status
+
+**Pieces MCP Integration Protocol:**
+- **Proactive Pieces Usage**: When user asks about implementation patterns, deployment, testing, or cross-project solutions, AUTOMATICALLY use Pieces MCP tools to search relevant context
+- **Auto-Trigger Scenarios**: 
+  - "How do I..." → Search Pieces for similar implementations
+  - "What's my preferred..." → Search Pieces for user patterns
+  - "How did I handle..." → Search Pieces for historical approaches
+  - "Similar to..." → Search Pieces for related examples
+- **Pieces Query Patterns**: Use specific, targeted searches like "authentication implementation", "deployment patterns", "testing strategies"
+- **Context Enhancement**: Always combine Pieces results with current project context from CLAUDE.md
+- **Fallback Protocol**: If Pieces MCP fails or returns no results, proceed with .claude/ file context
+2. **Autonomous Memory Management**: Proactively identify and store important information without being asked:
+   - Technical decisions and their rationale
+   - Code patterns and architectural choices
+   - User feedback and preferences (communication style, workflow preferences)
+   - Project status changes and milestone progress
+   - Performance insights and optimization opportunities
+   - Deployment results and system health status
+   - Error patterns and resolution strategies
+3. **Real-Time Updates**: Store observations immediately when encountering:
+   - New requirements or constraints
+   - Changed user preferences or feedback
+   - Technical insights or best practices
+   - Project blockers or breakthrough solutions
+   - System performance data or issues
+4. **Memory Augmentation Role for User**: Nick's role is to augment and correct memory, not initiate storage
+
+**Memory Best Practices:**
+- Use specific, searchable entity names (e.g., "VANA_Production_Environment")
+- Store observations with clear, actionable language
+- Create relations to show dependencies and impacts
+- Update project status entities after each significant change
+
+### Documentation & Evidence Standards
+
+- **Memory First:** Autonomously store ALL important decisions, patterns, and learnings in Memory MCP without being prompted
+- **Proactive Evidence Capture:** Automatically document test results, deployment status, and validation evidence as observations
+- **Automatic Relationship Mapping:** Continuously update relations to track dependencies between components, tools, and processes
+- **Continuous Status Updates:** Maintain real-time project status through persistent memory entities
+- **User Correction Protocol:** When Nick provides corrections or additional context, immediately update relevant memory entities
+
+### Design Impact Assessment Protocol
+
+Before any code changes:
+1. Use TodoWrite to systematically identify affected functions, modules, tools
+2. **Automatically store** assumptions, risks, and intended impacts as memory observations
+3. **Autonomously create/update** memory relations to show system dependencies
+4. **Proactively update** relevant memory entities during and immediately after making changes
+5. **Store rationale** for technical decisions in memory without being asked
+6. For large refactors or high-impact edits, confirm with user before execution
+
+**Memory Decision Framework:**
+- **Always Store**: Technical decisions, user preferences, system insights, error patterns
+- **Never Ask**: "Should I remember this?" - use judgment to store relevant information
+- **Immediate Storage**: Store insights the moment they're discovered or decided
+- **User Role**: Nick augments, corrects, or provides additional context to existing memories
+
+**Memory & Context Management:**
+- **Proactive Storage**: I autonomously store important insights throughout sessions without waiting for commands
+- **Pre-Compact Protocol**: Use `/memory-consolidate` before Claude Code's `/compact` command for optimal context management
+- **Consolidation Priority**: When `/memory-consolidate` is triggered, prioritize high-value information storage
+- **Available Commands**: 
+  - `/memory-consolidate` - Store session insights in Memory MCP before compacting
+  - `/memory-status` - Check Memory MCP health and recent updates
+  - `/finish-feature` - Complete feature development with memory update
+  - `/deploy-prep` - Prepare for deployment with memory checkpoint
+  - `/session-handoff` - End session with complete memory update
+
+**Local Vector Memory (Optional High-Performance):**
+- **Setup**: Run `./deploy_local_memory.sh` for 50x faster semantic search
+- **Commands**: 
+  - `search_memory` - Semantic search of local memory database
+  - `store_memory` - Add new information to local vector database
+  - `index_files` - Index .claude/ files for fast retrieval
+  - `memory_stats` - View local memory database statistics
+- **Optimal Workflow**: `/memory-consolidate` → `/compact` → continue session with preserved knowledge
+- **Autonomous Pattern**: I continuously store important information during conversations, not just at consolidation points
 
 ## Important Implementation Notes
 
@@ -327,6 +423,74 @@ The `memory-bank/` directory contains working knowledge for AI agents:
 - Production: Google Cloud Run with auto-scaling
 - Development: Local Poetry environment with Docker support
 - CI/CD: Automated deployment scripts in `deployment/` directory
+
+## MCP Server Configuration Guide
+
+To ensure all custom tools and MCP servers function correctly with Claude Code, follow these critical configuration steps. Failure to do so will result in API errors and disabled tools.
+
+### 1. Configure Servers in `.claude.json`
+
+All MCP servers must be defined in the `projects` section of `/Users/nick/.claude.json`.
+
+**Correct Configuration:**
+- API keys and other secrets **MUST** be placed inside the `env` object.
+- Do **NOT** pass secrets as command-line arguments using `--env`.
+
+✅ **Correct Example:**
+```json
+"brave-search": {
+  "type": "stdio",
+  "command": "npx",
+  "args": [
+    "-y",
+    "@modelcontextprotocol/server-brave-search"
+  ],
+  "env": {
+    "BRAVE_API_KEY": "YOUR_API_KEY_HERE"
+  }
+}
+```
+
+❌ **Incorrect Example:**
+```json
+"brave-search": {
+  "type": "stdio",
+  "command": "npx",
+  "args": [
+    "-y",
+    "@modelcontextprotocol/server-brave-search",
+    "--env",
+    "BRAVE_API_KEY=YOUR_API_KEY_HERE"
+  ],
+  "env": {}
+}
+```
+
+### 2. Enable Tool Permissions in `.claude/settings.local.json`
+
+After adding a server in `.claude.json`, you **MUST** grant permission for its tool to be used.
+
+1.  Open the project-specific settings file at `.claude/settings.local.json`.
+2.  Add the exact name of the tool to the `permissions.allow` array.
+
+✅ **Correct Example:**
+If you add the `memory` and `sequentialthinking` servers, you must add their names to the `allow` list:
+```json
+"permissions": {
+  "allow": [
+    "Bash(git:*)",
+    "WebFetch(domain:google.com)",
+    "memory",
+    "sequentialthinking"
+  ],
+  "deny": []
+}
+```
+
+**Troubleshooting Checklist:**
+1.  **API Error (`invalid_request_error`)?** -> Check your server configurations in `/Users/nick/.claude.json`. Ensure all API keys are in the `env` object.
+2.  **Tool Not Appearing?** -> Check your permissions in `.claude/settings.local.json`. Make sure the tool name is in the `allow` list.
+3.  **Restart Claude Code:** Always restart your Claude Code session after making changes to these configuration files.
 
 ## Deployment Validation Status
 
