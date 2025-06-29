@@ -6,7 +6,7 @@ Ensures memory accuracy, removes outdated information, and prevents contradictio
 
 import json
 from datetime import datetime, timedelta
-from typing import Dict, List, Set, Tuple
+from typing import Dict, List, Set, Tuple, Any
 from dataclasses import dataclass
 
 @dataclass

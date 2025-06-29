@@ -1,0 +1,10 @@
+{
+  "total_chunks_before": 2425,
+  "duplicate_groups_found": 234,
+  "chunks_to_remove": 1191,
+  "chunks_removed": 1191,
+  "chunks_preserved": 234,
+  "errors": [],
+  "dry_run": false,
+  "timestamp": "2025-06-29T10:36:17.120055"
+}

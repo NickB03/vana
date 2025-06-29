@@ -94,7 +94,7 @@ Each agent must:
 
 ## 📊 Current System Reality
 - Infrastructure: 46.2% working (per validation)
-- Missing dependencies: psutil (critical for code execution)
+- Dependencies: psutil v7.0.0 included in dependencies
 - Proxy pattern exists but undocumented
 - Many features planned but not implemented
 

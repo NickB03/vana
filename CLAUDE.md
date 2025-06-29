@@ -434,10 +434,12 @@ VANA uses dual memory systems for optimal performance:
 - **Relationships**: Team connections, tool dependencies, service relationships
 
 **Memory Usage Protocol:**
-1. **Session Start**: MANDATORY - Always begin with memory retrieval and explicit status confirmation:
-   - Attempt memory retrieval using `mcp__memory__search_memory` with query: "VANA project Nick recent work development tasks"
-   - **SUCCESS**: Report "✅ Custom ChromaDB Memory loaded: [brief summary of key context retrieved]"
-   - **FAILURE**: Report "❌ Custom ChromaDB Memory server unavailable - operating without persistent context"
+1. **Session Start**: MANDATORY - Always begin with Nick context retrieval and explicit status confirmation:
+   - Search "Nick preferences communication workflow" (communication style, autonomous expectations)
+   - Search "Nick VANA project current status" (project state, recent work, priorities)
+   - Search "Nick technical patterns Python Poetry" (Python 3.13+, documentation standards)
+   - **SUCCESS**: Report "✅ Nick context loaded: [brief summary of key patterns retrieved]"
+   - **FAILURE**: Report "❌ Memory server unavailable - operating without persistent context"
    - Read `.claude/` files for current project state regardless of memory status
    
 **CRITICAL Memory Tool Names:**

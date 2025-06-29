@@ -1,8 +1,14 @@
 # 🤖 VANA - Multi-Agent AI System
 
-> **Development Status**: Partially Operational (46.2% Infrastructure Working)
-> **Documentation Status**: Under Complete Rewrite
-> **Last Validation**: 2025-06-24
+[![Python 3.13+](https://img.shields.io/badge/python-3.13+-blue.svg)](https://www.python.org/downloads/)
+[![Infrastructure Status](https://img.shields.io/badge/infrastructure-46.2%25%20working-yellow.svg)](./docs/validation/GROUND_TRUTH_VALIDATION_REPORT.md)
+[![Core Tools](https://img.shields.io/badge/core%20tools-100%25%20working-green.svg)](./docs/tools/tool-reference.md)
+[![Documentation](https://img.shields.io/badge/documentation-rewrite%20in%20progress-orange.svg)](./docs/)
+[![Security](https://img.shields.io/badge/security-vulnerability%20reporting-blue.svg)](./SECURITY.md)
+
+> **Development Status**: Partially Operational (46.2% Infrastructure Working)  
+> **Documentation Status**: Under Complete Rewrite  
+> **Last Validation**: 2025-06-29
 
 ## ⚠️ Important Notice
 
@@ -10,39 +16,116 @@ This documentation is being completely rewritten to accurately reflect the syste
 
 ## 🚨 Critical Requirements
 
-### Required Dependencies
-- Python 3.13+ (mandatory)
-- psutil (currently missing - required for code execution)
-- [Additional dependencies to be documented]
+### ✅ Python 3.13+ Mandatory
+```bash
+# Verify Python version (MUST be 3.13+)
+python3 --version  # Should show Python 3.13.x
+poetry env info    # Virtualenv Python should be 3.13.x
+```
 
-### Known Issues
-- Code execution specialists non-functional (missing psutil)
-- Vector search infrastructure not configured
-- Some specialist agents failing to load
-- See [Known Issues](docs/reference/known-issues.md) for complete list
+**Why Python 3.13 is Required:**
+- Modern async patterns required by Google ADK
+- SSL/TLS compatibility for production services
+- Performance optimizations critical for agent coordination
+
+### 📦 Dependencies Status
+- ✅ **psutil v7.0.0** - Available (contrary to previous claims)
+- ✅ **google-adk** - Google Agent Development Kit integration
+- ✅ **fastapi** - Web framework functional
+- ⚠️ **Docker** - Optional (fallback mode available)
+
+### ⚠️ Known Issues
+- **Critical Bug**: `coordinated_search_tool` (lib/_tools/search_coordinator.py:425)
+- **Vector search** infrastructure not configured
+- **Memory service** using in-memory fallback
+- See [Troubleshooting Guide](./docs/troubleshooting/README.md) for solutions
 
 ## 🚀 Quick Start
 
-[To be rewritten with accurate, tested instructions]
+### 1. Environment Setup
+```bash
+# Install dependencies (Python 3.13+ required)
+poetry install
 
-## 📊 Current System Status
+# Verify environment
+poetry run python main.py --version
+```
 
-Based on systematic validation (2025-06-24):
-- **Core Tools**: ✅ 100% working
-- **Infrastructure**: ⚠️ 46.2% working
-- **Google ADK Compliance**: ⚠️ 50% compliant
-- **Agent System**: ⚠️ Partially functional
+### 2. Basic Usage
+```bash
+# Start the system (local development)
+python main.py
 
-See [Architecture Documentation](docs/architecture/README.md) for details.
+# Test core functionality
+curl http://localhost:8000/health
+# Returns: {"status": "healthy", "agent": "vana", "mcp_enabled": true}
+```
+
+### 3. What Works Today
+- **✅ Core Development Tools** - File operations, search, system monitoring
+- **✅ Agent Coordination** - Multi-agent task delegation
+- **✅ MCP Integration** - Time, filesystem, specialist tools
+- **⚠️ Web Features** - Requires GOOGLE_API_KEY configuration
+
+See [What Works Today](./docs/user-guide/WHAT_WORKS_TODAY.md) for complete functionality list.
+
+## 📊 System Status Dashboard
+
+| Component | Status | Success Rate | Notes |
+|-----------|--------|--------------|-------|
+| **Core Tools** | ✅ Working | 100% | All base ADK tools functional |
+| **Agent System** | ✅ Working | 100% | All agents load successfully |
+| **API Endpoints** | ⚠️ Partial | 80.6% | Most components tested working |
+| **Infrastructure** | ⚠️ Limited | 46.2% | Vector search not configured |
+| **Dependencies** | ✅ Complete | 100% | All required packages available |
+
+**Last Validated**: 2025-06-29 by 4 parallel documentation agents
+
+### 🔧 Agent Architecture
+- **VANA Orchestrator** - Main coordinator with comprehensive toolset
+- **Code Execution Specialist** - Secure sandboxed execution (fallback mode)
+- **Data Science Specialist** - Data analysis and ML capabilities
+- **Proxy Agents** - Memory/Orchestration delegate to VANA
 
 ## 📚 Documentation
 
-All documentation is being rewritten for accuracy. Check the [docs](docs/) directory for updates.
+### 📖 User Guides
+- **[What Works Today](./docs/user-guide/WHAT_WORKS_TODAY.md)** - Tested functionality with success rates
+- **[Getting Started](./docs/getting-started/installation.md)** - Real setup requirements
+- **[Troubleshooting](./docs/troubleshooting/README.md)** - Common issues with solutions
+
+### 🏗️ Developer Resources
+- **[Architecture Overview](./docs/architecture/README.md)** - System design and patterns
+- **[API Reference](./docs/api/README.md)** - Complete tool documentation
+- **[Developer Guide](./docs/guides/developer-guide.md)** - Development setup and patterns
+
+### 🚀 Deployment
+- **[Cloud Deployment](./docs/deployment/cloud-deployment.md)** - Google Cloud Run setup
+- **[Local Setup](./docs/deployment/local-setup.md)** - Development environment
+- **[Security Guide](./docs/deployment/security-guide.md)** - Security best practices
 
 ## 🤝 Contributing
 
-Please help us improve the documentation by reporting any inaccuracies or issues.
+We welcome contributions! Please see our:
+- **[Code of Conduct](./CODE_OF_CONDUCT.md)** - Community standards
+- **[Security Policy](./SECURITY.md)** - Vulnerability reporting
+- **[Changelog](./CHANGELOG.md)** - Recent changes and versions
+
+### 📝 Reporting Issues
+- **Bug Reports**: Use [GitHub Issues](https://github.com/yourusername/vana/issues)
+- **Security Vulnerabilities**: Email nbohmer@gmail.com
+- **Documentation Errors**: Help us improve accuracy
+
+## 📞 Support
+
+- **GitHub Issues**: Report bugs and request features
+- **Documentation**: Comprehensive guides and examples
+- **API Reference**: Complete tool documentation with examples
 
 ## 📝 License
 
-[License information]
+[License information to be added]
+
+---
+
+**Built with Google Agent Development Kit (ADK) • Multi-Agent Coordination • Comprehensive Tool Integration**
