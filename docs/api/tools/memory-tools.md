@@ -148,3 +148,55 @@ search_result = await mcp__memory__search_memory(
 - **Batch Operations**: Minimize individual storage calls
 - **Search Optimization**: Use specific, targeted queries
 - **Regular Cleanup**: Monitor database growth and performance
+
+## Automatic Cleanup System
+
+### Auto Cleanup Service
+**Status**: ✅ Fully Implemented  
+**Description**: Automated duplicate cleanup system that runs independently
+
+```bash
+# Start automatic cleanup service
+./scripts/start_auto_cleanup.sh
+
+# Stop automatic cleanup service  
+./scripts/stop_auto_cleanup.sh
+```
+
+**Features**:
+- **Scheduled Cleanup**: Runs every 6 hours automatically
+- **Configurable Threshold**: Triggers cleanup when 10+ duplicates detected
+- **Background Daemon**: Runs independently without manual intervention
+- **Logging**: Comprehensive activity logs in `auto_cleanup.log`
+- **Result Tracking**: Saves cleanup results with timestamps
+
+### Implementation Files
+- `scripts/auto_memory_cleanup.py` - Main cleanup service with scheduling
+- `scripts/start_auto_cleanup.sh` - Launch daemon service
+- `scripts/stop_auto_cleanup.sh` - Graceful service shutdown
+- `scripts/cleanup_chromadb_duplicates.py` - Core cleanup logic
+
+### Configuration Options
+```python
+# Customizable parameters
+interval_hours = 6      # Hours between cleanup checks
+duplicate_threshold = 10  # Minimum duplicates to trigger cleanup
+```
+
+### Service Management
+```bash
+# Check if service is running
+ps aux | grep auto_memory_cleanup
+
+# View service logs
+tail -f auto_cleanup.log
+
+# Check PID file
+cat scripts/auto_cleanup.pid
+```
+
+**Prevention Strategy**: The auto cleanup system prevents duplicate accumulation by:
+1. Monitoring ChromaDB for duplicate content patterns
+2. Automatically removing duplicates when threshold exceeded
+3. Preserving most recent versions based on timestamps
+4. Maintaining database performance and search precision

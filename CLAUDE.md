@@ -527,6 +527,45 @@ Before any code changes:
 - **Optimal Workflow**: Continuous autonomous storage → `/compact` → session continues with preserved knowledge
 - **Autonomous Pattern**: I continuously store important information during conversations using `mcp__memory__store_memory`, not just at consolidation points
 
+### Memory System Maintenance
+
+**Automatic Cleanup System**: VANA includes automated ChromaDB duplicate cleanup to maintain database performance and search precision.
+
+**When to Execute Auto Cleanup Scripts:**
+```bash
+# Start automatic cleanup service (run once at project setup)
+./scripts/start_auto_cleanup.sh
+
+# Stop automatic cleanup service (when needed for maintenance)
+./scripts/stop_auto_cleanup.sh
+```
+
+**Auto Cleanup Triggers:**
+- **Proactive Setup**: Run `start_auto_cleanup.sh` when setting up VANA development environment
+- **Performance Degradation**: If memory search becomes slow or returns poor results
+- **Database Growth**: When `mcp__memory__memory_stats` shows excessive chunk count growth
+- **Manual Cleanup Needed**: If `mcp__memory__operation_status` indicates duplicate accumulation
+- **Session Start**: Check if auto cleanup service is running during environment verification
+
+**Service Features:**
+- Runs every 6 hours automatically in background
+- Triggers cleanup when 10+ duplicate chunks detected
+- Preserves most recent versions based on timestamps
+- Comprehensive logging in `auto_cleanup.log`
+- PID tracking for service management
+
+**Monitoring Commands:**
+```bash
+# Check if auto cleanup is running  
+ps aux | grep auto_memory_cleanup
+
+# View cleanup activity logs
+tail -f auto_cleanup.log
+
+# Manual cleanup status check
+cat scripts/auto_cleanup.pid
+```
+
 ## Important Implementation Notes
 
 ### Multi-Agent Coordination
