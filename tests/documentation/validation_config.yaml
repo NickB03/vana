@@ -1,0 +1,47 @@
+# Documentation Validation Configuration
+
+validation_rules:
+  # Files that must exist
+  required_files:
+    - README.md
+    - docs/README.md
+    - docs/getting-started/installation.md
+    - docs/getting-started/quickstart.md
+    - docs/architecture/README.md
+    - docs/api-reference/README.md
+    
+  # Patterns that indicate false claims
+  red_flag_phrases:
+    - "fully operational"
+    - "100% working"
+    - "production ready"
+    - "no known issues"
+    
+  # Required disclaimers for honesty
+  required_disclaimers:
+    - "known issues"
+    - "limitations"
+    - "requirements"
+    - "dependencies"
+    
+  # Status badges that must be accurate
+  status_requirements:
+    infrastructure_working: "46.2%"
+    adk_compliance: "50%"
+    missing_dependencies: ["psutil"]
+    
+# Documentation structure requirements
+structure:
+  max_depth: 4
+  required_sections:
+    - overview
+    - prerequisites  
+    - known_issues
+    - validation
+    
+# Code example requirements
+code_examples:
+  must_be_executable: true
+  must_include_error_handling: true
+  must_show_output: true
+  max_length_lines: 50
