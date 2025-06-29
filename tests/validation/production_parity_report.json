@@ -11,26 +11,24 @@
     "google-adk": "available",
     "fastapi": "available",
     "requirements_file_exists": true,
-    "poetry_packages_count": 126
+    "poetry_packages_count": 127
   },
   "production_mirror": {
     "endpoints": {
       "/health": {
-        "status_code": 200,
-        "response_time": 0.223935,
-        "working": true
+        "error": "HTTPSConnectionPool(host='vana-dev-960076421399.us-central1.run.app', port=443): Read timed out. (read timeout=10)",
+        "working": false
       },
       "/info": {
-        "status_code": 200,
-        "response_time": 0.176817,
-        "working": true
+        "error": "HTTPSConnectionPool(host='vana-dev-960076421399.us-central1.run.app', port=443): Read timed out. (read timeout=10)",
+        "working": false
       }
     },
     "agent_functionality": {
       "agent_loaded": true,
-      "tool_count": 9,
+      "tool_count": 10,
       "tools": [
-        "web_search",
+        "coordinated_search",
         "mathematical_solve",
         "logical_analyze",
         "read_file",
@@ -38,12 +36,13 @@
         "analyze_task",
         "transfer_to_agent",
         "simple_execute_code",
+        "web_search",
         "load_memory"
       ],
       "tool_tests": {
-        "web_search": {
+        "coordinated_search": {
           "working": true,
-          "result_length": 45
+          "skipped": "no test implemented"
         },
         "mathematical_solve": {
           "working": true,

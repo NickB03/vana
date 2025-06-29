@@ -58,14 +58,15 @@ except Exception as e:
 
 # Import specialist agents for simple ADK delegation (following ADK patterns)
 try:
-    from agents.code_execution.specialist import code_execution_specialist
+    # NOTE: Code Execution Specialist temporarily disabled - focusing on core agents
+    # from agents.code_execution.specialist import code_execution_specialist
     from agents.data_science.specialist import data_science_specialist
 
     specialist_agents = [
-        code_execution_specialist,
+        # code_execution_specialist,  # Temporarily disabled
         data_science_specialist,
     ]
-    logger.info("✅ Specialist agents imported for simple ADK delegation")
+    logger.info("✅ Specialist agents imported for simple ADK delegation (Code Execution temporarily disabled)")
 except ImportError as e:
     logger.warning(f"Warning: Specialist agents not available: {e}")
     specialist_agents = []
@@ -79,7 +80,7 @@ root_agent = LlmAgent(
 
 AUTOMATIC ROUTING PROTOCOL - FOLLOW THIS FOR EVERY USER REQUEST:
 1. First, use analyze_task to classify the user's request
-2. If the task_type is "code_execution", immediately use transfer_to_agent with agent_name="code_execution_specialist"
+2. If the task_type is "code_execution", inform user that code execution is temporarily disabled while focusing on core functionality
 3. If the task_type is "data_analysis", immediately use transfer_to_agent with agent_name="data_science_specialist"
 4. For all other task types, handle the request directly using the appropriate tools below
 

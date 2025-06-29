@@ -133,7 +133,7 @@ for column in data.columns:
         delegation_context = f"Execute Python code for data analysis ({analysis_type}):\n\n{python_code}"
         # Simulate async operation for ADK compliance
         await asyncio.sleep(0.01)  
-        return f"For secure code execution, use transfer_to_agent('code_execution_specialist', '{delegation_context}')"
+        return "⚠️ Code execution is temporarily disabled. Data analysis capabilities are being optimized for direct integration. Please use alternative data analysis methods or wait for code execution to be re-enabled."
 
     except Exception as e:
         logger.error(f"Data analysis failed: {str(e)}")
@@ -270,7 +270,7 @@ logger.info("💡 Consider specific chart types: histogram, scatter, bar, line, 
         # Use ADK agent delegation instead of direct function call
         delegation_context = f"Execute Python code for data visualization ({chart_type}):\n\n{python_code}"
         await asyncio.sleep(0.01)  # Async pattern for ADK compliance
-        return f"For secure code execution, use transfer_to_agent('code_execution_specialist', '{delegation_context}')"
+        return "⚠️ Code execution is temporarily disabled. Data analysis capabilities are being optimized for direct integration. Please use alternative data analysis methods or wait for code execution to be re-enabled."
 
         # Add visualization insights
         insights = f"""
@@ -446,7 +446,7 @@ logger.info("\\n✅ Basic cleaning completed")
         # Use ADK agent delegation instead of direct function call
         delegation_context = f"Execute Python code for data cleaning ({operations}):\n\n{python_code}"
         await asyncio.sleep(0.01)  # Async pattern for ADK compliance
-        return f"For secure code execution, use transfer_to_agent('code_execution_specialist', '{delegation_context}')"
+        return "⚠️ Code execution is temporarily disabled. Data analysis capabilities are being optimized for direct integration. Please use alternative data analysis methods or wait for code execution to be re-enabled."
 
         # Add cleaning insights
         insights = f"""
@@ -682,7 +682,7 @@ logger.info(f"\\nInertia (WCSS): {{kmeans.inertia_:.3f}}")
         # Use ADK agent delegation instead of direct function call
         delegation_context = f"Execute Python code for machine learning ({model_type}):\n\n{python_code}"
         await asyncio.sleep(0.01)  # Async pattern for ADK compliance
-        return f"For secure code execution, use transfer_to_agent('code_execution_specialist', '{delegation_context}')"
+        return "⚠️ Code execution is temporarily disabled. Data analysis capabilities are being optimized for direct integration. Please use alternative data analysis methods or wait for code execution to be re-enabled."
 
         # Add modeling insights
         insights = f"""

@@ -118,28 +118,27 @@ VANA is a multi-agent AI system built on Google's Agent Development Kit (ADK) wi
   - Conditional tools (specialist capabilities, orchestration tools)
   - Agent coordination tools (delegation, status monitoring)
   - Workflow management tools (multi-step workflow execution)
-- **Code Execution Specialist** (`agents/code_execution/specialist.py`) - Secure sandboxed execution
-  - Python, JavaScript, Shell execution with resource monitoring
-  - Security validation and timeout management
-  - Integration with VANA for complex development tasks
 - **Data Science Specialist** (`agents/data_science/specialist.py`) - Data analysis and ML
-  - Leverages Code Execution Specialist for secure Python execution
   - Data processing, visualization, statistical computing
+  - Integrated analysis tools and workflow management
 - **Proxy Agents** - Discovery pattern for backward compatibility
   - Memory, Orchestration, Specialists, Workflows agents delegate to VANA
+
+### Deprecated/Future Components
+- **Code Execution Specialist** - Temporarily removed from build to focus on core functionality
+  - Will be reintroduced once primary agents and tools are optimized
 
 ### Project Structure
 ```
 vana/
 ├── agents/                    # Agent implementations
 │   ├── vana/                 # Main VANA orchestrator
-│   ├── code_execution/       # Secure code execution specialist
 │   ├── data_science/         # Data science specialist
 │   └── [proxy agents]/       # Memory, orchestration, specialists, workflows
 ├── lib/                      # Core libraries
 │   ├── _tools/              # Standardized tool implementations (59+ tools)
 │   ├── _shared_libraries/   # Shared services (vector search, caching, coordination)
-│   ├── sandbox/             # Secure execution environment
+│   ├── sandbox/             # Reserved for future secure execution environment
 │   ├── security/            # Security manager, access control, audit logging
 │   ├── monitoring/          # Performance monitoring, health checks
 │   └── mcp/                 # MCP (Model Context Protocol) integration
@@ -419,7 +418,7 @@ logger.info("Operation started",
 
 VANA uses dual memory systems for optimal performance:
 - **Memory MCP Server**: `@modelcontextprotocol/server-memory` for persistent knowledge graph-based memory
-- **Pieces Desktop**: Cross-project persistent memory with 9-month context retention and semantic search (Nick's primary memory system)
+
 
 **Memory System Structure:**
 - **Entities**: People, organizations, events, concepts (e.g., "Nick", "VANA_Project", "Python_3.13_Requirement")
@@ -448,33 +447,7 @@ VANA uses dual memory systems for optimal performance:
 - **ALWAYS use**: `mcp__memory__memory_stats` for database status
 - **ALWAYS use**: `mcp__memory__operation_status` for operation tracking
 - **ALWAYS use**: `mcp__memory__index_files` for indexing directories
-
-**Pieces MCP Integration Protocol:**
-- **Proactive Pieces Usage**: When user asks about implementation patterns, deployment, testing, or cross-project solutions, AUTOMATICALLY use Pieces MCP tools to search relevant context
-- **Auto-Trigger Scenarios**: 
-  - "How do I..." → Search Pieces for similar implementations
-  - "What's my preferred..." → Search Pieces for user patterns
-  - "How did I handle..." → Search Pieces for historical approaches
-  - "Similar to..." → Search Pieces for related examples
-- **Pieces Query Patterns**: Use specific, targeted searches like "authentication implementation", "deployment patterns", "testing strategies"
-- **Context Enhancement**: Always combine Pieces results with current project context from CLAUDE.md
-- **Fallback Protocol**: If Pieces MCP fails or returns no results, proceed with .claude/ file context
-2. **Autonomous Memory Management**: Proactively identify and store important information using `mcp__memory__store_memory` without being asked:
-   - Technical decisions and their rationale
-   - Code patterns and architectural choices
-   - User feedback and preferences (communication style, workflow preferences)
-   - Project status changes and milestone progress
-   - Performance insights and optimization opportunities
-   - Deployment results and system health status
-   - Error patterns and resolution strategies
-3. **Real-Time Updates**: Store observations immediately using `mcp__memory__store_memory` when encountering:
-   - New requirements or constraints
-   - Changed user preferences or feedback
-   - Technical insights or best practices
-   - Project blockers or breakthrough solutions
-   - System performance data or issues
-4. **Memory Augmentation Role for User**: Nick's role is to augment and correct memory, not initiate storage
-
+would it
 **Memory Best Practices:**
 - Use specific, searchable entity names (e.g., "VANA_Production_Environment")
 - Store observations with clear, actionable language
@@ -569,9 +542,10 @@ cat scripts/auto_cleanup.pid
 ## Important Implementation Notes
 
 ### Multi-Agent Coordination
-- Real agents: VANA Orchestrator, Code Execution Specialist, Data Science Specialist
-- Proxy pattern for discovery compatibility with legacy agent references
-- Coordination through standardized ADK patterns and tool interfaces
+- **Primary agents**: VANA Orchestrator, Data Science Specialist
+- **Proxy pattern** for discovery compatibility with legacy agent references
+- **Coordination** through standardized ADK patterns and tool interfaces
+- **Focus**: Core functionality and tool optimization before expanding capabilities
 
 ### Tool Architecture
 - 59+ standardized tools with consistent interfaces

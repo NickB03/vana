@@ -12,16 +12,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     coreutils \
     grep \
     sed \
-    awk \
-    cut \
-    sort \
-    uniq \
-    head \
-    tail \
-    wc \
-    tr \
-    tee \
-    xargs \
+    gawk \
     jq \
     curl \
     wget \
