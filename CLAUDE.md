@@ -157,7 +157,7 @@ vana/
 ├── tools/                   # External tool integrations
 ├── scripts/                # Utility and deployment scripts
 ├── config/                 # Configuration files
-├── memory-bank/            # Legacy file-based memory (deprecated - use Claude Code memory system)
+├── memory-bank/            # Legacy file-based memory (deprecated - use Memory MCP server)
 ├── dashboard/              # Unused - available for Streamlit admin dashboard
 └── archive/                # Historical artifacts (ignore for current development)
 ```
@@ -204,6 +204,117 @@ vana/
 - **`getting-started/installation.md`** - Installation and setup
 - **`getting-started/quick-start.md`** - Quick start guide
 - **`user/getting-started.md`** - End-user documentation
+
+## Tool Usage Guidelines
+
+### Tool Categories & Permissions
+
+#### Core Tools (Always Available)
+- **File Operations**: Read, Write, Edit, MultiEdit
+- **Search Tools**: Grep, Glob, LS  
+- **System Tools**: Bash (with restrictions), WebFetch, WebSearch
+- **Memory Tools**: All `mcp__memory__*` tools for ChromaDB operations
+- **Development Tools**: Task agent for complex searches
+
+#### Conditional Tools (Require Permissions)
+Tools must be explicitly allowed in `.claude/settings.local.json`:
+```json
+{
+  "permissions": {
+    "allow": [
+      "Bash(python:*)",        // Python execution
+      "Bash(poetry:*)",        // Poetry commands
+      "Bash(git:*)",           // Git operations
+      "WebFetch(domain:*)",    // Web fetching by domain
+      "mcp__memory__*",        // Memory MCP tools
+      "mcp__GitHub__*"         // GitHub MCP tools
+    ],
+    "deny": []
+  }
+}
+```
+
+#### MCP Server Tools
+Configure in `/Users/nick/.claude.json` under `projects`:
+```json
+{
+  "mcpServers": {
+    "memory": {
+      "type": "stdio",
+      "command": "node",
+      "args": ["/path/to/memory-server.js"],
+      "env": {
+        "API_KEY": "key_here"  // CRITICAL: Keys in env object
+      }
+    }
+  }
+}
+```
+
+### Tool Usage Best Practices
+
+#### 1. Search Strategy
+```python
+# For broad searches across codebase - use Task agent
+Task(prompt="Find all files implementing authentication")
+
+# For specific file patterns - use Glob
+Glob(pattern="**/*auth*.py")
+
+# For content search - use Grep
+Grep(pattern="authenticate.*user", include="*.py")
+```
+
+#### 2. File Operations
+- **Always read before editing**: Use Read tool first
+- **Batch edits**: Use MultiEdit for multiple changes to same file
+- **Verify paths**: Use LS to confirm directory structure
+
+#### 3. Memory Tool Protocol
+```python
+# Session start - MANDATORY
+mcp__memory__search_memory(query="VANA project Nick recent work")
+
+# Continuous storage - AUTONOMOUS
+mcp__memory__store_memory(
+    content="Important decision or insight",
+    metadata={"category": "technical_decision"}
+)
+
+# Status checks
+mcp__memory__memory_stats()  # Database health
+mcp__memory__operation_status()  # Real-time tracking
+```
+
+#### 4. Bash Command Restrictions
+```bash
+# Allowed with proper permissions
+poetry run pytest  # Requires Bash(poetry:*)
+git status        # Requires Bash(git:*)
+
+# Always quote paths with spaces
+cd "/path with spaces/directory"
+
+# Avoid these commands - use dedicated tools instead
+find .            # Use Glob instead
+grep -r           # Use Grep tool instead
+cat file.txt      # Use Read tool instead
+```
+
+### Tool Error Handling
+
+#### Common Issues & Solutions
+1. **"Tool not found"** → Check permissions in settings.local.json
+2. **"Permission denied"** → Add specific pattern to allow list
+3. **"MCP server error"** → Verify server config in .claude.json
+4. **API timeout errors** → Break operations into smaller chunks
+
+### Tool Performance Guidelines
+
+1. **Batch Operations**: Call multiple tools in single message for parallel execution
+2. **Incremental Approach**: For large files, create in chunks < 7KB
+3. **Search Optimization**: Use specific patterns to reduce result sets
+4. **Memory Efficiency**: Store insights immediately, search before storing duplicates
 
 ## Development Guidelines
 
@@ -409,7 +520,7 @@ Before any code changes:
   - `mcp__memory__search_memory` - Semantic search of ChromaDB with visual feedback
   - `mcp__memory__store_memory` - Add new information to ChromaDB vector database
   - `mcp__memory__index_files` - Index directory contents
-  - `mcp__memory__memory_stats` - View database statistics (current: 2,322+ chunks)
+  - `mcp__memory__memory_stats` - View database statistics (current: 2,343+ chunks)
   - `mcp__memory__operation_status` - Real-time operation dashboard with progress tracking
 - **Optimal Workflow**: Continuous autonomous storage → `/compact` → session continues with preserved knowledge
 - **Autonomous Pattern**: I continuously store important information during conversations using `mcp__memory__store_memory`, not just at consolidation points
