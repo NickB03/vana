@@ -422,26 +422,25 @@ def create_coordinated_search_tool() -> FunctionTool:
         except RuntimeError:
             return asyncio.run(coordinator.coordinated_search(query, max_results))
     
-    return FunctionTool(
-        name="coordinated_search",
-        description="🔍 Intelligent search with memory-first priority: checks memory → vector → web in order. Use for any information queries to ensure comprehensive results from all available sources.",
-        parameters={
-            "type": "object",
-            "properties": {
-                "query": {
-                    "type": "string",
-                    "description": "The search query - can be about VANA system, user preferences, technical topics, or current information"
-                },
-                "max_results": {
-                    "type": "integer", 
-                    "description": "Maximum number of results to return (default: 5)",
-                    "default": 5
-                }
+    tool = FunctionTool(func=sync_coordinated_search)
+    tool.name = "coordinated_search"
+    tool.description = "🔍 Intelligent search with memory-first priority: checks memory → vector → web in order. Use for any information queries to ensure comprehensive results from all available sources."
+    tool.parameters = {
+        "type": "object",
+        "properties": {
+            "query": {
+                "type": "string",
+                "description": "The search query - can be about VANA system, user preferences, technical topics, or current information"
             },
-            "required": ["query"]
+            "max_results": {
+                "type": "integer", 
+                "description": "Maximum number of results to return (default: 5)",
+                "default": 5
+            }
         },
-        function=sync_coordinated_search
-    )
+        "required": ["query"]
+    }
+    return tool
 
 
 # Export the main components
