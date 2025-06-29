@@ -7,27 +7,16 @@ echo "🚀 Setting up VANA Documentation Agent Clusters"
 echo "📁 Creating git worktrees..."
 
 # Architecture documentation branch
-git worktree add ../vana-docs-architecture docs/architecture-rewrite
-cd ../vana-docs-architecture
-git checkout -b docs/architecture-rewrite
+git worktree add -b docs/architecture-rewrite ../vana-docs-architecture HEAD
 
 # API and Tools documentation branch  
-cd ../vana
-git worktree add ../vana-docs-api docs/api-tools-rewrite
-cd ../vana-docs-api
-git checkout -b docs/api-tools-rewrite
+git worktree add -b docs/api-tools-rewrite ../vana-docs-api HEAD
 
 # Deployment documentation branch
-cd ../vana
-git worktree add ../vana-docs-deployment docs/deployment-ops-rewrite
-cd ../vana-docs-deployment
-git checkout -b docs/deployment-ops-rewrite
+git worktree add -b docs/deployment-ops-rewrite ../vana-docs-deployment HEAD
 
 # User guide documentation branch
-cd ../vana
-git worktree add ../vana-docs-user docs/user-guide-rewrite
-cd ../vana-docs-user
-git checkout -b docs/user-guide-rewrite
+git worktree add -b docs/user-guide-rewrite ../vana-docs-user HEAD
 
 echo "✅ Worktrees created successfully"
 
