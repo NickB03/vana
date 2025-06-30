@@ -1,4 +1,7 @@
-# ChromaDB Migration Status - COMPLETED ✅
+# VS Code Development: ChromaDB Migration Status - COMPLETED ✅
+
+**⚠️ IMPORTANT: This document relates to VS Code/Claude Code development environment ONLY.**  
+**This is NOT about VANA's application memory system.**
 
 ## Migration Summary (January 30, 2025)
 
@@ -57,15 +60,15 @@ The migration from custom ChromaDB to official Chroma MCP server has been succes
 }
 ```
 
-⏺ Migration Plan: Custom ChromaDB → Official Chroma MCP
+---
 
-  Executive Summary
+## Original Migration Plan (For Reference)
 
-  Objective: Migrate from custom ChromaDB MCP implementation to official Chroma MCP for improved performance,
-  stability, and maintenance while preserving existing 1,247 chunks and visual feedback experience.
+### Executive Summary
 
-  Storage Strategy: External ChromaDB location at /Users/nick/Development/chromadb to separate development tools
-   from VANA project knowledge.
+**Objective**: Migrate VS Code development environment from custom ChromaDB MCP implementation to official Chroma MCP for improved performance, stability, and maintenance.
+
+**Storage Strategy**: External ChromaDB location at /Users/nick/Development/chromadb to separate VS Code development tools from VANA project.
 
   Key Benefits:
   - Official Chroma team maintenance and updates
