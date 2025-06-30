@@ -36,6 +36,13 @@ The migration from custom ChromaDB to official Chroma MCP server has been succes
 - `mcp__chroma-official__chroma_list_collections` - List all collections
 - `mcp__chroma-official__chroma_create_collection` - Create new collection
 - `mcp__chroma-official__chroma_delete_documents` - Remove documents
+- `mcp__chroma-official__chroma_get_documents` - Retrieve documents (use instead of peek_collection)
+
+**Known Issues:**
+- `chroma_peek_collection` throws numpy serialization error due to numpy arrays
+- `chroma_get_collection_info` throws numpy serialization error due to embedding metadata
+- **Workaround**: Use `chroma_get_documents` with limit parameter for peeking at documents
+- **Alternative**: Use `chroma_get_collection_count` for collection statistics
 
 **Configuration in .claude.json:**
 ```json
