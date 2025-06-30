@@ -108,8 +108,7 @@ VANA is a multi-agent AI system built on Google's Agent Development Kit (ADK) wi
 ### Core Design Principles
 - **Dynamic Agent Orchestration** - Strategy-based execution with on-demand agent creation
 - **Advanced Tool Optimization** - Intelligent caching, consolidation, and performance monitoring
-- **AGOR-Style Coordination** - Enhanced agent communication with session state management
-- **Enhanced Tool Standardization** - Consistent interfaces across 59+ tools
+- **Enhanced Tool Standardization** - Consistent interfaces across tools
 - **Cloud-Native Design** - Google Cloud integration with auto-scaling and resilience
 
 ### Agent Architecture
@@ -414,11 +413,26 @@ logger.info("Operation started",
            extra={"operation": "example", "user_id": "123"})
 ```
 
-### Memory Management Protocol
+### Local Development Memory Protocol (VS Code Environment)
 
-VANA uses dual memory systems for optimal performance:
-- **Memory MCP Server**: `@modelcontextprotocol/server-memory` for persistent knowledge graph-based memory
+**IMPORTANT NOTE:** The following memory systems are for the **local development environment within VS Code** and are used by the agent to maintain context during development sessions. They are **completely separate** from the VANA application's own memory system, which uses the Google ADK (`lib/_shared_libraries/adk_memory_service.py`).
 
+Claude Code uses a sophisticated dual memory architecture for persistent context and knowledge management during development:
+
+#### Dual Memory Systems for Local Development
+
+**1. ChromaDB Vector Database (Unstructured Text)**
+- **Purpose**: Semantic search on documents and conversation history for the development session.
+- **Implementation**: Custom MCP server at `scripts/local_memory_server.py`.
+- **Database**: `.memory_db/`
+- **Tools**: `mcp__memory__search_memory`, `mcp__memory__store_memory`, `mcp__memory__index_files`, etc.
+- **Note**: This is a local development tool, not part of the VANA application.
+
+**2. Knowledge Graph Memory (Structured Data)**
+- **Purpose**: Storing facts, entities, and their relationships for the development session.
+- **Implementation**: Official `@modelcontextprotocol/server-memory` MCP server.
+- **Tools**: `mcp__memory__create_entities`, `mcp__memory__create_relations`, `mcp__memory__search_nodes`, etc.
+- **Note**: This is a local development tool, not part of the VANA application.
 
 **Memory System Structure:**
 - **Entities**: People, organizations, events, concepts (e.g., "Nick", "VANA_Project", "Python_3.13_Requirement")
@@ -548,7 +562,7 @@ cat scripts/auto_cleanup.pid
 - **Focus**: Core functionality and tool optimization before expanding capabilities
 
 ### Tool Architecture
-- 59+ standardized tools with consistent interfaces
+- Standardized tools with consistent interfaces
 - Intelligent caching and performance optimization
 - Conditional tool loading based on available dependencies
 - Comprehensive error handling and graceful degradation

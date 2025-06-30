@@ -1,6 +1,8 @@
-# Memory Tools
+# Local Development Memory Tools (VS Code)
 
-Persistent memory operations using ChromaDB and knowledge graph storage.
+**IMPORTANT NOTE:** The tools described here are for the **local development environment within VS Code**. They are **completely separate** from the VANA application's own memory system, which uses the Google ADK (`lib/_shared_libraries/adk_memory_service.py`).
+
+These tools provide persistent memory operations for development sessions using a local ChromaDB vector database and a knowledge graph server.
 
 ## Available Tools
 

@@ -5,7 +5,9 @@ source: vana_knowledge_base_creator
 type: system_documentation
 ---
 
-# VANA Memory Architecture
+# VANA Application Memory Architecture
+
+**IMPORTANT NOTE:** This document describes the memory architecture for the **VANA application itself**. This is separate from the local development memory system used in the VS Code environment (which uses ChromaDB and a Knowledge Graph server).
 
 ## Memory Hierarchy
 
