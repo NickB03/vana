@@ -19,7 +19,6 @@ Update Todos
      ☐ Install official Chroma MCP server using uvx chroma-mcp with persistent client configuration
      ☐ Export 1,247 chunks from current custom ChromaDB (.memory_db) to preserve data
      ☐ Configure official Chroma MCP with persistent storage pointing to external directory
-     ☐ Import exported data to official Chroma MCP and validate integrity
      ☐ Update .claude.json MCP server configuration to use official Chroma MCP instead of custom server
      ☐ Comprehensive testing of new setup including functionality, performance, and visual feedback validation
      ☐ Design and implement visual feedback system to maintain current user experience with operation tracking
