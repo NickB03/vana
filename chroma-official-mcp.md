@@ -1,5 +1,19 @@
+n Startup:
+  Continue ChromaDB migration
 
-⏺ Update Todos
+  Recovery Sources:
+  1. ✅ TodoWrite list - persists automatically
+  2. ✅ .claude/project_continuity.md - just created with all context
+  3. ✅ CLAUDE.md - has migration protocols
+  4. ✅ Directory status - /Users/nick/Development/chromadb exists
+
+  For Auto-Compact:
+  - Use /memory-consolidate before major steps
+  - Reference .claude/project_continuity.md
+  - TodoWrite tracks current progress
+⏺ 
+
+Update Todos
   ⎿  ☐ Commit current changes to docs/complete-rewrite branch on remote repository                            
      ☐ Create /Users/nick/Development/chromadb directory structure for external ChromaDB storage
      ☐ Install official Chroma MCP server using uvx chroma-mcp with persistent client configuration
