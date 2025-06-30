@@ -211,7 +211,7 @@ vana/
 - **File Operations**: Read, Write, Edit, MultiEdit
 - **Search Tools**: Grep, Glob, LS  
 - **System Tools**: Bash (with restrictions), WebFetch, WebSearch
-- **Memory Tools**: All `mcp__memory__*` tools for ChromaDB operations
+- **Memory Tools**: Official ChromaDB MCP tools (`mcp__chroma-official__*`) for vector search operations
 - **Development Tools**: Task agent for complex searches
 
 #### Conditional Tools (Require Permissions)
@@ -224,7 +224,7 @@ Tools must be explicitly allowed in `.claude/settings.local.json`:
       "Bash(poetry:*)",        // Poetry commands
       "Bash(git:*)",           // Git operations
       "WebFetch(domain:*)",    // Web fetching by domain
-      "mcp__memory__*",        // Memory MCP tools
+      "mcp__chroma-official__*", // Official ChromaDB MCP tools
       "mcp__GitHub__*"         // GitHub MCP tools
     ],
     "deny": []
@@ -268,20 +268,26 @@ Grep(pattern="authenticate.*user", include="*.py")
 - **Batch edits**: Use MultiEdit for multiple changes to same file
 - **Verify paths**: Use LS to confirm directory structure
 
-#### 3. Memory Tool Protocol
+#### 3. Official ChromaDB MCP Protocol
 ```python
 # Session start - MANDATORY
-mcp__memory__search_memory(query="VANA project Nick recent work")
+mcp__chroma-official__chroma_query_documents(
+    collection_name="vana_memory",
+    query_texts=["VANA project Nick recent work"],
+    n_results=5
+)
 
 # Continuous storage - AUTONOMOUS
-mcp__memory__store_memory(
-    content="Important decision or insight",
-    metadata={"category": "technical_decision"}
+mcp__chroma-official__chroma_add_documents(
+    collection_name="vana_memory",
+    documents=["Important decision or insight"],
+    ids=["unique_id_timestamp"],
+    metadatas=[{"category": "technical_decision"}]
 )
 
 # Status checks
-mcp__memory__memory_stats()  # Database health
-mcp__memory__operation_status()  # Real-time tracking
+mcp__chroma-official__chroma_get_collection_info(collection_name="vana_memory")
+mcp__chroma-official__chroma_get_collection_count(collection_name="vana_memory")
 ```
 
 #### 4. Bash Command Restrictions
