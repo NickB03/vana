@@ -191,3 +191,4 @@ claude_memory_config.json
 **/mcp-servers/*.json
 **/extensions/**/*.json
 open-webui/
+.memory_db/
