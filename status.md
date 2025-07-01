@@ -74,17 +74,17 @@
 **Focus Shift**: Documentation → Core Development & Technical Debt Resolution
 
 1. **Fix Coordinated Search Tool**: Resolve FunctionTool integration error (lib/_tools/search_coordinator.py:425)
-2. **Docker Environment Setup**: Configure container execution for secure code processing
-3. **Vector Search Integration**: Complete Vertex AI service configuration
-4. **Infrastructure Improvements**: Target >75% functional status from current 46.2%
-5. **Advanced Logging**: Resolve JSON formatter configuration for structured logging
+2. **Vector Search Integration**: Complete Vertex AI service configuration for semantic search
+3. **Infrastructure Improvements**: Target >75% functional status from current 46.2%
+4. **Advanced Logging**: Resolve JSON formatter configuration for structured logging
+5. **Memory Persistence**: Set up production ChromaDB server (short term)
 
 ## 🔧 Technical Debt & Improvements
 
 ### High Priority
 - Fix coordinated search tool integration error (lib/_tools/search_coordinator.py:425)
-- Configure Docker environment for secure code execution
 - Set up Vector Search service for production deployment
+- Improve infrastructure from 46.2% to >75% functional
 
 ### Medium Priority  
 - Advanced logging configuration repair
@@ -95,6 +95,11 @@
 - Additional MCP server integrations
 - Enhanced monitoring and alerting
 - Extended tool ecosystem development
+
+### Backlogged with Code Execution Specialist
+- Docker environment setup for sandbox executors
+- Secure code execution with container isolation
+- Multi-language execution support (Python, JavaScript, Shell)
 
 ## 📈 Success Metrics
 
@@ -131,8 +136,8 @@ The project now has **professional-grade documentation** that:
 
 ### 🎯 Next Session Focus
 - **Priority 1**: Fix coordinated search tool integration error
-- **Priority 2**: Docker environment configuration for secure execution
-- **Priority 3**: Vector Search service setup with Vertex AI
+- **Priority 2**: Vector Search service setup with Vertex AI
+- **Priority 3**: Advanced logging configuration
 - **Goal**: Infrastructure improvement from 46.2% → >75% functional
 
 ### 🧠 Memory Context Preserved

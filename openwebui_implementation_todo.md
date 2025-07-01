@@ -2,17 +2,17 @@
 
 ## Phase 1: Codebase Preparation
 
-- [ ] Check for untracked changes.
-- [ ] Add and commit all untracked changes.
-- [ ] Push the commit to the remote repository.
-- [ ] Create a Pull Request for the committed changes.
-- [ ] Create and switch to a new branch named `openwebui`.
+- [x] Check for untracked changes.
+- [x] Add and commit all untracked changes.
+- [x] Push the commit to the remote repository.
+- [ ] Create a Pull Request for the committed changes. (Blocked by GitHub authentication)
+- [x] Create and switch to a new branch named `openwebui`.
 
 ## Phase 2: Local Environment Setup
 
-- [ ] Create the `vana-api-adapter` directory and its necessary files (`main.py`, `Dockerfile`, `requirements.txt`).
-- [ ] Clone the OpenWebUI repository into an `open-webui` directory.
-- [ ] Create the `docker-compose.yml` for the multi-container local environment.
+- [x] Create the `vana-api-adapter` directory and its necessary files (`main.py`, `Dockerfile`, `requirements.txt`).
+- [x] Clone the OpenWebUI repository into an `open-webui` directory.
+- [x] Create the `docker-compose.yml` for the multi-container local environment.
 - [ ] Launch all services using Docker Compose.
 - [ ] Verify inter-container communication.
 

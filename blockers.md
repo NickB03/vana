@@ -20,16 +20,7 @@ All documentation blockers have been resolved. Core functionality is working at 
 - **Status**: System gracefully handles this error, core search still works
 - **Resolution Strategy**: Review Google ADK FunctionTool initialization parameters
 
-#### 2. Docker Environment Unavailable  
-- **Components Affected**: Python, JavaScript, Shell executors
-- **Current State**: Running in fallback mode (functional but limited)
-- **Impact**: Reduced security isolation for code execution
-- **Resolution Strategy**: 
-  - Verify Docker installation and configuration
-  - Check container runtime permissions
-  - Review sandbox security policies
-
-#### 3. Vector Search Service Not Available
+#### 2. Vector Search Service Not Available
 - **Component**: Vertex AI Vector Search integration
 - **Current State**: Service initialization fails
 - **Impact**: Advanced semantic search capabilities unavailable
@@ -41,13 +32,13 @@ All documentation blockers have been resolved. Core functionality is working at 
 
 ### Medium Priority Issues
 
-#### 4. Advanced Logging Configuration
+#### 3. Advanced Logging Configuration
 - **Error**: `Unable to configure formatter 'json'`
 - **Impact**: Using basic logging instead of structured JSON logging
 - **Current State**: Basic logging functional, just less detailed
 - **Resolution Strategy**: Review logging configuration dependencies
 
-#### 5. ChromaDB Memory Server Optional
+#### 4. ChromaDB Memory Server Optional
 - **Current State**: In-memory fallback working
 - **Impact**: No persistent memory across sessions in development
 - **Production Impact**: Memory persistence required for production use
@@ -55,10 +46,22 @@ All documentation blockers have been resolved. Core functionality is working at 
 
 ### Low Priority Issues
 
-#### 6. SSL/TLS Warning (urllib3)
+#### 5. SSL/TLS Warning (urllib3)
 - **Warning**: `urllib3 v2 only supports OpenSSL 1.1.1+, currently 'ssl' module is compiled with 'LibreSSL 2.8.3'`
 - **Impact**: Warning messages in output, functionality not affected
 - **Resolution Strategy**: Update system SSL libraries or use different urllib3 version
+
+### Backlogged with Code Execution Specialist
+
+#### Docker Environment & Sandbox Integration
+- **Components**: Python, JavaScript, Shell executors in lib/sandbox/
+- **Current State**: Sandbox modules exist but not integrated
+- **Impact**: Using simple_execute_code with basic security instead of isolated containers
+- **Backlog Reason**: Not core functionality - will implement with Code Execution Specialist
+- **Future Strategy**: 
+  - Enable Docker container execution
+  - Integrate sandbox executors for secure code isolation
+  - Replace simple_execute_code with containerized execution
 
 ## 🔧 Resolution Strategies
 
@@ -118,13 +121,13 @@ All documentation blockers have been resolved. Core functionality is working at 
 
 ### Immediate (Next Session)
 1. **Technical Debt**: Address coordinated search tool integration
-2. **Infrastructure**: Docker environment setup and testing
+2. **Vector Search**: Configure Vertex AI integration for semantic search
 3. **Monitoring**: Improve error visibility and system health checks
 
 ### Short Term (1-2 Sessions)
-1. **Vector Search**: Complete Vertex AI integration
-2. **Memory Persistence**: Set up production ChromaDB server
-3. **Advanced Logging**: Resolve JSON formatter configuration
+1. **Memory Persistence**: Set up production ChromaDB server
+2. **Advanced Logging**: Resolve JSON formatter configuration
+3. **Infrastructure Testing**: Validate core functionality improvements
 
 ### Medium Term (3-5 Sessions)
 1. **Infrastructure Completion**: Work toward >75% functional status

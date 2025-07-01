@@ -1,0 +1,31 @@
+services:
+  vana-orchestrator:
+    build:
+      context: .
+    container_name: vana-orchestrator-local
+    ports:
+      - "8081:8080" # Expose VANA on port 8081 to avoid conflicts
+    restart: always
+
+  vana-api-adapter:
+    build:
+      context: ./vana-api-adapter
+    container_name: vana-api-adapter-local
+    ports:
+      - "8080:8080"
+    depends_on:
+      - vana-orchestrator
+    environment:
+      - VANA_ORCHESTRATOR_URL=http://vana-orchestrator-local:8080
+
+  open-webui:
+    build:
+      context: ./open-webui
+    container_name: open-webui-local
+    ports:
+      - "3000:8080"
+    depends_on:
+      - vana-api-adapter
+    environment:
+      - OPENAI_API_BASE_URL=http://vana-api-adapter-local:8080/v1
+      - OPENAI_API_KEY=dummy-key
