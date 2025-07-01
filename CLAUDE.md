@@ -462,11 +462,14 @@ Claude Code uses a sophisticated dual memory architecture for persistent context
    - Read `.claude/` files for current project state regardless of memory status
    
 **CRITICAL Memory Tool Names:**
-- **ALWAYS use**: `mcp__memory__search_memory` (NOT `memory:search_memory`)
-- **ALWAYS use**: `mcp__memory__store_memory` (NOT `memory:store_memory`)
-- **ALWAYS use**: `mcp__memory__memory_stats` for database status
-- **ALWAYS use**: `mcp__memory__operation_status` for operation tracking
-- **ALWAYS use**: `mcp__memory__index_files` for indexing directories
+- **ChromaDB Vector Database**: Server `chroma-vana` with tools:
+  - `chroma_query_documents` - Semantic search of ChromaDB
+  - `chroma_add_documents` - Add new information to vector database
+  - `chroma_get_collection_count` - Database statistics
+- **Knowledge Graph Memory**: Server `memory-mcp` with tools:
+  - `search_nodes` - Search entities and relationships
+  - `add_observations` - Add facts to existing entities
+  - `read_graph` - Read entire knowledge graph
 #### Data Hygiene Protocol (MANDATORY):
 When code or documentation changes occur, you MUST actively maintain memory accuracy:
 1. **File Modifications**: When editing/deleting files, search for and update/delete corresponding memory entries
@@ -499,26 +502,26 @@ When code or documentation changes occur, you MUST actively maintain memory accu
 
 ### Documentation & Evidence Standards
 
-- **Memory First:** Autonomously store ALL important decisions, patterns, and learnings using `mcp__memory__store_memory` without being prompted
-- **Proactive Evidence Capture:** Automatically document test results, deployment status, and validation evidence using `mcp__memory__store_memory`
-- **Automatic Relationship Mapping:** Continuously update relations to track dependencies between components, tools, and processes in custom ChromaDB
-- **Continuous Status Updates:** Maintain real-time project status through persistent memory using `mcp__memory__store_memory`
-- **User Correction Protocol:** When Nick provides corrections or additional context, immediately update relevant memory using `mcp__memory__store_memory`
+- **Memory First:** Autonomously store ALL important decisions, patterns, and learnings using both `chroma-vana` and `memory-mcp` servers without being prompted
+- **Proactive Evidence Capture:** Automatically document test results, deployment status, and validation evidence using `chroma-vana` server
+- **Automatic Relationship Mapping:** Continuously update relations to track dependencies between components, tools, and processes using `memory-mcp` server
+- **Continuous Status Updates:** Maintain real-time project status through persistent memory using both memory systems
+- **User Correction Protocol:** When Nick provides corrections or additional context, immediately update relevant memory using appropriate server (`chroma-vana` for unstructured text, `memory-mcp` for structured facts)
 
 ### Design Impact Assessment Protocol
 
 Before any code changes:
 1. Use TodoWrite to systematically identify affected functions, modules, tools
-2. **Automatically store** assumptions, risks, and intended impacts using `mcp__memory__store_memory`
-3. **Autonomously create/update** memory relations to show system dependencies using `mcp__memory__store_memory`
-4. **Proactively update** relevant memory entities during and immediately after making changes using `mcp__memory__store_memory`
-5. **Store rationale** for technical decisions using `mcp__memory__store_memory` without being asked
+2. **Automatically store** assumptions, risks, and intended impacts using `chroma-vana` server
+3. **Autonomously create/update** memory relations to show system dependencies using `memory-mcp` server
+4. **Proactively update** relevant memory entities during and immediately after making changes using both memory systems
+5. **Store rationale** for technical decisions using appropriate memory server without being asked
 6. For large refactors or high-impact edits, confirm with user before execution
 
 **Memory Decision Framework:**
 - **Always Store**: Technical decisions, user preferences, system insights, error patterns
 - **Never Ask**: "Should I remember this?" - use judgment to store relevant information
-- **Immediate Storage**: Store insights the moment they're discovered or decided
+- **Immediate Storage**: Store insights the moment they're discovered or decided using both `chroma-vana` and `memory-mcp` servers
 - **User Role**: Nick augments, corrects, or provides additional context to existing memories
 
 **Memory & Context Management:**
@@ -532,16 +535,17 @@ Before any code changes:
   - `/deploy-prep` - Prepare for deployment with memory checkpoint
   - `/session-handoff` - End session with complete memory update
 
-**Custom ChromaDB Memory (Production System):**
-- **Setup**: Custom ChromaDB server automatically running at startup
-- **Commands**: 
-  - `mcp__memory__search_memory` - Semantic search of ChromaDB with visual feedback
-  - `mcp__memory__store_memory` - Add new information to ChromaDB vector database
-  - `mcp__memory__index_files` - Index directory contents
-  - `mcp__memory__memory_stats` - View database statistics (current: 2,343+ chunks)
-  - `mcp__memory__operation_status` - Real-time operation dashboard with progress tracking
+**Dual Memory System (Local Development):**
+- **ChromaDB Vector Database**: Server `chroma-vana`
+  - `chroma_query_documents` - Semantic search with visual feedback
+  - `chroma_add_documents` - Add new information to vector database
+  - `chroma_get_collection_count` - View database statistics
+- **Knowledge Graph Memory**: Server `memory-mcp`
+  - `search_nodes` - Search entities and relationships
+  - `add_observations` - Add facts to existing entities
+  - `read_graph` - Read entire knowledge graph
 - **Optimal Workflow**: Continuous autonomous storage → `/compact` → session continues with preserved knowledge
-- **Autonomous Pattern**: I continuously store important information during conversations using `mcp__memory__store_memory`, not just at consolidation points
+- **Autonomous Pattern**: I continuously store important information during conversations using both memory systems, not just at consolidation points
 
 ### Memory System Maintenance
 

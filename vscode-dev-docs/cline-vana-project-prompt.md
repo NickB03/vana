@@ -18,30 +18,29 @@ poetry env info    # Virtualenv must be 3.13+
 
 **Dual Memory System Protocol**: You have access to the same dual memory system as Claude Code - BOTH ChromaDB MCP and Memory MCP (Knowledge Graph). Use this IMMEDIATELY when starting any session:
 
-1. **Session Start Protocol** (MANDATORY - Exact Claude Code Pattern):
+1. **Session Start Protocol** (MANDATORY - Corrected Server Names):
    ```
-   # ChromaDB Memory (Unstructured Text)
-   - Use mcp__memory__memory_stats to check database health
-   - Use mcp__memory__search_memory with query "Nick preferences communication workflow"
-   - Use mcp__memory__search_memory with query "Nick VANA project current status"
-   - Use mcp__memory__search_memory with query "Nick technical patterns Python Poetry"
+   # ChromaDB Memory (Unstructured Text) - Server: chroma-vana
+   - Use chroma_query_documents with query "Nick preferences communication workflow"
+   - Use chroma_query_documents with query "Nick VANA project current status"
+   - Use chroma_query_documents with query "Nick technical patterns Python Poetry"
    
-   # Knowledge Graph Memory (Structured Data)
-   - Use mcp__memory__read_graph to check knowledge graph status
-   - Use mcp__memory__search_nodes with query "Nick" to load user context
-   - Use mcp__memory__search_nodes with query "VANA_Project" to load project context
+   # Knowledge Graph Memory (Structured Data) - Server: memory-mcp
+   - Use read_graph to check knowledge graph status
+   - Use search_nodes with query "Nick" to load user context
+   - Use search_nodes with query "VANA_Project" to load project context
    
    - Report: "✅ Nick context loaded: [brief summary]" or "❌ Memory servers unavailable"
    ```
 
 2. **Continuous Storage**: Autonomously store insights using BOTH systems:
    ```
-   # ChromaDB (Unstructured)
-   Tool: mcp__memory__store_memory
+   # ChromaDB (Unstructured) - Server: chroma-vana
+   Tool: chroma_add_documents
    Content: "[Insight or decision]. Source: Cline."
    
-   # Knowledge Graph (Structured)
-   Tool: mcp__memory__add_observations
+   # Knowledge Graph (Structured) - Server: memory-mcp
+   Tool: add_observations
    Entity: "[relevant entity like VANA_Project or Nick]"
    Observations: ["[specific fact or insight]"]
    ```
@@ -111,29 +110,22 @@ Nick prefers:
 
 ### Dual Memory Tools Available (Exact Claude Code Tools)
 
-#### ChromaDB MCP Tools (Unstructured Text Storage):
-- `mcp__memory__search_memory` - Semantic search of ChromaDB
-- `mcp__memory__store_memory` - Add new information to vector database
-- `mcp__memory__memory_stats` - View database statistics
-- `mcp__memory__operation_status` - Real-time operation dashboard
-- `mcp__memory__index_files` - Index directory contents
+#### ChromaDB MCP Tools (Unstructured Text Storage) - Server: chroma-vana:
+- `chroma_query_documents` - Semantic search of ChromaDB
+- `chroma_add_documents` - Add new information to vector database
+- `chroma_get_collection_count` - View database statistics
+- `chroma_list_collections` - List collections
+- `chroma_get_documents` - Retrieve documents
 
-#### Memory MCP Tools (Knowledge Graph - Structured Data):
-- `mcp__memory__read_graph` - Read entire knowledge graph
-- `mcp__memory__search_nodes` - Search for entities/relationships
-- `mcp__memory__open_nodes` - Get specific entities by name
-- `mcp__memory__create_entities` - Create new entities
-- `mcp__memory__create_relations` - Create relationships between entities
-- `mcp__memory__add_observations` - Add facts to existing entities
-- `mcp__memory__delete_entities` - Remove entities
-- `mcp__memory__delete_relations` - Remove relationships
-
-#### ChromaDB MCP Tools (Direct ChromaDB Access):
-- `mcp__chroma-official__chroma_query_documents` - Query documents
-- `mcp__chroma-official__chroma_add_documents` - Add documents
-- `mcp__chroma-official__chroma_get_collection_count` - Collection stats
-- `mcp__chroma-official__chroma_list_collections` - List collections
-- `mcp__chroma-official__chroma_get_documents` - Retrieve documents
+#### Memory MCP Tools (Knowledge Graph - Structured Data) - Server: memory-mcp:
+- `read_graph` - Read entire knowledge graph
+- `search_nodes` - Search for entities/relationships
+- `open_nodes` - Get specific entities by name
+- `create_entities` - Create new entities
+- `create_relations` - Create relationships between entities
+- `add_observations` - Add facts to existing entities
+- `delete_entities` - Remove entities
+- `delete_relations` - Remove relationships
 
 ### Memory Best Practices (Dual System Usage)
 
@@ -165,9 +157,9 @@ When code or documentation changes occur, you MUST actively maintain memory accu
 - Deprecated features → Delete old usage patterns
 
 #### Known Issues:
-- Avoid `mcp__chroma-official__chroma_peek_collection` (numpy serialization error)
-- Avoid `mcp__chroma-official__chroma_get_collection_info` (numpy serialization error)
-- Use `mcp__chroma-official__chroma_get_documents` with limit instead
+- Avoid `chroma_peek_collection` (numpy serialization error)
+- Avoid `chroma_get_collection_info` (numpy serialization error)
+- Use `chroma_get_documents` with limit instead
 
 ### Current Project Status
 
