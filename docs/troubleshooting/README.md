@@ -513,7 +513,7 @@ When reporting issues, please provide:
 1. **GitHub Issues**: [Report bugs and request features](https://github.com/your-org/vana/issues)
 2. **Discussions**: Community Q&A and troubleshooting
 3. **Documentation**: Review guides and API references
-4. **Email**: For security vulnerabilities: nbohmer@gmail.com
+4. **Security Advisories**: Report security vulnerabilities via [GitHub Security Advisories](https://github.com/your-org/vana/security/advisories)
 
 ### Self-Help Resources
 

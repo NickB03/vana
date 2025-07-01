@@ -30,7 +30,7 @@ jobs:
     
     strategy:
       matrix:
-        python-version: [3.13]
+        python-version: [3.12]  # Use 3.12 temporarily until GitHub Actions has stable 3.13 support
     
     steps:
     - name: Checkout code

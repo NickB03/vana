@@ -378,5 +378,5 @@ class ErrorTracker:
 
 ### Contact Channels
 - **GitHub Issues**: Bug reports and feature requests
-- **Security Issues**: Email nbohmer@gmail.com for security vulnerabilities
+- **Security Issues**: Report security vulnerabilities via [GitHub Security Advisories](https://github.com/your-org/vana/security/advisories)
 - **Documentation**: Contribute improvements via pull requests

@@ -16,12 +16,14 @@
   "production_mirror": {
     "endpoints": {
       "/health": {
-        "error": "HTTPSConnectionPool(host='vana-dev-960076421399.us-central1.run.app', port=443): Read timed out. (read timeout=10)",
-        "working": false
+        "status_code": 200,
+        "response_time": 0.068299,
+        "working": true
       },
       "/info": {
-        "error": "HTTPSConnectionPool(host='vana-dev-960076421399.us-central1.run.app', port=443): Read timed out. (read timeout=10)",
-        "working": false
+        "status_code": 200,
+        "response_time": 0.06217,
+        "working": true
       }
     },
     "agent_functionality": {

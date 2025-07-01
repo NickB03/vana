@@ -65,7 +65,7 @@ VANA provides three main agents:
 - **🐛 Bug Reports**: [GitHub Issues](https://github.com/your-org/vana/issues)
 - **💬 Questions**: [GitHub Discussions](https://github.com/your-org/vana/discussions)  
 - **📖 Documentation**: Browse the guides above
-- **🔒 Security**: Email nbohmer@gmail.com for vulnerabilities
+- **🔒 Security**: Report vulnerabilities via [GitHub Security Advisories](https://github.com/your-org/vana/security/advisories)
 
 ---
 

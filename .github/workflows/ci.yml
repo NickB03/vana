@@ -7,7 +7,7 @@ on:
     branches: [ main ]
 
 env:
-  PYTHON_VERSION: "3.12"  # Use 3.12 for GitHub Actions compatibility
+  PYTHON_VERSION: "3.13"  # Use 3.13 to match pyproject.toml requirement
   
 jobs:
   test:

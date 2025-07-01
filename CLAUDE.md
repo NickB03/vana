@@ -467,12 +467,35 @@ Claude Code uses a sophisticated dual memory architecture for persistent context
 - **ALWAYS use**: `mcp__memory__memory_stats` for database status
 - **ALWAYS use**: `mcp__memory__operation_status` for operation tracking
 - **ALWAYS use**: `mcp__memory__index_files` for indexing directories
-would it
+#### Data Hygiene Protocol (MANDATORY):
+When code or documentation changes occur, you MUST actively maintain memory accuracy:
+1. **File Modifications**: When editing/deleting files, search for and update/delete corresponding memory entries
+2. **Function/Class Changes**: Remove outdated documentation about deleted or renamed functions
+3. **Project Structure Changes**: Update memory when directories are moved or reorganized
+4. **Stale Information**: Proactively delete contradictory or outdated information
+5. **Before Storing**: Search for existing similar content and delete/update rather than duplicate
+
+**Delete Triggers**:
+- File deleted → Delete all memory chunks referencing that file
+- Function renamed → Delete old function documentation, store new
+- Implementation changed → Delete outdated implementation details
+- Error fixed → Delete memory of the error pattern
+- Deprecated features → Delete old usage patterns
+
+**Deletion Tools Available**:
+- `mcp__memory__delete_observations` - Remove specific observations from entities
+- `mcp__memory__delete_entities` - Remove entire entities and their relations
+- `mcp__memory__delete_relations` - Remove specific relationships between entities
+
 **Memory Best Practices:**
 - Use specific, searchable entity names (e.g., "VANA_Production_Environment")
 - Store observations with clear, actionable language
 - Create relations to show dependencies and impacts
 - Update project status entities after each significant change
+- Always search before storing to avoid duplicates
+- When updating code, immediately update corresponding memory entries
+- Delete obsolete information proactively, not reactively
+- Store rationale with deletions to prevent recreation of stale data
 
 ### Documentation & Evidence Standards
 

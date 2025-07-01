@@ -17,7 +17,7 @@ Please **do not** create a public GitHub issue for security vulnerabilities. Thi
 
 ### 2. Report Privately
 
-Send your vulnerability report to: **nbohmer@gmail.com**
+Use [GitHub Security Advisories](https://github.com/NickB03/vana/security/advisories) to report vulnerabilities privately.
 
 Include the following information:
 - Clear description of the vulnerability
