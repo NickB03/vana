@@ -82,7 +82,6 @@ class VANAMCPServer:
                             "minimum_tokens": {
                                 "type": "integer",
                                 "description": "Minimum tokens for comprehensive analysis",
-                                "default": 10000,
                             },
                         },
                         "required": ["prompt"],
@@ -101,7 +100,6 @@ class VANAMCPServer:
                             "max_results": {
                                 "type": "integer",
                                 "description": "Maximum number of results to return",
-                                "default": 5,
                             },
                         },
                         "required": ["query"],
