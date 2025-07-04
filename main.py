@@ -14,6 +14,7 @@ import sys
 
 import uvicorn
 from fastapi import FastAPI, Request
+from fastapi.staticfiles import StaticFiles
 from google.adk.cli.fast_api import get_fast_api_app
 
 # CRITICAL: Validate Python version before any imports
@@ -93,9 +94,12 @@ def after_model_callback(_agent_name: str, response: str, _session):
 app: FastAPI = get_fast_api_app(
     agents_dir=AGENT_DIR,
     allow_origins=ALLOWED_ORIGINS,
-    web=SERVE_WEB_INTERFACE,
+    web=False,  # Disable default ADK web UI
 )
 logger.info("FastAPI app created successfully")
+
+# Mount the new Mission Control UI
+app.mount("/", StaticFiles(directory="mission_control_ui/dist", html=True), name="mission_control_ui")
 
 # Note: Security guardrails defined above for future integration
 # Current ADK version may not support callback parameters

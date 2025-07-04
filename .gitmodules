@@ -1,0 +1,3 @@
+[submodule "mission_control_ui"]
+	path = mission_control_ui
+	url = https://github.com/NickB03/vana-mission-control-ui.git
