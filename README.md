@@ -56,8 +56,17 @@ poetry run python main.py --version
 # Start the system (local development)
 python main.py
 
+# In a separate terminal, start the UI development server
+cd mission_control_ui
+npm run dev
+```
+
+### 3. Accessing the UI
+- **VANA Backend**: `http://localhost:8081`
+- **Mission Control UI**: `http://localhost:8080`
+
 # Test core functionality
-curl http://localhost:8000/health
+curl http://localhost:8081/health
 # Returns: {"status": "healthy", "agent": "vana", "mcp_enabled": true}
 ```
 
