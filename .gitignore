@@ -192,3 +192,7 @@ claude_memory_config.json
 **/extensions/**/*.json
 open-webui/
 .memory_db/
+
+# Cline MCP Configuration (contains local paths)
+cline_mcp_settings.json
+mcp_servers/
