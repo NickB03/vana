@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }}</title>
+    <link rel="stylesheet" href="/static/css/styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23ffffff'><path d='M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5'/></svg>">
+</head>
+<body>
+    <div id="app" class="app">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <svg class="logo-icon" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+                    </svg>
+                    <span class="logo-text">VANA</span>
+                </div>
+                <button class="new-chat-btn" onclick="clearConversation()">
+                    <svg viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 2v20m10-10H2"/>
+                    </svg>
+                    New Chat
+                </button>
+            </div>
+            
+            <div class="sidebar-content">
+                <div class="conversation-history" id="conversationHistory">
+                    <!-- Conversation history will be loaded here -->
+                </div>
+            </div>
+            
+            <div class="sidebar-footer">
+                <div class="status-indicator" id="statusIndicator">
+                    <div class="status-dot"></div>
+                    <span>Connected</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Advanced UI - Multi-Panel Layout -->
+        <div class="main-content">
+            <div class="advanced-layout">
+                <!-- User Chat Panel -->
+                <div class="user-chat-panel">
+                    <header class="panel-header">
+                        <h2>User Chat</h2>
+                        <div class="agent-status" id="agentStatus">
+                            <span class="agent-badge">Ready</span>
+                        </div>
+                    </header>
+                    
+                    <div class="chat-messages" id="chatMessages">
+                        <div class="welcome-message">
+                            <div class="welcome-icon">
+                                <svg viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+                                </svg>
+                            </div>
+                            <h2>Welcome to VANA</h2>
+                            <p>Ask for a high-level goal to see the agents work in the Team Log and Task Plan.</p>
+                        </div>
+                    </div>
+
+                    <div class="chat-input-container">
+                        <div class="chat-input-wrapper">
+                            <textarea 
+                                id="messageInput" 
+                                class="chat-input" 
+                                placeholder="Message VANA..."
+                                rows="1"
+                                onkeydown="handleKeyDown(event)"
+                            ></textarea>
+                            <button id="sendButton" class="send-button" onclick="sendMessage()">
+                                <svg viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M2 21l21-9L2 3v7l15 2-15 2v7z"/>
+                                </svg>
+                            </button>
+                        </div>
+                        <div class="input-footer">
+                            <div class="typing-indicator" id="typingIndicator" style="display: none;">
+                                <span class="typing-text">VANA is thinking...</span>
+                                <div class="typing-dots">
+                                    <span></span>
+                                    <span></span>
+                                    <span></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Multi-Panel Content Area -->
+                <div class="content-panels">
+                    <!-- Top Panels: Team Log & Task Plan -->
+                    <div class="top-panels">
+                        <div class="team-log-panel">
+                            <header class="panel-header">
+                                <h2>Team Log</h2>
+                            </header>
+                            <div class="team-log-content" id="teamLogContent">
+                                <p class="placeholder-text">Waiting for task...</p>
+                            </div>
+                        </div>
+                        
+                        <div class="task-plan-panel">
+                            <header class="panel-header">
+                                <h2>Task Plan</h2>
+                            </header>
+                            <div class="task-plan-content" id="taskPlanContent">
+                                <p class="placeholder-text">Waiting for task...</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Bottom Panel: Canvas -->
+                    <div class="canvas-panel">
+                        <header class="panel-header">
+                            <h2>Canvas</h2>
+                            <div class="canvas-controls">
+                                <div class="view-toggle">
+                                    <button class="view-btn active" data-view="preview">Preview</button>
+                                    <button class="view-btn" data-view="code">Code</button>
+                                </div>
+                                <button class="copy-btn" onclick="copyCanvasContent()">
+                                    <svg viewBox="0 0 24 24" fill="currentColor">
+                                        <path d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                                    </svg>
+                                </button>
+                            </div>
+                        </header>
+                        <div class="canvas-content">
+                            <div id="canvasPreview" class="canvas-view">
+                                <p class="placeholder-text">Canvas content will appear here when agents complete tasks.</p>
+                            </div>
+                            <div id="canvasCode" class="canvas-view hidden">
+                                <pre><code id="canvasCodeContent" class="language-markdown"></code></pre>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/js/app.js"></script>
+    <script src="/static/js/app_advanced.js"></script>
+</body>
+</html>
