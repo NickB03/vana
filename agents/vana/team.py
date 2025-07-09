@@ -74,7 +74,7 @@ except ImportError as e:
 # Create simplified ADK-compliant VANA agent following Google ADK best practices
 root_agent = LlmAgent(
     name="vana",
-    model=os.getenv("VANA_MODEL", "gemini-2.0-flash-exp"),
+    model=os.getenv("VANA_MODEL", "gemini-2.5-pro"),
     description="Intelligent AI assistant with core capabilities",
     instruction="""You are VANA, an intelligent AI assistant with automatic task routing.
 
