@@ -23,7 +23,7 @@ app.add_event_handler("startup", lambda: os.environ.setdefault("VITE_API_KEY", "
 # Enhanced CORS Configuration
 app.add_middleware(
   CORSMiddleware,
-  allow_origins=["http://localhost:5177"],
+  allow_origins=["http://localhost:5177", "http://localhost:5179"],
   allow_credentials=True,
   allow_methods=["GET", "POST", "OPTIONS"],
   allow_headers=["Content-Type", "Authorization"]
@@ -34,7 +34,7 @@ app.add_middleware(
 async def preflight_handler(request: Request, call_next):
     if request.method == "OPTIONS":
         return Response("{'content': 'Preflight check successful'}", media_type='application/json', headers={
-            "Access-Control-Allow-Origin": "http://localhost:5177",
+            "Access-Control-Allow-Origin": "http://localhost:5179",
             "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
             "Access-Control-Allow-Headers": "Content-Type, Authorization",
             "Access-Control-Allow-Credentials": "true"
@@ -228,7 +228,7 @@ async def chat_completions(request: Request):
                 headers={
                     "Cache-Control": "no-cache",
                     "Connection": "keep-alive",
-                    "Access-Control-Allow-Origin": "http://localhost:5177",
+                    "Access-Control-Allow-Origin": "http://localhost:5179",
                     "Access-Control-Allow-Credentials": "true"
                 }
             )
