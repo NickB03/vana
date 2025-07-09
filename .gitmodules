@@ -1,0 +1,3 @@
+[submodule "vana-ui"]
+	path = vana-ui
+	url = https://github.com/NickB03/vana-ui.git
