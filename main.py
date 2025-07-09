@@ -1,189 +1,99 @@
-"""
-VANA Agent - FastAPI Entry Point
-
-This module provides the FastAPI entry point for the VANA agent using Google ADK.
-Automatically detects environment and configures authentication appropriately.
-Includes proper ADK memory service initialization for vector search and RAG pipeline.
-
-CRITICAL: Requires Python 3.13+ for production stability.
-"""
-
-import logging
 import os
-import sys
+from fastapi import FastAPI, Request, Response, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from typing import Dict, Any
+import logging
 
-import uvicorn
-from fastapi import FastAPI, Request
-from google.adk.cli.fast_api import get_fast_api_app
+# Import the VANA agent
+from agents.vana.team import root_agent
 
-# CRITICAL: Validate Python version before any imports
-def validate_python_version():
-    """Ensure Python 3.13+ is being used for production stability"""
-    if sys.version_info.major != 3 or sys.version_info.minor < 13:
-        print(f"🚨 CRITICAL ERROR: Python 3.13+ required, got {sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}")
-        print("❌ VANA system will not function correctly with this Python version")
-        print("✅ Fix: poetry env use python3.13 && poetry install")
-        sys.exit(1)
-    print(f"✅ Python version validated: {sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}")
+# Set up logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
-# Validate environment before proceeding
-validate_python_version()
+app = FastAPI()
 
-# Configure centralized logging first
-from lib.logging_config import setup_logging
+# Load API_KEY as environment variable:
+app.add_event_handler("startup", lambda: os.environ.setdefault("VITE_API_KEY", "secret-dev-vana-123"))
 
-setup_logging()
-logger = logging.getLogger("vana.main")
-
-# Note: sys.path.insert removed - using proper package imports instead
-
-# Verify lib directory exists for imports
-if not os.path.exists("lib"):
-    logger.warning("lib directory not found - some imports may fail")
-
-# Import our smart environment detection
-from lib.environment import setup_environment
-
-# Import MCP server components
-from lib.mcp_server.sse_transport import MCPSSETransport
-
-# Setup environment-specific configuration
-logger.info("Setting up environment configuration...")
-environment_type = setup_environment()
-logger.info(f"Environment configured: {environment_type}")
-
-# Get the directory where main.py is located - this is where the agent files are now located
-# Supporting directories are now in lib/ to avoid being treated as agents
-AGENT_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "agents")
-logger.info(f"Agent directory: {AGENT_DIR}")
-
-# Verify agent directory exists
-if not os.path.exists(AGENT_DIR):
-    logger.warning(f"Agent directory not found: {AGENT_DIR}")
-else:
-    logger.info("Agent directory found and accessible")
-
-# Session database URL (SQLite for development)
-# Use /tmp for Cloud Run compatibility (writable filesystem)
-SESSION_DB_URL = "sqlite:////tmp/sessions.db"
-
-# Allowed origins for CORS
-ALLOWED_ORIGINS = ["http://localhost", "http://localhost:8080", "*"]
-
-# Serve web interface
-SERVE_WEB_INTERFACE = True
-
-
-# Security guardrail callbacks
-def before_tool_callback(_tool_name: str, tool_args: dict, _session):
-    """Validate tool arguments before execution."""
-    path_arg = tool_args.get("file_path") or tool_args.get("directory_path")
-    if path_arg and (".." in path_arg or path_arg.startswith("/")):
-        raise ValueError("Invalid path access")
-
-
-def after_model_callback(_agent_name: str, response: str, _session):
-    """Lightweight policy check on model responses."""
-    banned = ["malware", "illegal"]
-    if any(word in response.lower() for word in banned):
-        logger.warning("Policy violation detected in response")
-
-
-# Create the FastAPI app using ADK
-app: FastAPI = get_fast_api_app(
-    agents_dir=AGENT_DIR,
-    allow_origins=ALLOWED_ORIGINS,
-    web=SERVE_WEB_INTERFACE,
+# Enhanced CORS Configuration
+app.add_middleware(
+  CORSMiddleware,
+  allow_origins=["http://localhost:5177"],
+  allow_credentials=True,
+  allow_methods=["GET", "POST", "OPTIONS"],
+  allow_headers=["Content-Type", "Authorization"]
 )
-logger.info("FastAPI app created successfully")
 
-# Note: Security guardrails defined above for future integration
-# Current ADK version may not support callback parameters
+# OPTIONS Preflight Handler
+@app.middleware("http")
+async def preflight_handler(request: Request, call_next):
+    if request.method == "OPTIONS":
+        return Response("{'content': 'Preflight check successful'}", media_type='application/json', headers={
+            "Access-Control-Allow-Origin": "http://localhost:5177",
+            "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+            "Access-Control-Allow-Headers": "Content-Type, Authorization",
+            "Access-Control-Allow-Credentials": "true"
+        })
+    return await call_next(request)
 
-# Initialize MCP SSE Transport
-mcp_transport = MCPSSETransport(None)  # Server will be initialized later
+# VANA Agent Endpoint - Process requests through the actual VANA orchestrator
+@app.post("/run")
+async def run_vana(request: Request) -> Dict[str, Any]:
+    """Process user input through the VANA orchestrator agent."""
+    try:
+        # Get request data
+        data = await request.json()
+        user_input = data.get("input", "")
+        
+        if not user_input:
+            raise HTTPException(status_code=400, detail="No input provided")
+        
+        logger.info(f"Processing request: {user_input[:50]}...")
+        
+        # Process through VANA agent
+        try:
+            # Use the agent's run method to process the input
+            response = root_agent.run(user_input)
+            
+            # Extract the response text
+            if hasattr(response, 'text'):
+                output_text = response.text
+            elif isinstance(response, str):
+                output_text = response
+            else:
+                output_text = str(response)
+            
+            logger.info(f"Agent response: {output_text[:100]}...")
+            
+            # Return in the expected format
+            return {
+                "result": {
+                    "output": output_text,
+                    "id": f"vana_{os.getpid()}_{id(response)}"  # Generate unique session ID
+                }
+            }
+            
+        except Exception as agent_error:
+            logger.error(f"Agent processing error: {agent_error}")
+            # Fallback to a helpful error message
+            return {
+                "result": {
+                    "output": f"I encountered an error processing your request: {str(agent_error)}. Please try again.",
+                    "id": "error"
+                }
+            }
+            
+    except Exception as e:
+        logger.error(f"Request handling error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
-
-# Add MCP endpoints
-@app.get("/mcp/sse")
-async def mcp_sse_endpoint(request: Request):
-    """MCP Server-Sent Events endpoint"""
-    return await mcp_transport.handle_sse_connection(request)
-
-
-@app.post("/mcp/messages")
-async def mcp_messages_endpoint(request: Request):
-    """MCP messages endpoint for JSON-RPC communication"""
-    return await mcp_transport.handle_message_post(request)
-
-
-# Add custom routes if needed
+# Existing endpoints can remain here
 @app.get("/health")
-async def health_check():
-    """Health check endpoint."""
-    from lib.version import get_version_summary
-
-    return {
-        "status": "healthy",
-        "agent": "vana",
-        "mcp_enabled": True,
-        "version": get_version_summary(),
-    }
-
-
-@app.get("/version")
-async def version_info():
-    """Detailed version information endpoint."""
-    from lib.version import get_runtime_version_info
-
-    return get_runtime_version_info()
-
-
-@app.get("/info")
-async def agent_info():
-    """Get agent information."""
-    # Get current memory service info (lazy initialization)
-    from lib._shared_libraries.lazy_initialization import get_adk_memory_service
-    from lib.version import get_runtime_version_info
-
-    memory_service = get_adk_memory_service()
-    current_memory_info = memory_service.get_service_info()
-    version_info = get_runtime_version_info()
-
-    return {
-        "name": "VANA",
-        "description": "AI assistant with enhanced reasoning capabilities, memory, knowledge graph, and search",
-        "version": version_info["version"],
-        "version_details": {
-            "base_version": version_info["base_version"],
-            "commit_hash": version_info["git"]["commit_short"],
-            "branch": version_info["git"]["branch"],
-            "build_id": version_info["build"]["build_id"],
-            "build_timestamp": version_info["build"]["build_timestamp"],
-            "deployment_timestamp": version_info["deployment"]["timestamp"],
-        },
-        "adk_integrated": True,
-        "mcp_server": True,
-        "mcp_endpoints": {"sse": "/mcp/sse", "messages": "/mcp/messages"},
-        "memory_service": {
-            "type": current_memory_info["service_type"],
-            "available": current_memory_info["available"],
-            "supports_persistence": current_memory_info["supports_persistence"],
-            "supports_semantic_search": current_memory_info["supports_semantic_search"],
-        },
-        "environment": environment_type,
-        "enhanced_features": {
-            "reasoning_tools": 5,
-            "mathematical_reasoning": True,
-            "logical_reasoning": True,
-            "enhanced_echo": True,
-            "enhanced_task_analysis": True,
-            "reasoning_coordination": True,
-        },
-    }
-
+async def health():
+    return {"status": "healthy"}
 
 if __name__ == "__main__":
-    # Use the PORT environment variable provided by Cloud Run, defaulting to 8081
-    port = int(os.environ.get("PORT", 8081))
-    uvicorn.run(app, host="0.0.0.0", port=port)
+    import uvicorn
+    # Ensure proper port binding and logging
+    uvicorn.run(app, host="0.0.0.0", port=8081, log_level="debug")
