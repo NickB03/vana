@@ -202,3 +202,88 @@ mcp_servers/
 # Temporary files
 backend_log.txt
 test_result.json
+
+# === VANA Specific Exclusions (Added Jul 10, 2025) ===
+
+# Development reports and documentation
+*_CLEANUP_REPORT.md
+*_SUMMARY.md
+*_ANALYSIS.md
+*_STATUS.md
+*_REPORT.md
+cleanup_results_*.json
+vscode-dev-docs/
+
+# Example and template files
+*.example
+*.template
+\!credentials.json.template  # Keep this one
+
+# One-time and deprecated code
+tests/one_time_tests/
+lib/_tools/archived_code/
+
+# Script test data
+scripts/test_queries.json
+scripts/vana_test_cases.json
+
+# Historical test results (keep baselines)
+tests/results/**/*.json
+\!tests/results/baselines/
+\!tests/results/performance/baseline*.json
+
+# Ensure all cache is ignored
+**/__pycache__/
+**/*.pyc
+**/.pytest_cache/
+
+# Memory and database files
+.memory_db/
+*.db
+*.sqlite
+*.sqlite3
+sessions.db
+
+# Large binary files
+*.bin
+*.dat
+
+# Temporary shell script outputs
+launch_*.log
+setup_*.log
+
+# === VSCode Local Development Tools (Not part of VANA) ===
+# These tools are for local development only, not VANA components
+
+# Chroma DB development tools
+*chroma*.py
+*Chroma*.py
+scripts/*chroma*
+scripts/*visual_chroma*
+.memory_db/
+chroma.sqlite3
+
+# Memory MCP client (local dev only)
+tools/mcp_memory_client.py
+
+# VSCode development documentation and guides
+vscode-dev-docs/
+.cline-rules
+.cline/
+
+# Cline and MCP configurations
+*cline*.md
+*mcp*.md
+cline_mcp_settings.json
+.roomodes
+
+# Development prompts and guides
+*memory-alignment*.md
+*memory-systems*.md
+*mcp-integration*.md
+*mcp-audit*.md
+
+# Local development memory tools
+*memory*client*.py
+.memory_db/**
+
