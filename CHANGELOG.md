@@ -24,6 +24,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Corrected misleading dependency claims in documentation
 - Fixed documentation validation framework
 
+## [2.0.0-alpha] - 2025-07-10
+
+### Added
+- **Hierarchical Agentic AI System (Phase 1)** - Complete transformation from 3-agent to 5-level architecture
+- **VANA Chat Agent** - Minimal tool user interface agent (2 tools only)
+- **Master Orchestrator** - HierarchicalTaskManager with intelligent routing (5 tools)
+- **5 Active Specialist Agents** - Architecture, DevOps, QA, UI/UX, Data Science (4-6 tools each)
+- **Task Complexity Analysis** - Simple → Moderate → Complex → Enterprise classification
+- **New Entry Point** - `main_agentic.py` for hierarchical agent system
+- **Enhanced Health Endpoint** - Returns phase, features, and agent system info
+- **Circuit Breakers** - Fault tolerance for agent failures
+- **Comprehensive Development Plan** - 10-week roadmap for full agentic transformation
+- **AGENTIC_AI_GUIDE.md** - Developer guide for working with new architecture
+
+### Changed
+- **Architecture Transformation** - From flat 3-agent to 5-level hierarchical system
+- **Tool Distribution** - Max 6 tools per agent following Google ADK best practices
+- **Agent Communication** - Implements transfer_to_agent and agent-as-tool patterns
+- **Infrastructure Utilization** - Increased from 46.2% to ~65% by activating dormant agents
+- **API Endpoints** - `/api/v1/chat` now uses hierarchical routing
+- **Documentation** - Updated README, ARCHITECTURE.md, GETTING_STARTED.md for Phase 1
+
+### Deprecated
+- **Flat Agent Structure** - Old team.py replaced with team_agentic.py
+- **Direct Tool Access** - VANA now delegates to specialists via Master Orchestrator
+
+### Fixed
+- **Import Error** - Added missing adk_transfer_to_agent import to hierarchical_task_manager.py
+- **Agent Activation** - Enabled 5 dormant specialist agents that were previously unused
+
 ## [1.0.0] - 2024-12-XX
 
 ### Added

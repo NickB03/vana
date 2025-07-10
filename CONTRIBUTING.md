@@ -39,7 +39,7 @@ Thank you for your interest in contributing to VANA! This guide will help you ge
    
    # Set up environment
    cp .env.example .env
-   # Add your GOOGLE_API_KEY
+   # Add your GOOGLE_API_KEY and VANA_AGENT_MODULE if using agentic mode
    ```
 
 3. **Verify Setup**
@@ -47,11 +47,23 @@ Thank you for your interest in contributing to VANA! This guide will help you ge
    # Run tests
    poetry run pytest
    
-   # Start the backend
-   python main.py
+   # Start the backend (choose one)
+   python main.py           # Standard mode
+   python main_agentic.py   # Hierarchical agent mode (recommended)
    
    # Check health
    curl http://localhost:8081/health
+   ```
+
+4. **Working with Agentic AI System**
+   ```bash
+   # Test the hierarchical agent system
+   curl -X POST http://localhost:8081/api/v1/chat \
+     -H "Content-Type: application/json" \
+     -d '{"message": "Analyze the system architecture"}'
+   
+   # Test specific specialists
+   python scripts/test_agentic_system.py
    ```
 
 ## 📋 Development Workflow
@@ -260,34 +272,62 @@ Technical considerations or suggestions.
 
 ## 🏗️ Architecture Guidelines
 
-### Adding New Agents
+### Working with the Hierarchical Agent System
 
-1. **Inherit from BaseAgent**
+The VANA agentic AI system uses a 5-level hierarchy:
+
+1. **Level 1: VANA Chat Agent** - User interface (2 tools max)
+2. **Level 2: Master Orchestrator** - Routes tasks based on complexity
+3. **Level 3: Project Managers** - Sequential/Parallel/Loop workflows (Phase 3)
+4. **Level 4: Specialist Agents** - Domain experts (4-6 tools each)
+5. **Level 5: Maintenance Agents** - Memory/Planning/Learning (Phase 4)
+
+### Adding New Specialist Agents
+
+1. **Create Specialist Agent**
    ```python
-   from lib.agents.base_agent import BaseAgent
+   from google.genai import adk
    
-   class MyAgent(BaseAgent):
-       async def process(self, task: str) -> Dict[str, Any]:
-           # Implementation
-           pass
+   def create_new_specialist():
+       return adk.LlmAgent(
+           name="NewSpecialist",
+           model="gemini-2.0-flash",
+           tools=[
+               adk.FunctionTool(tool1),
+               adk.FunctionTool(tool2),
+               # Max 6 tools per ADK best practices
+           ],
+           preamble="You are a specialist in..."
+       )
    ```
 
-2. **Register with Orchestrator**
+2. **Register with Master Orchestrator**
    ```python
-   # In agents/__init__.py
-   from .my_agent import MyAgent
-   
-   AVAILABLE_AGENTS = {
-       "my_agent": MyAgent,
-       # ... other agents
-   }
+   # In agents/orchestration/hierarchical_task_manager.py
+   specialist_agents = [
+       architecture_specialist,
+       devops_specialist,
+       qa_specialist,
+       ui_ux_specialist,
+       data_science_specialist,
+       new_specialist,  # Add here
+   ]
    ```
 
-3. **Add Tests**
+3. **Update Routing Logic**
    ```python
-   # tests/agents/test_my_agent.py
-   class TestMyAgent:
-       # Comprehensive test suite
+   # In hierarchical_task_manager.py
+   def route_to_specialist(analysis: Dict[str, Any]) -> str:
+       # Add routing conditions for new specialist
+       if "new_domain" in analysis["keywords"]:
+           return "NewSpecialist"
+   ```
+
+4. **Add Tests**
+   ```python
+   # tests/agents/test_new_specialist.py
+   class TestNewSpecialist:
+       # Test agent creation, tools, routing
        pass
    ```
 

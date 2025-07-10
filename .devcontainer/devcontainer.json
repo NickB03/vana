@@ -1,0 +1,110 @@
+{
+  "name": "VANA Development Container",
+  "dockerComposeFile": [
+    "../docker-compose.yml",
+    "../docker-compose.override.yml"
+  ],
+  "service": "backend",
+  "workspaceFolder": "/app",
+  
+  // Features to add to the dev container
+  "features": {
+    "ghcr.io/devcontainers/features/git:1": {},
+    "ghcr.io/devcontainers/features/github-cli:1": {},
+    "ghcr.io/devcontainers/features/python:1": {
+      "version": "3.13"
+    },
+    "ghcr.io/devcontainers/features/node:1": {
+      "version": "lts"
+    }
+  },
+
+  // Configure VS Code settings
+  "customizations": {
+    "vscode": {
+      "settings": {
+        "python.defaultInterpreterPath": "/app/.venv/bin/python",
+        "python.linting.enabled": true,
+        "python.linting.flake8Enabled": true,
+        "python.formatting.provider": "black",
+        "python.formatting.blackArgs": ["--line-length=120"],
+        "python.testing.pytestEnabled": true,
+        "python.testing.pytestArgs": ["-v"],
+        "editor.formatOnSave": true,
+        "editor.codeActionsOnSave": {
+          "source.organizeImports": true
+        },
+        "files.exclude": {
+          "**/__pycache__": true,
+          "**/.pytest_cache": true,
+          "**/.mypy_cache": true,
+          "**/.ruff_cache": true
+        },
+        "terminal.integrated.defaultProfile.linux": "bash"
+      },
+      
+      // Extensions to install
+      "extensions": [
+        "ms-python.python",
+        "ms-python.vscode-pylance",
+        "ms-python.black-formatter",
+        "ms-python.isort",
+        "ms-python.flake8",
+        "ms-azuretools.vscode-docker",
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+        "eamodio.gitlens",
+        "streetsidesoftware.code-spell-checker",
+        "redhat.vscode-yaml",
+        "tamasfe.even-better-toml",
+        "ms-vscode.makefile-tools",
+        "foxundermoon.shell-format",
+        "timonwong.shellcheck",
+        "GitHub.copilot",
+        "GitHub.copilot-chat"
+      ]
+    }
+  },
+
+  // Port forwarding
+  "forwardPorts": [8081, 5173, 5432],
+  "portsAttributes": {
+    "8081": {
+      "label": "VANA Backend API",
+      "onAutoForward": "notify"
+    },
+    "5173": {
+      "label": "VANA Frontend",
+      "onAutoForward": "openBrowser"
+    },
+    "5432": {
+      "label": "PostgreSQL Database",
+      "onAutoForward": "silent"
+    }
+  },
+
+  // Environment variables
+  "remoteEnv": {
+    "VANA_ENV": "development",
+    "IN_DEV_CONTAINER": "true"
+  },
+
+  // Post-creation commands
+  "postCreateCommand": "poetry install && cd vana-ui && npm install",
+  
+  // Post-start commands
+  "postStartCommand": "pre-commit install",
+  
+  // User to run as
+  "remoteUser": "vanadev",
+  
+  // Mounts
+  "mounts": [
+    "source=${localWorkspaceFolder}/.env.local,target=/app/.env.local,type=bind,consistency=cached"
+  ],
+  
+  // Run args
+  "runArgs": [
+    "--env-file", ".env.local"
+  ]
+}

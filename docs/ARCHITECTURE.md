@@ -1,102 +1,141 @@
-# VANA Architecture Documentation
+# VANA Agentic AI Architecture
+
+**Version**: 2.0 (Phase 1 Complete)  
+**Updated**: July 10, 2025
 
 ## System Overview
 
-VANA implements a sophisticated multi-agent architecture designed for scalability, reliability, and extensibility. The system leverages Google's Agent Development Kit (ADK) to provide seamless agent coordination and tool integration.
+VANA has evolved into a true agentic AI system with a 5-level hierarchical architecture. Built on Google's Agent Development Kit (ADK), VANA now features intelligent task routing, specialized agent coordination, and distributed tool ownership following ADK best practices.
 
-## Core Architecture Principles
+## Agentic Architecture (Phase 1)
 
-### 1. Hierarchical Agent Structure
+### 1. Five-Level Agent Hierarchy
 
 ```mermaid
 graph TB
-    subgraph "Orchestration Layer"
-        O[VANA Orchestrator]
+    subgraph "Level 1: Interface Layer"
+        U[User] --> VC[VANA Chat Agent<br/>2 tools only]
     end
     
-    subgraph "Specialist Layer"
-        C[Code Execution Agent]
-        D[Data Science Agent]
-        A[Architecture Agent]
-        Q[QA Agent]
-        U[UI/UX Agent]
-        DO[DevOps Agent]
+    subgraph "Level 2: Orchestration Layer"
+        MO[Master Orchestrator<br/>HierarchicalTaskManager<br/>5 tools]
     end
     
-    subgraph "Tool Layer"
-        T1[File Operations]
-        T2[Web Search]
-        T3[Vector Search]
-        T4[Memory Management]
-        T5[Workflow Engine]
-        T6[Task Analysis]
+    subgraph "Level 3: Management Layer"
+        PM1[Sequential PM<br/>Coming Phase 3]
+        PM2[Parallel PM<br/>Coming Phase 3]
+        PM3[Loop PM<br/>Coming Phase 3]
     end
     
-    O --> C
-    O --> D
-    O --> A
-    O --> Q
-    O --> U
-    O --> DO
+    subgraph "Level 4: Specialist Layer"
+        SA[System Architect<br/>6 tools]
+        DO[DevOps Engineer<br/>6 tools]
+        QA[QA Engineer<br/>6 tools]  
+        UI[UI/UX Designer<br/>6 tools]
+        DS[Data Scientist<br/>4 tools]
+        CE[Code Engineer<br/>Disabled]
+    end
     
-    C --> T1
-    C --> T2
-    D --> T3
-    D --> T4
-    A --> T5
-    Q --> T6
+    subgraph "Level 5: Maintenance Layer"
+        MA[Memory Agent<br/>Phase 4]
+        PA[Planning Agent<br/>Phase 4]
+        LA[Learning Agent<br/>Phase 4]
+    end
+    
+    VC --> MO
+    MO --> PM1
+    MO --> PM2
+    MO --> PM3
+    MO -.-> SA
+    MO -.-> DO
+    MO -.-> QA
+    MO -.-> UI
+    MO -.-> DS
+    
+    MO -.-> MA
+    MO -.-> PA
+    MO -.-> LA
+    
+    style VC fill:#e1f5fe
+    style MO fill:#fff3e0
+    style PM1 fill:#f5f5f5,stroke-dasharray: 5 5
+    style PM2 fill:#f5f5f5,stroke-dasharray: 5 5
+    style PM3 fill:#f5f5f5,stroke-dasharray: 5 5
+    style MA fill:#f5f5f5,stroke-dasharray: 5 5
+    style PA fill:#f5f5f5,stroke-dasharray: 5 5
+    style LA fill:#f5f5f5,stroke-dasharray: 5 5
+    style CE fill:#ffcccc
 ```
 
-### 2. Request Processing Flow
+### 2. Agentic Request Processing Flow
 
 ```mermaid
 sequenceDiagram
-    participant Client
+    participant User
     participant API
-    participant Orchestrator
-    participant TaskAnalyzer
-    participant Agent
+    participant VANA as VANA Chat
+    participant MO as Master Orchestrator
+    participant TA as Task Analyzer
+    participant CB as Circuit Breaker
+    participant SP as Specialist
     participant Tools
-    participant Memory
     
-    Client->>API: POST /run
-    API->>Orchestrator: Process Request
-    Orchestrator->>TaskAnalyzer: Analyze Task
-    TaskAnalyzer->>Orchestrator: Task Classification
+    User->>API: POST /api/v1/chat
+    API->>VANA: Process Query
     
-    alt Complex Task
-        Orchestrator->>Orchestrator: Decompose Task
-        loop For Each Subtask
-            Orchestrator->>Agent: Delegate Subtask
-            Agent->>Tools: Execute Operations
-            Tools->>Memory: Store Results
-            Memory->>Agent: Confirm Storage
-            Agent->>Orchestrator: Subtask Complete
+    alt Simple Conversation
+        VANA->>VANA: Handle directly
+        VANA->>API: Response
+    else Technical Task
+        VANA->>MO: transfer_to_agent
+        MO->>TA: analyze_task_complexity
+        TA->>MO: Complexity Score
+        
+        MO->>CB: Check circuit breaker
+        CB->>MO: Agent available
+        
+        alt Simple Task (Single Specialist)
+            MO->>SP: route_to_specialist
+            SP->>Tools: Execute domain tools
+            Tools->>SP: Results
+            SP->>MO: Task complete
+        else Complex Task (Workflow)
+            MO->>MO: coordinate_workflow
+            loop For each subtask
+                MO->>SP: Delegate subtask
+                SP->>Tools: Execute
+                Tools->>SP: Results
+                SP->>MO: Subtask complete
+            end
         end
-    else Simple Task
-        Orchestrator->>Agent: Direct Delegation
-        Agent->>Tools: Execute
-        Tools->>Agent: Results
-        Agent->>Orchestrator: Complete
+        
+        MO->>VANA: Aggregated results
+        VANA->>API: Formatted response
     end
     
-    Orchestrator->>API: Final Response
-    API->>Client: JSON Response
+    API->>User: Streaming response
 ```
 
 ## Component Details
 
-### VANA Orchestrator
+### Level 1: VANA Chat Agent
 
-The central hub responsible for:
-- Task reception and initial processing
-- Task analysis and classification
-- Agent selection and delegation
-- Result aggregation and response formatting
+The user-facing conversational interface:
+- **Purpose**: Natural language understanding and response formatting
+- **Tools**: Minimal (2 tools only - transfer_to_agent, analyze_task)
+- **Responsibilities**:
+  - Parse user intent
+  - Handle simple conversations
+  - Delegate technical tasks to orchestrator
+  - Present results in natural language
 
-**Key Features:**
-- Intelligent routing based on task requirements
-- Parallel execution management
+### Level 2: Master Orchestrator (HierarchicalTaskManager)
+
+The intelligent routing engine:
+- **Task Complexity Analysis**: Simple → Moderate → Complex → Enterprise
+- **Routing Decision Engine**: Selects appropriate specialists or workflows
+- **Circuit Breaker Integration**: Prevents cascading failures
+- **Performance Optimization**: Caches routing decisions
 - Error handling and recovery
 - Session state management
 

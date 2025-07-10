@@ -9,6 +9,7 @@ from agents.specialists.devops_specialist import analyze_infrastructure
 from agents.specialists.architecture_specialist import analyze_system_architecture
 from google.adk.tools import FunctionTool
 from google.adk.agents import LlmAgent
+from lib._tools import adk_transfer_to_agent
 import os
 import sys
 from enum import Enum
@@ -131,38 +132,43 @@ def create_hierarchical_task_manager() -> LlmAgent:
     task_orchestrator = LlmAgent(
         name="HierarchicalTaskManager",
         model="gemini-2.0-flash",
-        description="Orchestrates complex tasks using hierarchical decomposition",
-        instruction="""You are a Hierarchical Task Manager. Your role is to:
+        description="Master orchestrator for complex task management and intelligent routing",
+        instruction="""You are the Master Orchestrator for VANA's agentic AI system. Your role is to:
 
-1. **Analyze Task Complexity**: Determine if the task requires:
-   - Single specialist (simple questions)
-   - Multiple specialists (moderate complexity)
-   - Full workflow (complex projects)
-   - Hierarchical decomposition (enterprise-scale)
+1. **Analyze Task Complexity**: Use analyze_task_complexity to determine:
+   - SIMPLE: Single specialist can handle (route directly)
+   - MODERATE: Multiple specialists needed (use parallel/sequential workflow)
+   - COMPLEX: Full project workflow required
+   - ENTERPRISE: Hierarchical decomposition needed
 
-2. **Route Appropriately**: Based on complexity analysis:
-   - Simple: Route to appropriate specialist
-   - Moderate: Use parallel analysis or sequential workflow
-   - Complex: Use full project development workflow
-   - Enterprise: Break down into sub-projects
+2. **Route to Specialists**: Based on task type and requirements:
+   - architecture_specialist: System design, scalability, patterns
+   - devops_specialist: Infrastructure, deployment, monitoring
+   - qa_specialist: Testing, quality assurance, validation
+   - ui_specialist: User interface, UX design, frontend
+   - data_science_specialist: ML, data analysis, statistics
 
-3. **Coordinate Execution**: Manage the selected approach and integrate results
+3. **Coordinate Workflows**: For complex tasks:
+   - Sequential: Step-by-step execution
+   - Parallel: Concurrent specialist analysis
+   - Iterative: Refinement loops
+   - Hierarchical: Break into sub-projects
 
-4. **Quality Assurance**: Ensure comprehensive coverage and quality
+4. **Monitor & Integrate**: Track progress and combine results
 
-Available orchestration patterns:
-- Single specialist routing
-- Parallel specialist analysis
-- Sequential project workflow
-- Iterative refinement workflow
-- Hierarchical task decomposition
+ROUTING PROTOCOL:
+- ALWAYS analyze task complexity first
+- For SIMPLE tasks: Use route_to_specialist directly
+- For MODERATE+ tasks: Use coordinate_workflow
+- Provide clear status updates to the user
 
-Use the task analysis tool to determine the best approach, then coordinate execution.""",
+Available specialists: architecture, devops, qa, ui, data_science""",
         tools=[
             FunctionTool(analyze_task_complexity),
             FunctionTool(route_to_specialist),
             FunctionTool(coordinate_workflow),
             FunctionTool(decompose_enterprise_task),
+            adk_transfer_to_agent,  # For delegating to specialists
         ],
         output_key="orchestration_result",
     )

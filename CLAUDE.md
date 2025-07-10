@@ -13,15 +13,59 @@ Always verify: `python3 --version` should show Python 3.13.x
 
 ## 🏗️ Project Overview
 
-VANA is a multi-agent AI system built on Google's Agent Development Kit (ADK) that orchestrates specialized agents for complex tasks. The system uses Gemini 2.0 Flash model and implements a distributed architecture with tool-based capabilities.
+VANA is an advanced agentic AI system featuring hierarchical multi-agent orchestration built on Google's Agent Development Kit (ADK). With Phase 1 complete, VANA now implements a 5-level agent hierarchy with intelligent task routing, specialized agents, and distributed tool ownership.
 
-### Architecture Pattern
-- **VANA Orchestrator**: Central hub with 8 core tools (plus optional memory) that delegates to specialists
-- **Specialist Agents**: Code execution, data science, and domain-specific agents
-- **Tool Ecosystem**: ADK tools provide capabilities (file ops, search, memory, etc.)
-- **Shared Services**: Memory management, security, monitoring layers
+### 🆕 Agentic AI Architecture (Phase 1 Complete)
+
+**5-Level Hierarchy**:
+1. **VANA Chat Agent**: User interface, minimal tools (2), conversation handling
+2. **Master Orchestrator**: HierarchicalTaskManager, routing engine (5 tools)
+3. **Project Managers**: Sequential/Parallel/Loop workflows (Phase 3)
+4. **Specialist Agents**: Architecture, DevOps, QA, UI/UX, Data Science (4-6 tools each)
+5. **Maintenance Agents**: Memory, Planning, Learning agents (Phase 4)
+
+**Active Components**:
+- ✅ VANA Chat + Master Orchestrator
+- ✅ 5 Specialist Agents (Code Execution temporarily disabled)
+- ✅ Task complexity analysis (Simple → Enterprise)
+- ✅ Circuit breakers and fault tolerance
+- ⏳ Workflow managers (Phase 3)
+- ⏳ Maintenance agents (Phase 4)
 
 ## 🛠️ Development Commands
+
+### 🚀 Quick Start (NEW!)
+```bash
+# One-command setup and run
+make setup && make dev
+
+# Alternative: Use intelligent startup script
+./scripts/start-dev.sh
+```
+
+### Makefile Commands (NEW!)
+```bash
+# Development
+make help          # Show all available commands
+make setup         # Install all dependencies
+make dev           # Start full development environment
+make backend       # Start backend only
+make frontend      # Start frontend only
+
+# Testing & Quality
+make test          # Run all tests
+make test-unit     # Unit tests only
+make test-agent    # Agent tests only
+make format        # Format code with black
+make lint          # Run linting checks
+make security      # Run security scan
+make clean         # Clean generated files
+
+# Docker
+make docker-up     # Start with Docker Compose
+make docker-down   # Stop Docker services
+make docker-logs   # View Docker logs
+```
 
 ### Backend (Python/FastAPI)
 ```bash
@@ -29,9 +73,12 @@ VANA is a multi-agent AI system built on Google's Agent Development Kit (ADK) th
 poetry install
 
 # Start backend server
-python main.py
-# OR
-./start_backend.sh
+python main.py                     # Standard
+python main_agentic.py            # Agentic AI backend
+./start_backend.sh                # Using startup script
+
+# Environment validation (NEW!)
+./scripts/validate-env.sh         # Check all prerequisites
 
 # Run specific tests
 poetry run pytest -m unit          # Fast unit tests
@@ -58,6 +105,23 @@ npm install                        # Install dependencies
 npm run dev                        # Start dev server (port 5173)
 npm run build                      # Production build
 npm run lint                       # ESLint checks
+```
+
+### Development Environment Options (NEW!)
+```bash
+# Option 1: Make commands (recommended)
+make setup && make dev
+
+# Option 2: Docker Compose
+docker-compose up
+
+# Option 3: Improved startup script
+./scripts/start-dev.sh            # Interactive with checks
+./scripts/start-dev.sh --docker   # Force Docker mode
+./scripts/start-dev.sh --local    # Force local mode
+
+# Option 4: VS Code
+# Press Cmd+Shift+B to start development environment
 ```
 
 ## 🏛️ Key Architecture Components
@@ -107,9 +171,76 @@ npm run lint                       # ESLint checks
 4. Test with `poetry run pytest -m agent`
 
 ### Working with MCP Servers
-1. MCP servers in `lib/mcp/servers/`
-2. Registry in `lib/mcp/core/mcp_registry.py`
-3. Add new servers following existing patterns (GitHub, Brave Search examples)
+**⚠️ CRITICAL: MCP servers are VS Code development tools ONLY - they are NOT part of the VANA runtime**
+
+1. MCP servers in `lib/mcp/servers/` are for VS Code Claude integration
+2. Registry in `lib/mcp/core/mcp_registry.py` manages VS Code MCP connections
+3. **Chroma MCP**: VS Code tool for semantic search during development (NOT VANA's memory)
+4. **Memory MCP**: VS Code tool for maintaining dev context (NOT VANA's memory)
+5. VANA's actual memory is in `lib/_shared_libraries/adk_memory_service.py`
+
+## 🔌 MCP (Model Context Protocol) - VS Code Development Tools Only
+
+**⚠️ CRITICAL DISTINCTION**:
+- **MCP Tools**: Exclusively for VS Code local development with Claude
+- **VANA Memory**: Production memory system in `lib/_shared_libraries/adk_memory_service.py`
+- **These are completely separate systems**
+
+### Available MCP Servers (VS Code Only)
+
+#### 1. **Chroma Vector Database** (`mcp__chroma-vana`) - VS Code Development Tool
+**NOT VANA's memory system** - This is a VS Code tool for semantic search during development.
+
+**VS Code Usage**:
+```python
+# In VS Code with Claude - helps search your codebase
+mcp__chroma-vana__chroma_create_collection(
+    collection_name="dev_context",
+    embedding_function_name="default"
+)
+```
+
+#### 2. **Memory Management** (`mcp__memory-mcp`) - VS Code Development Tool
+**NOT VANA's memory system** - This is a VS Code tool for maintaining context during development.
+
+**VS Code Usage**:
+```python
+# In VS Code with Claude - helps remember development context
+mcp__memory-mcp__create_entities(
+    entities=[{
+        "name": "Current Feature",
+        "entityType": "task",
+        "observations": ["Working on Docker setup"]
+    }]
+)
+```
+
+### VS Code MCP Configuration
+
+**Configure in VS Code Claude extension settings** (not in VANA's .env files):
+```json
+// VS Code settings.json
+{
+  "mcp.servers": {
+    "chroma-vana": {
+      "command": "python",
+      "args": ["-m", "lib.mcp.servers.chroma_server"]
+    },
+    "memory-mcp": {
+      "command": "python",
+      "args": ["-m", "lib.mcp.servers.memory_server"]
+    }
+  }
+}
+```
+
+### VANA's Actual Memory System
+
+VANA uses its own memory service for agent coordination:
+- **Location**: `lib/_shared_libraries/adk_memory_service.py`
+- **Usage**: Automatically managed by VANA agents
+- **Storage**: In-memory (development) or vector DB (production)
+- **Purpose**: Agent task history and coordination
 
 ## 📋 Testing Strategy
 
@@ -158,5 +289,53 @@ Development artifacts should be saved to `.development/` directory (gitignored):
 - Analysis → `.development/analysis/`
 - Summaries → `.development/summaries/`
 - Claude artifacts → `.development/claude-artifacts/`
+- **VS Code MCP data** → `.development/claude-memory/` (local dev context only)
+
+**MCP Integration Guides (VS Code Development Only)**:
+- `docs/mcp/CHROMA_MCP_GUIDE.md` - VS Code semantic search tool
+- `docs/mcp/MEMORY_MCP_GUIDE.md` - VS Code context management tool
+
+⚠️ These MCP tools are for VS Code development sessions with Claude only.
+They are NOT part of VANA's runtime memory or storage systems.
 
 See `CLAUDE_DEVELOPMENT_GUIDE.md` for documentation organization guidelines.
+
+## 📁 New Development Files
+
+### Configuration Files
+- **Makefile**: Unified commands for all operations
+- **docker-compose.yml**: Full stack development with PostgreSQL
+- **Dockerfile.dev**: Development-optimized container
+- **.pre-commit-config.yaml**: Enhanced code quality hooks
+- **.vscode/tasks.json**: VS Code task integration
+- **.vscode/launch.json**: Debugging configurations
+- **.devcontainer/devcontainer.json**: Dev container support
+
+### Scripts
+- **scripts/validate-env.sh**: Environment validation with detailed checks
+- **scripts/start-dev.sh**: Intelligent startup script with Docker/local modes
+- **start-vana-ui.sh**: Improved with dependency checks and colors
+
+### Documentation
+- **DEVELOPMENT.md**: Comprehensive developer guide
+- **TROUBLESHOOTING.md**: Common issues and solutions
+
+## 🔄 Pre-commit Hooks
+
+The project now includes comprehensive pre-commit hooks:
+
+```bash
+# Install pre-commit hooks
+pre-commit install
+
+# Run manually on all files
+pre-commit run --all-files
+```
+
+**Included Hooks**:
+- Black (Python formatting)
+- isort (Import sorting)
+- Flake8 (Linting)
+- Bandit (Security checks)
+- Shellcheck (Shell script validation)
+- File checks (trailing whitespace, large files, etc.)

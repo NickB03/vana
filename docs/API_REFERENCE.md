@@ -5,7 +5,8 @@ Complete reference for the VANA multi-agent AI system API.
 ## Base URL
 
 ```
-http://localhost:8081
+http://localhost:8081  # Standard mode
+http://localhost:8081  # Agentic mode (main_agentic.py)
 ```
 
 ## Authentication
@@ -19,9 +20,69 @@ Currently, VANA uses API key authentication for frontend integration. Include yo
 
 ## Endpoints
 
+### POST /api/v1/chat (Agentic Mode)
+
+Main endpoint for the hierarchical agent system. Processes requests through the 5-level agent hierarchy.
+
+#### Request
+
+**URL:** `POST /api/v1/chat`
+
+**Headers:**
+```
+Content-Type: application/json
+Authorization: Bearer your_api_key (optional)
+```
+
+**Body:**
+```json
+{
+  "message": "string - The task or question",
+  "session_id": "string - Optional session identifier",
+  "context": {
+    "previous_messages": ["array of previous messages"],
+    "user_preferences": {}
+  }
+}
+```
+
+#### Response
+
+**Success (200):**
+```json
+{
+  "response": "string - Agent response",
+  "session_id": "string - Session identifier",
+  "metadata": {
+    "routing_path": ["VANA_Chat", "Master_Orchestrator", "Architecture_Specialist"],
+    "complexity": "moderate",
+    "tools_used": ["analyze_codebase", "suggest_patterns"],
+    "execution_time": 2.34
+  }
+}
+```
+
+#### Examples
+
+##### Simple Task
+```bash
+curl -X POST http://localhost:8081/api/v1/chat \
+  -H "Content-Type: application/json" \
+  -d '{"message": "What is the system architecture?"}'
+```
+
+##### Complex Task
+```bash
+curl -X POST http://localhost:8081/api/v1/chat \
+  -H "Content-Type: application/json" \
+  -d '{"message": "Analyze the codebase and suggest architectural improvements"}'
+```
+
+---
+
 ### POST /run
 
-Execute a task through VANA's multi-agent orchestration system.
+Execute a task through VANA's multi-agent orchestration system (legacy endpoint).
 
 #### Request
 
@@ -129,10 +190,27 @@ Check the health status of the VANA system.
 
 #### Response
 
-**Success (200):**
+**Standard Mode (200):**
 ```json
 {
   "status": "healthy"
+}
+```
+
+**Agentic Mode (200):**
+```json
+{
+  "status": "healthy",
+  "version": "2.0.0-alpha",
+  "agent_system": "hierarchical",
+  "phase": "1",
+  "features": [
+    "VANA Chat Agent",
+    "Master Orchestrator",
+    "5 Active Specialists",
+    "Task Complexity Analysis",
+    "Intelligent Routing"
+  ]
 }
 ```
 
@@ -161,6 +239,58 @@ curl http://localhost:8081/health
 ---
 
 ## Task Types and Agent Routing
+
+### Hierarchical Agent System (Agentic Mode)
+
+The system uses a 5-level hierarchy with intelligent routing based on task complexity:
+
+#### Level 1: VANA Chat Agent
+- **Role:** User interface, minimal tools (2)
+- **Routes to:** Master Orchestrator for all substantive tasks
+
+#### Level 2: Master Orchestrator (HierarchicalTaskManager)
+- **Complexity Analysis:** Simple → Moderate → Complex → Enterprise
+- **Tools:** 5 routing and coordination tools
+- **Routes to:** Appropriate specialist agents
+
+#### Level 3: Project Managers (Phase 3 - Coming Soon)
+- **Sequential Workflow Manager**
+- **Parallel Workflow Manager**
+- **Loop Workflow Manager**
+
+#### Level 4: Specialist Agents (Active)
+
+##### Architecture Specialist
+**Triggers:** "system design", "architecture", "patterns", "structure"
+**Tools:** analyze_codebase, suggest_patterns, review_architecture, document_design
+**Capabilities:** System design, pattern recommendations, architecture reviews
+
+##### DevOps Specialist
+**Triggers:** "deployment", "CI/CD", "infrastructure", "monitoring"
+**Tools:** analyze_deployment, suggest_pipeline, review_infrastructure, optimize_performance
+**Capabilities:** Deployment strategies, pipeline optimization, infrastructure as code
+
+##### QA Specialist
+**Triggers:** "testing", "quality", "bugs", "test coverage"
+**Tools:** analyze_tests, generate_test_cases, review_coverage, suggest_improvements
+**Capabilities:** Test strategy, coverage analysis, quality metrics
+
+##### UI/UX Specialist
+**Triggers:** "interface", "user experience", "design", "frontend"
+**Tools:** analyze_ui, suggest_ux_improvements, review_accessibility, create_mockups
+**Capabilities:** UI analysis, UX recommendations, accessibility reviews
+
+##### Data Science Specialist
+**Triggers:** "analyze data", "machine learning", "statistics", "visualization"
+**Tools:** statistical_analysis, ml_operations, data_visualization, feature_engineering
+**Capabilities:** Data analysis, ML model development, statistical insights
+
+#### Level 5: Maintenance Agents (Phase 4 - Coming Soon)
+- **Memory Agent:** Long-term memory management
+- **Planning Agent:** Strategic planning and optimization
+- **Learning Agent:** System improvement through experience
+
+### Legacy Routing (Standard Mode)
 
 VANA automatically analyzes tasks and routes them to appropriate agents:
 

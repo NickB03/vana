@@ -1,6 +1,6 @@
-# VANA: Advanced Multi-Agent AI System 
+# VANA: Agentic AI System with Hierarchical Orchestration
 
-<!-- TEST CHANGE - Updated Jul 10, 2025 at 11:54 AM -->
+<!-- Phase 1 Complete - Updated Jul 10, 2025 -->
 
 <div align="center">
   <img src="docs/assets/vana-logo.svg" alt="VANA Logo" width="200"/>
@@ -8,10 +8,10 @@
   [![Python 3.13+](https://img.shields.io/badge/python-3.13+-blue.svg)](https://www.python.org/downloads/)
   [![Google ADK](https://img.shields.io/badge/Google%20ADK-1.1.1-green.svg)](https://github.com/google/adk)
   [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-  [![Code Quality](https://img.shields.io/badge/code%20quality-A+-brightgreen.svg)]()
-  [![Tests](https://img.shields.io/badge/tests-passing-brightgreen.svg)]()
+  [![Architecture](https://img.shields.io/badge/architecture-hierarchical-purple.svg)]()
+  [![Agents](https://img.shields.io/badge/agents-7+-brightgreen.svg)]()
   
-  **Orchestrate specialized AI agents for complex task automation**
+  **True Agentic AI: Hierarchical Multi-Agent System for Complex Task Automation**
   
   [Features](#features) • [Quick Start](#quick-start) • [Architecture](#architecture) • [Documentation](#documentation) • [Contributing](#contributing)
 </div>
@@ -20,51 +20,126 @@
 
 ## 🌟 Overview
 
-VANA is a sophisticated multi-agent AI orchestration system built on Google's Agent Development Kit (ADK). It intelligently coordinates specialized agents to handle complex tasks through advanced task decomposition, parallel execution, and seamless tool integration.
+VANA is an advanced agentic AI system featuring hierarchical multi-agent orchestration built on Google's Agent Development Kit (ADK). With a 5-level agent hierarchy, VANA intelligently decomposes complex tasks, routes them to specialized agents, and coordinates sophisticated workflows through its Master Orchestrator.
 
-### Key Capabilities
+### 🆕 Agentic AI Features (Phase 1)
 
-- **🤖 Intelligent Orchestration**: Dynamic agent selection based on task requirements
-- **🔧 Extensible Tool Ecosystem**: Comprehensive toolkit for file operations, web search, data analysis, and more
-- **🧠 Advanced Task Analysis**: NLP-powered task understanding and routing
-- **⚡ Parallel Processing**: Efficient concurrent task execution
-- **🔄 Workflow Management**: Complex multi-step workflow automation
-- **🛡️ Enterprise Security**: Built-in security measures and audit logging
+- **🏗️ Hierarchical Architecture**: 5-level agent system (Chat → Orchestrator → Managers → Specialists → Sub-agents)
+- **🧠 Master Orchestrator**: Intelligent task analysis and routing with complexity scoring
+- **👥 Active Specialists**: Architecture, DevOps, QA, UI/UX, and Data Science agents
+- **🔄 Smart Routing**: Automatic task delegation based on complexity and domain
+- **🛡️ Fault Tolerance**: Circuit breakers and performance optimization
+
+### Core Capabilities
+
+- **🤖 Intelligent Orchestration**: Hierarchical task decomposition and agent coordination
+- **🔧 Distributed Tools**: Each specialist has domain-specific tools (4-6 per agent)
+- **🧠 Advanced Task Analysis**: Complexity scoring from Simple → Enterprise scale
+- **⚡ Workflow Management**: Sequential, Parallel, and Loop execution patterns
+- **🔄 Agent Communication**: Bidirectional agent-to-agent communication
+- **🛡️ Enterprise Ready**: Production-grade with monitoring and fault tolerance
 
 ## 🚀 Quick Start
 
 ### Prerequisites
 
 - Python 3.13+ (required for modern async patterns)
+- Node.js 18+ (for frontend)
 - Poetry for dependency management
 - Google Cloud API key for Gemini models
 
-### Installation
+### One-Command Setup
 
 ```bash
-# Clone the repository
+# Clone and setup everything
 git clone https://github.com/yourusername/vana.git
 cd vana
-
-# Install dependencies
-poetry install
-
-# Set up environment
-cp .env.example .env
-# Add your GOOGLE_API_KEY to .env
-
-# Start the backend
-python main.py
+make setup && make dev
 ```
 
-The API will be available at `http://localhost:8081`
+That's it! 🎉 The system will:
+- Check all dependencies
+- Install Python and Node packages
+- Setup your environment
+- Start both backend and frontend
+
+### Alternative Setup Methods
+
+#### Docker (Recommended)
+```bash
+# Using Docker Compose
+docker-compose up
+
+# Or with Make
+make docker-up
+```
+
+#### Local Development
+```bash
+# Manual setup
+./scripts/start-dev.sh  # Interactive setup with checks
+
+# Or step by step
+poetry install          # Python dependencies
+cd vana-ui && npm install && cd ..  # Frontend dependencies
+./start-vana-ui.sh     # Start everything
+```
+
+#### VS Code
+Press `Cmd+Shift+B` (or `Ctrl+Shift+B` on Windows/Linux) to start the development environment directly from VS Code.
+
+### Configuration
+
+```bash
+# Environment setup (auto-created by make setup)
+cp .env.example .env.local
+# Add your GOOGLE_API_KEY to .env.local
+```
+
+Get your API key from: [Google AI Studio](https://aistudio.google.com/apikey)
+
+### Access Points
+
+Once running, you can access:
+- 🌐 **Frontend**: http://localhost:5173
+- 🔧 **Backend API**: http://localhost:8081
+- 📚 **API Docs**: http://localhost:8081/docs
+- 🎯 **Health Check**: http://localhost:8081/health
 
 ### Your First Request
 
 ```bash
-curl -X POST http://localhost:8081/run \
+# Simple conversation (handled by VANA Chat)
+curl -X POST http://localhost:8081/api/v1/chat \
   -H "Content-Type: application/json" \
-  -d '{"input": "Analyze the sales data in reports/ and create visualizations"}'
+  -d '{"query": "Hello, what can you help me with?", "session_id": "test-001"}'
+
+# Complex task (routed to specialists)
+curl -X POST http://localhost:8081/api/v1/chat \
+  -H "Content-Type: application/json" \
+  -d '{"query": "Design a microservices architecture for an e-commerce platform", "session_id": "test-002"}'
+
+# Or use the web interface at http://localhost:5173
+```
+
+## 🛠️ Development Commands
+
+```bash
+# Common tasks
+make help          # Show all available commands
+make test          # Run all tests
+make format        # Format code with black
+make lint          # Run linting checks
+make security      # Run security scan
+
+# Docker operations
+make docker-up     # Start with Docker
+make docker-down   # Stop Docker services
+make docker-logs   # View logs
+
+# Environment
+make clean         # Clean generated files
+./scripts/validate-env.sh  # Check environment setup
 ```
 
 ## 🏗️ Architecture
@@ -73,27 +148,56 @@ curl -X POST http://localhost:8081/run \
   <img src="docs/assets/vana-architecture.png" alt="VANA Architecture" width="800"/>
 </div>
 
-### System Components
+### Agentic AI Architecture (Phase 1)
 
 ```mermaid
 graph TD
-    A[User Request] --> B[VANA Orchestrator]
-    B --> C{Task Analysis}
-    C --> D[Code Execution Agent]
-    C --> E[Data Science Agent]
-    C --> F[Specialist Agents]
+    User[User] --> VANA[VANA Chat Agent<br/>2 tools]
+    VANA --> MO[Master Orchestrator<br/>HierarchicalTaskManager<br/>5 tools]
     
-    D --> G[ADK Tools]
-    E --> G
-    F --> G
+    MO --> |Simple Tasks| Specialists
+    MO --> |Complex Tasks| PM[Project Managers<br/>Coming Phase 3]
     
-    G --> H[File System]
-    G --> I[Web Search]
-    G --> J[Vector Search]
-    G --> K[Memory System]
+    subgraph Specialists[Active Specialists]
+        SA[System Architect<br/>6 tools]
+        DO[DevOps Engineer<br/>6 tools]
+        QA[QA Engineer<br/>6 tools]
+        UI[UI/UX Designer<br/>6 tools]
+        DS[Data Scientist<br/>4 tools]
+    end
     
-    style B fill:#f9f,stroke:#333,stroke-width:4px
-    style C fill:#bbf,stroke:#333,stroke-width:2px
+    subgraph Maintenance[Maintenance Agents - Phase 4]
+        MA[Memory Agent]
+        PA[Planning Agent]
+        LA[Learning Agent]
+    end
+    
+    MO -.-> Maintenance
+    
+    style VANA fill:#e1f5fe
+    style MO fill:#fff3e0
+    style Specialists fill:#f3e5f5
+    style Maintenance fill:#f5f5f5,stroke-dasharray: 5 5
+```
+
+### Task Routing Flow
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant VANA as VANA Chat
+    participant MO as Master Orchestrator
+    participant TA as Task Analyzer
+    participant SP as Specialist
+    
+    User->>VANA: "Design a REST API"
+    VANA->>MO: transfer_to_agent
+    MO->>TA: analyze_task_complexity
+    TA-->>MO: complexity: SIMPLE, type: DESIGN
+    MO->>SP: route_to_specialist(architecture)
+    SP-->>MO: API design complete
+    MO-->>VANA: Results
+    VANA-->>User: Here's your API design...
 ```
 
 ### Agent Flow

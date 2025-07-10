@@ -1,12 +1,19 @@
-# Getting Started with VANA
+# Getting Started with VANA Agentic AI
 
-Welcome to VANA! This guide will help you set up and start using the advanced multi-agent AI system in minutes.
+Welcome to VANA! This guide will help you set up and start using the hierarchical multi-agent AI system that intelligently routes tasks to specialized agents.
+
+## 🆕 What's New in Phase 1
+
+- **Hierarchical Agent System**: 5-level architecture with intelligent routing
+- **Active Specialists**: Architecture, DevOps, QA, UI/UX, and Data Science agents
+- **Smart Task Routing**: Automatic complexity analysis and agent selection
+- **Production Ready**: Circuit breakers and performance optimization
 
 ## Prerequisites
 
 Before you begin, ensure you have:
 
-- **Python 3.13+** (Required for modern async patterns)
+- **Python 3.13+** (Required for modern async patterns and Google ADK)
 - **Poetry** for dependency management
 - **Git** for version control
 - **Google Cloud API Key** for Gemini models
@@ -15,7 +22,7 @@ Before you begin, ensure you have:
 
 ```bash
 python3 --version
-# Should show Python 3.13.x
+# Must show Python 3.13.x or higher
 ```
 
 If you need to install Python 3.13, visit [python.org](https://www.python.org/downloads/).
@@ -55,29 +62,31 @@ GOOGLE_API_KEY=your_google_api_key_here
 VITE_API_KEY=your_api_key_for_frontend
 ```
 
-### 4. Start the Backend
+### 4. Start the Agentic Backend
 
 ```bash
 # Activate the virtual environment
 poetry shell
 
-# Start the VANA backend
-python main.py
+# Start the VANA Agentic AI backend
+python main_agentic.py
 ```
 
 You should see:
 ```
-INFO:     Started server process
-INFO:     Waiting for application startup.
-INFO:     Application startup complete.
+🚀 Starting VANA Agentic AI Server...
+📊 Phase 1: Hierarchical Agent System Active
+✅ Root Agent: VANA_Chat
+✅ Orchestrator: HierarchicalTaskManager
+✅ Specialists: 5
 INFO:     Uvicorn running on http://localhost:8081
 ```
 
-## Your First Request
+## Your First Requests
 
 ### Health Check
 
-First, verify the system is running:
+Verify the agentic system is running:
 
 ```bash
 curl http://localhost:8081/health
@@ -86,18 +95,34 @@ curl http://localhost:8081/health
 Expected response:
 ```json
 {
-  "status": "healthy"
+  "status": "healthy",
+  "version": "2.0.0-alpha",
+  "agent_system": "hierarchical",
+  "phase": "1",
+  "features": [
+    "VANA Chat Agent",
+    "Master Orchestrator",
+    "5 Active Specialists",
+    "Task Complexity Analysis",
+    "Intelligent Routing"
+  ]
 }
 ```
 
-### Simple Task
+### Test Agent Routing
 
-Try a basic task:
-
+#### Simple Conversation (stays with VANA Chat):
 ```bash
-curl -X POST http://localhost:8081/run \
+curl -X POST http://localhost:8081/api/v1/chat \
   -H "Content-Type: application/json" \
-  -d '{"input": "What time is it?"}'
+  -d '{"query": "Hello, how are you?", "session_id": "test-001"}'
+```
+
+#### Technical Task (routed to specialist):
+```bash
+curl -X POST http://localhost:8081/api/v1/chat \
+  -H "Content-Type: application/json" \
+  -d '{"query": "Design a REST API for user authentication", "session_id": "test-002"}'
 ```
 
 Response:
