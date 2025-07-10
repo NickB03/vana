@@ -287,3 +287,12 @@ cline_mcp_settings.json
 *memory*client*.py
 .memory_db/**
 
+
+# === Development Documentation Directory ===
+# All Claude/AI generated reports, analysis, and artifacts
+.development/
+development-docs/
+dev-artifacts/
+
+# Legacy patterns (kept for backward compatibility)
+# These files should now go in .development/ subdirectories
