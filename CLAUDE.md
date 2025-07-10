@@ -141,3 +141,22 @@ poetry run pytest --cov=lib --cov=agents # With coverage
 3. **Frontend Submodule**: `vana-ui` is a git submodule. Use `git submodule update --init` if needed.
 4. **API Keys**: Set `GOOGLE_API_KEY` for web search and AI features.
 5. **Streaming Responses**: Backend supports streaming for real-time agent responses.
+
+## 🔧 Claude Code Configuration
+
+### Permission System
+The project includes an optimized permission configuration in `.claude/settings.local.json` that reduces confirmation prompts by ~80% while maintaining security. This allows common development commands to execute immediately without interruption.
+
+- **Auto-allowed**: Git operations, file reading, development tools, safe file operations
+- **Always confirms**: `sudo` commands, system modifications, destructive operations
+- **Configuration**: See `.claude/settings.local.json` for full permission list
+- **Guide**: Refer to `CLAUDE_PERMISSIONS_GUIDE.md` for detailed information
+
+### Development Documentation
+Development artifacts should be saved to `.development/` directory (gitignored):
+- Reports → `.development/reports/`
+- Analysis → `.development/analysis/`
+- Summaries → `.development/summaries/`
+- Claude artifacts → `.development/claude-artifacts/`
+
+See `CLAUDE_DEVELOPMENT_GUIDE.md` for documentation organization guidelines.
