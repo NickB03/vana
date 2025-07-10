@@ -7,8 +7,23 @@ Based on research of ADK documentation and sample agents.
 
 import os
 import sys
-
 from dotenv import load_dotenv
+
+# CRITICAL: Load environment variables BEFORE any Google libraries are imported.
+# This ensures the GOOGLE_API_KEY is available for the ADK and GenAI clients.
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
+dotenv_path = os.path.join(project_root, '.env.local')
+if os.path.exists(dotenv_path):
+    load_dotenv(dotenv_path=dotenv_path)
+    api_key = os.getenv("GOOGLE_API_KEY")
+    if api_key:
+        print("✅ GOOGLE_API_KEY loaded from .env.local")
+    else:
+        print("❌ WARNING: GOOGLE_API_KEY not found in .env.local.")
+else:
+    # Fallback for environments where .env.local might not be present
+    print(f"Warning: .env.local not found at {dotenv_path}. Relying on system environment variables.")
+
 from google.adk.agents import LlmAgent
 
 # Import only essential tools following ADK patterns
@@ -18,16 +33,12 @@ from lib._tools import adk_mathematical_solve  # Mathematical reasoning tool
 from lib._tools import adk_read_file  # Basic file operations
 from lib._tools import adk_simple_execute_code  # Simple code execution
 from lib._tools import adk_transfer_to_agent  # Agent delegation
-from lib._tools import adk_web_search  # Current information
+from lib._tools.web_search_sync import create_web_search_sync_tool  # Synchronous web search
 from lib._tools import adk_write_file  # Basic file operations
-from lib._tools.search_coordinator import create_coordinated_search_tool  # Memory-first search
 from lib.logging_config import get_logger
 
 # Removed sys.path.insert - using proper package imports
 
-
-# Load environment variables
-load_dotenv()
 
 # Import ADK memory service for persistent memory
 try:
@@ -46,15 +57,8 @@ except ImportError as e:
     load_memory = None
     MEMORY_AVAILABLE = False
 
-# Initialize coordinated search tool
-try:
-    coordinated_search = create_coordinated_search_tool()
-    COORDINATED_SEARCH_AVAILABLE = True
-    logger.info("Coordinated search tool initialized successfully")
-except Exception as e:
-    logger.warning(f"Coordinated search tool not available: {e}")
-    coordinated_search = None
-    COORDINATED_SEARCH_AVAILABLE = False
+# Create synchronous web search tool
+adk_web_search = create_web_search_sync_tool()
 
 # Import specialist agents for simple ADK delegation (following ADK patterns)
 try:
@@ -74,37 +78,43 @@ except ImportError as e:
 # Create simplified ADK-compliant VANA agent following Google ADK best practices
 root_agent = LlmAgent(
     name="vana",
-    model=os.getenv("VANA_MODEL", "gemini-2.0-flash-exp"),
+    model=os.getenv("VANA_MODEL", "gemini-2.0-flash"),
     description="Intelligent AI assistant with core capabilities",
     instruction="""You are VANA, an intelligent AI assistant with automatic task routing.
 
 AUTOMATIC ROUTING PROTOCOL - FOLLOW THIS FOR EVERY USER REQUEST:
-1. First, use analyze_task to classify the user's request
-2. If the task_type is "code_execution", inform user that code execution is temporarily disabled while focusing on core functionality
-3. If the task_type is "data_analysis", immediately use transfer_to_agent with agent_name="data_science_specialist"
-4. For all other task types, handle the request directly using the appropriate tools below
+1. BEFORE using analyze_task, check if the query is asking for:
+   - Current time → IMMEDIATELY use web_search(query="current time in [location]", max_results=5)
+   - Weather → IMMEDIATELY use web_search(query="weather in [location]", max_results=5)
+   - News → IMMEDIATELY use web_search(query="[topic] news", max_results=5)
+2. For other requests, use analyze_task to classify them
+3. If the task_type is "code_execution", inform user that code execution is temporarily disabled
+4. If the task_type is "data_analysis", use transfer_to_agent with agent_name="data_science_specialist"
+5. For all other task types, handle the request directly using the appropriate tools
 
 AVAILABLE TOOLS:
-- coordinated_search: 🔍 ALWAYS USE THIS FOR ANY INFORMATION QUERIES - automatically checks memory → vector → web in optimal order
+- web_search: 🔍 Search the web for current information (time, weather, news, etc.)
+  IMPORTANT: Always provide both query (string) and max_results (integer, use 5 if unsure)
 - mathematical_solve: For mathematical problems and calculations
 - logical_analyze: For logical reasoning tasks
 - read_file/write_file: For file operations
 - simple_execute_code: For basic Python execution (only for simple tasks, not complex code)
-- load_memory: For direct memory queries (prefer coordinated_search for general information)
-- web_search: For direct web queries (prefer coordinated_search for comprehensive results)
+- load_memory: For direct memory queries (if available)
+- analyze_task: For classifying and routing tasks
 
-SEARCH STRATEGY:
-ALWAYS use coordinated_search for information queries instead of individual search tools:
-- "What is VANA?" → coordinated_search (checks memory + knowledge first)
-- "How do I do X?" → coordinated_search (checks stored solutions first)
-- "Current weather" → coordinated_search (intelligently routes to web for current data)
-- "User preferences" → coordinated_search (prioritizes memory for personal context)
+CRITICAL INSTRUCTIONS FOR TIME/WEATHER/NEWS QUERIES:
+When user asks about time, weather, or news, SKIP analyze_task and DIRECTLY call web_search:
+- "What time is it in Dallas?" → IMMEDIATELY call web_search(query="current time in Dallas", max_results=5)
+- "what time is it in dallas" → IMMEDIATELY call web_search(query="current time in Dallas", max_results=5)
+- "Current weather in NYC" → IMMEDIATELY call web_search(query="weather New York City", max_results=5)
+- "Latest news about X" → IMMEDIATELY call web_search(query="latest news X", max_results=5)
+
+DO NOT analyze these queries, just search immediately!
 
 Remember: Always analyze first, then route if needed, then execute.""",
     tools=[
-        # Memory-first coordinated search (highest priority)
-        coordinated_search,  # Intelligent search with memory → vector → web priority
         # Essential tools (following ADK best practices)
+        adk_web_search,  # Web search with fallback support
         adk_mathematical_solve,  # Math problems
         adk_logical_analyze,  # Logical reasoning
         adk_read_file,  # Basic file operations
@@ -112,21 +122,8 @@ Remember: Always analyze first, then route if needed, then execute.""",
         adk_analyze_task,  # Intelligent task analysis
         adk_transfer_to_agent,  # Agent delegation for automatic routing
         adk_simple_execute_code,  # Simple code execution
-        # Legacy tools (lower priority - prefer coordinated_search)
-        adk_web_search,  # Direct web search (use coordinated_search instead)
     ]
-    + ([load_memory] if MEMORY_AVAILABLE and load_memory else [])  # Direct memory (use coordinated_search instead)
-    if COORDINATED_SEARCH_AVAILABLE else [
-        # Fallback to original tools if coordinated search unavailable
-        adk_web_search,  # Current information
-        adk_mathematical_solve,  # Math problems
-        adk_logical_analyze,  # Logical reasoning
-        adk_read_file,  # Basic file operations
-        adk_write_file,  # Basic file operations
-        adk_analyze_task,  # Intelligent task analysis
-        adk_transfer_to_agent,  # Agent delegation for automatic routing
-        adk_simple_execute_code,  # Simple code execution
-    ] + ([load_memory] if MEMORY_AVAILABLE and load_memory else []),
+    + ([load_memory] if MEMORY_AVAILABLE and load_memory else []),
     # Simple ADK delegation pattern
     sub_agents=specialist_agents,
 )

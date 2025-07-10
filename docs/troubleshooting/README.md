@@ -244,7 +244,7 @@ except Exception as e:
    python scripts/local_memory_server.py
    
    # Verify connection
-   curl -X POST http://localhost:8000/mcp/messages \
+   curl -X POST http://localhost:8081/mcp/messages \
      -H "Content-Type: application/json" \
      -d '{"method": "tools/list"}'
    ```
@@ -264,10 +264,10 @@ ps aux | grep local_memory_server
 python /Users/nick/Development/vana/scripts/local_memory_server.py &
 
 # Verify server is listening
-lsof -i :8000
+lsof -i :8081
 
 # Test connection
-curl http://localhost:8000/health
+curl http://localhost:8081/health
 ```
 
 ### Memory Storage Failures

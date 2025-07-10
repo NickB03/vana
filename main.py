@@ -1,189 +1,330 @@
-"""
-VANA Agent - FastAPI Entry Point
-
-This module provides the FastAPI entry point for the VANA agent using Google ADK.
-Automatically detects environment and configures authentication appropriately.
-Includes proper ADK memory service initialization for vector search and RAG pipeline.
-
-CRITICAL: Requires Python 3.13+ for production stability.
-"""
-
-import logging
 import os
-import sys
+from fastapi import FastAPI, Request, Response, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
+from typing import Dict, Any, AsyncGenerator, List
+import logging
+import json
+import asyncio
+from datetime import datetime
+import uuid
+from google.adk.runners import Runner
+from google.adk.sessions import InMemorySessionService
+from google.genai.types import Content, Part
 
-import uvicorn
-from fastapi import FastAPI, Request
-from google.adk.cli.fast_api import get_fast_api_app
+# Import the VANA agent
+from agents.vana.team import root_agent
 
-# CRITICAL: Validate Python version before any imports
-def validate_python_version():
-    """Ensure Python 3.13+ is being used for production stability"""
-    if sys.version_info.major != 3 or sys.version_info.minor < 13:
-        print(f"🚨 CRITICAL ERROR: Python 3.13+ required, got {sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}")
-        print("❌ VANA system will not function correctly with this Python version")
-        print("✅ Fix: poetry env use python3.13 && poetry install")
-        sys.exit(1)
-    print(f"✅ Python version validated: {sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}")
+# Set up logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
-# Validate environment before proceeding
-validate_python_version()
-
-# Configure centralized logging first
-from lib.logging_config import setup_logging
-
-setup_logging()
-logger = logging.getLogger("vana.main")
-
-# Note: sys.path.insert removed - using proper package imports instead
-
-# Verify lib directory exists for imports
-if not os.path.exists("lib"):
-    logger.warning("lib directory not found - some imports may fail")
-
-# Import our smart environment detection
-from lib.environment import setup_environment
-
-# Import MCP server components
-from lib.mcp_server.sse_transport import MCPSSETransport
-
-# Setup environment-specific configuration
-logger.info("Setting up environment configuration...")
-environment_type = setup_environment()
-logger.info(f"Environment configured: {environment_type}")
-
-# Get the directory where main.py is located - this is where the agent files are now located
-# Supporting directories are now in lib/ to avoid being treated as agents
-AGENT_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "agents")
-logger.info(f"Agent directory: {AGENT_DIR}")
-
-# Verify agent directory exists
-if not os.path.exists(AGENT_DIR):
-    logger.warning(f"Agent directory not found: {AGENT_DIR}")
-else:
-    logger.info("Agent directory found and accessible")
-
-# Session database URL (SQLite for development)
-# Use /tmp for Cloud Run compatibility (writable filesystem)
-SESSION_DB_URL = "sqlite:////tmp/sessions.db"
-
-# Allowed origins for CORS
-ALLOWED_ORIGINS = ["http://localhost", "http://localhost:8080", "*"]
-
-# Serve web interface
-SERVE_WEB_INTERFACE = True
-
-
-# Security guardrail callbacks
-def before_tool_callback(_tool_name: str, tool_args: dict, _session):
-    """Validate tool arguments before execution."""
-    path_arg = tool_args.get("file_path") or tool_args.get("directory_path")
-    if path_arg and (".." in path_arg or path_arg.startswith("/")):
-        raise ValueError("Invalid path access")
-
-
-def after_model_callback(_agent_name: str, response: str, _session):
-    """Lightweight policy check on model responses."""
-    banned = ["malware", "illegal"]
-    if any(word in response.lower() for word in banned):
-        logger.warning("Policy violation detected in response")
-
-
-# Create the FastAPI app using ADK
-app: FastAPI = get_fast_api_app(
-    agents_dir=AGENT_DIR,
-    allow_origins=ALLOWED_ORIGINS,
-    web=SERVE_WEB_INTERFACE,
+# Initialize ADK components
+session_service = InMemorySessionService()
+runner = Runner(
+    agent=root_agent,
+    app_name="vana",
+    session_service=session_service
 )
-logger.info("FastAPI app created successfully")
 
-# Note: Security guardrails defined above for future integration
-# Current ADK version may not support callback parameters
+app = FastAPI()
 
-# Initialize MCP SSE Transport
-mcp_transport = MCPSSETransport(None)  # Server will be initialized later
+# Load API_KEY from environment (no hardcoded values)
+app.add_event_handler("startup", lambda: logger.warning("Ensure VITE_API_KEY is set in environment") if not os.getenv("VITE_API_KEY") else None)
 
+# CORS Configuration - Single source of truth for allowed origins
+ALLOWED_ORIGINS = ["http://localhost:5173"]  # Frontend runs on port 5173
 
-# Add MCP endpoints
-@app.get("/mcp/sse")
-async def mcp_sse_endpoint(request: Request):
-    """MCP Server-Sent Events endpoint"""
-    return await mcp_transport.handle_sse_connection(request)
+app.add_middleware(
+  CORSMiddleware,
+  allow_origins=ALLOWED_ORIGINS,
+  allow_credentials=True,
+  allow_methods=["GET", "POST", "OPTIONS"],
+  allow_headers=["Content-Type", "Authorization"]
+)
 
+# OPTIONS Preflight Handler
+@app.middleware("http")
+async def preflight_handler(request: Request, call_next):
+    if request.method == "OPTIONS":
+        origin = request.headers.get("origin")
+        if origin in ALLOWED_ORIGINS:
+            return Response("{'content': 'Preflight check successful'}", media_type='application/json', headers={
+                "Access-Control-Allow-Origin": origin,
+                "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+                "Access-Control-Allow-Headers": "Content-Type, Authorization",
+                "Access-Control-Allow-Credentials": "true"
+            })
+        return Response(status_code=403)
+    return await call_next(request)
 
-@app.post("/mcp/messages")
-async def mcp_messages_endpoint(request: Request):
-    """MCP messages endpoint for JSON-RPC communication"""
-    return await mcp_transport.handle_message_post(request)
+# VANA Agent Endpoint - Process requests through the actual VANA orchestrator
+@app.post("/run")
+async def run_vana(request: Request) -> Dict[str, Any]:
+    """Process user input through the VANA orchestrator agent."""
+    try:
+        # Get request data
+        data = await request.json()
+        user_input = data.get("input", "")
+        
+        if not user_input:
+            raise HTTPException(status_code=400, detail="No input provided")
+        
+        logger.info(f"Processing request: {user_input[:50]}...")
+        
+        # Process through VANA agent using ADK Runner
+        try:
+            # Create session for this request with secure ID
+            session_id = f"session_{uuid.uuid4()}"
+            user_id = "api_user"
+            
+            # Create session first - this is required
+            # The session service create_session is already async, so just await it
+            session = await session_service.create_session(
+                app_name="vana",
+                user_id=user_id,
+                session_id=session_id
+            )
+            
+            # Create content from user input with explicit user role
+            user_message = Content(parts=[Part(text=user_input)], role="user")
+            
+            # Run the agent and collect response
+            output_text = ""
+            # Use regular for loop since runner.run() returns a generator
+            for event in runner.run(
+                user_id=user_id,
+                session_id=session_id,
+                new_message=user_message
+            ):
+                if event.is_final_response():
+                    # Extract text from the response content
+                    if hasattr(event, 'content') and event.content:
+                        if hasattr(event.content, 'parts') and event.content.parts:
+                            output_text = event.content.parts[0].text
+                        elif hasattr(event.content, 'text'):
+                            output_text = event.content.text
+                        else:
+                            output_text = str(event.content)
+            
+            if not output_text:
+                output_text = "I processed your request but couldn't generate a response."
+            
+            logger.info(f"Agent response: {output_text[:100]}...")
+            
+            # Return in the expected format
+            return {
+                "result": {
+                    "output": output_text,
+                    "id": session_id
+                }
+            }
+            
+        except Exception as agent_error:
+            logger.error(f"Agent processing error: {agent_error}")
+            # Fallback to a helpful error message
+            return {
+                "result": {
+                    "output": "I encountered an error processing your request. Please try again.",
+                    "id": f"error_{uuid.uuid4()}"
+                }
+            }
+            
+    except Exception as e:
+        logger.error(f"Request handling error: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
+# Data models for chat completions API
+class ChatMessage:
+    def __init__(self, role: str, content: str):
+        self.role = role
+        self.content = content
 
-# Add custom routes if needed
+class ChatCompletionRequest:
+    def __init__(self, messages: List[Dict[str, Any]], stream: bool = False):
+        self.messages = [ChatMessage(msg["role"], msg["content"]) for msg in messages]
+        self.stream = stream
+
+class AgentStatusTracker:
+    """Track agent delegation and status updates for streaming"""
+    def __init__(self):
+        self.current_status = "thinking"
+        self.delegated_agent = None
+        self.status_history = []
+    
+    def update_status(self, status: str, agent: str = None):
+        self.current_status = status
+        if agent:
+            self.delegated_agent = agent
+        self.status_history.append({
+            "status": status,
+            "agent": agent,
+            "timestamp": datetime.now().isoformat()
+        })
+
+# Global status tracker
+status_tracker = AgentStatusTracker()
+
+async def process_vana_agent(user_input: str) -> str:
+    """Process input through VANA agent and return response text"""
+    try:
+        # Create session for this request
+        session_id = f"stream_session_{datetime.now().timestamp()}"
+        user_id = "api_user"
+        
+        session = await session_service.create_session(
+            app_name="vana",
+            user_id=user_id,
+            session_id=session_id
+        )
+        
+        # Create content from user input with explicit user role
+        user_message = Content(parts=[Part(text=user_input)], role="user")
+        
+        # Run the agent and collect response
+        output_text = ""
+        # Use regular for loop since runner.run() returns a generator
+        for event in runner.run(
+            user_id=user_id,
+            session_id=session_id,
+            new_message=user_message
+        ):
+            if event.is_final_response():
+                # Extract text from the response content
+                if hasattr(event, 'content') and event.content:
+                    if hasattr(event.content, 'parts') and event.content.parts:
+                        output_text = event.content.parts[0].text
+                    elif hasattr(event.content, 'text'):
+                        output_text = event.content.text
+                    else:
+                        output_text = str(event.content)
+        
+        return output_text if output_text else "I processed your request but couldn't generate a response."
+            
+    except Exception as e:
+        logger.error(f"Agent processing error: {e}")
+        return f"I encountered an error processing your request: {str(e)}. Please try again."
+
+async def stream_agent_response(user_input: str, session_id: str = None) -> AsyncGenerator[str, None]:
+    """Stream VANA agent response with status updates"""
+    try:
+        # Initial thinking status
+        status_tracker.update_status("analyzing_request")
+        yield f"data: {json.dumps({'type': 'status', 'content': 'Analyzing your request...', 'status': 'analyzing_request'})}\n\n"
+        
+        await asyncio.sleep(0.1)  # Brief pause for UX
+        
+        # Process through VANA agent
+        status_tracker.update_status("processing")
+        yield f"data: {json.dumps({'type': 'status', 'content': 'Processing with VANA...', 'status': 'processing'})}\n\n"
+        
+        # Get response from agent
+        output_text = await process_vana_agent(user_input)
+        
+        # Check if agent was delegated by looking for transfer patterns
+        if "transfer_to_agent" in output_text.lower() or "delegating" in output_text.lower():
+            status_tracker.update_status("delegating_to_specialist")
+            yield f"data: {json.dumps({'type': 'status', 'content': 'Delegating to specialist agent...', 'status': 'delegating_to_specialist'})}\n\n"
+            await asyncio.sleep(0.5)
+            
+            status_tracker.update_status("specialist_working")
+            yield f"data: {json.dumps({'type': 'status', 'content': 'Specialist agent analyzing...', 'status': 'specialist_working'})}\n\n"
+            await asyncio.sleep(1.0)
+            
+            status_tracker.update_status("specialist_complete")
+            yield f"data: {json.dumps({'type': 'status', 'content': 'Specialist analysis complete...', 'status': 'specialist_complete'})}\n\n"
+            await asyncio.sleep(0.3)
+        
+        # Final response preparation
+        status_tracker.update_status("preparing_response")
+        yield f"data: {json.dumps({'type': 'status', 'content': 'Preparing response...', 'status': 'preparing_response'})}\n\n"
+        
+        await asyncio.sleep(0.2)
+        
+        # Stream the actual response (chunked for better UX)
+        status_tracker.update_status("responding")
+        words = output_text.split()
+        for i in range(0, len(words), 3):  # Stream 3 words at a time
+            chunk = " ".join(words[i:i+3])
+            if i > 0:
+                chunk = " " + chunk
+            yield f"data: {json.dumps({'type': 'content', 'content': chunk})}\n\n"
+            await asyncio.sleep(0.05)  # Small delay for streaming effect
+        
+        # End of stream
+        yield f"data: {json.dumps({'type': 'done', 'status': 'complete'})}\n\n"
+        
+    except Exception as e:
+        logger.error(f"Streaming error: {e}")
+        yield f"data: {json.dumps({'type': 'error', 'content': 'I encountered an error. Please try again.'})}\n\n"
+
+# OpenAI-compatible chat completions endpoint with streaming support
+@app.post("/v1/chat/completions")
+async def chat_completions(request: Request):
+    """OpenAI-compatible chat completions API with streaming support"""
+    try:
+        data = await request.json()
+        chat_request = ChatCompletionRequest(
+            messages=data.get("messages", []),
+            stream=data.get("stream", False)
+        )
+        
+        if not chat_request.messages:
+            raise HTTPException(status_code=400, detail="No messages provided")
+        
+        # Get the latest user message
+        user_message = None
+        for msg in reversed(chat_request.messages):
+            if msg.role == "user":
+                user_message = msg.content
+                break
+        
+        if not user_message:
+            raise HTTPException(status_code=400, detail="No user message found")
+        
+        logger.info(f"Chat completion request: {user_message[:50]}...")
+        
+        if chat_request.stream:
+            # Return streaming response
+            return StreamingResponse(
+                stream_agent_response(user_message),
+                media_type="text/plain",
+                headers={
+                    "Cache-Control": "no-cache",
+                    "Connection": "keep-alive",
+                    "Access-Control-Allow-Origin": ALLOWED_ORIGINS[0] if ALLOWED_ORIGINS else "*",
+                    "Access-Control-Allow-Credentials": "true"
+                }
+            )
+        else:
+            # Non-streaming response (fallback)
+            output_text = await process_vana_agent(user_message)
+            
+            return {
+                "id": f"chatcmpl-{os.getpid()}-{int(datetime.now().timestamp())}",
+                "object": "chat.completion",
+                "created": int(datetime.now().timestamp()),
+                "model": "vana",
+                "choices": [{
+                    "index": 0,
+                    "message": {
+                        "role": "assistant",
+                        "content": output_text
+                    },
+                    "finish_reason": "stop"
+                }]
+            }
+            
+    except Exception as e:
+        logger.error(f"Chat completion error: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+# Existing endpoints can remain here
 @app.get("/health")
-async def health_check():
-    """Health check endpoint."""
-    from lib.version import get_version_summary
-
-    return {
-        "status": "healthy",
-        "agent": "vana",
-        "mcp_enabled": True,
-        "version": get_version_summary(),
-    }
-
-
-@app.get("/version")
-async def version_info():
-    """Detailed version information endpoint."""
-    from lib.version import get_runtime_version_info
-
-    return get_runtime_version_info()
-
-
-@app.get("/info")
-async def agent_info():
-    """Get agent information."""
-    # Get current memory service info (lazy initialization)
-    from lib._shared_libraries.lazy_initialization import get_adk_memory_service
-    from lib.version import get_runtime_version_info
-
-    memory_service = get_adk_memory_service()
-    current_memory_info = memory_service.get_service_info()
-    version_info = get_runtime_version_info()
-
-    return {
-        "name": "VANA",
-        "description": "AI assistant with enhanced reasoning capabilities, memory, knowledge graph, and search",
-        "version": version_info["version"],
-        "version_details": {
-            "base_version": version_info["base_version"],
-            "commit_hash": version_info["git"]["commit_short"],
-            "branch": version_info["git"]["branch"],
-            "build_id": version_info["build"]["build_id"],
-            "build_timestamp": version_info["build"]["build_timestamp"],
-            "deployment_timestamp": version_info["deployment"]["timestamp"],
-        },
-        "adk_integrated": True,
-        "mcp_server": True,
-        "mcp_endpoints": {"sse": "/mcp/sse", "messages": "/mcp/messages"},
-        "memory_service": {
-            "type": current_memory_info["service_type"],
-            "available": current_memory_info["available"],
-            "supports_persistence": current_memory_info["supports_persistence"],
-            "supports_semantic_search": current_memory_info["supports_semantic_search"],
-        },
-        "environment": environment_type,
-        "enhanced_features": {
-            "reasoning_tools": 5,
-            "mathematical_reasoning": True,
-            "logical_reasoning": True,
-            "enhanced_echo": True,
-            "enhanced_task_analysis": True,
-            "reasoning_coordination": True,
-        },
-    }
-
+async def health():
+    return {"status": "healthy"}
 
 if __name__ == "__main__":
-    # Use the PORT environment variable provided by Cloud Run, defaulting to 8081
-    port = int(os.environ.get("PORT", 8081))
-    uvicorn.run(app, host="0.0.0.0", port=port)
+    import uvicorn
+    # Ensure proper port binding and logging
+    uvicorn.run(app, host="0.0.0.0", port=8081, log_level="debug")

@@ -228,7 +228,7 @@ cat .claude/settings.local.json | jq '.permissions'
 #### Test MCP Connectivity
 ```bash
 # Test MCP server status
-curl -X POST http://localhost:8000/mcp/messages \
+curl -X POST http://localhost:8081/mcp/messages \
   -H "Content-Type: application/json" \
   -d '{"method": "tools/list"}'
 ```
