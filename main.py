@@ -7,6 +7,9 @@ import logging
 import json
 import asyncio
 from datetime import datetime
+from google.adk.runners import Runner
+from google.adk.sessions import InMemorySessionService
+from google.genai.types import Content, Part
 
 # Import the VANA agent
 from agents.vana.team import root_agent
@@ -14,6 +17,14 @@ from agents.vana.team import root_agent
 # Set up logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+# Initialize ADK components
+session_service = InMemorySessionService()
+runner = Runner(
+    agent=root_agent,
+    app_name="vana",
+    session_service=session_service
+)
 
 app = FastAPI()
 
@@ -23,7 +34,7 @@ app.add_event_handler("startup", lambda: os.environ.setdefault("VITE_API_KEY", "
 # Enhanced CORS Configuration
 app.add_middleware(
   CORSMiddleware,
-  allow_origins=["http://localhost:5177", "http://localhost:5179"],
+  allow_origins=["http://localhost:5173", "http://localhost:5177", "http://localhost:5179"],
   allow_credentials=True,
   allow_methods=["GET", "POST", "OPTIONS"],
   allow_headers=["Content-Type", "Authorization"]
@@ -34,7 +45,7 @@ app.add_middleware(
 async def preflight_handler(request: Request, call_next):
     if request.method == "OPTIONS":
         return Response("{'content': 'Preflight check successful'}", media_type='application/json', headers={
-            "Access-Control-Allow-Origin": "http://localhost:5179",
+            "Access-Control-Allow-Origin": "http://localhost:5173",
             "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
             "Access-Control-Allow-Headers": "Content-Type, Authorization",
             "Access-Control-Allow-Credentials": "true"
@@ -55,18 +66,43 @@ async def run_vana(request: Request) -> Dict[str, Any]:
         
         logger.info(f"Processing request: {user_input[:50]}...")
         
-        # Process through VANA agent
+        # Process through VANA agent using ADK Runner
         try:
-            # Call the agent directly as it's callable
-            response = root_agent(user_input)
+            # Create session for this request
+            session_id = f"session_{datetime.now().timestamp()}"
+            user_id = "api_user"
             
-            # Extract the response text
-            if hasattr(response, 'text'):
-                output_text = response.text
-            elif isinstance(response, str):
-                output_text = response
-            else:
-                output_text = str(response)
+            # Create session first - this is required
+            # The session service create_session is already async, so just await it
+            session = await session_service.create_session(
+                app_name="vana",
+                user_id=user_id,
+                session_id=session_id
+            )
+            
+            # Create content from user input with explicit user role
+            user_message = Content(parts=[Part(text=user_input)], role="user")
+            
+            # Run the agent and collect response
+            output_text = ""
+            # Use regular for loop since runner.run() returns a generator
+            for event in runner.run(
+                user_id=user_id,
+                session_id=session_id,
+                new_message=user_message
+            ):
+                if event.is_final_response():
+                    # Extract text from the response content
+                    if hasattr(event, 'content') and event.content:
+                        if hasattr(event.content, 'parts') and event.content.parts:
+                            output_text = event.content.parts[0].text
+                        elif hasattr(event.content, 'text'):
+                            output_text = event.content.text
+                        else:
+                            output_text = str(event.content)
+            
+            if not output_text:
+                output_text = "I processed your request but couldn't generate a response."
             
             logger.info(f"Agent response: {output_text[:100]}...")
             
@@ -74,7 +110,7 @@ async def run_vana(request: Request) -> Dict[str, Any]:
             return {
                 "result": {
                     "output": output_text,
-                    "id": f"vana_{os.getpid()}_{id(response)}"  # Generate unique session ID
+                    "id": session_id
                 }
             }
             
@@ -126,16 +162,38 @@ status_tracker = AgentStatusTracker()
 async def process_vana_agent(user_input: str) -> str:
     """Process input through VANA agent and return response text"""
     try:
-        # For now, use a fallback to demonstrate the streaming functionality
-        # TODO: Fix the VANA agent integration once context issue is resolved
+        # Create session for this request
+        session_id = f"stream_session_{datetime.now().timestamp()}"
+        user_id = "api_user"
         
-        # Simulate VANA processing with a helpful response
-        if "what is vana" in user_input.lower():
-            return "VANA is a multi-agent AI system built on Google's Agent Development Kit (ADK). It uses dynamic orchestration to coordinate specialist agents for complex tasks. The system can handle data analysis, code execution, research, and various other AI-powered workflows through intelligent agent delegation and collaboration."
-        elif "hello" in user_input.lower():
-            return "Hello! I'm VANA, your AI orchestrator. I can help you with various tasks by coordinating specialist agents. What can I assist you with today?"
-        else:
-            return f"I understand you're asking about: {user_input}. I'm VANA, an AI orchestrator that can coordinate multiple specialist agents to help with complex tasks. How can I assist you today?"
+        session = await session_service.create_session(
+            app_name="vana",
+            user_id=user_id,
+            session_id=session_id
+        )
+        
+        # Create content from user input with explicit user role
+        user_message = Content(parts=[Part(text=user_input)], role="user")
+        
+        # Run the agent and collect response
+        output_text = ""
+        # Use regular for loop since runner.run() returns a generator
+        for event in runner.run(
+            user_id=user_id,
+            session_id=session_id,
+            new_message=user_message
+        ):
+            if event.is_final_response():
+                # Extract text from the response content
+                if hasattr(event, 'content') and event.content:
+                    if hasattr(event.content, 'parts') and event.content.parts:
+                        output_text = event.content.parts[0].text
+                    elif hasattr(event.content, 'text'):
+                        output_text = event.content.text
+                    else:
+                        output_text = str(event.content)
+        
+        return output_text if output_text else "I processed your request but couldn't generate a response."
             
     except Exception as e:
         logger.error(f"Agent processing error: {e}")
@@ -192,7 +250,7 @@ async def stream_agent_response(user_input: str, session_id: str = None) -> Asyn
         
     except Exception as e:
         logger.error(f"Streaming error: {e}")
-        yield f"data: {json.dumps({'type': 'error', 'content': f'I encountered an error: {str(e)}. Please try again.'})}\n\n"
+        yield f"data: {json.dumps({'type': 'error', 'content': 'I encountered an error. Please try again.'})}\n\n"
 
 # OpenAI-compatible chat completions endpoint with streaming support
 @app.post("/v1/chat/completions")
@@ -228,7 +286,7 @@ async def chat_completions(request: Request):
                 headers={
                     "Cache-Control": "no-cache",
                     "Connection": "keep-alive",
-                    "Access-Control-Allow-Origin": "http://localhost:5179",
+                    "Access-Control-Allow-Origin": "http://localhost:5173",
                     "Access-Control-Allow-Credentials": "true"
                 }
             )
