@@ -198,3 +198,7 @@ open-webui/
 # Cline MCP Configuration (contains local paths)
 cline_mcp_settings.json
 mcp_servers/
+
+# Temporary files
+backend_log.txt
+test_result.json
