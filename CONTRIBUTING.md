@@ -1,238 +1,424 @@
-# 🤝 Contributing to VANA
+# Contributing to VANA
 
-Thank you for your interest in contributing to VANA! This guide will help you get started with contributing to our multi-agent AI system.
+Thank you for your interest in contributing to VANA! This guide will help you get started with contributing to our multi-agent AI orchestration system.
 
-## 🎯 Ways to Contribute
+## 🌟 Ways to Contribute
 
-### 🐛 Bug Reports
-- Report bugs through [GitHub Issues](https://github.com/NickB03/vana/issues)
-- Include detailed reproduction steps
-- Provide system information and logs
-
-### ✨ Feature Requests
-- Suggest new features or improvements
-- Describe the use case and expected behavior
-- Consider implementation complexity
-
-### 📝 Documentation
-- Improve existing documentation
-- Add examples and tutorials
-- Fix typos and clarify instructions
-
-### 💻 Code Contributions
-- Fix bugs and implement features
-- Add new agents or tools
-- Improve performance and reliability
-
-### 🧪 Testing
-- Write unit and integration tests
-- Test new features and bug fixes
-- Improve test coverage
+- **Bug Reports**: Help us identify and fix issues
+- **Feature Requests**: Suggest new capabilities and improvements
+- **Code Contributions**: Implement features, fix bugs, improve performance
+- **Documentation**: Enhance guides, examples, and API documentation
+- **Testing**: Improve test coverage and quality
+- **Community**: Help others in discussions and provide support
 
 ## 🚀 Getting Started
 
-### 1. Fork and Clone
+### Prerequisites
+
+- Python 3.13+
+- Poetry for dependency management
+- Git for version control
+- Google Cloud API key for testing
+
+### Development Setup
+
+1. **Fork the Repository**
+   ```bash
+   # Fork on GitHub, then clone your fork
+   git clone https://github.com/yourusername/vana.git
+   cd vana
+   ```
+
+2. **Set Up Development Environment**
+   ```bash
+   # Install dependencies
+   poetry install
+   
+   # Install pre-commit hooks
+   poetry run pre-commit install
+   
+   # Set up environment
+   cp .env.example .env
+   # Add your GOOGLE_API_KEY
+   ```
+
+3. **Verify Setup**
+   ```bash
+   # Run tests
+   poetry run pytest
+   
+   # Start the backend
+   python main.py
+   
+   # Check health
+   curl http://localhost:8081/health
+   ```
+
+## 📋 Development Workflow
+
+### 1. Create a Feature Branch
 
 ```bash
-# Fork the repository on GitHub
-# Then clone your fork
-git clone https://github.com/YOUR_USERNAME/vana.git
-cd vana
-
-# Add upstream remote
-git remote add upstream https://github.com/NickB03/vana.git
-```
-
-### 2. Set Up Development Environment
-
-```bash
-# Install dependencies
-poetry install
-
-# Install pre-commit hooks
-pre-commit install
-
-# Copy environment template
-cp .env.local.example .env.local
-# Edit .env.local with your configuration
-```
-
-### 3. Create a Branch
-
-```bash
-# Create a feature branch
+# Create and switch to a new branch
 git checkout -b feature/your-feature-name
 
-# Or a bug fix branch
-git checkout -b fix/issue-number-description
+# Or for bug fixes
+git checkout -b fix/issue-description
 ```
 
-## 📋 Development Guidelines
+### 2. Make Your Changes
 
-### Code Style
+Follow our coding standards and best practices (see below).
 
-#### Python Standards
-- Follow [PEP 8](https://pep8.org/) style guide
-- Use [Black](https://black.readthedocs.io/) for code formatting
-- Use [Ruff](https://docs.astral.sh/ruff/) for linting
-- Add type hints for all functions
+### 3. Test Your Changes
 
-### Testing Requirements
+```bash
+# Run unit tests
+poetry run pytest tests/unit -v
 
-#### Unit Tests
+# Run integration tests
+poetry run pytest tests/integration -v
+
+# Run validation scripts
+python validate_workflow_engine.py
+python validate_task_analyzer.py
+
+# Check code quality
+poetry run black .
+poetry run isort .
+poetry run flake8
+poetry run mypy .
+```
+
+### 4. Commit Your Changes
+
+```bash
+# Stage your changes
+git add .
+
+# Commit with a descriptive message
+git commit -m "feat: add new agent coordination feature
+
+- Implement dynamic agent selection
+- Add performance metrics collection
+- Update documentation
+
+Closes #123"
+```
+
+### 5. Push and Create Pull Request
+
+```bash
+# Push to your fork
+git push origin feature/your-feature-name
+
+# Create a pull request on GitHub
+```
+
+## 📝 Coding Standards
+
+### Python Code Style
+
+We follow PEP 8 with some modifications:
+
+```python
+# Use descriptive variable names
+user_input = request.get("input")
+
+# Add type hints
+async def process_request(input_text: str) -> Dict[str, Any]:
+    """Process user input through VANA agents."""
+    pass
+
+# Use docstrings for all public functions
+def analyze_task(task: str) -> TaskAnalysis:
+    """Analyze a task and determine routing strategy.
+    
+    Args:
+        task: The task description to analyze
+        
+    Returns:
+        TaskAnalysis object with routing information
+    """
+    pass
+
+# Handle errors gracefully
+try:
+    result = await agent.process(task)
+except AgentException as e:
+    logger.error(f"Agent processing failed: {e}")
+    return {"error": "Processing failed", "details": str(e)}
+```
+
+### Code Organization
+
+```
+lib/
+├── _tools/              # ADK tool implementations
+│   ├── __init__.py
+│   ├── file_tools.py    # File operations
+│   ├── search_tools.py  # Search functionality
+│   └── workflow_tools.py# Workflow management
+├── _shared/             # Shared utilities
+│   ├── __init__.py
+│   ├── logging.py       # Logging configuration
+│   └── validation.py    # Input validation
+└── agents/              # Agent implementations
+    ├── __init__.py
+    └── base_agent.py    # Base agent class
+```
+
+### Testing Standards
+
+Write comprehensive tests for all new features:
+
 ```python
 import pytest
 from unittest.mock import Mock, patch
-from agents.example.agent import ExampleAgent
+from your_module import your_function
 
-class TestExampleAgent:
-    """Test suite for ExampleAgent."""
-
-    @pytest.fixture
-    def agent(self):
-        """Create agent instance for testing."""
-        config = {"test_mode": True}
-        return ExampleAgent(config)
-
-    def test_process_request_success(self, agent):
-        """Test successful request processing."""
-        message = "test message"
-        result = agent.process_request(message)
-
-        assert result["success"] is True
-        assert "data" in result
-        assert result["message"] == "Task completed successfully"
+class TestYourFunction:
+    """Test suite for your_function."""
+    
+    @pytest.mark.asyncio
+    async def test_successful_execution(self):
+        """Test successful function execution."""
+        result = await your_function("test input")
+        assert result["status"] == "success"
+    
+    @pytest.mark.asyncio
+    async def test_error_handling(self):
+        """Test error handling in function."""
+        with pytest.raises(ValueError):
+            await your_function("")
+    
+    @patch('your_module.external_service')
+    async def test_with_mocked_service(self, mock_service):
+        """Test function with mocked external dependency."""
+        mock_service.return_value = "mocked response"
+        result = await your_function("test")
+        assert "mocked response" in result
 ```
 
-## 🧪 Testing Guidelines
+## 🐛 Bug Reports
 
-### Running Tests
+### Before Submitting
 
-```bash
-# Run all tests
-poetry run pytest
+1. **Search existing issues** to avoid duplicates
+2. **Update to latest version** to see if the issue persists
+3. **Check documentation** for expected behavior
 
-# Run specific test file
-poetry run pytest tests/unit/test_agent.py
+### Bug Report Template
 
-# Run with coverage
-poetry run pytest --cov=agents --cov=lib --cov=tools
-
-# Run integration tests
-poetry run pytest tests/integration/
-
-# Run with verbose output
-poetry run pytest -v
-```
-
-### Test Categories
-
-#### Unit Tests
-- Test individual functions and methods
-- Mock external dependencies
-- Fast execution (< 1 second per test)
-- Located in `tests/unit/`
-
-#### Integration Tests
-- Test component interactions
-- Use real services when possible
-- Moderate execution time (< 30 seconds per test)
-- Located in `tests/integration/`
-
-#### End-to-End Tests
-- Test complete workflows
-- Use production-like environment
-- Longer execution time (< 5 minutes per test)
-- Located in `tests/e2e/`
-
-## 📝 Pull Request Process
-
-### 1. Prepare Your Changes
-
-```bash
-# Ensure your branch is up to date
-git fetch upstream
-git rebase upstream/main
-
-# Run tests and linting
-poetry run pytest
-poetry run black .
-poetry run ruff check .
-
-# Run pre-commit hooks
-pre-commit run --all-files
-```
-
-### 2. Create Pull Request
-
-#### PR Title Format
-- `feat: add new agent for travel booking`
-- `fix: resolve vector search timeout issue`
-- `docs: update API reference documentation`
-- `test: add integration tests for file operations`
-
-#### PR Description Template
 ```markdown
-## Description
-Brief description of the changes made.
+**Bug Description**
+A clear description of what the bug is.
 
-## Type of Change
-- [ ] Bug fix (non-breaking change which fixes an issue)
-- [ ] New feature (non-breaking change which adds functionality)
-- [ ] Breaking change (fix or feature that would cause existing functionality to not work as expected)
-- [ ] Documentation update
+**To Reproduce**
+Steps to reproduce the behavior:
+1. Send request to '...'
+2. With input '....'
+3. See error
 
-## Testing
-- [ ] Unit tests pass
-- [ ] Integration tests pass
-- [ ] Manual testing completed
+**Expected Behavior**
+What you expected to happen.
 
-## Checklist
-- [ ] Code follows style guidelines
-- [ ] Self-review completed
-- [ ] Documentation updated
-- [ ] Tests added/updated
-- [ ] No breaking changes (or breaking changes documented)
+**Actual Behavior**
+What actually happened.
 
-## Related Issues
-Fixes #123
-Related to #456
+**Environment**
+- OS: [e.g., macOS, Ubuntu]
+- Python version: [e.g., 3.13.2]
+- VANA version: [e.g., commit hash]
+
+**Additional Context**
+- Error logs
+- Configuration files
+- Screenshots (if applicable)
 ```
 
-## 🎯 Best Practices
+## ✨ Feature Requests
 
-### Performance
-- Profile code for performance bottlenecks
-- Use caching for expensive operations
-- Implement proper error handling
-- Monitor resource usage
+### Feature Request Template
 
-### Security
-- Validate all inputs
-- Use secure authentication methods
-- Protect sensitive data
-- Follow security best practices
+```markdown
+**Feature Description**
+A clear description of the feature you'd like to see.
 
-### Maintainability
-- Write clear, self-documenting code
-- Use meaningful variable names
-- Keep functions small and focused
-- Maintain consistent code style
+**Use Case**
+Describe the problem this feature would solve.
 
-## 📞 Getting Help
+**Proposed Solution**
+How do you envision this feature working?
 
-### Community Support
-- **GitHub Discussions**: Ask questions and share ideas
-- **Issues**: Report bugs and request features
-- **Documentation**: Check existing guides and references
+**Alternatives Considered**
+Other approaches you've considered.
 
-### Development Questions
-- **Architecture**: Review system design documents
-- **Implementation**: Check existing code examples
-- **Testing**: Follow established test patterns
+**Implementation Notes**
+Technical considerations or suggestions.
+```
+
+## 🏗️ Architecture Guidelines
+
+### Adding New Agents
+
+1. **Inherit from BaseAgent**
+   ```python
+   from lib.agents.base_agent import BaseAgent
+   
+   class MyAgent(BaseAgent):
+       async def process(self, task: str) -> Dict[str, Any]:
+           # Implementation
+           pass
+   ```
+
+2. **Register with Orchestrator**
+   ```python
+   # In agents/__init__.py
+   from .my_agent import MyAgent
+   
+   AVAILABLE_AGENTS = {
+       "my_agent": MyAgent,
+       # ... other agents
+   }
+   ```
+
+3. **Add Tests**
+   ```python
+   # tests/agents/test_my_agent.py
+   class TestMyAgent:
+       # Comprehensive test suite
+       pass
+   ```
+
+### Adding New Tools
+
+1. **Follow ADK Patterns**
+   ```python
+   from google.adk.tools import FunctionTool
+   
+   async def my_tool(param: str) -> str:
+       """Tool description for ADK."""
+       # Implementation
+       return result
+   
+   # Register as FunctionTool
+   my_function_tool = FunctionTool(my_tool)
+   ```
+
+2. **Add Error Handling**
+   ```python
+   async def robust_tool(param: str) -> str:
+       try:
+           result = await process(param)
+           return json.dumps({"status": "success", "result": result})
+       except Exception as e:
+           logger.error(f"Tool error: {e}")
+           return json.dumps({"status": "error", "message": str(e)})
+   ```
+
+## 📖 Documentation Guidelines
+
+### Code Documentation
+
+- Use clear, descriptive docstrings
+- Include type hints for all functions
+- Add inline comments for complex logic
+- Document configuration options
+
+### User Documentation
+
+- Write for different skill levels
+- Include practical examples
+- Keep it up-to-date with code changes
+- Test all code examples
+
+## 🔍 Review Process
+
+### Pull Request Guidelines
+
+1. **Clear Description**: Explain what and why
+2. **Reference Issues**: Link related issues
+3. **Test Coverage**: Include tests for new code
+4. **Documentation**: Update docs as needed
+5. **Small Commits**: Keep changes focused
+
+### Review Criteria
+
+- **Functionality**: Does it work as intended?
+- **Code Quality**: Follows standards and best practices?
+- **Testing**: Adequate test coverage?
+- **Documentation**: Clear and complete?
+- **Performance**: No significant regressions?
+
+## 🤝 Community Guidelines
+
+### Code of Conduct
+
+- **Be respectful**: Treat everyone with kindness and respect
+- **Be inclusive**: Welcome developers of all backgrounds
+- **Be collaborative**: Share knowledge and help others
+- **Be constructive**: Provide helpful feedback
+
+### Communication
+
+- **GitHub Issues**: For bugs and feature requests
+- **Discord**: For real-time community discussion
+- **Discussions**: For questions and general topics
+
+## 🎯 Project Roadmap
+
+### Current Priorities
+
+1. **Performance Optimization**: Improve response times
+2. **Enhanced Testing**: Increase coverage and reliability
+3. **Documentation**: Complete API and developer guides
+4. **Agent Development**: Add specialized capabilities
+
+### Future Plans
+
+- Distributed agent execution
+- Advanced workflow templates
+- Real-time collaboration features
+- Enterprise integrations
+
+## 📚 Resources
+
+### Learning Materials
+
+- [Google ADK Documentation](https://github.com/google/adk)
+- [FastAPI Documentation](https://fastapi.tiangolo.com/)
+- [Python Async Programming](https://docs.python.org/3/library/asyncio.html)
+
+### Development Tools
+
+- **Poetry**: Dependency management
+- **pytest**: Testing framework
+- **Black**: Code formatting
+- **mypy**: Type checking
+- **pre-commit**: Git hooks
+
+## 🙋 Getting Help
+
+### Before Asking
+
+1. Check the documentation
+2. Search existing issues
+3. Review the FAQ
+
+### Where to Ask
+
+- **Technical Questions**: GitHub Discussions
+- **Bug Reports**: GitHub Issues
+- **General Chat**: Discord server
+- **Security Issues**: Email security@vana.ai
 
 ---
 
-**Thank you for contributing to VANA!** 🎉
+## 📜 License
 
-Your contributions help make VANA a better multi-agent AI system for everyone.
+By contributing to VANA, you agree that your contributions will be licensed under the MIT License.
+
+---
+
+**Thank you for contributing to VANA!** Your efforts help make this project better for everyone. 🚀
