@@ -259,10 +259,12 @@ async def web_search(query: str, max_results: int = 5) -> str:
 
         api_key = os.getenv("BRAVE_API_KEY")
         if not api_key:
-            # Use simple web search when API key not available
-            from lib._tools.simple_web_search import simple_web_search
-            logger.info(f"Using simple web search for query: {query}")
-            return await simple_web_search(query, max_results)
+            # Use synchronous web search when API key not available
+            from lib._tools.web_search_sync import web_search as sync_web_search
+            logger.info(f"Using sync web search for query: {query}")
+            # Run sync function in thread pool
+            result = await asyncio.to_thread(sync_web_search, query, max_results)
+            return result
 
         url = "https://api.search.brave.com/res/v1/web/search"
 
