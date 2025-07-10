@@ -1,0 +1,29 @@
+
+# One-time test files
+test_*.py
+run_*_test.py
+*_test.json
+test_result.json
+
+# Debug and temporary files
+debug_*.py
+temp_*.py
+experiment_*.py
+scratch_*.py
+
+# One-time validation scripts in root
+validate_*.py
+check_*.py
+fix_*.py
+
+# Old analysis documents
+*_ANALYSIS.md
+*_SUMMARY.md
+*_STRATEGY.md
+blockers.md
+status.md
+
+# Keep test files in proper directories
+\!tests/**/test_*.py
+\!scripts/validation/validate_*.py
+\!scripts/debug/debug_*.py
