@@ -1,131 +1,120 @@
-# 🤖 VANA - Multi-Agent AI System
+# VANA - Multi-Agent AI System
 
 [![Python 3.13+](https://img.shields.io/badge/python-3.13+-blue.svg)](https://www.python.org/downloads/)
-[![Infrastructure Status](https://img.shields.io/badge/infrastructure-46.2%25%20working-yellow.svg)](./docs/validation/GROUND_TRUTH_VALIDATION_REPORT.md)
-[![Core Tools](https://img.shields.io/badge/core%20tools-100%25%20working-green.svg)](./docs/tools/tool-reference.md)
-[![Documentation](https://img.shields.io/badge/documentation-rewrite%20in%20progress-orange.svg)](./docs/)
-[![Security](https://img.shields.io/badge/security-vulnerability%20reporting-blue.svg)](./SECURITY.md)
+[![Last Tested](https://img.shields.io/badge/last%20tested-2025--01--10-green.svg)]()
+[![Server Port](https://img.shields.io/badge/port-8081-blue.svg)]()
 
-> **Development Status**: Partially Operational (46.2% Infrastructure Working)  
-> **Documentation Status**: Under Complete Rewrite  
-> **Last Validation**: 2025-06-29
+> **Reality Check**: This documentation reflects what actually works as of 2025-01-10, not aspirational features.
 
-## ⚠️ Important Notice
+## Quick Start
 
-This documentation is being completely rewritten to accurately reflect the system's current state. Previous documentation contained inaccurate claims. Please refer to the [Ground Truth Validation Report](docs/validation/GROUND_TRUTH_VALIDATION_REPORT.md) for actual system status.
-
-## 🚨 Critical Requirements
-
-### ✅ Python 3.13+ Mandatory
 ```bash
-# Verify Python version (MUST be 3.13+)
-python3 --version  # Should show Python 3.13.x
-poetry env info    # Virtualenv Python should be 3.13.x
-```
-
-**Why Python 3.13 is Required:**
-- Modern async patterns required by Google ADK
-- SSL/TLS compatibility for production services
-- Performance optimizations critical for agent coordination
-
-### 📦 Dependencies Status
-- ✅ **psutil v7.0.0** - Available (contrary to previous claims)
-- ✅ **google-adk** - Google Agent Development Kit integration
-- ✅ **fastapi** - Web framework functional
-- ⚠️ **Docker** - Optional (fallback mode available)
-
-### ⚠️ Known Issues
-- **Critical Bug**: `coordinated_search_tool` (lib/_tools/search_coordinator.py:425)
-- **Vector search** infrastructure not configured
-- **Memory service** using in-memory fallback
-- See [Troubleshooting Guide](./docs/troubleshooting/README.md) for solutions
-
-## 🚀 Quick Start
-
-### 1. Environment Setup
-```bash
-# Install dependencies (Python 3.13+ required)
+# Requirements: Python 3.13+ (MANDATORY)
 poetry install
+poetry run python main.py
 
-# Verify environment
-poetry run python main.py --version
+# Test the API (runs on port 8081, not 8000!)
+curl http://localhost:8081/health
+# Returns: {"status": "healthy"}
 ```
 
-### 2. Basic Usage
+## What Actually Works Today
+
+### ✅ Core Features (Verified 2025-01-10)
+- **FastAPI Server**: 3 working endpoints on port 8081
+- **VANA Orchestrator**: 8 functional tools (see list below)
+- **Web Search**: DuckDuckGo integration (no API key needed)
+- **File Operations**: Read/write files locally
+- **Basic Math**: Mathematical problem solving
+- **Chat API**: OpenAI-compatible `/v1/chat/completions`
+
+### ⚠️ Limited Functionality
+- **Memory System**: In-memory fallback only (no persistence)
+- **Code Execution**: Basic Python only, sandboxing disabled
+- **Specialist Agents**: Only 2 of 6 are integrated
+
+### ❌ Known Issues
+- Import error in `search_coordinator.py:425` 
+- Vector search not configured (requires Google Cloud)
+- Many test files were cluttering root (now cleaned up)
+- Documentation references non-existent validation reports
+
+## Real Working Examples
+
+### Basic Query
 ```bash
-# Start the system (local development)
-python main.py
-
-# Test core functionality
-curl http://localhost:8000/health
-# Returns: {"status": "healthy", "agent": "vana", "mcp_enabled": true}
+curl -X POST http://localhost:8081/run \
+  -H "Content-Type: application/json" \
+  -d '{"input": "What time is it in Dallas?"}'
+  
+# Actual Response:
+{
+  "result": {
+    "output": "It is 13:31 UTC. Dallas is in the Central Time Zone...",
+    "id": "session_1752154273.057734"
+  }
+}
 ```
 
-### 3. What Works Today
-- **✅ Core Development Tools** - File operations, search, system monitoring
-- **✅ Agent Coordination** - Multi-agent task delegation
-- **✅ MCP Integration** - Time, filesystem, specialist tools
-- **⚠️ Web Features** - Requires GOOGLE_API_KEY configuration
+### Available Tools (From Code Analysis)
+1. `web_search` - Web search via DuckDuckGo
+2. `mathematical_solve` - Math problem solving  
+3. `logical_analyze` - Logical reasoning
+4. `read_file` - Read local files
+5. `write_file` - Write local files
+6. `analyze_task` - Task classification
+7. `transfer_to_agent` - Agent delegation (limited)
+8. `simple_execute_code` - Basic Python execution
 
-See [What Works Today](./docs/user-guide/WHAT_WORKS_TODAY.md) for complete functionality list.
+## Setup Requirements
 
-## 📊 System Status Dashboard
+### Environment Variables
+Create `.env.local`:
+```bash
+GOOGLE_API_KEY=your-key-here  # Required for Gemini model
+```
 
-| Component | Status | Success Rate | Notes |
-|-----------|--------|--------------|-------|
-| **Core Tools** | ✅ Working | 100% | All base ADK tools functional |
-| **Agent System** | ✅ Working | 100% | All agents load successfully |
-| **API Endpoints** | ⚠️ Partial | 80.6% | Most components tested working |
-| **Infrastructure** | ⚠️ Limited | 46.2% | Vector search not configured |
-| **Dependencies** | ✅ Complete | 100% | All required packages available |
+### Python Version
+```bash
+python --version  # MUST show 3.13.x or higher
+poetry env info   # Verify poetry is using Python 3.13+
+```
 
-**Last Validated**: 2025-06-29 by 4 parallel documentation agents
+## Project Structure (Actual)
+```
+vana/
+├── main.py              # FastAPI server (PORT 8081!)
+├── agents/
+│   ├── vana/           # ✅ Working orchestrator
+│   ├── code_execution/ # ⚠️ Disabled
+│   └── data_science/   # ⚠️ Untested
+├── lib/_tools/
+│   └── web_search_sync.py  # ✅ The ONE web search to use
+└── tests/              # Now properly organized
+```
 
-### 🔧 Agent Architecture
-- **VANA Orchestrator** - Main coordinator with comprehensive toolset
-- **Code Execution Specialist** - Secure sandboxed execution (fallback mode)
-- **Data Science Specialist** - Data analysis and ML capabilities
-- **Proxy Agents** - Memory/Orchestration delegate to VANA
+## For Developers
 
-## 📚 Documentation
+### Important Files
+- **Use**: `lib/_tools/web_search_sync.py` for web search
+- **Avoid**: Any other web search implementations (deprecated)
+- **Main Agent**: `agents/vana/team.py`
+- **API**: `main.py` (FastAPI on port 8081)
 
-### 📖 User Guides
-- **[What Works Today](./docs/user-guide/WHAT_WORKS_TODAY.md)** - Tested functionality with success rates
-- **[Getting Started](./docs/getting-started/installation.md)** - Real setup requirements
-- **[Troubleshooting](./docs/troubleshooting/README.md)** - Common issues with solutions
+### Common Pitfalls
+1. Documentation says port 8000, but it's actually 8081
+2. Many features mentioned in docs don't exist yet
+3. No default parameters in tool functions (Gemini limitation)
+4. Vector search requires Google Cloud setup (not local)
 
-### 🏗️ Developer Resources
-- **[Architecture Overview](./docs/architecture/README.md)** - System design and patterns
-- **[API Reference](./docs/api/README.md)** - Complete tool documentation
-- **[Developer Guide](./docs/guides/developer-guide.md)** - Development setup and patterns
+## Contributing
 
-### 🚀 Deployment
-- **[Cloud Deployment](./docs/deployment/cloud-deployment.md)** - Google Cloud Run setup
-- **[Local Setup](./docs/deployment/local-setup.md)** - Development environment
-- **[Security Guide](./docs/deployment/security-guide.md)** - Security best practices
-
-## 🤝 Contributing
-
-We welcome contributions! Please see our:
-- **[Code of Conduct](./CODE_OF_CONDUCT.md)** - Community standards
-- **[Security Policy](./SECURITY.md)** - Vulnerability reporting
-- **[Changelog](./CHANGELOG.md)** - Recent changes and versions
-
-### 📝 Reporting Issues
-- **Bug Reports**: Use [GitHub Issues](https://github.com/yourusername/vana/issues)
-- **Security Vulnerabilities**: Email nbohmer@gmail.com
-- **Documentation Errors**: Help us improve accuracy
-
-## 📞 Support
-
-- **GitHub Issues**: Report bugs and request features
-- **Documentation**: Comprehensive guides and examples
-- **API Reference**: Complete tool documentation with examples
-
-## 📝 License
-
-[License information to be added]
+Before adding features:
+1. Test it actually works
+2. Document the real behavior
+3. Update this README with truthful information
+4. Don't add aspirational features without marking them as "PLANNED"
 
 ---
 
-**Built with Google Agent Development Kit (ADK) • Multi-Agent Coordination • Comprehensive Tool Integration**
+*Last verified: 2025-01-10 | Version: 0.1.0 | [Full Status Report](./docs/status/CURRENT_STATUS.md)*
