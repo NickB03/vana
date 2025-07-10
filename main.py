@@ -7,6 +7,7 @@ import logging
 import json
 import asyncio
 from datetime import datetime
+import uuid
 from google.adk.runners import Runner
 from google.adk.sessions import InMemorySessionService
 from google.genai.types import Content, Part
@@ -28,13 +29,15 @@ runner = Runner(
 
 app = FastAPI()
 
-# Load API_KEY as environment variable:
-app.add_event_handler("startup", lambda: os.environ.setdefault("VITE_API_KEY", "secret-dev-vana-123"))
+# Load API_KEY from environment (no hardcoded values)
+app.add_event_handler("startup", lambda: logger.warning("Ensure VITE_API_KEY is set in environment") if not os.getenv("VITE_API_KEY") else None)
 
-# Enhanced CORS Configuration
+# CORS Configuration - Single source of truth for allowed origins
+ALLOWED_ORIGINS = ["http://localhost:5173"]  # Frontend runs on port 5173
+
 app.add_middleware(
   CORSMiddleware,
-  allow_origins=["http://localhost:5173", "http://localhost:5177", "http://localhost:5179"],
+  allow_origins=ALLOWED_ORIGINS,
   allow_credentials=True,
   allow_methods=["GET", "POST", "OPTIONS"],
   allow_headers=["Content-Type", "Authorization"]
@@ -44,12 +47,15 @@ app.add_middleware(
 @app.middleware("http")
 async def preflight_handler(request: Request, call_next):
     if request.method == "OPTIONS":
-        return Response("{'content': 'Preflight check successful'}", media_type='application/json', headers={
-            "Access-Control-Allow-Origin": "http://localhost:5173",
-            "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-            "Access-Control-Allow-Headers": "Content-Type, Authorization",
-            "Access-Control-Allow-Credentials": "true"
-        })
+        origin = request.headers.get("origin")
+        if origin in ALLOWED_ORIGINS:
+            return Response("{'content': 'Preflight check successful'}", media_type='application/json', headers={
+                "Access-Control-Allow-Origin": origin,
+                "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+                "Access-Control-Allow-Headers": "Content-Type, Authorization",
+                "Access-Control-Allow-Credentials": "true"
+            })
+        return Response(status_code=403)
     return await call_next(request)
 
 # VANA Agent Endpoint - Process requests through the actual VANA orchestrator
@@ -68,8 +74,8 @@ async def run_vana(request: Request) -> Dict[str, Any]:
         
         # Process through VANA agent using ADK Runner
         try:
-            # Create session for this request
-            session_id = f"session_{datetime.now().timestamp()}"
+            # Create session for this request with secure ID
+            session_id = f"session_{uuid.uuid4()}"
             user_id = "api_user"
             
             # Create session first - this is required
@@ -119,14 +125,14 @@ async def run_vana(request: Request) -> Dict[str, Any]:
             # Fallback to a helpful error message
             return {
                 "result": {
-                    "output": f"I encountered an error processing your request: {str(agent_error)}. Please try again.",
-                    "id": "error"
+                    "output": "I encountered an error processing your request. Please try again.",
+                    "id": f"error_{uuid.uuid4()}"
                 }
             }
             
     except Exception as e:
         logger.error(f"Request handling error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 # Data models for chat completions API
 class ChatMessage:
@@ -286,7 +292,7 @@ async def chat_completions(request: Request):
                 headers={
                     "Cache-Control": "no-cache",
                     "Connection": "keep-alive",
-                    "Access-Control-Allow-Origin": "http://localhost:5173",
+                    "Access-Control-Allow-Origin": ALLOWED_ORIGINS[0] if ALLOWED_ORIGINS else "*",
                     "Access-Control-Allow-Credentials": "true"
                 }
             )
@@ -311,7 +317,7 @@ async def chat_completions(request: Request):
             
     except Exception as e:
         logger.error(f"Chat completion error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 # Existing endpoints can remain here
 @app.get("/health")
