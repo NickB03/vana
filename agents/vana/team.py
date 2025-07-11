@@ -60,20 +60,21 @@ except ImportError as e:
 # Create synchronous web search tool
 adk_web_search = create_web_search_sync_tool()
 
-# Import specialist agents for simple ADK delegation (following ADK patterns)
+# Import enhanced orchestrator with Phase 3 specialists
 try:
-    # NOTE: Code Execution Specialist temporarily disabled - focusing on core agents
-    # from agents.code_execution.specialist import code_execution_specialist
-    from agents.data_science.specialist import data_science_specialist
-
-    specialist_agents = [
-        # code_execution_specialist,  # Temporarily disabled
-        data_science_specialist,
-    ]
-    logger.info("✅ Specialist agents imported for simple ADK delegation (Code Execution temporarily disabled)")
+    from agents.vana.enhanced_orchestrator import enhanced_orchestrator
+    
+    # Use enhanced orchestrator as primary sub-agent
+    specialist_agents = [enhanced_orchestrator]
+    logger.info("✅ Enhanced orchestrator with Phase 3 specialists loaded")
 except ImportError as e:
-    logger.warning(f"Warning: Specialist agents not available: {e}")
-    specialist_agents = []
+    logger.warning(f"Warning: Enhanced orchestrator not available, falling back to basic specialists: {e}")
+    try:
+        # Fallback to individual specialists
+        from agents.data_science.specialist import data_science_specialist
+        specialist_agents = [data_science_specialist]
+    except ImportError:
+        specialist_agents = []
 
 # Create simplified ADK-compliant VANA agent following Google ADK best practices
 root_agent = LlmAgent(

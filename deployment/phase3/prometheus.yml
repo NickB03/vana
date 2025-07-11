@@ -1,0 +1,64 @@
+# Prometheus Configuration for VANA Phase 3
+# Monitors orchestrator and specialist performance
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    monitor: 'vana-orchestrator'
+    environment: 'production'
+
+# Alert manager configuration
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+          - alertmanager:9093
+
+# Load rules files
+rule_files:
+  - "alerts.yml"
+
+# Scrape configurations
+scrape_configs:
+  # VANA Orchestrator metrics
+  - job_name: 'vana-orchestrator'
+    static_configs:
+      - targets: ['vana-backend:8000']
+    metrics_path: '/metrics'
+    scrape_interval: 10s
+    
+  # Specialist metrics (if exposed separately)
+  - job_name: 'vana-specialists'
+    static_configs:
+      - targets: 
+        - 'vana-backend:8001'  # Architecture
+        - 'vana-backend:8002'  # Data Science
+        - 'vana-backend:8003'  # Security
+        - 'vana-backend:8004'  # DevOps
+    metrics_path: '/metrics'
+    scrape_interval: 30s
+
+  # Node exporter for system metrics
+  - job_name: 'node-exporter'
+    static_configs:
+      - targets: ['node-exporter:9100']
+
+  # Redis metrics
+  - job_name: 'redis'
+    static_configs:
+      - targets: ['redis-exporter:9121']
+
+  # Container metrics
+  - job_name: 'cadvisor'
+    static_configs:
+      - targets: ['cadvisor:8080']
+
+# Custom metrics for VANA
+# These would be exposed by the orchestrator
+- job_name: 'vana-custom'
+  static_configs:
+    - targets: ['vana-backend:8000']
+  metrics_path: '/custom-metrics'
+  params:
+    modules: [orchestrator, specialists, cache, routing]

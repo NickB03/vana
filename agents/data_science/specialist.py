@@ -8,6 +8,7 @@ by leveraging the Code Execution Specialist for secure Python execution.
 # Removed direct import - using ADK agent delegation instead
 from google.adk.tools import FunctionTool
 from google.adk.agents import LlmAgent
+import asyncio
 import logging
 import os
 import sys

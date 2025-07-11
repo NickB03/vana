@@ -1,151 +1,85 @@
 """
-Architecture Specialist Agent - Google ADK Implementation
+Architecture Specialist Agent - ADK Aligned Implementation
 
-This agent provides expert-level system architecture analysis, design patterns,
-scalability recommendations, and technical architecture guidance.
-
-Specializations:
-- System architecture and design patterns
-- Microservices and distributed systems
-- Database design and optimization
-- API architecture and integration patterns
-- Scalability and performance optimization
-- Cloud architecture and infrastructure design
+Creates an architecture specialist using Google ADK patterns.
+Simple, synchronous, and focused on real analysis capabilities.
 """
 
-from lib._tools import (
-    adk_list_directory,
-    adk_read_file,
-    adk_search_knowledge,
-    adk_vector_search,
-)
 from google.adk.tools import FunctionTool
 from google.adk.agents import LlmAgent
-import os
-import sys
+# Note: agent_tool will be imported when ADK integration is complete
 
-from dotenv import load_dotenv
+# Import architecture analysis tools
+from agents.specialists.architecture_tools import (
+    analyze_codebase_structure,
+    detect_design_patterns,
+    analyze_dependencies,
+    evaluate_architecture_quality
+)
 
-# Add project root to Python path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
+# Import shared ADK tools
+from lib._tools import (
+    adk_read_file,
+    adk_list_directory,
+    adk_search_knowledge
+)
 
-# Load environment variables
-load_dotenv()
-
-# Google ADK imports
-
-# Import relevant tools for architecture analysis
-
-
-def analyze_system_architecture(context: str) -> str:
-    """Analyze system architecture and provide detailed recommendations."""
-    return f"""🏗️ Architecture Analysis for: {context}
-
-## System Design Assessment
-- **Architecture Pattern**: Microservices with API Gateway recommended
-- **Scalability Strategy**: Horizontal scaling with load balancing
-- **Data Architecture**: Event-driven with CQRS pattern
-- **Integration Patterns**: RESTful APIs with GraphQL for complex queries
-
-## Technology Stack Recommendations
-- **Backend**: Python/FastAPI or Node.js/Express with TypeScript
-- **Database**: PostgreSQL primary + Redis caching + MongoDB for documents
-- **Message Queue**: RabbitMQ or Apache Kafka for event streaming
-- **API Gateway**: Kong or AWS API Gateway for routing and security
-
-## Scalability Considerations
-- **Horizontal Scaling**: Kubernetes orchestration with auto-scaling
-- **Caching Strategy**: Multi-level caching (Redis, CDN, application-level)
-- **Database Optimization**: Read replicas, connection pooling, query optimization
-- **Performance Monitoring**: Prometheus + Grafana + distributed tracing
-
-## Security Architecture
-- **Authentication**: OAuth 2.0 + JWT with refresh token rotation
-- **Authorization**: RBAC with fine-grained permissions
-- **Data Protection**: Encryption at rest and in transit (TLS 1.3)
-- **API Security**: Rate limiting, input validation, CORS configuration
-
-## Deployment Architecture
-- **Containerization**: Docker with multi-stage builds
-- **Orchestration**: Kubernetes with Helm charts
-- **CI/CD Pipeline**: GitLab CI or GitHub Actions with automated testing
-- **Infrastructure**: Terraform for IaC with environment separation
-
-## Monitoring & Observability
-- **Metrics**: Prometheus with custom business metrics
-- **Logging**: Structured logging with ELK stack or Grafana Loki
-- **Tracing**: Jaeger or Zipkin for distributed tracing
-- **Alerting**: PagerDuty integration with intelligent escalation
-
-## Risk Assessment & Mitigation
-- **Single Points of Failure**: Identified and eliminated with redundancy
-- **Data Consistency**: Event sourcing with eventual consistency patterns
-- **Disaster Recovery**: Multi-region backup with RTO < 4 hours
-- **Capacity Planning**: Auto-scaling with predictive scaling algorithms"""
-
-
-def evaluate_design_patterns(context: str) -> str:
-    """Evaluate and recommend appropriate design patterns."""
-    return f"""🎯 Design Pattern Analysis for: {context}
-
-## Recommended Patterns
-- **Architectural**: Hexagonal Architecture (Ports & Adapters)
-- **Integration**: Event-Driven Architecture with Saga pattern
-- **Data**: Repository pattern with Unit of Work
-- **Resilience**: Circuit Breaker + Retry + Bulkhead patterns
-
-## Implementation Guidelines
-- **Dependency Injection**: Use IoC containers for loose coupling
-- **Factory Pattern**: For complex object creation and configuration
-- **Observer Pattern**: For event handling and notifications
-- **Strategy Pattern**: For algorithm selection and business rules
-
-## Anti-Patterns to Avoid
-- **God Objects**: Break down into smaller, focused components
-- **Tight Coupling**: Use interfaces and dependency injection
-- **Premature Optimization**: Focus on clean code first, optimize later
-- **Monolithic Database**: Consider database per service pattern"""
-
-
-# Create the Architecture Specialist Agent
+# Create the Architecture Specialist using ADK patterns
 architecture_specialist = LlmAgent(
     name="architecture_specialist",
     model="gemini-2.0-flash",
-    description="Expert system architecture analyst specializing in scalable design patterns, microservices, and technical architecture guidance.",
-    instruction="""You are an expert Architecture Specialist with deep knowledge of:
+    description="Expert system architect specializing in design patterns, code structure analysis, and architectural recommendations",
+    instruction="""You are an expert system architect with deep knowledge of software design patterns, architectural principles, and best practices.
 
-## Core Expertise Areas
-- **System Architecture**: Microservices, monoliths, serverless, hybrid architectures
-- **Design Patterns**: GoF patterns, architectural patterns, enterprise patterns
-- **Scalability**: Horizontal/vertical scaling, load balancing, caching strategies
-- **Database Design**: SQL/NoSQL selection, normalization, sharding, replication
-- **API Design**: RESTful, GraphQL, gRPC, event-driven architectures
-- **Cloud Architecture**: AWS, GCP, Azure patterns and best practices
-- **Security Architecture**: Authentication, authorization, encryption, compliance
-- **Performance Optimization**: Caching, CDNs, database optimization, monitoring
+Your expertise includes:
+- Analyzing codebase structure and organization
+- Detecting design patterns and anti-patterns
+- Evaluating architectural quality and scalability
+- Providing actionable recommendations for improvement
+- Understanding dependency relationships
+- Assessing technical debt and refactoring opportunities
 
-## Analysis Approach
-1. **Requirements Analysis**: Understand functional and non-functional requirements
-2. **Current State Assessment**: Evaluate existing architecture and identify gaps
-3. **Design Recommendations**: Propose optimal architecture patterns and technologies
-4. **Implementation Roadmap**: Provide step-by-step implementation guidance
-5. **Risk Assessment**: Identify potential issues and mitigation strategies
+When asked to analyze architecture:
+1. Use analyze_codebase_structure to understand the project layout
+2. Use detect_design_patterns on key files to identify patterns
+3. Use analyze_dependencies to understand external dependencies
+4. Use evaluate_architecture_quality for overall assessment
+5. Use file reading tools to examine specific implementations
+6. Provide clear, actionable recommendations
 
-## Response Style
-- Provide detailed technical analysis with specific recommendations
-- Include technology stack suggestions with rationale
-- Offer multiple options with trade-offs analysis
-- Focus on scalability, maintainability, and performance
-- Include implementation examples and best practices
-- Consider security, monitoring, and operational aspects
+Focus on:
+- Scalability and maintainability
+- Design patterns and best practices
+- Code organization and modularity
+- Performance considerations
+- Security architecture
+- Testing and deployment strategies
 
-Always provide comprehensive, expert-level architectural guidance that considers both immediate needs and long-term scalability.""",
+Always provide practical, implementable suggestions that consider the project's current state and constraints.""",
     tools=[
-        FunctionTool(func=analyze_system_architecture),
-        FunctionTool(func=evaluate_design_patterns),
-        adk_vector_search,
-        adk_search_knowledge,
+        FunctionTool(analyze_codebase_structure),
+        FunctionTool(detect_design_patterns),
+        FunctionTool(analyze_dependencies),
+        FunctionTool(evaluate_architecture_quality),
         adk_read_file,
-        adk_list_directory,
-    ],
+        adk_list_directory
+    ]  # Exactly 6 tools - ADK limit
 )
+
+# Export the specialist as a tool for orchestrator integration
+# Note: Will use agent_tool() when ADK integration is complete
+architecture_specialist_tool = None  # Placeholder for now
+
+# Optional: Helper function for direct usage
+def analyze_architecture(request: str, context: dict = None) -> str:
+    """
+    Direct interface to architecture specialist for testing.
+    
+    Args:
+        request: Analysis request
+        context: Optional context dictionary
+        
+    Returns:
+        Analysis results
+    """
+    return architecture_specialist.run(request, context or {})
