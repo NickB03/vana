@@ -296,3 +296,8 @@ dev-artifacts/
 
 # Legacy patterns (kept for backward compatibility)
 # These files should now go in .development/ subdirectories
+
+# Research materials (too large for version control)
+project_research/*.pdf
+project_research/*.docx
+project_research/*.pptx

@@ -3,13 +3,13 @@
 <!-- Phase 1 Complete - Updated Jul 10, 2025 -->
 
 <div align="center">
-  <img src="docs/assets/vana-logo.svg" alt="VANA Logo" width="200"/>
+  <!-- VANA Logo - Add when assets are available -->
   
   [![Python 3.13+](https://img.shields.io/badge/python-3.13+-blue.svg)](https://www.python.org/downloads/)
   [![Google ADK](https://img.shields.io/badge/Google%20ADK-1.1.1-green.svg)](https://github.com/google/adk)
   [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
   [![Architecture](https://img.shields.io/badge/architecture-hierarchical-purple.svg)]()
-  [![Agents](https://img.shields.io/badge/agents-7+-brightgreen.svg)]()
+  [![Agents](https://img.shields.io/badge/agents-7_active-brightgreen.svg)]()
   
   **True Agentic AI: Hierarchical Multi-Agent System for Complex Task Automation**
   
@@ -26,7 +26,7 @@ VANA is an advanced agentic AI system featuring hierarchical multi-agent orchest
 
 - **🏗️ Hierarchical Architecture**: 5-level agent system (Chat → Orchestrator → Managers → Specialists → Sub-agents)
 - **🧠 Master Orchestrator**: Intelligent task analysis and routing with complexity scoring
-- **👥 Active Specialists**: Architecture, DevOps, QA, UI/UX, and Data Science agents
+- **👥 Active Specialists**: 5 specialized agents (Architecture, DevOps, QA, UI/UX, Data Science) expanded from 2
 - **🔄 Smart Routing**: Automatic task delegation based on complexity and domain
 - **🛡️ Fault Tolerance**: Circuit breakers and performance optimization
 
@@ -145,7 +145,7 @@ make clean         # Clean generated files
 ## 🏗️ Architecture
 
 <div align="center">
-  <img src="docs/assets/vana-architecture.png" alt="VANA Architecture" width="800"/>
+  <!-- Architecture diagram - Add when assets are available -->
 </div>
 
 ### Agentic AI Architecture (Phase 1)
@@ -203,7 +203,7 @@ sequenceDiagram
 ### Agent Flow
 
 <div align="center">
-  <img src="docs/assets/agent-flow-diagram.png" alt="Agent Flow" width="700"/>
+  <!-- Agent flow diagram - Add when assets are available -->
 </div>
 
 ```mermaid
