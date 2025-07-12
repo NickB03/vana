@@ -301,3 +301,6 @@ dev-artifacts/
 project_research/*.pdf
 project_research/*.docx
 project_research/*.pptx
+
+# Workflow checkpoints (test artifacts)
+.workflow_checkpoints/
