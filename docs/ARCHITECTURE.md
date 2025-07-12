@@ -1,45 +1,44 @@
 # VANA Agentic AI Architecture
 
-**Version**: 3.0 (Phase 3 Complete)  
-**Updated**: July 11, 2025
+**Version**: 4.0 (Phase 4 Complete)
 
 ## System Overview
 
-VANA has evolved into a true agentic AI system with a 5-level hierarchical architecture. Built on Google's Agent Development Kit (ADK), VANA now features intelligent task routing, specialized agent coordination, and distributed tool ownership following ADK best practices.
+VANA has evolved into a true agentic AI system with a multi-level hierarchical architecture. Built on Google's Agent Development Kit (ADK), VANA now features intelligent task routing, specialized agent coordination, and distributed tool ownership following ADK best practices.
 
 ## Agentic Architecture (Phase 3 Complete)
 
-### 1. Five-Level Agent Hierarchy
+### 1. Multi-Level Agent Hierarchy
 
 ```mermaid
 graph TB
     subgraph "Level 1: Interface Layer"
-        U[User] --> VC[VANA Chat Agent<br/>2 tools only]
+        U[User] --> VC[VANA Chat Agent<br/>minimal tools]
     end
     
     subgraph "Level 2: Orchestration Layer ✨"
-        MO[Enhanced Master Orchestrator<br/>🚀 Intelligent Routing<br/>📊 Metrics + Caching<br/>5 tools]
+        MO[Enhanced Master Orchestrator<br/>🚀 Intelligent Routing<br/>📊 Metrics + Caching]
     end
     
-    subgraph "Level 3: Management Layer (Phase 4)"
-        PM1[Sequential PM<br/>Coming Phase 4]
-        PM2[Parallel PM<br/>Coming Phase 4]
-        PM3[Loop PM<br/>Coming Phase 4]
+    subgraph "Level 3: Management Layer ✅"
+        PM1[Sequential PM<br/>✅ Active]
+        PM2[Parallel PM<br/>✅ Active]
+        PM3[Loop PM<br/>✅ Active]
     end
     
     subgraph "Level 4: Specialist Layer ✅"
-        SA[Architecture Specialist<br/>✅ AST Analysis<br/>6 tools]
-        SEC[🔴 Security Specialist<br/>ELEVATED STATUS<br/>4 tools]
-        DO[DevOps Specialist<br/>✅ CI/CD Generation<br/>6 tools]
-        DS[Data Science Specialist<br/>✅ Pure Python<br/>6 tools]
-        QA[QA Engineer<br/>Phase 4<br/>6 tools]  
-        UI[UI/UX Designer<br/>Phase 4<br/>6 tools]
+        SA[Architecture Specialist<br/>✅ AST Analysis]
+        SEC[🔴 Security Specialist<br/>ELEVATED STATUS]
+        DO[DevOps Specialist<br/>✅ CI/CD Generation]
+        DS[Data Science Specialist<br/>✅ Pure Python]
+        QA[QA Engineer<br/>✅ Active]  
+        UI[UI/UX Designer<br/>✅ Active]
     end
     
-    subgraph "Level 5: Maintenance Layer (Phase 4)"
-        MA[Memory Agent<br/>Phase 4]
-        PA[Planning Agent<br/>Phase 4]
-        LA[Learning Agent<br/>Phase 4]
+    subgraph "Level 5: Maintenance Layer (Future)"
+        MA[Memory Agent<br/>Future]
+        PA[Planning Agent<br/>Future]
+        LA[Learning Agent<br/>Future]
     end
     
     VC -->|transfer_to_agent| MO
@@ -63,17 +62,17 @@ graph TB
     style SA fill:#e8f5e9,stroke:#4caf50,stroke-width:2px
     style DO fill:#e8f5e9,stroke:#4caf50,stroke-width:2px
     style DS fill:#e8f5e9,stroke:#4caf50,stroke-width:2px
-    style PM1 fill:#f5f5f5,stroke-dasharray: 5 5
-    style PM2 fill:#f5f5f5,stroke-dasharray: 5 5
-    style PM3 fill:#f5f5f5,stroke-dasharray: 5 5
-    style QA fill:#f5f5f5,stroke-dasharray: 5 5
-    style UI fill:#f5f5f5,stroke-dasharray: 5 5
+    style PM1 fill:#e8f5e9,stroke:#4caf50,stroke-width:2px
+    style PM2 fill:#e8f5e9,stroke:#4caf50,stroke-width:2px
+    style PM3 fill:#e8f5e9,stroke:#4caf50,stroke-width:2px
+    style QA fill:#e8f5e9,stroke:#4caf50,stroke-width:2px
+    style UI fill:#e8f5e9,stroke:#4caf50,stroke-width:2px
     style MA fill:#f5f5f5,stroke-dasharray: 5 5
     style PA fill:#f5f5f5,stroke-dasharray: 5 5
     style LA fill:#f5f5f5,stroke-dasharray: 5 5
 ```
 
-### 2. Enhanced Request Processing Flow (Phase 3)
+### 2. Enhanced Request Processing Flow (Phase 4)
 
 ```mermaid
 sequenceDiagram
@@ -138,7 +137,7 @@ sequenceDiagram
     Note over Metrics: <100ms routing\n>90% cache hits
 ```
 
-## Phase 3 Performance Metrics
+## Phase 4 Performance Metrics
 
 ```mermaid
 graph LR
@@ -156,10 +155,12 @@ graph LR
     end
     
     subgraph "Specialist Performance"
-        S1[Architecture<br/>6 tools<br/>300ms avg]
-        S2[Security<br/>4 tools<br/>250ms avg<br/>🔴 ELEVATED]
-        S3[DevOps<br/>6 tools<br/>400ms avg]
-        S4[Data Science<br/>6 tools<br/>350ms avg]
+        S1[Architecture<br/>300ms avg]
+        S2[Security<br/>250ms avg<br/>🔴 ELEVATED]
+        S3[DevOps<br/>400ms avg]
+        S4[Data Science<br/>350ms avg]
+        S5[QA<br/>350ms avg]
+        S6[UI/UX<br/>300ms avg]
     end
     
     style S2 fill:#ffebee,stroke:#f44336,stroke-width:2px
@@ -171,7 +172,7 @@ graph LR
 
 The user-facing conversational interface:
 - **Purpose**: Natural language understanding and response formatting
-- **Tools**: Minimal (2 tools only - transfer_to_agent, analyze_task)
+- **Tools**: Minimal toolset for interface operations
 - **Responsibilities**:
   - Parse user intent
   - Handle simple conversations

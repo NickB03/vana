@@ -9,7 +9,7 @@
   [![Google ADK](https://img.shields.io/badge/Google%20ADK-1.1.1-green.svg)](https://github.com/google/adk)
   [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
   [![Architecture](https://img.shields.io/badge/architecture-hierarchical-purple.svg)]()
-  [![Agents](https://img.shields.io/badge/agents-7_active-brightgreen.svg)]()
+  [![Status](https://img.shields.io/badge/status-production_ready-brightgreen.svg)]()
   
   **True Agentic AI: Hierarchical Multi-Agent System for Complex Task Automation**
   
@@ -28,34 +28,34 @@ VANA is an advanced agentic AI system featuring hierarchical multi-agent orchest
 
 #### ✅ Completed Phases
 
-**Phase 1 (Foundation)**: Core hierarchical system with 5-level architecture  
+**Phase 1 (Foundation)**: Core hierarchical system with multi-level architecture  
 **Phase 2 (Stabilization)**: Critical bug fixes, thread safety, memory improvements  
 **Phase 3 (Enhancement)**: Working specialists with real tools, enhanced orchestrator  
-**Phase 4 (Enterprise)**: Workflow managers, QA/UI specialists, Orchestrator V2
+**Phase 4 (Enterprise)**: Workflow managers, additional specialists, Orchestrator V2
 
 #### 🆕 Current Features
 
-- **🏗️ Hierarchical Architecture**: Full 5-level agent system operational
-  - Level 1: VANA Chat Agent (user interface, 2 tools)
-  - Level 2: Master Orchestrator (routing engine, 5 tools)
-  - Level 3: Project Managers (3 workflow managers fully implemented)
-  - Level 4: Specialist Agents (6 functional specialists, 4-6 tools each)
-  - Level 5: Maintenance Agents (Framework ready for future enhancement)
+- **🏗️ Hierarchical Architecture**: Full multi-level agent system operational
+  - Level 1: VANA Chat Agent (user interface)
+  - Level 2: Master Orchestrator (intelligent routing engine)
+  - Level 3: Project Managers (workflow orchestration)
+  - Level 4: Specialist Agents (domain-specific expertise)
+  - Level 5: Maintenance Agents (framework for future enhancement)
 
 - **🧠 Enhanced Orchestrator**: Production-ready routing system
   - Intelligent task analysis (Simple → Enterprise complexity)
-  - LRU caching with 100-entry limit (40x speedup)
-  - Performance metrics (<10% overhead)
+  - LRU caching for performance optimization
+  - Comprehensive performance metrics
   - Security-first priority routing
   - Thread-safe implementation
 
 - **👥 Working Specialists** (All ADK-compliant, synchronous):
-  - **Architecture Specialist**: AST-based pattern detection, dependency analysis, real refactoring (6 tools)
-  - **Data Science Specialist**: Statistical analysis using only Python stdlib (6 tools)
-  - **Security Specialist (ELEVATED)**: Priority routing, vulnerability scanning, compliance validation (4 tools)
-  - **DevOps Specialist**: CI/CD generation, deployment configs, monitoring setup (6 tools)
-  - **QA Specialist**: Test generation, code coverage analysis, bug detection (6 tools)
-  - **UI/UX Specialist**: Component generation, accessibility validation, responsive design (6 tools)
+  - **Architecture Specialist**: AST-based pattern detection, dependency analysis, real refactoring
+  - **Data Science Specialist**: Statistical analysis using only Python stdlib
+  - **Security Specialist (ELEVATED)**: Priority routing, vulnerability scanning, compliance validation
+  - **DevOps Specialist**: CI/CD generation, deployment configs, monitoring setup
+  - **QA Specialist**: Test generation, code coverage analysis, bug detection
+  - **UI/UX Specialist**: Component generation, accessibility validation, responsive design
 
 - **🛡️ Production Features**:
   - Circuit breakers and fault tolerance
@@ -67,9 +67,9 @@ VANA is an advanced agentic AI system featuring hierarchical multi-agent orchest
 ### Core Capabilities
 
 - **🤖 Intelligent Orchestration**: Enhanced V2 orchestrator with workflow detection
-- **🔧 Distributed Tools**: 34+ specialized tools across 6 working specialists
+- **🔧 Distributed Tools**: Comprehensive toolset across all working specialists
 - **🧠 Advanced Task Analysis**: Multi-criteria routing with confidence scoring
-- **⚡ Performance**: <100ms routing, 40x cache speedup, <1s average response
+- **⚡ Performance**: Sub-100ms routing, optimized caching, sub-second average response
 - **🔄 Workflow Management**: Sequential, Parallel, and Loop workflow managers
 - **🛡️ Enterprise Ready**: Thread-safe, monitored, fault-tolerant, ADK-compliant
 - **🔍 Web Search**: Native Google Search integration with fallback to DuckDuckGo
@@ -196,8 +196,8 @@ make clean         # Clean generated files
 
 ```mermaid
 graph TD
-    User[User] --> VANA[VANA Chat Agent<br/>2 tools]
-    VANA --> MO[Master Orchestrator<br/>HierarchicalTaskManager<br/>5 tools]
+    User[User] --> VANA[VANA Chat Agent]
+    VANA --> MO[Master Orchestrator<br/>HierarchicalTaskManager]
     
     MO --> |Simple Tasks| Specialists
     MO --> |Complex Tasks| Workflows
@@ -210,12 +210,12 @@ graph TD
     end
     
     subgraph Specialists[Active Specialists]
-        ARCH[Architecture Specialist<br/>6 tools<br/>✅ Working]
-        SEC[Security Specialist<br/>4 tools<br/>🔴 ELEVATED]
-        DO[DevOps Specialist<br/>6 tools<br/>✅ Working]
-        DS[Data Science Specialist<br/>6 tools<br/>✅ Working]
-        QA[QA Engineer<br/>6 tools<br/>✅ Working]
-        UI[UI/UX Designer<br/>6 tools<br/>✅ Working]
+        ARCH[Architecture Specialist<br/>✅ Working]
+        SEC[Security Specialist<br/>🔴 ELEVATED]
+        DO[DevOps Specialist<br/>✅ Working]
+        DS[Data Science Specialist<br/>✅ Working]
+        QA[QA Engineer<br/>✅ Working]
+        UI[UI/UX Designer<br/>✅ Working]
     end
     
     subgraph Maintenance[Future Enhancement]
@@ -506,8 +506,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 <div align="center">
   <p>Built with ❤️ by the VANA Team</p>
   <p>
-    <a href="https://github.com/yourusername/vana">GitHub</a> •
-    <a href="/docs">Documentation</a> •
-    <a href="https://discord.gg/vana">Community</a>
+    <a href="/docs">Documentation</a>
   </p>
 </div>

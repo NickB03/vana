@@ -13,29 +13,29 @@ Always verify: `python3 --version` should show Python 3.13.x
 
 ## 🏗️ Project Overview
 
-VANA is an advanced agentic AI system featuring hierarchical multi-agent orchestration built on Google's Agent Development Kit (ADK). With Phase 4 complete, VANA implements an enterprise-ready 5-level agent hierarchy with intelligent task routing, 6 working specialist agents with real tools, 3 workflow managers, and enhanced orchestration V2 with adaptive learning.
+VANA is an advanced agentic AI system featuring hierarchical multi-agent orchestration built on Google's Agent Development Kit (ADK). With Phase 4 complete, VANA implements an enterprise-ready multi-level agent hierarchy with intelligent task routing, working specialist agents with real tools, workflow managers, and enhanced orchestration V2 with adaptive learning.
 
 ### 🆕 Agentic AI Architecture (Phase 4 Complete)
 
-**5-Level Hierarchy**:
-1. **VANA Chat Agent**: User interface, minimal tools (2), conversation handling
-2. **Master Orchestrator**: Enhanced with caching, metrics, priority routing (5 tools)
+**Multi-Level Hierarchy**:
+1. **VANA Chat Agent**: User interface, minimal tools, conversation handling
+2. **Master Orchestrator**: Enhanced with caching, metrics, priority routing
 3. **Project Managers**: Sequential/Parallel/Loop workflows (✅ Phase 4 complete)
-4. **Specialist Agents**: 6 working specialists with real tools (✅ All complete):
-   - **Architecture Specialist**: AST analysis, patterns, refactoring (6 tools)
-   - **Data Science Specialist**: Statistics, analysis, cleaning (6 tools)
-   - **Security Specialist (ELEVATED)**: Priority routing, scanning (4 tools)
-   - **DevOps Specialist**: CI/CD, deployment, monitoring (6 tools)
-   - **QA Specialist**: Test generation, coverage analysis (6 tools) 
-   - **UI/UX Specialist**: Component generation, accessibility (6 tools)
+4. **Specialist Agents**: Working specialists with real tools (✅ All complete):
+   - **Architecture Specialist**: AST analysis, patterns, refactoring
+   - **Data Science Specialist**: Statistics, analysis, cleaning
+   - **Security Specialist (ELEVATED)**: Priority routing, scanning
+   - **DevOps Specialist**: CI/CD, deployment, monitoring
+   - **QA Specialist**: Test generation, coverage analysis
+   - **UI/UX Specialist**: Component generation, accessibility
 5. **Maintenance Agents**: Memory, Planning, Learning agents (Future enhancement)
 
 **✅ Active Components** (Phase 4 Complete):
 - ✅ VANA Chat + Enhanced Master Orchestrator + Orchestrator V2
-- ✅ 6 Working Specialist Agents with real tools
-- ✅ 3 Workflow Managers (Sequential, Parallel, Loop)
+- ✅ Working Specialist Agents with real tools
+- ✅ Workflow Managers (Sequential, Parallel, Loop)
 - ✅ Intelligent routing with multi-criteria scoring
-- ✅ LRU caching (40x speedup) and metrics (<10% overhead)
+- ✅ LRU caching for performance and metrics
 - ✅ Thread-safe registry with double-checked locking
 - ✅ Comprehensive test coverage (unit, integration, e2e)
 - ✅ Adaptive learning and performance optimization
