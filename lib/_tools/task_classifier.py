@@ -58,7 +58,7 @@ class TaskClassifier:
         self.agent_capabilities = self._initialize_agent_capabilities()
         self.routing_rules = self._initialize_routing_rules()
 
-    def classify_task(self, task: str, context: str = "") -> TaskClassification:
+    def classify_task(self, task: str, context: str) -> TaskClassification:
         """Classify a task and recommend appropriate agents.
 
         Args:

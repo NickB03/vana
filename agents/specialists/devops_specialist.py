@@ -73,7 +73,7 @@ devops_specialist_tool = None  # Placeholder
 
 
 # Helper function for direct usage
-def analyze_devops(request: str, context: dict = None) -> str:
+def analyze_devops(request: str, context: dict) -> str:
     """
     Direct interface to DevOps specialist for testing.
 

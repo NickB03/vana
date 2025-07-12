@@ -75,7 +75,7 @@ security_specialist_tool = None  # Placeholder
 
 
 # Helper function for direct usage
-def analyze_security(request: str, context: dict = None) -> str:
+def analyze_security(request: str, context: dict) -> str:
     """
     Direct interface to security specialist for testing.
 

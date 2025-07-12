@@ -337,7 +337,7 @@ def create_example_crewai_tools() -> List[str]:
         from crewai_tools import tool
 
         @tool("String Formatter")
-        def format_string(text: str, format_type: str = "upper") -> str:
+        def format_string(text: str, format_type: str) -> str:
             """Format a string according to the specified format type."""
             if format_type == "upper":
                 return text.upper()
@@ -351,7 +351,7 @@ def create_example_crewai_tools() -> List[str]:
                 return text
 
         @tool("List Processor")
-        def process_list(items: str, operation: str = "sort") -> str:
+        def process_list(items: str, operation: str) -> str:
             """Process a comma-separated list of items."""
             item_list = [item.strip() for item in items.split(",")]
 

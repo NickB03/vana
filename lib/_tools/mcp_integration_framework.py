@@ -171,7 +171,7 @@ class MCPServerRegistry:
         """Get MCP server configuration by name"""
         return self.servers.get(name)
 
-    def list_servers(self, category: Optional[str] = None, priority: Optional[int] = None) -> List[MCPServerConfig]:
+    def list_servers(self, category: Optional[str], priority: Optional[int]) -> List[MCPServerConfig]:
         """List MCP servers with optional filtering"""
         servers = list(self.servers.values())
 
@@ -183,7 +183,7 @@ class MCPServerRegistry:
 
         return sorted(servers, key=lambda s: s.priority)
 
-    def get_priority_servers(self, max_priority: int = 1) -> List[MCPServerConfig]:
+    def get_priority_servers(self, max_priority: int) -> List[MCPServerConfig]:
         """Get high-priority servers for immediate implementation"""
         return [s for s in self.servers.values() if s.priority <= max_priority]
 

@@ -33,7 +33,7 @@ except ImportError:
                 "error": "FileSystemTool not available during initialization",
             }
 
-        def write_file(self, file_path: str, content: str, append: bool = False):
+        def write_file(self, file_path: str, content: str, append: bool):
             return {
                 "success": False,
                 "error": "FileSystemTool not available during initialization",
@@ -93,7 +93,7 @@ class StandardizedFileSystemTools:
         return response
 
     @standardized_tool_wrapper("write_file")
-    def write_file(self, file_path: str, content: str, append: bool = False) -> StandardToolResponse:
+    def write_file(self, file_path: str, content: str, append: bool) -> StandardToolResponse:
         """✍️ Write content to a file with backup and validation.
 
         Args:
@@ -228,7 +228,7 @@ def standardized_read_file(file_path: str) -> str:
     return result.to_string()
 
 
-def standardized_write_file(file_path: str, content: str, append: bool = False) -> str:
+def standardized_write_file(file_path: str, content: str, append: bool) -> str:
     """✍️ Write file with standardized interface - returns string for ADK compatibility."""
     result = standardized_fs_tools.write_file(file_path, content, append)
     return result.to_string()

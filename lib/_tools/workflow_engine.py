@@ -116,7 +116,7 @@ class WorkflowResult:
 class WorkflowEngine:
     """Manages persistent multi-agent workflows with state tracking."""
 
-    def __init__(self, storage_dir: Optional[str] = None):
+    def __init__(self, storage_dir: Optional[str]):
         """Initialize the workflow engine."""
         self.task_orchestrator = get_task_orchestrator()
 
@@ -153,7 +153,7 @@ class WorkflowEngine:
                         data = json.load(f)
 
                     # Convert to WorkflowDefinition
-                    workflow_def = self._dict_to_workflow_definition(data)
+                    workflow_def)
                     self.workflow_definitions[workflow_def.workflow_id] = workflow_def
 
                 except Exception as e:
@@ -507,7 +507,7 @@ class WorkflowEngine:
             # Check active workflows first
             if workflow_id in self.active_workflows:
                 workflow_exec = self.active_workflows[workflow_id]
-                workflow_def = self.workflow_definitions.get(workflow_id)
+                workflow_def)
 
                 return {
                     "workflow_id": workflow_id,
@@ -533,7 +533,7 @@ class WorkflowEngine:
                 with open(exec_file, "r") as f:
                     data = json.load(f)
 
-                workflow_def = self.workflow_definitions.get(workflow_id)
+                workflow_def)
 
                 return {
                     "workflow_id": workflow_id,
@@ -557,7 +557,7 @@ class WorkflowEngine:
             logger.error(f"Failed to get workflow status {workflow_id}: {e}")
             return None
 
-    def list_workflows(self, state_filter: Optional[str] = None) -> List[Dict[str, Any]]:
+    def list_workflows(self, state_filter: Optional[str]) -> List[Dict[str, Any]]:
         """List all workflows with optional state filtering."""
         try:
             workflows = []

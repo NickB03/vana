@@ -39,7 +39,7 @@ except ImportError:
 
     class InputValidator:
         @staticmethod
-        def validate_string(value, name, required=True, max_length=None):
+        def validate_string(value, name, required, max_length):
             return value
 
     def performance_monitor(func):
@@ -52,7 +52,7 @@ logger = logging.getLogger(__name__)
 # Standardized Long-Running Tool Wrappers
 
 
-def ask_for_approval(purpose: str, amount: float, approver: str = "System Administrator") -> str:
+def ask_for_approval(purpose: str, amount: float, approver: str) -> str:
     """
     🎫 Request approval for an action requiring authorization.
 
@@ -120,7 +120,7 @@ Use `check_task_status("{task_id}")` to monitor progress."""
         return f"❌ Error creating approval request: {str(e)}"
 
 
-def process_large_dataset(dataset_name: str, operation: str = "analyze") -> str:
+def process_large_dataset(dataset_name: str, operation: str) -> str:
     """
     📊 Process a large dataset with progress tracking.
 
@@ -179,7 +179,7 @@ Use `check_task_status("{task_id}")` to monitor progress."""
         return f"❌ Error starting dataset processing: {str(e)}"
 
 
-def generate_report(report_type: str, data_sources: str = "default") -> str:
+def generate_report(report_type: str, data_sources: str) -> str:
     """
     📄 Generate a comprehensive report from specified data sources.
 

@@ -71,7 +71,7 @@ architecture_specialist_tool = None  # Placeholder for now
 
 
 # Optional: Helper function for direct usage
-def analyze_architecture(request: str, context: dict = None) -> str:
+def analyze_architecture(request: str, context: dict) -> str:
     """
     Direct interface to architecture specialist for testing.
 

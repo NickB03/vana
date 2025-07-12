@@ -66,7 +66,7 @@ def _extract_location(query: str) -> str:
     return ""
 
 
-def _perform_google_search(query: str, max_results: int = 5) -> str:
+def _perform_google_search(query: str, max_results: int) -> str:
     """
     Internal function to perform the actual Google search.
     This function does NOT do any query enhancement to avoid recursion.
@@ -172,7 +172,7 @@ def _perform_google_search(query: str, max_results: int = 5) -> str:
         return ddg_search(query, max_results)
 
 
-def google_web_search(query: str, max_results: int = 5) -> str:
+def google_web_search(query: str, max_results: int) -> str:
     """
     🔍 Search the web using Google Custom Search API.
     

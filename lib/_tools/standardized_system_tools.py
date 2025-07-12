@@ -156,7 +156,7 @@ class StandardizedCoordinationTools:
     """Standardized coordination tools with enhanced PLAN/ACT integration."""
 
     @standardized_tool_wrapper("coordinate_task")
-    def coordinate_task(self, task_description: str, assigned_agent: str = "") -> StandardToolResponse:
+    def coordinate_task(self, task_description: str, assigned_agent: str) -> StandardToolResponse:
         """🎯 Coordinate task assignment with enhanced PLAN/ACT routing.
 
         Args:
@@ -235,7 +235,7 @@ class StandardizedCoordinationTools:
         return response
 
     @standardized_tool_wrapper("delegate_to_agent")
-    def delegate_to_agent(self, agent_name: str, task: str, context: str = "") -> StandardToolResponse:
+    def delegate_to_agent(self, agent_name: str, task: str, context: str) -> StandardToolResponse:
         """🤝 Delegate task with confidence-based agent selection.
 
         Args:
@@ -436,7 +436,7 @@ class StandardizedCoordinationTools:
         return response
 
     @standardized_tool_wrapper("transfer_to_agent")
-    def transfer_to_agent(self, agent_name: str, context: str = "") -> StandardToolResponse:
+    def transfer_to_agent(self, agent_name: str, context: str) -> StandardToolResponse:
         """🔄 Transfer conversation to specified agent (Google ADK Pattern).
 
         This implements the critical Google ADK transfer_to_agent() pattern for
@@ -568,13 +568,13 @@ def standardized_get_health_status() -> str:
     return result.to_string()
 
 
-def standardized_coordinate_task(task_description: str, assigned_agent: str = "") -> str:
+def standardized_coordinate_task(task_description: str, assigned_agent: str) -> str:
     """🎯 Task coordination with standardized interface - returns string for ADK compatibility."""
     result = standardized_coordination_tools.coordinate_task(task_description, assigned_agent)
     return result.to_string()
 
 
-def standardized_delegate_to_agent(agent_name: str, task: str, context: str = "") -> str:
+def standardized_delegate_to_agent(agent_name: str, task: str, context: str) -> str:
     """🤝 Agent delegation with standardized interface - returns string for ADK compatibility."""
     result = standardized_coordination_tools.delegate_to_agent(agent_name, task, context)
     return result.to_string()
@@ -586,7 +586,7 @@ def standardized_get_agent_status() -> str:
     return result.to_string()
 
 
-def standardized_transfer_to_agent(agent_name: str, context: str = "") -> str:
+def standardized_transfer_to_agent(agent_name: str, context: str) -> str:
     """🔄 Agent transfer with standardized interface - returns string for ADK compatibility."""
     result = standardized_coordination_tools.transfer_to_agent(agent_name, context)
     return result.to_string()

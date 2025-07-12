@@ -337,7 +337,7 @@ class EnhancedReasoningEngine:
         self.math_reasoning = MathematicalReasoning()
         self.logical_reasoning = LogicalReasoning()
 
-    def process_query(self, query: str, context: str = "") -> ReasoningResult:
+    def process_query(self, query: str, context: str) -> ReasoningResult:
         """Process query with appropriate reasoning approach"""
         # Determine reasoning approach
         if self._is_mathematical_query(query):
@@ -464,7 +464,7 @@ def intelligent_echo(message: str) -> str:
     return json.dumps(response, indent=2)
 
 
-def enhanced_analyze_task(task: str, context: str = "") -> str:
+def enhanced_analyze_task(task: str, context: str) -> str:
     """Enhanced task analysis with problem solving capabilities"""
     reasoning_engine = EnhancedReasoningEngine()
 

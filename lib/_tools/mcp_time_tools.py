@@ -32,7 +32,7 @@ TIMEZONE_MAPPINGS = {
 }
 
 
-def get_current_time(timezone: str = "UTC", format_string: str = "%Y-%m-%d %H:%M:%S %Z") -> str:
+def get_current_time(timezone: str, format_string: str) -> str:
     """
     Get the current time in the specified timezone.
 
@@ -255,7 +255,7 @@ def get_time_until(
         return f"Error calculating time until target: {str(e)}"
 
 
-def list_timezones(region: Optional[str] = None) -> str:
+def list_timezones(region: Optional[str]) -> str:
     """
     List available timezones, optionally filtered by region.
 

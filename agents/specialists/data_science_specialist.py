@@ -65,7 +65,7 @@ data_science_specialist_tool = None  # Placeholder
 
 
 # Helper function for direct usage
-def analyze_data(request: str, context: dict = None) -> str:
+def analyze_data(request: str, context: dict) -> str:
     """
     Direct interface to data science specialist for testing.
 

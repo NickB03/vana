@@ -48,7 +48,7 @@ class ToolInfo:
 class AgentDiscoveryService:
     """Service for discovering and managing agent information."""
 
-    def __init__(self, agents_dir: str = "agents"):
+    def __init__(self, agents_dir: str):
         """Initialize the agent discovery service.
 
         Args:
@@ -60,7 +60,7 @@ class AgentDiscoveryService:
         self._last_discovery: Optional[datetime] = None
         self._cache_ttl_seconds = 300  # 5 minutes
 
-    def discover_agents(self, force_refresh: bool = False) -> Dict[str, AgentCapability]:
+    def discover_agents(self, force_refresh: bool) -> Dict[str, AgentCapability]:
         """Discover all available agents and their capabilities.
 
         Args:

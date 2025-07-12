@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 class AgentCommunicationService:
     """Service for managing agent communication endpoints and routing."""
 
-    def __init__(self, base_url: str = "http://localhost:8000"):
+    def __init__(self, base_url: str):
         """Initialize the communication service.
 
         Args:

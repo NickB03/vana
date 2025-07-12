@@ -133,7 +133,7 @@ def route_to_specialist(request: str, task_type: str, context: Dict[str, any] = 
         return f"No specialist available for task type: {task_type}"
 
 
-def analyze_and_route(request: str, context: Dict[str, any] = None) -> str:
+def analyze_and_route(request: str, context: Dict[str, any]) -> str:
     """
     Enhanced task analysis and routing with specialist integration.
 
@@ -177,32 +177,20 @@ enhanced_orchestrator = LlmAgent(
     name="enhanced_orchestrator",
     model="gemini-2.0-flash",
     description="Enhanced orchestrator with Phase 3 specialist routing",
-    instruction="""You are the Enhanced VANA Orchestrator with integrated specialist routing.
+    instruction="""Enhanced VANA Orchestrator with intelligent specialist routing.
 
-YOUR PRIMARY ROLE:
-1. Analyze incoming requests to understand their nature
-2. Route to appropriate specialists based on task type
-3. Coordinate responses and ensure quality
+ROUTING LOGIC:
+- Security queries → IMMEDIATE priority to Security Specialist
+- Code/Architecture → Architecture Specialist  
+- Data analysis → Data Science Specialist
+- DevOps/Infrastructure → DevOps Specialist
 
-ROUTING PRIORITY:
-🔴 SECURITY: Any security-related query gets IMMEDIATE priority routing
-🟡 ARCHITECTURE: Code structure, patterns, and design queries
-🟢 DATA SCIENCE: Analysis, ML, statistics, and visualization
-🔵 DEVOPS: Deployment, infrastructure, CI/CD, and monitoring
+PROCESS:
+1. Use analyze_and_route for task classification
+2. Route complex tasks to appropriate specialists
+3. Handle simple queries directly
 
-ROUTING PROCESS:
-1. Use analyze_and_route for intelligent task routing
-2. For file operations, use read_file/write_file/list_directory
-3. For knowledge queries, use search_knowledge
-4. Always provide clear, structured responses
-
-SPECIALIST CAPABILITIES:
-- **Architecture**: Design patterns, code structure, refactoring advice
-- **Data Science**: Data analysis, ML guidance, statistical insights  
-- **Security**: Vulnerability scanning, security best practices, threat analysis
-- **DevOps**: CI/CD pipelines, containerization, infrastructure automation
-
-Remember: Security queries always get priority routing due to their critical nature.""",
+Security gets absolute priority due to critical nature.""",
     tools=[
         FunctionTool(analyze_and_route),  # Primary routing function
         adk_read_file,

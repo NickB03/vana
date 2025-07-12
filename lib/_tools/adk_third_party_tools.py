@@ -240,7 +240,7 @@ def register_crewai_tools() -> str:
     """
     try:
         # Create simple example tools without external dependencies
-        def format_string_crewai(text: str, format_type: str = "upper") -> str:
+        def format_string_crewai(text: str, format_type: str) -> str:
             """Format a string according to the specified format type using CrewAI."""
             if format_type == "upper":
                 return text.upper()
@@ -251,7 +251,7 @@ def register_crewai_tools() -> str:
             else:
                 return text
 
-        def process_list_crewai(items: str, operation: str = "sort") -> str:
+        def process_list_crewai(items: str, operation: str) -> str:
             """Process a comma-separated list of items using CrewAI."""
             item_list = [item.strip() for item in items.split(",")]
 

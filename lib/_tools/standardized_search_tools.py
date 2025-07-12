@@ -29,19 +29,19 @@ try:
     from agent.tools.web_search import search as web_search
 except ImportError:
     # Fallback implementations to avoid circular imports during initialization
-    def vector_search(query: str, max_results: int = 5):
+    def vector_search(query: str, max_results: int):
         return {
             "success": False,
             "error": "Vector search not available during initialization",
         }
 
-    def search_knowledge(query: str, max_results: int = 5):
+    def search_knowledge(query: str, max_results: int):
         return {
             "success": False,
             "error": "Knowledge search not available during initialization",
         }
 
-    def web_search(query: str, max_results: int = 5):
+    def web_search(query: str, max_results: int):
         return {
             "success": False,
             "error": "Web search not available during initialization",
@@ -52,7 +52,7 @@ class StandardizedSearchTools:
     """Standardized search tools with enhanced monitoring and error handling."""
 
     @standardized_tool_wrapper("vector_search")
-    def vector_search(self, query: str, max_results: int = 5) -> StandardToolResponse:
+    def vector_search(self, query: str, max_results: int) -> StandardToolResponse:
         """🔍 Search the vector database for relevant information with enhanced results.
 
         Args:
@@ -107,7 +107,7 @@ class StandardizedSearchTools:
         return response
 
     @standardized_tool_wrapper("web_search")
-    def web_search(self, query: str, max_results: int = 5) -> StandardToolResponse:
+    def web_search(self, query: str, max_results: int) -> StandardToolResponse:
         """🌐 Search the web for current information with enhanced formatting.
 
         Args:
@@ -163,7 +163,7 @@ class StandardizedSearchTools:
         return response
 
     @standardized_tool_wrapper("search_knowledge")
-    def search_knowledge(self, query: str, max_results: int = 5) -> StandardToolResponse:
+    def search_knowledge(self, query: str, max_results: int) -> StandardToolResponse:
         """🧠 Search the knowledge base for relevant information with context.
 
         Args:
@@ -227,19 +227,19 @@ standardized_search_tools = StandardizedSearchTools()
 
 
 # Wrapper functions for ADK compatibility
-def standardized_vector_search(query: str, max_results: int = 5) -> str:
+def standardized_vector_search(query: str, max_results: int) -> str:
     """🔍 Vector search with standardized interface - returns string for ADK compatibility."""
     result = standardized_search_tools.vector_search(query, max_results)
     return result.to_string()
 
 
-def standardized_web_search(query: str, max_results: int = 5) -> str:
+def standardized_web_search(query: str, max_results: int) -> str:
     """🌐 Web search with standardized interface - returns string for ADK compatibility."""
     result = standardized_search_tools.web_search(query, max_results)
     return result.to_string()
 
 
-def standardized_search_knowledge(query: str, max_results: int = 5) -> str:
+def standardized_search_knowledge(query: str, max_results: int) -> str:
     """🧠 Knowledge search with standardized interface - returns string for ADK compatibility."""
     result = standardized_search_tools.search_knowledge(query, max_results)
     return result.to_string()
