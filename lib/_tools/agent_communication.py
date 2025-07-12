@@ -92,9 +92,7 @@ class AgentCommunicationService:
             "average_response_time": 0.0,
         }
 
-        logger.info(
-            f"✅ Agent {agent_name} RPC endpoint registered at /agent/{agent_name}/rpc"
-        )
+        logger.info(f"✅ Agent {agent_name} RPC endpoint registered at /agent/{agent_name}/rpc")
         return rpc_handler
 
     async def send_task_to_agent(
@@ -128,27 +126,19 @@ class AgentCommunicationService:
                 return {
                     "status": "error",
                     "error": f"Agent '{agent_name}' not found",
-                    "available_agents": list(
-                        self.discovery_service.discover_agents().keys()
-                    ),
+                    "available_agents": list(self.discovery_service.discover_agents().keys()),
                 }
 
             # Send task using JSON-RPC client
             async with JsonRpcClient(base_url=self.base_url) as client:
-                response = await client.execute_task(
-                    agent_name, task, context, priority, timeout_seconds
-                )
+                response = await client.execute_task(agent_name, task, context, priority, timeout_seconds)
 
             # Update stats
             execution_time = (time.time() - start_time) * 1000
-            self._update_communication_stats(
-                agent_name, "sent", execution_time, response.error is None
-            )
+            self._update_communication_stats(agent_name, "sent", execution_time, response.error is None)
 
             if response.error:
-                logger.warning(
-                    f"⚠️ Task failed for {agent_name}: {response.error.message}"
-                )
+                logger.warning(f"⚠️ Task failed for {agent_name}: {response.error.message}")
                 return {
                     "status": "error",
                     "error": response.error.message,
@@ -156,9 +146,7 @@ class AgentCommunicationService:
                     "agent_name": agent_name,
                 }
             else:
-                logger.info(
-                    f"✅ Task completed by {agent_name} ({execution_time:.1f}ms)"
-                )
+                logger.info(f"✅ Task completed by {agent_name} ({execution_time:.1f}ms)")
                 return {
                     "status": "success",
                     "result": response.result,
@@ -198,11 +186,7 @@ class AgentCommunicationService:
 
         # Filter agents if specified
         if agent_filter:
-            target_agents = {
-                name: info
-                for name, info in available_agents.items()
-                if name in agent_filter
-            }
+            target_agents = {name: info for name, info in available_agents.items() if name in agent_filter}
         else:
             target_agents = available_agents
 
@@ -316,9 +300,7 @@ class AgentCommunicationService:
             "last_updated": datetime.now().isoformat(),
         }
 
-    def _update_communication_stats(
-        self, agent_name: str, direction: str, response_time: float, success: bool
-    ) -> None:
+    def _update_communication_stats(self, agent_name: str, direction: str, response_time: float, success: bool) -> None:
         """Update communication statistics.
 
         Args:
@@ -349,9 +331,7 @@ class AgentCommunicationService:
         # Update average response time
         current_avg = stats["average_response_time"]
         total_requests = stats["requests_sent"] + stats["requests_received"]
-        stats["average_response_time"] = (
-            (current_avg * (total_requests - 1)) + response_time
-        ) / total_requests
+        stats["average_response_time"] = ((current_avg * (total_requests - 1)) + response_time) / total_requests
 
         stats["last_communication"] = datetime.now().isoformat()
 

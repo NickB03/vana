@@ -39,9 +39,7 @@ class VectorSearchAuditLogger:
         # Create audit logger
         self.audit_logger = AuditLogger(log_dir=log_dir)
 
-        logger.info(
-            f"Vector Search Audit Logger initialized with log directory: {log_dir}"
-        )
+        logger.info(f"Vector Search Audit Logger initialized with log directory: {log_dir}")
 
     def log_search(
         self,

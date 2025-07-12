@@ -13,12 +13,13 @@ This script measures and documents baseline performance metrics for:
 
 import asyncio
 import json
-import time
-import psutil
 import statistics
-from pathlib import Path
-from typing import Dict, Any
 import sys
+import time
+from pathlib import Path
+from typing import Any, Dict
+
+import psutil
 
 # Add project root to path
 project_root = Path(__file__).parent.parent.parent
@@ -36,9 +37,7 @@ class BaselinePerformanceMeasurement:
     def __init__(self, environment: str = "dev"):
         self.environment = environment
         self.project_root = project_root
-        self.baseline_manager = BaselineManager(
-            project_root / "tests" / "validation" / "performance_baselines.json"
-        )
+        self.baseline_manager = BaselineManager(project_root / "tests" / "validation" / "performance_baselines.json")
         self.results_dir = project_root / "tests" / "results" / "performance"
         self.results_dir.mkdir(parents=True, exist_ok=True)
 
@@ -97,9 +96,7 @@ class BaselinePerformanceMeasurement:
             baseline_results["baselines_established"] = stored_baselines
 
             # Step 6: Generate performance summary
-            baseline_results["performance_summary"] = (
-                self._generate_performance_summary(baseline_results)
-            )
+            baseline_results["performance_summary"] = self._generate_performance_summary(baseline_results)
 
             logger.info("✅ Comprehensive baseline establishment completed!")
 
@@ -140,9 +137,7 @@ class BaselinePerformanceMeasurement:
             # System availability (simplified - assume 100% if we can measure)
             system_metrics["system_availability"].append(100.0)
 
-            logger.debug(
-                f"   Round {round_num + 1}: Memory={memory_used_mb:.1f}MB, CPU={cpu_percent:.1f}%"
-            )
+            logger.debug(f"   Round {round_num + 1}: Memory={memory_used_mb:.1f}MB, CPU={cpu_percent:.1f}%")
 
             if round_num < self.config["measurement_rounds"] - 1:
                 await asyncio.sleep(2)  # Wait between measurements
@@ -181,9 +176,7 @@ class BaselinePerformanceMeasurement:
             coordination_time = 0.2 + (round_num * 0.02)  # Slight variation
             agent_metrics["coordination_time"].append(coordination_time)
 
-            logger.debug(
-                f"   Round {round_num + 1}: Response={response_time:.3f}s, Discovery={discovery_time:.3f}s"
-            )
+            logger.debug(f"   Round {round_num + 1}: Response={response_time:.3f}s, Discovery={discovery_time:.3f}s")
 
             if round_num < self.config["measurement_rounds"] - 1:
                 await asyncio.sleep(1)
@@ -215,9 +208,7 @@ class BaselinePerformanceMeasurement:
             # API availability
             api_metrics["api_availability"].append(100.0)
 
-            logger.debug(
-                f"   Round {round_num + 1}: Health=50ms, Info=80ms, AgentList=120ms"
-            )
+            logger.debug(f"   Round {round_num + 1}: Health=50ms, Info=80ms, AgentList=120ms")
 
             if round_num < self.config["measurement_rounds"] - 1:
                 await asyncio.sleep(0.5)
@@ -256,9 +247,7 @@ class BaselinePerformanceMeasurement:
 
         return integration_metrics
 
-    async def _store_baselines(
-        self, baseline_results: Dict[str, Any]
-    ) -> Dict[str, Any]:
+    async def _store_baselines(self, baseline_results: Dict[str, Any]) -> Dict[str, Any]:
         """Store measured baselines in the baseline manager."""
         stored_baselines = {}
 
@@ -269,9 +258,7 @@ class BaselinePerformanceMeasurement:
                     "system",
                     metric_name,
                     values,
-                    self.config["target_metrics"]
-                    .get(metric_name, {})
-                    .get("unit", "units"),
+                    self.config["target_metrics"].get(metric_name, {}).get("unit", "units"),
                 )
                 stored_baselines[f"system_{metric_name}"] = {
                     "baseline_value": baseline.baseline_value,
@@ -283,9 +270,7 @@ class BaselinePerformanceMeasurement:
         for metric_name, values in baseline_results["agent_metrics"].items():
             if values:
                 unit = "seconds" if "time" in metric_name else "percentage"
-                baseline = self.baseline_manager.establish_baseline(
-                    "agent", metric_name, values, unit
-                )
+                baseline = self.baseline_manager.establish_baseline("agent", metric_name, values, unit)
                 stored_baselines[f"agent_{metric_name}"] = {
                     "baseline_value": baseline.baseline_value,
                     "confidence_interval": baseline.confidence_interval,
@@ -296,9 +281,7 @@ class BaselinePerformanceMeasurement:
         for metric_name, values in baseline_results["api_metrics"].items():
             if values:
                 unit = "seconds" if "time" in metric_name else "percentage"
-                baseline = self.baseline_manager.establish_baseline(
-                    "api", metric_name, values, unit
-                )
+                baseline = self.baseline_manager.establish_baseline("api", metric_name, values, unit)
                 stored_baselines[f"api_{metric_name}"] = {
                     "baseline_value": baseline.baseline_value,
                     "confidence_interval": baseline.confidence_interval,
@@ -309,9 +292,7 @@ class BaselinePerformanceMeasurement:
         for metric_name, values in baseline_results["integration_metrics"].items():
             if values:
                 unit = "seconds" if "time" in metric_name else "percentage"
-                baseline = self.baseline_manager.establish_baseline(
-                    "integration", metric_name, values, unit
-                )
+                baseline = self.baseline_manager.establish_baseline("integration", metric_name, values, unit)
                 stored_baselines[f"integration_{metric_name}"] = {
                     "baseline_value": baseline.baseline_value,
                     "confidence_interval": baseline.confidence_interval,
@@ -321,22 +302,16 @@ class BaselinePerformanceMeasurement:
         logger.info(f"💾 Stored {len(stored_baselines)} performance baselines")
         return stored_baselines
 
-    def _generate_performance_summary(
-        self, baseline_results: Dict[str, Any]
-    ) -> Dict[str, Any]:
+    def _generate_performance_summary(self, baseline_results: Dict[str, Any]) -> Dict[str, Any]:
         """Generate comprehensive performance summary."""
         summary = {
-            "total_baselines_established": len(
-                baseline_results.get("baselines_established", {})
-            ),
+            "total_baselines_established": len(baseline_results.get("baselines_established", {})),
             "measurement_quality": "high",
             "baseline_categories": {
                 "system_metrics": len(baseline_results.get("system_metrics", {})),
                 "agent_metrics": len(baseline_results.get("agent_metrics", {})),
                 "api_metrics": len(baseline_results.get("api_metrics", {})),
-                "integration_metrics": len(
-                    baseline_results.get("integration_metrics", {})
-                ),
+                "integration_metrics": len(baseline_results.get("integration_metrics", {})),
             },
             "key_performance_indicators": {},
         }
@@ -344,41 +319,25 @@ class BaselinePerformanceMeasurement:
         # Calculate key performance indicators
         if "agent_metrics" in baseline_results:
             agent_metrics = baseline_results["agent_metrics"]
-            if (
-                "agent_response_time" in agent_metrics
-                and agent_metrics["agent_response_time"]
-            ):
-                avg_response_time = statistics.mean(
-                    agent_metrics["agent_response_time"]
-                )
-                summary["key_performance_indicators"]["average_agent_response_time"] = (
-                    f"{avg_response_time:.3f}s"
-                )
+            if "agent_response_time" in agent_metrics and agent_metrics["agent_response_time"]:
+                avg_response_time = statistics.mean(agent_metrics["agent_response_time"])
+                summary["key_performance_indicators"]["average_agent_response_time"] = f"{avg_response_time:.3f}s"
 
-            if (
-                "agent_success_rate" in agent_metrics
-                and agent_metrics["agent_success_rate"]
-            ):
+            if "agent_success_rate" in agent_metrics and agent_metrics["agent_success_rate"]:
                 avg_success_rate = statistics.mean(agent_metrics["agent_success_rate"])
-                summary["key_performance_indicators"]["average_agent_success_rate"] = (
-                    f"{avg_success_rate:.1f}%"
-                )
+                summary["key_performance_indicators"]["average_agent_success_rate"] = f"{avg_success_rate:.1f}%"
 
         if "system_metrics" in baseline_results:
             system_metrics = baseline_results["system_metrics"]
             if "memory_usage" in system_metrics and system_metrics["memory_usage"]:
                 avg_memory = statistics.mean(system_metrics["memory_usage"])
-                summary["key_performance_indicators"]["average_memory_usage"] = (
-                    f"{avg_memory:.1f}MB"
-                )
+                summary["key_performance_indicators"]["average_memory_usage"] = f"{avg_memory:.1f}MB"
 
         return summary
 
     async def _save_baseline_results(self, results: Dict[str, Any]):
         """Save baseline measurement results."""
-        results_file = (
-            self.results_dir / f"baseline_measurement_{int(time.time())}.json"
-        )
+        results_file = self.results_dir / f"baseline_measurement_{int(time.time())}.json"
 
         with open(results_file, "w") as f:
             json.dump(results, f, indent=2)
@@ -399,9 +358,7 @@ async def main():
 
     if "error" not in results:
         logger.info("🎉 Baseline performance measurement completed successfully!")
-        logger.info(
-            f"📊 Established {results['performance_summary']['total_baselines_established']} baselines"
-        )
+        logger.info(f"📊 Established {results['performance_summary']['total_baselines_established']} baselines")
         logger.info("📋 Next steps:")
         logger.info("   1. Validate agent discovery and basic operations")
         logger.info("   2. Test tool integration")

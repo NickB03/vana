@@ -28,11 +28,7 @@ logger = logging.getLogger(__name__)
 
 # Add scripts directory to path
 sys.path.append("scripts")
-from test_vector_search_direct import (
-    generate_embedding,
-    get_vector_search_endpoint,
-    search_knowledge,
-)
+from test_vector_search_direct import generate_embedding, get_vector_search_endpoint, search_knowledge
 
 # Known-good test queries with expected patterns in results
 TEST_QUERIES = [
@@ -61,9 +57,7 @@ def check_embedding_generation():
         duration = time.time() - start_time
 
         if embedding and len(embedding) > 0:
-            logger.info(
-                f"✅ Embedding generation is working (dimensions: {len(embedding)}, time: {duration:.2f}s)"
-            )
+            logger.info(f"✅ Embedding generation is working (dimensions: {len(embedding)}, time: {duration:.2f}s)")
             return True
         else:
             logger.error("❌ Embedding generation returned empty result")
@@ -81,9 +75,7 @@ def check_vector_search_connectivity():
         endpoint, deployed_index_id = get_vector_search_endpoint()
 
         if endpoint and deployed_index_id:
-            logger.info(
-                f"✅ Vector Search endpoint is accessible (deployed_index_id: {deployed_index_id})"
-            )
+            logger.info(f"✅ Vector Search endpoint is accessible (deployed_index_id: {deployed_index_id})")
             return True
         else:
             logger.error("❌ Vector Search endpoint not found")
@@ -110,17 +102,9 @@ def run_test_queries():
             duration = time.time() - start_time
 
             # Check if result contains expected patterns
-            pattern_matches = [
-                pattern
-                for pattern in expected_patterns
-                if pattern.lower() in search_result.lower()
-            ]
+            pattern_matches = [pattern for pattern in expected_patterns if pattern.lower() in search_result.lower()]
 
-            success = (
-                len(pattern_matches) / len(expected_patterns)
-                if expected_patterns
-                else 0
-            )
+            success = len(pattern_matches) / len(expected_patterns) if expected_patterns else 0
 
             results.append(
                 {
@@ -133,9 +117,7 @@ def run_test_queries():
             )
 
             if success >= 0.5:
-                logger.info(
-                    f"✅ Query test passed: '{query}' (match ratio: {success:.2f}, time: {duration:.2f}s)"
-                )
+                logger.info(f"✅ Query test passed: '{query}' (match ratio: {success:.2f}, time: {duration:.2f}s)")
             else:
                 logger.warning(
                     f"⚠️ Query test partially failed: '{query}' (match ratio: {success:.2f}, time: {duration:.2f}s)"
@@ -148,9 +130,7 @@ def run_test_queries():
     success_count = sum(1 for r in results if r.get("success", False))
     success_rate = success_count / len(results) if results else 0
 
-    logger.info(
-        f"Query tests: {success_count}/{len(results)} successful ({success_rate:.1f}%)"
-    )
+    logger.info(f"Query tests: {success_count}/{len(results)} successful ({success_rate:.1f}%)")
 
     return results, success_rate >= 0.7  # At least 70% of queries should succeed
 

@@ -5,12 +5,14 @@ Test script to directly invoke VANA agent without server
 import asyncio
 import sys
 
+
 async def test_agent_direct():
     try:
         # Import VANA agent
-        from agents.vana.team import root_agent
-        from google.adk.session import Session
         from google.adk.context import Context
+        from google.adk.session import Session
+
+        from agents.vana.team import root_agent
         
         print(f"✅ Agent imported: {root_agent}")
         print(f"Agent model: {root_agent.model}")

@@ -10,11 +10,7 @@ import time
 
 import pytest
 
-from tests.framework import (
-    PerformanceBenchmarker,
-    ResponseQualityAnalyzer,
-    create_test_agent_client,
-)
+from tests.framework import PerformanceBenchmarker, ResponseQualityAnalyzer, create_test_agent_client
 
 
 class TestCompleteUserWorkflows:
@@ -59,9 +55,7 @@ class TestCompleteUserWorkflows:
             end_time = time.time()
 
             # Analyze response quality
-            quality_metrics = quality_analyzer.analyze_response_quality(
-                response.content, query
-            )
+            quality_metrics = quality_analyzer.analyze_response_quality(response.content, query)
 
             step_result = {
                 "step": step + 1,
@@ -82,9 +76,7 @@ class TestCompleteUserWorkflows:
             await asyncio.sleep(2)
 
         # Validate workflow completion
-        assert len(workflow_results) == len(research_workflow), (
-            "Not all workflow steps completed"
-        )
+        assert len(workflow_results) == len(research_workflow), "Not all workflow steps completed"
 
         # Check overall workflow success
         successful_steps = [r for r in workflow_results if r["status"] == "success"]
@@ -95,9 +87,7 @@ class TestCompleteUserWorkflows:
         quality_scores = [r["quality_metrics"].overall_score for r in successful_steps]
         if quality_scores:
             avg_quality = sum(quality_scores) / len(quality_scores)
-            assert avg_quality >= 0.6, (
-                f"Average response quality too low: {avg_quality:.2f}"
-            )
+            assert avg_quality >= 0.6, f"Average response quality too low: {avg_quality:.2f}"
 
         # Check for information research indicators
         all_responses = " ".join([r["response"] for r in successful_steps])
@@ -107,18 +97,12 @@ class TestCompleteUserWorkflows:
             "development",
             "technology",
         ]
-        found_indicators = sum(
-            1
-            for indicator in research_indicators
-            if indicator.lower() in all_responses.lower()
-        )
+        found_indicators = sum(1 for indicator in research_indicators if indicator.lower() in all_responses.lower())
         assert found_indicators >= 2, "Should contain research-related content"
 
         # Validate workflow performance
         total_workflow_time = sum(r["execution_time"] for r in workflow_results)
-        assert total_workflow_time < 120.0, (
-            f"Total workflow time too long: {total_workflow_time:.2f}s"
-        )
+        assert total_workflow_time < 120.0, f"Total workflow time too long: {total_workflow_time:.2f}s"
 
     @pytest.mark.e2e
     @pytest.mark.asyncio
@@ -139,9 +123,7 @@ class TestCompleteUserWorkflows:
             response = await vana_client.query(query)
 
             # Analyze response quality
-            quality_metrics = quality_analyzer.analyze_response_quality(
-                response.content, query
-            )
+            quality_metrics = quality_analyzer.analyze_response_quality(response.content, query)
 
             step_result = {
                 "step": step + 1,
@@ -151,11 +133,9 @@ class TestCompleteUserWorkflows:
                 "execution_time": response.execution_time,
                 "tools_used": response.tools_used,
                 "quality_metrics": quality_metrics,
-                "contains_code": "def " in response.content
-                or "class " in response.content,
+                "contains_code": "def " in response.content or "class " in response.content,
                 "contains_architecture": any(
-                    term in response.content.lower()
-                    for term in ["architecture", "design", "structure"]
+                    term in response.content.lower() for term in ["architecture", "design", "structure"]
                 ),
             }
 
@@ -165,18 +145,14 @@ class TestCompleteUserWorkflows:
         # Validate development workflow
         successful_steps = [r for r in workflow_results if r["status"] == "success"]
         success_rate = len(successful_steps) / len(workflow_results)
-        assert success_rate >= 0.7, (
-            f"Development workflow success rate too low: {success_rate:.2%}"
-        )
+        assert success_rate >= 0.7, f"Development workflow success rate too low: {success_rate:.2%}"
 
         # Check for development-specific content
         code_responses = [r for r in successful_steps if r["contains_code"]]
         arch_responses = [r for r in successful_steps if r["contains_architecture"]]
 
         # Should have some technical content
-        assert len(code_responses) > 0 or len(arch_responses) > 0, (
-            "Should contain code or architecture content"
-        )
+        assert len(code_responses) > 0 or len(arch_responses) > 0, "Should contain code or architecture content"
 
         # Check tool usage patterns
         all_tools_used = []
@@ -186,9 +162,7 @@ class TestCompleteUserWorkflows:
         # Should use appropriate tools for development queries
         expected_tools = ["delegate_to_agent", "adk_web_search"]
         tool_usage = any(tool in all_tools_used for tool in expected_tools)
-        assert tool_usage or len(all_tools_used) == 0, (
-            "Should use appropriate tools for development assistance"
-        )
+        assert tool_usage or len(all_tools_used) == 0, "Should use appropriate tools for development assistance"
 
     @pytest.mark.e2e
     @pytest.mark.asyncio
@@ -208,9 +182,7 @@ class TestCompleteUserWorkflows:
         for step, query in enumerate(data_workflow):
             response = await vana_client.query(query)
 
-            quality_metrics = quality_analyzer.analyze_response_quality(
-                response.content, query
-            )
+            quality_metrics = quality_analyzer.analyze_response_quality(response.content, query)
 
             step_result = {
                 "step": step + 1,
@@ -221,12 +193,10 @@ class TestCompleteUserWorkflows:
                 "tools_used": response.tools_used,
                 "quality_metrics": quality_metrics,
                 "mentions_data_tools": any(
-                    tool in response.content.lower()
-                    for tool in ["pandas", "matplotlib", "seaborn", "plotly"]
+                    tool in response.content.lower() for tool in ["pandas", "matplotlib", "seaborn", "plotly"]
                 ),
                 "mentions_analysis": any(
-                    term in response.content.lower()
-                    for term in ["analyz", "trend", "insight", "pattern"]
+                    term in response.content.lower() for term in ["analyz", "trend", "insight", "pattern"]
                 ),
             }
 
@@ -236,28 +206,18 @@ class TestCompleteUserWorkflows:
         # Validate data analysis workflow
         successful_steps = [r for r in workflow_results if r["status"] == "success"]
         success_rate = len(successful_steps) / len(workflow_results)
-        assert success_rate >= 0.7, (
-            f"Data analysis workflow success rate too low: {success_rate:.2%}"
-        )
+        assert success_rate >= 0.7, f"Data analysis workflow success rate too low: {success_rate:.2%}"
 
         # Check for data analysis content
-        data_tool_mentions = sum(
-            1 for r in successful_steps if r["mentions_data_tools"]
-        )
+        data_tool_mentions = sum(1 for r in successful_steps if r["mentions_data_tools"])
         analysis_mentions = sum(1 for r in successful_steps if r["mentions_analysis"])
 
         # Should contain relevant data analysis content
-        assert data_tool_mentions > 0 or analysis_mentions > 0, (
-            "Should contain data analysis related content"
-        )
+        assert data_tool_mentions > 0 or analysis_mentions > 0, "Should contain data analysis related content"
 
         # Check for delegation to data science agent
         delegation_tools = ["delegate_to_agent"]
-        used_delegation = any(
-            tool in result["tools_used"]
-            for result in successful_steps
-            for tool in delegation_tools
-        )
+        used_delegation = any(tool in result["tools_used"] for result in successful_steps for tool in delegation_tools)
 
         # Data analysis should involve appropriate agent coordination
         # (This is flexible as coordination patterns may vary)
@@ -280,9 +240,7 @@ class TestCompleteUserWorkflows:
         for step, query in enumerate(problem_workflow):
             response = await vana_client.query(query)
 
-            quality_metrics = quality_analyzer.analyze_response_quality(
-                response.content, query
-            )
+            quality_metrics = quality_analyzer.analyze_response_quality(response.content, query)
 
             step_result = {
                 "step": step + 1,
@@ -294,8 +252,7 @@ class TestCompleteUserWorkflows:
                 "quality_metrics": quality_metrics,
                 "addresses_performance": "performance" in response.content.lower(),
                 "provides_solutions": any(
-                    term in response.content.lower()
-                    for term in ["solution", "fix", "optimize", "improve"]
+                    term in response.content.lower() for term in ["solution", "fix", "optimize", "improve"]
                 ),
             }
 
@@ -305,26 +262,20 @@ class TestCompleteUserWorkflows:
         # Validate problem-solving workflow
         successful_steps = [r for r in workflow_results if r["status"] == "success"]
         success_rate = len(successful_steps) / len(workflow_results)
-        assert success_rate >= 0.7, (
-            f"Problem-solving workflow success rate too low: {success_rate:.2%}"
-        )
+        assert success_rate >= 0.7, f"Problem-solving workflow success rate too low: {success_rate:.2%}"
 
         # Check for problem-solving content
-        performance_mentions = sum(
-            1 for r in successful_steps if r["addresses_performance"]
-        )
+        performance_mentions = sum(1 for r in successful_steps if r["addresses_performance"])
         solution_mentions = sum(1 for r in successful_steps if r["provides_solutions"])
 
         assert performance_mentions >= 1, "Should address performance issues"
         assert solution_mentions >= 1, "Should provide solutions"
 
         # Responses should be substantial for complex problems
-        substantial_responses = [
-            r for r in successful_steps if len(r["response"]) > 100
-        ]
-        assert len(substantial_responses) >= len(successful_steps) // 2, (
-            "Should provide substantial responses for complex problems"
-        )
+        substantial_responses = [r for r in successful_steps if len(r["response"]) > 100]
+        assert (
+            len(substantial_responses) >= len(successful_steps) // 2
+        ), "Should provide substantial responses for complex problems"
 
     @pytest.mark.e2e
     @pytest.mark.slow
@@ -351,16 +302,12 @@ class TestCompleteUserWorkflows:
         for step, query in enumerate(extended_workflow):
             response = await vana_client.query(query)
 
-            quality_metrics = quality_analyzer.analyze_response_quality(
-                response.content, query
-            )
+            quality_metrics = quality_analyzer.analyze_response_quality(response.content, query)
 
             # Check for context awareness
             context_indicators = ["project", "customer", "data", "machine learning"]
             context_awareness = sum(
-                1
-                for indicator in context_indicators
-                if indicator.lower() in response.content.lower()
+                1 for indicator in context_indicators if indicator.lower() in response.content.lower()
             )
 
             step_result = {
@@ -376,45 +323,33 @@ class TestCompleteUserWorkflows:
             }
 
             workflow_results.append(step_result)
-            conversation_context.append(
-                {"step": step + 1, "query": query, "response": response.content}
-            )
+            conversation_context.append({"step": step + 1, "query": query, "response": response.content})
 
             await asyncio.sleep(1)
 
         # Validate extended conversation
         successful_steps = [r for r in workflow_results if r["status"] == "success"]
         success_rate = len(successful_steps) / len(workflow_results)
-        assert success_rate >= 0.7, (
-            f"Extended conversation success rate too low: {success_rate:.2%}"
-        )
+        assert success_rate >= 0.7, f"Extended conversation success rate too low: {success_rate:.2%}"
 
         # Check context preservation
         context_scores = [r["context_awareness_score"] for r in successful_steps]
         if context_scores:
             avg_context_score = sum(context_scores) / len(context_scores)
-            assert avg_context_score >= 0.3, (
-                f"Context awareness too low: {avg_context_score:.2f}"
-            )
+            assert avg_context_score >= 0.3, f"Context awareness too low: {avg_context_score:.2f}"
 
         # Later responses should maintain context from earlier conversation
         later_responses = successful_steps[len(successful_steps) // 2 :]
         if later_responses:
-            later_context_scores = [
-                r["context_awareness_score"] for r in later_responses
-            ]
+            later_context_scores = [r["context_awareness_score"] for r in later_responses]
             avg_later_context = sum(later_context_scores) / len(later_context_scores)
-            assert avg_later_context >= 0.2, (
-                "Later responses should maintain some context awareness"
-            )
+            assert avg_later_context >= 0.2, "Later responses should maintain some context awareness"
 
         # Check overall conversation quality
         quality_scores = [r["quality_metrics"].overall_score for r in successful_steps]
         if quality_scores:
             avg_quality = sum(quality_scores) / len(quality_scores)
-            assert avg_quality >= 0.6, (
-                f"Extended conversation quality too low: {avg_quality:.2f}"
-            )
+            assert avg_quality >= 0.6, f"Extended conversation quality too low: {avg_quality:.2f}"
 
     @pytest.mark.e2e
     @pytest.mark.performance
@@ -455,25 +390,17 @@ class TestCompleteUserWorkflows:
             )
 
         # Validate workflow performance
-        response_times = [
-            p["response_time"] for p in workflow_performance if p["status"] == "success"
-        ]
+        response_times = [p["response_time"] for p in workflow_performance if p["status"] == "success"]
 
         if response_times:
             avg_response_time = sum(response_times) / len(response_times)
             max_response_time = max(response_times)
 
-            assert avg_response_time < 15.0, (
-                f"Average workflow response time too slow: {avg_response_time:.2f}s"
-            )
-            assert max_response_time < 30.0, (
-                f"Maximum workflow response time too slow: {max_response_time:.2f}s"
-            )
+            assert avg_response_time < 15.0, f"Average workflow response time too slow: {avg_response_time:.2f}s"
+            assert max_response_time < 30.0, f"Maximum workflow response time too slow: {max_response_time:.2f}s"
 
         # Check success rate
-        successful_queries = [
-            p for p in workflow_performance if p["status"] == "success"
-        ]
+        successful_queries = [p for p in workflow_performance if p["status"] == "success"]
         success_rate = len(successful_queries) / len(workflow_performance)
         assert success_rate >= 0.8, f"Workflow success rate too low: {success_rate:.2%}"
 
@@ -502,17 +429,14 @@ class TestCompleteUserWorkflows:
                 "status": response.status,
                 "execution_time": response.execution_time,
                 "error": response.error,
-                "recovered": response.status == "success"
-                and step > 2,  # Recovery after errors
+                "recovered": response.status == "success" and step > 2,  # Recovery after errors
             }
 
             workflow_results.append(step_result)
             await asyncio.sleep(1)
 
         # Validate error recovery
-        assert len(workflow_results) == len(error_recovery_workflow), (
-            "Not all workflow steps completed"
-        )
+        assert len(workflow_results) == len(error_recovery_workflow), "Not all workflow steps completed"
 
         # Should handle errors gracefully
         for result in workflow_results:
@@ -523,9 +447,7 @@ class TestCompleteUserWorkflows:
             ], f"Invalid status: {result['status']}"
 
             # Should not hang on errors
-            assert result["execution_time"] < 30.0, (
-                f"Step took too long: {result['execution_time']:.2f}s"
-            )
+            assert result["execution_time"] < 30.0, f"Step took too long: {result['execution_time']:.2f}s"
 
         # Should recover from errors
         recovery_steps = [r for r in workflow_results[-2:] if r["recovered"]]

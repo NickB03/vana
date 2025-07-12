@@ -21,9 +21,7 @@ project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
 # Configure logging
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
 
@@ -383,9 +381,7 @@ type: system_documentation
         # Create index file
         self.create_index_file()
 
-        logger.info(
-            f"📊 Knowledge base creation completed: {success_count}/{len(knowledge_files)} files created"
-        )
+        logger.info(f"📊 Knowledge base creation completed: {success_count}/{len(knowledge_files)} files created")
         return success_count == len(knowledge_files)
 
     def create_index_file(self):

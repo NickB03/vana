@@ -95,9 +95,7 @@ class ADKMemoryService:
                     # Enhanced environment variable priority logic (Phase 1 fix)
                     # Priority 1: VANA_RAG_CORPUS_ID (validate if it's full resource name)
                     rag_corpus = os.getenv("VANA_RAG_CORPUS_ID")
-                    if rag_corpus and not self._validate_rag_corpus_resource_name(
-                        rag_corpus
-                    ):
+                    if rag_corpus and not self._validate_rag_corpus_resource_name(rag_corpus):
                         logger.warning(
                             f"VANA_RAG_CORPUS_ID appears to be corpus ID, not full resource name: {rag_corpus}"
                         )
@@ -109,13 +107,9 @@ class ADKMemoryService:
 
                     # Priority 3: Build from individual components
                     if not rag_corpus:
-                        project_id = os.getenv(
-                            "GOOGLE_CLOUD_PROJECT", "analystai-454200"
-                        )
+                        project_id = os.getenv("GOOGLE_CLOUD_PROJECT", "analystai-454200")
                         location = os.getenv("GOOGLE_CLOUD_LOCATION", "us-central1")
-                        corpus_id = os.getenv(
-                            "RAG_CORPUS_ID", "vana-corpus"
-                        )  # Different from VANA_RAG_CORPUS_ID
+                        corpus_id = os.getenv("RAG_CORPUS_ID", "vana-corpus")  # Different from VANA_RAG_CORPUS_ID
                         rag_corpus = f"projects/{project_id}/locations/{location}/ragCorpora/{corpus_id}"
 
                 self.memory_service = VertexAiRagMemoryService(
@@ -123,27 +117,19 @@ class ADKMemoryService:
                     similarity_top_k=5,
                     vector_distance_threshold=0.7,
                 )
-                logger.info(
-                    f"Initialized VertexAiRagMemoryService with corpus: {rag_corpus}"
-                )
+                logger.info(f"Initialized VertexAiRagMemoryService with corpus: {rag_corpus}")
 
                 # Initialize vector search service for Phase 2 enhancement
                 if VECTOR_SEARCH_AVAILABLE and _get_vector_search_service:
                     try:
                         self.vector_search_service = _get_vector_search_service()
                         if self.vector_search_service.is_available():
-                            logger.info(
-                                "Vector search service initialized successfully"
-                            )
+                            logger.info("Vector search service initialized successfully")
                         else:
-                            logger.warning(
-                                "Vector search service not properly configured"
-                            )
+                            logger.warning("Vector search service not properly configured")
                             self.vector_search_service = None
                     except Exception as e:
-                        logger.warning(
-                            f"Failed to initialize vector search service: {e}"
-                        )
+                        logger.warning(f"Failed to initialize vector search service: {e}")
                         self.vector_search_service = None
                 else:
                     self.vector_search_service = None
@@ -213,9 +199,7 @@ class ADKMemoryService:
                     return vector_results
 
                 except Exception as e:
-                    logger.warning(
-                        f"Vector search failed, falling back to base results: {e}"
-                    )
+                    logger.warning(f"Vector search failed, falling back to base results: {e}")
 
             # Fallback to base ADK memory results
             logger.info("Using base ADK memory search")
@@ -249,9 +233,7 @@ class ADKMemoryService:
             logger.error(f"Error adding session to ADK memory: {e}")
             return False
 
-    async def add_knowledge_to_memory(
-        self, content: str, metadata: Dict[str, Any]
-    ) -> bool:
+    async def add_knowledge_to_memory(self, content: str, metadata: Dict[str, Any]) -> bool:
         """
         Add knowledge content directly to memory for population purposes.
 
@@ -282,9 +264,7 @@ class ADKMemoryService:
                     self.memory_service._memory_store = []
 
                 self.memory_service._memory_store.append(memory_entry)
-                logger.info(
-                    f"Added knowledge to memory: {metadata.get('type', 'unknown')}"
-                )
+                logger.info(f"Added knowledge to memory: {metadata.get('type', 'unknown')}")
                 return True
             else:
                 # For VertexAiRagMemoryService, we need to create a session
@@ -321,9 +301,7 @@ class ADKMemoryService:
             Dictionary with service information
         """
         return {
-            "service_type": "VertexAiRagMemoryService"
-            if self.use_vertex_ai
-            else "InMemoryMemoryService",
+            "service_type": "VertexAiRagMemoryService" if self.use_vertex_ai else "InMemoryMemoryService",
             "available": self.is_available(),
             "supports_persistence": self.use_vertex_ai,
             "supports_semantic_search": True,
@@ -345,9 +323,7 @@ def get_adk_memory_service() -> ADKMemoryService:
     if _adk_memory_service is None:
         # Determine if we should use Vertex AI based on environment
         # Use Vertex AI if GOOGLE_GENAI_USE_VERTEXAI is True or if SESSION_SERVICE_TYPE is vertex_ai
-        use_vertex_ai_env = (
-            os.getenv("GOOGLE_GENAI_USE_VERTEXAI", "False").lower() == "true"
-        )
+        use_vertex_ai_env = os.getenv("GOOGLE_GENAI_USE_VERTEXAI", "False").lower() == "true"
         session_service_type = os.getenv("SESSION_SERVICE_TYPE", "in_memory").lower()
         use_vertex_ai = use_vertex_ai_env or session_service_type == "vertex_ai"
 

@@ -14,6 +14,7 @@ sys.path.append(str(Path(__file__).parent / "scripts"))
 
 from local_memory_server import VanaLocalMemory
 
+
 async def test_visual_feedback():
     """Test the visual feedback system with full repo indexing"""
     

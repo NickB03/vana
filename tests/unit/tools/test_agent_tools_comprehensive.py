@@ -5,34 +5,31 @@ Tests all 12 critical functions in agent_tools.py with STRICT validation.
 This module implements the critical "Agents-as-Tools" pattern for Google ADK.
 """
 
-import pytest
-import time
-from unittest.mock import Mock, patch
-import tempfile
 import os
-from pathlib import Path
 
 # Import the agent tools
 import sys
+import tempfile
+import time
+from pathlib import Path
+from unittest.mock import Mock, patch
+
+import pytest
 
 sys.path.append(str(Path(__file__).parent.parent.parent.parent))
 
-from lib._tools.agent_tools import (
-    # Core Classes
+from lib._tools.agent_tools import (  # Core Classes; Factory Functions; Tool Functions; Initialization Functions
     AgentTool,
     AgentToolResult,
     _AgentToolsSingleton,
-    # Factory Functions
+    _get_tool_or_initialize,
     create_agent_tool,
     create_specialist_agent_tools,
-    # Tool Functions
     get_adk_architecture_tool,
-    get_adk_ui_tool,
     get_adk_devops_tool,
     get_adk_qa_tool,
-    # Initialization Functions
+    get_adk_ui_tool,
     initialize_agent_tools,
-    _get_tool_or_initialize,
 )
 
 
@@ -58,16 +55,12 @@ class TestAgentToolsComprehensive:
     @pytest.mark.unit
     def test_agent_tool_initialization(self):
         """Test AgentTool initialization with STRICT validation"""
-        agent_tool = AgentTool(
-            self.mock_agent, name="test_tool", description="Test description"
-        )
+        agent_tool = AgentTool(self.mock_agent, name="test_tool", description="Test description")
 
         # STRICT: Must have proper initialization
         assert isinstance(agent_tool, AgentTool), "Must create AgentTool instance"
         assert agent_tool.name == "test_tool", "Name must be set correctly"
-        assert agent_tool.description == "Test description", (
-            "Description must be set correctly"
-        )
+        assert agent_tool.description == "Test description", "Description must be set correctly"
         assert agent_tool.agent == self.mock_agent, "Agent must be stored correctly"
         assert isinstance(agent_tool.capabilities, list), "Capabilities must be a list"
         assert agent_tool.timeout == 60.0, "Default timeout must be 60 seconds"
@@ -83,12 +76,8 @@ class TestAgentToolsComprehensive:
         # STRICT: Must extract architecture capabilities
         assert isinstance(arch_tool.capabilities, list), "Capabilities must be list"
         assert len(arch_tool.capabilities) >= 3, "Must have multiple capabilities"
-        assert "system_design" in arch_tool.capabilities, (
-            "Must include system_design capability"
-        )
-        assert "architecture_planning" in arch_tool.capabilities, (
-            "Must include architecture_planning"
-        )
+        assert "system_design" in arch_tool.capabilities, "Must include system_design capability"
+        assert "architecture_planning" in arch_tool.capabilities, "Must include architecture_planning"
 
         # Test UI agent
         ui_agent = Mock()
@@ -96,12 +85,8 @@ class TestAgentToolsComprehensive:
         ui_tool = AgentTool(ui_agent)
 
         # STRICT: Must extract UI capabilities
-        assert "interface_design" in ui_tool.capabilities, (
-            "Must include interface_design capability"
-        )
-        assert "user_experience" in ui_tool.capabilities, (
-            "Must include user_experience capability"
-        )
+        assert "interface_design" in ui_tool.capabilities, "Must include interface_design capability"
+        assert "user_experience" in ui_tool.capabilities, "Must include user_experience capability"
 
     @pytest.mark.unit
     def test_agent_tool_execute_functionality(self):
@@ -112,9 +97,7 @@ class TestAgentToolsComprehensive:
         result = agent_tool.execute(test_context)
 
         # STRICT: Must return AgentToolResult
-        assert isinstance(result, AgentToolResult), (
-            "Must return AgentToolResult instance"
-        )
+        assert isinstance(result, AgentToolResult), "Must return AgentToolResult instance"
         assert isinstance(result.success, bool), "Success must be boolean"
         assert isinstance(result.result, str), "Result must be string"
         assert result.agent_name == "test_executor", "Agent name must match"
@@ -123,16 +106,10 @@ class TestAgentToolsComprehensive:
 
         # STRICT: If successful, result must have meaningful content
         if result.success:
-            assert len(result.result) > 20, (
-                "Successful result must have meaningful content"
-            )
-            assert result.error_message is None, (
-                "Successful result must not have error message"
-            )
+            assert len(result.result) > 20, "Successful result must have meaningful content"
+            assert result.error_message is None, "Successful result must not have error message"
             assert isinstance(result.metadata, dict), "Metadata must be dictionary"
-            assert "capabilities_used" in result.metadata, (
-                "Metadata must include capabilities"
-            )
+            assert "capabilities_used" in result.metadata, "Metadata must include capabilities"
 
     @pytest.mark.unit
     def test_agent_tool_call_functionality(self):
@@ -148,16 +125,14 @@ class TestAgentToolsComprehensive:
 
         # STRICT: Should not contain error prefix for successful calls
         if not result.startswith("Error:"):
-            assert "Test callable context" in result or "analysis" in result.lower(), (
-                "Successful call must process context"
-            )
+            assert (
+                "Test callable context" in result or "analysis" in result.lower()
+            ), "Successful call must process context"
 
     @pytest.mark.unit
     def test_agent_tool_get_tool_info_functionality(self):
         """Test AgentTool get_tool_info method with STRICT validation"""
-        agent_tool = AgentTool(
-            self.mock_agent, name="info_test", description="Info test description"
-        )
+        agent_tool = AgentTool(self.mock_agent, name="info_test", description="Info test description")
 
         info = agent_tool.get_tool_info()
 
@@ -181,9 +156,7 @@ class TestAgentToolsComprehensive:
         assert info["name"] == "info_test", "Name must match"
         assert info["description"] == "Info test description", "Description must match"
         assert info["tool_type"] == "agent_as_tool", "Tool type must be agent_as_tool"
-        assert info["adk_pattern"] == "agents_as_tools", (
-            "ADK pattern must be agents_as_tools"
-        )
+        assert info["adk_pattern"] == "agents_as_tools", "ADK pattern must be agents_as_tools"
         assert isinstance(info["capabilities"], list), "Capabilities must be list"
 
     # Factory Functions Tests - STRICT validation
@@ -207,9 +180,7 @@ class TestAgentToolsComprehensive:
         devops_agent = Mock()
         qa_agent = Mock()
 
-        result = create_specialist_agent_tools(
-            arch_agent, ui_agent, devops_agent, qa_agent
-        )
+        result = create_specialist_agent_tools(arch_agent, ui_agent, devops_agent, qa_agent)
 
         # STRICT: Must create dictionary of agent tools
         assert isinstance(result, dict), "Must return dictionary"
@@ -218,17 +189,13 @@ class TestAgentToolsComprehensive:
         expected_tools = ["architecture_tool", "ui_tool", "devops_tool", "qa_tool"]
         for tool_name in expected_tools:
             assert tool_name in result, f"Must contain {tool_name}"
-            assert isinstance(result[tool_name], AgentTool), (
-                f"{tool_name} must be AgentTool instance"
-            )
+            assert isinstance(result[tool_name], AgentTool), f"{tool_name} must be AgentTool instance"
 
         # STRICT: Each tool must have proper configuration
-        assert result["architecture_tool"].name == "architecture_tool", (
-            "Architecture tool name must be correct"
-        )
-        assert "Architecture" in result["architecture_tool"].description, (
-            "Architecture tool description must be descriptive"
-        )
+        assert result["architecture_tool"].name == "architecture_tool", "Architecture tool name must be correct"
+        assert (
+            "Architecture" in result["architecture_tool"].description
+        ), "Architecture tool description must be descriptive"
 
     # ADK Tool Functions Tests - STRICT validation
 
@@ -249,9 +216,7 @@ class TestAgentToolsComprehensive:
 
         assert isinstance(result, str), "Tool function must return string"
         assert len(result) > 50, "Architecture analysis must be comprehensive"
-        assert "Architecture Analysis" in result, (
-            "Must contain architecture analysis header"
-        )
+        assert "Architecture Analysis" in result, "Must contain architecture analysis header"
         assert "System Design" in result, "Must contain system design section"
         assert test_context in result, "Must reference input context"
 
@@ -289,9 +254,7 @@ class TestAgentToolsComprehensive:
 
         assert isinstance(result, str), "Tool function must return string"
         assert len(result) > 50, "DevOps plan must be comprehensive"
-        assert "DevOps Implementation" in result, (
-            "Must contain DevOps implementation header"
-        )
+        assert "DevOps Implementation" in result, "Must contain DevOps implementation header"
         assert "Infrastructure Setup" in result, "Must contain infrastructure section"
         assert test_context in result, "Must reference input context"
 
@@ -324,9 +287,7 @@ class TestAgentToolsComprehensive:
 
         # STRICT: Must be same instance (singleton pattern)
         assert singleton1 is singleton2, "Singleton must return same instance"
-        assert hasattr(singleton1, "_initialized"), (
-            "Singleton must have _initialized attribute"
-        )
+        assert hasattr(singleton1, "_initialized"), "Singleton must have _initialized attribute"
         assert isinstance(singleton1._initialized, bool), "_initialized must be boolean"
 
     @pytest.mark.unit
@@ -341,15 +302,11 @@ class TestAgentToolsComprehensive:
             error = str(e)
 
         # STRICT: Must initialize successfully
-        assert success, (
-            f"initialize_agent_tools must succeed, got error: {error if not success else 'None'}"
-        )
+        assert success, f"initialize_agent_tools must succeed, got error: {error if not success else 'None'}"
 
         # STRICT: After initialization, tools should be available
         arch_tool = get_adk_architecture_tool()
-        assert arch_tool is not None, (
-            "Architecture tool must be available after initialization"
-        )
+        assert arch_tool is not None, "Architecture tool must be available after initialization"
 
     @pytest.mark.unit
     def test_get_tool_or_initialize_functionality(self):
@@ -378,26 +335,16 @@ class TestAgentToolsComprehensive:
         agent_tool = AgentTool(error_agent, name="error_test")
 
         # Force an error by patching the simulate method
-        with patch.object(
-            agent_tool, "_simulate_agent_execution", side_effect=Exception("Test error")
-        ):
+        with patch.object(agent_tool, "_simulate_agent_execution", side_effect=Exception("Test error")):
             result = agent_tool.execute("test context")
 
             # STRICT: Must handle error gracefully
-            assert isinstance(result, AgentToolResult), (
-                "Must return AgentToolResult even on error"
-            )
+            assert isinstance(result, AgentToolResult), "Must return AgentToolResult even on error"
             assert result.success is False, "Error result must have success=False"
-            assert result.error_message is not None, (
-                "Error result must have error message"
-            )
-            assert "Test error" in result.error_message, (
-                "Error message must contain actual error"
-            )
+            assert result.error_message is not None, "Error result must have error message"
+            assert "Test error" in result.error_message, "Error message must contain actual error"
             assert result.result == "", "Error result should have empty result"
-            assert isinstance(result.execution_time, float), (
-                "Error result must still have execution time"
-            )
+            assert isinstance(result.execution_time, float), "Error result must still have execution time"
 
     @pytest.mark.unit
     def test_agent_tool_timeout_validation(self):
@@ -414,9 +361,7 @@ class TestAgentToolsComprehensive:
 
         # Should complete much faster than timeout for simple operations
         assert (end_time - start_time) < 5.0, "Simple execution should complete quickly"
-        assert result.execution_time < 5.0, (
-            "Recorded execution time should be reasonable"
-        )
+        assert result.execution_time < 5.0, "Recorded execution time should be reasonable"
 
     # Integration-style tests within unit scope
 
@@ -428,9 +373,7 @@ class TestAgentToolsComprehensive:
 
         # Get tool info
         info = agent_tool.get_tool_info()
-        assert info["name"] == "workflow_test", (
-            "Tool info must match creation parameters"
-        )
+        assert info["name"] == "workflow_test", "Tool info must match creation parameters"
 
         # Execute tool
         result = agent_tool.execute("Complete workflow test")
@@ -472,14 +415,11 @@ class TestAgentToolsComprehensive:
             for j, result2 in enumerate(results):
                 if i != j:
                     # Results should be substantially different
-                    assert result1 != result2, (
-                        f"Tool {i} and {j} must provide different results"
-                    )
+                    assert result1 != result2, f"Tool {i} and {j} must provide different results"
                     # Should have different key terms
                     result1_lower = result1.lower()
                     result2_lower = result2.lower()
                     if "architecture" in result1_lower:
                         assert (
-                            "ui/ux" not in result1_lower
-                            or "devops" not in result1_lower
+                            "ui/ux" not in result1_lower or "devops" not in result1_lower
                         ), "Each tool should focus on its specialty"

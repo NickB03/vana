@@ -242,9 +242,7 @@ class FeedbackManager:
             logger.error(f"Error storing general feedback: {str(e)}")
             return {"success": False, "reason": str(e)}
 
-    def get_feedback(
-        self, feedback_type: str = "all", limit: int = 10
-    ) -> List[Dict[str, Any]]:
+    def get_feedback(self, feedback_type: str = "all", limit: int = 10) -> List[Dict[str, Any]]:
         """
         Get feedback records
 
@@ -338,9 +336,7 @@ class FeedbackManager:
                 # Count ratings
                 rating = record.get("rating")
                 if rating is not None and rating > 0:
-                    analysis["rating_distribution"][rating] = (
-                        analysis["rating_distribution"].get(rating, 0) + 1
-                    )
+                    analysis["rating_distribution"][rating] = analysis["rating_distribution"].get(rating, 0) + 1
                     total_rating += rating
                     rated_records += 1
 

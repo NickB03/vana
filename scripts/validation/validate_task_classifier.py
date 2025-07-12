@@ -5,9 +5,9 @@ Validates all 7 critical functions without external dependencies
 """
 
 import sys
-from pathlib import Path
 from dataclasses import dataclass
-from typing import List, Dict, Any
+from pathlib import Path
+from typing import Any, Dict, List
 
 # Add project root to path
 sys.path.append(str(Path(__file__).parent))
@@ -34,12 +34,8 @@ def validate_task_classifier():
         print("\n📋 Test 1: Enums and Data Classes")
 
         # Test AgentCategory enum
-        assert isinstance(AgentCategory.ORCHESTRATION, AgentCategory), (
-            "AgentCategory must be enum"
-        )
-        assert AgentCategory.ORCHESTRATION.value == "orchestration", (
-            "Enum value must be correct"
-        )
+        assert isinstance(AgentCategory.ORCHESTRATION, AgentCategory), "AgentCategory must be enum"
+        assert AgentCategory.ORCHESTRATION.value == "orchestration", "Enum value must be correct"
         assert len(list(AgentCategory)) >= 6, "Must have at least 6 agent categories"
         print("  ✅ AgentCategory enum works correctly")
 
@@ -52,16 +48,12 @@ def validate_task_classifier():
             fallback_agents=["vana", "specialists"],
         )
 
-        assert isinstance(recommendation.agent_category, AgentCategory), (
-            "Agent category must be enum"
-        )
+        assert isinstance(recommendation.agent_category, AgentCategory), "Agent category must be enum"
         assert isinstance(recommendation.agent_name, str), "Agent name must be string"
         assert isinstance(recommendation.confidence, float), "Confidence must be float"
         assert 0 <= recommendation.confidence <= 1, "Confidence must be 0-1"
         assert isinstance(recommendation.reasoning, str), "Reasoning must be string"
-        assert isinstance(recommendation.fallback_agents, list), (
-            "Fallback agents must be list"
-        )
+        assert isinstance(recommendation.fallback_agents, list), "Fallback agents must be list"
         print("  ✅ AgentRecommendation dataclass works correctly")
 
         # Test TaskClassification
@@ -74,24 +66,14 @@ def validate_task_classifier():
             routing_strategy="direct_routing",
         )
 
-        assert isinstance(classification.primary_recommendation, AgentRecommendation), (
-            "Primary recommendation must be AgentRecommendation"
-        )
-        assert isinstance(classification.alternative_recommendations, list), (
-            "Alternative recommendations must be list"
-        )
-        assert isinstance(classification.decomposition_suggested, bool), (
-            "Decomposition suggested must be bool"
-        )
-        assert isinstance(classification.parallel_execution, bool), (
-            "Parallel execution must be bool"
-        )
-        assert isinstance(classification.estimated_agents_needed, int), (
-            "Estimated agents needed must be int"
-        )
-        assert isinstance(classification.routing_strategy, str), (
-            "Routing strategy must be string"
-        )
+        assert isinstance(
+            classification.primary_recommendation, AgentRecommendation
+        ), "Primary recommendation must be AgentRecommendation"
+        assert isinstance(classification.alternative_recommendations, list), "Alternative recommendations must be list"
+        assert isinstance(classification.decomposition_suggested, bool), "Decomposition suggested must be bool"
+        assert isinstance(classification.parallel_execution, bool), "Parallel execution must be bool"
+        assert isinstance(classification.estimated_agents_needed, int), "Estimated agents needed must be int"
+        assert isinstance(classification.routing_strategy, str), "Routing strategy must be string"
         print("  ✅ TaskClassification dataclass works correctly")
 
         # Test 2: TaskClassifier initialization with mocks
@@ -106,20 +88,12 @@ def validate_task_classifier():
             classifier = TaskClassifier()
 
             # Validate initialization
-            assert classifier.task_analyzer is not None, (
-                "Task analyzer must be initialized"
-            )
-            assert isinstance(classifier.agent_capabilities, dict), (
-                "Agent capabilities must be dict"
-            )
-            assert isinstance(classifier.routing_rules, dict), (
-                "Routing rules must be dict"
-            )
+            assert classifier.task_analyzer is not None, "Task analyzer must be initialized"
+            assert isinstance(classifier.agent_capabilities, dict), "Agent capabilities must be dict"
+            assert isinstance(classifier.routing_rules, dict), "Routing rules must be dict"
 
             # Validate agent capabilities structure
-            assert len(classifier.agent_capabilities) >= 6, (
-                "Must have multiple agent categories"
-            )
+            assert len(classifier.agent_capabilities) >= 6, "Must have multiple agent categories"
             for category, capabilities in classifier.agent_capabilities.items():
                 assert isinstance(category, AgentCategory), "Key must be AgentCategory"
                 assert isinstance(capabilities, dict), "Capabilities must be dict"
@@ -151,20 +125,12 @@ def validate_task_classifier():
             ]
 
             for category in required_categories:
-                assert category in capabilities, (
-                    f"Must have {category.value} capabilities"
-                )
+                assert category in capabilities, f"Must have {category.value} capabilities"
                 agent_info = capabilities[category]
                 assert isinstance(agent_info["name"], str), "Agent name must be string"
-                assert isinstance(agent_info["capabilities"], list), (
-                    "Capabilities must be list"
-                )
-                assert len(agent_info["capabilities"]) > 0, (
-                    "Must have at least one capability"
-                )
-                assert isinstance(agent_info["specialties"], list), (
-                    "Specialties must be list"
-                )
+                assert isinstance(agent_info["capabilities"], list), "Capabilities must be list"
+                assert len(agent_info["capabilities"]) > 0, "Must have at least one capability"
+                assert isinstance(agent_info["specialties"], list), "Specialties must be list"
 
             print("  ✅ Agent capabilities configuration works correctly")
 
@@ -191,18 +157,10 @@ def validate_task_classifier():
                 assert key in rules, f"Rules must contain {key}"
 
             # Validate trigger lists
-            assert isinstance(rules["decomposition_triggers"], list), (
-                "Decomposition triggers must be list"
-            )
-            assert isinstance(rules["parallel_triggers"], list), (
-                "Parallel triggers must be list"
-            )
-            assert len(rules["decomposition_triggers"]) > 5, (
-                "Must have multiple decomposition triggers"
-            )
-            assert len(rules["parallel_triggers"]) > 3, (
-                "Must have multiple parallel triggers"
-            )
+            assert isinstance(rules["decomposition_triggers"], list), "Decomposition triggers must be list"
+            assert isinstance(rules["parallel_triggers"], list), "Parallel triggers must be list"
+            assert len(rules["decomposition_triggers"]) > 5, "Must have multiple decomposition triggers"
+            assert len(rules["parallel_triggers"]) > 3, "Must have multiple parallel triggers"
 
             print("  ✅ Routing rules configuration works correctly")
 
@@ -214,11 +172,7 @@ def validate_task_classifier():
 
             # Import TaskAnalysis components for testing
             try:
-                from lib._tools.task_analyzer import (
-                    TaskAnalysis,
-                    TaskComplexity,
-                    TaskType,
-                )
+                from lib._tools.task_analyzer import TaskAnalysis, TaskComplexity, TaskType
             except ImportError:
                 # Create mock TaskAnalysis if not available
                 @dataclass
@@ -253,12 +207,8 @@ def validate_task_classifier():
             )
 
             # Test scoring for code execution agent
-            code_agent_capabilities = classifier.agent_capabilities[
-                AgentCategory.CODE_EXECUTION
-            ]
-            score = classifier._calculate_agent_score(
-                test_analysis, code_agent_capabilities, "run python script"
-            )
+            code_agent_capabilities = classifier.agent_capabilities[AgentCategory.CODE_EXECUTION]
+            score = classifier._calculate_agent_score(test_analysis, code_agent_capabilities, "run python script")
 
             assert isinstance(score, float), "Score must be float"
             assert 0 <= score <= 1, "Score must be 0-1"
@@ -302,12 +252,8 @@ def validate_task_classifier():
                 complex_analysis,
                 "analyze data and create multiple visualizations and also run machine learning models",
             )
-            assert isinstance(should_decompose_1, bool), (
-                "Decomposition decision must be bool"
-            )
-            assert should_decompose_1 == True, (
-                "Should suggest decomposition for complex multi-step task"
-            )
+            assert isinstance(should_decompose_1, bool), "Decomposition decision must be bool"
+            assert should_decompose_1 == True, "Should suggest decomposition for complex multi-step task"
 
             # Test simple task
             simple_analysis = TaskAnalysis(
@@ -321,9 +267,7 @@ def validate_task_classifier():
                 reasoning="Simple task detected",
             )
 
-            should_decompose_2 = classifier._should_decompose_task(
-                simple_analysis, "run a simple script"
-            )
+            should_decompose_2 = classifier._should_decompose_task(simple_analysis, "run a simple script")
             assert should_decompose_2 == False, "Should not decompose simple tasks"
 
             print("  ✅ Task decomposition logic works correctly")
@@ -353,9 +297,7 @@ def validate_task_classifier():
                 "process multiple files simultaneously and run analysis in parallel",
             )
             assert isinstance(should_parallel_1, bool), "Parallel decision must be bool"
-            assert should_parallel_1 == True, (
-                "Should suggest parallel execution for parallel tasks"
-            )
+            assert should_parallel_1 == True, "Should suggest parallel execution for parallel tasks"
 
             # Test sequential task
             should_parallel_2 = classifier._should_execute_parallel(
@@ -386,30 +328,16 @@ def validate_task_classifier():
             )
 
             # Test different routing strategies
-            strategy_1 = classifier._determine_routing_strategy(
-                test_analysis, True, True
-            )
-            assert strategy_1 == "decompose_and_parallel", (
-                "Should suggest decompose and parallel"
-            )
+            strategy_1 = classifier._determine_routing_strategy(test_analysis, True, True)
+            assert strategy_1 == "decompose_and_parallel", "Should suggest decompose and parallel"
 
-            strategy_2 = classifier._determine_routing_strategy(
-                test_analysis, True, False
-            )
-            assert strategy_2 == "decompose_sequential", (
-                "Should suggest decompose sequential"
-            )
+            strategy_2 = classifier._determine_routing_strategy(test_analysis, True, False)
+            assert strategy_2 == "decompose_sequential", "Should suggest decompose sequential"
 
-            strategy_3 = classifier._determine_routing_strategy(
-                test_analysis, False, True
-            )
-            assert strategy_3 == "parallel_execution", (
-                "Should suggest parallel execution"
-            )
+            strategy_3 = classifier._determine_routing_strategy(test_analysis, False, True)
+            assert strategy_3 == "parallel_execution", "Should suggest parallel execution"
 
-            strategy_4 = classifier._determine_routing_strategy(
-                test_analysis, False, False
-            )
+            strategy_4 = classifier._determine_routing_strategy(test_analysis, False, False)
             assert strategy_4 == "direct_routing", "Should suggest direct routing"
 
             print("  ✅ Routing strategy determination works correctly")
@@ -433,9 +361,7 @@ def validate_task_classifier():
         print("\n🎉 ALL TESTS PASSED!")
         print("=" * 60)
         print("✅ Task Classifier: 7 functions validated")
-        print(
-            "✅ Enums and data classes: AgentCategory, AgentRecommendation, TaskClassification work correctly"
-        )
+        print("✅ Enums and data classes: AgentCategory, AgentRecommendation, TaskClassification work correctly")
         print("✅ Initialization: TaskClassifier setup works correctly")
         print("✅ Agent capabilities: Configuration works correctly")
         print("✅ Routing rules: Rule configuration works correctly")

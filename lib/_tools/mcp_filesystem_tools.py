@@ -113,15 +113,11 @@ def batch_file_operations(operations: str) -> str:
                         shutil.copytree(source, destination)
                     else:
                         shutil.copy2(source, destination)
-                    results.append(
-                        f"Operation {i + 1}: Copied '{source}' to '{destination}' - SUCCESS"
-                    )
+                    results.append(f"Operation {i + 1}: Copied '{source}' to '{destination}' - SUCCESS")
 
                 elif operation == "move":
                     shutil.move(source, destination)
-                    results.append(
-                        f"Operation {i + 1}: Moved '{source}' to '{destination}' - SUCCESS"
-                    )
+                    results.append(f"Operation {i + 1}: Moved '{source}' to '{destination}' - SUCCESS")
 
                 elif operation == "delete":
                     if os.path.isdir(source):
@@ -131,9 +127,7 @@ def batch_file_operations(operations: str) -> str:
                     results.append(f"Operation {i + 1}: Deleted '{source}' - SUCCESS")
 
                 else:
-                    results.append(
-                        f"Operation {i + 1}: Unknown operation '{operation}' - FAILED"
-                    )
+                    results.append(f"Operation {i + 1}: Unknown operation '{operation}' - FAILED")
 
             except Exception as e:
                 results.append(f"Operation {i + 1}: {str(e)} - FAILED")
@@ -144,9 +138,7 @@ def batch_file_operations(operations: str) -> str:
         return f"Error in batch operations: {str(e)}"
 
 
-def compress_files(
-    file_paths: str, archive_path: str, compression_type: str = "zip"
-) -> str:
+def compress_files(file_paths: str, archive_path: str, compression_type: str = "zip") -> str:
     """
     Compress files or directories into an archive.
 
@@ -170,9 +162,7 @@ def compress_files(
                     elif path.is_dir():
                         for file_path in path.rglob("*"):
                             if file_path.is_file():
-                                zipf.write(
-                                    file_path, file_path.relative_to(path.parent)
-                                )
+                                zipf.write(file_path, file_path.relative_to(path.parent))
 
         elif compression_type.lower() in ["tar", "tar.gz", "tar.bz2"]:
             mode_map = {"tar": "w", "tar.gz": "w:gz", "tar.bz2": "w:bz2"}
@@ -223,10 +213,7 @@ def extract_archive(archive_path: str, extract_to: Optional[str] = None) -> str:
                 zipf.extractall(extract_to)
                 file_count = len(zipf.namelist())
 
-        elif (
-            archive_path.suffix.lower() in [".tar", ".gz", ".bz2"]
-            or ".tar." in archive_path.name.lower()
-        ):
+        elif archive_path.suffix.lower() in [".tar", ".gz", ".bz2"] or ".tar." in archive_path.name.lower():
             with tarfile.open(archive_path, "r:*") as tarf:
                 tarf.extractall(extract_to)
                 file_count = len(tarf.getnames())
@@ -240,9 +227,7 @@ def extract_archive(archive_path: str, extract_to: Optional[str] = None) -> str:
         return f"Error extracting archive: {str(e)}"
 
 
-def find_files(
-    search_path: str, pattern: str = "*", file_type: str = "all", max_results: int = 100
-) -> str:
+def find_files(search_path: str, pattern: str = "*", file_type: str = "all", max_results: int = 100) -> str:
     """
     Search for files matching criteria.
 
@@ -301,9 +286,7 @@ def find_files(
         return f"Error searching files: {str(e)}"
 
 
-def sync_directories(
-    source_dir: str, target_dir: str, sync_type: str = "mirror"
-) -> str:
+def sync_directories(source_dir: str, target_dir: str, sync_type: str = "mirror") -> str:
     """
     Synchronize two directories.
 

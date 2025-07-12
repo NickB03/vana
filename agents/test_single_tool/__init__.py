@@ -3,6 +3,7 @@ Test Agent with Only Single Tool Property
 """
 
 from google.adk.agents import LlmAgent
+
 from lib._tools import adk_echo
 
 # Create test agent with only one simple tool

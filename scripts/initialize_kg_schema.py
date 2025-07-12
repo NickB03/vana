@@ -68,9 +68,7 @@ def initialize_kg_schema():
                 "operation": "store",
                 "entityName": f"Sample {entity_type.capitalize()}",
                 "entityType": entity_type,
-                "observations": [
-                    f"This is a sample {entity_type} entity for schema initialization"
-                ],
+                "observations": [f"This is a sample {entity_type} entity for schema initialization"],
             }
 
             response = requests.post(
@@ -83,9 +81,7 @@ def initialize_kg_schema():
             if response.status_code == 200:
                 logger.info(f"✅ Initialized entity type: {entity_type}")
             else:
-                logger.error(
-                    f"❌ Failed to initialize entity type {entity_type}: {response.text}"
-                )
+                logger.error(f"❌ Failed to initialize entity type {entity_type}: {response.text}")
         except Exception as e:
             logger.error(f"❌ Error initializing entity type {entity_type}: {e}")
 
@@ -94,9 +90,7 @@ def initialize_kg_schema():
         # Get the first two entities to create a relationship
         payload = {"operation": "retrieve_all"}
 
-        response = requests.post(
-            f"{endpoint}/{namespace}/memory", headers=headers, json=payload, timeout=10
-        )
+        response = requests.post(f"{endpoint}/{namespace}/memory", headers=headers, json=payload, timeout=10)
 
         if response.status_code == 200:
             entities = response.json().get("entities", [])
@@ -120,9 +114,7 @@ def initialize_kg_schema():
                 if response.status_code == 200:
                     logger.info("✅ Initialized relationship: related_to")
                 else:
-                    logger.error(
-                        f"❌ Failed to initialize relationship: {response.text}"
-                    )
+                    logger.error(f"❌ Failed to initialize relationship: {response.text}")
             else:
                 logger.info("⚠️ Not enough entities to create a relationship")
         else:

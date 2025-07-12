@@ -101,29 +101,19 @@ class RoutingEngine:
             classification = self.task_classifier.classify_task(task, context)
 
             # Phase 2: Create routing plan
-            routing_plan = await self._create_routing_plan(
-                analysis, classification, task, context, preferred_strategy
-            )
+            routing_plan = await self._create_routing_plan(analysis, classification, task, context, preferred_strategy)
 
             # Phase 3: Execute routing plan
-            routing_result = await self._execute_routing_plan(
-                routing_plan, task, context, route_id
-            )
+            routing_result = await self._execute_routing_plan(routing_plan, task, context, route_id)
 
             # Phase 4: Track performance and update metrics
             execution_time = time.time() - start_time
-            await self._update_performance_metrics(
-                routing_plan, routing_result, execution_time
-            )
+            await self._update_performance_metrics(routing_plan, routing_result, execution_time)
 
             # Record routing history
-            self._record_routing_history(
-                route_id, task, routing_plan, routing_result, execution_time
-            )
+            self._record_routing_history(route_id, task, routing_plan, routing_result, execution_time)
 
-            logger.info(
-                f"✅ Task routing completed in {execution_time:.2f}s: {routing_result.success}"
-            )
+            logger.info(f"✅ Task routing completed in {execution_time:.2f}s: {routing_result.success}")
             return routing_result
 
         except Exception as e:
@@ -149,14 +139,10 @@ class RoutingEngine:
         preferred_strategy: Optional[RoutingStrategy],
     ) -> RoutingPlan:
         """Create an optimal routing plan based on analysis."""
-        logger.info(
-            f"📋 Creating routing plan for {classification.routing_strategy} strategy"
-        )
+        logger.info(f"📋 Creating routing plan for {classification.routing_strategy} strategy")
 
         # Get capability matching results
-        matching_result = self.capability_matcher.match_capabilities(
-            task, context, analysis.required_capabilities
-        )
+        matching_result = self.capability_matcher.match_capabilities(task, context, analysis.required_capabilities)
 
         if not matching_result.best_match:
             # No suitable agents found - create fallback plan
@@ -183,9 +169,7 @@ class RoutingEngine:
             RoutingDecision.ORCHESTRATED,
         ]:
             # Add secondary agents from alternatives
-            for alt_match in matching_result.alternative_matches[
-                : classification.estimated_agents_needed - 1
-            ]:
+            for alt_match in matching_result.alternative_matches[: classification.estimated_agents_needed - 1]:
                 if alt_match.overall_score > 0.5:
                     secondary_agents.append(alt_match.agent_name)
 
@@ -202,9 +186,7 @@ class RoutingEngine:
         confidence = max(0.1, base_confidence - complexity_penalty)
 
         # Generate reasoning
-        reasoning = self._generate_routing_reasoning(
-            decision, primary_agent, secondary_agents, matching_result
-        )
+        reasoning = self._generate_routing_reasoning(decision, primary_agent, secondary_agents, matching_result)
 
         # Create fallback plan
         fallback_plan = None
@@ -222,13 +204,9 @@ class RoutingEngine:
             fallback_plan=fallback_plan,
         )
 
-    async def _execute_routing_plan(
-        self, plan: RoutingPlan, task: str, context: str, route_id: str
-    ) -> RoutingResult:
+    async def _execute_routing_plan(self, plan: RoutingPlan, task: str, context: str, route_id: str) -> RoutingResult:
         """Execute the routing plan."""
-        logger.info(
-            f"⚡ Executing {plan.decision.value} plan with {len(plan.execution_order)} agents"
-        )
+        logger.info(f"⚡ Executing {plan.decision.value} plan with {len(plan.execution_order)} agents")
 
         self.active_routes[route_id] = {
             "plan": plan,
@@ -253,16 +231,12 @@ class RoutingEngine:
             if route_id in self.active_routes:
                 self.active_routes[route_id]["status"] = "completed"
 
-    async def _execute_direct_route(
-        self, plan: RoutingPlan, task: str, context: str
-    ) -> RoutingResult:
+    async def _execute_direct_route(self, plan: RoutingPlan, task: str, context: str) -> RoutingResult:
         """Execute direct routing to a single agent."""
         start_time = time.time()
 
         try:
-            result = await self.communication_service.send_task_to_agent(
-                plan.primary_agent, task, context
-            )
+            result = await self.communication_service.send_task_to_agent(plan.primary_agent, task, context)
             execution_time = time.time() - start_time
 
             return RoutingResult(
@@ -291,9 +265,7 @@ class RoutingEngine:
                 performance_metrics={"error": True, "execution_time": execution_time},
             )
 
-    async def _execute_sequential_decomposition(
-        self, plan: RoutingPlan, task: str, context: str
-    ) -> RoutingResult:
+    async def _execute_sequential_decomposition(self, plan: RoutingPlan, task: str, context: str) -> RoutingResult:
         """Execute sequential task decomposition."""
         start_time = time.time()
         results = []
@@ -308,26 +280,20 @@ class RoutingEngine:
         for i, agent_name in enumerate(plan.execution_order):
             try:
                 subtask = subtasks[i] if i < len(subtasks) else task
-                result = await self.communication_service.send_task_to_agent(
-                    agent_name, subtask, accumulated_context
-                )
+                result = await self.communication_service.send_task_to_agent(agent_name, subtask, accumulated_context)
 
                 results.append(result)
                 agents_used.append(agent_name)
 
                 # Update context with previous results
                 if result.get("status") == "success" and result.get("result"):
-                    accumulated_context += (
-                        f"\nPrevious result from {agent_name}: {result['result']}"
-                    )
+                    accumulated_context += f"\nPrevious result from {agent_name}: {result['result']}"
 
             except Exception as e:
                 errors.append(f"Error with {agent_name}: {str(e)}")
 
         execution_time = time.time() - start_time
-        success = len(results) > 0 and any(
-            r.get("status") == "success" for r in results
-        )
+        success = len(results) > 0 and any(r.get("status") == "success" for r in results)
 
         return RoutingResult(
             success=success,
@@ -344,9 +310,7 @@ class RoutingEngine:
             },
         )
 
-    async def _execute_parallel_decomposition(
-        self, plan: RoutingPlan, task: str, context: str
-    ) -> RoutingResult:
+    async def _execute_parallel_decomposition(self, plan: RoutingPlan, task: str, context: str) -> RoutingResult:
         """Execute parallel task decomposition."""
         start_time = time.time()
 
@@ -357,9 +321,7 @@ class RoutingEngine:
         tasks = []
         for i, agent_name in enumerate(plan.execution_order):
             subtask = subtasks[i] if i < len(subtasks) else task
-            task_coroutine = self.communication_service.send_task_to_agent(
-                agent_name, subtask, context
-            )
+            task_coroutine = self.communication_service.send_task_to_agent(agent_name, subtask, context)
             tasks.append((agent_name, task_coroutine))
 
         # Wait for all results
@@ -376,9 +338,7 @@ class RoutingEngine:
                 errors.append(f"Error with {agent_name}: {str(e)}")
 
         execution_time = time.time() - start_time
-        success = len(results) > 0 and any(
-            r.get("status") == "success" for r in results
-        )
+        success = len(results) > 0 and any(r.get("status") == "success" for r in results)
 
         return RoutingResult(
             success=success,
@@ -395,9 +355,7 @@ class RoutingEngine:
             },
         )
 
-    async def _execute_orchestrated_plan(
-        self, plan: RoutingPlan, task: str, context: str
-    ) -> RoutingResult:
+    async def _execute_orchestrated_plan(self, plan: RoutingPlan, task: str, context: str) -> RoutingResult:
         """Execute orchestrated plan using VANA as coordinator."""
         start_time = time.time()
 
@@ -411,9 +369,7 @@ class RoutingEngine:
 
         try:
             # Send to orchestration agent (VANA)
-            result = await self.communication_service.send_task_to_agent(
-                "vana", task, orchestration_context
-            )
+            result = await self.communication_service.send_task_to_agent("vana", task, orchestration_context)
             execution_time = time.time() - start_time
 
             return RoutingResult(
@@ -443,21 +399,15 @@ class RoutingEngine:
                 performance_metrics={"error": True, "execution_time": execution_time},
             )
 
-    async def _execute_fallback_plan(
-        self, plan: RoutingPlan, task: str, context: str
-    ) -> RoutingResult:
+    async def _execute_fallback_plan(self, plan: RoutingPlan, task: str, context: str) -> RoutingResult:
         """Execute fallback plan when primary plan fails."""
         logger.warning("⚠️ Executing fallback plan for task")
 
         if plan.fallback_plan:
-            return await self._execute_routing_plan(
-                plan.fallback_plan, task, context, f"fallback_{int(time.time())}"
-            )
+            return await self._execute_routing_plan(plan.fallback_plan, task, context, f"fallback_{int(time.time())}")
         else:
             # Default fallback to VANA orchestration
-            return await self.communication_service.send_task_to_agent(
-                "vana", task, context
-            )
+            return await self.communication_service.send_task_to_agent("vana", task, context)
 
     def _decompose_task(self, task: str, num_subtasks: int) -> List[str]:
         """Decompose a task into subtasks."""
@@ -515,9 +465,7 @@ class RoutingEngine:
 
         return ". ".join(reasoning_parts)
 
-    async def _update_performance_metrics(
-        self, plan: RoutingPlan, result: RoutingResult, execution_time: float
-    ):
+    async def _update_performance_metrics(self, plan: RoutingPlan, result: RoutingResult, execution_time: float):
         """Update performance metrics based on routing results."""
         await self.performance_tracker.record_routing_performance(
             plan.primary_agent,
@@ -566,16 +514,11 @@ class RoutingEngine:
         return {
             "total_routes": total_routes,
             "success_rate": successful_routes / total_routes,
-            "average_execution_time": sum(
-                entry["execution_time"] for entry in self.routing_history
-            )
-            / total_routes,
+            "average_execution_time": sum(entry["execution_time"] for entry in self.routing_history) / total_routes,
             "decision_distribution": self._get_decision_distribution(),
             "agent_usage": self._get_agent_usage_stats(),
             "recent_performance": (
-                self.routing_history[-10:]
-                if len(self.routing_history) >= 10
-                else self.routing_history
+                self.routing_history[-10:] if len(self.routing_history) >= 10 else self.routing_history
             ),
         }
 

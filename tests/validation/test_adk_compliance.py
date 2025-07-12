@@ -43,17 +43,13 @@ def check_vana_agent_structure():
             "has_tools": hasattr(root_agent, "tools"),
             "has_sub_agents": hasattr(root_agent, "sub_agents"),
             "tool_count": len(root_agent.tools) if hasattr(root_agent, "tools") else 0,
-            "sub_agent_count": len(root_agent.sub_agents)
-            if hasattr(root_agent, "sub_agents")
-            else 0,
+            "sub_agent_count": len(root_agent.sub_agents) if hasattr(root_agent, "sub_agents") else 0,
         }
 
         if hasattr(root_agent, "tools"):
             tool_types = [str(type(tool)) for tool in root_agent.tools]
             result["tool_types"] = tool_types
-            result["all_function_tools"] = all(
-                "FunctionTool" in tool_type for tool_type in tool_types
-            )
+            result["all_function_tools"] = all("FunctionTool" in tool_type for tool_type in tool_types)
 
         return result
 
@@ -141,9 +137,7 @@ def main():
         print(f"  Is LlmAgent: {'✅' if vana_result['is_llm_agent'] else '❌'}")
         print(f"  Tools: {vana_result['tool_count']}")
         print(f"  Sub-agents: {vana_result['sub_agent_count']}")
-        print(
-            f"  All Function Tools: {'✅' if vana_result.get('all_function_tools', False) else '❌'}"
-        )
+        print(f"  All Function Tools: {'✅' if vana_result.get('all_function_tools', False) else '❌'}")
     else:
         print("❌ VANA agent structure invalid")
         print(f"  Error: {vana_result['error']}")
@@ -214,9 +208,7 @@ def main():
 
         json.dump(results, f, indent=2, default=str)
 
-    print(
-        "\nResults saved to: /Users/nick/Development/vana/adk_compliance_results.json"
-    )
+    print("\nResults saved to: /Users/nick/Development/vana/adk_compliance_results.json")
 
 
 if __name__ == "__main__":

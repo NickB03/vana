@@ -3,14 +3,16 @@ Parallel Analysis Workflow - Concurrent Specialist Analysis
 Implements Google ADK ParallelAgent pattern for comprehensive concurrent analysis.
 """
 
-from agents.specialists.ui_specialist import analyze_user_interface
-from agents.specialists.qa_specialist import analyze_testing_strategy
-from agents.specialists.devops_specialist import analyze_infrastructure
-from agents.specialists.architecture_specialist import analyze_system_architecture
-from google.adk.tools import FunctionTool
-from google.adk.agents import LlmAgent, ParallelAgent, SequentialAgent
 import os
 import sys
+
+from google.adk.agents import LlmAgent, ParallelAgent, SequentialAgent
+from google.adk.tools import FunctionTool
+
+from agents.specialists.architecture_specialist import analyze_system_architecture
+from agents.specialists.devops_specialist import analyze_infrastructure
+from agents.specialists.qa_specialist import analyze_testing_strategy
+from agents.specialists.ui_specialist import analyze_user_interface
 
 # Add project root to Python path
 

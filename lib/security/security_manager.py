@@ -35,9 +35,7 @@ class SecurityManager:
             r"exec\s*\(",  # Code injection
         ]
 
-    def validate_input(
-        self, input_data: str, max_length: int = 10000
-    ) -> Tuple[bool, str]:
+    def validate_input(self, input_data: str, max_length: int = 10000) -> Tuple[bool, str]:
         """Validate and sanitize input data."""
         if len(input_data) > max_length:
             return False, f"Input exceeds maximum length of {max_length}"
@@ -49,9 +47,7 @@ class SecurityManager:
 
         return True, "Input validation passed"
 
-    def check_rate_limit(
-        self, identifier: str, limit: int = 100, window_seconds: int = 60
-    ) -> bool:
+    def check_rate_limit(self, identifier: str, limit: int = 100, window_seconds: int = 60) -> bool:
         """Check if identifier is within rate limits."""
         now = time.time()
         window_start = now - window_seconds
@@ -76,9 +72,7 @@ class SecurityManager:
     def block_ip(self, ip_address: str, reason: str = "Security violation"):
         """Block an IP address."""
         self.blocked_ips.add(ip_address)
-        self.log_security_event(
-            "ip_blocked", "high", ip_address, "", {"reason": reason}
-        )
+        self.log_security_event("ip_blocked", "high", ip_address, "", {"reason": reason})
 
     def log_security_event(
         self,
@@ -108,15 +102,11 @@ class SecurityManager:
         """Generate CSRF token for session."""
         timestamp = str(int(time.time()))
         message = f"{session_id}:{timestamp}"
-        signature = hmac.new(
-            secret_key.encode(), message.encode(), hashlib.sha256
-        ).hexdigest()
+        signature = hmac.new(secret_key.encode(), message.encode(), hashlib.sha256).hexdigest()
 
         return f"{timestamp}:{signature}"
 
-    def validate_csrf_token(
-        self, token: str, session_id: str, secret_key: str, max_age: int = 3600
-    ) -> bool:
+    def validate_csrf_token(self, token: str, session_id: str, secret_key: str, max_age: int = 3600) -> bool:
         """Validate CSRF token."""
         try:
             timestamp_str, signature = token.split(":", 1)
@@ -128,9 +118,7 @@ class SecurityManager:
 
             # Verify signature
             message = f"{session_id}:{timestamp_str}"
-            expected_signature = hmac.new(
-                secret_key.encode(), message.encode(), hashlib.sha256
-            ).hexdigest()
+            expected_signature = hmac.new(secret_key.encode(), message.encode(), hashlib.sha256).hexdigest()
 
             return hmac.compare_digest(signature, expected_signature)
 

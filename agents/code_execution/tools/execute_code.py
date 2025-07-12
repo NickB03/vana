@@ -72,9 +72,7 @@ async def execute_code_tool(
             response["error_type"] = _classify_error(result.error)
 
             if debug_mode:
-                response["debug_info"] = _generate_debug_info(
-                    result.error, language, code
-                )
+                response["debug_info"] = _generate_debug_info(result.error, language, code)
 
         # Add resource usage information
         if result.resource_usage:
@@ -155,9 +153,7 @@ def _python_debug_info(error: str, code: str) -> Dict[str, Any]:
         debug_info["suggestion"] = "Ensure all variables are defined before use"
     elif "ImportError" in error or "ModuleNotFoundError" in error:
         debug_info["issue"] = "import_error"
-        debug_info["suggestion"] = (
-            "Check if the module is available in the sandbox environment"
-        )
+        debug_info["suggestion"] = "Check if the module is available in the sandbox environment"
     elif "SyntaxError" in error:
         debug_info["issue"] = "syntax_error"
         debug_info["suggestion"] = "Check for missing brackets, quotes, or colons"
@@ -165,8 +161,7 @@ def _python_debug_info(error: str, code: str) -> Dict[str, Any]:
     # Analyze code structure
     lines = code.split("\n")
     debug_info["has_imports"] = any(
-        line.strip().startswith("import ") or line.strip().startswith("from ")
-        for line in lines
+        line.strip().startswith("import ") or line.strip().startswith("from ") for line in lines
     )
     debug_info["has_functions"] = any("def " in line for line in lines)
     debug_info["has_classes"] = any("class " in line for line in lines)
@@ -192,12 +187,8 @@ def _javascript_debug_info(error: str, code: str) -> Dict[str, Any]:
     # Analyze code structure
     lines = code.split("\n")
     debug_info["has_requires"] = any("require(" in line for line in lines)
-    debug_info["has_functions"] = any(
-        "function " in line or "=>" in line for line in lines
-    )
-    debug_info["has_async"] = any(
-        "async " in line or "await " in line for line in lines
-    )
+    debug_info["has_functions"] = any("function " in line or "=>" in line for line in lines)
+    debug_info["has_async"] = any("async " in line or "await " in line for line in lines)
 
     return debug_info
 
@@ -209,9 +200,7 @@ def _shell_debug_info(error: str, code: str) -> Dict[str, Any]:
     # Check for common shell issues
     if "command not found" in error.lower():
         debug_info["issue"] = "command_not_found"
-        debug_info["suggestion"] = (
-            "Check if the command is available in the sandbox environment"
-        )
+        debug_info["suggestion"] = "Check if the command is available in the sandbox environment"
     elif "permission denied" in error.lower():
         debug_info["issue"] = "permission_denied"
         debug_info["suggestion"] = "Check file permissions or use allowed commands"
@@ -236,11 +225,7 @@ def _analyze_execution(result, code: str, language: str) -> Dict[str, Any]:
         "performance_metrics": {
             "execution_time": result.execution_time,
             "relative_speed": (
-                "fast"
-                if result.execution_time < 1.0
-                else "slow"
-                if result.execution_time > 5.0
-                else "normal"
+                "fast" if result.execution_time < 1.0 else "slow" if result.execution_time > 5.0 else "normal"
             ),
         },
     }

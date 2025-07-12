@@ -103,9 +103,7 @@ class MockVectorSearchClientFixture:
         # Return the configured number of results
         return self.search_results[:top_k]
 
-    def search_vector_store(
-        self, query_embedding: List[float], top_k: int = 5
-    ) -> List[Dict[str, Any]]:
+    def search_vector_store(self, query_embedding: List[float], top_k: int = 5) -> List[Dict[str, Any]]:
         """Mock implementation of search_vector_store"""
         self.call_history["search_vector_store"] += 1
 
@@ -199,9 +197,7 @@ def patched_vector_search_client(mock_vector_search_client):
         The configured mock client
     """
     # Create a patcher for the VectorSearchClient class
-    with patch(
-        "tools.vector_search.vector_search_client.VectorSearchClient"
-    ) as mock_class:
+    with patch("tools.vector_search.vector_search_client.VectorSearchClient") as mock_class:
         # Configure the mock class to return our mock client instance
         mock_class.return_value = mock_vector_search_client
         yield mock_vector_search_client
@@ -237,21 +233,11 @@ def real_vector_search_client(request):
     test_params = {
         "use_mock": params.get("use_mock", False),
         "auto_fallback": params.get("auto_fallback", True),
-        "project_id": params.get(
-            "project_id", os.environ.get("TEST_GOOGLE_CLOUD_PROJECT")
-        ),
-        "location": params.get(
-            "location", os.environ.get("TEST_GOOGLE_CLOUD_LOCATION", "us-central1")
-        ),
-        "endpoint_id": params.get(
-            "endpoint_id", os.environ.get("TEST_VECTOR_SEARCH_ENDPOINT_ID")
-        ),
-        "deployed_index_id": params.get(
-            "deployed_index_id", os.environ.get("TEST_DEPLOYED_INDEX_ID")
-        ),
-        "credentials_path": params.get(
-            "credentials_path", os.environ.get("TEST_GOOGLE_APPLICATION_CREDENTIALS")
-        ),
+        "project_id": params.get("project_id", os.environ.get("TEST_GOOGLE_CLOUD_PROJECT")),
+        "location": params.get("location", os.environ.get("TEST_GOOGLE_CLOUD_LOCATION", "us-central1")),
+        "endpoint_id": params.get("endpoint_id", os.environ.get("TEST_VECTOR_SEARCH_ENDPOINT_ID")),
+        "deployed_index_id": params.get("deployed_index_id", os.environ.get("TEST_DEPLOYED_INDEX_ID")),
+        "credentials_path": params.get("credentials_path", os.environ.get("TEST_GOOGLE_APPLICATION_CREDENTIALS")),
     }
 
     # Create and return the real client with test configuration
@@ -259,9 +245,7 @@ def real_vector_search_client(request):
 
     # If the client should be available but isn't, log a warning
     if not test_params["use_mock"] and not client.is_available():
-        logger.warning(
-            "Real Vector Search client is not available. Tests may fall back to mock implementation."
-        )
+        logger.warning("Real Vector Search client is not available. Tests may fall back to mock implementation.")
 
     return client
 
@@ -301,18 +285,10 @@ def vector_search_health_checker(request, mock_vector_search_client):
         client = VectorSearchClient(
             use_mock=client_params.get("use_mock", False),
             auto_fallback=client_params.get("auto_fallback", True),
-            project_id=client_params.get(
-                "project_id", os.environ.get("TEST_GOOGLE_CLOUD_PROJECT")
-            ),
-            location=client_params.get(
-                "location", os.environ.get("TEST_GOOGLE_CLOUD_LOCATION", "us-central1")
-            ),
-            endpoint_id=client_params.get(
-                "endpoint_id", os.environ.get("TEST_VECTOR_SEARCH_ENDPOINT_ID")
-            ),
-            deployed_index_id=client_params.get(
-                "deployed_index_id", os.environ.get("TEST_DEPLOYED_INDEX_ID")
-            ),
+            project_id=client_params.get("project_id", os.environ.get("TEST_GOOGLE_CLOUD_PROJECT")),
+            location=client_params.get("location", os.environ.get("TEST_GOOGLE_CLOUD_LOCATION", "us-central1")),
+            endpoint_id=client_params.get("endpoint_id", os.environ.get("TEST_VECTOR_SEARCH_ENDPOINT_ID")),
+            deployed_index_id=client_params.get("deployed_index_id", os.environ.get("TEST_DEPLOYED_INDEX_ID")),
             credentials_path=client_params.get(
                 "credentials_path",
                 os.environ.get("TEST_GOOGLE_APPLICATION_CREDENTIALS"),
@@ -324,18 +300,14 @@ def vector_search_health_checker(request, mock_vector_search_client):
 
     # Create and return the health checker with the selected client
     history_size = params.get("history_size", 10)
-    return VectorSearchHealthChecker(
-        vector_search_client=client, history_size=history_size
-    )
+    return VectorSearchHealthChecker(vector_search_client=client, history_size=history_size)
 
 
 # Example basic test to verify the fixtures work
 def test_fixtures_example():
     """Example test to demonstrate how to use the fixtures"""
     # Create a mock client directly (without using pytest fixture)
-    mock_client = MockVectorSearchClientFixture(
-        is_available=True, embedding_success=True, search_success=True
-    )
+    mock_client = MockVectorSearchClientFixture(is_available=True, embedding_success=True, search_success=True)
 
     # Verify the mock client works as expected
     assert mock_client.is_available() is True

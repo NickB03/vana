@@ -12,20 +12,18 @@ Performs thorough security assessment of the VANA system:
 """
 
 import asyncio
-import logging
-import time
-import sys
-import os
 import json
+import logging
+import os
 import re
-from typing import List
-from dataclasses import dataclass, asdict
+import sys
+import time
+from dataclasses import asdict, dataclass
 from pathlib import Path
+from typing import List
 
 # Add project root to path
-sys.path.insert(
-    0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-)
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 from lib.logging_config import setup_logging
 
@@ -312,9 +310,7 @@ class SecurityAuditFramework:
 
                     severity = self._get_severity_for_category(category)
                     title = self._get_title_for_category(category)
-                    description = (
-                        f"Potential {category.replace('_', ' ')} vulnerability detected"
-                    )
+                    description = f"Potential {category.replace('_', ' ')} vulnerability detected"
                     recommendation = self._get_recommendation_for_category(category)
 
                     self.findings.append(
@@ -754,9 +750,7 @@ async def main():
         # Show top findings
         if framework.findings:
             print("\n🔍 Top Security Findings:")
-            critical_and_high = [
-                f for f in framework.findings if f.severity in ["critical", "high"]
-            ]
+            critical_and_high = [f for f in framework.findings if f.severity in ["critical", "high"]]
             for finding in critical_and_high[:5]:
                 severity_icon = "🚨" if finding.severity == "critical" else "⚠️"
                 print(f"  {severity_icon} {finding.title} ({finding.file_path})")

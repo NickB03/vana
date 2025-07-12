@@ -3,11 +3,11 @@ VANA Version Management
 Provides version tracking for deployments and runtime information
 """
 
+import json
 import os
 import subprocess
-import json
 from datetime import datetime
-from typing import Dict, Any, Optional
+from typing import Any, Dict, Optional
 
 
 def get_git_commit_info() -> Dict[str, str]:
@@ -15,36 +15,26 @@ def get_git_commit_info() -> Dict[str, str]:
     try:
         # Get current commit hash
         commit_hash = (
-            subprocess.check_output(
-                ["git", "rev-parse", "HEAD"], stderr=subprocess.DEVNULL
-            )
-            .decode("utf-8")
-            .strip()
+            subprocess.check_output(["git", "rev-parse", "HEAD"], stderr=subprocess.DEVNULL).decode("utf-8").strip()
         )
 
         # Get current branch
         branch = (
-            subprocess.check_output(
-                ["git", "rev-parse", "--abbrev-ref", "HEAD"], stderr=subprocess.DEVNULL
-            )
+            subprocess.check_output(["git", "rev-parse", "--abbrev-ref", "HEAD"], stderr=subprocess.DEVNULL)
             .decode("utf-8")
             .strip()
         )
 
         # Get commit message
         commit_message = (
-            subprocess.check_output(
-                ["git", "log", "-1", "--pretty=%B"], stderr=subprocess.DEVNULL
-            )
+            subprocess.check_output(["git", "log", "-1", "--pretty=%B"], stderr=subprocess.DEVNULL)
             .decode("utf-8")
             .strip()
         )
 
         # Get commit timestamp
         commit_timestamp = (
-            subprocess.check_output(
-                ["git", "log", "-1", "--pretty=%cI"], stderr=subprocess.DEVNULL
-            )
+            subprocess.check_output(["git", "log", "-1", "--pretty=%cI"], stderr=subprocess.DEVNULL)
             .decode("utf-8")
             .strip()
         )
@@ -71,9 +61,7 @@ def get_build_info() -> Dict[str, Any]:
     return {
         "build_id": os.environ.get("BUILD_ID", "local"),
         "build_number": os.environ.get("BUILD_NUMBER", "0"),
-        "build_timestamp": os.environ.get(
-            "BUILD_TIMESTAMP", datetime.now().isoformat()
-        ),
+        "build_timestamp": os.environ.get("BUILD_TIMESTAMP", datetime.now().isoformat()),
         "builder": os.environ.get("BUILDER", "local"),
         "project_id": os.environ.get("GOOGLE_CLOUD_PROJECT", "unknown"),
         "region": os.environ.get("GOOGLE_CLOUD_REGION", "unknown"),

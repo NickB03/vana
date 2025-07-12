@@ -104,9 +104,7 @@ class MCPSSETransport:
             return JSONResponse(response)
 
         except json.JSONDecodeError:
-            return JSONResponse(
-                {"error": {"code": -32700, "message": "Parse error"}}, status_code=400
-            )
+            return JSONResponse({"error": {"code": -32700, "message": "Parse error"}}, status_code=400)
         except Exception as e:
             logger.error(f"Message handling error: {e}")
             return JSONResponse(
@@ -225,9 +223,7 @@ class MCPSSETransport:
             elif tool_name == "brave_search_mcp":
                 from lib._tools.adk_mcp_tools import brave_search_mcp
 
-                result = brave_search_mcp(
-                    arguments.get("query", ""), arguments.get("max_results", 5)
-                )
+                result = brave_search_mcp(arguments.get("query", ""), arguments.get("max_results", 5))
             elif tool_name == "github_mcp_operations":
                 from lib._tools.adk_mcp_tools import github_mcp_operations
 
@@ -376,10 +372,6 @@ Please provide:
 Use the Context7 sequential thinking framework for comprehensive analysis.
 """
 
-            return {
-                "messages": [
-                    {"role": "user", "content": {"type": "text", "text": prompt_text}}
-                ]
-            }
+            return {"messages": [{"role": "user", "content": {"type": "text", "text": prompt_text}}]}
         else:
             raise ValueError(f"Unknown prompt: {name}")

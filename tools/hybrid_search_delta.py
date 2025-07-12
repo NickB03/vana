@@ -155,8 +155,6 @@ class HybridSearchDelta:
         # Add source statistics
         vs_count = results.get("sources", {}).get("vector_search", 0)
         kg_count = results.get("sources", {}).get("knowledge_graph", 0)
-        formatted += (
-            f"Sources: {vs_count} from Vector Search, {kg_count} from Knowledge Graph"
-        )
+        formatted += f"Sources: {vs_count} from Vector Search, {kg_count} from Knowledge Graph"
 
         return formatted

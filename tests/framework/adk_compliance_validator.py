@@ -57,11 +57,7 @@ class ADKComplianceValidator:
             }
 
         # Find all agent directories
-        agent_dirs = [
-            d
-            for d in self.agents_path.iterdir()
-            if d.is_dir() and not d.name.startswith(".")
-        ]
+        agent_dirs = [d for d in self.agents_path.iterdir() if d.is_dir() and not d.name.startswith(".")]
 
         for agent_dir in agent_dirs:
             agent_name = agent_dir.name
@@ -133,11 +129,7 @@ class ADKComplianceValidator:
         compliance_scores.append(import_result["score"])
 
         # Calculate overall compliance score
-        overall_score = (
-            sum(compliance_scores) / len(compliance_scores)
-            if compliance_scores
-            else 0.0
-        )
+        overall_score = sum(compliance_scores) / len(compliance_scores) if compliance_scores else 0.0
         compliant = overall_score >= 0.8 and len(issues) == 0
 
         return ComplianceResult(
@@ -174,9 +166,7 @@ class ADKComplianceValidator:
                 )
             else:
                 issues.append("No memory service implementation found")
-                recommendations.append(
-                    "Implement BaseMemoryService or use shared memory service"
-                )
+                recommendations.append("Implement BaseMemoryService or use shared memory service")
                 return ComplianceResult(
                     component=f"memory_service_{agent_name}",
                     compliant=False,
@@ -227,9 +217,7 @@ class ADKComplianceValidator:
         # Check for at least one main agent file
         main_files = [f for f in optional_files if f in existing_files]
         if not main_files:
-            issues.append(
-                "No main agent file found (team.py, agent.py, or specialist.py)"
-            )
+            issues.append("No main agent file found (team.py, agent.py, or specialist.py)")
             recommendations.append("Create main agent implementation file")
 
         details["main_files"] = main_files
@@ -271,37 +259,22 @@ class ADKComplianceValidator:
                 tree = ast.parse(content)
 
                 # Find async functions
-                async_funcs = [
-                    node
-                    for node in ast.walk(tree)
-                    if isinstance(node, ast.AsyncFunctionDef)
-                ]
+                async_funcs = [node for node in ast.walk(tree) if isinstance(node, ast.AsyncFunctionDef)]
                 async_functions_found += len(async_funcs)
 
                 # Check for blocking calls in async functions
                 for func in async_funcs:
-                    blocking_calls = self._find_blocking_calls_in_function(
-                        func, content
-                    )
+                    blocking_calls = self._find_blocking_calls_in_function(func, content)
                     if blocking_calls:
-                        blocking_calls_found.extend(
-                            [
-                                f"{py_file.name}:{func.name}:{call}"
-                                for call in blocking_calls
-                            ]
-                        )
+                        blocking_calls_found.extend([f"{py_file.name}:{func.name}:{call}" for call in blocking_calls])
 
                 # Check for proper async/await usage
-                await_calls = [
-                    node for node in ast.walk(tree) if isinstance(node, ast.Await)
-                ]
+                await_calls = [node for node in ast.walk(tree) if isinstance(node, ast.Await)]
 
                 details[py_file.name] = {
                     "async_functions": len(async_funcs),
                     "await_calls": len(await_calls),
-                    "blocking_calls": len(blocking_calls)
-                    if "blocking_calls" in locals()
-                    else 0,
+                    "blocking_calls": len(blocking_calls) if "blocking_calls" in locals() else 0,
                 }
 
             except Exception as e:
@@ -312,15 +285,11 @@ class ADKComplianceValidator:
 
         # Validate async patterns
         if async_functions_found == 0:
-            issues.append(
-                "No async functions found - ADK agents should use async patterns"
-            )
+            issues.append("No async functions found - ADK agents should use async patterns")
             recommendations.append("Implement async functions for agent operations")
 
         if blocking_calls_found:
-            issues.append(
-                f"Found {len(blocking_calls_found)} blocking calls in async functions"
-            )
+            issues.append(f"Found {len(blocking_calls_found)} blocking calls in async functions")
             recommendations.append("Replace blocking calls with async equivalents")
             details["blocking_calls_details"] = blocking_calls_found
 
@@ -374,9 +343,7 @@ class ADKComplianceValidator:
 
                 # Check for tool function signatures
                 tree = ast.parse(content)
-                functions = [
-                    node for node in ast.walk(tree) if isinstance(node, ast.FunctionDef)
-                ]
+                functions = [node for node in ast.walk(tree) if isinstance(node, ast.FunctionDef)]
 
                 tool_functions = []
                 for func in functions:
@@ -528,9 +495,7 @@ class ADKComplianceValidator:
             # Check for proper exports
             if "__all__" not in content and "from" not in content:
                 issues.append("__init__.py should export agent components")
-                recommendations.append(
-                    "Add __all__ or import statements to __init__.py"
-                )
+                recommendations.append("Add __all__ or import statements to __init__.py")
 
             # Check for agent registration
             if "agent" not in content.lower():
@@ -571,9 +536,7 @@ class ADKComplianceValidator:
                     issues.append(f"Missing required method: {method}")
 
             details["found_methods"] = found_methods
-            details["missing_methods"] = [
-                m for m in required_methods if m not in found_methods
-            ]
+            details["missing_methods"] = [m for m in required_methods if m not in found_methods]
 
             # Check for async compliance
             if "async def" not in content:
@@ -594,9 +557,7 @@ class ADKComplianceValidator:
             "details": details,
         }
 
-    def _find_blocking_calls_in_function(
-        self, func_node: ast.AsyncFunctionDef, content: str
-    ) -> List[str]:
+    def _find_blocking_calls_in_function(self, func_node: ast.AsyncFunctionDef, content: str) -> List[str]:
         """Find blocking calls in async function"""
         blocking_patterns = [
             r"requests\.",
@@ -608,11 +569,7 @@ class ADKComplianceValidator:
 
         # Get function content
         func_start = func_node.lineno
-        func_end = (
-            func_node.end_lineno
-            if hasattr(func_node, "end_lineno")
-            else func_start + 10
-        )
+        func_end = func_node.end_lineno if hasattr(func_node, "end_lineno") else func_start + 10
 
         lines = content.split("\n")
         func_content = "\n".join(lines[func_start - 1 : func_end])

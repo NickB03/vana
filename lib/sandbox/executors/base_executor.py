@@ -73,9 +73,7 @@ class BaseExecutor:
     def _init_docker_client(self):
         """Initialize Docker client with error handling."""
         if not DOCKER_AVAILABLE:
-            logger.warning(
-                f"Docker not available for {self.language} executor - running in fallback mode"
-            )
+            logger.warning(f"Docker not available for {self.language} executor - running in fallback mode")
             self.docker_client = None
             return
 
@@ -88,9 +86,7 @@ class BaseExecutor:
             logger.error(f"Failed to initialize Docker client: {e}")
             self.docker_client = None
 
-    async def execute(
-        self, code: str, execution_id: Optional[str] = None, **kwargs
-    ) -> ExecutorResult:
+    async def execute(self, code: str, execution_id: Optional[str] = None, **kwargs) -> ExecutorResult:
         """
         Execute code in a secure container environment.
 
@@ -108,9 +104,7 @@ class BaseExecutor:
         # Validate Docker availability
         if not self.docker_client:
             # Use fallback execution when Docker is not available
-            logger.warning(
-                f"Docker not available for {self.language} executor - using fallback execution"
-            )
+            logger.warning(f"Docker not available for {self.language} executor - using fallback execution")
             return await self._execute_fallback(code, execution_id, start_time)
 
         # Create temporary workspace
@@ -142,9 +136,7 @@ class BaseExecutor:
                     metadata={"error_type": "execution_error", "exception": str(e)},
                 )
 
-    async def _prepare_workspace(
-        self, workspace_path: Path, code: str, execution_id: str
-    ):
+    async def _prepare_workspace(self, workspace_path: Path, code: str, execution_id: str):
         """
         Prepare workspace directory with code and necessary files.
 
@@ -195,23 +187,14 @@ class BaseExecutor:
 
         try:
             # Create container
-            container = self.docker_client.containers.create(
-                image=image_name, name=container_name, **container_config
-            )
+            container = self.docker_client.containers.create(image=image_name, name=container_name, **container_config)
 
-            logger.info(
-                f"Created container {container_name} for execution {execution_id}"
-            )
+            logger.info(f"Created container {container_name} for execution {execution_id}")
             return container
 
         except Exception as e:
             # Check if it's an ImageNotFound error (only if docker is available)
-            if (
-                DOCKER_AVAILABLE
-                and docker
-                and hasattr(docker, "errors")
-                and isinstance(e, docker.errors.ImageNotFound)
-            ):
+            if DOCKER_AVAILABLE and docker and hasattr(docker, "errors") and isinstance(e, docker.errors.ImageNotFound):
                 # Try to build image if not found
                 await self._build_docker_image()
                 container = self.docker_client.containers.create(
@@ -221,9 +204,7 @@ class BaseExecutor:
             else:
                 raise ContainerError(f"Failed to create container: {e}")
 
-    async def _run_container(
-        self, container, code: str, execution_id: str
-    ) -> ExecutorResult:
+    async def _run_container(self, container, code: str, execution_id: str) -> ExecutorResult:
         """
         Run container and capture output.
 
@@ -240,9 +221,7 @@ class BaseExecutor:
             container.start()
 
             # Wait for container to complete with timeout
-            timeout = self.security_manager.get_resource_limits().get(
-                "max_execution_time", 30
-            )
+            timeout = self.security_manager.get_resource_limits().get("max_execution_time", 30)
 
             try:
                 exit_code = container.wait(timeout=timeout)
@@ -269,9 +248,7 @@ class BaseExecutor:
                 container_id=container.id,
                 metadata={
                     "container_name": container.name,
-                    "image": container.image.tags[0]
-                    if container.image.tags
-                    else "unknown",
+                    "image": container.image.tags[0] if container.image.tags else "unknown",
                 },
             )
 
@@ -333,17 +310,13 @@ class BaseExecutor:
 
     def _get_dockerfile_path(self) -> Path:
         """Get path to Dockerfile for this executor."""
-        return (
-            Path(__file__).parent.parent / "containers" / f"Dockerfile.{self.language}"
-        )
+        return Path(__file__).parent.parent / "containers" / f"Dockerfile.{self.language}"
 
     def _get_code_filename(self) -> str:
         """Get filename for code file. Override in subclasses."""
         return f"code.{self.language}"
 
-    def _get_container_config(
-        self, workspace_path: Path, container_name: str
-    ) -> Dict[str, Any]:
+    def _get_container_config(self, workspace_path: Path, container_name: str) -> Dict[str, Any]:
         """
         Get base container configuration.
         Override in subclasses to customize.
@@ -372,9 +345,7 @@ class BaseExecutor:
         """Get environment variables for container."""
         return {"HOME": "/workspace", "USER": "sandbox", "SHELL": "/bin/bash"}
 
-    async def _execute_fallback(
-        self, code: str, execution_id: str, start_time: float
-    ) -> ExecutorResult:
+    async def _execute_fallback(self, code: str, execution_id: str, start_time: float) -> ExecutorResult:
         """
         Fallback execution method when Docker is not available.
 

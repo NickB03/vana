@@ -44,9 +44,7 @@ class FirestoreMemoryService:
         self.db: Optional[AsyncClient] = None
         self._initialize_client()
 
-        logger.info(
-            f"FirestoreMemoryService initialized with collection: {collection_name}"
-        )
+        logger.info(f"FirestoreMemoryService initialized with collection: {collection_name}")
 
     def _initialize_client(self) -> None:
         """Initialize the async Firestore client."""
@@ -93,9 +91,7 @@ class FirestoreMemoryService:
                 "content": content,
                 "metadata": {
                     "user_id": getattr(session, "user_id", ""),
-                    "created_at": getattr(
-                        session, "created_at", datetime.now()
-                    ).isoformat()
+                    "created_at": getattr(session, "created_at", datetime.now()).isoformat()
                     if hasattr(session, "created_at")
                     else datetime.now().isoformat(),
                 },
@@ -108,18 +104,14 @@ class FirestoreMemoryService:
             collection_ref = self.db.collection(self.collection_name)
             doc_ref = await collection_ref.add(memory_doc)
 
-            logger.info(
-                f"Session {session.id} added to memory with document ID: {doc_ref[1].id}"
-            )
+            logger.info(f"Session {session.id} added to memory with document ID: {doc_ref[1].id}")
             return True
 
         except Exception as e:
             logger.error(f"Failed to add session to memory: {e}")
             return False
 
-    async def search_memory(
-        self, query: str, top_k: int = 5, session_id: Optional[str] = None
-    ) -> List[Dict[str, Any]]:
+    async def search_memory(self, query: str, top_k: int = 5, session_id: Optional[str] = None) -> List[Dict[str, Any]]:
         """
         Simple keyword search - upgrade to vector search later.
 
@@ -146,9 +138,7 @@ class FirestoreMemoryService:
                 query_ref = query_ref.where("session_id", "==", session_id)
 
             # Order by timestamp (most recent first) and limit results
-            query_ref = query_ref.order_by(
-                "timestamp", direction=firestore.Query.DESCENDING
-            )
+            query_ref = query_ref.order_by("timestamp", direction=firestore.Query.DESCENDING)
             query_ref = query_ref.limit(50)  # Get more docs for filtering
 
             # Execute query
@@ -187,9 +177,7 @@ class FirestoreMemoryService:
             logger.error(f"Failed to search memory: {e}")
             return []
 
-    async def get_session_memories(
-        self, session_id: str, limit: int = 10
-    ) -> List[Dict[str, Any]]:
+    async def get_session_memories(self, session_id: str, limit: int = 10) -> List[Dict[str, Any]]:
         """
         Get recent memories for a specific session.
 
@@ -233,9 +221,7 @@ class FirestoreMemoryService:
                     }
                     memories.append(memory_dict)
 
-            logger.debug(
-                f"Retrieved {len(memories)} memories for session: {session_id}"
-            )
+            logger.debug(f"Retrieved {len(memories)} memories for session: {session_id}")
             return memories
 
         except Exception as e:

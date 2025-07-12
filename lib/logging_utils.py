@@ -42,9 +42,7 @@ class LoggerMixin:
         else:
             self.logger = get_logger(f"vana.{component}")
 
-    def log_debug(
-        self, message: str, operation: Optional[str] = None, **kwargs
-    ) -> None:
+    def log_debug(self, message: str, operation: Optional[str] = None, **kwargs) -> None:
         """Log a debug message."""
         if hasattr(self.logger, "debug") and hasattr(self.logger, "component"):
             # Structured logger
@@ -62,9 +60,7 @@ class LoggerMixin:
             # Standard logger
             self.logger.info(message)
 
-    def log_warning(
-        self, message: str, operation: Optional[str] = None, **kwargs
-    ) -> None:
+    def log_warning(self, message: str, operation: Optional[str] = None, **kwargs) -> None:
         """Log a warning message."""
         if hasattr(self.logger, "warning") and hasattr(self.logger, "component"):
             # Structured logger
@@ -98,17 +94,13 @@ class LoggerMixin:
         """Log a critical message."""
         if hasattr(self.logger, "critical") and hasattr(self.logger, "component"):
             # Structured logger
-            self.logger.critical(
-                message, operation, kwargs if kwargs else None, exc_info
-            )
+            self.logger.critical(message, operation, kwargs if kwargs else None, exc_info)
         else:
             # Standard logger
             self.logger.critical(message, exc_info=exc_info)
 
 
-def log_function_call(
-    logger_name: str = None, log_args: bool = False, log_result: bool = False
-):
+def log_function_call(logger_name: str = None, log_args: bool = False, log_result: bool = False):
     """
     Decorator to log function calls.
 
@@ -147,9 +139,7 @@ def log_function_call(
 
                 # Log success
                 if log_result:
-                    logger.debug(
-                        f"{func_name} completed in {execution_time:.3f}s, result={result}"
-                    )
+                    logger.debug(f"{func_name} completed in {execution_time:.3f}s, result={result}")
                 else:
                     logger.debug(f"{func_name} completed in {execution_time:.3f}s")
 
@@ -307,17 +297,13 @@ def log_warning(message: str, component: str = "vana", **kwargs) -> None:
     logger.warning(message, extra=kwargs if kwargs else None)
 
 
-def log_error(
-    message: str, component: str = "vana", exc_info: bool = False, **kwargs
-) -> None:
+def log_error(message: str, component: str = "vana", exc_info: bool = False, **kwargs) -> None:
     """Quick error logging."""
     logger = get_structured_logger(component)
     logger.error(message, extra=kwargs if kwargs else None, exc_info=exc_info)
 
 
-def log_critical(
-    message: str, component: str = "vana", exc_info: bool = False, **kwargs
-) -> None:
+def log_critical(message: str, component: str = "vana", exc_info: bool = False, **kwargs) -> None:
     """Quick critical logging."""
     logger = get_structured_logger(component)
     logger.critical(message, extra=kwargs if kwargs else None, exc_info=exc_info)

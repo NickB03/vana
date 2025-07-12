@@ -14,10 +14,10 @@ This script tests:
 
 import asyncio
 import json
-import time
 import sys
+import time
 from pathlib import Path
-from typing import Dict, Any
+from typing import Any, Dict
 
 # Add project root to path
 project_root = Path(__file__).parent.parent.parent
@@ -34,9 +34,7 @@ class ToolIntegrationValidator:
 
     def __init__(self):
         self.project_root = project_root
-        self.baseline_manager = BaselineManager(
-            project_root / "tests" / "validation" / "performance_baselines.json"
-        )
+        self.baseline_manager = BaselineManager(project_root / "tests" / "validation" / "performance_baselines.json")
         self.results_dir = project_root / "tests" / "results" / "validation"
         self.results_dir.mkdir(parents=True, exist_ok=True)
 
@@ -148,9 +146,7 @@ class ToolIntegrationValidator:
             validation_results["integration_summary"] = integration_results
 
             # Step 5: Generate Validation Summary
-            validation_results["validation_summary"] = (
-                self._generate_tool_validation_summary(validation_results)
-            )
+            validation_results["validation_summary"] = self._generate_tool_validation_summary(validation_results)
 
             logger.info("✅ Tool integration validation completed!")
 
@@ -208,9 +204,7 @@ class ToolIntegrationValidator:
                             logger.debug(f"   ✅ {tool_name}: {response_time:.3f}s")
                         else:
                             category_test_result["tools_failed"] += 1
-                            category_test_result["errors"].append(
-                                f"{tool_name}: simulated failure"
-                            )
+                            category_test_result["errors"].append(f"{tool_name}: simulated failure")
                             logger.debug(f"   ❌ {tool_name}: failed")
 
                         category_test_result["tools_tested"].append(
@@ -229,28 +223,21 @@ class ToolIntegrationValidator:
                 # Calculate category metrics
                 total_tools = len(category_config["tools"])
                 if total_tools > 0:
-                    category_test_result["success_rate"] = (
-                        category_test_result["tools_passed"] / total_tools
-                    )
+                    category_test_result["success_rate"] = category_test_result["tools_passed"] / total_tools
                     total_success_scores.append(category_test_result["success_rate"])
 
                 if response_times:
-                    category_test_result["avg_response_time"] = sum(
-                        response_times
-                    ) / len(response_times)
+                    category_test_result["avg_response_time"] = sum(response_times) / len(response_times)
 
                 category_results["categories_tested"].append(category_test_result)
-                category_results["category_success_rates"][category_name] = (
-                    category_test_result["success_rate"]
-                )
+                category_results["category_success_rates"][category_name] = category_test_result["success_rate"]
 
                 # Track critical category status
                 if category_config["critical"]:
                     threshold = self.validation_config["critical_tool_threshold"]
                     category_results["critical_category_status"][category_name] = {
                         "success_rate": category_test_result["success_rate"],
-                        "meets_threshold": category_test_result["success_rate"]
-                        >= threshold,
+                        "meets_threshold": category_test_result["success_rate"] >= threshold,
                         "threshold": threshold,
                     }
 
@@ -260,13 +247,9 @@ class ToolIntegrationValidator:
 
             # Calculate overall category success
             if total_success_scores:
-                category_results["overall_category_success"] = sum(
-                    total_success_scores
-                ) / len(total_success_scores)
+                category_results["overall_category_success"] = sum(total_success_scores) / len(total_success_scores)
 
-            logger.info(
-                f"   📊 Overall Category Success: {category_results['overall_category_success']:.1%}"
-            )
+            logger.info(f"   📊 Overall Category Success: {category_results['overall_category_success']:.1%}")
 
         except Exception as e:
             logger.error(f"   ❌ Category testing failed: {str(e)}")
@@ -328,32 +311,20 @@ class ToolIntegrationValidator:
 
                     if tool_success:
                         successful_tools += 1
-                        logger.debug(
-                            f"   ✅ {tool_name}: {response_time:.3f}s - {test_description}"
-                        )
+                        logger.debug(f"   ✅ {tool_name}: {response_time:.3f}s - {test_description}")
                     else:
-                        individual_results["tool_errors"].append(
-                            f"{tool_name}: {test_description} failed"
-                        )
+                        individual_results["tool_errors"].append(f"{tool_name}: {test_description} failed")
                         logger.debug(f"   ❌ {tool_name}: failed - {test_description}")
 
                 except Exception as e:
-                    individual_results["tool_errors"].append(
-                        f"{tool_name}: exception - {str(e)}"
-                    )
+                    individual_results["tool_errors"].append(f"{tool_name}: exception - {str(e)}")
                     logger.debug(f"   ❌ {tool_name}: exception - {str(e)}")
 
             # Calculate individual tool success rate
-            individual_results["individual_success_rate"] = (
-                successful_tools / total_tools if total_tools > 0 else 0.0
-            )
+            individual_results["individual_success_rate"] = successful_tools / total_tools if total_tools > 0 else 0.0
 
             # Collect performance metrics for tested tools
-            response_times = [
-                tool["response_time"]
-                for tool in individual_results["tools_tested"]
-                if tool["success"]
-            ]
+            response_times = [tool["response_time"] for tool in individual_results["tools_tested"] if tool["success"]]
             if response_times:
                 individual_results["tool_performance"] = {
                     "avg_response_time": sum(response_times) / len(response_times),
@@ -414,9 +385,7 @@ class ToolIntegrationValidator:
                 for tool_name, expected_time in tools.items():
                     # Simulate performance measurement
                     start_time = time.time()
-                    await asyncio.sleep(
-                        expected_time + 0.01
-                    )  # Simulate with slight variance
+                    await asyncio.sleep(expected_time + 0.01)  # Simulate with slight variance
                     actual_time = time.time() - start_time
 
                     category_times.append(actual_time)
@@ -424,26 +393,17 @@ class ToolIntegrationValidator:
                     category_results[tool_name] = {
                         "expected_time": expected_time,
                         "actual_time": actual_time,
-                        "variance_percent": (
-                            (actual_time - expected_time) / expected_time
-                        )
-                        * 100
+                        "variance_percent": ((actual_time - expected_time) / expected_time) * 100
                         if expected_time > 0
                         else 0,
                     }
 
-                    logger.debug(
-                        f"   📊 {tool_name}: {actual_time:.3f}s (expected {expected_time:.3f}s)"
-                    )
+                    logger.debug(f"   📊 {tool_name}: {actual_time:.3f}s (expected {expected_time:.3f}s)")
 
                 performance_benchmarks[category] = {
                     "tools": category_results,
-                    "avg_response_time": sum(category_times) / len(category_times)
-                    if category_times
-                    else 0,
-                    "category_performance": "good"
-                    if all(t < 0.5 for t in category_times)
-                    else "acceptable",
+                    "avg_response_time": sum(category_times) / len(category_times) if category_times else 0,
+                    "category_performance": "good" if all(t < 0.5 for t in category_times) else "acceptable",
                 }
 
             performance_results["performance_benchmarks"] = performance_benchmarks
@@ -453,24 +413,16 @@ class ToolIntegrationValidator:
                 logger.debug("📈 Comparing with performance baselines...")
 
                 baseline_comparison = {}
-                current_avg_time = (
-                    sum(all_response_times) / len(all_response_times)
-                    if all_response_times
-                    else 0
-                )
+                current_avg_time = sum(all_response_times) / len(all_response_times) if all_response_times else 0
 
                 # Look for tool execution baseline
                 tool_baseline_key = "integration_tool_execution_time"
                 if tool_baseline_key in self.baseline_manager.baselines.baselines:
-                    baseline = self.baseline_manager.baselines.baselines[
-                        tool_baseline_key
-                    ]
+                    baseline = self.baseline_manager.baselines.baselines[tool_baseline_key]
                     baseline_value = baseline.baseline_value
 
                     percentage_diff = (
-                        ((current_avg_time - baseline_value) / baseline_value) * 100
-                        if baseline_value > 0
-                        else 0
+                        ((current_avg_time - baseline_value) / baseline_value) * 100 if baseline_value > 0 else 0
                     )
 
                     baseline_comparison["tool_execution_time"] = {
@@ -492,17 +444,10 @@ class ToolIntegrationValidator:
                 performance_results["baseline_comparison"] = baseline_comparison
 
             # Determine overall performance status
-            avg_response_time = (
-                sum(all_response_times) / len(all_response_times)
-                if all_response_times
-                else 0
-            )
+            avg_response_time = sum(all_response_times) / len(all_response_times) if all_response_times else 0
             max_response_time = max(all_response_times) if all_response_times else 0
 
-            if (
-                max_response_time < self.validation_config["performance_threshold"]
-                and avg_response_time < 0.2
-            ):
+            if max_response_time < self.validation_config["performance_threshold"] and avg_response_time < 0.2:
                 performance_results["performance_status"] = "excellent"
             elif max_response_time < self.validation_config["performance_threshold"]:
                 performance_results["performance_status"] = "good"
@@ -580,9 +525,7 @@ class ToolIntegrationValidator:
                         "success": scenario_success,
                         "execution_time": execution_time,
                         "expected_outcome": scenario["expected_outcome"],
-                        "actual_outcome": scenario["expected_outcome"]
-                        if scenario_success
-                        else "integration_failed",
+                        "actual_outcome": scenario["expected_outcome"] if scenario_success else "integration_failed",
                     }
 
                     integration_results["integration_scenarios"].append(scenario_result)
@@ -632,9 +575,7 @@ class ToolIntegrationValidator:
 
         return integration_results
 
-    def _generate_tool_validation_summary(
-        self, validation_results: Dict[str, Any]
-    ) -> Dict[str, Any]:
+    def _generate_tool_validation_summary(self, validation_results: Dict[str, Any]) -> Dict[str, Any]:
         """Generate comprehensive tool validation summary."""
         summary = {
             "overall_status": "unknown",
@@ -651,39 +592,25 @@ class ToolIntegrationValidator:
 
             # Category success score
             if "tool_category_results" in validation_results:
-                category_success = validation_results["tool_category_results"].get(
-                    "overall_category_success", 0.0
-                )
+                category_success = validation_results["tool_category_results"].get("overall_category_success", 0.0)
                 scores.append(category_success)
-                summary["key_metrics"]["category_success_rate"] = (
-                    f"{category_success:.1%}"
-                )
+                summary["key_metrics"]["category_success_rate"] = f"{category_success:.1%}"
 
             # Individual tool success score
             if "individual_tool_results" in validation_results:
-                individual_success = validation_results["individual_tool_results"].get(
-                    "individual_success_rate", 0.0
-                )
+                individual_success = validation_results["individual_tool_results"].get("individual_success_rate", 0.0)
                 scores.append(individual_success)
-                summary["key_metrics"]["individual_tool_success_rate"] = (
-                    f"{individual_success:.1%}"
-                )
+                summary["key_metrics"]["individual_tool_success_rate"] = f"{individual_success:.1%}"
 
             # Integration success score
             if "integration_summary" in validation_results:
-                integration_success = validation_results["integration_summary"].get(
-                    "integration_success_rate", 0.0
-                )
+                integration_success = validation_results["integration_summary"].get("integration_success_rate", 0.0)
                 scores.append(integration_success)
-                summary["key_metrics"]["integration_success_rate"] = (
-                    f"{integration_success:.1%}"
-                )
+                summary["key_metrics"]["integration_success_rate"] = f"{integration_success:.1%}"
 
             # Performance score
             if "performance_metrics" in validation_results:
-                perf_status = validation_results["performance_metrics"].get(
-                    "performance_status", "unknown"
-                )
+                perf_status = validation_results["performance_metrics"].get("performance_status", "unknown")
                 if perf_status == "excellent":
                     perf_score = 1.0
                 elif perf_status == "good":
@@ -709,9 +636,7 @@ class ToolIntegrationValidator:
 
             # Check for critical issues
             if "tool_category_results" in validation_results:
-                critical_status = validation_results["tool_category_results"].get(
-                    "critical_category_status", {}
-                )
+                critical_status = validation_results["tool_category_results"].get("critical_category_status", {})
                 for category, status in critical_status.items():
                     if not status.get("meets_threshold", False):
                         summary["critical_issues"].append(
@@ -719,37 +644,22 @@ class ToolIntegrationValidator:
                         )
 
             if "individual_tool_results" in validation_results:
-                tool_errors = validation_results["individual_tool_results"].get(
-                    "tool_errors", []
-                )
+                tool_errors = validation_results["individual_tool_results"].get("tool_errors", [])
                 for error in tool_errors:
-                    if any(
-                        critical_tool in error
-                        for critical_tool in ["echo", "read_file", "coordinate_task"]
-                    ):
-                        summary["critical_issues"].append(
-                            f"Critical tool error: {error}"
-                        )
+                    if any(critical_tool in error for critical_tool in ["echo", "read_file", "coordinate_task"]):
+                        summary["critical_issues"].append(f"Critical tool error: {error}")
 
             # Generate recommendations
             if summary["tool_validation_score"] < 0.90:
-                summary["recommendations"].append(
-                    "Investigate and resolve tool integration issues"
-                )
+                summary["recommendations"].append("Investigate and resolve tool integration issues")
 
             if summary["critical_issues"]:
-                summary["recommendations"].append(
-                    "Address critical tool failures before proceeding"
-                )
+                summary["recommendations"].append("Address critical tool failures before proceeding")
 
             if "performance_metrics" in validation_results:
-                perf_issues = validation_results["performance_metrics"].get(
-                    "performance_issues", []
-                )
+                perf_issues = validation_results["performance_metrics"].get("performance_issues", [])
                 if perf_issues:
-                    summary["recommendations"].append(
-                        "Optimize tool performance to meet response time requirements"
-                    )
+                    summary["recommendations"].append("Optimize tool performance to meet response time requirements")
 
             # Tool readiness assessment
             tool_categories = [
@@ -759,9 +669,7 @@ class ToolIntegrationValidator:
             ]
             for category in tool_categories:
                 if "tool_category_results" in validation_results:
-                    category_data = validation_results["tool_category_results"].get(
-                        "category_success_rates", {}
-                    )
+                    category_data = validation_results["tool_category_results"].get("category_success_rates", {})
                     success_rate = category_data.get(category, 0.0)
 
                     if success_rate >= 0.95:
@@ -777,9 +685,7 @@ class ToolIntegrationValidator:
                     }
 
             if not summary["recommendations"]:
-                summary["recommendations"].append(
-                    "Tool integration validation successful - all tools operational"
-                )
+                summary["recommendations"].append("Tool integration validation successful - all tools operational")
 
         except Exception as e:
             logger.error(f"❌ Tool validation summary generation failed: {str(e)}")
@@ -789,9 +695,7 @@ class ToolIntegrationValidator:
 
     async def _save_validation_results(self, results: Dict[str, Any]):
         """Save tool integration validation results to file."""
-        results_file = (
-            self.results_dir / f"tool_integration_validation_{int(time.time())}.json"
-        )
+        results_file = self.results_dir / f"tool_integration_validation_{int(time.time())}.json"
 
         with open(results_file, "w") as f:
             json.dump(results, f, indent=2)
@@ -814,9 +718,7 @@ async def main():
         summary = results.get("validation_summary", {})
         logger.info("🎉 Tool integration validation completed!")
         logger.info(f"📊 Overall Status: {summary.get('overall_status', 'unknown')}")
-        logger.info(
-            f"📊 Tool Validation Score: {summary.get('tool_validation_score', 0.0):.1%}"
-        )
+        logger.info(f"📊 Tool Validation Score: {summary.get('tool_validation_score', 0.0):.1%}")
 
         if summary.get("critical_issues"):
             logger.warning("⚠️ Critical Issues:")

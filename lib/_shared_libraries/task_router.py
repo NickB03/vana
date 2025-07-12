@@ -71,16 +71,10 @@ class AgentCircuitBreaker:
                 return True
             elif self.state == CircuitBreakerState.OPEN:
                 # Check if timeout has passed
-                if (
-                    self.last_failure_time
-                    and time.time() - self.last_failure_time
-                    > self.config.timeout_seconds
-                ):
+                if self.last_failure_time and time.time() - self.last_failure_time > self.config.timeout_seconds:
                     self.state = CircuitBreakerState.HALF_OPEN
                     self.success_count = 0
-                    logger.info(
-                        f"Circuit breaker transitioning to HALF_OPEN (correlation: {self.correlation_id})"
-                    )
+                    logger.info(f"Circuit breaker transitioning to HALF_OPEN (correlation: {self.correlation_id})")
                     return True
                 return False
             elif self.state == CircuitBreakerState.HALF_OPEN:
@@ -95,9 +89,7 @@ class AgentCircuitBreaker:
                 if self.success_count >= self.config.success_threshold:
                     self.state = CircuitBreakerState.CLOSED
                     self.failure_count = 0
-                    logger.info(
-                        f"Circuit breaker recovered to CLOSED (correlation: {self.correlation_id})"
-                    )
+                    logger.info(f"Circuit breaker recovered to CLOSED (correlation: {self.correlation_id})")
             elif self.state == CircuitBreakerState.CLOSED:
                 self.failure_count = max(0, self.failure_count - 1)  # Gradual recovery
 
@@ -110,14 +102,10 @@ class AgentCircuitBreaker:
             if self.state == CircuitBreakerState.CLOSED:
                 if self.failure_count >= self.config.failure_threshold:
                     self.state = CircuitBreakerState.OPEN
-                    logger.warning(
-                        f"Circuit breaker OPENED due to failures (correlation: {self.correlation_id})"
-                    )
+                    logger.warning(f"Circuit breaker OPENED due to failures (correlation: {self.correlation_id})")
             elif self.state == CircuitBreakerState.HALF_OPEN:
                 self.state = CircuitBreakerState.OPEN
-                logger.warning(
-                    f"Circuit breaker returned to OPEN from HALF_OPEN (correlation: {self.correlation_id})"
-                )
+                logger.warning(f"Circuit breaker returned to OPEN from HALF_OPEN (correlation: {self.correlation_id})")
 
     def get_state_info(self) -> Dict[str, Any]:
         """Get current circuit breaker state information."""
@@ -201,9 +189,7 @@ class TaskRouter:
         with self._circuit_breaker_lock:
             if agent_name not in self._agent_circuit_breakers:
                 self._agent_circuit_breakers[agent_name] = AgentCircuitBreaker()
-                self._agent_circuit_breakers[agent_name].set_correlation_id(
-                    self._correlation_id
-                )
+                self._agent_circuit_breakers[agent_name].set_correlation_id(self._correlation_id)
             return self._agent_circuit_breakers[agent_name]
 
     def route_task(
@@ -222,27 +208,19 @@ class TaskRouter:
         correlation_id = self.set_correlation_id()
 
         # Create cache key for this routing decision
-        cache_key = self._get_routing_cache_key(
-            task_description, context, force_planning
-        )
+        cache_key = self._get_routing_cache_key(task_description, context, force_planning)
 
         # Thread-safe cache check
         with self._routing_cache_lock:
             if cache_key in self._routing_cache:
                 cached_decision = self._routing_cache[cache_key]
                 # Create a new decision with updated timestamp but same routing logic
-                logger.debug(
-                    f"Cache hit for routing decision (correlation: {correlation_id})"
-                )
-                return self._create_cached_routing_decision(
-                    cached_decision, task_description
-                )
+                logger.debug(f"Cache hit for routing decision (correlation: {correlation_id})")
+                return self._create_cached_routing_decision(cached_decision, task_description)
 
         # Perform actual routing
         try:
-            result = self._route_task_uncached(
-                task_description, context, force_planning
-            )
+            result = self._route_task_uncached(task_description, context, force_planning)
 
             # Thread-safe cache update
             with self._routing_cache_lock:
@@ -252,15 +230,11 @@ class TaskRouter:
                     oldest_keys = list(self._routing_cache.keys())[:50]
                     for key in oldest_keys:
                         del self._routing_cache[key]
-                    logger.debug(
-                        f"Cache cleanup performed (correlation: {correlation_id})"
-                    )
+                    logger.debug(f"Cache cleanup performed (correlation: {correlation_id})")
 
                 self._routing_cache[cache_key] = result
 
-            logger.info(
-                f"Task routed to {result.selected_agent} (correlation: {correlation_id})"
-            )
+            logger.info(f"Task routed to {result.selected_agent} (correlation: {correlation_id})")
             return result
 
         except Exception as e:
@@ -292,22 +266,14 @@ class TaskRouter:
         task_analysis = self.confidence_scorer.analyze_task(task_description)
 
         # Step 2: Get agent confidence scores with circuit breaker check
-        best_agent, best_score = self.confidence_scorer.get_best_agent_for_task(
-            task_description
-        )
+        best_agent, best_score = self.confidence_scorer.get_best_agent_for_task(task_description)
 
         # Check circuit breaker for selected agent
         circuit_breaker = self.get_agent_circuit_breaker(best_agent)
         if not circuit_breaker.can_execute():
-            logger.warning(
-                f"Agent {best_agent} circuit breaker is OPEN, finding alternative"
-            )
+            logger.warning(f"Agent {best_agent} circuit breaker is OPEN, finding alternative")
             # Find alternative agent
-            collaboration_recommendations = (
-                self.confidence_scorer.get_collaboration_recommendations(
-                    task_description
-                )
-            )
+            collaboration_recommendations = self.confidence_scorer.get_collaboration_recommendations(task_description)
             alternative_found = False
 
             for alt_agent, alt_score in collaboration_recommendations:
@@ -317,9 +283,7 @@ class TaskRouter:
                         best_agent = alt_agent
                         best_score = alt_score
                         alternative_found = True
-                        logger.info(
-                            f"Using alternative agent {best_agent} (correlation: {self._correlation_id})"
-                        )
+                        logger.info(f"Using alternative agent {best_agent} (correlation: {self._correlation_id})")
                         break
 
             if not alternative_found:
@@ -341,9 +305,7 @@ class TaskRouter:
                     reasoning="Emergency fallback due to circuit breaker protection",
                 )
 
-        collaboration_recommendations = (
-            self.confidence_scorer.get_collaboration_recommendations(task_description)
-        )
+        collaboration_recommendations = self.confidence_scorer.get_collaboration_recommendations(task_description)
 
         # Step 3: Determine if planning is required
         requires_planning = (
@@ -356,24 +318,16 @@ class TaskRouter:
         # Step 4: Create execution plan if needed
         execution_plan = None
         if requires_planning:
-            execution_plan = self.mode_manager.create_execution_plan(
-                task_description, context
-            )
+            execution_plan = self.mode_manager.create_execution_plan(task_description, context)
 
         # Step 5: Build fallback chain (filter by circuit breaker status)
-        fallback_agents = self._build_fallback_chain_with_circuit_breaker(
-            collaboration_recommendations, best_agent
-        )
+        fallback_agents = self._build_fallback_chain_with_circuit_breaker(collaboration_recommendations, best_agent)
 
         # Step 6: Extract collaboration agents
-        collaboration_agents = [
-            agent for agent, _ in collaboration_recommendations if agent != best_agent
-        ]
+        collaboration_agents = [agent for agent, _ in collaboration_recommendations if agent != best_agent]
 
         # Step 7: Generate routing reasoning
-        reasoning = self._generate_routing_reasoning(
-            task_analysis, best_score, requires_planning, collaboration_agents
-        )
+        reasoning = self._generate_routing_reasoning(task_analysis, best_score, requires_planning, collaboration_agents)
 
         # Step 8: Create routing decision with correlation ID
         task_id = f"route_{int(time.time() * 1000)}_{self._correlation_id}"
@@ -457,9 +411,7 @@ class TaskRouter:
         reasoning_parts = []
 
         # Primary agent selection reasoning
-        reasoning_parts.append(
-            f"Selected {best_score.agent_name} (confidence: {best_score.final_confidence:.2f})"
-        )
+        reasoning_parts.append(f"Selected {best_score.agent_name} (confidence: {best_score.final_confidence:.2f})")
         reasoning_parts.append(best_score.reasoning)
 
         # Planning reasoning
@@ -475,17 +427,13 @@ class TaskRouter:
 
         # Complexity assessment
         if task_analysis.complexity_score > 0.7:
-            reasoning_parts.append(
-                "High complexity task requiring careful coordination"
-            )
+            reasoning_parts.append("High complexity task requiring careful coordination")
         elif task_analysis.complexity_score < 0.3:
             reasoning_parts.append("Low complexity task suitable for direct execution")
 
         return "; ".join(reasoning_parts)
 
-    def execute_routing_decision(
-        self, routing_decision: RoutingDecision
-    ) -> ExecutionResult:
+    def execute_routing_decision(self, routing_decision: RoutingDecision) -> ExecutionResult:
         """
         Execute a routing decision with proper mode management and circuit breaker protection.
 
@@ -500,16 +448,12 @@ class TaskRouter:
         outputs = []
 
         # Get circuit breaker for the selected agent
-        circuit_breaker = self.get_agent_circuit_breaker(
-            routing_decision.selected_agent
-        )
+        circuit_breaker = self.get_agent_circuit_breaker(routing_decision.selected_agent)
 
         try:
             # Check circuit breaker before execution
             if not circuit_breaker.can_execute():
-                raise Exception(
-                    f"Agent {routing_decision.selected_agent} circuit breaker is OPEN"
-                )
+                raise Exception(f"Agent {routing_decision.selected_agent} circuit breaker is OPEN")
 
             if routing_decision.requires_planning and routing_decision.execution_plan:
                 # Execute with planning
@@ -558,16 +502,12 @@ class TaskRouter:
 
             # Try fallback if available
             if routing_decision.fallback_agents:
-                fallback_result = self._try_fallback_execution_with_circuit_breaker(
-                    routing_decision, str(e)
-                )
+                fallback_result = self._try_fallback_execution_with_circuit_breaker(routing_decision, str(e))
                 if fallback_result:
                     return fallback_result
 
             # Record failed execution
-            self.confidence_scorer.record_performance(
-                routing_decision.selected_agent, 0.2
-            )
+            self.confidence_scorer.record_performance(routing_decision.selected_agent, 0.2)
 
             return ExecutionResult(
                 task_id=routing_decision.task_id,
@@ -580,9 +520,7 @@ class TaskRouter:
                 confidence_score=routing_decision.confidence_score,
             )
 
-    def _execute_with_planning(
-        self, routing_decision: RoutingDecision
-    ) -> Dict[str, Any]:
+    def _execute_with_planning(self, routing_decision: RoutingDecision) -> Dict[str, Any]:
         """Execute task with planning phase."""
         plan = routing_decision.execution_plan
 
@@ -600,17 +538,13 @@ class TaskRouter:
         for i, step in enumerate(plan.steps):
             try:
                 # Simulate step execution (in real implementation, this would call actual tools)
-                step_result = self._execute_plan_step(
-                    step, routing_decision.selected_agent
-                )
+                step_result = self._execute_plan_step(step, routing_decision.selected_agent)
                 step_outputs.append(step_result)
                 completed_steps += 1
 
                 # Validate step completion
                 if not self._validate_step_completion(step, step_result):
-                    raise ValueError(
-                        f"Step {i + 1} validation failed: {step['description']}"
-                    )
+                    raise ValueError(f"Step {i + 1} validation failed: {step['description']}")
 
             except Exception as e:
                 raise ValueError(f"Step {i + 1} execution failed: {str(e)}")
@@ -635,9 +569,7 @@ class TaskRouter:
 
         return result
 
-    def _execute_plan_step(
-        self, step: Dict[str, Any], agent_name: str
-    ) -> Dict[str, Any]:
+    def _execute_plan_step(self, step: Dict[str, Any], agent_name: str) -> Dict[str, Any]:
         """Execute a single plan step."""
         # This is a simulation - in real implementation, this would:
         # 1. Call the appropriate tools
@@ -653,9 +585,7 @@ class TaskRouter:
             "output": f"Executed {step['action']} successfully",
         }
 
-    def _validate_step_completion(
-        self, step: Dict[str, Any], step_result: Dict[str, Any]
-    ) -> bool:
+    def _validate_step_completion(self, step: Dict[str, Any], step_result: Dict[str, Any]) -> bool:
         """Validate that a step completed successfully."""
         # Simple validation - in real implementation, this would check:
         # 1. Expected outputs are present
@@ -664,9 +594,7 @@ class TaskRouter:
 
         return step_result.get("status") == "completed"
 
-    def _try_fallback_execution(
-        self, routing_decision: RoutingDecision, error: str
-    ) -> Optional[ExecutionResult]:
+    def _try_fallback_execution(self, routing_decision: RoutingDecision, error: str) -> Optional[ExecutionResult]:
         """Try fallback agents if primary execution fails."""
         for fallback_agent in routing_decision.fallback_agents:
             try:
@@ -714,13 +642,8 @@ class TaskRouter:
         for fallback_agent in routing_decision.fallback_agents:
             try:
                 # Check circuit breaker for fallback agent
-                fallback_circuit_breaker = self.get_agent_circuit_breaker(
-                    fallback_agent
-                )
-                if (
-                    not fallback_circuit_breaker.can_execute()
-                    and fallback_agent != "vana"
-                ):
+                fallback_circuit_breaker = self.get_agent_circuit_breaker(fallback_agent)
+                if not fallback_circuit_breaker.can_execute() and fallback_agent != "vana":
                     logger.debug(
                         f"Skipping fallback {fallback_agent} - circuit breaker is OPEN (correlation: {self._correlation_id})"
                     )
@@ -767,9 +690,7 @@ class TaskRouter:
 
             except Exception as fallback_error:
                 # Record failure in fallback circuit breaker
-                fallback_circuit_breaker = self.get_agent_circuit_breaker(
-                    fallback_agent
-                )
+                fallback_circuit_breaker = self.get_agent_circuit_breaker(fallback_agent)
                 fallback_circuit_breaker.record_failure()
                 logger.warning(
                     f"Fallback {fallback_agent} also failed: {str(fallback_error)} (correlation: {self._correlation_id})"
@@ -782,8 +703,7 @@ class TaskRouter:
         """Get status of all circuit breakers."""
         with self._circuit_breaker_lock:
             return {
-                agent_name: breaker.get_state_info()
-                for agent_name, breaker in self._agent_circuit_breakers.items()
+                agent_name: breaker.get_state_info() for agent_name, breaker in self._agent_circuit_breakers.items()
             }
 
     def reset_circuit_breaker(self, agent_name: str) -> bool:
@@ -794,9 +714,7 @@ class TaskRouter:
                 breaker.state = CircuitBreakerState.CLOSED
                 breaker.failure_count = 0
                 breaker.success_count = 0
-                logger.info(
-                    f"Circuit breaker reset for {agent_name} (correlation: {self._correlation_id})"
-                )
+                logger.info(f"Circuit breaker reset for {agent_name} (correlation: {self._correlation_id})")
                 return True
             return False
 
@@ -815,9 +733,7 @@ class TaskRouter:
             agent_usage[agent] = agent_usage.get(agent, 0) + 1
 
         # Average confidence scores
-        avg_confidence = (
-            sum(r.confidence_score for r in self.routing_history) / total_routes
-        )
+        avg_confidence = sum(r.confidence_score for r in self.routing_history) / total_routes
 
         return {
             "total_routes": total_routes,
@@ -854,15 +770,9 @@ class TaskRouter:
         context_key = ""
         if context:
             # Only include context keys that affect routing
-            relevant_context = {
-                k: v
-                for k, v in context.items()
-                if k in ["priority", "deadline", "complexity"]
-            }
+            relevant_context = {k: v for k, v in context.items() if k in ["priority", "deadline", "complexity"]}
             if relevant_context:
-                context_key = hashlib.sha256(
-                    str(sorted(relevant_context.items())).encode()
-                ).hexdigest()[:8]
+                context_key = hashlib.sha256(str(sorted(relevant_context.items())).encode()).hexdigest()[:8]
 
         return f"{normalized_task}_{context_key}_{force_planning}"
 
@@ -887,9 +797,7 @@ class TaskRouter:
         )
 
     @lru_cache(maxsize=500)
-    def _get_cached_agent_selection(
-        self, task_description: str
-    ) -> Tuple[str, CapabilityScore]:
+    def _get_cached_agent_selection(self, task_description: str) -> Tuple[str, CapabilityScore]:
         """Cached agent selection for performance optimization."""
         return self.confidence_scorer.get_best_agent_for_task(task_description)
 

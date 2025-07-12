@@ -148,9 +148,7 @@ class FeedbackCollector:
             logger.error(f"Error recording feedback: {e}")
             return None
 
-    def record_result_feedback(
-        self, feedback_id: int, result_id: int, relevance_rating: int
-    ):
+    def record_result_feedback(self, feedback_id: int, result_id: int, relevance_rating: int):
         """
         Record feedback for a specific result
 
@@ -175,9 +173,7 @@ class FeedbackCollector:
             conn.commit()
             conn.close()
 
-            logger.info(
-                f"Recorded result feedback for feedback_id: {feedback_id}, result_id: {result_id}"
-            )
+            logger.info(f"Recorded result feedback for feedback_id: {feedback_id}, result_id: {result_id}")
             return True
         except Exception as e:
             logger.error(f"Error recording result feedback: {e}")
@@ -199,9 +195,7 @@ class FeedbackCollector:
             cursor = conn.cursor()
 
             # Get feedback
-            cursor.execute(
-                "SELECT * FROM feedback ORDER BY timestamp DESC LIMIT ?", (limit,)
-            )
+            cursor.execute("SELECT * FROM feedback ORDER BY timestamp DESC LIMIT ?", (limit,))
 
             feedback_entries = []
             for row in cursor.fetchall():
@@ -314,9 +308,7 @@ class FeedbackCollector:
             problematic_queries = []
             for row in cursor.fetchall():
                 query, avg_rating, count = row
-                problematic_queries.append(
-                    {"query": query, "avg_rating": avg_rating, "count": count}
-                )
+                problematic_queries.append({"query": query, "avg_rating": avg_rating, "count": count})
 
             # Get implementation comparison
             cursor.execute(

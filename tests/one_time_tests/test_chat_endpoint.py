@@ -2,8 +2,10 @@
 """
 Test script for VANA chat endpoint
 """
-import requests
 import json
+
+import requests
+
 
 def test_chat_endpoint():
     url = "http://localhost:8000/chat"

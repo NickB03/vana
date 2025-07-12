@@ -48,9 +48,7 @@ class PerformanceMonitor:
         self.metrics[name].append(metric)
         self._check_thresholds(metric)
 
-    def record_response_time(
-        self, operation: str, duration: float, success: bool = True, **kwargs
-    ):
+    def record_response_time(self, operation: str, duration: float, success: bool = True, **kwargs):
         """Record response time for an operation."""
         self.record_metric(
             f"response_time.{operation}",
@@ -64,13 +62,9 @@ class PerformanceMonitor:
         process = psutil.Process()
         memory_info = process.memory_info()
 
-        self.record_metric(
-            f"memory.{component}.rss", memory_info.rss / 1024 / 1024, "MB"
-        )
+        self.record_metric(f"memory.{component}.rss", memory_info.rss / 1024 / 1024, "MB")
 
-        self.record_metric(
-            f"memory.{component}.vms", memory_info.vms / 1024 / 1024, "MB"
-        )
+        self.record_metric(f"memory.{component}.vms", memory_info.vms / 1024 / 1024, "MB")
 
     def record_cpu_usage(self, component: str = "system"):
         """Record current CPU usage."""
@@ -135,9 +129,7 @@ class PerformanceMonitor:
                 }
             )
 
-    def get_metrics(
-        self, metric_name: str, since: Optional[float] = None
-    ) -> List[PerformanceMetric]:
+    def get_metrics(self, metric_name: str, since: Optional[float] = None) -> List[PerformanceMetric]:
         """Get metrics for a specific metric name."""
         metrics = list(self.metrics.get(metric_name, []))
 

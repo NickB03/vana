@@ -37,9 +37,7 @@ def validate_env_variables():
             missing_vars.append(var)
 
     if missing_vars:
-        logger.error(
-            f"Missing required environment variables: {', '.join(missing_vars)}"
-        )
+        logger.error(f"Missing required environment variables: {', '.join(missing_vars)}")
         return False
 
     logger.info("All required environment variables are set")
@@ -80,9 +78,7 @@ def validate_service_account():
                 missing_fields.append(field)
 
         if missing_fields:
-            logger.error(
-                f"Service account credentials file missing required fields: {', '.join(missing_fields)}"
-            )
+            logger.error(f"Service account credentials file missing required fields: {', '.join(missing_fields)}")
             return False
 
         # Verify project ID matches
@@ -96,9 +92,7 @@ def validate_service_account():
         return True
 
     except json.JSONDecodeError:
-        logger.error(
-            f"Service account credentials file is not valid JSON: {creds_path}"
-        )
+        logger.error(f"Service account credentials file is not valid JSON: {creds_path}")
         return False
     except Exception as e:
         logger.error(f"Error validating service account credentials: {str(e)}")
@@ -144,9 +138,7 @@ def validate_adk_structure():
 
     # Check for agent.py file
     if not os.path.isfile("adk-setup/vana/agent.py"):
-        logger.warning(
-            "Missing agent.py file in adk-setup/vana/ - this is required for ADK to find the root agent"
-        )
+        logger.warning("Missing agent.py file in adk-setup/vana/ - this is required for ADK to find the root agent")
         return False
 
     logger.info("ADK project structure validated")

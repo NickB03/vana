@@ -13,8 +13,8 @@ This validates:
 7. Edge cases and error handling
 """
 
-import sys
 import asyncio
+import sys
 from pathlib import Path
 
 # Add project root to path
@@ -28,13 +28,7 @@ async def test_task_analyzer():
 
     try:
         # Import task analyzer modules
-        from lib._tools.task_analyzer import (
-            TaskAnalyzer,
-            TaskAnalysis,
-            TaskType,
-            TaskComplexity,
-            get_task_analyzer,
-        )
+        from lib._tools.task_analyzer import TaskAnalysis, TaskAnalyzer, TaskComplexity, TaskType, get_task_analyzer
 
         print("✅ Successfully imported task analyzer modules")
 
@@ -47,18 +41,10 @@ async def test_task_analyzer():
         analyzer = TaskAnalyzer()
 
         assert hasattr(analyzer, "task_patterns"), "Analyzer must have task patterns"
-        assert hasattr(analyzer, "capability_keywords"), (
-            "Analyzer must have capability keywords"
-        )
-        assert hasattr(analyzer, "complexity_indicators"), (
-            "Analyzer must have complexity indicators"
-        )
-        assert isinstance(analyzer.task_patterns, dict), (
-            "Task patterns must be dictionary"
-        )
-        assert len(analyzer.task_patterns) >= 5, (
-            "Must have patterns for main task types"
-        )
+        assert hasattr(analyzer, "capability_keywords"), "Analyzer must have capability keywords"
+        assert hasattr(analyzer, "complexity_indicators"), "Analyzer must have complexity indicators"
+        assert isinstance(analyzer.task_patterns, dict), "Task patterns must be dictionary"
+        assert len(analyzer.task_patterns) >= 5, "Must have patterns for main task types"
         print("    ✅ Task analyzer initialization works correctly")
 
         # Test get_task_analyzer() - Singleton pattern
@@ -67,12 +53,8 @@ async def test_task_analyzer():
         analyzer1 = get_task_analyzer()
         analyzer2 = get_task_analyzer()
 
-        assert analyzer1 is analyzer2, (
-            "get_task_analyzer() must return singleton instance"
-        )
-        assert hasattr(analyzer1, "task_patterns"), (
-            "Singleton must be properly initialized"
-        )
+        assert analyzer1 is analyzer2, "get_task_analyzer() must return singleton instance"
+        assert hasattr(analyzer1, "task_patterns"), "Singleton must be properly initialized"
         print("    ✅ Task analyzer singleton access works correctly")
 
         # Test 2: Task Type Classification
@@ -91,16 +73,10 @@ async def test_task_analyzer():
         for task in code_tasks:
             analysis = analyzer.analyze_task(task)
             assert isinstance(analysis, TaskAnalysis), "Must return TaskAnalysis object"
-            assert analysis.task_type == TaskType.CODE_EXECUTION, (
-                f"Should classify '{task}' as CODE_EXECUTION"
-            )
-            assert analysis.confidence_score > 0.5, (
-                "Should have reasonable confidence for clear code tasks"
-            )
+            assert analysis.task_type == TaskType.CODE_EXECUTION, f"Should classify '{task}' as CODE_EXECUTION"
+            assert analysis.confidence_score > 0.5, "Should have reasonable confidence for clear code tasks"
             assert len(analysis.keywords) > 0, "Should extract relevant keywords"
-            assert len(analysis.required_capabilities) > 0, (
-                "Should identify required capabilities"
-            )
+            assert len(analysis.required_capabilities) > 0, "Should identify required capabilities"
 
         print("    ✅ Code execution task classification works correctly")
 
@@ -116,12 +92,8 @@ async def test_task_analyzer():
 
         for task in data_tasks:
             analysis = analyzer.analyze_task(task)
-            assert analysis.task_type == TaskType.DATA_ANALYSIS, (
-                f"Should classify '{task}' as DATA_ANALYSIS"
-            )
-            assert analysis.confidence_score > 0.5, (
-                "Should have reasonable confidence for clear data tasks"
-            )
+            assert analysis.task_type == TaskType.DATA_ANALYSIS, f"Should classify '{task}' as DATA_ANALYSIS"
+            assert analysis.confidence_score > 0.5, "Should have reasonable confidence for clear data tasks"
             # Check for data-related keywords (more flexible)
             data_keywords = [
                 "data",
@@ -130,13 +102,8 @@ async def test_task_analyzer():
                 "visualization",
                 "dataset",
             ]
-            has_data_keyword = any(
-                any(dk in kw.lower() for dk in data_keywords)
-                for kw in analysis.keywords
-            )
-            assert has_data_keyword, (
-                f"Should extract data-related keywords, found: {analysis.keywords}"
-            )
+            has_data_keyword = any(any(dk in kw.lower() for dk in data_keywords) for kw in analysis.keywords)
+            assert has_data_keyword, f"Should extract data-related keywords, found: {analysis.keywords}"
 
         print("    ✅ Data analysis task classification works correctly")
 
@@ -156,14 +123,12 @@ async def test_task_analyzer():
             # Allow some flexibility - searching might be classified as knowledge search or related type
             if analysis.task_type == TaskType.KNOWLEDGE_SEARCH:
                 knowledge_search_count += 1
-            assert analysis.confidence_score > 0.3, (
-                "Should have reasonable confidence for search tasks"
-            )
+            assert analysis.confidence_score > 0.3, "Should have reasonable confidence for search tasks"
 
         # At least half should be classified as knowledge search
-        assert knowledge_search_count >= len(search_tasks) // 2, (
-            f"Should classify most search tasks as KNOWLEDGE_SEARCH, got {knowledge_search_count}/{len(search_tasks)}"
-        )
+        assert (
+            knowledge_search_count >= len(search_tasks) // 2
+        ), f"Should classify most search tasks as KNOWLEDGE_SEARCH, got {knowledge_search_count}/{len(search_tasks)}"
 
         print("    ✅ Knowledge search task classification works correctly")
 
@@ -186,9 +151,7 @@ async def test_task_analyzer():
                 TaskComplexity.SIMPLE,
                 TaskComplexity.MODERATE,
             ], f"'{task}' should be simple or moderate complexity"
-            assert analysis.estimated_duration < 60.0, (
-                "Simple tasks should have short estimated duration"
-            )
+            assert analysis.estimated_duration < 60.0, "Simple tasks should have short estimated duration"
 
         print("    ✅ Simple complexity assessment works correctly")
 
@@ -213,20 +176,14 @@ async def test_task_analyzer():
             assert isinstance(analysis, TaskAnalysis), "Must return TaskAnalysis object"
             assert analysis.estimated_duration > 0.0, "Duration must be positive"
             assert isinstance(analysis.keywords, list), "Keywords must be a list"
-            assert isinstance(analysis.required_capabilities, list), (
-                "Capabilities must be a list"
-            )
-            assert 0.0 <= analysis.confidence_score <= 1.0, (
-                "Confidence must be in valid range"
-            )
+            assert isinstance(analysis.required_capabilities, list), "Capabilities must be a list"
+            assert 0.0 <= analysis.confidence_score <= 1.0, "Confidence must be in valid range"
             assert len(analysis.reasoning) > 0, "Must provide reasoning"
 
         # Verify that we get some variety in complexity assessments
         complexities = [a.complexity for a in complex_analysis_results]
         unique_complexities = set(complexities)
-        assert len(unique_complexities) >= 1, (
-            "Should have at least some complexity variation"
-        )
+        assert len(unique_complexities) >= 1, "Should have at least some complexity variation"
 
         print("    ✅ Complex complexity assessment works correctly")
 
@@ -236,7 +193,9 @@ async def test_task_analyzer():
         # Test _extract_keywords() - Technical keyword extraction
         print("  Testing technical keyword extraction...")
 
-        technical_text = "Implement a REST API using Flask with JWT authentication, PostgreSQL database, and Redis caching"
+        technical_text = (
+            "Implement a REST API using Flask with JWT authentication, PostgreSQL database, and Redis caching"
+        )
         analysis = analyzer.analyze_task(technical_text)
 
         expected_keywords = [
@@ -252,20 +211,18 @@ async def test_task_analyzer():
         extracted_keywords_lower = [kw.lower() for kw in analysis.keywords]
 
         matching_keywords = [
-            kw
-            for kw in expected_keywords
-            if any(kw in extracted.lower() for extracted in extracted_keywords_lower)
+            kw for kw in expected_keywords if any(kw in extracted.lower() for extracted in extracted_keywords_lower)
         ]
-        assert len(matching_keywords) >= 2, (
-            f"Should extract at least 2 technical keywords, found: {analysis.keywords}"
-        )
+        assert len(matching_keywords) >= 2, f"Should extract at least 2 technical keywords, found: {analysis.keywords}"
         assert len(analysis.keywords) >= 3, "Should extract multiple relevant keywords"
         print("    ✅ Technical keyword extraction works correctly")
 
         # Test _extract_keywords() - Business keyword extraction
         print("  Testing business keyword extraction...")
 
-        business_text = "Analyze quarterly sales performance, identify trends, and create executive report with recommendations"
+        business_text = (
+            "Analyze quarterly sales performance, identify trends, and create executive report with recommendations"
+        )
         analysis = analyzer.analyze_task(business_text)
 
         business_keywords = [
@@ -278,13 +235,9 @@ async def test_task_analyzer():
         extracted_keywords_lower = [kw.lower() for kw in analysis.keywords]
 
         matching_business = [
-            kw
-            for kw in business_keywords
-            if any(kw in extracted.lower() for extracted in extracted_keywords_lower)
+            kw for kw in business_keywords if any(kw in extracted.lower() for extracted in extracted_keywords_lower)
         ]
-        assert len(matching_business) >= 2, (
-            f"Should extract business keywords, found: {analysis.keywords}"
-        )
+        assert len(matching_business) >= 2, f"Should extract business keywords, found: {analysis.keywords}"
         print("    ✅ Business keyword extraction works correctly")
 
         # Test 5: Capability Identification and Mapping
@@ -293,9 +246,7 @@ async def test_task_analyzer():
         # Test _identify_capabilities() - Code execution capabilities
         print("  Testing code execution capability identification...")
 
-        code_capability_text = (
-            "Write Python code to scrape web data, clean it, and store in MongoDB"
-        )
+        code_capability_text = "Write Python code to scrape web data, clean it, and store in MongoDB"
         analysis = analyzer.analyze_task(code_capability_text)
 
         # The analyzer returns general capability categories, not specific technologies
@@ -315,12 +266,10 @@ async def test_task_analyzer():
             if any(exp_cap in found_cap for found_cap in found_capabilities):
                 capability_matches.append(exp_cap)
 
-        assert len(capability_matches) >= 1, (
-            f"Should identify relevant capability types, found: {analysis.required_capabilities}"
-        )
-        assert len(analysis.required_capabilities) >= 2, (
-            "Should identify multiple required capabilities"
-        )
+        assert (
+            len(capability_matches) >= 1
+        ), f"Should identify relevant capability types, found: {analysis.required_capabilities}"
+        assert len(analysis.required_capabilities) >= 2, "Should identify multiple required capabilities"
         print("    ✅ Code execution capability identification works correctly")
 
         # Test _identify_capabilities() - Data analysis capabilities
@@ -345,9 +294,9 @@ async def test_task_analyzer():
             if any(cap_type in found_cap for found_cap in found_capabilities):
                 data_matches.append(cap_type)
 
-        assert len(data_matches) >= 1, (
-            f"Should identify data analysis capability types, found: {analysis.required_capabilities}"
-        )
+        assert (
+            len(data_matches) >= 1
+        ), f"Should identify data analysis capability types, found: {analysis.required_capabilities}"
         print("    ✅ Data analysis capability identification works correctly")
 
         # Test 6: Duration Estimation and Resource Planning
@@ -370,19 +319,13 @@ async def test_task_analyzer():
             durations.append(analysis.estimated_duration)
 
             # Basic validation
-            assert analysis.estimated_duration > 0, (
-                f"Duration must be positive for '{task_text}'"
-            )
-            assert isinstance(analysis.estimated_duration, (int, float)), (
-                f"Duration must be numeric for '{task_text}'"
-            )
+            assert analysis.estimated_duration > 0, f"Duration must be positive for '{task_text}'"
+            assert isinstance(analysis.estimated_duration, (int, float)), f"Duration must be numeric for '{task_text}'"
 
         # Verify durations are reasonable (not all the same)
         unique_durations = len(set(durations))
         assert unique_durations >= 1, "Should have some variation in duration estimates"
-        assert all(d <= 10000 for d in durations), (
-            "Durations should be reasonable (under 10000 seconds)"
-        )
+        assert all(d <= 10000 for d in durations), "Durations should be reasonable (under 10000 seconds)"
         print("    ✅ Duration estimation scaling works correctly")
 
         # Test _determine_resource_requirements() - Resource planning
@@ -398,12 +341,8 @@ async def test_task_analyzer():
         for task_text, expected_type in resource_test_cases:
             analysis = analyzer.analyze_task(task_text)
 
-            assert isinstance(analysis.resource_requirements, dict), (
-                "Resource requirements must be dictionary"
-            )
-            assert len(analysis.resource_requirements) > 0, (
-                "Should specify resource requirements"
-            )
+            assert isinstance(analysis.resource_requirements, dict), "Resource requirements must be dictionary"
+            assert len(analysis.resource_requirements) > 0, "Should specify resource requirements"
 
             # Check for reasonable resource specifications
             if "memory" in analysis.resource_requirements:
@@ -431,15 +370,9 @@ async def test_task_analyzer():
 
         for task in high_confidence_tasks:
             analysis = analyzer.analyze_task(task)
-            assert 0.0 <= analysis.confidence_score <= 1.0, (
-                "Confidence score must be between 0 and 1"
-            )
-            assert analysis.confidence_score >= 0.6, (
-                f"Should have high confidence for clear task: '{task}'"
-            )
-            assert len(analysis.reasoning) > 0, (
-                "Should provide reasoning for classification"
-            )
+            assert 0.0 <= analysis.confidence_score <= 1.0, "Confidence score must be between 0 and 1"
+            assert analysis.confidence_score >= 0.6, f"Should have high confidence for clear task: '{task}'"
+            assert len(analysis.reasoning) > 0, "Should provide reasoning for classification"
 
         print("    ✅ High confidence scoring works correctly")
 
@@ -455,13 +388,9 @@ async def test_task_analyzer():
 
         for task in ambiguous_tasks:
             analysis = analyzer.analyze_task(task)
-            assert 0.0 <= analysis.confidence_score <= 1.0, (
-                "Confidence score must be between 0 and 1"
-            )
+            assert 0.0 <= analysis.confidence_score <= 1.0, "Confidence score must be between 0 and 1"
             # Note: Even ambiguous tasks might get reasonable confidence based on patterns
-            assert len(analysis.reasoning) > 0, (
-                "Should provide reasoning even for ambiguous tasks"
-            )
+            assert len(analysis.reasoning) > 0, "Should provide reasoning even for ambiguous tasks"
 
         print("    ✅ Lower confidence scoring works correctly")
 
@@ -473,14 +402,10 @@ async def test_task_analyzer():
 
         reasoning_lower = analysis.reasoning.lower()
         assert (
-            "machine learning" in reasoning_lower
-            or "ml" in reasoning_lower
-            or "model" in reasoning_lower
+            "machine learning" in reasoning_lower or "ml" in reasoning_lower or "model" in reasoning_lower
         ), "Reasoning should mention ML context"
         assert len(analysis.reasoning) >= 50, "Reasoning should be reasonably detailed"
-        assert analysis.reasoning.endswith("."), (
-            "Reasoning should be properly formatted"
-        )
+        assert analysis.reasoning.endswith("."), "Reasoning should be properly formatted"
         print("    ✅ Reasoning generation quality works correctly")
 
         # Test 8: Edge Cases and Error Handling
@@ -500,18 +425,10 @@ async def test_task_analyzer():
         for edge_case in edge_cases:
             try:
                 analysis = analyzer.analyze_task(edge_case)
-                assert isinstance(analysis, TaskAnalysis), (
-                    "Must return TaskAnalysis even for edge cases"
-                )
-                assert isinstance(analysis.task_type, TaskType), (
-                    "Must assign a task type"
-                )
-                assert isinstance(analysis.complexity, TaskComplexity), (
-                    "Must assign a complexity"
-                )
-                assert 0.0 <= analysis.confidence_score <= 1.0, (
-                    "Confidence must be valid range"
-                )
+                assert isinstance(analysis, TaskAnalysis), "Must return TaskAnalysis even for edge cases"
+                assert isinstance(analysis.task_type, TaskType), "Must assign a task type"
+                assert isinstance(analysis.complexity, TaskComplexity), "Must assign a complexity"
+                assert 0.0 <= analysis.confidence_score <= 1.0, "Confidence must be valid range"
                 assert analysis.estimated_duration >= 0, "Duration must be non-negative"
                 # Note: For edge cases, low confidence and general classification is acceptable
             except Exception as e:
@@ -530,13 +447,9 @@ async def test_task_analyzer():
         analysis_with_context = analyzer.analyze_task(task_with_context, context_info)
 
         # Context should influence the analysis
-        assert isinstance(analysis_with_context, TaskAnalysis), (
-            "Must handle context parameter"
-        )
+        assert isinstance(analysis_with_context, TaskAnalysis), "Must handle context parameter"
         # The analysis might be different with context, but both should be valid
-        assert analysis_with_context.confidence_score >= 0.0, (
-            "Context-aware analysis should be valid"
-        )
+        assert analysis_with_context.confidence_score >= 0.0, "Context-aware analysis should be valid"
         print("    ✅ Context-aware analysis works correctly")
 
         # Test 9: Integration and Performance
@@ -572,23 +485,15 @@ async def test_task_analyzer():
         avg_time_per_task = total_time / len(performance_tasks)
 
         assert len(analyses) == len(performance_tasks), "Should process all tasks"
-        assert all(isinstance(a, TaskAnalysis) for a in analyses), (
-            "All results should be TaskAnalysis objects"
-        )
-        assert avg_time_per_task < 1.0, (
-            f"Average analysis time should be under 1 second, got {avg_time_per_task:.3f}s"
-        )
+        assert all(isinstance(a, TaskAnalysis) for a in analyses), "All results should be TaskAnalysis objects"
+        assert avg_time_per_task < 1.0, f"Average analysis time should be under 1 second, got {avg_time_per_task:.3f}s"
 
         # Verify task type diversity
         task_types = [a.task_type for a in analyses]
         unique_types = set(task_types)
-        assert len(unique_types) >= 3, (
-            f"Should identify diverse task types, found: {unique_types}"
-        )
+        assert len(unique_types) >= 3, f"Should identify diverse task types, found: {unique_types}"
 
-        print(
-            f"    ✅ Analyzer performance acceptable ({avg_time_per_task:.3f}s per task)"
-        )
+        print(f"    ✅ Analyzer performance acceptable ({avg_time_per_task:.3f}s per task)")
 
         # Test comprehensive analysis validation
         print("  Testing comprehensive analysis validation...")
@@ -611,24 +516,14 @@ async def test_task_analyzer():
             TaskComplexity.VERY_COMPLEX,
         ], "Should assign valid complexity"
         assert len(analysis.keywords) >= 3, "Should extract keywords from complex task"
-        assert len(analysis.required_capabilities) >= 1, (
-            "Should identify required capabilities"
-        )
-        assert analysis.estimated_duration > 0, (
-            "Task should have positive duration estimate"
-        )
-        assert analysis.confidence_score >= 0.3, (
-            "Should have reasonable confidence for described task"
-        )
+        assert len(analysis.required_capabilities) >= 1, "Should identify required capabilities"
+        assert analysis.estimated_duration > 0, "Task should have positive duration estimate"
+        assert analysis.confidence_score >= 0.3, "Should have reasonable confidence for described task"
         assert len(analysis.reasoning) >= 20, "Should provide reasoning for task"
 
         # Validate resource requirements are present
-        assert isinstance(analysis.resource_requirements, dict), (
-            "Resource requirements must be dictionary"
-        )
-        assert len(analysis.resource_requirements) >= 1, (
-            "Should specify resource requirements"
-        )
+        assert isinstance(analysis.resource_requirements, dict), "Resource requirements must be dictionary"
+        assert len(analysis.resource_requirements) >= 1, "Should specify resource requirements"
 
         print("    ✅ Comprehensive analysis validation works correctly")
 

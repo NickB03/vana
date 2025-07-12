@@ -52,9 +52,7 @@ class AgentTestClient:
 
         # Use environment variable or default to dev environment
         if base_url is None:
-            base_url = os.getenv(
-                "VANA_TEST_URL", "https://vana-dev-960076421399.us-central1.run.app"
-            )
+            base_url = os.getenv("VANA_TEST_URL", "https://vana-dev-960076421399.us-central1.run.app")
 
         self.base_url = base_url.rstrip("/")
         self.session_id = None
@@ -147,9 +145,7 @@ class AgentTestClient:
             status = "success" if response.status_code == 200 else "error"
             delegations = []  # Extract delegations from events if needed
             metadata = (
-                {"events": response_data}
-                if isinstance(response_data, list)
-                else response_data.get("metadata", {})
+                {"events": response_data} if isinstance(response_data, list) else response_data.get("metadata", {})
             )
 
             # Create agent response
@@ -243,15 +239,12 @@ class AgentTestClient:
             return {}
 
         execution_times = [i["execution_time"] for i in self.interaction_history]
-        successful_interactions = [
-            i for i in self.interaction_history if i["status"] == "success"
-        ]
+        successful_interactions = [i for i in self.interaction_history if i["status"] == "success"]
 
         return {
             "total_interactions": len(self.interaction_history),
             "successful_interactions": len(successful_interactions),
-            "success_rate": len(successful_interactions)
-            / len(self.interaction_history),
+            "success_rate": len(successful_interactions) / len(self.interaction_history),
             "avg_execution_time": sum(execution_times) / len(execution_times),
             "min_execution_time": min(execution_times),
             "max_execution_time": max(execution_times),
@@ -281,9 +274,7 @@ class AgentTestClient:
 
         return list(set(tools))  # Remove duplicates
 
-    def _extract_delegations(
-        self, response_data: Dict[str, Any]
-    ) -> List[Dict[str, Any]]:
+    def _extract_delegations(self, response_data: Dict[str, Any]) -> List[Dict[str, Any]]:
         """Extract delegation information from response data"""
         delegations = []
 
@@ -329,15 +320,11 @@ class AgentTestClient:
 
         # Log delegations
         for delegation in response.delegations:
-            self.delegation_history.append(
-                {"timestamp": time.time(), "delegation": delegation, "message": message}
-            )
+            self.delegation_history.append({"timestamp": time.time(), "delegation": delegation, "message": message})
 
 
 # Factory functions for creating test clients
-async def create_test_agent_client(
-    agent_name: str = "vana", base_url: Optional[str] = None
-) -> AgentTestClient:
+async def create_test_agent_client(agent_name: str = "vana", base_url: Optional[str] = None) -> AgentTestClient:
     """Factory function to create and initialize an agent test client"""
     client = AgentTestClient(agent_name=agent_name, base_url=base_url)
     return client

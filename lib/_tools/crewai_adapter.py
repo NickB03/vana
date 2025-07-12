@@ -15,11 +15,7 @@ import logging
 from typing import Any, Callable, List, Optional
 
 from lib._shared_libraries.tool_standards import performance_monitor
-from lib._tools.third_party_tools import (
-    ThirdPartyToolAdapter,
-    ThirdPartyToolInfo,
-    ThirdPartyToolType,
-)
+from lib._tools.third_party_tools import ThirdPartyToolAdapter, ThirdPartyToolInfo, ThirdPartyToolType
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -45,9 +41,7 @@ class CrewAIToolAdapter(ThirdPartyToolAdapter):
         if self.crewai_available:
             logger.info("CrewAI integration available")
         else:
-            logger.warning(
-                "CrewAI not available - install with: pip install crewai crewai-tools"
-            )
+            logger.warning("CrewAI not available - install with: pip install crewai crewai-tools")
 
     def _check_crewai_availability(self) -> bool:
         """
@@ -166,15 +160,11 @@ class CrewAIToolAdapter(ThirdPartyToolAdapter):
                 else:
                     result_str = str(result)
 
-                performance_monitor.end_execution(
-                    tool_info.name, start_time, success=True
-                )
+                performance_monitor.end_execution(tool_info.name, start_time, success=True)
                 return f"🤖 **CrewAI Tool Result**:\n\n{result_str}"
 
             except Exception as e:
-                performance_monitor.end_execution(
-                    tool_info.name, start_time, success=False
-                )
+                performance_monitor.end_execution(tool_info.name, start_time, success=False)
                 logger.error(f"Error executing CrewAI tool {tool_info.name}: {e}")
                 return f"❌ Error executing CrewAI tool: {str(e)}"
 
@@ -211,19 +201,11 @@ class CrewAIToolAdapter(ThirdPartyToolAdapter):
 
         try:
             # Check if it has CrewAI tool attributes
-            if (
-                hasattr(obj, "name")
-                and hasattr(obj, "description")
-                and (hasattr(obj, "run") or hasattr(obj, "_run"))
-            ):
+            if hasattr(obj, "name") and hasattr(obj, "description") and (hasattr(obj, "run") or hasattr(obj, "_run")):
                 return True
 
             # Check for function tools (have __name__ and specific attributes)
-            if (
-                hasattr(obj, "__name__")
-                and hasattr(obj, "description")
-                and hasattr(obj, "args")
-            ):
+            if hasattr(obj, "__name__") and hasattr(obj, "description") and hasattr(obj, "args"):
                 return True
 
             # Check for CrewAI tool class patterns
@@ -251,11 +233,7 @@ class CrewAIToolAdapter(ThirdPartyToolAdapter):
             name = getattr(tool, "name", getattr(tool, "__name__", "unknown_tool"))
 
             # Get tool description
-            description = (
-                getattr(tool, "description", None)
-                or getattr(tool, "__doc__", None)
-                or f"CrewAI tool: {name}"
-            )
+            description = getattr(tool, "description", None) or getattr(tool, "__doc__", None) or f"CrewAI tool: {name}"
 
             # Get parameters from args if available
             parameters = {}
@@ -324,9 +302,7 @@ def discover_crewai_tools() -> List[str]:
         for module_name in tool_modules:
             try:
                 module = importlib.import_module(module_name)
-                tool_ids = third_party_registry.discover_tools_from_source(
-                    module, ThirdPartyToolType.CREWAI
-                )
+                tool_ids = third_party_registry.discover_tools_from_source(module, ThirdPartyToolType.CREWAI)
                 registered_tools.extend(tool_ids)
             except ImportError:
                 logger.debug(f"Could not import {module_name}")
@@ -410,9 +386,7 @@ def create_example_crewai_tools() -> List[str]:
         example_tools = [format_string, process_list, analyze_text]
 
         # Register the tools
-        tool_ids = third_party_registry.discover_tools_from_source(
-            example_tools, ThirdPartyToolType.CREWAI
-        )
+        tool_ids = third_party_registry.discover_tools_from_source(example_tools, ThirdPartyToolType.CREWAI)
         registered_tools.extend(tool_ids)
 
         logger.info(f"Created {len(registered_tools)} example CrewAI tools")

@@ -4,11 +4,11 @@ No external API keys required
 """
 
 import json
-import urllib.request
-import urllib.parse
-from datetime import datetime
-from typing import List, Dict
 import logging
+import urllib.parse
+import urllib.request
+from datetime import datetime
+from typing import Dict, List
 
 logger = logging.getLogger(__name__)
 

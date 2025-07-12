@@ -13,11 +13,7 @@ import sys
 import time
 
 # Add the parent directory to the path so we can import our modules
-sys.path.append(
-    os.path.dirname(
-        os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-    )
-)
+sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))))
 
 from tests.e2e.framework.agent_client import AgentClient
 from tests.e2e.framework.test_case import TestCase
@@ -86,25 +82,19 @@ class MemoryRetrievalTest(TestCase):
     def _send_message_and_verify(self, message, expected_content=None, timeout=30):
         """Helper method to send a message and verify the response."""
         # Send message
-        self.execute_step(
-            self.agent_client.send_message, "vana", message, self.session_id
-        )
+        self.execute_step(self.agent_client.send_message, "vana", message, self.session_id)
 
         # Wait for agent response
         start_time = time.time()
         agent_response = None
         while time.time() - start_time < timeout:
-            agent_response = self.agent_client.wait_for_agent_response(
-                "vana", self.session_id
-            )
+            agent_response = self.agent_client.wait_for_agent_response("vana", self.session_id)
             if agent_response is not None:
                 break
             time.sleep(1)
 
         # Verify response
-        self.assert_true(
-            agent_response is not None, f"Agent did not respond to: {message}"
-        )
+        self.assert_true(agent_response is not None, f"Agent did not respond to: {message}")
 
         # Check for expected content if provided
         if expected_content and agent_response:
@@ -186,9 +176,7 @@ class MemoryRetrievalTest(TestCase):
 
         # Find a memory with category "work" or "appointments"
         target_categories = ["work", "appointments"]
-        category_memories = [
-            m for m in self.stored_memories if m["category"] in target_categories
-        ]
+        category_memories = [m for m in self.stored_memories if m["category"] in target_categories]
 
         if category_memories:
             target_memory = random.choice(category_memories)
@@ -203,15 +191,11 @@ class MemoryRetrievalTest(TestCase):
 
         # Step 6: Test recall of identity information
         self.step("identity_recall", "Test recall of identity information")
-        identity_memories = [
-            m for m in self.stored_memories if m["category"] == "identity"
-        ]
+        identity_memories = [m for m in self.stored_memories if m["category"] == "identity"]
 
         if identity_memories:
             identity_memories[0]
-            response = self._send_message_and_verify(
-                "What is my name and where do I work?", ["Alex Chen", "Acme Corp"]
-            )
+            response = self._send_message_and_verify("What is my name and where do I work?", ["Alex Chen", "Acme Corp"])
         else:
             self.log_warning("No identity memory found")
 
@@ -234,9 +218,7 @@ class MemoryRetrievalTest(TestCase):
                     missing_memories.append(memory["content"])
 
             # Assert that at least 80% of memories were recalled
-            recall_percentage = (
-                len(self.stored_memories) - len(missing_memories)
-            ) / len(self.stored_memories)
+            recall_percentage = (len(self.stored_memories) - len(missing_memories)) / len(self.stored_memories)
             self.assert_true(
                 recall_percentage >= 0.8,
                 f"Agent recalled only {recall_percentage:.0%} of memories. Missing: {missing_memories}",
@@ -257,9 +239,7 @@ class MemoryRetrievalTest(TestCase):
         # Now come back and test recall
         random_memory = random.choice(self.stored_memories)
         response = self._send_message_and_verify(
-            "I'm back. Can you still remember what I told you about "
-            + random_memory["category"]
-            + "?",
+            "I'm back. Can you still remember what I told you about " + random_memory["category"] + "?",
             random_memory["content"],
         )
 
@@ -274,13 +254,9 @@ class MemoryRetrievalTest(TestCase):
         if "favorite" in original_content:
             corrected_content = original_content.replace("favorite", "second favorite")
         elif "two cats" in original_content:
-            corrected_content = (
-                original_content.replace("two cats", "three cats") + " and Nova"
-            )
+            corrected_content = original_content.replace("two cats", "three cats") + " and Nova"
         elif "next Tuesday" in original_content:
-            corrected_content = original_content.replace(
-                "next Tuesday", "next Wednesday"
-            )
+            corrected_content = original_content.replace("next Tuesday", "next Wednesday")
         elif "Friday" in original_content:
             corrected_content = original_content.replace("Friday", "Thursday")
         elif "@example.com" in original_content:
@@ -309,9 +285,7 @@ class MemoryRetrievalTest(TestCase):
 
         # Find work and identity memories
         work_memories = [m for m in self.stored_memories if m["category"] == "work"]
-        identity_memories = [
-            m for m in self.stored_memories if m["category"] == "identity"
-        ]
+        identity_memories = [m for m in self.stored_memories if m["category"] == "identity"]
 
         if work_memories and identity_memories:
             response = self._send_message_and_verify(
@@ -319,9 +293,7 @@ class MemoryRetrievalTest(TestCase):
                 ["software engineer", "report"],
             )
         else:
-            self.log_warning(
-                "Missing work or identity memories for complex retrieval test"
-            )
+            self.log_warning("Missing work or identity memories for complex retrieval test")
 
         # Step 11: End the test
         self.step("end", "End the test")

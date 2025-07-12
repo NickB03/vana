@@ -3,6 +3,7 @@ Test Agent with output_key + tools Combination
 """
 
 from google.adk.agents import LlmAgent
+
 from lib._tools import adk_echo
 
 # Create test agent with output_key + tools combination

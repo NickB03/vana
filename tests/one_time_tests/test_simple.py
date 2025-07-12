@@ -3,6 +3,7 @@
 
 import os
 import sys
+
 from dotenv import load_dotenv
 
 # Add the project root to the Python path
@@ -25,6 +26,7 @@ genai.configure(api_key=api_key)
 # Import the VANA agent
 from agents.vana.team import root_agent
 
+
 def test_simple():
     """Test VANA agent using direct prompt"""
     try:
@@ -34,7 +36,7 @@ def test_simple():
         
         # Try direct prompting
         from google.genai.types import Content, Part
-        
+
         # Create a simple test with the agent's model
         print(f"\n🤖 Agent name: {root_agent.name}")
         print(f"🤖 Agent model: {root_agent.model}")

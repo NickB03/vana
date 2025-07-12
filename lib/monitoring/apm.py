@@ -32,14 +32,10 @@ class APM:
                     raise
                 finally:
                     duration = time.time() - start_time
-                    self.monitor.record_response_time(
-                        op_name, duration, success=success, **(tags or {})
-                    )
+                    self.monitor.record_response_time(op_name, duration, success=success, **(tags or {}))
 
                     if error:
-                        self.monitor.record_metric(
-                            f"errors.{op_name}", 1, "count", tags={"error": error}
-                        )
+                        self.monitor.record_metric(f"errors.{op_name}", 1, "count", tags={"error": error})
 
             return wrapper
 
@@ -66,14 +62,10 @@ class APM:
                     raise
                 finally:
                     duration = time.time() - start_time
-                    self.monitor.record_response_time(
-                        op_name, duration, success=success, **(tags or {})
-                    )
+                    self.monitor.record_response_time(op_name, duration, success=success, **(tags or {}))
 
                     if error:
-                        self.monitor.record_metric(
-                            f"errors.{op_name}", 1, "count", tags={"error": error}
-                        )
+                        self.monitor.record_metric(f"errors.{op_name}", 1, "count", tags={"error": error})
 
             return wrapper
 

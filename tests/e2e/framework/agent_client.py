@@ -21,9 +21,7 @@ class AgentClient:
 
         In test mode, this will use mock responses if real server is not available.
         """
-        self.base_url = base_url or os.environ.get(
-            "VANA_API_URL", "http://localhost:8000/api"
-        )
+        self.base_url = base_url or os.environ.get("VANA_API_URL", "http://localhost:8000/api")
         self.timeout = timeout
         self.session = requests.Session()
         self.use_mock = os.environ.get("VANA_USE_MOCK", "false").lower() == "true"
@@ -96,9 +94,7 @@ class AgentClient:
             response.raise_for_status()
             return response.json()
         except requests.exceptions.RequestException as e:
-            logger.error(
-                f"Error getting conversation history for session {session_id}: {e}"
-            )
+            logger.error(f"Error getting conversation history for session {session_id}: {e}")
             return {"success": False, "error": str(e)}
 
     def create_session(self):
@@ -140,9 +136,7 @@ class AgentClient:
             logger.error(f"Error ending session {session_id}: {e}")
             return False
 
-    def wait_for_agent_response(
-        self, agent_id, session_id, timeout=60, poll_interval=1
-    ):
+    def wait_for_agent_response(self, agent_id, session_id, timeout=60, poll_interval=1):
         """
         Wait for an agent to respond to a message.
 
@@ -161,9 +155,7 @@ class AgentClient:
             history = self.get_conversation_history(session_id)
 
             if isinstance(history, dict) and not history.get("success", True):
-                logger.error(
-                    f"Error getting conversation history: {history.get('error')}"
-                )
+                logger.error(f"Error getting conversation history: {history.get('error')}")
                 return None
 
             # Check if there's a response from the agent
@@ -177,9 +169,7 @@ class AgentClient:
         logger.warning(f"Timeout waiting for response from agent {agent_id}")
         return None
 
-    def simulate_conversation(
-        self, agent_id, messages, session_id=None, wait_for_response=True
-    ):
+    def simulate_conversation(self, agent_id, messages, session_id=None, wait_for_response=True):
         """
         Simulate a conversation with an agent.
 

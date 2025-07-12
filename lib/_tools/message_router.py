@@ -104,15 +104,11 @@ class MessageRouter:
                 }
 
             # Send task to selected agent
-            result = await self.communication_service.send_task_to_agent(
-                selected_agent.name, task, context
-            )
+            result = await self.communication_service.send_task_to_agent(selected_agent.name, task, context)
 
             # Update routing history and performance metrics
             routing_time = (time.time() - start_time) * 1000
-            self._update_routing_metrics(
-                selected_agent.name, task, strategy, routing_time, result
-            )
+            self._update_routing_metrics(selected_agent.name, task, strategy, routing_time, result)
 
             # Add routing metadata to result
             result["routing_info"] = {
@@ -120,14 +116,10 @@ class MessageRouter:
                 "strategy": strategy.value,
                 "routing_time_ms": routing_time,
                 "agent_capabilities": selected_agent.capabilities,
-                "selection_reasoning": self._get_selection_reasoning(
-                    selected_agent, task, strategy
-                ),
+                "selection_reasoning": self._get_selection_reasoning(selected_agent, task, strategy),
             }
 
-            logger.info(
-                f"✅ Task routed to {selected_agent.name} ({routing_time:.1f}ms)"
-            )
+            logger.info(f"✅ Task routed to {selected_agent.name} ({routing_time:.1f}ms)")
             return result
 
         except Exception as e:
@@ -170,16 +162,12 @@ class MessageRouter:
             }
 
         # Select multiple agents
-        selected_agents = await self._select_multiple_agents(
-            online_agents, task, agent_count, strategy
-        )
+        selected_agents = await self._select_multiple_agents(online_agents, task, agent_count, strategy)
 
         # Send task to all selected agents concurrently
         tasks = []
         for agent in selected_agents:
-            task_coroutine = self.communication_service.send_task_to_agent(
-                agent.name, task, context
-            )
+            task_coroutine = self.communication_service.send_task_to_agent(agent.name, task, context)
             tasks.append((agent.name, task_coroutine))
 
         # Wait for all responses
@@ -301,19 +289,12 @@ class MessageRouter:
             "total_routes": len(self.routing_history),
             "agent_load": self.agent_load,
             "agent_performance": self.agent_performance,
-            "offline_agents": {
-                name: offline_time.isoformat()
-                for name, offline_time in self.offline_agents.items()
-            },
-            "queued_tasks": {
-                agent: len(tasks) for agent, tasks in self.message_queue.items()
-            },
+            "offline_agents": {name: offline_time.isoformat() for name, offline_time in self.offline_agents.items()},
+            "queued_tasks": {agent: len(tasks) for agent, tasks in self.message_queue.items()},
             "last_updated": datetime.now().isoformat(),
         }
 
-    def _filter_online_agents(
-        self, agents: Dict[str, AgentCapability]
-    ) -> Dict[str, AgentCapability]:
+    def _filter_online_agents(self, agents: Dict[str, AgentCapability]) -> Dict[str, AgentCapability]:
         """Filter out offline agents.
 
         Args:
@@ -364,9 +345,7 @@ class MessageRouter:
             filtered_agents = {}
             for name, agent in agents.items():
                 agent_caps = [cap.lower() for cap in agent.capabilities]
-                if all(
-                    req_cap.lower() in agent_caps for req_cap in required_capabilities
-                ):
+                if all(req_cap.lower() in agent_caps for req_cap in required_capabilities):
                     filtered_agents[name] = agent
             agents = filtered_agents
 
@@ -424,9 +403,7 @@ class MessageRouter:
             # For other strategies, just select first N agents
             return list(agents.values())[:count]
 
-    def _select_by_capability(
-        self, agents: Dict[str, AgentCapability], task: str
-    ) -> AgentCapability:
+    def _select_by_capability(self, agents: Dict[str, AgentCapability], task: str) -> AgentCapability:
         """Select agent based on capability matching."""
         # Score agents based on capability match
         best_agent = None
@@ -446,14 +423,8 @@ class MessageRouter:
         score = 0.0
 
         # Check agent name relevance
-        if any(
-            keyword in agent.name.lower()
-            for keyword in ["code", "data", "memory", "search"]
-        ):
-            if any(
-                keyword in task_lower
-                for keyword in ["code", "data", "memory", "search"]
-            ):
+        if any(keyword in agent.name.lower() for keyword in ["code", "data", "memory", "search"]):
+            if any(keyword in task_lower for keyword in ["code", "data", "memory", "search"]):
                 score += 2.0
 
         # Check capability relevance
@@ -470,9 +441,7 @@ class MessageRouter:
 
         return score
 
-    def _select_round_robin(
-        self, agents: Dict[str, AgentCapability]
-    ) -> AgentCapability:
+    def _select_round_robin(self, agents: Dict[str, AgentCapability]) -> AgentCapability:
         """Select agent using round-robin strategy."""
         agent_names = sorted(agents.keys())
 
@@ -484,16 +453,12 @@ class MessageRouter:
                 self.agent_load[name] = 0
 
             # Simple round-robin based on load count
-            if self.agent_load[name] < self.agent_load.get(
-                least_recent_agent or name, float("inf")
-            ):
+            if self.agent_load[name] < self.agent_load.get(least_recent_agent or name, float("inf")):
                 least_recent_agent = name
 
         return agents[least_recent_agent or agent_names[0]]
 
-    def _select_least_loaded(
-        self, agents: Dict[str, AgentCapability]
-    ) -> AgentCapability:
+    def _select_least_loaded(self, agents: Dict[str, AgentCapability]) -> AgentCapability:
         """Select agent with the least current load."""
         least_loaded_agent = None
         min_load = float("inf")
@@ -506,18 +471,14 @@ class MessageRouter:
 
         return least_loaded_agent or next(iter(agents.values()))
 
-    def _select_fastest_response(
-        self, agents: Dict[str, AgentCapability]
-    ) -> AgentCapability:
+    def _select_fastest_response(self, agents: Dict[str, AgentCapability]) -> AgentCapability:
         """Select agent with the fastest average response time."""
         fastest_agent = None
         best_time = float("inf")
 
         for name, agent in agents.items():
             if name in self.agent_performance:
-                avg_time = self.agent_performance[name].get(
-                    "average_response_time", float("inf")
-                )
+                avg_time = self.agent_performance[name].get("average_response_time", float("inf"))
                 if avg_time < best_time:
                     best_time = avg_time
                     fastest_agent = agent
@@ -558,9 +519,7 @@ class MessageRouter:
             current_avg = perf["average_response_time"]
             total_requests = perf["total_requests"]
             new_time = result["execution_time_ms"]
-            perf["average_response_time"] = (
-                (current_avg * (total_requests - 1)) + new_time
-            ) / total_requests
+            perf["average_response_time"] = ((current_avg * (total_requests - 1)) + new_time) / total_requests
 
         perf["last_request_time"] = datetime.now().isoformat()
 
@@ -580,24 +539,18 @@ class MessageRouter:
         if len(self.routing_history) > 1000:
             self.routing_history = self.routing_history[-1000:]
 
-    def _get_selection_reasoning(
-        self, agent: AgentCapability, task: str, strategy: RoutingStrategy
-    ) -> str:
+    def _get_selection_reasoning(self, agent: AgentCapability, task: str, strategy: RoutingStrategy) -> str:
         """Get reasoning for agent selection."""
         if strategy == RoutingStrategy.CAPABILITY_BASED:
             score = self._calculate_capability_score(agent, task)
-            return (
-                f"Selected {agent.name} based on capability match (score: {score:.1f})"
-            )
+            return f"Selected {agent.name} based on capability match (score: {score:.1f})"
         elif strategy == RoutingStrategy.ROUND_ROBIN:
             return f"Selected {agent.name} using round-robin strategy"
         elif strategy == RoutingStrategy.LEAST_LOADED:
             load = self.agent_load.get(agent.name, 0)
             return f"Selected {agent.name} as least loaded agent (load: {load})"
         elif strategy == RoutingStrategy.FASTEST_RESPONSE:
-            avg_time = self.agent_performance.get(agent.name, {}).get(
-                "average_response_time", 0
-            )
+            avg_time = self.agent_performance.get(agent.name, {}).get("average_response_time", 0)
             return f"Selected {agent.name} for fastest response time ({avg_time:.1f}ms)"
         else:
             return f"Selected {agent.name} using {strategy.value} strategy"

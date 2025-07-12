@@ -141,9 +141,7 @@ class ADKDocumentProcessor:
         except Exception as e:
             return False, f"Error validating file: {str(e)}"
 
-    def generate_document_id(
-        self, file_path: str, content_hash: Optional[str] = None
-    ) -> str:
+    def generate_document_id(self, file_path: str, content_hash: Optional[str] = None) -> str:
         """
         Generate a unique document ID
 
@@ -280,9 +278,7 @@ class ADKDocumentProcessor:
                 "processing_time_seconds": processing_time,
                 "upload_response": {
                     "name": upload_response.name,
-                    "state": str(upload_response.state)
-                    if hasattr(upload_response, "state")
-                    else "unknown",
+                    "state": str(upload_response.state) if hasattr(upload_response, "state") else "unknown",
                 },
             }
 
@@ -300,9 +296,7 @@ class ADKDocumentProcessor:
                 "success": False,
                 "error": error_msg,
                 "file_path": file_path,
-                "processing_time_seconds": (
-                    datetime.now() - start_time
-                ).total_seconds(),
+                "processing_time_seconds": (datetime.now() - start_time).total_seconds(),
             }
 
     async def batch_upload_files(
@@ -341,10 +335,7 @@ class ADKDocumentProcessor:
                 return result
 
         # Create tasks for all uploads
-        tasks = [
-            upload_with_semaphore(file_path, i)
-            for i, file_path in enumerate(file_paths)
-        ]
+        tasks = [upload_with_semaphore(file_path, i) for i, file_path in enumerate(file_paths)]
 
         # Execute all uploads concurrently
         results = await asyncio.gather(*tasks, return_exceptions=True)
@@ -353,9 +344,7 @@ class ADKDocumentProcessor:
         processed_results = []
         for i, result in enumerate(results):
             if isinstance(result, Exception):
-                processed_results.append(
-                    {"success": False, "error": str(result), "file_path": file_paths[i]}
-                )
+                processed_results.append({"success": False, "error": str(result), "file_path": file_paths[i]})
             else:
                 processed_results.append(result)
 
@@ -398,12 +387,8 @@ class ADKDocumentProcessor:
             result = {
                 "success": True,
                 "import_response": {
-                    "name": import_response.name
-                    if hasattr(import_response, "name")
-                    else "unknown",
-                    "operation_id": str(import_response)
-                    if import_response
-                    else "unknown",
+                    "name": import_response.name if hasattr(import_response, "name") else "unknown",
+                    "operation_id": str(import_response) if import_response else "unknown",
                 },
                 "gcs_uri": gcs_uri,
                 "chunk_size": chunk_size,
@@ -458,16 +443,12 @@ class ADKDocumentProcessor:
             for root, dirs, files in os.walk(directory_path):
                 for file in files:
                     file_path = os.path.join(root, file)
-                    if any(
-                        file.lower().endswith(ext.lower()) for ext in file_extensions
-                    ):
+                    if any(file.lower().endswith(ext.lower()) for ext in file_extensions):
                         file_paths.append(file_path)
         else:
             for file in os.listdir(directory_path):
                 file_path = os.path.join(directory_path, file)
-                if os.path.isfile(file_path) and any(
-                    file.lower().endswith(ext.lower()) for ext in file_extensions
-                ):
+                if os.path.isfile(file_path) and any(file.lower().endswith(ext.lower()) for ext in file_extensions):
                     file_paths.append(file_path)
 
         logger.info(f"Found {len(file_paths)} files in {directory_path}")
@@ -490,12 +471,8 @@ class ADKDocumentProcessor:
             stats["success_rate"] = 0.0
 
         if stats["documents_processed"] > 0:
-            stats["avg_processing_time_seconds"] = (
-                stats["processing_time_seconds"] / stats["documents_processed"]
-            )
-            stats["avg_file_size_mb"] = (
-                stats["total_size_mb"] / stats["documents_processed"]
-            )
+            stats["avg_processing_time_seconds"] = stats["processing_time_seconds"] / stats["documents_processed"]
+            stats["avg_file_size_mb"] = stats["total_size_mb"] / stats["documents_processed"]
         else:
             stats["avg_processing_time_seconds"] = 0.0
             stats["avg_file_size_mb"] = 0.0
@@ -534,9 +511,7 @@ class ADKDocumentMigrator:
         # Migration tracking
         self.migration_log = []
 
-    def validate_migration_source(
-        self, source_path: str
-    ) -> Tuple[bool, str, List[str]]:
+    def validate_migration_source(self, source_path: str) -> Tuple[bool, str, List[str]]:
         """
         Validate migration source and get file list
 
@@ -578,9 +553,7 @@ class ADKDocumentMigrator:
                     )
 
                 if invalid_files:
-                    logger.warning(
-                        f"Found {len(invalid_files)} invalid files that will be skipped"
-                    )
+                    logger.warning(f"Found {len(invalid_files)} invalid files that will be skipped")
 
                 return True, "", valid_files
 
@@ -619,9 +592,7 @@ class ADKDocumentMigrator:
                     "source_path": source_path,
                 }
 
-            logger.info(
-                f"Starting migration of {len(file_list)} files from {source_path}"
-            )
+            logger.info(f"Starting migration of {len(file_list)} files from {source_path}")
 
             if dry_run:
                 logger.info("DRY RUN: No files will be actually migrated")
@@ -639,12 +610,8 @@ class ADKDocumentMigrator:
             )
 
             # Analyze results
-            successful_migrations = [
-                r for r in migration_results if r.get("success", False)
-            ]
-            failed_migrations = [
-                r for r in migration_results if not r.get("success", False)
-            ]
+            successful_migrations = [r for r in migration_results if r.get("success", False)]
+            failed_migrations = [r for r in migration_results if not r.get("success", False)]
 
             migration_time = (datetime.now() - migration_start).total_seconds()
 
@@ -667,18 +634,14 @@ class ADKDocumentMigrator:
                     "total_files": len(file_list),
                     "successful_migrations": len(successful_migrations),
                     "failed_migrations": len(failed_migrations),
-                    "success_rate": len(successful_migrations) / len(file_list)
-                    if file_list
-                    else 0,
+                    "success_rate": len(successful_migrations) / len(file_list) if file_list else 0,
                     "migration_time_seconds": migration_time,
                 },
                 "detailed_results": migration_results,
                 "source_path": source_path,
             }
 
-            logger.info(
-                f"Migration completed: {len(successful_migrations)}/{len(file_list)} files successful"
-            )
+            logger.info(f"Migration completed: {len(successful_migrations)}/{len(file_list)} files successful")
             return result
 
         except Exception as e:
@@ -689,9 +652,7 @@ class ADKDocumentMigrator:
                 "success": False,
                 "error": error_msg,
                 "source_path": source_path,
-                "migration_time_seconds": (
-                    datetime.now() - migration_start
-                ).total_seconds(),
+                "migration_time_seconds": (datetime.now() - migration_start).total_seconds(),
             }
 
     def get_migration_history(self) -> List[Dict[str, Any]]:
@@ -737,9 +698,7 @@ def create_adk_processor(**kwargs) -> ADKDocumentProcessor:
     return ADKDocumentProcessor(**kwargs)
 
 
-def create_migrator(
-    adk_processor: ADKDocumentProcessor, **kwargs
-) -> ADKDocumentMigrator:
+def create_migrator(adk_processor: ADKDocumentProcessor, **kwargs) -> ADKDocumentMigrator:
     """Create a document migrator"""
     return ADKDocumentMigrator(adk_processor, **kwargs)
 
@@ -750,9 +709,7 @@ async def quick_upload(file_path: str, **processor_kwargs) -> Dict[str, Any]:
     return await processor.upload_file_to_rag_corpus(file_path)
 
 
-async def quick_batch_upload(
-    file_paths: List[str], **processor_kwargs
-) -> List[Dict[str, Any]]:
+async def quick_batch_upload(file_paths: List[str], **processor_kwargs) -> List[Dict[str, Any]]:
     """Quick batch upload of multiple files"""
     processor = create_adk_processor(**processor_kwargs)
     return await processor.batch_upload_files(file_paths)

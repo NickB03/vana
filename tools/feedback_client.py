@@ -167,9 +167,7 @@ class FeedbackClient:
         """
         try:
             # Send request
-            response = requests.get(
-                f"{self.api_url}/feedback/analysis", params={"min_count": min_count}
-            )
+            response = requests.get(f"{self.api_url}/feedback/analysis", params={"min_count": min_count})
 
             # Check response
             if response.status_code == 200:
@@ -260,9 +258,7 @@ def main():
             try:
                 result_ratings = [int(r) for r in args.result_ratings.split(",")]
             except ValueError:
-                logger.error(
-                    "Invalid result ratings format. Use comma-separated integers (e.g., '5,4,3,2,1')"
-                )
+                logger.error("Invalid result ratings format. Use comma-separated integers (e.g., '5,4,3,2,1')")
                 sys.exit(1)
 
         # Submit feedback

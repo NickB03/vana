@@ -62,9 +62,7 @@ class StrategyOrchestrator:
         self.agent_status: Dict[str, str] = {}
         self.task_queue: List[Dict[str, Any]] = []
 
-    def select_strategy(
-        self, task_description: str, context: Dict[str, Any] = None
-    ) -> StrategyConfig:
+    def select_strategy(self, task_description: str, context: Dict[str, Any] = None) -> StrategyConfig:
         """
         Automatically select optimal strategy based on task analysis
 
@@ -83,21 +81,13 @@ class StrategyOrchestrator:
         # Strategy selection logic based on AGOR patterns
         if complexity == "low" and agent_count == 1:
             strategy_type = StrategyType.SINGLE_AGENT
-        elif (
-            "design" in task_description.lower()
-            and "multiple" in task_description.lower()
-        ):
+        elif "design" in task_description.lower() and "multiple" in task_description.lower():
             strategy_type = StrategyType.PARALLEL_DIVERGENT
-        elif (
-            "security" in task_description.lower() or "test" in task_description.lower()
-        ):
+        elif "security" in task_description.lower() or "test" in task_description.lower():
             strategy_type = StrategyType.RED_TEAM
         elif complexity == "high" and agent_count > 3:
             strategy_type = StrategyType.MOB_PROGRAMMING
-        elif (
-            "workflow" in task_description.lower()
-            or "pipeline" in task_description.lower()
-        ):
+        elif "workflow" in task_description.lower() or "pipeline" in task_description.lower():
             strategy_type = StrategyType.PIPELINE
         else:
             strategy_type = StrategyType.SWARM

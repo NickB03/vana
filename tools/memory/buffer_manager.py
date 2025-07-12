@@ -51,9 +51,7 @@ class MemoryBufferManager:
         """Stop recording messages to the buffer"""
         self.memory_on = False
         duration = datetime.now() - self.start_time if self.start_time else None
-        logger.info(
-            f"Memory recording stopped. Duration: {duration}. Buffer size: {len(self.buffer)}"
-        )
+        logger.info(f"Memory recording stopped. Duration: {duration}. Buffer size: {len(self.buffer)}")
         self.start_time = None
 
     def get_status(self) -> Dict[str, Any]:

@@ -54,13 +54,9 @@ class SecurityValidator:
     def add_violation(self, violation: SecurityViolation):
         """Add a security violation to the results."""
         self.violations.append(violation)
-        logger.warning(
-            f"Security violation detected: {violation.severity} - {violation.description}"
-        )
+        logger.warning(f"Security violation detected: {violation.severity} - {violation.description}")
 
-    def validate_python_code(
-        self, code: str, filename: str = "unknown"
-    ) -> List[SecurityViolation]:
+    def validate_python_code(self, code: str, filename: str = "unknown") -> List[SecurityViolation]:
         """Validate Python code for security vulnerabilities."""
         violations = []
 
@@ -163,9 +159,7 @@ class SecurityValidator:
 
         return violations
 
-    def validate_configuration(
-        self, config: Dict[str, Any], config_name: str = "unknown"
-    ) -> List[SecurityViolation]:
+    def validate_configuration(self, config: Dict[str, Any], config_name: str = "unknown") -> List[SecurityViolation]:
         """Validate configuration for security issues."""
         violations = []
         config_str = json.dumps(config, indent=2)
@@ -206,10 +200,7 @@ class SecurityValidator:
             if isinstance(obj, dict):
                 for key, value in obj.items():
                     current_path = f"{path}.{key}" if path else key
-                    if (
-                        key.lower() in insecure_configs
-                        and value == insecure_configs[key.lower()]
-                    ):
+                    if key.lower() in insecure_configs and value == insecure_configs[key.lower()]:
                         violation = SecurityViolation(
                             severity="medium",
                             category="insecure_configuration",
@@ -321,13 +312,9 @@ class SecurityValidator:
 
         for violation in self.violations:
             severity_counts[violation.severity] += 1
-            category_counts[violation.category] = (
-                category_counts.get(violation.category, 0) + 1
-            )
+            category_counts[violation.category] = category_counts.get(violation.category, 0) + 1
             if violation.owasp_category:
-                owasp_counts[violation.owasp_category] = (
-                    owasp_counts.get(violation.owasp_category, 0) + 1
-                )
+                owasp_counts[violation.owasp_category] = owasp_counts.get(violation.owasp_category, 0) + 1
 
         total_violations = len(self.violations)
         risk_score = (
@@ -365,6 +352,4 @@ class SecurityValidator:
             json.dump(report, f, indent=2)
 
         logger.info(f"Security report saved to {filepath}")
-        logger.info(
-            f"Total violations: {report['total_violations']}, Risk score: {report['risk_score']}"
-        )
+        logger.info(f"Total violations: {report['total_violations']}, Risk score: {report['risk_score']}")

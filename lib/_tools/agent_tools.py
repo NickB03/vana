@@ -55,17 +55,13 @@ class AgentTool:
         """
         self.agent = agent
         self.name = name or getattr(agent, "name", "unknown_agent")
-        self.description = description or getattr(
-            agent, "description", f"Agent tool for {self.name}"
-        )
+        self.description = description or getattr(agent, "description", f"Agent tool for {self.name}")
         self.timeout = timeout
 
         # Extract agent capabilities
         self.capabilities = self._extract_capabilities()
 
-        logger.info(
-            f"AgentTool created for '{self.name}' with capabilities: {self.capabilities}"
-        )
+        logger.info(f"AgentTool created for '{self.name}' with capabilities: {self.capabilities}")
 
     def _extract_capabilities(self) -> list:
         """Extract capabilities from the agent's instruction or description."""
@@ -122,9 +118,7 @@ class AgentTool:
         start_time = time.time()
 
         try:
-            logger.info(
-                f"Executing agent tool '{self.name}' with context: {context[:100]}..."
-            )
+            logger.info(f"Executing agent tool '{self.name}' with context: {context[:100]}...")
 
             # For now, simulate agent execution since we don't have full LLM integration in tests
             # In practice, this would call the actual agent's run/execute method
@@ -384,9 +378,7 @@ def create_specialist_agent_tools(
             name="devops_tool",
             description="⚙️ DevOps & Infrastructure Specialist Tool",
         ),
-        "qa_tool": create_agent_tool(
-            qa_specialist, name="qa_tool", description="🧪 QA & Testing Specialist Tool"
-        ),
+        "qa_tool": create_agent_tool(qa_specialist, name="qa_tool", description="🧪 QA & Testing Specialist Tool"),
     }
 
 

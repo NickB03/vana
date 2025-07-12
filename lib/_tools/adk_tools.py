@@ -124,6 +124,7 @@ def file_exists(file_path: str) -> str:
 def sync_read_file(file_path: str) -> str:
     """Synchronous wrapper for async read_file function."""
     import asyncio
+
     try:
         loop = asyncio.get_event_loop()
         if loop.is_running():
@@ -135,9 +136,11 @@ def sync_read_file(file_path: str) -> str:
         # No event loop exists, create a new one
         return asyncio.run(read_file(file_path))
 
+
 def sync_write_file(file_path: str, content: str) -> str:
     """Synchronous wrapper for async write_file function."""
     import asyncio
+
     try:
         loop = asyncio.get_event_loop()
         if loop.is_running():
@@ -147,9 +150,11 @@ def sync_write_file(file_path: str, content: str) -> str:
     except RuntimeError:
         return asyncio.run(write_file(file_path, content))
 
+
 def sync_web_search(query: str, max_results: int = 5) -> str:
     """Synchronous wrapper for async web_search function."""
     import asyncio
+
     try:
         loop = asyncio.get_event_loop()
         if loop.is_running():
@@ -159,9 +164,11 @@ def sync_web_search(query: str, max_results: int = 5) -> str:
     except RuntimeError:
         return asyncio.run(web_search(query, max_results))
 
+
 def sync_vector_search(query: str, max_results: int = 5) -> str:
     """Synchronous wrapper for async vector_search function."""
     import asyncio
+
     try:
         loop = asyncio.get_event_loop()
         if loop.is_running():
@@ -170,6 +177,7 @@ def sync_vector_search(query: str, max_results: int = 5) -> str:
             return loop.run_until_complete(vector_search(query, max_results))
     except RuntimeError:
         return asyncio.run(vector_search(query, max_results))
+
 
 # Create FunctionTool instances with explicit names and backward compatibility
 # Use sync wrappers for ADK tools to maintain compatibility
@@ -252,70 +260,28 @@ async def vector_search(query: str, max_results: int = 5) -> str:
 
 
 async def web_search(query: str, max_results: int = 5) -> str:
-    """🌐 Search the web for current information with enhanced data extraction (async)."""
+    """🌐 Search the web using Google Search (ADK compliant)."""
     try:
-        # Lazy import to avoid HTTP requests during module import
-        import aiohttp
-
-        api_key = os.getenv("BRAVE_API_KEY")
-        if not api_key:
-            # Use synchronous web search when API key not available
-            from lib._tools.web_search_sync import web_search as sync_web_search
-            logger.info(f"Using sync web search for query: {query}")
-            # Run sync function in thread pool
-            result = await asyncio.to_thread(sync_web_search, query, max_results)
-            return result
-
-        url = "https://api.search.brave.com/res/v1/web/search"
-
-        # Use async HTTP client for better performance
-        headers = {"X-Subscription-Token": api_key}
-        params = {
-            "q": query,
-            "count": min(max_results, 10),
-            "extra_snippets": True,  # Enable additional excerpts
-            "summary": True,  # Enable AI summary
-            "spellcheck": True,  # Enable spell correction
-            "text_decorations": False,
-            "result_filter": "web,infobox,faq",  # Include structured data
-        }
-
-        async with aiohttp.ClientSession() as session:
-            async with session.get(url, headers=headers, params=params, timeout=10) as response:
-                if response.status == 200:
-                    data = await response.json()
-
-                    # Extract enhanced results with rich data
-                    results = []
-                    web_results = data.get("web", {}).get("results", [])
-
-                    for result in web_results[:max_results]:
-                        enhanced_result = {
-                            "title": result.get("title", ""),
-                            "url": result.get("url", ""),
-                            "description": result.get("description", ""),
-                            # Rich data fields for extraction
-                            "extra_snippets": result.get("extra_snippets", []),
-                            "summary": result.get("summary", ""),
-                            "age": result.get("age", ""),
-                            "relevance_score": result.get("profile", {}).get("score", 0),
-                            "language": result.get("language", "en"),
-                        }
-                        results.append(enhanced_result)
-
-                    # INTELLIGENT DATA PROCESSING: Extract and format data for clear agent interpretation
-                    processed_data = _process_search_results(query, results, data)
-
-                    logger.info(f"Enhanced web search completed: {len(results)} results with intelligent processing")
-                    return processed_data
-                else:
-                    error_msg = f"Web search failed: HTTP {response.status}"
-                    logger.error(error_msg)
-                    return json.dumps({"error": error_msg}, indent=2)
+        # Use the new Google search implementation v2
+        from lib._tools.google_search_v2 import google_web_search
+        
+        logger.info(f"Web search using Google for: {query}")
+        
+        # Run synchronous function in thread pool for async compatibility
+        result = await asyncio.to_thread(google_web_search, query, max_results)
+        return result
+        
     except Exception as e:
-        error_msg = f"Web search error: {str(e)}"
-        logger.error(error_msg)
-        return json.dumps({"error": error_msg}, indent=2)
+        logger.error(f"Web search failed: {e}")
+        # Final fallback to DuckDuckGo
+        try:
+            from lib._tools.web_search_sync import web_search as ddg_search
+            result = await asyncio.to_thread(ddg_search, query, max_results)
+            return result
+        except Exception as fallback_error:
+            error_msg = f"All search methods failed: {str(fallback_error)}"
+            logger.error(error_msg)
+            return json.dumps({"error": error_msg}, indent=2)
 
 
 def _process_search_results(query: str, results: list, raw_data: dict) -> str:

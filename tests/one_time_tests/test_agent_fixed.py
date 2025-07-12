@@ -3,6 +3,7 @@
 
 import os
 import sys
+
 from dotenv import load_dotenv
 from google.adk.runners import Runner
 from google.adk.sessions import InMemorySessionService
@@ -20,6 +21,7 @@ if os.path.exists(dotenv_path):
 
 # Import the VANA agent after environment is loaded
 from agents.vana.team import root_agent
+
 
 def test_agent():
     """Test the VANA agent with actual user message"""

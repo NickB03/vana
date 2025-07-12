@@ -25,13 +25,9 @@ async def test_mcp_integrations():
 
     try:
         # Import MCP modules
+        from lib._tools.adk_mcp_tools import brave_search_mcp, context7_sequential_thinking, github_mcp_operations
         from lib.mcp.core.mcp_client import MCPClient, ServerConfig
         from lib.mcp.core.mcp_manager import MCPManager
-        from lib._tools.adk_mcp_tools import (
-            context7_sequential_thinking,
-            brave_search_mcp,
-            github_mcp_operations,
-        )
 
         print("✅ Successfully imported MCP integration modules")
 
@@ -42,9 +38,7 @@ async def test_mcp_integrations():
         print("  Testing MCPClient connection establishment...")
 
         # Create proper server config for MCPClient
-        test_config = ServerConfig(
-            name="test_server", command=["echo", "test"], args=[], env={}, timeout=5
-        )
+        test_config = ServerConfig(name="test_server", command=["echo", "test"], args=[], env={}, timeout=5)
 
         # Mock the MCPClient for testing
         with unittest.mock.patch.object(MCPClient, "connect") as mock_connect:
@@ -73,14 +67,10 @@ async def test_mcp_integrations():
             client = MCPClient(test_config)
             request_result = await client.send_request("tools/list", {"format": "json"})
 
-            assert hasattr(request_result, "result"), (
-                "Request must return Response object with result"
-            )
+            assert hasattr(request_result, "result"), "Request must return Response object with result"
             assert hasattr(request_result, "id"), "Response must have id field"
             assert request_result.result is not None, "Must include result data"
-            assert request_result.error is None, (
-                "Must not have error for successful request"
-            )
+            assert request_result.error is None, "Must not have error for successful request"
             print("    ✅ MCP JSON-RPC communication works correctly")
 
         # Test 2: MCP Manager Server Lifecycle
@@ -90,16 +80,10 @@ async def test_mcp_integrations():
         print("  Testing MCP server startup management...")
 
         with unittest.mock.patch.object(MCPManager, "start_server") as mock_start:
+            from lib.mcp.core.mcp_client import ConnectionStatus, MCPClient, ServerConfig
             from lib.mcp.core.mcp_manager import ServerInstance
-            from lib.mcp.core.mcp_client import (
-                MCPClient,
-                ServerConfig,
-                ConnectionStatus,
-            )
 
-            mock_config = ServerConfig(
-                name="brave_search", command=["test"], args=[], env={}
-            )
+            mock_config = ServerConfig(name="brave_search", command=["test"], args=[], env={})
             mock_client = MCPClient(mock_config)
             mock_instance = ServerInstance(
                 name="brave_search_server",
@@ -116,15 +100,11 @@ async def test_mcp_integrations():
             manager = MCPManager("test_config.json")
             startup_result = await manager.start_server("brave_search")
 
-            assert hasattr(startup_result, "name"), (
-                "Server startup must return ServerInstance"
-            )
+            assert hasattr(startup_result, "name"), "Server startup must return ServerInstance"
             assert hasattr(startup_result, "status"), "Must include server status"
             assert hasattr(startup_result, "client"), "Must include client connection"
             assert hasattr(startup_result, "tools"), "Must list server capabilities"
-            assert startup_result.status == ConnectionStatus.CONNECTED, (
-                "Must indicate server is connected"
-            )
+            assert startup_result.status == ConnectionStatus.CONNECTED, "Must indicate server is connected"
             print("    ✅ MCP server startup management works correctly")
 
         # Test MCPManager.execute_tool() - Cross-server tool execution
@@ -156,24 +136,14 @@ async def test_mcp_integrations():
             )
 
             manager = MCPManager("test_config.json")
-            execution_result = await manager.execute_tool(
-                "brave_search", "search", {"query": "VANA AI agents"}
-            )
+            execution_result = await manager.execute_tool("brave_search", "search", {"query": "VANA AI agents"})
 
-            assert hasattr(execution_result, "success"), (
-                "Tool execution must return ToolResult"
-            )
+            assert hasattr(execution_result, "success"), "Tool execution must return ToolResult"
             assert hasattr(execution_result, "server_name"), "Must identify server used"
             assert hasattr(execution_result, "content"), "Must include execution result"
-            assert hasattr(execution_result, "execution_time"), (
-                "Must include execution timing"
-            )
-            assert execution_result.success == True, (
-                "Must indicate successful execution"
-            )
-            assert execution_result.error_message is None, (
-                "Must not have error for successful execution"
-            )
+            assert hasattr(execution_result, "execution_time"), "Must include execution timing"
+            assert execution_result.success == True, "Must indicate successful execution"
+            assert execution_result.error_message is None, "Must not have error for successful execution"
             print("    ✅ Cross-server tool execution works correctly")
 
         # Test 3: External Service Integrations
@@ -189,17 +159,11 @@ async def test_mcp_integrations():
         if "error" in search_result:
             assert "error" in search_result, "Must include error field"
             assert "message" in search_result, "Must include error message"
-            assert "Brave API key not configured" in search_result["error"], (
-                "Must indicate API key issue"
-            )
-            print(
-                "    ✅ Brave search MCP integration correctly handles missing API key"
-            )
+            assert "Brave API key not configured" in search_result["error"], "Must indicate API key issue"
+            print("    ✅ Brave search MCP integration correctly handles missing API key")
         else:
             # If somehow API key is configured, check for valid response
-            assert "results" in search_result or "web" in search_result, (
-                "Must include search results"
-            )
+            assert "results" in search_result or "web" in search_result, "Must include search results"
             print("    ✅ Brave search MCP integration works correctly")
 
         # Test github_mcp_operations() - GitHub API integration
@@ -257,9 +221,7 @@ async def test_mcp_integrations():
             assert isinstance(discovery_result, dict), "Tool discovery must return dict"
             assert "tool_name" in discovery_result, "Must include tool name"
             assert "servers" in discovery_result, "Must include available servers"
-            assert "recommended_server" in discovery_result, (
-                "Must recommend best server"
-            )
+            assert "recommended_server" in discovery_result, "Must recommend best server"
             assert len(discovery_result["servers"]) > 0, "Must find available servers"
             assert all(
                 "performance_score" in server for server in discovery_result["servers"]
@@ -274,9 +236,7 @@ async def test_mcp_integrations():
             def validate_authentication(self, server_type, credentials):
                 pass
 
-        with unittest.mock.patch.object(
-            MockMCPServerManager, "validate_authentication"
-        ) as mock_auth:
+        with unittest.mock.patch.object(MockMCPServerManager, "validate_authentication") as mock_auth:
             mock_auth.return_value = {
                 "server_type": "brave_search",
                 "authentication_method": "api_key",
@@ -288,21 +248,15 @@ async def test_mcp_integrations():
             }
 
             server_manager = MockMCPServerManager()
-            auth_result = server_manager.validate_authentication(
-                "brave_search", {"api_key": "test_key"}
-            )
+            auth_result = server_manager.validate_authentication("brave_search", {"api_key": "test_key"})
 
             assert isinstance(auth_result, dict), "Authentication must return dict"
             assert "server_type" in auth_result, "Must include server type"
             assert "validation_result" in auth_result, "Must include validation result"
             assert "permissions" in auth_result, "Must include permissions"
             assert "status" in auth_result, "Must include authentication status"
-            assert auth_result["validation_result"] == "valid", (
-                "Must validate successfully"
-            )
-            assert auth_result["status"] == "authenticated", (
-                "Must indicate authenticated status"
-            )
+            assert auth_result["validation_result"] == "valid", "Must validate successfully"
+            assert auth_result["status"] == "authenticated", "Must indicate authenticated status"
             print("    ✅ MCP authentication validation works correctly")
 
         # Test 5: Multi-Agent Orchestration Integration
@@ -342,9 +296,7 @@ async def test_mcp_integrations():
         }
 
         # Mock orchestrated execution
-        with unittest.mock.patch(
-            "lib.mcp.core.mcp_manager.MCPManager"
-        ) as mock_orchestrator:
+        with unittest.mock.patch("lib.mcp.core.mcp_manager.MCPManager") as mock_orchestrator:
             mock_orchestrator.return_value.execute_orchestrated_task.return_value = {
                 "task_id": "research_vana_architecture",
                 "execution_steps": [
@@ -387,28 +339,17 @@ async def test_mcp_integrations():
             }
 
             orchestrator = mock_orchestrator.return_value
-            orchestration_result = orchestrator.execute_orchestrated_task(
-                orchestration_scenario
-            )
+            orchestration_result = orchestrator.execute_orchestrated_task(orchestration_scenario)
 
-            assert isinstance(orchestration_result, dict), (
-                "Orchestration must return dict"
-            )
+            assert isinstance(orchestration_result, dict), "Orchestration must return dict"
             assert "task_id" in orchestration_result, "Must include task identifier"
-            assert "execution_steps" in orchestration_result, (
-                "Must include execution steps"
-            )
+            assert "execution_steps" in orchestration_result, "Must include execution steps"
             assert "status" in orchestration_result, "Must include orchestration status"
-            assert len(orchestration_result["execution_steps"]) == 3, (
-                "Must execute all planned steps"
-            )
+            assert len(orchestration_result["execution_steps"]) == 3, "Must execute all planned steps"
             assert all(
-                step["status"] == "completed"
-                for step in orchestration_result["execution_steps"]
+                step["status"] == "completed" for step in orchestration_result["execution_steps"]
             ), "All steps must complete"
-            assert orchestration_result["status"] == "orchestration_completed", (
-                "Must complete orchestration"
-            )
+            assert orchestration_result["status"] == "orchestration_completed", "Must complete orchestration"
             print("    ✅ Multi-agent MCP orchestration works correctly")
 
         # Test 6: Performance and Error Handling
@@ -418,9 +359,7 @@ async def test_mcp_integrations():
         print("  Testing MCP error handling and resilience...")
 
         with unittest.mock.patch.object(MCPClient, "connect") as mock_error_connect:
-            mock_error_connect.side_effect = Exception(
-                "Connection failed: Server unreachable"
-            )
+            mock_error_connect.side_effect = Exception("Connection failed: Server unreachable")
 
             client = MCPClient(test_config)
             try:
@@ -428,9 +367,7 @@ async def test_mcp_integrations():
                 error_handled = False
             except Exception as e:
                 error_handled = True
-                assert "Connection failed" in str(e), (
-                    "Must provide meaningful error message"
-                )
+                assert "Connection failed" in str(e), "Must provide meaningful error message"
 
             assert error_handled, "Must handle connection errors gracefully"
             print("    ✅ MCP error handling works correctly")
@@ -468,16 +405,12 @@ async def test_mcp_integrations():
             execution_times = []
 
             for i in range(3):
-                result = await manager.execute_tool(
-                    "search_server", "search", {"query": f"test_{i}"}
-                )
+                result = await manager.execute_tool("search_server", "search", {"query": f"test_{i}"})
                 execution_times.append(result.execution_time)
                 assert result.success == True, "Must maintain performance under load"
 
             avg_time = sum(execution_times) / len(execution_times)
-            assert avg_time < 2.0, (
-                f"Average execution time must be reasonable, got {avg_time}"
-            )
+            assert avg_time < 2.0, f"Average execution time must be reasonable, got {avg_time}"
             print(f"    ✅ MCP performance acceptable (avg: {avg_time:.2f}s)")
 
         # Test 7: Integration Quality Assessment
@@ -495,34 +428,18 @@ async def test_mcp_integrations():
         }
 
         # Validate quality thresholds
-        assert quality_metrics["connection_reliability"] > 0.95, (
-            "Connection reliability must exceed 95%"
-        )
-        assert quality_metrics["tool_execution_success"] > 0.90, (
-            "Tool execution success must exceed 90%"
-        )
-        assert quality_metrics["response_accuracy"] > 0.85, (
-            "Response accuracy must exceed 85%"
-        )
-        assert quality_metrics["average_latency"] < 3.0, (
-            "Average latency must be under 3 seconds"
-        )
-        assert quality_metrics["error_recovery_rate"] > 0.80, (
-            "Error recovery must exceed 80%"
-        )
+        assert quality_metrics["connection_reliability"] > 0.95, "Connection reliability must exceed 95%"
+        assert quality_metrics["tool_execution_success"] > 0.90, "Tool execution success must exceed 90%"
+        assert quality_metrics["response_accuracy"] > 0.85, "Response accuracy must exceed 85%"
+        assert quality_metrics["average_latency"] < 3.0, "Average latency must be under 3 seconds"
+        assert quality_metrics["error_recovery_rate"] > 0.80, "Error recovery must exceed 80%"
 
         print("    ✅ MCP integration quality metrics meet standards")
-        print(
-            f"      - Connection reliability: {quality_metrics['connection_reliability']:.1%}"
-        )
-        print(
-            f"      - Tool execution success: {quality_metrics['tool_execution_success']:.1%}"
-        )
+        print(f"      - Connection reliability: {quality_metrics['connection_reliability']:.1%}")
+        print(f"      - Tool execution success: {quality_metrics['tool_execution_success']:.1%}")
         print(f"      - Response accuracy: {quality_metrics['response_accuracy']:.1%}")
         print(f"      - Average latency: {quality_metrics['average_latency']:.1f}s")
-        print(
-            f"      - Error recovery rate: {quality_metrics['error_recovery_rate']:.1%}"
-        )
+        print(f"      - Error recovery rate: {quality_metrics['error_recovery_rate']:.1%}")
 
         print("\n🎉 ALL MCP INTEGRATION TESTS PASSED!")
         print("=" * 80)
@@ -544,9 +461,7 @@ async def test_mcp_integrations():
 
     except ImportError as e:
         print(f"\n❌ MCP IMPORT ERROR: {e}")
-        print(
-            "Some MCP modules may not be available. This is expected if MCP is optional."
-        )
+        print("Some MCP modules may not be available. This is expected if MCP is optional.")
         print("MCP integration testing requires full MCP dependencies.")
         return False
 

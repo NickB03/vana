@@ -9,7 +9,7 @@ Based on the analysis that only 16% of tool files are tested.
 import ast
 import json
 from pathlib import Path
-from typing import Dict, List, Any
+from typing import Any, Dict, List
 
 
 class ToolTestGenerator:
@@ -50,9 +50,7 @@ class ToolTestGenerator:
                     func_info = {
                         "name": node.name,
                         "args": [arg.arg for arg in node.args.args],
-                        "returns": getattr(node.returns, "id", "Any")
-                        if node.returns
-                        else "Any",
+                        "returns": getattr(node.returns, "id", "Any") if node.returns else "Any",
                         "docstring": ast.get_docstring(node) or "",
                         "is_async": isinstance(node, ast.AsyncFunctionDef),
                         "line_number": node.lineno,
@@ -100,9 +98,7 @@ class ToolTestGenerator:
             print(f"Error analyzing {file_path}: {e}")
             return {"file": file_path.name, "error": str(e)}
 
-    def generate_test_for_function(
-        self, func_info: Dict[str, Any], file_name: str
-    ) -> str:
+    def generate_test_for_function(self, func_info: Dict[str, Any], file_name: str) -> str:
         """Generate test code for a specific function"""
         func_name = func_info["name"]
         args = func_info["args"]
@@ -154,27 +150,15 @@ class ToolTestGenerator:
 
         if any(term in name_lower for term in ["search", "query", "find"]):
             return "search"
-        elif any(
-            term in name_lower for term in ["read", "write", "file", "save", "load"]
-        ):
+        elif any(term in name_lower for term in ["read", "write", "file", "save", "load"]):
             return "file_ops"
-        elif any(
-            term in name_lower
-            for term in ["coordinate", "delegate", "transfer", "agent"]
-        ):
+        elif any(term in name_lower for term in ["coordinate", "delegate", "transfer", "agent"]):
             return "coordination"
-        elif any(
-            term in name_lower for term in ["analyze", "classify", "match", "score"]
-        ):
+        elif any(term in name_lower for term in ["analyze", "classify", "match", "score"]):
             return "intelligence"
-        elif any(
-            term in name_lower
-            for term in ["workflow", "execute", "run", "start", "stop"]
-        ):
+        elif any(term in name_lower for term in ["workflow", "execute", "run", "start", "stop"]):
             return "workflow"
-        elif any(
-            term in name_lower for term in ["health", "status", "check", "monitor"]
-        ):
+        elif any(term in name_lower for term in ["health", "status", "check", "monitor"]):
             return "monitoring"
         else:
             return "generic"
@@ -296,34 +280,31 @@ class ToolTestGenerator:
 
         # Test with None values
         for arg in filtered_args:
-            error_cases.append(f'''
+            error_cases.append(
+                f'''
         # Test with None {arg}
         try:
             result = {func_name}({", ".join("None" if a == arg else f'"{a}_value"' for a in filtered_args)})
             # Should either work or raise appropriate error
             assert result is not None or True, "None input handling"
         except Exception as e:
-            assert isinstance(e, (ValueError, TypeError)), f"Should raise appropriate error for None {arg}"''')
+            assert isinstance(e, (ValueError, TypeError)), f"Should raise appropriate error for None {arg}"'''
+            )
 
         # Test with empty strings for string args
-        if any(
-            "query" in arg.lower() or "message" in arg.lower() or "task" in arg.lower()
-            for arg in filtered_args
-        ):
-            error_cases.append(f'''
+        if any("query" in arg.lower() or "message" in arg.lower() or "task" in arg.lower() for arg in filtered_args):
+            error_cases.append(
+                f'''
         # Test with empty string
         try:
             result = {func_name}({", ".join('""' if any(term in a.lower() for term in ["query", "message", "task"]) else f'"{a}_value"' for a in filtered_args)})
             # Should handle empty strings gracefully
             assert result is not None, "Empty string should be handled"
         except Exception as e:
-            assert isinstance(e, ValueError), "Should raise ValueError for empty input"''')
+            assert isinstance(e, ValueError), "Should raise ValueError for empty input"'''
+            )
 
-        return (
-            "\n".join(error_cases)
-            if error_cases
-            else "# No specific error cases to test"
-        )
+        return "\n".join(error_cases) if error_cases else "# No specific error cases to test"
 
     def generate_test_file(self, tool_file: Path) -> str:
         """Generate complete test file for a tool"""
@@ -382,34 +363,21 @@ class Test{tool_name.title().replace("_", "")}:
         test_methods = []
         for func in functions:
             if not func["name"].startswith("_"):  # Skip private functions
-                test_methods.append(
-                    self.generate_test_for_function(func, tool_file.name)
-                )
+                test_methods.append(self.generate_test_for_function(func, tool_file.name))
 
         # Generate tests for class methods
         for cls in classes:
             if not cls["name"].startswith("_"):
                 for method in cls["methods"]:
-                    if (
-                        not method["name"].startswith("_")
-                        and method["name"] != "__init__"
-                    ):
-                        method_test = self.generate_test_for_function(
-                            method, tool_file.name
-                        )
-                        test_methods.append(
-                            method_test.replace(
-                                method["name"], f"{cls['name']}_{method['name']}"
-                            )
-                        )
+                    if not method["name"].startswith("_") and method["name"] != "__init__":
+                        method_test = self.generate_test_for_function(method, tool_file.name)
+                        test_methods.append(method_test.replace(method["name"], f"{cls['name']}_{method['name']}"))
 
         return imports + "\n".join(test_methods)
 
     def generate_all_tests(self):
         """Generate tests for all high-priority tools"""
-        print(
-            f"🧪 Generating comprehensive tests for {len(self.priority_tools)} priority tools..."
-        )
+        print(f"🧪 Generating comprehensive tests for {len(self.priority_tools)} priority tools...")
 
         generated_files = []
 

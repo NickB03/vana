@@ -246,18 +246,14 @@ if __name__ == "__main__":
         """Get enhanced Python execution command with wrapper."""
         return ["python3", "/workspace/wrapper.py"]
 
-    async def _run_container(
-        self, container, code: str, execution_id: str
-    ) -> ExecutorResult:
+    async def _run_container(self, container, code: str, execution_id: str) -> ExecutorResult:
         """Enhanced container execution with Python-specific handling."""
         try:
             # Start container
             container.start()
 
             # Wait for container to complete with timeout
-            timeout = self.security_manager.get_resource_limits().get(
-                "max_execution_time", 30
-            )
+            timeout = self.security_manager.get_resource_limits().get("max_execution_time", 30)
 
             try:
                 exit_code = container.wait(timeout=timeout)
@@ -287,8 +283,7 @@ if __name__ == "__main__":
                     if result_data:
                         return ExecutorResult(
                             output=result_data.get("output", output),
-                            error=result_data.get("error")
-                            or (error_output if error_output else None),
+                            error=result_data.get("error") or (error_output if error_output else None),
                             exit_code=result_data.get("exit_code", exit_code),
                             execution_time=result_data.get("execution_time", 0),
                             container_id=container.id,
@@ -360,18 +355,14 @@ if __name__ == "__main__":
 
         return {}
 
-    async def _execute_fallback(
-        self, code: str, execution_id: str, start_time: float
-    ) -> ExecutorResult:
+    async def _execute_fallback(self, code: str, execution_id: str, start_time: float) -> ExecutorResult:
         """
         Fallback Python execution when Docker is not available.
 
         Executes Python code directly with basic security restrictions.
         This is less secure than Docker execution but allows basic functionality.
         """
-        timeout = self.security_manager.get_resource_limits().get(
-            "max_execution_time", 30
-        )
+        timeout = self.security_manager.get_resource_limits().get("max_execution_time", 30)
 
         try:
             # Validate code first

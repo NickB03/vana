@@ -71,19 +71,13 @@ class EnvironmentDetector:
         ]
 
         # Check if multiple Cloud Run indicators are present
-        indicators_present = sum(
-            1 for indicator in cloud_run_indicators if os.getenv(indicator)
-        )
+        indicators_present = sum(1 for indicator in cloud_run_indicators if os.getenv(indicator))
 
         # If 2 or more indicators are present, likely Cloud Run
         is_cloud_run = indicators_present >= 2
 
-        logger.info(
-            f"Environment detection: Cloud Run indicators found: {indicators_present}/5"
-        )
-        logger.info(
-            f"Environment detected: {'Cloud Run' if is_cloud_run else 'Local Development'}"
-        )
+        logger.info(f"Environment detection: Cloud Run indicators found: {indicators_present}/5")
+        logger.info(f"Environment detected: {'Cloud Run' if is_cloud_run else 'Local Development'}")
 
         return is_cloud_run
 
@@ -178,9 +172,7 @@ class EnvironmentDetector:
         if not api_key or api_key == "YOUR_GOOGLE_API_KEY_HERE":
             logger.error("GOOGLE_API_KEY not set or still placeholder!")
             logger.error("Please set your Google API key in .env.local")
-            logger.error(
-                "Get your API key from: https://aistudio.google.com/app/apikey"
-            )
+            logger.error("Get your API key from: https://aistudio.google.com/app/apikey")
 
         # Set default values for local development
         if not os.environ.get("VANA_ENV"):
@@ -192,9 +184,7 @@ class EnvironmentDetector:
     @staticmethod
     def _log_auth_config():
         """Log the current authentication configuration for debugging."""
-        use_vertex = (
-            os.environ.get("GOOGLE_GENAI_USE_VERTEXAI", "False").lower() == "true"
-        )
+        use_vertex = os.environ.get("GOOGLE_GENAI_USE_VERTEXAI", "False").lower() == "true"
         api_key_set = bool(os.environ.get("GOOGLE_API_KEY"))
         project_id = os.environ.get("GOOGLE_CLOUD_PROJECT")
 

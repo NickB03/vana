@@ -82,27 +82,19 @@ class TaskAnalyzer:
         complexity = self._assess_complexity(full_text, keywords)
 
         # Identify required capabilities
-        required_capabilities = self._identify_capabilities(
-            full_text, keywords, task_type
-        )
+        required_capabilities = self._identify_capabilities(full_text, keywords, task_type)
 
         # Estimate duration
-        estimated_duration = self._estimate_duration(
-            complexity, task_type, len(full_text)
-        )
+        estimated_duration = self._estimate_duration(complexity, task_type, len(full_text))
 
         # Determine resource requirements
-        resource_requirements = self._determine_resource_requirements(
-            task_type, complexity
-        )
+        resource_requirements = self._determine_resource_requirements(task_type, complexity)
 
         # Calculate confidence score
         confidence_score = self._calculate_confidence(task_type, keywords, full_text)
 
         # Generate reasoning
-        reasoning = self._generate_reasoning(
-            task_type, complexity, keywords, required_capabilities
-        )
+        reasoning = self._generate_reasoning(task_type, complexity, keywords, required_capabilities)
 
         analysis = TaskAnalysis(
             task_type=task_type,
@@ -313,16 +305,10 @@ class TaskAnalyzer:
                 keyword_matches = sum(1 for kw in indicators["keywords"] if kw in text)
 
                 # Check for complexity patterns
-                pattern_matches = sum(
-                    1 for pattern in indicators["patterns"] if re.search(pattern, text)
-                )
+                pattern_matches = sum(1 for pattern in indicators["patterns"] if re.search(pattern, text))
 
                 # If we have matches or it's within word limit, consider this complexity
-                if (
-                    keyword_matches > 0
-                    or pattern_matches > 0
-                    or complexity == TaskComplexity.SIMPLE
-                ):
+                if keyword_matches > 0 or pattern_matches > 0 or complexity == TaskComplexity.SIMPLE:
                     return complexity
 
         # Default based on word count
@@ -335,9 +321,7 @@ class TaskAnalyzer:
         else:
             return TaskComplexity.VERY_COMPLEX
 
-    def _identify_capabilities(
-        self, text: str, keywords: List[str], task_type: TaskType
-    ) -> List[str]:
+    def _identify_capabilities(self, text: str, keywords: List[str], task_type: TaskType) -> List[str]:
         """Identify required capabilities based on task analysis."""
         required_capabilities = []
 
@@ -361,9 +345,7 @@ class TaskAnalyzer:
 
         return required_capabilities
 
-    def _estimate_duration(
-        self, complexity: TaskComplexity, task_type: TaskType, text_length: int
-    ) -> float:
+    def _estimate_duration(self, complexity: TaskComplexity, task_type: TaskType, text_length: int) -> float:
         """Estimate task duration in seconds."""
         base_durations = {
             TaskComplexity.SIMPLE: 5.0,
@@ -387,9 +369,7 @@ class TaskAnalyzer:
 
         return base_duration * type_multiplier * (1 + length_factor * 0.5)
 
-    def _determine_resource_requirements(
-        self, task_type: TaskType, complexity: TaskComplexity
-    ) -> Dict[str, Any]:
+    def _determine_resource_requirements(self, task_type: TaskType, complexity: TaskComplexity) -> Dict[str, Any]:
         """Determine resource requirements for the task."""
         base_requirements = {
             "cpu_intensive": False,
@@ -418,9 +398,7 @@ class TaskAnalyzer:
 
         return base_requirements
 
-    def _calculate_confidence(
-        self, task_type: TaskType, keywords: List[str], text: str
-    ) -> float:
+    def _calculate_confidence(self, task_type: TaskType, keywords: List[str], text: str) -> float:
         """Calculate confidence score for the analysis."""
         confidence = 0.5  # Base confidence
 
@@ -430,9 +408,7 @@ class TaskAnalyzer:
 
         # Increase confidence based on clear indicators
         type_patterns = self.task_patterns.get(task_type, [])
-        pattern_matches = sum(
-            1 for pattern in type_patterns if re.search(pattern, text)
-        )
+        pattern_matches = sum(1 for pattern in type_patterns if re.search(pattern, text))
         confidence += min(pattern_matches * 0.1, 0.2)
 
         # Decrease confidence for very short or very long tasks

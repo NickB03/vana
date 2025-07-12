@@ -3,6 +3,7 @@ Fixed web search tool that properly handles ADK function naming
 """
 
 from google.adk.tools import FunctionTool
+
 from lib._tools.adk_tools import sync_web_search
 
 

@@ -2,10 +2,11 @@
 Web search tool without any default parameter values for ADK compatibility
 """
 
-from google.adk.tools import FunctionTool
 import asyncio
 import json
 import logging
+
+from google.adk.tools import FunctionTool
 
 logger = logging.getLogger(__name__)
 
@@ -24,7 +25,7 @@ def web_search(query: str, max_results: int) -> str:
     try:
         # Import the async web search function
         from lib._tools.adk_tools import web_search as async_web_search
-        
+
         # Run the async function synchronously
         try:
             loop = asyncio.get_event_loop()

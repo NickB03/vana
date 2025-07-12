@@ -121,9 +121,7 @@ class IntelligentCache:
     def clear_expired(self) -> int:
         """Clear all expired entries and return count."""
         with self._lock:
-            expired_keys = [
-                key for key, entry in self._cache.items() if entry.is_expired()
-            ]
+            expired_keys = [key for key, entry in self._cache.items() if entry.is_expired()]
 
             for key in expired_keys:
                 del self._cache[key]
@@ -209,9 +207,7 @@ class ToolResultCache(IntelligentCache):
             return True
 
         # Always cache search and knowledge graph results
-        if any(
-            pattern in tool_name.lower() for pattern in ["search", "kg", "knowledge"]
-        ):
+        if any(pattern in tool_name.lower() for pattern in ["search", "kg", "knowledge"]):
             return True
 
         return False
@@ -224,9 +220,7 @@ class AgentDecisionCache(IntelligentCache):
         # Agent decisions can be cached for shorter periods
         super().__init__(max_size=300, default_ttl=1800)  # 30 minutes
 
-    def get_decision_cache_key(
-        self, task_description: str, context: Dict[str, Any]
-    ) -> str:
+    def get_decision_cache_key(self, task_description: str, context: Dict[str, Any]) -> str:
         """Generate cache key for agent decisions."""
         # Create similarity-based key for better cache hits
         task_signature = self._get_task_signature(task_description)
@@ -338,6 +332,4 @@ def clear_all_caches():
     tool_result_cache._cache.clear()
     agent_decision_cache._cache.clear()
     tool_result_cache.hits = tool_result_cache.misses = tool_result_cache.evictions = 0
-    agent_decision_cache.hits = agent_decision_cache.misses = (
-        agent_decision_cache.evictions
-    ) = 0
+    agent_decision_cache.hits = agent_decision_cache.misses = agent_decision_cache.evictions = 0

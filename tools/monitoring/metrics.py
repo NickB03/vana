@@ -30,9 +30,7 @@ class MetricsCollector:
         self.last_collection_time = 0
         self.collection_interval = 60  # 1 minute
 
-    def register_component(
-        self, component_name: str, collect_function: Callable[[], Dict[str, Any]]
-    ) -> None:
+    def register_component(self, component_name: str, collect_function: Callable[[], Dict[str, Any]]) -> None:
         """
         Register a component metrics collector.
 
@@ -56,10 +54,7 @@ class MetricsCollector:
         current_time = time.time()
 
         # Check if we need to collect metrics
-        if (
-            not force
-            and current_time - self.last_collection_time < self.collection_interval
-        ):
+        if not force and current_time - self.last_collection_time < self.collection_interval:
             return self.metrics_cache
 
         # Collect system metrics
@@ -73,9 +68,7 @@ class MetricsCollector:
                 metrics = collect_function()
                 component_metrics[component_name] = metrics
             except Exception as e:
-                logger.error(
-                    f"Error collecting metrics for component {component_name}: {str(e)}"
-                )
+                logger.error(f"Error collecting metrics for component {component_name}: {str(e)}")
                 component_metrics[component_name] = {
                     "error": str(e),
                     "timestamp": datetime.datetime.now().isoformat(),
@@ -113,9 +106,7 @@ class MetricsCollector:
             metrics = collect_function()
             return metrics
         except Exception as e:
-            logger.error(
-                f"Error collecting metrics for component {component_name}: {str(e)}"
-            )
+            logger.error(f"Error collecting metrics for component {component_name}: {str(e)}")
             return {"error": str(e), "timestamp": datetime.datetime.now().isoformat()}
 
     def _collect_system_metrics(self) -> Dict[str, Any]:

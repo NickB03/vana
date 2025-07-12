@@ -95,24 +95,14 @@ def check_current_status():
     # Check system dependencies
     tesseract_available = check_system_command("tesseract")
 
-    print(
-        f"PyPDF2 (PDF processing):     {'✅ Available' if pdf_available else '❌ Missing'}"
-    )
-    print(
-        f"Pillow (Image processing):   {'✅ Available' if pil_available else '❌ Missing'}"
-    )
-    print(
-        f"pytesseract (OCR):           {'✅ Available' if pytesseract_available else '❌ Missing'}"
-    )
-    print(
-        f"Tesseract (System OCR):      {'✅ Available' if tesseract_available else '❌ Missing'}"
-    )
+    print(f"PyPDF2 (PDF processing):     {'✅ Available' if pdf_available else '❌ Missing'}")
+    print(f"Pillow (Image processing):   {'✅ Available' if pil_available else '❌ Missing'}")
+    print(f"pytesseract (OCR):           {'✅ Available' if pytesseract_available else '❌ Missing'}")
+    print(f"Tesseract (System OCR):      {'✅ Available' if tesseract_available else '❌ Missing'}")
 
     # Feature availability summary
     print("\n🎯 Feature Availability:")
-    print(
-        f"PDF Processing:              {'✅ Enabled' if pdf_available else '⚠️  Graceful fallback'}"
-    )
+    print(f"PDF Processing:              {'✅ Enabled' if pdf_available else '⚠️  Graceful fallback'}")
     print(
         f"Image Processing:            {'✅ Enabled' if (pil_available and pytesseract_available and tesseract_available) else '⚠️  Graceful fallback'}"
     )
@@ -228,18 +218,10 @@ Examples:
         """,
     )
 
-    parser.add_argument(
-        "--all", action="store_true", help="Install all optional dependencies"
-    )
-    parser.add_argument(
-        "--pd", action="store_true", help="Install PDF processing dependencies"
-    )
-    parser.add_argument(
-        "--images", action="store_true", help="Install image processing dependencies"
-    )
-    parser.add_argument(
-        "--status", action="store_true", help="Check dependency status only"
-    )
+    parser.add_argument("--all", action="store_true", help="Install all optional dependencies")
+    parser.add_argument("--pd", action="store_true", help="Install PDF processing dependencies")
+    parser.add_argument("--images", action="store_true", help="Install image processing dependencies")
+    parser.add_argument("--status", action="store_true", help="Check dependency status only")
 
     args = parser.parse_args()
 

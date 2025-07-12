@@ -128,14 +128,10 @@ class DocumentProcessor:
 
         return document
 
-    def _process_pdf(
-        self, file_path: str, content: bytes, document: Dict[str, Any]
-    ) -> None:
+    def _process_pdf(self, file_path: str, content: bytes, document: Dict[str, Any]) -> None:
         """Process a PDF document"""
         if not PDF_SUPPORT:
-            logger.warning(
-                "PDF support not available. Install PyPDF2 for PDF processing."
-            )
+            logger.warning("PDF support not available. Install PyPDF2 for PDF processing.")
             document["text"] = "PDF processing not available. Install PyPDF2."
             return
 
@@ -190,9 +186,7 @@ class DocumentProcessor:
             logger.error(f"Error processing PDF: {str(e)}")
             document["text"] = f"Error processing PDF: {str(e)}"
 
-    def _process_text(
-        self, file_path: str, content: Union[str, bytes], document: Dict[str, Any]
-    ) -> None:
+    def _process_text(self, file_path: str, content: Union[str, bytes], document: Dict[str, Any]) -> None:
         """Process a text document"""
         try:
             # Get text content
@@ -221,17 +215,11 @@ class DocumentProcessor:
             logger.error(f"Error processing text: {str(e)}")
             document["text"] = f"Error processing text: {str(e)}"
 
-    def _process_image(
-        self, file_path: str, content: bytes, document: Dict[str, Any]
-    ) -> None:
+    def _process_image(self, file_path: str, content: bytes, document: Dict[str, Any]) -> None:
         """Process an image document"""
         if not IMAGE_SUPPORT:
-            logger.warning(
-                "Image support not available. Install PIL and pytesseract for image processing."
-            )
-            document["text"] = (
-                "Image processing not available. Install PIL and pytesseract."
-            )
+            logger.warning("Image support not available. Install PIL and pytesseract for image processing.")
+            document["text"] = "Image processing not available. Install PIL and pytesseract."
             return
 
         try:

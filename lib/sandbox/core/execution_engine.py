@@ -287,9 +287,7 @@ class ExecutionEngine:
         """Get list of supported programming languages."""
         return self.supported_languages.copy()
 
-    def get_execution_history(
-        self, limit: Optional[int] = None
-    ) -> List[ExecutionResult]:
+    def get_execution_history(self, limit: Optional[int] = None) -> List[ExecutionResult]:
         """
         Get execution history.
 
@@ -316,9 +314,7 @@ class MockExecutor:
     def __init__(self, language: str):
         self.language = language
 
-    async def execute(
-        self, code: str, execution_id: Optional[str] = None
-    ) -> Dict[str, Any]:
+    async def execute(self, code: str, execution_id: Optional[str] = None) -> Dict[str, Any]:
         """Mock execution that returns a placeholder result."""
         await asyncio.sleep(0.1)  # Simulate execution time
 

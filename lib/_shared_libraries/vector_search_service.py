@@ -108,17 +108,13 @@ class VectorSearchService:
     def _initialize_services(self):
         """Initialize Vertex AI services."""
         if not VERTEX_AI_AVAILABLE:
-            logger.warning(
-                "Google Cloud AI Platform not available - vector search disabled"
-            )
+            logger.warning("Google Cloud AI Platform not available - vector search disabled")
             return
 
         try:
             # Initialize AI Platform
             aiplatform.init(project=self.project_id, location=self.region)
-            logger.info(
-                f"Initialized Vertex AI for project {self.project_id} in {self.region}"
-            )
+            logger.info(f"Initialized Vertex AI for project {self.project_id} in {self.region}")
 
             # Initialize index if provided
             if self.index_id:
@@ -127,12 +123,8 @@ class VectorSearchService:
 
             # Initialize endpoint if provided
             if self.endpoint_id:
-                self.endpoint = MatchingEngineIndexEndpoint(
-                    index_endpoint_name=self.endpoint_id
-                )
-                logger.info(
-                    f"Initialized MatchingEngineIndexEndpoint: {self.endpoint_id}"
-                )
+                self.endpoint = MatchingEngineIndexEndpoint(index_endpoint_name=self.endpoint_id)
+                logger.info(f"Initialized MatchingEngineIndexEndpoint: {self.endpoint_id}")
 
         except Exception as e:
             logger.error(f"Failed to initialize Vertex AI services: {e}")
@@ -148,9 +140,7 @@ class VectorSearchService:
             List of float values representing the embedding, or None if failed
         """
         if not VERTEX_AI_AVAILABLE or not NUMPY_AVAILABLE:
-            logger.warning(
-                "Vector search dependencies not available - skipping embedding generation"
-            )
+            logger.warning("Vector search dependencies not available - skipping embedding generation")
             return None
 
         # Check cache first
@@ -170,20 +160,14 @@ class VectorSearchService:
                     from vertexai.language_models import TextEmbeddingModel
 
                     vertexai.init(project=self.project_id, location=self.region)
-                    self._embedding_model = TextEmbeddingModel.from_pretrained(
-                        self.embedding_model
-                    )
-                    logger.info(
-                        f"Initialized Vertex AI embedding model: {self.embedding_model}"
-                    )
+                    self._embedding_model = TextEmbeddingModel.from_pretrained(self.embedding_model)
+                    logger.info(f"Initialized Vertex AI embedding model: {self.embedding_model}")
                 except Exception as e:
                     logger.error(f"Failed to initialize Vertex AI embedding model: {e}")
                     # Fallback to mock embedding for development
                     import numpy as np
 
-                    embedding = np.random.normal(
-                        0, 1, self.embedding_dimensions
-                    ).tolist()
+                    embedding = np.random.normal(0, 1, self.embedding_dimensions).tolist()
                     logger.warning("Using mock embedding due to initialization failure")
                     return embedding
 
@@ -196,9 +180,7 @@ class VectorSearchService:
                 if len(self._embedding_cache) < self._cache_max_size:
                     self._embedding_cache[cache_key] = embedding
 
-                logger.debug(
-                    f"Generated real embedding with {len(embedding)} dimensions"
-                )
+                logger.debug(f"Generated real embedding with {len(embedding)} dimensions")
                 return embedding
             else:
                 logger.error("No embeddings returned from Vertex AI")
@@ -213,9 +195,7 @@ class VectorSearchService:
             logger.warning("Using mock embedding due to generation failure")
             return embedding
 
-    async def semantic_search(
-        self, query: str, top_k: int = 5, filter_str: str = ""
-    ) -> List[Dict[str, Any]]:
+    async def semantic_search(self, query: str, top_k: int = 5, filter_str: str = "") -> List[Dict[str, Any]]:
         """
         Perform semantic similarity search using vector embeddings.
 
@@ -240,10 +220,7 @@ class VectorSearchService:
             if VERTEX_AI_AVAILABLE and self.endpoint:
                 try:
                     # Check if we have deployed indexes
-                    if (
-                        not hasattr(self.endpoint, "deployed_indexes")
-                        or not self.endpoint.deployed_indexes
-                    ):
+                    if not hasattr(self.endpoint, "deployed_indexes") or not self.endpoint.deployed_indexes:
                         logger.warning("No deployed indexes found on endpoint")
                         return self._get_fallback_results(query, top_k)
 
@@ -266,9 +243,7 @@ class VectorSearchService:
                             # Handle potential None values safely
                             distance = getattr(neighbor, "distance", 0.5)
                             neighbor_id = getattr(neighbor, "id", f"result_{i + 1}")
-                            score = max(
-                                0.0, 1.0 - (distance if distance is not None else 0.5)
-                            )
+                            score = max(0.0, 1.0 - (distance if distance is not None else 0.5))
 
                             result = {
                                 "content": f"Vector search result {i + 1} for: {query}",
@@ -290,9 +265,7 @@ class VectorSearchService:
                     logger.warning(f"Real vector search failed, using fallback: {e}")
                     return self._get_fallback_results(query, top_k)
             else:
-                logger.warning(
-                    "Vector search endpoint not available - using fallback results"
-                )
+                logger.warning("Vector search endpoint not available - using fallback results")
                 return self._get_fallback_results(query, top_k)
 
         except Exception as e:
@@ -373,35 +346,37 @@ class VectorSearchService:
             True if available, False otherwise
         """
         return VERTEX_AI_AVAILABLE and bool(self.project_id) and bool(self.region)
-    
+
     async def semantic_search_simple(self, query: str, top_k: int = 5) -> List[Dict[str, Any]]:
         """
         Simplified semantic search for search coordinator integration.
-        
+
         Args:
             query: Search query text
             top_k: Number of results to return
-            
+
         Returns:
             List of search results with simplified format for coordinator
         """
         try:
             # Use the full semantic_search method
             full_results = await self.semantic_search(query, top_k)
-            
+
             # Simplify format for search coordinator
             simplified_results = []
             for result in full_results:
-                simplified_results.append({
-                    "content": result.get("content", ""),
-                    "similarity_score": result.get("similarity_score", 0.7),
-                    "metadata": result.get("metadata", {}),
-                    "source": "vector_search"
-                })
-            
+                simplified_results.append(
+                    {
+                        "content": result.get("content", ""),
+                        "similarity_score": result.get("similarity_score", 0.7),
+                        "metadata": result.get("metadata", {}),
+                        "source": "vector_search",
+                    }
+                )
+
             logger.info(f"Simplified semantic search returned {len(simplified_results)} results")
             return simplified_results
-            
+
         except Exception as e:
             logger.error(f"Simplified semantic search failed: {e}")
             return []
@@ -444,20 +419,14 @@ def get_vector_search_service() -> VectorSearchService:
     global _vector_search_service
     if _vector_search_service is None:
         # Get configuration from environment
-        project_id = os.getenv("VERTEX_PROJECT_ID") or os.getenv(
-            "GOOGLE_CLOUD_PROJECT", ""
-        )
-        region = os.getenv("VERTEX_REGION") or os.getenv(
-            "GOOGLE_CLOUD_LOCATION", "us-central1"
-        )
+        project_id = os.getenv("VERTEX_PROJECT_ID") or os.getenv("GOOGLE_CLOUD_PROJECT", "")
+        region = os.getenv("VERTEX_REGION") or os.getenv("GOOGLE_CLOUD_LOCATION", "us-central1")
         index_id = os.getenv("VECTOR_SEARCH_INDEX_ID")
         endpoint_id = os.getenv("VECTOR_SEARCH_ENDPOINT_ID")
         embedding_model = os.getenv("EMBEDDING_MODEL_NAME", "text-embedding-004")
         embedding_dimensions = int(os.getenv("EMBEDDING_DIMENSIONS", "768"))
 
-        logger.info(
-            f"Initializing Vector Search Service: project={project_id}, region={region}"
-        )
+        logger.info(f"Initializing Vector Search Service: project={project_id}, region={region}")
         _vector_search_service = VectorSearchService(
             project_id=project_id,
             region=region,

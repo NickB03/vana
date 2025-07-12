@@ -7,18 +7,17 @@ It integrates all dashboard components and provides a web interface
 for monitoring and managing the VANA system.
 """
 
-from dashboard.routes.vector_search_routes import (
-    register_routes as register_vector_search_routes,
-)
-from dashboard.routes.auth_routes import register_routes as register_auth_routes
-from dashboard.routes.api_routes import register_routes as register_api_routes
-from dashboard.auth.dashboard_auth import DashboardAuth
 import argparse
 import logging
 import os
 import sys
 
 from flask import Flask, redirect, render_template, url_for
+
+from dashboard.auth.dashboard_auth import DashboardAuth
+from dashboard.routes.api_routes import register_routes as register_api_routes
+from dashboard.routes.auth_routes import register_routes as register_auth_routes
+from dashboard.routes.vector_search_routes import register_routes as register_vector_search_routes
 
 # Add the project root to the Python path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))

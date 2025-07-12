@@ -100,9 +100,7 @@ DEFAULT_TEST_QUERIES = [
 ]
 
 
-def calculate_precision(
-    results: List[Dict[str, Any]], expected_keywords: List[str]
-) -> float:
+def calculate_precision(results: List[Dict[str, Any]], expected_keywords: List[str]) -> float:
     """
     Calculate precision of retrieval results
 
@@ -128,9 +126,7 @@ def calculate_precision(
     return relevant_count / len(results)
 
 
-def calculate_recall(
-    results: List[Dict[str, Any]], expected_keywords: List[str]
-) -> float:
+def calculate_recall(results: List[Dict[str, Any]], expected_keywords: List[str]) -> float:
     """
     Calculate recall of retrieval results
 
@@ -148,9 +144,7 @@ def calculate_recall(
     all_content = " ".join([result.get("content", "") for result in results]).lower()
 
     # Count how many expected keywords are found
-    found_keywords = sum(
-        1 for keyword in expected_keywords if keyword.lower() in all_content
-    )
+    found_keywords = sum(1 for keyword in expected_keywords if keyword.lower() in all_content)
 
     return found_keywords / len(expected_keywords)
 
@@ -172,9 +166,7 @@ def calculate_f1_score(precision: float, recall: float) -> float:
     return 2 * (precision * recall) / (precision + recall)
 
 
-def calculate_relevance_scores(
-    results: List[Dict[str, Any]], expected_keywords: List[str]
-) -> List[float]:
+def calculate_relevance_scores(results: List[Dict[str, Any]], expected_keywords: List[str]) -> List[float]:
     """
     Calculate relevance score for each result
 
@@ -194,9 +186,7 @@ def calculate_relevance_scores(
         content = result.get("content", "").lower()
 
         # Count how many expected keywords are found in this result
-        found_keywords = sum(
-            1 for keyword in expected_keywords if keyword.lower() in content
-        )
+        found_keywords = sum(1 for keyword in expected_keywords if keyword.lower() in content)
 
         # Calculate relevance score
         relevance = found_keywords / len(expected_keywords)
@@ -240,9 +230,7 @@ def calculate_ndcg(relevance_scores: List[float], k: int = None) -> float:
     return dcg / idcg
 
 
-def evaluate_vector_search(
-    test_queries: List[Dict[str, Any]], top_k: int = 5
-) -> Dict[str, Any]:
+def evaluate_vector_search(test_queries: List[Dict[str, Any]], top_k: int = 5) -> Dict[str, Any]:
     """
     Evaluate Vector Search retrieval quality
 
@@ -330,9 +318,7 @@ def evaluate_vector_search(
     for difficulty in difficulties:
         difficulty_results = [r for r in results if r["difficulty"] == difficulty]
         if difficulty_results:
-            diff_avg_f1 = sum(r["f1"] for r in difficulty_results) / len(
-                difficulty_results
-            )
+            diff_avg_f1 = sum(r["f1"] for r in difficulty_results) / len(difficulty_results)
             difficulty_metrics[difficulty] = diff_avg_f1
             logger.info(f"  {difficulty}: F1 = {diff_avg_f1:.2f}")
 
@@ -455,9 +441,7 @@ def evaluate_knowledge_graph(test_queries: List[Dict[str, Any]]) -> Dict[str, An
     for difficulty in difficulties:
         difficulty_results = [r for r in results if r["difficulty"] == difficulty]
         if difficulty_results:
-            diff_avg_f1 = sum(r["f1"] for r in difficulty_results) / len(
-                difficulty_results
-            )
+            diff_avg_f1 = sum(r["f1"] for r in difficulty_results) / len(difficulty_results)
             difficulty_metrics[difficulty] = diff_avg_f1
             logger.info(f"  {difficulty}: F1 = {diff_avg_f1:.2f}")
 
@@ -475,9 +459,7 @@ def evaluate_knowledge_graph(test_queries: List[Dict[str, Any]]) -> Dict[str, An
     }
 
 
-def evaluate_hybrid_search(
-    test_queries: List[Dict[str, Any]], top_k: int = 5
-) -> Dict[str, Any]:
+def evaluate_hybrid_search(test_queries: List[Dict[str, Any]], top_k: int = 5) -> Dict[str, Any]:
     """
     Evaluate Hybrid Search retrieval quality
 
@@ -573,9 +555,7 @@ def evaluate_hybrid_search(
     for difficulty in difficulties:
         difficulty_results = [r for r in results if r["difficulty"] == difficulty]
         if difficulty_results:
-            diff_avg_f1 = sum(r["f1"] for r in difficulty_results) / len(
-                difficulty_results
-            )
+            diff_avg_f1 = sum(r["f1"] for r in difficulty_results) / len(difficulty_results)
             difficulty_metrics[difficulty] = diff_avg_f1
             logger.info(f"  {difficulty}: F1 = {diff_avg_f1:.2f}")
 
@@ -599,18 +579,10 @@ def main():
     parser = argparse.ArgumentParser(description="Evaluate Knowledge Base")
     parser.add_argument("--queries", help="JSON file containing test queries")
     parser.add_argument("--output", help="Output file for evaluation results")
-    parser.add_argument(
-        "--top-k", type=int, default=5, help="Number of results to retrieve"
-    )
-    parser.add_argument(
-        "--vector-search", action="store_true", help="Evaluate Vector Search"
-    )
-    parser.add_argument(
-        "--knowledge-graph", action="store_true", help="Evaluate Knowledge Graph"
-    )
-    parser.add_argument(
-        "--hybrid-search", action="store_true", help="Evaluate Hybrid Search"
-    )
+    parser.add_argument("--top-k", type=int, default=5, help="Number of results to retrieve")
+    parser.add_argument("--vector-search", action="store_true", help="Evaluate Vector Search")
+    parser.add_argument("--knowledge-graph", action="store_true", help="Evaluate Knowledge Graph")
+    parser.add_argument("--hybrid-search", action="store_true", help="Evaluate Hybrid Search")
 
     args = parser.parse_args()
 

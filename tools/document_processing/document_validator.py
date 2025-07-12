@@ -135,16 +135,10 @@ class DocumentValidator:
 
         # Security patterns to check for
         self.security_patterns = {
-            "suspicious_urls": re.compile(
-                r"https?://(?:bit\.ly|tinyurl|t\.co|goo\.gl|short\.link)", re.IGNORECASE
-            ),
-            "email_addresses": re.compile(
-                r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b"
-            ),
+            "suspicious_urls": re.compile(r"https?://(?:bit\.ly|tinyurl|t\.co|goo\.gl|short\.link)", re.IGNORECASE),
+            "email_addresses": re.compile(r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b"),
             "phone_numbers": re.compile(r"\b\d{3}[-.]?\d{3}[-.]?\d{4}\b"),
-            "credit_card_patterns": re.compile(
-                r"\b\d{4}[-\s]?\d{4}[-\s]?\d{4}[-\s]?\d{4}\b"
-            ),
+            "credit_card_patterns": re.compile(r"\b\d{4}[-\s]?\d{4}[-\s]?\d{4}[-\s]?\d{4}\b"),
             "ssn_patterns": re.compile(r"\b\d{3}-\d{2}-\d{4}\b"),
         }
 
@@ -153,24 +147,14 @@ class DocumentValidator:
         return [
             ValidationRule("file_exists", "File must exist", "error"),
             ValidationRule("file_readable", "File must be readable", "error"),
-            ValidationRule(
-                "file_size_check", "File size must be within limits", "error"
-            ),
-            ValidationRule(
-                "file_type_supported", "File type must be supported", "error"
-            ),
-            ValidationRule(
-                "file_extension_match", "File extension must match MIME type", "warning"
-            ),
+            ValidationRule("file_size_check", "File size must be within limits", "error"),
+            ValidationRule("file_type_supported", "File type must be supported", "error"),
+            ValidationRule("file_extension_match", "File extension must match MIME type", "warning"),
             ValidationRule("file_not_empty", "File must not be empty", "error"),
             ValidationRule("filename_valid", "Filename must be valid", "warning"),
-            ValidationRule(
-                "content_encoding_check", "Content encoding must be valid", "warning"
-            ),
+            ValidationRule("content_encoding_check", "Content encoding must be valid", "warning"),
             ValidationRule("security_scan", "File must pass security scan", "warning"),
-            ValidationRule(
-                "metadata_extraction", "Metadata must be extractable", "info"
-            ),
+            ValidationRule("metadata_extraction", "Metadata must be extractable", "info"),
         ]
 
     def add_custom_rule(self, rule: ValidationRule):
@@ -191,9 +175,7 @@ class DocumentValidator:
                 rule_name="file_exists",
                 passed=exists,
                 severity="error",
-                message="File exists"
-                if exists
-                else f"File does not exist: {file_path}",
+                message="File exists" if exists else f"File does not exist: {file_path}",
             )
         except Exception as e:
             return ValidationResult(
@@ -296,9 +278,7 @@ class DocumentValidator:
                     message=f"Supported file type: {mime_type}",
                     details={
                         "mime_type": mime_type,
-                        "description": self.supported_mime_types[mime_type][
-                            "description"
-                        ],
+                        "description": self.supported_mime_types[mime_type]["description"],
                     },
                 )
             else:
@@ -537,9 +517,7 @@ class DocumentValidator:
                     for pattern_name, pattern in self.security_patterns.items():
                         matches = pattern.findall(content)
                         if matches:
-                            security_issues.append(
-                                f"Found {pattern_name}: {len(matches)} matches"
-                            )
+                            security_issues.append(f"Found {pattern_name}: {len(matches)} matches")
 
                 except Exception:
                     pass  # Ignore encoding errors for security scan
@@ -675,9 +653,7 @@ class DocumentValidator:
 
         # Determine overall status
         error_count = sum(1 for r in results if not r.passed and r.severity == "error")
-        warning_count = sum(
-            1 for r in results if not r.passed and r.severity == "warning"
-        )
+        warning_count = sum(1 for r in results if not r.passed and r.severity == "warning")
 
         if error_count > 0:
             overall_status = "invalid"
@@ -724,9 +700,7 @@ class DocumentValidator:
 
         reports = []
         for i, file_path in enumerate(file_paths):
-            logger.info(
-                f"Validating file {i + 1}/{len(file_paths)}: {os.path.basename(file_path)}"
-            )
+            logger.info(f"Validating file {i + 1}/{len(file_paths)}: {os.path.basename(file_path)}")
             report = self.validate_document(file_path)
             reports.append(report)
 
@@ -741,9 +715,7 @@ class DocumentValidator:
 
         return reports
 
-    def export_validation_report(
-        self, reports: List[DocumentValidationReport], output_path: str
-    ) -> bool:
+    def export_validation_report(self, reports: List[DocumentValidationReport], output_path: str) -> bool:
         """
         Export validation reports to JSON file
 
@@ -759,15 +731,9 @@ class DocumentValidator:
             report_data = {
                 "validation_summary": {
                     "total_files": len(reports),
-                    "valid_files": sum(
-                        1 for r in reports if r.overall_status == "valid"
-                    ),
-                    "warning_files": sum(
-                        1 for r in reports if r.overall_status == "warning"
-                    ),
-                    "invalid_files": sum(
-                        1 for r in reports if r.overall_status == "invalid"
-                    ),
+                    "valid_files": sum(1 for r in reports if r.overall_status == "valid"),
+                    "warning_files": sum(1 for r in reports if r.overall_status == "warning"),
+                    "invalid_files": sum(1 for r in reports if r.overall_status == "invalid"),
                     "total_errors": sum(r.error_count for r in reports),
                     "total_warnings": sum(r.warning_count for r in reports),
                 },

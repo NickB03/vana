@@ -3,8 +3,8 @@
 Generate version manifest at build time
 """
 
-import os
 import json
+import os
 import subprocess
 from datetime import datetime
 
@@ -13,23 +13,15 @@ def get_git_info():
     """Get git information if available"""
     try:
         commit_hash = (
-            subprocess.check_output(
-                ["git", "rev-parse", "HEAD"], stderr=subprocess.DEVNULL
-            )
-            .decode("utf-8")
-            .strip()
+            subprocess.check_output(["git", "rev-parse", "HEAD"], stderr=subprocess.DEVNULL).decode("utf-8").strip()
         )
         commit_short = (
-            subprocess.check_output(
-                ["git", "rev-parse", "--short", "HEAD"], stderr=subprocess.DEVNULL
-            )
+            subprocess.check_output(["git", "rev-parse", "--short", "HEAD"], stderr=subprocess.DEVNULL)
             .decode("utf-8")
             .strip()
         )
         branch = (
-            subprocess.check_output(
-                ["git", "rev-parse", "--abbrev-ref", "HEAD"], stderr=subprocess.DEVNULL
-            )
+            subprocess.check_output(["git", "rev-parse", "--abbrev-ref", "HEAD"], stderr=subprocess.DEVNULL)
             .decode("utf-8")
             .strip()
         )
@@ -56,9 +48,7 @@ def main():
         },
         "build": {
             "build_id": os.environ.get("BUILD_ID", "unknown"),
-            "build_timestamp": os.environ.get(
-                "BUILD_TIMESTAMP", datetime.now().isoformat()
-            ),
+            "build_timestamp": os.environ.get("BUILD_TIMESTAMP", datetime.now().isoformat()),
             "builder": "docker",
             "environment": os.environ.get("ENVIRONMENT", "development"),
         },

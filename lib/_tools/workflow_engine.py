@@ -157,9 +157,7 @@ class WorkflowEngine:
                     self.workflow_definitions[workflow_def.workflow_id] = workflow_def
 
                 except Exception as e:
-                    logger.warning(
-                        f"Failed to load workflow definition {def_file}: {e}"
-                    )
+                    logger.warning(f"Failed to load workflow definition {def_file}: {e}")
 
             # Load active workflow executions
             for exec_file in self.executions_dir.glob("*.json"):
@@ -179,9 +177,7 @@ class WorkflowEngine:
                         self.active_workflows[workflow_exec.workflow_id] = workflow_exec
 
                 except Exception as e:
-                    logger.warning(
-                        f"Failed to load workflow execution {exec_file}: {e}"
-                    )
+                    logger.warning(f"Failed to load workflow execution {exec_file}: {e}")
 
             logger.info(
                 f"Loaded {len(self.workflow_definitions)} definitions, {len(self.active_workflows)} active workflows"
@@ -253,9 +249,7 @@ class WorkflowEngine:
             with open(def_file, "w") as f:
                 json.dump(asdict(workflow_def), f, indent=2, default=str)
         except Exception as e:
-            logger.error(
-                f"Failed to save workflow definition {workflow_def.workflow_id}: {e}"
-            )
+            logger.error(f"Failed to save workflow definition {workflow_def.workflow_id}: {e}")
 
     def _save_workflow_execution(self, workflow_exec: WorkflowExecution):
         """Save workflow execution to storage."""
@@ -264,9 +258,7 @@ class WorkflowEngine:
             with open(exec_file, "w") as f:
                 json.dump(asdict(workflow_exec), f, indent=2, default=str)
         except Exception as e:
-            logger.error(
-                f"Failed to save workflow execution {workflow_exec.workflow_id}: {e}"
-            )
+            logger.error(f"Failed to save workflow execution {workflow_exec.workflow_id}: {e}")
 
     def create_workflow(
         self,
@@ -289,9 +281,7 @@ class WorkflowEngine:
             workflow_steps = []
             for i, step_data in enumerate(steps):
                 step = WorkflowStep(
-                    step_id=step_data.get(
-                        "step_id", f"step_{i + 1}_{int(time.time())}"
-                    ),
+                    step_id=step_data.get("step_id", f"step_{i + 1}_{int(time.time())}"),
                     name=step_data["name"],
                     description=step_data["description"],
                     agent_name=step_data["agent_name"],
@@ -320,9 +310,7 @@ class WorkflowEngine:
             self.workflow_definitions[workflow_id] = workflow_def
             self._save_workflow_definition(workflow_def)
 
-            logger.info(
-                f"Created workflow: {workflow_id} ({name}) with {len(workflow_steps)} steps"
-            )
+            logger.info(f"Created workflow: {workflow_id} ({name}) with {len(workflow_steps)} steps")
             return workflow_id
 
         except Exception as e:
@@ -353,13 +341,9 @@ class WorkflowEngine:
             result = await self._execute_workflow(workflow_def, workflow_exec)
 
             # Update final state
-            workflow_exec.state = (
-                WorkflowState.COMPLETED if result.success else WorkflowState.FAILED
-            )
+            workflow_exec.state = WorkflowState.COMPLETED if result.success else WorkflowState.FAILED
             workflow_exec.end_time = time.time()
-            workflow_exec.total_execution_time = workflow_exec.end_time - (
-                workflow_exec.start_time or 0.0
-            )
+            workflow_exec.total_execution_time = workflow_exec.end_time - (workflow_exec.start_time or 0.0)
             workflow_exec.progress_percentage = 100.0
             workflow_exec.last_updated = time.time()
 
@@ -390,9 +374,7 @@ class WorkflowEngine:
         """Execute workflow using the task orchestrator."""
         try:
             # Convert workflow steps to orchestration format
-            task_description = (
-                f"Execute workflow: {workflow_def.name} - {workflow_def.description}"
-            )
+            task_description = f"Execute workflow: {workflow_def.name} - {workflow_def.description}"
 
             # Use task orchestrator for execution
             orchestration_result = await self.task_orchestrator.orchestrate_task(
@@ -407,30 +389,22 @@ class WorkflowEngine:
             workflow_exec.results = orchestration_result.results
             workflow_exec.errors = orchestration_result.errors
             workflow_exec.completed_steps = [
-                step.step_id
-                for step in workflow_def.steps
-                if step.status == TaskStatus.COMPLETED
+                step.step_id for step in workflow_def.steps if step.status == TaskStatus.COMPLETED
             ]
             workflow_exec.failed_steps = [
-                step.step_id
-                for step in workflow_def.steps
-                if step.status == TaskStatus.FAILED
+                step.step_id for step in workflow_def.steps if step.status == TaskStatus.FAILED
             ]
 
             # Calculate progress
             total_steps = len(workflow_def.steps)
             completed_steps = len(workflow_exec.completed_steps)
-            workflow_exec.progress_percentage = (
-                (completed_steps / total_steps) * 100.0 if total_steps > 0 else 100.0
-            )
+            workflow_exec.progress_percentage = (completed_steps / total_steps) * 100.0 if total_steps > 0 else 100.0
 
             # Create workflow result
             result = WorkflowResult(
                 workflow_id=workflow_def.workflow_id,
                 success=orchestration_result.success,
-                state=WorkflowState.COMPLETED
-                if orchestration_result.success
-                else WorkflowState.FAILED,
+                state=WorkflowState.COMPLETED if orchestration_result.success else WorkflowState.FAILED,
                 completed_steps=completed_steps,
                 failed_steps=len(workflow_exec.failed_steps),
                 total_steps=total_steps,
@@ -512,9 +486,7 @@ class WorkflowEngine:
             workflow_exec = self.active_workflows[workflow_id]
             workflow_exec.state = WorkflowState.CANCELLED
             workflow_exec.end_time = time.time()
-            workflow_exec.total_execution_time = workflow_exec.end_time - (
-                workflow_exec.start_time or 0.0
-            )
+            workflow_exec.total_execution_time = workflow_exec.end_time - (workflow_exec.start_time or 0.0)
             workflow_exec.last_updated = time.time()
 
             self._save_workflow_execution(workflow_exec)
@@ -549,9 +521,7 @@ class WorkflowEngine:
                     "total_steps": len(workflow_def.steps) if workflow_def else 0,
                     "start_time": workflow_exec.start_time,
                     "execution_time": (
-                        time.time() - (workflow_exec.start_time or 0.0)
-                        if workflow_exec.start_time
-                        else 0.0
+                        time.time() - (workflow_exec.start_time or 0.0) if workflow_exec.start_time else 0.0
                     ),
                     "errors": workflow_exec.errors,
                     "last_updated": workflow_exec.last_updated,
@@ -587,9 +557,7 @@ class WorkflowEngine:
             logger.error(f"Failed to get workflow status {workflow_id}: {e}")
             return None
 
-    def list_workflows(
-        self, state_filter: Optional[str] = None
-    ) -> List[Dict[str, Any]]:
+    def list_workflows(self, state_filter: Optional[str] = None) -> List[Dict[str, Any]]:
         """List all workflows with optional state filtering."""
         try:
             workflows = []

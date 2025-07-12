@@ -3,6 +3,7 @@
 
 import os
 import sys
+
 from dotenv import load_dotenv
 
 # Add the project root to the Python path
@@ -16,6 +17,7 @@ if os.path.exists(dotenv_path):
 
 # Configure genai AFTER loading env
 import google.generativeai as genai
+
 api_key = os.getenv('GOOGLE_API_KEY')
 genai.configure(api_key=api_key)
 
@@ -25,6 +27,7 @@ from google.adk.tools import FunctionTool
 
 # Import the VANA agent
 from agents.vana.team import root_agent
+
 
 def test_adk_agent():
     """Test ADK agent tool execution"""

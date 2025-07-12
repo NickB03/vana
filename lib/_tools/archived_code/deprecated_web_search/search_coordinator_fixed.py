@@ -3,6 +3,7 @@ Fixed Search Coordinator - Removes default values that cause issues with Google 
 """
 
 from google.adk.tools import FunctionTool
+
 from lib._tools.search_coordinator import create_coordinated_search_tool
 
 
@@ -55,7 +56,7 @@ def create_fixed_coordinated_search_tool() -> FunctionTool:
 def create_fixed_web_search_tool() -> FunctionTool:
     """Create a fixed version of web_search without default values."""
     from lib._tools.adk_tools import adk_web_search
-    
+
     # Create wrapper
     def fixed_web_search(query: str, max_results: int) -> str:
         """

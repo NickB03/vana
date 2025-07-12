@@ -86,18 +86,14 @@ class StandardizedFileSystemTools:
                 metadata={"file_size": len(result["content"]), "file_path": file_path},
             )
         else:
-            response = StandardToolResponse(
-                success=False, error=result["error"], tool_name="read_file"
-            )
+            response = StandardToolResponse(success=False, error=result["error"], tool_name="read_file")
 
         # Record analytics
         tool_analytics.record_usage("read_file", parameters, response)
         return response
 
     @standardized_tool_wrapper("write_file")
-    def write_file(
-        self, file_path: str, content: str, append: bool = False
-    ) -> StandardToolResponse:
+    def write_file(self, file_path: str, content: str, append: bool = False) -> StandardToolResponse:
         """✍️ Write content to a file with backup and validation.
 
         Args:
@@ -110,9 +106,7 @@ class StandardizedFileSystemTools:
         """
         # Validate inputs
         file_path = InputValidator.validate_path(file_path, "file_path")
-        content = InputValidator.validate_string(
-            content, "content", required=True, max_length=1000000
-        )
+        content = InputValidator.validate_string(content, "content", required=True, max_length=1000000)
 
         # Record usage for analytics
         parameters = {
@@ -137,9 +131,7 @@ class StandardizedFileSystemTools:
                 },
             )
         else:
-            response = StandardToolResponse(
-                success=False, error=result["error"], tool_name="write_file"
-            )
+            response = StandardToolResponse(success=False, error=result["error"], tool_name="write_file")
 
         # Record analytics
         tool_analytics.record_usage("write_file", parameters, response)
@@ -174,18 +166,12 @@ class StandardizedFileSystemTools:
                 metadata={
                     "directory_path": directory_path,
                     "item_count": len(contents),
-                    "file_count": sum(
-                        1 for item in contents if item.get("type") == "file"
-                    ),
-                    "directory_count": sum(
-                        1 for item in contents if item.get("type") == "directory"
-                    ),
+                    "file_count": sum(1 for item in contents if item.get("type") == "file"),
+                    "directory_count": sum(1 for item in contents if item.get("type") == "directory"),
                 },
             )
         else:
-            response = StandardToolResponse(
-                success=False, error=result["error"], tool_name="list_directory"
-            )
+            response = StandardToolResponse(success=False, error=result["error"], tool_name="list_directory")
 
         # Record analytics
         tool_analytics.record_usage("list_directory", parameters, response)
@@ -224,9 +210,7 @@ class StandardizedFileSystemTools:
                 metadata={"file_path": file_path, "exists": exists},
             )
         else:
-            response = StandardToolResponse(
-                success=False, error=result["error"], tool_name="file_exists"
-            )
+            response = StandardToolResponse(success=False, error=result["error"], tool_name="file_exists")
 
         # Record analytics
         tool_analytics.record_usage("file_exists", parameters, response)

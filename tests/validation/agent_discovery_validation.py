@@ -13,10 +13,10 @@ This script tests:
 
 import asyncio
 import json
-import time
 import sys
+import time
 from pathlib import Path
-from typing import Dict, Any
+from typing import Any, Dict
 
 # Add project root to path
 project_root = Path(__file__).parent.parent.parent
@@ -35,9 +35,7 @@ class AgentDiscoveryValidator:
     def __init__(self, environment: str = "dev"):
         self.environment = environment
         self.project_root = project_root
-        self.baseline_manager = BaselineManager(
-            project_root / "tests" / "validation" / "performance_baselines.json"
-        )
+        self.baseline_manager = BaselineManager(project_root / "tests" / "validation" / "performance_baselines.json")
         self.regression_detector = RegressionDetector()
         self.results_dir = project_root / "tests" / "results" / "validation"
         self.results_dir.mkdir(parents=True, exist_ok=True)
@@ -134,9 +132,7 @@ class AgentDiscoveryValidator:
             validation_results["regression_analysis"] = regression_results
 
             # Step 7: Generate Validation Summary
-            validation_results["validation_summary"] = (
-                self._generate_validation_summary(validation_results)
-            )
+            validation_results["validation_summary"] = self._generate_validation_summary(validation_results)
 
             logger.info("✅ Agent discovery and basic operations validation completed!")
 
@@ -211,9 +207,7 @@ class AgentDiscoveryValidator:
             # Calculate success rate
             total_expected = len(self.expected_agents)
             found_expected = len(discovery_results["expected_agents_found"])
-            discovery_results["discovery_success_rate"] = (
-                found_expected / total_expected if total_expected > 0 else 0.0
-            )
+            discovery_results["discovery_success_rate"] = found_expected / total_expected if total_expected > 0 else 0.0
 
             logger.info(
                 f"   📊 Discovery Results: {found_expected}/{total_expected} expected agents found ({discovery_results['discovery_success_rate']:.1%})"
@@ -308,9 +302,7 @@ class AgentDiscoveryValidator:
 
             successful_tests = sum(1 for test in all_tests if test["success"])
             total_tests = len(all_tests)
-            operations_results["operation_success_rate"] = (
-                successful_tests / total_tests if total_tests > 0 else 0.0
-            )
+            operations_results["operation_success_rate"] = successful_tests / total_tests if total_tests > 0 else 0.0
 
             response_times = [test["response_time"] for test in all_tests]
             operations_results["average_response_time"] = (
@@ -320,9 +312,7 @@ class AgentDiscoveryValidator:
             logger.info(
                 f"   📊 Operations Results: {successful_tests}/{total_tests} tests passed ({operations_results['operation_success_rate']:.1%})"
             )
-            logger.info(
-                f"   ⏱️ Average Response Time: {operations_results['average_response_time']:.3f}s"
-            )
+            logger.info(f"   ⏱️ Average Response Time: {operations_results['average_response_time']:.3f}s")
 
         except Exception as e:
             logger.error(f"   ❌ Basic operations validation failed: {str(e)}")
@@ -403,28 +393,20 @@ class AgentDiscoveryValidator:
 
             # Calculate tool success metrics
             all_tool_tests = (
-                tool_results["file_operations"]
-                + tool_results["search_operations"]
-                + tool_results["system_operations"]
+                tool_results["file_operations"] + tool_results["search_operations"] + tool_results["system_operations"]
             )
 
             successful_tools = sum(1 for test in all_tool_tests if test["success"])
             total_tools = len(all_tool_tests)
-            tool_results["tool_success_rate"] = (
-                successful_tools / total_tools if total_tools > 0 else 0.0
-            )
+            tool_results["tool_success_rate"] = successful_tools / total_tools if total_tools > 0 else 0.0
 
             response_times = [test["response_time"] for test in all_tool_tests]
-            tool_results["tool_response_time"] = (
-                sum(response_times) / len(response_times) if response_times else 0.0
-            )
+            tool_results["tool_response_time"] = sum(response_times) / len(response_times) if response_times else 0.0
 
             logger.info(
                 f"   📊 Tool Results: {successful_tools}/{total_tools} tools working ({tool_results['tool_success_rate']:.1%})"
             )
-            logger.info(
-                f"   ⏱️ Average Tool Response Time: {tool_results['tool_response_time']:.3f}s"
-            )
+            logger.info(f"   ⏱️ Average Tool Response Time: {tool_results['tool_response_time']:.3f}s")
 
         except Exception as e:
             logger.error(f"   ❌ Tool integration validation failed: {str(e)}")
@@ -532,9 +514,7 @@ class AgentDiscoveryValidator:
             logger.info(
                 f"   📊 Coordination Results: {successful_coord}/{total_coord} tests passed ({coordination_results['coordination_success_rate']:.1%})"
             )
-            logger.info(
-                f"   ⏱️ Average Coordination Time: {coordination_results['coordination_response_time']:.3f}s"
-            )
+            logger.info(f"   ⏱️ Average Coordination Time: {coordination_results['coordination_response_time']:.3f}s")
 
         except Exception as e:
             logger.error(f"   ❌ Agent coordination validation failed: {str(e)}")
@@ -573,16 +553,12 @@ class AgentDiscoveryValidator:
                 for metric_name, current_value in current_metrics.items():
                     baseline_key = f"agent_{metric_name}"
                     if baseline_key in self.baseline_manager.baselines.baselines:
-                        baseline = self.baseline_manager.baselines.baselines[
-                            baseline_key
-                        ]
+                        baseline = self.baseline_manager.baselines.baselines[baseline_key]
                         baseline_value = baseline.baseline_value
 
                         # Calculate percentage difference
                         if baseline_value > 0:
-                            percentage_diff = (
-                                (current_value - baseline_value) / baseline_value
-                            ) * 100
+                            percentage_diff = ((current_value - baseline_value) / baseline_value) * 100
                         else:
                             percentage_diff = 0.0
 
@@ -600,9 +576,7 @@ class AgentDiscoveryValidator:
                 performance_metrics["baseline_comparison"] = baseline_comparison
 
                 # Determine overall performance status
-                degraded_metrics = [
-                    m for m in baseline_comparison.values() if m["status"] == "degraded"
-                ]
+                degraded_metrics = [m for m in baseline_comparison.values() if m["status"] == "degraded"]
                 if len(degraded_metrics) == 0:
                     performance_metrics["performance_status"] = "good"
                 elif len(degraded_metrics) <= 2:
@@ -610,9 +584,7 @@ class AgentDiscoveryValidator:
                 else:
                     performance_metrics["performance_status"] = "concerning"
 
-                logger.info(
-                    f"   📊 Performance Status: {performance_metrics['performance_status']}"
-                )
+                logger.info(f"   📊 Performance Status: {performance_metrics['performance_status']}")
             else:
                 logger.info("   📊 No baselines available for comparison")
                 performance_metrics["performance_status"] = "no_baseline"
@@ -623,9 +595,7 @@ class AgentDiscoveryValidator:
 
         return performance_metrics
 
-    async def _detect_regressions(
-        self, validation_results: Dict[str, Any]
-    ) -> Dict[str, Any]:
+    async def _detect_regressions(self, validation_results: Dict[str, Any]) -> Dict[str, Any]:
         """Detect performance regressions using regression detector."""
         regression_results = {
             "regressions_detected": [],
@@ -641,18 +611,14 @@ class AgentDiscoveryValidator:
                 "performance_metrics" in validation_results
                 and "current_metrics" in validation_results["performance_metrics"]
             ):
-                current_metrics = validation_results["performance_metrics"][
-                    "current_metrics"
-                ]
+                current_metrics = validation_results["performance_metrics"]["current_metrics"]
 
                 # Check each metric for regressions
                 for metric_name, current_value in current_metrics.items():
                     baseline_key = f"agent_{metric_name}"
 
                     if baseline_key in self.baseline_manager.baselines.baselines:
-                        baseline = self.baseline_manager.baselines.baselines[
-                            baseline_key
-                        ]
+                        baseline = self.baseline_manager.baselines.baselines[baseline_key]
 
                         # Use regression detector to analyze
                         regression = self.regression_detector.detect_regression(
@@ -675,40 +641,22 @@ class AgentDiscoveryValidator:
 
                 # Generate regression summary
                 if regression_results["regressions_detected"]:
-                    severities = [
-                        r["severity"]
-                        for r in regression_results["regressions_detected"]
-                    ]
+                    severities = [r["severity"] for r in regression_results["regressions_detected"]]
                     if "critical" in severities:
-                        regression_results["overall_regression_status"] = (
-                            "critical_regressions"
-                        )
+                        regression_results["overall_regression_status"] = "critical_regressions"
                     elif "major" in severities:
-                        regression_results["overall_regression_status"] = (
-                            "major_regressions"
-                        )
+                        regression_results["overall_regression_status"] = "major_regressions"
                     elif "moderate" in severities:
-                        regression_results["overall_regression_status"] = (
-                            "moderate_regressions"
-                        )
+                        regression_results["overall_regression_status"] = "moderate_regressions"
                     else:
-                        regression_results["overall_regression_status"] = (
-                            "minor_regressions"
-                        )
+                        regression_results["overall_regression_status"] = "minor_regressions"
 
                     regression_results["regression_summary"] = {
-                        "total_regressions": len(
-                            regression_results["regressions_detected"]
-                        ),
-                        "severity_breakdown": {
-                            severity: severities.count(severity)
-                            for severity in set(severities)
-                        },
+                        "total_regressions": len(regression_results["regressions_detected"]),
+                        "severity_breakdown": {severity: severities.count(severity) for severity in set(severities)},
                     }
 
-                    logger.warning(
-                        f"   ⚠️ {len(regression_results['regressions_detected'])} regressions detected"
-                    )
+                    logger.warning(f"   ⚠️ {len(regression_results['regressions_detected'])} regressions detected")
                 else:
                     logger.info("   ✅ No performance regressions detected")
 
@@ -718,9 +666,7 @@ class AgentDiscoveryValidator:
 
         return regression_results
 
-    def _generate_validation_summary(
-        self, validation_results: Dict[str, Any]
-    ) -> Dict[str, Any]:
+    def _generate_validation_summary(self, validation_results: Dict[str, Any]) -> Dict[str, Any]:
         """Generate comprehensive validation summary."""
         summary = {
             "overall_status": "unknown",
@@ -739,18 +685,14 @@ class AgentDiscoveryValidator:
                 discovery = validation_results["agent_discovery"]
                 discovery_score = discovery.get("discovery_success_rate", 0.0)
                 scores.append(discovery_score)
-                summary["key_metrics"]["agent_discovery_rate"] = (
-                    f"{discovery_score:.1%}"
-                )
+                summary["key_metrics"]["agent_discovery_rate"] = f"{discovery_score:.1%}"
 
             # Basic operations score
             if "basic_operations" in validation_results:
                 operations = validation_results["basic_operations"]
                 operations_score = operations.get("operation_success_rate", 0.0)
                 scores.append(operations_score)
-                summary["key_metrics"]["operations_success_rate"] = (
-                    f"{operations_score:.1%}"
-                )
+                summary["key_metrics"]["operations_success_rate"] = f"{operations_score:.1%}"
 
             # Tool integration score
             if "tool_integration" in validation_results:
@@ -764,9 +706,7 @@ class AgentDiscoveryValidator:
                 coordination = validation_results["coordination_tests"]
                 coordination_score = coordination.get("coordination_success_rate", 0.0)
                 scores.append(coordination_score)
-                summary["key_metrics"]["coordination_success_rate"] = (
-                    f"{coordination_score:.1%}"
-                )
+                summary["key_metrics"]["coordination_success_rate"] = f"{coordination_score:.1%}"
 
             # Calculate overall score
             if scores:
@@ -786,9 +726,7 @@ class AgentDiscoveryValidator:
             if "agent_discovery" in validation_results:
                 missing_critical = [
                     agent
-                    for agent in validation_results["agent_discovery"].get(
-                        "missing_agents", []
-                    )
+                    for agent in validation_results["agent_discovery"].get("missing_agents", [])
                     if agent.get("critical", False)
                 ]
                 if missing_critical:
@@ -799,9 +737,7 @@ class AgentDiscoveryValidator:
             if "regression_analysis" in validation_results:
                 critical_regressions = [
                     r
-                    for r in validation_results["regression_analysis"].get(
-                        "regressions_detected", []
-                    )
+                    for r in validation_results["regression_analysis"].get("regressions_detected", [])
                     if r.get("severity") == "critical"
                 ]
                 if critical_regressions:
@@ -811,28 +747,18 @@ class AgentDiscoveryValidator:
 
             # Generate recommendations
             if summary["validation_score"] < 0.95:
-                summary["recommendations"].append(
-                    "Investigate and resolve validation failures"
-                )
+                summary["recommendations"].append("Investigate and resolve validation failures")
 
             if summary["critical_issues"]:
-                summary["recommendations"].append(
-                    "Address critical issues before proceeding to next validation phase"
-                )
+                summary["recommendations"].append("Address critical issues before proceeding to next validation phase")
 
             if "performance_metrics" in validation_results:
-                perf_status = validation_results["performance_metrics"].get(
-                    "performance_status", "unknown"
-                )
+                perf_status = validation_results["performance_metrics"].get("performance_status", "unknown")
                 if perf_status == "concerning":
-                    summary["recommendations"].append(
-                        "Investigate performance degradation"
-                    )
+                    summary["recommendations"].append("Investigate performance degradation")
 
             if not summary["recommendations"]:
-                summary["recommendations"].append(
-                    "Proceed to next validation phase - Tool Integration Testing"
-                )
+                summary["recommendations"].append("Proceed to next validation phase - Tool Integration Testing")
 
         except Exception as e:
             logger.error(f"❌ Validation summary generation failed: {str(e)}")
@@ -842,9 +768,7 @@ class AgentDiscoveryValidator:
 
     async def _save_validation_results(self, results: Dict[str, Any]):
         """Save validation results to file."""
-        results_file = (
-            self.results_dir / f"agent_discovery_validation_{int(time.time())}.json"
-        )
+        results_file = self.results_dir / f"agent_discovery_validation_{int(time.time())}.json"
 
         with open(results_file, "w") as f:
             json.dump(results, f, indent=2)

@@ -79,9 +79,7 @@ class MCPConfigManager:
             name="github",
             package="ghcr.io/github/github-mcp-server",
             server_type=MCPServerType.API_DIRECT,
-            status=self._get_server_status(
-                ["GITHUB_TOKEN", "GITHUB_PERSONAL_ACCESS_TOKEN"]
-            ),
+            status=self._get_server_status(["GITHUB_TOKEN", "GITHUB_PERSONAL_ACCESS_TOKEN"]),
             description="Complete GitHub workflow automation",
             env_keys=["GITHUB_TOKEN", "GITHUB_PERSONAL_ACCESS_TOKEN"],
             url="https://api.github.com",
@@ -179,19 +177,11 @@ class MCPConfigManager:
 
     def get_ready_servers(self) -> Dict[str, MCPServerConfig]:
         """Get all servers that are ready to use."""
-        return {
-            name: config
-            for name, config in self.servers.items()
-            if config.status == MCPServerStatus.READY
-        }
+        return {name: config for name, config in self.servers.items() if config.status == MCPServerStatus.READY}
 
     def get_servers_by_priority(self, priority: int = 1) -> Dict[str, MCPServerConfig]:
         """Get servers by priority level."""
-        return {
-            name: config
-            for name, config in self.servers.items()
-            if config.priority == priority
-        }
+        return {name: config for name, config in self.servers.items() if config.priority == priority}
 
     def get_server_status_summary(self) -> Dict[str, Any]:
         """Get comprehensive status summary of all MCP servers."""
@@ -209,18 +199,10 @@ class MCPConfigManager:
             "readiness_percentage": round((ready_servers / total_servers) * 100, 1),
             "status_breakdown": status_counts,
             "tier_1_ready": len(
-                [
-                    c
-                    for c in self.servers.values()
-                    if c.priority == 1 and c.status == MCPServerStatus.READY
-                ]
+                [c for c in self.servers.values() if c.priority == 1 and c.status == MCPServerStatus.READY]
             ),
             "tier_2_ready": len(
-                [
-                    c
-                    for c in self.servers.values()
-                    if c.priority == 2 and c.status == MCPServerStatus.READY
-                ]
+                [c for c in self.servers.values() if c.priority == 2 and c.status == MCPServerStatus.READY]
             ),
         }
 

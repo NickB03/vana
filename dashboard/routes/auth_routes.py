@@ -7,16 +7,7 @@ This module provides routes for dashboard authentication.
 
 import logging
 
-from flask import (
-    Blueprint,
-    current_app,
-    flash,
-    redirect,
-    render_template,
-    request,
-    session,
-    url_for,
-)
+from flask import Blueprint, current_app, flash, redirect, render_template, request, session, url_for
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)

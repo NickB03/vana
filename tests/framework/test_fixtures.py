@@ -110,10 +110,7 @@ class TestFixtureManager:
             agent_id=agent_id,
             test_queries=[s.query for s in selected_scenarios],
             expected_responses=[s.expected_pattern for s in selected_scenarios],
-            expected_tools=[
-                s.expected_tools[0] if s.expected_tools else "echo"
-                for s in selected_scenarios
-            ],
+            expected_tools=[s.expected_tools[0] if s.expected_tools else "echo" for s in selected_scenarios],
             context={"query_type": query_type.value, "test_mode": True},
             performance_thresholds={
                 "response_time": 5.0,
@@ -223,9 +220,7 @@ class TestFixtureManager:
         multi_agent_data = MultiAgentTestData(
             scenario_name=scenario_name,
             agents=agents,
-            conversation_flow=conversation_flows.get(
-                conversation_type, conversation_flows["coordination"]
-            ),
+            conversation_flow=conversation_flows.get(conversation_type, conversation_flows["coordination"]),
             expected_delegations=[
                 {"from": agents[0], "to": agents[1]},
                 {"from": agents[1], "to": agents[0]},
@@ -257,9 +252,7 @@ class TestFixtureManager:
         self.logger.info(f"Created multi-agent test fixture: {fixture_name}")
         return fixture
 
-    def create_performance_test_fixture(
-        self, test_name: str, load_config: Dict[str, Any]
-    ) -> TestFixture:
+    def create_performance_test_fixture(self, test_name: str, load_config: Dict[str, Any]) -> TestFixture:
         """Create test fixture for performance testing"""
 
         # Default performance test configuration
@@ -293,9 +286,7 @@ class TestFixtureManager:
         self.logger.info(f"Created performance test fixture: {fixture_name}")
         return fixture
 
-    def create_security_test_fixture(
-        self, test_name: str, security_scenarios: List[str]
-    ) -> TestFixture:
+    def create_security_test_fixture(self, test_name: str, security_scenarios: List[str]) -> TestFixture:
         """Create test fixture for security testing"""
 
         # Define security test scenarios
@@ -325,9 +316,7 @@ class TestFixtureManager:
 
         # Filter scenarios based on request
         filtered_data = {
-            scenario: security_data[scenario]
-            for scenario in security_scenarios
-            if scenario in security_data
+            scenario: security_data[scenario] for scenario in security_scenarios if scenario in security_data
         }
 
         # Create fixture
@@ -440,9 +429,7 @@ class TestFixtureManager:
         """Get statistics about the fixture manager"""
         fixture_types = {}
         for fixture in self.fixtures.values():
-            fixture_types[fixture.fixture_type] = (
-                fixture_types.get(fixture.fixture_type, 0) + 1
-            )
+            fixture_types[fixture.fixture_type] = fixture_types.get(fixture.fixture_type, 0) + 1
 
         return {
             "total_fixtures": len(self.fixtures),

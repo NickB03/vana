@@ -91,9 +91,7 @@ class ResponseQualityAnalyzer:
         clarity = self.analyze_clarity(response)
 
         # Calculate overall score
-        overall_score = (
-            accuracy * 0.3 + completeness * 0.25 + relevance * 0.25 + clarity * 0.2
-        )
+        overall_score = accuracy * 0.3 + completeness * 0.25 + relevance * 0.25 + clarity * 0.2
 
         # Determine if human review is needed
         needs_review = self._needs_human_review(clarity, relevance, overall_score)
@@ -105,9 +103,7 @@ class ResponseQualityAnalyzer:
             clarity=clarity,
             overall_score=overall_score,
             needs_human_review=needs_review,
-            review_status=ReviewStatus.PENDING_REVIEW
-            if needs_review
-            else ReviewStatus.NOT_REVIEWED,
+            review_status=ReviewStatus.PENDING_REVIEW if needs_review else ReviewStatus.NOT_REVIEWED,
         )
 
         # If review is needed, attempt LLM judge first (if enabled)
@@ -167,9 +163,7 @@ class ResponseQualityAnalyzer:
                 if self._verify_fact_in_response(response, fact_type, expected_value):
                     accuracy_score += 1.0
 
-        return (
-            accuracy_score / total_checks if total_checks > 0 else 0.5
-        )  # STRICT: Low score without validation
+        return accuracy_score / total_checks if total_checks > 0 else 0.5  # STRICT: Low score without validation
 
     def analyze_completeness(
         self,
@@ -180,9 +174,7 @@ class ResponseQualityAnalyzer:
         """Assess completeness of information provided"""
 
         # Check minimum length requirement
-        min_length = (
-            validation_criteria.get("min_length", 0) if validation_criteria else 0
-        )
+        min_length = validation_criteria.get("min_length", 0) if validation_criteria else 0
         if min_length > 0 and len(response) < min_length:
             return 0.3  # Significantly penalize too-short responses
 
@@ -247,9 +239,7 @@ class ResponseQualityAnalyzer:
 
         return sum(clarity_factors.values()) / len(clarity_factors)
 
-    def validate_against_criteria(
-        self, response: str, criteria: Dict[str, Any]
-    ) -> ValidationResult:
+    def validate_against_criteria(self, response: str, criteria: Dict[str, Any]) -> ValidationResult:
         """Validate response against specific criteria"""
         passed = True
         score = 1.0
@@ -276,9 +266,7 @@ class ResponseQualityAnalyzer:
         if "min_length" in criteria:
             if len(response) < criteria["min_length"]:
                 passed = False
-                failed_criteria.append(
-                    f"Response too short: {len(response)} < {criteria['min_length']}"
-                )
+                failed_criteria.append(f"Response too short: {len(response)} < {criteria['min_length']}")
                 score -= 0.4
 
         # Check format pattern
@@ -295,13 +283,9 @@ class ResponseQualityAnalyzer:
 
         score = max(0.0, score)
 
-        return ValidationResult(
-            passed=passed, score=score, details=details, failed_criteria=failed_criteria
-        )
+        return ValidationResult(passed=passed, score=score, details=details, failed_criteria=failed_criteria)
 
-    def submit_human_review(
-        self, response_id: str, human_score: float, comments: str, reviewer_id: str
-    ) -> None:
+    def submit_human_review(self, response_id: str, human_score: float, comments: str, reviewer_id: str) -> None:
         """Submit human review for a response"""
         review_data = {
             "response_id": response_id,
@@ -324,19 +308,11 @@ class ResponseQualityAnalyzer:
         return []
 
     # Helper methods (implementation details)
-    def _needs_human_review(
-        self, clarity: float, relevance: float, overall: float
-    ) -> bool:
+    def _needs_human_review(self, clarity: float, relevance: float, overall: float) -> bool:
         """Determine if response needs human review"""
-        return (
-            clarity < self.hitl_threshold
-            or relevance < self.hitl_threshold
-            or overall < self.hitl_threshold
-        )
+        return clarity < self.hitl_threshold or relevance < self.hitl_threshold or overall < self.hitl_threshold
 
-    def _llm_judge_evaluation(
-        self, response: str, query: str, metrics: QualityMetrics
-    ) -> Optional[Dict[str, Any]]:
+    def _llm_judge_evaluation(self, response: str, query: str, metrics: QualityMetrics) -> Optional[Dict[str, Any]]:
         """Use LLM as judge for subjective evaluation"""
         # This would integrate with an LLM service for evaluation
         # For now, return None to indicate LLM judge not available
@@ -358,9 +334,7 @@ class ResponseQualityAnalyzer:
             "structure_indicators": ["because", "therefore", "however", "additionally"],
         }
 
-    def _verify_fact_in_response(
-        self, response: str, fact_type: str, expected_value: Any
-    ) -> bool:
+    def _verify_fact_in_response(self, response: str, fact_type: str, expected_value: Any) -> bool:
         """Verify a specific fact is present in the response"""
         response_lower = response.lower()
 
@@ -391,31 +365,21 @@ class ResponseQualityAnalyzer:
 
         return requirements
 
-    def _requirement_addressed_in_response(
-        self, response: str, requirement: str
-    ) -> bool:
+    def _requirement_addressed_in_response(self, response: str, requirement: str) -> bool:
         """Check if a requirement is addressed in the response"""
         response_lower = response.lower()
 
         if requirement.startswith("answer_"):
             # Check if response provides an answer
             return len(response) > 20 and not any(
-                phrase in response_lower
-                for phrase in ["i cannot", "unable to", "don't know"]
+                phrase in response_lower for phrase in ["i cannot", "unable to", "don't know"]
             )
         elif requirement == "comparison":
-            return any(
-                word in response_lower
-                for word in ["versus", "vs", "compared to", "difference"]
-            )
+            return any(word in response_lower for word in ["versus", "vs", "compared to", "difference"])
         elif requirement == "analysis":
-            return any(
-                word in response_lower for word in ["analysis", "examine", "evaluate"]
-            )
+            return any(word in response_lower for word in ["analysis", "examine", "evaluate"])
         elif requirement == "explanation":
-            return any(
-                word in response_lower for word in ["because", "due to", "reason"]
-            )
+            return any(word in response_lower for word in ["because", "due to", "reason"])
 
         return True  # Default to true for unknown requirements
 
@@ -513,9 +477,7 @@ class ResponseQualityAnalyzer:
             "consequently",
         ]
 
-        connector_count = sum(
-            1 for connector in connectors if connector in response.lower()
-        )
+        connector_count = sum(1 for connector in connectors if connector in response.lower())
 
         # Normalize based on response length
         response_sentences = len(re.split(r"[.!?]+", response))

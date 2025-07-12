@@ -99,9 +99,7 @@ class TestCreateWorkflowTool:
         strategy = "sequential"
         priority = "high"
 
-        result = adk_create_workflow.func(
-            name, description, template_name, strategy, priority
-        )
+        result = adk_create_workflow.func(name, description, template_name, strategy, priority)
 
         assert isinstance(result, str)
         assert len(result) > 0
@@ -314,9 +312,7 @@ class TestWorkflowManagementIntegration:
     def test_workflow_lifecycle_simulation(self):
         """Test simulated workflow lifecycle"""
         # Create workflow
-        create_result = adk_create_workflow.func(
-            "Test Lifecycle", "Test workflow lifecycle"
-        )
+        create_result = adk_create_workflow.func("Test Lifecycle", "Test workflow lifecycle")
         create_parsed = json.loads(create_result)
         workflow_id = create_parsed["workflow_id"]
 
@@ -412,8 +408,6 @@ class TestWorkflowManagementIntegration:
             execution_time = end_time - start_time
 
             # Should be reasonably fast (under 2 seconds)
-            assert execution_time < 2.0, (
-                f"Tool {tool.name} took too long: {execution_time:.2f}s"
-            )
+            assert execution_time < 2.0, f"Tool {tool.name} took too long: {execution_time:.2f}s"
             assert isinstance(result, str)
             assert len(result) > 0

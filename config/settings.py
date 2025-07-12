@@ -33,18 +33,12 @@ class Settings(BaseSettings):
     )
 
     # Model Configuration
-    vana_model: str = Field(
-        default="gemini-2.0-flash-exp", description="Default LLM model for VANA agent"
-    )
+    vana_model: str = Field(default="gemini-2.0-flash-exp", description="Default LLM model for VANA agent")
 
     # Google Cloud Configuration
-    google_project_id: str = Field(
-        default="analystai-454200", description="Google Cloud project ID"
-    )
+    google_project_id: str = Field(default="analystai-454200", description="Google Cloud project ID")
 
-    google_location: str = Field(
-        default="us-central1", description="Google Cloud region for services"
-    )
+    google_location: str = Field(default="us-central1", description="Google Cloud region for services")
 
     # Environment Detection
     vana_env: str = Field(
@@ -53,42 +47,26 @@ class Settings(BaseSettings):
     )
 
     # API Keys (loaded from Secret Manager via existing integration)
-    openrouter_api_key: Optional[str] = Field(
-        default="", description="OpenRouter API key for LLM access"
-    )
+    openrouter_api_key: Optional[str] = Field(default="", description="OpenRouter API key for LLM access")
 
-    github_token: Optional[str] = Field(
-        default="", description="GitHub token for repository access"
-    )
+    github_token: Optional[str] = Field(default="", description="GitHub token for repository access")
 
-    brave_api_key: Optional[str] = Field(
-        default="", description="Brave Search API key for web search"
-    )
+    brave_api_key: Optional[str] = Field(default="", description="Brave Search API key for web search")
 
     # Server Configuration
-    port: int = Field(
-        default=8000, description="Server port (Cloud Run uses PORT env var)"
-    )
+    port: int = Field(default=8000, description="Server port (Cloud Run uses PORT env var)")
 
     # Memory Configuration
-    memory_similarity_top_k: int = Field(
-        default=5, description="Number of top results for similarity search"
-    )
+    memory_similarity_top_k: int = Field(default=5, description="Number of top results for similarity search")
 
-    memory_vector_distance_threshold: float = Field(
-        default=0.7, description="Distance threshold for vector search"
-    )
+    memory_vector_distance_threshold: float = Field(default=0.7, description="Distance threshold for vector search")
 
     memory_cache_size: int = Field(default=1000, description="Local memory cache size")
 
-    memory_cache_ttl: int = Field(
-        default=3600, description="Memory cache TTL in seconds"
-    )
+    memory_cache_ttl: int = Field(default=3600, description="Memory cache TTL in seconds")
 
     # RAG Configuration
-    rag_corpus_resource_name: Optional[str] = Field(
-        default=None, description="Vertex AI RAG corpus resource name"
-    )
+    rag_corpus_resource_name: Optional[str] = Field(default=None, description="Vertex AI RAG corpus resource name")
 
     # Logging Configuration
     log_level: str = Field(default="INFO", description="Logging level")

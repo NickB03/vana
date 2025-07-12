@@ -193,9 +193,7 @@ class VanaLoggingConfig:
 
         # Update loggers to use file handlers
         for logger_name in ["vana", "agents", "lib", "tools"]:
-            config["loggers"][logger_name]["handlers"].extend(
-                ["file_all", "file_errors", "file_json"]
-            )
+            config["loggers"][logger_name]["handlers"].extend(["file_all", "file_errors", "file_json"])
 
         # Update root logger
         config["root"]["handlers"].extend(["file_all", "file_errors", "file_json"])

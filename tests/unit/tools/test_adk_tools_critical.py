@@ -6,34 +6,31 @@ These are production-critical functions that power the core VANA functionality.
 """
 
 import json
-import pytest
-import tempfile
 import os
-from pathlib import Path
-from unittest.mock import Mock, patch
 
 # Import the critical ADK tools
 import sys
+import tempfile
+from pathlib import Path
+from unittest.mock import Mock, patch
+
+import pytest
 
 sys.path.append(str(Path(__file__).parent.parent.parent.parent))
 
-from lib._tools.adk_tools import (
-    # File System Tools (Critical)
-    read_file,
-    write_file,
-    list_directory,
-    file_exists,
-    # Search Tools (Critical)
-    vector_search,
-    web_search,
-    # System Tools (Critical)
-    echo,
-    get_health_status,
-    # Coordination Tools (Critical)
-    coordinate_task,
-    get_agent_status,
+from lib._tools.adk_tools import (  # File System Tools (Critical); Search Tools (Critical); System Tools (Critical); Coordination Tools (Critical)
     analyze_task,
     classify_task,
+    coordinate_task,
+    echo,
+    file_exists,
+    get_agent_status,
+    get_health_status,
+    list_directory,
+    read_file,
+    vector_search,
+    web_search,
+    write_file,
 )
 
 
@@ -62,9 +59,9 @@ class TestCriticalADKTools:
 
         # STRICT: Must return success indicator
         assert isinstance(result, str), "write_file must return string"
-        assert "success" in result.lower() or "written" in result.lower(), (
-            f"write_file must indicate success. Got: {result}"
-        )
+        assert (
+            "success" in result.lower() or "written" in result.lower()
+        ), f"write_file must indicate success. Got: {result}"
 
         # STRICT: File must actually be created
         assert os.path.exists(self.test_file), "File must be created"
@@ -85,9 +82,9 @@ class TestCriticalADKTools:
 
         # STRICT: Must return exact file content
         assert isinstance(result, str), "read_file must return string"
-        assert result == self.test_content, (
-            f"read_file must return exact content. Expected: {self.test_content}, Got: {result}"
-        )
+        assert (
+            result == self.test_content
+        ), f"read_file must return exact content. Expected: {self.test_content}, Got: {result}"
 
     @pytest.mark.unit
     def test_file_exists_functionality(self):
@@ -95,18 +92,18 @@ class TestCriticalADKTools:
         # Test with non-existent file
         result_missing = file_exists("/nonexistent/file.txt")
         assert isinstance(result_missing, str), "file_exists must return string"
-        assert "false" in result_missing.lower() or "not" in result_missing.lower(), (
-            "file_exists must indicate file does not exist"
-        )
+        assert (
+            "false" in result_missing.lower() or "not" in result_missing.lower()
+        ), "file_exists must indicate file does not exist"
 
         # Test with existing file
         with open(self.test_file, "w") as f:
             f.write("test")
 
         result_exists = file_exists(self.test_file)
-        assert "true" in result_exists.lower() or "exists" in result_exists.lower(), (
-            "file_exists must indicate file exists"
-        )
+        assert (
+            "true" in result_exists.lower() or "exists" in result_exists.lower()
+        ), "file_exists must indicate file exists"
 
     @pytest.mark.unit
     def test_list_directory_functionality(self):
@@ -186,9 +183,7 @@ class TestCriticalADKTools:
 
             # Should contain query information
             result_lower = result.lower()
-            assert "test" in result_lower or "query" in result_lower, (
-                "Vector search result must reference query"
-            )
+            assert "test" in result_lower or "query" in result_lower, "Vector search result must reference query"
 
     # System Tools Tests - STRICT validation
 
@@ -200,9 +195,7 @@ class TestCriticalADKTools:
 
         # STRICT: Must echo the message back
         assert isinstance(result, str), "echo must return string"
-        assert test_message in result, (
-            f"echo must contain input message. Expected: {test_message}, Got: {result}"
-        )
+        assert test_message in result, f"echo must contain input message. Expected: {test_message}, Got: {result}"
         assert len(result) >= len(test_message), "echo result too short"
 
     @pytest.mark.unit
@@ -218,9 +211,9 @@ class TestCriticalADKTools:
         try:
             parsed = json.loads(result)
             assert "status" in parsed, "Health status missing 'status' field"
-            assert "health" in parsed or "operational" in str(parsed).lower(), (
-                "Health status must indicate system health"
-            )
+            assert (
+                "health" in parsed or "operational" in str(parsed).lower()
+            ), "Health status must indicate system health"
         except json.JSONDecodeError:
             # If not JSON, must contain health indicators
             result_lower = result.lower()
@@ -246,9 +239,9 @@ class TestCriticalADKTools:
             assert "action" in parsed, "Missing action field"
             assert parsed["action"] == "coordinate_task", "Incorrect action value"
             # Must preserve task description
-            assert task_description in str(parsed) or "task" in str(parsed).lower(), (
-                "Coordination result must reference task"
-            )
+            assert (
+                task_description in str(parsed) or "task" in str(parsed).lower()
+            ), "Coordination result must reference task"
         except json.JSONDecodeError:
             # If not JSON, must contain coordination indicators
             result_lower = result.lower()
@@ -289,15 +282,14 @@ class TestCriticalADKTools:
         # STRICT: Must contain analysis information
         try:
             parsed = json.loads(result)
-            assert "analysis" in str(parsed).lower() or "task" in str(parsed).lower(), (
-                "Task analysis must contain analysis information"
-            )
+            assert (
+                "analysis" in str(parsed).lower() or "task" in str(parsed).lower()
+            ), "Task analysis must contain analysis information"
         except json.JSONDecodeError:
             # If not JSON, must contain analysis indicators
             result_lower = result.lower()
             assert any(
-                term in result_lower
-                for term in ["analysis", "task", "complexity", "sentiment"]
+                term in result_lower for term in ["analysis", "task", "complexity", "sentiment"]
             ), "Task analysis must contain analysis indicators"
 
     @pytest.mark.unit
@@ -313,8 +305,7 @@ class TestCriticalADKTools:
         # STRICT: Must contain classification information
         result_lower = result.lower()
         assert any(
-            term in result_lower
-            for term in ["classification", "category", "type", "financial", "data"]
+            term in result_lower for term in ["classification", "category", "type", "financial", "data"]
         ), "Task classification must contain classification information"
 
     # Error Handling Tests - STRICT validation
@@ -346,9 +337,7 @@ class TestCriticalADKTools:
             result = coordinate_task(None)
             assert isinstance(result, str), "Must handle None input"
         except Exception as e:
-            assert isinstance(e, (ValueError, TypeError)), (
-                "Should raise appropriate error for None"
-            )
+            assert isinstance(e, (ValueError, TypeError)), "Should raise appropriate error for None"
 
     # Integration-style tests within unit scope
 
@@ -357,16 +346,12 @@ class TestCriticalADKTools:
         """Test complete file workflow with STRICT validation"""
         # Write -> Read -> Check exists workflow
         write_result = write_file(self.test_file, self.test_content)
-        assert "success" in write_result.lower() or "written" in write_result.lower(), (
-            "Write operation must succeed"
-        )
+        assert "success" in write_result.lower() or "written" in write_result.lower(), "Write operation must succeed"
 
         read_result = read_file(self.test_file)
-        assert read_result == self.test_content, (
-            "Read must return exact written content"
-        )
+        assert read_result == self.test_content, "Read must return exact written content"
 
         exists_result = file_exists(self.test_file)
-        assert "true" in exists_result.lower() or "exists" in exists_result.lower(), (
-            "File existence check must confirm file exists"
-        )
+        assert (
+            "true" in exists_result.lower() or "exists" in exists_result.lower()
+        ), "File existence check must confirm file exists"

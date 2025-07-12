@@ -49,15 +49,11 @@ class EnvironmentConfig:
         )
 
         similarity_top_k = int(os.environ.get("MEMORY_SIMILARITY_TOP_K", "5"))
-        vector_distance_threshold = float(
-            os.environ.get("MEMORY_VECTOR_DISTANCE_THRESHOLD", "0.7")
-        )
+        vector_distance_threshold = float(os.environ.get("MEMORY_VECTOR_DISTANCE_THRESHOLD", "0.7"))
         session_service_type = os.environ.get("SESSION_SERVICE_TYPE", "vertex_ai")
 
         logger.info(f"Using ADK Memory with RAG Corpus: {rag_corpus_resource_name}")
-        logger.info(
-            f"Memory similarity settings: top_k={similarity_top_k}, threshold={vector_distance_threshold}"
-        )
+        logger.info(f"Memory similarity settings: top_k={similarity_top_k}, threshold={vector_distance_threshold}")
 
         return {
             "rag_corpus_resource_name": rag_corpus_resource_name,
@@ -90,9 +86,7 @@ class EnvironmentConfig:
                 # Further validation could be added here (e.g., JSON parsing, permission checks)
                 pass  # Placeholder for more robust validation
         else:
-            logger.warning(
-                "GOOGLE_APPLICATION_CREDENTIALS environment variable not set. Vector Search may require it."
-            )
+            logger.warning("GOOGLE_APPLICATION_CREDENTIALS environment variable not set. Vector Search may require it.")
 
         return config
 
@@ -139,16 +133,12 @@ class EnvironmentConfig:
                 or "projects/${GOOGLE_CLOUD_PROJECT}/locations/us-central1/ragCorpora/vana-corpus"
             ),
             "similarity_top_k": int(os.environ.get("MEMORY_SIMILARITY_TOP_K", "5")),
-            "vector_distance_threshold": float(
-                os.environ.get("MEMORY_VECTOR_DISTANCE_THRESHOLD", "0.7")
-            ),
+            "vector_distance_threshold": float(os.environ.get("MEMORY_VECTOR_DISTANCE_THRESHOLD", "0.7")),
             "session_service_type": os.environ.get("SESSION_SERVICE_TYPE", "vertex_ai"),
             # Local caching settings (for performance optimization)
             "cache_size": int(os.environ.get("MEMORY_CACHE_SIZE", "1000")),
             "cache_ttl": int(os.environ.get("MEMORY_CACHE_TTL", "3600")),
-            "local_db_path": os.path.join(
-                EnvironmentConfig.get_data_dir(), "adk_memory_cache.db"
-            ),
+            "local_db_path": os.path.join(EnvironmentConfig.get_data_dir(), "adk_memory_cache.db"),
         }
 
     @staticmethod
@@ -167,9 +157,7 @@ class EnvironmentConfig:
         """
         credentials_path = os.environ.get("GOOGLE_APPLICATION_CREDENTIALS")
         if not credentials_path:
-            logger.warning(
-                "GOOGLE_APPLICATION_CREDENTIALS environment variable is not set."
-            )
+            logger.warning("GOOGLE_APPLICATION_CREDENTIALS environment variable is not set.")
             return None
 
         if not os.path.exists(credentials_path):
@@ -191,9 +179,7 @@ class EnvironmentConfig:
                         f"It is recommended to restrict access to owner only (chmod 600)."
                     )
             except Exception as e:
-                logger.warning(
-                    f"Could not check permissions on GCP credentials file: {e}"
-                )
+                logger.warning(f"Could not check permissions on GCP credentials file: {e}")
 
         try:
             import json
@@ -210,9 +196,7 @@ class EnvironmentConfig:
                 "client_email",
             ]
             if not all(key in credentials for key in required_keys):
-                logger.error(
-                    f"GCP credentials file {credentials_path} is missing one or more required keys."
-                )
+                logger.error(f"GCP credentials file {credentials_path} is missing one or more required keys.")
                 return None
 
             # Validate service account type
@@ -223,37 +207,25 @@ class EnvironmentConfig:
                 return None
 
             # Validate private key format
-            if not credentials.get("private_key", "").startswith(
-                "-----BEGIN PRIVATE KEY-----"
-            ):
-                logger.error(
-                    f"GCP credentials file {credentials_path} contains an invalid private key format."
-                )
+            if not credentials.get("private_key", "").startswith("-----BEGIN PRIVATE KEY-----"):
+                logger.error(f"GCP credentials file {credentials_path} contains an invalid private key format.")
                 return None
 
             # Validate client email format
             if not credentials.get("client_email", "").endswith(".gserviceaccount.com"):
-                logger.warning(
-                    f"GCP credentials file {credentials_path} contains an unusual client email format."
-                )
+                logger.warning(f"GCP credentials file {credentials_path} contains an unusual client email format.")
 
             logger.info(f"Successfully loaded GCP credentials from {credentials_path}")
             return credentials
 
         except json.JSONDecodeError:
-            logger.error(
-                f"Error decoding JSON from GCP credentials file: {credentials_path}"
-            )
+            logger.error(f"Error decoding JSON from GCP credentials file: {credentials_path}")
             return None
         except PermissionError:
-            logger.error(
-                f"Permission denied when trying to read GCP credentials file: {credentials_path}"
-            )
+            logger.error(f"Permission denied when trying to read GCP credentials file: {credentials_path}")
             return None
         except Exception as e:
-            logger.error(
-                f"An unexpected error occurred while loading GCP credentials from {credentials_path}: {e}"
-            )
+            logger.error(f"An unexpected error occurred while loading GCP credentials from {credentials_path}: {e}")
             return None
 
     @staticmethod
@@ -268,24 +240,18 @@ class EnvironmentConfig:
             # Validate RAG Corpus Resource Name format
             rag_corpus = config.get("rag_corpus_resource_name", "")
             if not rag_corpus.startswith("projects/"):
-                validation_results["errors"].append(
-                    "RAG_CORPUS_RESOURCE_NAME must start with 'projects/'"
-                )
+                validation_results["errors"].append("RAG_CORPUS_RESOURCE_NAME must start with 'projects/'")
                 validation_results["valid"] = False
 
             # Validate similarity settings
             top_k = config.get("similarity_top_k", 0)
             if top_k <= 0 or top_k > 100:
-                validation_results["errors"].append(
-                    "MEMORY_SIMILARITY_TOP_K must be between 1 and 100"
-                )
+                validation_results["errors"].append("MEMORY_SIMILARITY_TOP_K must be between 1 and 100")
                 validation_results["valid"] = False
 
             threshold = config.get("vector_distance_threshold", 0)
             if threshold < 0.0 or threshold > 1.0:
-                validation_results["errors"].append(
-                    "MEMORY_VECTOR_DISTANCE_THRESHOLD must be between 0.0 and 1.0"
-                )
+                validation_results["errors"].append("MEMORY_VECTOR_DISTANCE_THRESHOLD must be between 0.0 and 1.0")
                 validation_results["valid"] = False
 
             # Validate session service type
@@ -298,15 +264,11 @@ class EnvironmentConfig:
 
             # Note: Deprecated MCP variable checks removed as part of cleanup
 
-            logger.info(
-                f"ADK Memory configuration validation: {'PASSED' if validation_results['valid'] else 'FAILED'}"
-            )
+            logger.info(f"ADK Memory configuration validation: {'PASSED' if validation_results['valid'] else 'FAILED'}")
 
         except Exception as e:
             validation_results["valid"] = False
-            validation_results["errors"].append(
-                f"Configuration validation error: {str(e)}"
-            )
+            validation_results["errors"].append(f"Configuration validation error: {str(e)}")
             logger.error(f"ADK Memory configuration validation failed: {e}")
 
         return validation_results
@@ -328,9 +290,7 @@ class EnvironmentConfig:
             if adk_config.get("rag_corpus_resource_name"):
                 status["adk_memory_configured"] = True
         except Exception:
-            status["recommendations"].append(
-                "Configure ADK memory variables in environment"
-            )
+            status["recommendations"].append("Configure ADK memory variables in environment")
 
         # Note: MCP variable checks removed as part of cleanup
 
@@ -342,11 +302,7 @@ class EnvironmentConfig:
             status["recommendations"].extend(validation["errors"])
 
         # Determine migration phase
-        if (
-            status["adk_memory_configured"]
-            and not status["mcp_variables_present"]
-            and status["configuration_valid"]
-        ):
+        if status["adk_memory_configured"] and not status["mcp_variables_present"] and status["configuration_valid"]:
             status["migration_phase"] = "complete"
         elif status["adk_memory_configured"]:
             status["migration_phase"] = "in_progress"

@@ -15,15 +15,7 @@ try:
     import mcp.types as types
     from mcp.server import Server
     from mcp.server.sse import SseServerTransport
-    from mcp.types import (
-        CallToolResult,
-        GetPromptResult,
-        Prompt,
-        ReadResourceResult,
-        Resource,
-        TextContent,
-        Tool,
-    )
+    from mcp.types import CallToolResult, GetPromptResult, Prompt, ReadResourceResult, Resource, TextContent, Tool
 except ImportError as e:
     logging.error(f"MCP SDK not available: {e}")
     # Fallback for development
@@ -150,16 +142,12 @@ class VANAMCPServer:
                     result = await self._handle_github_tool(arguments)
                 else:
                     return CallToolResult(
-                        content=[
-                            TextContent(type="text", text=f"Unknown tool: {name}")
-                        ],
+                        content=[TextContent(type="text", text=f"Unknown tool: {name}")],
                         isError=True,
                     )
 
                 return CallToolResult(
-                    content=[
-                        TextContent(type="text", text=json.dumps(result, indent=2))
-                    ],
+                    content=[TextContent(type="text", text=json.dumps(result, indent=2))],
                     isError=False,
                 )
 
@@ -189,9 +177,7 @@ class VANAMCPServer:
             "transport": "sse",
         }
 
-    async def _handle_brave_search_tool(
-        self, arguments: Dict[str, Any]
-    ) -> Dict[str, Any]:
+    async def _handle_brave_search_tool(self, arguments: Dict[str, Any]) -> Dict[str, Any]:
         """Handle Brave Search MCP tool"""
         query = arguments.get("query", "")
         max_results = arguments.get("max_results", 5)
@@ -329,9 +315,7 @@ class VANAMCPServer:
             ]
 
         @self.server.get_prompt()
-        async def get_prompt(
-            name: str, arguments: Optional[Dict[str, str]] = None
-        ) -> GetPromptResult:
+        async def get_prompt(name: str, arguments: Optional[Dict[str, str]] = None) -> GetPromptResult:
             """Handle prompt requests"""
             if name == "vana_analysis":
                 topic = arguments.get("topic", "") if arguments else ""

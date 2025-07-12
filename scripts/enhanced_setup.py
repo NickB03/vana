@@ -4,21 +4,22 @@ Enhanced Setup for Auto-Memory System
 Installs dependencies and configures automatic memory integration
 """
 
+import json
 import subprocess
 import sys
-import json
 from pathlib import Path
+
 
 def install_enhanced_dependencies():
     """Install all required packages for enhanced memory system"""
     packages = [
         "chromadb>=0.4.0",
-        "sentence-transformers>=2.2.0", 
+        "sentence-transformers>=2.2.0",
         "fastmcp>=0.2.0",
         "watchdog>=3.0.0",  # For file system monitoring
-        "mcp>=0.2.0"        # Core MCP library
+        "mcp>=0.2.0",  # Core MCP library
     ]
-    
+
     print("📦 Installing enhanced dependencies...")
     for package in packages:
         print(f"Installing {package}...")
@@ -27,13 +28,14 @@ def install_enhanced_dependencies():
         except subprocess.CalledProcessError as e:
             print(f"❌ Failed to install {package}: {e}")
             return False
-    
+
     print("✅ Enhanced dependencies installed successfully!")
     return True
 
+
 def create_enhanced_config():
     """Create enhanced Claude desktop config"""
-    
+
     config_snippet = {
         "vana-auto-memory": {
             "command": "python",
@@ -42,22 +44,23 @@ def create_enhanced_config():
                 "MEMORY_DB_PATH": str(Path.cwd() / ".memory_db"),
                 "AUTO_SEARCH_ENABLED": "true",
                 "FILE_WATCHING_ENABLED": "true",
-                "SEARCH_THRESHOLD": "0.7"
-            }
+                "SEARCH_THRESHOLD": "0.7",
+            },
         }
     }
-    
+
     config_file = Path("claude_enhanced_config.json")
-    with open(config_file, 'w') as f:
+    with open(config_file, "w") as f:
         json.dump(config_snippet, f, indent=2)
-    
+
     print(f"⚙️ Enhanced config saved to: {config_file}")
-    
+
     return config_snippet
+
 
 def create_memory_instructions():
     """Create instructions for automatic memory integration"""
-    
+
     instructions = """
 # Automatic Memory Integration Instructions
 
@@ -102,71 +105,74 @@ When user asks questions like:
 - Relevant context appears automatically
 - System learns from your query patterns
 """
-    
+
     instructions_file = Path(".claude/auto-memory-instructions.md")
     instructions_file.write_text(instructions)
-    
+
     print(f"📋 Auto-memory instructions saved to: {instructions_file}")
+
 
 def test_enhanced_system():
     """Test the enhanced memory system"""
-    
+
     print("🧪 Testing enhanced memory system...")
-    
+
     try:
         # Test imports
         import chromadb
         from sentence_transformers import SentenceTransformer
         from watchdog.observers import Observer
+
         print("✅ All imports successful")
-        
+
         # Test ChromaDB
         client = chromadb.Client()
         collection = client.create_collection("test_enhanced")
         print("✅ ChromaDB working")
-        
+
         # Test sentence-transformers
         model = SentenceTransformer("all-MiniLM-L6-v2")
         test_embedding = model.encode(["test enhanced memory"])
         print("✅ Sentence transformers working")
-        
+
         # Test file watching
         observer = Observer()
         print("✅ File watching available")
-        
+
         print("\n🎉 Enhanced memory system ready!")
         print("\n🚀 Features enabled:")
         print("  - Automatic memory search")
-        print("  - Real-time file watching") 
+        print("  - Real-time file watching")
         print("  - Query intent analysis")
         print("  - Smart context injection")
-        
+
         return True
-        
+
     except Exception as e:
         print(f"❌ Enhanced system test failed: {e}")
         return False
+
 
 def main():
     """Main enhanced setup function"""
     print("🚀 Setting up Enhanced Auto-Memory System...")
     print("=" * 50)
-    
+
     try:
         # Step 1: Install enhanced dependencies
         if not install_enhanced_dependencies():
             sys.exit(1)
-        
+
         # Step 2: Create directories
         Path(".memory_db").mkdir(exist_ok=True)
         Path("scripts").mkdir(exist_ok=True)
-        
+
         # Step 3: Create enhanced config
         config = create_enhanced_config()
-        
+
         # Step 4: Create memory instructions
         create_memory_instructions()
-        
+
         # Step 5: Test enhanced system
         if test_enhanced_system():
             print("\n" + "=" * 50)
@@ -187,10 +193,11 @@ def main():
             print("  - Work invisibly in background")
         else:
             print("❌ Enhanced setup encountered issues.")
-            
+
     except Exception as e:
         print(f"❌ Enhanced setup failed: {e}")
         sys.exit(1)
+
 
 if __name__ == "__main__":
     main()

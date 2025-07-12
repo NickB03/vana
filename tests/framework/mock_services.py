@@ -152,9 +152,7 @@ class MockWebSearchService(BaseMockService):
             return json.dumps(response_data)
 
         # Apply the mock
-        self.mock_patch = patch(
-            "lib._tools.adk_tools.web_search", side_effect=mock_web_search
-        )
+        self.mock_patch = patch("lib._tools.adk_tools.web_search", side_effect=mock_web_search)
         self.mock_patch.start()
 
         self.is_active = True
@@ -202,16 +200,12 @@ class MockVectorSearchService(BaseMockService):
         if self.is_active:
             return
 
-        async def mock_vector_search(
-            query: str, limit: int = 10
-        ) -> List[Dict[str, Any]]:
+        async def mock_vector_search(query: str, limit: int = 10) -> List[Dict[str, Any]]:
             self.record_call("vector_search", (query, limit), {})
             await asyncio.sleep(0.05)  # Simulate processing
             return self.mock_results[:limit]
 
-        self.mock_patch = patch(
-            "lib._tools.adk_tools.vector_search", side_effect=mock_vector_search
-        )
+        self.mock_patch = patch("lib._tools.adk_tools.vector_search", side_effect=mock_vector_search)
         self.mock_patch.start()
 
         self.is_active = True
@@ -255,9 +249,7 @@ class MockAgentCoordinationService(BaseMockService):
         async def mock_delegate_to_agent(agent_name: str, task: str) -> str:
             self.record_call("delegate_to_agent", (agent_name, task), {})
             await asyncio.sleep(0.2)  # Simulate delegation delay
-            return self.agent_responses.get(
-                agent_name, f"Mock response from {agent_name}"
-            )
+            return self.agent_responses.get(agent_name, f"Mock response from {agent_name}")
 
         async def mock_get_agent_status(
             agent_name: Optional[str] = None,
@@ -273,12 +265,8 @@ class MockAgentCoordinationService(BaseMockService):
                 }
 
         # Apply mocks
-        delegate_patch = patch(
-            "lib._tools.adk_tools.delegate_to_agent", side_effect=mock_delegate_to_agent
-        )
-        status_patch = patch(
-            "lib._tools.adk_tools.get_agent_status", side_effect=mock_get_agent_status
-        )
+        delegate_patch = patch("lib._tools.adk_tools.delegate_to_agent", side_effect=mock_delegate_to_agent)
+        status_patch = patch("lib._tools.adk_tools.get_agent_status", side_effect=mock_get_agent_status)
 
         delegate_patch.start()
         status_patch.start()

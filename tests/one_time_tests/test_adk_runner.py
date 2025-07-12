@@ -3,6 +3,7 @@
 
 import os
 import sys
+
 from dotenv import load_dotenv
 
 # Add the project root to the Python path
@@ -15,11 +16,14 @@ if os.path.exists(dotenv_path):
     load_dotenv(dotenv_path=dotenv_path, override=True)
     print(f"✅ Loaded .env.local")
 
+import asyncio
+
 # Import after env is loaded
 from google.adk.runners import Runner
 from google.adk.sessions import InMemorySessionService
+
 from agents.vana.team import root_agent
-import asyncio
+
 
 async def test_runner():
     """Test the ADK Runner with different message formats"""

@@ -158,9 +158,7 @@ class TestSystemTools:
         # Check for common health status fields
         expected_fields = ["agent", "tools", "status", "system"]
         found_fields = [field for field in expected_fields if field in result_lower]
-        assert len(found_fields) >= 2, (
-            f"Expected health status fields, found: {found_fields}"
-        )
+        assert len(found_fields) >= 2, f"Expected health status fields, found: {found_fields}"
 
     @pytest.mark.unit
     def test_adk_get_health_status_consistency(self):
@@ -198,9 +196,7 @@ class TestSystemTools:
         execution_time = end_time - start_time
 
         # Health status should be fast (under 1 second)
-        assert execution_time < 1.0, (
-            f"Health status took too long: {execution_time:.2f}s"
-        )
+        assert execution_time < 1.0, f"Health status took too long: {execution_time:.2f}s"
         assert isinstance(result, str)
 
 
@@ -333,6 +329,4 @@ class TestSystemToolsEdgeCases:
 
         # Memory usage shouldn't grow significantly
         object_growth = final_objects - initial_objects
-        assert object_growth < 1000, (
-            f"Potential memory leak: {object_growth} new objects"
-        )
+        assert object_growth < 1000, f"Potential memory leak: {object_growth} new objects"

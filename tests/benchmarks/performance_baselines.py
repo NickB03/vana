@@ -80,16 +80,12 @@ class PerformanceBaselines:
             f"Added baseline for {baseline.benchmark_name}.{baseline.metric_name}: {baseline.baseline_value} {baseline.unit}"
         )
 
-    def get_baseline(
-        self, benchmark_name: str, metric_name: str
-    ) -> Optional[PerformanceBaseline]:
+    def get_baseline(self, benchmark_name: str, metric_name: str) -> Optional[PerformanceBaseline]:
         """Get baseline for specific benchmark and metric."""
         key = f"{benchmark_name}_{metric_name}"
         return self.baselines.get(key)
 
-    def update_baseline(
-        self, benchmark_name: str, metric_name: str, new_baseline: PerformanceBaseline
-    ):
+    def update_baseline(self, benchmark_name: str, metric_name: str, new_baseline: PerformanceBaseline):
         """Update existing baseline."""
         key = f"{benchmark_name}_{metric_name}"
         if key in self.baselines:
@@ -114,9 +110,7 @@ class PerformanceBaselines:
     def to_dict(self) -> Dict[str, Any]:
         """Convert baselines to dictionary."""
         return {
-            "baselines": {
-                key: baseline.to_dict() for key, baseline in self.baselines.items()
-            },
+            "baselines": {key: baseline.to_dict() for key, baseline in self.baselines.items()},
             "total_baselines": len(self.baselines),
             "last_updated": time.time(),
         }
@@ -146,13 +140,9 @@ class BaselineManager:
                 with open(self.baselines_file) as f:
                     data = json.load(f)
                     self.baselines = PerformanceBaselines.from_dict(data)
-                logger.info(
-                    f"Loaded {len(self.baselines.baselines)} baselines from {self.baselines_file}"
-                )
+                logger.info(f"Loaded {len(self.baselines.baselines)} baselines from {self.baselines_file}")
             except Exception as e:
-                logger.error(
-                    f"Failed to load baselines from {self.baselines_file}: {e}"
-                )
+                logger.error(f"Failed to load baselines from {self.baselines_file}: {e}")
                 self.baselines = PerformanceBaselines()
         else:
             logger.info(f"No existing baselines file found at {self.baselines_file}")
@@ -162,9 +152,7 @@ class BaselineManager:
         try:
             with open(self.baselines_file, "w") as f:
                 json.dump(self.baselines.to_dict(), f, indent=2)
-            logger.info(
-                f"Saved {len(self.baselines.baselines)} baselines to {self.baselines_file}"
-            )
+            logger.info(f"Saved {len(self.baselines.baselines)} baselines to {self.baselines_file}")
         except Exception as e:
             logger.error(f"Failed to save baselines to {self.baselines_file}: {e}")
 
@@ -214,9 +202,7 @@ class BaselineManager:
 
         return baseline
 
-    def compare_to_baseline(
-        self, benchmark_name: str, metric_name: str, current_value: float
-    ) -> Dict[str, Any]:
+    def compare_to_baseline(self, benchmark_name: str, metric_name: str, current_value: float) -> Dict[str, Any]:
         """Compare current performance to baseline."""
         baseline = self.baselines.get_baseline(benchmark_name, metric_name)
 
@@ -228,25 +214,17 @@ class BaselineManager:
 
         # Calculate performance difference
         difference = current_value - baseline.baseline_value
-        percentage_change = (
-            (difference / baseline.baseline_value) * 100
-            if baseline.baseline_value != 0
-            else 0
-        )
+        percentage_change = (difference / baseline.baseline_value) * 100 if baseline.baseline_value != 0 else 0
 
         # Determine if this is within acceptable range
-        acceptable_threshold = (
-            baseline.confidence_interval * 2
-        )  # 2x confidence interval
+        acceptable_threshold = baseline.confidence_interval * 2  # 2x confidence interval
         is_within_range = abs(difference) <= acceptable_threshold
 
         # Determine performance status
         if is_within_range:
             status = "stable"
         elif difference > 0:
-            status = (
-                "regression"  # Assuming higher values are worse (e.g., response time)
-            )
+            status = "regression"  # Assuming higher values are worse (e.g., response time)
         else:
             status = "improvement"
 
@@ -285,9 +263,7 @@ class BaselineManager:
 
         # Check if change is significant and consistent
         percentage_change = (
-            abs((new_mean - baseline.baseline_value) / baseline.baseline_value)
-            if baseline.baseline_value != 0
-            else 0
+            abs((new_mean - baseline.baseline_value) / baseline.baseline_value) if baseline.baseline_value != 0 else 0
         )
 
         if percentage_change > auto_update_threshold:
@@ -297,13 +273,9 @@ class BaselineManager:
                 f"{percentage_change:.1%} change, updating baseline"
             )
 
-            new_baseline = self.establish_baseline(
-                benchmark_name, metric_name, new_values, unit
-            )
+            new_baseline = self.establish_baseline(benchmark_name, metric_name, new_values, unit)
             new_baseline.metadata["previous_baseline"] = baseline.baseline_value
-            new_baseline.metadata["update_reason"] = (
-                f"Auto-update due to {percentage_change:.1%} change"
-            )
+            new_baseline.metadata["update_reason"] = f"Auto-update due to {percentage_change:.1%} change"
 
             self.baselines.update_baseline(benchmark_name, metric_name, new_baseline)
             self.save_baselines()
@@ -369,6 +341,4 @@ class BaselineManager:
             self.baselines = imported_baselines
 
         self.save_baselines()
-        logger.info(
-            f"Imported {len(imported_baselines.baselines)} baselines from {import_path}"
-        )
+        logger.info(f"Imported {len(imported_baselines.baselines)} baselines from {import_path}")

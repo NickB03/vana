@@ -125,16 +125,12 @@ class MathematicalReasoning:
                         expression = match.strip("?").strip()
 
                     if expression:
-                        reasoning_steps.append(
-                            f"Identified mathematical expression: {expression}"
-                        )
+                        reasoning_steps.append(f"Identified mathematical expression: {expression}")
 
                         # Evaluate the expression
                         result = self.safe_eval(expression)
                         if result is not None:
-                            reasoning_steps.append(
-                                f"Calculating: {expression} = {result}"
-                            )
+                            reasoning_steps.append(f"Calculating: {expression} = {result}")
                             return ReasoningResult(
                                 answer=result,
                                 reasoning_steps=reasoning_steps,
@@ -151,9 +147,7 @@ class MathematicalReasoning:
             # Try common operations
             if any(word in problem_lower for word in ["add", "plus", "sum", "+"]):
                 result = sum(float(n) for n in numbers)
-                reasoning_steps.append(
-                    f"Adding numbers: {' + '.join(numbers)} = {result}"
-                )
+                reasoning_steps.append(f"Adding numbers: {' + '.join(numbers)} = {result}")
                 return ReasoningResult(
                     answer=result,
                     reasoning_steps=reasoning_steps,
@@ -161,14 +155,9 @@ class MathematicalReasoning:
                     problem_type="arithmetic_word_problem",
                     solution_method="addition",
                 )
-            elif any(
-                word in problem_lower
-                for word in ["subtract", "minus", "difference", "-"]
-            ):
+            elif any(word in problem_lower for word in ["subtract", "minus", "difference", "-"]):
                 result = float(numbers[0]) - float(numbers[1])
-                reasoning_steps.append(
-                    f"Subtracting: {numbers[0]} - {numbers[1]} = {result}"
-                )
+                reasoning_steps.append(f"Subtracting: {numbers[0]} - {numbers[1]} = {result}")
                 return ReasoningResult(
                     answer=result,
                     reasoning_steps=reasoning_steps,
@@ -256,13 +245,9 @@ class LogicalReasoning:
             "how much",
         ]
         statement_lower = statement.lower()
-        return any(
-            indicator in statement_lower for indicator in word_problem_indicators
-        )
+        return any(indicator in statement_lower for indicator in word_problem_indicators)
 
-    def _solve_word_problem(
-        self, problem: str, reasoning_steps: List[str]
-    ) -> ReasoningResult:
+    def _solve_word_problem(self, problem: str, reasoning_steps: List[str]) -> ReasoningResult:
         """Solve simple word problems"""
         reasoning_steps.append("Identified as word problem")
 
@@ -299,12 +284,8 @@ class LogicalReasoning:
 
             if any(word in problem_lower for word in subtraction_keywords):
                 result = num1 - num2
-                reasoning_steps.append(
-                    f"Operation: subtraction ({num1} - {num2} = {result})"
-                )
-                reasoning_steps.append(
-                    f"Reasoning: '{problem}' indicates removal/reduction"
-                )
+                reasoning_steps.append(f"Operation: subtraction ({num1} - {num2} = {result})")
+                reasoning_steps.append(f"Reasoning: '{problem}' indicates removal/reduction")
                 return ReasoningResult(
                     answer=result,
                     reasoning_steps=reasoning_steps,
@@ -314,12 +295,8 @@ class LogicalReasoning:
                 )
             elif any(word in problem_lower for word in addition_keywords):
                 result = num1 + num2
-                reasoning_steps.append(
-                    f"Operation: addition ({num1} + {num2} = {result})"
-                )
-                reasoning_steps.append(
-                    f"Reasoning: '{problem}' indicates addition/increase"
-                )
+                reasoning_steps.append(f"Operation: addition ({num1} + {num2} = {result})")
+                reasoning_steps.append(f"Reasoning: '{problem}' indicates addition/increase")
                 return ReasoningResult(
                     answer=result,
                     reasoning_steps=reasoning_steps,
@@ -331,16 +308,10 @@ class LogicalReasoning:
             # Try questions asking "how many" - usually indicate remaining/result calculation
             if "how many" in problem_lower:
                 # Look for context clues about operation
-                if any(
-                    word in problem_lower for word in ["away", "eats", "takes", "uses"]
-                ):
+                if any(word in problem_lower for word in ["away", "eats", "takes", "uses"]):
                     result = num1 - num2
-                    reasoning_steps.append(
-                        f"Operation: subtraction ({num1} - {num2} = {result})"
-                    )
-                    reasoning_steps.append(
-                        "'How many' question with removal context suggests subtraction"
-                    )
+                    reasoning_steps.append(f"Operation: subtraction ({num1} - {num2} = {result})")
+                    reasoning_steps.append("'How many' question with removal context suggests subtraction")
                     return ReasoningResult(
                         answer=result,
                         reasoning_steps=reasoning_steps,
@@ -561,9 +532,7 @@ def _suggest_alternatives(reasoning_result: ReasoningResult) -> List[str]:
             ]
         )
     elif reasoning_result.problem_type == "word_problem":
-        alternatives.extend(
-            ["Draw diagram", "Create equation", "Use different variable names"]
-        )
+        alternatives.extend(["Draw diagram", "Create equation", "Use different variable names"])
     elif reasoning_result.problem_type == "logical_analysis":
         alternatives.extend(
             [
@@ -573,9 +542,7 @@ def _suggest_alternatives(reasoning_result: ReasoningResult) -> List[str]:
             ]
         )
     else:
-        alternatives.extend(
-            ["Rephrase problem", "Seek expert consultation", "Use specialized tools"]
-        )
+        alternatives.extend(["Rephrase problem", "Seek expert consultation", "Use specialized tools"])
 
     return alternatives
 
@@ -612,9 +579,7 @@ def reasoning_coordinate_task(task_description: str) -> str:
             "confidence": reasoning_result.confidence,
         },
         "coordination_strategy": {
-            "approach": "reasoning_based"
-            if reasoning_result.confidence > 0.7
-            else "exploratory",
+            "approach": "reasoning_based" if reasoning_result.confidence > 0.7 else "exploratory",
             "agent_requirements": _determine_agent_requirements(reasoning_result),
             "execution_plan": _create_execution_plan(reasoning_result),
         },
@@ -622,9 +587,7 @@ def reasoning_coordinate_task(task_description: str) -> str:
         "status": "coordination_with_reasoning",
     }
 
-    logger.info(
-        f"Reasoning-based coordination: {task_description} -> {reasoning_result.problem_type}"
-    )
+    logger.info(f"Reasoning-based coordination: {task_description} -> {reasoning_result.problem_type}")
     return json.dumps(coordination_result, indent=2)
 
 

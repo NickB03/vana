@@ -26,9 +26,7 @@ def query_memory(
     # Get API key from parameters or environment variables
     key = api_key or os.environ.get("RAGIE_API_KEY")
     if not key:
-        raise ValueError(
-            "No Ragie API key provided. Set RAGIE_API_KEY environment variable or pass as parameter."
-        )
+        raise ValueError("No Ragie API key provided. Set RAGIE_API_KEY environment variable or pass as parameter.")
 
     headers = {"Authorization": f"Bearer {key}", "Content-Type": "application/json"}
 
@@ -40,9 +38,7 @@ def query_memory(
         logger.debug(f"[DEBUG] Payload: {payload}")
 
     try:
-        response = requests.post(
-            "https://api.ragie.ai/retrievals", json=payload, headers=headers
-        )
+        response = requests.post("https://api.ragie.ai/retrievals", json=payload, headers=headers)
         response.raise_for_status()
 
         # Extract relevant data from response
@@ -51,9 +47,7 @@ def query_memory(
         if debug:
             logger.debug(f"[DEBUG] Received {len(results)} results from Ragie API")
             for i, result in enumerate(results):
-                logger.debug(
-                    "%s", f"[DEBUG] Result {i + 1}: {result.get('text', '')[:100]}..."
-                )
+                logger.debug("%s", f"[DEBUG] Result {i + 1}: {result.get('text', '')[:100]}...")
 
         return results
     except Exception as e:
@@ -87,9 +81,7 @@ def format_memory_results(results: List[Dict[Any, Any]], debug: bool = False) ->
         score = result.get("score", 0)
 
         if debug:
-            logger.debug(
-                f"[DEBUG] Formatting result {i}: Score={score:.2f}, Source={source}"
-            )
+            logger.debug(f"[DEBUG] Formatting result {i}: Score={score:.2f}, Source={source}")
             logger.debug(f"[DEBUG] Text preview: {text[:50]}...")
 
         formatted.append(f"[{i}] {text}\nSource: {source} (Score: {score:.2f})")

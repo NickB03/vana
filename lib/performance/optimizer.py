@@ -12,13 +12,14 @@ Implements comprehensive performance optimizations including:
 
 import asyncio
 import logging
+import threading
 import time
-from typing import Dict, Any, Optional
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from functools import wraps
+from typing import Any, Dict, Optional
+
 import psutil
-import threading
-from concurrent.futures import ThreadPoolExecutor
 
 logger = logging.getLogger(__name__)
 
@@ -188,9 +189,7 @@ class PerformanceOptimizer:
                 if asyncio.iscoroutinefunction(func):
                     result = await func(*args, **kwargs)
                 else:
-                    result = await asyncio.get_event_loop().run_in_executor(
-                        self.executor, func, *args, **kwargs
-                    )
+                    result = await asyncio.get_event_loop().run_in_executor(self.executor, func, *args, **kwargs)
 
                 # Cache successful results
                 if result is not None:
@@ -238,32 +237,20 @@ class PerformanceOptimizer:
         # Log memory optimization
         process = psutil.Process()
         memory_info = process.memory_info()
-        logger.info(
-            f"Memory optimization completed. RSS: {memory_info.rss / 1024 / 1024:.2f}MB"
-        )
+        logger.info(f"Memory optimization completed. RSS: {memory_info.rss / 1024 / 1024:.2f}MB")
 
     def _generate_cache_key(self, func_name: str, args: tuple, kwargs: dict) -> str:
         """Generate cache key for function call."""
         # Simple cache key generation - could be improved with hashing
         key_parts = [func_name]
-        key_parts.extend(
-            str(arg) for arg in args if isinstance(arg, (str, int, float, bool))
-        )
-        key_parts.extend(
-            f"{k}={v}"
-            for k, v in kwargs.items()
-            if isinstance(v, (str, int, float, bool))
-        )
+        key_parts.extend(str(arg) for arg in args if isinstance(arg, (str, int, float, bool)))
+        key_parts.extend(f"{k}={v}" for k, v in kwargs.items() if isinstance(v, (str, int, float, bool)))
         return "|".join(key_parts)[:100]  # Limit key length
 
     def _cleanup_cache(self):
         """Clean up expired cache entries."""
         current_time = time.time()
-        expired_keys = [
-            key
-            for key, expiry in self.cache._expiry_times.items()
-            if current_time > expiry
-        ]
+        expired_keys = [key for key, expiry in self.cache._expiry_times.items() if current_time > expiry]
         for key in expired_keys:
             self.cache._remove(key)
 
@@ -272,9 +259,7 @@ class PerformanceOptimizer:
         if len(self._metrics_history) > 1000:
             self._metrics_history = self._metrics_history[-500:]  # Keep last 500
 
-        self._metrics_history.append(
-            {"type": metric_type, "value": value, "timestamp": time.time()}
-        )
+        self._metrics_history.append({"type": metric_type, "value": value, "timestamp": time.time()})
 
     def get_performance_metrics(self) -> PerformanceMetrics:
         """Get current performance metrics."""
@@ -292,11 +277,7 @@ class PerformanceOptimizer:
 
     def _get_avg_response_time(self) -> float:
         """Get average response time from recent metrics."""
-        recent_metrics = [
-            m
-            for m in self._metrics_history[-100:]  # Last 100 metrics
-            if m["type"] == "response_time"
-        ]
+        recent_metrics = [m for m in self._metrics_history[-100:] if m["type"] == "response_time"]  # Last 100 metrics
         if not recent_metrics:
             return 0.0
         return sum(m["value"] for m in recent_metrics) / len(recent_metrics)

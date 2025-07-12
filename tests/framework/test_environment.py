@@ -84,9 +84,7 @@ class TestEnvironment:
 
         if self.config.enable_logging:
             handler = logging.StreamHandler()
-            formatter = logging.Formatter(
-                "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-            )
+            formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
             handler.setFormatter(formatter)
             logger.addHandler(handler)
             logger.setLevel(getattr(logging, self.config.log_level))
@@ -112,9 +110,7 @@ class TestEnvironment:
             os.environ[key] = value
             self.logger.debug(f"Set environment variable: {key}={value}")
 
-    async def create_agent_environment(
-        self, agent_id: str, **kwargs
-    ) -> AgentEnvironment:
+    async def create_agent_environment(self, agent_id: str, **kwargs) -> AgentEnvironment:
         """Create an isolated agent test environment"""
         self.logger.info(f"Creating agent environment for: {agent_id}")
 
@@ -168,9 +164,7 @@ class TestEnvironment:
         finally:
             await self.cleanup_agent_environment(agent_id)
 
-    async def simulate_multi_agent_environment(
-        self, agent_ids: List[str], **kwargs
-    ) -> Dict[str, AgentEnvironment]:
+    async def simulate_multi_agent_environment(self, agent_ids: List[str], **kwargs) -> Dict[str, AgentEnvironment]:
         """Create multiple agent environments for coordination testing"""
         self.logger.info(f"Creating multi-agent environment: {agent_ids}")
 
@@ -181,14 +175,10 @@ class TestEnvironment:
 
         # Set up inter-agent communication context
         for env in environments.values():
-            env.context["peer_agents"] = [
-                aid for aid in agent_ids if aid != env.agent_id
-            ]
+            env.context["peer_agents"] = [aid for aid in agent_ids if aid != env.agent_id]
             env.context["multi_agent_session"] = True
 
-        self.logger.info(
-            f"Multi-agent environment created with {len(environments)} agents"
-        )
+        self.logger.info(f"Multi-agent environment created with {len(environments)} agents")
         return environments
 
     async def reset_environment(self):
@@ -239,9 +229,7 @@ class TestEnvironment:
 @pytest.fixture
 async def test_environment():
     """Pytest fixture for test environment"""
-    config = EnvironmentConfig(
-        env_type=EnvironmentType.UNIT, enable_logging=True, log_level="DEBUG"
-    )
+    config = EnvironmentConfig(env_type=EnvironmentType.UNIT, enable_logging=True, log_level="DEBUG")
 
     env = TestEnvironment(config)
     try:

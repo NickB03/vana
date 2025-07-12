@@ -296,9 +296,7 @@ def generate_summary_report(results):
         logger.info("\n🎉 Your ADK memory configuration is ready for use!")
     else:
         print_status("warning", "Some validation checks failed")
-        logger.error(
-            "\n📋 Please review the errors above and update your configuration"
-        )
+        logger.error("\n📋 Please review the errors above and update your configuration")
 
     return passed_checks == total_checks
 
@@ -306,15 +304,9 @@ def generate_summary_report(results):
 def main():
     """Main validation function"""
     parser = argparse.ArgumentParser(description="Validate ADK Memory Configuration")
-    parser.add_argument(
-        "--detailed", action="store_true", help="Show detailed configuration"
-    )
-    parser.add_argument(
-        "--fix-permissions", action="store_true", help="Fix file permissions"
-    )
-    parser.add_argument(
-        "--json", action="store_true", help="Output results in JSON format"
-    )
+    parser.add_argument("--detailed", action="store_true", help="Show detailed configuration")
+    parser.add_argument("--fix-permissions", action="store_true", help="Fix file permissions")
+    parser.add_argument("--json", action="store_true", help="Output results in JSON format")
 
     args = parser.parse_args()
 

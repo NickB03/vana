@@ -5,8 +5,8 @@ Validates all 8 critical functions without external dependencies
 """
 
 import sys
-from pathlib import Path
 from dataclasses import dataclass
+from pathlib import Path
 from typing import List
 
 # Add project root to path
@@ -22,8 +22,8 @@ def validate_capability_matcher():
         # Import the capability matcher components
         from lib._tools.capability_matcher import (
             CapabilityMatch,
-            MatchingResult,
             CapabilityMatcher,
+            MatchingResult,
             get_capability_matcher,
         )
 
@@ -47,9 +47,7 @@ def validate_capability_matcher():
 
         assert isinstance(match.agent_name, str), "Agent name must be string"
         assert isinstance(match.match_score, float), "Match score must be float"
-        assert isinstance(match.matched_capabilities, list), (
-            "Matched capabilities must be list"
-        )
+        assert isinstance(match.matched_capabilities, list), "Matched capabilities must be list"
         assert 0 <= match.match_score <= 1, "Match score must be 0-1"
         assert 0 <= match.capability_coverage <= 1, "Coverage must be 0-1"
         print("  ✅ CapabilityMatch dataclass works correctly")
@@ -62,15 +60,9 @@ def validate_capability_matcher():
             recommendations=["Use test_agent"],
         )
 
-        assert isinstance(result.best_match, CapabilityMatch), (
-            "Best match must be CapabilityMatch"
-        )
-        assert isinstance(result.alternative_matches, list), (
-            "Alternative matches must be list"
-        )
-        assert isinstance(result.coverage_analysis, dict), (
-            "Coverage analysis must be dict"
-        )
+        assert isinstance(result.best_match, CapabilityMatch), "Best match must be CapabilityMatch"
+        assert isinstance(result.alternative_matches, list), "Alternative matches must be list"
+        assert isinstance(result.coverage_analysis, dict), "Coverage analysis must be dict"
         assert isinstance(result.recommendations, list), "Recommendations must be list"
         print("  ✅ MatchingResult dataclass works correctly")
 
@@ -81,13 +73,9 @@ def validate_capability_matcher():
         from unittest.mock import Mock, patch
 
         with (
-            patch(
-                "lib._tools.capability_matcher.get_discovery_service"
-            ) as mock_discovery,
+            patch("lib._tools.capability_matcher.get_discovery_service") as mock_discovery,
             patch("lib._tools.capability_matcher.get_task_analyzer") as mock_analyzer,
-            patch(
-                "lib._tools.capability_matcher.get_task_classifier"
-            ) as mock_classifier,
+            patch("lib._tools.capability_matcher.get_task_classifier") as mock_classifier,
         ):
             # Setup mocks
             mock_discovery.return_value = Mock()
@@ -97,26 +85,14 @@ def validate_capability_matcher():
             matcher = CapabilityMatcher()
 
             # Validate initialization
-            assert matcher.discovery_service is not None, (
-                "Discovery service must be initialized"
-            )
-            assert matcher.task_analyzer is not None, (
-                "Task analyzer must be initialized"
-            )
-            assert matcher.task_classifier is not None, (
-                "Task classifier must be initialized"
-            )
-            assert isinstance(matcher.capability_weights, dict), (
-                "Capability weights must be dict"
-            )
-            assert isinstance(matcher.performance_cache, dict), (
-                "Performance cache must be dict"
-            )
+            assert matcher.discovery_service is not None, "Discovery service must be initialized"
+            assert matcher.task_analyzer is not None, "Task analyzer must be initialized"
+            assert matcher.task_classifier is not None, "Task classifier must be initialized"
+            assert isinstance(matcher.capability_weights, dict), "Capability weights must be dict"
+            assert isinstance(matcher.performance_cache, dict), "Performance cache must be dict"
 
             # Validate capability weights
-            assert len(matcher.capability_weights) > 5, (
-                "Must have multiple capability weights"
-            )
+            assert len(matcher.capability_weights) > 5, "Must have multiple capability weights"
             assert all(
                 isinstance(w, (int, float)) for w in matcher.capability_weights.values()
             ), "All weights must be numeric"
@@ -126,13 +102,9 @@ def validate_capability_matcher():
         print("\n📋 Test 3: Capability Weight Configuration")
 
         with (
-            patch(
-                "lib._tools.capability_matcher.get_discovery_service"
-            ) as mock_discovery,
+            patch("lib._tools.capability_matcher.get_discovery_service") as mock_discovery,
             patch("lib._tools.capability_matcher.get_task_analyzer") as mock_analyzer,
-            patch(
-                "lib._tools.capability_matcher.get_task_classifier"
-            ) as mock_classifier,
+            patch("lib._tools.capability_matcher.get_task_classifier") as mock_classifier,
         ):
             mock_discovery.return_value = Mock()
             mock_analyzer.return_value = Mock()
@@ -159,13 +131,9 @@ def validate_capability_matcher():
         print("\n📋 Test 4: Performance Score Calculation")
 
         with (
-            patch(
-                "lib._tools.capability_matcher.get_discovery_service"
-            ) as mock_discovery,
+            patch("lib._tools.capability_matcher.get_discovery_service") as mock_discovery,
             patch("lib._tools.capability_matcher.get_task_analyzer") as mock_analyzer,
-            patch(
-                "lib._tools.capability_matcher.get_task_classifier"
-            ) as mock_classifier,
+            patch("lib._tools.capability_matcher.get_task_classifier") as mock_classifier,
         ):
             mock_discovery.return_value = Mock()
             mock_analyzer.return_value = Mock()
@@ -209,19 +177,13 @@ def validate_capability_matcher():
 
             for status, agent in test_agents.items():
                 score = matcher._calculate_performance_score(agent.name, agent)
-                assert isinstance(score, float), (
-                    f"Performance score must be float for {status}"
-                )
+                assert isinstance(score, float), f"Performance score must be float for {status}"
                 assert 0 <= score <= 1, f"Performance score must be 0-1 for {status}"
 
                 if status == "active":
-                    assert score > 0.8, (
-                        "Active agent should have high performance score"
-                    )
+                    assert score > 0.8, "Active agent should have high performance score"
                 elif status == "offline":
-                    assert score < 0.5, (
-                        "Offline agent should have low performance score"
-                    )
+                    assert score < 0.5, "Offline agent should have low performance score"
 
             print("  ✅ Performance score calculation works correctly")
 
@@ -229,13 +191,9 @@ def validate_capability_matcher():
         print("\n📋 Test 5: Availability Score Calculation")
 
         with (
-            patch(
-                "lib._tools.capability_matcher.get_discovery_service"
-            ) as mock_discovery,
+            patch("lib._tools.capability_matcher.get_discovery_service") as mock_discovery,
             patch("lib._tools.capability_matcher.get_task_analyzer") as mock_analyzer,
-            patch(
-                "lib._tools.capability_matcher.get_task_classifier"
-            ) as mock_classifier,
+            patch("lib._tools.capability_matcher.get_task_classifier") as mock_classifier,
         ):
             mock_discovery.return_value = Mock()
             mock_analyzer.return_value = Mock()
@@ -258,12 +216,8 @@ def validate_capability_matcher():
                 )
 
                 score = matcher._calculate_availability_score(agent.name, agent)
-                assert isinstance(score, float), (
-                    f"Availability score must be float for {status}"
-                )
-                assert abs(score - expected) < 0.1, (
-                    f"Availability score incorrect for {status}"
-                )
+                assert isinstance(score, float), f"Availability score must be float for {status}"
+                assert abs(score - expected) < 0.1, f"Availability score incorrect for {status}"
 
             print("  ✅ Availability score calculation works correctly")
 
@@ -271,13 +225,9 @@ def validate_capability_matcher():
         print("\n📋 Test 6: Coverage Analysis")
 
         with (
-            patch(
-                "lib._tools.capability_matcher.get_discovery_service"
-            ) as mock_discovery,
+            patch("lib._tools.capability_matcher.get_discovery_service") as mock_discovery,
             patch("lib._tools.capability_matcher.get_task_analyzer") as mock_analyzer,
-            patch(
-                "lib._tools.capability_matcher.get_task_classifier"
-            ) as mock_classifier,
+            patch("lib._tools.capability_matcher.get_task_classifier") as mock_classifier,
         ):
             mock_discovery.return_value = Mock()
             mock_analyzer.return_value = Mock()
@@ -325,9 +275,7 @@ def validate_capability_matcher():
             for field in required_fields:
                 assert field in coverage, f"Coverage analysis must contain {field}"
 
-            assert isinstance(coverage["total_coverage"], float), (
-                "Total coverage must be float"
-            )
+            assert isinstance(coverage["total_coverage"], float), "Total coverage must be float"
             assert 0 <= coverage["total_coverage"] <= 1, "Total coverage must be 0-1"
             assert coverage["total_coverage"] > 0.5, "Should have good total coverage"
 
@@ -337,13 +285,9 @@ def validate_capability_matcher():
         print("\n📋 Test 7: Performance Cache")
 
         with (
-            patch(
-                "lib._tools.capability_matcher.get_discovery_service"
-            ) as mock_discovery,
+            patch("lib._tools.capability_matcher.get_discovery_service") as mock_discovery,
             patch("lib._tools.capability_matcher.get_task_analyzer") as mock_analyzer,
-            patch(
-                "lib._tools.capability_matcher.get_task_classifier"
-            ) as mock_classifier,
+            patch("lib._tools.capability_matcher.get_task_classifier") as mock_classifier,
         ):
             mock_discovery.return_value = Mock()
             mock_analyzer.return_value = Mock()
@@ -354,12 +298,8 @@ def validate_capability_matcher():
             # Test cache update
             matcher.update_performance_cache("test_agent", 0.85)
 
-            assert "test_agent" in matcher.performance_cache, (
-                "Agent must be in performance cache"
-            )
-            assert matcher.performance_cache["test_agent"] == 0.85, (
-                "Cache value must be correct"
-            )
+            assert "test_agent" in matcher.performance_cache, "Agent must be in performance cache"
+            assert matcher.performance_cache["test_agent"] == 0.85, "Cache value must be correct"
 
             print("  ✅ Performance cache functionality works correctly")
 
@@ -367,13 +307,9 @@ def validate_capability_matcher():
         print("\n📋 Test 8: Global Function")
 
         with (
-            patch(
-                "lib._tools.capability_matcher.get_discovery_service"
-            ) as mock_discovery,
+            patch("lib._tools.capability_matcher.get_discovery_service") as mock_discovery,
             patch("lib._tools.capability_matcher.get_task_analyzer") as mock_analyzer,
-            patch(
-                "lib._tools.capability_matcher.get_task_classifier"
-            ) as mock_classifier,
+            patch("lib._tools.capability_matcher.get_task_classifier") as mock_classifier,
         ):
             mock_discovery.return_value = Mock()
             mock_analyzer.return_value = Mock()
@@ -383,12 +319,8 @@ def validate_capability_matcher():
             matcher1 = get_capability_matcher()
             matcher2 = get_capability_matcher()
 
-            assert isinstance(matcher1, CapabilityMatcher), (
-                "Must return CapabilityMatcher"
-            )
-            assert isinstance(matcher2, CapabilityMatcher), (
-                "Must return CapabilityMatcher"
-            )
+            assert isinstance(matcher1, CapabilityMatcher), "Must return CapabilityMatcher"
+            assert isinstance(matcher2, CapabilityMatcher), "Must return CapabilityMatcher"
             assert matcher1 is matcher2, "Should return same instance (singleton)"
 
             print("  ✅ Global function works correctly")

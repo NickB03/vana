@@ -80,9 +80,7 @@ class VanaAudit:
                 )
         except Exception as e:
             duration = time.time() - start
-            self.log_result(
-                "Health Check", False, f"Connection error: {str(e)}", duration
-            )
+            self.log_result("Health Check", False, f"Connection error: {str(e)}", duration)
 
         # Version endpoint
         start = time.time()
@@ -92,14 +90,10 @@ class VanaAudit:
 
             if response.status_code == 200:
                 data = response.json()
-                details = (
-                    f"Build: {data.get('build_info', {}).get('build_id', 'unknown')}"
-                )
+                details = f"Build: {data.get('build_info', {}).get('build_id', 'unknown')}"
                 self.log_result("Version Endpoint", True, details, duration)
             else:
-                self.log_result(
-                    "Version Endpoint", False, f"HTTP {response.status_code}", duration
-                )
+                self.log_result("Version Endpoint", False, f"HTTP {response.status_code}", duration)
         except Exception as e:
             duration = time.time() - start
             self.log_result("Version Endpoint", False, f"Error: {str(e)}", duration)
@@ -159,19 +153,13 @@ class VanaAudit:
                 duration = time.time() - start
 
                 # Check if expected answer is in result
-                contains_answer = (
-                    expected in result or expected.lower() in result.lower()
-                )
+                contains_answer = expected in result or expected.lower() in result.lower()
                 details = f"Problem: {problem} | Expected: {expected} | Got: {result[:100]}..."
-                self.log_result(
-                    f"Math Tool: {problem[:20]}...", contains_answer, details, duration
-                )
+                self.log_result(f"Math Tool: {problem[:20]}...", contains_answer, details, duration)
 
             except Exception as e:
                 duration = time.time() - start
-                self.log_result(
-                    f"Math Tool: {problem[:20]}...", False, f"Error: {str(e)}", duration
-                )
+                self.log_result(f"Math Tool: {problem[:20]}...", False, f"Error: {str(e)}", duration)
 
     def test_logical_tool(self):
         """Test logical reasoning tool"""
@@ -198,9 +186,7 @@ class VanaAudit:
                 # Check if logical concept is addressed
                 contains_logic = expected_concept.lower() in result.lower()
                 details = f"Problem: {problem[:30]}... | Expected concept: {expected_concept} | Got: {result[:100]}..."
-                self.log_result(
-                    f"Logic Tool: {problem[:20]}...", contains_logic, details, duration
-                )
+                self.log_result(f"Logic Tool: {problem[:20]}...", contains_logic, details, duration)
 
             except Exception as e:
                 duration = time.time() - start
@@ -232,19 +218,13 @@ class VanaAudit:
 
                 # Check if result contains relevant information
                 result_lower = result.lower()
-                contains_terms = any(
-                    term.lower() in result_lower for term in expected_terms
-                )
+                contains_terms = any(term.lower() in result_lower for term in expected_terms)
                 details = f"Query: {query} | Expected terms: {expected_terms} | Result length: {len(result)} chars"
-                self.log_result(
-                    f"Web Search: {query[:20]}...", contains_terms, details, duration
-                )
+                self.log_result(f"Web Search: {query[:20]}...", contains_terms, details, duration)
 
             except Exception as e:
                 duration = time.time() - start
-                self.log_result(
-                    f"Web Search: {query[:20]}...", False, f"Error: {str(e)}", duration
-                )
+                self.log_result(f"Web Search: {query[:20]}...", False, f"Error: {str(e)}", duration)
 
     def test_file_tools(self):
         """Test file read/write operations"""
@@ -257,10 +237,7 @@ class VanaAudit:
             from lib._tools.adk_tools import read_file, write_file
 
             # Test write
-            test_content = (
-                "VANA Agent Test File\nCreated during comprehensive audit\nTimestamp: "
-                + str(datetime.now())
-            )
+            test_content = "VANA Agent Test File\nCreated during comprehensive audit\nTimestamp: " + str(datetime.now())
             test_file = "/tmp/vana_test_file.txt"
 
             write_result = write_file(test_file, test_content)
@@ -303,9 +280,7 @@ class VanaAudit:
 
             # Verify agent properties
             has_tools = len(root_agent.tools) == 5
-            has_subagents = (
-                len(root_agent.sub_agents) >= 0
-            )  # May be 0 if specialists not available
+            has_subagents = len(root_agent.sub_agents) >= 0  # May be 0 if specialists not available
             has_instruction = len(root_agent.instruction) > 0
 
             details = f"Tools: {len(root_agent.tools)}, Sub-agents: {len(root_agent.sub_agents)}, Instruction: {len(root_agent.instruction)} chars"
@@ -374,9 +349,7 @@ class VanaAudit:
             self.log_result("Invalid Endpoint Handling", handles_404, details, duration)
         except Exception as e:
             duration = time.time() - start
-            self.log_result(
-                "Invalid Endpoint Handling", False, f"Error: {str(e)}", duration
-            )
+            self.log_result("Invalid Endpoint Handling", False, f"Error: {str(e)}", duration)
 
     def generate_report(self):
         """Generate comprehensive test report"""
@@ -391,9 +364,7 @@ class VanaAudit:
 
         print("\n🎯 COMPREHENSIVE AUDIT SUMMARY")
         print("=" * 60)
-        print(
-            f"📈 Overall Success Rate: {success_rate:.1f}% ({passed_tests}/{total_tests})"
-        )
+        print(f"📈 Overall Success Rate: {success_rate:.1f}% ({passed_tests}/{total_tests})")
         print(f"⏱️  Total Test Duration: {total_duration:.2f} seconds")
         print(f"✅ Passed Tests: {passed_tests}")
         print(f"❌ Failed Tests: {failed_tests}")
@@ -431,9 +402,7 @@ class VanaAudit:
             ],
         }
 
-        report_file = (
-            f"vana_audit_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
-        )
+        report_file = f"vana_audit_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
         with open(report_file, "w") as f:
             json.dump(report_data, f, indent=2)
 

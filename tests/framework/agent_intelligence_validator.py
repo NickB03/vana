@@ -98,15 +98,11 @@ class AgentIntelligenceValidator:
             pattern_results = []
 
             for scenario in pattern_scenarios:
-                response = await self.agent_client.query(
-                    scenario.query, expected_tools=scenario.expected_tools
-                )
+                response = await self.agent_client.query(scenario.query, expected_tools=scenario.expected_tools)
 
                 # Analyze reasoning pattern
                 detected_pattern = self._analyze_reasoning_pattern(response, scenario)
-                consistency_score = self._calculate_pattern_consistency(
-                    detected_pattern, scenario.expected_pattern
-                )
+                consistency_score = self._calculate_pattern_consistency(detected_pattern, scenario.expected_pattern)
 
                 result = {
                     "scenario_id": scenario.query_id,
@@ -128,9 +124,7 @@ class AgentIntelligenceValidator:
 
         # Calculate overall consistency score
         overall_score = (
-            sum(pattern_consistency_scores) / len(pattern_consistency_scores)
-            if pattern_consistency_scores
-            else 0.0
+            sum(pattern_consistency_scores) / len(pattern_consistency_scores) if pattern_consistency_scores else 0.0
         )
 
         execution_time = time.time() - start_time
@@ -168,9 +162,7 @@ class AgentIntelligenceValidator:
                 continue  # Skip if no scenarios for this type
 
             for scenario in scenarios:
-                response = await self.agent_client.query(
-                    scenario.query, expected_tools=scenario.expected_tools
-                )
+                response = await self.agent_client.query(scenario.query, expected_tools=scenario.expected_tools)
 
                 # Evaluate tool selection appropriateness
                 appropriateness = self._evaluate_tool_appropriateness(
@@ -190,11 +182,7 @@ class AgentIntelligenceValidator:
                 individual_results.append(result)
                 appropriateness_scores.append(appropriateness)
 
-        overall_score = (
-            sum(appropriateness_scores) / len(appropriateness_scores)
-            if appropriateness_scores
-            else 0.0
-        )
+        overall_score = sum(appropriateness_scores) / len(appropriateness_scores) if appropriateness_scores else 0.0
 
         execution_time = time.time() - start_time
 
@@ -204,9 +192,7 @@ class AgentIntelligenceValidator:
             details={
                 "query_types_tested": len(query_types),
                 "avg_appropriateness": overall_score,
-                "tool_usage_analysis": self._analyze_tool_usage_patterns(
-                    individual_results
-                ),
+                "tool_usage_analysis": self._analyze_tool_usage_patterns(individual_results),
             },
             passed=overall_score >= 0.85,
             execution_time=execution_time,
@@ -231,18 +217,14 @@ class AgentIntelligenceValidator:
             if "context" in scenario:
                 # This would set context in the agent client
                 # For now, we'll simulate by including context in the query
-                enhanced_query = (
-                    f"Context: {scenario['context']}\n\nQuery: {scenario['query']}"
-                )
+                enhanced_query = f"Context: {scenario['context']}\n\nQuery: {scenario['query']}"
             else:
                 enhanced_query = scenario["query"]
 
             response = await self.agent_client.query(enhanced_query)
 
             # Analyze context utilization
-            context_usage_score = self._analyze_context_usage(
-                response, scenario.get("context", ""), scenario["query"]
-            )
+            context_usage_score = self._analyze_context_usage(response, scenario.get("context", ""), scenario["query"])
 
             result = {
                 "scenario_id": scenario.get("id", f"context_{len(individual_results)}"),
@@ -256,9 +238,7 @@ class AgentIntelligenceValidator:
             individual_results.append(result)
             context_scores.append(context_usage_score)
 
-        overall_score = (
-            sum(context_scores) / len(context_scores) if context_scores else 0.0
-        )
+        overall_score = sum(context_scores) / len(context_scores) if context_scores else 0.0
 
         execution_time = time.time() - start_time
 
@@ -306,9 +286,7 @@ class AgentIntelligenceValidator:
             QueryType.CONVERSATIONAL: [],
         }
 
-    def _group_scenarios_by_pattern(
-        self, scenarios: List[TestScenario]
-    ) -> Dict[str, List[TestScenario]]:
+    def _group_scenarios_by_pattern(self, scenarios: List[TestScenario]) -> Dict[str, List[TestScenario]]:
         """Group scenarios by their expected reasoning pattern"""
         groups = {}
         for scenario in scenarios:
@@ -318,9 +296,7 @@ class AgentIntelligenceValidator:
             groups[pattern].append(scenario)
         return groups
 
-    def _analyze_reasoning_pattern(
-        self, response: AgentResponse, scenario: TestScenario
-    ) -> str:
+    def _analyze_reasoning_pattern(self, response: AgentResponse, scenario: TestScenario) -> str:
         """Analyze the reasoning pattern used in the response"""
         content = response.content.lower()
         tools_used = response.tools_used
@@ -346,9 +322,7 @@ class AgentIntelligenceValidator:
         # Default to direct answer
         return ReasoningPattern.DIRECT_ANSWER_OR_SEARCH.value
 
-    def _calculate_pattern_consistency(
-        self, detected_pattern: str, expected_pattern: str
-    ) -> float:
+    def _calculate_pattern_consistency(self, detected_pattern: str, expected_pattern: str) -> float:
         """Calculate consistency score between detected and expected patterns"""
         if detected_pattern == expected_pattern:
             return 1.0
@@ -419,9 +393,7 @@ class AgentIntelligenceValidator:
         f1_score = 2 * (precision * recall) / (precision + recall)
         return f1_score
 
-    def _analyze_tool_usage_patterns(
-        self, results: List[Dict[str, Any]]
-    ) -> Dict[str, Any]:
+    def _analyze_tool_usage_patterns(self, results: List[Dict[str, Any]]) -> Dict[str, Any]:
         """Analyze patterns in tool usage across results"""
         tool_counts = {}
         query_type_tools = {}
@@ -439,16 +411,12 @@ class AgentIntelligenceValidator:
                 query_type_tools[query_type] = {}
 
             for tool in tools_used:
-                query_type_tools[query_type][tool] = (
-                    query_type_tools[query_type].get(tool, 0) + 1
-                )
+                query_type_tools[query_type][tool] = query_type_tools[query_type].get(tool, 0) + 1
 
         return {
             "tool_usage_frequency": tool_counts,
             "tools_by_query_type": query_type_tools,
-            "most_used_tool": max(tool_counts.items(), key=lambda x: x[1])[0]
-            if tool_counts
-            else None,
+            "most_used_tool": max(tool_counts.items(), key=lambda x: x[1])[0] if tool_counts else None,
         }
 
     def _generate_context_scenarios(self) -> List[Dict[str, Any]]:
@@ -474,9 +442,7 @@ class AgentIntelligenceValidator:
             },
         ]
 
-    def _analyze_context_usage(
-        self, response: AgentResponse, context: str, query: str
-    ) -> float:
+    def _analyze_context_usage(self, response: AgentResponse, context: str, query: str) -> float:
         """Analyze how well the agent utilized provided context"""
         if not context:
             return 0.8  # Default score if no context provided
@@ -566,9 +532,7 @@ class AgentIntelligenceValidator:
         # Return unique terms
         return list(set(key_terms))
 
-    def _analyze_context_patterns(
-        self, results: List[Dict[str, Any]]
-    ) -> Dict[str, Any]:
+    def _analyze_context_patterns(self, results: List[Dict[str, Any]]) -> Dict[str, Any]:
         """Analyze patterns in context utilization"""
         scores = [r["context_usage_score"] for r in results]
 

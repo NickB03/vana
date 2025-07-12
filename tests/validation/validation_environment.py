@@ -19,17 +19,23 @@ import json
 import sys
 import time
 from pathlib import Path
-from typing import Dict, Any
+from typing import Any, Dict
+
 
 # CRITICAL: Validate Python version before any operations
 def validate_python_version():
     """Ensure Python 3.13+ is being used"""
     if sys.version_info.major != 3 or sys.version_info.minor < 13:
-        print(f"🚨 CRITICAL ERROR: Python 3.13+ required for validation, got {sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}")
+        print(
+            f"🚨 CRITICAL ERROR: Python 3.13+ required for validation, got {sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"
+        )
         print("❌ VANA validation environment will not function correctly")
         print("✅ Fix: poetry env use python3.13 && poetry install")
         sys.exit(1)
-    print(f"✅ Python version validated for validation environment: {sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}")
+    print(
+        f"✅ Python version validated for validation environment: {sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"
+    )
+
 
 # Validate environment before proceeding
 validate_python_version()
@@ -52,9 +58,7 @@ class ValidationEnvironment:
         self.project_root = project_root
         self.validation_dir = project_root / "tests" / "validation"
         self.results_dir = project_root / "tests" / "results"
-        self.baseline_manager = BaselineManager(
-            self.validation_dir / "performance_baselines.json"
-        )
+        self.baseline_manager = BaselineManager(self.validation_dir / "performance_baselines.json")
         self.regression_detector = RegressionDetector()
 
         # Environment configuration
@@ -112,9 +116,7 @@ class ValidationEnvironment:
 
             # Step 4: Setup monitoring infrastructure
             await self._setup_monitoring_infrastructure()
-            setup_results["setup_steps"].append(
-                "✅ Monitoring infrastructure configured"
-            )
+            setup_results["setup_steps"].append("✅ Monitoring infrastructure configured")
 
             # Step 5: Validate environment connectivity
             connectivity_status = await self._validate_environment_connectivity()
@@ -205,16 +207,10 @@ class ValidationEnvironment:
 
         # Get existing baseline summary
         if self.baseline_manager.baselines.baselines:
-            baseline_status["baseline_summary"] = (
-                self.baseline_manager.get_baseline_summary()
-            )
-            logger.info(
-                f"📊 Found {baseline_status['existing_baselines']} existing performance baselines"
-            )
+            baseline_status["baseline_summary"] = self.baseline_manager.get_baseline_summary()
+            logger.info(f"📊 Found {baseline_status['existing_baselines']} existing performance baselines")
         else:
-            logger.info(
-                "📊 No existing performance baselines found - will establish during testing"
-            )
+            logger.info("📊 No existing performance baselines found - will establish during testing")
 
         return baseline_status
 
@@ -322,11 +318,7 @@ class ValidationEnvironment:
 
     async def _save_setup_results(self, results: Dict[str, Any]):
         """Save validation environment setup results."""
-        results_file = (
-            self.results_dir
-            / "validation"
-            / f"environment_setup_{int(time.time())}.json"
-        )
+        results_file = self.results_dir / "validation" / f"environment_setup_{int(time.time())}.json"
         results_file.parent.mkdir(parents=True, exist_ok=True)
 
         with open(results_file, "w") as f:

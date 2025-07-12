@@ -119,14 +119,10 @@ class LoadBalancer:
 
         # Get alternative agents
         sorted_agents = sorted(agent_scores.items(), key=lambda x: x[1], reverse=True)
-        alternative_agents = [
-            agent for agent, score in sorted_agents[1:4] if score > 0.3
-        ]
+        alternative_agents = [agent for agent, score in sorted_agents[1:4] if score > 0.3]
 
         # Generate reasoning
-        reasoning = self._generate_load_reasoning(
-            best_agent, best_score, load_distribution
-        )
+        reasoning = self._generate_load_reasoning(best_agent, best_score, load_distribution)
 
         decision = LoadBalancingDecision(
             recommended_agent=best_agent,
@@ -136,9 +132,7 @@ class LoadBalancer:
             load_distribution=load_distribution,
         )
 
-        logger.info(
-            f"✅ Load balancing recommendation: {best_agent} (score: {best_score:.2f})"
-        )
+        logger.info(f"✅ Load balancing recommendation: {best_agent} (score: {best_score:.2f})")
         return decision
 
     async def _update_agent_loads(self):
@@ -157,9 +151,7 @@ class LoadBalancer:
         self.last_load_update = current_time
         logger.debug(f"🔄 Updated load information for {len(available_agents)} agents")
 
-    async def _update_single_agent_load(
-        self, agent_name: str, agent_info: AgentCapability
-    ):
+    async def _update_single_agent_load(self, agent_name: str, agent_info: AgentCapability):
         """Update load information for a single agent."""
         # Get current active tasks
         active_tasks = len(self.active_tasks.get(agent_name, []))
@@ -179,9 +171,7 @@ class LoadBalancer:
         # Get last task time
         last_task_time = None
         if self.active_tasks.get(agent_name):
-            last_task = max(
-                self.active_tasks[agent_name], key=lambda x: x.get("start_time", 0)
-            )
+            last_task = max(self.active_tasks[agent_name], key=lambda x: x.get("start_time", 0))
             last_task_time = last_task.get("start_time")
 
         # Calculate average task duration
@@ -260,9 +250,7 @@ class LoadBalancer:
 
         return default_durations.get(agent_name, 20.0)
 
-    def _generate_load_reasoning(
-        self, agent_name: str, score: float, load_distribution: Dict[str, float]
-    ) -> str:
+    def _generate_load_reasoning(self, agent_name: str, score: float, load_distribution: Dict[str, float]) -> str:
         """Generate reasoning for load balancing decision."""
         agent_load = self.agent_loads.get(agent_name)
 
@@ -271,9 +259,7 @@ class LoadBalancer:
 
         if agent_load:
             reasoning_parts.append(f"Current utilization: {agent_load.utilization:.1%}")
-            reasoning_parts.append(
-                f"Active tasks: {agent_load.active_tasks}/{agent_load.capacity}"
-            )
+            reasoning_parts.append(f"Active tasks: {agent_load.active_tasks}/{agent_load.capacity}")
 
             if agent_load.utilization < 0.5:
                 reasoning_parts.append("Low utilization - good availability")
@@ -294,9 +280,7 @@ class LoadBalancer:
 
         return ". ".join(reasoning_parts)
 
-    async def register_task_start(
-        self, agent_name: str, task_id: str, task_info: Dict[str, Any]
-    ):
+    async def register_task_start(self, agent_name: str, task_id: str, task_info: Dict[str, Any]):
         """Register that a task has started on an agent."""
         task_record = {
             "task_id": task_id,
@@ -307,28 +291,18 @@ class LoadBalancer:
         self.active_tasks[agent_name].append(task_record)
 
         # Remove from queue if it was queued
-        self.task_queue[agent_name] = [
-            task
-            for task in self.task_queue[agent_name]
-            if task.get("task_id") != task_id
-        ]
+        self.task_queue[agent_name] = [task for task in self.task_queue[agent_name] if task.get("task_id") != task_id]
 
         logger.debug(f"📝 Registered task start: {task_id} on {agent_name}")
 
-    async def register_task_completion(
-        self, agent_name: str, task_id: str, success: bool
-    ):
+    async def register_task_completion(self, agent_name: str, task_id: str, success: bool):
         """Register that a task has completed on an agent."""
         # Remove from active tasks
         self.active_tasks[agent_name] = [
-            task
-            for task in self.active_tasks[agent_name]
-            if task.get("task_id") != task_id
+            task for task in self.active_tasks[agent_name] if task.get("task_id") != task_id
         ]
 
-        logger.debug(
-            f"✅ Registered task completion: {task_id} on {agent_name} (success: {success})"
-        )
+        logger.debug(f"✅ Registered task completion: {task_id} on {agent_name} (success: {success})")
 
     async def queue_task(
         self,
@@ -351,9 +325,7 @@ class LoadBalancer:
         else:
             self.task_queue[agent_name].append(task_record)
 
-        logger.debug(
-            f"📥 Queued task: {task_id} for {agent_name} (priority: {priority})"
-        )
+        logger.debug(f"📥 Queued task: {task_id} for {agent_name} (priority: {priority})")
 
     def get_load_statistics(self) -> Dict[str, Any]:
         """Get comprehensive load statistics."""
@@ -361,17 +333,11 @@ class LoadBalancer:
             return {"message": "No load data available"}
 
         total_capacity = sum(load.capacity for load in self.agent_loads.values())
-        total_active_tasks = sum(
-            load.active_tasks for load in self.agent_loads.values()
-        )
-        total_queued_tasks = sum(
-            load.queued_tasks for load in self.agent_loads.values()
-        )
+        total_active_tasks = sum(load.active_tasks for load in self.agent_loads.values())
+        total_queued_tasks = sum(load.queued_tasks for load in self.agent_loads.values())
 
         # Calculate system utilization
-        system_utilization = (
-            total_active_tasks / total_capacity if total_capacity > 0 else 0
-        )
+        system_utilization = total_active_tasks / total_capacity if total_capacity > 0 else 0
 
         # Find most and least loaded agents
         most_loaded = max(self.agent_loads.values(), key=lambda x: x.utilization)
@@ -418,31 +384,21 @@ class LoadBalancer:
             return ["No load data available for recommendations"]
 
         # Check for overloaded agents
-        overloaded_agents = [
-            load for load in self.agent_loads.values() if load.utilization > 0.9
-        ]
+        overloaded_agents = [load for load in self.agent_loads.values() if load.utilization > 0.9]
 
         if overloaded_agents:
             agent_names = [agent.agent_name for agent in overloaded_agents]
-            recommendations.append(
-                f"Agents overloaded (>90%): {', '.join(agent_names)}"
-            )
-            recommendations.append(
-                "Consider increasing capacity or redistributing tasks"
-            )
+            recommendations.append(f"Agents overloaded (>90%): {', '.join(agent_names)}")
+            recommendations.append("Consider increasing capacity or redistributing tasks")
 
         # Check for underutilized agents
         underutilized_agents = [
-            load
-            for load in self.agent_loads.values()
-            if load.utilization < 0.2 and load.status.lower() == "active"
+            load for load in self.agent_loads.values() if load.utilization < 0.2 and load.status.lower() == "active"
         ]
 
         if underutilized_agents:
             agent_names = [agent.agent_name for agent in underutilized_agents]
-            recommendations.append(
-                f"Agents underutilized (<20%): {', '.join(agent_names)}"
-            )
+            recommendations.append(f"Agents underutilized (<20%): {', '.join(agent_names)}")
             recommendations.append("Consider routing more tasks to these agents")
 
         # Check for queued tasks
@@ -452,24 +408,18 @@ class LoadBalancer:
             recommendations.append("Consider scaling up agent capacity")
 
         # System utilization recommendations
-        system_utilization = sum(
-            load.active_tasks for load in self.agent_loads.values()
-        ) / sum(load.capacity for load in self.agent_loads.values())
+        system_utilization = sum(load.active_tasks for load in self.agent_loads.values()) / sum(
+            load.capacity for load in self.agent_loads.values()
+        )
 
         if system_utilization > 0.8:
             recommendations.append("System utilization high (>80%)")
-            recommendations.append(
-                "Monitor performance and consider capacity expansion"
-            )
+            recommendations.append("Monitor performance and consider capacity expansion")
         elif system_utilization < 0.3:
             recommendations.append("System utilization low (<30%)")
             recommendations.append("System has good capacity for additional load")
 
-        return (
-            recommendations
-            if recommendations
-            else ["Load distribution appears optimal"]
-        )
+        return recommendations if recommendations else ["Load distribution appears optimal"]
 
     async def rebalance_tasks(self) -> Dict[str, Any]:
         """Attempt to rebalance tasks across agents."""
@@ -478,12 +428,8 @@ class LoadBalancer:
         rebalancing_actions = []
 
         # Find overloaded and underloaded agents
-        overloaded = [
-            load for load in self.agent_loads.values() if load.utilization > 0.8
-        ]
-        underloaded = [
-            load for load in self.agent_loads.values() if load.utilization < 0.4
-        ]
+        overloaded = [load for load in self.agent_loads.values() if load.utilization > 0.8]
+        underloaded = [load for load in self.agent_loads.values() if load.utilization < 0.4]
 
         # Move queued tasks from overloaded to underloaded agents
         for overloaded_agent in overloaded:
@@ -507,9 +453,7 @@ class LoadBalancer:
                     }
                 )
 
-        logger.info(
-            f"✅ Rebalancing completed: {len(rebalancing_actions)} actions taken"
-        )
+        logger.info(f"✅ Rebalancing completed: {len(rebalancing_actions)} actions taken")
 
         return {
             "rebalancing_completed": True,

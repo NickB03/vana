@@ -3,6 +3,7 @@
 
 import os
 import sys
+
 from dotenv import load_dotenv
 
 # Add the project root to the Python path

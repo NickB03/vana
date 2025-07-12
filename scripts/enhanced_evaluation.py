@@ -147,9 +147,7 @@ def calculate_relevance_scores(results, expected_keywords):
         content = result.get("content", "").lower()
 
         # Count how many expected keywords are in the content
-        keyword_count = sum(
-            1 for keyword in expected_keywords if keyword.lower() in content
-        )
+        keyword_count = sum(1 for keyword in expected_keywords if keyword.lower() in content)
 
         # Normalize by total keywords
         relevance = keyword_count / len(expected_keywords)
@@ -266,14 +264,11 @@ def evaluate_vector_search(test_queries, top_k=5):
         category_results = [r for r in results if r["category"] == category]
 
         category_metrics[category] = {
-            "precision": sum(r["precision"] for r in category_results)
-            / len(category_results),
-            "recall": sum(r["recall"] for r in category_results)
-            / len(category_results),
+            "precision": sum(r["precision"] for r in category_results) / len(category_results),
+            "recall": sum(r["recall"] for r in category_results) / len(category_results),
             "f1": sum(r["f1"] for r in category_results) / len(category_results),
             "ndcg": sum(r["ndcg"] for r in category_results) / len(category_results),
-            "latency": sum(r["latency"] for r in category_results)
-            / len(category_results),
+            "latency": sum(r["latency"] for r in category_results) / len(category_results),
             "count": len(category_results),
         }
 
@@ -285,15 +280,11 @@ def evaluate_vector_search(test_queries, top_k=5):
         difficulty_results = [r for r in results if r["difficulty"] == difficulty]
 
         difficulty_metrics[difficulty] = {
-            "precision": sum(r["precision"] for r in difficulty_results)
-            / len(difficulty_results),
-            "recall": sum(r["recall"] for r in difficulty_results)
-            / len(difficulty_results),
+            "precision": sum(r["precision"] for r in difficulty_results) / len(difficulty_results),
+            "recall": sum(r["recall"] for r in difficulty_results) / len(difficulty_results),
             "f1": sum(r["f1"] for r in difficulty_results) / len(difficulty_results),
-            "ndcg": sum(r["ndcg"] for r in difficulty_results)
-            / len(difficulty_results),
-            "latency": sum(r["latency"] for r in difficulty_results)
-            / len(difficulty_results),
+            "ndcg": sum(r["ndcg"] for r in difficulty_results) / len(difficulty_results),
+            "latency": sum(r["latency"] for r in difficulty_results) / len(difficulty_results),
             "count": len(difficulty_results),
         }
 
@@ -351,14 +342,10 @@ def evaluate_enhanced_hybrid_search(test_queries, top_k=5, include_web=True):
             category = test_case.get("category", "general")
             difficulty = test_case.get("difficulty", "medium")
 
-            logger.info(
-                f"Query: {query} (Category: {category}, Difficulty: {difficulty})"
-            )
+            logger.info(f"Query: {query} (Category: {category}, Difficulty: {difficulty})")
 
             # Get search results with latency measurement
-            search_results, latency = measure_latency(
-                hybrid_search.search, query, top_k=top_k, include_web=include_web
-            )
+            search_results, latency = measure_latency(hybrid_search.search, query, top_k=top_k, include_web=include_web)
 
             # Get combined results
             combined_results = search_results.get("combined", [])
@@ -367,9 +354,7 @@ def evaluate_enhanced_hybrid_search(test_queries, top_k=5, include_web=True):
             precision = calculate_precision(combined_results, expected_keywords)
             recall = calculate_recall(combined_results, expected_keywords)
             f1 = calculate_f1_score(precision, recall)
-            relevance_scores = calculate_relevance_scores(
-                combined_results, expected_keywords
-            )
+            relevance_scores = calculate_relevance_scores(combined_results, expected_keywords)
             ndcg = calculate_ndcg(relevance_scores)
 
             logger.info(f"  Precision: {precision:.2f}")
@@ -383,9 +368,7 @@ def evaluate_enhanced_hybrid_search(test_queries, top_k=5, include_web=True):
             kg_count = len(search_results.get("knowledge_graph", []))
             web_count = len(search_results.get("web_search", []))
 
-            logger.info(
-                f"  Results: Vector Search: {vs_count}, Knowledge Graph: {kg_count}, Web: {web_count}"
-            )
+            logger.info(f"  Results: Vector Search: {vs_count}, Knowledge Graph: {kg_count}, Web: {web_count}")
 
             results.append(
                 {
@@ -432,15 +415,11 @@ def evaluate_enhanced_hybrid_search(test_queries, top_k=5, include_web=True):
             category_results = [r for r in results if r["category"] == category]
 
             category_metrics[category] = {
-                "precision": sum(r["precision"] for r in category_results)
-                / len(category_results),
-                "recall": sum(r["recall"] for r in category_results)
-                / len(category_results),
+                "precision": sum(r["precision"] for r in category_results) / len(category_results),
+                "recall": sum(r["recall"] for r in category_results) / len(category_results),
                 "f1": sum(r["f1"] for r in category_results) / len(category_results),
-                "ndcg": sum(r["ndcg"] for r in category_results)
-                / len(category_results),
-                "latency": sum(r["latency"] for r in category_results)
-                / len(category_results),
+                "ndcg": sum(r["ndcg"] for r in category_results) / len(category_results),
+                "latency": sum(r["latency"] for r in category_results) / len(category_results),
                 "count": len(category_results),
             }
 
@@ -452,16 +431,11 @@ def evaluate_enhanced_hybrid_search(test_queries, top_k=5, include_web=True):
             difficulty_results = [r for r in results if r["difficulty"] == difficulty]
 
             difficulty_metrics[difficulty] = {
-                "precision": sum(r["precision"] for r in difficulty_results)
-                / len(difficulty_results),
-                "recall": sum(r["recall"] for r in difficulty_results)
-                / len(difficulty_results),
-                "f1": sum(r["f1"] for r in difficulty_results)
-                / len(difficulty_results),
-                "ndcg": sum(r["ndcg"] for r in difficulty_results)
-                / len(difficulty_results),
-                "latency": sum(r["latency"] for r in difficulty_results)
-                / len(difficulty_results),
+                "precision": sum(r["precision"] for r in difficulty_results) / len(difficulty_results),
+                "recall": sum(r["recall"] for r in difficulty_results) / len(difficulty_results),
+                "f1": sum(r["f1"] for r in difficulty_results) / len(difficulty_results),
+                "ndcg": sum(r["ndcg"] for r in difficulty_results) / len(difficulty_results),
+                "latency": sum(r["latency"] for r in difficulty_results) / len(difficulty_results),
                 "count": len(difficulty_results),
             }
 
@@ -532,28 +506,18 @@ def generate_report(evaluation_results, output_file="evaluation_report.md"):
 
             # Write top 5 and bottom 5 queries
             f.write("\n### Top 5 Queries (by F1 Score)\n\n")
-            f.write(
-                "| Query | Category | Difficulty | Precision | Recall | F1 | NDCG |\n"
-            )
-            f.write(
-                "|-------|----------|------------|-----------|--------|----|----|-------------|\n"
-            )
+            f.write("| Query | Category | Difficulty | Precision | Recall | F1 | NDCG |\n")
+            f.write("|-------|----------|------------|-----------|--------|----|----|-------------|\n")
 
-            top_queries = sorted(
-                results["results"], key=lambda x: x["f1"], reverse=True
-            )[:5]
+            top_queries = sorted(results["results"], key=lambda x: x["f1"], reverse=True)[:5]
             for result in top_queries:
                 f.write(
                     f"| {result['query']} | {result['category']} | {result['difficulty']} | {result['precision']:.2f} | {result['recall']:.2f} | {result['f1']:.2f} | {result['ndcg']:.2f} |\n"
                 )
 
             f.write("\n### Bottom 5 Queries (by F1 Score)\n\n")
-            f.write(
-                "| Query | Category | Difficulty | Precision | Recall | F1 | NDCG |\n"
-            )
-            f.write(
-                "|-------|----------|------------|-----------|--------|----|----|-------------|\n"
-            )
+            f.write("| Query | Category | Difficulty | Precision | Recall | F1 | NDCG |\n")
+            f.write("|-------|----------|------------|-----------|--------|----|----|-------------|\n")
 
             bottom_queries = sorted(results["results"], key=lambda x: x["f1"])[:5]
             for result in bottom_queries:
@@ -562,12 +526,8 @@ def generate_report(evaluation_results, output_file="evaluation_report.md"):
                 )
 
         f.write("\n## Conclusion\n\n")
-        f.write(
-            "This report provides a comprehensive evaluation of VANA's search capabilities. "
-        )
-        f.write(
-            "The metrics show the performance across different query categories and difficulty levels, "
-        )
+        f.write("This report provides a comprehensive evaluation of VANA's search capabilities. ")
+        f.write("The metrics show the performance across different query categories and difficulty levels, ")
         f.write("highlighting areas of strength and opportunities for improvement.\n\n")
 
         f.write("### Next Steps\n\n")
@@ -581,17 +541,11 @@ def generate_report(evaluation_results, output_file="evaluation_report.md"):
 def main():
     """Main function"""
     # Parse command line arguments
-    parser = argparse.ArgumentParser(
-        description="Enhanced Evaluation Framework for VANA"
-    )
+    parser = argparse.ArgumentParser(description="Enhanced Evaluation Framework for VANA")
     parser.add_argument("--queries", help="JSON file containing test queries")
     parser.add_argument("--output", help="Output file for evaluation report")
-    parser.add_argument(
-        "--top-k", type=int, default=5, help="Number of results to retrieve"
-    )
-    parser.add_argument(
-        "--vector-search", action="store_true", help="Evaluate Vector Search"
-    )
+    parser.add_argument("--top-k", type=int, default=5, help="Number of results to retrieve")
+    parser.add_argument("--vector-search", action="store_true", help="Evaluate Vector Search")
     parser.add_argument(
         "--enhanced-hybrid-search",
         action="store_true",
@@ -619,15 +573,11 @@ def main():
             return 1
     else:
         # Use default test queries from tests/test_data/comprehensive_test_queries.json
-        default_queries_path = os.path.join(
-            "tests", "test_data", "comprehensive_test_queries.json"
-        )
+        default_queries_path = os.path.join("tests", "test_data", "comprehensive_test_queries.json")
         try:
             with open(default_queries_path, "r") as f:
                 test_queries = json.load(f)
-            logger.info(
-                f"Loaded {len(test_queries)} test queries from {default_queries_path}"
-            )
+            logger.info(f"Loaded {len(test_queries)} test queries from {default_queries_path}")
         except Exception as e:
             logger.error(f"Error loading default test queries: {str(e)}")
             return 1
@@ -648,9 +598,7 @@ def main():
 
     # Evaluate Enhanced Hybrid Search
     if args.enhanced_hybrid_search:
-        ehs_results = evaluate_enhanced_hybrid_search(
-            test_queries, args.top_k, args.include_web
-        )
+        ehs_results = evaluate_enhanced_hybrid_search(test_queries, args.top_k, args.include_web)
         evaluation_results["Enhanced Hybrid Search"] = ehs_results
 
     # Generate report
@@ -665,9 +613,7 @@ def main():
         return 1
 
     # Check if any evaluation was successful
-    success = any(
-        results.get("success", False) for results in evaluation_results.values()
-    )
+    success = any(results.get("success", False) for results in evaluation_results.values())
 
     if success:
         logger.info("Evaluation completed successfully!")

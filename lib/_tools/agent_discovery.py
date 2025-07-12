@@ -60,9 +60,7 @@ class AgentDiscoveryService:
         self._last_discovery: Optional[datetime] = None
         self._cache_ttl_seconds = 300  # 5 minutes
 
-    def discover_agents(
-        self, force_refresh: bool = False
-    ) -> Dict[str, AgentCapability]:
+    def discover_agents(self, force_refresh: bool = False) -> Dict[str, AgentCapability]:
         """Discover all available agents and their capabilities.
 
         Args:
@@ -92,9 +90,7 @@ class AgentDiscoveryService:
             self._agent_cache = discovered_agents
             self._last_discovery = datetime.now()
 
-            logger.info(
-                f"✅ Discovered {len(discovered_agents)} agents: {list(discovered_agents.keys())}"
-            )
+            logger.info(f"✅ Discovered {len(discovered_agents)} agents: {list(discovered_agents.keys())}")
 
         except Exception as e:
             logger.error(f"❌ Agent discovery failed: {e}")
@@ -356,9 +352,7 @@ class AgentDiscoveryService:
         return {
             "total_agents": len(agents),
             "agent_names": list(agents.keys()),
-            "last_discovery": self._last_discovery.isoformat()
-            if self._last_discovery
-            else None,
+            "last_discovery": self._last_discovery.isoformat() if self._last_discovery else None,
             "cache_valid": self._is_cache_valid(),
             "discovery_status": "success" if agents else "no_agents_found",
         }

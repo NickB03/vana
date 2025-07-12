@@ -181,9 +181,7 @@ class BraveSearchServer:
                 "result_filter": "web",
             }
 
-            response = self.session.get(
-                f"{self.base_url}/web/search", params=params, timeout=15
-            )
+            response = self.session.get(f"{self.base_url}/web/search", params=params, timeout=15)
             response.raise_for_status()
 
             data = response.json()
@@ -228,9 +226,7 @@ class BraveSearchServer:
             logger.error(f"Error in web search: {e}")
             raise
 
-    def news_search(
-        self, query: str, count: int = 10, freshness: str = "pd", country: str = "US"
-    ) -> NewsResults:
+    def news_search(self, query: str, count: int = 10, freshness: str = "pd", country: str = "US") -> NewsResults:
         """Search news articles with date filtering."""
         try:
             import time
@@ -245,9 +241,7 @@ class BraveSearchServer:
                 "text_decorations": False,
             }
 
-            response = self.session.get(
-                f"{self.base_url}/news/search", params=params, timeout=15
-            )
+            response = self.session.get(f"{self.base_url}/news/search", params=params, timeout=15)
             response.raise_for_status()
 
             data = response.json()
@@ -285,9 +279,7 @@ class BraveSearchServer:
             logger.error(f"Error in news search: {e}")
             raise
 
-    def image_search(
-        self, query: str, count: int = 10, size: str = "medium", type: str = "photo"
-    ) -> ImageResults:
+    def image_search(self, query: str, count: int = 10, size: str = "medium", type: str = "photo") -> ImageResults:
         """Search images with size and type filtering."""
         try:
             import time
@@ -305,9 +297,7 @@ class BraveSearchServer:
                 "safesearch": "moderate",
             }
 
-            response = self.session.get(
-                f"{self.base_url}/images/search", params=params, timeout=15
-            )
+            response = self.session.get(f"{self.base_url}/images/search", params=params, timeout=15)
             response.raise_for_status()
 
             data = response.json()
@@ -345,9 +335,7 @@ class BraveSearchServer:
             logger.error(f"Error in image search: {e}")
             raise
 
-    def video_search(
-        self, query: str, count: int = 10, duration: str = "medium"
-    ) -> VideoResults:
+    def video_search(self, query: str, count: int = 10, duration: str = "medium") -> VideoResults:
         """Search videos with duration filtering."""
         try:
             import time
@@ -362,9 +350,7 @@ class BraveSearchServer:
                 "safesearch": "moderate",
             }
 
-            response = self.session.get(
-                f"{self.base_url}/videos/search", params=params, timeout=15
-            )
+            response = self.session.get(f"{self.base_url}/videos/search", params=params, timeout=15)
             response.raise_for_status()
 
             data = response.json()
@@ -401,9 +387,7 @@ class BraveSearchServer:
             logger.error(f"Error in video search: {e}")
             raise
 
-    def local_search(
-        self, query: str, location: str, radius: int = 5000
-    ) -> LocalResults:
+    def local_search(self, query: str, location: str, radius: int = 5000) -> LocalResults:
         """Search local businesses and places."""
         try:
             import time
@@ -418,9 +402,7 @@ class BraveSearchServer:
                 "safesearch": "moderate",
             }
 
-            response = self.session.get(
-                f"{self.base_url}/local/search", params=params, timeout=15
-            )
+            response = self.session.get(f"{self.base_url}/local/search", params=params, timeout=15)
             response.raise_for_status()
 
             data = response.json()
@@ -453,9 +435,7 @@ class BraveSearchServer:
             )
 
         except requests.exceptions.RequestException as e:
-            logger.error(
-                f"Brave local search failed for '{query}' in '{location}': {e}"
-            )
+            logger.error(f"Brave local search failed for '{query}' in '{location}': {e}")
             raise
         except Exception as e:
             logger.error(f"Error in local search: {e}")
@@ -466,9 +446,7 @@ class BraveSearchServer:
         try:
             params = {"q": query, "country": country}
 
-            response = self.session.get(
-                f"{self.base_url}/suggest", params=params, timeout=10
-            )
+            response = self.session.get(f"{self.base_url}/suggest", params=params, timeout=10)
             response.raise_for_status()
 
             data = response.json()

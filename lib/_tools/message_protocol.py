@@ -126,9 +126,7 @@ class MessageProtocol:
         return JsonRpcRequest(method=method, params=params, id=request_id)
 
     @staticmethod
-    def create_success_response(
-        result: Any, request_id: Optional[Union[str, int]] = None
-    ) -> JsonRpcResponse:
+    def create_success_response(result: Any, request_id: Optional[Union[str, int]] = None) -> JsonRpcResponse:
         """Create a successful JSON-RPC 2.0 response.
 
         Args:

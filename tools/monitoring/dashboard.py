@@ -32,9 +32,7 @@ class Dashboard:
             data_dir: Directory for dashboard data (optional, defaults to data/dashboard)
         """
         # Create data directory if it doesn't exist
-        self.data_dir = data_dir or os.path.join(
-            os.environ.get("VANA_DATA_DIR", "data"), "dashboard"
-        )
+        self.data_dir = data_dir or os.path.join(os.environ.get("VANA_DATA_DIR", "data"), "dashboard")
         os.makedirs(self.data_dir, exist_ok=True)
 
         # Initialize components
@@ -60,9 +58,7 @@ class Dashboard:
 
         # Register metrics collection
         if hasattr(component, "collect_metrics"):
-            self.metrics_collector.register_component(
-                component_name, component.collect_metrics
-            )
+            self.metrics_collector.register_component(component_name, component.collect_metrics)
 
         logger.info(f"Registered component for monitoring: {component_name}")
 
@@ -202,14 +198,8 @@ class Dashboard:
                     # Filter health data
                     if component_name in data.get("health", {}).get("components", {}):
                         filtered_data["health"] = {
-                            "status": data["health"].get(
-                                "status", HealthStatus.UNKNOWN
-                            ),
-                            "components": {
-                                component_name: data["health"]["components"][
-                                    component_name
-                                ]
-                            },
+                            "status": data["health"].get("status", HealthStatus.UNKNOWN),
+                            "components": {component_name: data["health"]["components"][component_name]},
                         }
 
                     # Filter metrics data
@@ -217,22 +207,14 @@ class Dashboard:
                         if metric_name:
                             if metric_name in data["metrics"][component_name]:
                                 filtered_data["metrics"] = {
-                                    component_name: {
-                                        metric_name: data["metrics"][component_name][
-                                            metric_name
-                                        ]
-                                    }
+                                    component_name: {metric_name: data["metrics"][component_name][metric_name]}
                                 }
                         else:
-                            filtered_data["metrics"] = {
-                                component_name: data["metrics"][component_name]
-                            }
+                            filtered_data["metrics"] = {component_name: data["metrics"][component_name]}
 
                     # Filter alerts data
                     filtered_data["alerts"] = [
-                        alert
-                        for alert in data.get("alerts", [])
-                        if alert.get("component") == component_name
+                        alert for alert in data.get("alerts", []) if alert.get("component") == component_name
                     ]
 
                     historical_data.append(filtered_data)

@@ -41,9 +41,7 @@ class BraveSearchClient:
 
         if self.api_key:
             # Log the API key being used (first 5 and last 5 characters for security)
-            logger.info(
-                f"Using Brave API key: {self.api_key[:5]}...{self.api_key[-5:]}"
-            )
+            logger.info(f"Using Brave API key: {self.api_key[:5]}...{self.api_key[-5:]}")
         else:
             logger.warning("No Brave API key found. Web search will not be available.")
 
@@ -51,9 +49,7 @@ class BraveSearchClient:
         """Check if Brave Search is available"""
         return self.api_key is not None
 
-    def search(
-        self, query: str, num_results: int = 5, **kwargs
-    ) -> List[Dict[str, Any]]:
+    def search(self, query: str, num_results: int = 5, **kwargs) -> List[Dict[str, Any]]:
         """
         Perform a web search using Brave Search API with Free AI plan optimizations
 
@@ -72,9 +68,7 @@ class BraveSearchClient:
         # Ensure num_results is within limits (Brave Search allows up to 20)
         if num_results > 20:
             num_results = 20
-            logger.warning(
-                "Requested result count exceeded maximum (20), limiting to 20 results"
-            )
+            logger.warning("Requested result count exceeded maximum (20), limiting to 20 results")
 
         try:
             # Construct request headers
@@ -127,9 +121,7 @@ class BraveSearchClient:
                     "date": item.get("age", ""),
                     "language": item.get("language", "en"),
                     # Free AI plan enhancements
-                    "extra_snippets": item.get(
-                        "extra_snippets", []
-                    ),  # Additional excerpts
+                    "extra_snippets": item.get("extra_snippets", []),  # Additional excerpts
                     "summary": item.get("summary", ""),  # AI-generated summary
                     "type": item.get("type", "web"),  # Result type
                     "meta_url": item.get("meta_url", {}),  # Enhanced metadata
@@ -141,9 +133,7 @@ class BraveSearchClient:
             if query_info:
                 # Log query modifications and spell corrections
                 if query_info.get("altered"):
-                    logger.info(
-                        f"Query spell-corrected from '{query}' to '{query_info.get('altered')}'"
-                    )
+                    logger.info(f"Query spell-corrected from '{query}' to '{query_info.get('altered')}'")
                 if query_info.get("safesearch"):
                     logger.info(f"Safe search applied: {query_info.get('safesearch')}")
 
@@ -154,9 +144,7 @@ class BraveSearchClient:
                 if results:
                     results[0]["ai_summary"] = data["summarizer"].get("key", "")
 
-            logger.info(
-                f"Brave Search returned {len(results)} results for query: {query}"
-            )
+            logger.info(f"Brave Search returned {len(results)} results for query: {query}")
             return results
 
         except requests.RequestException as e:
@@ -198,9 +186,7 @@ class BraveSearchClient:
 
         return formatted
 
-    def optimized_search(
-        self, query: str, search_type: str = "comprehensive", **kwargs
-    ) -> List[Dict[str, Any]]:
+    def optimized_search(self, query: str, search_type: str = "comprehensive", **kwargs) -> List[Dict[str, Any]]:
         """
         Perform optimized search using Free AI plan features with intelligent parameter selection
 
@@ -280,9 +266,7 @@ class BraveSearchClient:
         logger.info(f"Performing {search_type} optimized search for: {query}")
         return self.search(query, num_results=params.get("count", 10), **params)
 
-    def search_with_goggles(
-        self, query: str, goggle_type: str = "academic", **kwargs
-    ) -> List[Dict[str, Any]]:
+    def search_with_goggles(self, query: str, goggle_type: str = "academic", **kwargs) -> List[Dict[str, Any]]:
         """
         Search with Brave Goggles for custom result ranking (Free AI plan feature)
 
@@ -313,9 +297,7 @@ class BraveSearchClient:
         else:
             goggle_url = goggles.get(goggle_type)
             if not goggle_url:
-                logger.warning(
-                    f"Unknown goggle type: {goggle_type}, using standard search"
-                )
+                logger.warning(f"Unknown goggle type: {goggle_type}, using standard search")
                 return self.search(query, **kwargs)
 
         # Add goggle to search parameters
@@ -415,9 +397,7 @@ class MockBraveSearchClient:
         """Mock client is always available"""
         return True
 
-    def search(
-        self, query: str, num_results: int = 5, **kwargs
-    ) -> List[Dict[str, Any]]:
+    def search(self, query: str, num_results: int = 5, **kwargs) -> List[Dict[str, Any]]:
         """Return mock search results based on the query"""
         # Simple keyword matching for mock results
         for key, results in self.mock_results.items():
@@ -475,8 +455,6 @@ if __name__ == "__main__":
             formatted = client.format_results(results)
             logger.info("%s", formatted)
         else:
-            logger.info(
-                "Brave Search client not available. Please check your API key configuration."
-            )
+            logger.info("Brave Search client not available. Please check your API key configuration.")
     else:
         logger.info("Usage: python brave_search_client.py <search query>")

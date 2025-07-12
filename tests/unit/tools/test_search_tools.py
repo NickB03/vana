@@ -316,9 +316,7 @@ class TestKnowledgeSearchTool:
         execution_time = end_time - start_time
 
         # Should be reasonably fast (under 5 seconds for real implementation)
-        assert execution_time < 5.0, (
-            f"Knowledge search took too long: {execution_time:.2f}s"
-        )
+        assert execution_time < 5.0, f"Knowledge search took too long: {execution_time:.2f}s"
         assert isinstance(result, str)
         assert len(result) > 0
 

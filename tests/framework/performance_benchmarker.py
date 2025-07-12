@@ -82,11 +82,7 @@ class PerformanceBenchmarker:
 
         # Set up baseline storage
         if baseline_file is None:
-            baseline_file = (
-                Path(__file__).parent.parent
-                / "test_data"
-                / "performance_baselines.json"
-            )
+            baseline_file = Path(__file__).parent.parent / "test_data" / "performance_baselines.json"
 
         self.baseline_file = Path(baseline_file)
         self.baseline_file.parent.mkdir(parents=True, exist_ok=True)
@@ -132,9 +128,7 @@ class PerformanceBenchmarker:
             for iteration in range(iterations):
                 for query_type in query_types:
                     try:
-                        scenarios = self.test_data_manager.load_scenarios_by_type(
-                            query_type
-                        )
+                        scenarios = self.test_data_manager.load_scenarios_by_type(query_type)
                     except FileNotFoundError:
                         continue
 
@@ -151,9 +145,7 @@ class PerformanceBenchmarker:
                             else:
                                 failed_requests += 1
                                 error_type = response.error or "unknown_error"
-                                error_types[error_type] = (
-                                    error_types.get(error_type, 0) + 1
-                                )
+                                error_types[error_type] = error_types.get(error_type, 0) + 1
 
                             # Record timeline data
                             timeline_data.append(
@@ -204,9 +196,7 @@ class PerformanceBenchmarker:
         )
 
         # Evaluate performance
-        issues, recommendations, passed = self._evaluate_performance(
-            metrics, "response_time"
-        )
+        issues, recommendations, passed = self._evaluate_performance(metrics, "response_time")
 
         return LoadTestResult(
             test_name="response_time_benchmark",
@@ -299,9 +289,7 @@ class PerformanceBenchmarker:
         )
 
         # Evaluate performance
-        issues, recommendations, passed = self._evaluate_performance(
-            metrics, "load_test"
-        )
+        issues, recommendations, passed = self._evaluate_performance(metrics, "load_test")
 
         return LoadTestResult(
             test_name="concurrent_load_test",
@@ -340,9 +328,7 @@ class PerformanceBenchmarker:
 
         return results
 
-    def compare_with_baseline(
-        self, metrics: PerformanceMetrics, test_name: str
-    ) -> Dict[str, Any]:
+    def compare_with_baseline(self, metrics: PerformanceMetrics, test_name: str) -> Dict[str, Any]:
         """Compare current metrics with baseline"""
         if test_name not in self.baselines:
             return {
@@ -373,9 +359,7 @@ class PerformanceBenchmarker:
             baseline_value = baseline.get(metric, 0)
 
             if baseline_value > 0:
-                change_percent = (
-                    (current_value - baseline_value) / baseline_value
-                ) * 100
+                change_percent = ((current_value - baseline_value) / baseline_value) * 100
 
                 # Determine if this is an improvement or regression
                 improvement_metrics = ["success_rate", "requests_per_second"]
@@ -489,12 +473,8 @@ class PerformanceBenchmarker:
             # Calculate percentiles
             sorted_times = sorted(response_times)
             p50_response_time = statistics.median(sorted_times)
-            p95_response_time = (
-                sorted_times[int(len(sorted_times) * 0.95)] if sorted_times else 0
-            )
-            p99_response_time = (
-                sorted_times[int(len(sorted_times) * 0.99)] if sorted_times else 0
-            )
+            p95_response_time = sorted_times[int(len(sorted_times) * 0.95)] if sorted_times else 0
+            p99_response_time = sorted_times[int(len(sorted_times) * 0.99)] if sorted_times else 0
         else:
             avg_response_time = min_response_time = max_response_time = 0
             p50_response_time = p95_response_time = p99_response_time = 0
@@ -505,12 +485,8 @@ class PerformanceBenchmarker:
 
         # Resource usage metrics
         if resource_timeline:
-            cpu_values = [
-                r["cpu_percent"] for r in resource_timeline if "cpu_percent" in r
-            ]
-            memory_values = [
-                r["memory_mb"] for r in resource_timeline if "memory_mb" in r
-            ]
+            cpu_values = [r["cpu_percent"] for r in resource_timeline if "cpu_percent" in r]
+            memory_values = [r["memory_mb"] for r in resource_timeline if "memory_mb" in r]
 
             avg_cpu_usage = statistics.mean(cpu_values) if cpu_values else 0
             max_cpu_usage = max(cpu_values) if cpu_values else 0
@@ -520,9 +496,7 @@ class PerformanceBenchmarker:
             avg_cpu_usage = max_cpu_usage = avg_memory_usage = max_memory_usage = 0
 
         # Count timeouts
-        timeout_count = error_types.get("TimeoutError", 0) + error_types.get(
-            "asyncio.TimeoutError", 0
-        )
+        timeout_count = error_types.get("TimeoutError", 0) + error_types.get("asyncio.TimeoutError", 0)
 
         return PerformanceMetrics(
             avg_response_time=avg_response_time,
@@ -546,24 +520,18 @@ class PerformanceBenchmarker:
             timeout_count=timeout_count,
         )
 
-    def _evaluate_performance(
-        self, metrics: PerformanceMetrics, test_type: str
-    ) -> Tuple[List[str], List[str], bool]:
+    def _evaluate_performance(self, metrics: PerformanceMetrics, test_type: str) -> Tuple[List[str], List[str], bool]:
         """Evaluate performance against thresholds"""
         issues = []
         recommendations = []
 
         # Check response time thresholds
         if metrics.avg_response_time > self.thresholds["max_response_time"]:
-            issues.append(
-                f"Average response time too high: {metrics.avg_response_time:.2f}s"
-            )
+            issues.append(f"Average response time too high: {metrics.avg_response_time:.2f}s")
             recommendations.append("Optimize agent processing or increase resources")
 
         if metrics.p95_response_time > self.thresholds["max_response_time"] * 2:
-            issues.append(
-                f"95th percentile response time too high: {metrics.p95_response_time:.2f}s"
-            )
+            issues.append(f"95th percentile response time too high: {metrics.p95_response_time:.2f}s")
             recommendations.append("Investigate performance outliers")
 
         # Check success rate
@@ -582,9 +550,7 @@ class PerformanceBenchmarker:
 
         # Check throughput
         if metrics.requests_per_second < self.thresholds["min_requests_per_second"]:
-            issues.append(
-                f"Throughput too low: {metrics.requests_per_second:.2f} req/s"
-            )
+            issues.append(f"Throughput too low: {metrics.requests_per_second:.2f} req/s")
             recommendations.append("Optimize agent performance or scaling")
 
         passed = len(issues) == 0

@@ -117,36 +117,28 @@ def test_deployment_readiness():
     main_file = "/Users/nick/Development/vana/main.py"
     checks["main_py"] = {
         "exists": os.path.exists(main_file),
-        "readable": os.access(main_file, os.R_OK)
-        if os.path.exists(main_file)
-        else False,
+        "readable": os.access(main_file, os.R_OK) if os.path.exists(main_file) else False,
     }
 
     # Check Docker configuration
     dockerfile = "/Users/nick/Development/vana/Dockerfile"
     checks["dockerfile"] = {
         "exists": os.path.exists(dockerfile),
-        "readable": os.access(dockerfile, os.R_OK)
-        if os.path.exists(dockerfile)
-        else False,
+        "readable": os.access(dockerfile, os.R_OK) if os.path.exists(dockerfile) else False,
     }
 
     # Check requirements
     requirements = "/Users/nick/Development/vana/requirements.txt"
     checks["requirements"] = {
         "exists": os.path.exists(requirements),
-        "readable": os.access(requirements, os.R_OK)
-        if os.path.exists(requirements)
-        else False,
+        "readable": os.access(requirements, os.R_OK) if os.path.exists(requirements) else False,
     }
 
     # Check poetry config
     pyproject = "/Users/nick/Development/vana/pyproject.toml"
     checks["pyproject"] = {
         "exists": os.path.exists(pyproject),
-        "readable": os.access(pyproject, os.R_OK)
-        if os.path.exists(pyproject)
-        else False,
+        "readable": os.access(pyproject, os.R_OK) if os.path.exists(pyproject) else False,
     }
 
     return checks
@@ -247,17 +239,13 @@ def main():
 
     # Deployment
     for component, result in deployment_checks.items():
-        tests.append(
-            (f"Deployment {component}", result["exists"] and result["readable"])
-        )
+        tests.append((f"Deployment {component}", result["exists"] and result["readable"]))
 
     working_components = sum(1 for _, working in tests if working)
     total_components = len(tests)
 
     print(f"Working components: {working_components}/{total_components}")
-    print(
-        f"Infrastructure readiness: {(working_components / total_components) * 100:.1f}%"
-    )
+    print(f"Infrastructure readiness: {(working_components / total_components) * 100:.1f}%")
 
     if working_components >= total_components * 0.75:
         print("✅ INFRASTRUCTURE MOSTLY FUNCTIONAL")
@@ -281,16 +269,12 @@ def main():
         },
     }
 
-    with open(
-        "/Users/nick/Development/vana/infrastructure_reality_check.json", "w"
-    ) as f:
+    with open("/Users/nick/Development/vana/infrastructure_reality_check.json", "w") as f:
         import json
 
         json.dump(all_results, f, indent=2, default=str)
 
-    print(
-        "\nResults saved to: /Users/nick/Development/vana/infrastructure_reality_check.json"
-    )
+    print("\nResults saved to: /Users/nick/Development/vana/infrastructure_reality_check.json")
 
 
 if __name__ == "__main__":

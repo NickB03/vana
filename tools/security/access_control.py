@@ -109,9 +109,7 @@ class AccessControlManager:
 
         logger.info("Access Control Manager initialized")
 
-    def has_permission(
-        self, role: Union[Role, str], operation: Union[Operation, str]
-    ) -> bool:
+    def has_permission(self, role: Union[Role, str], operation: Union[Operation, str]) -> bool:
         """
         Check if a role has permission for an operation.
 
@@ -149,9 +147,7 @@ class AccessControlManager:
         has_permission = required_permission in role_permissions
 
         if not has_permission:
-            logger.warning(
-                f"Role {role.value} does not have permission for operation {operation.value}"
-            )
+            logger.warning(f"Role {role.value} does not have permission for operation {operation.value}")
 
         return has_permission
 
@@ -218,9 +214,7 @@ class AccessControlManager:
         return True
 
 
-def require_permission(
-    operation: Union[Operation, str], entity_type_arg: Optional[str] = None
-):
+def require_permission(operation: Union[Operation, str], entity_type_arg: Optional[str] = None):
     """
     Decorator to require permission for an operation.
 
@@ -256,9 +250,7 @@ def require_permission(
 
             # Check authorization
             if not acm.authorize(role, operation, entity_type):
-                logger.warning(
-                    f"Access denied: {role} cannot perform {operation} on {entity_type}"
-                )
+                logger.warning(f"Access denied: {role} cannot perform {operation} on {entity_type}")
                 return {"error": "Access denied", "success": False}
 
             # Call the original function

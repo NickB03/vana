@@ -18,8 +18,8 @@ from pathlib import Path
 project_root = Path(__file__).parent.parent
 sys.path.append(str(project_root))
 
-from tests.eval.test_critical_functionality import CriticalFunctionalityEvaluator
 from lib.logging_config import get_logger
+from tests.eval.test_critical_functionality import CriticalFunctionalityEvaluator
 
 logger = get_logger("vana.critical_evaluation")
 
@@ -28,9 +28,7 @@ async def main():
     """Run critical functionality evaluation"""
     import argparse
 
-    parser = argparse.ArgumentParser(
-        description="Run critical functionality evaluation"
-    )
+    parser = argparse.ArgumentParser(description="Run critical functionality evaluation")
     parser.add_argument(
         "--environment",
         default="dev",

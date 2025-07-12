@@ -4,30 +4,29 @@ Fixed async tests for adk_tools.py - Core ADK Functions
 Tests the critical async functions in adk_tools.py with proper async/await handling.
 """
 
-import json
-import pytest
-import tempfile
-import os
 import asyncio
-from pathlib import Path
-from unittest.mock import Mock, patch, AsyncMock
+import json
+import os
 
 # Import the critical ADK tools
 import sys
+import tempfile
+from pathlib import Path
+from unittest.mock import AsyncMock, Mock, patch
+
+import pytest
+
 sys.path.append(str(Path(__file__).parent.parent.parent.parent))
 
-from lib._tools.adk_tools import (
-    # File System Tools (Critical)
-    read_file,
-    write_file,
-    list_directory,
+from lib._tools.adk_tools import (  # File System Tools (Critical); Search Tools (Critical); System Tools (Critical)
+    echo,
     file_exists,
-    # Search Tools (Critical)
+    get_health_status,
+    list_directory,
+    read_file,
     vector_search,
     web_search,
-    # System Tools (Critical)
-    echo,
-    get_health_status,
+    write_file,
 )
 
 
@@ -43,6 +42,7 @@ class TestCriticalADKToolsAsync:
     def teardown_method(self):
         """Cleanup after each test method"""
         import shutil
+
         if os.path.exists(self.temp_dir):
             shutil.rmtree(self.temp_dir)
 
@@ -52,16 +52,16 @@ class TestCriticalADKToolsAsync:
         """Test async write_file with proper await"""
         # Call async function with await
         result = await write_file(self.test_file, self.test_content)
-        
+
         # Validate result
         assert isinstance(result, str), "write_file must return string"
-        assert "success" in result.lower() or "written" in result.lower(), (
-            f"write_file must indicate success. Got: {result}"
-        )
-        
+        assert (
+            "success" in result.lower() or "written" in result.lower()
+        ), f"write_file must indicate success. Got: {result}"
+
         # Verify file was created
         assert os.path.exists(self.test_file), "File must be created"
-        
+
         # Verify content
         with open(self.test_file, "r") as f:
             actual_content = f.read()
@@ -74,15 +74,15 @@ class TestCriticalADKToolsAsync:
         # Setup: Create test file
         with open(self.test_file, "w") as f:
             f.write(self.test_content)
-        
+
         # Call async function with await
         result = await read_file(self.test_file)
-        
+
         # Validate result
         assert isinstance(result, str), "read_file must return string"
-        assert result == self.test_content, (
-            f"read_file must return exact content. Expected: {self.test_content}, Got: {result}"
-        )
+        assert (
+            result == self.test_content
+        ), f"read_file must return exact content. Expected: {self.test_content}, Got: {result}"
 
     @pytest.mark.asyncio
     @pytest.mark.unit
@@ -91,18 +91,18 @@ class TestCriticalADKToolsAsync:
         # Test with non-existent file
         result_missing = file_exists("/nonexistent/file.txt")
         assert isinstance(result_missing, str), "file_exists must return string"
-        assert "false" in result_missing.lower() or "not" in result_missing.lower(), (
-            "file_exists must indicate file does not exist"
-        )
-        
+        assert (
+            "false" in result_missing.lower() or "not" in result_missing.lower()
+        ), "file_exists must indicate file does not exist"
+
         # Create a file and test
         with open(self.test_file, "w") as f:
             f.write("test")
-        
+
         result_exists = file_exists(self.test_file)
-        assert "true" in result_exists.lower() or "exists" in result_exists.lower(), (
-            "file_exists must indicate file exists"
-        )
+        assert (
+            "true" in result_exists.lower() or "exists" in result_exists.lower()
+        ), "file_exists must indicate file exists"
 
     @pytest.mark.asyncio
     @pytest.mark.unit
@@ -112,10 +112,10 @@ class TestCriticalADKToolsAsync:
         for i in range(3):
             with open(os.path.join(self.temp_dir, f"file{i}.txt"), "w") as f:
                 f.write(f"content{i}")
-        
+
         result = list_directory(self.temp_dir)
         assert isinstance(result, str), "list_directory must return string"
-        
+
         # Parse JSON result
         data = json.loads(result)
         assert "items" in data, "Result must contain items"
@@ -127,10 +127,10 @@ class TestCriticalADKToolsAsync:
     async def test_vector_search_async(self):
         """Test async vector_search with proper await"""
         query = "test query"
-        
+
         # Call async function with await
         result = await vector_search(query)
-        
+
         # Validate result
         assert isinstance(result, str), "vector_search must return string"
         data = json.loads(result)
@@ -144,10 +144,10 @@ class TestCriticalADKToolsAsync:
     async def test_web_search_async(self):
         """Test async web_search with proper await"""
         query = "Python programming"
-        
+
         # Call async function with await
         result = await web_search(query, max_results=3)
-        
+
         # Validate result
         assert isinstance(result, str), "web_search must return string"
         data = json.loads(result)
@@ -162,7 +162,7 @@ class TestCriticalADKToolsAsync:
         """Test echo (sync function)"""
         message = "Hello, World!"
         result = echo(message)
-        
+
         assert isinstance(result, str), "echo must return string"
         assert message in result, f"echo must contain input message. Got: {result}"
 
@@ -171,16 +171,15 @@ class TestCriticalADKToolsAsync:
     async def test_get_health_status_sync(self):
         """Test get_health_status (sync function)"""
         result = get_health_status()
-        
+
         assert isinstance(result, str), "get_health_status must return string"
         data = json.loads(result)
         assert "status" in data, "Result must contain status"
-        assert data["status"] in ["healthy", "degraded", "unhealthy"], (
-            "Status must be valid health state"
-        )
+        assert data["status"] in ["healthy", "degraded", "unhealthy"], "Status must be valid health state"
 
 
 # Create a simple test runner for debugging
 if __name__ == "__main__":
     import sys
+
     pytest.main([__file__, "-v", "-s"] + sys.argv[1:])

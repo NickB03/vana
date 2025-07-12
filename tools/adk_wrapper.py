@@ -49,41 +49,31 @@ class ADKWrapper:
                 logger.info("✅ Imported ADK from google.cloud.aiplatform.adk")
                 return
             else:
-                logger.warning(
-                    "❌ google.cloud.aiplatform does not have 'adk' attribute"
-                )
+                logger.warning("❌ google.cloud.aiplatform does not have 'adk' attribute")
         except ImportError as e:
             logger.warning(f"❌ Failed to import google.cloud.aiplatform: {str(e)}")
 
         # Strategy 3: Try aiplatform.agents for direct agent access
         try:
-            logger.debug(
-                "Trying Strategy 3: Import agents from google.cloud.aiplatform"
-            )
+            logger.debug("Trying Strategy 3: Import agents from google.cloud.aiplatform")
             from google.cloud.aiplatform import agents
 
             self.agent_module = agents
             logger.info("✅ Imported agents from google.cloud.aiplatform.agents")
             return
         except ImportError as e:
-            logger.warning(
-                f"❌ Failed to import google.cloud.aiplatform.agents: {str(e)}"
-            )
+            logger.warning(f"❌ Failed to import google.cloud.aiplatform.agents: {str(e)}")
 
         # Strategy 4: Check for Vertex AI availability for direct LLM calls
         try:
-            logger.debug(
-                "Trying Strategy 4: Check Vertex AI availability for direct LLM calls"
-            )
+            logger.debug("Trying Strategy 4: Check Vertex AI availability for direct LLM calls")
 
             self.vertexai_available = True
             logger.info("✅ Vertex AI is available for direct LLM calls")
         except ImportError as e:
             logger.warning(f"❌ Failed to import vertexai: {str(e)}")
 
-        logger.warning(
-            "⚠️ All ADK import strategies failed, falling back to direct Vector Search"
-        )
+        logger.warning("⚠️ All ADK import strategies failed, falling back to direct Vector Search")
 
     def _get_environment_info(self) -> Dict[str, Any]:
         """Get information about the Python environment."""
@@ -135,12 +125,8 @@ class ADKWrapper:
             # Let the AgentProxy handle it
             return agent.run(query, **kwargs)
         else:
-            logger.error(
-                f"Agent of type {type(agent)} has no run or generate_content method"
-            )
-            raise AttributeError(
-                "Agent does not have 'run' method and is not a fallback proxy"
-            )
+            logger.error(f"Agent of type {type(agent)} has no run or generate_content method")
+            raise AttributeError("Agent does not have 'run' method and is not a fallback proxy")
 
     def is_available(self) -> bool:
         """Check if ADK functionality is available."""
@@ -170,11 +156,7 @@ class AgentProxy:
         """Run the agent proxy by using direct Vector Search."""
         # Try to use the search tool if available
         for tool in self.tools:
-            if (
-                isinstance(tool, dict)
-                and "function" in tool
-                and callable(tool["function"])
-            ):
+            if isinstance(tool, dict) and "function" in tool and callable(tool["function"]):
                 try:
                     results = tool["function"](query)
                     return {
@@ -234,9 +216,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     # Configure logging
-    logging.basicConfig(
-        level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s"
-    )
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 
     # Create a new instance
     adk_test = ADKWrapper()

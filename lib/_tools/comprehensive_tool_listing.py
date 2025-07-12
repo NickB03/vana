@@ -301,21 +301,15 @@ def validate_tool_functionality() -> Dict[str, Any]:
             results["tests_run"] += 1
             if intel_working:
                 results["tests_passed"] += 1
-                results["details"].append(
-                    "✅ Competitive Intelligence tool: Creating task IDs"
-                )
+                results["details"].append("✅ Competitive Intelligence tool: Creating task IDs")
             else:
                 results["tests_failed"] += 1
-                results["details"].append(
-                    "❌ Competitive Intelligence tool: Not creating task IDs"
-                )
+                results["details"].append("❌ Competitive Intelligence tool: Not creating task IDs")
 
         except Exception as e:
             results["tests_run"] += 1
             results["tests_failed"] += 1
-            results["details"].append(
-                f"❌ Competitive Intelligence tool: Exception - {e}"
-            )
+            results["details"].append(f"❌ Competitive Intelligence tool: Exception - {e}")
 
         # Test 3: Task status checking
         try:
@@ -331,9 +325,7 @@ def validate_tool_functionality() -> Dict[str, Any]:
                 results["details"].append("✅ Task status checking: Working")
             else:
                 results["tests_failed"] += 1
-                results["details"].append(
-                    "❌ Task status checking: Unexpected response"
-                )
+                results["details"].append("❌ Task status checking: Unexpected response")
 
         except Exception as e:
             results["tests_run"] += 1

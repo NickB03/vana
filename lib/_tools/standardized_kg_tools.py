@@ -113,9 +113,7 @@ class StandardizedKnowledgeGraphTools:
         return response
 
     @standardized_tool_wrapper("kg_store")
-    def kg_store(
-        self, entity_name: str, entity_type: str, properties: str = ""
-    ) -> StandardToolResponse:
+    def kg_store(self, entity_name: str, entity_type: str, properties: str = "") -> StandardToolResponse:
         """💾 Store an entity in the knowledge graph with properties.
 
         Args:
@@ -133,9 +131,7 @@ class StandardizedKnowledgeGraphTools:
         entity_type = InputValidator.validate_string(
             entity_type, "entity_type", required=True, min_length=1, max_length=100
         )
-        properties = InputValidator.validate_string(
-            properties, "properties", required=False, max_length=2000
-        )
+        properties = InputValidator.validate_string(properties, "properties", required=False, max_length=2000)
 
         # Record usage for analytics
         parameters = {
@@ -178,9 +174,7 @@ class StandardizedKnowledgeGraphTools:
         return response
 
     @standardized_tool_wrapper("kg_relationship")
-    def kg_relationship(
-        self, entity1: str, relationship: str, entity2: str
-    ) -> StandardToolResponse:
+    def kg_relationship(self, entity1: str, relationship: str, entity2: str) -> StandardToolResponse:
         """🔗 Create a relationship between two entities in the knowledge graph.
 
         Args:
@@ -192,15 +186,11 @@ class StandardizedKnowledgeGraphTools:
             StandardToolResponse with relationship creation result or error information
         """
         # Validate inputs
-        entity1 = InputValidator.validate_string(
-            entity1, "entity1", required=True, min_length=1, max_length=200
-        )
+        entity1 = InputValidator.validate_string(entity1, "entity1", required=True, min_length=1, max_length=200)
         relationship = InputValidator.validate_string(
             relationship, "relationship", required=True, min_length=1, max_length=100
         )
-        entity2 = InputValidator.validate_string(
-            entity2, "entity2", required=True, min_length=1, max_length=200
-        )
+        entity2 = InputValidator.validate_string(entity2, "entity2", required=True, min_length=1, max_length=200)
 
         # Record usage for analytics
         parameters = {
@@ -217,9 +207,7 @@ class StandardizedKnowledgeGraphTools:
             if isinstance(result, dict) and not result.get("success", True):
                 response = StandardToolResponse(
                     success=False,
-                    error=result.get(
-                        "error", "Knowledge graph relationship creation failed"
-                    ),
+                    error=result.get("error", "Knowledge graph relationship creation failed"),
                     tool_name="kg_relationship",
                 )
             else:
@@ -246,9 +234,7 @@ class StandardizedKnowledgeGraphTools:
         return response
 
     @standardized_tool_wrapper("kg_extract_entities")
-    def kg_extract_entities(
-        self, text: str, store_entities: bool = True
-    ) -> StandardToolResponse:
+    def kg_extract_entities(self, text: str, store_entities: bool = True) -> StandardToolResponse:
         """🎯 Extract entities from text using NLP and optionally store in knowledge graph.
 
         Args:
@@ -259,9 +245,7 @@ class StandardizedKnowledgeGraphTools:
             StandardToolResponse with extracted entities or error information
         """
         # Validate inputs
-        text = InputValidator.validate_string(
-            text, "text", required=True, min_length=1, max_length=10000
-        )
+        text = InputValidator.validate_string(text, "text", required=True, min_length=1, max_length=10000)
 
         # Record usage for analytics
         parameters = {"text_length": len(text), "store_entities": store_entities}
@@ -313,9 +297,7 @@ def standardized_kg_query(entity_type: str, query_text: str) -> str:
     return result.to_string()
 
 
-def standardized_kg_store(
-    entity_name: str, entity_type: str, properties: str = ""
-) -> str:
+def standardized_kg_store(entity_name: str, entity_type: str, properties: str = "") -> str:
     """💾 KG store with standardized interface - returns string for ADK compatibility."""
     result = standardized_kg_tools.kg_store(entity_name, entity_type, properties)
     return result.to_string()
@@ -350,7 +332,5 @@ def get_kg_tools_analytics() -> Dict[str, Any]:
         "kg_query": tool_analytics.get_usage_analytics("kg_query"),
         "kg_store": tool_analytics.get_usage_analytics("kg_store"),
         "kg_relationship": tool_analytics.get_usage_analytics("kg_relationship"),
-        "kg_extract_entities": tool_analytics.get_usage_analytics(
-            "kg_extract_entities"
-        ),
+        "kg_extract_entities": tool_analytics.get_usage_analytics("kg_extract_entities"),
     }

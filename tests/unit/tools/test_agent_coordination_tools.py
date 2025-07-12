@@ -21,12 +21,7 @@ import pytest
 # Import the actual tools from VANA codebase
 sys.path.append(str(Path(__file__).parent.parent.parent.parent))
 
-from lib._tools.adk_tools import (
-    adk_coordinate_task,
-    adk_delegate_to_agent,
-    adk_get_agent_status,
-    adk_transfer_to_agent,
-)
+from lib._tools.adk_tools import adk_coordinate_task, adk_delegate_to_agent, adk_get_agent_status, adk_transfer_to_agent
 from tests.framework import EnvironmentConfig, EnvironmentType, TestEnvironment
 
 
@@ -109,15 +104,11 @@ class TestAgentCoordinationTools:
         # STRICT: Must have required coordination fields
         assert "action" in parsed, "Missing action field"
         assert parsed["action"] == "coordinate_task", "Incorrect action value"
-        assert "task_description" in parsed or task_description in str(parsed), (
-            "Original task not preserved"
-        )
+        assert "task_description" in parsed or task_description in str(parsed), "Original task not preserved"
 
         # STRICT: Must have delegation or coordination information
         required_fields = ["delegation", "coordination", "specialist", "response"]
-        assert any(field in str(parsed).lower() for field in required_fields), (
-            "Missing coordination information"
-        )
+        assert any(field in str(parsed).lower() for field in required_fields), "Missing coordination information"
 
     @pytest.mark.unit
     def test_adk_coordinate_task_with_assigned_agent(self):
@@ -204,11 +195,7 @@ class TestAgentCoordinationTools:
         assert isinstance(result, str)
         # Should handle invalid agent gracefully
         result_lower = result.lower()
-        assert (
-            "not found" in result_lower
-            or "not available" in result_lower
-            or "transfer_to_agent" in result_lower
-        )
+        assert "not found" in result_lower or "not available" in result_lower or "transfer_to_agent" in result_lower
 
     @pytest.mark.unit
     def test_adk_delegate_to_agent_empty_task(self):
@@ -337,9 +324,7 @@ class TestAgentCoordinationEdgeCases:
     @pytest.mark.unit
     def test_coordinate_task_very_long_description(self):
         """Test task coordination with very long description"""
-        long_description = (
-            "This is a very long task description. " * 100
-        )  # ~4000 characters
+        long_description = "This is a very long task description. " * 100  # ~4000 characters
 
         result = adk_coordinate_task.func(long_description)
 
@@ -414,9 +399,7 @@ class TestAgentCoordinationEdgeCases:
         execution_time = end_time - start_time
 
         # Should be fast (under 1 second)
-        assert execution_time < 1.0, (
-            f"Agent status took too long: {execution_time:.2f}s"
-        )
+        assert execution_time < 1.0, f"Agent status took too long: {execution_time:.2f}s"
         assert isinstance(result, str)
         assert len(result) > 0
 

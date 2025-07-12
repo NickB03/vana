@@ -10,15 +10,15 @@ Optimizes multi-agent coordination for better performance:
 """
 
 import asyncio
-import logging
-import time
-from typing import Dict, Any, List, Optional, Tuple
-from dataclasses import dataclass
-from collections import defaultdict, deque
-import threading
-from concurrent.futures import ThreadPoolExecutor
-import json
 import hashlib
+import json
+import logging
+import threading
+import time
+from collections import defaultdict, deque
+from concurrent.futures import ThreadPoolExecutor
+from dataclasses import dataclass
+from typing import Any, Dict, List, Optional, Tuple
 
 logger = logging.getLogger(__name__)
 
@@ -73,18 +73,12 @@ class AgentLoadBalancer:
                 stats = self.agent_stats[agent_id]
                 # Update moving averages
                 alpha = 0.1  # Smoothing factor
-                stats.avg_response_time = (
-                    1 - alpha
-                ) * stats.avg_response_time + alpha * response_time
-                stats.success_rate = (1 - alpha) * stats.success_rate + alpha * (
-                    1.0 if success else 0.0
-                )
+                stats.avg_response_time = (1 - alpha) * stats.avg_response_time + alpha * response_time
+                stats.success_rate = (1 - alpha) * stats.success_rate + alpha * (1.0 if success else 0.0)
                 stats.total_requests += 1
                 stats.last_updated = time.time()
 
-    def select_best_agent(
-        self, available_agents: List[str], task_type: str = None
-    ) -> str:
+    def select_best_agent(self, available_agents: List[str], task_type: str = None) -> str:
         """Select the best agent based on performance and load."""
         with self._lock:
             if not available_agents:
@@ -111,9 +105,7 @@ class AgentLoadBalancer:
         stats = self.agent_stats[agent_id]
 
         # Base score components
-        response_time_score = max(
-            0, 1.0 - (stats.avg_response_time / 10.0)
-        )  # Normalize to 0-1
+        response_time_score = max(0, 1.0 - (stats.avg_response_time / 10.0))  # Normalize to 0-1
         success_rate_score = stats.success_rate
         load_score = max(0, 1.0 - (stats.current_load / 10.0))  # Assume max load of 10
 
@@ -132,9 +124,7 @@ class AgentLoadBalancer:
         """Decrement current load for an agent."""
         with self._lock:
             if agent_id in self.agent_stats:
-                self.agent_stats[agent_id].current_load = max(
-                    0, self.agent_stats[agent_id].current_load - 1
-                )
+                self.agent_stats[agent_id].current_load = max(0, self.agent_stats[agent_id].current_load - 1)
 
 
 class RequestBatcher:
@@ -185,8 +175,7 @@ class RequestBatcher:
             for batch_key, requests in self.pending_batches.items():
                 if (
                     len(requests) >= self.batch_size
-                    or current_time - self.batch_timers.get(batch_key, current_time)
-                    >= self.batch_timeout
+                    or current_time - self.batch_timers.get(batch_key, current_time) >= self.batch_timeout
                 ):
                     ready_batches.append(batch_key)
 
@@ -242,20 +231,14 @@ class CoordinationCache:
         if key in self._access_order:
             self._access_order.remove(key)
 
-    def generate_key(
-        self, agent_id: str, function_name: str, args: tuple, kwargs: dict
-    ) -> str:
+    def generate_key(self, agent_id: str, function_name: str, args: tuple, kwargs: dict) -> str:
         """Generate cache key for coordination request."""
         # Create deterministic key from request parameters
         key_data = {
             "agent": agent_id,
             "function": function_name,
             "args": args,
-            "kwargs": {
-                k: v
-                for k, v in kwargs.items()
-                if isinstance(v, (str, int, float, bool))
-            },
+            "kwargs": {k: v for k, v in kwargs.items() if isinstance(v, (str, int, float, bool))},
         }
         key_str = json.dumps(key_data, sort_keys=True)
         return hashlib.sha256(key_str.encode()).hexdigest()
@@ -271,21 +254,15 @@ class CoordinationOptimizer:
             batch_size=config.get("batch_size", 10),
             batch_timeout=config.get("batch_timeout", 0.1),
         )
-        self.cache = CoordinationCache(
-            max_size=config.get("cache_size", 1000), ttl=config.get("cache_ttl", 300)
-        )
+        self.cache = CoordinationCache(max_size=config.get("cache_size", 1000), ttl=config.get("cache_ttl", 300))
         self.executor = ThreadPoolExecutor(max_workers=config.get("max_workers", 20))
         self._optimization_enabled = config.get("enable_optimization", True)
 
-    async def coordinate_optimized(
-        self, agent_id: str, function_name: str, *args, **kwargs
-    ) -> Any:
+    async def coordinate_optimized(self, agent_id: str, function_name: str, *args, **kwargs) -> Any:
         """Optimized coordination with caching, batching, and load balancing."""
         if not self._optimization_enabled:
             # Fallback to direct coordination
-            return await self._direct_coordinate(
-                agent_id, function_name, *args, **kwargs
-            )
+            return await self._direct_coordinate(agent_id, function_name, *args, **kwargs)
 
         # Check cache first
         cache_key = self.cache.generate_key(agent_id, function_name, args, kwargs)
@@ -337,9 +314,7 @@ class CoordinationOptimizer:
         await asyncio.sleep(0.01)  # Simulate processing time
         return f"Optimized result for {request.function_name}"
 
-    async def _direct_coordinate(
-        self, agent_id: str, function_name: str, *args, **kwargs
-    ) -> Any:
+    async def _direct_coordinate(self, agent_id: str, function_name: str, *args, **kwargs) -> Any:
         """Direct coordination without optimization."""
         # This would call the actual coordination function
         await asyncio.sleep(0.05)  # Simulate processing time

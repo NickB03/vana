@@ -184,9 +184,7 @@ class MCPManager:
             logger.error(f"Failed to discover tools from {server_name}: {e}")
             return []
 
-    async def execute_tool(
-        self, server_name: str, tool_name: str, params: Dict[str, Any]
-    ) -> ToolResult:
+    async def execute_tool(self, server_name: str, tool_name: str, params: Dict[str, Any]) -> ToolResult:
         """Execute a tool on a specific server."""
         start_time = time.time()
 
@@ -328,16 +326,12 @@ class MCPManager:
                     health = await self.get_server_health(server_name)
 
                     if not health.is_healthy:
-                        logger.warning(
-                            f"Server {server_name} unhealthy: {health.status_message}"
-                        )
+                        logger.warning(f"Server {server_name} unhealthy: {health.status_message}")
 
                         # Auto-restart if error count is high
                         instance = self.servers.get(server_name)
                         if instance and instance.error_count > 5:
-                            logger.info(
-                                f"Auto-restarting server {server_name} due to high error count"
-                            )
+                            logger.info(f"Auto-restarting server {server_name} due to high error count")
                             await self.restart_server(server_name)
 
             except asyncio.CancelledError:

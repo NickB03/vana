@@ -15,11 +15,7 @@ import logging
 from typing import Any, Callable, List, Optional
 
 from lib._shared_libraries.tool_standards import performance_monitor
-from lib._tools.third_party_tools import (
-    ThirdPartyToolAdapter,
-    ThirdPartyToolInfo,
-    ThirdPartyToolType,
-)
+from lib._tools.third_party_tools import ThirdPartyToolAdapter, ThirdPartyToolInfo, ThirdPartyToolType
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -46,9 +42,7 @@ class LangChainToolAdapter(ThirdPartyToolAdapter):
         if self.langchain_available:
             logger.info("LangChain integration available")
         else:
-            logger.warning(
-                "LangChain not available - install with: pip install langchain langchain-community"
-            )
+            logger.warning("LangChain not available - install with: pip install langchain langchain-community")
 
     def _check_langchain_availability(self) -> bool:
         """
@@ -99,9 +93,7 @@ class LangChainToolAdapter(ThirdPartyToolAdapter):
                             tools.append(tool_info)
 
             # Pattern 3: Toolkit with get_tools() method
-            elif hasattr(source, "get_tools") and callable(
-                getattr(source, "get_tools")
-            ):
+            elif hasattr(source, "get_tools") and callable(getattr(source, "get_tools")):
                 try:
                     toolkit_tools = source.get_tools()
                     for tool in toolkit_tools:
@@ -173,15 +165,11 @@ class LangChainToolAdapter(ThirdPartyToolAdapter):
                     # Direct callable
                     result = langchain_tool(*args, **kwargs)
                 else:
-                    raise ValueError(
-                        f"Unable to execute LangChain tool {tool_info.name}"
-                    )
+                    raise ValueError(f"Unable to execute LangChain tool {tool_info.name}")
 
                 # Convert result to string
                 if result is None:
-                    result_str = (
-                        "LangChain tool executed successfully (no return value)"
-                    )
+                    result_str = "LangChain tool executed successfully (no return value)"
                 elif isinstance(result, str):
                     result_str = result
                 elif isinstance(result, dict):
@@ -193,15 +181,11 @@ class LangChainToolAdapter(ThirdPartyToolAdapter):
                 else:
                     result_str = str(result)
 
-                performance_monitor.end_execution(
-                    tool_info.name, start_time, success=True
-                )
+                performance_monitor.end_execution(tool_info.name, start_time, success=True)
                 return f"🔧 **LangChain Tool Result**:\n\n{result_str}"
 
             except Exception as e:
-                performance_monitor.end_execution(
-                    tool_info.name, start_time, success=False
-                )
+                performance_monitor.end_execution(tool_info.name, start_time, success=False)
                 logger.error(f"Error executing LangChain tool {tool_info.name}: {e}")
                 return f"❌ Error executing LangChain tool: {str(e)}"
 
@@ -244,19 +228,11 @@ class LangChainToolAdapter(ThirdPartyToolAdapter):
                 return True
 
             # Check if it has LangChain tool attributes
-            if (
-                hasattr(obj, "name")
-                and hasattr(obj, "description")
-                and (hasattr(obj, "run") or hasattr(obj, "invoke"))
-            ):
+            if hasattr(obj, "name") and hasattr(obj, "description") and (hasattr(obj, "run") or hasattr(obj, "invoke")):
                 return True
 
             # Check for function tools (have __name__ and specific attributes)
-            if (
-                hasattr(obj, "__name__")
-                and hasattr(obj, "description")
-                and hasattr(obj, "args_schema")
-            ):
+            if hasattr(obj, "__name__") and hasattr(obj, "description") and hasattr(obj, "args_schema"):
                 return True
 
             return False
@@ -280,9 +256,7 @@ class LangChainToolAdapter(ThirdPartyToolAdapter):
 
             # Get tool description
             description = (
-                getattr(tool, "description", None)
-                or getattr(tool, "__doc__", None)
-                or f"LangChain tool: {name}"
+                getattr(tool, "description", None) or getattr(tool, "__doc__", None) or f"LangChain tool: {name}"
             )
 
             # Get parameters from args_schema if available
@@ -296,9 +270,7 @@ class LangChainToolAdapter(ThirdPartyToolAdapter):
                             field_name: {
                                 "type": field.type_,
                                 "description": (
-                                    field.field_info.description
-                                    if hasattr(field.field_info, "description")
-                                    else None
+                                    field.field_info.description if hasattr(field.field_info, "description") else None
                                 ),
                             }
                             for field_name, field in schema.__fields__.items()
@@ -364,9 +336,7 @@ def discover_langchain_community_tools() -> List[str]:
         for module_name in tool_modules:
             try:
                 module = importlib.import_module(module_name)
-                tool_ids = third_party_registry.discover_tools_from_source(
-                    module, ThirdPartyToolType.LANGCHAIN
-                )
+                tool_ids = third_party_registry.discover_tools_from_source(module, ThirdPartyToolType.LANGCHAIN)
                 registered_tools.extend(tool_ids)
             except ImportError:
                 logger.debug(f"Could not import {module_name}")
@@ -406,9 +376,7 @@ def load_langchain_tools(tool_names: List[str]) -> List[str]:
         tools = load_tools(tool_names)
 
         # Register the loaded tools
-        tool_ids = third_party_registry.discover_tools_from_source(
-            tools, ThirdPartyToolType.LANGCHAIN
-        )
+        tool_ids = third_party_registry.discover_tools_from_source(tools, ThirdPartyToolType.LANGCHAIN)
         registered_tools.extend(tool_ids)
 
         logger.info(f"Loaded {len(registered_tools)} LangChain tools: {tool_names}")
@@ -472,9 +440,7 @@ def create_example_langchain_tools() -> List[str]:
         example_tools = [calculator, text_length, word_count, reverse_text]
 
         # Register the tools
-        tool_ids = third_party_registry.discover_tools_from_source(
-            example_tools, ThirdPartyToolType.LANGCHAIN
-        )
+        tool_ids = third_party_registry.discover_tools_from_source(example_tools, ThirdPartyToolType.LANGCHAIN)
         registered_tools.extend(tool_ids)
 
         logger.info(f"Created {len(registered_tools)} example LangChain tools")

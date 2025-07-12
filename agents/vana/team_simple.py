@@ -3,6 +3,14 @@ VANA Agent - Simplified Version for Testing
 Fixed agent-tool integration issues by simplifying instruction
 """
 
+import os
+
+# Add project root to Python path for absolute imports
+import sys
+
+from dotenv import load_dotenv
+from google.adk.agents import LlmAgent
+
 from lib._tools import (  # File System Tools; Search Tools; System Tools; Agent Coordination Tools
     adk_coordinate_task,
     adk_delegate_to_agent,
@@ -17,13 +25,6 @@ from lib._tools import (  # File System Tools; Search Tools; System Tools; Agent
     adk_web_search,
     adk_write_file,
 )
-from google.adk.agents import LlmAgent
-import os
-
-# Add project root to Python path for absolute imports
-import sys
-
-from dotenv import load_dotenv
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
 

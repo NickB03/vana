@@ -72,15 +72,9 @@ class MCPRegistry:
     def __init__(self):
         """Initialize the registry."""
         self.servers: Dict[str, ServerInfo] = {}
-        self.tool_index: Dict[str, List[str]] = defaultdict(
-            list
-        )  # tool_name -> [server_names]
-        self.capability_index: Dict[str, List[str]] = defaultdict(
-            list
-        )  # capability -> [server_names]
-        self.tag_index: Dict[str, List[str]] = defaultdict(
-            list
-        )  # tag -> [server_names]
+        self.tool_index: Dict[str, List[str]] = defaultdict(list)  # tool_name -> [server_names]
+        self.capability_index: Dict[str, List[str]] = defaultdict(list)  # capability -> [server_names]
+        self.tag_index: Dict[str, List[str]] = defaultdict(list)  # tag -> [server_names]
         self.performance_metrics: Dict[str, PerformanceMetrics] = {}
 
     def register_server(self, server_info: ServerInfo) -> bool:
@@ -111,9 +105,7 @@ class MCPRegistry:
             if server_name not in self.performance_metrics:
                 self.performance_metrics[server_name] = PerformanceMetrics()
 
-            logger.info(
-                f"Registered server: {server_name} with {len(server_info.tools)} tools"
-            )
+            logger.info(f"Registered server: {server_name} with {len(server_info.tools)} tools")
             return True
 
         except Exception as e:
@@ -237,11 +229,7 @@ class MCPRegistry:
                 prompts=[],  # Would need to be populated from server discovery
                 sampling="sampling" in server_info.capabilities,
                 roots="roots" in server_info.capabilities,
-                experimental=[
-                    cap
-                    for cap in server_info.capabilities
-                    if cap.startswith("experimental/")
-                ],
+                experimental=[cap for cap in server_info.capabilities if cap.startswith("experimental/")],
             )
 
         except Exception as e:
@@ -252,9 +240,7 @@ class MCPRegistry:
         """Update performance metrics for a server."""
         try:
             if server_name not in self.servers:
-                logger.warning(
-                    f"Cannot update metrics for unregistered server: {server_name}"
-                )
+                logger.warning(f"Cannot update metrics for unregistered server: {server_name}")
                 return False
 
             self.performance_metrics[server_name] = metrics
@@ -288,9 +274,7 @@ class MCPRegistry:
                 metrics.average_response_time = response_time
             else:
                 alpha = 0.1  # Smoothing factor
-                metrics.average_response_time = (
-                    alpha * response_time + (1 - alpha) * metrics.average_response_time
-                )
+                metrics.average_response_time = alpha * response_time + (1 - alpha) * metrics.average_response_time
 
             # Update error rate
             metrics.error_rate = metrics.failed_requests / metrics.total_requests
@@ -356,10 +340,7 @@ class MCPRegistry:
             stale_servers = []
 
             for server_name, server_info in self.servers.items():
-                if (
-                    server_info.last_seen
-                    and (current_time - server_info.last_seen) > max_age_seconds
-                ):
+                if server_info.last_seen and (current_time - server_info.last_seen) > max_age_seconds:
                     stale_servers.append(server_name)
 
             for server_name in stale_servers:

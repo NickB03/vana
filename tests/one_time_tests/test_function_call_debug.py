@@ -3,6 +3,7 @@
 
 import os
 import sys
+
 from dotenv import load_dotenv
 
 # Add the project root to the Python path
@@ -23,6 +24,7 @@ genai.configure(api_key=api_key)
 
 # Import the fixed web search tool
 from lib._tools.fixed_web_search import create_fixed_web_search_tool
+
 
 def test_adk_tool_format():
     """Test ADK FunctionTool format"""

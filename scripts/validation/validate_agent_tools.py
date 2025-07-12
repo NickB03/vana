@@ -24,9 +24,9 @@ def validate_agent_tools():
             AgentToolResult,
             create_agent_tool,
             get_adk_architecture_tool,
-            get_adk_ui_tool,
             get_adk_devops_tool,
             get_adk_qa_tool,
+            get_adk_ui_tool,
             initialize_agent_tools,
         )
 
@@ -50,9 +50,7 @@ def validate_agent_tools():
 
         # Test execute method
         result = agent_tool.execute("test context")
-        assert isinstance(result, AgentToolResult), (
-            "Execute must return AgentToolResult"
-        )
+        assert isinstance(result, AgentToolResult), "Execute must return AgentToolResult"
         assert isinstance(result.success, bool), "Success must be boolean"
         assert isinstance(result.result, str), "Result must be string"
         assert result.agent_name == "test_tool", "Agent name must match"
@@ -76,9 +74,7 @@ def validate_agent_tools():
         print("\n📋 Test 2: Factory Functions")
 
         factory_tool = create_agent_tool(mock_agent, name="factory_test")
-        assert isinstance(factory_tool, AgentTool), (
-            "create_agent_tool must return AgentTool"
-        )
+        assert isinstance(factory_tool, AgentTool), "create_agent_tool must return AgentTool"
         assert factory_tool.name == "factory_test", "Factory tool name must be correct"
         print("  ✅ create_agent_tool factory function works correctly")
 
@@ -93,16 +89,12 @@ def validate_agent_tools():
         arch_tool = get_adk_architecture_tool()
         assert arch_tool is not None, "Architecture tool must not be None"
         assert hasattr(arch_tool, "name"), "Architecture tool must have name"
-        assert arch_tool.name == "architecture_tool", (
-            "Architecture tool name must be correct"
-        )
+        assert arch_tool.name == "architecture_tool", "Architecture tool name must be correct"
 
         arch_result = arch_tool.func("Design a microservices architecture")
         assert isinstance(arch_result, str), "Architecture tool must return string"
         assert len(arch_result) > 50, "Architecture result must be comprehensive"
-        assert "Architecture Analysis" in arch_result, (
-            "Must contain architecture analysis"
-        )
+        assert "Architecture Analysis" in arch_result, "Must contain architecture analysis"
         print("  ✅ get_adk_architecture_tool works correctly")
 
         # Test UI tool
@@ -124,9 +116,7 @@ def validate_agent_tools():
         devops_result = devops_tool.func("Setup CI/CD pipeline")
         assert isinstance(devops_result, str), "DevOps tool must return string"
         assert len(devops_result) > 50, "DevOps result must be comprehensive"
-        assert "DevOps Implementation" in devops_result, (
-            "Must contain DevOps implementation"
-        )
+        assert "DevOps Implementation" in devops_result, "Must contain DevOps implementation"
         print("  ✅ get_adk_devops_tool works correctly")
 
         # Test QA tool
@@ -158,9 +148,7 @@ def validate_agent_tools():
         for i, result1 in enumerate(results):
             for j, result2 in enumerate(results):
                 if i != j:
-                    assert result1 != result2, (
-                        f"Tool {i} and {j} must provide different results"
-                    )
+                    assert result1 != result2, f"Tool {i} and {j} must provide different results"
 
         print("  ✅ All specialist tools provide unique, comprehensive responses")
 
@@ -181,12 +169,8 @@ def validate_agent_tools():
         execution_time = end_time - start_time
 
         assert execution_time < 5.0, "Execution should be fast for simple operations"
-        assert perf_result.execution_time < 5.0, (
-            "Recorded execution time should be reasonable"
-        )
-        print(
-            f"  ✅ Performance validation passed (execution time: {execution_time:.3f}s)"
-        )
+        assert perf_result.execution_time < 5.0, "Recorded execution time should be reasonable"
+        print(f"  ✅ Performance validation passed (execution time: {execution_time:.3f}s)")
 
         print("\n🎉 ALL TESTS PASSED!")
         print("=" * 60)

@@ -63,9 +63,7 @@ class StandardizedSearchTools:
             StandardToolResponse with search results or error information
         """
         # Validate inputs with standardized parameter name
-        query = InputValidator.validate_string(
-            query, "query", required=True, min_length=1, max_length=1000
-        )
+        query = InputValidator.validate_string(query, "query", required=True, min_length=1, max_length=1000)
         max_results = InputValidator.validate_integer(
             max_results, "max_results", required=False, min_value=1, max_value=50
         )
@@ -120,9 +118,7 @@ class StandardizedSearchTools:
             StandardToolResponse with search results or error information
         """
         # Validate inputs with standardized parameter name
-        query = InputValidator.validate_string(
-            query, "query", required=True, min_length=1, max_length=1000
-        )
+        query = InputValidator.validate_string(query, "query", required=True, min_length=1, max_length=1000)
         max_results = InputValidator.validate_integer(
             max_results, "max_results", required=False, min_value=1, max_value=10
         )
@@ -144,9 +140,7 @@ class StandardizedSearchTools:
             else:
                 # Ensure results is a list
                 if isinstance(results, str):
-                    results = [
-                        {"title": "Web Search Result", "content": results, "link": ""}
-                    ]
+                    results = [{"title": "Web Search Result", "content": results, "link": ""}]
                 elif not isinstance(results, list):
                     results = []
 
@@ -169,9 +163,7 @@ class StandardizedSearchTools:
         return response
 
     @standardized_tool_wrapper("search_knowledge")
-    def search_knowledge(
-        self, query: str, max_results: int = 5
-    ) -> StandardToolResponse:
+    def search_knowledge(self, query: str, max_results: int = 5) -> StandardToolResponse:
         """🧠 Search the knowledge base for relevant information with context.
 
         Args:
@@ -182,9 +174,7 @@ class StandardizedSearchTools:
             StandardToolResponse with search results or error information
         """
         # Validate inputs
-        query = InputValidator.validate_string(
-            query, "query", required=True, min_length=1, max_length=1000
-        )
+        query = InputValidator.validate_string(query, "query", required=True, min_length=1, max_length=1000)
         max_results = InputValidator.validate_integer(
             max_results, "max_results", required=False, min_value=1, max_value=20
         )
@@ -282,12 +272,8 @@ def get_unified_search_performance() -> Dict[str, Any]:
     if not search_metrics:
         return {"total_searches": 0, "avg_performance": 0.0}
 
-    total_searches = sum(
-        m.success_count + m.error_count for m in search_metrics.values()
-    )
-    avg_performance = sum(
-        m.average_execution_time for m in search_metrics.values()
-    ) / len(search_metrics)
+    total_searches = sum(m.success_count + m.error_count for m in search_metrics.values())
+    avg_performance = sum(m.average_execution_time for m in search_metrics.values()) / len(search_metrics)
 
     return {
         "total_searches": total_searches,
@@ -297,9 +283,7 @@ def get_unified_search_performance() -> Dict[str, Any]:
                 "executions": m.success_count + m.error_count,
                 "avg_time": m.average_execution_time,
                 "success_rate": (
-                    m.success_count / (m.success_count + m.error_count)
-                    if (m.success_count + m.error_count) > 0
-                    else 0
+                    m.success_count / (m.success_count + m.error_count) if (m.success_count + m.error_count) > 0 else 0
                 ),
             }
             for name, m in search_metrics.items()

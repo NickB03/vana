@@ -5,13 +5,15 @@ Provides comprehensive data analysis, visualization, and machine learning capabi
 by leveraging the Code Execution Specialist for secure Python execution.
 """
 
-# Removed direct import - using ADK agent delegation instead
-from google.adk.tools import FunctionTool
-from google.adk.agents import LlmAgent
 import asyncio
 import logging
 import os
 import sys
+
+from google.adk.agents import LlmAgent
+
+# Removed direct import - using ADK agent delegation instead
+from google.adk.tools import FunctionTool
 
 # Removed sys.path.insert - using proper package imports
 
@@ -133,7 +135,7 @@ for column in data.columns:
         # Use ADK agent delegation instead of direct function call (async)
         delegation_context = f"Execute Python code for data analysis ({analysis_type}):\n\n{python_code}"
         # Simulate async operation for ADK compliance
-        await asyncio.sleep(0.01)  
+        await asyncio.sleep(0.01)
         return "⚠️ Code execution is temporarily disabled. Data analysis capabilities are being optimized for direct integration. Please use alternative data analysis methods or wait for code execution to be re-enabled."
 
     except Exception as e:
@@ -141,9 +143,7 @@ for column in data.columns:
         return f"❌ Analysis failed: {str(e)}"
 
 
-async def visualize_data(
-    data_source: str, chart_type: str = "histogram", columns: str = "all"
-) -> str:
+async def visualize_data(data_source: str, chart_type: str = "histogram", columns: str = "all") -> str:
     """
     Generate data visualizations.
 
@@ -472,9 +472,7 @@ logger.info("\\n✅ Basic cleaning completed")
         return f"❌ Cleaning failed: {str(e)}"
 
 
-async def model_data(
-    data_source: str, target_column: str = "target", model_type: str = "regression"
-) -> str:
+async def model_data(data_source: str, target_column: str = "target", model_type: str = "regression") -> str:
     """
     Perform basic machine learning modeling.
 
@@ -714,10 +712,12 @@ logger.info(f"\\nInertia (WCSS): {{kmeans.inertia_:.3f}}")
 def sync_analyze_data(data_source: str, analysis_type: str = "descriptive") -> str:
     """Synchronous wrapper for async analyze_data function."""
     import asyncio
+
     try:
         loop = asyncio.get_event_loop()
         if loop.is_running():
             import concurrent.futures
+
             with concurrent.futures.ThreadPoolExecutor() as executor:
                 future = executor.submit(asyncio.run, analyze_data(data_source, analysis_type))
                 return future.result()
@@ -730,10 +730,12 @@ def sync_analyze_data(data_source: str, analysis_type: str = "descriptive") -> s
 def sync_visualize_data(data_source: str, chart_type: str = "auto", title: str = "Data Visualization") -> str:
     """Synchronous wrapper for async visualize_data function."""
     import asyncio
+
     try:
         loop = asyncio.get_event_loop()
         if loop.is_running():
             import concurrent.futures
+
             with concurrent.futures.ThreadPoolExecutor() as executor:
                 future = executor.submit(asyncio.run, visualize_data(data_source, chart_type, title))
                 return future.result()
@@ -746,10 +748,12 @@ def sync_visualize_data(data_source: str, chart_type: str = "auto", title: str =
 def sync_clean_data(data_source: str, operations: str = "basic") -> str:
     """Synchronous wrapper for async clean_data function."""
     import asyncio
+
     try:
         loop = asyncio.get_event_loop()
         if loop.is_running():
             import concurrent.futures
+
             with concurrent.futures.ThreadPoolExecutor() as executor:
                 future = executor.submit(asyncio.run, clean_data(data_source, operations))
                 return future.result()
@@ -762,10 +766,12 @@ def sync_clean_data(data_source: str, operations: str = "basic") -> str:
 def sync_model_data(data_source: str, model_type: str = "auto", target_column: str = "target") -> str:
     """Synchronous wrapper for async model_data function."""
     import asyncio
+
     try:
         loop = asyncio.get_event_loop()
         if loop.is_running():
             import concurrent.futures
+
             with concurrent.futures.ThreadPoolExecutor() as executor:
                 future = executor.submit(asyncio.run, model_data(data_source, model_type, target_column))
                 return future.result()
@@ -775,7 +781,7 @@ def sync_model_data(data_source: str, model_type: str = "auto", target_column: s
         return asyncio.run(model_data(data_source, model_type, target_column))
 
 
-# Helper function to create named tools  
+# Helper function to create named tools
 def _create_named_tool(func, name):
     """Create a FunctionTool with explicit name."""
     tool = FunctionTool(func=func)

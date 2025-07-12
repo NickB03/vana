@@ -7,6 +7,7 @@ from .adk_mcp_tools import (  # MCP Integration Tools
     context7_sequential_thinking,
     github_mcp_operations,
 )
+from .google_search_v2 import adk_google_web_search, google_web_search  # Google Search v2
 from .adk_tools import (  # File System Tools; Search Tools; System Tools; Agent Coordination Tools; Intelligent Task Analysis Tools; Multi-Agent Workflow Management Tools; Enhanced Reasoning Tools
     adk_analyze_task,
     adk_cancel_workflow,
@@ -50,6 +51,8 @@ __all__ = [
     # Search Tools
     "adk_vector_search",
     "adk_web_search",
+    "adk_google_web_search",
+    "google_web_search",
     "adk_search_knowledge",
     # System Tools
     "adk_echo",

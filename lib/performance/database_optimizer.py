@@ -9,15 +9,15 @@ Optimizes database operations for better performance:
 - Query analysis and profiling
 """
 
-import logging
-import time
-import sqlite3
-import threading
-from typing import Dict, Any, List, Optional, Tuple
-from dataclasses import dataclass
 import hashlib
 import json
+import logging
+import sqlite3
+import threading
+import time
 from contextlib import contextmanager
+from dataclasses import dataclass
+from typing import Any, Dict, List, Optional, Tuple
 
 logger = logging.getLogger(__name__)
 
@@ -167,8 +167,7 @@ class QueryCache:
             return {
                 "size": len(self._cache),
                 "max_size": self.max_size,
-                "memory_usage_estimate": len(self._cache)
-                * 0.001,  # Rough estimate in MB
+                "memory_usage_estimate": len(self._cache) * 0.001,  # Rough estimate in MB
             }
 
 
@@ -192,34 +191,24 @@ class QueryOptimizer:
 
         # Check for common optimization opportunities
         if "select *" in query_lower:
-            analysis["suggestions"].append(
-                "Consider selecting only needed columns instead of SELECT *"
-            )
+            analysis["suggestions"].append("Consider selecting only needed columns instead of SELECT *")
 
         if "order by" in query_lower and "limit" not in query_lower:
             analysis["suggestions"].append("Consider adding LIMIT clause with ORDER BY")
 
         if query_lower.count("join") > 2:
-            analysis["suggestions"].append(
-                "Complex joins detected - consider query restructuring"
-            )
+            analysis["suggestions"].append("Complex joins detected - consider query restructuring")
 
         # Suggest indexes based on WHERE clauses
         if "where" in query_lower:
-            where_clause = (
-                query_lower.split("where", 1)[1]
-                .split("order by")[0]
-                .split("group by")[0]
-            )
+            where_clause = query_lower.split("where", 1)[1].split("order by")[0].split("group by")[0]
             # Simple heuristic for index suggestions
             if "=" in where_clause:
                 analysis["indexes_needed"].append("Consider index on equality columns")
 
         return analysis
 
-    def record_query_execution(
-        self, query: str, execution_time: float, cached: bool = False
-    ):
+    def record_query_execution(self, query: str, execution_time: float, cached: bool = False):
         """Record query execution statistics."""
         query_hash = self._hash_query(query)
 
@@ -253,9 +242,7 @@ class QueryOptimizer:
         """Get queries that are slower than threshold."""
         with self._lock:
             slow_queries = [
-                (query_hash, stats)
-                for query_hash, stats in self.query_stats.items()
-                if stats.avg_time > threshold
+                (query_hash, stats) for query_hash, stats in self.query_stats.items() if stats.avg_time > threshold
             ]
             return sorted(slow_queries, key=lambda x: x[1].avg_time, reverse=True)
 
@@ -298,16 +285,12 @@ class DatabaseOptimizer:
             max_connections=config.get("max_connections", 10),
         )
 
-        self.query_cache = QueryCache(
-            max_size=config.get("cache_size", 1000), ttl=config.get("cache_ttl", 300)
-        )
+        self.query_cache = QueryCache(max_size=config.get("cache_size", 1000), ttl=config.get("cache_ttl", 300))
 
         self.query_optimizer = QueryOptimizer()
         self._optimization_enabled = config.get("enable_optimization", True)
 
-    def execute_optimized(
-        self, query: str, params: Optional[Tuple] = None
-    ) -> List[Dict[str, Any]]:
+    def execute_optimized(self, query: str, params: Optional[Tuple] = None) -> List[Dict[str, Any]]:
         """Execute query with optimization."""
         if not self._optimization_enabled:
             return self._execute_direct(query, params)
@@ -348,9 +331,7 @@ class DatabaseOptimizer:
             logger.error(f"Query execution error: {e}")
             raise
 
-    def _execute_direct(
-        self, query: str, params: Optional[Tuple] = None
-    ) -> List[Dict[str, Any]]:
+    def _execute_direct(self, query: str, params: Optional[Tuple] = None) -> List[Dict[str, Any]]:
         """Execute query directly without optimization."""
         with self.connection_pool.get_connection() as conn:
             cursor = conn.cursor()
@@ -360,11 +341,7 @@ class DatabaseOptimizer:
                 cursor.execute(query)
 
             # Convert rows to dictionaries
-            columns = (
-                [description[0] for description in cursor.description]
-                if cursor.description
-                else []
-            )
+            columns = [description[0] for description in cursor.description] if cursor.description else []
             rows = cursor.fetchall()
 
             return [dict(zip(columns, row)) for row in rows]
@@ -380,16 +357,11 @@ class DatabaseOptimizer:
         query_lower = query.lower().strip()
 
         # Don't cache write operations
-        if any(
-            op in query_lower
-            for op in ["insert", "update", "delete", "create", "drop", "alter"]
-        ):
+        if any(op in query_lower for op in ["insert", "update", "delete", "create", "drop", "alter"]):
             return False
 
         # Don't cache queries with time-sensitive functions
-        if any(
-            func in query_lower for func in ["now()", "current_timestamp", "random()"]
-        ):
+        if any(func in query_lower for func in ["now()", "current_timestamp", "random()"]):
             return False
 
         return True
@@ -435,9 +407,7 @@ class DatabaseOptimizer:
 _database_optimizers: Dict[str, DatabaseOptimizer] = {}
 
 
-def get_database_optimizer(
-    database_path: str, config: Optional[Dict[str, Any]] = None
-) -> DatabaseOptimizer:
+def get_database_optimizer(database_path: str, config: Optional[Dict[str, Any]] = None) -> DatabaseOptimizer:
     """Get database optimizer instance for a specific database."""
     if database_path not in _database_optimizers:
         default_config = {
@@ -449,8 +419,6 @@ def get_database_optimizer(
         if config:
             default_config.update(config)
 
-        _database_optimizers[database_path] = DatabaseOptimizer(
-            database_path, default_config
-        )
+        _database_optimizers[database_path] = DatabaseOptimizer(database_path, default_config)
 
     return _database_optimizers[database_path]

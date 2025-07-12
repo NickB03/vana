@@ -31,44 +31,28 @@ try:
     from tools.web_search_client import get_web_search_client
 except ImportError as e:
     logger.error(f"Error importing required modules: {e}")
-    logger.info(
-        "Make sure you run this script from the project root or scripts directory."
-    )
+    logger.info("Make sure you run this script from the project root or scripts directory.")
     sys.exit(1)
 
 
 def parse_arguments():
     """Parse command line arguments."""
-    parser = argparse.ArgumentParser(
-        description="Run VANA optimized search with optional web integration"
-    )
+    parser = argparse.ArgumentParser(description="Run VANA optimized search with optional web integration")
     parser.add_argument("--query", "-q", type=str, required=True, help="Search query")
-    parser.add_argument(
-        "--include-web", action="store_true", help="Include web search results"
-    )
-    parser.add_argument(
-        "--no-web", action="store_true", help="Exclude web search results"
-    )
-    parser.add_argument(
-        "--count", "-c", type=int, default=5, help="Number of results to return"
-    )
+    parser.add_argument("--include-web", action="store_true", help="Include web search results")
+    parser.add_argument("--no-web", action="store_true", help="Exclude web search results")
+    parser.add_argument("--count", "-c", type=int, default=5, help="Number of results to return")
     parser.add_argument(
         "--mock",
         action="store_true",
         help="Use mock web search client instead of real API",
     )
-    parser.add_argument(
-        "--verbose", "-v", action="store_true", help="Print verbose output"
-    )
-    parser.add_argument(
-        "--compare", action="store_true", help="Compare with basic hybrid search"
-    )
+    parser.add_argument("--verbose", "-v", action="store_true", help="Print verbose output")
+    parser.add_argument("--compare", action="store_true", help="Compare with basic hybrid search")
     return parser.parse_args()
 
 
-def format_results(
-    results: List[Dict[str, Any]], include_metadata: bool = False
-) -> str:
+def format_results(results: List[Dict[str, Any]], include_metadata: bool = False) -> str:
     """Format search results for display."""
     formatted = ""
     for i, result in enumerate(results):

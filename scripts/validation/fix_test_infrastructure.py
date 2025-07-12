@@ -24,9 +24,7 @@ def fix_missing_dependencies():
 
     for dep in missing_deps:
         try:
-            subprocess.run(
-                [sys.executable, "-c", f"import {dep}"], check=True, capture_output=True
-            )
+            subprocess.run([sys.executable, "-c", f"import {dep}"], check=True, capture_output=True)
             print(f"   ✅ {dep} already installed")
         except subprocess.CalledProcessError:
             print(f"   📥 Installing {dep}...")
@@ -44,12 +42,8 @@ def fix_test_config():
             config = json.load(f)
 
         # Update to use correct ports and endpoints
-        config["agent_config"]["base_url"] = (
-            "https://vana-dev-960076421399.us-central1.run.app"
-        )
-        config["dashboard_config"]["base_url"] = (
-            "http://localhost:8000"  # Use actual port
-        )
+        config["agent_config"]["base_url"] = "https://vana-dev-960076421399.us-central1.run.app"
+        config["dashboard_config"]["base_url"] = "http://localhost:8000"  # Use actual port
 
         with open(e2e_config_path, "w") as f:
             json.dump(config, f, indent=4)

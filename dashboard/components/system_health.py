@@ -13,12 +13,7 @@ import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
 
-from dashboard.api.system_api import (
-    get_service_status,
-    get_system_alerts,
-    get_system_health,
-    get_system_health_history,
-)
+from dashboard.api.system_api import get_service_status, get_system_alerts, get_system_health, get_system_health_history
 
 logger = logging.getLogger(__name__)
 

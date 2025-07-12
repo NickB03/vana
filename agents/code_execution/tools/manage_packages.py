@@ -170,11 +170,7 @@ async def _list_available_packages(language: str) -> Dict[str, Any]:
     return {
         "language": language,
         "available_packages": lang_packages,
-        "total_available": sum(
-            len(category)
-            for category in lang_packages.values()
-            if category != "restricted"
-        ),
+        "total_available": sum(len(category) for category in lang_packages.values() if category != "restricted"),
         "restricted_packages": lang_packages.get("restricted", []),
         "package_categories": list(lang_packages.keys()),
     }
@@ -332,9 +328,7 @@ async def _get_package_info(language: str, package_name: str) -> Dict[str, Any]:
     return package_info
 
 
-async def _check_package_availability(
-    language: str, package_name: str
-) -> Dict[str, Any]:
+async def _check_package_availability(language: str, package_name: str) -> Dict[str, Any]:
     """Check if a specific package is available."""
 
     # Get available packages
@@ -366,12 +360,8 @@ async def _check_package_availability(
     if is_available:
         result["category"] = category
         if is_restricted:
-            result["message"] = (
-                f"Package '{package_name}' is restricted in sandbox environment"
-            )
-            result["alternatives"] = await _get_package_alternatives(
-                language, package_name
-            )
+            result["message"] = f"Package '{package_name}' is restricted in sandbox environment"
+            result["alternatives"] = await _get_package_alternatives(language, package_name)
         else:
             result["message"] = f"Package '{package_name}' is available"
     else:
@@ -403,12 +393,8 @@ async def _check_packages_batch(language: str, packages: List[str]) -> Dict[str,
         "unavailable": total_packages - available_packages,
         "results": results,
         "summary": {
-            "availability_rate": round(available_packages / total_packages * 100, 1)
-            if total_packages > 0
-            else 0,
-            "restriction_rate": round(restricted_packages / total_packages * 100, 1)
-            if total_packages > 0
-            else 0,
+            "availability_rate": round(available_packages / total_packages * 100, 1) if total_packages > 0 else 0,
+            "restriction_rate": round(restricted_packages / total_packages * 100, 1) if total_packages > 0 else 0,
         },
     }
 
@@ -456,9 +442,7 @@ async def _get_installation_info(language: str) -> Dict[str, Any]:
     }
 
     if language not in installation_info:
-        return {
-            "error": f"Installation information not available for language: {language}"
-        }
+        return {"error": f"Installation information not available for language: {language}"}
 
     info = installation_info[language]
     info["language"] = language
@@ -466,9 +450,7 @@ async def _get_installation_info(language: str) -> Dict[str, Any]:
     return info
 
 
-async def _check_restricted_package(
-    language: str, package_name: str
-) -> Optional[Dict[str, Any]]:
+async def _check_restricted_package(language: str, package_name: str) -> Optional[Dict[str, Any]]:
     """Check if package is restricted and provide information."""
 
     restricted_info = {
@@ -547,9 +529,7 @@ async def _get_package_alternatives(language: str, package_name: str) -> List[st
         },
     }
 
-    return alternatives.get(language, {}).get(
-        package_name, ["Check available packages for alternatives"]
-    )
+    return alternatives.get(language, {}).get(package_name, ["Check available packages for alternatives"])
 
 
 async def _get_package_suggestions(language: str, package_name: str) -> List[str]:

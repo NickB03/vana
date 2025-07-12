@@ -4,6 +4,16 @@ VANA Multi-Agent Team Definition - Minimal Working Version
 This is a simplified version with only working tools to test basic functionality.
 """
 
+import logging
+import os
+
+# Add project root to Python path for absolute imports
+import sys
+
+from dotenv import load_dotenv
+from google.adk.agents import LlmAgent
+from google.adk.tools import FunctionTool
+
 from lib._tools import (  # File System Tools; Search Tools; System Tools; Agent Coordination Tools
     adk_coordinate_task,
     adk_delegate_to_agent,
@@ -18,15 +28,6 @@ from lib._tools import (  # File System Tools; Search Tools; System Tools; Agent
     adk_web_search,
     adk_write_file,
 )
-from google.adk.tools import FunctionTool
-from google.adk.agents import LlmAgent
-import logging
-import os
-
-# Add project root to Python path for absolute imports
-import sys
-
-from dotenv import load_dotenv
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -52,10 +53,7 @@ except ImportError as e:
 
 # Import advanced orchestration capabilities for Priority 3 enhancements
 try:
-    from agents.memory.specialist_memory_manager import (
-        get_specialist_knowledge_func,
-        save_specialist_knowledge_func,
-    )
+    from agents.memory.specialist_memory_manager import get_specialist_knowledge_func, save_specialist_knowledge_func
     from agents.orchestration.hierarchical_task_manager import (
         analyze_task_complexity,
         coordinate_workflow,

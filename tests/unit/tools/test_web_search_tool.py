@@ -83,11 +83,7 @@ class TestWebSearchTool:
             try:
                 parsed_result = json.loads(result)
                 # Should contain query information or results
-                assert (
-                    "query" in parsed_result
-                    or "results" in parsed_result
-                    or "error" in parsed_result
-                )
+                assert "query" in parsed_result or "results" in parsed_result or "error" in parsed_result
             except json.JSONDecodeError:
                 # If not JSON, should still be a meaningful string response
                 assert "london" in result.lower() or "time" in result.lower()
@@ -95,9 +91,7 @@ class TestWebSearchTool:
             # Verify API was called correctly
             mock_get.assert_called_once()
             call_args = mock_get.call_args
-            assert "q=" in str(call_args) or "What time is it in London" in str(
-                call_args
-            )
+            assert "q=" in str(call_args) or "What time is it in London" in str(call_args)
 
     @pytest.mark.unit
     def test_web_search_data_extraction(self, mock_brave_response):
@@ -122,10 +116,7 @@ class TestWebSearchTool:
             # Verify content contains relevant information
             result_text = str(result).lower()
             assert "london" in result_text
-            assert any(
-                time_indicator in result_text
-                for time_indicator in ["time", "15:45", "3:45"]
-            )
+            assert any(time_indicator in result_text for time_indicator in ["time", "15:45", "3:45"])
 
     @pytest.mark.unit
     def test_web_search_error_handling(self):
@@ -215,9 +206,7 @@ class TestWebSearchTool:
             with patch("requests.get") as mock_get:
                 mock_response = Mock()
                 mock_response.status_code = error_code
-                mock_response.raise_for_status.side_effect = Exception(
-                    f"HTTP {error_code}"
-                )
+                mock_response.raise_for_status.side_effect = Exception(f"HTTP {error_code}")
                 mock_get.return_value = mock_response
 
                 result = web_search.func("test query")

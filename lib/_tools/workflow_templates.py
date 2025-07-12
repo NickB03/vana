@@ -51,9 +51,7 @@ class WorkflowTemplates:
         logger.info(f"Created workflow from template '{template_name}': {workflow_id}")
         return workflow_id
 
-    def _data_analysis_template(
-        self, task_description: str, params: Dict[str, Any]
-    ) -> Dict[str, Any]:
+    def _data_analysis_template(self, task_description: str, params: Dict[str, Any]) -> Dict[str, Any]:
         """Template for data analysis workflows."""
         return {
             "name": f"Data Analysis: {task_description[:50]}...",
@@ -104,9 +102,7 @@ class WorkflowTemplates:
             },
         }
 
-    def _code_execution_template(
-        self, task_description: str, params: Dict[str, Any]
-    ) -> Dict[str, Any]:
+    def _code_execution_template(self, task_description: str, params: Dict[str, Any]) -> Dict[str, Any]:
         """Template for code execution workflows."""
         return {
             "name": f"Code Execution: {task_description[:50]}...",
@@ -149,9 +145,7 @@ class WorkflowTemplates:
             },
         }
 
-    def _research_analysis_template(
-        self, task_description: str, params: Dict[str, Any]
-    ) -> Dict[str, Any]:
+    def _research_analysis_template(self, task_description: str, params: Dict[str, Any]) -> Dict[str, Any]:
         """Template for research and analysis workflows."""
         return {
             "name": f"Research & Analysis: {task_description[:50]}...",
@@ -202,9 +196,7 @@ class WorkflowTemplates:
             },
         }
 
-    def _content_creation_template(
-        self, task_description: str, params: Dict[str, Any]
-    ) -> Dict[str, Any]:
+    def _content_creation_template(self, task_description: str, params: Dict[str, Any]) -> Dict[str, Any]:
         """Template for content creation workflows."""
         return {
             "name": f"Content Creation: {task_description[:50]}...",
@@ -247,9 +239,7 @@ class WorkflowTemplates:
             },
         }
 
-    def _system_monitoring_template(
-        self, task_description: str, params: Dict[str, Any]
-    ) -> Dict[str, Any]:
+    def _system_monitoring_template(self, task_description: str, params: Dict[str, Any]) -> Dict[str, Any]:
         """Template for system monitoring workflows."""
         return {
             "name": f"System Monitoring: {task_description[:50]}...",
@@ -300,9 +290,7 @@ class WorkflowTemplates:
             },
         }
 
-    def _multi_agent_collaboration_template(
-        self, task_description: str, params: Dict[str, Any]
-    ) -> Dict[str, Any]:
+    def _multi_agent_collaboration_template(self, task_description: str, params: Dict[str, Any]) -> Dict[str, Any]:
         """Template for complex multi-agent collaboration workflows."""
         return {
             "name": f"Multi-Agent Collaboration: {task_description[:50]}...",

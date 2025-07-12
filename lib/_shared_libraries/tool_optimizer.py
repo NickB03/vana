@@ -130,22 +130,16 @@ class ToolOptimizer:
 
         return decorator
 
-    def get_optimized_tool_set(
-        self, agent_id: str, task_context: str = None
-    ) -> List[str]:
+    def get_optimized_tool_set(self, agent_id: str, task_context: str = None) -> List[str]:
         """Get optimized tool set for an agent based on usage patterns and context"""
         # Start with agent's assigned tools
         base_tools = self.agent_tool_assignments.get(agent_id, set())
 
         # Add high-priority tools
-        priority_tools = {
-            name for name, tool in self.tools.items() if tool.priority == 1
-        }
+        priority_tools = {name for name, tool in self.tools.items() if tool.priority == 1}
 
         # Add context-relevant tools
-        context_tools = (
-            self._get_context_relevant_tools(task_context) if task_context else set()
-        )
+        context_tools = self._get_context_relevant_tools(task_context) if task_context else set()
 
         # Combine and optimize
         all_tools = base_tools | priority_tools | context_tools
@@ -190,11 +184,7 @@ class ToolOptimizer:
                 )
 
             # Check for cache candidates
-            if (
-                not tool_def.cache_enabled
-                and metrics.usage_count > 10
-                and metrics.average_execution_time > 1.0
-            ):
+            if not tool_def.cache_enabled and metrics.usage_count > 10 and metrics.average_execution_time > 1.0:
                 recommendations["cache_candidates"].append(tool_name)
 
         return recommendations
@@ -206,11 +196,7 @@ class ToolOptimizer:
         # Group tools by similar functionality (simple heuristic)
         for tool_name, tool_def in self.tools.items():
             # Use first word of description as grouping key
-            group_key = (
-                tool_def.description.split()[0].lower()
-                if tool_def.description
-                else "unknown"
-            )
+            group_key = tool_def.description.split()[0].lower() if tool_def.description else "unknown"
             duplicates[group_key].append(tool_name)
 
         # Filter to only groups with multiple tools
@@ -277,17 +263,13 @@ class ToolOptimizer:
         metrics = self.metrics[tool_name]
         metrics.usage_count += 1
         metrics.total_execution_time += execution_time
-        metrics.average_execution_time = (
-            metrics.total_execution_time / metrics.usage_count
-        )
+        metrics.average_execution_time = metrics.total_execution_time / metrics.usage_count
         metrics.last_used = time.strftime("%Y-%m-%d %H:%M:%S")
 
         if not success:
             metrics.error_count += 1
 
-        metrics.success_rate = (
-            metrics.usage_count - metrics.error_count
-        ) / metrics.usage_count
+        metrics.success_rate = (metrics.usage_count - metrics.error_count) / metrics.usage_count
 
     def _get_context_relevant_tools(self, context: str) -> Set[str]:
         """Get tools relevant to the given context"""
@@ -295,10 +277,7 @@ class ToolOptimizer:
         context_lower = context.lower()
 
         for tool_name, tool_def in self.tools.items():
-            if any(
-                keyword in context_lower
-                for keyword in tool_def.description.lower().split()
-            ):
+            if any(keyword in context_lower for keyword in tool_def.description.lower().split()):
                 relevant_tools.add(tool_name)
 
         return relevant_tools
@@ -338,17 +317,13 @@ class ToolOptimizer:
     def _calculate_cache_hit_rate(self) -> float:
         """Calculate overall cache hit rate"""
         total_hits = sum(m.cache_hits for m in self.metrics.values())
-        total_requests = sum(
-            m.cache_hits + m.cache_misses for m in self.metrics.values()
-        )
+        total_requests = sum(m.cache_hits + m.cache_misses for m in self.metrics.values())
 
         return total_hits / total_requests if total_requests > 0 else 0.0
 
     def _calculate_average_performance(self) -> float:
         """Calculate average tool performance"""
-        times = [
-            m.average_execution_time for m in self.metrics.values() if m.usage_count > 0
-        ]
+        times = [m.average_execution_time for m in self.metrics.values() if m.usage_count > 0]
         return sum(times) / len(times) if times else 0.0
 
     def _get_top_performing_tools(self, limit: int) -> List[Dict[str, Any]]:
@@ -390,10 +365,7 @@ class ToolOptimizer:
     def _get_most_used_tools(self, limit: int) -> List[Dict[str, Any]]:
         """Get most used tools"""
         return sorted(
-            [
-                {"tool": name, "usage_count": metrics.usage_count}
-                for name, metrics in self.metrics.items()
-            ],
+            [{"tool": name, "usage_count": metrics.usage_count} for name, metrics in self.metrics.items()],
             key=lambda x: x["usage_count"],
             reverse=True,
         )[:limit]
@@ -401,10 +373,7 @@ class ToolOptimizer:
     def _get_least_used_tools(self, limit: int) -> List[Dict[str, Any]]:
         """Get least used tools"""
         return sorted(
-            [
-                {"tool": name, "usage_count": metrics.usage_count}
-                for name, metrics in self.metrics.items()
-            ],
+            [{"tool": name, "usage_count": metrics.usage_count} for name, metrics in self.metrics.items()],
             key=lambda x: x["usage_count"],
         )[:limit]
 
@@ -427,8 +396,6 @@ class ToolOptimizer:
         duplicates = self.consolidate_duplicate_tools()
         for group, tools in duplicates.items():
             if len(tools) > 1:
-                opportunities.append(
-                    f"Consolidate duplicate tools in {group}: {', '.join(tools)}"
-                )
+                opportunities.append(f"Consolidate duplicate tools in {group}: {', '.join(tools)}")
 
         return opportunities

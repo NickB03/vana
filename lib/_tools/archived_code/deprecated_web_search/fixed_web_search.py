@@ -3,6 +3,7 @@ Fixed web search tool without default values
 """
 
 from google.adk.tools import FunctionTool
+
 from lib._tools.adk_tools import adk_web_search
 
 

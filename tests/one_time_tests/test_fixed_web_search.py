@@ -3,6 +3,7 @@
 
 import os
 import sys
+
 from dotenv import load_dotenv
 
 # Add the project root to the Python path
@@ -16,6 +17,7 @@ if os.path.exists(dotenv_path):
 
 # Configure genai AFTER loading env
 import google.generativeai as genai
+
 api_key = os.getenv('GOOGLE_API_KEY')
 genai.configure(api_key=api_key)
 
@@ -30,6 +32,7 @@ print(f"📝 Function name: {tool.func.__name__}")
 
 # Check function signature
 import inspect
+
 sig = inspect.signature(tool.func)
 print(f"🔍 Function signature: {tool.func.__name__}{sig}")
 

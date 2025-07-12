@@ -18,9 +18,7 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Any, Callable, Dict, List, Optional
 
-from lib._shared_libraries.tool_standards import (
-    performance_monitor,
-)
+from lib._shared_libraries.tool_standards import performance_monitor
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -118,9 +116,7 @@ class ThirdPartyToolAdapter(ABC):
         try:
             # Validate the tool
             if not self.validate_tool(tool_info.original_tool):
-                raise ValueError(
-                    f"Tool {tool_info.name} is not compatible with {self.tool_type.value} adapter"
-                )
+                raise ValueError(f"Tool {tool_info.name} is not compatible with {self.tool_type.value} adapter")
 
             # Adapt the tool
             adapted_tool = self.adapt_tool(tool_info)
@@ -208,9 +204,7 @@ class GenericThirdPartyAdapter(ThirdPartyToolAdapter):
             elif hasattr(source, "__iter__"):
                 for i, obj in enumerate(source):
                     if self._is_tool_like(obj):
-                        name = getattr(
-                            obj, "name", getattr(obj, "__name__", f"tool_{i}")
-                        )
+                        name = getattr(obj, "name", getattr(obj, "__name__", f"tool_{i}"))
                         tool_info = self._create_tool_info(name, obj)
                         if tool_info:
                             tools.append(tool_info)
@@ -269,15 +263,11 @@ class GenericThirdPartyAdapter(ThirdPartyToolAdapter):
                 else:
                     result_str = str(result)
 
-                performance_monitor.end_execution(
-                    tool_info.name, start_time, success=True
-                )
+                performance_monitor.end_execution(tool_info.name, start_time, success=True)
                 return result_str
 
             except Exception as e:
-                performance_monitor.end_execution(
-                    tool_info.name, start_time, success=False
-                )
+                performance_monitor.end_execution(tool_info.name, start_time, success=False)
                 logger.error(f"Error executing generic tool {tool_info.name}: {e}")
                 return f"❌ Error executing tool: {str(e)}"
 
@@ -349,9 +339,7 @@ class GenericThirdPartyAdapter(ThirdPartyToolAdapter):
                 parameters = getattr(tool, "args_schema", {})
             elif callable(tool):
                 sig = inspect.signature(tool)
-                parameters = {
-                    param.name: param.annotation for param in sig.parameters.values()
-                }
+                parameters = {param.name: param.annotation for param in sig.parameters.values()}
 
             return ThirdPartyToolInfo(
                 name=name,
@@ -398,9 +386,7 @@ class ThirdPartyToolRegistry:
         self.adapters[adapter.tool_type] = adapter
         logger.info(f"Registered adapter for {adapter.tool_type.value}")
 
-    def discover_tools_from_source(
-        self, source: Any, tool_type: Optional[ThirdPartyToolType] = None
-    ) -> List[str]:
+    def discover_tools_from_source(self, source: Any, tool_type: Optional[ThirdPartyToolType] = None) -> List[str]:
         """
         Discover and register tools from a source.
 
@@ -438,18 +424,12 @@ class ThirdPartyToolRegistry:
                             self.all_tools[tool_id] = tool_info
                             registered_ids.append(tool_id)
                         except Exception as e:
-                            logger.error(
-                                f"Failed to register tool {tool_info.name}: {e}"
-                            )
+                            logger.error(f"Failed to register tool {tool_info.name}: {e}")
 
                 except Exception as e:
-                    logger.debug(
-                        f"Adapter {adapter.tool_type.value} could not process source: {e}"
-                    )
+                    logger.debug(f"Adapter {adapter.tool_type.value} could not process source: {e}")
 
-        logger.info(
-            f"Discovered and registered {len(registered_ids)} tools from source"
-        )
+        logger.info(f"Discovered and registered {len(registered_ids)} tools from source")
         return registered_ids
 
     def get_tool(self, tool_id: str) -> Optional[Callable]:
@@ -476,9 +456,7 @@ class ThirdPartyToolRegistry:
         """
         return list(self.all_tools.values())
 
-    def get_tools_by_type(
-        self, tool_type: ThirdPartyToolType
-    ) -> List[ThirdPartyToolInfo]:
+    def get_tools_by_type(self, tool_type: ThirdPartyToolType) -> List[ThirdPartyToolInfo]:
         """
         Get tools by type.
 

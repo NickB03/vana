@@ -127,14 +127,10 @@ class InputValidator:
             raise ValueError(f"Parameter '{name}' must be a string, got {type(value)}")
 
         if len(value) < min_length:
-            raise ValueError(
-                f"Parameter '{name}' must be at least {min_length} characters"
-            )
+            raise ValueError(f"Parameter '{name}' must be at least {min_length} characters")
 
         if len(value) > max_length:
-            raise ValueError(
-                f"Parameter '{name}' must be at most {max_length} characters"
-            )
+            raise ValueError(f"Parameter '{name}' must be at most {max_length} characters")
 
         return value
 
@@ -156,9 +152,7 @@ class InputValidator:
             try:
                 value = int(value)
             except (ValueError, TypeError):
-                raise ValueError(
-                    f"Parameter '{name}' must be an integer, got {type(value)}"
-                )
+                raise ValueError(f"Parameter '{name}' must be an integer, got {type(value)}")
 
         if value < min_value:
             raise ValueError(f"Parameter '{name}' must be at least {min_value}")
@@ -204,9 +198,7 @@ class ErrorHandler:
             return ToolErrorType.UNKNOWN_ERROR
 
     @staticmethod
-    def create_error_response(
-        tool_name: str, error: Exception, execution_time: float = 0.0
-    ) -> StandardToolResponse:
+    def create_error_response(tool_name: str, error: Exception, execution_time: float = 0.0) -> StandardToolResponse:
         """Create standardized error response."""
         error_type = ErrorHandler.classify_error(error)
 
@@ -261,9 +253,7 @@ class PerformanceMonitor:
 
     def get_performance_summary(self) -> Dict[str, Any]:
         """Get performance summary across all tools."""
-        total_executions = sum(
-            m.success_count + m.error_count for m in self.tool_metrics.values()
-        )
+        total_executions = sum(m.success_count + m.error_count for m in self.tool_metrics.values())
         total_errors = sum(m.error_count for m in self.tool_metrics.values())
 
         if total_executions == 0:
@@ -303,9 +293,7 @@ def standardized_tool_wrapper(tool_name: str, validate_inputs: bool = True):
                 result = func(*args, **kwargs)
 
                 # Record successful execution
-                execution_time = performance_monitor.end_execution(
-                    tool_name, start_time, success=True
-                )
+                execution_time = performance_monitor.end_execution(tool_name, start_time, success=True)
 
                 # Standardize response format
                 if isinstance(result, StandardToolResponse):
@@ -322,13 +310,9 @@ def standardized_tool_wrapper(tool_name: str, validate_inputs: bool = True):
 
             except Exception as error:
                 # Record failed execution
-                execution_time = performance_monitor.end_execution(
-                    tool_name, start_time, success=False
-                )
+                execution_time = performance_monitor.end_execution(tool_name, start_time, success=False)
 
-                return ErrorHandler.create_error_response(
-                    tool_name, error, execution_time
-                )
+                return ErrorHandler.create_error_response(tool_name, error, execution_time)
 
         return wrapper
 
@@ -352,21 +336,15 @@ class ToolDocumentationGenerator:
         for param_name, param in signature.parameters.items():
             param_info = {
                 "name": param_name,
-                "type": str(param.annotation)
-                if param.annotation != inspect.Parameter.empty
-                else "Any",
+                "type": str(param.annotation) if param.annotation != inspect.Parameter.empty else "Any",
                 "required": param.default == inspect.Parameter.empty,
-                "default": param.default
-                if param.default != inspect.Parameter.empty
-                else None,
+                "default": param.default if param.default != inspect.Parameter.empty else None,
             }
             parameters.append(param_info)
 
         # Get return type
         return_type = (
-            str(signature.return_annotation)
-            if signature.return_annotation != inspect.Parameter.empty
-            else "Any"
+            str(signature.return_annotation) if signature.return_annotation != inspect.Parameter.empty else "Any"
         )
 
         return {
@@ -412,9 +390,7 @@ class ToolAnalytics:
     def __init__(self):
         self.usage_patterns: Dict[str, List[Dict[str, Any]]] = {}
 
-    def record_usage(
-        self, tool_name: str, parameters: Dict[str, Any], result: StandardToolResponse
-    ):
+    def record_usage(self, tool_name: str, parameters: Dict[str, Any], result: StandardToolResponse):
         """Record tool usage for analytics."""
         if tool_name not in self.usage_patterns:
             self.usage_patterns[tool_name] = []
@@ -443,19 +419,13 @@ class ToolAnalytics:
         successful_usage = sum(1 for r in records if r["success"])
 
         success_rate = successful_usage / total_usage if total_usage > 0 else 0.0
-        avg_execution_time = (
-            sum(r["execution_time"] for r in records) / total_usage
-            if total_usage > 0
-            else 0.0
-        )
+        avg_execution_time = sum(r["execution_time"] for r in records) / total_usage if total_usage > 0 else 0.0
 
         return {
             "total_usage": total_usage,
             "success_rate": success_rate,
             "avg_execution_time": avg_execution_time,
-            "recent_errors": [
-                r["error_type"] for r in records[-10:] if not r["success"]
-            ],
+            "recent_errors": [r["error_type"] for r in records[-10:] if not r["success"]],
         }
 
 

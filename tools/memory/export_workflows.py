@@ -10,9 +10,7 @@ import os
 import sys
 
 # Set up logging
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s"
-)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger(__name__)
 
 # Add the project root to the Python path
@@ -71,11 +69,7 @@ def export_workflows():
                         "value": "Bearer {{$env.RAGIE_API_KEY}}",
                     },
                     "sendBody": True,
-                    "bodyParameters": {
-                        "parameters": [
-                            {"name": "documents", "value": "={{$json.documents}}"}
-                        ]
-                    },
+                    "bodyParameters": {"parameters": [{"name": "documents", "value": "={{$json.documents}}"}]},
                     "options": {},
                 },
                 "name": "Upload to Ragie",
@@ -107,12 +101,8 @@ def export_workflows():
                     [{"node": "Error: Not Active", "type": "main", "index": 0}],
                 ]
             },
-            "Format For Ragie": {
-                "main": [[{"node": "Upload to Ragie", "type": "main", "index": 0}]]
-            },
-            "Upload to Ragie": {
-                "main": [[{"node": "Response Handler", "type": "main", "index": 0}]]
-            },
+            "Format For Ragie": {"main": [[{"node": "Upload to Ragie", "type": "main", "index": 0}]]},
+            "Upload to Ragie": {"main": [[{"node": "Response Handler", "type": "main", "index": 0}]]},
         },
         "active": True,
         "settings": {},
@@ -123,9 +113,7 @@ def export_workflows():
     daily_memory_sync = {
         "nodes": [
             {
-                "parameters": {
-                    "rule": {"interval": [{"field": "hours", "minutesInterval": 1440}]}
-                },
+                "parameters": {"rule": {"interval": [{"field": "hours", "minutesInterval": 1440}]}},
                 "name": "Schedule",
                 "type": "n8n-nodes-base.scheduleTrigger",
                 "position": [250, 300],
@@ -157,11 +145,7 @@ def export_workflows():
                         "value": "Bearer {{$env.RAGIE_API_KEY}}",
                     },
                     "sendBody": True,
-                    "bodyParameters": {
-                        "parameters": [
-                            {"name": "documents", "value": "={{$json.documents}}"}
-                        ]
-                    },
+                    "bodyParameters": {"parameters": [{"name": "documents", "value": "={{$json.documents}}"}]},
                     "options": {},
                 },
                 "name": "Upload to Ragie",
@@ -178,20 +162,10 @@ def export_workflows():
             },
         ],
         "connections": {
-            "Schedule": {
-                "main": [[{"node": "Get Recent Logs", "type": "main", "index": 0}]]
-            },
-            "Get Recent Logs": {
-                "main": [
-                    [{"node": "Format Logs for Ragie", "type": "main", "index": 0}]
-                ]
-            },
-            "Format Logs for Ragie": {
-                "main": [[{"node": "Upload to Ragie", "type": "main", "index": 0}]]
-            },
-            "Upload to Ragie": {
-                "main": [[{"node": "Log Result", "type": "main", "index": 0}]]
-            },
+            "Schedule": {"main": [[{"node": "Get Recent Logs", "type": "main", "index": 0}]]},
+            "Get Recent Logs": {"main": [[{"node": "Format Logs for Ragie", "type": "main", "index": 0}]]},
+            "Format Logs for Ragie": {"main": [[{"node": "Upload to Ragie", "type": "main", "index": 0}]]},
+            "Upload to Ragie": {"main": [[{"node": "Log Result", "type": "main", "index": 0}]]},
         },
         "active": True,
         "settings": {},

@@ -13,11 +13,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
 
-from dashboard.api.memory_api import (
-    get_memory_metrics_history,
-    get_memory_usage,
-    get_recent_queries,
-)
+from dashboard.api.memory_api import get_memory_metrics_history, get_memory_usage, get_recent_queries
 from dashboard.utils.data_formatter import format_percentage
 
 logger = logging.getLogger(__name__)

@@ -26,9 +26,7 @@ logger = logging.getLogger(__name__)
 # ============================================================================
 
 
-def context7_sequential_thinking(
-    prompt: str, minimum_tokens: int = 10000
-) -> Dict[str, Any]:
+def context7_sequential_thinking(prompt: str, minimum_tokens: int = 10000) -> Dict[str, Any]:
     """
     Advanced reasoning and structured problem-solving using sequential thinking patterns.
 
@@ -80,7 +78,9 @@ def context7_sequential_thinking(
                     "Ecosystem: Community support and available implementations",
                 ]
 
-                analysis_framework["synthesis"] = """
+                analysis_framework[
+                    "synthesis"
+                ] = """
                 MCP (Model Context Protocol) servers offer significant advantages for AI agent systems:
 
                 BENEFITS:
@@ -125,7 +125,9 @@ def context7_sequential_thinking(
             ]
 
             if "mcp" in prompt.lower():
-                analysis_framework["synthesis"] = """
+                analysis_framework[
+                    "synthesis"
+                ] = """
                 MCP Server Implementation Patterns Analysis:
 
                 CORE PATTERNS:
@@ -157,7 +159,9 @@ def context7_sequential_thinking(
                 "5. Evaluate options and synthesize recommendations",
             ]
 
-            analysis_framework["synthesis"] = f"""
+            analysis_framework[
+                "synthesis"
+            ] = f"""
             Structured analysis of: {prompt}
 
             This requires systematic examination of the problem domain,
@@ -276,23 +280,13 @@ def brave_search_mcp(query: str, max_results: int = 5) -> Dict[str, Any]:
             query_insights = {
                 "query_type": (
                     "informational"
-                    if any(
-                        word in query.lower()
-                        for word in ["what", "how", "why", "when", "where"]
-                    )
+                    if any(word in query.lower() for word in ["what", "how", "why", "when", "where"])
                     else "navigational"
                 ),
-                "complexity": "high"
-                if len(query.split()) > 5
-                else "medium"
-                if len(query.split()) > 2
-                else "simple",
+                "complexity": "high" if len(query.split()) > 5 else "medium" if len(query.split()) > 2 else "simple",
                 "domain_focus": (
                     "technical"
-                    if any(
-                        word in query.lower()
-                        for word in ["api", "code", "programming", "server", "mcp"]
-                    )
+                    if any(word in query.lower() for word in ["api", "code", "programming", "server", "mcp"])
                     else "general"
                 ),
             }
@@ -324,9 +318,7 @@ def brave_search_mcp(query: str, max_results: int = 5) -> Dict[str, Any]:
         else:
             return {
                 "error": f"Brave Search API error: {response.status_code}",
-                "message": response.text[:200]
-                if response.text
-                else "Unknown API error",
+                "message": response.text[:200] if response.text else "Unknown API error",
                 "status": "api_error",
             }
 
@@ -370,9 +362,7 @@ def github_mcp_operations(operation: str, **kwargs) -> Dict[str, Any]:
     """
     try:
         # Check if GitHub token is configured
-        github_token = os.getenv("GITHUB_TOKEN") or os.getenv(
-            "GITHUB_PERSONAL_ACCESS_TOKEN"
-        )
+        github_token = os.getenv("GITHUB_TOKEN") or os.getenv("GITHUB_PERSONAL_ACCESS_TOKEN")
         if not github_token:
             return {
                 "error": "GitHub token not configured",
@@ -445,9 +435,7 @@ def github_mcp_operations(operation: str, **kwargs) -> Dict[str, Any]:
                 "error": f"Invalid operation: {operation}",
                 "valid_operations": list(operation_mapping.keys()),
                 "status": "invalid_operation",
-                "available_operations": {
-                    k: v["description"] for k, v in operation_mapping.items()
-                },
+                "available_operations": {k: v["description"] for k, v in operation_mapping.items()},
             }
 
         # Prepare GitHub API request
@@ -523,9 +511,7 @@ def github_mcp_operations(operation: str, **kwargs) -> Dict[str, Any]:
                         "state": issue.get("state"),
                         "author": issue.get("user", {}).get("login"),
                         "created": issue.get("created_at"),
-                        "labels": [
-                            label.get("name") for label in issue.get("labels", [])
-                        ],
+                        "labels": [label.get("name") for label in issue.get("labels", [])],
                     }
                     for issue in (data if isinstance(data, list) else [data])
                 ]
@@ -567,9 +553,7 @@ def github_mcp_operations(operation: str, **kwargs) -> Dict[str, Any]:
         else:
             return {
                 "error": f"GitHub API error: {response.status_code}",
-                "message": response.text[:200]
-                if response.text
-                else "Unknown API error",
+                "message": response.text[:200] if response.text else "Unknown API error",
                 "status": "api_error",
             }
 
@@ -655,9 +639,7 @@ def firecrawl_mcp(url: str, mode: str = "scrape", **kwargs) -> Dict[str, Any]:
                 "waitFor": kwargs.get("wait_for", 0),
             }
 
-            response = requests.post(
-                endpoint, headers=headers, json=payload, timeout=30
-            )
+            response = requests.post(endpoint, headers=headers, json=payload, timeout=30)
 
             if response.status_code == 200:
                 data = response.json()
@@ -675,9 +657,7 @@ def firecrawl_mcp(url: str, mode: str = "scrape", **kwargs) -> Dict[str, Any]:
             else:
                 return {
                     "error": f"Firecrawl API error: {response.status_code}",
-                    "message": response.text[:200]
-                    if response.text
-                    else "Unknown API error",
+                    "message": response.text[:200] if response.text else "Unknown API error",
                     "status": "api_error",
                 }
 
@@ -697,9 +677,7 @@ def firecrawl_mcp(url: str, mode: str = "scrape", **kwargs) -> Dict[str, Any]:
                 },
             }
 
-            response = requests.post(
-                endpoint, headers=headers, json=payload, timeout=60
-            )
+            response = requests.post(endpoint, headers=headers, json=payload, timeout=60)
 
             if response.status_code == 200:
                 data = response.json()
@@ -715,9 +693,7 @@ def firecrawl_mcp(url: str, mode: str = "scrape", **kwargs) -> Dict[str, Any]:
             else:
                 return {
                     "error": f"Firecrawl crawl error: {response.status_code}",
-                    "message": response.text[:200]
-                    if response.text
-                    else "Unknown API error",
+                    "message": response.text[:200] if response.text else "Unknown API error",
                     "status": "api_error",
                 }
         else:
@@ -1026,9 +1002,7 @@ def list_available_mcp_servers() -> Dict[str, Any]:
             "firecrawl": {
                 "package": "firecrawl-api",
                 "type": "api_direct",
-                "status": "ready"
-                if os.getenv("FIRECRAWL_API_KEY")
-                else "needs_api_key",
+                "status": "ready" if os.getenv("FIRECRAWL_API_KEY") else "needs_api_key",
                 "description": "Advanced web scraping and crawling",
             },
             "playwright": {
@@ -1063,12 +1037,7 @@ def list_available_mcp_servers() -> Dict[str, Any]:
     return {
         "available_servers": servers,
         "total_servers": sum(len(tier.keys()) for tier in servers.values()),
-        "ready_servers": sum(
-            1
-            for tier in servers.values()
-            for server in tier.values()
-            if server["status"] == "ready"
-        ),
+        "ready_servers": sum(1 for tier in servers.values() for server in tier.values() if server["status"] == "ready"),
         "implementation_status": "Phase 6A in progress",
     }
 
@@ -1085,9 +1054,7 @@ def get_mcp_integration_status() -> Dict[str, Any]:
     """
     # Check authentication status for each MCP server
     brave_api_key = os.getenv("BRAVE_API_KEY")
-    github_token = os.getenv("GITHUB_TOKEN") or os.getenv(
-        "GITHUB_PERSONAL_ACCESS_TOKEN"
-    )
+    github_token = os.getenv("GITHUB_TOKEN") or os.getenv("GITHUB_PERSONAL_ACCESS_TOKEN")
 
     # Calculate readiness metrics
     framework_complete = True

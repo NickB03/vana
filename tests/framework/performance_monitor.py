@@ -81,9 +81,7 @@ class PerformanceMonitor:
         self.buffer_size = buffer_size
 
         # Metrics storage
-        self.metrics: Dict[MetricType, deque] = defaultdict(
-            lambda: deque(maxlen=buffer_size)
-        )
+        self.metrics: Dict[MetricType, deque] = defaultdict(lambda: deque(maxlen=buffer_size))
         self.thresholds: Dict[MetricType, PerformanceThreshold] = {}
         self.active_tests: Dict[str, Dict[str, Any]] = {}
 
@@ -108,15 +106,9 @@ class PerformanceMonitor:
         default_thresholds = [
             PerformanceThreshold(MetricType.RESPONSE_TIME, 2.0, 5.0, "greater_than"),
             PerformanceThreshold(MetricType.ERROR_RATE, 0.05, 0.10, "greater_than"),
-            PerformanceThreshold(
-                MetricType.MEMORY_USAGE, 500.0, 1000.0, "greater_than"
-            ),  # MB
-            PerformanceThreshold(
-                MetricType.CPU_USAGE, 70.0, 90.0, "greater_than"
-            ),  # Percentage
-            PerformanceThreshold(
-                MetricType.THROUGHPUT, 10.0, 5.0, "less_than"
-            ),  # requests/sec
+            PerformanceThreshold(MetricType.MEMORY_USAGE, 500.0, 1000.0, "greater_than"),  # MB
+            PerformanceThreshold(MetricType.CPU_USAGE, 70.0, 90.0, "greater_than"),  # Percentage
+            PerformanceThreshold(MetricType.THROUGHPUT, 10.0, 5.0, "less_than"),  # requests/sec
         ]
 
         for threshold in default_thresholds:
@@ -175,8 +167,7 @@ class PerformanceMonitor:
 
         if violation_level:
             self.logger.warning(
-                f"Threshold violation ({violation_level}): "
-                f"{metric.metric_type.value}={metric.value}"
+                f"Threshold violation ({violation_level}): " f"{metric.metric_type.value}={metric.value}"
             )
 
     async def start_monitoring(self, interval: float = 1.0):
@@ -301,9 +292,7 @@ class PerformanceMonitor:
             tags={"tool": tool_name},
         )
 
-    def record_agent_coordination(
-        self, from_agent: str, to_agent: str, duration: float
-    ):
+    def record_agent_coordination(self, from_agent: str, to_agent: str, duration: float):
         """Record agent coordination timing"""
         self.record_metric(
             MetricType.AGENT_COORDINATION_TIME,
@@ -326,17 +315,11 @@ class PerformanceMonitor:
             "max": max(values),
             "mean": sum(values) / len(values),
             "median": sorted(values)[len(values) // 2],
-            "p95": sorted(values)[int(len(values) * 0.95)]
-            if len(values) > 1
-            else values[0],
-            "p99": sorted(values)[int(len(values) * 0.99)]
-            if len(values) > 1
-            else values[0],
+            "p95": sorted(values)[int(len(values) * 0.95)] if len(values) > 1 else values[0],
+            "p99": sorted(values)[int(len(values) * 0.99)] if len(values) > 1 else values[0],
         }
 
-    def get_recent_metrics(
-        self, metric_type: MetricType, count: int = 10
-    ) -> List[PerformanceMetric]:
+    def get_recent_metrics(self, metric_type: MetricType, count: int = 10) -> List[PerformanceMetric]:
         """Get recent metrics of a specific type"""
         metrics = list(self.metrics[metric_type])
         return metrics[-count:] if metrics else []
@@ -371,9 +354,7 @@ class PerformanceMonitor:
                     )
 
         # Generate recommendations
-        recommendations = self._generate_recommendations(
-            summary_stats, threshold_violations
-        )
+        recommendations = self._generate_recommendations(summary_stats, threshold_violations)
 
         return PerformanceReport(
             test_name=test_name,
@@ -386,9 +367,7 @@ class PerformanceMonitor:
             recommendations=recommendations,
         )
 
-    def _is_threshold_violated(
-        self, metric: PerformanceMetric, threshold: PerformanceThreshold
-    ) -> bool:
+    def _is_threshold_violated(self, metric: PerformanceMetric, threshold: PerformanceThreshold) -> bool:
         """Check if a metric violates threshold"""
         if threshold.comparison == "greater_than":
             return metric.value > threshold.warning_threshold
@@ -407,16 +386,12 @@ class PerformanceMonitor:
         # Response time recommendations
         response_stats = summary_stats.get(MetricType.RESPONSE_TIME, {})
         if response_stats.get("mean", 0) > 2.0:
-            recommendations.append(
-                "Consider optimizing response times - average exceeds 2 seconds"
-            )
+            recommendations.append("Consider optimizing response times - average exceeds 2 seconds")
 
         # Memory usage recommendations
         memory_stats = summary_stats.get(MetricType.MEMORY_USAGE, {})
         if memory_stats.get("max", 0) > 500:
-            recommendations.append(
-                "High memory usage detected - consider memory optimization"
-            )
+            recommendations.append("High memory usage detected - consider memory optimization")
 
         # Error rate recommendations
         error_stats = summary_stats.get(MetricType.ERROR_RATE, {})
@@ -426,9 +401,7 @@ class PerformanceMonitor:
         # Throughput recommendations
         throughput_stats = summary_stats.get(MetricType.THROUGHPUT, {})
         if throughput_stats.get("mean", 0) < 10:
-            recommendations.append(
-                "Low throughput detected - consider performance tuning"
-            )
+            recommendations.append("Low throughput detected - consider performance tuning")
 
         return recommendations
 

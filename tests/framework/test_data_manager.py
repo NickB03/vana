@@ -136,19 +136,13 @@ class TestDataManager:
             scenarios = [s for s in scenarios if s.query_type == query_type]
 
         if expected_tools:
-            scenarios = [
-                s
-                for s in scenarios
-                if any(tool in s.expected_tools for tool in expected_tools)
-            ]
+            scenarios = [s for s in scenarios if any(tool in s.expected_tools for tool in expected_tools)]
 
         if pattern:
             scenarios = [s for s in scenarios if s.expected_pattern == pattern]
 
         if complexity:
-            scenarios = [
-                s for s in scenarios if s.expected_data.get("complexity") == complexity
-            ]
+            scenarios = [s for s in scenarios if s.expected_data.get("complexity") == complexity]
 
         return scenarios
 
@@ -156,9 +150,7 @@ class TestDataManager:
         """Get validation criteria for a scenario"""
         return scenario.validation_criteria
 
-    def add_custom_scenario(
-        self, scenario_data: Dict[str, Any], query_type: QueryType
-    ) -> TestScenario:
+    def add_custom_scenario(self, scenario_data: Dict[str, Any], query_type: QueryType) -> TestScenario:
         """Add a custom scenario at runtime (not persisted to file)"""
         scenario = TestScenario.from_dict(scenario_data)
 
@@ -173,9 +165,7 @@ class TestDataManager:
 
         return scenario
 
-    def save_scenario_to_file(
-        self, scenario: TestScenario, query_type: QueryType
-    ) -> None:
+    def save_scenario_to_file(self, scenario: TestScenario, query_type: QueryType) -> None:
         """Save a scenario to the appropriate file (for test generation)"""
         file_path = self.base_path / f"{query_type.value}_queries.json"
 
@@ -229,9 +219,7 @@ class TestDataManager:
 
             # Count by complexity
             complexity = scenario.expected_data.get("complexity", "unknown")
-            stats["by_complexity"][complexity] = (
-                stats["by_complexity"].get(complexity, 0) + 1
-            )
+            stats["by_complexity"][complexity] = stats["by_complexity"].get(complexity, 0) + 1
 
         return stats
 
@@ -272,14 +260,10 @@ class TestDataManager:
                     try:
                         QueryType(item["query_type"])
                     except ValueError:
-                        errors.append(
-                            f"Item {i} has invalid query_type: {item['query_type']}"
-                        )
+                        errors.append(f"Item {i} has invalid query_type: {item['query_type']}")
 
                 # Validate expected_tools is a list
-                if "expected_tools" in item and not isinstance(
-                    item["expected_tools"], list
-                ):
+                if "expected_tools" in item and not isinstance(item["expected_tools"], list):
                     errors.append(f"Item {i} expected_tools must be a list")
 
         except json.JSONDecodeError as e:

@@ -108,9 +108,7 @@ def main():
     test_cases = {
         "adk_web_search": {"query": "test query", "max_results": 3},
         "adk_mathematical_solve": {"problem": "2 + 2"},
-        "adk_logical_analyze": {
-            "problem": "If A then B. A is true. What can we conclude?"
-        },
+        "adk_logical_analyze": {"problem": "If A then B. A is true. What can we conclude?"},
         "adk_read_file": {"file_path": "/Users/nick/Development/vana/README.md"},
         "adk_write_file": {
             "file_path": "/tmp/test_file.txt",
@@ -154,14 +152,11 @@ def main():
     print("\n📊 VALIDATION SUMMARY")
     print("=" * 60)
 
-    importable_count = sum(
-        1 for tool in claimed_tools if results[tool]["import"]["importable"]
-    )
+    importable_count = sum(1 for tool in claimed_tools if results[tool]["import"]["importable"])
     executable_count = sum(
         1
         for tool in claimed_tools
-        if "execution" in results[tool]
-        and results[tool]["execution"].get("executable", False)
+        if "execution" in results[tool] and results[tool]["execution"].get("executable", False)
     )
 
     print(f"Tools claimed: {len(claimed_tools)}")
@@ -189,9 +184,7 @@ def main():
 
         json.dump(results, f, indent=2, default=str)
 
-    print(
-        "\nResults saved to: /Users/nick/Development/vana/tool_validation_results.json"
-    )
+    print("\nResults saved to: /Users/nick/Development/vana/tool_validation_results.json")
 
 
 if __name__ == "__main__":

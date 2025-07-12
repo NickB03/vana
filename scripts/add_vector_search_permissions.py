@@ -103,9 +103,7 @@ def main():
                 policy.bindings.append(binding)
 
         # Set the updated IAM policy
-        set_request = iam_policy_pb2.SetIamPolicyRequest(
-            resource=project_name, policy=policy
-        )
+        set_request = iam_policy_pb2.SetIamPolicyRequest(resource=project_name, policy=policy)
         updated_policy = client.set_iam_policy(request=set_request)
 
         logger.info("✅ Successfully updated IAM policy with Vector Search permissions")

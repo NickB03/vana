@@ -3,6 +3,7 @@
 
 import os
 import sys
+
 from dotenv import load_dotenv
 
 # Add the project root to the Python path
@@ -16,11 +17,13 @@ if os.path.exists(dotenv_path):
 
 # Configure genai AFTER loading env
 import google.generativeai as genai
+
 api_key = os.getenv('GOOGLE_API_KEY')
 genai.configure(api_key=api_key)
 
 # Create a minimal agent with just web search
 from google.adk.agents import LlmAgent
+
 from lib._tools.web_search_fixed import create_web_search_tool
 
 # Create minimal agent
@@ -36,11 +39,13 @@ For example:
     tools=[create_web_search_tool()]
 )
 
+import asyncio
+
 # Test with ADK Runner
 from google.adk.runners import Runner
 from google.adk.sessions import InMemorySessionService
 from google.genai.types import Content, Part
-import asyncio
+
 
 async def test_web_search():
     """Test web search only"""

@@ -114,9 +114,7 @@ def create_adk_memory_service():
         from lib._shared_libraries.adk_memory_service import ADKMemoryService
 
         # Determine Vertex AI usage
-        use_vertex_ai_env = (
-            os.getenv("GOOGLE_GENAI_USE_VERTEXAI", "False").lower() == "true"
-        )
+        use_vertex_ai_env = os.getenv("GOOGLE_GENAI_USE_VERTEXAI", "False").lower() == "true"
         session_service_type = os.getenv("SESSION_SERVICE_TYPE", "in_memory").lower()
         use_vertex_ai = use_vertex_ai_env or session_service_type == "vertex_ai"
 

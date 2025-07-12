@@ -3,6 +3,7 @@
 
 import os
 import sys
+
 from dotenv import load_dotenv
 
 # Add the project root to the Python path
@@ -24,6 +25,7 @@ genai.configure(api_key=api_key)
 
 # Import the VANA agent
 from agents.vana.team import root_agent
+
 
 def test_tools():
     """Test VANA agent tools"""

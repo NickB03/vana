@@ -26,9 +26,7 @@ class MonitoringIntegration:
         self.config_path = config_path or "config/monitoring/monitoring.yaml"
         self.config = self._load_config()
         self.monitor = PerformanceMonitor(
-            retention_minutes=self.config.get("performance_monitoring", {}).get(
-                "retention_minutes", 60
-            )
+            retention_minutes=self.config.get("performance_monitoring", {}).get("retention_minutes", 60)
         )
         self.apm = APM(self.monitor)
         self._setup_thresholds()
@@ -88,21 +86,13 @@ class MonitoringIntegration:
         """Get the APM instance."""
         return self.apm
 
-    def record_agent_response(
-        self, agent_name: str, duration: float, success: bool = True
-    ):
+    def record_agent_response(self, agent_name: str, duration: float, success: bool = True):
         """Record agent response time."""
-        self.monitor.record_response_time(
-            f"agent.{agent_name}", duration, success=success, agent=agent_name
-        )
+        self.monitor.record_response_time(f"agent.{agent_name}", duration, success=success, agent=agent_name)
 
-    def record_tool_execution(
-        self, tool_name: str, duration: float, success: bool = True
-    ):
+    def record_tool_execution(self, tool_name: str, duration: float, success: bool = True):
         """Record tool execution time."""
-        self.monitor.record_response_time(
-            f"tool.{tool_name}", duration, success=success, tool=tool_name
-        )
+        self.monitor.record_response_time(f"tool.{tool_name}", duration, success=success, tool=tool_name)
 
     def record_system_metrics(self):
         """Record system-level metrics."""
@@ -112,15 +102,11 @@ class MonitoringIntegration:
     def get_health_status(self) -> Dict[str, Any]:
         """Get overall system health status."""
         recent_alerts = [
-            alert
-            for alert in self.monitor.alerts
-            if alert["timestamp"] > (time.time() - 300)  # Last 5 minutes
+            alert for alert in self.monitor.alerts if alert["timestamp"] > (time.time() - 300)  # Last 5 minutes
         ]
 
         return {
-            "status": "critical"
-            if any(a["level"] == "critical" for a in recent_alerts)
-            else "healthy",
+            "status": "critical" if any(a["level"] == "critical" for a in recent_alerts) else "healthy",
             "recent_alerts": len(recent_alerts),
             "metrics_collected": len(self.monitor.metrics),
             "uptime_seconds": time.time() - getattr(self, "_start_time", time.time()),

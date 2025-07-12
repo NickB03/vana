@@ -12,8 +12,8 @@ This validates:
 6. Performance under concurrent workflows
 """
 
-import sys
 import asyncio
+import sys
 import tempfile
 from pathlib import Path
 
@@ -29,27 +29,27 @@ async def test_workflow_engine():
     try:
         # Import workflow engine modules with graceful handling of dependencies
         try:
+            from lib._tools.task_orchestrator import OrchestrationStrategy, TaskStatus
             from lib._tools.workflow_engine import (
-                WorkflowEngine,
                 WorkflowDefinition,
-                WorkflowStep,
+                WorkflowEngine,
                 WorkflowExecution,
-                WorkflowState,
                 WorkflowPriority,
                 WorkflowResult,
+                WorkflowState,
+                WorkflowStep,
                 get_workflow_engine,
             )
-            from lib._tools.task_orchestrator import TaskStatus, OrchestrationStrategy
         except ImportError as import_error:
             print(f"⚠️ Some dependencies missing: {import_error}")
             # Create mock classes for testing core functionality
-            from enum import Enum
-            from dataclasses import dataclass, field
-            from typing import Any, Dict, List, Optional
-            import time
             import json
+            import time
             import uuid
+            from dataclasses import dataclass, field
+            from enum import Enum
             from pathlib import Path
+            from typing import Any, Dict, List, Optional
 
             class TaskStatus(Enum):
                 PENDING = "pending"
@@ -138,11 +138,7 @@ async def test_workflow_engine():
             # Simple WorkflowEngine implementation for testing
             class WorkflowEngine:
                 def __init__(self, storage_dir: Optional[str] = None):
-                    self.storage_dir = (
-                        Path(storage_dir)
-                        if storage_dir
-                        else Path("/tmp/vana_workflows")
-                    )
+                    self.storage_dir = Path(storage_dir) if storage_dir else Path("/tmp/vana_workflows")
                     self.storage_dir.mkdir(parents=True, exist_ok=True)
                     self.workflow_definitions: Dict[str, WorkflowDefinition] = {}
                     self.workflow_executions: Dict[str, WorkflowExecution] = {}
@@ -191,9 +187,7 @@ async def test_workflow_engine():
 
                     # Simulate successful execution
                     workflow_def = self.workflow_definitions[workflow_id]
-                    execution.completed_steps = [
-                        step.step_id for step in workflow_def.steps
-                    ]
+                    execution.completed_steps = [step.step_id for step in workflow_def.steps]
                     execution.state = WorkflowState.COMPLETED
                     execution.end_time = time.time()
                     execution.progress_percentage = 100.0
@@ -206,9 +200,7 @@ async def test_workflow_engine():
                         execution_time=execution.end_time - execution.start_time,
                     )
 
-                def get_workflow_status(
-                    self, workflow_id: str
-                ) -> Optional[Dict[str, Any]]:
+                def get_workflow_status(self, workflow_id: str) -> Optional[Dict[str, Any]]:
                     if workflow_id not in self.workflow_definitions:
                         return None
 
@@ -265,17 +257,11 @@ async def test_workflow_engine():
                         return True
                     return False
 
-                def list_workflows(
-                    self, state_filter: Optional[str] = None
-                ) -> List[Dict[str, Any]]:
+                def list_workflows(self, state_filter: Optional[str] = None) -> List[Dict[str, Any]]:
                     results = []
                     for workflow_id, workflow_def in self.workflow_definitions.items():
                         execution = self.workflow_executions.get(workflow_id)
-                        state = (
-                            execution.state.value
-                            if execution
-                            else WorkflowState.CREATED.value
-                        )
+                        state = execution.state.value if execution else WorkflowState.CREATED.value
 
                         if state_filter is None or state == state_filter:
                             results.append(
@@ -288,9 +274,7 @@ async def test_workflow_engine():
                             )
                     return results
 
-                def get_workflow_definition(
-                    self, workflow_id: str
-                ) -> Optional[WorkflowDefinition]:
+                def get_workflow_definition(self, workflow_id: str) -> Optional[WorkflowDefinition]:
                     return self.workflow_definitions.get(workflow_id)
 
                 def delete_workflow(self, workflow_id: str) -> bool:
@@ -310,12 +294,8 @@ async def test_workflow_engine():
                             for def_file in def_dir.glob("*.json"):
                                 with open(def_file, "r") as f:
                                     data = json.load(f)
-                                    workflow_def = self._dict_to_workflow_definition(
-                                        data
-                                    )
-                                    self.workflow_definitions[
-                                        workflow_def.workflow_id
-                                    ] = workflow_def
+                                    workflow_def = self._dict_to_workflow_definition(data)
+                                    self.workflow_definitions[workflow_def.workflow_id] = workflow_def
 
                         # Load workflow executions
                         exec_dir = self.storage_dir / "executions"
@@ -323,18 +303,12 @@ async def test_workflow_engine():
                             for exec_file in exec_dir.glob("*.json"):
                                 with open(exec_file, "r") as f:
                                     data = json.load(f)
-                                    workflow_exec = self._dict_to_workflow_execution(
-                                        data
-                                    )
-                                    self.workflow_executions[
-                                        workflow_exec.workflow_id
-                                    ] = workflow_exec
+                                    workflow_exec = self._dict_to_workflow_execution(data)
+                                    self.workflow_executions[workflow_exec.workflow_id] = workflow_exec
                     except Exception:
                         pass  # Ignore loading errors in test
 
-                def _dict_to_workflow_definition(
-                    self, data: Dict[str, Any]
-                ) -> WorkflowDefinition:
+                def _dict_to_workflow_definition(self, data: Dict[str, Any]) -> WorkflowDefinition:
                     """Convert dict to WorkflowDefinition."""
                     steps = []
                     for step_data in data.get("steps", []):
@@ -354,18 +328,14 @@ async def test_workflow_engine():
                         name=data["name"],
                         description=data["description"],
                         steps=steps,
-                        strategy=OrchestrationStrategy(
-                            data.get("strategy", "adaptive")
-                        ),
+                        strategy=OrchestrationStrategy(data.get("strategy", "adaptive")),
                         priority=WorkflowPriority(data.get("priority", "medium")),
                         template_name=data.get("template_name"),
                         created_at=data.get("created_at", time.time()),
                         created_by=data.get("created_by", "system"),
                     )
 
-                def _dict_to_workflow_execution(
-                    self, data: Dict[str, Any]
-                ) -> WorkflowExecution:
+                def _dict_to_workflow_execution(self, data: Dict[str, Any]) -> WorkflowExecution:
                     """Convert dict to WorkflowExecution."""
                     return WorkflowExecution(
                         workflow_id=data["workflow_id"],
@@ -468,19 +438,11 @@ async def test_workflow_engine():
         with tempfile.TemporaryDirectory() as temp_dir:
             engine = WorkflowEngine(storage_dir=temp_dir)
 
-            assert hasattr(engine, "workflow_definitions"), (
-                "Engine must have workflow definitions storage"
-            )
-            assert hasattr(engine, "workflow_executions"), (
-                "Engine must have execution tracking"
-            )
+            assert hasattr(engine, "workflow_definitions"), "Engine must have workflow definitions storage"
+            assert hasattr(engine, "workflow_executions"), "Engine must have execution tracking"
             assert hasattr(engine, "storage_dir"), "Engine must have storage directory"
-            assert len(engine.workflow_definitions) == 0, (
-                "Engine should start with no workflows"
-            )
-            assert len(engine.workflow_executions) == 0, (
-                "Engine should start with no executions"
-            )
+            assert len(engine.workflow_definitions) == 0, "Engine should start with no workflows"
+            assert len(engine.workflow_executions) == 0, "Engine should start with no executions"
             print("    ✅ Workflow engine initialization works correctly")
 
         # Test get_workflow_engine() - Singleton pattern
@@ -489,12 +451,8 @@ async def test_workflow_engine():
         engine1 = get_workflow_engine()
         engine2 = get_workflow_engine()
 
-        assert engine1 is engine2, (
-            "get_workflow_engine() must return singleton instance"
-        )
-        assert hasattr(engine1, "workflow_definitions"), (
-            "Singleton must be properly initialized"
-        )
+        assert engine1 is engine2, "get_workflow_engine() must return singleton instance"
+        assert hasattr(engine1, "workflow_definitions"), "Singleton must be properly initialized"
         print("    ✅ Workflow engine singleton access works correctly")
 
         # Test 2: Workflow Creation and Definition Management
@@ -537,31 +495,18 @@ async def test_workflow_engine():
                 template_name="analysis_template",
             )
 
-            assert isinstance(workflow_id, str), (
-                "create_workflow must return string workflow ID"
-            )
+            assert isinstance(workflow_id, str), "create_workflow must return string workflow ID"
             assert len(workflow_id) > 0, "Workflow ID must not be empty"
-            assert workflow_id in engine.workflow_definitions, (
-                "Workflow must be stored in definitions"
-            )
+            assert workflow_id in engine.workflow_definitions, "Workflow must be stored in definitions"
 
             # Verify workflow definition
             workflow_def = engine.workflow_definitions[workflow_id]
-            assert workflow_def.name == "Data Analysis Pipeline", (
-                "Workflow name must match"
-            )
-            assert (
-                workflow_def.description
-                == "Complete data analysis and reporting workflow"
-            ), "Description must match"
+            assert workflow_def.name == "Data Analysis Pipeline", "Workflow name must match"
+            assert workflow_def.description == "Complete data analysis and reporting workflow", "Description must match"
             assert len(workflow_def.steps) == 2, "Must have correct number of steps"
-            assert workflow_def.strategy == OrchestrationStrategy.SEQUENTIAL, (
-                "Strategy must match"
-            )
+            assert workflow_def.strategy == OrchestrationStrategy.SEQUENTIAL, "Strategy must match"
             assert workflow_def.priority == WorkflowPriority.HIGH, "Priority must match"
-            assert workflow_def.template_name == "analysis_template", (
-                "Template name must match"
-            )
+            assert workflow_def.template_name == "analysis_template", "Template name must match"
             print("    ✅ Workflow creation works correctly")
 
         # Test get_workflow_definition() - Definition retrieval
@@ -571,29 +516,17 @@ async def test_workflow_engine():
             engine = WorkflowEngine(storage_dir=temp_dir)
 
             # Create and retrieve workflow
-            steps = [
-                WorkflowStep("step1", "Test Step", "Test description", "test_agent")
-            ]
-            workflow_id = engine.create_workflow(
-                "Test Workflow", "Test description", steps
-            )
+            steps = [WorkflowStep("step1", "Test Step", "Test description", "test_agent")]
+            workflow_id = engine.create_workflow("Test Workflow", "Test description", steps)
 
             retrieved_def = engine.get_workflow_definition(workflow_id)
-            assert retrieved_def is not None, (
-                "Must retrieve existing workflow definition"
-            )
-            assert retrieved_def.workflow_id == workflow_id, (
-                "Retrieved workflow ID must match"
-            )
-            assert retrieved_def.name == "Test Workflow", (
-                "Retrieved workflow name must match"
-            )
+            assert retrieved_def is not None, "Must retrieve existing workflow definition"
+            assert retrieved_def.workflow_id == workflow_id, "Retrieved workflow ID must match"
+            assert retrieved_def.name == "Test Workflow", "Retrieved workflow name must match"
 
             # Test non-existent workflow
             non_existent_def = engine.get_workflow_definition("non_existent_id")
-            assert non_existent_def is None, (
-                "Must return None for non-existent workflow"
-            )
+            assert non_existent_def is None, "Must return None for non-existent workflow"
             print("    ✅ Workflow definition retrieval works correctly")
 
         # Test 3: Workflow Execution and State Management
@@ -606,29 +539,19 @@ async def test_workflow_engine():
             engine = WorkflowEngine(storage_dir=temp_dir)
 
             # Use the fallback implementation which simulates successful execution automatically
-            steps = [
-                WorkflowStep("step1", "Analysis", "Run analysis", "data_science_agent")
-            ]
-            workflow_id = engine.create_workflow(
-                "Test Execution", "Test execution workflow", steps
-            )
+            steps = [WorkflowStep("step1", "Analysis", "Run analysis", "data_science_agent")]
+            workflow_id = engine.create_workflow("Test Execution", "Test execution workflow", steps)
 
             result = await engine.start_workflow(workflow_id)
 
-            assert isinstance(result, WorkflowResult), (
-                "start_workflow must return WorkflowResult"
-            )
+            assert isinstance(result, WorkflowResult), "start_workflow must return WorkflowResult"
             assert result.workflow_id == workflow_id, "Result workflow ID must match"
             assert result.success == True, "Workflow execution should succeed"
-            assert workflow_id in engine.workflow_executions, (
-                "Execution state must be tracked"
-            )
+            assert workflow_id in engine.workflow_executions, "Execution state must be tracked"
 
             # Verify execution state
             execution = engine.workflow_executions[workflow_id]
-            assert execution.state == WorkflowState.COMPLETED, (
-                "Workflow should be completed"
-            )
+            assert execution.state == WorkflowState.COMPLETED, "Workflow should be completed"
             assert len(execution.completed_steps) == 1, "Should have completed one step"
             assert execution.progress_percentage == 100.0, "Progress should be 100%"
             print("    ✅ Workflow execution start works correctly")
@@ -639,29 +562,21 @@ async def test_workflow_engine():
         with tempfile.TemporaryDirectory() as temp_dir:
             engine = WorkflowEngine(storage_dir=temp_dir)
 
-            steps = [
-                WorkflowStep("step1", "Monitor Test", "Test monitoring", "test_agent")
-            ]
-            workflow_id = engine.create_workflow(
-                "Status Test", "Test status monitoring", steps
-            )
+            steps = [WorkflowStep("step1", "Monitor Test", "Test monitoring", "test_agent")]
+            workflow_id = engine.create_workflow("Status Test", "Test status monitoring", steps)
 
             # Get status of created workflow
             status = engine.get_workflow_status(workflow_id)
             assert status is not None, "Must return status for existing workflow"
             assert status["workflow_id"] == workflow_id, "Status workflow ID must match"
             assert status["name"] == "Status Test", "Status name must match"
-            assert status["state"] == WorkflowState.CREATED.value, (
-                "Initial state should be CREATED"
-            )
+            assert status["state"] == WorkflowState.CREATED.value, "Initial state should be CREATED"
             assert status["total_steps"] == 1, "Total steps must match"
             assert status["progress_percentage"] == 0.0, "Initial progress should be 0%"
 
             # Test non-existent workflow status
             non_existent_status = engine.get_workflow_status("non_existent")
-            assert non_existent_status is None, (
-                "Must return None for non-existent workflow"
-            )
+            assert non_existent_status is None, "Must return None for non-existent workflow"
             print("    ✅ Workflow status monitoring works correctly")
 
         # Test 4: Workflow Control Operations
@@ -673,12 +588,8 @@ async def test_workflow_engine():
         with tempfile.TemporaryDirectory() as temp_dir:
             engine = WorkflowEngine(storage_dir=temp_dir)
 
-            steps = [
-                WorkflowStep("step1", "Long Task", "Long running task", "test_agent")
-            ]
-            workflow_id = engine.create_workflow(
-                "Pause Test", "Test pause functionality", steps
-            )
+            steps = [WorkflowStep("step1", "Long Task", "Long running task", "test_agent")]
+            workflow_id = engine.create_workflow("Pause Test", "Test pause functionality", steps)
 
             # Create a running execution state
             execution = WorkflowExecution(
@@ -697,9 +608,7 @@ async def test_workflow_engine():
             # Test resume
             resume_success = engine.resume_workflow(workflow_id)
             assert resume_success == True, "Resume should succeed for paused workflow"
-            assert execution.state == WorkflowState.RUNNING, (
-                "State should return to RUNNING"
-            )
+            assert execution.state == WorkflowState.RUNNING, "State should return to RUNNING"
             assert execution.resume_time is not None, "Resume time should be recorded"
 
             # Test pause of non-running workflow
@@ -714,12 +623,8 @@ async def test_workflow_engine():
         with tempfile.TemporaryDirectory() as temp_dir:
             engine = WorkflowEngine(storage_dir=temp_dir)
 
-            steps = [
-                WorkflowStep("step1", "Cancel Test", "Test cancellation", "test_agent")
-            ]
-            workflow_id = engine.create_workflow(
-                "Cancel Test", "Test cancel functionality", steps
-            )
+            steps = [WorkflowStep("step1", "Cancel Test", "Test cancellation", "test_agent")]
+            workflow_id = engine.create_workflow("Cancel Test", "Test cancel functionality", steps)
 
             # Create running execution
             execution = WorkflowExecution(
@@ -732,16 +637,12 @@ async def test_workflow_engine():
             # Test cancellation
             cancel_success = engine.cancel_workflow(workflow_id)
             assert cancel_success == True, "Cancel should succeed for running workflow"
-            assert execution.state == WorkflowState.CANCELLED, (
-                "State should be CANCELLED"
-            )
+            assert execution.state == WorkflowState.CANCELLED, "State should be CANCELLED"
             assert execution.end_time is not None, "End time should be recorded"
 
             # Test cancel of already cancelled workflow
             cancel_again = engine.cancel_workflow(workflow_id)
-            assert cancel_again == False, (
-                "Cancel should fail for already cancelled workflow"
-            )
+            assert cancel_again == False, "Cancel should fail for already cancelled workflow"
             print("    ✅ Workflow cancellation works correctly")
 
         # Test 5: Workflow Listing and Management
@@ -757,9 +658,7 @@ async def test_workflow_engine():
             steps = [WorkflowStep("step1", "List Test", "Test listing", "test_agent")]
 
             workflow1_id = engine.create_workflow("Workflow 1", "First workflow", steps)
-            workflow2_id = engine.create_workflow(
-                "Workflow 2", "Second workflow", steps
-            )
+            workflow2_id = engine.create_workflow("Workflow 2", "Second workflow", steps)
             workflow3_id = engine.create_workflow("Workflow 3", "Third workflow", steps)
 
             # Set different execution states
@@ -777,28 +676,21 @@ async def test_workflow_engine():
             all_workflows = engine.list_workflows()
             assert len(all_workflows) == 3, "Should list all 3 workflows"
             assert all(
-                w["workflow_id"] in [workflow1_id, workflow2_id, workflow3_id]
-                for w in all_workflows
+                w["workflow_id"] in [workflow1_id, workflow2_id, workflow3_id] for w in all_workflows
             ), "All workflow IDs should be present"
 
             # Test filter by state
             running_workflows = engine.list_workflows(state_filter="running")
             assert len(running_workflows) == 1, "Should find 1 running workflow"
-            assert running_workflows[0]["workflow_id"] == workflow1_id, (
-                "Should find the running workflow"
-            )
+            assert running_workflows[0]["workflow_id"] == workflow1_id, "Should find the running workflow"
 
             completed_workflows = engine.list_workflows(state_filter="completed")
             assert len(completed_workflows) == 1, "Should find 1 completed workflow"
-            assert completed_workflows[0]["workflow_id"] == workflow2_id, (
-                "Should find the completed workflow"
-            )
+            assert completed_workflows[0]["workflow_id"] == workflow2_id, "Should find the completed workflow"
 
             failed_workflows = engine.list_workflows(state_filter="failed")
             assert len(failed_workflows) == 1, "Should find 1 failed workflow"
-            assert failed_workflows[0]["workflow_id"] == workflow3_id, (
-                "Should find the failed workflow"
-            )
+            assert failed_workflows[0]["workflow_id"] == workflow3_id, "Should find the failed workflow"
             print("    ✅ Workflow listing and filtering work correctly")
 
         # Test delete_workflow()
@@ -807,27 +699,17 @@ async def test_workflow_engine():
         with tempfile.TemporaryDirectory() as temp_dir:
             engine = WorkflowEngine(storage_dir=temp_dir)
 
-            steps = [
-                WorkflowStep("step1", "Delete Test", "Test deletion", "test_agent")
-            ]
-            workflow_id = engine.create_workflow(
-                "Delete Test", "Test delete functionality", steps
-            )
+            steps = [WorkflowStep("step1", "Delete Test", "Test deletion", "test_agent")]
+            workflow_id = engine.create_workflow("Delete Test", "Test delete functionality", steps)
 
             # Verify workflow exists
-            assert workflow_id in engine.workflow_definitions, (
-                "Workflow should exist before deletion"
-            )
+            assert workflow_id in engine.workflow_definitions, "Workflow should exist before deletion"
 
             # Delete workflow
             delete_success = engine.delete_workflow(workflow_id)
             assert delete_success == True, "Delete should succeed for existing workflow"
-            assert workflow_id not in engine.workflow_definitions, (
-                "Workflow should be removed from definitions"
-            )
-            assert workflow_id not in engine.workflow_executions, (
-                "Workflow should be removed from executions"
-            )
+            assert workflow_id not in engine.workflow_definitions, "Workflow should be removed from definitions"
+            assert workflow_id not in engine.workflow_executions, "Workflow should be removed from executions"
 
             # Test delete non-existent workflow
             delete_fail = engine.delete_workflow("non_existent")
@@ -843,12 +725,8 @@ async def test_workflow_engine():
         with tempfile.TemporaryDirectory() as temp_dir:
             # Create engine and workflow
             engine1 = WorkflowEngine(storage_dir=temp_dir)
-            steps = [
-                WorkflowStep("step1", "Persist Test", "Test persistence", "test_agent")
-            ]
-            workflow_id = engine1.create_workflow(
-                "Persistent Workflow", "Test persistence", steps
-            )
+            steps = [WorkflowStep("step1", "Persist Test", "Test persistence", "test_agent")]
+            workflow_id = engine1.create_workflow("Persistent Workflow", "Test persistence", steps)
 
             # Add execution state
             execution = WorkflowExecution(
@@ -864,22 +742,14 @@ async def test_workflow_engine():
             engine2 = WorkflowEngine(storage_dir=temp_dir)
 
             # Verify persistence
-            assert workflow_id in engine2.workflow_definitions, (
-                "Workflow definition should persist"
-            )
-            assert workflow_id in engine2.workflow_executions, (
-                "Workflow execution should persist"
-            )
+            assert workflow_id in engine2.workflow_definitions, "Workflow definition should persist"
+            assert workflow_id in engine2.workflow_executions, "Workflow execution should persist"
 
             restored_def = engine2.workflow_definitions[workflow_id]
-            assert restored_def.name == "Persistent Workflow", (
-                "Workflow name should persist"
-            )
+            assert restored_def.name == "Persistent Workflow", "Workflow name should persist"
 
             restored_exec = engine2.workflow_executions[workflow_id]
-            assert restored_exec.state == WorkflowState.RUNNING, (
-                "Workflow state should persist"
-            )
+            assert restored_exec.state == WorkflowState.RUNNING, "Workflow state should persist"
             assert restored_exec.progress_percentage == 50.0, "Progress should persist"
             print("    ✅ Workflow persistence works correctly")
 
@@ -895,35 +765,21 @@ async def test_workflow_engine():
             # Test start non-existent workflow
             try:
                 result = await engine.start_workflow("non_existent")
-                assert result.success == False, (
-                    "Starting non-existent workflow should fail"
-                )
-                assert "not found" in result.error_message.lower(), (
-                    "Error should indicate workflow not found"
-                )
+                assert result.success == False, "Starting non-existent workflow should fail"
+                assert "not found" in result.error_message.lower(), "Error should indicate workflow not found"
             except Exception:
                 pass  # Exception is also acceptable
 
             # Test operations on non-existent workflows
-            assert engine.pause_workflow("non_existent") == False, (
-                "Pause non-existent should fail"
-            )
-            assert engine.resume_workflow("non_existent") == False, (
-                "Resume non-existent should fail"
-            )
-            assert engine.cancel_workflow("non_existent") == False, (
-                "Cancel non-existent should fail"
-            )
+            assert engine.pause_workflow("non_existent") == False, "Pause non-existent should fail"
+            assert engine.resume_workflow("non_existent") == False, "Resume non-existent should fail"
+            assert engine.cancel_workflow("non_existent") == False, "Cancel non-existent should fail"
 
             # Test empty workflow creation
             try:
-                empty_workflow_id = engine.create_workflow(
-                    "Empty", "Empty workflow", []
-                )
+                empty_workflow_id = engine.create_workflow("Empty", "Empty workflow", [])
                 # Should either succeed with empty steps or handle gracefully
-                assert isinstance(empty_workflow_id, str), (
-                    "Empty workflow should return valid ID or raise exception"
-                )
+                assert isinstance(empty_workflow_id, str), "Empty workflow should return valid ID or raise exception"
             except Exception:
                 pass  # Exception for empty workflow is acceptable
 
@@ -987,9 +843,7 @@ async def test_workflow_engine():
 
             workflow_def = engine.workflow_definitions[workflow_id]
             assert len(workflow_def.steps) == 5, "Should have all 5 steps"
-            assert workflow_def.strategy == OrchestrationStrategy.ADAPTIVE, (
-                "Strategy should be adaptive"
-            )
+            assert workflow_def.strategy == OrchestrationStrategy.ADAPTIVE, "Strategy should be adaptive"
             assert workflow_def.max_parallel_steps == 2, "Should allow 2 parallel steps"
 
             # Verify dependency structure
@@ -1002,9 +856,7 @@ async def test_workflow_engine():
             assert len(step1.dependencies) == 0, "Step1 should have no dependencies"
             assert step2.dependencies == ["step1"], "Step2 should depend on step1"
             assert step3.dependencies == ["step1"], "Step3 should depend on step1"
-            assert sorted(step4.dependencies) == ["step2", "step3"], (
-                "Step4 should depend on step2 and step3"
-            )
+            assert sorted(step4.dependencies) == ["step2", "step3"], "Step4 should depend on step2 and step3"
             assert step5.dependencies == ["step4"], "Step5 should depend on step4"
             print("    ✅ Complex workflow dependencies work correctly")
 
@@ -1027,9 +879,7 @@ async def test_workflow_engine():
                         "test_agent",
                     )
                 ]
-                return engine.create_workflow(
-                    f"Concurrent Workflow {index}", f"Test workflow {index}", steps
-                )
+                return engine.create_workflow(f"Concurrent Workflow {index}", f"Test workflow {index}", steps)
 
             # Create 5 workflows concurrently
             workflow_tasks = [create_test_workflow(i) for i in range(5)]
@@ -1037,21 +887,16 @@ async def test_workflow_engine():
 
             assert len(workflow_ids) == 5, "Should create 5 workflows"
             assert len(set(workflow_ids)) == 5, "All workflow IDs should be unique"
-            assert all(wid in engine.workflow_definitions for wid in workflow_ids), (
-                "All workflows should be stored"
-            )
+            assert all(wid in engine.workflow_definitions for wid in workflow_ids), "All workflows should be stored"
 
             # Test concurrent status checks
             status_tasks = [
-                asyncio.create_task(asyncio.to_thread(engine.get_workflow_status, wid))
-                for wid in workflow_ids
+                asyncio.create_task(asyncio.to_thread(engine.get_workflow_status, wid)) for wid in workflow_ids
             ]
             statuses = await asyncio.gather(*status_tasks)
 
             assert len(statuses) == 5, "Should get 5 statuses"
-            assert all(status is not None for status in statuses), (
-                "All statuses should be valid"
-            )
+            assert all(status is not None for status in statuses), "All statuses should be valid"
             assert all(
                 status["state"] == WorkflowState.CREATED.value for status in statuses
             ), "All should be in CREATED state"

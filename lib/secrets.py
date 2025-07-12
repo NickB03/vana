@@ -1,17 +1,16 @@
-import os
 import logging
+import os
 from typing import Optional
-from google.cloud import secretmanager
+
 from google.api_core import exceptions
+from google.cloud import secretmanager
 
 logger = logging.getLogger(__name__)
 
 
 class SecretManager:
     def __init__(self, project_id: Optional[str] = None):
-        self.project_id = project_id or os.getenv(
-            "GOOGLE_CLOUD_PROJECT", "analystai-454200"
-        )
+        self.project_id = project_id or os.getenv("GOOGLE_CLOUD_PROJECT", "analystai-454200")
         self.client = None
 
     def _get_client(self):
@@ -37,9 +36,7 @@ class SecretManager:
         """
         try:
             client = self._get_client()
-            name = (
-                f"projects/{self.project_id}/secrets/{secret_name}/versions/{version}"
-            )
+            name = f"projects/{self.project_id}/secrets/{secret_name}/versions/{version}"
             response = client.access_secret_version(request={"name": name})
             return response.payload.data.decode("UTF-8")
         except exceptions.NotFound:

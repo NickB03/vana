@@ -3,17 +3,19 @@ Hierarchical Task Manager - Complex Task Decomposition
 Implements Google ADK hierarchical agent patterns for complex task orchestration.
 """
 
-from agents.specialists.ui_specialist import analyze_user_interface
-from agents.specialists.qa_specialist import analyze_testing_strategy
-from agents.specialists.devops_specialist import analyze_infrastructure
-from agents.specialists.architecture_specialist import analyze_system_architecture
-from google.adk.tools import FunctionTool
-from google.adk.agents import LlmAgent
-from lib._tools import adk_transfer_to_agent
 import os
 import sys
 from enum import Enum
 from typing import Any, Dict
+
+from google.adk.agents import LlmAgent
+from google.adk.tools import FunctionTool
+
+from agents.specialists.architecture_specialist import analyze_system_architecture
+from agents.specialists.devops_specialist import analyze_infrastructure
+from agents.specialists.qa_specialist import analyze_testing_strategy
+from agents.specialists.ui_specialist import analyze_user_interface
+from lib._tools import adk_transfer_to_agent
 
 # Add project root to Python path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
@@ -63,11 +65,7 @@ def analyze_task_complexity(task_description: str) -> Dict[str, Any]:
     # Count indicators
     scores = {}
     for level, indicators in complexity_indicators.items():
-        score = sum(
-            1
-            for indicator in indicators
-            if indicator.lower() in task_description.lower()
-        )
+        score = sum(1 for indicator in indicators if indicator.lower() in task_description.lower())
         scores[level] = score
 
     # Determine complexity
@@ -89,11 +87,7 @@ def analyze_task_complexity(task_description: str) -> Dict[str, Any]:
 
     task_scores = {}
     for task_type, indicators in task_type_indicators.items():
-        score = sum(
-            1
-            for indicator in indicators
-            if indicator.lower() in task_description.lower()
-        )
+        score = sum(1 for indicator in indicators if indicator.lower() in task_description.lower())
         task_scores[task_type] = score
 
     task_type = TaskType.ANALYSIS  # Default
@@ -191,9 +185,7 @@ def route_to_specialist(task_description: str, specialist_type: str) -> str:
 
     try:
         # This would call the specialist function with the task
-        result = (
-            f"Routed task to {specialist_type} specialist: {task_description[:100]}..."
-        )
+        result = f"Routed task to {specialist_type} specialist: {task_description[:100]}..."
         return result
     except Exception as e:
         return f"Error routing to specialist: {str(e)}"

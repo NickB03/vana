@@ -144,20 +144,14 @@ class TaskOrchestrator:
 
             # Phase 3: Aggregate results
             if result.success and len(result.results) > 1:
-                aggregated_result = await self._aggregate_orchestration_results(
-                    plan, result
-                )
+                aggregated_result = await self._aggregate_orchestration_results(plan, result)
                 result.aggregated_result = aggregated_result
 
             # Phase 4: Record orchestration history
             execution_time = time.time() - start_time
-            self._record_orchestration_history(
-                orchestration_id, task, plan, result, execution_time
-            )
+            self._record_orchestration_history(orchestration_id, task, plan, result, execution_time)
 
-            logger.info(
-                f"✅ Orchestration completed: {orchestration_id} in {execution_time:.2f}s"
-            )
+            logger.info(f"✅ Orchestration completed: {orchestration_id} in {execution_time:.2f}s")
             return result
 
         except Exception as e:
@@ -321,9 +315,7 @@ class TaskOrchestrator:
     async def _assign_agent_to_subtask(self, subtask: SubTask, context: str) -> str:
         """Assign the best agent to a subtask."""
         # Use routing engine to find best agent
-        routing_result = await self.routing_engine.route_task(
-            subtask.description, context
-        )
+        routing_result = await self.routing_engine.route_task(subtask.description, context)
 
         if routing_result.success and routing_result.agents_used:
             return routing_result.agents_used[0]
@@ -340,9 +332,7 @@ class TaskOrchestrator:
             else:
                 return "vana"  # Default to orchestration agent
 
-    def _build_dependency_graph(
-        self, subtasks: List[SubTask], strategy: OrchestrationStrategy
-    ) -> Dict[str, List[str]]:
+    def _build_dependency_graph(self, subtasks: List[SubTask], strategy: OrchestrationStrategy) -> Dict[str, List[str]]:
         """Build dependency graph based on strategy."""
         dependency_graph = {}
 
@@ -366,9 +356,7 @@ class TaskOrchestrator:
                     dependency_graph[subtask.task_id] = []
                 elif i == len(subtasks) - 1:
                     # Last task depends on all previous
-                    dependency_graph[subtask.task_id] = [
-                        st.task_id for st in subtasks[:-1]
-                    ]
+                    dependency_graph[subtask.task_id] = [st.task_id for st in subtasks[:-1]]
                 else:
                     # Middle tasks depend on first task
                     dependency_graph[subtask.task_id] = [subtasks[0].task_id]
@@ -387,9 +375,7 @@ class TaskOrchestrator:
 
         return dependency_graph
 
-    def _analyze_intelligent_dependencies(
-        self, subtasks: List[SubTask]
-    ) -> Dict[str, List[str]]:
+    def _analyze_intelligent_dependencies(self, subtasks: List[SubTask]) -> Dict[str, List[str]]:
         """Analyze intelligent dependencies between subtasks."""
         dependency_graph = {}
 
@@ -405,33 +391,22 @@ class TaskOrchestrator:
                 other_description_lower = other_subtask.description.lower()
 
                 # If this task analyzes results, it depends on execution tasks
-                if (
-                    "analyze" in description_lower
-                    and "execute" in other_description_lower
-                ):
+                if "analyze" in description_lower and "execute" in other_description_lower:
                     dependencies.append(other_subtask.task_id)
 
                 # If this task summarizes, it depends on analysis tasks
-                if (
-                    "summary" in description_lower
-                    and "analyze" in other_description_lower
-                ):
+                if "summary" in description_lower and "analyze" in other_description_lower:
                     dependencies.append(other_subtask.task_id)
 
                 # If this task validates, it depends on main execution
-                if (
-                    "validate" in description_lower
-                    and "execute" in other_description_lower
-                ):
+                if "validate" in description_lower and "execute" in other_description_lower:
                     dependencies.append(other_subtask.task_id)
 
             dependency_graph[subtask.task_id] = dependencies
 
         return dependency_graph
 
-    def _estimate_orchestration_duration(
-        self, subtasks: List[SubTask], strategy: OrchestrationStrategy
-    ) -> float:
+    def _estimate_orchestration_duration(self, subtasks: List[SubTask], strategy: OrchestrationStrategy) -> float:
         """Estimate total orchestration duration."""
         if strategy == OrchestrationStrategy.PARALLEL:
             # Duration is the longest subtask
@@ -443,13 +418,9 @@ class TaskOrchestrator:
             # Pipeline or adaptive - somewhere in between
             return len(subtasks) * 20.0  # Default estimate
 
-    async def _execute_orchestration_plan(
-        self, plan: OrchestrationPlan
-    ) -> OrchestrationResult:
+    async def _execute_orchestration_plan(self, plan: OrchestrationPlan) -> OrchestrationResult:
         """Execute the orchestration plan."""
-        logger.info(
-            f"⚡ Executing orchestration plan with {len(plan.subtasks)} subtasks"
-        )
+        logger.info(f"⚡ Executing orchestration plan with {len(plan.subtasks)} subtasks")
 
         start_time = time.time()
         completed_subtasks = 0
@@ -472,11 +443,7 @@ class TaskOrchestrator:
                 ready_subtasks = self._find_ready_subtasks(plan, completed_task_ids)
 
                 # Start new tasks (up to parallel limit)
-                while (
-                    len(running_tasks) < plan.max_parallel_tasks
-                    and ready_subtasks
-                    and len(ready_subtasks) > 0
-                ):
+                while len(running_tasks) < plan.max_parallel_tasks and ready_subtasks and len(ready_subtasks) > 0:
                     subtask = ready_subtasks.pop(0)
                     if subtask.task_id not in running_tasks:
                         task_coroutine = self._execute_subtask(subtask)
@@ -497,13 +464,9 @@ class TaskOrchestrator:
                             # Check if task is done (non-blocking)
                             if task_info["coroutine"].done():
                                 result = await task_info["coroutine"]
-                                done_tasks.append(
-                                    (task_id, task_info["subtask"], result)
-                                )
+                                done_tasks.append((task_id, task_info["subtask"], result))
                         except Exception as e:
-                            done_tasks.append(
-                                (task_id, task_info["subtask"], {"error": str(e)})
-                            )
+                            done_tasks.append((task_id, task_info["subtask"], {"error": str(e)}))
 
                     # Process completed tasks
                     for task_id, subtask, result in done_tasks:
@@ -513,9 +476,7 @@ class TaskOrchestrator:
                             subtask.status = TaskStatus.FAILED
                             subtask.error = result["error"]
                             failed_subtasks += 1
-                            errors.append(
-                                f"Subtask {task_id} failed: {result['error']}"
-                            )
+                            errors.append(f"Subtask {task_id} failed: {result['error']}")
                         else:
                             subtask.status = TaskStatus.COMPLETED
                             subtask.result = result
@@ -547,24 +508,19 @@ class TaskOrchestrator:
             performance_metrics={
                 "strategy": plan.strategy.value,
                 "subtask_count": len(plan.subtasks),
-                "parallel_efficiency": completed_subtasks
-                / max(total_execution_time, 1),
+                "parallel_efficiency": completed_subtasks / max(total_execution_time, 1),
                 "success_rate": completed_subtasks / len(plan.subtasks),
             },
         )
 
-    def _find_ready_subtasks(
-        self, plan: OrchestrationPlan, completed_task_ids: set
-    ) -> List[SubTask]:
+    def _find_ready_subtasks(self, plan: OrchestrationPlan, completed_task_ids: set) -> List[SubTask]:
         """Find subtasks that are ready to execute (dependencies satisfied)."""
         ready_subtasks = []
 
         for subtask in plan.subtasks:
             if subtask.status == TaskStatus.PENDING:
                 # Check if all dependencies are completed
-                dependencies_satisfied = all(
-                    dep_id in completed_task_ids for dep_id in subtask.dependencies
-                )
+                dependencies_satisfied = all(dep_id in completed_task_ids for dep_id in subtask.dependencies)
 
                 if dependencies_satisfied:
                     ready_subtasks.append(subtask)
@@ -574,9 +530,7 @@ class TaskOrchestrator:
     async def _execute_subtask(self, subtask: SubTask) -> Dict[str, Any]:
         """Execute a single subtask."""
         try:
-            logger.debug(
-                f"🔄 Executing subtask: {subtask.task_id} on {subtask.agent_name}"
-            )
+            logger.debug(f"🔄 Executing subtask: {subtask.task_id} on {subtask.agent_name}")
 
             # Register task start with load balancer
             await self.load_balancer.register_task_start(
@@ -586,15 +540,11 @@ class TaskOrchestrator:
             )
 
             # Execute the subtask
-            result = await self.communication_service.send_task_to_agent(
-                subtask.agent_name, subtask.description, ""
-            )
+            result = await self.communication_service.send_task_to_agent(subtask.agent_name, subtask.description, "")
 
             # Register task completion
             success = result.get("status") == "success"
-            await self.load_balancer.register_task_completion(
-                subtask.agent_name, subtask.task_id, success
-            )
+            await self.load_balancer.register_task_completion(subtask.agent_name, subtask.task_id, success)
 
             return result
 
@@ -602,9 +552,7 @@ class TaskOrchestrator:
             logger.error(f"❌ Subtask execution failed: {subtask.task_id} - {e}")
 
             # Register task completion as failed
-            await self.load_balancer.register_task_completion(
-                subtask.agent_name, subtask.task_id, False
-            )
+            await self.load_balancer.register_task_completion(subtask.agent_name, subtask.task_id, False)
 
             return {"error": str(e)}
 
@@ -650,20 +598,14 @@ class TaskOrchestrator:
             return {"message": "No orchestration history available"}
 
         total_orchestrations = len(self.orchestration_history)
-        successful_orchestrations = sum(
-            1 for entry in self.orchestration_history if entry["success"]
-        )
+        successful_orchestrations = sum(1 for entry in self.orchestration_history if entry["success"])
 
         return {
             "total_orchestrations": total_orchestrations,
             "success_rate": successful_orchestrations / total_orchestrations,
-            "average_execution_time": sum(
-                entry["execution_time"] for entry in self.orchestration_history
-            )
+            "average_execution_time": sum(entry["execution_time"] for entry in self.orchestration_history)
             / total_orchestrations,
-            "average_subtask_count": sum(
-                entry["subtask_count"] for entry in self.orchestration_history
-            )
+            "average_subtask_count": sum(entry["subtask_count"] for entry in self.orchestration_history)
             / total_orchestrations,
             "strategy_distribution": self._get_strategy_distribution(),
             "active_orchestrations": len(self.active_orchestrations),

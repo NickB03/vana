@@ -26,9 +26,7 @@ except ImportError as e:
 class EnhancedHybridSearchOptimized:
     """Enhanced Hybrid Search with optimized algorithms"""
 
-    def __init__(
-        self, vector_search_client=None, kg_manager=None, web_search_client=None
-    ):
+    def __init__(self, vector_search_client=None, kg_manager=None, web_search_client=None):
         """
         Initialize Enhanced Hybrid Search with optimized algorithms
 
@@ -44,10 +42,7 @@ class EnhancedHybridSearchOptimized:
         # Check availability
         self.vs_available = self.vector_search_client.is_available()
         self.kg_available = self.kg_manager.is_available()
-        self.web_available = (
-            hasattr(self.web_search_client, "available")
-            and self.web_search_client.available
-        )
+        self.web_available = hasattr(self.web_search_client, "available") and self.web_search_client.available
 
         # Source weights - optimized based on evaluation
         self.source_weights = {
@@ -158,20 +153,14 @@ class EnhancedHybridSearchOptimized:
         if category_scores:
             max_score = max(category_scores.values())
             if max_score > 0:
-                best_categories = [
-                    c for c, s in category_scores.items() if s == max_score
-                ]
+                best_categories = [c for c, s in category_scores.items() if s == max_score]
                 best_category = best_categories[0]  # Take the first if multiple match
-                return self.category_weights.get(
-                    best_category, self.default_category_weights
-                )
+                return self.category_weights.get(best_category, self.default_category_weights)
 
         # Default weights if no category matches
         return self.default_category_weights
 
-    def search(
-        self, query: str, top_k: int = 5, include_web: bool = True
-    ) -> Dict[str, Any]:
+    def search(self, query: str, top_k: int = 5, include_web: bool = True) -> Dict[str, Any]:
         """
         Perform enhanced hybrid search with optimized algorithms
 
@@ -194,9 +183,7 @@ class EnhancedHybridSearchOptimized:
         # Vector Search
         if self.vs_available:
             try:
-                vs_results = self.vector_search_client.search(
-                    preprocessed_query, top_k=top_k
-                )
+                vs_results = self.vector_search_client.search(preprocessed_query, top_k=top_k)
                 results["vector_search"] = vs_results
             except Exception as e:
                 logger.error(f"Error in Vector Search: {str(e)}")
@@ -234,9 +221,7 @@ class EnhancedHybridSearchOptimized:
         # Web Search
         if include_web and self.web_available:
             try:
-                web_results = self.web_search_client.search(
-                    preprocessed_query, num_results=top_k
-                )
+                web_results = self.web_search_client.search(preprocessed_query, num_results=top_k)
 
                 # Convert to common format
                 web_formatted = []
@@ -340,17 +325,13 @@ class EnhancedHybridSearchOptimized:
         # Add Knowledge Graph results
         for result in results.get("knowledge_graph", []):
             result["source"] = "knowledge_graph"
-            result["score"] = (
-                0.8 * source_weights["knowledge_graph"]
-            )  # Base score for KG results
+            result["score"] = 0.8 * source_weights["knowledge_graph"]  # Base score for KG results
             all_results.append(result)
 
         # Add Web Search results
         for result in results.get("web_search", []):
             result["source"] = "web_search"
-            result["score"] = (
-                0.7 * source_weights["web_search"]
-            )  # Base score for web results
+            result["score"] = 0.7 * source_weights["web_search"]  # Base score for web results
             all_results.append(result)
 
         # Calculate relevance to query
@@ -359,30 +340,22 @@ class EnhancedHybridSearchOptimized:
             result["relevance"] = relevance
 
             # Apply recency boost for web results
-            if result["source"] == "web_search" and "timestamp" in result.get(
-                "metadata", {}
-            ):
-                recency_boost = self.calculate_recency_boost(
-                    result["metadata"]["timestamp"]
-                )
+            if result["source"] == "web_search" and "timestamp" in result.get("metadata", {}):
+                recency_boost = self.calculate_recency_boost(result["metadata"]["timestamp"])
                 result["recency_boost"] = recency_boost
                 result["final_score"] = result["score"] * relevance * recency_boost
             else:
                 result["final_score"] = result["score"] * relevance
 
         # Sort by final score
-        ranked_results = sorted(
-            all_results, key=lambda x: x.get("final_score", 0), reverse=True
-        )
+        ranked_results = sorted(all_results, key=lambda x: x.get("final_score", 0), reverse=True)
 
         # Ensure diversity
         diverse_results = self.ensure_diversity(ranked_results)
 
         return diverse_results
 
-    def calculate_relevance_optimized(
-        self, result: Dict[str, Any], query: str
-    ) -> float:
+    def calculate_relevance_optimized(self, result: Dict[str, Any], query: str) -> float:
         """
         Calculate relevance score with optimized algorithm
 
@@ -418,28 +391,17 @@ class EnhancedHybridSearchOptimized:
         metadata = result.get("metadata", {})
         metadata_match = 0.0
 
-        if "title" in metadata and any(
-            term in metadata["title"].lower() for term in query_terms
-        ):
+        if "title" in metadata and any(term in metadata["title"].lower() for term in query_terms):
             metadata_match += 0.3
 
-        if "name" in metadata and any(
-            term in metadata["name"].lower() for term in query_terms
-        ):
+        if "name" in metadata and any(term in metadata["name"].lower() for term in query_terms):
             metadata_match += 0.3
 
-        if "type" in metadata and any(
-            term in metadata["type"].lower() for term in query_terms
-        ):
+        if "type" in metadata and any(term in metadata["type"].lower() for term in query_terms):
             metadata_match += 0.2
 
         # Combine scores with weights
-        relevance = (
-            0.4 * term_frequency
-            + 0.3 * exact_match
-            + 0.2 * proximity_score
-            + 0.1 * metadata_match
-        )
+        relevance = 0.4 * term_frequency + 0.3 * exact_match + 0.2 * proximity_score + 0.1 * metadata_match
 
         return min(relevance, 1.0)  # Cap at 1.0
 
@@ -460,9 +422,7 @@ class EnhancedHybridSearchOptimized:
         # Find positions of all query terms
         positions = {}
         for term in query_terms:
-            term_positions = [
-                m.start() for m in re.finditer(r"\b" + re.escape(term) + r"\b", content)
-            ]
+            term_positions = [m.start() for m in re.finditer(r"\b" + re.escape(term) + r"\b", content)]
             if term_positions:
                 positions[term] = term_positions
 
@@ -598,9 +558,7 @@ class EnhancedHybridSearchOptimized:
                 name = result.get("metadata", {}).get("name", "")
                 entity_type = result.get("metadata", {}).get("type", "")
 
-                formatted.append(
-                    f"**{name}** ({entity_type})\n{content}\nSource: Knowledge Graph"
-                )
+                formatted.append(f"**{name}** ({entity_type})\n{content}\nSource: Knowledge Graph")
 
             else:  # vector_search
                 doc_id = result.get("metadata", {}).get("doc_id", "")

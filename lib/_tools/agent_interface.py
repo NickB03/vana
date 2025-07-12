@@ -78,9 +78,7 @@ class AgentInterface(ABC):
         communication_service = get_communication_service(self.base_url)
 
         # Register the agent endpoint with task handler
-        self.rpc_handler = communication_service.register_agent_endpoint(
-            app, self.agent_name, self.execute_task
-        )
+        self.rpc_handler = communication_service.register_agent_endpoint(app, self.agent_name, self.execute_task)
 
         # Register additional methods
         self.rpc_handler.register_method("get_capabilities", self.get_capabilities)
@@ -141,9 +139,7 @@ class AgentInterface(ABC):
         """
         logger.info(f"🧭 {self.agent_name} routing task: {task}")
 
-        return await self.router.route_task(
-            task, context, strategy, required_capabilities=required_capabilities
-        )
+        return await self.router.route_task(task, context, strategy, required_capabilities=required_capabilities)
 
     async def broadcast_task(
         self, task: str, context: str = "", agent_filter: Optional[List[str]] = None
@@ -223,20 +219,14 @@ class SimpleAgentInterface(AgentInterface):
             if self.task_handler:
                 # Use custom task handler
                 if asyncio.iscoroutinefunction(self.task_handler):
-                    result = await self.task_handler(
-                        task, context, agent_id, priority, timeout_seconds
-                    )
+                    result = await self.task_handler(task, context, agent_id, priority, timeout_seconds)
                 else:
-                    result = self.task_handler(
-                        task, context, agent_id, priority, timeout_seconds
-                    )
+                    result = self.task_handler(task, context, agent_id, priority, timeout_seconds)
 
                 if isinstance(result, AgentTaskResponse):
                     return result
                 else:
-                    return AgentTaskResponse(
-                        status="completed", output=str(result), agent_id=self.agent_name
-                    )
+                    return AgentTaskResponse(status="completed", output=str(result), agent_id=self.agent_name)
             else:
                 # Default task handler
                 return AgentTaskResponse(
@@ -248,9 +238,7 @@ class SimpleAgentInterface(AgentInterface):
 
         except Exception as e:
             logger.error(f"❌ Task execution failed in {self.agent_name}: {e}")
-            return AgentTaskResponse(
-                status="error", agent_id=self.agent_name, error=str(e)
-            )
+            return AgentTaskResponse(status="error", agent_id=self.agent_name, error=str(e))
 
     async def get_capabilities(self) -> Dict[str, Any]:
         """Get agent capabilities."""
@@ -260,9 +248,7 @@ class SimpleAgentInterface(AgentInterface):
 class OrchestrationAgentInterface(AgentInterface):
     """Specialized interface for orchestration agents like VANA."""
 
-    def __init__(
-        self, agent_name: str = "vana", base_url: str = "http://localhost:8000"
-    ):
+    def __init__(self, agent_name: str = "vana", base_url: str = "http://localhost:8000"):
         """Initialize orchestration agent interface."""
         super().__init__(agent_name, base_url)
         self.delegation_history: List[Dict[str, Any]] = []
@@ -289,9 +275,7 @@ class OrchestrationAgentInterface(AgentInterface):
                     self.delegation_history.append(
                         {
                             "task": task,
-                            "delegated_to": routing_result.get("routing_info", {}).get(
-                                "selected_agent"
-                            ),
+                            "delegated_to": routing_result.get("routing_info", {}).get("selected_agent"),
                             "timestamp": asyncio.get_event_loop().time(),
                             "success": True,
                         }
@@ -312,9 +296,7 @@ class OrchestrationAgentInterface(AgentInterface):
 
         except Exception as e:
             logger.error(f"❌ Orchestration failed in {self.agent_name}: {e}")
-            return AgentTaskResponse(
-                status="error", agent_id=self.agent_name, error=str(e)
-            )
+            return AgentTaskResponse(status="error", agent_id=self.agent_name, error=str(e))
 
     async def get_capabilities(self) -> Dict[str, Any]:
         """Get orchestration agent capabilities."""
@@ -339,15 +321,11 @@ class OrchestrationAgentInterface(AgentInterface):
         task_lower = task.lower()
 
         # Delegate code-related tasks
-        if any(
-            keyword in task_lower for keyword in ["code", "execute", "run", "script"]
-        ):
+        if any(keyword in task_lower for keyword in ["code", "execute", "run", "script"]):
             return True
 
         # Delegate data analysis tasks
-        if any(
-            keyword in task_lower for keyword in ["analyze", "data", "chart", "graph"]
-        ):
+        if any(keyword in task_lower for keyword in ["analyze", "data", "chart", "graph"]):
             return True
 
         # Delegate search tasks
@@ -355,9 +333,7 @@ class OrchestrationAgentInterface(AgentInterface):
             return True
 
         # Handle coordination tasks locally
-        if any(
-            keyword in task_lower for keyword in ["coordinate", "manage", "orchestrate"]
-        ):
+        if any(keyword in task_lower for keyword in ["coordinate", "manage", "orchestrate"]):
             return False
 
         # Default to delegation for complex tasks

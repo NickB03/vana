@@ -3,6 +3,7 @@
 
 import os
 import sys
+
 from dotenv import load_dotenv
 
 # Add the project root to the Python path
@@ -16,15 +17,19 @@ if os.path.exists(dotenv_path):
 
 # Configure genai AFTER loading env
 import google.generativeai as genai
+
 api_key = os.getenv('GOOGLE_API_KEY')
 genai.configure(api_key=api_key)
+
+import asyncio
 
 # Test ADK Runner with proper message format
 from google.adk.runners import Runner
 from google.adk.sessions import InMemorySessionService
 from google.genai.types import Content, Part
+
 from agents.vana.team import root_agent
-import asyncio
+
 
 async def test_minimal():
     """Minimal test to reproduce the error"""

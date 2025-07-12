@@ -87,9 +87,7 @@ class MCPServerRegistry:
                     "GITHUB_PERSONAL_ACCESS_TOKEN",
                     "ghcr.io/github/github-mcp-server",
                 ],
-                env_vars={
-                    "GITHUB_PERSONAL_ACCESS_TOKEN": os.getenv("GITHUB_TOKEN", "")
-                },
+                env_vars={"GITHUB_PERSONAL_ACCESS_TOKEN": os.getenv("GITHUB_TOKEN", "")},
                 description="Complete GitHub workflow automation",
                 category="development",
                 priority=1,
@@ -153,9 +151,7 @@ class MCPServerRegistry:
                 command="npx",
                 args=["-y", "@mongodb-js/mongodb-mcp-server"],
                 env_vars={
-                    "MONGODB_CONNECTION_STRING": os.getenv(
-                        "MONGODB_CONNECTION_STRING", ""
-                    ),
+                    "MONGODB_CONNECTION_STRING": os.getenv("MONGODB_CONNECTION_STRING", ""),
                     "FASTMCP_LOG_LEVEL": "ERROR",
                 },
                 description="Database operations and management",
@@ -175,9 +171,7 @@ class MCPServerRegistry:
         """Get MCP server configuration by name"""
         return self.servers.get(name)
 
-    def list_servers(
-        self, category: Optional[str] = None, priority: Optional[int] = None
-    ) -> List[MCPServerConfig]:
+    def list_servers(self, category: Optional[str] = None, priority: Optional[int] = None) -> List[MCPServerConfig]:
         """List MCP servers with optional filtering"""
         servers = list(self.servers.values())
 
@@ -229,9 +223,7 @@ class MCPServerManager:
 
             elif config.server_type == MCPServerType.UVX:
                 # UVX handles installation automatically on first run
-                logger.info(
-                    f"UVX will handle installation for {server_name} on first run"
-                )
+                logger.info(f"UVX will handle installation for {server_name} on first run")
 
             return True
 

@@ -6,20 +6,21 @@ Following Google ADK best practices with proper agent hierarchy.
 
 import os
 import sys
+
 from dotenv import load_dotenv
 
 # Load environment variables
-project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
-dotenv_path = os.path.join(project_root, '.env.local')
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+dotenv_path = os.path.join(project_root, ".env.local")
 if os.path.exists(dotenv_path):
     load_dotenv(dotenv_path=dotenv_path)
 
 from google.adk.agents import LlmAgent
 
-# Import essential tools for chat layer
-from lib._tools import adk_transfer_to_agent
-from lib._tools import adk_analyze_task
 from lib._shared_libraries.adk_memory_service import get_adk_memory_service
+
+# Import essential tools for chat layer
+from lib._tools import adk_analyze_task, adk_transfer_to_agent
 from lib.logging_config import get_logger
 
 logger = get_logger("vana.agents.agentic")
@@ -27,14 +28,14 @@ logger = get_logger("vana.agents.agentic")
 # Import all specialist agents (activating dormant infrastructure)
 try:
     from agents.data_science.specialist import data_science_specialist
+
+    # Import the hierarchical task manager
+    from agents.orchestration.hierarchical_task_manager import create_hierarchical_task_manager
     from agents.specialists.architecture_specialist import architecture_specialist
     from agents.specialists.devops_specialist import devops_specialist
     from agents.specialists.qa_specialist import qa_specialist
     from agents.specialists.ui_specialist import ui_specialist
-    
-    # Import the hierarchical task manager
-    from agents.orchestration.hierarchical_task_manager import create_hierarchical_task_manager
-    
+
     logger.info("✅ All specialist agents and orchestration components imported successfully")
 except ImportError as e:
     logger.error(f"Failed to import specialist agents: {e}")
@@ -49,7 +50,7 @@ master_orchestrator.sub_agents = [
     architecture_specialist,
     devops_specialist,
     qa_specialist,
-    ui_specialist
+    ui_specialist,
 ]
 
 # Create the VANA Chat Agent (minimal tools, user-facing)
@@ -74,7 +75,7 @@ You have minimal tools - your strength is in understanding users and routing the
         adk_transfer_to_agent,  # For delegating to orchestrator
         adk_analyze_task,  # For understanding task complexity
     ],
-    sub_agents=[master_orchestrator]  # Hierarchical structure
+    sub_agents=[master_orchestrator],  # Hierarchical structure
 )
 
 # Export the new root agent

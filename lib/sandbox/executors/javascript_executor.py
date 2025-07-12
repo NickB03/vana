@@ -330,18 +330,14 @@ class SafeModuleLoader {
 module.exports = SafeModuleLoader;
 """
 
-    async def _run_container(
-        self, container, code: str, execution_id: str
-    ) -> ExecutorResult:
+    async def _run_container(self, container, code: str, execution_id: str) -> ExecutorResult:
         """Enhanced container execution with JavaScript-specific handling."""
         try:
             # Start container
             container.start()
 
             # Wait for container to complete with timeout
-            timeout = self.security_manager.get_resource_limits().get(
-                "max_execution_time", 30
-            )
+            timeout = self.security_manager.get_resource_limits().get("max_execution_time", 30)
 
             try:
                 exit_code = container.wait(timeout=timeout)
@@ -370,8 +366,7 @@ module.exports = SafeModuleLoader;
                     if result_data:
                         return ExecutorResult(
                             output=result_data.get("output", output),
-                            error=result_data.get("error")
-                            or (error_output if error_output else None),
+                            error=result_data.get("error") or (error_output if error_output else None),
                             exit_code=result_data.get("exit_code", exit_code),
                             execution_time=result_data.get("execution_time", 0),
                             container_id=container.id,

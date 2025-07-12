@@ -54,9 +54,7 @@ Retrieved information:
 # Create the memory tool for use in ADK agents
 # Create a function tool with the correct signature for ADK 0.3.0
 search_memory_tool.__name__ = "search_memory"
-search_memory_tool.__doc__ = (
-    "Search the agent's memory for relevant information about the project"
-)
+search_memory_tool.__doc__ = "Search the agent's memory for relevant information about the project"
 memory_tool = FunctionTool(search_memory_tool)
 
 

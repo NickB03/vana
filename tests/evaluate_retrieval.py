@@ -168,9 +168,7 @@ METRICS = {
 }
 
 
-def calculate_precision(
-    results: List[Dict[str, Any]], expected_keywords: List[str]
-) -> float:
+def calculate_precision(results: List[Dict[str, Any]], expected_keywords: List[str]) -> float:
     """
     Calculate precision of retrieval results
 
@@ -192,9 +190,7 @@ def calculate_precision(
         content = result.get("content", "")
 
         # Count as relevant if it contains at least one expected keyword
-        is_relevant = any(
-            keyword.lower() in content.lower() for keyword in expected_keywords
-        )
+        is_relevant = any(keyword.lower() in content.lower() for keyword in expected_keywords)
 
         if is_relevant:
             relevant_count += 1
@@ -202,9 +198,7 @@ def calculate_precision(
     return relevant_count / len(results)
 
 
-def calculate_keyword_coverage(
-    results: List[Dict[str, Any]], expected_keywords: List[str]
-) -> float:
+def calculate_keyword_coverage(results: List[Dict[str, Any]], expected_keywords: List[str]) -> float:
     """
     Calculate keyword coverage of retrieval results
 
@@ -224,9 +218,7 @@ def calculate_keyword_coverage(
     all_content = " ".join([result.get("content", "") for result in results]).lower()
 
     # Count keywords found
-    keywords_found = sum(
-        1 for keyword in expected_keywords if keyword.lower() in all_content
-    )
+    keywords_found = sum(1 for keyword in expected_keywords if keyword.lower() in all_content)
 
     return keywords_found / len(expected_keywords)
 
@@ -250,9 +242,7 @@ def calculate_f1_score(precision: float, recall: float) -> float:
     return 2 * (precision * recall) / (precision + recall)
 
 
-def calculate_relevance_scores(
-    results: List[Dict[str, Any]], expected_keywords: List[str]
-) -> List[float]:
+def calculate_relevance_scores(results: List[Dict[str, Any]], expected_keywords: List[str]) -> List[float]:
     """
     Calculate relevance score for each result
 
@@ -272,9 +262,7 @@ def calculate_relevance_scores(
         content = result.get("content", "").lower()
 
         # Count how many expected keywords are found in this result
-        found_keywords = sum(
-            1 for keyword in expected_keywords if keyword.lower() in content
-        )
+        found_keywords = sum(1 for keyword in expected_keywords if keyword.lower() in content)
 
         # Calculate relevance score
         relevance = found_keywords / len(expected_keywords)
@@ -418,9 +406,7 @@ def evaluate_vector_search():
     for difficulty in difficulties:
         difficulty_results = [r for r in results if r["difficulty"] == difficulty]
         if difficulty_results:
-            diff_avg_f1 = sum(r["f1"] for r in difficulty_results) / len(
-                difficulty_results
-            )
+            diff_avg_f1 = sum(r["f1"] for r in difficulty_results) / len(difficulty_results)
             logger.info(f"  {difficulty}: F1 = {diff_avg_f1:.2f}")
 
     # Save results to file

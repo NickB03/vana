@@ -9,35 +9,28 @@ This test shows how to properly test VANA agents with:
 """
 
 import asyncio
+from typing import Any, Dict
+
 import httpx
-from typing import Dict, Any
 
 
 class WorkingVANATestClient:
     """Properly working VANA test client"""
 
-    def __init__(
-        self, base_url: str = "https://vana-dev-960076421399.us-central1.run.app"
-    ):
+    def __init__(self, base_url: str = "https://vana-dev-960076421399.us-central1.run.app"):
         self.base_url = base_url.rstrip("/")
         self.session_id = None
 
-    async def create_session(
-        self, user_id: str = "test_user", app_name: str = "vana"
-    ) -> str:
+    async def create_session(self, user_id: str = "test_user", app_name: str = "vana") -> str:
         """Create a new session and return session ID"""
         async with httpx.AsyncClient(timeout=30) as client:
-            response = await client.post(
-                f"{self.base_url}/apps/{app_name}/users/{user_id}/sessions", json={}
-            )
+            response = await client.post(f"{self.base_url}/apps/{app_name}/users/{user_id}/sessions", json={})
             response.raise_for_status()
             session_data = response.json()
             self.session_id = session_data["id"]
             return self.session_id
 
-    async def query_agent(
-        self, message: str, app_name: str = "vana", user_id: str = "test_user"
-    ) -> Dict[str, Any]:
+    async def query_agent(self, message: str, app_name: str = "vana", user_id: str = "test_user") -> Dict[str, Any]:
         """Send query to agent and return structured response"""
         if not self.session_id:
             await self.create_session(user_id, app_name)

@@ -10,9 +10,7 @@ import logging
 import sys
 
 # Set up logging
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s"
-)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger(__name__)
 
 # Import the direct test script
@@ -101,14 +99,10 @@ def main():
     total_count = len(results)
     success_rate = success_count / total_count * 100
 
-    logger.info(
-        f"\nSummary: {success_count}/{total_count} queries successful ({success_rate:.1f}%)"
-    )
+    logger.info(f"\nSummary: {success_count}/{total_count} queries successful ({success_rate:.1f}%)")
 
     if success_rate < 50:
-        logger.error(
-            "❌ Vector Search testing failed: Too many queries returned no results"
-        )
+        logger.error("❌ Vector Search testing failed: Too many queries returned no results")
         return 1
     elif success_rate < 80:
         logger.warning("⚠️ Vector Search testing partial success: Some queries failed")

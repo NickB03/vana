@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """Test web search through the API to see actual function calls"""
 
-import requests
 import json
+
+import requests
 
 # Test the /run endpoint
 url = "http://localhost:8000/run"

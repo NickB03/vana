@@ -70,9 +70,7 @@ class CircuitBreaker:
 
         logger.info(f"Circuit breaker '{name}' initialized")
 
-    def add_state_change_listener(
-        self, listener: Callable[[str, CircuitState, CircuitState], None]
-    ) -> None:
+    def add_state_change_listener(self, listener: Callable[[str, CircuitState, CircuitState], None]) -> None:
         """
         Add a listener for state changes.
 
@@ -81,9 +79,7 @@ class CircuitBreaker:
         """
         self.state_change_listeners.append(listener)
 
-    def _notify_state_change(
-        self, old_state: CircuitState, new_state: CircuitState
-    ) -> None:
+    def _notify_state_change(self, old_state: CircuitState, new_state: CircuitState) -> None:
         """
         Notify listeners of a state change.
 
@@ -95,9 +91,7 @@ class CircuitBreaker:
             try:
                 listener(self.name, old_state, new_state)
             except Exception as e:
-                logger.error(
-                    f"Error in circuit breaker state change listener: {str(e)}"
-                )
+                logger.error(f"Error in circuit breaker state change listener: {str(e)}")
 
     def allow_request(self) -> bool:
         """
@@ -117,9 +111,7 @@ class CircuitBreaker:
                     old_state = self.state
                     self.state = CircuitState.HALF_OPEN
                     self.half_open_calls = 0
-                    logger.info(
-                        f"Circuit breaker '{self.name}' transitioning from OPEN to HALF_OPEN"
-                    )
+                    logger.info(f"Circuit breaker '{self.name}' transitioning from OPEN to HALF_OPEN")
                     self._notify_state_change(old_state, self.state)
                     return True
                 return False
@@ -142,9 +134,7 @@ class CircuitBreaker:
                 self.state = CircuitState.CLOSED
                 self.failure_count = 0
                 self.half_open_calls = 0
-                logger.info(
-                    f"Circuit breaker '{self.name}' transitioning from HALF_OPEN to CLOSED"
-                )
+                logger.info(f"Circuit breaker '{self.name}' transitioning from HALF_OPEN to CLOSED")
                 self._notify_state_change(old_state, self.state)
             elif self.state == CircuitState.CLOSED:
                 # Reset failure count on success
@@ -160,9 +150,7 @@ class CircuitBreaker:
                 # If failed in half-open state, open the circuit again
                 old_state = self.state
                 self.state = CircuitState.OPEN
-                logger.warning(
-                    f"Circuit breaker '{self.name}' transitioning from HALF_OPEN to OPEN"
-                )
+                logger.warning(f"Circuit breaker '{self.name}' transitioning from HALF_OPEN to OPEN")
                 self._notify_state_change(old_state, self.state)
             elif self.state == CircuitState.CLOSED:
                 # Increment failure count
@@ -220,9 +208,7 @@ class CircuitBreaker:
         @functools.wraps(func)
         def wrapper(*args: Any, **kwargs: Any) -> T:
             if not self.allow_request():
-                logger.warning(
-                    f"Circuit breaker '{self.name}' is OPEN, request rejected"
-                )
+                logger.warning(f"Circuit breaker '{self.name}' is OPEN, request rejected")
                 raise CircuitBreakerOpenError(f"Circuit breaker '{self.name}' is open")
 
             try:
@@ -349,9 +335,7 @@ class CircuitBreakerRegistry:
     state_change_listeners = []
 
     @classmethod
-    def add_state_change_listener(
-        cls, listener: Callable[[str, CircuitState, CircuitState], None]
-    ) -> None:
+    def add_state_change_listener(cls, listener: Callable[[str, CircuitState, CircuitState], None]) -> None:
         """
         Add a listener for state changes in all circuit breakers.
 
@@ -361,9 +345,7 @@ class CircuitBreakerRegistry:
         cls.state_change_listeners.append(listener)
 
     @classmethod
-    def _log_state_change(
-        cls, name: str, old_state: CircuitState, new_state: CircuitState
-    ) -> None:
+    def _log_state_change(cls, name: str, old_state: CircuitState, new_state: CircuitState) -> None:
         """
         Log circuit breaker state changes.
 
@@ -372,9 +354,7 @@ class CircuitBreakerRegistry:
             old_state: Previous state
             new_state: New state
         """
-        logger.info(
-            f"Circuit breaker '{name}' state changed from {old_state.value} to {new_state.value}"
-        )
+        logger.info(f"Circuit breaker '{name}' state changed from {old_state.value} to {new_state.value}")
 
 
 # Create a global registry

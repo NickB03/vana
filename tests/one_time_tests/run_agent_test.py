@@ -1,6 +1,6 @@
 import os
-import sys
 import site
+import sys
 
 # --- Environment Diagnostics ---
 print("--- Python Environment Diagnostics ---")

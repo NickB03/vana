@@ -14,11 +14,11 @@ This script tests:
 
 import asyncio
 import json
-import time
-import sys
 import os
+import sys
+import time
 from pathlib import Path
-from typing import Dict, Any
+from typing import Any, Dict
 
 # Add project root to path
 project_root = Path(__file__).parent.parent.parent
@@ -35,9 +35,7 @@ class DeploymentPipelineValidator:
 
     def __init__(self):
         self.project_root = project_root
-        self.baseline_manager = BaselineManager(
-            project_root / "tests" / "validation" / "performance_baselines.json"
-        )
+        self.baseline_manager = BaselineManager(project_root / "tests" / "validation" / "performance_baselines.json")
         self.results_dir = project_root / "tests" / "results" / "validation"
         self.results_dir.mkdir(parents=True, exist_ok=True)
 
@@ -112,9 +110,7 @@ class DeploymentPipelineValidator:
             validation_results["configuration_validation"] = config_results
 
             # Step 6: Generate Validation Summary
-            validation_results["validation_summary"] = (
-                self._generate_deployment_summary(validation_results)
-            )
+            validation_results["validation_summary"] = self._generate_deployment_summary(validation_results)
 
             logger.info("✅ Deployment pipeline validation completed!")
 
@@ -186,9 +182,7 @@ class DeploymentPipelineValidator:
                 }
 
             # Determine overall environment status
-            accessible_envs = sum(
-                1 for env in env_results["environments_tested"] if env["accessible"]
-            )
+            accessible_envs = sum(1 for env in env_results["environments_tested"] if env["accessible"])
             total_envs = len(env_results["environments_tested"])
 
             if accessible_envs == total_envs:
@@ -198,9 +192,7 @@ class DeploymentPipelineValidator:
             else:
                 env_results["overall_environment_status"] = "none_accessible"
 
-            logger.info(
-                f"   📊 Environment Status: {accessible_envs}/{total_envs} environments accessible"
-            )
+            logger.info(f"   📊 Environment Status: {accessible_envs}/{total_envs} environments accessible")
 
         except Exception as e:
             logger.error(f"   ❌ Environment validation failed: {str(e)}")
@@ -233,14 +225,10 @@ class DeploymentPipelineValidator:
                         "size": file_path.stat().st_size,
                         "modified": file_path.stat().st_mtime,
                     }
-                    logger.debug(
-                        f"   ✅ {config_file}: exists ({config_consistency[config_file]['size']} bytes)"
-                    )
+                    logger.debug(f"   ✅ {config_file}: exists ({config_consistency[config_file]['size']} bytes)")
                 else:
                     config_consistency[config_file] = {"exists": False}
-                    consistency_results["consistency_issues"].append(
-                        f"Missing config file: {config_file}"
-                    )
+                    consistency_results["consistency_issues"].append(f"Missing config file: {config_file}")
                     logger.warning(f"   ⚠️ {config_file}: missing")
 
             consistency_results["configuration_consistency"] = config_consistency
@@ -259,18 +247,14 @@ class DeploymentPipelineValidator:
                 }
 
                 if not dependency_consistency["lock_file_exists"]:
-                    consistency_results["consistency_issues"].append(
-                        "Missing poetry.lock file"
-                    )
+                    consistency_results["consistency_issues"].append("Missing poetry.lock file")
 
                 consistency_results["dependency_consistency"] = dependency_consistency
                 logger.debug(
                     f"   ✅ Dependencies: {dependency_consistency['dependencies_count']} main, {dependency_consistency['dev_dependencies_count']} dev"
                 )
             else:
-                consistency_results["consistency_issues"].append(
-                    "Missing pyproject.toml"
-                )
+                consistency_results["consistency_issues"].append("Missing pyproject.toml")
 
             # Check resource consistency
             logger.debug("💾 Checking resource consistency...")
@@ -286,9 +270,7 @@ class DeploymentPipelineValidator:
             prod_cpu = int(self.environments["prod"]["expected_resources"]["cpu"])
 
             if prod_cpu <= dev_cpu:
-                consistency_results["consistency_issues"].append(
-                    "Production CPU resources not properly scaled"
-                )
+                consistency_results["consistency_issues"].append("Production CPU resources not properly scaled")
                 resource_consistency["resource_scaling_valid"] = False
 
             consistency_results["resource_consistency"] = resource_consistency
@@ -297,14 +279,12 @@ class DeploymentPipelineValidator:
             total_checks = 3  # config, dependencies, resources
             passed_checks = 0
 
-            if len(config_consistency) > 0 and all(
-                c.get("exists", False) for c in config_consistency.values()
-            ):
+            if len(config_consistency) > 0 and all(c.get("exists", False) for c in config_consistency.values()):
                 passed_checks += 1
 
-            if "dependency_consistency" in consistency_results and consistency_results[
-                "dependency_consistency"
-            ].get("pyproject_toml_valid", False):
+            if "dependency_consistency" in consistency_results and consistency_results["dependency_consistency"].get(
+                "pyproject_toml_valid", False
+            ):
                 passed_checks += 1
 
             if resource_consistency.get("resource_scaling_valid", False):
@@ -312,13 +292,9 @@ class DeploymentPipelineValidator:
 
             consistency_results["consistency_score"] = passed_checks / total_checks
 
-            logger.info(
-                f"   📊 Consistency Score: {consistency_results['consistency_score']:.1%}"
-            )
+            logger.info(f"   📊 Consistency Score: {consistency_results['consistency_score']:.1%}")
             if consistency_results["consistency_issues"]:
-                logger.warning(
-                    f"   ⚠️ {len(consistency_results['consistency_issues'])} consistency issues found"
-                )
+                logger.warning(f"   ⚠️ {len(consistency_results['consistency_issues'])} consistency issues found")
 
         except Exception as e:
             logger.error(f"   ❌ Consistency validation failed: {str(e)}")
@@ -346,25 +322,16 @@ class DeploymentPipelineValidator:
                 # Simulate performance testing
                 perf_metrics = {
                     "response_time": 0.8
-                    + (
-                        0.2 if env_name == "prod" else 0
-                    ),  # Prod slightly slower due to more resources
-                    "throughput": 100
-                    - (
-                        10 if env_name == "prod" else 0
-                    ),  # Dev slightly faster for simple tests
-                    "memory_usage": 1024
-                    + (512 if env_name == "prod" else 0),  # Prod uses more memory
-                    "cpu_usage": 15
-                    + (5 if env_name == "prod" else 0),  # Prod uses more CPU
+                    + (0.2 if env_name == "prod" else 0),  # Prod slightly slower due to more resources
+                    "throughput": 100 - (10 if env_name == "prod" else 0),  # Dev slightly faster for simple tests
+                    "memory_usage": 1024 + (512 if env_name == "prod" else 0),  # Prod uses more memory
+                    "cpu_usage": 15 + (5 if env_name == "prod" else 0),  # Prod uses more CPU
                     "availability": 99.9,
                     "error_rate": 0.1,
                 }
 
                 env_performance[env_name] = perf_metrics
-                logger.debug(
-                    f"     Response time: {perf_metrics['response_time']:.3f}s"
-                )
+                logger.debug(f"     Response time: {perf_metrics['response_time']:.3f}s")
                 logger.debug(f"     Throughput: {perf_metrics['throughput']} req/s")
 
             performance_results["environment_performance"] = env_performance
@@ -383,9 +350,7 @@ class DeploymentPipelineValidator:
 
                     if dev_val > 0:
                         diff_percent = abs(prod_val - dev_val) / dev_val * 100
-                        consistency_score = max(
-                            0, 1 - (diff_percent / 50)
-                        )  # 50% difference = 0 consistency
+                        consistency_score = max(0, 1 - (diff_percent / 50))  # 50% difference = 0 consistency
                         consistency_scores.append(consistency_score)
 
                         comparison[metric] = {
@@ -402,14 +367,10 @@ class DeploymentPipelineValidator:
 
                 performance_results["performance_comparison"] = comparison
                 performance_results["performance_consistency"] = (
-                    sum(consistency_scores) / len(consistency_scores)
-                    if consistency_scores
-                    else 0
+                    sum(consistency_scores) / len(consistency_scores) if consistency_scores else 0
                 )
 
-                logger.info(
-                    f"   📊 Performance Consistency: {performance_results['performance_consistency']:.1%}"
-                )
+                logger.info(f"   📊 Performance Consistency: {performance_results['performance_consistency']:.1%}")
 
         except Exception as e:
             logger.error(f"   ❌ Performance validation failed: {str(e)}")
@@ -443,9 +404,7 @@ class DeploymentPipelineValidator:
                     files_status[file_name] = {
                         "exists": True,
                         "size": file_path.stat().st_size,
-                        "executable": os.access(file_path, os.X_OK)
-                        if file_name.endswith(".sh")
-                        else None,
+                        "executable": os.access(file_path, os.X_OK) if file_name.endswith(".sh") else None,
                     }
                     logger.debug(f"   ✅ {file_name}: exists")
                 else:
@@ -490,9 +449,7 @@ class DeploymentPipelineValidator:
                 for script_file in ["deploy_dev.sh", "deploy_prod.sh"]:
                     script_path = scripts_dir / script_file
                     if script_path.exists():
-                        deployment_scripts["script_permissions"][script_file] = (
-                            os.access(script_path, os.X_OK)
-                        )
+                        deployment_scripts["script_permissions"][script_file] = os.access(script_path, os.X_OK)
                         logger.debug(
                             f"   ✅ {script_file}: {'executable' if deployment_scripts['script_permissions'][script_file] else 'not executable'}"
                         )
@@ -501,13 +458,9 @@ class DeploymentPipelineValidator:
 
             # Determine overall pipeline status
             critical_files = ["Dockerfile"]
-            critical_files_present = all(
-                files_status.get(f, {}).get("exists", False) for f in critical_files
-            )
+            critical_files_present = all(files_status.get(f, {}).get("exists", False) for f in critical_files)
 
-            if critical_files_present and build_validation.get(
-                "dockerfile_valid", False
-            ):
+            if critical_files_present and build_validation.get("dockerfile_valid", False):
                 pipeline_results["pipeline_status"] = "functional"
             elif critical_files_present:
                 pipeline_results["pipeline_status"] = "partial"
@@ -552,9 +505,7 @@ class DeploymentPipelineValidator:
                     logger.debug(f"   ✅ {config_name} config: exists")
                 else:
                     env_configs[config_name] = {"exists": False}
-                    config_results["config_issues"].append(
-                        f"Missing {config_name} configuration"
-                    )
+                    config_results["config_issues"].append(f"Missing {config_name} configuration")
                     logger.debug(f"   ⚠️ {config_name} config: missing")
 
             config_results["environment_configs"] = env_configs
@@ -577,9 +528,7 @@ class DeploymentPipelineValidator:
 
             # Check for presence of secret files (they should exist but be ignored)
             secret_files = [".env.local", ".env.production"]
-            secret_files_present = any(
-                (self.project_root / f).exists() for f in secret_files
-            )
+            secret_files_present = any((self.project_root / f).exists() for f in secret_files)
             secret_management["secret_files_present"] = secret_files_present
 
             config_results["secret_management"] = secret_management
@@ -589,11 +538,7 @@ class DeploymentPipelineValidator:
 
             # Factor 1: Essential configs present
             essential_configs = ["pyproject", "production"]
-            essential_present = sum(
-                1
-                for c in essential_configs
-                if env_configs.get(c, {}).get("exists", False)
-            )
+            essential_present = sum(1 for c in essential_configs if env_configs.get(c, {}).get("exists", False))
             consistency_factors.append(essential_present / len(essential_configs))
 
             # Factor 2: Secret management
@@ -609,17 +554,11 @@ class DeploymentPipelineValidator:
             )
             consistency_factors.append(secret_score)
 
-            config_results["configuration_consistency"] = sum(
-                consistency_factors
-            ) / len(consistency_factors)
+            config_results["configuration_consistency"] = sum(consistency_factors) / len(consistency_factors)
 
-            logger.info(
-                f"   📊 Configuration Consistency: {config_results['configuration_consistency']:.1%}"
-            )
+            logger.info(f"   📊 Configuration Consistency: {config_results['configuration_consistency']:.1%}")
             if config_results["config_issues"]:
-                logger.warning(
-                    f"   ⚠️ {len(config_results['config_issues'])} configuration issues found"
-                )
+                logger.warning(f"   ⚠️ {len(config_results['config_issues'])} configuration issues found")
 
         except Exception as e:
             logger.error(f"   ❌ Configuration validation failed: {str(e)}")
@@ -627,9 +566,7 @@ class DeploymentPipelineValidator:
 
         return config_results
 
-    def _generate_deployment_summary(
-        self, validation_results: Dict[str, Any]
-    ) -> Dict[str, Any]:
+    def _generate_deployment_summary(self, validation_results: Dict[str, Any]) -> Dict[str, Any]:
         """Generate comprehensive deployment validation summary."""
         summary = {
             "overall_status": "unknown",
@@ -649,9 +586,7 @@ class DeploymentPipelineValidator:
                 env_val = validation_results["environment_validation"]
                 if env_val.get("overall_environment_status") == "all_accessible":
                     env_score = 1.0
-                elif (
-                    env_val.get("overall_environment_status") == "partially_accessible"
-                ):
+                elif env_val.get("overall_environment_status") == "partially_accessible":
                     env_score = 0.5
                 else:
                     env_score = 0.0
@@ -663,9 +598,7 @@ class DeploymentPipelineValidator:
                 consistency = validation_results["deployment_consistency"]
                 consistency_score = consistency.get("consistency_score", 0.0)
                 scores.append(consistency_score)
-                summary["key_metrics"]["deployment_consistency"] = (
-                    f"{consistency_score:.1%}"
-                )
+                summary["key_metrics"]["deployment_consistency"] = f"{consistency_score:.1%}"
 
             # Performance consistency score
             if "performance_validation" in validation_results:
@@ -684,18 +617,14 @@ class DeploymentPipelineValidator:
                 else:
                     pipeline_score = 0.3
                 scores.append(pipeline_score)
-                summary["key_metrics"]["pipeline_functionality"] = (
-                    f"{pipeline_score:.1%}"
-                )
+                summary["key_metrics"]["pipeline_functionality"] = f"{pipeline_score:.1%}"
 
             # Configuration management score
             if "configuration_validation" in validation_results:
                 config_val = validation_results["configuration_validation"]
                 config_score = config_val.get("configuration_consistency", 0.0)
                 scores.append(config_score)
-                summary["key_metrics"]["configuration_management"] = (
-                    f"{config_score:.1%}"
-                )
+                summary["key_metrics"]["configuration_management"] = f"{config_score:.1%}"
 
             # Calculate overall deployment score
             if scores:
@@ -713,39 +642,29 @@ class DeploymentPipelineValidator:
 
             # Identify critical issues
             if "deployment_consistency" in validation_results:
-                consistency_issues = validation_results["deployment_consistency"].get(
-                    "consistency_issues", []
-                )
+                consistency_issues = validation_results["deployment_consistency"].get("consistency_issues", [])
                 for issue in consistency_issues:
                     if "Missing" in issue or "poetry.lock" in issue:
                         summary["critical_issues"].append(issue)
 
             if "configuration_validation" in validation_results:
-                config_issues = validation_results["configuration_validation"].get(
-                    "config_issues", []
-                )
+                config_issues = validation_results["configuration_validation"].get("config_issues", [])
                 for issue in config_issues:
                     if "production" in issue.lower():
                         summary["critical_issues"].append(issue)
 
             # Generate recommendations
             if summary["deployment_score"] < 0.95:
-                summary["recommendations"].append(
-                    "Address deployment pipeline issues before production deployment"
-                )
+                summary["recommendations"].append("Address deployment pipeline issues before production deployment")
 
             if summary["critical_issues"]:
-                summary["recommendations"].append(
-                    "Resolve critical configuration and consistency issues"
-                )
+                summary["recommendations"].append("Resolve critical configuration and consistency issues")
 
             # Environment readiness assessment
             for env_name in ["dev", "prod"]:
                 if "environment_validation" in validation_results:
                     env_status = (
-                        validation_results["environment_validation"]
-                        .get("environment_status", {})
-                        .get(env_name, {})
+                        validation_results["environment_validation"].get("environment_status", {}).get(env_name, {})
                     )
                     readiness_score = 0.0
 
@@ -778,9 +697,7 @@ class DeploymentPipelineValidator:
 
     async def _save_validation_results(self, results: Dict[str, Any]):
         """Save deployment validation results to file."""
-        results_file = (
-            self.results_dir / f"deployment_pipeline_validation_{int(time.time())}.json"
-        )
+        results_file = self.results_dir / f"deployment_pipeline_validation_{int(time.time())}.json"
 
         with open(results_file, "w") as f:
             json.dump(results, f, indent=2)

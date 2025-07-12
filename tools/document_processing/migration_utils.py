@@ -17,10 +17,7 @@ from dataclasses import asdict, dataclass
 from datetime import datetime
 from typing import Any, Callable, Dict, List, Optional
 
-from tools.document_processing.adk_document_processor import (
-    ADKDocumentMigrator,
-    ADKDocumentProcessor,
-)
+from tools.document_processing.adk_document_processor import ADKDocumentMigrator, ADKDocumentProcessor
 
 # Import legacy and new processors
 from tools.document_processing.document_processor import DocumentProcessor
@@ -87,9 +84,7 @@ class LegacyDocumentExtractor:
             logger.info(f"Extracting document with legacy processor: {file_path}")
 
             # Process document with legacy processor
-            legacy_document = self.legacy_processor.process_document(
-                file_path=file_path
-            )
+            legacy_document = self.legacy_processor.process_document(file_path=file_path)
 
             # Log extraction
             extraction_record = {
@@ -145,9 +140,7 @@ class LegacyDocumentExtractor:
             extracted_documents.append(document)
 
         successful = sum(1 for doc in extracted_documents if doc.get("text"))
-        logger.info(
-            f"Legacy extraction completed: {successful}/{len(file_paths)} successful"
-        )
+        logger.info(f"Legacy extraction completed: {successful}/{len(file_paths)} successful")
 
         return extracted_documents
 
@@ -163,9 +156,7 @@ class DocumentFormatConverter:
         """Initialize format converter"""
         self.conversion_log = []
 
-    def convert_legacy_to_adk_metadata(
-        self, legacy_metadata: Dict[str, Any]
-    ) -> Dict[str, Any]:
+    def convert_legacy_to_adk_metadata(self, legacy_metadata: Dict[str, Any]) -> Dict[str, Any]:
         """
         Convert legacy metadata format to ADK format
 
@@ -224,9 +215,7 @@ class DocumentFormatConverter:
                 "conversion_error": str(e),
             }
 
-    def convert_legacy_chunks_to_adk(
-        self, legacy_chunks: List[Dict[str, Any]]
-    ) -> List[Dict[str, Any]]:
+    def convert_legacy_chunks_to_adk(self, legacy_chunks: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """
         Convert legacy chunks format to ADK format
 
@@ -245,9 +234,7 @@ class DocumentFormatConverter:
                     "text": chunk.get("text", ""),
                     "metadata": {
                         "source": chunk.get("metadata", {}).get("source", ""),
-                        "section_path": chunk.get("metadata", {}).get(
-                            "section_path", ""
-                        ),
+                        "section_path": chunk.get("metadata", {}).get("section_path", ""),
                         "heading": chunk.get("metadata", {}).get("heading", ""),
                         "token_count": chunk.get("metadata", {}).get("token_count", 0),
                         "chunk_index": i,
@@ -269,9 +256,7 @@ class DocumentFormatConverter:
             logger.error(f"Error converting chunks: {str(e)}")
             return []
 
-    def convert_legacy_document_to_adk(
-        self, legacy_document: Dict[str, Any]
-    ) -> Dict[str, Any]:
+    def convert_legacy_document_to_adk(self, legacy_document: Dict[str, Any]) -> Dict[str, Any]:
         """
         Convert complete legacy document to ADK format
 
@@ -286,12 +271,8 @@ class DocumentFormatConverter:
                 "document_id": legacy_document.get("doc_id"),
                 "title": legacy_document.get("title"),
                 "content": legacy_document.get("text", ""),
-                "metadata": self.convert_legacy_to_adk_metadata(
-                    legacy_document.get("metadata", {})
-                ),
-                "chunks": self.convert_legacy_chunks_to_adk(
-                    legacy_document.get("chunks", [])
-                ),
+                "metadata": self.convert_legacy_to_adk_metadata(legacy_document.get("metadata", {})),
+                "chunks": self.convert_legacy_chunks_to_adk(legacy_document.get("chunks", [])),
                 "conversion_timestamp": datetime.now().isoformat(),
             }
 
@@ -378,18 +359,10 @@ class MigrationProgressTracker:
 
         # Update counters
         self.processed_documents = len(
-            [
-                m
-                for m in self.document_mappings
-                if m.migration_status in ["completed", "failed"]
-            ]
+            [m for m in self.document_mappings if m.migration_status in ["completed", "failed"]]
         )
-        self.successful_migrations = len(
-            [m for m in self.document_mappings if m.migration_status == "completed"]
-        )
-        self.failed_migrations = len(
-            [m for m in self.document_mappings if m.migration_status == "failed"]
-        )
+        self.successful_migrations = len([m for m in self.document_mappings if m.migration_status == "completed"])
+        self.failed_migrations = len([m for m in self.document_mappings if m.migration_status == "failed"])
 
         # Call progress callbacks
         progress_info = self.get_progress_info()
@@ -409,19 +382,14 @@ class MigrationProgressTracker:
             "successful_migrations": self.successful_migrations,
             "failed_migrations": self.failed_migrations,
             "progress_percentage": (
-                (self.processed_documents / self.total_documents) * 100
-                if self.total_documents > 0
-                else 0
+                (self.processed_documents / self.total_documents) * 100 if self.total_documents > 0 else 0
             ),
             "success_rate": (
-                (self.successful_migrations / self.processed_documents) * 100
-                if self.processed_documents > 0
-                else 0
+                (self.successful_migrations / self.processed_documents) * 100 if self.processed_documents > 0 else 0
             ),
             "elapsed_time_seconds": elapsed_time,
             "estimated_remaining_seconds": (
-                (elapsed_time / self.processed_documents)
-                * (self.total_documents - self.processed_documents)
+                (elapsed_time / self.processed_documents) * (self.total_documents - self.processed_documents)
                 if self.processed_documents > 0
                 else 0
             ),
@@ -444,9 +412,7 @@ class MigrationProgressTracker:
         try:
             report = {
                 "migration_summary": self.get_progress_info(),
-                "document_mappings": [
-                    asdict(mapping) for mapping in self.document_mappings
-                ],
+                "document_mappings": [asdict(mapping) for mapping in self.document_mappings],
                 "export_timestamp": datetime.now().isoformat(),
             }
 
@@ -510,15 +476,11 @@ class ComprehensiveMigrationManager:
 
         self.is_migrating = True
         migration_start = datetime.now()
-        self.current_migration_id = (
-            f"migration_{migration_start.strftime('%Y%m%d_%H%M%S')}"
-        )
+        self.current_migration_id = f"migration_{migration_start.strftime('%Y%m%d_%H%M%S')}"
 
         try:
             # Get list of files to migrate
-            file_paths = self.adk_processor.process_directory(
-                source_directory, file_extensions, recursive=True
-            )
+            file_paths = self.adk_processor.process_directory(source_directory, file_extensions, recursive=True)
 
             if not file_paths:
                 return {
@@ -527,9 +489,7 @@ class ComprehensiveMigrationManager:
                     "migration_id": self.current_migration_id,
                 }
 
-            logger.info(
-                f"Starting migration of {len(file_paths)} files from {source_directory}"
-            )
+            logger.info(f"Starting migration of {len(file_paths)} files from {source_directory}")
 
             # Initialize progress tracker
             progress_tracker = MigrationProgressTracker(len(file_paths))
@@ -542,9 +502,7 @@ class ComprehensiveMigrationManager:
 
             async def migrate_single_file(file_path: str) -> DocumentMapping:
                 async with semaphore:
-                    return await self._migrate_single_document(
-                        file_path, progress_tracker
-                    )
+                    return await self._migrate_single_document(file_path, progress_tracker)
 
             # Create tasks for all files
             tasks = [migrate_single_file(fp) for fp in file_paths]
@@ -571,12 +529,8 @@ class ComprehensiveMigrationManager:
             migration_end = datetime.now()
             migration_duration = (migration_end - migration_start).total_seconds()
 
-            successful_count = sum(
-                1 for m in migration_results if m.migration_status == "completed"
-            )
-            failed_count = sum(
-                1 for m in migration_results if m.migration_status == "failed"
-            )
+            successful_count = sum(1 for m in migration_results if m.migration_status == "completed")
+            failed_count = sum(1 for m in migration_results if m.migration_status == "failed")
 
             migration_summary = {
                 "migration_id": self.current_migration_id,
@@ -597,9 +551,7 @@ class ComprehensiveMigrationManager:
                 "migration_id": self.current_migration_id,
             }
 
-            logger.info(
-                f"Migration completed: {successful_count}/{len(file_paths)} files successful"
-            )
+            logger.info(f"Migration completed: {successful_count}/{len(file_paths)} files successful")
             return result
 
         except Exception as e:
@@ -610,9 +562,7 @@ class ComprehensiveMigrationManager:
                 "success": False,
                 "error": error_msg,
                 "migration_id": self.current_migration_id,
-                "migration_duration_seconds": (
-                    datetime.now() - migration_start
-                ).total_seconds(),
+                "migration_duration_seconds": (datetime.now() - migration_start).total_seconds(),
             }
 
         finally:
@@ -653,9 +603,7 @@ class ComprehensiveMigrationManager:
                 self.format_converter.convert_legacy_document_to_adk(legacy_document)
 
             # Step 3: Upload to ADK
-            upload_result = await self.adk_processor.upload_file_to_rag_corpus(
-                file_path
-            )
+            upload_result = await self.adk_processor.upload_file_to_rag_corpus(file_path)
 
             if upload_result.get("success", False):
                 mapping.adk_document_id = upload_result.get("document_id")
@@ -664,9 +612,7 @@ class ComprehensiveMigrationManager:
                 mapping.migration_timestamp = datetime.now().isoformat()
             else:
                 mapping.migration_status = "failed"
-                mapping.error_message = upload_result.get(
-                    "error", "Unknown upload error"
-                )
+                mapping.error_message = upload_result.get("error", "Unknown upload error")
                 mapping.migration_timestamp = datetime.now().isoformat()
 
         except Exception as e:
@@ -690,9 +636,7 @@ class ComprehensiveMigrationManager:
 
 
 # Utility functions
-def create_migration_manager(
-    adk_processor: ADKDocumentProcessor, **config_kwargs
-) -> ComprehensiveMigrationManager:
+def create_migration_manager(adk_processor: ADKDocumentProcessor, **config_kwargs) -> ComprehensiveMigrationManager:
     """Create a migration manager with custom configuration"""
     config = MigrationConfig(**config_kwargs)
     return ComprehensiveMigrationManager(adk_processor, config)
@@ -706,9 +650,7 @@ async def quick_migrate_directory(
 ) -> Dict[str, Any]:
     """Quick migration of a directory"""
     manager = create_migration_manager(adk_processor, **config_kwargs)
-    return await manager.migrate_documents_from_filesystem(
-        source_directory, progress_callback=progress_callback
-    )
+    return await manager.migrate_documents_from_filesystem(source_directory, progress_callback=progress_callback)
 
 
 def default_migration_progress_callback(progress_info: Dict[str, Any]):

@@ -157,9 +157,7 @@ class TestInfrastructureSetup:
             self.logger.info("✅ All infrastructure validation tests passed")
         else:
             failed_components = [name for name, result in results.items() if not result]
-            self.logger.error(
-                f"❌ Infrastructure validation failed for: {failed_components}"
-            )
+            self.logger.error(f"❌ Infrastructure validation failed for: {failed_components}")
 
         return results
 
@@ -175,9 +173,7 @@ class TestInfrastructureSetup:
                     return False
 
             # Test multi-agent environment
-            multi_env = await self.test_environment.simulate_multi_agent_environment(
-                ["agent1", "agent2"]
-            )
+            multi_env = await self.test_environment.simulate_multi_agent_environment(["agent1", "agent2"])
             if len(multi_env) != 2:
                 return False
 
@@ -220,9 +216,7 @@ class TestInfrastructureSetup:
             # Create test fixtures
             from tests.framework.test_data_manager import QueryType
 
-            agent_fixture = self.fixture_manager.create_agent_test_fixture(
-                "test_agent", QueryType.FACTUAL, 3
-            )
+            agent_fixture = self.fixture_manager.create_agent_test_fixture("test_agent", QueryType.FACTUAL, 3)
 
             multi_agent_fixture = self.fixture_manager.create_multi_agent_test_fixture(
                 "test_scenario", ["agent1", "agent2"], "coordination"
@@ -263,9 +257,7 @@ class TestInfrastructureSetup:
             self.performance_monitor.end_request("test_request", success=True)
 
             # Validate metrics collection
-            summary = self.performance_monitor.get_metric_summary(
-                MetricType.RESPONSE_TIME
-            )
+            summary = self.performance_monitor.get_metric_summary(MetricType.RESPONSE_TIME)
             if not summary or summary.get("count", 0) == 0:
                 return False
 
@@ -310,24 +302,16 @@ class TestInfrastructureSetup:
         if self.setup_complete:
             # Collect component statistics
             if self.test_environment:
-                health_status["component_stats"]["test_environment"] = (
-                    self.test_environment.get_environment_stats()
-                )
+                health_status["component_stats"]["test_environment"] = self.test_environment.get_environment_stats()
 
             if self.mock_service_manager:
-                health_status["component_stats"]["mock_services"] = (
-                    self.mock_service_manager.get_manager_stats()
-                )
+                health_status["component_stats"]["mock_services"] = self.mock_service_manager.get_manager_stats()
 
             if self.fixture_manager:
-                health_status["component_stats"]["fixture_manager"] = (
-                    self.fixture_manager.get_manager_stats()
-                )
+                health_status["component_stats"]["fixture_manager"] = self.fixture_manager.get_manager_stats()
 
             if self.performance_monitor:
-                health_status["component_stats"]["performance_monitor"] = (
-                    self.performance_monitor.get_monitor_stats()
-                )
+                health_status["component_stats"]["performance_monitor"] = self.performance_monitor.get_monitor_stats()
 
         # Determine overall health
         if self.setup_complete and all(self.validation_results.values()):

@@ -46,9 +46,7 @@ class MockVertexAiRagMemoryService:
         for session_id, session_data in self.session_store.items():
             if app_name in session_id and user_id in session_id:
                 # Simple keyword matching for mock
-                if any(
-                    word.lower() in str(session_data).lower() for word in query.split()
-                ):
+                if any(word.lower() in str(session_data).lower() for word in query.split()):
                     results.append(
                         {
                             "session_id": session_id,
@@ -106,17 +104,13 @@ class MockSessionService:
 @pytest.fixture
 def mock_rag_corpus():
     """Provide mock RAG corpus resource name."""
-    return (
-        "projects/${GOOGLE_CLOUD_PROJECT}/locations/us-central1/ragCorpora/test-corpus"
-    )
+    return "projects/${GOOGLE_CLOUD_PROJECT}/locations/us-central1/ragCorpora/test-corpus"
 
 
 @pytest.fixture
 def mock_memory_service(mock_rag_corpus):
     """Provide mock VertexAiRagMemoryService."""
-    return MockVertexAiRagMemoryService(
-        rag_corpus=mock_rag_corpus, similarity_top_k=5, vector_distance_threshold=0.7
-    )
+    return MockVertexAiRagMemoryService(rag_corpus=mock_rag_corpus, similarity_top_k=5, vector_distance_threshold=0.7)
 
 
 @pytest.fixture

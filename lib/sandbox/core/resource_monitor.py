@@ -125,9 +125,7 @@ class ResourceMonitor:
             logger.warning(f"Process {self.process_id} no longer exists")
             usage = ResourceUsage(0, 0, 0, execution_time, 0, 0, 0, 0, 0, 0)
 
-        logger.info(
-            f"Stopped resource monitoring. Execution time: {execution_time:.2f}s"
-        )
+        logger.info(f"Stopped resource monitoring. Execution time: {execution_time:.2f}s")
         return usage
 
     def _monitor_loop(self) -> None:
@@ -202,9 +200,7 @@ class ResourceMonitor:
         """Get current process statistics."""
         try:
             memory_info = process.memory_info()
-            io_counters = (
-                process.io_counters() if hasattr(process, "io_counters") else None
-            )
+            io_counters = process.io_counters() if hasattr(process, "io_counters") else None
 
             stats = {
                 "memory_rss": memory_info.rss,
@@ -240,38 +236,18 @@ class ResourceMonitor:
         except psutil.NoSuchProcess:
             return {}
 
-    def _calculate_usage(
-        self, current_stats: Dict[str, Any], execution_time: float
-    ) -> ResourceUsage:
+    def _calculate_usage(self, current_stats: Dict[str, Any], execution_time: float) -> ResourceUsage:
         """Calculate resource usage from current and initial statistics."""
         if not self.initial_stats or not current_stats:
             return ResourceUsage(0, 0, 0, execution_time, 0, 0, 0, 0, 0, 0)
 
         # Memory usage
         memory_mb = current_stats.get("memory_rss", 0) / 1024 / 1024
-        memory_percent = (
-            (memory_mb / self.limits["max_memory_mb"]) * 100
-            if self.limits["max_memory_mb"] > 0
-            else 0
-        )
+        memory_percent = (memory_mb / self.limits["max_memory_mb"]) * 100 if self.limits["max_memory_mb"] > 0 else 0
 
         # Disk I/O
-        disk_read_mb = (
-            (
-                current_stats.get("read_bytes", 0)
-                - self.initial_stats.get("read_bytes", 0)
-            )
-            / 1024
-            / 1024
-        )
-        disk_write_mb = (
-            (
-                current_stats.get("write_bytes", 0)
-                - self.initial_stats.get("write_bytes", 0)
-            )
-            / 1024
-            / 1024
-        )
+        disk_read_mb = (current_stats.get("read_bytes", 0) - self.initial_stats.get("read_bytes", 0)) / 1024 / 1024
+        disk_write_mb = (current_stats.get("write_bytes", 0) - self.initial_stats.get("write_bytes", 0)) / 1024 / 1024
 
         # CPU usage (approximate)
         cpu_percent = 0
@@ -279,9 +255,7 @@ class ResourceMonitor:
             current_cpu = current_stats.get("cpu_times")
             initial_cpu = self.initial_stats.get("cpu_times")
             if current_cpu and initial_cpu:
-                cpu_time_used = (current_cpu.user + current_cpu.system) - (
-                    initial_cpu.user + initial_cpu.system
-                )
+                cpu_time_used = (current_cpu.user + current_cpu.system) - (initial_cpu.user + initial_cpu.system)
                 cpu_percent = (cpu_time_used / execution_time) * 100
 
         return ResourceUsage(

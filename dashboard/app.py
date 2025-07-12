@@ -90,9 +90,7 @@ def main():
 
     elif page == "ADK Memory":
         try:
-            from dashboard.components.adk_memory_dashboard import (
-                display_adk_memory_dashboard,
-            )
+            from dashboard.components.adk_memory_dashboard import display_adk_memory_dashboard
 
             display_adk_memory_dashboard()
         except Exception as e:

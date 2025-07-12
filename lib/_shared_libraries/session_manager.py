@@ -71,19 +71,13 @@ class ADKSessionManager:
                 project_id = os.getenv("GOOGLE_CLOUD_PROJECT", "analystai-454200")
                 location = os.getenv("GOOGLE_CLOUD_LOCATION", "us-central1")
 
-                self.session_service = VertexAiSessionService(
-                    project=project_id, location=location
-                )
-                logger.info(
-                    f"Initialized VertexAiSessionService for project: {project_id}, location: {location}"
-                )
+                self.session_service = VertexAiSessionService(project=project_id, location=location)
+                logger.info(f"Initialized VertexAiSessionService for project: {project_id}, location: {location}")
 
             else:
                 # Initialize InMemorySessionService for development/testing
                 self.session_service = InMemorySessionService()
-                logger.info(
-                    "Initialized InMemorySessionService for development/testing"
-                )
+                logger.info("Initialized InMemorySessionService for development/testing")
 
         except Exception as e:
             logger.error(f"Failed to initialize ADK session service: {e}")
@@ -121,18 +115,14 @@ class ADKSessionManager:
                 state=initial_state,
             )
 
-            logger.info(
-                f"Created session {session.id} for user {user_id} in app {app_name}"
-            )
+            logger.info(f"Created session {session.id} for user {user_id} in app {app_name}")
             return session
 
         except Exception as e:
             logger.error(f"Error creating session: {e}")
             raise
 
-    async def get_session(
-        self, app_name: str, user_id: str, session_id: str
-    ) -> Optional[Session]:
+    async def get_session(self, app_name: str, user_id: str, session_id: str) -> Optional[Session]:
         """
         Retrieve an existing session.
 
@@ -149,9 +139,7 @@ class ADKSessionManager:
                 logger.warning("Session service not initialized")
                 return None
 
-            session = await self.session_service.get_session(
-                app_name=app_name, user_id=user_id, session_id=session_id
-            )
+            session = await self.session_service.get_session(app_name=app_name, user_id=user_id, session_id=session_id)
 
             if session:
                 logger.info(f"Retrieved session {session_id} for user {user_id}")
@@ -164,9 +152,7 @@ class ADKSessionManager:
             logger.error(f"Error retrieving session: {e}")
             return None
 
-    async def update_session_state(
-        self, session: Session, state_updates: Dict[str, Any]
-    ) -> bool:
+    async def update_session_state(self, session: Session, state_updates: Dict[str, Any]) -> bool:
         """
         Update session state with new values.
 
@@ -182,18 +168,14 @@ class ADKSessionManager:
             for key, value in state_updates.items():
                 session.state[key] = value
 
-            logger.info(
-                f"Updated session {session.id} state with {len(state_updates)} keys"
-            )
+            logger.info(f"Updated session {session.id} state with {len(state_updates)} keys")
             return True
 
         except Exception as e:
             logger.error(f"Error updating session state: {e}")
             return False
 
-    async def delete_session(
-        self, app_name: str, user_id: str, session_id: str
-    ) -> bool:
+    async def delete_session(self, app_name: str, user_id: str, session_id: str) -> bool:
         """
         Delete a session.
 
@@ -210,9 +192,7 @@ class ADKSessionManager:
                 logger.warning("Session service not initialized")
                 return False
 
-            await self.session_service.delete_session(
-                app_name=app_name, user_id=user_id, session_id=session_id
-            )
+            await self.session_service.delete_session(app_name=app_name, user_id=user_id, session_id=session_id)
 
             logger.info(f"Deleted session {session_id} for user {user_id}")
             return True
@@ -238,9 +218,7 @@ class ADKSessionManager:
             Dictionary with service information
         """
         return {
-            "service_type": "VertexAiSessionService"
-            if self.use_vertex_ai
-            else "InMemorySessionService",
+            "service_type": "VertexAiSessionService" if self.use_vertex_ai else "InMemorySessionService",
             "available": self.is_available(),
             "supports_persistence": self.use_vertex_ai,
             "supports_state_management": True,

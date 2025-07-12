@@ -5,25 +5,21 @@ Tests all 8 critical functions in capability_matcher.py with STRICT validation.
 This module provides capability matching for optimal agent routing decisions.
 """
 
-import pytest
-import tempfile
 import os
-from pathlib import Path
-from unittest.mock import Mock, patch
 
 # Import the capability matcher
 import sys
+import tempfile
+from pathlib import Path
+from unittest.mock import Mock, patch
+
+import pytest
 
 sys.path.append(str(Path(__file__).parent.parent.parent.parent))
 
 try:
-    from lib._tools.capability_matcher import (
-        CapabilityMatch,
-        MatchingResult,
-        CapabilityMatcher,
-        get_capability_matcher,
-    )
     from lib._tools.agent_discovery import AgentCapability
+    from lib._tools.capability_matcher import CapabilityMatch, CapabilityMatcher, MatchingResult, get_capability_matcher
 except ImportError as e:
     pytest.skip(f"Could not import capability_matcher: {e}", allow_module_level=True)
 
@@ -104,19 +100,11 @@ class TestCapabilityMatcherComprehensive:
         # STRICT: Must have all required fields with correct types
         assert isinstance(match.agent_name, str), "Agent name must be string"
         assert isinstance(match.match_score, float), "Match score must be float"
-        assert isinstance(match.matched_capabilities, list), (
-            "Matched capabilities must be list"
-        )
-        assert isinstance(match.missing_capabilities, list), (
-            "Missing capabilities must be list"
-        )
+        assert isinstance(match.matched_capabilities, list), "Matched capabilities must be list"
+        assert isinstance(match.missing_capabilities, list), "Missing capabilities must be list"
         assert isinstance(match.capability_coverage, float), "Coverage must be float"
-        assert isinstance(match.performance_score, float), (
-            "Performance score must be float"
-        )
-        assert isinstance(match.availability_score, float), (
-            "Availability score must be float"
-        )
+        assert isinstance(match.performance_score, float), "Performance score must be float"
+        assert isinstance(match.availability_score, float), "Availability score must be float"
         assert isinstance(match.overall_score, float), "Overall score must be float"
         assert isinstance(match.reasoning, str), "Reasoning must be string"
 
@@ -150,15 +138,9 @@ class TestCapabilityMatcherComprehensive:
         )
 
         # STRICT: Must have all required fields with correct types
-        assert isinstance(result.best_match, CapabilityMatch), (
-            "Best match must be CapabilityMatch"
-        )
-        assert isinstance(result.alternative_matches, list), (
-            "Alternative matches must be list"
-        )
-        assert isinstance(result.coverage_analysis, dict), (
-            "Coverage analysis must be dict"
-        )
+        assert isinstance(result.best_match, CapabilityMatch), "Best match must be CapabilityMatch"
+        assert isinstance(result.alternative_matches, list), "Alternative matches must be list"
+        assert isinstance(result.coverage_analysis, dict), "Coverage analysis must be dict"
         assert isinstance(result.recommendations, list), "Recommendations must be list"
 
     # CapabilityMatcher Class Tests - STRICT validation
@@ -167,13 +149,9 @@ class TestCapabilityMatcherComprehensive:
     def test_capability_matcher_initialization(self):
         """Test CapabilityMatcher initialization with STRICT validation"""
         with (
-            patch(
-                "lib._tools.capability_matcher.get_discovery_service"
-            ) as mock_discovery,
+            patch("lib._tools.capability_matcher.get_discovery_service") as mock_discovery,
             patch("lib._tools.capability_matcher.get_task_analyzer") as mock_analyzer,
-            patch(
-                "lib._tools.capability_matcher.get_task_classifier"
-            ) as mock_classifier,
+            patch("lib._tools.capability_matcher.get_task_classifier") as mock_classifier,
         ):
             mock_discovery.return_value = Mock()
             mock_analyzer.return_value = Mock()
@@ -182,29 +160,16 @@ class TestCapabilityMatcherComprehensive:
             matcher = CapabilityMatcher()
 
             # STRICT: Must initialize all components
-            assert matcher.discovery_service is not None, (
-                "Discovery service must be initialized"
-            )
-            assert matcher.task_analyzer is not None, (
-                "Task analyzer must be initialized"
-            )
-            assert matcher.task_classifier is not None, (
-                "Task classifier must be initialized"
-            )
-            assert isinstance(matcher.capability_weights, dict), (
-                "Capability weights must be dict"
-            )
-            assert isinstance(matcher.performance_cache, dict), (
-                "Performance cache must be dict"
-            )
+            assert matcher.discovery_service is not None, "Discovery service must be initialized"
+            assert matcher.task_analyzer is not None, "Task analyzer must be initialized"
+            assert matcher.task_classifier is not None, "Task classifier must be initialized"
+            assert isinstance(matcher.capability_weights, dict), "Capability weights must be dict"
+            assert isinstance(matcher.performance_cache, dict), "Performance cache must be dict"
 
             # STRICT: Capability weights must be properly configured
-            assert len(matcher.capability_weights) > 5, (
-                "Must have multiple capability weights"
-            )
+            assert len(matcher.capability_weights) > 5, "Must have multiple capability weights"
             assert all(
-                isinstance(weight, (int, float))
-                for weight in matcher.capability_weights.values()
+                isinstance(weight, (int, float)) for weight in matcher.capability_weights.values()
             ), "All weights must be numeric"
             assert all(
                 0 <= weight <= 2 for weight in matcher.capability_weights.values()
@@ -214,13 +179,9 @@ class TestCapabilityMatcherComprehensive:
     def test_match_capabilities_functionality(self):
         """Test match_capabilities method with STRICT validation"""
         with (
-            patch(
-                "lib._tools.capability_matcher.get_discovery_service"
-            ) as mock_discovery,
+            patch("lib._tools.capability_matcher.get_discovery_service") as mock_discovery,
             patch("lib._tools.capability_matcher.get_task_analyzer") as mock_analyzer,
-            patch(
-                "lib._tools.capability_matcher.get_task_classifier"
-            ) as mock_classifier,
+            patch("lib._tools.capability_matcher.get_task_classifier") as mock_classifier,
         ):
             # Setup mocks
             mock_discovery_service = Mock()
@@ -246,40 +207,24 @@ class TestCapabilityMatcherComprehensive:
 
             # STRICT: Must have best match
             assert result.best_match is not None, "Must have best match"
-            assert isinstance(result.best_match, CapabilityMatch), (
-                "Best match must be CapabilityMatch"
-            )
+            assert isinstance(result.best_match, CapabilityMatch), "Best match must be CapabilityMatch"
 
             # STRICT: Must have coverage analysis
-            assert isinstance(result.coverage_analysis, dict), (
-                "Coverage analysis must be dict"
-            )
-            assert "total_coverage" in result.coverage_analysis, (
-                "Must include total coverage"
-            )
-            assert "best_coverage" in result.coverage_analysis, (
-                "Must include best coverage"
-            )
+            assert isinstance(result.coverage_analysis, dict), "Coverage analysis must be dict"
+            assert "total_coverage" in result.coverage_analysis, "Must include total coverage"
+            assert "best_coverage" in result.coverage_analysis, "Must include best coverage"
 
             # STRICT: Must have recommendations
-            assert isinstance(result.recommendations, list), (
-                "Recommendations must be list"
-            )
-            assert len(result.recommendations) > 0, (
-                "Must have at least one recommendation"
-            )
+            assert isinstance(result.recommendations, list), "Recommendations must be list"
+            assert len(result.recommendations) > 0, "Must have at least one recommendation"
 
     @pytest.mark.unit
     def test_match_capabilities_with_explicit_requirements(self):
         """Test match_capabilities with explicit requirements with STRICT validation"""
         with (
-            patch(
-                "lib._tools.capability_matcher.get_discovery_service"
-            ) as mock_discovery,
+            patch("lib._tools.capability_matcher.get_discovery_service") as mock_discovery,
             patch("lib._tools.capability_matcher.get_task_analyzer") as mock_analyzer,
-            patch(
-                "lib._tools.capability_matcher.get_task_classifier"
-            ) as mock_classifier,
+            patch("lib._tools.capability_matcher.get_task_classifier") as mock_classifier,
         ):
             # Setup mocks
             mock_discovery_service = Mock()
@@ -293,30 +238,25 @@ class TestCapabilityMatcherComprehensive:
 
             # Test with explicit capability requirements
             required_capabilities = ["python", "machine_learning", "visualization"]
-            result = matcher.match_capabilities(
-                "Build ML model", required_capabilities=required_capabilities
-            )
+            result = matcher.match_capabilities("Build ML model", required_capabilities=required_capabilities)
 
             # STRICT: Must handle explicit requirements
             assert isinstance(result, MatchingResult), "Must return MatchingResult"
             assert result.best_match is not None, "Must find best match"
 
             # STRICT: Best match should be data_science agent (has most required capabilities)
-            assert result.best_match.agent_name in ["data_science", "code_execution"], (
-                "Best match should be specialist with required capabilities"
-            )
+            assert result.best_match.agent_name in [
+                "data_science",
+                "code_execution",
+            ], "Best match should be specialist with required capabilities"
 
     @pytest.mark.unit
     def test_score_agent_match_functionality(self):
         """Test _score_agent_match method with STRICT validation"""
         with (
-            patch(
-                "lib._tools.capability_matcher.get_discovery_service"
-            ) as mock_discovery,
+            patch("lib._tools.capability_matcher.get_discovery_service") as mock_discovery,
             patch("lib._tools.capability_matcher.get_task_analyzer") as mock_analyzer,
-            patch(
-                "lib._tools.capability_matcher.get_task_classifier"
-            ) as mock_classifier,
+            patch("lib._tools.capability_matcher.get_task_classifier") as mock_classifier,
         ):
             mock_discovery.return_value = Mock()
             mock_analyzer.return_value = Mock()
@@ -329,32 +269,20 @@ class TestCapabilityMatcherComprehensive:
             required_capabilities = ["python", "data_analysis", "statistics"]
             task = "Analyze customer data"
 
-            match = matcher._score_agent_match(
-                "data_science", agent_info, required_capabilities, task
-            )
+            match = matcher._score_agent_match("data_science", agent_info, required_capabilities, task)
 
             # STRICT: Must return CapabilityMatch
             assert isinstance(match, CapabilityMatch), "Must return CapabilityMatch"
             assert match.agent_name == "data_science", "Agent name must match"
 
             # STRICT: Must have high match score for matching capabilities
-            assert match.match_score > 0.5, (
-                "Should have high match score for relevant capabilities"
-            )
-            assert match.capability_coverage > 0.5, (
-                "Should have good capability coverage"
-            )
+            assert match.match_score > 0.5, "Should have high match score for relevant capabilities"
+            assert match.capability_coverage > 0.5, "Should have good capability coverage"
 
             # STRICT: Must identify matched and missing capabilities
-            assert isinstance(match.matched_capabilities, list), (
-                "Matched capabilities must be list"
-            )
-            assert isinstance(match.missing_capabilities, list), (
-                "Missing capabilities must be list"
-            )
-            assert len(match.matched_capabilities) > 0, (
-                "Should have some matched capabilities"
-            )
+            assert isinstance(match.matched_capabilities, list), "Matched capabilities must be list"
+            assert isinstance(match.missing_capabilities, list), "Missing capabilities must be list"
+            assert len(match.matched_capabilities) > 0, "Should have some matched capabilities"
 
             # STRICT: Scores must be in valid ranges
             assert 0 <= match.overall_score <= 1, "Overall score must be 0-1"
@@ -364,13 +292,9 @@ class TestCapabilityMatcherComprehensive:
     def test_calculate_performance_score_functionality(self):
         """Test _calculate_performance_score method with STRICT validation"""
         with (
-            patch(
-                "lib._tools.capability_matcher.get_discovery_service"
-            ) as mock_discovery,
+            patch("lib._tools.capability_matcher.get_discovery_service") as mock_discovery,
             patch("lib._tools.capability_matcher.get_task_analyzer") as mock_analyzer,
-            patch(
-                "lib._tools.capability_matcher.get_task_classifier"
-            ) as mock_classifier,
+            patch("lib._tools.capability_matcher.get_task_classifier") as mock_classifier,
         ):
             mock_discovery.return_value = Mock()
             mock_analyzer.return_value = Mock()
@@ -397,26 +321,18 @@ class TestCapabilityMatcherComprehensive:
                 load_factor=1.0,
                 performance_score=0.0,
             )
-            offline_score = matcher._calculate_performance_score(
-                "offline_agent", offline_agent
-            )
+            offline_score = matcher._calculate_performance_score("offline_agent", offline_agent)
 
             # STRICT: Offline agent should have low score
-            assert offline_score < 0.5, (
-                "Offline agent should have low performance score"
-            )
+            assert offline_score < 0.5, "Offline agent should have low performance score"
 
     @pytest.mark.unit
     def test_calculate_availability_score_functionality(self):
         """Test _calculate_availability_score method with STRICT validation"""
         with (
-            patch(
-                "lib._tools.capability_matcher.get_discovery_service"
-            ) as mock_discovery,
+            patch("lib._tools.capability_matcher.get_discovery_service") as mock_discovery,
             patch("lib._tools.capability_matcher.get_task_analyzer") as mock_analyzer,
-            patch(
-                "lib._tools.capability_matcher.get_task_classifier"
-            ) as mock_classifier,
+            patch("lib._tools.capability_matcher.get_task_classifier") as mock_classifier,
         ):
             mock_discovery.return_value = Mock()
             mock_analyzer.return_value = Mock()
@@ -446,25 +362,17 @@ class TestCapabilityMatcherComprehensive:
                 score = matcher._calculate_availability_score(f"{status}_agent", agent)
 
                 # STRICT: Must return appropriate availability score
-                assert isinstance(score, float), (
-                    f"Availability score must be float for {status}"
-                )
+                assert isinstance(score, float), f"Availability score must be float for {status}"
                 assert 0 <= score <= 1, f"Availability score must be 0-1 for {status}"
-                assert score >= expected_min_score - 0.1, (
-                    f"Score too low for {status} agent"
-                )
+                assert score >= expected_min_score - 0.1, f"Score too low for {status} agent"
 
     @pytest.mark.unit
     def test_analyze_coverage_functionality(self):
         """Test _analyze_coverage method with STRICT validation"""
         with (
-            patch(
-                "lib._tools.capability_matcher.get_discovery_service"
-            ) as mock_discovery,
+            patch("lib._tools.capability_matcher.get_discovery_service") as mock_discovery,
             patch("lib._tools.capability_matcher.get_task_analyzer") as mock_analyzer,
-            patch(
-                "lib._tools.capability_matcher.get_task_classifier"
-            ) as mock_classifier,
+            patch("lib._tools.capability_matcher.get_task_classifier") as mock_classifier,
         ):
             mock_discovery.return_value = Mock()
             mock_analyzer.return_value = Mock()
@@ -498,9 +406,7 @@ class TestCapabilityMatcherComprehensive:
             )
 
             required_capabilities = ["python", "data_analysis", "machine_learning"]
-            coverage = matcher._analyze_coverage(
-                [match1, match2], required_capabilities
-            )
+            coverage = matcher._analyze_coverage([match1, match2], required_capabilities)
 
             # STRICT: Must return comprehensive coverage analysis
             assert isinstance(coverage, dict), "Coverage analysis must be dict"
@@ -516,18 +422,10 @@ class TestCapabilityMatcherComprehensive:
                 assert field in coverage, f"Coverage analysis must contain {field}"
 
             # STRICT: Values must be in correct types and ranges
-            assert isinstance(coverage["total_coverage"], float), (
-                "Total coverage must be float"
-            )
-            assert isinstance(coverage["best_coverage"], float), (
-                "Best coverage must be float"
-            )
-            assert isinstance(coverage["uncovered_capabilities"], list), (
-                "Uncovered capabilities must be list"
-            )
-            assert isinstance(coverage["coverage_gaps"], int), (
-                "Coverage gaps must be int"
-            )
+            assert isinstance(coverage["total_coverage"], float), "Total coverage must be float"
+            assert isinstance(coverage["best_coverage"], float), "Best coverage must be float"
+            assert isinstance(coverage["uncovered_capabilities"], list), "Uncovered capabilities must be list"
+            assert isinstance(coverage["coverage_gaps"], int), "Coverage gaps must be int"
 
             assert 0 <= coverage["total_coverage"] <= 1, "Total coverage must be 0-1"
             assert 0 <= coverage["best_coverage"] <= 1, "Best coverage must be 0-1"
@@ -538,13 +436,9 @@ class TestCapabilityMatcherComprehensive:
     def test_get_capability_matcher_functionality(self):
         """Test get_capability_matcher global function with STRICT validation"""
         with (
-            patch(
-                "lib._tools.capability_matcher.get_discovery_service"
-            ) as mock_discovery,
+            patch("lib._tools.capability_matcher.get_discovery_service") as mock_discovery,
             patch("lib._tools.capability_matcher.get_task_analyzer") as mock_analyzer,
-            patch(
-                "lib._tools.capability_matcher.get_task_classifier"
-            ) as mock_classifier,
+            patch("lib._tools.capability_matcher.get_task_classifier") as mock_classifier,
         ):
             mock_discovery.return_value = Mock()
             mock_analyzer.return_value = Mock()
@@ -555,12 +449,8 @@ class TestCapabilityMatcherComprehensive:
             matcher2 = get_capability_matcher()
 
             # STRICT: Must return CapabilityMatcher instances
-            assert isinstance(matcher1, CapabilityMatcher), (
-                "Must return CapabilityMatcher instance"
-            )
-            assert isinstance(matcher2, CapabilityMatcher), (
-                "Must return CapabilityMatcher instance"
-            )
+            assert isinstance(matcher1, CapabilityMatcher), "Must return CapabilityMatcher instance"
+            assert isinstance(matcher2, CapabilityMatcher), "Must return CapabilityMatcher instance"
 
             # STRICT: Should return same instance (singleton pattern)
             assert matcher1 is matcher2, "Should return same instance (singleton)"
@@ -571,13 +461,9 @@ class TestCapabilityMatcherComprehensive:
     def test_no_agents_available_handling(self):
         """Test handling when no agents are available with STRICT validation"""
         with (
-            patch(
-                "lib._tools.capability_matcher.get_discovery_service"
-            ) as mock_discovery,
+            patch("lib._tools.capability_matcher.get_discovery_service") as mock_discovery,
             patch("lib._tools.capability_matcher.get_task_analyzer") as mock_analyzer,
-            patch(
-                "lib._tools.capability_matcher.get_task_classifier"
-            ) as mock_classifier,
+            patch("lib._tools.capability_matcher.get_task_classifier") as mock_classifier,
         ):
             # Setup mocks with empty agents
             mock_discovery_service = Mock()
@@ -592,28 +478,18 @@ class TestCapabilityMatcherComprehensive:
             result = matcher.match_capabilities("test task")
 
             # STRICT: Must handle no agents gracefully
-            assert isinstance(result, MatchingResult), (
-                "Must return MatchingResult even with no agents"
-            )
+            assert isinstance(result, MatchingResult), "Must return MatchingResult even with no agents"
             assert result.best_match is None, "Best match should be None when no agents"
-            assert len(result.alternative_matches) == 0, (
-                "Should have no alternative matches"
-            )
-            assert "No agents available" in str(result.recommendations), (
-                "Should indicate no agents available"
-            )
+            assert len(result.alternative_matches) == 0, "Should have no alternative matches"
+            assert "No agents available" in str(result.recommendations), "Should indicate no agents available"
 
     @pytest.mark.unit
     def test_performance_cache_functionality(self):
         """Test performance cache update functionality with STRICT validation"""
         with (
-            patch(
-                "lib._tools.capability_matcher.get_discovery_service"
-            ) as mock_discovery,
+            patch("lib._tools.capability_matcher.get_discovery_service") as mock_discovery,
             patch("lib._tools.capability_matcher.get_task_analyzer") as mock_analyzer,
-            patch(
-                "lib._tools.capability_matcher.get_task_classifier"
-            ) as mock_classifier,
+            patch("lib._tools.capability_matcher.get_task_classifier") as mock_classifier,
         ):
             mock_discovery.return_value = Mock()
             mock_analyzer.return_value = Mock()
@@ -625,12 +501,8 @@ class TestCapabilityMatcherComprehensive:
             matcher.update_performance_cache("test_agent", 0.85)
 
             # STRICT: Must update cache correctly
-            assert "test_agent" in matcher.performance_cache, (
-                "Agent must be in performance cache"
-            )
-            assert matcher.performance_cache["test_agent"] == 0.85, (
-                "Cache value must be correct"
-            )
+            assert "test_agent" in matcher.performance_cache, "Agent must be in performance cache"
+            assert matcher.performance_cache["test_agent"] == 0.85, "Cache value must be correct"
 
             # Test cache is used in performance calculation
             mock_agent = AgentCapability(
@@ -655,13 +527,9 @@ class TestCapabilityMatcherComprehensive:
     def test_complete_capability_matching_workflow(self):
         """Test complete capability matching workflow with STRICT validation"""
         with (
-            patch(
-                "lib._tools.capability_matcher.get_discovery_service"
-            ) as mock_discovery,
+            patch("lib._tools.capability_matcher.get_discovery_service") as mock_discovery,
             patch("lib._tools.capability_matcher.get_task_analyzer") as mock_analyzer,
-            patch(
-                "lib._tools.capability_matcher.get_task_classifier"
-            ) as mock_classifier,
+            patch("lib._tools.capability_matcher.get_task_classifier") as mock_classifier,
         ):
             # Setup comprehensive mock environment
             mock_discovery_service = Mock()
@@ -689,19 +557,13 @@ class TestCapabilityMatcherComprehensive:
             result = matcher.match_capabilities(task, context)
 
             # STRICT: Complete workflow must succeed
-            assert isinstance(result, MatchingResult), (
-                "Complete workflow must return MatchingResult"
-            )
+            assert isinstance(result, MatchingResult), "Complete workflow must return MatchingResult"
             assert result.best_match is not None, "Must find best match"
-            assert result.best_match.agent_name in self.mock_agents, (
-                "Best match must be available agent"
-            )
+            assert result.best_match.agent_name in self.mock_agents, "Best match must be available agent"
             assert len(result.recommendations) > 0, "Must provide recommendations"
 
             # STRICT: Coverage analysis must be comprehensive
             coverage = result.coverage_analysis
             assert coverage["total_coverage"] > 0, "Must have some capability coverage"
             assert "agents_analyzed" in coverage, "Must include agents analyzed count"
-            assert coverage["agents_analyzed"] == len(self.mock_agents), (
-                "Must analyze all available agents"
-            )
+            assert coverage["agents_analyzed"] == len(self.mock_agents), "Must analyze all available agents"

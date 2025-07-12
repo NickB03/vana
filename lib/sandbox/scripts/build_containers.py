@@ -14,9 +14,7 @@ from pathlib import Path
 import docker
 
 # Set up logging
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
-)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
 
@@ -169,9 +167,7 @@ class ContainerBuilder:
             command = test_commands.get(language, ["echo", "test"])
 
             # Run test container
-            result = self.docker_client.containers.run(
-                tag, command=command, remove=True, stdout=True, stderr=True
-            )
+            result = self.docker_client.containers.run(tag, command=command, remove=True, stdout=True, stderr=True)
 
             output = result.decode("utf-8").strip()
             logger.info(f"Test successful for {language}: {output}")
@@ -181,9 +177,7 @@ class ContainerBuilder:
             logger.error(f"Test failed for {language}: {e}")
             return False
 
-    def build_all_containers(
-        self, force_rebuild: bool = False, test: bool = True
-    ) -> bool:
+    def build_all_containers(self, force_rebuild: bool = False, test: bool = True) -> bool:
         """
         Build all containers.
 
@@ -200,16 +194,12 @@ class ContainerBuilder:
         total_count = len(self.containers)
 
         for language in self.containers.keys():
-            logger.info(
-                f"Building {language} container ({success_count + 1}/{total_count})"
-            )
+            logger.info(f"Building {language} container ({success_count + 1}/{total_count})")
 
             if self.build_container(language, force_rebuild):
                 if test and self.test_container(language):
                     success_count += 1
-                    logger.info(
-                        f"✅ {language} container built and tested successfully"
-                    )
+                    logger.info(f"✅ {language} container built and tested successfully")
                 elif not test:
                     success_count += 1
                     logger.info(f"✅ {language} container built successfully")
@@ -222,9 +212,7 @@ class ContainerBuilder:
             logger.info(f"🎉 All {total_count} containers built successfully!")
             return True
         else:
-            logger.error(
-                f"❌ {success_count}/{total_count} containers built successfully"
-            )
+            logger.error(f"❌ {success_count}/{total_count} containers built successfully")
             return False
 
     def list_images(self) -> None:
@@ -249,9 +237,7 @@ class ContainerBuilder:
             confirm: Skip confirmation prompt
         """
         if not confirm:
-            response = input(
-                "Are you sure you want to remove all VANA Sandbox images? (y/N): "
-            )
+            response = input("Are you sure you want to remove all VANA Sandbox images? (y/N): ")
             if response.lower() != "y":
                 logger.info("Cleanup cancelled")
                 return
@@ -277,16 +263,10 @@ def main():
         choices=["python", "javascript", "shell"],
         help="Build specific language container",
     )
-    parser.add_argument(
-        "--force", action="store_true", help="Force rebuild even if images exist"
-    )
-    parser.add_argument(
-        "--no-test", action="store_true", help="Skip testing containers after build"
-    )
+    parser.add_argument("--force", action="store_true", help="Force rebuild even if images exist")
+    parser.add_argument("--no-test", action="store_true", help="Skip testing containers after build")
     parser.add_argument("--list", action="store_true", help="List existing images")
-    parser.add_argument(
-        "--cleanup", action="store_true", help="Remove all VANA Sandbox images"
-    )
+    parser.add_argument("--cleanup", action="store_true", help="Remove all VANA Sandbox images")
     parser.add_argument("--yes", action="store_true", help="Skip confirmation prompts")
 
     args = parser.parse_args()

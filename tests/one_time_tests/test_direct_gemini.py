@@ -2,8 +2,9 @@
 """Test Gemini API directly to verify API key"""
 
 import os
-from dotenv import load_dotenv
+
 import google.generativeai as genai
+from dotenv import load_dotenv
 
 # Load environment variables
 project_root = os.path.abspath(os.path.dirname(__file__))

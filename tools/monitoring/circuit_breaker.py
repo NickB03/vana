@@ -127,9 +127,7 @@ class CircuitBreaker:
             logger.info(f"Circuit '{self.name}' recovered - closing circuit")
             self.state = CircuitState.CLOSED
 
-    def _handle_failure(
-        self, exception: Exception, func: Callable[..., T], *args: Any, **kwargs: Any
-    ) -> T:
+    def _handle_failure(self, exception: Exception, func: Callable[..., T], *args: Any, **kwargs: Any) -> T:
         """
         Handle a failed call
 
@@ -151,18 +149,13 @@ class CircuitBreaker:
         logger.warning(f"Circuit '{self.name}' recorded failure: {str(exception)}")
 
         # Check if we should open the circuit
-        if (
-            self.state == CircuitState.CLOSED
-            and self.failure_count >= self.failure_threshold
-        ):
+        if self.state == CircuitState.CLOSED and self.failure_count >= self.failure_threshold:
             logger.error(f"Circuit '{self.name}' threshold reached - opening circuit")
             self.state = CircuitState.OPEN
 
         # If in half-open state, reopen the circuit
         if self.state == CircuitState.HALF_OPEN:
-            logger.warning(
-                f"Circuit '{self.name}' failed during recovery - reopening circuit"
-            )
+            logger.warning(f"Circuit '{self.name}' failed during recovery - reopening circuit")
             self.state = CircuitState.OPEN
 
         return self._handle_open_circuit(func, *args, **kwargs)
@@ -171,9 +164,7 @@ class CircuitBreaker:
         """Check if enough time has passed to attempt recovery"""
         return time.time() - self.last_failure_time >= self.recovery_timeout
 
-    def _handle_open_circuit(
-        self, func: Callable[..., T], *args: Any, **kwargs: Any
-    ) -> T:
+    def _handle_open_circuit(self, func: Callable[..., T], *args: Any, **kwargs: Any) -> T:
         """
         Handle a call when the circuit is open
 
@@ -192,9 +183,7 @@ class CircuitBreaker:
             logger.info(f"Circuit '{self.name}' using fallback function")
             return self.fallback_function(*args, **kwargs)
         else:
-            raise CircuitOpenError(
-                f"Circuit '{self.name}' is open and no fallback provided"
-            )
+            raise CircuitOpenError(f"Circuit '{self.name}' is open and no fallback provided")
 
     def reset(self) -> None:
         """Reset the circuit breaker to closed state"""
