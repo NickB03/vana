@@ -4,9 +4,17 @@
 
 def get_root_agent():
     """Lazy load root_agent to avoid circular imports."""
-    from agents.vana.team import root_agent
+    from agents.base_agents import get_root_agent as get_base_root_agent
 
-    return root_agent
+    # Try to get from base module first
+    agent = get_base_root_agent()
+    if agent is None:
+        # Fallback to importing directly (will trigger initialization)
+        from agents.vana.team import root_agent
+
+        agent = root_agent
+
+    return agent
 
 
 # Create a proxy agent that delegates to root_agent
@@ -32,38 +40,26 @@ def get_agent():
 
 # Import specialist agents
 try:
-    from .architecture_specialist import (
-        architecture_specialist,
-        architecture_specialist_tool
-    )
+    from .architecture_specialist import architecture_specialist, architecture_specialist_tool
 except ImportError:
     # Handle gracefully if specialists not yet implemented
     architecture_specialist = None
     architecture_specialist_tool = None
 
 try:
-    from .data_science_specialist import (
-        data_science_specialist,
-        data_science_specialist_tool
-    )
+    from .data_science_specialist import data_science_specialist, data_science_specialist_tool
 except ImportError:
     data_science_specialist = None
     data_science_specialist_tool = None
 
 try:
-    from .security_specialist import (
-        security_specialist,
-        security_specialist_tool
-    )
+    from .security_specialist import security_specialist, security_specialist_tool
 except ImportError:
     security_specialist = None
     security_specialist_tool = None
 
 try:
-    from .devops_specialist import (
-        devops_specialist,
-        devops_specialist_tool
-    )
+    from .devops_specialist import devops_specialist, devops_specialist_tool
 except ImportError:
     devops_specialist = None
     devops_specialist_tool = None
@@ -71,8 +67,8 @@ except ImportError:
 
 # Ensure agent is available at module level
 __all__ = [
-    "agent", 
-    "get_agent", 
+    "agent",
+    "get_agent",
     "root_agent",
     "architecture_specialist",
     "architecture_specialist_tool",
@@ -81,5 +77,5 @@ __all__ = [
     "security_specialist",
     "security_specialist_tool",
     "devops_specialist",
-    "devops_specialist_tool"
+    "devops_specialist_tool",
 ]

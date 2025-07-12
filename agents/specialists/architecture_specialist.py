@@ -5,24 +5,23 @@ Creates an architecture specialist using Google ADK patterns.
 Simple, synchronous, and focused on real analysis capabilities.
 """
 
-from google.adk.tools import FunctionTool
 from google.adk.agents import LlmAgent
-# Note: agent_tool will be imported when ADK integration is complete
+from google.adk.tools import FunctionTool
 
 # Import architecture analysis tools
 from agents.specialists.architecture_tools import (
     analyze_codebase_structure,
-    detect_design_patterns,
     analyze_dependencies,
-    evaluate_architecture_quality
+    detect_design_patterns,
+    evaluate_architecture_quality,
 )
 
 # Import shared ADK tools
-from lib._tools import (
-    adk_read_file,
-    adk_list_directory,
-    adk_search_knowledge
-)
+from lib._tools import adk_list_directory, adk_read_file, adk_search_knowledge
+
+# Note: agent_tool will be imported when ADK integration is complete
+
+
 
 # Create the Architecture Specialist using ADK patterns
 architecture_specialist = LlmAgent(
@@ -62,23 +61,24 @@ Always provide practical, implementable suggestions that consider the project's 
         FunctionTool(analyze_dependencies),
         FunctionTool(evaluate_architecture_quality),
         adk_read_file,
-        adk_list_directory
-    ]  # Exactly 6 tools - ADK limit
+        adk_list_directory,
+    ],  # Exactly 6 tools - ADK limit
 )
 
 # Export the specialist as a tool for orchestrator integration
 # Note: Will use agent_tool() when ADK integration is complete
 architecture_specialist_tool = None  # Placeholder for now
 
+
 # Optional: Helper function for direct usage
 def analyze_architecture(request: str, context: dict = None) -> str:
     """
     Direct interface to architecture specialist for testing.
-    
+
     Args:
         request: Analysis request
         context: Optional context dictionary
-        
+
     Returns:
         Analysis results
     """

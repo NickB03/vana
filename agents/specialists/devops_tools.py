@@ -5,19 +5,21 @@ Synchronous tools for deployment, infrastructure, and CI/CD analysis.
 Focuses on containerization, orchestration, and automation best practices.
 """
 
-import yaml
 import json
-from pathlib import Path
-from typing import Dict, List, Any
 import re
+from pathlib import Path
+from typing import Any, Dict, List
+
+import yaml
+
 
 def analyze_deployment_config(config_path: str) -> str:
     """
     Analyze deployment configuration files (Docker, K8s, etc.).
-    
+
     Args:
         config_path: Path to configuration file
-        
+
     Returns:
         Deployment configuration analysis
     """
@@ -25,175 +27,179 @@ def analyze_deployment_config(config_path: str) -> str:
         path = Path(config_path)
         if not path.exists():
             return f"Error: Configuration file {config_path} not found"
-            
+
         content = path.read_text()
         analysis = f"## Deployment Configuration Analysis\n\n"
         analysis += f"**File**: {path.name}\n"
         analysis += f"**Type**: "
-        
+
         # Determine file type and analyze accordingly
-        if path.suffix in ['.yml', '.yaml']:
+        if path.suffix in [".yml", ".yaml"]:
             analysis += "YAML Configuration\n\n"
-            
+
             try:
                 data = yaml.safe_load(content)
-                
+
                 # Docker Compose analysis
-                if 'services' in data:
+                if "services" in data:
                     analysis += "### Docker Compose Configuration\n"
                     analysis += f"- **Services**: {', '.join(data['services'].keys())}\n"
                     analysis += f"- **Version**: {data.get('version', 'Not specified')}\n\n"
-                    
+
                     # Analyze each service
-                    for service, config in data['services'].items():
+                    for service, config in data["services"].items():
                         analysis += f"#### Service: {service}\n"
-                        if 'image' in config:
+                        if "image" in config:
                             analysis += f"- Image: `{config['image']}`\n"
-                        if 'build' in config:
+                        if "build" in config:
                             analysis += f"- Build: `{config['build']}`\n"
-                        if 'ports' in config:
+                        if "ports" in config:
                             analysis += f"- Ports: {config['ports']}\n"
-                        if 'environment' in config:
+                        if "environment" in config:
                             analysis += f"- Environment vars: {len(config.get('environment', []))} defined\n"
-                        if 'volumes' in config:
+                        if "volumes" in config:
                             analysis += f"- Volumes: {len(config.get('volumes', []))} mounted\n"
-                        if 'depends_on' in config:
+                        if "depends_on" in config:
                             analysis += f"- Dependencies: {', '.join(config['depends_on'])}\n"
                         analysis += "\n"
-                    
+
                     # Security analysis
                     analysis += "### Security Considerations\n"
                     security_issues = []
-                    
-                    for service, config in data['services'].items():
+
+                    for service, config in data["services"].items():
                         # Check for exposed ports
-                        if 'ports' in config:
-                            for port in config['ports']:
-                                if isinstance(port, str) and port.startswith('0.0.0.0'):
+                        if "ports" in config:
+                            for port in config["ports"]:
+                                if isinstance(port, str) and port.startswith("0.0.0.0"):
                                     security_issues.append(f"- {service}: Binding to 0.0.0.0 (consider localhost)")
-                        
+
                         # Check for privileged mode
-                        if config.get('privileged'):
+                        if config.get("privileged"):
                             security_issues.append(f"- {service}: Running in privileged mode")
-                        
+
                         # Check for hardcoded secrets
-                        if 'environment' in config:
-                            for env in config.get('environment', []):
-                                if isinstance(env, str) and any(secret in env.upper() for secret in ['PASSWORD', 'SECRET', 'KEY', 'TOKEN']):
+                        if "environment" in config:
+                            for env in config.get("environment", []):
+                                if isinstance(env, str) and any(
+                                    secret in env.upper() for secret in ["PASSWORD", "SECRET", "KEY", "TOKEN"]
+                                ):
                                     security_issues.append(f"- {service}: Possible hardcoded secret in environment")
-                    
+
                     if security_issues:
                         analysis += "\n".join(security_issues[:5])  # Limit to first 5
                     else:
                         analysis += "- No immediate security issues detected"
-                        
+
                 # Kubernetes manifest analysis
-                elif 'apiVersion' in data:
+                elif "apiVersion" in data:
                     analysis += "### Kubernetes Manifest\n"
                     analysis += f"- **API Version**: {data['apiVersion']}\n"
                     analysis += f"- **Kind**: {data['kind']}\n"
                     analysis += f"- **Name**: {data.get('metadata', {}).get('name', 'unnamed')}\n"
                     analysis += f"- **Namespace**: {data.get('metadata', {}).get('namespace', 'default')}\n\n"
-                    
+
                     # Deployment specific analysis
-                    if data['kind'] == 'Deployment':
-                        spec = data.get('spec', {})
+                    if data["kind"] == "Deployment":
+                        spec = data.get("spec", {})
                         analysis += "#### Deployment Details\n"
                         analysis += f"- Replicas: {spec.get('replicas', 1)}\n"
                         analysis += f"- Strategy: {spec.get('strategy', {}).get('type', 'RollingUpdate')}\n"
-                        
+
                         # Container analysis
-                        containers = spec.get('template', {}).get('spec', {}).get('containers', [])
+                        containers = spec.get("template", {}).get("spec", {}).get("containers", [])
                         if containers:
                             analysis += f"- Containers: {len(containers)}\n"
                             for container in containers:
-                                analysis += f"  - {container.get('name', 'unnamed')}: {container.get('image', 'no-image')}\n"
-                    
+                                analysis += (
+                                    f"  - {container.get('name', 'unnamed')}: {container.get('image', 'no-image')}\n"
+                                )
+
                     # Service specific analysis
-                    elif data['kind'] == 'Service':
-                        spec = data.get('spec', {})
+                    elif data["kind"] == "Service":
+                        spec = data.get("spec", {})
                         analysis += "#### Service Details\n"
                         analysis += f"- Type: {spec.get('type', 'ClusterIP')}\n"
                         analysis += f"- Ports: {spec.get('ports', [])}\n"
                         analysis += f"- Selector: {spec.get('selector', {})}\n"
-                        
+
             except yaml.YAMLError as e:
                 analysis += f"\nError parsing YAML: {str(e)}\n"
-                
-        elif path.name == 'Dockerfile':
+
+        elif path.name == "Dockerfile":
             analysis += "Dockerfile\n\n"
-            lines = content.split('\n')
-            
+            lines = content.split("\n")
+
             # Extract key information
             base_image = None
             user_specified = False
             exposed_ports = []
-            
+
             for line in lines:
                 line = line.strip()
-                if line.startswith('FROM'):
-                    base_image = line.split()[1] if len(line.split()) > 1 else 'unknown'
-                elif line.startswith('USER'):
+                if line.startswith("FROM"):
+                    base_image = line.split()[1] if len(line.split()) > 1 else "unknown"
+                elif line.startswith("USER"):
                     user_specified = True
-                elif line.startswith('EXPOSE'):
+                elif line.startswith("EXPOSE"):
                     ports = line.split()[1:]
                     exposed_ports.extend(ports)
-            
+
             analysis += "### Dockerfile Analysis\n"
             if base_image:
                 analysis += f"- **Base Image**: `{base_image}`\n"
-                
+
                 # Security checks for base image
-                if ':latest' in base_image or not ':' in base_image:
+                if ":latest" in base_image or not ":" in base_image:
                     analysis += "  - ⚠️ Using 'latest' tag or no tag (pin specific version)\n"
-                if 'alpine' in base_image:
+                if "alpine" in base_image:
                     analysis += "  - ✅ Using Alpine Linux (minimal attack surface)\n"
-            
+
             analysis += f"- **User Configuration**: {'✅ Non-root user' if user_specified else '⚠️ Running as root (add USER instruction)'}\n"
-            
+
             if exposed_ports:
                 analysis += f"- **Exposed Ports**: {', '.join(exposed_ports)}\n"
-            
+
             # Check for common issues
             analysis += "\n### Best Practices Check\n"
             issues = []
-            
+
             if not user_specified:
                 issues.append("- Add USER instruction to run as non-root")
-            
-            if 'apt-get install' in content and 'apt-get update' not in content:
+
+            if "apt-get install" in content and "apt-get update" not in content:
                 issues.append("- Missing apt-get update before install")
-            
-            if 'COPY . .' in content or 'ADD . .' in content:
+
+            if "COPY . ." in content or "ADD . ." in content:
                 issues.append("- Copying entire directory (be specific about files)")
-            
-            if not any(line.strip().startswith('HEALTHCHECK') for line in lines):
+
+            if not any(line.strip().startswith("HEALTHCHECK") for line in lines):
                 issues.append("- Consider adding HEALTHCHECK instruction")
-                
+
             if issues:
                 analysis += "\n".join(issues)
             else:
                 analysis += "- All basic checks passed"
-                
-        elif path.suffix == '.json':
+
+        elif path.suffix == ".json":
             analysis += "JSON Configuration\n\n"
             try:
                 data = json.loads(content)
                 analysis += f"- **Keys**: {', '.join(list(data.keys())[:10])}\n"
-                
+
                 # Check for common CI/CD configurations
-                if 'scripts' in data:
+                if "scripts" in data:
                     analysis += f"- **Scripts defined**: {len(data['scripts'])}\n"
-                if 'dependencies' in data:
+                if "dependencies" in data:
                     analysis += f"- **Dependencies**: {len(data['dependencies'])}\n"
-                if 'devDependencies' in data:
+                if "devDependencies" in data:
                     analysis += f"- **Dev Dependencies**: {len(data['devDependencies'])}\n"
-                    
+
             except json.JSONDecodeError as e:
                 analysis += f"Error parsing JSON: {str(e)}\n"
-        
+
         return analysis
-        
+
     except Exception as e:
         return f"Error analyzing deployment config: {str(e)}"
 
@@ -201,16 +207,19 @@ def analyze_deployment_config(config_path: str) -> str:
 def generate_cicd_pipeline(project_type: str, platform: str = "github") -> str:
     """
     Generate CI/CD pipeline configuration for different platforms.
-    
+
     Args:
         project_type: Type of project (python, node, go, etc.)
         platform: CI/CD platform (github, gitlab, jenkins)
-        
+
     Returns:
         Generated CI/CD configuration
     """
     pipelines = {
-        ("python", "github"): """## Generated GitHub Actions Pipeline
+        (
+            "python",
+            "github",
+        ): """## Generated GitHub Actions Pipeline
 
 ```yaml
 name: Python CI/CD
@@ -334,8 +343,10 @@ jobs:
 - **Test Coverage**: With Codecov integration
 - **Container Security**: Trivy scanning
 - **Conditional Deployment**: Only on main branch""",
-
-        ("node", "github"): """## Generated GitHub Actions Pipeline
+        (
+            "node",
+            "github",
+        ): """## Generated GitHub Actions Pipeline
 
 ```yaml
 name: Node.js CI/CD
@@ -409,8 +420,10 @@ jobs:
 - **Security Audit**: npm audit and Snyk
 - **Type Checking**: If TypeScript is used
 - **Automated Deployment**: On main branch""",
-
-        ("go", "github"): """## Generated GitHub Actions Pipeline
+        (
+            "go",
+            "github",
+        ): """## Generated GitHub Actions Pipeline
 
 ```yaml
 name: Go CI/CD
@@ -492,9 +505,9 @@ jobs:
 - **Module Caching**: Faster builds
 - **Static Analysis**: go vet and staticcheck
 - **Race Detection**: Tests with -race flag
-- **Cross-compilation**: Linux binary build"""
+- **Cross-compilation**: Linux binary build""",
     }
-    
+
     key = (project_type.lower(), platform.lower())
     if key in pipelines:
         return pipelines[key]
@@ -533,10 +546,10 @@ jobs:
 def analyze_infrastructure_as_code(iac_path: str) -> str:
     """
     Analyze Infrastructure as Code files (Terraform, CloudFormation, etc.).
-    
+
     Args:
         iac_path: Path to IaC file or directory
-        
+
     Returns:
         IaC analysis report
     """
@@ -544,108 +557,108 @@ def analyze_infrastructure_as_code(iac_path: str) -> str:
         path = Path(iac_path)
         if not path.exists():
             return f"Error: Path {iac_path} not found"
-        
+
         analysis = "## Infrastructure as Code Analysis\n\n"
-        
+
         if path.is_file():
             content = path.read_text()
-            
+
             # Terraform analysis
-            if path.suffix == '.tf':
+            if path.suffix == ".tf":
                 analysis += "### Terraform Configuration\n"
-                
+
                 # Count resources
                 resource_count = len(re.findall(r'resource\s+"[^"]+"\s+"[^"]+"', content))
                 data_count = len(re.findall(r'data\s+"[^"]+"\s+"[^"]+"', content))
                 variable_count = len(re.findall(r'variable\s+"[^"]+"', content))
                 output_count = len(re.findall(r'output\s+"[^"]+"', content))
-                
+
                 analysis += f"- **Resources**: {resource_count}\n"
                 analysis += f"- **Data Sources**: {data_count}\n"
                 analysis += f"- **Variables**: {variable_count}\n"
                 analysis += f"- **Outputs**: {output_count}\n\n"
-                
+
                 # Security analysis
                 analysis += "### Security Considerations\n"
                 security_issues = []
-                
+
                 # Check for hardcoded values
                 if re.search(r'(password|secret|key)\s*=\s*"[^"]+"', content, re.IGNORECASE):
                     security_issues.append("- Potential hardcoded secrets detected")
-                
+
                 # Check for public access
-                if 'ingress' in content and '0.0.0.0/0' in content:
+                if "ingress" in content and "0.0.0.0/0" in content:
                     security_issues.append("- Security group allows access from 0.0.0.0/0")
-                
+
                 # Check for encryption
-                if 'aws_s3_bucket' in content and 'server_side_encryption_configuration' not in content:
+                if "aws_s3_bucket" in content and "server_side_encryption_configuration" not in content:
                     security_issues.append("- S3 bucket without encryption configuration")
-                
-                if 'aws_rds_instance' in content and 'storage_encrypted' not in content:
+
+                if "aws_rds_instance" in content and "storage_encrypted" not in content:
                     security_issues.append("- RDS instance without encryption")
-                
+
                 if security_issues:
                     analysis += "\n".join(security_issues)
                 else:
                     analysis += "- No immediate security issues detected"
-                
+
                 # Best practices
                 analysis += "\n\n### Best Practices\n"
-                if 'terraform' not in content:
+                if "terraform" not in content:
                     analysis += "- Add terraform version constraint\n"
-                if 'backend' not in content:
+                if "backend" not in content:
                     analysis += "- Configure remote state backend\n"
-                if not re.search(r'tags\s*=\s*{', content):
+                if not re.search(r"tags\s*=\s*{", content):
                     analysis += "- Add resource tags for organization\n"
-                    
+
             # CloudFormation analysis
-            elif path.suffix in ['.yml', '.yaml', '.json'] and 'AWSTemplateFormatVersion' in content:
+            elif path.suffix in [".yml", ".yaml", ".json"] and "AWSTemplateFormatVersion" in content:
                 analysis += "### CloudFormation Template\n"
-                
+
                 try:
-                    if path.suffix == '.json':
+                    if path.suffix == ".json":
                         template = json.loads(content)
                     else:
                         template = yaml.safe_load(content)
-                    
+
                     analysis += f"- **Format Version**: {template.get('AWSTemplateFormatVersion', 'Not specified')}\n"
                     analysis += f"- **Description**: {template.get('Description', 'No description')[:100]}...\n"
-                    
-                    if 'Parameters' in template:
+
+                    if "Parameters" in template:
                         analysis += f"- **Parameters**: {len(template['Parameters'])}\n"
-                    if 'Resources' in template:
+                    if "Resources" in template:
                         analysis += f"- **Resources**: {len(template['Resources'])}\n"
-                    if 'Outputs' in template:
+                    if "Outputs" in template:
                         analysis += f"- **Outputs**: {len(template['Outputs'])}\n"
-                        
+
                 except (json.JSONDecodeError, yaml.YAMLError) as e:
                     analysis += f"Error parsing template: {str(e)}\n"
-                    
+
         else:  # Directory
             analysis += f"### IaC Directory Analysis: {path.name}\n"
-            
+
             # Count files by type
-            tf_files = list(path.rglob('*.tf'))
-            yaml_files = list(path.rglob('*.yaml')) + list(path.rglob('*.yml'))
-            json_files = list(path.rglob('*.json'))
-            
+            tf_files = list(path.rglob("*.tf"))
+            yaml_files = list(path.rglob("*.yaml")) + list(path.rglob("*.yml"))
+            json_files = list(path.rglob("*.json"))
+
             analysis += f"- **Terraform files**: {len(tf_files)}\n"
             analysis += f"- **YAML files**: {len(yaml_files)}\n"
             analysis += f"- **JSON files**: {len(json_files)}\n"
-            
+
             # Check for modules
-            if (path / 'modules').exists():
-                modules = [d for d in (path / 'modules').iterdir() if d.is_dir()]
+            if (path / "modules").exists():
+                modules = [d for d in (path / "modules").iterdir() if d.is_dir()]
                 analysis += f"- **Modules**: {len(modules)} ({', '.join(m.name for m in modules[:5])})\n"
-            
+
             # Check for environments
-            env_dirs = ['dev', 'staging', 'prod', 'production']
+            env_dirs = ["dev", "staging", "prod", "production"]
             envs = [d for d in path.iterdir() if d.is_dir() and d.name in env_dirs]
             if envs:
                 analysis += f"- **Environments**: {', '.join(e.name for e in envs)}\n"
-        
+
         return analysis
-        
+
     except Exception as e:
         return f"Error analyzing IaC: {str(e)}"
 
@@ -653,296 +666,17 @@ def analyze_infrastructure_as_code(iac_path: str) -> str:
 def generate_monitoring_config(stack: str, metrics_type: str = "basic") -> str:
     """
     Generate monitoring and observability configuration.
-    
+
     Args:
         stack: Technology stack (prometheus, datadog, cloudwatch, etc.)
         metrics_type: Level of metrics (basic, detailed, full)
-        
+
     Returns:
         Monitoring configuration
     """
-    configs = {
-        "prometheus": f"""## Prometheus Monitoring Configuration
+    from .devops_monitoring_configs import DEFAULT_CONFIG_TEMPLATE, MONITORING_CONFIGS
 
-### Basic prometheus.yml
-```yaml
-global:
-  scrape_interval: 15s
-  evaluation_interval: 15s
-
-alerting:
-  alertmanagers:
-    - static_configs:
-        - targets:
-          - alertmanager:9093
-
-rule_files:
-  - "alerts/*.yml"
-
-scrape_configs:
-  # Application metrics
-  - job_name: 'application'
-    static_configs:
-      - targets: ['app:8080']
-    metrics_path: '/metrics'
-    
-  # Node exporter for system metrics
-  - job_name: 'node'
-    static_configs:
-      - targets: ['node-exporter:9100']
-  
-  # Database metrics (postgres example)
-  - job_name: 'postgres'
-    static_configs:
-      - targets: ['postgres-exporter:9187']
-  
-  # Redis metrics
-  - job_name: 'redis'
-    static_configs:
-      - targets: ['redis-exporter:9121']
-```
-
-### Alert Rules (alerts/basic.yml)
-```yaml
-groups:
-  - name: basic_alerts
-    interval: 30s
-    rules:
-      # High CPU usage
-      - alert: HighCPUUsage
-        expr: 100 - (avg(rate(node_cpu_seconds_total{{mode="idle"}}[5m])) * 100) > 80
-        for: 5m
-        labels:
-          severity: warning
-        annotations:
-          summary: "High CPU usage detected"
-          description: "CPU usage is above 80% (current value: {{{{ $value }}}}%)"
-      
-      # High memory usage
-      - alert: HighMemoryUsage
-        expr: (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100 > 85
-        for: 5m
-        labels:
-          severity: warning
-        annotations:
-          summary: "High memory usage detected"
-          description: "Memory usage is above 85% (current value: {{{{ $value }}}}%)"
-      
-      # Service down
-      - alert: ServiceDown
-        expr: up == 0
-        for: 1m
-        labels:
-          severity: critical
-        annotations:
-          summary: "Service {{{{ $labels.job }}}} is down"
-          description: "{{{{ $labels.instance }}}} of job {{{{ $labels.job }}}} has been down for more than 1 minute"
-```
-
-### Grafana Dashboard Example
-```json
-{{
-  "dashboard": {{
-    "title": "Application Metrics",
-    "panels": [
-      {{
-        "title": "Request Rate",
-        "targets": [
-          {{
-            "expr": "rate(http_requests_total[5m])",
-            "refId": "A"
-          }}
-        ],
-        "type": "graph"
-      }},
-      {{
-        "title": "Response Time",
-        "targets": [
-          {{
-            "expr": "histogram_quantile(0.95, http_request_duration_seconds_bucket)",
-            "refId": "A"
-          }}
-        ],
-        "type": "graph"
-      }}
-    ]
-  }}
-}}
-```""",
-
-        "datadog": """## Datadog Monitoring Configuration
-
-### Agent Configuration (datadog.yaml)
-```yaml
-api_key: ${DD_API_KEY}
-site: datadoghq.com
-hostname: ${HOSTNAME}
-
-tags:
-  - env:production
-  - service:api
-  - version:${VERSION}
-
-logs_enabled: true
-apm_enabled: true
-process_config:
-  enabled: true
-
-# Custom metrics
-dogstatsd_metrics_stats_enable: true
-```
-
-### Application Integration
-```python
-# Python example
-from datadog import initialize, statsd
-import time
-
-# Initialize
-options = {
-    'statsd_host': '127.0.0.1',
-    'statsd_port': 8125
-}
-initialize(**options)
-
-# Custom metrics
-def track_request(func):
-    def wrapper(*args, **kwargs):
-        start = time.time()
-        try:
-            result = func(*args, **kwargs)
-            statsd.increment('api.request.success')
-            return result
-        except Exception as e:
-            statsd.increment('api.request.error')
-            raise
-        finally:
-            duration = time.time() - start
-            statsd.histogram('api.request.duration', duration)
-    return wrapper
-```
-
-### Monitors Configuration
-```json
-{
-  "name": "High Error Rate",
-  "type": "query alert",
-  "query": "avg(last_5m):sum:api.request.error{env:production}.as_rate() > 0.05",
-  "message": "Error rate is above 5%! @slack-alerts",
-  "thresholds": {
-    "critical": 0.05,
-    "warning": 0.03
-  }
-}
-```""",
-
-        "cloudwatch": """## AWS CloudWatch Configuration
-
-### CloudWatch Agent Config
-```json
-{
-  "metrics": {
-    "namespace": "MyApp",
-    "metrics_collected": {
-      "cpu": {
-        "measurement": [
-          "cpu_usage_idle",
-          "cpu_usage_iowait",
-          "cpu_usage_user",
-          "cpu_usage_system"
-        ],
-        "metrics_collection_interval": 60,
-        "totalcpu": false
-      },
-      "disk": {
-        "measurement": [
-          "used_percent",
-          "inodes_free"
-        ],
-        "metrics_collection_interval": 60,
-        "resources": [
-          "*"
-        ]
-      },
-      "mem": {
-        "measurement": [
-          "mem_used_percent"
-        ],
-        "metrics_collection_interval": 60
-      }
-    }
-  },
-  "logs": {
-    "logs_collected": {
-      "files": {
-        "collect_list": [
-          {
-            "file_path": "/var/log/application/*.log",
-            "log_group_name": "/aws/ec2/application",
-            "log_stream_name": "{instance_id}",
-            "retention_in_days": 30
-          }
-        ]
-      }
-    }
-  }
-}
-```
-
-### CloudFormation Alarms
-```yaml
-HighCPUAlarm:
-  Type: AWS::CloudWatch::Alarm
-  Properties:
-    AlarmDescription: "Triggers when CPU exceeds 80%"
-    MetricName: CPUUtilization
-    Namespace: AWS/EC2
-    Statistic: Average
-    Period: 300
-    EvaluationPeriods: 2
-    Threshold: 80
-    ComparisonOperator: GreaterThanThreshold
-    AlarmActions:
-      - !Ref SNSTopic
-```"""
-    }
-    
-    if stack.lower() in configs:
-        return configs[stack.lower()]
+    if stack.lower() in MONITORING_CONFIGS:
+        return MONITORING_CONFIGS[stack.lower()]
     else:
-        return f"""## Monitoring Configuration
-
-**Stack**: {stack}
-**Metrics Type**: {metrics_type}
-
-### Essential Metrics to Monitor
-
-1. **System Metrics**
-   - CPU usage
-   - Memory usage
-   - Disk I/O
-   - Network traffic
-
-2. **Application Metrics**
-   - Request rate
-   - Error rate
-   - Response time
-   - Active users
-
-3. **Business Metrics**
-   - Conversion rate
-   - Revenue
-   - User engagement
-   - Feature adoption
-
-### Recommended Tools
-- **Open Source**: Prometheus + Grafana, ELK Stack
-- **Cloud**: CloudWatch (AWS), Stackdriver (GCP), Azure Monitor
-- **SaaS**: Datadog, New Relic, AppDynamics
-
-### Best Practices
-- Set up alerts for critical metrics
-- Use dashboards for visualization
-- Implement distributed tracing
-- Store metrics for trend analysis
-- Regular review and optimization"""
+        return DEFAULT_CONFIG_TEMPLATE.format(stack=stack, metrics_type=metrics_type)

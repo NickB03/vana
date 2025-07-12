@@ -146,6 +146,7 @@ docker-compose up
 
 ### Core Libraries (`lib/`)
 - **ADK Tools** (`lib/_tools/`): File operations, search, system tools
+  - **Web Search** (`lib/_tools/google_search_v2.py`): Google Custom Search with DuckDuckGo fallback
 - **Tool Registry** (`lib/_tools/registry.py`): Phase 3 thread-safe tool management
 - **MCP Integration** (`lib/mcp/`): Model Context Protocol for VS Code only
 - **Shared Services** (`lib/_shared_libraries/`):
@@ -289,8 +290,13 @@ poetry run pytest --cov=lib --cov=agents # With coverage
 1. **Memory Service**: Currently using in-memory fallback. Vector DB integration pending.
 2. **Code Execution**: Works in fallback mode without Docker. Full sandbox requires Docker.
 3. **Frontend Submodule**: `vana-ui` is a git submodule. Use `git submodule update --init` if needed.
-4. **API Keys**: Set `GOOGLE_API_KEY` for web search and AI features.
-5. **Streaming Responses**: Backend supports streaming for real-time agent responses.
+4. **API Keys**: Set `GOOGLE_API_KEY` for Gemini models and web search features.
+5. **Web Search Configuration**: 
+   - **Primary**: Google Custom Search API (automatic with `GOOGLE_API_KEY`)
+   - **Optional**: Set `GOOGLE_CSE_ID` for custom search engine (uses default if not set)
+   - **Fallback**: DuckDuckGo when Google is unavailable or quota exceeded
+   - **No Brave API Required**: Removed dependency on `BRAVE_API_KEY`
+6. **Streaming Responses**: Backend supports streaming for real-time agent responses.
 
 ## 🔧 Claude Code Configuration
 

@@ -5,22 +5,19 @@ DevOps expert for deployment, infrastructure, CI/CD, and monitoring.
 Provides practical automation and infrastructure guidance.
 """
 
-from google.adk.tools import FunctionTool
 from google.adk.agents import LlmAgent
+from google.adk.tools import FunctionTool
 
 # Import DevOps analysis tools
 from agents.specialists.devops_tools import (
     analyze_deployment_config,
-    generate_cicd_pipeline,
     analyze_infrastructure_as_code,
-    generate_monitoring_config
+    generate_cicd_pipeline,
+    generate_monitoring_config,
 )
 
 # Import shared ADK tools
-from lib._tools import (
-    adk_read_file,
-    adk_list_directory
-)
+from lib._tools import adk_list_directory, adk_read_file
 
 # Create the DevOps Specialist using ADK patterns
 devops_specialist = LlmAgent(
@@ -67,22 +64,23 @@ Always provide:
         FunctionTool(analyze_infrastructure_as_code),
         FunctionTool(generate_monitoring_config),
         adk_read_file,
-        adk_list_directory
-    ]  # Exactly 6 tools - ADK limit
+        adk_list_directory,
+    ],  # Exactly 6 tools - ADK limit
 )
 
 # Note: agent_tool conversion will be added when ADK integration is complete
 devops_specialist_tool = None  # Placeholder
 
+
 # Helper function for direct usage
 def analyze_devops(request: str, context: dict = None) -> str:
     """
     Direct interface to DevOps specialist for testing.
-    
+
     Args:
         request: DevOps analysis request
         context: Optional context dictionary
-        
+
     Returns:
         DevOps analysis results
     """

@@ -11,14 +11,16 @@ FunctionTool fallback implementation:
 - Avoids Google ADK AgentTool import hanging issues
 """
 
-from agents.specialists.ui_specialist import analyze_user_interface
-from agents.specialists.qa_specialist import analyze_testing_strategy
-from agents.specialists.devops_specialist import analyze_infrastructure
-from agents.specialists.architecture_specialist import analyze_system_architecture
-from google.adk.tools import FunctionTool
 import os
 import sys
 from typing import Dict
+
+from google.adk.tools import FunctionTool
+
+from agents.specialists.architecture_specialist import analyze_system_architecture
+from agents.specialists.devops_specialist import analyze_infrastructure
+from agents.specialists.qa_specialist import analyze_testing_strategy
+from agents.specialists.ui_specialist import analyze_user_interface
 
 # Add project root to Python path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))

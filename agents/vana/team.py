@@ -7,12 +7,13 @@ Based on research of ADK documentation and sample agents.
 
 import os
 import sys
+
 from dotenv import load_dotenv
 
 # CRITICAL: Load environment variables BEFORE any Google libraries are imported.
 # This ensures the GOOGLE_API_KEY is available for the ADK and GenAI clients.
-project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
-dotenv_path = os.path.join(project_root, '.env.local')
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+dotenv_path = os.path.join(project_root, ".env.local")
 if os.path.exists(dotenv_path):
     load_dotenv(dotenv_path=dotenv_path)
     api_key = os.getenv("GOOGLE_API_KEY")
@@ -33,8 +34,8 @@ from lib._tools import adk_mathematical_solve  # Mathematical reasoning tool
 from lib._tools import adk_read_file  # Basic file operations
 from lib._tools import adk_simple_execute_code  # Simple code execution
 from lib._tools import adk_transfer_to_agent  # Agent delegation
-from lib._tools.web_search_sync import create_web_search_sync_tool  # Synchronous web search
 from lib._tools import adk_write_file  # Basic file operations
+from lib._tools.web_search_sync import create_web_search_sync_tool  # Synchronous web search
 from lib.logging_config import get_logger
 
 # Removed sys.path.insert - using proper package imports
@@ -63,7 +64,7 @@ adk_web_search = create_web_search_sync_tool()
 # Import enhanced orchestrator with Phase 3 specialists
 try:
     from agents.vana.enhanced_orchestrator import enhanced_orchestrator
-    
+
     # Use enhanced orchestrator as primary sub-agent
     specialist_agents = [enhanced_orchestrator]
     logger.info("✅ Enhanced orchestrator with Phase 3 specialists loaded")
@@ -72,9 +73,13 @@ except ImportError as e:
     try:
         # Fallback to individual specialists
         from agents.data_science.specialist import data_science_specialist
+
         specialist_agents = [data_science_specialist]
     except ImportError:
         specialist_agents = []
+
+# Import base agents module to avoid circular dependencies
+from agents.base_agents import set_root_agent
 
 # Create simplified ADK-compliant VANA agent following Google ADK best practices
 root_agent = LlmAgent(
@@ -89,7 +94,7 @@ AUTOMATIC ROUTING PROTOCOL - FOLLOW THIS FOR EVERY USER REQUEST:
    - Weather → IMMEDIATELY use web_search(query="weather in [location]", max_results=5)
    - News → IMMEDIATELY use web_search(query="[topic] news", max_results=5)
 2. For other requests, use analyze_task to classify them
-3. If the task_type is "code_execution", inform user that code execution is temporarily disabled
+3. If the task_type is "code_execution", use simple_execute_code or mathematical_solve as appropriate
 4. If the task_type is "data_analysis", use transfer_to_agent with agent_name="data_science_specialist"
 5. For all other task types, handle the request directly using the appropriate tools
 
@@ -99,7 +104,7 @@ AVAILABLE TOOLS:
 - mathematical_solve: For mathematical problems and calculations
 - logical_analyze: For logical reasoning tasks
 - read_file/write_file: For file operations
-- simple_execute_code: For basic Python execution (only for simple tasks, not complex code)
+- simple_execute_code: 🐍 Execute simple Python code safely (basic operations, no external libraries)
 - load_memory: For direct memory queries (if available)
 - analyze_task: For classifying and routing tasks
 
@@ -111,6 +116,11 @@ When user asks about time, weather, or news, SKIP analyze_task and DIRECTLY call
 - "Latest news about X" → IMMEDIATELY call web_search(query="latest news X", max_results=5)
 
 DO NOT analyze these queries, just search immediately!
+
+CODE EXECUTION GUIDANCE:
+- Use simple_execute_code for: basic Python (print, math, lists, functions, algorithms)
+- Use mathematical_solve for: mathematical expressions and word problems  
+- Delegate to specialists for: complex analysis, external libraries, file processing
 
 Remember: Always analyze first, then route if needed, then execute.""",
     tools=[
@@ -128,3 +138,6 @@ Remember: Always analyze first, then route if needed, then execute.""",
     # Simple ADK delegation pattern
     sub_agents=specialist_agents,
 )
+
+# Register root agent to avoid circular dependencies
+set_root_agent(root_agent)

@@ -5,22 +5,19 @@ Simplified data science specialist using only standard library.
 No pandas, no numpy - just pure Python for basic analysis.
 """
 
-from google.adk.tools import FunctionTool
 from google.adk.agents import LlmAgent
+from google.adk.tools import FunctionTool
 
 # Import our simplified data science tools
 from agents.specialists.data_science_tools import (
     analyze_data_simple,
-    generate_data_insights,
     clean_data_basic,
-    create_data_summary
+    create_data_summary,
+    generate_data_insights,
 )
 
 # Import shared ADK tools
-from lib._tools import (
-    adk_read_file,
-    adk_search_knowledge
-)
+from lib._tools import adk_read_file, adk_search_knowledge
 
 # Create the Data Science Specialist using ADK patterns
 data_science_specialist = LlmAgent(
@@ -59,22 +56,23 @@ Always explain findings in clear, non-technical language and provide actionable 
         FunctionTool(clean_data_basic),
         FunctionTool(create_data_summary),
         adk_read_file,
-        adk_search_knowledge
-    ]  # Exactly 6 tools - ADK limit
+        adk_search_knowledge,
+    ],  # Exactly 6 tools - ADK limit
 )
 
 # Note: agent_tool conversion will be added when ADK integration is complete
 data_science_specialist_tool = None  # Placeholder
 
+
 # Helper function for direct usage
 def analyze_data(request: str, context: dict = None) -> str:
     """
     Direct interface to data science specialist for testing.
-    
+
     Args:
         request: Analysis request
         context: Optional context dictionary
-        
+
     Returns:
         Analysis results
     """

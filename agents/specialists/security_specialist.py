@@ -5,22 +5,19 @@ Security expert with priority routing for any security-related queries.
 Provides vulnerability detection, security best practices, and remediation guidance.
 """
 
-from google.adk.tools import FunctionTool
 from google.adk.agents import LlmAgent
+from google.adk.tools import FunctionTool
 
 # Import security analysis tools
 from agents.specialists.security_tools import (
-    scan_security_vulnerabilities,
-    generate_security_report,
+    analyze_authentication_security,
     check_security_headers,
-    analyze_authentication_security
+    generate_security_report,
+    scan_security_vulnerabilities,
 )
 
 # Import shared ADK tools
-from lib._tools import (
-    adk_read_file,
-    adk_search_knowledge
-)
+from lib._tools import adk_read_file, adk_search_knowledge
 
 # Create the Security Specialist with ELEVATED STATUS
 security_specialist = LlmAgent(
@@ -69,22 +66,23 @@ Your responses should be clear, urgent when necessary, and always actionable."""
         FunctionTool(check_security_headers),
         FunctionTool(analyze_authentication_security),
         adk_read_file,
-        adk_search_knowledge
-    ]  # Exactly 6 tools - ADK limit
+        adk_search_knowledge,
+    ],  # Exactly 6 tools - ADK limit
 )
 
 # Note: agent_tool conversion will be added when ADK integration is complete
 security_specialist_tool = None  # Placeholder
 
+
 # Helper function for direct usage
 def analyze_security(request: str, context: dict = None) -> str:
     """
     Direct interface to security specialist for testing.
-    
+
     Args:
         request: Security analysis request
         context: Optional context dictionary
-        
+
     Returns:
         Security analysis results
     """

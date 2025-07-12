@@ -69,6 +69,7 @@ VANA is an advanced agentic AI system featuring hierarchical multi-agent orchest
 - **⚡ Performance**: <100ms routing, 40x cache speedup, <1s average response
 - **🔄 Agent Communication**: Agent-as-tool pattern for seamless integration
 - **🛡️ Enterprise Ready**: Thread-safe, monitored, fault-tolerant, ADK-compliant
+- **🔍 Web Search**: Native Google Search integration with fallback to DuckDuckGo
 
 ## 🚀 Quick Start
 
@@ -128,6 +129,14 @@ cp .env.example .env.local
 ```
 
 Get your API key from: [Google AI Studio](https://aistudio.google.com/apikey)
+
+#### Optional: Enable Google Custom Search
+For enhanced web search capabilities:
+1. Enable Custom Search API in [Google Cloud Console](https://console.cloud.google.com/apis/library/customsearch.googleapis.com)
+2. Create a Custom Search Engine at [CSE Control Panel](https://cse.google.com/)
+3. Add `GOOGLE_CSE_ID` to your `.env.local` file
+
+**Note**: Web search works without configuration, falling back to DuckDuckGo when Google Search is unavailable.
 
 ### Access Points
 
@@ -290,6 +299,23 @@ Execute a task through VANA orchestration.
   }
 }
 ```
+
+#### Web Search Integration
+VANA automatically uses web search for current information:
+
+**Example:**
+```json
+{
+  "input": "What's the current time in Dallas?"
+}
+```
+
+Web search capabilities:
+- Time queries with location extraction
+- Weather information
+- Local business and venue searches
+- Current news and events
+- Automatic fallback to DuckDuckGo when Google is unavailable
 
 #### GET /health
 Check system health status.
