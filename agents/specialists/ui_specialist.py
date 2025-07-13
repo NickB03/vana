@@ -818,7 +818,7 @@ def analyze_user_flow(
 # Create the UI/UX Specialist agent
 ui_specialist = LlmAgent(
     name="UIUXSpecialist",
-    model="gemini-2.0-flash",
+    model="gemini-2.5-flash",
     description="User interface design and experience optimization expert",
     instruction="""You are a UI/UX specialist focused on creating accessible, performant, and user-friendly interfaces.
 

@@ -39,7 +39,7 @@ jobs:
           --platform managed \
           --region us-central1 \
           --allow-unauthenticated \
-          --set-env-vars ENVIRONMENT=development,VANA_MODEL=gemini-2.0-flash-exp \
+          --set-env-vars ENVIRONMENT=development,VANA_MODEL=gemini-2.5-flash-exp \
           --memory 1Gi \
           --cpu 1 \
           --concurrency 500 \

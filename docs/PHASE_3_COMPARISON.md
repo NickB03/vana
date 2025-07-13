@@ -23,7 +23,7 @@
 ```python
 # Complex base class with many dependencies
 class BaseSpecialist(ABC):
-    def __init__(self, name: str, model: str = "gemini-2.0-flash"):
+    def __init__(self, name: str, model: str = "gemini-2.5-flash"):
         self.metrics = SpecialistMetrics()
         self.cache = SpecialistCache()
         self.circuit_breaker = CircuitBreaker()
@@ -51,7 +51,7 @@ def analyze_architecture(context: str) -> str:
 # Standard ADK agent
 architecture_specialist = LlmAgent(
     name="architecture_specialist",
-    model="gemini-2.0-flash",
+    model="gemini-2.5-flash",
     tools=[FunctionTool(analyze_architecture), ...],
     instruction="..."
 )

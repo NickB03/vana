@@ -253,7 +253,7 @@ class TestSecuritySpecialistAgent:
     def test_agent_configuration(self):
         """Test that agent is properly configured"""
         assert security_specialist.name == "security_specialist"
-        assert security_specialist.model == "gemini-2.0-flash"
+        assert security_specialist.model == "gemini-2.5-flash"
         assert "ELEVATED STATUS" in security_specialist.description
 
     def test_agent_has_required_tools(self):

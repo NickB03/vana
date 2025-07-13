@@ -27,10 +27,10 @@ class TestSequentialWorkflowADKCompliance:
         """Create sample agents for testing."""
         return [
             LlmAgent(
-                name="Agent1", model="gemini-2.0-flash", description="First agent", instruction="Do task 1", tools=[]
+                name="Agent1", model="gemini-2.5-flash", description="First agent", instruction="Do task 1", tools=[]
             ),
             LlmAgent(
-                name="Agent2", model="gemini-2.0-flash", description="Second agent", instruction="Do task 2", tools=[]
+                name="Agent2", model="gemini-2.5-flash", description="Second agent", instruction="Do task 2", tools=[]
             ),
         ]
 
@@ -144,7 +144,7 @@ class TestParallelWorkflowADKCompliance:
     def sample_agents(self):
         return [
             LlmAgent(
-                name=f"Agent{i}", model="gemini-2.0-flash", description=f"Agent {i}", instruction=f"Task {i}", tools=[]
+                name=f"Agent{i}", model="gemini-2.5-flash", description=f"Agent {i}", instruction=f"Task {i}", tools=[]
             )
             for i in range(3)
         ]
@@ -222,7 +222,7 @@ class TestLoopWorkflowADKCompliance:
     def sample_agent(self):
         return LlmAgent(
             name="IterativeAgent",
-            model="gemini-2.0-flash",
+            model="gemini-2.5-flash",
             description="Iterative processor",
             instruction="Process iteratively",
             tools=[],

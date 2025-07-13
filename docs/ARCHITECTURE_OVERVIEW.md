@@ -10,7 +10,7 @@ VANA implements a sophisticated multi-level hierarchical agent system built on G
 - **Location**: `agents/vana/team.py`
 - **Purpose**: Primary user interface
 - **Tools**: Minimal toolset for conversation
-- **Model**: Gemini 2.0 Flash
+- **Model**: Gemini 2.5 Flash
 - **Responsibilities**:
   - Handle user conversations
   - Route complex tasks to Master Orchestrator

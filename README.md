@@ -1,9 +1,8 @@
-# VANA: Agentic AI System with Hierarchical Orchestration
+# VANA: Enterprise Multi-Agent AI System
 
-<!-- Phase 3 Complete - Production Ready -->
+<!-- Phase 4 Complete - Production Ready with ThinkingPanel -->
 
 <div align="center">
-  <!-- VANA Logo - Add when assets are available -->
   
   [![Python 3.13+](https://img.shields.io/badge/python-3.13+-blue.svg)](https://www.python.org/downloads/)
   [![Google ADK](https://img.shields.io/badge/Google%20ADK-1.1.1-green.svg)](https://github.com/google/adk)
@@ -11,501 +10,307 @@
   [![Architecture](https://img.shields.io/badge/architecture-hierarchical-purple.svg)]()
   [![Status](https://img.shields.io/badge/status-production_ready-brightgreen.svg)]()
   
-  **True Agentic AI: Hierarchical Multi-Agent System for Complex Task Automation**
+  **Transparent Multi-Agent AI: See How AI Thinks While It Works**
   
-  [Features](#features) • [Quick Start](#quick-start) • [Architecture](#architecture) • [Documentation](#documentation) • [Contributing](#contributing)
+  [Demo](#demo) • [Features](#features) • [Quick Start](#quick-start) • [Architecture](#architecture) • [Documentation](#documentation)
 </div>
 
 ---
 
 ## 🌟 Overview
 
-VANA is an advanced agentic AI system featuring hierarchical multi-agent orchestration built on Google's Agent Development Kit (ADK). With a 5-level agent hierarchy, VANA intelligently decomposes complex tasks, routes them to specialized agents, and coordinates sophisticated workflows through its Master Orchestrator.
+VANA is an enterprise-grade multi-agent AI system that makes AI decision-making transparent. Built on Google's Agent Development Kit (ADK), VANA features a hierarchical orchestration system with real-time thinking visibility through its innovative ThinkingPanel.
 
-### 🚀 Current Status: Enterprise Ready
+### 🎯 Key Differentiator: See AI Think
 
-**VANA has successfully completed Phase 4 implementation**, achieving a fully functional hierarchical agentic AI system with advanced workflow management, 6 working specialists, and enterprise-grade orchestration. The system is now enterprise-ready with comprehensive testing, security features, and performance optimizations.
-
-#### ✅ Completed Phases
-
-**Phase 1 (Foundation)**: Core hierarchical system with multi-level architecture  
-**Phase 2 (Stabilization)**: Critical bug fixes, thread safety, memory improvements  
-**Phase 3 (Enhancement)**: Working specialists with real tools, enhanced orchestrator  
-**Phase 4 (Enterprise)**: Workflow managers, additional specialists, Orchestrator V2
-
-#### 🆕 Current Features
-
-- **🏗️ Hierarchical Architecture**: Full multi-level agent system operational
-  - Level 1: VANA Chat Agent (user interface)
-  - Level 2: Master Orchestrator (intelligent routing engine)
-  - Level 3: Project Managers (workflow orchestration)
-  - Level 4: Specialist Agents (domain-specific expertise)
-  - Level 5: Maintenance Agents (framework for future enhancement)
-
-- **🧠 Enhanced Orchestrator**: Production-ready routing system
-  - Intelligent task analysis (Simple → Enterprise complexity)
-  - LRU caching for performance optimization
-  - Comprehensive performance metrics
-  - Security-first priority routing
-  - Thread-safe implementation
-
-- **👥 Working Specialists** (All ADK-compliant, synchronous):
-  - **Architecture Specialist**: AST-based pattern detection, dependency analysis, real refactoring
-  - **Data Science Specialist**: Statistical analysis using only Python stdlib
-  - **Security Specialist (ELEVATED)**: Priority routing, vulnerability scanning, compliance validation
-  - **DevOps Specialist**: CI/CD generation, deployment configs, monitoring setup
-  - **QA Specialist**: Test generation, code coverage analysis, bug detection
-  - **UI/UX Specialist**: Component generation, accessibility validation, responsive design
-
-- **🛡️ Production Features**:
-  - Circuit breakers and fault tolerance
-  - Comprehensive error handling
-  - Performance monitoring and metrics
-  - Thread-safe singleton registry
-  - Double-checked locking patterns
-
-### Core Capabilities
-
-- **🤖 Intelligent Orchestration**: Enhanced V2 orchestrator with workflow detection
-- **🔧 Distributed Tools**: Comprehensive toolset across all working specialists
-- **🧠 Advanced Task Analysis**: Multi-criteria routing with confidence scoring
-- **⚡ Performance**: Sub-100ms routing, optimized caching, sub-second average response
-- **🔄 Workflow Management**: Sequential, Parallel, and Loop workflow managers
-- **🛡️ Enterprise Ready**: Thread-safe, monitored, fault-tolerant, ADK-compliant
-- **🔍 Web Search**: Native Google Search integration with fallback to DuckDuckGo
-- **🎯 Adaptive Learning**: Performance tracking and routing optimization
+Unlike traditional AI assistants, VANA shows you exactly how it processes your requests:
+- **Real-time orchestration visibility** - Watch as requests are routed to specialists
+- **Transparent decision making** - See which agents are working on your task
+- **Live progress tracking** - Monitor each step of the analysis process
 
 ## 🚀 Quick Start
 
 ### Prerequisites
 
-- Python 3.13+ (required for modern async patterns)
-- Node.js 18+ (for frontend)
-- Poetry for dependency management
-- Google Cloud API key for Gemini models
+- Python 3.13+ (mandatory for ADK compatibility)
+- Node.js 20+ and npm
+- Docker (optional, for containerized deployment)
+- Google API key for Gemini models
 
-### One-Command Setup
+### Installation
 
 ```bash
-# Clone and setup everything
-git clone https://github.com/NickB03/vana.git
+# Clone the repository
+git clone https://github.com/your-org/vana.git
 cd vana
+
+# Quick setup with Make
 make setup && make dev
+
+# Or manual setup:
+# Backend
+poetry install
+cp .env.example .env
+# Edit .env with your GOOGLE_API_KEY
+
+# Frontend
+cd vana-ui
+npm install
 ```
 
-That's it! 🎉 The system will:
-- Check all dependencies
-- Install Python and Node packages
-- Setup your environment
-- Start both backend and frontend
+### Running VANA
 
-### Alternative Setup Methods
-
-#### Docker (Recommended)
 ```bash
-# Using Docker Compose
+# Option 1: Using Make (recommended)
+make dev
+
+# Option 2: Manual
+# Terminal 1 - Backend
+python main.py
+
+# Terminal 2 - Frontend
+cd vana-ui && npm run dev
+
+# Option 3: Docker
 docker-compose up
-
-# Or with Make
-make docker-up
 ```
 
-#### Local Development
-```bash
-# Manual setup
-./scripts/start-dev.sh  # Interactive setup with checks
+### Access VANA
 
-# Or step by step
-poetry install          # Python dependencies
-cd vana-ui && npm install && cd ..  # Frontend dependencies
-./start-vana-ui.sh     # Start everything
-```
-
-#### VS Code
-Press `Cmd+Shift+B` (or `Ctrl+Shift+B` on Windows/Linux) to start the development environment directly from VS Code.
-
-### Configuration
-
-```bash
-# Environment setup (auto-created by make setup)
-cp .env.example .env.local
-# Add your GOOGLE_API_KEY to .env.local
-```
-
-Get your API key from: [Google AI Studio](https://aistudio.google.com/apikey)
-
-#### Optional: Enable Google Custom Search
-For enhanced web search capabilities:
-1. Enable Custom Search API in [Google Cloud Console](https://console.cloud.google.com/apis/library/customsearch.googleapis.com)
-2. Create a Custom Search Engine at [CSE Control Panel](https://cse.google.com/)
-3. Add `GOOGLE_CSE_ID` to your `.env.local` file
-
-**Note**: Web search works without configuration, falling back to DuckDuckGo when Google Search is unavailable.
-
-### Access Points
-
-Once running, you can access:
-- 🌐 **Frontend**: http://localhost:5173
-- 🔧 **Backend API**: http://localhost:8081
-- 📚 **API Docs**: http://localhost:8081/docs
-- 🎯 **Health Check**: http://localhost:8081/health
-
-### Your First Request
-
-```bash
-# Simple conversation (handled by VANA Chat)
-curl -X POST http://localhost:8081/api/v1/chat \
-  -H "Content-Type: application/json" \
-  -d '{"query": "Hello, what can you help me with?", "session_id": "test-001"}'
-
-# Complex task (routed to specialists)
-curl -X POST http://localhost:8081/api/v1/chat \
-  -H "Content-Type: application/json" \
-  -d '{"query": "Design a microservices architecture for an e-commerce platform", "session_id": "test-002"}'
-
-# Or use the web interface at http://localhost:5173
-```
-
-## 🛠️ Development Commands
-
-```bash
-# Common tasks
-make help          # Show all available commands
-make test          # Run all tests
-make format        # Format code with black
-make lint          # Run linting checks
-make security      # Run security scan
-
-# Docker operations
-make docker-up     # Start with Docker
-make docker-down   # Stop Docker services
-make docker-logs   # View logs
-
-# Environment
-make clean         # Clean generated files
-./scripts/validate-env.sh  # Check environment setup
-```
+1. Open http://localhost:5173 (development) or http://localhost:8080 (production)
+2. Login with demo credentials:
+   - Email: `demo@vana.ai`
+   - Password: `vana-demo-2024`
+3. Try queries like:
+   - "What are the security vulnerabilities in this code?"
+   - "Analyze the data trends from last quarter"
+   - "How should I deploy this application?"
 
 ## 🏗️ Architecture
 
-<div align="center">
-  <!-- Architecture diagram - Add when assets are available -->
-</div>
-
-### Current Architecture (Phase 4 Complete)
-
 ```mermaid
 graph TD
-    User[User] --> VANA[VANA Chat Agent]
-    VANA --> MO[Master Orchestrator<br/>HierarchicalTaskManager]
+    User[User Interface] --> Chat[VANA Chat Agent]
+    Chat --> Stream[Streaming API<br/>with ThinkingPanel Events]
+    Stream --> Orchestrator[Master Orchestrator<br/>Enhanced V2]
     
-    MO --> |Simple Tasks| Specialists
-    MO --> |Complex Tasks| Workflows
-    MO --> |Workflow Detection| OV2[Orchestrator V2<br/>Enhanced Routing]
+    Orchestrator --> Routing{Intelligent<br/>Routing}
     
-    subgraph Workflows[Workflow Managers]
-        SEQ[Sequential Workflow<br/>✅ Active]
-        PAR[Parallel Workflow<br/>✅ Active]
-        LOOP[Loop Workflow<br/>✅ Active]
-    end
+    Routing -->|Security Query| Security[🔒 Security Specialist]
+    Routing -->|Data Query| DataSci[📊 Data Science Specialist]
+    Routing -->|Code Query| Arch[🏗️ Architecture Specialist]
+    Routing -->|Deploy Query| DevOps[⚙️ DevOps Specialist]
+    Routing -->|Test Query| QA[🧪 QA Specialist]
+    Routing -->|UI Query| UIUX[🎨 UI/UX Specialist]
     
-    subgraph Specialists[Active Specialists]
-        ARCH[Architecture Specialist<br/>✅ Working]
-        SEC[Security Specialist<br/>🔴 ELEVATED]
-        DO[DevOps Specialist<br/>✅ Working]
-        DS[Data Science Specialist<br/>✅ Working]
-        QA[QA Engineer<br/>✅ Working]
-        UI[UI/UX Designer<br/>✅ Working]
-    end
+    Security --> Tools1[Security Tools<br/>• Vulnerability Scan<br/>• Compliance Check<br/>• Threat Analysis]
+    DataSci --> Tools2[Data Tools<br/>• Statistical Analysis<br/>• Data Cleaning<br/>• Trend Detection]
+    Arch --> Tools3[Architecture Tools<br/>• AST Analysis<br/>• Pattern Detection<br/>• Refactoring]
     
-    subgraph Maintenance[Future Enhancement]
-        MA[Memory Agent]
-        PA[Planning Agent]
-        LA[Learning Agent]
-    end
+    Orchestrator --> Thinking[ThinkingPanel<br/>Real-time Updates]
+    Thinking --> User
     
-    MO -.-> Maintenance
-    
-    style VANA fill:#e1f5fe
-    style MO fill:#fff3e0
-    style Specialists fill:#f3e5f5
-    style Maintenance fill:#f5f5f5,stroke-dasharray: 5 5
+    style Orchestrator fill:#f96,stroke:#333,stroke-width:4px
+    style Thinking fill:#9f6,stroke:#333,stroke-width:2px
 ```
 
-### Task Routing Flow
+### Component Overview
 
-```mermaid
-sequenceDiagram
-    participant User
-    participant VANA as VANA Chat
-    participant MO as Master Orchestrator
-    participant TA as Task Analyzer
-    participant SP as Specialist
-    
-    User->>VANA: "Design a REST API"
-    VANA->>MO: transfer_to_agent
-    MO->>TA: analyze_task_complexity
-    TA-->>MO: complexity: SIMPLE, type: DESIGN
-    MO->>SP: route_to_specialist(architecture)
-    SP-->>MO: API design complete
-    MO-->>VANA: Results
-    VANA-->>User: Here's your API design...
+1. **User Interface**: React-based chat interface with real-time thinking display
+2. **Streaming API**: Server-sent events (SSE) for live updates
+3. **Master Orchestrator**: Intelligent routing with caching and metrics
+4. **Specialist Agents**: Domain-specific experts with real tools
+5. **ThinkingPanel**: Transparent display of AI decision-making
+
+## ✨ Features
+
+### 🧠 ThinkingPanel - See AI in Action
+
+The ThinkingPanel provides unprecedented transparency into AI operations:
+
+```typescript
+// Real-time thinking events displayed to users
+🎯 Analyzing your request...
+🔒 Security analysis requested - routing to Security Specialist...
+🔍 Performing vulnerability scan...
+✅ Analysis complete, preparing response...
 ```
 
-### Agent Flow
+### 👥 Specialist Agents
 
-<div align="center">
-  <!-- Agent flow diagram - Add when assets are available -->
-</div>
+All specialists are production-ready with real tools:
 
-```mermaid
-sequenceDiagram
-    participant U as User
-    participant V as VANA
-    participant T as Task Analyzer
-    participant A as Agents
-    participant Tools
-    
-    U->>V: Submit Request
-    V->>T: Analyze Task
-    T->>V: Task Classification
-    V->>A: Delegate to Specialist
-    A->>Tools: Execute Operations
-    Tools->>A: Return Results
-    A->>V: Task Complete
-    V->>U: Final Response
-```
+| Specialist | Icon | Capabilities |
+|------------|------|--------------|
+| Security | 🔒 | Vulnerability scanning, compliance validation, threat analysis |
+| Data Science | 📊 | Statistical analysis, data cleaning, trend detection |
+| Architecture | 🏗️ | AST analysis, pattern detection, code refactoring |
+| DevOps | ⚙️ | CI/CD generation, deployment configs, monitoring |
+| QA | 🧪 | Test generation, coverage analysis, bug detection |
+| UI/UX | 🎨 | Component generation, accessibility, responsive design |
 
-## 📚 Documentation
+### 🚀 Performance
 
-### Core Concepts
+- **Sub-100ms routing** - Lightning-fast specialist selection
+- **LRU caching** - Optimized response times
+- **Streaming responses** - Real-time content delivery
+- **Thread-safe** - Enterprise-grade concurrency
 
-#### Multi-Agent Architecture
-VANA employs a hierarchical agent structure where the orchestrator delegates tasks to specialized agents based on their capabilities and the task requirements.
+### 🛡️ Production Features
 
-#### Task Analysis Engine
-Advanced NLP-powered analysis determines task type, complexity, required capabilities, and optimal execution strategy.
+- **Clean output formatting** - No internal handoff artifacts
+- **Comprehensive error handling** - Graceful degradation
+- **Health monitoring** - Built-in health checks
+- **Docker ready** - Production containerization
+- **Security first** - Input validation and sanitization
 
-#### Tool Integration
-Seamless integration with Google ADK provides a rich set of tools for file operations, web searching, data processing, and more.
+## 📊 API Documentation
 
-### API Reference
+### Streaming Chat Endpoint
 
-#### POST /run
-Execute a task through VANA orchestration.
+```http
+POST /chat
+Content-Type: application/json
 
-**Request:**
-```json
 {
-  "input": "Your task description here"
+  "message": "Your query here",
+  "session_id": "optional-session-id",
+  "stream": true
 }
 ```
 
-**Response:**
-```json
+**SSE Response Events:**
+
+```javascript
+// Thinking event
+data: {"type": "thinking", "content": "Analyzing request...", "agent": "master_orchestrator"}
+
+// Content streaming
+data: {"type": "content", "content": "Based on my analysis..."}
+
+// Completion
+data: {"type": "done", "status": "complete"}
+```
+
+### Standard Chat Endpoint
+
+```http
+POST /run
+Content-Type: application/json
+
 {
-  "result": {
-    "output": "Task completed successfully...",
-    "id": "session_uuid"
-  }
+  "input": "Your query here"
 }
 ```
 
-#### Web Search Integration
-VANA automatically uses web search for current information:
+## 🔧 Configuration
 
-**Example:**
-```json
-{
-  "input": "What's the current time in Dallas?"
-}
+### Environment Variables
+
+```bash
+# Required
+GOOGLE_API_KEY=your-google-api-key
+GOOGLE_CLOUD_PROJECT=your-project-id
+
+# Optional
+VANA_MODEL=gemini-2.0-flash  # Default model
+PORT=8080                     # Server port
+VANA_ENV=production          # Environment
+LOG_LEVEL=INFO               # Logging level
+
+# Feature Flags
+VANA_ENABLE_SPECIALISTS=true  # Enable specialist agents
+VANA_MAX_TOOLS_PER_AGENT=6   # ADK best practice
 ```
 
-Web search capabilities:
-- Time queries with location extraction
-- Weather information
-- Local business and venue searches
-- Current news and events
-- Automatic fallback to DuckDuckGo when Google is unavailable
+## 🐳 Docker Deployment
 
-#### GET /health
-Check system health status.
+```bash
+# Build and run with Docker Compose
+docker-compose up -d
 
-**Response:**
-```json
-{
-  "status": "healthy"
-}
+# Or build production image
+docker build -t vana-prod -f Dockerfile.prod .
+docker run -p 8080:8080 --env-file .env vana-prod
 ```
 
-## 🛠️ Development
-
-### Project Structure
+## 📁 Project Structure
 
 ```
 vana/
-├── agents/               # Agent implementations
-│   ├── vana/            # Main orchestrator
-│   │   ├── team.py      # VANA root agent
-│   │   └── enhanced_orchestrator.py  # Phase 3 routing
-│   ├── specialists/     # Phase 3 functional specialists
-│   │   ├── architecture_specialist.py
-│   │   ├── data_science_specialist.py
-│   │   ├── security_specialist.py (ELEVATED)
-│   │   └── devops_specialist.py
-│   ├── code_execution/  # Code execution (temp disabled)
-│   └── data_science/    # Legacy data specialist
-├── lib/                 # Core libraries
-│   ├── _tools/          # ADK tool implementations
-│   ├── _shared_libraries/  # Shared utilities
-│   │   └── orchestrator_metrics.py  # Phase 3 metrics
-│   └── mcp/             # Model Context Protocol
-├── tests/               # Test suites
-│   ├── unit/           # Specialist unit tests
-│   ├── integration/    # Orchestrator tests
-│   ├── e2e/           # End-to-end flows
-│   └── performance/    # Benchmarks
-├── docs/                # Documentation
-└── main.py              # FastAPI application
+├── agents/                 # Agent definitions
+│   ├── vana/              # Main orchestrator
+│   ├── specialists/       # Specialist agents
+│   └── workflows/         # Workflow managers
+├── lib/                   # Core libraries
+│   ├── _tools/           # ADK tools
+│   ├── _shared_libraries/ # Shared services
+│   └── response_formatter.py # Output cleaning
+├── vana-ui/              # React frontend
+│   ├── src/
+│   │   ├── components/   # UI components
+│   │   │   └── ThinkingPanel.tsx
+│   │   ├── pages/       # Page components
+│   │   └── services/    # API integration
+├── main.py              # Main entry point
+├── docker-compose.yml   # Container orchestration
+└── Dockerfile.prod      # Production image
 ```
 
-### Phase 3 Features
-
-#### Enhanced Orchestrator
-```python
-from agents.vana.enhanced_orchestrator import analyze_and_route
-
-# Automatically routes to appropriate specialist
-result = analyze_and_route("Check my code for SQL injection vulnerabilities")
-# Routes to Security Specialist with ELEVATED priority
-
-# View performance metrics
-from agents.vana.enhanced_orchestrator import get_orchestrator_stats
-print(get_orchestrator_stats())
-```
-
-#### Specialist Examples
-```python
-# Architecture analysis
-result = analyze_and_route("Review the design patterns in my codebase")
-
-# Data science without external dependencies  
-result = analyze_and_route("Analyze this dataset: [1,2,3,4,5]")
-
-# DevOps automation
-result = analyze_and_route("Create a CI/CD pipeline for Python")
-```
-
-### Running Tests
+## 🧪 Testing
 
 ```bash
-# Run unit tests (including all specialists)
-poetry run pytest tests/unit -v
+# Run all tests
+make test
 
-# Run integration tests
-poetry run pytest tests/integration -v
+# Test ThinkingPanel integration
+python test_thinking_panel.py
 
-# Run end-to-end tests
-poetry run pytest tests/e2e -v
-
-# Run performance benchmarks
-poetry run pytest tests/performance -v -m benchmark
-
-# Run comprehensive test suite
-./scripts/run_comprehensive_tests.sh
+# Run specific test suites
+poetry run pytest -m unit       # Unit tests
+poetry run pytest -m agent      # Agent tests
+poetry run pytest -m integration # Integration tests
 ```
 
-### Code Quality
+## 📈 Monitoring
 
-```bash
-# Format code
-poetry run black .
+- Health endpoint: `GET /health`
+- Metrics: Performance tracking built into orchestrator
+- Logging: Comprehensive logging with configurable levels
 
-# Sort imports
-poetry run isort .
+## 🔒 Security
 
-# Run linters
-poetry run flake8
-poetry run mypy .
-
-# Security scan
-poetry run bandit -r .
-```
-
-## 🗺️ Roadmap
-
-### Phase 1: Foundation (Complete ✅)
-- [x] Core orchestration system
-- [x] ADK integration
-- [x] Basic agent implementations
-- [x] Tool ecosystem
-
-### Phase 2: Enhancement (Complete ✅)
-- [x] Thread safety fixes
-- [x] Error handling improvements
-- [x] Integration bug fixes
-- [x] Memory system updates
-
-### Phase 3: Code Improvement (Complete ✅)
-- [x] Architecture Specialist with AST-based analysis
-- [x] Data Science Specialist (no external dependencies)
-- [x] Security Specialist with ELEVATED priority routing
-- [x] DevOps Specialist with real config generation
-- [x] Enhanced Orchestrator with caching and metrics
-- [x] Comprehensive test suite (unit, integration, e2e)
-- [x] Performance benchmarks (<1s average response)
-
-### Phase 4: Integration & Enhancement (Next 🚀)
-- [ ] Integrate V2 Workflow Managers (code complete)
-- [ ] Activate QA and UI/UX Specialists (frameworks ready)
-- [ ] Deploy Memory and Learning Agents
-- [ ] Implement distributed rate limiting
-- [ ] Build performance analytics dashboard
-- [ ] Complete remaining documentation (20%)
-
-### Phase 5: Advanced Intelligence (Future 🔮)
-- [ ] Self-improving agents with feedback loops
-- [ ] Cross-agent knowledge sharing
-- [ ] Predictive task optimization
-- [ ] Autonomous workflow generation
-- [ ] Real-time performance tuning
+- **Authentication**: Demo login (replace for production)
+- **Input validation**: All inputs sanitized
+- **Rate limiting**: Configurable per endpoint
+- **CORS**: Properly configured for frontend
+- **Secrets**: Environment-based configuration
 
 ## 🤝 Contributing
 
-We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
+We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
-### Development Setup
+## 📚 Documentation
 
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Make your changes
-4. Run tests (`poetry run pytest`)
-5. Commit your changes (`git commit -m 'Add amazing feature'`)
-6. Push to the branch (`git push origin feature/amazing-feature`)
-7. Open a Pull Request
-
-### Code Standards
-
-- Follow PEP 8 style guidelines
-- Write comprehensive tests
-- Document all public APIs
-- Keep commits atomic and well-described
+- [Architecture Guide](docs/ARCHITECTURE.md) - Detailed system design
+- [Development Guide](docs/DEVELOPMENT.md) - Setup and development
+- [API Reference](docs/API.md) - Complete API documentation
+- [Deployment Guide](DEPLOYMENT_GUIDE.md) - Production deployment
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License - see [LICENSE](LICENSE) for details.
 
 ## 🙏 Acknowledgments
 
-- Built on [Google's Agent Development Kit (ADK)](https://github.com/google/adk)
-- Powered by Gemini AI models
-- Inspired by modern orchestration patterns
+- Built on [Google ADK](https://github.com/google/adk) v1.1.1
+- Powered by Gemini models
+- UI components from [shadcn/ui](https://ui.shadcn.com/)
 
 ---
 
 <div align="center">
-  <p>Built with ❤️ by the VANA Team</p>
-  <p>
-    <a href="/docs">Documentation</a>
-  </p>
+  <strong>VANA - Making AI Transparent, One Decision at a Time</strong>
+  
+  [Report Bug](https://github.com/your-org/vana/issues) • [Request Feature](https://github.com/your-org/vana/issues)
 </div>

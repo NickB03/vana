@@ -792,7 +792,7 @@ def _create_named_tool(func, name):
 # Create the Data Science Specialist Agent
 data_science_specialist = LlmAgent(
     name="data_science_specialist",
-    model="gemini-2.0-flash",
+    model="gemini-2.5-flash",
     description="Specialist for data analysis, visualization, and machine learning using Python data science libraries",
     output_key="data_science_results",
     instruction="""You are a Data Science Specialist with expertise in data analysis, visualization, and machine learning.

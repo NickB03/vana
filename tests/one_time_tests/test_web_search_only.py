@@ -29,7 +29,7 @@ from lib._tools.web_search_fixed import create_web_search_tool
 # Create minimal agent
 test_agent = LlmAgent(
     name="test_agent",
-    model="gemini-2.0-flash",
+    model="gemini-2.5-flash",
     description="Test agent for web search",
     instruction="""You are a test agent. When asked about time, use web_search tool.
     

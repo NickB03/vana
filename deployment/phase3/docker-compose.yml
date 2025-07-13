@@ -11,7 +11,7 @@ services:
     container_name: vana-orchestrator
     environment:
       - GOOGLE_API_KEY=${GOOGLE_API_KEY}
-      - VANA_MODEL=${VANA_MODEL:-gemini-2.0-flash}
+      - VANA_MODEL=${VANA_MODEL:-gemini-2.5-flash}
       - ORCHESTRATOR_CACHE_SIZE=${ORCHESTRATOR_CACHE_SIZE:-100}
       - METRICS_PERSIST_PATH=/app/data/metrics.json
       - PYTHONPATH=/app

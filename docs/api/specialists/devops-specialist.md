@@ -1,7 +1,7 @@
 # DevOps Specialist Documentation
 
 **Status**: Phase 3 Complete ✅  
-**Model**: Gemini 2.0 Flash  
+**Model**: Gemini 2.5 Flash  
 **Tools**: 6 (Infrastructure and automation tools)  
 **Location**: `agents/specialists/devops_specialist.py`
 
@@ -33,7 +33,7 @@ See [DevOps Tools API](../tools/devops-tools.md) for detailed tool documentation
 
 ```python
 devops_specialist = LlmAgent(
-    model="gemini-2.0-flash",
+    model="gemini-2.5-flash",
     tools=[
         generate_ci_cd_pipeline,
         create_deployment_config,

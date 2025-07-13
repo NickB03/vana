@@ -154,7 +154,7 @@ def create_iterative_refinement_workflow(max_iterations: int = 5, quality_thresh
     # Solution Generator/Refiner
     solution_refiner = LlmAgent(
         name="SolutionRefiner",
-        model="gemini-2.0-flash",
+        model="gemini-2.5-flash",
         instruction="""You are a Solution Refiner. Your task is to create or improve a comprehensive solution.
 
 If this is the first iteration (no 'current_solution' in state):
@@ -181,7 +181,7 @@ Save the improved solution for quality evaluation.""",
     # Quality Evaluator
     quality_evaluator = LlmAgent(
         name="QualityEvaluator",
-        model="gemini-2.0-flash",
+        model="gemini-2.5-flash",
         instruction="""Evaluate the current solution in state['current_solution'] for:
 
 1. **Completeness** (0.0-1.0): Does it cover all required aspects?

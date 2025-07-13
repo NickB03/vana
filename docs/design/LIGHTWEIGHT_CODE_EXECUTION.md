@@ -76,7 +76,7 @@ from lib._tools.adk_tools import (
 
 lightweight_code_specialist = LlmAgent(
     name="lightweight_code_specialist",
-    model="gemini-2.0-flash",
+    model="gemini-2.5-flash",
     description="Basic code execution for simple Python scripts and calculations",
     instruction="""You provide basic code execution capabilities:
 

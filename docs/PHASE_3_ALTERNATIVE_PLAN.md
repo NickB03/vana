@@ -172,7 +172,7 @@ from google.adk.agents import LlmAgent
 
 architecture_specialist = LlmAgent(
     name="architecture_specialist",
-    model="gemini-2.0-flash",
+    model="gemini-2.5-flash",
     description="Expert system architect specializing in design patterns and architecture",
     instruction="""You are an expert system architect. Use your tools to analyze codebases and provide insights.
 
@@ -291,7 +291,7 @@ def generate_data_insights(data_summary: str) -> str:
 # Simplified data science specialist
 data_science_specialist = LlmAgent(
     name="data_science_specialist",
-    model="gemini-2.0-flash",
+    model="gemini-2.5-flash",
     description="Data analysis expert (simplified, no code execution)",
     instruction="""You are a data science expert. Use the available tools to analyze data.
 
@@ -439,7 +439,7 @@ def generate_security_report(scan_results: str, context: str = "") -> str:
 # Create security specialist with elevated status
 security_specialist = LlmAgent(
     name="security_specialist",
-    model="gemini-2.0-flash",
+    model="gemini-2.5-flash",
     description="PRIORITY SPECIALIST - Security expert with elevated routing status",
     instruction="""You are a security specialist with ELEVATED STATUS in the VANA system.
 
@@ -631,7 +631,7 @@ jobs:
 # Create DevOps specialist
 devops_specialist = LlmAgent(
     name="devops_specialist",
-    model="gemini-2.0-flash",
+    model="gemini-2.5-flash",
     description="DevOps and infrastructure expert",
     instruction="""You are a DevOps specialist with expertise in:
 - CI/CD pipelines and automation
@@ -830,7 +830,7 @@ VANA_CONFIG = {
     
     # ADK settings
     'max_tools_per_agent': 6,  # ADK hard limit
-    'default_model': os.getenv('VANA_DEFAULT_MODEL', 'gemini-2.0-flash'),
+    'default_model': os.getenv('VANA_DEFAULT_MODEL', 'gemini-2.5-flash'),
     
     # Cache settings
     'cache_ttl_seconds': int(os.getenv('VANA_CACHE_TTL', '3600')),
@@ -866,7 +866,7 @@ grep -r "password\s*=\s*['\"]" agents/ && echo "WARNING: Hardcoded passwords fou
 echo "Setting up environment..."
 export VANA_SECURITY_THRESHOLD=0.6
 export VANA_CACHE_ENABLED=true
-export VANA_DEFAULT_MODEL=gemini-2.0-flash
+export VANA_DEFAULT_MODEL=gemini-2.5-flash
 
 # 4. Start services
 echo "Starting VANA services..."

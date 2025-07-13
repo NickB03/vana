@@ -84,7 +84,7 @@ from agents.base_agents import set_root_agent
 # Create simplified ADK-compliant VANA agent following Google ADK best practices
 root_agent = LlmAgent(
     name="vana",
-    model=os.getenv("VANA_MODEL", "gemini-2.0-flash"),
+    model=os.getenv("VANA_MODEL", "gemini-2.5-flash"),
     description="Intelligent AI assistant with core capabilities",
     instruction="""You are VANA, an intelligent AI assistant specializing in task routing.
 

@@ -147,7 +147,7 @@ class LoopWorkflowManager:
         for i in range(iterations):
             agent = LlmAgent(
                 name=f"Loop_{i+1}_{loop_task['name']}",
-                model="gemini-2.0-flash",
+                model="gemini-2.5-flash",
                 description=f"Iteration {i+1} of {iterations}: {loop_task.get('description', '')}",
                 instruction=self._create_iteration_instruction(
                     loop_task["instruction"], i + 1, iterations, loop_task.get("accumulate_results", False)
@@ -209,7 +209,7 @@ class LoopWorkflowManager:
         for i in range(min(max_iterations, 10)):  # Start with 10, can extend
             agent = LlmAgent(
                 name=f"ConditionalLoop_{i+1}_{loop_task['name']}",
-                model="gemini-2.0-flash",
+                model="gemini-2.5-flash",
                 description=f"Conditional iteration {i+1}: {loop_task.get('description', '')}",
                 instruction=self._create_conditional_instruction(loop_task["instruction"], i + 1, condition),
                 tools=[FunctionTool(tool) for tool in loop_task.get("tools", [])][:6],
@@ -266,7 +266,7 @@ class LoopWorkflowManager:
         for i in range(max_adaptations):
             agent = LlmAgent(
                 name=f"Adaptive_{i+1}_{loop_task['name']}",
-                model="gemini-2.0-flash",
+                model="gemini-2.5-flash",
                 description=f"Adaptive iteration {i+1}: {loop_task.get('description', '')}",
                 instruction=self._create_adaptive_instruction(loop_task["instruction"], i + 1, adaptation_strategy),
                 tools=[FunctionTool(tool) for tool in loop_task.get("tools", [])][:6],
@@ -367,7 +367,7 @@ Previous results available in state for analysis and improvement.
         """Create an agent that evaluates loop conditions."""
         return LlmAgent(
             name="LoopConditionEvaluator",
-            model="gemini-2.0-flash",
+            model="gemini-2.5-flash",
             description="Evaluates whether loop should continue",
             instruction=f"""Evaluate the loop condition for workflow: {workflow_name}
 
@@ -388,7 +388,7 @@ For custom conditions: Apply the specified evaluation logic.
         """Create an agent that controls adaptive behavior."""
         return LlmAgent(
             name="AdaptiveLoopController",
-            model="gemini-2.0-flash",
+            model="gemini-2.5-flash",
             description="Controls adaptive loop behavior",
             instruction=f"""Control adaptive loop execution for: {workflow_name}
 

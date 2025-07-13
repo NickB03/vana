@@ -1,7 +1,7 @@
 # Data Science Specialist Documentation
 
 **Status**: Phase 3 Complete ✅  
-**Model**: Gemini 2.0 Flash  
+**Model**: Gemini 2.5 Flash  
 **Tools**: 6 (Pure Python analytics tools)  
 **Special**: No external dependencies (pandas/numpy free)  
 **Location**: `agents/specialists/data_science_specialist.py`
@@ -34,7 +34,7 @@ See [Data Science Tools API](../tools/data-science-tools.md) for detailed tool d
 
 ```python
 data_science_specialist = LlmAgent(
-    model="gemini-2.0-flash",
+    model="gemini-2.5-flash",
     tools=[
         analyze_data_simple,
         generate_data_insights,

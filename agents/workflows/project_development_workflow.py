@@ -34,7 +34,7 @@ def create_project_development_workflow() -> SequentialAgent:
     # Phase 1: Requirements Analysis
     requirements_analyst = LlmAgent(
         name="RequirementsAnalyst",
-        model="gemini-2.0-flash",
+        model="gemini-2.5-flash",
         description="Analyzes project requirements and creates detailed specifications",
         instruction="""You are a Requirements Analyst. Analyze the user's project request and create:
         1. Functional requirements
@@ -49,7 +49,7 @@ def create_project_development_workflow() -> SequentialAgent:
     # Phase 2: Architecture Design
     architecture_designer = LlmAgent(
         name="ArchitectureDesigner",
-        model="gemini-2.0-flash",
+        model="gemini-2.5-flash",
         description="Creates system architecture based on requirements",
         instruction="""You are an Architecture Specialist. Based on the requirements in state['project_requirements']:
 
@@ -73,7 +73,7 @@ def create_project_development_workflow() -> SequentialAgent:
     # Phase 3: UI/UX Design
     ui_designer = LlmAgent(
         name="UIDesigner",
-        model="gemini-2.0-flash",
+        model="gemini-2.5-flash",
         description="Creates UI/UX design based on requirements and architecture",
         instruction="""You are a UI/UX Specialist. Based on:
         - Requirements: state['project_requirements']
@@ -93,7 +93,7 @@ def create_project_development_workflow() -> SequentialAgent:
     # Phase 4: DevOps Strategy
     devops_planner = LlmAgent(
         name="DevOpsPlanner",
-        model="gemini-2.0-flash",
+        model="gemini-2.5-flash",
         description="Creates deployment and infrastructure strategy",
         instruction="""You are a DevOps Specialist. Based on:
         - Requirements: state['project_requirements']
@@ -114,7 +114,7 @@ def create_project_development_workflow() -> SequentialAgent:
     # Phase 5: QA Strategy
     qa_strategist = LlmAgent(
         name="QAStrategist",
-        model="gemini-2.0-flash",
+        model="gemini-2.5-flash",
         description="Creates comprehensive testing strategy",
         instruction="""You are a QA Specialist. Based on all previous phases:
         - Requirements: state['project_requirements']
@@ -136,7 +136,7 @@ def create_project_development_workflow() -> SequentialAgent:
     # Phase 6: Integration Summary
     integration_manager = LlmAgent(
         name="IntegrationManager",
-        model="gemini-2.0-flash",
+        model="gemini-2.5-flash",
         description="Integrates all specialist recommendations into final project plan",
         instruction="""You are an Integration Manager. Review all specialist outputs:
         - Requirements: state['project_requirements']

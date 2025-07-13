@@ -22,7 +22,7 @@ from lib._tools import adk_read_file, adk_search_knowledge
 # Create the Security Specialist with ELEVATED STATUS
 security_specialist = LlmAgent(
     name="security_specialist",
-    model="gemini-2.0-flash",
+    model="gemini-2.5-flash",
     description="PRIORITY SPECIALIST - Security expert with elevated routing status for security concerns",
     instruction="""You are a security specialist with ELEVATED STATUS in the VANA system.
 

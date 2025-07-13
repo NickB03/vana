@@ -125,7 +125,7 @@ def create_hierarchical_task_manager() -> LlmAgent:
 
     task_orchestrator = LlmAgent(
         name="HierarchicalTaskManager",
-        model="gemini-2.0-flash",
+        model="gemini-2.5-flash",
         description="Master orchestrator for complex task management and intelligent routing",
         instruction="""You are the Master Orchestrator for VANA's agentic AI system. Your role is to:
 

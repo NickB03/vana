@@ -31,7 +31,7 @@ Level 5: Maintenance Agents (Memory/Planning/Learning - Phase 4)
    - User interface agent
    - Minimal tool set (2 tools)
    - Conversation handling
-   - Gemini 2.0 Flash powered
+   - Gemini 2.5 Flash powered
 
 2. **Enhanced Master Orchestrator** (`agents/vana/enhanced_orchestrator.py`)
    - Intelligent task routing with security-first priority

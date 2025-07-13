@@ -30,7 +30,7 @@ def create_parallel_analysis_workflow() -> SequentialAgent:
     # Phase 1: Input Preparation
     input_analyzer = LlmAgent(
         name="InputAnalyzer",
-        model="gemini-2.0-flash",
+        model="gemini-2.5-flash",
         description="Analyzes user input and prepares context for all specialists",
         instruction="""Analyze the user's request and prepare comprehensive context for specialist analysis:
         1. Extract key requirements and constraints
@@ -47,7 +47,7 @@ def create_parallel_analysis_workflow() -> SequentialAgent:
     # Architecture Analysis Agent
     architecture_analyzer = LlmAgent(
         name="ParallelArchitectureAnalyzer",
-        model="gemini-2.0-flash",
+        model="gemini-2.5-flash",
         description="Performs architecture analysis in parallel",
         instruction="""Based on the context in state['analysis_context'], perform comprehensive architecture analysis:
         1. System design recommendations
@@ -63,7 +63,7 @@ def create_parallel_analysis_workflow() -> SequentialAgent:
     # UI/UX Analysis Agent
     ui_analyzer = LlmAgent(
         name="ParallelUIAnalyzer",
-        model="gemini-2.0-flash",
+        model="gemini-2.5-flash",
         description="Performs UI/UX analysis in parallel",
         instruction="""Based on the context in state['analysis_context'], perform comprehensive UI/UX analysis:
         1. User interface design recommendations
@@ -79,7 +79,7 @@ def create_parallel_analysis_workflow() -> SequentialAgent:
     # DevOps Analysis Agent
     devops_analyzer = LlmAgent(
         name="ParallelDevOpsAnalyzer",
-        model="gemini-2.0-flash",
+        model="gemini-2.5-flash",
         description="Performs DevOps analysis in parallel",
         instruction="""Based on the context in state['analysis_context'], perform comprehensive DevOps analysis:
         1. Infrastructure requirements
@@ -95,7 +95,7 @@ def create_parallel_analysis_workflow() -> SequentialAgent:
     # QA Analysis Agent
     qa_analyzer = LlmAgent(
         name="ParallelQAAnalyzer",
-        model="gemini-2.0-flash",
+        model="gemini-2.5-flash",
         description="Performs QA analysis in parallel",
         instruction="""Based on the context in state['analysis_context'], perform comprehensive QA analysis:
         1. Testing strategy recommendations
@@ -118,7 +118,7 @@ def create_parallel_analysis_workflow() -> SequentialAgent:
     # Phase 3: Integration and Synthesis
     synthesis_manager = LlmAgent(
         name="SynthesisManager",
-        model="gemini-2.0-flash",
+        model="gemini-2.5-flash",
         description="Integrates parallel specialist analyses into comprehensive recommendations",
         instruction="""Synthesize all parallel specialist analyses into comprehensive recommendations:
 

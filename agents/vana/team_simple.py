@@ -38,7 +38,7 @@ load_dotenv()
 # Create simplified VANA agent with concise instruction
 root_agent = LlmAgent(
     name="vana",
-    model="gemini-2.0-flash-exp",
+    model="gemini-2.5-flash",
     instruction="""You are VANA, an AI assistant with file operations, search capabilities, and system tools.
 
 TOOL USAGE RULES:

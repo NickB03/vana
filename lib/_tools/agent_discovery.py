@@ -216,7 +216,7 @@ class AgentDiscoveryService:
                             "task_coordination",
                         ],
                         status="active",
-                        model="gemini-2.0-flash-exp",
+                        model="gemini-2.5-flash",
                         specialization="orchestration",
                         last_updated=datetime.now().isoformat(),
                     )

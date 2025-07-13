@@ -172,12 +172,163 @@ def analyze_and_route(request: str, context: Dict[str, any]) -> str:
 {result}"""
 
 
+async def analyze_and_route_async(request: str, context: Dict[str, any]) -> str:
+    """
+    Async version of analyze_and_route for A2A protocol compatibility.
+    """
+    import asyncio
+    
+    # Run the synchronous version in a thread pool
+    loop = asyncio.get_event_loop()
+    return await loop.run_in_executor(None, analyze_and_route, request, context)
+
+
+async def parallel_route_specialists(request: str, specialists: List[str], context: Dict[str, any] = None) -> str:
+    """
+    Route request to multiple specialists in parallel using A2A protocol.
+    
+    Args:
+        request: User request
+        specialists: List of specialist names to route to
+        context: Optional context dictionary
+    
+    Returns:
+        Aggregated results from all specialists
+    """
+    try:
+        # Get A2A protocol and parallel executor
+        from agents.protocols.a2a_protocol import get_a2a_protocol
+        from agents.protocols.parallel_executor import get_parallel_executor, ParallelTask, ExecutionStrategy, ResultAggregationMethod
+        import uuid
+        
+        a2a_protocol = await get_a2a_protocol()
+        parallel_executor = get_parallel_executor(a2a_protocol)
+        
+        # Create parallel task
+        task = ParallelTask(
+            task_id=str(uuid.uuid4()),
+            task_type="analysis",
+            data={"request": request},
+            specialists=specialists,
+            strategy=ExecutionStrategy.BEST_EFFORT,
+            aggregation=ResultAggregationMethod.MERGE,
+            timeout=30.0,
+            context=context or {}
+        )
+        
+        # Execute in parallel
+        result = await parallel_executor.execute_parallel(task)
+        
+        if result.success:
+            return f"""## Parallel Specialist Analysis
+
+**Request**: {request}
+**Specialists Consulted**: {', '.join(specialists)}
+**Execution Time**: {result.execution_time:.2f}s
+**Success Rate**: {result.specialists_succeeded}/{len(specialists)}
+
+### Aggregated Results:
+{result.data}
+
+### Individual Specialist Results:
+{chr(10).join([
+    f"**{r.specialist_name}**: {'✅ Success' if r.success else '❌ Failed'} ({r.execution_time:.2f}s)"
+    for r in result.specialist_results
+])}"""
+        else:
+            return f"""## Parallel Execution Failed
+
+**Request**: {request}
+**Error**: {result.error}
+**Specialists**: {', '.join(specialists)}
+**Execution Time**: {result.execution_time:.2f}s"""
+    
+    except Exception as e:
+        logger.error(f"Parallel routing failed: {e}")
+        return f"Parallel routing failed: {str(e)}"
+
+
+def smart_route_with_parallel(request: str, context: Dict[str, any] = None) -> str:
+    """
+    Smart routing that decides whether to use single specialist or parallel execution.
+    """
+    import asyncio
+    
+    # Analyze request complexity
+    analysis = adk_analyze_task(request)
+    
+    # Check if request benefits from multiple perspectives
+    parallel_keywords = [
+        "compare", "analyze from multiple angles", "comprehensive review",
+        "different perspectives", "full analysis", "complete assessment"
+    ]
+    
+    needs_parallel = any(keyword in request.lower() for keyword in parallel_keywords)
+    
+    if needs_parallel:
+        # Determine relevant specialists based on request content
+        relevant_specialists = []
+        
+        if any(word in request.lower() for word in ["code", "architecture", "design", "pattern"]):
+            relevant_specialists.append("architecture_specialist")
+        
+        if any(word in request.lower() for word in ["data", "analysis", "statistics", "ml"]):
+            relevant_specialists.append("data_science_specialist")
+        
+        if any(word in request.lower() for word in ["security", "vulnerability", "threat", "auth"]):
+            relevant_specialists.append("security_specialist")
+        
+        if any(word in request.lower() for word in ["deployment", "devops", "ci", "infrastructure"]):
+            relevant_specialists.append("devops_specialist")
+        
+        if any(word in request.lower() for word in ["test", "qa", "quality", "bug"]):
+            relevant_specialists.append("qa_specialist")
+        
+        if any(word in request.lower() for word in ["ui", "ux", "interface", "user"]):
+            relevant_specialists.append("ui_specialist")
+        
+        if len(relevant_specialists) > 1:
+            # Use parallel execution
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            try:
+                result = loop.run_until_complete(
+                    parallel_route_specialists(request, relevant_specialists, context)
+                )
+                return result
+            finally:
+                loop.close()
+    
+    # Use standard single-specialist routing
+    return analyze_and_route(request, context or {})
+
+
+# Initialize Agent-as-Tool pattern (Phase 3)
+try:
+    from lib.tools.agent_as_tool import create_specialist_tools
+    
+    # Create specialist tool mappings
+    available_specialists = {
+        "security": security_specialist,
+        "architecture": architecture_specialist,
+        "data_science": data_science_specialist,
+        "devops": devops_specialist
+    }
+    
+    # Create agent-as-tool functions
+    specialist_tools = create_specialist_tools(available_specialists)
+    logger.info(f"✅ Created {len(specialist_tools)} agent-as-tool functions")
+    
+except ImportError as e:
+    logger.warning(f"⚠️ Agent-as-Tool pattern not available: {e}")
+    specialist_tools = []
+
 # Create the enhanced orchestrator
 enhanced_orchestrator = LlmAgent(
     name="enhanced_orchestrator",
-    model="gemini-2.0-flash",
-    description="Enhanced orchestrator with Phase 3 specialist routing",
-    instruction="""Enhanced VANA Orchestrator with intelligent specialist routing.
+    model="gemini-2.5-flash",
+    description="Enhanced orchestrator with Phase 3 specialist routing and agent-as-tool pattern",
+    instruction="""Enhanced VANA Orchestrator with intelligent specialist routing and direct tool access.
 
 ROUTING LOGIC:
 - Security queries → IMMEDIATE priority to Security Specialist
@@ -185,12 +336,18 @@ ROUTING LOGIC:
 - Data analysis → Data Science Specialist
 - DevOps/Infrastructure → DevOps Specialist
 
-PROCESS:
-1. Use analyze_and_route for task classification
-2. Route complex tasks to appropriate specialists
-3. Handle simple queries directly
+DIRECT TOOL ACCESS (Agent-as-Tool Pattern):
+- quick_security_scan: Fast security vulnerability check
+- architecture_review: Quick architecture and design analysis
+- data_stats: Basic statistical analysis and insights
+- devops_config: DevOps configuration guidance
 
-Security gets absolute priority due to critical nature.""",
+PROCESS:
+1. For simple queries: Use direct specialist tools for fast response
+2. For complex tasks: Use analyze_and_route for full specialist execution
+3. Security gets absolute priority due to critical nature
+
+Choose direct tools for quick analysis, full routing for complex tasks.""",
     tools=[
         FunctionTool(analyze_and_route),  # Primary routing function
         adk_read_file,
@@ -198,7 +355,7 @@ Security gets absolute priority due to critical nature.""",
         adk_list_directory,
         adk_search_knowledge,
         adk_analyze_task,  # Direct access for fine-grained control
-    ],
+    ] + specialist_tools,  # Add agent-as-tool functions
     # Include specialists as sub-agents if available
     sub_agents=[
         s
@@ -247,37 +404,54 @@ orchestrator_cache = SimpleCache()
 
 def cached_route_to_specialist(request: str, task_type: str, context: Dict[str, any] = None) -> str:
     """
-    Cached version of route_to_specialist for common queries.
+    Context-aware cached version of route_to_specialist for common queries.
 
     Args:
         request: User request
         task_type: Type of task
-        context: Optional context
+        context: Optional context (enhanced with SpecialistContext if available)
 
     Returns:
-        Cached or fresh specialist response
+        Cached or fresh specialist response with context awareness
     """
     # Get metrics instance
     metrics = get_orchestrator_metrics()
 
-    # Create cache key
-    cache_key = f"{task_type}:{request[:100]}"  # Limit key length
+    # Enhanced context awareness for Phase 3
+    context_key = ""
+    if context and isinstance(context, dict):
+        # Extract context-sensitive information for cache key
+        user_level = context.get("user_preferences", {}).get("technical_level", "intermediate")
+        security_level = context.get("execution_metadata", {}).get("security_level", "public")
+        context_key = f":{user_level}:{security_level}"
+
+    # Create context-aware cache key
+    cache_key = f"{task_type}:{request[:100]}{context_key}"
 
     # Check cache first
     cached_response = orchestrator_cache.get(cache_key)
     if cached_response:
-        logger.info(f"Cache hit for task type: {task_type}")
+        logger.info(f"Context-aware cache hit for task type: {task_type}")
         metrics.record_cache_hit()
-        return f"{cached_response}\n\n*[Cached Response]*"
+        return f"{cached_response}\n\n*[Cached Response - Context-Aware]*"
 
     # Cache miss
     metrics.record_cache_miss()
 
-    # Get fresh response
+    # Get fresh response with context
     response = route_to_specialist(request, task_type, context)
 
-    # Cache if successful
-    if "not available" not in response.lower():
+    # Cache if successful (consider context in caching decision)
+    should_cache = "not available" not in response.lower()
+    
+    # Don't cache sensitive responses
+    if context and isinstance(context, dict):
+        security_level = context.get("execution_metadata", {}).get("security_level", "public")
+        if security_level in ["confidential", "secret"]:
+            should_cache = False
+            logger.info("Skipping cache for sensitive response")
+
+    if should_cache:
         orchestrator_cache.set(cache_key, response)
 
     return response

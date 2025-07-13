@@ -136,7 +136,7 @@ docker-compose up
 ## 🏛️ Key Architecture Components
 
 ### Agent System (`agents/`)
-- **VANA Orchestrator** (`agents/vana/team.py`): Main coordinator using Gemini 2.0 Flash
+- **VANA Orchestrator** (`agents/vana/team.py`): Main coordinator using Gemini 2.5 Flash
 - **Enhanced Orchestrator** (`agents/vana/enhanced_orchestrator.py`): Phase 3 routing with caching/metrics
 - **Specialists** (`agents/specialists/`): Phase 3 working specialists:
   - `architecture_specialist.py` + `architecture_tools.py`: Real AST analysis

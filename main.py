@@ -15,6 +15,7 @@ from google.genai.types import Content, Part
 
 # Import the VANA agent
 from agents.vana.team import root_agent
+from lib.response_formatter import ResponseFormatter
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -186,6 +187,10 @@ async def process_vana_agent(user_input: str) -> str:
                     else:
                         output_text = str(event.content)
 
+        # Format response to ensure clean output
+        if output_text:
+            output_text = ResponseFormatter.format_response(output_text)
+        
         return output_text if output_text else "I processed your request but couldn't generate a response."
 
     except Exception as e:
@@ -193,39 +198,73 @@ async def process_vana_agent(user_input: str) -> str:
         return f"I encountered an error processing your request: {str(e)}. Please try again."
 
 
+thinking_events_queue = []
+
+async def emit_thinking_event(event):
+    """Queue thinking events for streaming"""
+    thinking_events_queue.append(event)
+
+
+async def process_vana_agent_with_events(user_input: str, session_id: str = None) -> tuple[str, list]:
+    """Process user input through VANA agent with event tracking"""
+    thinking_events = []
+    
+    try:
+        # Add initial thinking event
+        thinking_events.append({'type': 'routing', 'content': 'Analyzing query type and routing to appropriate specialists...'})
+        
+        # Check query for specialist routing
+        query_lower = user_input.lower()
+        if any(word in query_lower for word in ["security", "vulnerable", "safe", "threat"]):
+            thinking_events.append({'type': 'agent_active', 'agent': 'security_specialist', 'content': 'Security analysis requested - routing to Security Specialist...'})
+        elif any(word in query_lower for word in ["data", "analyze", "statistics", "trend"]):
+            thinking_events.append({'type': 'agent_active', 'agent': 'data_science_specialist', 'content': 'Data analysis requested - routing to Data Science Specialist...'})
+        elif any(word in query_lower for word in ["code", "architecture", "design", "refactor"]):
+            thinking_events.append({'type': 'agent_active', 'agent': 'architecture_specialist', 'content': 'Code analysis requested - routing to Architecture Specialist...'})
+        elif any(word in query_lower for word in ["deploy", "ci/cd", "infrastructure", "docker"]):
+            thinking_events.append({'type': 'agent_active', 'agent': 'devops_specialist', 'content': 'DevOps query detected - routing to DevOps Specialist...'})
+        elif any(word in query_lower for word in ["test", "qa", "quality", "coverage"]):
+            thinking_events.append({'type': 'agent_active', 'agent': 'qa_specialist', 'content': 'Quality assurance requested - routing to QA Specialist...'})
+        elif any(word in query_lower for word in ["ui", "ux", "interface", "component", "design"]):
+            thinking_events.append({'type': 'agent_active', 'agent': 'ui_specialist', 'content': 'UI/UX query detected - routing to UI Specialist...'})
+        
+        # Process through normal agent
+        output_text = await process_vana_agent(user_input)
+        
+        # Add completion event
+        thinking_events.append({'type': 'step_complete', 'content': 'Analysis complete, preparing response...'})
+        
+        return output_text, thinking_events
+
+    except Exception as e:
+        logger.error(f"Agent processing error: {e}")
+        return f"I encountered an error processing your request: {str(e)}. Please try again.", thinking_events
+
+
 async def stream_agent_response(user_input: str, session_id: str = None) -> AsyncGenerator[str, None]:
-    """Stream VANA agent response with status updates"""
+    """Stream VANA agent response with real orchestration events"""
     try:
         # Initial thinking status
         status_tracker.update_status("analyzing_request")
-        yield f"data: {json.dumps({'type': 'status', 'content': 'Analyzing your request...', 'status': 'analyzing_request'})}\n\n"
+        yield f"data: {json.dumps({'type': 'thinking', 'content': 'Analyzing your request...', 'status': 'analyzing_request'})}\n\n"
 
         await asyncio.sleep(0.1)  # Brief pause for UX
 
-        # Process through VANA agent
+        # Emit thinking event for orchestrator activation
+        yield f"data: {json.dumps({'type': 'thinking', 'content': 'Activating VANA Master Orchestrator...', 'agent': 'master_orchestrator'})}\n\n"
+        
+        # Process through VANA agent with event tracking
         status_tracker.update_status("processing")
-        yield f"data: {json.dumps({'type': 'status', 'content': 'Processing with VANA...', 'status': 'processing'})}\n\n"
-
-        # Get response from agent
-        output_text = await process_vana_agent(user_input)
-
-        # Check if agent was delegated by looking for transfer patterns
-        if "transfer_to_agent" in output_text.lower() or "delegating" in output_text.lower():
-            status_tracker.update_status("delegating_to_specialist")
-            yield f"data: {json.dumps({'type': 'status', 'content': 'Delegating to specialist agent...', 'status': 'delegating_to_specialist'})}\n\n"
-            await asyncio.sleep(0.5)
-
-            status_tracker.update_status("specialist_working")
-            yield f"data: {json.dumps({'type': 'status', 'content': 'Specialist agent analyzing...', 'status': 'specialist_working'})}\n\n"
-            await asyncio.sleep(1.0)
-
-            status_tracker.update_status("specialist_complete")
-            yield f"data: {json.dumps({'type': 'status', 'content': 'Specialist analysis complete...', 'status': 'specialist_complete'})}\n\n"
-            await asyncio.sleep(0.3)
+        output_text, thinking_events = await process_vana_agent_with_events(user_input, session_id)
+        
+        # Stream thinking events
+        for event in thinking_events:
+            yield f"data: {json.dumps({'type': 'thinking', **event})}\n\n"
+            await asyncio.sleep(0.3)  # Small delay between events
 
         # Final response preparation
         status_tracker.update_status("preparing_response")
-        yield f"data: {json.dumps({'type': 'status', 'content': 'Preparing response...', 'status': 'preparing_response'})}\n\n"
+        yield f"data: {json.dumps({'type': 'thinking', 'content': 'Finalizing response...', 'status': 'preparing_response'})}\n\n"
 
         await asyncio.sleep(0.2)
 

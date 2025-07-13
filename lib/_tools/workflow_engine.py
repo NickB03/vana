@@ -153,7 +153,7 @@ class WorkflowEngine:
                         data = json.load(f)
 
                     # Convert to WorkflowDefinition
-                    workflow_def)
+                    workflow_def = WorkflowDefinition(**data)
                     self.workflow_definitions[workflow_def.workflow_id] = workflow_def
 
                 except Exception as e:
@@ -507,7 +507,7 @@ class WorkflowEngine:
             # Check active workflows first
             if workflow_id in self.active_workflows:
                 workflow_exec = self.active_workflows[workflow_id]
-                workflow_def)
+                workflow_def = self.workflow_definitions.get(workflow_id)
 
                 return {
                     "workflow_id": workflow_id,
@@ -533,7 +533,7 @@ class WorkflowEngine:
                 with open(exec_file, "r") as f:
                     data = json.load(f)
 
-                workflow_def)
+                workflow_def = self.workflow_definitions.get(workflow_id)
 
                 return {
                     "workflow_id": workflow_id,

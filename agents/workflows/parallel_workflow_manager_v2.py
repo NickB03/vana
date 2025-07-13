@@ -281,21 +281,21 @@ def example_adk_parallel_workflow():
     agents = [
         LlmAgent(
             name="SecurityAnalyzer",
-            model="gemini-2.0-flash",
+            model="gemini-2.5-flash",
             description="Analyze security aspects",
             instruction="Analyze the security implications and vulnerabilities",
             tools=[],
         ),
         LlmAgent(
             name="PerformanceAnalyzer",
-            model="gemini-2.0-flash",
+            model="gemini-2.5-flash",
             description="Analyze performance aspects",
             instruction="Analyze performance characteristics and bottlenecks",
             tools=[],
         ),
         LlmAgent(
             name="UsabilityAnalyzer",
-            model="gemini-2.0-flash",
+            model="gemini-2.5-flash",
             description="Analyze usability aspects",
             instruction="Analyze user experience and usability issues",
             tools=[],

@@ -26,7 +26,7 @@ from lib._tools import adk_list_directory, adk_read_file, adk_search_knowledge
 # Create the Architecture Specialist using ADK patterns
 architecture_specialist = LlmAgent(
     name="architecture_specialist",
-    model="gemini-2.0-flash",
+    model="gemini-2.5-flash",
     description="Expert system architect specializing in design patterns, code structure analysis, and architectural recommendations",
     instruction="""You are an expert system architect with deep knowledge of software design patterns, architectural principles, and best practices.
 

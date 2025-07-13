@@ -59,7 +59,7 @@ cp .env.template .env.local
 # Configure basic settings
 cat << EOF >> .env.local
 # Core Configuration
-VANA_MODEL=gemini-2.0-flash
+VANA_MODEL=gemini-2.5-flash
 ENVIRONMENT=development
 
 # Google Cloud (for production features)
@@ -201,7 +201,7 @@ The `cloudbuild.yaml` includes:
 
 ```bash
 # Core Configuration (Required)
-VANA_MODEL=gemini-2.0-flash              # AI model to use
+VANA_MODEL=gemini-2.5-flash              # AI model to use
 ENVIRONMENT=production                    # Environment type
 GOOGLE_CLOUD_PROJECT=your-project-id     # GCP project ID
 

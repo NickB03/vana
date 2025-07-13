@@ -82,7 +82,7 @@ code_analysis_tool.description = "Analyze code execution requests to determine t
 # Create the lightweight code specialist
 lightweight_code_specialist = LlmAgent(
     name="lightweight_code_specialist",
-    model="gemini-2.0-flash",
+    model="gemini-2.5-flash",
     description="Specialist for basic code execution and calculations without Docker",
     output_key="code_results",
     instruction="""You are a Lightweight Code Execution Specialist providing safe, basic code execution capabilities.

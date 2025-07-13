@@ -15,7 +15,7 @@
 ### AI/ML Framework
 - **Google Agent Development Kit (ADK)** - Core agent framework
 - **Vertex AI** - Vector search and ML capabilities
-- **Gemini 2.0 Flash** - Default AI model (configurable)
+- **Gemini 2.5 Flash** - Default AI model (configurable)
 
 ### Databases & Storage
 - **ChromaDB** - Vector database for semantic search (development tools)
@@ -78,7 +78,7 @@ gcloud auth application-default login
 #### Required Environment Variables
 ```bash
 # Core Configuration
-VANA_MODEL=gemini-2.0-flash
+VANA_MODEL=gemini-2.5-flash
 GOOGLE_CLOUD_PROJECT=your-project-id
 ENVIRONMENT=development
 ```

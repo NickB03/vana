@@ -123,7 +123,7 @@ steps:
           --timeout=900 \
           --service-account=vana-vector-search-sa@$PROJECT_ID.iam.gserviceaccount.com \
           --port=8000 \
-          --set-env-vars="ENVIRONMENT=production,GOOGLE_GENAI_USE_VERTEXAI=true,GOOGLE_CLOUD_PROJECT=$PROJECT_ID,GOOGLE_CLOUD_LOCATION=us-central1,GOOGLE_CLOUD_REGION=us-central1,VANA_MODEL=gemini-2.0-flash,LOG_LEVEL=INFO,BUILD_ID=$BUILD_ID,BUILD_NUMBER=$BUILD_ID,BUILD_TIMESTAMP=$BUILD_TIMESTAMP,COMMIT_SHA=$COMMIT_SHA,BRANCH_NAME=$BRANCH_NAME,PRODUCTION_TAG=$PRODUCTION_TAG,BUILDER=cloud-build,ENHANCED_REASONING_ENABLED=true,REASONING_TOOLS_COUNT=5,DASHBOARD_ENABLED=false,PRODUCTION_MODE=true,RAG_CORPUS_RESOURCE_NAME=projects/$PROJECT_ID/locations/us-central1/ragCorpora/2305843009213693952" \
+          --set-env-vars="ENVIRONMENT=production,GOOGLE_GENAI_USE_VERTEXAI=true,GOOGLE_CLOUD_PROJECT=$PROJECT_ID,GOOGLE_CLOUD_LOCATION=us-central1,GOOGLE_CLOUD_REGION=us-central1,VANA_MODEL=gemini-2.5-flash,LOG_LEVEL=INFO,BUILD_ID=$BUILD_ID,BUILD_NUMBER=$BUILD_ID,BUILD_TIMESTAMP=$BUILD_TIMESTAMP,COMMIT_SHA=$COMMIT_SHA,BRANCH_NAME=$BRANCH_NAME,PRODUCTION_TAG=$PRODUCTION_TAG,BUILDER=cloud-build,ENHANCED_REASONING_ENABLED=true,REASONING_TOOLS_COUNT=5,DASHBOARD_ENABLED=false,PRODUCTION_MODE=true,RAG_CORPUS_RESOURCE_NAME=projects/$PROJECT_ID/locations/us-central1/ragCorpora/2305843009213693952" \
           --set-secrets="BRAVE_API_KEY=brave-api-key:latest,OPENROUTER_API_KEY=openrouter-api-key:latest" \
           --add-cloudsql-instances="$PROJECT_ID:us-central1:vana-prod-db" \
           --revision-suffix="$(echo $PRODUCTION_TAG | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9-]/-/g')"

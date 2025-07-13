@@ -50,7 +50,7 @@ VANA is a multi-agent AI orchestration system built on Google's Agent Developmen
 - **Role**: Central coordination and task routing
 - **Location**: `agents/vana/team.py`
 - **Capabilities**: 9 core tools, automatic delegation
-- **Model**: gemini-2.0-flash-exp
+- **Model**: gemini-2.5-flash-exp
 
 #### 2. Code Execution Specialist  
 - **Role**: Secure code execution and development tasks
