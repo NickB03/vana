@@ -305,15 +305,18 @@ def smart_route_with_parallel(request: str, context: Dict[str, any] = None) -> s
 
 # Initialize Agent-as-Tool pattern (Phase 3)
 try:
-    from lib.tools.agent_as_tool import create_specialist_tools
+    from lib._tools.agent_tools import create_specialist_tools
     
-    # Create specialist tool mappings
-    available_specialists = {
-        "security": security_specialist,
-        "architecture": architecture_specialist,
-        "data_science": data_science_specialist,
-        "devops": devops_specialist
-    }
+    # Create specialist agent list
+    available_specialists = []
+    if security_specialist:
+        available_specialists.append(security_specialist)
+    if architecture_specialist:
+        available_specialists.append(architecture_specialist)
+    if data_science_specialist:
+        available_specialists.append(data_science_specialist)
+    if devops_specialist:
+        available_specialists.append(devops_specialist)
     
     # Create agent-as-tool functions
     specialist_tools = create_specialist_tools(available_specialists)
