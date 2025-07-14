@@ -92,24 +92,13 @@ class ADKEventStreamHandler:
                     else:
                         is_transfer = self._is_transfer_message(content_text)
                         
-                    # Detect and filter transfer messages
+                    # Route transfer messages to thinking panel
                     if is_transfer:
-                        # Convert to internal routing event
-                        if USE_ENHANCED_DETECTION:
-                            ui_events = convert_to_ui_events(content_text)
-                            for ui_event in ui_events:
-                                if ui_event.get('type') != 'content':
-                                    yield ui_event
-                        else:
-                            specialist_info = self._extract_specialist_info(content_text)
-                            if specialist_info:
-                                yield {
-                                    'type': 'agent_active',
-                                    'agent': specialist_info['name'],
-                                    'content': f"{specialist_info['description']} analyzing request...",
-                                    'internal': True  # Don't show in chat
-                                }
-                        continue  # Skip adding to response
+                        # Convert transfer messages to thinking events
+                        thinking_event = self._convert_transfer_to_thinking(content_text)
+                        if thinking_event:
+                            yield thinking_event
+                        continue  # Don't add to main response
                 
                 # Convert ADK events to UI events
                 ui_event = await self._convert_to_ui_event(event)
@@ -292,4 +281,87 @@ class ADKEventStreamHandler:
                     'content': text
                 }
                 
+        return None
+    
+    def _convert_transfer_to_thinking(self, content: str) -> Optional[Dict[str, Any]]:
+        """
+        Convert transfer messages to thinking panel events.
+        Shows the multi-agent orchestration transparently.
+        """
+        content_lower = content.lower()
+        
+        # Map transfer patterns to user-friendly thinking events
+        if "i've transferred your request" in content_lower or "transferring to" in content_lower:
+            # Extract which agent
+            if "enhanced_orchestrator" in content_lower or "orchestrator" in content_lower:
+                return {
+                    'type': 'thinking',
+                    'content': 'Analyzing request and determining best approach...',
+                    'agent': 'master_orchestrator',
+                    'status': 'routing'
+                }
+            elif "security" in content_lower:
+                return {
+                    'type': 'thinking', 
+                    'content': 'Assigning Security Specialist for vulnerability analysis...',
+                    'agent': 'security_specialist',
+                    'status': 'active'
+                }
+            elif "data" in content_lower:
+                return {
+                    'type': 'thinking',
+                    'content': 'Assigning Data Science Specialist for analysis...',
+                    'agent': 'data_science_specialist', 
+                    'status': 'active'
+                }
+            elif "architecture" in content_lower:
+                return {
+                    'type': 'thinking',
+                    'content': 'Assigning Architecture Specialist for code review...',
+                    'agent': 'architecture_specialist',
+                    'status': 'active'
+                }
+            elif "devops" in content_lower:
+                return {
+                    'type': 'thinking',
+                    'content': 'Assigning DevOps Specialist for deployment analysis...',
+                    'agent': 'devops_specialist',
+                    'status': 'active'
+                }
+            elif "qa" in content_lower or "test" in content_lower:
+                return {
+                    'type': 'thinking',
+                    'content': 'Assigning QA Specialist for quality assessment...',
+                    'agent': 'qa_specialist',
+                    'status': 'active'
+                }
+            elif "ui" in content_lower or "ux" in content_lower:
+                return {
+                    'type': 'thinking',
+                    'content': 'Assigning UI/UX Specialist for interface design...',
+                    'agent': 'ui_specialist',
+                    'status': 'active'
+                }
+                
+        # Handle completion messages
+        elif "complete" in content_lower or "finished" in content_lower:
+            # Extract which agent completed
+            for agent in ['security', 'data', 'architecture', 'devops', 'qa', 'ui']:
+                if agent in content_lower:
+                    agent_name = f"{agent}_specialist"
+                    return {
+                        'type': 'thinking',
+                        'content': f'{agent.title()} analysis complete, preparing insights...',
+                        'agent': agent_name,
+                        'status': 'complete'
+                    }
+                    
+        # Handle generic routing messages
+        elif "routing" in content_lower or "analyzing" in content_lower:
+            return {
+                'type': 'thinking',
+                'content': 'Determining optimal specialist configuration...',
+                'status': 'routing'
+            }
+            
         return None

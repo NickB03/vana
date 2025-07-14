@@ -257,28 +257,30 @@ async def process_vana_agent_with_events(user_input: str, session_id: str = None
     
     try:
         # Add initial thinking event
-        thinking_events.append({'type': 'routing', 'content': 'Analyzing query type and routing to appropriate specialists...'})
+        thinking_events.append({'type': 'thinking', 'content': 'Understanding your request...', 'status': 'analyzing'})
         
-        # Check query for specialist routing
+        # Check query for specialist routing and show in thinking panel
         query_lower = user_input.lower()
         if any(word in query_lower for word in ["security", "vulnerable", "safe", "threat"]):
-            thinking_events.append({'type': 'agent_active', 'agent': 'security_specialist', 'content': 'Security analysis requested - routing to Security Specialist...'})
+            thinking_events.append({'type': 'thinking', 'agent': 'security_specialist', 'content': 'Assigning Security Specialist for vulnerability analysis...', 'status': 'active'})
         elif any(word in query_lower for word in ["data", "analyze", "statistics", "trend"]):
-            thinking_events.append({'type': 'agent_active', 'agent': 'data_science_specialist', 'content': 'Data analysis requested - routing to Data Science Specialist...'})
+            thinking_events.append({'type': 'thinking', 'agent': 'data_science_specialist', 'content': 'Assigning Data Science Specialist for analysis...', 'status': 'active'})
         elif any(word in query_lower for word in ["code", "architecture", "design", "refactor"]):
-            thinking_events.append({'type': 'agent_active', 'agent': 'architecture_specialist', 'content': 'Code analysis requested - routing to Architecture Specialist...'})
+            thinking_events.append({'type': 'thinking', 'agent': 'architecture_specialist', 'content': 'Assigning Architecture Specialist for code review...', 'status': 'active'})
         elif any(word in query_lower for word in ["deploy", "ci/cd", "infrastructure", "docker"]):
-            thinking_events.append({'type': 'agent_active', 'agent': 'devops_specialist', 'content': 'DevOps query detected - routing to DevOps Specialist...'})
+            thinking_events.append({'type': 'thinking', 'agent': 'devops_specialist', 'content': 'Assigning DevOps Specialist for deployment analysis...', 'status': 'active'})
         elif any(word in query_lower for word in ["test", "qa", "quality", "coverage"]):
-            thinking_events.append({'type': 'agent_active', 'agent': 'qa_specialist', 'content': 'Quality assurance requested - routing to QA Specialist...'})
+            thinking_events.append({'type': 'thinking', 'agent': 'qa_specialist', 'content': 'Assigning QA Specialist for quality assessment...', 'status': 'active'})
         elif any(word in query_lower for word in ["ui", "ux", "interface", "component", "design"]):
-            thinking_events.append({'type': 'agent_active', 'agent': 'ui_specialist', 'content': 'UI/UX query detected - routing to UI Specialist...'})
+            thinking_events.append({'type': 'thinking', 'agent': 'ui_specialist', 'content': 'Assigning UI/UX Specialist for interface design...', 'status': 'active'})
+        else:
+            thinking_events.append({'type': 'thinking', 'content': 'Processing your request...', 'status': 'active'})
         
         # Process through normal agent
         output_text = await process_vana_agent(user_input, session_id)
         
         # Add completion event
-        thinking_events.append({'type': 'step_complete', 'content': 'Analysis complete, preparing response...'})
+        thinking_events.append({'type': 'thinking', 'content': 'Finalizing response...', 'status': 'complete'})
         
         return output_text, thinking_events
 
@@ -306,12 +308,12 @@ async def stream_agent_response(user_input: str, session_id: str = None) -> Asyn
     try:
         # Initial thinking status
         status_tracker.update_status("analyzing_request")
-        yield f"data: {json.dumps({'type': 'thinking', 'content': 'Analyzing your request...', 'status': 'analyzing_request'})}\n\n"
+        yield f"data: {json.dumps({'type': 'thinking', 'content': 'Understanding your request...', 'status': 'analyzing_request'})}\n\n"
 
         await asyncio.sleep(0.1)  # Brief pause for UX
 
-        # Emit thinking event for orchestrator activation
-        yield f"data: {json.dumps({'type': 'thinking', 'content': 'Activating VANA Master Orchestrator...', 'agent': 'master_orchestrator'})}\n\n"
+        # Don't mention orchestrator activation - just show what's happening
+        yield f"data: {json.dumps({'type': 'thinking', 'content': 'Determining best approach...', 'status': 'routing'})}\n\n"
         
         # Process through VANA agent with event tracking
         status_tracker.update_status("processing")

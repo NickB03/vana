@@ -118,16 +118,14 @@ class ResponseFormatter:
         if not response:
             return ""
         
-        # Check if entire message is a transfer - return empty
-        if cls.is_transfer_message(response):
-            return ""
+        # Don't filter out the entire response if it's a transfer message
+        # Transfer messages should be handled by the event stream processor
+        # and routed to the thinking panel, not filtered here
         
-        # Remove handoff artifacts
+        # Only remove inline handoff artifacts that might appear in larger responses
         cleaned = response
-        for pattern in cls.HANDOFF_PATTERNS:
-            cleaned = re.sub(pattern, '', cleaned, flags=re.IGNORECASE | re.DOTALL)
         
-        # Remove internal thinking (unless specifically requested to show)
+        # Remove only explicit internal markers, not content
         for pattern in cls.THINKING_PATTERNS:
             cleaned = re.sub(pattern, '', cleaned, flags=re.IGNORECASE | re.DOTALL)
         
@@ -136,7 +134,6 @@ class ResponseFormatter:
         cleaned = re.sub(r' {2,}', ' ', cleaned)
         cleaned = cleaned.strip()
         
-        # Don't return placeholder messages for empty responses
         return cleaned
     
     @classmethod
