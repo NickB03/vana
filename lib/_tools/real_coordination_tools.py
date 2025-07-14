@@ -561,25 +561,33 @@ def real_coordinate_task(task_description: str, assigned_agent: str) -> str:
 
 
 def real_delegate_to_agent(agent_name: str, task: str, context: str) -> str:
-    """Real implementation of delegate_to_agent tool."""
-    service = get_coordination_service()
+    """Real implementation of delegate_to_agent tool with feature flag support."""
+    # Phase 2 MP-2.3: Check USE_ADK_COORDINATION feature flag
+    use_adk_coordination = os.getenv("USE_ADK_COORDINATION", "false").lower() == "true"
+    
+    if use_adk_coordination:
+        logger.info("Using ADK coordination mechanism")
+        return transfer_to_agent(agent_name, task, context)
+    else:
+        logger.info("Using legacy coordination mechanism")
+        service = get_coordination_service()
 
-    # Handle async call in sync context
-    try:
-        loop = asyncio.get_event_loop()
-        if loop.is_running():
-            # If we're already in an async context, create a task
-            import concurrent.futures
+        # Handle async call in sync context
+        try:
+            loop = asyncio.get_event_loop()
+            if loop.is_running():
+                # If we're already in an async context, create a task
+                import concurrent.futures
 
-            with concurrent.futures.ThreadPoolExecutor() as executor:
-                future = executor.submit(asyncio.run, service.delegate_to_agent(agent_name, task, context))
-                return future.result(timeout=30)
-        else:
-            # Run in the existing loop
-            return loop.run_until_complete(service.delegate_to_agent(agent_name, task, context))
-    except RuntimeError:
-        # No event loop, create one
-        return asyncio.run(service.delegate_to_agent(agent_name, task, context))
+                with concurrent.futures.ThreadPoolExecutor() as executor:
+                    future = executor.submit(asyncio.run, service.delegate_to_agent(agent_name, task, context))
+                    return future.result(timeout=30)
+            else:
+                # Run in the existing loop
+                return loop.run_until_complete(service.delegate_to_agent(agent_name, task, context))
+        except RuntimeError:
+            # No event loop, create one
+            return asyncio.run(service.delegate_to_agent(agent_name, task, context))
 
 
 def real_get_agent_status() -> str:
