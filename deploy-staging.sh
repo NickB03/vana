@@ -48,7 +48,8 @@ GOOGLE_GENAI_USE_VERTEXAI=true,\
 GOOGLE_CLOUD_PROJECT=$PROJECT_ID,\
 GOOGLE_CLOUD_REGION=$REGION,\
 RAG_CORPUS_RESOURCE_NAME=projects/$PROJECT_ID/locations/$REGION/ragCorpora/2305843009213693952,\
-ENVIRONMENT=staging" \
+ENVIRONMENT=staging,\
+USE_ADK_EVENTS=true" \
   --set-secrets "GOOGLE_API_KEY=gemini-api-key:latest" \
   --no-traffic
 
