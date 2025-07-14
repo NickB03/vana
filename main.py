@@ -211,6 +211,8 @@ async def process_vana_agent(user_input: str, session_id: str = None) -> str:
         # Format response to ensure clean output
         if output_text:
             output_text = ResponseFormatter.format_response(output_text)
+            # Ensure markdown formatting is preserved
+            output_text = ResponseFormatter.ensure_markdown_formatting(output_text)
         
         return output_text if output_text else "I processed your request but couldn't generate a response."
 

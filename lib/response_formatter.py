@@ -85,13 +85,22 @@ class ResponseFormatter:
             'routing to specialist',
             'handing off to',
             'delegating to',
-            'forwarding to'
+            'forwarding to',
+            "i've transferred your request",
+            "i have transferred your request"
         ]
         
         # If response is primarily a transfer message
+        # Must be a short message that's mostly about transferring
         for phrase in transfer_phrases:
-            if phrase in response_lower and len(response_lower) < 100:
-                return True
+            if phrase in response_lower:
+                # Calculate what percentage of the message is the transfer phrase
+                if len(response_lower) < 150:  # Short message
+                    # Check if this is the main content
+                    words_in_response = len(response_lower.split())
+                    words_in_phrase = len(phrase.split())
+                    if words_in_response < words_in_phrase + 10:  # Transfer phrase + a few extra words
+                        return True
                 
         return False
     
@@ -240,13 +249,25 @@ class ResponseFormatter:
         Returns:
             Response with enhanced markdown formatting
         """
+        # Preserve existing paragraph breaks
+        # First, normalize line endings
+        response = response.replace('\r\n', '\n').replace('\r', '\n')
+        
         # Fix code blocks
         response = re.sub(r'```(\w+)?\n', r'```\1\n', response)
         
-        # Ensure lists have proper spacing
-        response = re.sub(r'(\n)(\d+\.|[-*])\s', r'\n\n\2 ', response)
+        # Ensure lists have proper spacing (but don't double-space already spaced lists)
+        response = re.sub(r'(?<!\n\n)(\n)(\d+\.|[-*])\s', r'\n\n\2 ', response)
         
-        # Fix headers
-        response = re.sub(r'(\n)(#{1,6})\s', r'\n\n\2 ', response)
+        # Fix headers (but don't double-space already spaced headers)
+        response = re.sub(r'(?<!\n\n)(\n)(#{1,6})\s', r'\n\n\2 ', response)
+        
+        # Ensure proper paragraph breaks between sentences that look like new paragraphs
+        # Look for periods followed by a capital letter on the same line
+        response = re.sub(r'\.(\s+)([A-Z])', r'.\n\n\2', response)
+        
+        # But don't break common abbreviations
+        for abbr in ['Mr.', 'Mrs.', 'Dr.', 'Ms.', 'Prof.', 'Sr.', 'Jr.']:
+            response = response.replace(f'{abbr}\n\n', f'{abbr} ')
         
         return response
