@@ -657,6 +657,28 @@ def transfer_to_agent(agent_name: str, task: str, context: str = "") -> str:
         JSON string with transfer result matching existing format
     """
     try:
+        # Validate agent name
+        valid_agents = [
+            'architecture_specialist',
+            'data_science_specialist',
+            'security_specialist',
+            'devops_specialist',
+            'qa_specialist',
+            'ui_ux_specialist'
+        ]
+        
+        if agent_name not in valid_agents:
+            logger.error(f"❌ ADK Transfer failed: Unknown agent '{agent_name}'")
+            return json.dumps({
+                "action": "transfer_to_agent",
+                "agent": agent_name,
+                "task": task,
+                "context": context,
+                "status": "error",
+                "error": f"Unknown agent: {agent_name}. Valid agents are: {', '.join(valid_agents)}",
+                "timestamp": datetime.now().isoformat(),
+            }, indent=2)
+        
         logger.info(f"🚀 ADK Transfer to {agent_name}: {task}")
         
         # For now, simulate ADK AgentTool coordination
