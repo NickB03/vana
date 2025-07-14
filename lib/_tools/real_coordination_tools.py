@@ -16,6 +16,8 @@ from typing import Any, Dict, List, Optional
 # Add project root to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
 
+# Phase 2 - ADK Compliance imports will be added here
+
 from lib._tools.agent_communication import get_communication_service
 from lib._tools.agent_discovery import AgentCapability, get_discovery_service
 from lib._tools.routing_engine import get_routing_engine
