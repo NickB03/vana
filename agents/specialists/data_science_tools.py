@@ -18,7 +18,7 @@ from lib._shared_libraries.redis_cache_service import redis_cache
 
 
 @redis_cache(namespace="data_science", ttl=3600)
-def analyze_data_simple(data_json: str, analysis_type: str = "descriptive") -> str:
+def analyze_data_simple(data_json: str, analysis_type: str) -> str:
     """
     Perform basic data analysis without external dependencies.
 
@@ -221,7 +221,7 @@ def generate_data_insights(data_summary: str) -> str:
     return "\n".join(insights)
 
 
-def clean_data_basic(data_json: str, operations: str = "basic") -> str:
+def clean_data_basic(data_json: str, operations: str) -> str:
     """
     Perform basic data cleaning operations.
 

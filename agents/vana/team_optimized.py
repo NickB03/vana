@@ -61,7 +61,7 @@ from agents.base_agents import set_root_agent
 # Create ADK-optimized VANA agent
 optimized_root_agent = LlmAgent(
     name="vana_optimized",
-    model=os.getenv("VANA_MODEL", "gemini-2.0-flash"),
+    model=os.getenv("VANA_MODEL", "gemini-2.5-flash"),
     description="Intelligent AI assistant with optimized task routing and execution",
     instruction="""You are VANA, an intelligent AI assistant specializing in task routing and execution.
 

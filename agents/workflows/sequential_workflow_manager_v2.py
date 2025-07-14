@@ -112,7 +112,7 @@ class SequentialWorkflowManagerV2:
         # Create agent with state awareness
         agent = LlmAgent(
             name=f"Step_{index+1}_{task['name']}",
-            model="gemini-2.0-flash",
+            model="gemini-2.5-flash",
             description=task.get("description", f"Step {index+1}: {task['name']}"),
             instruction=instructions,
             tools=[FunctionTool(tool) for tool in task.get("tools", [])],

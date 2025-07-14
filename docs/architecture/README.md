@@ -339,7 +339,7 @@ agent_patterns = {
 # 1. Create specialist with tools
 from google.genai import LlmAgent
 specialist = LlmAgent(
-    model="gemini-2.0-flash",
+    model="gemini-2.5-flash",
     tools=[tool1, tool2, ...],  # Max 6 tools
     instruction="Specialist instructions"
 )

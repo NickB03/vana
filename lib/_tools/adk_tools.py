@@ -151,7 +151,7 @@ def sync_write_file(file_path: str, content: str) -> str:
         return asyncio.run(write_file(file_path, content))
 
 
-def sync_web_search(query: str, max_results: int = 5) -> str:
+def sync_web_search(query: str, max_results: int) -> str:
     """Synchronous wrapper for async web_search function."""
     import asyncio
 
@@ -165,7 +165,7 @@ def sync_web_search(query: str, max_results: int = 5) -> str:
         return asyncio.run(web_search(query, max_results))
 
 
-def sync_vector_search(query: str, max_results: int = 5) -> str:
+def sync_vector_search(query: str, max_results: int) -> str:
     """Synchronous wrapper for async vector_search function."""
     import asyncio
 
@@ -198,7 +198,7 @@ adk_vector_search.name = "vector_search"
 
 
 # Search Tools - Real production implementations with ADK integration
-async def vector_search(query: str, max_results: int = 5) -> str:
+async def vector_search(query: str, max_results: int) -> str:
     """🔍 Search the vector database for relevant information using Vertex AI Vector Search (async)."""
     try:
         logger.info(f"Vector search query: {query}")
@@ -259,7 +259,7 @@ async def vector_search(query: str, max_results: int = 5) -> str:
         return json.dumps(result, indent=2)
 
 
-async def web_search(query: str, max_results: int = 5) -> str:
+async def web_search(query: str, max_results: int) -> str:
     """🌐 Search the web using Google Search (ADK compliant)."""
     try:
         # Use the new Google search implementation v2
@@ -739,7 +739,7 @@ def get_health_status() -> str:
 
 
 # Enhanced Agent Coordination Tools - Self-contained production implementations
-def coordinate_task(task_description: str, assigned_agent: str = "") -> str:
+def coordinate_task(task_description: str, assigned_agent: str) -> str:
     """🎯 Coordinate task assignment with ADK sub_agents delegation."""
     try:
         # FIXED: Use ADK sub_agents pattern instead of JSON-RPC communication
@@ -784,7 +784,7 @@ def coordinate_task(task_description: str, assigned_agent: str = "") -> str:
         return error_msg
 
 
-def delegate_to_agent(agent_name: str, task: str, context: str = "") -> str:
+def delegate_to_agent(agent_name: str, task: str, context: str) -> str:
     """🤝 Delegate task using ADK AgentTool pattern for actual delegation."""
     try:
         # Import the specialist agents that are available as sub_agents
@@ -859,7 +859,7 @@ def get_agent_status() -> str:
         return error_msg
 
 
-def transfer_to_agent(agent_name: str, context: str = "") -> str:
+def transfer_to_agent(agent_name: str, context: str) -> str:
     """🔄 Transfer conversation to specified agent (Google ADK Pattern)."""
     try:
         logger.info(f"Transferring to {agent_name}")
@@ -894,7 +894,7 @@ adk_transfer_to_agent.name = "transfer_to_agent"
 
 
 # Intelligent Task Analysis Tools - Production implementations
-def analyze_task(task: str, context: str = "") -> str:
+def analyze_task(task: str, context: str) -> str:
     """🧠 Analyze task using intelligent NLP-based task analyzer for optimal routing."""
     try:
         from lib._tools.task_analyzer import get_task_analyzer
@@ -929,7 +929,7 @@ def analyze_task(task: str, context: str = "") -> str:
         return json.dumps({"error": error_msg}, indent=2)
 
 
-def match_capabilities(task: str, context: str = "", required_capabilities: str = "") -> str:
+def match_capabilities(task: str, context: str, required_capabilities: str) -> str:
     """🎯 Match task requirements to available agent capabilities using intelligent capability matcher."""
     try:
         from lib._tools.capability_matcher import get_capability_matcher
@@ -998,7 +998,7 @@ def match_capabilities(task: str, context: str = "", required_capabilities: str 
         return json.dumps({"error": error_msg}, indent=2)
 
 
-def classify_task(task: str, context: str = "") -> str:
+def classify_task(task: str, context: str) -> str:
     """🏷️ Classify task and recommend appropriate agents using intelligent task classifier."""
     try:
         from lib._tools.task_classifier import get_task_classifier
@@ -1191,7 +1191,7 @@ def start_workflow(workflow_id: str) -> str:
         # For now, return a simulated workflow start since async execution needs proper setup
         # This will be enhanced once the async infrastructure is properly configured
 
-        workflow_def = workflow_engine.get_workflow_definition(workflow_id)
+        workflow_def = workflow_definitions.get(workflow_id)
         if not workflow_def:
             return json.dumps({"error": f"Workflow {workflow_id} not found"}, indent=2)
 
@@ -1258,7 +1258,7 @@ def get_workflow_status(workflow_id: str) -> str:
         return json.dumps({"error": error_msg}, indent=2)
 
 
-def list_workflows(state_filter: str = "") -> str:
+def list_workflows(state_filter: str) -> str:
     """📋 List all workflows with optional state filtering."""
     try:
         import time
@@ -1558,7 +1558,7 @@ except ImportError as e:
     adk_intelligent_echo = FunctionTool(func=basic_echo)
     adk_intelligent_echo.name = "intelligent_echo"
 
-    def basic_analyze_task(task: str, context: str = "") -> str:
+    def basic_analyze_task(task: str, context: str) -> str:
         """Basic task analysis as fallback"""
         return f"Task analysis: {task[:100]}..."
 
@@ -1567,7 +1567,7 @@ except ImportError as e:
 
 
 # Simple Code Execution Tool (lightweight alternative to complex sandbox)
-def simple_execute_code(code: str, language: str = "python") -> str:
+def simple_execute_code(code: str, language: str) -> str:
     """🐍 Execute simple Python code with basic security measures."""
     import os
     import subprocess

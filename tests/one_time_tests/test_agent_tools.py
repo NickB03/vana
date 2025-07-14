@@ -42,7 +42,7 @@ def test_tools():
     
     # Test a simple query that should work
     print("\n\n🧪 Testing with Gemini model directly...")
-    model = genai.GenerativeModel('gemini-2.0-flash')
+    model = genai.GenerativeModel('gemini-2.5-flash')
     
     # Test without tools first
     test_queries = [

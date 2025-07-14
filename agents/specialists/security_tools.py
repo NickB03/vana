@@ -12,7 +12,7 @@ from pathlib import Path
 from typing import Dict, List, Tuple
 
 
-def scan_security_vulnerabilities(code: str, language: str = "python") -> str:
+def scan_security_vulnerabilities(code: str, language: str) -> str:
     """
     Scan code for common security vulnerabilities.
 
@@ -122,7 +122,7 @@ def scan_security_vulnerabilities(code: str, language: str = "python") -> str:
         return "✅ No security vulnerabilities detected in the provided code."
 
 
-def generate_security_report(scan_results: str, context: str = "") -> str:
+def generate_security_report(scan_results: str, context: str) -> str:
     """
     Generate comprehensive security report with remediation steps.
 
@@ -212,7 +212,7 @@ api_key = os.environ.get("API_KEY")
     return report
 
 
-def check_security_headers(config_content: str, file_type: str = "nginx") -> str:
+def check_security_headers(config_content: str, file_type: str) -> str:
     """
     Check security headers in configuration files.
 
@@ -310,7 +310,7 @@ app.use(helmet({
     return report
 
 
-def analyze_authentication_security(code: str, language: str = "python") -> str:
+def analyze_authentication_security(code: str, language: str) -> str:
     """
     Analyze authentication and session management security.
 

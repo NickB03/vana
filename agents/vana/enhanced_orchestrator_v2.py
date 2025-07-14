@@ -600,7 +600,7 @@ def get_orchestrator_v2_stats() -> str:
 # Create the Enhanced Orchestrator V2
 enhanced_orchestrator_v2 = LlmAgent(
     name="enhanced_orchestrator_v2",
-    model="gemini-2.0-flash",
+    model="gemini-2.5-flash",
     description="Enhanced orchestrator with workflow management and advanced routing",
     instruction="""You are the Enhanced VANA Orchestrator V2 with integrated workflow management.
 

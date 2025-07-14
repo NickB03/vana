@@ -204,7 +204,7 @@ def analyze_deployment_config(config_path: str) -> str:
         return f"Error analyzing deployment config: {str(e)}"
 
 
-def generate_cicd_pipeline(project_type: str, platform: str = "github") -> str:
+def generate_cicd_pipeline(project_type: str, platform: str) -> str:
     """
     Generate CI/CD pipeline configuration for different platforms.
 
@@ -663,7 +663,7 @@ def analyze_infrastructure_as_code(iac_path: str) -> str:
         return f"Error analyzing IaC: {str(e)}"
 
 
-def generate_monitoring_config(stack: str, metrics_type: str = "basic") -> str:
+def generate_monitoring_config(stack: str, metrics_type: str) -> str:
     """
     Generate monitoring and observability configuration.
 

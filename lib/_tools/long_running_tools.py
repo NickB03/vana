@@ -49,12 +49,12 @@ except ImportError:
             return time.time()
 
         @staticmethod
-        def end_execution(name, start_time, success=True):
+        def end_execution(name, start_time, success):
             return time.time() - start_time
 
     class InputValidator:
         @staticmethod
-        def validate_string(value, name, required=True, max_length=None):
+        def validate_string(value, name, required, max_length):
             return value
 
 
@@ -117,7 +117,7 @@ class LongRunningTaskManager:
         self.tasks: Dict[str, LongRunningTaskResult] = {}
         self.task_callbacks: Dict[str, Callable] = {}
 
-    def create_task(self, task_id: str = None) -> str:
+    def create_task(self, task_id: str) -> str:
         """Create a new long-running task."""
         if task_id is None:
             task_id = str(uuid.uuid4())
@@ -161,7 +161,7 @@ class LongRunningTaskManager:
         """Register callback for task updates."""
         self.task_callbacks[task_id] = callback
 
-    def cleanup_completed_tasks(self, max_age_hours: int = 24):
+    def cleanup_completed_tasks(self, max_age_hours: int):
         """Clean up old completed tasks."""
         current_time = time.time()
         max_age_seconds = max_age_hours * 3600
@@ -223,7 +223,7 @@ class LongRunningFunctionTool:
 
         logger.info(f"Created LongRunningFunctionTool: {self.name}")
 
-    async def run_async(self, args: Dict[str, Any], tool_context: Any = None) -> Dict[str, Any]:
+    async def run_async(self, args: Dict[str, Any], tool_context: Any) -> Dict[str, Any]:
         """
         Execute the long-running function asynchronously.
 
@@ -391,7 +391,7 @@ async def ask_for_approval(
     return result
 
 
-async def process_large_dataset(task_id: str, dataset_name: str, operation: str = "analyze") -> Dict[str, Any]:
+async def process_large_dataset(task_id: str, dataset_name: str, operation: str) -> Dict[str, Any]:
     """
     Example long-running tool for data processing.
 
@@ -450,7 +450,7 @@ async def process_large_dataset(task_id: str, dataset_name: str, operation: str 
     return final_result
 
 
-def generate_report(task_id: str, report_type: str, data_sources: list = None) -> Dict[str, Any]:
+def generate_report(task_id: str, report_type: str, data_sources: list) -> Dict[str, Any]:
     """
     Example synchronous long-running tool for report generation.
 

@@ -33,7 +33,7 @@ class Settings(BaseSettings):
     )
 
     # Model Configuration
-    vana_model: str = Field(default="gemini-2.0-flash-exp", description="Default LLM model for VANA agent")
+    vana_model: str = Field(default="gemini-2.5-flash", description="Default LLM model for VANA agent")
 
     # Google Cloud Configuration
     google_project_id: str = Field(default="analystai-454200", description="Google Cloud project ID")

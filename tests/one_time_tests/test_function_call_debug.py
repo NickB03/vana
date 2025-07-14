@@ -68,7 +68,7 @@ def test_adk_tool_format():
     
     # Test with simple tool
     model = genai.GenerativeModel(
-        'gemini-2.0-flash',
+        'gemini-2.5-flash',
         tools=[simple_tool]
     )
     
@@ -89,7 +89,7 @@ def test_adk_tool_format():
     # Now test with the fixed web search tool
     print("\n   Testing with fixed web search tool:")
     model2 = genai.GenerativeModel(
-        'gemini-2.0-flash',
+        'gemini-2.5-flash',
         tools=[fixed_tool]
     )
     

@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 # ============================================================================
 
 
-def context7_sequential_thinking(prompt: str, minimum_tokens: int = 10000) -> Dict[str, Any]:
+def context7_sequential_thinking(prompt: str, minimum_tokens: int) -> Dict[str, Any]:
     """
     Advanced reasoning and structured problem-solving using sequential thinking patterns.
 
@@ -196,7 +196,7 @@ def context7_sequential_thinking(prompt: str, minimum_tokens: int = 10000) -> Di
 # ============================================================================
 
 
-def brave_search_mcp(query: str, max_results: int = 5) -> Dict[str, Any]:
+def brave_search_mcp(query: str, max_results: int) -> Dict[str, Any]:
     """
     Enhanced web search using Brave Search API with MCP-style interface.
 
@@ -581,7 +581,7 @@ def github_mcp_operations(operation: str, **kwargs) -> Dict[str, Any]:
 # ============================================================================
 
 
-def firecrawl_mcp(url: str, mode: str = "scrape", **kwargs) -> Dict[str, Any]:
+def firecrawl_mcp(url: str, mode: str, **kwargs) -> Dict[str, Any]:
     """
     Web scraping and crawling using Firecrawl API with MCP-style interface.
 

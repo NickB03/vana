@@ -42,7 +42,7 @@ spec:
               name: vana-secrets
               key: google-api-key
         - name: VANA_MODEL
-          value: "gemini-2.0-flash"
+          value: "gemini-2.5-flash"
         - name: ORCHESTRATOR_CACHE_SIZE
           value: "200"
         - name: METRICS_PERSIST_PATH

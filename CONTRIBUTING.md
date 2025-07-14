@@ -291,7 +291,7 @@ The VANA agentic AI system uses a 5-level hierarchy:
    def create_new_specialist():
        return adk.LlmAgent(
            name="NewSpecialist",
-           model="gemini-2.0-flash",
+           model="gemini-2.5-flash",
            tools=[
                adk.FunctionTool(tool1),
                adk.FunctionTool(tool2),

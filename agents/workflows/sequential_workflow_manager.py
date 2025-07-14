@@ -57,7 +57,7 @@ class SequentialWorkflowManager:
             # Create agent for this step
             agent = LlmAgent(
                 name=f"Step_{i+1}_{task['name']}",
-                model="gemini-2.0-flash",
+                model="gemini-2.5-flash",
                 description=task.get("description", f"Step {i+1}: {task['name']}"),
                 instruction=self._build_step_instructions(task, i),
                 tools=[FunctionTool(tool) for tool in task.get("tools", [])],

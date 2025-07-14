@@ -103,7 +103,7 @@ graph LR
 ```python
 vana_chat_agent = LlmAgent(
     name="VANA_Chat",
-    model="gemini-2.0-flash",
+    model="gemini-2.5-flash",
     tools=[
         adk_transfer_to_agent,  # Delegate to orchestrator
         adk_analyze_task,       # Basic task understanding
@@ -155,7 +155,7 @@ Each specialist has real, functional tools:
 # Architecture Specialist - Real AST Analysis
 architecture_specialist = LlmAgent(
     name="architecture_specialist",
-    model="gemini-2.0-flash",
+    model="gemini-2.5-flash",
     tools=[
         detect_design_patterns,      # AST-based pattern detection
         analyze_dependencies,        # Real dependency graphs
@@ -169,7 +169,7 @@ architecture_specialist = LlmAgent(
 # 🔴 Security Specialist - ELEVATED Priority
 security_specialist = LlmAgent(
     name="security_specialist",
-    model="gemini-2.0-flash",
+    model="gemini-2.5-flash",
     tools=[
         scan_code_vulnerabilities,      # Real vulnerability detection
         validate_security_compliance,   # OWASP/PCI-DSS checks
@@ -181,7 +181,7 @@ security_specialist = LlmAgent(
 # DevOps Specialist - Config Generation
 devops_specialist = LlmAgent(
     name="devops_specialist",
-    model="gemini-2.0-flash",
+    model="gemini-2.5-flash",
     tools=[
         generate_ci_cd_pipeline,    # GitHub Actions, GitLab CI
         create_deployment_config,   # K8s manifests, Docker
@@ -195,7 +195,7 @@ devops_specialist = LlmAgent(
 # Data Science Specialist - Pure Python
 data_science_specialist = LlmAgent(
     name="data_science_specialist",
-    model="gemini-2.0-flash",
+    model="gemini-2.5-flash",
     tools=[
         analyze_data_simple,       # Statistics without pandas
         generate_data_insights,    # Pattern recognition
@@ -223,7 +223,7 @@ def specialist_tool(context: str) -> str:
 
 new_specialist = LlmAgent(
     name="new_specialist",
-    model="gemini-2.0-flash",
+    model="gemini-2.5-flash",
     description="Expert in [domain]",
     instruction="You are an expert...",
     tools=[

@@ -33,7 +33,7 @@ except ImportError:
             "error": "Knowledge graph not available during initialization",
         }
 
-    def kg_store(entity_name: str, entity_type: str, properties: str = ""):
+    def kg_store(entity_name: str, entity_type: str, properties: str):
         return {
             "success": False,
             "error": "Knowledge graph not available during initialization",
@@ -113,7 +113,7 @@ class StandardizedKnowledgeGraphTools:
         return response
 
     @standardized_tool_wrapper("kg_store")
-    def kg_store(self, entity_name: str, entity_type: str, properties: str = "") -> StandardToolResponse:
+    def kg_store(self, entity_name: str, entity_type: str, properties: str) -> StandardToolResponse:
         """💾 Store an entity in the knowledge graph with properties.
 
         Args:
@@ -234,7 +234,7 @@ class StandardizedKnowledgeGraphTools:
         return response
 
     @standardized_tool_wrapper("kg_extract_entities")
-    def kg_extract_entities(self, text: str, store_entities: bool = True) -> StandardToolResponse:
+    def kg_extract_entities(self, text: str, store_entities: bool) -> StandardToolResponse:
         """🎯 Extract entities from text using NLP and optionally store in knowledge graph.
 
         Args:
@@ -297,7 +297,7 @@ def standardized_kg_query(entity_type: str, query_text: str) -> str:
     return result.to_string()
 
 
-def standardized_kg_store(entity_name: str, entity_type: str, properties: str = "") -> str:
+def standardized_kg_store(entity_name: str, entity_type: str, properties: str) -> str:
     """💾 KG store with standardized interface - returns string for ADK compatibility."""
     result = standardized_kg_tools.kg_store(entity_name, entity_type, properties)
     return result.to_string()
@@ -309,7 +309,7 @@ def standardized_kg_relationship(entity1: str, relationship: str, entity2: str) 
     return result.to_string()
 
 
-def standardized_kg_extract_entities(text: str, store_entities: bool = True) -> str:
+def standardized_kg_extract_entities(text: str, store_entities: bool) -> str:
     """🎯 KG entity extraction with standardized interface - returns string for ADK compatibility."""
     result = standardized_kg_tools.kg_extract_entities(text, store_entities)
     return result.to_string()

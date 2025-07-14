@@ -438,7 +438,7 @@ class TestUIUXSpecialistAgent:
     def test_ui_specialist_configuration(self):
         """Test UI/UX specialist agent is properly configured."""
         assert ui_specialist.name == "UIUXSpecialist"
-        assert ui_specialist.model == "gemini-2.0-flash"
+        assert ui_specialist.model == "gemini-2.5-flash"
         assert len(ui_specialist.tools) == 6
 
         # Check all tools are present

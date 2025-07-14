@@ -17,7 +17,7 @@ logger = get_logger("vana.secure_file_tools")
 
 
 @rate_limit(requests_per_minute=100, requests_per_hour=1000)
-def secure_read_file(file_path: str, user_id: str = "system") -> str:
+def secure_read_file(file_path: str, user_id: str) -> str:
     """
     Securely read a file with path validation and rate limiting
 
@@ -56,7 +56,7 @@ def secure_read_file(file_path: str, user_id: str = "system") -> str:
 
 
 @rate_limit(requests_per_minute=50, requests_per_hour=500)
-def secure_write_file(file_path: str, content: str, user_id: str = "system") -> str:
+def secure_write_file(file_path: str, content: str, user_id: str) -> str:
     """
     Securely write to a file with validation and sanitization
 
@@ -101,7 +101,7 @@ def secure_write_file(file_path: str, content: str, user_id: str = "system") -> 
 
 
 @rate_limit(requests_per_minute=100, requests_per_hour=1000)
-def secure_list_directory(directory: str, user_id: str = "system") -> List[Dict[str, Any]]:
+def secure_list_directory(directory: str, user_id: str) -> List[Dict[str, Any]]:
     """
     Securely list directory contents
 
@@ -153,7 +153,7 @@ def secure_list_directory(directory: str, user_id: str = "system") -> List[Dict[
         return [{"error": f"Error listing directory: {str(e)}"}]
 
 
-def secure_delete_file(file_path: str, user_id: str = "system") -> str:
+def secure_delete_file(file_path: str, user_id: str) -> str:
     """
     Securely delete a file with extra confirmation
 
@@ -199,7 +199,7 @@ def secure_delete_file(file_path: str, user_id: str = "system") -> str:
         return f"Error deleting file: {str(e)}"
 
 
-def secure_move_file(source: str, destination: str, user_id: str = "system") -> str:
+def secure_move_file(source: str, destination: str, user_id: str) -> str:
     """
     Securely move/rename a file
 
@@ -241,7 +241,7 @@ def secure_move_file(source: str, destination: str, user_id: str = "system") -> 
         return f"Error moving file: {str(e)}"
 
 
-def secure_create_directory(directory: str, user_id: str = "system") -> str:
+def secure_create_directory(directory: str, user_id: str) -> str:
     """
     Securely create a directory
 
@@ -278,7 +278,7 @@ def secure_create_directory(directory: str, user_id: str = "system") -> str:
         return f"Error creating directory: {str(e)}"
 
 
-def secure_get_file_info(file_path: str, user_id: str = "system") -> Dict[str, Any]:
+def secure_get_file_info(file_path: str, user_id: str) -> Dict[str, Any]:
     """
     Get secure file information
 

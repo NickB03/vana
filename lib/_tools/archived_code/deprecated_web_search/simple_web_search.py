@@ -115,7 +115,7 @@ def search_time_info(query: str) -> List[Dict]:
     return []
 
 
-async def simple_web_search(query: str, max_results: int = 5) -> str:
+async def simple_web_search(query: str, max_results: int) -> str:
     """
     Simple web search that combines multiple free sources.
     
@@ -157,7 +157,7 @@ async def simple_web_search(query: str, max_results: int = 5) -> str:
 
 
 # Synchronous wrapper
-def sync_simple_web_search(query: str, max_results: int = 5) -> str:
+def sync_simple_web_search(query: str, max_results: int) -> str:
     """Synchronous wrapper for simple web search."""
     import asyncio
     try:

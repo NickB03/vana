@@ -55,7 +55,7 @@ class SequentialWorkflowManager:
         for i, task in enumerate(task_chain):
             agent = LlmAgent(
                 name=f"Step_{i+1}_{task['name']}",
-                model="gemini-2.0-flash",
+                model="gemini-2.5-flash",
                 description=task['description'],
                 instruction=task['instruction'],
                 tools=[FunctionTool(tool) for tool in task.get('tools', [])],
@@ -111,7 +111,7 @@ class ParallelWorkflowManager:
         for task in parallel_tasks:
             agent = LlmAgent(
                 name=f"Parallel_{task['name']}",
-                model="gemini-2.0-flash",
+                model="gemini-2.5-flash",
                 description=task['description'],
                 instruction=self._wrap_with_timeout(task['instruction']),
                 tools=[FunctionTool(tool) for tool in task.get('tools', [])],
@@ -162,7 +162,7 @@ class LoopWorkflowManager:
         # Main iteration agent
         iteration_agent = LlmAgent(
             name="IterationAgent",
-            model="gemini-2.0-flash",
+            model="gemini-2.5-flash",
             description=iterative_task['description'],
             instruction=iterative_task['instruction'],
             tools=[FunctionTool(tool) for tool in iterative_task.get('tools', [])],
@@ -264,7 +264,7 @@ def plan_security_testing(architecture: str, threat_model: str = None) -> str:
 # QA Specialist Agent Definition
 qa_specialist = LlmAgent(
     name="qa_specialist",
-    model="gemini-2.0-flash",
+    model="gemini-2.5-flash",
     description="Quality assurance and testing expert",
     instruction="""You are a QA specialist focused on comprehensive testing strategies.
     
@@ -342,7 +342,7 @@ def evaluate_usability(ui_design: str, heuristics: List[str] = None) -> str:
 # UI/UX Specialist Agent Definition
 ui_ux_specialist = LlmAgent(
     name="ui_ux_specialist",
-    model="gemini-2.0-flash",
+    model="gemini-2.5-flash",
     description="User interface and experience design expert",
     instruction="""You are a UI/UX specialist focused on user-centered design.
     

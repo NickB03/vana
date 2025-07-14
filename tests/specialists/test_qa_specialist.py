@@ -404,7 +404,7 @@ class TestQASpecialistAgent:
     def test_qa_specialist_configuration(self):
         """Test QA specialist agent is properly configured."""
         assert qa_specialist.name == "QASpecialist"
-        assert qa_specialist.model == "gemini-2.0-flash"
+        assert qa_specialist.model == "gemini-2.5-flash"
         assert len(qa_specialist.tools) == 6
 
         # Check all tools are present

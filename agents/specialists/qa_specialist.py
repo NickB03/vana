@@ -572,7 +572,7 @@ def analyze_bug_risk(
 # Create the QA Specialist agent
 qa_specialist = LlmAgent(
     name="QASpecialist",
-    model="gemini-2.0-flash",
+    model="gemini-2.5-flash",
     description="Testing and quality assurance expert",
     instruction="""You are a QA specialist focused on testing strategies and quality assurance.
 

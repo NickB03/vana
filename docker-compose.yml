@@ -9,7 +9,7 @@ services:
       - "8081:8081"
     environment:
       - GOOGLE_API_KEY=${GOOGLE_API_KEY}
-      - VANA_MODEL=${VANA_MODEL:-gemini-2.0-flash-thinking-exp-01-21}
+      - VANA_MODEL=${VANA_MODEL:-gemini-2.5-flash-thinking-exp-01-21}
       - VANA_ENV=${VANA_ENV:-development}
       - VANA_HOST=0.0.0.0
       - VANA_PORT=8081

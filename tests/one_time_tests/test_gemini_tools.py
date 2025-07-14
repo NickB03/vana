@@ -50,7 +50,7 @@ def test_simple_tool():
     
     # Create model with tools
     model = genai.GenerativeModel(
-        'gemini-2.0-flash',
+        'gemini-2.5-flash',
         tools=[get_current_time, multiply]
     )
     

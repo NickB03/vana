@@ -1,7 +1,7 @@
 # Architecture Specialist Documentation
 
 **Status**: Phase 3 Complete ✅  
-**Model**: Gemini 2.0 Flash  
+**Model**: Gemini 2.5 Flash  
 **Tools**: 6 (Maximum per ADK guidelines)  
 **Location**: `agents/specialists/architecture_specialist.py`
 
@@ -33,7 +33,7 @@ See [Architecture Tools API](../tools/architecture-tools.md) for detailed tool d
 
 ```python
 architecture_specialist = LlmAgent(
-    model="gemini-2.0-flash",
+    model="gemini-2.5-flash",
     tools=[
         detect_design_patterns,
         analyze_dependencies,

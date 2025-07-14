@@ -114,7 +114,7 @@ def _handle_local_query(query: str) -> str:
     return ddg_search(enhanced_query, max_results=8)
 
 
-def google_web_search(query: str, max_results: int = 5) -> str:
+def google_web_search(query: str, max_results: int) -> str:
     """
     🔍 Search the web using Google Custom Search API.
     

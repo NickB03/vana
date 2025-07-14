@@ -337,7 +337,7 @@ class TestEnhancedOrchestratorV2Agent:
     def test_orchestrator_v2_configuration(self):
         """Test orchestrator V2 is properly configured."""
         assert enhanced_orchestrator_v2.name == "enhanced_orchestrator_v2"
-        assert enhanced_orchestrator_v2.model == "gemini-2.0-flash"
+        assert enhanced_orchestrator_v2.model == "gemini-2.5-flash"
 
         # Check tools
         tool_names = [tool.func.__name__ for tool in enhanced_orchestrator_v2.tools]

@@ -110,7 +110,7 @@ class ToolRegistry:
             ],
         }
 
-    def register_tool(self, tool: FunctionTool, category: Optional[ToolCategory] = None) -> None:
+    def register_tool(self, tool: FunctionTool, category: Optional[ToolCategory]) -> None:
         """
         Register a tool with the registry
 
@@ -155,7 +155,7 @@ class ToolRegistry:
         tool_names = self.categories.get(category, [])
         return [self.tools[name].tool for name in tool_names if name in self.tools]
 
-    def get_tools_for_agent(self, agent_type: str, max_tools: int = 6) -> List[FunctionTool]:
+    def get_tools_for_agent(self, agent_type: str, max_tools: int) -> List[FunctionTool]:
         """
         Get optimal tool mix for an agent type
         Following ADK best practice of max 6 tools per agent

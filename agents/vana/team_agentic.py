@@ -56,7 +56,7 @@ master_orchestrator.sub_agents = [
 # Create the VANA Chat Agent (minimal tools, user-facing)
 vana_chat_agent = LlmAgent(
     name="VANA_Chat",
-    model=os.getenv("VANA_MODEL", "gemini-2.0-flash"),
+    model=os.getenv("VANA_MODEL", "gemini-2.5-flash"),
     description="VANA's conversational interface for natural user interaction",
     instruction="""You are VANA, a friendly and intelligent AI assistant. Your role is to:
 

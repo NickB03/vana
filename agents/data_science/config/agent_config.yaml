@@ -1,7 +1,7 @@
 name: "data_science_specialist"
 description: "Specialist for data analysis, visualization, and machine learning"
 version: "1.0.0"
-model: "gemini-2.0-flash"
+model: "gemini-2.5-flash"
 
 capabilities:
   - data_analysis

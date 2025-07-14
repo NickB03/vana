@@ -2,15 +2,15 @@
 
 ## System Architecture
 
-VANA implements a sophisticated 5-level hierarchical agent system built on Google's Agent Development Kit (ADK). Each level has specific responsibilities and capabilities.
+VANA implements a sophisticated multi-level hierarchical agent system built on Google's Agent Development Kit (ADK). Each level has specific responsibilities and capabilities.
 
 ## Agent Hierarchy
 
 ### Level 1: VANA Chat Agent
 - **Location**: `agents/vana/team.py`
 - **Purpose**: Primary user interface
-- **Tools**: 2 (minimal toolset for conversation)
-- **Model**: Gemini 2.0 Flash
+- **Tools**: Minimal toolset for conversation
+- **Model**: Gemini 2.5 Flash
 - **Responsibilities**:
   - Handle user conversations
   - Route complex tasks to Master Orchestrator
@@ -19,17 +19,17 @@ VANA implements a sophisticated 5-level hierarchical agent system built on Googl
 ### Level 2: Master Orchestrator
 - **Location**: `agents/vana/enhanced_orchestrator.py`
 - **Purpose**: Intelligent task routing and coordination
-- **Tools**: 5 (orchestration and analysis tools)
+- **Tools**: Orchestration and analysis tools
 - **Features**:
   - Task complexity analysis (Simple/Moderate/Complex/Enterprise)
-  - LRU caching with 100-entry limit
+  - LRU caching for performance optimization
   - Performance metrics tracking
   - Security-first priority routing
   - Thread-safe implementation
 
-### Level 3: Workflow Managers (Ready for Integration)
+### Level 3: Workflow Managers (Active)
 - **Location**: `agents/workflows/`
-- **Status**: Code complete, awaiting integration
+- **Status**: Fully integrated and operational
 - **Types**:
   - Sequential Workflow Manager
   - Parallel Workflow Manager
@@ -39,7 +39,7 @@ VANA implements a sophisticated 5-level hierarchical agent system built on Googl
 
 #### Architecture Specialist
 - **Location**: `agents/specialists/architecture_specialist.py`
-- **Tools**: 6 specialized architecture tools
+- **Tools**: Specialized architecture analysis tools
 - **Capabilities**:
   - AST-based code analysis
   - Design pattern detection
@@ -48,7 +48,7 @@ VANA implements a sophisticated 5-level hierarchical agent system built on Googl
 
 #### Data Science Specialist
 - **Location**: `agents/specialists/data_science_specialist.py`
-- **Tools**: 6 data analysis tools
+- **Tools**: Data analysis tools
 - **Capabilities**:
   - Statistical analysis (pure Python)
   - Data cleaning and validation
@@ -57,7 +57,7 @@ VANA implements a sophisticated 5-level hierarchical agent system built on Googl
 
 #### Security Specialist (ELEVATED Priority)
 - **Location**: `agents/specialists/security_specialist.py`
-- **Tools**: 4 security analysis tools
+- **Tools**: Security analysis tools
 - **Special Status**: ELEVATED - gets priority routing
 - **Capabilities**:
   - Vulnerability scanning
@@ -67,12 +67,30 @@ VANA implements a sophisticated 5-level hierarchical agent system built on Googl
 
 #### DevOps Specialist
 - **Location**: `agents/specialists/devops_specialist.py`
-- **Tools**: 6 DevOps automation tools
+- **Tools**: DevOps automation tools
 - **Capabilities**:
   - CI/CD pipeline generation
   - Infrastructure as Code analysis
   - Monitoring configuration
   - Deployment automation
+
+#### QA Specialist
+- **Location**: `agents/specialists/qa_specialist.py`
+- **Tools**: Quality assurance and testing tools
+- **Capabilities**:
+  - Test generation
+  - Code coverage analysis
+  - Bug detection
+  - Test optimization
+
+#### UI/UX Specialist
+- **Location**: `agents/specialists/ui_specialist.py`
+- **Tools**: Design and user experience tools
+- **Capabilities**:
+  - Component generation
+  - Accessibility validation
+  - Responsive design analysis
+  - User flow optimization
 
 ### Level 5: Maintenance Agents (Future)
 - **Status**: Framework ready for future implementation

@@ -57,7 +57,7 @@ class TaskAnalyzer:
         self.capability_keywords = self._initialize_capability_keywords()
         self.complexity_indicators = self._initialize_complexity_indicators()
 
-    def analyze_task(self, task: str, context: str = "") -> TaskAnalysis:
+    def analyze_task(self, task: str, context: str) -> TaskAnalysis:
         """Analyze a task to determine its characteristics for routing.
 
         Args:

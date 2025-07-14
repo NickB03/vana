@@ -257,7 +257,7 @@ def _create_named_tool(func, name):
 # Create the Code Execution Specialist Agent
 code_execution_specialist = LlmAgent(
     name="code_execution_specialist",
-    model="gemini-2.0-flash",
+    model="gemini-2.5-flash",
     description="Specialist for secure code execution and debugging across multiple programming languages",
     output_key="code_execution_results",
     instruction="""You are a Code Execution Specialist with expertise in secure code execution across multiple programming languages.

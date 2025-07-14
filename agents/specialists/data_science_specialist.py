@@ -22,7 +22,7 @@ from lib._tools import adk_read_file, adk_search_knowledge
 # Create the Data Science Specialist using ADK patterns
 data_science_specialist = LlmAgent(
     name="data_science_specialist",
-    model="gemini-2.0-flash",
+    model="gemini-2.5-flash",
     description="Data analysis expert providing insights without code execution",
     instruction="""You are a data science expert specializing in data analysis and insights.
 
@@ -65,7 +65,7 @@ data_science_specialist_tool = None  # Placeholder
 
 
 # Helper function for direct usage
-def analyze_data(request: str, context: dict = None) -> str:
+def analyze_data(request: str, context: dict) -> str:
     """
     Direct interface to data science specialist for testing.
 

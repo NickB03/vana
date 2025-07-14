@@ -29,12 +29,12 @@ try:
     genai.configure(api_key=api_key)
     
     # Test the API key with a simple request
-    model = genai.GenerativeModel('gemini-2.0-flash')
+    model = genai.GenerativeModel('gemini-2.5-flash')
     response = model.generate_content("Say 'API key works!'")
     print(f"\n✅ API Test Success: {response.text}")
 except Exception as e:
     print(f"\n❌ API Test Failed: {type(e).__name__}: {str(e)}")
 
 # Check model setting
-model_name = os.getenv('VANA_MODEL', 'gemini-2.0-flash')
+model_name = os.getenv('VANA_MODEL', 'gemini-2.5-flash')
 print(f"\n🤖 VANA_MODEL: {model_name}")

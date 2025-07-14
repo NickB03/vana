@@ -60,7 +60,7 @@ class RoutingPerformanceStats:
 class PerformanceTracker:
     """Tracks and analyzes routing performance metrics."""
 
-    def __init__(self, max_history: int = 10000):
+    def __init__(self, max_history: int):
         """Initialize the performance tracker.
 
         Args:
@@ -374,7 +374,7 @@ class PerformanceTracker:
 
         return recommendations
 
-    def export_metrics(self, format: str = "json") -> Any:
+    def export_metrics(self, format: str) -> Any:
         """Export performance metrics in specified format."""
         if format == "json":
             return {
@@ -386,7 +386,7 @@ class PerformanceTracker:
         else:
             raise ValueError(f"Unsupported export format: {format}")
 
-    def clear_old_metrics(self, days: int = 30):
+    def clear_old_metrics(self, days: int):
         """Clear metrics older than specified days."""
         cutoff_time = datetime.now() - timedelta(days=days)
 

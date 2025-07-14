@@ -32,7 +32,7 @@ load_dotenv()
 # Create a simple VANA agent with working tools
 root_agent = LlmAgent(
     name="vana",
-    model="gemini-2.0-flash-exp",
+    model="gemini-2.5-flash",
     instruction="""
 ## 🧠 MEMORY-FIRST DECISION STRATEGY
 

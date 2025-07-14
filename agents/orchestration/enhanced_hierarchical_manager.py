@@ -415,7 +415,7 @@ def create_enhanced_hierarchical_manager() -> LlmAgent:
 
     enhanced_task_manager = LlmAgent(
         name="EnhancedHierarchicalTaskManager",
-        model="gemini-2.0-flash",
+        model="gemini-2.5-flash",
         description="Enhanced Master Orchestrator with Tool Registry, Domain Detection, and Security-First Routing",
         instruction="""You are the Enhanced Master Orchestrator for VANA's Phase 2 implementation.
 

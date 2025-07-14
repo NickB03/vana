@@ -1,7 +1,7 @@
 # Security Specialist Documentation
 
 **Status**: Phase 3 Complete ✅  
-**Model**: Gemini 2.0 Flash  
+**Model**: Gemini 2.5 Flash  
 **Tools**: 4 (Security-focused toolset)  
 **Priority**: 🔴 ELEVATED STATUS  
 **Location**: `agents/specialists/security_specialist.py`
@@ -40,7 +40,7 @@ See [Security Tools API](../tools/security-tools.md) for detailed tool documenta
 
 ```python
 security_specialist = LlmAgent(
-    model="gemini-2.0-flash",
+    model="gemini-2.5-flash",
     tools=[
         scan_code_vulnerabilities,
         validate_security_compliance,

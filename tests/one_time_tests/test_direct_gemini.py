@@ -21,7 +21,7 @@ genai.configure(api_key=api_key)
 
 # Test the API
 try:
-    model = genai.GenerativeModel('gemini-2.0-flash')
+    model = genai.GenerativeModel('gemini-2.5-flash')
     response = model.generate_content("What is 2+2?")
     print(f"\nGemini response: {response.text}")
 except Exception as e:

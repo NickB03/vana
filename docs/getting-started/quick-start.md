@@ -57,7 +57,7 @@ cp .env.example .env
 
 # Edit .env with your settings
 # Minimum required:
-echo "VANA_MODEL=gemini-2.0-flash" >> .env
+echo "VANA_MODEL=gemini-2.5-flash" >> .env
 echo "ENVIRONMENT=development" >> .env
 echo "GOOGLE_API_KEY=your-api-key" >> .env
 

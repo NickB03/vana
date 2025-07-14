@@ -185,7 +185,7 @@ cd vana-ui && npm install package-name
        def __init__(self):
            super().__init__(
                name="your_agent",
-               model="gemini-2.0-flash-thinking-exp-01-21",
+               model="gemini-2.5-flash-thinking-exp-01-21",
                tools=[...]
            )
    ```

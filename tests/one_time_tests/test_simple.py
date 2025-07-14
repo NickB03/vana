@@ -44,7 +44,7 @@ def test_simple():
         print(f"🤖 Agent tools: {len(root_agent.tools)} tools available")
         
         # Test the model directly
-        model = genai.GenerativeModel('gemini-2.0-flash')
+        model = genai.GenerativeModel('gemini-2.5-flash')
         response = model.generate_content(test_input)
         print(f"\n📥 Direct model response: {response.text}")
         

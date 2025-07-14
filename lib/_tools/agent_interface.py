@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 class AgentInterface(ABC):
     """Abstract base class for agent communication interface."""
 
-    def __init__(self, agent_name: str, base_url: str = "http://localhost:8000"):
+    def __init__(self, agent_name: str, base_url: str):
         """Initialize the agent interface.
 
         Args:
@@ -248,7 +248,7 @@ class SimpleAgentInterface(AgentInterface):
 class OrchestrationAgentInterface(AgentInterface):
     """Specialized interface for orchestration agents like VANA."""
 
-    def __init__(self, agent_name: str = "vana", base_url: str = "http://localhost:8000"):
+    def __init__(self, agent_name: str, base_url: str):
         """Initialize orchestration agent interface."""
         super().__init__(agent_name, base_url)
         self.delegation_history: List[Dict[str, Any]] = []

@@ -22,7 +22,7 @@ from google.adk.agents import LlmAgent
 from google.adk.tools import FunctionTool
 
 
-def analyze_accessibility(html_content: str, wcag_level: str = "AA", include_warnings: bool = True) -> Dict[str, Any]:
+def analyze_accessibility(html_content: str, wcag_level: str, include_warnings: bool) -> Dict[str, Any]:
     """
     Analyzes HTML content for accessibility compliance.
 
@@ -556,7 +556,7 @@ def check_responsive_layout(
         return {"error": f"Responsive layout check failed: {str(e)}", "responsive_report": responsive_report}
 
 
-def profile_ui_performance(component_name: str, metrics: List[str] = None, render_count: int = 100) -> Dict[str, Any]:
+def profile_ui_performance(component_name: str, metrics: List[str], render_count: int) -> Dict[str, Any]:
     """
     Profiles UI component rendering performance.
 
@@ -818,7 +818,7 @@ def analyze_user_flow(
 # Create the UI/UX Specialist agent
 ui_specialist = LlmAgent(
     name="UIUXSpecialist",
-    model="gemini-2.0-flash",
+    model="gemini-2.5-flash",
     description="User interface design and experience optimization expert",
     instruction="""You are a UI/UX specialist focused on creating accessible, performant, and user-friendly interfaces.
 

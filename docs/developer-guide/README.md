@@ -51,7 +51,7 @@ cp .env.template .env.local
 
 # Configure for development
 cat << EOF >> .env.local
-VANA_MODEL=gemini-2.0-flash
+VANA_MODEL=gemini-2.5-flash
 ENVIRONMENT=development
 ANTHROPIC_LOG=debug
 EOF
@@ -360,7 +360,7 @@ class TestCustomTools:
            tools = create_custom_tools()
            super().__init__(
                name="Custom Agent",
-               model="gemini-2.0-flash",
+               model="gemini-2.5-flash",
                tools=tools,
                instructions="You are a specialized agent for custom tasks."
            )

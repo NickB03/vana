@@ -22,7 +22,7 @@ from lib._tools import adk_list_directory, adk_read_file
 # Create the DevOps Specialist using ADK patterns
 devops_specialist = LlmAgent(
     name="devops_specialist",
-    model="gemini-2.0-flash",
+    model="gemini-2.5-flash",
     description="DevOps expert specializing in CI/CD, containerization, infrastructure automation, and monitoring",
     instruction="""You are a DevOps specialist with expertise in modern infrastructure and deployment practices.
 
@@ -73,7 +73,7 @@ devops_specialist_tool = None  # Placeholder
 
 
 # Helper function for direct usage
-def analyze_devops(request: str, context: dict = None) -> str:
+def analyze_devops(request: str, context: dict) -> str:
     """
     Direct interface to DevOps specialist for testing.
 

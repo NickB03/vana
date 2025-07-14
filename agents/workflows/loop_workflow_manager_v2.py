@@ -412,7 +412,7 @@ def example_adk_loop_workflows():
     # Base agent for iteration
     optimization_agent = LlmAgent(
         name="OptimizationAgent",
-        model="gemini-2.0-flash",
+        model="gemini-2.5-flash",
         description="Iteratively optimize a solution",
         instruction="Improve the solution based on previous iterations",
         tools=[],

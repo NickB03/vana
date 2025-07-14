@@ -47,7 +47,7 @@ def create_llm_agent(*args, **kwargs) -> LlmAgent:
         openrouter_api_key = os.getenv("OPENROUTER_API_KEY")
         if not openrouter_api_key:
             logger.error("OPENROUTER_API_KEY not found, falling back to Gemini")
-            kwargs["model"] = "gemini-2.0-flash"
+            kwargs["model"] = "gemini-2.5-flash"
             return LlmAgent(*args, **kwargs)
 
         # Extract the actual model name and format correctly for OpenRouter
@@ -69,7 +69,7 @@ def create_llm_agent(*args, **kwargs) -> LlmAgent:
             )
         else:
             logger.error("LiteLlm not available, falling back to Gemini")
-            kwargs["model"] = "gemini-2.0-flash"
+            kwargs["model"] = "gemini-2.5-flash"
             return LlmAgent(*args, **kwargs)
 
         # Replace the model parameter with the LiteLLM instance
@@ -79,7 +79,7 @@ def create_llm_agent(*args, **kwargs) -> LlmAgent:
     else:
         if is_openrouter_model(model) and not LITELLM_AVAILABLE:
             logger.error("OpenRouter model requested but LiteLLM not available. Falling back to Gemini.")
-            kwargs["model"] = "gemini-2.0-flash"
+            kwargs["model"] = "gemini-2.5-flash"
         else:
             logger.info(f"Creating standard ADK agent for model: {model}")
         return LlmAgent(*args, **kwargs)
@@ -92,7 +92,7 @@ def get_effective_model() -> str:
     Returns:
         The actual model name being used
     """
-    model = os.getenv("VANA_MODEL", "gemini-2.0-flash")
+    model = os.getenv("VANA_MODEL", "gemini-2.5-flash")
 
     if is_openrouter_model(model):
         # Return the actual OpenRouter model name

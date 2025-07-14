@@ -138,7 +138,7 @@ def batch_file_operations(operations: str) -> str:
         return f"Error in batch operations: {str(e)}"
 
 
-def compress_files(file_paths: str, archive_path: str, compression_type: str = "zip") -> str:
+def compress_files(file_paths: str, archive_path: str, compression_type: str) -> str:
     """
     Compress files or directories into an archive.
 
@@ -185,7 +185,7 @@ def compress_files(file_paths: str, archive_path: str, compression_type: str = "
         return f"Error compressing files: {str(e)}"
 
 
-def extract_archive(archive_path: str, extract_to: Optional[str] = None) -> str:
+def extract_archive(archive_path: str, extract_to: Optional[str]) -> str:
     """
     Extract files from an archive.
 
@@ -227,7 +227,7 @@ def extract_archive(archive_path: str, extract_to: Optional[str] = None) -> str:
         return f"Error extracting archive: {str(e)}"
 
 
-def find_files(search_path: str, pattern: str = "*", file_type: str = "all", max_results: int = 100) -> str:
+def find_files(search_path: str, pattern: str, file_type: str, max_results: int) -> str:
     """
     Search for files matching criteria.
 
@@ -286,7 +286,7 @@ def find_files(search_path: str, pattern: str = "*", file_type: str = "all", max
         return f"Error searching files: {str(e)}"
 
 
-def sync_directories(source_dir: str, target_dir: str, sync_type: str = "mirror") -> str:
+def sync_directories(source_dir: str, target_dir: str, sync_type: str) -> str:
     """
     Synchronize two directories.
 

@@ -33,7 +33,7 @@ class AgentCoordinationService:
         self.coordination_history: List[Dict[str, Any]] = []
         self.active_delegations: Dict[str, Dict[str, Any]] = {}
 
-    def coordinate_task(self, task_description: str, assigned_agent: str = "") -> str:
+    def coordinate_task(self, task_description: str, assigned_agent: str) -> str:
         """Coordinate task assignment with real agent routing.
 
         Args:
@@ -114,7 +114,7 @@ class AgentCoordinationService:
                 }
             )
 
-    async def delegate_to_agent(self, agent_name: str, task: str, context: str = "") -> str:
+    async def delegate_to_agent(self, agent_name: str, task: str, context: str) -> str:
         """Delegate task to a specific agent with real JSON-RPC communication.
 
         Args:
@@ -212,7 +212,7 @@ class AgentCoordinationService:
                 }
             )
 
-    async def intelligent_route_task(self, task: str, context: str = "") -> str:
+    async def intelligent_route_task(self, task: str, context: str) -> str:
         """Route task using intelligent routing engine with analysis and optimization.
 
         Args:
@@ -551,13 +551,13 @@ def get_coordination_service() -> AgentCoordinationService:
 
 
 # Real coordination tool functions to replace stubs
-def real_coordinate_task(task_description: str, assigned_agent: str = "") -> str:
+def real_coordinate_task(task_description: str, assigned_agent: str) -> str:
     """Real implementation of coordinate_task tool."""
     service = get_coordination_service()
     return service.coordinate_task(task_description, assigned_agent)
 
 
-def real_delegate_to_agent(agent_name: str, task: str, context: str = "") -> str:
+def real_delegate_to_agent(agent_name: str, task: str, context: str) -> str:
     """Real implementation of delegate_to_agent tool."""
     service = get_coordination_service()
 
@@ -585,7 +585,7 @@ def real_get_agent_status() -> str:
     return service.get_agent_status()
 
 
-def real_intelligent_route_task(task: str, context: str = "") -> str:
+def real_intelligent_route_task(task: str, context: str) -> str:
     """Real implementation of intelligent task routing."""
     service = get_coordination_service()
 
@@ -607,7 +607,7 @@ def real_intelligent_route_task(task: str, context: str = "") -> str:
         return asyncio.run(service.intelligent_route_task(task, context))
 
 
-def real_orchestrate_complex_task(task: str, context: str = "", max_agents: int = 3, timeout_seconds: int = 300) -> str:
+def real_orchestrate_complex_task(task: str, context: str, max_agents: int, timeout_seconds: int) -> str:
     """Real implementation of complex task orchestration."""
     service = get_coordination_service()
 

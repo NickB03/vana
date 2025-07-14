@@ -204,7 +204,7 @@ class SearchCoordinator:
             logger.warning(f"Failed to initialize vector search service: {e}")
             self.vector_service = None
 
-    async def coordinated_search(self, query: str, max_results: int = 5, force_web: bool = False) -> str:
+    async def coordinated_search(self, query: str, max_results: int, force_web: bool) -> str:
         """
         Perform coordinated search with memory-first priority.
 
@@ -434,12 +434,12 @@ def create_coordinated_search_tool() -> FunctionTool:
 
     coordinator = SearchCoordinator()
 
-    async def coordinated_search_wrapper(query: str, max_results: int = 5) -> str:
+    async def coordinated_search_wrapper(query: str, max_results: int) -> str:
         """Wrapper function for ADK tool integration."""
         return await coordinator.coordinated_search(query, max_results)
 
     # Create synchronous wrapper for backward compatibility
-    def sync_coordinated_search(query: str, max_results: int = 5) -> str:
+    def sync_coordinated_search(query: str, max_results: int) -> str:
         """Synchronous wrapper for coordinated search."""
         try:
             loop = asyncio.get_event_loop()

@@ -166,7 +166,7 @@ class ParallelWorkflowManager:
             # Create agent with timeout wrapper
             agent = LlmAgent(
                 name=f"Parallel_{task['name']}",
-                model="gemini-2.0-flash",
+                model="gemini-2.5-flash",
                 description=task.get("description", f"Parallel task: {task['name']}"),
                 instruction=self._wrap_with_timeout(task["instruction"], task.get("timeout", 30)),
                 tools=[FunctionTool(tool) for tool in task.get("tools", [])][:6],  # Enforce 6-tool limit

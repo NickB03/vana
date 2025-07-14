@@ -386,7 +386,7 @@ class ThirdPartyToolRegistry:
         self.adapters[adapter.tool_type] = adapter
         logger.info(f"Registered adapter for {adapter.tool_type.value}")
 
-    def discover_tools_from_source(self, source: Any, tool_type: Optional[ThirdPartyToolType] = None) -> List[str]:
+    def discover_tools_from_source(self, source: Any, tool_type: Optional[ThirdPartyToolType]) -> List[str]:
         """
         Discover and register tools from a source.
 

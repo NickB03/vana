@@ -50,7 +50,7 @@ Level 5: Maintenance Agents (System Support)
 - Development tooling setup
 
 ### Technical Decisions
-- Chose Gemini 2.0 Flash for speed and efficiency
+- Chose Gemini 2.5 Flash for speed and efficiency
 - Implemented agent-as-tool pattern for flexibility
 - Used synchronous patterns throughout (ADK compliance)
 - Limited each agent to 6 tools maximum
