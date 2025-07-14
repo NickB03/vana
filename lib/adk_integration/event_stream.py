@@ -296,7 +296,7 @@ class ADKEventStreamHandler:
             if "enhanced_orchestrator" in content_lower or "orchestrator" in content_lower:
                 return {
                     'type': 'thinking',
-                    'content': 'Analyzing request and determining best approach...',
+                    'content': 'Processing request through multi-agent system...',
                     'agent': 'master_orchestrator',
                     'status': 'routing'
                 }
