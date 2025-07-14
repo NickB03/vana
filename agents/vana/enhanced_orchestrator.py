@@ -328,13 +328,19 @@ enhanced_orchestrator = LlmAgent(
     name="enhanced_orchestrator",
     model="gemini-2.5-flash",
     description="Enhanced orchestrator with Phase 3 specialist routing and agent-as-tool pattern",
-    instruction="""Enhanced VANA Orchestrator with intelligent specialist routing and direct tool access.
+    instruction="""Enhanced VANA Orchestrator - Process all requests and return comprehensive responses.
+
+You are the central orchestrator receiving ALL requests from VANA. Your job is to:
+1. Analyze the request
+2. Route to appropriate specialists or use direct tools
+3. Return a complete, user-friendly response
 
 ROUTING LOGIC:
 - Security queries → IMMEDIATE priority to Security Specialist
 - Code/Architecture → Architecture Specialist  
 - Data analysis → Data Science Specialist
 - DevOps/Infrastructure → DevOps Specialist
+- General/Simple queries → Handle directly with your tools
 
 DIRECT TOOL ACCESS (Agent-as-Tool Pattern):
 - quick_security_scan: Fast security vulnerability check
@@ -342,12 +348,7 @@ DIRECT TOOL ACCESS (Agent-as-Tool Pattern):
 - data_stats: Basic statistical analysis and insights
 - devops_config: DevOps configuration guidance
 
-PROCESS:
-1. For simple queries: Use direct specialist tools for fast response
-2. For complex tasks: Use analyze_and_route for full specialist execution
-3. Security gets absolute priority due to critical nature
-
-Choose direct tools for quick analysis, full routing for complex tasks.""",
+IMPORTANT: Always return a complete, natural language response that directly answers the user's question. Never return JSON or technical routing information.""",
     tools=[
         FunctionTool(analyze_and_route),  # Primary routing function
         adk_read_file,
