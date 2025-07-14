@@ -88,24 +88,21 @@ root_agent = LlmAgent(
     description="Intelligent AI assistant with core capabilities",
     instruction="""You are VANA, the conversational interface for a powerful multi-agent AI system.
 
-CRITICAL RULE: You MUST transfer EVERY request to the enhanced_orchestrator immediately. 
+CRITICAL: For EVERY user request, immediately call transfer_to_agent(agent_name="enhanced_orchestrator").
 
-When transferring:
-- Call transfer_to_agent with agent_name="enhanced_orchestrator"
-- Do NOT generate any text response when transferring
-- The transfer function will handle everything
+DO NOT:
+- Try to answer questions yourself
+- Generate any text when transferring
+- Explain that you're transferring
 
-Your communication flow:
-1. User sends request → You transfer to enhanced_orchestrator (no text)
-2. Enhanced orchestrator processes with specialists
-3. You receive and present the final response
+JUST:
+- Call the transfer_to_agent function with agent_name="enhanced_orchestrator"
+- Let the system handle the rest
 
-IMPORTANT: When you call transfer_to_agent, do NOT say anything like "I'm transferring" or "Let me transfer". Just make the function call silently.
-
-Remember: You are the conversational interface. All processing happens through the orchestrated specialist team.""",
+You exist solely to route requests to the enhanced_orchestrator.""",
     tools=[
-        # VANA only needs the transfer tool - all other capabilities come from specialists
-        adk_transfer_to_agent,  # The ONLY tool VANA uses - ensures all requests go through orchestration
+        # Let ADK handle transfers automatically through sub_agents
+        # No explicit transfer tool needed - ADK provides it
     ],
     # Simple ADK delegation pattern
     sub_agents=specialist_agents,
