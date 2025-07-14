@@ -246,6 +246,8 @@ async def process_vana_agent_with_events(user_input: str, session_id: str = None
             
         except Exception as e:
             logger.error(f"ADK event processing error: {e}")
+            import traceback
+            logger.error(f"ADK traceback: {traceback.format_exc()}")
             # Fall back to hardcoded implementation
             
     # Fallback: Hardcoded implementation for when ADK events are disabled
@@ -293,6 +295,8 @@ async def stream_agent_response(user_input: str, session_id: str = None) -> Asyn
                 yield sse_event
         except Exception as e:
             logger.error(f"ADK streaming error: {e}")
+            import traceback
+            logger.error(f"ADK streaming traceback: {traceback.format_exc()}")
             yield f"data: {json.dumps({'type': 'error', 'content': 'I encountered an error. Please try again.'})}\n\n"
         return
     
