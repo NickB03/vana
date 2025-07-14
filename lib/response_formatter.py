@@ -28,7 +28,17 @@ class ResponseFormatter:
         r'---.*?handoff.*?---',
         r'(?i)invoking.*?agent',
         r'(?i)passing to',
-        r'(?i)forwarding to'
+        r'(?i)forwarding to',
+        # Add JSON transfer patterns
+        r'{\s*"action"\s*:\s*"transfer_conversation".*?}',
+        r'{\s*"action"\s*:\s*"TRANSFER_CONTROL".*?}',
+        r'{\s*"target_agent"\s*:.*?}',
+        r'{\s*"status"\s*:\s*"transferred".*?}',
+        # Full JSON blocks that are transfer messages
+        r'(?s){\s*\n?\s*"action"[^}]+?"pattern"\s*:\s*"google_adk"[^}]+?}',
+        # Status messages
+        r'✅ Successfully transferred to.*',
+        r'🔄 Transferring conversation to.*'
     ]
     
     # Patterns for internal thinking/processing
@@ -39,6 +49,51 @@ class ResponseFormatter:
         r'(?i)debug:.*?(?=\n|$)',
         r'(?i)processing:.*?(?=\n|$)'
     ]
+    
+    @classmethod
+    def is_transfer_message(cls, response: str) -> bool:
+        """
+        Check if entire response is a transfer message that should be hidden.
+        
+        Args:
+            response: Response to check
+            
+        Returns:
+            True if this is a pure transfer message
+        """
+        if not response:
+            return False
+            
+        # Check for JSON transfer messages
+        try:
+            import json
+            data = json.loads(response.strip())
+            if isinstance(data, dict):
+                # Check for transfer action
+                if data.get('action') in ['transfer_conversation', 'TRANSFER_CONTROL']:
+                    return True
+                # Check for transfer-related fields
+                if all(key in data for key in ['target_agent', 'status']) and data.get('status') == 'transferred':
+                    return True
+        except:
+            pass
+        
+        # Check for transfer patterns in plain text
+        response_lower = response.lower().strip()
+        transfer_phrases = [
+            'transferring to',
+            'routing to specialist',
+            'handing off to',
+            'delegating to',
+            'forwarding to'
+        ]
+        
+        # If response is primarily a transfer message
+        for phrase in transfer_phrases:
+            if phrase in response_lower and len(response_lower) < 100:
+                return True
+                
+        return False
     
     @classmethod
     def format_response(cls, response: str) -> str:
@@ -52,7 +107,11 @@ class ResponseFormatter:
             Cleaned response with unified voice
         """
         if not response:
-            return "I'm ready to help you. What would you like to know?"
+            return ""
+        
+        # Check if entire message is a transfer - return empty
+        if cls.is_transfer_message(response):
+            return ""
         
         # Remove handoff artifacts
         cleaned = response
@@ -68,10 +127,7 @@ class ResponseFormatter:
         cleaned = re.sub(r' {2,}', ' ', cleaned)
         cleaned = cleaned.strip()
         
-        # Ensure response isn't empty after cleaning
-        if not cleaned:
-            return "I've processed your request. How else can I help you?"
-        
+        # Don't return placeholder messages for empty responses
         return cleaned
     
     @classmethod

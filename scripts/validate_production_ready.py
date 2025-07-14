@@ -151,13 +151,13 @@ class ProductionValidator:
             import main_agentic
             self.log_success("main_agentic.py imports successfully")
             
-            from agents.vana.team import vana_team
+            from agents.vana.team import root_agent
             self.log_success("VANA team imports successfully")
             
             from lib._shared_libraries.adk_memory_service import get_adk_memory_service
             self.log_success("Memory service imports successfully")
             
-            from lib._shared_libraries.adk_session_manager import get_adk_session_manager
+            from lib._shared_libraries.session_manager import get_session_manager
             self.log_success("Session manager imports successfully")
             
             return True
@@ -175,7 +175,7 @@ class ProductionValidator:
         
         try:
             from lib._shared_libraries.adk_memory_service import get_adk_memory_service
-            from lib._shared_libraries.adk_session_manager import get_adk_session_manager
+            from lib._shared_libraries.session_manager import get_session_manager
             
             # Test memory service
             memory_service = get_adk_memory_service()
@@ -190,7 +190,7 @@ class ProductionValidator:
                 return False
             
             # Test session manager
-            session_manager = get_adk_session_manager()
+            session_manager = get_session_manager()
             test_session = await session_manager.create_session("test-user")
             
             if test_session:
@@ -221,7 +221,7 @@ class ProductionValidator:
         print("=" * 50)
         
         try:
-            from agents.vana.team import vana_team
+            from agents.vana.team import root_agent
             
             # Test queries
             test_queries = [
@@ -246,7 +246,7 @@ class ProductionValidator:
                 
                 try:
                     # Run query
-                    result = await vana_team.arun(query)
+                    result = await root_agent.arun(query)
                     
                     if isinstance(result, str) and len(result) > 0:
                         # Check for handoff leakage
@@ -348,7 +348,8 @@ class ProductionValidator:
         # Check for key UI files
         key_files = [
             "src/App.tsx",
-            "src/components/Chat.tsx",
+            "src/pages/Chat.tsx",
+            "src/components/ThinkingPanel.tsx",
             "index.html"
         ]
         

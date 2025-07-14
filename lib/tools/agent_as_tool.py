@@ -199,11 +199,10 @@ def create_specialist_tools(specialists: Dict[str, Any]) -> List[FunctionTool]:
             else:
                 return f"Security scan failed: {result['error']}"
         
-        tools.append(FunctionTool(
-            name="quick_security_scan",
-            function=security_tool_func,
-            description="Quick security vulnerability check and analysis for code or systems"
-        ))
+        tool = FunctionTool(func=security_tool_func)
+        tool.name = "quick_security_scan"
+        tool.description = "Quick security vulnerability check and analysis for code or systems"
+        tools.append(tool)
     
     # Architecture specialist tool  
     if "architecture" in specialists and specialists["architecture"]:
@@ -231,11 +230,10 @@ def create_specialist_tools(specialists: Dict[str, Any]) -> List[FunctionTool]:
             else:
                 return f"Architecture review failed: {result['error']}"
         
-        tools.append(FunctionTool(
-            name="architecture_review",
-            function=architecture_tool_func,
-            description="Quick architecture review and design pattern analysis"
-        ))
+        tool = FunctionTool(func=architecture_tool_func)
+        tool.name = "architecture_review"
+        tool.description = "Quick architecture review and design pattern analysis"
+        tools.append(tool)
     
     # Data science specialist tool
     if "data_science" in specialists and specialists["data_science"]:
@@ -263,11 +261,10 @@ def create_specialist_tools(specialists: Dict[str, Any]) -> List[FunctionTool]:
             else:
                 return f"Data analysis failed: {result['error']}"
         
-        tools.append(FunctionTool(
-            name="data_stats",
-            function=data_science_tool_func,
-            description="Quick statistical analysis and data insights"
-        ))
+        tool = FunctionTool(func=data_science_tool_func)
+        tool.name = "data_stats"
+        tool.description = "Quick statistical analysis and data insights"
+        tools.append(tool)
     
     # QA specialist tool
     if "qa" in specialists and specialists["qa"]:
@@ -295,11 +292,10 @@ def create_specialist_tools(specialists: Dict[str, Any]) -> List[FunctionTool]:
             else:
                 return f"QA check failed: {result['error']}"
         
-        tools.append(FunctionTool(
-            name="qa_quick_check", 
-            function=qa_tool_func,
-            description="Quick quality assurance and testing analysis"
-        ))
+        tool = FunctionTool(func=qa_tool_func)
+        tool.name = "qa_quick_check"
+        tool.description = "Quick quality assurance and testing analysis"
+        tools.append(tool)
     
     # UI specialist tool
     if "ui" in specialists and specialists["ui"]:
@@ -327,11 +323,10 @@ def create_specialist_tools(specialists: Dict[str, Any]) -> List[FunctionTool]:
             else:
                 return f"UI analysis failed: {result['error']}"
         
-        tools.append(FunctionTool(
-            name="ui_component_gen",
-            function=ui_tool_func,
-            description="Quick UI component generation and analysis"
-        ))
+        tool = FunctionTool(func=ui_tool_func)
+        tool.name = "ui_component_gen"
+        tool.description = "Quick UI component generation and analysis"
+        tools.append(tool)
     
     # DevOps specialist tool
     if "devops" in specialists and specialists["devops"]:
@@ -359,11 +354,10 @@ def create_specialist_tools(specialists: Dict[str, Any]) -> List[FunctionTool]:
             else:
                 return f"DevOps analysis failed: {result['error']}"
         
-        tools.append(FunctionTool(
-            name="devops_config",
-            function=devops_tool_func,
-            description="Quick DevOps configuration and deployment analysis"
-        ))
+        tool = FunctionTool(func=devops_tool_func)
+        tool.name = "devops_config"
+        tool.description = "Quick DevOps configuration and deployment analysis"
+        tools.append(tool)
     
     logger.info(f"Created {len(tools)} agent-as-tool functions")
     return tools

@@ -9,6 +9,7 @@ from typing import Any, AsyncGenerator, Dict, List
 from fastapi import FastAPI, HTTPException, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
+from fastapi.staticfiles import StaticFiles
 from google.adk.runners import Runner
 from google.adk.sessions import InMemorySessionService
 from google.genai.types import Content, Part
@@ -17,13 +18,23 @@ from google.genai.types import Content, Part
 from agents.vana.team import root_agent
 from lib.response_formatter import ResponseFormatter
 
+# Import ADK integration for event streaming
+from lib.adk_integration import VANAEventProcessor, create_adk_processor
+
 # Set up logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# Feature flag for ADK event streaming (gradual rollout)
+USE_ADK_EVENTS = os.getenv('USE_ADK_EVENTS', 'false').lower() == 'true'
+logger.info(f"ADK Event Streaming: {'ENABLED' if USE_ADK_EVENTS else 'DISABLED'}")
+
 # Initialize ADK components
 session_service = InMemorySessionService()
 runner = Runner(agent=root_agent, app_name="vana", session_service=session_service)
+
+# Create ADK event processor for new event streaming
+adk_processor = create_adk_processor(runner) if USE_ADK_EVENTS else None
 
 app = FastAPI()
 
@@ -34,7 +45,12 @@ app.add_event_handler(
 )
 
 # CORS Configuration - Single source of truth for allowed origins
-ALLOWED_ORIGINS = ["http://localhost:5173"]  # Frontend runs on port 5173
+ALLOWED_ORIGINS = [
+    "http://localhost:5173",  # Local frontend development
+    "http://localhost:8081",  # Local backend serving frontend
+    "https://vana-dev-960076421399.us-central1.run.app",  # Production vana-dev
+    "https://vana-staging-960076421399.us-central1.run.app",  # Staging environment
+]
 
 app.add_middleware(
     CORSMiddleware,
@@ -161,14 +177,19 @@ class AgentStatusTracker:
 status_tracker = AgentStatusTracker()
 
 
-async def process_vana_agent(user_input: str) -> str:
+async def process_vana_agent(user_input: str, session_id: str = None) -> str:
     """Process input through VANA agent and return response text"""
     try:
-        # Create session for this request
-        session_id = f"stream_session_{datetime.now().timestamp()}"
+        # Use provided session_id or create a new one
+        if not session_id:
+            session_id = f"stream_session_{datetime.now().timestamp()}"
         user_id = "api_user"
 
-        session = await session_service.create_session(app_name="vana", user_id=user_id, session_id=session_id)
+        # Check if session exists, otherwise create it
+        try:
+            session = await session_service.get_session(user_id=user_id, session_id=session_id)
+        except:
+            session = await session_service.create_session(app_name="vana", user_id=user_id, session_id=session_id)
 
         # Create content from user input with explicit user role
         user_message = Content(parts=[Part(text=user_input)], role="user")
@@ -207,6 +228,27 @@ async def emit_thinking_event(event):
 
 async def process_vana_agent_with_events(user_input: str, session_id: str = None) -> tuple[str, list]:
     """Process user input through VANA agent with event tracking"""
+    
+    # Use ADK event processor if available
+    if USE_ADK_EVENTS and adk_processor:
+        thinking_events = []
+        output_text = ""
+        
+        try:
+            # Process with real ADK events
+            async for event in adk_processor.process_with_adk_events(user_input, session_id or f"session_{uuid.uuid4()}"):
+                if event['type'] == 'content':
+                    output_text += event['content']
+                elif not event.get('internal'):  # Only collect non-internal events for thinking panel
+                    thinking_events.append(event)
+                    
+            return output_text, thinking_events
+            
+        except Exception as e:
+            logger.error(f"ADK event processing error: {e}")
+            # Fall back to hardcoded implementation
+            
+    # Fallback: Hardcoded implementation for when ADK events are disabled
     thinking_events = []
     
     try:
@@ -229,7 +271,7 @@ async def process_vana_agent_with_events(user_input: str, session_id: str = None
             thinking_events.append({'type': 'agent_active', 'agent': 'ui_specialist', 'content': 'UI/UX query detected - routing to UI Specialist...'})
         
         # Process through normal agent
-        output_text = await process_vana_agent(user_input)
+        output_text = await process_vana_agent(user_input, session_id)
         
         # Add completion event
         thinking_events.append({'type': 'step_complete', 'content': 'Analysis complete, preparing response...'})
@@ -243,6 +285,18 @@ async def process_vana_agent_with_events(user_input: str, session_id: str = None
 
 async def stream_agent_response(user_input: str, session_id: str = None) -> AsyncGenerator[str, None]:
     """Stream VANA agent response with real orchestration events"""
+    
+    # Use ADK streaming if available
+    if USE_ADK_EVENTS and adk_processor:
+        try:
+            async for sse_event in adk_processor.stream_response(user_input, session_id):
+                yield sse_event
+        except Exception as e:
+            logger.error(f"ADK streaming error: {e}")
+            yield f"data: {json.dumps({'type': 'error', 'content': 'I encountered an error. Please try again.'})}\n\n"
+        return
+    
+    # Fallback: Original hardcoded implementation
     try:
         # Initial thinking status
         status_tracker.update_status("analyzing_request")
@@ -285,6 +339,38 @@ async def stream_agent_response(user_input: str, session_id: str = None) -> Asyn
         logger.error(f"Streaming error: {e}")
         yield f"data: {json.dumps({'type': 'error', 'content': 'I encountered an error. Please try again.'})}\n\n"
 
+
+# New /chat endpoint for frontend SSE streaming
+@app.post("/chat")
+async def chat_endpoint(request: Request):
+    """Streaming chat endpoint for VANA frontend with ThinkingPanel events"""
+    try:
+        data = await request.json()
+        message = data.get("message", "")
+        session_id = data.get("session_id")
+        stream = data.get("stream", True)
+        
+        if not message:
+            raise HTTPException(status_code=400, detail="No message provided")
+        
+        if stream:
+            return StreamingResponse(
+                stream_agent_response(message, session_id),
+                media_type="text/event-stream",
+                headers={
+                    "Cache-Control": "no-cache",
+                    "Connection": "keep-alive",
+                    "X-Accel-Buffering": "no"
+                }
+            )
+        else:
+            # Non-streaming fallback
+            output_text = await process_vana_agent(message, session_id)
+            return {"type": "content", "content": output_text}
+    
+    except Exception as e:
+        logger.error(f"Chat endpoint error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 # OpenAI-compatible chat completions endpoint with streaming support
 @app.post("/v1/chat/completions")
@@ -346,8 +432,19 @@ async def health():
     return {"status": "healthy"}
 
 
+# Serve frontend static files (must be after all API routes)
+if os.path.exists("vana-ui/dist"):
+    app.mount("/", StaticFiles(directory="vana-ui/dist", html=True), name="static")
+    logger.info("✅ Frontend static files mounted from vana-ui/dist")
+else:
+    logger.warning("⚠️ Frontend build not found at vana-ui/dist - UI will not be available")
+
+
 if __name__ == "__main__":
     import uvicorn
 
+    # Use PORT env var for CloudRun, default to 8081
+    port = int(os.getenv("PORT", "8081"))
+    
     # Ensure proper port binding and logging
-    uvicorn.run(app, host="0.0.0.0", port=8081, log_level="debug")
+    uvicorn.run(app, host="0.0.0.0", port=port, log_level="debug")
