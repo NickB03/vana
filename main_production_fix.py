@@ -16,13 +16,6 @@ from fastapi.staticfiles import StaticFiles
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Handle recursion limit for Cloud Run
-import sys
-recursion_limit = int(os.getenv("PYTHON_RECURSION_LIMIT", "1000"))
-if recursion_limit != sys.getrecursionlimit():
-    logger.info(f"Setting recursion limit to {recursion_limit}")
-    sys.setrecursionlimit(recursion_limit)
-
 # Create FastAPI app first
 app = FastAPI()
 

@@ -5,87 +5,49 @@ import os
 import re
 import uuid
 from datetime import datetime
-from typing import Any, AsyncGenerator, Dict, List, Optional
+from typing import Any, AsyncGenerator, Dict, List
 
 from fastapi import FastAPI, HTTPException, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from fastapi.staticfiles import StaticFiles
+from google.adk.runners import Runner
+from google.adk.sessions import InMemorySessionService
+from google.genai.types import Content, Part
+
+# Import the VANA agent
+from agents.vana.team import root_agent
+from lib.response_formatter import ResponseFormatter
+
+# Import ADK integration for event streaming
+from lib.adk_integration import VANAEventProcessor, create_adk_processor
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Handle recursion limit for Cloud Run
-import sys
-recursion_limit = int(os.getenv("PYTHON_RECURSION_LIMIT", "1000"))
-if recursion_limit != sys.getrecursionlimit():
-    logger.info(f"Setting recursion limit to {recursion_limit}")
-    sys.setrecursionlimit(recursion_limit)
+# Feature flag for ADK event streaming (gradual rollout)
+USE_ADK_EVENTS = os.getenv('USE_ADK_EVENTS', 'false').lower() == 'true'
+logger.info(f"ADK Event Streaming: {'ENABLED' if USE_ADK_EVENTS else 'DISABLED'}")
 
-# Create FastAPI app first
+# Initialize ADK components
+session_service = InMemorySessionService()
+runner = Runner(agent=root_agent, app_name="vana", session_service=session_service)
+
+# Create ADK event processor for new event streaming
+adk_processor = create_adk_processor(runner) if USE_ADK_EVENTS else None
+
 app = FastAPI()
 
-# Global variables for ADK components (will be initialized on startup)
-runner: Optional[Any] = None
-adk_processor: Optional[Any] = None
-session_service: Optional[Any] = None
-root_agent: Optional[Any] = None
-ResponseFormatter: Optional[Any] = None
-
-# Feature flags
-USE_ADK_EVENTS = os.getenv('USE_ADK_EVENTS', 'false').lower() == 'true'
-
-# Initialize ADK components on startup
-@app.on_event("startup")
-async def startup_event():
-    """Initialize ADK components after app starts"""
-    global runner, adk_processor, session_service, root_agent, ResponseFormatter
-    
-    logger.info("=== VANA Starting Up ===")
-    logger.info(f"PORT: {os.getenv('PORT', '8081')}")
-    logger.info(f"GOOGLE_API_KEY present: {bool(os.getenv('GOOGLE_API_KEY'))}")
-    logger.info(f"USE_ADK_EVENTS: {USE_ADK_EVENTS}")
-    
-    try:
-        # Import ADK components
-        from google.adk.runners import Runner
-        from google.adk.sessions import InMemorySessionService
-        from google.genai.types import Content, Part
-        
-        # Import VANA components
-        from agents.vana.team import root_agent as imported_root_agent
-        from lib.response_formatter import ResponseFormatter as imported_formatter
-        from lib.adk_integration import VANAEventProcessor, create_adk_processor
-        
-        # Assign to globals
-        root_agent = imported_root_agent
-        ResponseFormatter = imported_formatter
-        
-        # Initialize ADK
-        session_service = InMemorySessionService()
-        runner = Runner(agent=root_agent, app_name="vana", session_service=session_service)
-        
-        # Create ADK event processor for new event streaming
-        adk_processor = create_adk_processor(runner) if USE_ADK_EVENTS else None
-        
-        logger.info(f"ADK Event Streaming: {'ENABLED' if USE_ADK_EVENTS else 'DISABLED'}")
-        logger.info("✅ ADK initialization complete!")
-        
-    except Exception as e:
-        logger.error(f"❌ Failed to initialize ADK: {str(e)}")
-        logger.error(f"Error type: {type(e).__name__}")
-        import traceback
-        logger.error(f"Traceback: {traceback.format_exc()}")
-        logger.warning("Service will run with limited functionality")
-
 # Load API_KEY from environment (no hardcoded values)
-@app.on_event("startup")
-async def check_api_key():
-    if not os.getenv("VITE_API_KEY"):
-        logger.warning("Ensure VITE_API_KEY is set in environment")
+app.add_event_handler(
+    "startup",
+    lambda: logger.warning("Ensure VITE_API_KEY is set in environment") if not os.getenv("VITE_API_KEY") else None,
+)
 
 # Enhanced CORS Configuration with pattern matching
+import re
+
 class CorsConfig:
     # Explicit allowed origins
     ALLOWED_ORIGINS = [
@@ -173,13 +135,13 @@ app.add_middleware(
     allow_headers=["Content-Type", "Authorization"],
 )
 
+
+
+
 # VANA Agent Endpoint - Process requests through the actual VANA orchestrator
 @app.post("/run")
 async def run_vana(request: Request) -> Dict[str, Any]:
     """Process user input through the VANA orchestrator agent."""
-    if not runner:
-        raise HTTPException(status_code=503, detail="ADK not initialized. Please try again later.")
-        
     try:
         # Get request data
         data = await request.json()
@@ -192,14 +154,12 @@ async def run_vana(request: Request) -> Dict[str, Any]:
 
         # Process through VANA agent using ADK Runner
         try:
-            # Import types only when needed
-            from google.genai.types import Content, Part
-            
             # Create session for this request with secure ID
             session_id = f"session_{uuid.uuid4()}"
             user_id = "api_user"
 
             # Create session first - this is required
+            # The session service create_session is already async, so just await it
             session = await session_service.create_session(app_name="vana", user_id=user_id, session_id=session_id)
 
             # Create content from user input with explicit user role
@@ -241,19 +201,23 @@ async def run_vana(request: Request) -> Dict[str, Any]:
         logger.error(f"Request handling error: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")
 
+
 # Data models for chat completions API
 class ChatMessage:
     def __init__(self, role: str, content: str):
         self.role = role
         self.content = content
 
+
 class ChatCompletionRequest:
     def __init__(self, messages: List[Dict[str, Any]], stream: bool = False):
         self.messages = [ChatMessage(msg["role"], msg["content"]) for msg in messages]
         self.stream = stream
 
+
 class AgentStatusTracker:
     """Track agent delegation and status updates for streaming"""
+
     def __init__(self):
         self.current_status = "thinking"
         self.delegated_agent = None
@@ -265,18 +229,14 @@ class AgentStatusTracker:
             self.delegated_agent = agent
         self.status_history.append({"status": status, "agent": agent, "timestamp": datetime.now().isoformat()})
 
+
 # Global status tracker
 status_tracker = AgentStatusTracker()
 
+
 async def process_vana_agent(user_input: str, session_id: str = None) -> str:
     """Process input through VANA agent and return response text"""
-    if not runner or not session_service:
-        return "ADK not initialized. Please try again later."
-        
     try:
-        # Import types only when needed
-        from google.genai.types import Content, Part
-        
         # Use provided session_id or create a new one
         if not session_id:
             session_id = f"stream_session_{datetime.now().timestamp()}"
@@ -306,7 +266,7 @@ async def process_vana_agent(user_input: str, session_id: str = None) -> str:
                         output_text = str(event.content)
 
         # Format response to ensure clean output
-        if output_text and ResponseFormatter:
+        if output_text:
             output_text = ResponseFormatter.format_response(output_text)
             # Ensure markdown formatting is preserved
             output_text = ResponseFormatter.ensure_markdown_formatting(output_text)
@@ -317,18 +277,16 @@ async def process_vana_agent(user_input: str, session_id: str = None) -> str:
         logger.error(f"Agent processing error: {e}")
         return f"I encountered an error processing your request: {str(e)}. Please try again."
 
+
 thinking_events_queue = []
 
 async def emit_thinking_event(event):
     """Queue thinking events for streaming"""
     thinking_events_queue.append(event)
 
+
 async def process_vana_agent_with_events(user_input: str, session_id: str = None) -> tuple[str, list]:
     """Process user input through VANA agent with event tracking"""
-    
-    # Check if ADK is initialized
-    if not runner:
-        return "ADK not initialized. Please try again later.", []
     
     # Use ADK event processor if available
     if USE_ADK_EVENTS and adk_processor:
@@ -387,13 +345,9 @@ async def process_vana_agent_with_events(user_input: str, session_id: str = None
         logger.error(f"Agent processing error: {e}")
         return f"I encountered an error processing your request: {str(e)}. Please try again.", thinking_events
 
+
 async def stream_agent_response(user_input: str, session_id: str = None) -> AsyncGenerator[str, None]:
     """Stream VANA agent response with real orchestration events"""
-    
-    # Check if ADK is initialized
-    if not runner:
-        yield f"data: {json.dumps({'type': 'error', 'content': 'ADK not initialized. Please try again later.'})}\n\n"
-        return
     
     # Use ADK streaming if available
     if USE_ADK_EVENTS and adk_processor:
@@ -434,6 +388,7 @@ async def stream_agent_response(user_input: str, session_id: str = None) -> Asyn
         await asyncio.sleep(0.2)
 
         # Stream the actual response (chunked for better UX)
+        status_tracker.update_status("responding")
         words = output_text.split()
         for i in range(0, len(words), 3):  # Stream 3 words at a time
             chunk = " ".join(words[i : i + 3])
@@ -448,6 +403,7 @@ async def stream_agent_response(user_input: str, session_id: str = None) -> Asyn
     except Exception as e:
         logger.error(f"Streaming error: {e}")
         yield f"data: {json.dumps({'type': 'error', 'content': 'I encountered an error. Please try again.'})}\n\n"
+
 
 # New /chat endpoint for frontend SSE streaming
 @app.post("/chat")
@@ -481,13 +437,11 @@ async def chat_endpoint(request: Request):
         logger.error(f"Chat endpoint error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+
 # OpenAI-compatible chat completions endpoint with streaming support
 @app.post("/v1/chat/completions")
 async def chat_completions(request: Request):
     """OpenAI-compatible chat completions API with streaming support"""
-    if not runner:
-        raise HTTPException(status_code=503, detail="ADK not initialized. Please try again later.")
-        
     try:
         data = await request.json()
         chat_request = ChatCompletionRequest(messages=data.get("messages", []), stream=data.get("stream", False))
@@ -537,6 +491,7 @@ async def chat_completions(request: Request):
         logger.error(f"Chat completion error: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")
 
+
 # Enhanced health check and diagnostics
 @app.get("/health")
 async def health():
@@ -548,9 +503,7 @@ async def health():
             "allowed_origins": len(CorsConfig.ALLOWED_ORIGINS),
             "pattern_matching": True,
             "patterns": len(CorsConfig.ALLOWED_ORIGIN_PATTERNS)
-        },
-        "adk_initialized": runner is not None,
-        "api_key_present": bool(os.getenv("GOOGLE_API_KEY"))
+        }
     }
 
 @app.get("/diagnostics/cors")
@@ -564,6 +517,7 @@ async def cors_diagnostics(request: Request):
         "origin_patterns": CorsConfig.ALLOWED_ORIGIN_PATTERNS,
         "headers": dict(request.headers)
     }
+
 
 # API-first routing: Serve frontend as fallback only for root path
 @app.get("/")
@@ -614,6 +568,7 @@ if os.path.exists("vana-ui/dist"):
 else:
     logger.warning("⚠️ Frontend build not found at vana-ui/dist - UI will not be available")
 
+
 if __name__ == "__main__":
     import uvicorn
 
@@ -621,4 +576,4 @@ if __name__ == "__main__":
     port = int(os.getenv("PORT", "8081"))
     
     # Ensure proper port binding and logging
-    uvicorn.run(app, host="0.0.0.0", port=port, log_level="info")
+    uvicorn.run(app, host="0.0.0.0", port=port, log_level="debug")

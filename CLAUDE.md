@@ -282,8 +282,90 @@ poetry run pytest --cov=lib --cov=agents # With coverage
 
 ## 🚀 Deployment
 
+### ⚠️ CRITICAL: Directory Requirements
+
+**ALWAYS deploy from the project root directory** (`/Users/nick/Development/vana`). Deploying from subdirectories will cause failures.
+
+#### Common Directory Issues and Solutions:
+```bash
+# ❌ WRONG - Will deploy only frontend (102 files)
+cd vana-ui
+gcloud run deploy vana-staging --source .
+
+# ✅ CORRECT - Will deploy full project (795 files)
+cd /Users/nick/Development/vana
+gcloud run deploy vana-staging --source .
+
+# ✅ SAFE PATTERN - Use subshells for temporary directory changes
+(cd vana-ui && npm run build)  # Returns to original directory after
+```
+
+#### Deployment Checklist:
+1. **Verify directory**: `pwd` should show `/Users/nick/Development/vana`
+2. **Check file count**: `find . -type f | wc -l` should show ~795 files
+3. **Verify Dockerfile**: `ls -la Dockerfile*` should show Dockerfile
+4. **Frontend built**: `ls -la vana-ui/dist/index.html` should exist
+
+### Cloud Run Deployment Commands
+
+#### Standard Deployment (Recommended)
+```bash
+# Ensure you're in project root
+cd /Users/nick/Development/vana
+
+# Build frontend first
+(cd vana-ui && npm run build)
+
+# Deploy to staging
+gcloud run deploy vana-staging \
+  --source . \
+  --region=us-central1 \
+  --allow-unauthenticated \
+  --set-env-vars="USE_OFFICIAL_AGENT_TOOL=true,USE_ADK_COORDINATION=true,USE_ADK_EVENTS=true,GOOGLE_API_KEY=$GOOGLE_API_KEY" \
+  --port=8081 \
+  --memory=2Gi \
+  --cpu=2 \
+  --timeout=900 \
+  --max-instances=10
+
+# Deploy to production
+gcloud run deploy vana-prod \
+  --source . \
+  --region=us-central1 \
+  --allow-unauthenticated \
+  --set-env-vars="USE_OFFICIAL_AGENT_TOOL=true,USE_ADK_COORDINATION=true,USE_ADK_EVENTS=true,GOOGLE_API_KEY=$GOOGLE_API_KEY" \
+  --port=8081 \
+  --memory=2Gi \
+  --cpu=2 \
+  --timeout=900 \
+  --max-instances=50
+```
+
+#### Warning Signs of Wrong Directory:
+- "Creating temporary archive of 102 file(s)" → You're in vana-ui/
+- "Building using Buildpacks" → Missing Dockerfile, likely in wrong directory
+- "totalling 811.4 KiB" → Too small, should be ~7.4 MiB
+- ADK web UI loads instead of VANA → Deployed from wrong directory
+
+#### Recovery from Failed Deployment:
+```bash
+# 1. Return to project root
+cd /Users/nick/Development/vana
+
+# 2. Verify correct directory
+pwd  # Should show: /Users/nick/Development/vana
+
+# 3. Delete failed service (if needed)
+gcloud run services delete vana-staging --region=us-central1 --quiet
+
+# 4. Redeploy from correct directory
+gcloud run deploy vana-staging --source . --region=us-central1 ...
+```
+
+### Deployment Types
 - **Local**: Use `python main.py` or Docker Compose
-- **Production**: Google Cloud Run ready (see `deployment/`)
+- **Staging**: Deploy to vana-staging for testing
+- **Production**: Deploy to vana-prod with higher resource limits
 - **Environment Variables**: Copy `.env.example` to `.env`
 - **Required**: `GOOGLE_API_KEY` for Gemini models
 

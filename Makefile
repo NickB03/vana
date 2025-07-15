@@ -26,6 +26,11 @@ help:
 	@echo "  $(YELLOW)make docker-up$(NC)  - Start services with docker-compose"
 	@echo "  $(YELLOW)make docker-down$(NC)- Stop docker services"
 	@echo "  $(YELLOW)make docker-logs$(NC)- View docker logs"
+	@echo ""
+	@echo "$(GREEN)Deployment:$(NC)"
+	@echo "  $(YELLOW)make deploy-staging$(NC)     - Deploy to staging (safe)"
+	@echo "  $(YELLOW)make deploy-production$(NC)  - Deploy to production (requires confirmation)"
+	@echo "  $(YELLOW)make check-deployment$(NC)   - Validate deployment readiness"
 
 setup:
 	@echo "$(GREEN)🚀 Setting up VANA development environment...$(NC)"
@@ -112,3 +117,26 @@ docker-down:
 
 docker-logs:
 	@docker-compose logs -f
+
+# Deployment commands with safety checks
+check-deployment:
+	@echo "$(GREEN)🔍 Checking deployment readiness...$(NC)"
+	@pwd | grep -q "vana$$" || (echo "$(RED)❌ Not in VANA root directory!$(NC)" && exit 1)
+	@test -f Dockerfile || (echo "$(RED)❌ Dockerfile not found!$(NC)" && exit 1)
+	@test -f main.py || (echo "$(RED)❌ main.py not found!$(NC)" && exit 1)
+	@test -d vana-ui || (echo "$(RED)❌ vana-ui directory not found!$(NC)" && exit 1)
+	@test -f vana-ui/dist/index.html || (echo "$(YELLOW)⚠️  Frontend not built - run 'make frontend-build' first$(NC)")
+	@echo "$(GREEN)✅ All deployment checks passed!$(NC)"
+
+frontend-build:
+	@echo "$(GREEN)🏗️  Building frontend...$(NC)"
+	@cd vana-ui && npm run build
+	@echo "$(GREEN)✅ Frontend build complete!$(NC)"
+
+deploy-staging: check-deployment
+	@echo "$(GREEN)🚀 Deploying to staging...$(NC)"
+	@./scripts/safe-deploy.sh staging
+
+deploy-production: check-deployment
+	@echo "$(RED)⚠️  PRODUCTION DEPLOYMENT$(NC)"
+	@./scripts/safe-deploy.sh production

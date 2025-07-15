@@ -318,13 +318,13 @@ try:
     if devops_specialist:
         available_specialists.append(devops_specialist)
     
-    # Create agent-as-tool functions
-    specialist_tools = create_specialist_tools(available_specialists)
-    logger.info(f"✅ Created {len(specialist_tools)} agent-as-tool functions")
+    # Note: When USE_OFFICIAL_AGENT_TOOL=true, ADK AgentTool objects are created
+    # but they should NOT be added to the tools list. ADK handles agent delegation
+    # through the sub_agents mechanism, not through tools.
+    logger.info(f"✅ {len(available_specialists)} specialists will be available as sub-agents")
     
 except ImportError as e:
-    logger.warning(f"⚠️ Agent-as-Tool pattern not available: {e}")
-    specialist_tools = []
+    logger.warning(f"⚠️ Specialist agents not available: {e}")
 
 # Create the enhanced orchestrator
 enhanced_orchestrator = LlmAgent(
@@ -351,7 +351,12 @@ DIRECT TOOL ACCESS (Agent-as-Tool Pattern):
 - data_stats: Basic statistical analysis and insights
 - devops_config: DevOps configuration guidance
 
-IMPORTANT: Always return a complete, natural language response that directly answers the user's question. Never return JSON or technical routing information.""",
+IMPORTANT: Always return a complete, natural language response that directly answers the user's question. Never return JSON or technical routing information.
+
+CRITICAL ROUTING RULES:
+- NEVER transfer back to 'vana' - you ARE the orchestrator receiving from VANA
+- Only transfer to your specialist sub-agents when needed
+- If you cannot handle a request, respond with your limitations rather than transferring back""",
     tools=[
         FunctionTool(analyze_and_route),  # Primary routing function
         adk_read_file,
@@ -359,7 +364,7 @@ IMPORTANT: Always return a complete, natural language response that directly ans
         adk_list_directory,
         adk_search_knowledge,
         adk_analyze_task,  # Direct access for fine-grained control
-    ] + specialist_tools,  # Add agent-as-tool functions
+    ],  # Specialists are handled via sub_agents, not tools (ADK pattern)
     # Include specialists as sub-agents if available
     sub_agents=[
         s

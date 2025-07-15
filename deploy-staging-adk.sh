@@ -40,7 +40,8 @@ echo "🏗️  Submitting build to Cloud Build..."
 gcloud builds submit \
     --config=cloudbuild-staging-adk.yaml \
     --substitutions=SHORT_SHA=$(git rev-parse --short HEAD) \
-    --timeout=900s
+    --timeout=900s \
+    --region=us-central1
 
 # Get the service URL
 echo "🔗 Getting service URL..."

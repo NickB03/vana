@@ -1,5 +1,6 @@
 # VANA ADK-Enabled Staging Deployment
 # Includes ADK feature flags enabled in staging
+# Region: us-central1
 
 steps:
   # Build the Docker image using our updated Dockerfile

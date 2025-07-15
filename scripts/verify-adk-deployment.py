@@ -43,7 +43,7 @@ def test_adk_coordination(base_url, api_key=None):
     try:
         print("📤 Sending coordination request...")
         response = requests.post(
-            f"{base_url}/api/chat",
+            f"{base_url}/chat",
             json=test_payload,
             headers=headers,
             timeout=30,
@@ -114,7 +114,7 @@ def test_performance(base_url, api_key=None):
         
         try:
             response = requests.post(
-                f"{base_url}/api/chat",
+                f"{base_url}/chat",
                 json={
                     "message": f"Quick test {i}",
                     "sessionId": f"perf-test-{int(time.time())}"

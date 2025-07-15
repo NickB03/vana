@@ -7,7 +7,8 @@ RUN npm ci
 # Copy frontend source
 COPY vana-ui/ ./
 # Set production API URL as build arg
-ARG VITE_API_URL=https://vana-staging-960076421399.us-central1.run.app
+# When deployed, frontend uses same origin, so we leave this empty
+ARG VITE_API_URL=""
 ENV VITE_API_URL=$VITE_API_URL
 # Build frontend with production settings
 RUN npm run build
@@ -46,6 +47,12 @@ ENV PORT=8081
 
 # Enable ADK Event Streaming in production
 ENV USE_ADK_EVENTS=true
+
+# Prevent recursion issues in Cloud Run
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+# Increase recursion limit for complex agent hierarchies
+ENV PYTHON_RECURSION_LIMIT=3000
 
 # Run the application
 CMD ["sh", "-c", "uvicorn main:app --host 0.0.0.0 --port ${PORT:-8081}"]

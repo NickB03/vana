@@ -19,3 +19,5 @@ node_modules
 # Override .gitignore exclusions for Cloud Build
 # Include lib/ directory needed for VANA imports
 !lib/
+# Include vana-ui/dist/ directory needed for frontend
+!vana-ui/dist/
