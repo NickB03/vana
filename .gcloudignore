@@ -1,23 +1,76 @@
-# This file specifies files that are *not* uploaded to Google Cloud
-# using gcloud. It follows the same syntax as .gitignore, with the addition of
-# "#!include" directives (which insert the entries of the given .gitignore-style
-# file at that point).
-#
-# For more information, run:
-#   $ gcloud topic gcloudignore
-#
-.gcloudignore
-# If you would like to upload your .git directory, .gitignore file or files
-# from your .gitignore file, remove the corresponding line
-# below:
-.git
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+
+# Virtual environments
+venv/
+env/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Git
+.git/
 .gitignore
 
-node_modules
-#!include:.gitignore
+# Development files
+*.log
+.env.local
+.env.development
+.env.test
+test_*.py
+fix_*.py
+*_test.py
+*_fixed.py
+*_backup.py
+*_broken.py
 
-# Override .gitignore exclusions for Cloud Build
-# Include lib/ directory needed for VANA imports
-!lib/
-# Include vana-ui/dist/ directory needed for frontend
-!vana-ui/dist/
+# Build artifacts  
+build/
+dist/
+*.egg-info/
+
+# Documentation
+docs/
+*.md
+!README.md
+
+# Scripts
+scripts/
+monitor-*.sh
+check-*.sh
+deploy-*.sh
+emergency-*.sh
+
+# Temporary files
+tmp/
+temp/
+.development/
+.claude/
+
+# Frontend dev files (keep dist)
+vana-ui/node_modules/
+vana-ui/.env*
+vana-ui/src/
+vana-ui/public/
+vana-ui/index.html
+vana-ui/vite.config.ts
+vana-ui/tsconfig*.json
+vana-ui/package*.json
+vana-ui/eslint.config.js
+vana-ui/.gitignore
+
+# Keep only essential deployment files
+# Everything else is ignored
