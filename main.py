@@ -207,8 +207,17 @@ async def run_vana(request: Request) -> Dict[str, Any]:
 
             # Run the agent and collect response
             output_text = ""
+            event_count = 0
+            max_events = 20  # Prevent infinite loops
+            
             # Use regular for loop since runner.run() returns a generator
             for event in runner.run(user_id=user_id, session_id=session_id, new_message=user_message):
+                event_count += 1
+                if event_count > max_events:
+                    logger.warning(f"Exceeded max events ({max_events}), possible delegation loop")
+                    output_text = "I encountered an issue processing your request. Please try rephrasing it."
+                    break
+                    
                 if event.is_final_response():
                     # Extract text from the response content
                     if hasattr(event, "content") and event.content:
@@ -218,6 +227,7 @@ async def run_vana(request: Request) -> Dict[str, Any]:
                             output_text = event.content.text
                         else:
                             output_text = str(event.content)
+                    break
 
             if not output_text:
                 output_text = "I processed your request but couldn't generate a response."

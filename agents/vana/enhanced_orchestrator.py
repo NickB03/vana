@@ -356,7 +356,13 @@ IMPORTANT: Always return a complete, natural language response that directly ans
 CRITICAL ROUTING RULES:
 - NEVER transfer back to 'vana' - you ARE the orchestrator receiving from VANA
 - Only transfer to your specialist sub-agents when needed
-- If you cannot handle a request, respond with your limitations rather than transferring back""",
+- If you cannot handle a request, respond with your limitations rather than transferring back
+
+WRITING TASKS:
+For writing tasks like reports, essays, or content creation:
+1. First check if you have a writing specialist available
+2. If not, handle the request yourself by providing a comprehensive outline and content
+3. NEVER transfer back to vana - you must provide a response""",
     tools=[
         FunctionTool(analyze_and_route),  # Primary routing function
         adk_read_file,
