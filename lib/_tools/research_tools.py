@@ -9,7 +9,7 @@ from typing import Dict, Any, List
 from google.adk.tools import FunctionTool, ToolContext
 import json
 from datetime import datetime
-import hashlib
+import uuid
 
 
 def web_search_advanced(
@@ -55,8 +55,8 @@ def web_search_advanced(
                 'error_message': 'Number of results must be between 1 and 50'
             }
             
-        # Simulate search with filters
-        search_id = hashlib.md5(f"{query}{json.dumps(filters)}".encode()).hexdigest()[:8]
+        # Generate unique search ID
+        search_id = str(uuid.uuid4())[:8]
         
         # Build filter string
         filter_parts = []

@@ -6,14 +6,7 @@ Uses Google ADK patterns with proper tool integration.
 """
 
 from google.adk.agents import LlmAgent
-from lib._tools.content_creation_tools import (
-    adk_write_document,
-    adk_generate_outline,
-    adk_edit_content,
-    adk_format_markdown,
-    adk_check_grammar,
-    adk_improve_clarity
-)
+from lib._tools.content_creation_tools_adk import tools as content_tools
 
 # Create the Content Creation Specialist
 content_creation_specialist = LlmAgent(
@@ -54,14 +47,7 @@ Quality Standards:
 - Accurate and relevant content
 
 Remember to iterate and refine content based on requirements. Always deliver polished, professional documents.""",
-    tools=[
-        adk_write_document,
-        adk_generate_outline,
-        adk_edit_content,
-        adk_format_markdown,
-        adk_check_grammar,
-        adk_improve_clarity
-    ]  # Exactly 6 tools
+    tools=content_tools  # All 6 ADK-compliant content creation tools
 )
 
 # Helper function for testing

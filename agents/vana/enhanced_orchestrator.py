@@ -155,43 +155,69 @@ def route_to_specialist(request: str, task_type: str, context: Dict[str, any] = 
         return f"No specialist available for task type: {task_type}"
 
 
-def analyze_and_route(request: str, context: Dict[str, any]) -> str:
+def analyze_and_route(request: str, context: Dict[str, any], timeout: float = 30.0) -> str:
     """
-    Enhanced task analysis and routing with specialist integration.
+    Enhanced task analysis and routing with specialist integration and timeout handling.
 
     Args:
         request: User request to analyze and route
         context: Optional context dictionary
+        timeout: Maximum time in seconds for specialist execution
 
     Returns:
         Analysis and routing result
     """
-    # First, use analyze_task to understand the request
-    analysis = adk_analyze_task(request)
+    import threading
+    from lib._tools.exceptions import TimeoutError
+    
+    result_container = {"result": None, "error": None}
+    
+    def execute_with_timeout():
+        try:
+            # First, use analyze_task to understand the request
+            analysis = adk_analyze_task(request)
 
-    # Extract task type from analysis
-    # The analyze_task tool returns a structured analysis
-    task_type = "unknown"
-    if "task_type:" in analysis.lower():
-        # Extract task type from the analysis
-        for line in analysis.split("\n"):
-            if "task_type:" in line.lower():
-                task_type = line.split(":")[-1].strip().lower()
-                break
+            # Extract task type from analysis
+            # The analyze_task tool returns a structured analysis
+            task_type = "unknown"
+            if "task_type:" in analysis.lower():
+                # Extract task type from the analysis
+                for line in analysis.split("\n"):
+                    if "task_type:" in line.lower():
+                        task_type = line.split(":")[-1].strip().lower()
+                        break
 
-    logger.info(f"Task analysis complete. Type: {task_type}")
+            logger.info(f"Task analysis complete. Type: {task_type}")
 
-    # Route to appropriate specialist
-    result = route_to_specialist(request, task_type, context)
+            # Route to appropriate specialist
+            specialist_result = route_to_specialist(request, task_type, context)
 
-    return f"""## Task Analysis & Routing
+            result_container["result"] = f"""## Task Analysis & Routing
 
 **Request**: {request}
 **Task Type**: {task_type}
 **Routed To**: {task_type.replace('_', ' ').title()} Specialist
 
 ### Specialist Response:
-{result}"""
+{specialist_result}"""
+        except Exception as e:
+            result_container["error"] = e
+    
+    # Execute in thread with timeout
+    thread = threading.Thread(target=execute_with_timeout)
+    thread.daemon = True
+    thread.start()
+    thread.join(timeout)
+    
+    if thread.is_alive():
+        # Timeout occurred
+        metrics.record_error("orchestration_timeout", f"Exceeded {timeout}s timeout")
+        return f"Request timed out after {timeout} seconds. Please try a simpler request or break it into smaller parts."
+    
+    if result_container["error"]:
+        raise result_container["error"]
+        
+    return result_container["result"]
 
 
 async def analyze_and_route_async(request: str, context: Dict[str, any]) -> str:

@@ -80,8 +80,8 @@ class TestContentCreationTools:
         original = "This is a test content that needs editing for clarity."
         result = edit_content(
             content=original,
-            edit_type="clarity",
-            suggestions=["Use active voice", "Simplify language"],
+            edit_type="restyle",  # Changed from "clarity" to valid type
+            instructions="Use active voice and simplify language",  # Changed from suggestions list
             tool_context=self.tool_context
         )
         
@@ -104,7 +104,7 @@ class TestContentCreationTools:
         assert 'formatted_content' in result
         assert '# Title' in result['formatted_content']
         assert '## Subheading' in result['formatted_content']
-        assert result['has_toc'] == True
+        assert result['toc'] is not None  # Changed from has_toc to toc
     
     def test_check_grammar_analysis(self):
         """Test grammar checking"""
@@ -116,24 +116,24 @@ class TestContentCreationTools:
         )
         
         assert result['status'] == 'success'
-        assert 'grammar_score' in result
-        assert 'issues' in result
-        assert len(result['issues']) > 0
-        assert result['grammar_score'] < 100
+        assert 'score' in result  # Changed from grammar_score
+        assert 'corrections' in result  # Changed from issues
+        assert len(result['corrections']) > 0
+        assert result['score'] < 100  # Changed from grammar_score
     
     def test_improve_clarity_technical(self):
         """Test clarity improvement for technical audience"""
         content = "The implementation utilizes a paradigm shift in algorithmic processing."
         result = improve_clarity(
             content=content,
-            audience="technical",
+            target_audience="technical",  # Changed from audience
             tool_context=self.tool_context
         )
         
         assert result['status'] == 'success'
         assert 'improved_content' in result
         assert 'readability_score' in result
-        assert 'improvements' in result
+        assert 'improvements_made' in result  # Changed from improvements
 
 
 class TestContentCreationSpecialist:

@@ -1,5 +1,5 @@
 """
-Research Specialist Agent - ADK Compliant Implementation
+Research Specialist Agent - ADK Compliant Implementation V2
 
 Expert in conducting comprehensive research using Google Search grounding.
 Uses built-in google_search tool for real search capabilities.
@@ -9,11 +9,11 @@ from google.adk.agents import LlmAgent
 from google.adk.tools import google_search
 from lib._tools.research_tools_adk_v2 import tools as research_tools
 
-# Create the Research Specialist
+# Create the Research Specialist with built-in google_search
 research_specialist = LlmAgent(
-    name="research_specialist",
+    name="research_specialist_v2",
     model="gemini-2.5-flash",
-    description="Expert researcher specializing in comprehensive information gathering, source analysis, fact extraction, and synthesis of findings with academic rigor",
+    description="Expert researcher with Google Search grounding capabilities for comprehensive information gathering, source analysis, and synthesis",
     instruction="""You are an expert research specialist with access to real-time Google Search.
 
 Your capabilities include:
