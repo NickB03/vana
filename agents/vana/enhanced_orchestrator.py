@@ -23,6 +23,8 @@ try:
     from agents.specialists.data_science_specialist import data_science_specialist
     from agents.specialists.devops_specialist import devops_specialist
     from agents.specialists.security_specialist import security_specialist
+    from agents.specialists.content_creation_specialist import content_creation_specialist
+    from agents.specialists.research_specialist import research_specialist
 
     SPECIALISTS_AVAILABLE = True
     logger = get_logger("vana.enhanced_orchestrator")
@@ -36,6 +38,8 @@ except ImportError as e:
     data_science_specialist = None
     security_specialist = None
     devops_specialist = None
+    content_creation_specialist = None
+    research_specialist = None
 
 
 def route_to_specialist(request: str, task_type: str, context: Dict[str, any] = None) -> str:
@@ -80,6 +84,24 @@ def route_to_specialist(request: str, task_type: str, context: Dict[str, any] = 
         "monitoring": devops_specialist,
         "docker": devops_specialist,
         "kubernetes": devops_specialist,
+        # Content creation patterns
+        "writing": content_creation_specialist,
+        "write": content_creation_specialist,
+        "document": content_creation_specialist,
+        "report": content_creation_specialist,
+        "article": content_creation_specialist,
+        "content": content_creation_specialist,
+        "edit": content_creation_specialist,
+        "format": content_creation_specialist,
+        # Research patterns  
+        "research": research_specialist,
+        "investigate": research_specialist,
+        "find_information": research_specialist,
+        "search": research_specialist,
+        "analyze": research_specialist,
+        "fact_check": research_specialist,
+        "validate": research_specialist,
+        "sources": research_specialist,
     }
 
     # Check for security keywords first (ELEVATED STATUS)

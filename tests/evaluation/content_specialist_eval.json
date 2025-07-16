@@ -1,0 +1,168 @@
+{
+  "evaluation_set": "content_creation_specialist",
+  "version": "1.0.0",
+  "description": "Evaluation scenarios for Content Creation Specialist",
+  "scenarios": [
+    {
+      "id": "cc_001",
+      "name": "Technical Report Writing",
+      "request": "Write a technical report on implementing microservices architecture with security considerations",
+      "expected_tools": [
+        "generate_outline",
+        "write_document",
+        "format_markdown",
+        "check_grammar",
+        "improve_clarity"
+      ],
+      "expected_outputs": {
+        "document_type": "report",
+        "sections": ["executive_summary", "introduction", "architecture", "security", "recommendations"],
+        "word_count_range": [1500, 2500],
+        "grammar_score_min": 90
+      },
+      "evaluation_criteria": {
+        "completeness": "All required sections present",
+        "technical_accuracy": "Correct microservices concepts",
+        "clarity": "Technical concepts explained clearly",
+        "formatting": "Proper markdown structure with TOC"
+      }
+    },
+    {
+      "id": "cc_002",
+      "name": "Blog Post Creation",
+      "request": "Create an engaging blog post about AI trends for a general audience",
+      "expected_tools": [
+        "generate_outline",
+        "write_document",
+        "improve_clarity",
+        "format_markdown"
+      ],
+      "expected_outputs": {
+        "document_type": "article",
+        "tone": "conversational",
+        "audience": "general",
+        "word_count_range": [800, 1200]
+      },
+      "evaluation_criteria": {
+        "engagement": "Interesting introduction and conclusion",
+        "accessibility": "Complex concepts simplified",
+        "structure": "Clear flow with subheadings",
+        "audience_fit": "Appropriate for general readers"
+      }
+    },
+    {
+      "id": "cc_003",
+      "name": "Documentation Update",
+      "request": "Update API documentation to include new authentication methods and error codes",
+      "expected_tools": [
+        "edit_content",
+        "format_markdown",
+        "check_grammar",
+        "improve_clarity"
+      ],
+      "expected_outputs": {
+        "document_type": "documentation",
+        "modifications": ["authentication_section", "error_codes", "examples"],
+        "style": "technical"
+      },
+      "evaluation_criteria": {
+        "accuracy": "Correct technical details",
+        "completeness": "All new features documented",
+        "consistency": "Matches existing documentation style",
+        "examples": "Working code examples included"
+      }
+    },
+    {
+      "id": "cc_004",
+      "name": "Executive Summary Creation",
+      "request": "Write an executive summary for a quarterly business report focusing on growth metrics",
+      "expected_tools": [
+        "write_document",
+        "improve_clarity",
+        "check_grammar"
+      ],
+      "expected_outputs": {
+        "document_type": "summary",
+        "audience": "executive",
+        "word_count_range": [300, 500],
+        "key_elements": ["highlights", "metrics", "recommendations"]
+      },
+      "evaluation_criteria": {
+        "conciseness": "Key points in limited words",
+        "impact": "Strong opening and conclusions",
+        "data_presentation": "Metrics clearly presented",
+        "actionability": "Clear next steps"
+      }
+    },
+    {
+      "id": "cc_005",
+      "name": "Proposal Formatting",
+      "request": "Format and improve a project proposal for better readability and professional appearance",
+      "expected_tools": [
+        "format_markdown",
+        "improve_clarity",
+        "check_grammar",
+        "edit_content"
+      ],
+      "expected_outputs": {
+        "document_type": "proposal",
+        "formatting": "professional",
+        "improvements": ["structure", "clarity", "grammar"]
+      },
+      "evaluation_criteria": {
+        "professionalism": "Clean, consistent formatting",
+        "readability": "Easy to scan and understand",
+        "persuasiveness": "Compelling argument structure",
+        "error_free": "No grammar or spelling errors"
+      }
+    }
+  ],
+  "tool_usage_patterns": {
+    "common_workflows": [
+      {
+        "name": "full_document_creation",
+        "sequence": ["generate_outline", "write_document", "format_markdown", "check_grammar", "improve_clarity"]
+      },
+      {
+        "name": "editing_workflow",
+        "sequence": ["edit_content", "check_grammar", "improve_clarity", "format_markdown"]
+      },
+      {
+        "name": "quick_document",
+        "sequence": ["write_document", "check_grammar", "format_markdown"]
+      }
+    ]
+  },
+  "performance_benchmarks": {
+    "response_time_ms": {
+      "p50": 2000,
+      "p95": 5000,
+      "p99": 8000
+    },
+    "quality_scores": {
+      "grammar_minimum": 85,
+      "clarity_minimum": 80,
+      "format_compliance": 95
+    }
+  },
+  "edge_cases": [
+    {
+      "id": "edge_001",
+      "description": "Extremely long document request",
+      "request": "Write a 10,000 word white paper",
+      "expected_behavior": "Break into sections, warn about length"
+    },
+    {
+      "id": "edge_002",
+      "description": "Conflicting requirements",
+      "request": "Write a technical document for kindergarten students",
+      "expected_behavior": "Clarify audience and adjust approach"
+    },
+    {
+      "id": "edge_003",
+      "description": "Unknown document type",
+      "request": "Create a florblegaster document",
+      "expected_behavior": "Ask for clarification or suggest similar types"
+    }
+  ]
+}
