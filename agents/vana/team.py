@@ -61,13 +61,13 @@ except ImportError as e:
 # Create synchronous web search tool
 adk_web_search = create_web_search_sync_tool()
 
-# Import enhanced orchestrator with Phase 3 specialists
+# Import enhanced orchestrator with specialists
 try:
     from agents.vana.enhanced_orchestrator import enhanced_orchestrator
 
     # Use enhanced orchestrator as primary sub-agent
     specialist_agents = [enhanced_orchestrator]
-    logger.info("✅ Enhanced orchestrator with Phase 3 specialists loaded")
+    logger.info("✅ Enhanced orchestrator with specialists loaded")
 except ImportError as e:
     logger.warning(f"Warning: Enhanced orchestrator not available, falling back to basic specialists: {e}")
     try:

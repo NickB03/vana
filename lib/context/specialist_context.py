@@ -1,5 +1,5 @@
 """
-Enhanced Context Management for VANA Phase 3
+Enhanced Context Management for VANA
 Rich context objects with conversation history, user preferences, and execution metadata.
 """
 

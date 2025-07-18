@@ -1,0 +1,100 @@
+{
+  "servers": {
+    "github": {
+      "command": ["npx", "-y", "@modelcontextprotocol/server-github"],
+      "args": [],
+      "env": {
+        "GITHUB_PERSONAL_ACCESS_TOKEN": ""
+      },
+      "enabled": true,
+      "timeout": 30,
+      "retry_count": 3,
+      "description": "GitHub repository and issue management",
+      "capabilities": [
+        "repositories",
+        "issues",
+        "pull_requests",
+        "search",
+        "code_search",
+        "file_operations"
+      ]
+    },
+    "brave_search": {
+      "command": ["npx", "-y", "@modelcontextprotocol/server-brave-search"],
+      "args": [],
+      "env": {
+        "BRAVE_API_KEY": ""
+      },
+      "enabled": true,
+      "timeout": 30,
+      "retry_count": 3,
+      "description": "Web search using Brave Search API",
+      "capabilities": [
+        "web_search",
+        "news_search",
+        "image_search",
+        "video_search",
+        "local_search",
+        "suggestions"
+      ]
+    },
+    "fetch": {
+      "command": ["npx", "-y", "@modelcontextprotocol/server-fetch"],
+      "args": [],
+      "env": {},
+      "enabled": true,
+      "timeout": 30,
+      "retry_count": 3,
+      "description": "HTTP requests and web content fetching",
+      "capabilities": [
+        "http_get",
+        "http_post",
+        "http_put",
+        "http_delete",
+        "web_scraping",
+        "file_download",
+        "url_status_check"
+      ]
+    }
+  },
+  "global_settings": {
+    "default_timeout": 30,
+    "max_concurrent_connections": 10,
+    "retry_delay": 1,
+    "max_retry_delay": 30,
+    "connection_pool_size": 5,
+    "enable_logging": true,
+    "log_level": "INFO"
+  },
+  "security": {
+    "allowed_domains": [
+      "github.com",
+      "api.github.com",
+      "search.brave.com",
+      "api.search.brave.com"
+    ],
+    "blocked_domains": [
+      "localhost",
+      "127.0.0.1",
+      "0.0.0.0",
+      "internal",
+      "private"
+    ],
+    "max_request_size": 10485760,
+    "max_response_size": 52428800,
+    "enable_ssl_verification": true,
+    "allowed_schemes": ["https", "http"],
+    "rate_limiting": {
+      "enabled": true,
+      "requests_per_minute": 60,
+      "burst_size": 10
+    }
+  },
+  "monitoring": {
+    "enable_metrics": true,
+    "metrics_interval": 60,
+    "health_check_interval": 30,
+    "performance_tracking": true,
+    "error_tracking": true
+  }
+}

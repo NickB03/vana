@@ -33,8 +33,7 @@ session_service: Optional[Any] = None
 root_agent: Optional[Any] = None
 ResponseFormatter: Optional[Any] = None
 
-# Feature flags
-USE_ADK_EVENTS = os.getenv('USE_ADK_EVENTS', 'false').lower() == 'true'
+# ADK Events are enabled by default
 
 # Initialize ADK components on startup
 @app.on_event("startup")
@@ -45,7 +44,7 @@ async def startup_event():
     logger.info("=== VANA Starting Up ===")
     logger.info(f"PORT: {os.getenv('PORT', '8081')}")
     logger.info(f"GOOGLE_API_KEY present: {bool(os.getenv('GOOGLE_API_KEY'))}")
-    logger.info(f"USE_ADK_EVENTS: {USE_ADK_EVENTS}")
+    logger.info("ADK Events: ENABLED")
     
     try:
         # Import ADK components
@@ -66,10 +65,10 @@ async def startup_event():
         session_service = InMemorySessionService()
         runner = Runner(agent=root_agent, app_name="vana", session_service=session_service)
         
-        # Create ADK event processor for new event streaming
-        adk_processor = create_adk_processor(runner) if USE_ADK_EVENTS else None
+        # Create ADK event processor for event streaming
+        adk_processor = create_adk_processor(runner)
         
-        logger.info(f"ADK Event Streaming: {'ENABLED' if USE_ADK_EVENTS else 'DISABLED'}")
+        logger.info("ADK Event Streaming: ENABLED")
         logger.info("✅ ADK initialization complete!")
         
     except Exception as e:
@@ -340,8 +339,8 @@ async def process_vana_agent_with_events(user_input: str, session_id: str = None
     if not runner:
         return "ADK not initialized. Please try again later.", []
     
-    # Use ADK event processor if available
-    if USE_ADK_EVENTS and adk_processor:
+    # Use ADK event processor
+    if adk_processor:
         thinking_events = []
         output_text = ""
         
@@ -405,8 +404,8 @@ async def stream_agent_response(user_input: str, session_id: str = None) -> Asyn
         yield f"data: {json.dumps({'type': 'error', 'content': 'ADK not initialized. Please try again later.'})}\n\n"
         return
     
-    # Use ADK streaming if available
-    if USE_ADK_EVENTS and adk_processor:
+    # Use ADK streaming
+    if adk_processor:
         try:
             async for sse_event in adk_processor.stream_response(user_input, session_id):
                 yield sse_event

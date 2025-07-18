@@ -22,16 +22,11 @@ logger = logging.getLogger(__name__)
 
 
 # File System Tools - Self-contained production implementations
-async def read_file(file_path: str) -> str:
-    """📖 Read the contents of a file with enhanced error handling and security checks (async)."""
+def read_file(file_path: str) -> str:
+    """📖 Read the contents of a file with enhanced error handling and security checks."""
     try:
-        # For ADK compliance, implement async file reading for large files
-        # Use asyncio.to_thread for CPU-bound file operations
-        def _read_file_sync():
-            with open(file_path, "r", encoding="utf-8") as f:
-                return f.read()
-
-        content = await asyncio.to_thread(_read_file_sync)
+        with open(file_path, "r", encoding="utf-8") as f:
+            content = f.read()
         logger.info(f"Successfully read file: {file_path}")
         return content
     except Exception as e:
@@ -40,8 +35,8 @@ async def read_file(file_path: str) -> str:
         return error_msg
 
 
-async def write_file(file_path: str, content: str) -> str:
-    """✍️ Write content to a file with enhanced validation and error handling (async)."""
+def write_file(file_path: str, content: str) -> str:
+    """✍️ Write content to a file with enhanced validation and error handling."""
     try:
         # Validate inputs
         if not file_path or file_path.strip() == "":
@@ -122,61 +117,23 @@ def file_exists(file_path: str) -> str:
 
 # Wrapper functions for backward compatibility with synchronous calls
 def sync_read_file(file_path: str) -> str:
-    """Synchronous wrapper for async read_file function."""
-    import asyncio
-
-    try:
-        loop = asyncio.get_event_loop()
-        if loop.is_running():
-            # If already in an event loop, use asyncio.create_task
-            return asyncio.run_coroutine_threadsafe(read_file(file_path), loop).result()
-        else:
-            return loop.run_until_complete(read_file(file_path))
-    except RuntimeError:
-        # No event loop exists, create a new one
-        return asyncio.run(read_file(file_path))
+    """Synchronous wrapper for read_file function."""
+    return read_file(file_path)
 
 
 def sync_write_file(file_path: str, content: str) -> str:
-    """Synchronous wrapper for async write_file function."""
-    import asyncio
-
-    try:
-        loop = asyncio.get_event_loop()
-        if loop.is_running():
-            return asyncio.run_coroutine_threadsafe(write_file(file_path, content), loop).result()
-        else:
-            return loop.run_until_complete(write_file(file_path, content))
-    except RuntimeError:
-        return asyncio.run(write_file(file_path, content))
+    """Synchronous wrapper for write_file function."""
+    return write_file(file_path, content)
 
 
 def sync_web_search(query: str, max_results: int) -> str:
-    """Synchronous wrapper for async web_search function."""
-    import asyncio
-
-    try:
-        loop = asyncio.get_event_loop()
-        if loop.is_running():
-            return asyncio.run_coroutine_threadsafe(web_search(query, max_results), loop).result()
-        else:
-            return loop.run_until_complete(web_search(query, max_results))
-    except RuntimeError:
-        return asyncio.run(web_search(query, max_results))
+    """Synchronous wrapper for web_search function."""
+    return web_search(query, max_results)
 
 
 def sync_vector_search(query: str, max_results: int) -> str:
-    """Synchronous wrapper for async vector_search function."""
-    import asyncio
-
-    try:
-        loop = asyncio.get_event_loop()
-        if loop.is_running():
-            return asyncio.run_coroutine_threadsafe(vector_search(query, max_results), loop).result()
-        else:
-            return loop.run_until_complete(vector_search(query, max_results))
-    except RuntimeError:
-        return asyncio.run(vector_search(query, max_results))
+    """Synchronous wrapper for vector_search function."""
+    return vector_search(query, max_results)
 
 
 # Create FunctionTool instances with explicit names and backward compatibility
@@ -198,8 +155,8 @@ adk_vector_search.name = "vector_search"
 
 
 # Search Tools - Real production implementations with ADK integration
-async def vector_search(query: str, max_results: int) -> str:
-    """🔍 Search the vector database for relevant information using Vertex AI Vector Search (async)."""
+def vector_search(query: str, max_results: int) -> str:
+    """🔍 Search the vector database for relevant information using Vertex AI Vector Search."""
     try:
         logger.info(f"Vector search query: {query}")
 
@@ -209,8 +166,8 @@ async def vector_search(query: str, max_results: int) -> str:
         # Initialize vector search client
         vector_client = VectorSearchClient()
 
-        # Perform async vector search
-        search_results = await asyncio.to_thread(vector_client.search, query, max_results)
+        # Perform vector search
+        search_results = vector_client.search(query, max_results)
 
         # Format results for ADK compatibility
         formatted_results = []
@@ -259,29 +216,25 @@ async def vector_search(query: str, max_results: int) -> str:
         return json.dumps(result, indent=2)
 
 
-async def web_search(query: str, max_results: int) -> str:
+def web_search(query: str, max_results: int) -> str:
     """🌐 Search the web using Google Search (ADK compliant)."""
     try:
-        # Use the new Google search implementation v2
-        from lib._tools.google_search_v2 import google_web_search
+        # Use ADK native Google search when available
+        # TODO: Replace with google.adk.tools.google_search
         
-        logger.info(f"Web search using Google for: {query}")
+        logger.info(f"Web search for: {query}")
         
-        # Run synchronous function in thread pool for async compatibility
-        result = await asyncio.to_thread(google_web_search, query, max_results)
-        return result
+        # Temporary placeholder until ADK migration complete
+        return json.dumps({
+            "query": query,
+            "message": "Web search pending ADK migration. Use research_specialist.py which has working google_search from ADK.",
+            "max_results": max_results,
+            "status": "pending_migration"
+        }, indent=2)
         
     except Exception as e:
-        logger.error(f"Web search failed: {e}")
-        # Final fallback to DuckDuckGo
-        try:
-            from lib._tools.web_search_sync import web_search as ddg_search
-            result = await asyncio.to_thread(ddg_search, query, max_results)
-            return result
-        except Exception as fallback_error:
-            error_msg = f"All search methods failed: {str(fallback_error)}"
-            logger.error(error_msg)
-            return json.dumps({"error": error_msg}, indent=2)
+        logger.error(f"Web search error: {e}")
+        return json.dumps({"error": str(e)}, indent=2)
 
 
 def _process_search_results(query: str, results: list, raw_data: dict) -> str:
@@ -1461,6 +1414,7 @@ adk_get_workflow_templates.name = "get_workflow_templates"
 
 # Import enhanced reasoning capabilities
 try:
+    # Enhanced reasoning tools removed - not available
     from .enhanced_reasoning_tools import (
         LogicalReasoning,
         MathematicalReasoning,

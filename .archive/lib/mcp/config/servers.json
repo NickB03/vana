@@ -1,0 +1,101 @@
+{
+  "github": {
+    "enabled": true,
+    "description": "GitHub API integration for repository and issue management",
+    "command": ["python", "-m", "lib.mcp.servers.github_server"],
+    "args": [],
+    "env": {
+      "GITHUB_TOKEN": "${GITHUB_TOKEN}",
+      "GITHUB_PERSONAL_ACCESS_TOKEN": "${GITHUB_PERSONAL_ACCESS_TOKEN}"
+    },
+    "capabilities": [
+      "repositories",
+      "issues",
+      "pull_requests",
+      "search",
+      "code_search",
+      "file_operations"
+    ],
+    "tools": [
+      "create_repository",
+      "clone_repository",
+      "list_repositories",
+      "create_issue",
+      "update_issue",
+      "search_issues",
+      "add_comment",
+      "search_code",
+      "get_file_content",
+      "create_pull_request"
+    ],
+    "rate_limit": 60,
+    "timeout": 30,
+    "retry_attempts": 3,
+    "retry_delay": 1,
+    "tags": ["development", "version_control", "collaboration"]
+  },
+  "brave_search": {
+    "enabled": true,
+    "description": "Brave Search API integration for web search capabilities",
+    "command": ["python", "-m", "lib.mcp.servers.brave_search_server"],
+    "args": [],
+    "env": {
+      "BRAVE_API_KEY": "${BRAVE_API_KEY}"
+    },
+    "capabilities": [
+      "web_search",
+      "news_search",
+      "image_search",
+      "video_search",
+      "local_search",
+      "suggestions"
+    ],
+    "tools": [
+      "web_search",
+      "news_search",
+      "image_search",
+      "video_search",
+      "local_search",
+      "get_suggestions"
+    ],
+    "rate_limit": 100,
+    "timeout": 15,
+    "retry_attempts": 3,
+    "retry_delay": 1,
+    "default_country": "US",
+    "default_language": "en",
+    "tags": ["search", "web", "information"]
+  },
+  "fetch": {
+    "enabled": true,
+    "description": "HTTP client for web requests and content fetching",
+    "command": ["python", "-m", "lib.mcp.servers.fetch_server"],
+    "args": [],
+    "env": {},
+    "capabilities": [
+      "http_get",
+      "http_post",
+      "http_put",
+      "http_delete",
+      "web_scraping",
+      "file_download",
+      "url_status_check"
+    ],
+    "tools": [
+      "http_get",
+      "http_post",
+      "http_put",
+      "http_delete",
+      "scrape_content",
+      "download_file",
+      "check_url_status"
+    ],
+    "timeout": 30,
+    "retry_attempts": 3,
+    "retry_delay": 1,
+    "max_file_size": 10485760,
+    "allowed_domains": ["*"],
+    "blocked_domains": ["localhost", "127.0.0.1", "0.0.0.0"],
+    "tags": ["http", "web", "content"]
+  }
+}

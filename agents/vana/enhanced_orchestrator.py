@@ -1,5 +1,5 @@
 """
-Enhanced VANA Orchestrator - Phase 3 Integration
+Enhanced VANA Orchestrator
 Following Google ADK patterns with specialist routing
 """
 
@@ -17,7 +17,7 @@ from lib._tools import adk_analyze_task, adk_list_directory, adk_read_file, adk_
 # Import logging and metrics
 from lib.logging_config import get_logger
 
-# Import specialist agents (Phase 3)
+# Import specialist agents
 try:
     from agents.specialists.architecture_specialist import architecture_specialist
     from agents.specialists.data_science_specialist import data_science_specialist
@@ -28,7 +28,7 @@ try:
 
     SPECIALISTS_AVAILABLE = True
     logger = get_logger("vana.enhanced_orchestrator")
-    logger.info("✅ All Phase 3 specialists loaded successfully")
+    logger.info("✅ All specialists loaded successfully")
 except ImportError as e:
     SPECIALISTS_AVAILABLE = False
     logger = get_logger("vana.enhanced_orchestrator")
@@ -351,7 +351,7 @@ def smart_route_with_parallel(request: str, context: Dict[str, any] = None) -> s
     return analyze_and_route(request, context or {})
 
 
-# Initialize Agent-as-Tool pattern (Phase 3)
+# Initialize Agent-as-Tool pattern
 try:
     from lib._tools.agent_tools import create_specialist_tools
     
@@ -366,9 +366,8 @@ try:
     if devops_specialist:
         available_specialists.append(devops_specialist)
     
-    # Note: When USE_OFFICIAL_AGENT_TOOL=true, ADK AgentTool objects are created
-    # but they should NOT be added to the tools list. ADK handles agent delegation
-    # through the sub_agents mechanism, not through tools.
+    # Note: ADK handles agent delegation through the sub_agents mechanism,
+    # not through tools. AgentTool objects should not be added to the tools list.
     logger.info(f"✅ {len(available_specialists)} specialists will be available as sub-agents")
     
 except ImportError as e:
@@ -378,7 +377,7 @@ except ImportError as e:
 enhanced_orchestrator = LlmAgent(
     name="enhanced_orchestrator",
     model="gemini-2.5-flash",
-    description="Enhanced orchestrator with Phase 3 specialist routing and agent-as-tool pattern",
+    description="Enhanced orchestrator with specialist routing and agent-as-tool pattern",
     instruction="""Enhanced VANA Orchestrator - Process all requests and return comprehensive responses.
 
 You are the central orchestrator receiving ALL requests from VANA. Your job is to:
@@ -480,7 +479,7 @@ def cached_route_to_specialist(request: str, task_type: str, context: Dict[str, 
     # Get metrics instance
     metrics = get_orchestrator_metrics()
 
-    # Enhanced context awareness for Phase 3
+    # Enhanced context awareness
     context_key = ""
     if context and isinstance(context, dict):
         # Extract context-sensitive information for cache key

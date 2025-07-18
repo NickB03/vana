@@ -262,7 +262,6 @@ class EnvironmentConfig:
                     f"SESSION_SERVICE_TYPE '{session_type}' is not in recommended types: {valid_session_types}"
                 )
 
-            # Note: Deprecated MCP variable checks removed as part of cleanup
 
             logger.info(f"ADK Memory configuration validation: {'PASSED' if validation_results['valid'] else 'FAILED'}")
 
@@ -273,40 +272,3 @@ class EnvironmentConfig:
 
         return validation_results
 
-    @staticmethod
-    def get_migration_status():
-        """Get the current migration status from MCP to ADK memory"""
-        status = {
-            "migration_phase": "complete",  # planning, in_progress, complete
-            "adk_memory_configured": False,
-            "mcp_variables_present": False,
-            "configuration_valid": False,
-            "recommendations": [],
-        }
-
-        # Check if ADK memory is configured
-        try:
-            adk_config = EnvironmentConfig.get_adk_memory_config()
-            if adk_config.get("rag_corpus_resource_name"):
-                status["adk_memory_configured"] = True
-        except Exception:
-            status["recommendations"].append("Configure ADK memory variables in environment")
-
-        # Note: MCP variable checks removed as part of cleanup
-
-        # Validate configuration
-        validation = EnvironmentConfig.validate_adk_memory_config()
-        status["configuration_valid"] = validation["valid"]
-
-        if not status["configuration_valid"]:
-            status["recommendations"].extend(validation["errors"])
-
-        # Determine migration phase
-        if status["adk_memory_configured"] and not status["mcp_variables_present"] and status["configuration_valid"]:
-            status["migration_phase"] = "complete"
-        elif status["adk_memory_configured"]:
-            status["migration_phase"] = "in_progress"
-        else:
-            status["migration_phase"] = "planning"
-
-        return status

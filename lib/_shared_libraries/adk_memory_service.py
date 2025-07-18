@@ -37,7 +37,7 @@ from google.adk.memory import InMemoryMemoryService, VertexAiRagMemoryService
 from google.adk.sessions import Session
 from google.adk.tools import load_memory
 
-# Vector Search integration for Phase 2
+# Vector Search integration
 try:
     from .vector_search_service import get_vector_search_service
 
@@ -92,7 +92,7 @@ class ADKMemoryService:
             if self.use_vertex_ai:
                 # Initialize VertexAiRagMemoryService for production
                 if not rag_corpus:
-                    # Enhanced environment variable priority logic (Phase 1 fix)
+                    # Enhanced environment variable priority logic
                     # Priority 1: VANA_RAG_CORPUS_ID (validate if it's full resource name)
                     rag_corpus = os.getenv("VANA_RAG_CORPUS_ID")
                     if rag_corpus and not self._validate_rag_corpus_resource_name(rag_corpus):
@@ -119,7 +119,7 @@ class ADKMemoryService:
                 )
                 logger.info(f"Initialized VertexAiRagMemoryService with corpus: {rag_corpus}")
 
-                # Initialize vector search service for Phase 2 enhancement
+                # Initialize vector search service for enhanced capabilities
                 if VECTOR_SEARCH_AVAILABLE and _get_vector_search_service:
                     try:
                         self.vector_search_service = _get_vector_search_service()
@@ -182,7 +182,7 @@ class ADKMemoryService:
                 }
             ]
 
-            # Enhanced Phase 2: Add vector search results if available
+            # Enhanced: Add vector search results if available
             if hasattr(self, "vector_search_service") and self.vector_search_service:
                 try:
                     logger.info("Performing hybrid search with vector similarity")
@@ -190,10 +190,10 @@ class ADKMemoryService:
                         query=query, keyword_results=base_results, top_k=top_k
                     )
 
-                    # Add Phase 2 enhancement indicator
+                    # Add enhancement indicator
                     for result in vector_results:
                         if result.get("source") == "vector_search":
-                            result["metadata"]["phase2_enhanced"] = True
+                            result["metadata"]["enhanced"] = True
 
                     logger.info(f"Hybrid search returned {len(vector_results)} results")
                     return vector_results
