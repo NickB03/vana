@@ -4,18 +4,6 @@
 			"path": "."
 		},
 		{
-			"path": "../vana-docs-api"
-		},
-		{
-			"path": "../vana-docs-user"
-		},
-		{
-			"path": "../vana-docs-deployment"
-		},
-		{
-			"path": "../vana-docs-architecture"
-		},
-		{
 			"path": "../chromadb"
 		}
 	],
