@@ -79,8 +79,8 @@ docker-compose up
 
 1. Open http://localhost:5173 (development) or http://localhost:8080 (production)
 2. Login with demo credentials:
-   - Email: `demo@vana.ai`
-   - Password: `vana-demo-2024`
+   - Email: `demo@vana.bot`
+   - Password: `vana-demo-2025`
 3. Try queries like:
    - "What are the security vulnerabilities in this code?"
    - "Analyze the data trends from last quarter"
