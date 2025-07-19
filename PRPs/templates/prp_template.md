@@ -1,79 +1,162 @@
 # Product Requirements Prompt (PRP): [FEATURE_NAME]
 
-## 🎯 Core Objectives
-[Clear, numbered list of what this PRP will achieve]
+## 🎯 Product Requirement
 
-## 📋 Research Phase
+### What We're Building
+[Clear description of the feature/functionality]
 
-### Codebase Analysis
-[Results from analyzing existing code patterns and conventions]
+### Why It Matters
+[Business/technical justification]
 
-### Similar Implementations
-[Found examples and patterns from the codebase]
+### Success Criteria
+[Measurable outcomes that indicate success]
 
-### Project Conventions
-[Identified coding standards, import patterns, file organization]
+## 📚 Context & Research
 
-## 🏗️ Architecture Blueprint
+### Referenced Documentation
+- **ADK Documentation**: [Specific URLs and sections]
+- **Library Docs**: [API references with URLs]
+- **Code Examples**: [Links to examples in codebase]
+- **External Resources**: [Blog posts, GitHub examples]
 
-### Directory Structure
+### Codebase Patterns
+```python
+# Example from existing code showing pattern to follow
+# File: path/to/example.py
 ```
-[Proposed file and directory organization]
+
+### Project Conventions Discovered
+- **Import Style**: [How imports are organized]
+- **Error Handling**: [Project's error patterns]
+- **Testing Approach**: [How tests are structured]
+- **File Organization**: [Module structure]
+
+## 🏗️ Implementation Strategy
+
+### Architecture Overview
+```
+[Directory structure and component relationships]
 ```
 
 ### Core Components
-[List of main components with descriptions]
+1. **Component A**: [Description and responsibility]
+2. **Component B**: [Description and responsibility]
+3. **Integration Layer**: [How they connect]
 
-### Integration Points
-[How components will interact with existing system]
+### Implementation Chunks (MANDATORY ITERATIVE APPROACH)
 
-## 📝 Implementation Plan
+#### Chunk 1: [Feature Name] - Foundation
+**Size**: ~100-200 lines
+**Features**: 
+- Feature 1.1: [Specific functionality]
+- Feature 1.2: [Specific functionality]
 
-### Phase 1: Foundation
-[Initial setup and core infrastructure]
+**Implementation**:
+```python
+# Pseudocode showing approach
+```
 
-### Phase 2: Core Features
-[Main functionality implementation]
+**Validation**:
+```bash
+# Local test
+make test
+python main.py
 
-### Phase 3: Integration
-[Connect with existing systems]
+# Deploy to dev
+gcloud run deploy vana-dev --source .
 
-### Phase 4: Testing & Validation
-[Comprehensive testing approach]
+# Success criteria for this chunk
+```
 
-## 🔧 Technical Specifications
+#### Chunk 2: [Feature Name] - Core Logic
+**Size**: ~150-250 lines
+**Features**:
+- Feature 2.1: [Specific functionality]
+- Feature 2.2: [Specific functionality]
 
-### Dependencies
-[Required packages and versions]
+**Dependencies**: Requires Chunk 1 complete and tested in dev
 
-### Configuration
-[Environment variables and settings]
+**Implementation**:
+```python
+# Pseudocode showing approach
+```
 
-### API Contracts
-[Interfaces and data models]
+**Validation**:
+```bash
+# Same validation pattern for each chunk
+```
 
-## ✅ Validation Loops
+[Continue with more chunks as needed...]
 
-### Loop 1: Component Validation
-[Test individual components]
+## 🧪 Validation Gates
 
-### Loop 2: Integration Testing
-[Test component interactions]
+### Per-Chunk Validation (REQUIRED FOR EACH CHUNK)
+```bash
+# 1. Code Quality
+make lint
+make typecheck
 
-### Loop 3: End-to-End Testing
-[Full system validation]
+# 2. Unit Tests
+make test
 
-### Loop 4: Performance Testing
-[Ensure meets performance criteria]
+# 3. Local Run
+python main.py
 
-## ⚠️ Anti-Patterns to Avoid
-[Common mistakes and how to prevent them]
+# 4. Dev Deployment
+gcloud run deploy vana-dev --source .
 
-## 🎯 Success Criteria
-[Measurable outcomes that indicate success]
+# 5. Dev Testing
+# [Specific test commands for dev environment]
+```
 
-## 📊 Confidence Score
-[Self-assessment of PRP completeness: X/10]
+### Final Integration Validation
+```bash
+# Run after all chunks complete
+make test
+make security
+# Full integration test suite
+```
 
-## 🔄 Iteration Notes
-[Space for updates during implementation]
+## ⚠️ Gotchas & Anti-Patterns
+
+### Known Issues
+- **Issue 1**: [Description and workaround]
+- **Issue 2**: [Library quirk or version issue]
+
+### Anti-Patterns to Avoid
+- **DON'T**: Implement entire phases at once
+- **DON'T**: Skip dev testing between chunks
+- **DON'T**: Use patterns not in ADK documentation
+- **DO**: Follow existing project patterns
+- **DO**: Test each chunk thoroughly
+
+## 📊 Implementation Tracking
+
+### Chunk Status Checklist
+- [ ] Chunk 1: Foundation - Local tested
+- [ ] Chunk 1: Foundation - Dev deployed
+- [ ] Chunk 1: Foundation - Dev validated
+- [ ] Chunk 2: Core Logic - Local tested
+- [ ] Chunk 2: Core Logic - Dev deployed
+- [ ] Chunk 2: Core Logic - Dev validated
+[Continue for all chunks...]
+
+### Final Checklist
+- [ ] All chunks implemented and tested
+- [ ] Integration tests passing
+- [ ] Performance benchmarks met
+- [ ] Documentation updated
+- [ ] ADK compliance verified
+
+## 🎯 Confidence Score
+**PRP Completeness**: [X/10]
+
+**Scoring Criteria**:
+- Context completeness (examples, docs, patterns)
+- Implementation clarity (pseudocode, chunks)
+- Validation comprehensiveness
+- Anti-pattern awareness
+- ADK compliance
+
+## 📝 Notes for Executor
+[Any special instructions or context for the AI executing this PRP]
