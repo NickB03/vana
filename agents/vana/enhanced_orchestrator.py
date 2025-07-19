@@ -6,6 +6,13 @@ Following Google ADK patterns with specialist routing
 import os
 from typing import Dict, List, Optional
 
+# Load environment variables from .env file for ADK evaluation
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass  # dotenv not available, rely on system environment
+
 from google.adk.agents import LlmAgent
 from google.adk.tools import FunctionTool
 
@@ -403,10 +410,32 @@ if test_specialist_available and test_specialist:
 
 logger.info(f"✅ {len(available_specialists)} specialists available as sub-agents (including test specialist)")
 
+# Ensure proper API key configuration for ADK evaluation
+import os
+
+def get_model_with_api_key():
+    """Get model configuration with proper API key handling for ADK evaluation."""
+    api_key = os.getenv("GOOGLE_API_KEY")
+    use_vertex = os.getenv("GOOGLE_GENAI_USE_VERTEXAI", "FALSE").upper() == "TRUE"
+    
+    # For ADK evaluation, ensure environment variables are properly set
+    # The ADK framework expects these to be set correctly
+    if api_key and not use_vertex:
+        logger.info("✅ Using Google AI Studio with API key for ADK evaluation")
+        # Let ADK handle the configuration via environment variables
+        # This is the safest approach based on the documentation
+        return "gemini-2.5-flash"
+    elif use_vertex:
+        logger.info("✅ Using Vertex AI for ADK evaluation")
+        return "gemini-2.5-flash"
+    else:
+        logger.warning("⚠️ No API key configured, ADK evaluation may fail")
+        return "gemini-2.5-flash"
+
 # Create the enhanced orchestrator
 enhanced_orchestrator = LlmAgent(
     name="enhanced_orchestrator",
-    model="gemini-2.5-flash",
+    model=get_model_with_api_key(),
     description="Enhanced orchestrator with specialist routing and agent-as-tool pattern",
     instruction="""Enhanced VANA Orchestrator - Process all requests and return comprehensive responses.
 
@@ -592,3 +621,6 @@ __all__ = [
     "cached_route_to_specialist",
     "get_orchestrator_stats",
 ]
+
+# ADK evaluator expects root_agent
+root_agent = enhanced_orchestrator
