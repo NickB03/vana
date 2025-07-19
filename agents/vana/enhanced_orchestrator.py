@@ -23,12 +23,13 @@ try:
     from agents.specialists.data_science_specialist import data_science_specialist
     from agents.specialists.devops_specialist import devops_specialist
     from agents.specialists.security_specialist import security_specialist
-    from agents.specialists.content_creation_specialist import content_creation_specialist
+    # from agents.specialists.content_creation_specialist import content_creation_specialist  # Missing file
     from agents.specialists.research_specialist import research_specialist
 
     SPECIALISTS_AVAILABLE = True
     logger = get_logger("vana.enhanced_orchestrator")
-    logger.info("✅ All specialists loaded successfully")
+    logger.info("✅ Available specialists loaded successfully")
+    content_creation_specialist = None  # Not available yet
 except ImportError as e:
     SPECIALISTS_AVAILABLE = False
     logger = get_logger("vana.enhanced_orchestrator")
@@ -351,27 +352,56 @@ def smart_route_with_parallel(request: str, context: Dict[str, any] = None) -> s
     return analyze_and_route(request, context or {})
 
 
-# Initialize Agent-as-Tool pattern
+# Initialize Agent-as-Tool pattern (temporarily disabled for Phase 1)
+# try:
+#     from lib._tools.agent_tools import create_specialist_tools
+#     
+#     # Create specialist agent list
+#     available_specialists = []
+#     if security_specialist:
+#         available_specialists.append(security_specialist)
+#     if architecture_specialist:
+#         available_specialists.append(architecture_specialist)
+#     if data_science_specialist:
+#         available_specialists.append(data_science_specialist)
+#     if devops_specialist:
+#         available_specialists.append(devops_specialist)
+#     
+#     # Note: ADK handles agent delegation through the sub_agents mechanism,
+#     # not through tools. AgentTool objects should not be added to the tools list.
+#     logger.info(f"✅ {len(available_specialists)} specialists will be available as sub-agents")
+#     
+# except ImportError as e:
+#     logger.warning(f"⚠️ Specialist agents not available: {e}")
+
+# Import test specialist for Phase 1 validation
 try:
-    from lib._tools.agent_tools import create_specialist_tools
-    
-    # Create specialist agent list
-    available_specialists = []
-    if security_specialist:
-        available_specialists.append(security_specialist)
-    if architecture_specialist:
-        available_specialists.append(architecture_specialist)
-    if data_science_specialist:
-        available_specialists.append(data_science_specialist)
-    if devops_specialist:
-        available_specialists.append(devops_specialist)
-    
-    # Note: ADK handles agent delegation through the sub_agents mechanism,
-    # not through tools. AgentTool objects should not be added to the tools list.
-    logger.info(f"✅ {len(available_specialists)} specialists will be available as sub-agents")
-    
+    from agents.test_specialist import test_specialist
+    test_specialist_available = True
+    logger.info("✅ Test specialist loaded for Phase 1 validation")
 except ImportError as e:
-    logger.warning(f"⚠️ Specialist agents not available: {e}")
+    test_specialist_available = False
+    test_specialist = None
+    logger.warning(f"⚠️ Test specialist not available: {e}")
+
+# Count available specialists
+available_specialists = []
+if security_specialist:
+    available_specialists.append(security_specialist)
+if architecture_specialist:
+    available_specialists.append(architecture_specialist)
+if data_science_specialist:
+    available_specialists.append(data_science_specialist)
+if devops_specialist:
+    available_specialists.append(devops_specialist)
+if research_specialist:
+    available_specialists.append(research_specialist)
+
+# Add test specialist for Phase 1 validation
+if test_specialist_available and test_specialist:
+    available_specialists.append(test_specialist)
+
+logger.info(f"✅ {len(available_specialists)} specialists available as sub-agents (including test specialist)")
 
 # Create the enhanced orchestrator
 enhanced_orchestrator = LlmAgent(
@@ -411,7 +441,7 @@ For writing tasks like reports, essays, or content creation:
 2. If not, handle the request yourself by providing a comprehensive outline and content
 3. NEVER transfer back to vana - you must provide a response""",
     tools=[
-        FunctionTool(analyze_and_route),  # Primary routing function
+        analyze_and_route,  # ADK auto-wraps as FunctionTool
         adk_read_file,
         adk_write_file,
         adk_list_directory,
@@ -419,11 +449,7 @@ For writing tasks like reports, essays, or content creation:
         adk_analyze_task,  # Direct access for fine-grained control
     ],  # Specialists are handled via sub_agents, not tools (ADK pattern)
     # Include specialists as sub-agents if available
-    sub_agents=[
-        s
-        for s in [architecture_specialist, data_science_specialist, security_specialist, devops_specialist]
-        if s is not None
-    ],
+    sub_agents=available_specialists,
 )
 
 

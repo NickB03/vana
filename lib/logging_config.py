@@ -14,7 +14,7 @@ from pathlib import Path
 from typing import Any, Dict, Optional
 
 # Import existing structured logger
-from tools.logging.structured_logger import StructuredLogger
+from lib.logging.structured_logger import StructuredLogger
 
 
 class VanaLoggingConfig:

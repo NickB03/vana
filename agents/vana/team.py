@@ -29,13 +29,13 @@ from google.adk.agents import LlmAgent
 
 # Import only essential tools following ADK patterns
 from lib._tools import adk_analyze_task  # Intelligent task analysis
-from lib._tools import adk_logical_analyze  # Logical reasoning tool
-from lib._tools import adk_mathematical_solve  # Mathematical reasoning tool
+# from lib._tools import adk_logical_analyze  # Logical reasoning tool - not available yet
+# from lib._tools import adk_mathematical_solve  # Mathematical reasoning tool - not available yet
 from lib._tools import adk_read_file  # Basic file operations
 from lib._tools import adk_simple_execute_code  # Simple code execution
 # ADK provides transfer_to_agent automatically - no need to import
 from lib._tools import adk_write_file  # Basic file operations
-from lib._tools.web_search_sync import create_web_search_sync_tool  # Synchronous web search
+# from lib._tools.web_search_sync import create_web_search_sync_tool  # Synchronous web search - not available yet
 from lib.logging_config import get_logger
 
 # Removed sys.path.insert - using proper package imports
@@ -59,7 +59,7 @@ except ImportError as e:
     MEMORY_AVAILABLE = False
 
 # Create synchronous web search tool
-adk_web_search = create_web_search_sync_tool()
+# adk_web_search = create_web_search_sync_tool()  # Web search not available yet
 
 # Import enhanced orchestrator with specialists
 try:
