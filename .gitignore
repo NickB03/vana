@@ -44,6 +44,8 @@ pyvenv.cfg
 .env.development.local
 .env.test.local
 .env.production.local
+.mcp.json
+start-claude.sh
 secrets/
 *.key
 *.pem
