@@ -11,7 +11,44 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **Development Process** - When responding to the user you should never respond without first completing all assigned tasks.  The only exception is if you need to ask clarifying questions in order ot continue. You should always use documented facts when responding you should never make assumptions based on partial knowledge. Before responding to the user always check your response and provide it an accuracy score from 1 through 10. ie; 10/10 (you confirmed your answer through documentation) 0/10 (you are making assumptions) 5/10 (you have a good idea but need to confirm)
 
+**ADK Compliance is MANDATORY** - Before implementing ANY code for VANA:
+1. **ALWAYS** search the ADK knowledge base in ChromaDB first
+2. **NEVER** implement patterns not documented in ADK
+3. **VERIFY** all agent, tool, and deployment patterns against ADK docs
+4. **UPDATE** the ADK knowledge base weekly (see ADK KB section)
+
+**ChromaDB Long-Term Memory** - MUST be used proactively:
+1. **Store** important decisions, architecture choices, and implementation details
+2. **Query** before making assumptions about previous work or patterns
+3. **Update** when discovering new patterns or completing major features
+4. **Search** for context from previous conversations and implementations
+
 Always verify: `python3 --version` should show Python 3.13.x
+
+## 🎯 Context Engineering Principles
+
+**"Context Engineering is 10x better than prompt engineering and 100x better than vibe coding."**
+
+This project follows Context Engineering methodology for AI-assisted development:
+
+### Core Workflow
+1. **Initial Feature Request** - Define requirements in `INITIAL.md`
+2. **Generate PRP** - Run `/generate-prp INITIAL.md` to create comprehensive blueprint
+3. **Execute PRP** - Run `/execute-prp PRPs/feature-name.md` to implement
+4. **Validate** - Follow validation loops defined in PRP
+
+### Key Principles
+- **High Information Density**: Every interaction should be information-rich
+- **Comprehensive Context**: PRPs include all necessary implementation details
+- **Validation Loops**: Built-in quality checks at each phase
+- **Anti-Pattern Awareness**: Explicitly define what NOT to do
+
+### Development Guidelines
+- Always read existing PRPs before starting work
+- Maintain task tracking in validation loops
+- Follow project conventions identified in research phase
+- Never assume missing context - ask for clarification
+- Use examples from `examples/` folder as reference
 
 ## 🏗️ Project Overview
 
@@ -165,24 +202,54 @@ mcp__memory-mcp__create_entities(
 )
 ```
 
-### VS Code MCP Configuration
+### MCP Configuration
 
-**Configure in VS Code Claude extension settings** (not in VANA's .env files):
+**MCP servers are configured in `.mcp.json` at the project root**:
 ```json
-// VS Code settings.json
+// .mcp.json
 {
-  "mcp.servers": {
+  "mcpServers": {
     "chroma-vana": {
+      "autoApprove": ["chroma_query_documents", "chroma_get_documents", "chroma_get_collection_count", "chroma_list_collections", "chroma_add_documents"],
+      "disabled": false,
+      "timeout": 60,
+      "type": "stdio",
       "command": "python",
-      "args": ["-m", "lib.mcp.servers.chroma_server"]
+      "args": ["-m", "lib.mcp.servers.chroma_server"],
+      "env": {
+        "CHROMA_CLIENT_TYPE": "persistent",
+        "CHROMA_DATA_DIR": "/Users/nick/Development/vana/.chroma_db"
+      }
     },
     "memory-mcp": {
+      "autoApprove": ["create_entities", "create_relations", "add_observations", "search_nodes", "read_graph"],
+      "disabled": false,
+      "timeout": 60,
+      "type": "stdio",
       "command": "python",
-      "args": ["-m", "lib.mcp.servers.memory_server"]
+      "args": ["-m", "lib.mcp.servers.memory_server"],
+      "env": {}
+    },
+    "firecrawl": {
+      "autoApprove": [],
+      "disabled": false,
+      "timeout": 60,
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "firecrawl-mcp"],
+      "env": {
+        "FIRECRAWL_API_KEY": "$FIRECRAWL_API_KEY"
+      }
     }
   }
 }
 ```
+
+**Note**: 
+- These MCP servers are Claude Code development tools only, not part of VANA's runtime
+- Stateful servers (Chroma, Memory) use Python implementations
+- Stateless tools (Firecrawl) use NPM packages via npx
+- Environment variables use `$VAR_NAME` syntax and must be set in your shell
 
 ### VANA's Actual Memory System
 
@@ -309,6 +376,40 @@ gcloud run deploy vana-dev --source . --region=us-central1 ...
    - **No Brave API Required**: Removed dependency on `BRAVE_API_KEY`
 5. **Streaming Responses**: Backend supports streaming for real-time agent responses.
 
+## 📐 Project Conventions
+
+### Code Organization
+- **Agents**: All agents in `agents/` directory, following ADK LlmAgent pattern
+- **Tools**: Consolidated in `lib/_tools/`, using ADK FunctionTool wrapper
+- **Shared Libraries**: Core services in `lib/_shared_libraries/`
+- **File Length**: Keep files under 500 lines for maintainability
+
+### Import Patterns
+```python
+# Standard library imports first
+import os
+import sys
+
+# Third-party imports
+from google.adk.agents import LlmAgent
+from google.adk.tools import FunctionTool
+
+# Local imports (use absolute imports)
+from lib._tools import adk_read_file
+from lib.logging_config import get_logger
+```
+
+### ADK Patterns
+- **Agent Definition**: Use LlmAgent with clear name, model, description, instruction
+- **Tool Registration**: Wrap functions with FunctionTool or use as direct imports
+- **Sub-agents**: Use sub_agents parameter, not tools list for agent delegation
+- **Memory**: Use ADK memory patterns, not custom implementations
+
+### Testing Patterns
+- **Test Location**: Tests in `/tests` directory mirroring source structure
+- **Test Naming**: `test_<module_name>.py` for test files
+- **Markers**: Use pytest markers (unit, agent, integration, e2e, security, performance)
+- **Coverage**: Aim for 80%+ test coverage on new code
 ## 🔧 Claude Code Configuration
 
 ### Permission System
@@ -360,3 +461,313 @@ poetry run flake8
 poetry run mypy .
 poetry run bandit -r .
 ```
+
+## 📚 ADK Knowledge Base
+
+### Overview
+The ADK Knowledge Base is a ChromaDB-powered semantic search system containing all Google ADK documentation. This is MANDATORY for all VANA development to ensure ADK compliance.
+
+**Collection Name**: `adk_complete_docs`
+**Location**: `.development/adk-knowledge-base/`
+**Current Status**: 66 pages indexed, 16 document chunks
+
+### Searching the ADK Knowledge Base
+
+#### 1. Basic Pattern Search
+```python
+# Search for specific ADK patterns
+mcp__chroma-vana__chroma_query_documents(
+    collection_name="adk_complete_docs",
+    query_texts=["LlmAgent implementation"],
+    n_results=5
+)
+```
+
+#### 2. Category-Specific Search
+```python
+# Search within a specific category
+mcp__chroma-vana__chroma_get_documents(
+    collection_name="adk_complete_docs",
+    where={"category": "agents"},
+    limit=10
+)
+```
+
+#### 3. Code Example Search
+```python
+# Find documents with code examples
+mcp__chroma-vana__chroma_get_documents(
+    collection_name="adk_complete_docs",
+    where={"has_code_examples": True},
+    limit=20
+)
+```
+
+#### 4. Multi-Query Search
+```python
+# Search for multiple related concepts
+mcp__chroma-vana__chroma_query_documents(
+    collection_name="adk_complete_docs",
+    query_texts=[
+        "FunctionTool implementation",
+        "tool registration patterns",
+        "ToolContext usage"
+    ],
+    n_results=3
+)
+```
+
+### Required ADK Checks Before Implementation
+
+**ALWAYS perform these checks before writing ANY code:**
+
+1. **Agent Implementation Check**
+   ```python
+   mcp__chroma-vana__chroma_query_documents(
+       collection_name="adk_complete_docs",
+       query_texts=["LlmAgent", "BaseAgent", "agent initialization"],
+       n_results=5
+   )
+   ```
+
+2. **Tool Pattern Check**
+   ```python
+   mcp__chroma-vana__chroma_query_documents(
+       collection_name="adk_complete_docs",
+       query_texts=["FunctionTool", "tool registration", "ToolContext"],
+       n_results=5
+   )
+   ```
+
+3. **Multi-Agent Pattern Check**
+   ```python
+   mcp__chroma-vana__chroma_query_documents(
+       collection_name="adk_complete_docs",
+       query_texts=["sub_agents", "multi-agent orchestration"],
+       n_results=5
+   )
+   ```
+
+4. **Deployment Pattern Check**
+   ```python
+   mcp__chroma-vana__chroma_query_documents(
+       collection_name="adk_complete_docs",
+       query_texts=["Cloud Run deployment", "ADK deployment"],
+       n_results=5
+   )
+   ```
+
+### ADK KB Status Tracking
+
+#### Check Index Status
+```bash
+# Quick status check
+cd .development/adk-knowledge-base/
+./check_adk_index.sh
+
+# Detailed status with Python
+python3 index_tracker.py
+```
+
+#### View Current Coverage
+- **Indexed**: 5 URLs, 16 document chunks
+- **Pending**: 28 URLs awaiting indexing
+- **Manifest**: `.development/adk-knowledge-base/index_manifest.json`
+
+### Updating the ADK Knowledge Base
+
+#### Weekly Update Process (MANDATORY)
+1. **Check for ADK Updates**
+   ```python
+   # Crawl ADK docs for changes
+   mcp__firecrawl__firecrawl_crawl(
+       url="https://google.github.io/adk-docs/",
+       maxDepth=3,
+       limit=100,
+       scrapeOptions={"formats": ["markdown"]}
+   )
+   ```
+
+2. **Process New Content**
+   ```python
+   # Check crawl status
+   mcp__firecrawl__firecrawl_check_crawl_status(
+       id="<crawl_job_id>"
+   )
+   ```
+
+3. **Update ChromaDB**
+   ```python
+   # Add new documents
+   mcp__chroma-vana__chroma_add_documents(
+       collection_name="adk_complete_docs",
+       documents=["<processed_content>"],
+       ids=["<unique_doc_id>"],
+       metadatas=[{
+           "source": "<url>",
+           "category": "<category>",
+           "last_updated": "<date>"
+       }]
+   )
+   ```
+
+4. **Update Tracking**
+   ```bash
+   cd .development/adk-knowledge-base/
+   python3 index_tracker.py
+   ```
+
+#### Emergency Full Re-index
+Only if corruption detected:
+```python
+# Delete and recreate collection
+mcp__chroma-vana__chroma_delete_collection(collection_name="adk_complete_docs")
+mcp__chroma-vana__chroma_create_collection(
+    collection_name="adk_complete_docs",
+    embedding_function_name="default"
+)
+# Then re-run full crawl and indexing
+```
+
+### Common ADK Patterns Reference
+
+Based on indexed documentation, always follow these patterns:
+
+1. **Agent Creation**
+   - Use `LlmAgent` class, not custom implementations
+   - Always provide: name, model, description, instruction
+   - Register tools via `tools` parameter
+   - Use `sub_agents` for delegation, not tools list
+
+2. **Tool Implementation**
+   - Wrap with `FunctionTool` or use direct imports
+   - Include proper type hints and docstrings
+   - Return structured responses
+   - Handle ToolContext when needed
+
+3. **Multi-Agent Systems**
+   - Use ADK's native orchestration patterns
+   - Implement proper agent hierarchy
+   - Follow session management guidelines
+   - Use ADK memory patterns
+
+4. **Deployment**
+   - Follow ADK Cloud Run deployment specs
+   - Use proper service configuration
+   - Implement health checks as documented
+   - Follow ADK security guidelines
+
+### Troubleshooting ADK KB
+
+#### Collection Not Found
+```python
+# List all collections
+mcp__chroma-vana__chroma_list_collections()
+```
+
+#### Search Not Returning Results
+```python
+# Check document count
+mcp__chroma-vana__chroma_get_collection_count(
+    collection_name="adk_complete_docs"
+)
+```
+
+#### View All Indexed URLs
+```python
+# Get all documents with metadata
+mcp__chroma-vana__chroma_get_documents(
+    collection_name="adk_complete_docs",
+    limit=1000,
+    include=["metadatas"]
+)
+```
+
+## 💾 Proactive ChromaDB Usage
+
+### Long-Term Memory Collections
+
+**IMPORTANT**: ChromaDB should be used proactively for maintaining context across sessions. Create and use these collections:
+
+1. **vana_architecture** - System architecture decisions
+2. **vana_implementations** - Completed feature implementations
+3. **vana_patterns** - Discovered patterns and best practices
+4. **vana_issues** - Known issues and their solutions
+
+### Examples of Proactive Usage
+
+#### 1. Before Starting Any Task
+```python
+# Check for previous work on similar features
+mcp__chroma-vana__chroma_query_documents(
+    collection_name="vana_implementations",
+    query_texts=["similar feature keywords"],
+    n_results=5
+)
+```
+
+#### 2. After Implementing a Feature
+```python
+# Store implementation details
+mcp__chroma-vana__chroma_add_documents(
+    collection_name="vana_implementations",
+    documents=["Feature X implemented using ADK pattern Y with considerations Z"],
+    ids=["feature_x_implementation_2025_01_19"],
+    metadatas=[{
+        "feature": "Feature X",
+        "date": "2025-01-19",
+        "files_modified": ["file1.py", "file2.py"],
+        "adk_patterns_used": ["LlmAgent", "FunctionTool"]
+    }]
+)
+```
+
+#### 3. When Making Architecture Decisions
+```python
+# Store architecture decision
+mcp__chroma-vana__chroma_add_documents(
+    collection_name="vana_architecture",
+    documents=["Decided to use pattern X because of reasons Y and Z"],
+    ids=["arch_decision_pattern_x_2025_01_19"],
+    metadatas=[{
+        "decision_type": "pattern_choice",
+        "date": "2025-01-19",
+        "rationale": "Performance and ADK compliance"
+    }]
+)
+```
+
+#### 4. When Encountering Issues
+```python
+# Store issue and solution
+mcp__chroma-vana__chroma_add_documents(
+    collection_name="vana_issues",
+    documents=["Issue: X occurred when Y. Solution: Do Z instead."],
+    ids=["issue_x_solution_2025_01_19"],
+    metadatas=[{
+        "issue_type": "implementation",
+        "date": "2025-01-19",
+        "resolved": True
+    }]
+)
+```
+
+### Creating Memory Collections
+```python
+# Create collections if they don't exist
+for collection_name in ["vana_architecture", "vana_implementations", "vana_patterns", "vana_issues"]:
+    try:
+        mcp__chroma-vana__chroma_create_collection(
+            collection_name=collection_name,
+            embedding_function_name="default"
+        )
+    except:
+        pass  # Collection already exists
+```
+
+**Remember**: ChromaDB is your long-term memory. Use it to maintain context across sessions and prevent repeating mistakes or rediscovering patterns.
+# important-instruction-reminders
+Do what has been asked; nothing more, nothing less.
+NEVER create files unless they're absolutely necessary for achieving your goal.
+ALWAYS prefer editing an existing file to creating a new one.
+NEVER proactively create documentation files (*.md) or README files. Only create documentation files if explicitly requested by the User.
