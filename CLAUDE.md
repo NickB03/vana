@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file provides guidance to Claude Code when working with code in this repository.
 
 ## 🚨 Critical Requirements
 
@@ -9,13 +9,100 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - SSL/TLS compatibility for production services
 - Performance optimizations critical for agent coordination
 
-**Development Process** - When responding to the user you should never respond without first completing all assigned tasks.  The only exception is if you need to ask clarifying questions in order ot continue. You should always use documented facts when responding you should never make assumptions based on partial knowledge. Before responding to the user always check your response and provide it an accuracy score from 1 through 10. ie; 10/10 (you confirmed your answer through documentation) 0/10 (you are making assumptions) 5/10 (you have a good idea but need to confirm)
+**Development Process** - When responding to the user you should never respond without first completing all assigned tasks.  The only exception is if you need to ask clarifying questions in order to continue. You should always use documented facts when responding you should never make assumptions based on partial knowledge. Before responding to the user always check your response and provide it an accuracy score from 1 through 10. ie; 10/10 (you confirmed your answer through documentation) 0/10 (you are making assumptions) 5/10 (you have a good idea but need to confirm)
 
 **ADK Compliance is MANDATORY** - Before implementing ANY code for VANA:
 1. **ALWAYS** search the ADK knowledge base in ChromaDB first
 2. **NEVER** implement patterns not documented in ADK
 3. **VERIFY** all agent, tool, and deployment patterns against ADK docs
 4. **UPDATE** the ADK knowledge base weekly (see ADK KB section)
+
+### 🔴 CRITICAL: Required ADK Pattern Verification
+
+Before implementing ANY code, you MUST query the ADK knowledge base for these core patterns:
+
+#### 1. **Agent Creation Patterns** (ALWAYS CHECK FIRST)
+```python
+# Query for proper LlmAgent initialization
+mcp__chroma-vana__chroma_query_documents(
+    collection_name="adk_complete_docs",
+    query_texts=["LlmAgent initialization", "agent name description model", "agent identity"],
+    n_results=5
+)
+```
+
+Key ADK Rules:
+- ALWAYS use `LlmAgent` (or `Agent`) class, never custom implementations
+- REQUIRED parameters: `name`, `model`, `instruction`
+- Agent names must be unique, descriptive (e.g., `security_analyst`, not `agent1`)
+- NEVER use reserved names like `user`
+- Description is CRITICAL for multi-agent systems
+
+#### 2. **Tool Implementation Patterns** (CHECK BEFORE CREATING TOOLS)
+```python
+# Query for FunctionTool patterns
+mcp__chroma-vana__chroma_query_documents(
+    collection_name="adk_complete_docs",
+    query_texts=["FunctionTool", "tool docstring", "tool parameters", "creating effective tools"],
+    n_results=5
+)
+```
+
+Key ADK Rules:
+- Functions are automatically wrapped as FunctionTool in Python
+- Tool docstrings are CRITICAL - LLM uses them to understand tool purpose
+- MUST include: What it does, When to use it, Parameter descriptions, Return format
+- Parameters MUST have type hints, no defaults, be JSON serializable
+- Return type MUST be a dictionary
+
+#### 3. **Multi-Agent Orchestration** (CHECK BEFORE AGENT DELEGATION)
+```python
+# Query for multi-agent patterns
+mcp__chroma-vana__chroma_query_documents(
+    collection_name="adk_complete_docs",
+    query_texts=["sub_agents", "AgentTool", "workflow agents", "agent delegation"],
+    n_results=5
+)
+```
+
+Key ADK Rules:
+- Use `sub_agents` parameter for agent hierarchy, NOT tools list
+- Use `AgentTool` wrapper when adding agent to tools list
+- Workflow agents (Sequential, Parallel, Loop) do NOT use LLMs
+- Agent descriptions are used by other agents for routing decisions
+
+#### 4. **Common ADK Anti-Patterns to AVOID**
+```python
+# Query for mistakes and best practices
+mcp__chroma-vana__chroma_query_documents(
+    collection_name="adk_complete_docs",
+    query_texts=["common mistakes", "best practices", "anti-patterns", "output_schema limitations"],
+    n_results=5
+)
+```
+
+NEVER DO:
+- Create custom agent classes when ADK patterns exist
+- Mix agents in tools list without AgentTool wrapper
+- Use output_schema with tools (they're mutually exclusive)
+- Implement custom flow control instead of Workflow agents
+- Skip tool docstrings or use vague descriptions
+
+### 📚 ADK Crash Course Examples
+Key examples to reference (query ChromaDB for patterns):
+- **Basic Agent**: `1-basic-agent/` - Minimal LlmAgent setup
+- **Multi-Agent**: `7-multi-agent/` - Proper sub_agents and AgentTool usage
+- **Workflow Agents**: `10-sequential-agent/`, `11-parallel-agent/`, `12-loop-agent/`
+- **State Management**: `5-sessions-and-state/`, `6-persistent-storage/`
+
+ALWAYS cross-reference your implementation with these examples by querying:
+```python
+mcp__chroma-vana__chroma_query_documents(
+    collection_name="adk_complete_docs",
+    query_texts=["example: <pattern you're implementing>"],
+    n_results=3
+)
+```
 
 **ChromaDB Long-Term Memory** - MUST be used proactively:
 1. **Store** important decisions, architecture choices, and implementation details
@@ -26,8 +113,6 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 Always verify: `python3 --version` should show Python 3.13.x
 
 ## 🎯 Context Engineering Principles
-
-**"Context Engineering is 10x better than prompt engineering and 100x better than vibe coding."**
 
 This project follows Context Engineering methodology for AI-assisted development:
 
@@ -365,16 +450,7 @@ gcloud run deploy vana-dev --source . --region=us-central1 ...
 - **Required**: `GOOGLE_API_KEY` for Gemini models
 
 ## 💡 Tips
-
-1. **Memory Service**: Currently using in-memory fallback. Vector DB integration pending.
-2. **Code Execution**: Works in fallback mode without Docker. Full sandbox requires Docker.
-3. **API Keys**: Set `GOOGLE_API_KEY` for Gemini models and web search features.
-4. **Web Search Configuration**: 
-   - **Primary**: Google Custom Search API (automatic with `GOOGLE_API_KEY`)
-   - **Optional**: Set `GOOGLE_CSE_ID` for custom search engine (uses default if not set)
-   - **Fallback**: DuckDuckGo when Google is unavailable or quota exceeded
-   - **No Brave API Required**: Removed dependency on `BRAVE_API_KEY`
-5. **Streaming Responses**: Backend supports streaming for real-time agent responses.
+TBD
 
 ## 📐 Project Conventions
 
@@ -429,6 +505,75 @@ Development artifacts should be saved to `.development/` directory (gitignored):
 
 ⚠️ MCP tools are for VS Code development sessions with Claude only.
 They are NOT part of VANA's runtime memory or storage systems.
+
+## 📝 Claude Code Workspace Rules
+
+### Temporary File Management
+To prevent document sprawl and repository contamination, Claude Code MUST follow these rules:
+
+#### 1. **ALWAYS Use Claude Workspace for Temporary Files**
+```bash
+# ✅ CORRECT - All temporary work goes in workspace
+.claude_workspace/analysis.md
+.claude_workspace/test_script.py
+.claude_workspace/investigation_notes.md
+
+# ❌ WRONG - Never create temp files in these locations
+./random_analysis.md          # Don't pollute root
+./lib/temp_investigation.md   # Don't pollute source
+./agents/scratch_test.py      # Don't mix with production code
+```
+
+#### 2. **What Goes Where**
+| File Type | Location | Example |
+|-----------|----------|---------|
+| Temporary analysis/planning | `.claude_workspace/` | `auth_analysis.md` |
+| Scratch Python scripts | `.claude_workspace/` | `test_api.py` |
+| Investigation notes | `.claude_workspace/` | `debug_notes.md` |
+| VANA source code | Proper directories | `lib/`, `agents/`, `tests/` |
+| Project docs | Root (only when needed) | `README.md`, `CLAUDE.md` |
+| Active feature requests | Root | `INITIAL_*.md` (user created) |
+
+#### 3. **Before Creating ANY File**
+Ask yourself:
+1. Is this temporary work? → Use `.claude_workspace/`
+2. Is this VANA source code? → Use proper directory structure
+3. Is this a requested document? → Only then create in root
+
+#### 4. **Workspace Cleanup**
+The `.claude_workspace/` directory:
+- Is completely gitignored
+- Can be cleaned anytime without data loss
+- Should contain ONLY temporary work
+- Has a `cleanup.sh` script for manual cleaning
+
+#### 5. **Important: Date/Timestamp Handling**
+When creating files that need timestamps:
+```bash
+# Always use system date, not training date
+TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
+DATE=$(date +"%Y-%m-%d")
+```
+
+### Examples of Correct Usage
+```bash
+# Starting investigation
+echo "# Auth Pattern Analysis" > .claude_workspace/auth_investigation.md
+
+# Testing something
+cat > .claude_workspace/test_pattern.py << 'EOF'
+# Quick test of ADK pattern
+from google.adk import LlmAgent
+# ... test code ...
+EOF
+
+# Saving important findings to ChromaDB (not a file)
+mcp__chroma-vana__chroma_add_documents(
+    collection_name="vana_patterns",
+    documents=["Important pattern discovered..."],
+    ids=[f"pattern_{timestamp}"],
+    metadatas=[{"type": "discovery", "date": system_date}]
+)
 
 ## 📁 New Development Files
 
