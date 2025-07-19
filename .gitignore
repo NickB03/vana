@@ -311,3 +311,7 @@ project_research/*.pptx
 
 # Workflow checkpoints (test artifacts)
 .workflow_checkpoints/
+
+# Archive directories from cleanup
+.archive/adk-knowledge-base-old/
+.archive/purge-reports/
