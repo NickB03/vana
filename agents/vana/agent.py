@@ -5,8 +5,9 @@ Following ADK standards as documented in:
 https://google.github.io/adk-docs/deploy/cloud-run/
 """
 
-# For ADK evaluation, use the enhanced orchestrator
-from .enhanced_orchestrator import enhanced_orchestrator
+# Use pure delegation pattern with separate simple search agent
+# Reference: https://github.com/google/adk-python/issues/53
+from .orchestrator_pure_delegation import orchestrator_pure as enhanced_orchestrator
 
 # ADK expects the agent to be named 'root_agent'
 root_agent = enhanced_orchestrator

@@ -313,5 +313,5 @@ project_research/*.pptx
 .workflow_checkpoints/
 
 # Archive directories from cleanup
-.archive/adk-knowledge-base-old/
-.archive/purge-reports/
+# Archive directory - all archived content
+.archive/
