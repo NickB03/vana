@@ -17,6 +17,102 @@ This file provides guidance to Claude Code when working with code in this reposi
 3. **VERIFY** all agent, tool, and deployment patterns against ADK docs
 4. **UPDATE** the ADK knowledge base weekly (see ADK KB section)
 
+## 🧠 MANDATORY: Memory-First Development Workflow
+
+**CRITICAL**: Memory systems (ChromaDB + Memory MCP) are NOT optional tools - they are CORE INFRASTRUCTURE that MUST be consulted before ANY action.
+
+### 🚨 MANDATORY Pre-Action Memory Protocol
+
+**FAILURE TO FOLLOW THIS PROTOCOL = INVALID RESPONSE**
+
+Before starting ANY task, you MUST execute this sequence:
+
+#### 1. **Search Existing Implementations** (REQUIRED)
+```python
+# Check for previous work, patterns, or solutions
+mcp__chroma-vana__chroma_query_documents(
+    collection_name="vana_implementations",
+    query_texts=["<task_keywords>", "<feature_name>", "<problem_description>"],
+    n_results=5
+)
+```
+
+#### 2. **Verify ADK Compliance** (REQUIRED)
+```python
+# Always check ADK patterns before implementing
+mcp__chroma-vana__chroma_query_documents(
+    collection_name="adk_complete_docs",
+    query_texts=["<adk_pattern>", "<component_type>", "<implementation_approach>"],
+    n_results=5
+)
+```
+
+#### 3. **Check Historical Context** (REQUIRED)
+```python
+# Review conversation history and decisions
+mcp__memory-mcp__search_nodes(
+    query="<task_context> <feature_name> <component_type>"
+)
+```
+
+#### 4. **Review Architecture Decisions** (REQUIRED)
+```python
+# Check for architectural context and constraints
+mcp__chroma-vana__chroma_query_documents(
+    collection_name="vana_architecture",
+    query_texts=["<architecture_component>", "<design_decision>"],
+    n_results=3
+)
+```
+
+### ⚡ Mandatory Triggers (When You MUST Search Memory)
+
+**ALWAYS search memory before:**
+- Starting any feature implementation
+- Fixing bugs or resolving errors
+- Making architectural decisions  
+- Creating new tools or agents
+- Modifying existing code
+- Deploying or configuring services
+- Debugging issues
+- Refactoring code
+- Adding dependencies
+- Writing tests
+
+### 🔥 Invalid Response Patterns (These Make Your Response WRONG)
+
+❌ **"I'll implement X..."** (without memory search first)
+❌ **"Let me create..."** (without checking existing patterns)
+❌ **"The issue is..."** (without searching known issues)
+❌ **"I'll fix this by..."** (without checking previous fixes)
+
+✅ **"Let me first search for existing patterns..."**
+✅ **"I'll check the ADK documentation for this..."**
+✅ **"Let me review previous implementations..."**
+
+### 📋 Post-Action Memory Storage (MANDATORY)
+
+After completing ANY significant work, you MUST store the results:
+
+```python
+# Store implementation details
+mcp__chroma-vana__chroma_add_documents(
+    collection_name="vana_implementations",
+    documents=["<detailed_description_of_what_was_done>"],
+    ids=["<unique_id_with_date>"],
+    metadatas=[{"type": "<task_type>", "date": "<YYYY-MM-DD>", "files": "<files_modified>"}]
+)
+
+# Store architectural decisions
+mcp__memory-mcp__create_entities(
+    entities=[{
+        "name": "<decision_or_implementation_name>",
+        "entityType": "<type>",
+        "observations": ["<what_was_done>", "<why_it_was_done>", "<key_learnings>"]
+    }]
+)
+```
+
 ### 🔴 CRITICAL: Required ADK Pattern Verification
 
 Before implementing ANY code, you MUST query the ADK knowledge base for these core patterns:
@@ -104,11 +200,47 @@ mcp__chroma-vana__chroma_query_documents(
 )
 ```
 
-**ChromaDB Long-Term Memory** - MUST be used proactively:
-1. **Store** important decisions, architecture choices, and implementation details
-2. **Query** before making assumptions about previous work or patterns
-3. **Update** when discovering new patterns or completing major features
-4. **Search** for context from previous conversations and implementations
+**ChromaDB Long-Term Memory** - CORE INFRASTRUCTURE (NOT OPTIONAL):
+
+**🚨 MANDATORY USAGE REQUIREMENTS:**
+1. **ALWAYS SEARCH FIRST** - Query memory before any implementation
+2. **VERIFY COMPLIANCE** - Check ADK patterns before coding  
+3. **STORE EVERYTHING** - Document all decisions and implementations
+4. **UPDATE WEEKLY** - Keep knowledge base current
+
+**⚡ REQUIRED SEARCH SEQUENCE** (Execute before ANY task):
+```python
+# 1. Check existing implementations
+mcp__chroma-vana__chroma_query_documents(
+    collection_name="vana_implementations", 
+    query_texts=["<your_task_keywords>"], 
+    n_results=5
+)
+
+# 2. Verify ADK compliance
+mcp__chroma-vana__chroma_query_documents(
+    collection_name="adk_complete_docs",
+    query_texts=["<adk_pattern_keywords>"], 
+    n_results=5
+)
+
+# 3. Check architecture decisions  
+mcp__chroma-vana__chroma_query_documents(
+    collection_name="vana_architecture",
+    query_texts=["<component_keywords>"], 
+    n_results=3
+)
+
+# 4. Review known issues
+mcp__chroma-vana__chroma_query_documents(
+    collection_name="vana_issues",
+    query_texts=["<problem_keywords>"], 
+    n_results=3
+)
+```
+
+**❌ INVALID if you don't search memory first**
+**✅ VALID only after memory consultation**
 
 Always verify: `python3 --version` should show Python 3.13.x
 
@@ -231,16 +363,76 @@ TBD
 ## 🔍 Common Development Tasks
 
 ### Adding a New Tool
-1. Create tool in `lib/_tools/` following ADK pattern
-2. Register in appropriate agent's tool list
-3. Add tests (test directory structure TBD)
-4. Update documentation (docs structure TBD)
+**MANDATORY: Search memory BEFORE implementing any tool**
+
+1. **Search for existing patterns** (REQUIRED):
+   ```python
+   # Check for similar tools or implementations
+   mcp__chroma-vana__chroma_query_documents(
+       collection_name="vana_implementations",
+       query_texts=["tool creation", "similar tool name", "tool purpose"],
+       n_results=5
+   )
+   
+   # Verify ADK tool patterns
+   mcp__chroma-vana__chroma_query_documents(
+       collection_name="adk_complete_docs", 
+       query_texts=["FunctionTool", "tool implementation", "tool best practices"],
+       n_results=5
+   )
+   ```
+
+2. Create tool in `lib/_tools/` following discovered ADK patterns
+3. Register in appropriate agent's tool list
+4. Add tests (test directory structure TBD)
+5. Update documentation (docs structure TBD)
+
+6. **Store implementation** (REQUIRED):
+   ```python
+   # Document the new tool
+   mcp__chroma-vana__chroma_add_documents(
+       collection_name="vana_implementations",
+       documents=["Tool X created with purpose Y using ADK pattern Z"],
+       ids=["tool_<name>_<date>"],
+       metadatas=[{"type": "tool_creation", "date": "<YYYY-MM-DD>", "tool_name": "<name>"}]
+   )
+   ```
 
 ### Modifying Agent Behavior
-1. Agent definitions in `agents/*/team.py` or `agents/*/specialist.py`
-2. Model selection and prompts are configurable
-3. Tools are loaded via ADK's tool system
-4. Test with `poetry run pytest -m agent`
+**MANDATORY: Search memory BEFORE modifying any agent**
+
+1. **Search for existing patterns** (REQUIRED):
+   ```python
+   # Check for similar modifications or configurations
+   mcp__chroma-vana__chroma_query_documents(
+       collection_name="vana_implementations",
+       query_texts=["agent modification", "agent configuration", "similar change"],
+       n_results=5
+   )
+   
+   # Review ADK agent patterns
+   mcp__chroma-vana__chroma_query_documents(
+       collection_name="adk_complete_docs",
+       query_texts=["LlmAgent", "agent configuration", "agent behavior"],
+       n_results=5
+   )
+   ```
+
+2. Agent definitions in `agents/*/team.py` or `agents/*/specialist.py`
+3. Model selection and prompts are configurable
+4. Tools are loaded via ADK's tool system
+5. Test with `poetry run pytest -m agent`
+
+6. **Store changes** (REQUIRED):
+   ```python
+   # Document the agent modifications
+   mcp__chroma-vana__chroma_add_documents(
+       collection_name="vana_implementations",
+       documents=["Agent X modified: changed Y to achieve Z"],
+       ids=["agent_mod_<name>_<date>"],
+       metadatas=[{"type": "agent_modification", "date": "<YYYY-MM-DD>", "agent": "<name>"}]
+   )
+   ```
 
 ### Working with MCP Servers
 **⚠️ CRITICAL: ChromaDB and Memory MCP servers are VS Code development tools ONLY - they are NOT part of the VANA runtime**
@@ -910,7 +1102,37 @@ for collection_name in ["vana_architecture", "vana_implementations", "vana_patte
         pass  # Collection already exists
 ```
 
-**Remember**: ChromaDB is your long-term memory. Use it to maintain context across sessions and prevent repeating mistakes or rediscovering patterns.
+## 🔥 CRITICAL MEMORY ENFORCEMENT
+
+**ABSOLUTE REQUIREMENT**: ChromaDB and Memory MCP are MANDATORY infrastructure, not optional tools.
+
+### ❌ Response Rejection Criteria
+
+Your response is **INVALID** and **REJECTED** if you:
+- Start implementing without searching memory first
+- Make assumptions about previous work without querying
+- Fix bugs without checking known issues  
+- Create tools/agents without checking existing patterns
+- Deploy without reviewing deployment history
+
+### ✅ Required Response Pattern
+
+**EVERY response must follow this pattern:**
+
+1. **"Let me first search for existing..."** → Memory query
+2. **"Based on previous implementations..."** → Reference found patterns  
+3. **"Following ADK compliance..."** → Reference ADK documentation
+4. **"I'll now implement..."** → Only after memory consultation
+5. **"Storing this implementation..."** → Document the work
+
+### 🎯 Success Metrics
+
+- **100% memory consultation** before action
+- **Zero assumptions** without documentation  
+- **Complete pattern reuse** when available
+- **Full context preservation** across sessions
+
+**Remember**: Failure to use memory = Invalid response. Memory is CORE INFRASTRUCTURE, not an optional tool.
 # important-instruction-reminders
 Do what has been asked; nothing more, nothing less.
 NEVER create files unless they're absolutely necessary for achieving your goal.

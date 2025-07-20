@@ -5,7 +5,7 @@ description = "VANA - Advanced AI Agent System with Google ADK Integration"
 authors = ["Nick <110638609+NickB03@users.noreply.github.com>"]
 readme = "README.md"
 license = "MIT"
-packages = [{include = "agents"}, {include = "lib"}, {include = "tools"}]
+packages = [{include = "agents"}, {include = "lib"}]
 
 [build-system]
 requires = ["poetry-core"]
@@ -191,7 +191,7 @@ filterwarnings = [
 
 
 [tool.coverage.run]
-source = ["lib", "agents", "tools"]
+source = ["lib", "agents"]
 omit = [
     "*/tests/*",
     "*/archived_scripts/*",

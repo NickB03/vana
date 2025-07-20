@@ -4313,4 +4313,4 @@ document-processing = []
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.13,<3.14"
-content-hash = "8947b8b02728a8141fa3dd264b07e697331faad106f68035b89c926d4dedd777"
+content-hash = "635abe22e63c7d1a6ae8e842041dd070b086bc00914ce6e6752640b3bd998a21"

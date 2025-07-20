@@ -34,7 +34,6 @@ help:
 
 setup:
 	@echo "$(GREEN)🚀 Setting up VANA development environment...$(NC)"
-	@./scripts/validate-env.sh || true
 	@if [ ! -f .env.local ]; then \
 		cp .env.example .env.local; \
 		echo "$(YELLOW)📝 Created .env.local - Please add your GOOGLE_API_KEY$(NC)"; \
