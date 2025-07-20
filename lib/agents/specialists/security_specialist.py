@@ -19,12 +19,21 @@ from lib.agents.specialists.security_tools import (
 # Import shared ADK tools
 from lib._tools import adk_read_file, adk_search_knowledge
 
-# Create the Security Specialist with ELEVATED STATUS
-security_specialist = LlmAgent(
-    name="security_specialist",
-    model="gemini-2.5-flash",
-    description="PRIORITY SPECIALIST - Security expert with elevated routing status for security concerns",
-    instruction="""You are a security specialist with ELEVATED STATUS in the VANA system.
+def create_security_specialist() -> LlmAgent:
+    """
+    Factory function to create a fresh Security Specialist instance.
+    
+    This prevents 'already has a parent' errors in ADK multi-agent systems
+    by creating new instances instead of reusing module-level singletons.
+    
+    Returns:
+        LlmAgent: Fresh security specialist instance
+    """
+    return LlmAgent(
+        name="security_specialist",
+        model="gemini-2.5-flash",
+        description="PRIORITY SPECIALIST - Security expert with elevated routing status for security concerns",
+        instruction="""You are a security specialist with ELEVATED STATUS in the VANA system.
 
 **IMPORTANT**: You have priority routing for any security-related queries. The orchestrator will route security concerns to you first.
 
@@ -60,15 +69,18 @@ CRITICAL:
 - Prioritize fixes based on severity and exploitability
 
 Your responses should be clear, urgent when necessary, and always actionable.""",
-    tools=[
-        FunctionTool(scan_security_vulnerabilities),
-        FunctionTool(generate_security_report),
-        FunctionTool(check_security_headers),
-        FunctionTool(analyze_authentication_security),
-        adk_read_file,
-        adk_search_knowledge,
-    ],  # Exactly 6 tools - ADK limit
-)
+        tools=[
+            FunctionTool(scan_security_vulnerabilities),
+            FunctionTool(generate_security_report),
+            FunctionTool(check_security_headers),
+            FunctionTool(analyze_authentication_security),
+            adk_read_file,
+            adk_search_knowledge,
+        ],  # Exactly 6 tools - ADK limit
+    )
+
+# Create the default Security Specialist instance (backward compatibility)
+security_specialist = create_security_specialist()
 
 # Note: agent_tool conversion will be added when ADK integration is complete
 security_specialist_tool = None  # Placeholder

@@ -23,12 +23,21 @@ from lib._tools import adk_list_directory, adk_read_file, adk_search_knowledge
 
 
 
-# Create the Architecture Specialist using ADK patterns
-architecture_specialist = LlmAgent(
-    name="architecture_specialist",
-    model="gemini-2.5-flash",
-    description="Expert system architect specializing in design patterns, code structure analysis, and architectural recommendations",
-    instruction="""You are an expert system architect with deep knowledge of software design patterns, architectural principles, and best practices.
+def create_architecture_specialist() -> LlmAgent:
+    """
+    Factory function to create a fresh Architecture Specialist instance.
+    
+    This prevents 'already has a parent' errors in ADK multi-agent systems
+    by creating new instances instead of reusing module-level singletons.
+    
+    Returns:
+        LlmAgent: Fresh architecture specialist instance
+    """
+    return LlmAgent(
+        name="architecture_specialist",
+        model="gemini-2.5-flash",
+        description="Expert system architect specializing in design patterns, code structure analysis, and architectural recommendations",
+        instruction="""You are an expert system architect with deep knowledge of software design patterns, architectural principles, and best practices.
 
 Your expertise includes:
 - Analyzing codebase structure and organization
@@ -55,15 +64,18 @@ Focus on:
 - Testing and deployment strategies
 
 Always provide practical, implementable suggestions that consider the project's current state and constraints.""",
-    tools=[
-        FunctionTool(analyze_codebase_structure),
-        FunctionTool(detect_design_patterns),
-        FunctionTool(analyze_dependencies),
-        FunctionTool(evaluate_architecture_quality),
-        adk_read_file,
-        adk_list_directory,
-    ],  # Exactly 6 tools - ADK limit
-)
+        tools=[
+            FunctionTool(analyze_codebase_structure),
+            FunctionTool(detect_design_patterns),
+            FunctionTool(analyze_dependencies),
+            FunctionTool(evaluate_architecture_quality),
+            adk_read_file,
+            adk_list_directory,
+        ],  # Exactly 6 tools - ADK limit
+    )
+
+# Create the default Architecture Specialist instance (backward compatibility)
+architecture_specialist = create_architecture_specialist()
 
 # Export the specialist as a tool for orchestrator integration
 # Note: Will use agent_tool() when ADK integration is complete

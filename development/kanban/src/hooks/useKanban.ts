@@ -26,6 +26,8 @@ export const useKanban = () => {
         
         const stored = localStorage.getItem(STORAGE_KEY);
         console.log('useKanban: Stored data exists:', !!stored);
+        console.log('useKanban: Storage key used:', STORAGE_KEY);
+        console.log('useKanban: Stored data preview:', stored ? stored.substring(0, 100) + '...' : 'null');
         
         if (stored) {
           const parsed = JSON.parse(stored);
@@ -62,21 +64,34 @@ export const useKanban = () => {
   // Save data to localStorage whenever it changes
   const saveToStorage = useCallback((data: KanbanData) => {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+      console.log('💾 saveToStorage called with:', data.tasks.length, 'tasks');
+      const jsonData = JSON.stringify(data);
+      localStorage.setItem(STORAGE_KEY, jsonData);
+      console.log('✅ Successfully saved to localStorage under key:', STORAGE_KEY);
+      
+      // Verify it was saved
+      const verification = localStorage.getItem(STORAGE_KEY);
+      console.log('🔍 Verification - data saved correctly:', !!verification);
     } catch (error) {
-      console.error('Failed to save kanban data to localStorage:', error);
+      console.error('❌ Failed to save kanban data to localStorage:', error);
     }
   }, []);
 
   // Update tasks and save to storage
   const updateTasks = useCallback((newTasks: Task[]) => {
+    console.log('🔄 updateTasks called with:', newTasks.length, 'tasks');
+    console.log('📋 Task statuses:', newTasks.map(t => `${t.id}:${t.status}`));
+    
     const newData = {
       ...kanbanData,
       tasks: newTasks,
       lastUpdated: new Date(),
     };
+    
+    console.log('💾 Saving new kanban data:', newData);
     setKanbanData(newData);
     saveToStorage(newData);
+    console.log('✅ Update complete');
   }, [kanbanData, saveToStorage]);
 
   // Move task to different column

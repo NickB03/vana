@@ -213,8 +213,17 @@ export const KanbanProvider = <
   const [activeCardId, setActiveCardId] = useState<string | null>(null);
 
   const sensors = useSensors(
-    useSensor(MouseSensor),
-    useSensor(TouchSensor),
+    useSensor(MouseSensor, {
+      activationConstraint: {
+        distance: 5, // Start drag after 5px movement
+      },
+    }),
+    useSensor(TouchSensor, {
+      activationConstraint: {
+        delay: 250,
+        tolerance: 5,
+      },
+    }),
     useSensor(KeyboardSensor)
   );
 
@@ -234,24 +243,46 @@ export const KanbanProvider = <
     }
 
     const activeItem = data.find((item) => item.id === active.id);
-    const overItem = data.find((item) => item.id === over.id);
-
-    if (!(activeItem && overItem)) {
+    if (!activeItem) {
       return;
     }
 
-    const activeColumn = activeItem.column;
-    const overColumn = overItem.column;
+    // Check if dropping onto a column (droppable area)
+    const targetColumn = columns.find((col) => col.id === over.id);
+    
+    if (targetColumn) {
+      // Dropping onto a column area
+      const activeColumn = activeItem.column;
+      const overColumn = targetColumn.id;
 
-    if (activeColumn !== overColumn) {
-      let newData = [...data];
-      const activeIndex = newData.findIndex((item) => item.id === active.id);
-      const overIndex = newData.findIndex((item) => item.id === over.id);
+      if (activeColumn !== overColumn) {
+        let newData = [...data];
+        const activeIndex = newData.findIndex((item) => item.id === active.id);
 
-      newData[activeIndex].column = overColumn;
-      newData = arrayMove(newData, activeIndex, overIndex);
+        // Move to new column at the end of that column's tasks
+        newData[activeIndex].column = overColumn;
+        
+        onDataChange?.(newData);
+      }
+    } else {
+      // Dropping onto another task
+      const overItem = data.find((item) => item.id === over.id);
+      
+      if (overItem) {
+        const activeColumn = activeItem.column;
+        const overColumn = overItem.column;
 
-      onDataChange?.(newData);
+        if (activeColumn !== overColumn) {
+          let newData = [...data];
+          const activeIndex = newData.findIndex((item) => item.id === active.id);
+          const overIndex = newData.findIndex((item) => item.id === over.id);
+
+          newData[activeIndex].column = overColumn;
+          newData = arrayMove(newData, activeIndex, overIndex);
+
+          onDataChange?.(newData);
+        }
+      }
     }
 
     onDragOver?.(event);
@@ -268,14 +299,33 @@ export const KanbanProvider = <
       return;
     }
 
-    let newData = [...data];
+    const activeItem = data.find((item) => item.id === active.id);
+    if (!activeItem) {
+      return;
+    }
 
-    const oldIndex = newData.findIndex((item) => item.id === active.id);
-    const newIndex = newData.findIndex((item) => item.id === over.id);
+    // Check if dropping onto a column (droppable area)
+    const targetColumn = columns.find((col) => col.id === over.id);
+    
+    if (targetColumn) {
+      // Dropping onto a column area - already handled in handleDragOver
+      // No additional action needed here
+      return;
+    } else {
+      // Dropping onto another task - reorder within same column or move between columns
+      const overItem = data.find((item) => item.id === over.id);
+      
+      if (overItem && activeItem.column === overItem.column) {
+        // Same column reordering
+        let newData = [...data];
+        const oldIndex = newData.findIndex((item) => item.id === active.id);
+        const newIndex = newData.findIndex((item) => item.id === over.id);
 
-    newData = arrayMove(newData, oldIndex, newIndex);
-
-    onDataChange?.(newData);
+        newData = arrayMove(newData, oldIndex, newIndex);
+        onDataChange?.(newData);
+      }
+      // Cross-column moves are already handled in handleDragOver
+    }
   };
 
   const announcements: Announcements = {

@@ -19,12 +19,21 @@ from lib.agents.specialists.data_science_tools import (
 # Import shared ADK tools
 from lib._tools import adk_read_file, adk_search_knowledge
 
-# Create the Data Science Specialist using ADK patterns
-data_science_specialist = LlmAgent(
-    name="data_science_specialist",
-    model="gemini-2.5-flash",
-    description="Data analysis expert providing insights without code execution",
-    instruction="""You are a data science expert specializing in data analysis and insights.
+def create_data_science_specialist() -> LlmAgent:
+    """
+    Factory function to create a fresh Data Science Specialist instance.
+    
+    This prevents 'already has a parent' errors in ADK multi-agent systems
+    by creating new instances instead of reusing module-level singletons.
+    
+    Returns:
+        LlmAgent: Fresh data science specialist instance
+    """
+    return LlmAgent(
+        name="data_science_specialist",
+        model="gemini-2.5-flash",
+        description="Data analysis expert providing insights without code execution",
+        instruction="""You are a data science expert specializing in data analysis and insights.
 
 Due to the current environment, code execution is temporarily disabled. However, you can still provide valuable data analysis using the available tools.
 
@@ -50,15 +59,18 @@ Important notes:
 - Provide clear recommendations based on the analysis
 
 Always explain findings in clear, non-technical language and provide actionable next steps.""",
-    tools=[
-        FunctionTool(analyze_data_simple),
-        FunctionTool(generate_data_insights),
-        FunctionTool(clean_data_basic),
-        FunctionTool(create_data_summary),
-        adk_read_file,
-        adk_search_knowledge,
-    ],  # Exactly 6 tools - ADK limit
-)
+        tools=[
+            FunctionTool(analyze_data_simple),
+            FunctionTool(generate_data_insights),
+            FunctionTool(clean_data_basic),
+            FunctionTool(create_data_summary),
+            adk_read_file,
+            adk_search_knowledge,
+        ],  # Exactly 6 tools - ADK limit
+    )
+
+# Create the Data Science Specialist using factory function
+data_science_specialist = create_data_science_specialist()
 
 # Note: agent_tool conversion will be added when ADK integration is complete
 data_science_specialist_tool = None  # Placeholder

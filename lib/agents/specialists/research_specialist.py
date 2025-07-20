@@ -8,15 +8,21 @@ Uses built-in google_search tool for real search capabilities.
 from google.adk.agents import LlmAgent
 from google.adk.tools import google_search
 
-# Research tools will be added when available
-research_tools = []
-
-# Create the Research Specialist
-research_specialist = LlmAgent(
-    name="research_specialist",
-    model="gemini-2.5-flash",
-    description="Expert researcher specializing in comprehensive information gathering, source analysis, fact extraction, and synthesis of findings with academic rigor",
-    instruction="""You are an expert research specialist with access to real-time Google Search.
+def create_research_specialist() -> LlmAgent:
+    """
+    Factory function to create a fresh Research Specialist instance.
+    
+    This prevents 'already has a parent' errors in ADK multi-agent systems
+    by creating new instances instead of reusing module-level singletons.
+    
+    Returns:
+        LlmAgent: Fresh research specialist instance
+    """
+    return LlmAgent(
+        name="research_specialist",
+        model="gemini-2.5-flash",
+        description="Expert researcher specializing in comprehensive information gathering, source analysis, fact extraction, and synthesis of findings with academic rigor",
+        instruction="""You are an expert research specialist with access to real-time Google Search.
 
 Your capabilities include:
 1. **Google Search Grounding**: Use the built-in google_search tool to find current, accurate information
@@ -51,8 +57,14 @@ Quality Standards:
 - Provide search result citations
 
 Remember: The google_search tool provides real, grounded information. Always use it to ensure accuracy and currency of information.""",
-    tools=[google_search]  # Built-in google_search only for now
-)
+        tools=[google_search]  # Built-in google_search only for now
+    )
+
+# Research tools will be added when available
+research_tools = []
+
+# Create the Research Specialist using factory function
+research_specialist = create_research_specialist()
 
 # Helper function for testing
 def conduct_research(request: str, context: dict = None) -> str:

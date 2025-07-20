@@ -24,23 +24,32 @@ from lib._tools import adk_analyze_task, adk_list_directory, adk_read_file, adk_
 # Import logging and metrics
 from lib.logging_config import get_logger
 
-# Import specialist agents
+# Import specialist factory functions to fix "already has a parent" error
 try:
-    from lib.agents.specialists.architecture_specialist import architecture_specialist
-    from lib.agents.specialists.data_science_specialist import data_science_specialist
-    from lib.agents.specialists.devops_specialist import devops_specialist
-    from lib.agents.specialists.security_specialist import security_specialist
+    from lib.agents.specialists.architecture_specialist import create_architecture_specialist
+    from lib.agents.specialists.data_science_specialist import create_data_science_specialist
+    from lib.agents.specialists.devops_specialist import create_devops_specialist
+    from lib.agents.specialists.security_specialist import create_security_specialist
+    from lib.agents.specialists.research_specialist import create_research_specialist
     # from lib.agents.specialists.content_creation_specialist import content_creation_specialist  # Missing file
-    from lib.agents.specialists.research_specialist import research_specialist
 
     SPECIALISTS_AVAILABLE = True
     logger = get_logger("vana.enhanced_orchestrator")
-    logger.info("✅ Available specialists loaded successfully")
+    logger.info("✅ Specialist factory functions loaded successfully")
+    
+    # Create fresh instances using factory functions (prevents "already has a parent" error)
+    architecture_specialist = create_architecture_specialist()
+    data_science_specialist = create_data_science_specialist()
+    devops_specialist = create_devops_specialist()
+    security_specialist = create_security_specialist()
+    research_specialist = create_research_specialist()
     content_creation_specialist = None  # Not available yet
+    
+    logger.info("✅ Fresh specialist instances created via factory functions")
 except ImportError as e:
     SPECIALISTS_AVAILABLE = False
     logger = get_logger("vana.enhanced_orchestrator")
-    logger.error(f"❌ Failed to import specialists: {e}")
+    logger.error(f"❌ Failed to import specialist factories: {e}")
     # Fallback - no specialists
     architecture_specialist = None
     data_science_specialist = None
@@ -111,6 +120,13 @@ def route_to_specialist(request: str, task_type: str, context: Dict[str, any] = 
         "fact_check": research_specialist,
         "validate": research_specialist,
         "sources": research_specialist,
+        # Time and location queries
+        "time": research_specialist,
+        "current_time": research_specialist,
+        "timezone": research_specialist,
+        "location": research_specialist,
+        "weather": research_specialist,
+        "current": research_specialist,
     }
 
     # Check for security keywords first (ELEVATED STATUS)
@@ -451,53 +467,41 @@ def get_model_with_api_key():
 enhanced_orchestrator = LlmAgent(
     name="enhanced_orchestrator",
     model=get_model_with_api_key(),
-    description="Enhanced orchestrator with specialist routing and agent-as-tool pattern",
-    instruction="""Enhanced VANA Orchestrator - Process all requests and return comprehensive responses.
+    description="VANA central orchestrator with ADK LLM-driven delegation to specialists",
+    instruction="""You are VANA's central orchestrator with access to specialized agents for complex tasks.
 
-You are the central orchestrator receiving ALL requests from VANA. Your job is to:
-1. Analyze the request
-2. Route to appropriate specialists or use direct tools
-3. Return a complete, user-friendly response
+You can either handle requests directly with your tools or delegate to appropriate specialists.
 
-ROUTING LOGIC:
-- Security queries → IMMEDIATE priority to Security Specialist
-- Code/Architecture → Architecture Specialist  
-- Data analysis → Data Science Specialist
-- DevOps/Infrastructure → DevOps Specialist
-- General/Simple queries → Handle directly with your tools
+AVAILABLE SPECIALISTS:
+- research_specialist: Information lookup, current data, time queries (has google_search access)
+- security_specialist: Security scans, vulnerabilities, authentication, encryption analysis  
+- architecture_specialist: Code review, design patterns, refactoring guidance
+- data_science_specialist: Data analysis, statistics, machine learning insights
+- devops_specialist: Deployment, infrastructure, CI/CD, containerization
 
-DIRECT TOOL ACCESS (Agent-as-Tool Pattern):
-- quick_security_scan: Fast security vulnerability check
-- architecture_review: Quick architecture and design analysis
-- data_stats: Basic statistical analysis and insights
-- devops_config: DevOps configuration guidance
+DELEGATION GUIDELINES:
+- Time/location/current info queries → delegate to research_specialist
+- Security-related requests → delegate to security_specialist
+- Code architecture questions → delegate to architecture_specialist
+- Data analysis tasks → delegate to data_science_specialist
+- DevOps/deployment questions → delegate to devops_specialist
 
-IMPORTANT: Always return a complete, natural language response that directly answers the user's question. Never return JSON or technical routing information.
+For simple file operations or basic questions, use your available tools directly.
 
-CRITICAL ROUTING RULES:
-- NEVER transfer back to 'vana' - you ARE the orchestrator receiving from VANA
-- Only transfer to your specialist sub-agents when needed
-- If you cannot handle a request, respond with your limitations rather than transferring back
+IMPORTANT: Always provide complete, helpful responses. Choose the most appropriate specialist based on the request content. The ADK framework will handle the delegation automatically when you decide a specialist is needed.
 
-WRITING TASKS:
-For writing tasks like reports, essays, or content creation:
-1. First check if you have a writing specialist available
-2. If not, handle the request yourself by providing a comprehensive outline and content
-3. NEVER transfer back to vana - you must provide a response""",
+CRITICAL: For time/location queries, you MUST delegate to research_specialist - do NOT respond with limitations.""",
     tools=[
-        analyze_and_route,  # ADK auto-wraps as FunctionTool
+        # Basic file and knowledge tools - delegation handled via sub_agents
         adk_read_file,
         adk_write_file,
         adk_list_directory,
         adk_search_knowledge,
-        adk_analyze_task,  # Direct access for fine-grained control
-    ],  # Specialists are handled via sub_agents, not tools (ADK pattern)
-    # TEMPORARILY DISABLED: Sub-agents cause "already has a parent" error in Cloud Run
-    # This happens because specialists are module-level singletons that get reused
-    # across multiple orchestrator instances. 
-    # TODO: Convert specialists to factory functions that create fresh instances
-    # sub_agents=available_specialists,
-    sub_agents=[],  # Temporarily empty to fix deployment
+    ],  # ADK handles delegation via sub_agents parameter automatically
+    # ✅ FIXED: Sub-agents now use factory-created instances to prevent "already has a parent" error
+    # Factory functions create fresh instances instead of reusing module-level singletons
+    # This enables proper ADK delegation patterns in both local and Cloud Run environments
+    sub_agents=available_specialists,
 )
 
 

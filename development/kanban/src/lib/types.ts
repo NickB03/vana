@@ -28,6 +28,7 @@ export interface KanbanColumn {
   id: TaskStatus;
   name: string;
   color?: string;
+  [key: string]: unknown; // Index signature for Kibo UI compatibility
 }
 
 // Kanban board data structure

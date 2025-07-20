@@ -1,0 +1,4 @@
+# Include .gitignore excluded files with ! prefix
+!.development/
+!.claude_workspace/
+!.memory_db/

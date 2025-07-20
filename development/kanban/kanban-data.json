@@ -1,80 +1,59 @@
 {
   "tasks": [
     {
-      "id": "1",
-      "title": "Setup Next.js project",
-      "description": "Initialize the project with TypeScript and Tailwind CSS",
-      "status": "done",
-      "priority": "high",
-      "tags": [
-        "setup",
-        "frontend"
-      ],
-      "createdAt": "2025-01-19T10:00:00.000Z",
-      "updatedAt": "2025-01-19T11:00:00.000Z",
-      "source": "manual",
-      "lastModifiedBy": "developer"
-    },
-    {
-      "id": "2",
-      "title": "Add Kibo UI kanban component",
-      "description": "Install and configure the Kibo UI kanban component",
-      "status": "done",
-      "priority": "high",
-      "tags": [
-        "kibo-ui",
-        "components"
-      ],
-      "createdAt": "2025-01-19T11:00:00.000Z",
-      "updatedAt": "2025-01-19T12:00:00.000Z",
-      "source": "manual",
-      "lastModifiedBy": "developer"
-    },
-    {
-      "id": "3",
-      "title": "Create TypeScript interfaces",
-      "description": "Define the data models for tasks and kanban board",
-      "status": "in-progress",
-      "priority": "high",
-      "tags": [
-        "typescript",
-        "interfaces"
-      ],
-      "createdAt": "2025-01-19T12:00:00.000Z",
-      "updatedAt": "2025-01-19T12:30:00.000Z",
-      "source": "manual",
-      "lastModifiedBy": "developer"
-    },
-    {
       "id": "4",
       "title": "Add localStorage persistence",
       "description": "Save kanban state to browser localStorage",
-      "status": "todo",
-      "priority": "medium",
-      "tags": [
-        "persistence",
-        "storage"
-      ],
-      "createdAt": "2025-01-19T12:30:00.000Z",
-      "updatedAt": "2025-01-19T12:30:00.000Z",
-      "source": "manual",
-      "lastModifiedBy": "developer"
+      "status": "done",
+      "createdAt": "2025-01-19 12:30:00+00:00",
+      "updatedAt": "2025-07-20 16:39:00.052000+00:00",
+      "assignee": null,
+      "labels": [],
+      "priority": "medium"
     },
     {
       "id": "5",
       "title": "Implement Claude Code integration",
       "description": "Create API endpoints for Claude Code to update tasks",
       "status": "todo",
-      "priority": "medium",
-      "tags": [
-        "claude-code",
-        "integration",
-        "api"
-      ],
-      "createdAt": "2025-01-19T12:30:00.000Z",
-      "updatedAt": "2025-01-19T12:30:00.000Z",
-      "source": "manual",
-      "lastModifiedBy": "developer"
+      "createdAt": "2025-01-19 12:30:00+00:00",
+      "updatedAt": "2025-07-20 16:39:00.052000+00:00",
+      "assignee": null,
+      "labels": [],
+      "priority": "medium"
+    },
+    {
+      "id": "2",
+      "title": "Add Kibo UI kanban component",
+      "description": "Install and configure the Kibo UI kanban component",
+      "status": "todo",
+      "createdAt": "2025-01-19 11:00:00+00:00",
+      "updatedAt": "2025-07-20 16:39:00.052000+00:00",
+      "assignee": null,
+      "labels": [],
+      "priority": "high"
+    },
+    {
+      "id": "1",
+      "title": "Setup Next.js project",
+      "description": "Initialize the project with TypeScript and Tailwind CSS",
+      "status": "in-progress",
+      "createdAt": "2025-01-19 10:00:00+00:00",
+      "updatedAt": "2025-07-20 16:39:00.052000+00:00",
+      "assignee": null,
+      "labels": [],
+      "priority": "high"
+    },
+    {
+      "id": "3",
+      "title": "Create TypeScript interfaces",
+      "description": "Define the data models for tasks and kanban board",
+      "status": "in-progress",
+      "createdAt": "2025-01-19 12:00:00+00:00",
+      "updatedAt": "2025-07-20 16:39:00.052000+00:00",
+      "assignee": null,
+      "labels": [],
+      "priority": "high"
     }
   ],
   "columns": [
@@ -94,5 +73,5 @@
       "color": "#10b981"
     }
   ],
-  "lastUpdated": "2025-07-20T03:45:39.916Z"
+  "version": "1.0"
 }
