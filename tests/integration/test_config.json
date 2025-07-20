@@ -1,0 +1,11 @@
+{
+  "criteria": {
+    "tool_trajectory_avg_score": 0.95,
+    "response_match_score": 0.75
+  },
+  "options": {
+    "continue_on_failure": true,
+    "verbose_output": false,
+    "timeout_seconds": 60
+  }
+}

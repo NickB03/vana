@@ -1,48 +1,75 @@
+# Cloud Build configuration for VANA development deployment
+# Target: vana-dev service with minimal resources
+
 steps:
-  # Build the container image
+  # Build the Docker image
   - name: 'gcr.io/cloud-builders/docker'
-    args: ['build', '-t', 'gcr.io/$PROJECT_ID/vana-dev:latest', '-f', 'Dockerfile', '.']
+    args:
+      - 'build'
+      - '-t'
+      - 'gcr.io/$PROJECT_ID/vana-dev:$_SHORT_SHA'
+      - '-t'
+      - 'gcr.io/$PROJECT_ID/vana-dev:latest'
+      - '-f'
+      - 'Dockerfile'
+      - '.'
+    env:
+      - 'DOCKER_BUILDKIT=1'
 
-  # Push the container image to Container Registry
+  # Push the image to Google Container Registry
   - name: 'gcr.io/cloud-builders/docker'
-    args: ['push', 'gcr.io/$PROJECT_ID/vana-dev:latest']
+    args:
+      - 'push'
+      - '--all-tags'
+      - 'gcr.io/$PROJECT_ID/vana-dev'
 
-  # Deploy container image to Cloud Run
-  - name: 'gcr.io/cloud-builders/gcloud'
+  # Deploy to Cloud Run
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: 'gcloud'
     args:
       - 'run'
       - 'deploy'
       - 'vana-dev'
       - '--image'
-      - 'gcr.io/$PROJECT_ID/vana-dev:latest'
-      - '--region'
-      - 'us-central1'
+      - 'gcr.io/$PROJECT_ID/vana-dev:$_SHORT_SHA'
       - '--platform'
       - 'managed'
+      - '--region'
+      - 'us-central1'
+      - '--port'
+      - '8081'
       - '--allow-unauthenticated'
       - '--memory'
-      - '4Gi'
+      - '1Gi'
       - '--cpu'
-      - '2'
-      - '--concurrency'
-      - '40'
-      - '--max-instances'
-      - '5'
-      - '--min-instances'
-      - '0'
+      - '1'
       - '--timeout'
-      - '300'
-      - '--service-account'
-      - 'vana-vector-search-sa@$PROJECT_ID.iam.gserviceaccount.com'
-      - '--port'
-      - '8000'
+      - '900'
+      - '--concurrency'
+      - '1000'
+      - '--max-instances'
+      - '10'
       - '--set-env-vars'
-      - 'ENVIRONMENT=development,GOOGLE_GENAI_USE_VERTEXAI=true,GOOGLE_CLOUD_PROJECT=$PROJECT_ID,GOOGLE_CLOUD_LOCATION=us-central1,GOOGLE_CLOUD_REGION=us-central1,RAG_CORPUS_RESOURCE_NAME=projects/$PROJECT_ID/locations/us-central1/ragCorpora/2305843009213693952'
+      - 'ENVIRONMENT=development,PYTHONUNBUFFERED=1'
       - '--set-secrets'
-      - 'BRAVE_API_KEY=brave-api-key:latest,OPENROUTER_API_KEY=openrouter-api-key:latest'
+      - 'GOOGLE_API_KEY=gemini-api-key:latest'
 
-
+# Images to be pushed to registry
 images:
+  - 'gcr.io/$PROJECT_ID/vana-dev:$_SHORT_SHA'
   - 'gcr.io/$PROJECT_ID/vana-dev:latest'
 
-timeout: '900s'
+# Build options for efficiency
+options:
+  machineType: 'E2_HIGHCPU_8'
+  env:
+    - 'DOCKER_BUILDKIT=1'
+  substitution_option: 'ALLOW_LOOSE'
+  logging: CLOUD_LOGGING_ONLY
+
+# Timeout for the entire build process
+timeout: '1200s'
+
+# Default substitutions
+substitutions:
+  _SHORT_SHA: 'latest'

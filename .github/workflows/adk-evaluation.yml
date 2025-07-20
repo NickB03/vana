@@ -1,0 +1,56 @@
+name: ADK Agent Evaluation
+
+on:
+  push:
+    branches: [main, develop, feature/*]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  evaluate:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python 3.13
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.13'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install google-adk
+        pip install poetry
+        poetry install
+    
+    - name: Run ADK Unit Tests
+      run: |
+        adk eval agents/vana tests/unit \
+          --config_file_path=tests/unit/test_config.json \
+          --print_detailed_results
+    
+    - name: Run ADK Integration Tests
+      if: success()
+      run: |
+        adk eval agents/vana tests/integration \
+          --config_file_path=tests/integration/test_config.json
+    
+    - name: Run Pytest Wrapper
+      if: success()
+      run: |
+        poetry run pytest tests/test_adk_evaluation.py -v
+    
+    - name: Generate Evaluation Report
+      if: always()
+      run: |
+        adk eval agents/vana tests --print_detailed_results > evaluation_report.txt
+    
+    - name: Upload Evaluation Results
+      if: always()
+      uses: actions/upload-artifact@v3
+      with:
+        name: evaluation-results
+        path: evaluation_report.txt
+        retention-days: 30

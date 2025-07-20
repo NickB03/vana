@@ -1,0 +1,67 @@
+{
+  "eval_set_id": "file_operations_tools_tests",
+  "description": "Test ADK file operation tools",
+  "eval_cases": [
+    {
+      "eval_id": "read_existing_file",
+      "description": "Test reading an existing file",
+      "conversation": [{
+        "user_content": {
+          "parts": [{"text": "Read the README.md file"}]
+        },
+        "final_response": {
+          "parts": [{"text": "Here's the content of README.md:"}]
+        },
+        "intermediate_data": {
+          "tool_uses": [{
+            "name": "read_file",
+            "args": {
+              "file_path": "README.md"
+            }
+          }]
+        }
+      }]
+    },
+    {
+      "eval_id": "write_new_file",
+      "description": "Test writing a new configuration file",
+      "conversation": [{
+        "user_content": {
+          "parts": [{"text": "Create a new config file with default settings"}]
+        },
+        "final_response": {
+          "parts": [{"text": "I've created a new configuration file with default settings."}]
+        },
+        "intermediate_data": {
+          "tool_uses": [{
+            "name": "write_file",
+            "args": {
+              "file_path": "config/defaults.json",
+              "content": "{\"debug\": false, \"timeout\": 30}"
+            }
+          }]
+        }
+      }]
+    },
+    {
+      "eval_id": "handle_missing_file",
+      "description": "Test error handling for non-existent file",
+      "conversation": [{
+        "user_content": {
+          "parts": [{"text": "Read the file that_does_not_exist.txt"}]
+        },
+        "final_response": {
+          "parts": [{"text": "I couldn't find the file 'that_does_not_exist.txt'. The file may not exist or might be in a different location."}]
+        },
+        "intermediate_data": {
+          "tool_uses": [{
+            "name": "read_file",
+            "args": {
+              "file_path": "that_does_not_exist.txt"
+            }
+          }]
+        }
+      }]
+    }
+  ]
+}

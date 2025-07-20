@@ -26,12 +26,12 @@ from lib.logging_config import get_logger
 
 # Import specialist agents
 try:
-    from agents.specialists.architecture_specialist import architecture_specialist
-    from agents.specialists.data_science_specialist import data_science_specialist
-    from agents.specialists.devops_specialist import devops_specialist
-    from agents.specialists.security_specialist import security_specialist
-    # from agents.specialists.content_creation_specialist import content_creation_specialist  # Missing file
-    from agents.specialists.research_specialist import research_specialist
+    from lib.agents.specialists.architecture_specialist import architecture_specialist
+    from lib.agents.specialists.data_science_specialist import data_science_specialist
+    from lib.agents.specialists.devops_specialist import devops_specialist
+    from lib.agents.specialists.security_specialist import security_specialist
+    # from lib.agents.specialists.content_creation_specialist import content_creation_specialist  # Missing file
+    from lib.agents.specialists.research_specialist import research_specialist
 
     SPECIALISTS_AVAILABLE = True
     logger = get_logger("vana.enhanced_orchestrator")
@@ -92,15 +92,16 @@ def route_to_specialist(request: str, task_type: str, context: Dict[str, any] = 
         "monitoring": devops_specialist,
         "docker": devops_specialist,
         "kubernetes": devops_specialist,
-        # Content creation patterns
-        "writing": content_creation_specialist,
-        "write": content_creation_specialist,
-        "document": content_creation_specialist,
-        "report": content_creation_specialist,
-        "article": content_creation_specialist,
-        "content": content_creation_specialist,
-        "edit": content_creation_specialist,
-        "format": content_creation_specialist,
+        # Content creation patterns - REMOVED until specialist available
+        # TODO: Uncomment when content_creation_specialist is implemented
+        # "writing": content_creation_specialist,
+        # "write": content_creation_specialist,
+        # "document": content_creation_specialist,
+        # "report": content_creation_specialist,
+        # "article": content_creation_specialist,
+        # "content": content_creation_specialist,
+        # "edit": content_creation_specialist,
+        # "format": content_creation_specialist,
         # Research patterns  
         "research": research_specialist,
         "investigate": research_specialist,
@@ -152,15 +153,29 @@ def route_to_specialist(request: str, task_type: str, context: Dict[str, any] = 
                     specialist_name = spec.name if hasattr(spec, "name") else pattern
                     break
 
+    # Enhanced null validation with better error messages
     if specialist and specialist_name:
         logger.info(f"Routing to {specialist_name} for task type: {task_type}")
 
         # Time the specialist execution
         with MetricsTimer(metrics, task_type, specialist_name):
-            return specialist.run(request, context or {})
+            try:
+                return specialist.run(request, context or {})
+            except Exception as e:
+                logger.error(f"Specialist {specialist_name} execution failed: {e}")
+                metrics.record_error("specialist_execution_failure", str(e))
+                return f"The {specialist_name} encountered an error: {str(e)}. Please try rephrasing your request."
     else:
+        # Provide helpful feedback based on task type
         metrics.record_error("routing_failure", f"No specialist for type: {task_type}")
-        return f"No specialist available for task type: {task_type}"
+        logger.warning(f"No specialist available for task type: {task_type}")
+        
+        # Check if this was a content creation task
+        content_tasks = ["writing", "write", "document", "report", "article", "content", "edit", "format"]
+        if task_type in content_tasks:
+            return f"I identified this as a '{task_type}' task, but the content creation specialist is not yet available. Please try a different type of request."
+        else:
+            return f"I identified this as a '{task_type}' task, but no specialist is currently available to handle it. Please try a different request."
 
 
 def analyze_and_route(request: str, context: Dict[str, any], timeout: float = 30.0) -> str:
@@ -477,8 +492,12 @@ For writing tasks like reports, essays, or content creation:
         adk_search_knowledge,
         adk_analyze_task,  # Direct access for fine-grained control
     ],  # Specialists are handled via sub_agents, not tools (ADK pattern)
-    # Include specialists as sub-agents if available
-    sub_agents=available_specialists,
+    # TEMPORARILY DISABLED: Sub-agents cause "already has a parent" error in Cloud Run
+    # This happens because specialists are module-level singletons that get reused
+    # across multiple orchestrator instances. 
+    # TODO: Convert specialists to factory functions that create fresh instances
+    # sub_agents=available_specialists,
+    sub_agents=[],  # Temporarily empty to fix deployment
 )
 
 

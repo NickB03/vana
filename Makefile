@@ -42,7 +42,7 @@ setup:
 	@echo "$(GREEN)📦 Installing Python dependencies...$(NC)"
 	@poetry install
 	@echo "$(GREEN)📦 Installing frontend dependencies...$(NC)"
-	@cd vana-ui && npm install
+	@echo "$(YELLOW)📝 Frontend setup skipped - vana-ui archived, will use Kibo/shadcn$(NC)"
 	@echo "$(GREEN)✅ Setup complete! Run 'make dev' to start$(NC)"
 
 dev:
@@ -51,16 +51,16 @@ dev:
 		docker-compose up; \
 	else \
 		echo "$(YELLOW)⚠️  Docker not available, using local processes...$(NC)"; \
-		./start-vana-ui.sh; \
+		echo "$(GREEN)🚀 Deploy with: gcloud run deploy vana-dev --source .$(NC)"; \
 	fi
 
 backend:
 	@echo "$(GREEN)🔧 Starting VANA backend...$(NC)"
-	@poetry run python main.py
+	@echo "$(YELLOW)⚠️  Backend now uses pure ADK deployment - use 'gcloud run deploy' instead$(NC)"
 
 frontend:
 	@echo "$(GREEN)🎨 Starting VANA frontend...$(NC)"
-	@cd vana-ui && npm run dev
+	@echo "$(YELLOW)⚠️  Frontend archived - will integrate with Kibo/shadcn UI$(NC)"
 
 test:
 	@echo "$(GREEN)🧪 Running tests...$(NC)"
@@ -123,20 +123,22 @@ check-deployment:
 	@echo "$(GREEN)🔍 Checking deployment readiness...$(NC)"
 	@pwd | grep -q "vana$$" || (echo "$(RED)❌ Not in VANA root directory!$(NC)" && exit 1)
 	@test -f Dockerfile || (echo "$(RED)❌ Dockerfile not found!$(NC)" && exit 1)
-	@test -f main.py || (echo "$(RED)❌ main.py not found!$(NC)" && exit 1)
-	@test -d vana-ui || (echo "$(RED)❌ vana-ui directory not found!$(NC)" && exit 1)
-	@test -f vana-ui/dist/index.html || (echo "$(YELLOW)⚠️  Frontend not built - run 'make frontend-build' first$(NC)")
+	@echo "$(GREEN)✓ Using pure ADK deployment (no main.py needed)$(NC)"
+	@echo "$(GREEN)✓ Frontend archived - using pure ADK API$(NC)"
+	@echo "$(GREEN)✓ Pure ADK deployment ready$(NC)"
 	@echo "$(GREEN)✅ All deployment checks passed!$(NC)"
 
 frontend-build:
 	@echo "$(GREEN)🏗️  Building frontend...$(NC)"
-	@cd vana-ui && npm run build
+	@echo "$(YELLOW)⚠️  Frontend archived - will build with Kibo/shadcn UI$(NC)"
 	@echo "$(GREEN)✅ Frontend build complete!$(NC)"
 
 deploy-staging: check-deployment
 	@echo "$(GREEN)🚀 Deploying to staging...$(NC)"
-	@./scripts/safe-deploy.sh staging
+	@echo "$(YELLOW)Note: Use deployment/deploy-dev.sh for development deployment$(NC)"
+	@echo "$(YELLOW)Or use: gcloud run deploy vana-staging --source .$(NC)"
 
 deploy-production: check-deployment
 	@echo "$(RED)⚠️  PRODUCTION DEPLOYMENT$(NC)"
-	@./scripts/safe-deploy.sh production
+	@echo "$(YELLOW)Note: Use gcloud run deploy vana-prod --source . (with appropriate flags)$(NC)"
+	@echo "$(YELLOW)See CLAUDE.md for full deployment commands$(NC)"

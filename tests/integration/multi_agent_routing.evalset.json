@@ -1,0 +1,85 @@
+{
+  "eval_set_id": "multi_agent_routing_integration",
+  "description": "Integration tests for multi-agent routing and complex workflows",
+  "eval_cases": [
+    {
+      "eval_id": "security_then_data_analysis",
+      "description": "Test routing to multiple specialists in a workflow",
+      "conversation": [
+        {
+          "user_content": {
+            "parts": [{"text": "Analyze our user database for security vulnerabilities and data patterns"}]
+          },
+          "final_response": {
+            "parts": [{"text": "I'll coordinate with both our security specialist and data analyst to provide a comprehensive analysis of your user database."}]
+          },
+          "intermediate_data": {
+            "tool_uses": [{
+              "name": "analyze_and_route",
+              "args": {
+                "request": "Analyze our user database for security vulnerabilities and data patterns",
+                "context": {"requires_multiple_specialists": true}
+              }
+            }]
+          }
+        },
+        {
+          "user_content": {
+            "parts": [{"text": "What security issues did you find?"}]
+          },
+          "final_response": {
+            "parts": [{"text": "Based on the security analysis, here are the key vulnerabilities found in your user database:"}]
+          },
+          "intermediate_data": {
+            "tool_uses": []
+          }
+        },
+        {
+          "user_content": {
+            "parts": [{"text": "And what about the data patterns?"}]
+          },
+          "final_response": {
+            "parts": [{"text": "The data analysis revealed the following patterns in your user database:"}]
+          },
+          "intermediate_data": {
+            "tool_uses": []
+          }
+        }
+      ]
+    },
+    {
+      "eval_id": "context_preservation",
+      "description": "Test that context is preserved across multiple turns",
+      "conversation": [
+        {
+          "user_content": {
+            "parts": [{"text": "I'm working on a Python project that needs security review"}]
+          },
+          "final_response": {
+            "parts": [{"text": "I understand you're working on a Python project that needs a security review. What specific aspects would you like me to examine?"}]
+          },
+          "intermediate_data": {
+            "tool_uses": []
+          }
+        },
+        {
+          "user_content": {
+            "parts": [{"text": "Check the authentication module for vulnerabilities"}]
+          },
+          "final_response": {
+            "parts": [{"text": "I'll analyze your Python project's authentication module for security vulnerabilities."}]
+          },
+          "intermediate_data": {
+            "tool_uses": [{
+              "name": "analyze_and_route",
+              "args": {
+                "request": "Check the authentication module for vulnerabilities",
+                "context": {"project_type": "Python", "previous_context": "security review needed"}
+              }
+            }]
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -12,7 +12,7 @@ from datetime import datetime, timedelta
 from functools import wraps
 from typing import Any, Callable, Dict, Optional, Tuple
 
-from lib._shared_libraries.redis_cache_service import get_redis_cache
+# Using in-memory rate limiting for development - Redis dependency removed
 from lib.logging_config import get_logger
 
 logger = get_logger("vana.security.rate_limiter")
@@ -30,7 +30,7 @@ class RateLimiter:
     """Thread-safe rate limiter with multiple algorithms"""
 
     def __init__(
-        self, requests_per_minute: int = 60, requests_per_hour: int = 1000, burst_size: int = 10, use_redis: bool = True
+        self, requests_per_minute: int = 60, requests_per_hour: int = 1000, burst_size: int = 10, use_redis: bool = False
     ):
         """
         Initialize rate limiter
@@ -39,12 +39,12 @@ class RateLimiter:
             requests_per_minute: Max requests per minute
             requests_per_hour: Max requests per hour
             burst_size: Max burst requests allowed
-            use_redis: Use Redis for distributed rate limiting
+            use_redis: Use Redis for distributed rate limiting (default: False for Phase 1)
         """
         self.requests_per_minute = requests_per_minute
         self.requests_per_hour = requests_per_hour
         self.burst_size = burst_size
-        self.use_redis = use_redis and get_redis_cache().is_available
+        self.use_redis = use_redis
 
         # Local storage for rate limiting
         self._request_history = defaultdict(deque)
@@ -53,7 +53,7 @@ class RateLimiter:
 
         # Redis cache for distributed rate limiting
         if self.use_redis:
-            self._redis = get_redis_cache()
+            self._redis = None  # Redis disabled
             logger.info("Using Redis for distributed rate limiting")
         else:
             self._redis = None

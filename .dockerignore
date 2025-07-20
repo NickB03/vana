@@ -1,2 +1,46 @@
-# Ignore the vana-ui node_modules directory
-vana-ui/node_modules
+# Development files
+.git
+.github
+.vscode
+.pytest_cache
+.claude
+.claude_workspace
+.development
+.memory_db
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+.env
+.env.*
+.DS_Store
+
+# Archive files
+*.zip
+*.tar.gz
+
+# Logs
+logs/
+*.log
+
+# Testing
+tests/
+.coverage
+
+# Documentation
+docs/
+PRPs/
+examples/
+INITIAL.md
+README.md
+
+# Poetry files (not needed in container)
+poetry.lock
+pyproject.toml
+
+# SQLite database files (IMPORTANT: prevents readonly DB issues)
+sessions.db
+*.sqlite
+*.db
+*.sqlite3

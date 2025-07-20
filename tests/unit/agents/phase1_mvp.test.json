@@ -1,0 +1,19 @@
+{
+  "eval_set_id": "phase1_mvp_orchestrator_test",
+  "eval_cases": [
+    {
+      "eval_id": "basic_analysis",
+      "conversation": [{
+        "user_content": {
+          "parts": [{"text": "What can you help me with?"}]
+        },
+        "final_response": {
+          "parts": [{"text": "I can help you with various tasks"}]
+        },
+        "intermediate_data": {
+          "tool_uses": []
+        }
+      }]
+    }
+  ]
+}

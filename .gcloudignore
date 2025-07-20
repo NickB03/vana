@@ -1,76 +1,91 @@
-# Python cache
+# This file specifies files that are *not* uploaded to Google Cloud
+# using gcloud. It follows the same syntax as .gitignore, with the addition of
+# "#!include" directives (which insert the entries of the given .gitignore-style
+# file at that point).
+#
+# For more information, run:
+#   $ gcloud topic gcloudignore
+#
+.gcloudignore
+# If you would like to upload your .git directory, .gitignore file or files
+# from your .gitignore file, remove the corresponding line
+# below:
+.git
+.gitignore
+
+# Python pycache:
 __pycache__/
-*.pyc
-*.pyo
-*.pyd
-.Python
-*.so
+*.py[cod]
+*$py.class
 
-# Virtual environments
+# Virtual environments (CRITICAL - these are huge):
+.venv/
 venv/
-env/
 ENV/
+env/
+__pycache__/
 
-# IDE
+# Archive directories - IMPORTANT: Exclude to avoid ADK discovering old agents
+.archive/
+**/.archive/
+*.archive
+
+# Development files (can be large):
+.development/
+.claude_workspace/
+.chroma_db/
+.memory_db/
+.pytest_cache/
+*.log
+*.tmp
+
+# Large data files:
+*.pkl
+*.parquet
+*.csv
+*.json.gz
+*.tar.gz
+*.sqlite3
+
+# Test files:
+tests/
+pytest_cache/
+.coverage
+htmlcov/
+
+# Documentation and config (not needed for runtime):
+docs/
+PRPs/
+config/
+use-cases/
+logs/
+
+# Example agents - prevent ADK discovery:
+examples/
+
+# IDE files:
 .vscode/
 .idea/
 *.swp
 *.swo
 
-# OS
+# OS files:
 .DS_Store
 Thumbs.db
 
-# Git
-.git/
-.gitignore
-
-# Development files
-*.log
-.env.local
-.env.development
-.env.test
-test_*.py
-fix_*.py
-*_test.py
-*_fixed.py
-*_backup.py
-*_broken.py
-
-# Build artifacts  
-build/
-dist/
-*.egg-info/
-
-# Documentation
+# Documentation:
 docs/
+README.md
+CLAUDE.md
 *.md
-!README.md
 
-# Scripts
-scripts/
-monitor-*.sh
-check-*.sh
-deploy-*.sh
-emergency-*.sh
+# Node modules (if any):
+node_modules/
 
-# Temporary files
-tmp/
-temp/
-.development/
-.claude/
-
-# Frontend dev files (keep dist)
-vana-ui/node_modules/
-vana-ui/.env*
+# Frontend build artifacts (already built):
 vana-ui/src/
 vana-ui/public/
-vana-ui/index.html
-vana-ui/vite.config.ts
-vana-ui/tsconfig*.json
+vana-ui/node_modules/
 vana-ui/package*.json
-vana-ui/eslint.config.js
-vana-ui/.gitignore
-
-# Keep only essential deployment files
-# Everything else is ignored
+vana-ui/.env*
+vana-ui/README.md
