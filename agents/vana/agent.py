@@ -7,10 +7,10 @@ https://google.github.io/adk-docs/deploy/cloud-run/
 
 # Use pure delegation pattern with separate simple search agent
 # Reference: https://github.com/google/adk-python/issues/53
-from .orchestrator_pure_delegation import orchestrator_pure as enhanced_orchestrator
+from .orchestrator_pure_delegation import orchestrator_pure
 
 # ADK expects the agent to be named 'root_agent'
-root_agent = enhanced_orchestrator
+root_agent = orchestrator_pure
 
 # Note: For simplified testing, use the MVP orchestrator:
 # from .mvp_orchestrator import mvp_orchestrator

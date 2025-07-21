@@ -61,15 +61,15 @@ except ImportError as e:
 # Create synchronous web search tool
 # adk_web_search = create_web_search_sync_tool()  # Web search not available yet
 
-# Import enhanced orchestrator with specialists
+# Import orchestrator with specialists
 try:
-    from agents.vana.enhanced_orchestrator import enhanced_orchestrator
+    from agents.vana.agent import root_agent as orchestrator
 
-    # Use enhanced orchestrator as primary sub-agent
-    specialist_agents = [enhanced_orchestrator]
-    logger.info("✅ Enhanced orchestrator with specialists loaded")
+    # Use orchestrator as primary sub-agent
+    specialist_agents = [orchestrator]
+    logger.info("✅ Orchestrator with specialists loaded")
 except ImportError as e:
-    logger.warning(f"Warning: Enhanced orchestrator not available, falling back to basic specialists: {e}")
+    logger.warning(f"Warning: Orchestrator not available, falling back to basic specialists: {e}")
     try:
         # Fallback to individual specialists
         from agents.data_science.specialist import data_science_specialist
@@ -88,12 +88,12 @@ root_agent = LlmAgent(
     description="Intelligent AI assistant with core capabilities",
     instruction="""You are VANA, the conversational interface for a powerful multi-agent AI system.
 
-Your ONLY role is to receive user requests and immediately transfer them to the enhanced_orchestrator.
+Your ONLY role is to receive user requests and immediately transfer them to the orchestrator.
 
 CRITICAL TRANSFER RULE:
-1. For EVERY user request, immediately call: transfer_to_agent(agent_name="enhanced_orchestrator")
+1. For EVERY user request, immediately call: transfer_to_agent(agent_name="vana_orchestrator")
 2. Do NOT generate any response text - just call the transfer function
-3. The enhanced_orchestrator will handle the response
+3. The orchestrator will handle the response
 
 DO NOT:
 - Try to answer questions yourself
@@ -102,7 +102,7 @@ DO NOT:
 - Accept transfers FROM other agents (you are the entry point only)
 
 JUST:
-- Call transfer_to_agent(agent_name="enhanced_orchestrator") 
+- Call transfer_to_agent(agent_name="vana_orchestrator") 
 - Nothing else
 
 You are the entry point, not a destination for transfers.""",

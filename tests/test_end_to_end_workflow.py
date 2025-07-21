@@ -15,11 +15,11 @@ class TestEndToEndWorkflow:
     def test_security_specialist_workflow(self):
         """Test security task routing and execution."""
         with MockedGoogleAPI() as mock_ai:
-            from agents.vana.enhanced_orchestrator import enhanced_orchestrator
+            from agents.vana.agent import root_agent
             
             # Test security-related request
             request = "Check for security vulnerabilities in the login system"
-            result = enhanced_orchestrator.run(request, {})
+            result = root_agent.run(request, {})
             
             # Verify response
             assert isinstance(result, str)
@@ -31,11 +31,11 @@ class TestEndToEndWorkflow:
     def test_data_science_workflow(self):
         """Test data analysis task routing and execution."""
         with MockedGoogleAPI() as mock_ai:
-            from agents.vana.enhanced_orchestrator import enhanced_orchestrator
+            from agents.vana.agent import root_agent
             
             # Test data analysis request
             request = "Analyze this dataset and provide statistics: [1,2,3,4,5,6,7,8,9,10]"
-            result = enhanced_orchestrator.run(request, {})
+            result = root_agent.run(request, {})
             
             # Verify response
             assert isinstance(result, str)
@@ -46,11 +46,11 @@ class TestEndToEndWorkflow:
     def test_research_workflow(self):
         """Test research task routing and execution."""
         with MockedGoogleAPI() as mock_ai:
-            from agents.vana.enhanced_orchestrator import enhanced_orchestrator
+            from agents.vana.agent import root_agent
             
             # Test research request
             request = "Research the latest trends in artificial intelligence"
-            result = enhanced_orchestrator.run(request, {})
+            result = root_agent.run(request, {})
             
             # Verify response
             assert isinstance(result, str)
@@ -61,7 +61,7 @@ class TestEndToEndWorkflow:
     def test_file_operation_workflow(self):
         """Test direct tool usage without specialist routing."""
         with MockedGoogleAPI() as mock_ai:
-            from agents.vana.enhanced_orchestrator import enhanced_orchestrator
+            from agents.vana.agent import root_agent
             import tempfile
             import os
             
@@ -73,7 +73,7 @@ class TestEndToEndWorkflow:
             try:
                 # Test file reading request
                 request = f"Read the file {test_file}"
-                result = enhanced_orchestrator.run(request, {})
+                result = root_agent.run(request, {})
                 
                 # Verify response
                 assert isinstance(result, str)
@@ -89,21 +89,14 @@ class TestEndToEndWorkflow:
     def test_missing_specialist_graceful_handling(self):
         """Test graceful handling when specialist is not available."""
         # This test specifically tests our routing logic, not the full orchestrator
-        from agents.vana.enhanced_orchestrator import route_to_specialist
-        
-        # Test content creation request (specialist not available)
-        result = route_to_specialist("Write a blog post", "writing", {})
-        
-        # Should get helpful error message
-        assert isinstance(result, str)
-        assert "content creation specialist is not yet available" in result.lower()
-        
-        print(f"✅ Missing specialist handled gracefully: {result}")
+        # Note: route_to_specialist is not available in pure delegation pattern
+        # Skipping this test as pure delegation uses ADK's built-in routing
+        pytest.skip("route_to_specialist not available in pure delegation pattern")
     
     def test_orchestrator_with_context(self):
         """Test orchestrator with context parameter."""
         with MockedGoogleAPI() as mock_ai:
-            from agents.vana.enhanced_orchestrator import enhanced_orchestrator
+            from agents.vana.agent import root_agent
             
             # Test with context
             request = "Analyze the security of this system"
@@ -113,7 +106,7 @@ class TestEndToEndWorkflow:
                 "user_role": "admin"
             }
             
-            result = enhanced_orchestrator.run(request, context)
+            result = root_agent.run(request, context)
             
             # Verify response
             assert isinstance(result, str)
@@ -124,7 +117,7 @@ class TestEndToEndWorkflow:
     def test_orchestrator_metrics_tracking(self):
         """Test that orchestrator tracks metrics correctly."""
         with MockedGoogleAPI() as mock_ai:
-            from agents.vana.enhanced_orchestrator import enhanced_orchestrator
+            from agents.vana.agent import root_agent
             from lib._shared_libraries.orchestrator_metrics import get_orchestrator_metrics
             
             # Reset metrics
@@ -133,7 +126,7 @@ class TestEndToEndWorkflow:
             
             # Make a request
             request = "Check system security"
-            result = enhanced_orchestrator.run(request, {})
+            result = root_agent.run(request, {})
             
             # Check metrics were updated
             updated_count = metrics.metrics.get("total_requests", 0)
@@ -146,7 +139,7 @@ class TestEndToEndWorkflow:
     def test_full_delegation_chain(self):
         """Test complete delegation from orchestrator to specialist with all components."""
         with MockedGoogleAPI() as mock_ai:
-            from agents.vana.enhanced_orchestrator import enhanced_orchestrator
+            from agents.vana.agent import root_agent
             
             # Test multiple request types in sequence
             test_cases = [
@@ -159,7 +152,7 @@ class TestEndToEndWorkflow:
             
             results = []
             for request, expected_type in test_cases:
-                result = enhanced_orchestrator.run(request, {})
+                result = root_agent.run(request, {})
                 assert isinstance(result, str)
                 assert len(result) > 0
                 results.append((expected_type, len(result)))

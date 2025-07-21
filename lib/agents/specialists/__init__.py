@@ -16,11 +16,12 @@ except ImportError:
     data_science_specialist = None
     data_science_specialist_tool = None
 
-try:
-    from .security_specialist import security_specialist, security_specialist_tool
-except ImportError:
-    security_specialist = None
-    security_specialist_tool = None
+# Security specialist archived for later
+# try:
+#     from .security_specialist import security_specialist, security_specialist_tool
+# except ImportError:
+#     security_specialist = None
+#     security_specialist_tool = None
 
 try:
     from .devops_specialist import devops_specialist, devops_specialist_tool
@@ -32,6 +33,6 @@ except ImportError:
 __all__ = [
     "architecture_specialist_tool",
     "data_science_specialist_tool", 
-    "security_specialist_tool",
+    # "security_specialist_tool",  # Archived for later
     "devops_specialist_tool",
 ]

@@ -77,11 +77,11 @@ class TestPhase1ADK:
         """Test that orchestrator can be imported."""
         try:
             # Import should work with conftest.py path setup
-            from agents.vana.enhanced_orchestrator import enhanced_orchestrator
-            assert enhanced_orchestrator is not None
-            assert hasattr(enhanced_orchestrator, 'name')
-            assert hasattr(enhanced_orchestrator, 'model')
-            print(f"✅ Enhanced orchestrator imported successfully: {enhanced_orchestrator.name}")
+            from agents.vana.agent import root_agent
+            assert root_agent is not None
+            assert hasattr(root_agent, 'name')
+            assert hasattr(root_agent, 'model')
+            print(f"✅ Root agent imported successfully: {root_agent.name}")
         except ImportError as e:
             pytest.fail(f"Cannot import orchestrator: {e}")
 

@@ -32,33 +32,16 @@ def create_data_science_specialist() -> LlmAgent:
     return LlmAgent(
         name="data_science_specialist",
         model="gemini-2.5-flash",
-        description="Data analysis expert providing insights without code execution",
-        instruction="""You are a data science expert specializing in data analysis and insights.
+        description="Data science expert for analysis and insights",
+        instruction="""You are a data science specialist for analysis and insights.
 
-Due to the current environment, code execution is temporarily disabled. However, you can still provide valuable data analysis using the available tools.
+Use your tools to:
+1. Analyze data structure and statistics
+2. Identify patterns and correlations
+3. Check data quality
+4. Generate actionable insights
 
-Your capabilities include:
-- Statistical analysis (mean, median, standard deviation, etc.)
-- Correlation analysis between variables
-- Distribution analysis and shape detection
-- Data cleaning recommendations
-- Data quality assessment
-- Insight generation from analysis results
-
-When asked to analyze data:
-1. Use create_data_summary to understand the dataset structure
-2. Use analyze_data_simple for statistical analysis
-3. Use clean_data_basic to check for data quality issues
-4. Use generate_data_insights to provide actionable recommendations
-5. If data is in a file, use adk_read_file to access it first
-
-Important notes:
-- All analysis is done without external libraries (no pandas/numpy)
-- Focus on practical insights over complex modeling
-- Explain what advanced analysis would be possible with full libraries
-- Provide clear recommendations based on the analysis
-
-Always explain findings in clear, non-technical language and provide actionable next steps.""",
+Provide clear, practical recommendations based on your analysis.""",
         tools=[
             FunctionTool(analyze_data_simple),
             FunctionTool(generate_data_insights),

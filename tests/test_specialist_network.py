@@ -16,10 +16,10 @@ class TestSpecialistNetwork:
         """Test that all specialist agents load successfully."""
         with MockedGoogleAPI() as mock_ai:
             try:
-                from agents.vana.enhanced_orchestrator import enhanced_orchestrator
+                from agents.vana.agent import root_agent
                 
                 # Check that we have the expected specialists
-                sub_agents = getattr(enhanced_orchestrator, 'sub_agents', [])
+                sub_agents = getattr(root_agent, 'sub_agents', [])
                 specialist_names = [agent.name for agent in sub_agents]
                 
                 expected_specialists = [
@@ -52,20 +52,20 @@ class TestSpecialistNetwork:
         """Test orchestrator configuration with specialist network."""
         with MockedGoogleAPI() as mock_ai:
             try:
-                from agents.vana.enhanced_orchestrator import enhanced_orchestrator
+                from agents.vana.agent import root_agent
                 
                 # Validate orchestrator properties
-                assert enhanced_orchestrator.name == "enhanced_orchestrator"
-                assert "gemini" in enhanced_orchestrator.model.lower()
-                assert hasattr(enhanced_orchestrator, 'description')
-                assert hasattr(enhanced_orchestrator, 'instruction')
+                assert root_agent.name == "vana_orchestrator"
+                assert "gemini" in root_agent.model.lower()
+                assert hasattr(root_agent, 'description')
+                assert hasattr(root_agent, 'instruction')
                 
                 # Check tools are loaded
-                tools = getattr(enhanced_orchestrator, 'tools', [])
+                tools = getattr(root_agent, 'tools', [])
                 print(f"✅ Orchestrator has {len(tools)} tools loaded")
                 
                 # Check sub-agents
-                sub_agents = getattr(enhanced_orchestrator, 'sub_agents', [])
+                sub_agents = getattr(root_agent, 'sub_agents', [])
                 print(f"✅ Orchestrator has {len(sub_agents)} sub-agents")
                 
                 # Verify ADK compliance
@@ -154,17 +154,17 @@ class TestSpecialistNetwork:
         """Test that the system is ready for Phase 1 completion."""
         with MockedGoogleAPI() as mock_ai:
             try:
-                from agents.vana.enhanced_orchestrator import enhanced_orchestrator
+                from agents.vana.agent import root_agent
                 
                 # Check enhanced orchestrator loads with specialists
-                sub_agents = getattr(enhanced_orchestrator, 'sub_agents', [])
+                sub_agents = getattr(root_agent, 'sub_agents', [])
                 specialist_count = len([a for a in sub_agents if 'test' not in a.name.lower()])
                 
                 assert specialist_count >= 5, f"Expected at least 5 production specialists, got {specialist_count}"
                 
                 # Verify system state
                 checks = {
-                    "Enhanced orchestrator loaded": enhanced_orchestrator is not None,
+                    "Enhanced orchestrator loaded": root_agent is not None,
                     "Specialists loaded": len(sub_agents) >= 5,
                     "No Redis dependencies": True,  # We removed them
                     "ADK patterns followed": all(hasattr(a, 'name') and hasattr(a, 'model') for a in sub_agents)

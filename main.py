@@ -47,6 +47,18 @@ app: FastAPI = get_fast_api_app(
     web=SERVE_WEB_INTERFACE,
 )
 
+# Add health check endpoint
+@app.get("/health")
+async def health_check():
+    """Health check endpoint for Cloud Run"""
+    agent_status = verify_agent()
+    return {
+        "status": "healthy" if agent_status else "unhealthy",
+        "service": "vana",
+        "version": "1.0.0",
+        "agent_loaded": agent_status
+    }
+
 # Verify agent is available for health checks
 def verify_agent():
     """Verify VANA agent is properly loaded"""

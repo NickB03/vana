@@ -75,31 +75,32 @@ class TestIndividualSpecialists:
             except Exception as e:
                 pytest.fail(f"Data science specialist test failed: {e}")
     
-    def test_security_specialist_functionality(self):
-        """Test security specialist functions correctly."""
-        with MockedGoogleAPI() as mock_ai:
-            try:
-                from agents.specialists.security_specialist import security_specialist
-                
-                # Test basic properties
-                assert security_specialist.name == "security_specialist"
-                assert "gemini" in security_specialist.model.lower()
-                assert "security" in security_specialist.description.lower()
-                
-                # Test tools are loaded
-                tools = getattr(security_specialist, 'tools', [])
-                print(f"✅ Security specialist has {len(tools)} tools")
-                
-                # Test can handle security request
-                request = "Analyze security vulnerabilities in a web application"
-                response = security_specialist.run(request, {})
-                
-                assert isinstance(response, str)
-                assert len(response) > 0
-                print(f"✅ Security specialist responds to requests: {len(response)} chars")
-                
-            except Exception as e:
-                pytest.fail(f"Security specialist test failed: {e}")
+    # Security specialist archived for MVP
+    # def test_security_specialist_functionality(self):
+    #     """Test security specialist functions correctly."""
+    #     with MockedGoogleAPI() as mock_ai:
+    #         try:
+    #             from agents.specialists.security_specialist import security_specialist
+    #             
+    #             # Test basic properties
+    #             assert security_specialist.name == "security_specialist"
+    #             assert "gemini" in security_specialist.model.lower()
+    #             assert "security" in security_specialist.description.lower()
+    #             
+    #             # Test tools are loaded
+    #             tools = getattr(security_specialist, 'tools', [])
+    #             print(f"✅ Security specialist has {len(tools)} tools")
+    #             
+    #             # Test can handle security request
+    #             request = "Analyze security vulnerabilities in a web application"
+    #             response = security_specialist.run(request, {})
+    #             
+    #             assert isinstance(response, str)
+    #             assert len(response) > 0
+    #             print(f"✅ Security specialist responds to requests: {len(response)} chars")
+    #             
+    #         except Exception as e:
+    #             pytest.fail(f"Security specialist test failed: {e}")
     
     def test_devops_specialist_functionality(self):
         """Test DevOps specialist functions correctly."""

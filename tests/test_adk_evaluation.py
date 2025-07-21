@@ -61,7 +61,7 @@ class TestVANAAgentsADK:
     
     @pytest.mark.asyncio
     @pytest.mark.parametrize("test_file,agent_module", [
-        ("orchestrator.test.json", "agents.vana.enhanced_orchestrator"),
+        ("orchestrator.test.json", "agents.vana"),
         # Add more as specialists are implemented
         # ("data_analyst.test.json", "agents.specialists.data_analyst"),
         # ("security_analyst.test.json", "agents.specialists.security_analyst"),

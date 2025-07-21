@@ -15,23 +15,23 @@ class TestPhase1Orchestrator:
 
     def test_orchestrator_import(self):
         """Test that orchestrator can be imported without errors."""
-        from agents.vana.enhanced_orchestrator import enhanced_orchestrator
+        from agents.vana.agent import root_agent
         
-        assert enhanced_orchestrator is not None
-        assert enhanced_orchestrator.name == "enhanced_orchestrator"
-        assert enhanced_orchestrator.model == "gemini-2.5-flash"
+        assert root_agent is not None
+        assert root_agent.name == "vana_orchestrator"
+        assert root_agent.model == "gemini-2.5-flash"
     
     def test_orchestrator_has_tools(self):
         """Test that orchestrator has required tools loaded."""
-        from agents.vana.enhanced_orchestrator import enhanced_orchestrator
+        from agents.vana.agent import root_agent
         
         # Check that tools are available
-        assert hasattr(enhanced_orchestrator, 'tools')
-        assert len(enhanced_orchestrator.tools) > 0
+        assert hasattr(root_agent, 'tools')
+        assert len(root_agent.tools) > 0
         
         # Check specific tools are present (ADK auto-wraps functions)
         tool_names = []
-        for tool in enhanced_orchestrator.tools:
+        for tool in root_agent.tools:
             if hasattr(tool, 'name'):
                 tool_names.append(tool.name)
             elif hasattr(tool, '__name__'):
@@ -48,7 +48,7 @@ class TestPhase1Orchestrator:
     
     def test_orchestrator_tools_directly(self):
         """Test orchestrator tools can be called directly."""
-        from agents.vana.enhanced_orchestrator import enhanced_orchestrator
+        from agents.vana.agent import root_agent
         from lib._tools import adk_read_file, adk_write_file
         
         # Create a temporary file
@@ -107,14 +107,14 @@ class TestPhase1Orchestrator:
     
     def test_orchestrator_has_sub_agents(self):
         """Test orchestrator has sub-agents configured."""
-        from agents.vana.enhanced_orchestrator import enhanced_orchestrator
+        from agents.vana.agent import root_agent
         
         # Check that sub-agents are configured
-        assert hasattr(enhanced_orchestrator, 'sub_agents')
-        assert len(enhanced_orchestrator.sub_agents) > 0
+        assert hasattr(root_agent, 'sub_agents')
+        assert len(root_agent.sub_agents) > 0
         
         # Check that test specialist is available
-        sub_agent_names = [agent.name for agent in enhanced_orchestrator.sub_agents]
+        sub_agent_names = [agent.name for agent in root_agent.sub_agents]
         assert 'test_specialist' in sub_agent_names
     
     def test_sub_agent_can_be_accessed(self):
@@ -129,47 +129,26 @@ class TestPhase1Orchestrator:
     
     def test_routing_functions_exist(self):
         """Test that routing functions are available."""
-        from agents.vana.enhanced_orchestrator import route_to_specialist, analyze_and_route
-        
-        # Check that routing functions exist
-        assert route_to_specialist is not None
-        assert analyze_and_route is not None
-        assert callable(route_to_specialist)
-        assert callable(analyze_and_route)
+        # Note: Pure delegation pattern doesn't expose routing functions
+        # ADK handles routing internally via sub_agents
+        pytest.skip("Routing functions not exposed in pure delegation pattern")
+        return
     
     def test_route_to_specialist_basic(self):
         """Test basic routing functionality."""
-        from agents.vana.enhanced_orchestrator import route_to_specialist
-        
-        # Test with unknown task type
-        result = route_to_specialist("test request", "unknown_type", {})
-        assert result is not None
-        assert len(result) > 0
-        # Should indicate no specialist available
-        assert "no specialist" in result.lower() or "not available" in result.lower()
+        # Note: Pure delegation pattern doesn't expose routing functions
+        pytest.skip("Routing functions not exposed in pure delegation pattern")
     
     def test_routing_handles_no_specialists(self):
         """Test that routing handles the case when specialists aren't available."""
-        from agents.vana.enhanced_orchestrator import route_to_specialist
-        
-        # Test various requests when specialists not available
-        test_requests = [
-            ("check for security vulnerabilities", "security"),
-            ("analyze this data", "data_analysis"), 
-            ("review architecture", "architecture_review")
-        ]
-        
-        for request, task_type in test_requests:
-            result = route_to_specialist(request, task_type, {})
-            assert result is not None
-            assert len(result) > 0
-            # Should indicate specialists not available
-            assert ("not available" in result.lower() or 
-                   "cannot route" in result.lower())
+        # Note: Pure delegation pattern doesn't expose routing functions
+        pytest.skip("Routing functions not exposed in pure delegation pattern")
     
     def test_cache_operations(self):
         """Test orchestrator cache basic operations."""
-        from agents.vana.enhanced_orchestrator import orchestrator_cache
+        # Note: Pure delegation pattern doesn't expose internal cache directly
+        # Using the shared orchestrator cache instead
+        from lib._shared_libraries.orchestrator_cache import orchestrator_cache
         
         # Test cache set and get
         test_key = "test_key_phase1"
@@ -186,7 +165,9 @@ class TestPhase1Orchestrator:
     
     def test_cache_stats(self):
         """Test orchestrator cache statistics."""
-        from agents.vana.enhanced_orchestrator import orchestrator_cache
+        # Note: Pure delegation pattern doesn't expose internal cache directly
+        # Using the shared orchestrator cache instead
+        from lib._shared_libraries.orchestrator_cache import orchestrator_cache
         
         # Test stats functionality
         stats = orchestrator_cache.get_stats()
@@ -203,15 +184,9 @@ class TestPhase1Orchestrator:
     
     def test_metrics_stats_function(self):
         """Test orchestrator stats function works."""
-        from agents.vana.enhanced_orchestrator import get_orchestrator_stats
-        
-        # Get stats report
-        stats_report = get_orchestrator_stats()
-        
-        assert stats_report is not None
-        assert len(stats_report) > 0
-        assert "orchestrator" in stats_report.lower()
-        assert "metrics" in stats_report.lower()
+        # Note: Pure delegation pattern doesn't expose stats function directly
+        # Need to mock or skip this test
+        pytest.skip("get_orchestrator_stats not exposed in pure delegation pattern")
 
 
 # Integration tests (marked separately)
@@ -221,23 +196,15 @@ class TestPhase1Integration:
     @pytest.mark.integration
     def test_orchestrator_routing_logic(self):
         """Test orchestrator routing decisions."""
-        from agents.vana.enhanced_orchestrator import route_to_specialist
-        
-        # Test routing to available test specialist
-        result = route_to_specialist(
-            "This is a test request", 
-            "test_type",
-            {}
-        )
-        
-        assert result is not None
-        # Should indicate no specialist available for unknown type
-        assert "no specialist" in result.lower() or "not available" in result.lower()
+        # Note: Pure delegation pattern doesn't expose routing functions
+        pytest.skip("Routing functions not exposed in pure delegation pattern")
     
     @pytest.mark.integration  
     def test_cache_functionality(self):
         """Test orchestrator caching works."""
-        from agents.vana.enhanced_orchestrator import orchestrator_cache
+        # Note: Pure delegation pattern doesn't expose internal cache directly
+        # Using the shared orchestrator cache instead
+        from lib._shared_libraries.orchestrator_cache import orchestrator_cache
         
         # Test cache operations
         test_key = "test_key_phase1"

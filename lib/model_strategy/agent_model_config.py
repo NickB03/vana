@@ -60,8 +60,8 @@ class AgentModelConfigurator:
     # Default agent profiles
     DEFAULT_PROFILES = {
         # Orchestrators use flash model by default, can upgrade for complex tasks
-        "enhanced_orchestrator": AgentModelProfile(
-            agent_name="enhanced_orchestrator",
+        "vana_orchestrator": AgentModelProfile(
+            agent_name="vana_orchestrator",
             role=AgentRole.ORCHESTRATOR,
             default_model_type=ModelType.FLASH,
             fallback_model_type=ModelType.FLASH,
@@ -69,9 +69,9 @@ class AgentModelConfigurator:
             can_downgrade=False
         ),
         
-        # Security specialist always uses reasoning model
-        "security_specialist": AgentModelProfile(
-            agent_name="security_specialist",
+        # Security specialist archived for MVP
+        # "security_specialist": AgentModelProfile(
+        #     agent_name="security_specialist",
             role=AgentRole.SECURITY,
             default_model_type=ModelType.REASONING,
             fallback_model_type=ModelType.FLASH,

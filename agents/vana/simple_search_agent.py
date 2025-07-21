@@ -14,7 +14,7 @@ def create_simple_search_agent() -> LlmAgent:
     
     return LlmAgent(
         name="simple_search_agent",
-        model="gemini-2.0-flash",
+        model="gemini-2.5-flash",
         description="Simple search agent for basic factual queries",
         instruction="""You are a simple search assistant.
 
