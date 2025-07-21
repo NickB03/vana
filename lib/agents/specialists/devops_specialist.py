@@ -49,20 +49,18 @@ Focus on automation, security, and reliability with practical solutions.""",
             FunctionTool(generate_monitoring_config),
             adk_read_file,
             adk_list_directory,
-        ],  # Exactly 6 tools - ADK limit
+        ],  # Limited tool set for focused functionality
     )
-
-# Create the DevOps Specialist using factory function
-devops_specialist = create_devops_specialist()
 
 # Note: agent_tool conversion will be added when ADK integration is complete
 devops_specialist_tool = None  # Placeholder
 
 
 # Helper function for direct usage
-def analyze_devops(request: str, context: dict) -> str:
+def analyze_devops(request: str, context: dict = None) -> str:
     """
     Direct interface to DevOps specialist for testing.
+    Creates a fresh instance for each call.
 
     Args:
         request: DevOps analysis request
@@ -71,4 +69,5 @@ def analyze_devops(request: str, context: dict) -> str:
     Returns:
         DevOps analysis results
     """
-    return devops_specialist.run(request, context or {})
+    specialist = create_devops_specialist()
+    return specialist.run(request, context or {})

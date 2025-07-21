@@ -53,11 +53,8 @@ Focus on practical, actionable advice for better architecture.""",
             FunctionTool(evaluate_architecture_quality),
             adk_read_file,
             adk_list_directory,
-        ],  # Exactly 6 tools - ADK limit
+        ],  # Limited tool set for focused functionality
     )
-
-# Create the default Architecture Specialist instance (backward compatibility)
-architecture_specialist = create_architecture_specialist()
 
 # Export the specialist as a tool for orchestrator integration
 # Note: Will use agent_tool() when ADK integration is complete
@@ -65,9 +62,10 @@ architecture_specialist_tool = None  # Placeholder for now
 
 
 # Optional: Helper function for direct usage
-def analyze_architecture(request: str, context: dict) -> str:
+def analyze_architecture(request: str, context: dict = None) -> str:
     """
     Direct interface to architecture specialist for testing.
+    Creates a fresh instance for each call.
 
     Args:
         request: Analysis request
@@ -76,4 +74,5 @@ def analyze_architecture(request: str, context: dict) -> str:
     Returns:
         Analysis results
     """
-    return architecture_specialist.run(request, context or {})
+    specialist = create_architecture_specialist()
+    return specialist.run(request, context or {})

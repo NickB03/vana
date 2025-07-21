@@ -49,20 +49,18 @@ Provide clear, practical recommendations based on your analysis.""",
             FunctionTool(create_data_summary),
             adk_read_file,
             adk_search_knowledge,
-        ],  # Exactly 6 tools - ADK limit
+        ],  # Limited tool set for focused functionality
     )
-
-# Create the Data Science Specialist using factory function
-data_science_specialist = create_data_science_specialist()
 
 # Note: agent_tool conversion will be added when ADK integration is complete
 data_science_specialist_tool = None  # Placeholder
 
 
 # Helper function for direct usage
-def analyze_data(request: str, context: dict) -> str:
+def analyze_data(request: str, context: dict = None) -> str:
     """
     Direct interface to data science specialist for testing.
+    Creates a fresh instance for each call.
 
     Args:
         request: Analysis request
@@ -71,4 +69,5 @@ def analyze_data(request: str, context: dict) -> str:
     Returns:
         Analysis results
     """
-    return data_science_specialist.run(request, context or {})
+    specialist = create_data_science_specialist()
+    return specialist.run(request, context or {})

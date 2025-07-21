@@ -1,6 +1,9 @@
 """
 VANA Orchestrator - Pure Delegation Pattern
-Works around ADK limitation by using ONLY AgentTools, no built-in tools
+
+Design choice: Uses ONLY AgentTools for clean separation of concerns.
+This ensures the orchestrator focuses purely on routing without mixing
+direct tool execution with delegation responsibilities.
 """
 
 from google.adk.agents import LlmAgent
@@ -18,8 +21,11 @@ logger = get_logger("vana.orchestrator_pure_delegation")
 
 def create_pure_delegation_orchestrator() -> LlmAgent:
     """
-    Create orchestrator that uses ONLY AgentTools to avoid ADK limitation.
-    No built-in tools at orchestrator level.
+    Create orchestrator that uses ONLY AgentTools for clean architecture.
+    
+    Design decision: Pure delegation pattern ensures the orchestrator
+    focuses solely on routing decisions without executing any tools directly.
+    This provides clear separation of concerns and predictable behavior.
     """
     
     # Create specialist instances
@@ -57,7 +63,7 @@ Pick ONE specialist and delegate the ENTIRE request."""
             agent_tool.AgentTool(agent=data_science_specialist),
             agent_tool.AgentTool(agent=devops_specialist)
         ]
-        # NO built-in tools, ONLY AgentTools to avoid ADK limitation
+        # Design choice: ONLY AgentTools for clean separation of concerns
     )
 
 # Create the orchestrator instance

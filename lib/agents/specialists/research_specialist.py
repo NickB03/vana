@@ -37,10 +37,11 @@ Focus on accuracy and comprehensiveness.""",
 # Research tools will be added when available
 research_tools = []
 
-# Create the Research Specialist using factory function
-research_specialist = create_research_specialist()
-
 # Helper function for testing
 def conduct_research(request: str, context: dict = None) -> str:
-    """Direct interface to research specialist for testing."""
-    return research_specialist.run(request, context or {})
+    """
+    Direct interface to research specialist for testing.
+    Creates a fresh instance for each call.
+    """
+    specialist = create_research_specialist()
+    return specialist.run(request, context or {})
