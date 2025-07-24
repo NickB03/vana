@@ -10,6 +10,8 @@ from pathlib import Path
 
 import uvicorn
 from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from google.adk.cli.fast_api import get_fast_api_app
 
 # Add the project root to Python path for imports
@@ -29,14 +31,14 @@ PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
 AGENT_DIR = os.path.join(PROJECT_ROOT, "agents")
 
 # CORS configuration for web interface
-ALLOWED_ORIGINS = [
-    "http://localhost",
-    "http://localhost:8080", 
-    "http://localhost:8081",
-    "*"  # For Cloud Run deployment
+# Environment-aware CORS: permissive for development, restrictive for production
+ENVIRONMENT = os.getenv("ENVIRONMENT", "development")
+ALLOWED_ORIGINS = ["*"] if ENVIRONMENT == "development" else [
+    "https://vana-ai.com",  # Update with your actual domain when ready
+    # Add more allowed origins as needed for production
 ]
 
-# Enable web interface for Cloud Run deployment
+# Enable ADK web interface at /dev-ui
 SERVE_WEB_INTERFACE = True
 
 # Create FastAPI app using ADK's official pattern
@@ -46,6 +48,14 @@ app: FastAPI = get_fast_api_app(
     allow_origins=ALLOWED_ORIGINS,
     web=SERVE_WEB_INTERFACE,
 )
+
+# Remove the default root redirect that ADK adds
+# This allows us to serve our custom frontend at root
+for route in app.routes:
+    if hasattr(route, 'path') and route.path == '/' and hasattr(route, 'response_class'):
+        # Remove ADK's root redirect
+        app.routes.remove(route)
+        break
 
 # Add health check endpoint
 @app.get("/health")
@@ -69,6 +79,53 @@ def verify_agent():
     except Exception as e:
         print(f"❌ Failed to load VANA agent: {e}")
         return False
+
+# Serve static files (React build) if they exist
+FRONTEND_BUILD_DIR = os.path.join(PROJECT_ROOT, "frontend", "dist")
+if os.path.exists(FRONTEND_BUILD_DIR):
+    # Mount static assets
+    app.mount("/assets", StaticFiles(directory=os.path.join(FRONTEND_BUILD_DIR, "assets")), name="assets")
+    
+    # Serve React app at root
+    @app.get("/")
+    async def serve_root():
+        """Serve the React app at root"""
+        return FileResponse(os.path.join(FRONTEND_BUILD_DIR, "index.html"))
+    
+    # Serve index.html for favicon
+    @app.get("/favicon.ico")
+    async def serve_favicon():
+        favicon_path = os.path.join(FRONTEND_BUILD_DIR, "favicon.ico")
+        if os.path.exists(favicon_path):
+            return FileResponse(favicon_path)
+        # Return vite.svg as fallback
+        vite_svg_path = os.path.join(FRONTEND_BUILD_DIR, "vite.svg")
+        if os.path.exists(vite_svg_path):
+            return FileResponse(vite_svg_path)
+        return {"detail": "Not found"}, 404
+    
+    # Catch-all route for React Router - must be last
+    # This needs to be registered with lower priority than ADK routes
+    @app.get("/{full_path:path}")
+    async def serve_spa(full_path: str):
+        """Serve the React app for all non-API routes"""
+        # Skip ADK-specific paths
+        if full_path.startswith(("apps/", "run_sse", "list-apps", "debug/", "dev-ui/")):
+            # Return 404 to let ADK's error handler take over
+            from fastapi import HTTPException
+            raise HTTPException(status_code=404, detail="Not found")
+            
+        # Check if requesting a specific static file
+        file_path = os.path.join(FRONTEND_BUILD_DIR, full_path)
+        if os.path.exists(file_path) and os.path.isfile(file_path):
+            return FileResponse(file_path)
+            
+        # For all other routes, serve index.html (React Router handles client-side routing)
+        return FileResponse(os.path.join(FRONTEND_BUILD_DIR, "index.html"))
+    
+    print("📦 Frontend static files mounted successfully")
+else:
+    print("⚠️  Frontend build not found. Run 'cd frontend && npm run build' to build the frontend.")
 
 # Initialize agent verification
 if verify_agent():

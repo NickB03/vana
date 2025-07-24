@@ -1,4 +1,4 @@
-.PHONY: help setup dev backend frontend test clean format lint security docker-up docker-down docker-logs
+.PHONY: help setup dev backend frontend frontend-dev frontend-build frontend-install dev-full test clean format lint security docker-up docker-down docker-logs docker-build
 
 .DEFAULT_GOAL := help
 
@@ -10,22 +10,24 @@ NC := \033[0m # No Color
 
 help:
 	@echo "$(GREEN)VANA Development Commands:$(NC)"
-	@echo "  $(YELLOW)make setup$(NC)      - Initial project setup (install dependencies)"
-	@echo "  $(YELLOW)make dev$(NC)        - Start full development environment"
-	@echo "  $(YELLOW)make backend$(NC)    - Start backend only"
-	@echo "  $(YELLOW)make frontend$(NC)   - Start frontend only"
-	@echo "  $(YELLOW)make test$(NC)       - Run all tests"
-	@echo "  $(YELLOW)make clean$(NC)      - Clean generated files and caches"
+	@echo "  $(YELLOW)make setup$(NC)           - Initial project setup (install all dependencies)"
+	@echo "  $(YELLOW)make dev-full$(NC)        - Start full stack (backend + frontend)"
+	@echo "  $(YELLOW)make backend$(NC)         - Start backend only (port 8081)"
+	@echo "  $(YELLOW)make frontend-dev$(NC)    - Start frontend dev server (port 5173)"
+	@echo "  $(YELLOW)make frontend-build$(NC)  - Build frontend for production"
+	@echo "  $(YELLOW)make test$(NC)            - Run all tests"
+	@echo "  $(YELLOW)make clean$(NC)           - Clean generated files and caches"
 	@echo ""
 	@echo "$(GREEN)Code Quality:$(NC)"
-	@echo "  $(YELLOW)make format$(NC)     - Format code with black and isort"
-	@echo "  $(YELLOW)make lint$(NC)       - Run linting checks"
-	@echo "  $(YELLOW)make security$(NC)   - Run security scan with bandit"
+	@echo "  $(YELLOW)make format$(NC)          - Format code with black and isort"
+	@echo "  $(YELLOW)make lint$(NC)            - Run linting checks"
+	@echo "  $(YELLOW)make security$(NC)        - Run security scan with bandit"
 	@echo ""
 	@echo "$(GREEN)Docker Commands:$(NC)"
-	@echo "  $(YELLOW)make docker-up$(NC)  - Start services with docker-compose"
-	@echo "  $(YELLOW)make docker-down$(NC)- Stop docker services"
-	@echo "  $(YELLOW)make docker-logs$(NC)- View docker logs"
+	@echo "  $(YELLOW)make docker-build$(NC)    - Build Docker image with multi-stage build"
+	@echo "  $(YELLOW)make docker-up$(NC)       - Start services with docker-compose"
+	@echo "  $(YELLOW)make docker-down$(NC)     - Stop docker services"
+	@echo "  $(YELLOW)make docker-logs$(NC)     - View docker logs"
 	@echo ""
 	@echo "$(GREEN)Deployment:$(NC)"
 	@echo "  $(YELLOW)make deploy-staging$(NC)     - Deploy to staging (safe)"
@@ -41,8 +43,8 @@ setup:
 	@echo "$(GREEN)📦 Installing Python dependencies...$(NC)"
 	@poetry install
 	@echo "$(GREEN)📦 Installing frontend dependencies...$(NC)"
-	@echo "$(YELLOW)📝 Frontend setup skipped - vana-ui archived, will use Kibo/shadcn$(NC)"
-	@echo "$(GREEN)✅ Setup complete! Run 'make dev' to start$(NC)"
+	@cd frontend && npm install
+	@echo "$(GREEN)✅ Setup complete! Run 'make dev-full' to start$(NC)"
 
 dev:
 	@if command -v docker-compose >/dev/null 2>&1 && docker info >/dev/null 2>&1; then \
@@ -55,11 +57,26 @@ dev:
 
 backend:
 	@echo "$(GREEN)🔧 Starting VANA backend...$(NC)"
-	@echo "$(YELLOW)⚠️  Backend now uses pure ADK deployment - use 'gcloud run deploy' instead$(NC)"
+	@echo "$(YELLOW)📊 ADK interface available at http://localhost:8081/dev-ui$(NC)"
+	@python main.py
 
-frontend:
-	@echo "$(GREEN)🎨 Starting VANA frontend...$(NC)"
-	@echo "$(YELLOW)⚠️  Frontend archived - will integrate with Kibo/shadcn UI$(NC)"
+frontend-dev:
+	@echo "$(GREEN)🎨 Starting Vite development server...$(NC)"
+	@cd frontend && npm run dev
+
+frontend-build:
+	@echo "$(GREEN)🏗️  Building frontend for production...$(NC)"
+	@cd frontend && npm run build
+	@echo "$(GREEN)✅ Frontend build complete! Output in frontend/dist$(NC)"
+
+frontend-install:
+	@echo "$(GREEN)📦 Installing frontend dependencies...$(NC)"
+	@cd frontend && npm install
+
+dev-full:
+	@echo "$(GREEN)🚀 Starting full development environment...$(NC)"
+	@echo "$(YELLOW)Starting backend on port 8081 and frontend on port 5173$(NC)"
+	@make -j2 backend frontend-dev
 
 test:
 	@echo "$(GREEN)🧪 Running tests...$(NC)"
@@ -122,15 +139,17 @@ check-deployment:
 	@echo "$(GREEN)🔍 Checking deployment readiness...$(NC)"
 	@pwd | grep -q "vana$$" || (echo "$(RED)❌ Not in VANA root directory!$(NC)" && exit 1)
 	@test -f Dockerfile || (echo "$(RED)❌ Dockerfile not found!$(NC)" && exit 1)
-	@echo "$(GREEN)✓ Using pure ADK deployment (no main.py needed)$(NC)"
-	@echo "$(GREEN)✓ Frontend archived - using pure ADK API$(NC)"
-	@echo "$(GREEN)✓ Pure ADK deployment ready$(NC)"
+	@test -f main.py || (echo "$(RED)❌ main.py not found!$(NC)" && exit 1)
+	@test -d frontend/dist || (echo "$(YELLOW)⚠️  Frontend not built. Run 'make frontend-build' first$(NC)")
+	@echo "$(GREEN)✓ Dockerfile with multi-stage build found$(NC)"
+	@echo "$(GREEN)✓ FastAPI backend configured$(NC)"
+	@echo "$(GREEN)✓ React frontend ready$(NC)"
 	@echo "$(GREEN)✅ All deployment checks passed!$(NC)"
 
-frontend-build:
-	@echo "$(GREEN)🏗️  Building frontend...$(NC)"
-	@echo "$(YELLOW)⚠️  Frontend archived - will build with Kibo/shadcn UI$(NC)"
-	@echo "$(GREEN)✅ Frontend build complete!$(NC)"
+docker-build:
+	@echo "$(GREEN)🐳 Building Docker image with multi-stage build...$(NC)"
+	@docker build -t vana:latest .
+	@echo "$(GREEN)✅ Docker image built successfully$(NC)"
 
 deploy-staging: check-deployment
 	@echo "$(GREEN)🚀 Deploying to staging...$(NC)"

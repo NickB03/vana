@@ -1,6 +1,32 @@
 {
-  "tool_trajectory_avg_score": 0.7,
-  "response_match_score": 0.7,
-  "overall_pass_rate": 0.8,
-  "description": "Relaxed configuration for MVP testing - focuses on functionality over perfect scores"
+  "criteria": {
+    "tool_trajectory_avg_score": 0.95,
+    "response_match_score": 0.80
+  },
+  "evaluation_method": "in_order",
+  "timeout_seconds": 30,
+  "retry_on_failure": true,
+  "max_retries": 2,
+  "test_categories": {
+    "orchestrator": {
+      "required_score": 0.95,
+      "description": "Tests for orchestrator routing and delegation"
+    },
+    "specialists": {
+      "required_score": 0.90,
+      "description": "Tests for individual specialist agents"
+    },
+    "tools": {
+      "required_score": 0.95,
+      "description": "Tests for tool usage patterns"
+    },
+    "integration": {
+      "required_score": 0.85,
+      "description": "Multi-agent workflow tests"
+    },
+    "performance": {
+      "required_score": 0.80,
+      "description": "Response time and efficiency tests"
+    }
+  }
 }

@@ -1,4 +1,4 @@
-# ADK-compliant Dockerfile for Cloud Run deployment
+# Backend-only Dockerfile for VANA (frontend archived)
 FROM python:3.13-slim
 
 # Install build dependencies for packages that need compilation
@@ -17,14 +17,18 @@ RUN pip install --no-cache-dir -r requirements.txt
 RUN adduser --disabled-password --gecos "" vanauser && \
     chown -R vanauser:vanauser /app
 
-# Copy application source
-COPY . .
+# Copy application code
+COPY --chown=vanauser:vanauser . .
 
 # Switch to non-root user
 USER vanauser
 
-# Set user PATH for local bin
-ENV PATH="/home/vanauser/.local/bin:$PATH"
+# Expose port (Cloud Run uses PORT env var)
+EXPOSE 8081
 
-# Use PORT environment variable for Cloud Run compatibility
-CMD ["sh", "-c", "uvicorn main:app --host 0.0.0.0 --port ${PORT:-8081}"]
+# Set environment variables
+ENV PYTHONUNBUFFERED=1
+ENV PORT=8081
+
+# Run the application
+CMD ["python", "main.py"]
