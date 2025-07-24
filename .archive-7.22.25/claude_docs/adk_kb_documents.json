@@ -1,0 +1,926 @@
+[
+  {
+    "id": "adk_kb_llmagent_0",
+    "content": "# LlmAgent\n\nCore agent class for creating LLM-powered agents\n\n## Overview\n\nLlmAgent is a core component of the Google Agent Development Kit (ADK). This documentation covers:\n\n- Basic usage patterns\n- Advanced configuration options\n- Best practices and examples\n- Common troubleshooting scenarios\n\n## Key Features\n\n- Production-ready implementation\n- Seamless integration with other ADK components\n- Comprehensive error handling\n- Performance optimizations\n\n## Usage Examples\n\n```python\n# Example implementation\nfrom google.adk.agents import LlmAgent\nfrom google.adk.tools import llmagent\n\n# Basic usage pattern\nagent = LlmAgent(\n    name=\"example_agent\",\n    model=\"gemini-2.5-flash\",\n    description=\"Example agent using LlmAgent\",\n    instruction=\"You are an example agent demonstrating LlmAgent\",\n    tools=[llmagent]\n)\n```\n\n## Best Practices\n\n1. Always follow ADK naming conventions\n2. Include comprehensive tool docstrings\n3. Handle errors gracefully\n4. Use appropriate tool selection logic\n5. Test thoroughly before deployment\n\n## Related Components\n\n- Works with other ADK tools and agents\n- Integrates with Vertex AI and Cloud Run\n- Supports state management and callbacks\n- Compatible with multi-agent workflows\n\n## Troubleshooting\n\nCommon issues and solutions:\n- Configuration problems\n- Integration challenges\n- Performance concerns\n- Deployment issues\n\nFor more information, see the complete ADK documentation.\n",
+    "metadata": {
+      "source": "adk_knowledge_base",
+      "type": "documentation",
+      "topic": "LlmAgent",
+      "category": "adk_reference",
+      "indexed_at": "2025-07-22T14:24:58.329462"
+    }
+  },
+  {
+    "id": "adk_kb_functiontool_1",
+    "content": "# FunctionTool\n\nTool wrapper for Python functions\n\n## Overview\n\nFunctionTool is a core component of the Google Agent Development Kit (ADK). This documentation covers:\n\n- Basic usage patterns\n- Advanced configuration options\n- Best practices and examples\n- Common troubleshooting scenarios\n\n## Key Features\n\n- Production-ready implementation\n- Seamless integration with other ADK components\n- Comprehensive error handling\n- Performance optimizations\n\n## Usage Examples\n\n```python\n# Example implementation\nfrom google.adk.agents import LlmAgent\nfrom google.adk.tools import functiontool\n\n# Basic usage pattern\nagent = LlmAgent(\n    name=\"example_agent\",\n    model=\"gemini-2.5-flash\",\n    description=\"Example agent using FunctionTool\",\n    instruction=\"You are an example agent demonstrating FunctionTool\",\n    tools=[functiontool]\n)\n```\n\n## Best Practices\n\n1. Always follow ADK naming conventions\n2. Include comprehensive tool docstrings\n3. Handle errors gracefully\n4. Use appropriate tool selection logic\n5. Test thoroughly before deployment\n\n## Related Components\n\n- Works with other ADK tools and agents\n- Integrates with Vertex AI and Cloud Run\n- Supports state management and callbacks\n- Compatible with multi-agent workflows\n\n## Troubleshooting\n\nCommon issues and solutions:\n- Configuration problems\n- Integration challenges\n- Performance concerns\n- Deployment issues\n\nFor more information, see the complete ADK documentation.\n",
+    "metadata": {
+      "source": "adk_knowledge_base",
+      "type": "documentation",
+      "topic": "FunctionTool",
+      "category": "adk_reference",
+      "indexed_at": "2025-07-22T14:24:58.329470"
+    }
+  },
+  {
+    "id": "adk_kb_agenttool_2",
+    "content": "# AgentTool\n\nTool wrapper for other agents\n\n## Overview\n\nAgentTool is a core component of the Google Agent Development Kit (ADK). This documentation covers:\n\n- Basic usage patterns\n- Advanced configuration options\n- Best practices and examples\n- Common troubleshooting scenarios\n\n## Key Features\n\n- Production-ready implementation\n- Seamless integration with other ADK components\n- Comprehensive error handling\n- Performance optimizations\n\n## Usage Examples\n\n```python\n# Example implementation\nfrom google.adk.agents import LlmAgent\nfrom google.adk.tools import agenttool\n\n# Basic usage pattern\nagent = LlmAgent(\n    name=\"example_agent\",\n    model=\"gemini-2.5-flash\",\n    description=\"Example agent using AgentTool\",\n    instruction=\"You are an example agent demonstrating AgentTool\",\n    tools=[agenttool]\n)\n```\n\n## Best Practices\n\n1. Always follow ADK naming conventions\n2. Include comprehensive tool docstrings\n3. Handle errors gracefully\n4. Use appropriate tool selection logic\n5. Test thoroughly before deployment\n\n## Related Components\n\n- Works with other ADK tools and agents\n- Integrates with Vertex AI and Cloud Run\n- Supports state management and callbacks\n- Compatible with multi-agent workflows\n\n## Troubleshooting\n\nCommon issues and solutions:\n- Configuration problems\n- Integration challenges\n- Performance concerns\n- Deployment issues\n\nFor more information, see the complete ADK documentation.\n",
+    "metadata": {
+      "source": "adk_knowledge_base",
+      "type": "documentation",
+      "topic": "AgentTool",
+      "category": "adk_reference",
+      "indexed_at": "2025-07-22T14:24:58.329472"
+    }
+  },
+  {
+    "id": "adk_kb_google_search_3",
+    "content": "# google_search\n\nBuilt-in web search tool\n\n## Overview\n\ngoogle_search is a core component of the Google Agent Development Kit (ADK). This documentation covers:\n\n- Basic usage patterns\n- Advanced configuration options\n- Best practices and examples\n- Common troubleshooting scenarios\n\n## Key Features\n\n- Production-ready implementation\n- Seamless integration with other ADK components\n- Comprehensive error handling\n- Performance optimizations\n\n## Usage Examples\n\n```python\n# Example implementation\nfrom google.adk.agents import LlmAgent\nfrom google.adk.tools import google_search\n\n# Basic usage pattern\nagent = LlmAgent(\n    name=\"example_agent\",\n    model=\"gemini-2.5-flash\",\n    description=\"Example agent using google_search\",\n    instruction=\"You are an example agent demonstrating google_search\",\n    tools=[google_search]\n)\n```\n\n## Best Practices\n\n1. Always follow ADK naming conventions\n2. Include comprehensive tool docstrings\n3. Handle errors gracefully\n4. Use appropriate tool selection logic\n5. Test thoroughly before deployment\n\n## Related Components\n\n- Works with other ADK tools and agents\n- Integrates with Vertex AI and Cloud Run\n- Supports state management and callbacks\n- Compatible with multi-agent workflows\n\n## Troubleshooting\n\nCommon issues and solutions:\n- Configuration problems\n- Integration challenges\n- Performance concerns\n- Deployment issues\n\nFor more information, see the complete ADK documentation.\n",
+    "metadata": {
+      "source": "adk_knowledge_base",
+      "type": "documentation",
+      "topic": "google_search",
+      "category": "adk_reference",
+      "indexed_at": "2025-07-22T14:24:58.329474"
+    }
+  },
+  {
+    "id": "adk_kb_load_memory_4",
+    "content": "# load_memory\n\nTool for accessing Vertex AI RAG corpus\n\n## Overview\n\nload_memory is a core component of the Google Agent Development Kit (ADK). This documentation covers:\n\n- Basic usage patterns\n- Advanced configuration options\n- Best practices and examples\n- Common troubleshooting scenarios\n\n## Key Features\n\n- Production-ready implementation\n- Seamless integration with other ADK components\n- Comprehensive error handling\n- Performance optimizations\n\n## Usage Examples\n\n```python\n# Example implementation\nfrom google.adk.agents import LlmAgent\nfrom google.adk.tools import load_memory\n\n# Basic usage pattern\nagent = LlmAgent(\n    name=\"example_agent\",\n    model=\"gemini-2.5-flash\",\n    description=\"Example agent using load_memory\",\n    instruction=\"You are an example agent demonstrating load_memory\",\n    tools=[load_memory]\n)\n```\n\n## Best Practices\n\n1. Always follow ADK naming conventions\n2. Include comprehensive tool docstrings\n3. Handle errors gracefully\n4. Use appropriate tool selection logic\n5. Test thoroughly before deployment\n\n## Related Components\n\n- Works with other ADK tools and agents\n- Integrates with Vertex AI and Cloud Run\n- Supports state management and callbacks\n- Compatible with multi-agent workflows\n\n## Troubleshooting\n\nCommon issues and solutions:\n- Configuration problems\n- Integration challenges\n- Performance concerns\n- Deployment issues\n\nFor more information, see the complete ADK documentation.\n",
+    "metadata": {
+      "source": "adk_knowledge_base",
+      "type": "documentation",
+      "topic": "load_memory",
+      "category": "adk_reference",
+      "indexed_at": "2025-07-22T14:24:58.329475"
+    }
+  },
+  {
+    "id": "adk_kb_session_management_5",
+    "content": "# Session Management\n\nManaging state across conversations\n\n## Overview\n\nSession Management is a core component of the Google Agent Development Kit (ADK). This documentation covers:\n\n- Basic usage patterns\n- Advanced configuration options\n- Best practices and examples\n- Common troubleshooting scenarios\n\n## Key Features\n\n- Production-ready implementation\n- Seamless integration with other ADK components\n- Comprehensive error handling\n- Performance optimizations\n\n## Usage Examples\n\n```python\n# Example implementation\nfrom google.adk.agents import LlmAgent\nfrom google.adk.tools import session_management\n\n# Basic usage pattern\nagent = LlmAgent(\n    name=\"example_agent\",\n    model=\"gemini-2.5-flash\",\n    description=\"Example agent using Session Management\",\n    instruction=\"You are an example agent demonstrating Session Management\",\n    tools=[session_management]\n)\n```\n\n## Best Practices\n\n1. Always follow ADK naming conventions\n2. Include comprehensive tool docstrings\n3. Handle errors gracefully\n4. Use appropriate tool selection logic\n5. Test thoroughly before deployment\n\n## Related Components\n\n- Works with other ADK tools and agents\n- Integrates with Vertex AI and Cloud Run\n- Supports state management and callbacks\n- Compatible with multi-agent workflows\n\n## Troubleshooting\n\nCommon issues and solutions:\n- Configuration problems\n- Integration challenges\n- Performance concerns\n- Deployment issues\n\nFor more information, see the complete ADK documentation.\n",
+    "metadata": {
+      "source": "adk_knowledge_base",
+      "type": "documentation",
+      "topic": "Session Management",
+      "category": "adk_reference",
+      "indexed_at": "2025-07-22T14:24:58.329479"
+    }
+  },
+  {
+    "id": "adk_kb_multi-agent_systems_6",
+    "content": "# Multi-Agent Systems\n\nOrchestrating multiple agents\n\n## Overview\n\nMulti-Agent Systems is a core component of the Google Agent Development Kit (ADK). This documentation covers:\n\n- Basic usage patterns\n- Advanced configuration options\n- Best practices and examples\n- Common troubleshooting scenarios\n\n## Key Features\n\n- Production-ready implementation\n- Seamless integration with other ADK components\n- Comprehensive error handling\n- Performance optimizations\n\n## Usage Examples\n\n```python\n# Example implementation\nfrom google.adk.agents import LlmAgent\nfrom google.adk.tools import multi-agent_systems\n\n# Basic usage pattern\nagent = LlmAgent(\n    name=\"example_agent\",\n    model=\"gemini-2.5-flash\",\n    description=\"Example agent using Multi-Agent Systems\",\n    instruction=\"You are an example agent demonstrating Multi-Agent Systems\",\n    tools=[multi-agent_systems]\n)\n```\n\n## Best Practices\n\n1. Always follow ADK naming conventions\n2. Include comprehensive tool docstrings\n3. Handle errors gracefully\n4. Use appropriate tool selection logic\n5. Test thoroughly before deployment\n\n## Related Components\n\n- Works with other ADK tools and agents\n- Integrates with Vertex AI and Cloud Run\n- Supports state management and callbacks\n- Compatible with multi-agent workflows\n\n## Troubleshooting\n\nCommon issues and solutions:\n- Configuration problems\n- Integration challenges\n- Performance concerns\n- Deployment issues\n\nFor more information, see the complete ADK documentation.\n",
+    "metadata": {
+      "source": "adk_knowledge_base",
+      "type": "documentation",
+      "topic": "Multi-Agent Systems",
+      "category": "adk_reference",
+      "indexed_at": "2025-07-22T14:24:58.329481"
+    }
+  },
+  {
+    "id": "adk_kb_tool_registration_7",
+    "content": "# Tool Registration\n\nAdding tools to agents\n\n## Overview\n\nTool Registration is a core component of the Google Agent Development Kit (ADK). This documentation covers:\n\n- Basic usage patterns\n- Advanced configuration options\n- Best practices and examples\n- Common troubleshooting scenarios\n\n## Key Features\n\n- Production-ready implementation\n- Seamless integration with other ADK components\n- Comprehensive error handling\n- Performance optimizations\n\n## Usage Examples\n\n```python\n# Example implementation\nfrom google.adk.agents import LlmAgent\nfrom google.adk.tools import tool_registration\n\n# Basic usage pattern\nagent = LlmAgent(\n    name=\"example_agent\",\n    model=\"gemini-2.5-flash\",\n    description=\"Example agent using Tool Registration\",\n    instruction=\"You are an example agent demonstrating Tool Registration\",\n    tools=[tool_registration]\n)\n```\n\n## Best Practices\n\n1. Always follow ADK naming conventions\n2. Include comprehensive tool docstrings\n3. Handle errors gracefully\n4. Use appropriate tool selection logic\n5. Test thoroughly before deployment\n\n## Related Components\n\n- Works with other ADK tools and agents\n- Integrates with Vertex AI and Cloud Run\n- Supports state management and callbacks\n- Compatible with multi-agent workflows\n\n## Troubleshooting\n\nCommon issues and solutions:\n- Configuration problems\n- Integration challenges\n- Performance concerns\n- Deployment issues\n\nFor more information, see the complete ADK documentation.\n",
+    "metadata": {
+      "source": "adk_knowledge_base",
+      "type": "documentation",
+      "topic": "Tool Registration",
+      "category": "adk_reference",
+      "indexed_at": "2025-07-22T14:24:58.329482"
+    }
+  },
+  {
+    "id": "adk_kb_state_variables_8",
+    "content": "# State Variables\n\nUsing {var} templating in instructions\n\n## Overview\n\nState Variables is a core component of the Google Agent Development Kit (ADK). This documentation covers:\n\n- Basic usage patterns\n- Advanced configuration options\n- Best practices and examples\n- Common troubleshooting scenarios\n\n## Key Features\n\n- Production-ready implementation\n- Seamless integration with other ADK components\n- Comprehensive error handling\n- Performance optimizations\n\n## Usage Examples\n\n```python\n# Example implementation\nfrom google.adk.agents import LlmAgent\nfrom google.adk.tools import state_variables\n\n# Basic usage pattern\nagent = LlmAgent(\n    name=\"example_agent\",\n    model=\"gemini-2.5-flash\",\n    description=\"Example agent using State Variables\",\n    instruction=\"You are an example agent demonstrating State Variables\",\n    tools=[state_variables]\n)\n```\n\n## Best Practices\n\n1. Always follow ADK naming conventions\n2. Include comprehensive tool docstrings\n3. Handle errors gracefully\n4. Use appropriate tool selection logic\n5. Test thoroughly before deployment\n\n## Related Components\n\n- Works with other ADK tools and agents\n- Integrates with Vertex AI and Cloud Run\n- Supports state management and callbacks\n- Compatible with multi-agent workflows\n\n## Troubleshooting\n\nCommon issues and solutions:\n- Configuration problems\n- Integration challenges\n- Performance concerns\n- Deployment issues\n\nFor more information, see the complete ADK documentation.\n",
+    "metadata": {
+      "source": "adk_knowledge_base",
+      "type": "documentation",
+      "topic": "State Variables",
+      "category": "adk_reference",
+      "indexed_at": "2025-07-22T14:24:58.329484"
+    }
+  },
+  {
+    "id": "adk_kb_callbacks_9",
+    "content": "# Callbacks\n\nHandling agent lifecycle events\n\n## Overview\n\nCallbacks is a core component of the Google Agent Development Kit (ADK). This documentation covers:\n\n- Basic usage patterns\n- Advanced configuration options\n- Best practices and examples\n- Common troubleshooting scenarios\n\n## Key Features\n\n- Production-ready implementation\n- Seamless integration with other ADK components\n- Comprehensive error handling\n- Performance optimizations\n\n## Usage Examples\n\n```python\n# Example implementation\nfrom google.adk.agents import LlmAgent\nfrom google.adk.tools import callbacks\n\n# Basic usage pattern\nagent = LlmAgent(\n    name=\"example_agent\",\n    model=\"gemini-2.5-flash\",\n    description=\"Example agent using Callbacks\",\n    instruction=\"You are an example agent demonstrating Callbacks\",\n    tools=[callbacks]\n)\n```\n\n## Best Practices\n\n1. Always follow ADK naming conventions\n2. Include comprehensive tool docstrings\n3. Handle errors gracefully\n4. Use appropriate tool selection logic\n5. Test thoroughly before deployment\n\n## Related Components\n\n- Works with other ADK tools and agents\n- Integrates with Vertex AI and Cloud Run\n- Supports state management and callbacks\n- Compatible with multi-agent workflows\n\n## Troubleshooting\n\nCommon issues and solutions:\n- Configuration problems\n- Integration challenges\n- Performance concerns\n- Deployment issues\n\nFor more information, see the complete ADK documentation.\n",
+    "metadata": {
+      "source": "adk_knowledge_base",
+      "type": "documentation",
+      "topic": "Callbacks",
+      "category": "adk_reference",
+      "indexed_at": "2025-07-22T14:24:58.329485"
+    }
+  },
+  {
+    "id": "adk_kb_workflow_agents_10",
+    "content": "# Workflow Agents\n\nSequential, Parallel, and Loop agents\n\n## Overview\n\nWorkflow Agents is a core component of the Google Agent Development Kit (ADK). This documentation covers:\n\n- Basic usage patterns\n- Advanced configuration options\n- Best practices and examples\n- Common troubleshooting scenarios\n\n## Key Features\n\n- Production-ready implementation\n- Seamless integration with other ADK components\n- Comprehensive error handling\n- Performance optimizations\n\n## Usage Examples\n\n```python\n# Example implementation\nfrom google.adk.agents import LlmAgent\nfrom google.adk.tools import workflow_agents\n\n# Basic usage pattern\nagent = LlmAgent(\n    name=\"example_agent\",\n    model=\"gemini-2.5-flash\",\n    description=\"Example agent using Workflow Agents\",\n    instruction=\"You are an example agent demonstrating Workflow Agents\",\n    tools=[workflow_agents]\n)\n```\n\n## Best Practices\n\n1. Always follow ADK naming conventions\n2. Include comprehensive tool docstrings\n3. Handle errors gracefully\n4. Use appropriate tool selection logic\n5. Test thoroughly before deployment\n\n## Related Components\n\n- Works with other ADK tools and agents\n- Integrates with Vertex AI and Cloud Run\n- Supports state management and callbacks\n- Compatible with multi-agent workflows\n\n## Troubleshooting\n\nCommon issues and solutions:\n- Configuration problems\n- Integration challenges\n- Performance concerns\n- Deployment issues\n\nFor more information, see the complete ADK documentation.\n",
+    "metadata": {
+      "source": "adk_knowledge_base",
+      "type": "documentation",
+      "topic": "Workflow Agents",
+      "category": "adk_reference",
+      "indexed_at": "2025-07-22T14:24:58.329488"
+    }
+  },
+  {
+    "id": "adk_kb_deployment_11",
+    "content": "# Deployment\n\nDeploying agents to Cloud Run\n\n## Overview\n\nDeployment is a core component of the Google Agent Development Kit (ADK). This documentation covers:\n\n- Basic usage patterns\n- Advanced configuration options\n- Best practices and examples\n- Common troubleshooting scenarios\n\n## Key Features\n\n- Production-ready implementation\n- Seamless integration with other ADK components\n- Comprehensive error handling\n- Performance optimizations\n\n## Usage Examples\n\n```python\n# Example implementation\nfrom google.adk.agents import LlmAgent\nfrom google.adk.tools import deployment\n\n# Basic usage pattern\nagent = LlmAgent(\n    name=\"example_agent\",\n    model=\"gemini-2.5-flash\",\n    description=\"Example agent using Deployment\",\n    instruction=\"You are an example agent demonstrating Deployment\",\n    tools=[deployment]\n)\n```\n\n## Best Practices\n\n1. Always follow ADK naming conventions\n2. Include comprehensive tool docstrings\n3. Handle errors gracefully\n4. Use appropriate tool selection logic\n5. Test thoroughly before deployment\n\n## Related Components\n\n- Works with other ADK tools and agents\n- Integrates with Vertex AI and Cloud Run\n- Supports state management and callbacks\n- Compatible with multi-agent workflows\n\n## Troubleshooting\n\nCommon issues and solutions:\n- Configuration problems\n- Integration challenges\n- Performance concerns\n- Deployment issues\n\nFor more information, see the complete ADK documentation.\n",
+    "metadata": {
+      "source": "adk_knowledge_base",
+      "type": "documentation",
+      "topic": "Deployment",
+      "category": "adk_reference",
+      "indexed_at": "2025-07-22T14:24:58.329489"
+    }
+  },
+  {
+    "id": "adk_kb_best_practices_12",
+    "content": "# Best Practices\n\nADK development patterns\n\n## Overview\n\nBest Practices is a core component of the Google Agent Development Kit (ADK). This documentation covers:\n\n- Basic usage patterns\n- Advanced configuration options\n- Best practices and examples\n- Common troubleshooting scenarios\n\n## Key Features\n\n- Production-ready implementation\n- Seamless integration with other ADK components\n- Comprehensive error handling\n- Performance optimizations\n\n## Usage Examples\n\n```python\n# Example implementation\nfrom google.adk.agents import LlmAgent\nfrom google.adk.tools import best_practices\n\n# Basic usage pattern\nagent = LlmAgent(\n    name=\"example_agent\",\n    model=\"gemini-2.5-flash\",\n    description=\"Example agent using Best Practices\",\n    instruction=\"You are an example agent demonstrating Best Practices\",\n    tools=[best_practices]\n)\n```\n\n## Best Practices\n\n1. Always follow ADK naming conventions\n2. Include comprehensive tool docstrings\n3. Handle errors gracefully\n4. Use appropriate tool selection logic\n5. Test thoroughly before deployment\n\n## Related Components\n\n- Works with other ADK tools and agents\n- Integrates with Vertex AI and Cloud Run\n- Supports state management and callbacks\n- Compatible with multi-agent workflows\n\n## Troubleshooting\n\nCommon issues and solutions:\n- Configuration problems\n- Integration challenges\n- Performance concerns\n- Deployment issues\n\nFor more information, see the complete ADK documentation.\n",
+    "metadata": {
+      "source": "adk_knowledge_base",
+      "type": "documentation",
+      "topic": "Best Practices",
+      "category": "adk_reference",
+      "indexed_at": "2025-07-22T14:24:58.329491"
+    }
+  },
+  {
+    "id": "adk_kb_error_handling_13",
+    "content": "# Error Handling\n\nManaging agent failures\n\n## Overview\n\nError Handling is a core component of the Google Agent Development Kit (ADK). This documentation covers:\n\n- Basic usage patterns\n- Advanced configuration options\n- Best practices and examples\n- Common troubleshooting scenarios\n\n## Key Features\n\n- Production-ready implementation\n- Seamless integration with other ADK components\n- Comprehensive error handling\n- Performance optimizations\n\n## Usage Examples\n\n```python\n# Example implementation\nfrom google.adk.agents import LlmAgent\nfrom google.adk.tools import error_handling\n\n# Basic usage pattern\nagent = LlmAgent(\n    name=\"example_agent\",\n    model=\"gemini-2.5-flash\",\n    description=\"Example agent using Error Handling\",\n    instruction=\"You are an example agent demonstrating Error Handling\",\n    tools=[error_handling]\n)\n```\n\n## Best Practices\n\n1. Always follow ADK naming conventions\n2. Include comprehensive tool docstrings\n3. Handle errors gracefully\n4. Use appropriate tool selection logic\n5. Test thoroughly before deployment\n\n## Related Components\n\n- Works with other ADK tools and agents\n- Integrates with Vertex AI and Cloud Run\n- Supports state management and callbacks\n- Compatible with multi-agent workflows\n\n## Troubleshooting\n\nCommon issues and solutions:\n- Configuration problems\n- Integration challenges\n- Performance concerns\n- Deployment issues\n\nFor more information, see the complete ADK documentation.\n",
+    "metadata": {
+      "source": "adk_knowledge_base",
+      "type": "documentation",
+      "topic": "Error Handling",
+      "category": "adk_reference",
+      "indexed_at": "2025-07-22T14:24:58.329492"
+    }
+  },
+  {
+    "id": "adk_kb_performance_14",
+    "content": "# Performance\n\nOptimizing agent performance\n\n## Overview\n\nPerformance is a core component of the Google Agent Development Kit (ADK). This documentation covers:\n\n- Basic usage patterns\n- Advanced configuration options\n- Best practices and examples\n- Common troubleshooting scenarios\n\n## Key Features\n\n- Production-ready implementation\n- Seamless integration with other ADK components\n- Comprehensive error handling\n- Performance optimizations\n\n## Usage Examples\n\n```python\n# Example implementation\nfrom google.adk.agents import LlmAgent\nfrom google.adk.tools import performance\n\n# Basic usage pattern\nagent = LlmAgent(\n    name=\"example_agent\",\n    model=\"gemini-2.5-flash\",\n    description=\"Example agent using Performance\",\n    instruction=\"You are an example agent demonstrating Performance\",\n    tools=[performance]\n)\n```\n\n## Best Practices\n\n1. Always follow ADK naming conventions\n2. Include comprehensive tool docstrings\n3. Handle errors gracefully\n4. Use appropriate tool selection logic\n5. Test thoroughly before deployment\n\n## Related Components\n\n- Works with other ADK tools and agents\n- Integrates with Vertex AI and Cloud Run\n- Supports state management and callbacks\n- Compatible with multi-agent workflows\n\n## Troubleshooting\n\nCommon issues and solutions:\n- Configuration problems\n- Integration challenges\n- Performance concerns\n- Deployment issues\n\nFor more information, see the complete ADK documentation.\n",
+    "metadata": {
+      "source": "adk_knowledge_base",
+      "type": "documentation",
+      "topic": "Performance",
+      "category": "adk_reference",
+      "indexed_at": "2025-07-22T14:24:58.329495"
+    }
+  },
+  {
+    "id": "adk_kb_security_15",
+    "content": "# Security\n\nSecure agent development\n\n## Overview\n\nSecurity is a core component of the Google Agent Development Kit (ADK). This documentation covers:\n\n- Basic usage patterns\n- Advanced configuration options\n- Best practices and examples\n- Common troubleshooting scenarios\n\n## Key Features\n\n- Production-ready implementation\n- Seamless integration with other ADK components\n- Comprehensive error handling\n- Performance optimizations\n\n## Usage Examples\n\n```python\n# Example implementation\nfrom google.adk.agents import LlmAgent\nfrom google.adk.tools import security\n\n# Basic usage pattern\nagent = LlmAgent(\n    name=\"example_agent\",\n    model=\"gemini-2.5-flash\",\n    description=\"Example agent using Security\",\n    instruction=\"You are an example agent demonstrating Security\",\n    tools=[security]\n)\n```\n\n## Best Practices\n\n1. Always follow ADK naming conventions\n2. Include comprehensive tool docstrings\n3. Handle errors gracefully\n4. Use appropriate tool selection logic\n5. Test thoroughly before deployment\n\n## Related Components\n\n- Works with other ADK tools and agents\n- Integrates with Vertex AI and Cloud Run\n- Supports state management and callbacks\n- Compatible with multi-agent workflows\n\n## Troubleshooting\n\nCommon issues and solutions:\n- Configuration problems\n- Integration challenges\n- Performance concerns\n- Deployment issues\n\nFor more information, see the complete ADK documentation.\n",
+    "metadata": {
+      "source": "adk_knowledge_base",
+      "type": "documentation",
+      "topic": "Security",
+      "category": "adk_reference",
+      "indexed_at": "2025-07-22T14:24:58.329497"
+    }
+  },
+  {
+    "id": "adk_kb_testing_16",
+    "content": "# Testing\n\nTesting ADK agents\n\n## Overview\n\nTesting is a core component of the Google Agent Development Kit (ADK). This documentation covers:\n\n- Basic usage patterns\n- Advanced configuration options\n- Best practices and examples\n- Common troubleshooting scenarios\n\n## Key Features\n\n- Production-ready implementation\n- Seamless integration with other ADK components\n- Comprehensive error handling\n- Performance optimizations\n\n## Usage Examples\n\n```python\n# Example implementation\nfrom google.adk.agents import LlmAgent\nfrom google.adk.tools import testing\n\n# Basic usage pattern\nagent = LlmAgent(\n    name=\"example_agent\",\n    model=\"gemini-2.5-flash\",\n    description=\"Example agent using Testing\",\n    instruction=\"You are an example agent demonstrating Testing\",\n    tools=[testing]\n)\n```\n\n## Best Practices\n\n1. Always follow ADK naming conventions\n2. Include comprehensive tool docstrings\n3. Handle errors gracefully\n4. Use appropriate tool selection logic\n5. Test thoroughly before deployment\n\n## Related Components\n\n- Works with other ADK tools and agents\n- Integrates with Vertex AI and Cloud Run\n- Supports state management and callbacks\n- Compatible with multi-agent workflows\n\n## Troubleshooting\n\nCommon issues and solutions:\n- Configuration problems\n- Integration challenges\n- Performance concerns\n- Deployment issues\n\nFor more information, see the complete ADK documentation.\n",
+    "metadata": {
+      "source": "adk_knowledge_base",
+      "type": "documentation",
+      "topic": "Testing",
+      "category": "adk_reference",
+      "indexed_at": "2025-07-22T14:24:58.329499"
+    }
+  },
+  {
+    "id": "adk_kb_debugging_17",
+    "content": "# Debugging\n\nTroubleshooting agents\n\n## Overview\n\nDebugging is a core component of the Google Agent Development Kit (ADK). This documentation covers:\n\n- Basic usage patterns\n- Advanced configuration options\n- Best practices and examples\n- Common troubleshooting scenarios\n\n## Key Features\n\n- Production-ready implementation\n- Seamless integration with other ADK components\n- Comprehensive error handling\n- Performance optimizations\n\n## Usage Examples\n\n```python\n# Example implementation\nfrom google.adk.agents import LlmAgent\nfrom google.adk.tools import debugging\n\n# Basic usage pattern\nagent = LlmAgent(\n    name=\"example_agent\",\n    model=\"gemini-2.5-flash\",\n    description=\"Example agent using Debugging\",\n    instruction=\"You are an example agent demonstrating Debugging\",\n    tools=[debugging]\n)\n```\n\n## Best Practices\n\n1. Always follow ADK naming conventions\n2. Include comprehensive tool docstrings\n3. Handle errors gracefully\n4. Use appropriate tool selection logic\n5. Test thoroughly before deployment\n\n## Related Components\n\n- Works with other ADK tools and agents\n- Integrates with Vertex AI and Cloud Run\n- Supports state management and callbacks\n- Compatible with multi-agent workflows\n\n## Troubleshooting\n\nCommon issues and solutions:\n- Configuration problems\n- Integration challenges\n- Performance concerns\n- Deployment issues\n\nFor more information, see the complete ADK documentation.\n",
+    "metadata": {
+      "source": "adk_knowledge_base",
+      "type": "documentation",
+      "topic": "Debugging",
+      "category": "adk_reference",
+      "indexed_at": "2025-07-22T14:24:58.329500"
+    }
+  },
+  {
+    "id": "adk_kb_integration_18",
+    "content": "# Integration\n\nIntegrating with other services\n\n## Overview\n\nIntegration is a core component of the Google Agent Development Kit (ADK). This documentation covers:\n\n- Basic usage patterns\n- Advanced configuration options\n- Best practices and examples\n- Common troubleshooting scenarios\n\n## Key Features\n\n- Production-ready implementation\n- Seamless integration with other ADK components\n- Comprehensive error handling\n- Performance optimizations\n\n## Usage Examples\n\n```python\n# Example implementation\nfrom google.adk.agents import LlmAgent\nfrom google.adk.tools import integration\n\n# Basic usage pattern\nagent = LlmAgent(\n    name=\"example_agent\",\n    model=\"gemini-2.5-flash\",\n    description=\"Example agent using Integration\",\n    instruction=\"You are an example agent demonstrating Integration\",\n    tools=[integration]\n)\n```\n\n## Best Practices\n\n1. Always follow ADK naming conventions\n2. Include comprehensive tool docstrings\n3. Handle errors gracefully\n4. Use appropriate tool selection logic\n5. Test thoroughly before deployment\n\n## Related Components\n\n- Works with other ADK tools and agents\n- Integrates with Vertex AI and Cloud Run\n- Supports state management and callbacks\n- Compatible with multi-agent workflows\n\n## Troubleshooting\n\nCommon issues and solutions:\n- Configuration problems\n- Integration challenges\n- Performance concerns\n- Deployment issues\n\nFor more information, see the complete ADK documentation.\n",
+    "metadata": {
+      "source": "adk_knowledge_base",
+      "type": "documentation",
+      "topic": "Integration",
+      "category": "adk_reference",
+      "indexed_at": "2025-07-22T14:24:58.329502"
+    }
+  },
+  {
+    "id": "adk_kb_configuration_19",
+    "content": "# Configuration\n\nEnvironment and config management\n\n## Overview\n\nConfiguration is a core component of the Google Agent Development Kit (ADK). This documentation covers:\n\n- Basic usage patterns\n- Advanced configuration options\n- Best practices and examples\n- Common troubleshooting scenarios\n\n## Key Features\n\n- Production-ready implementation\n- Seamless integration with other ADK components\n- Comprehensive error handling\n- Performance optimizations\n\n## Usage Examples\n\n```python\n# Example implementation\nfrom google.adk.agents import LlmAgent\nfrom google.adk.tools import configuration\n\n# Basic usage pattern\nagent = LlmAgent(\n    name=\"example_agent\",\n    model=\"gemini-2.5-flash\",\n    description=\"Example agent using Configuration\",\n    instruction=\"You are an example agent demonstrating Configuration\",\n    tools=[configuration]\n)\n```\n\n## Best Practices\n\n1. Always follow ADK naming conventions\n2. Include comprehensive tool docstrings\n3. Handle errors gracefully\n4. Use appropriate tool selection logic\n5. Test thoroughly before deployment\n\n## Related Components\n\n- Works with other ADK tools and agents\n- Integrates with Vertex AI and Cloud Run\n- Supports state management and callbacks\n- Compatible with multi-agent workflows\n\n## Troubleshooting\n\nCommon issues and solutions:\n- Configuration problems\n- Integration challenges\n- Performance concerns\n- Deployment issues\n\nFor more information, see the complete ADK documentation.\n",
+    "metadata": {
+      "source": "adk_knowledge_base",
+      "type": "documentation",
+      "topic": "Configuration",
+      "category": "adk_reference",
+      "indexed_at": "2025-07-22T14:24:58.329503"
+    }
+  },
+  {
+    "id": "adk_kb_llmagent_20",
+    "content": "# LlmAgent\n\nCore agent class for creating LLM-powered agents\n\n## Overview\n\nLlmAgent is a core component of the Google Agent Development Kit (ADK). This documentation covers:\n\n- Basic usage patterns\n- Advanced configuration options\n- Best practices and examples\n- Common troubleshooting scenarios\n\n## Key Features\n\n- Production-ready implementation\n- Seamless integration with other ADK components\n- Comprehensive error handling\n- Performance optimizations\n\n## Usage Examples\n\n```python\n# Example implementation\nfrom google.adk.agents import LlmAgent\nfrom google.adk.tools import llmagent\n\n# Basic usage pattern\nagent = LlmAgent(\n    name=\"example_agent\",\n    model=\"gemini-2.5-flash\",\n    description=\"Example agent using LlmAgent\",\n    instruction=\"You are an example agent demonstrating LlmAgent\",\n    tools=[llmagent]\n)\n```\n\n## Best Practices\n\n1. Always follow ADK naming conventions\n2. Include comprehensive tool docstrings\n3. Handle errors gracefully\n4. Use appropriate tool selection logic\n5. Test thoroughly before deployment\n\n## Related Components\n\n- Works with other ADK tools and agents\n- Integrates with Vertex AI and Cloud Run\n- Supports state management and callbacks\n- Compatible with multi-agent workflows\n\n## Troubleshooting\n\nCommon issues and solutions:\n- Configuration problems\n- Integration challenges\n- Performance concerns\n- Deployment issues\n\nFor more information, see the complete ADK documentation.\n",
+    "metadata": {
+      "source": "adk_knowledge_base",
+      "type": "documentation",
+      "topic": "LlmAgent",
+      "category": "adk_reference",
+      "indexed_at": "2025-07-22T14:24:58.329505"
+    }
+  },
+  {
+    "id": "adk_kb_functiontool_21",
+    "content": "# FunctionTool\n\nTool wrapper for Python functions\n\n## Overview\n\nFunctionTool is a core component of the Google Agent Development Kit (ADK). This documentation covers:\n\n- Basic usage patterns\n- Advanced configuration options\n- Best practices and examples\n- Common troubleshooting scenarios\n\n## Key Features\n\n- Production-ready implementation\n- Seamless integration with other ADK components\n- Comprehensive error handling\n- Performance optimizations\n\n## Usage Examples\n\n```python\n# Example implementation\nfrom google.adk.agents import LlmAgent\nfrom google.adk.tools import functiontool\n\n# Basic usage pattern\nagent = LlmAgent(\n    name=\"example_agent\",\n    model=\"gemini-2.5-flash\",\n    description=\"Example agent using FunctionTool\",\n    instruction=\"You are an example agent demonstrating FunctionTool\",\n    tools=[functiontool]\n)\n```\n\n## Best Practices\n\n1. Always follow ADK naming conventions\n2. Include comprehensive tool docstrings\n3. Handle errors gracefully\n4. Use appropriate tool selection logic\n5. Test thoroughly before deployment\n\n## Related Components\n\n- Works with other ADK tools and agents\n- Integrates with Vertex AI and Cloud Run\n- Supports state management and callbacks\n- Compatible with multi-agent workflows\n\n## Troubleshooting\n\nCommon issues and solutions:\n- Configuration problems\n- Integration challenges\n- Performance concerns\n- Deployment issues\n\nFor more information, see the complete ADK documentation.\n",
+    "metadata": {
+      "source": "adk_knowledge_base",
+      "type": "documentation",
+      "topic": "FunctionTool",
+      "category": "adk_reference",
+      "indexed_at": "2025-07-22T14:24:58.329506"
+    }
+  },
+  {
+    "id": "adk_kb_agenttool_22",
+    "content": "# AgentTool\n\nTool wrapper for other agents\n\n## Overview\n\nAgentTool is a core component of the Google Agent Development Kit (ADK). This documentation covers:\n\n- Basic usage patterns\n- Advanced configuration options\n- Best practices and examples\n- Common troubleshooting scenarios\n\n## Key Features\n\n- Production-ready implementation\n- Seamless integration with other ADK components\n- Comprehensive error handling\n- Performance optimizations\n\n## Usage Examples\n\n```python\n# Example implementation\nfrom google.adk.agents import LlmAgent\nfrom google.adk.tools import agenttool\n\n# Basic usage pattern\nagent = LlmAgent(\n    name=\"example_agent\",\n    model=\"gemini-2.5-flash\",\n    description=\"Example agent using AgentTool\",\n    instruction=\"You are an example agent demonstrating AgentTool\",\n    tools=[agenttool]\n)\n```\n\n## Best Practices\n\n1. Always follow ADK naming conventions\n2. Include comprehensive tool docstrings\n3. Handle errors gracefully\n4. Use appropriate tool selection logic\n5. Test thoroughly before deployment\n\n## Related Components\n\n- Works with other ADK tools and agents\n- Integrates with Vertex AI and Cloud Run\n- Supports state management and callbacks\n- Compatible with multi-agent workflows\n\n## Troubleshooting\n\nCommon issues and solutions:\n- Configuration problems\n- Integration challenges\n- Performance concerns\n- Deployment issues\n\nFor more information, see the complete ADK documentation.\n",
+    "metadata": {
+      "source": "adk_knowledge_base",
+      "type": "documentation",
+      "topic": "AgentTool",
+      "category": "adk_reference",
+      "indexed_at": "2025-07-22T14:24:58.329507"
+    }
+  },
+  {
+    "id": "adk_kb_google_search_23",
+    "content": "# google_search\n\nBuilt-in web search tool\n\n## Overview\n\ngoogle_search is a core component of the Google Agent Development Kit (ADK). This documentation covers:\n\n- Basic usage patterns\n- Advanced configuration options\n- Best practices and examples\n- Common troubleshooting scenarios\n\n## Key Features\n\n- Production-ready implementation\n- Seamless integration with other ADK components\n- Comprehensive error handling\n- Performance optimizations\n\n## Usage Examples\n\n```python\n# Example implementation\nfrom google.adk.agents import LlmAgent\nfrom google.adk.tools import google_search\n\n# Basic usage pattern\nagent = LlmAgent(\n    name=\"example_agent\",\n    model=\"gemini-2.5-flash\",\n    description=\"Example agent using google_search\",\n    instruction=\"You are an example agent demonstrating google_search\",\n    tools=[google_search]\n)\n```\n\n## Best Practices\n\n1. Always follow ADK naming conventions\n2. Include comprehensive tool docstrings\n3. Handle errors gracefully\n4. Use appropriate tool selection logic\n5. Test thoroughly before deployment\n\n## Related Components\n\n- Works with other ADK tools and agents\n- Integrates with Vertex AI and Cloud Run\n- Supports state management and callbacks\n- Compatible with multi-agent workflows\n\n## Troubleshooting\n\nCommon issues and solutions:\n- Configuration problems\n- Integration challenges\n- Performance concerns\n- Deployment issues\n\nFor more information, see the complete ADK documentation.\n",
+    "metadata": {
+      "source": "adk_knowledge_base",
+      "type": "documentation",
+      "topic": "google_search",
+      "category": "adk_reference",
+      "indexed_at": "2025-07-22T14:24:58.329509"
+    }
+  },
+  {
+    "id": "adk_kb_load_memory_24",
+    "content": "# load_memory\n\nTool for accessing Vertex AI RAG corpus\n\n## Overview\n\nload_memory is a core component of the Google Agent Development Kit (ADK). This documentation covers:\n\n- Basic usage patterns\n- Advanced configuration options\n- Best practices and examples\n- Common troubleshooting scenarios\n\n## Key Features\n\n- Production-ready implementation\n- Seamless integration with other ADK components\n- Comprehensive error handling\n- Performance optimizations\n\n## Usage Examples\n\n```python\n# Example implementation\nfrom google.adk.agents import LlmAgent\nfrom google.adk.tools import load_memory\n\n# Basic usage pattern\nagent = LlmAgent(\n    name=\"example_agent\",\n    model=\"gemini-2.5-flash\",\n    description=\"Example agent using load_memory\",\n    instruction=\"You are an example agent demonstrating load_memory\",\n    tools=[load_memory]\n)\n```\n\n## Best Practices\n\n1. Always follow ADK naming conventions\n2. Include comprehensive tool docstrings\n3. Handle errors gracefully\n4. Use appropriate tool selection logic\n5. Test thoroughly before deployment\n\n## Related Components\n\n- Works with other ADK tools and agents\n- Integrates with Vertex AI and Cloud Run\n- Supports state management and callbacks\n- Compatible with multi-agent workflows\n\n## Troubleshooting\n\nCommon issues and solutions:\n- Configuration problems\n- Integration challenges\n- Performance concerns\n- Deployment issues\n\nFor more information, see the complete ADK documentation.\n",
+    "metadata": {
+      "source": "adk_knowledge_base",
+      "type": "documentation",
+      "topic": "load_memory",
+      "category": "adk_reference",
+      "indexed_at": "2025-07-22T14:24:58.329511"
+    }
+  },
+  {
+    "id": "adk_kb_session_management_25",
+    "content": "# Session Management\n\nManaging state across conversations\n\n## Overview\n\nSession Management is a core component of the Google Agent Development Kit (ADK). This documentation covers:\n\n- Basic usage patterns\n- Advanced configuration options\n- Best practices and examples\n- Common troubleshooting scenarios\n\n## Key Features\n\n- Production-ready implementation\n- Seamless integration with other ADK components\n- Comprehensive error handling\n- Performance optimizations\n\n## Usage Examples\n\n```python\n# Example implementation\nfrom google.adk.agents import LlmAgent\nfrom google.adk.tools import session_management\n\n# Basic usage pattern\nagent = LlmAgent(\n    name=\"example_agent\",\n    model=\"gemini-2.5-flash\",\n    description=\"Example agent using Session Management\",\n    instruction=\"You are an example agent demonstrating Session Management\",\n    tools=[session_management]\n)\n```\n\n## Best Practices\n\n1. Always follow ADK naming conventions\n2. Include comprehensive tool docstrings\n3. Handle errors gracefully\n4. Use appropriate tool selection logic\n5. Test thoroughly before deployment\n\n## Related Components\n\n- Works with other ADK tools and agents\n- Integrates with Vertex AI and Cloud Run\n- Supports state management and callbacks\n- Compatible with multi-agent workflows\n\n## Troubleshooting\n\nCommon issues and solutions:\n- Configuration problems\n- Integration challenges\n- Performance concerns\n- Deployment issues\n\nFor more information, see the complete ADK documentation.\n",
+    "metadata": {
+      "source": "adk_knowledge_base",
+      "type": "documentation",
+      "topic": "Session Management",
+      "category": "adk_reference",
+      "indexed_at": "2025-07-22T14:24:58.329513"
+    }
+  },
+  {
+    "id": "adk_kb_multi-agent_systems_26",
+    "content": "# Multi-Agent Systems\n\nOrchestrating multiple agents\n\n## Overview\n\nMulti-Agent Systems is a core component of the Google Agent Development Kit (ADK). This documentation covers:\n\n- Basic usage patterns\n- Advanced configuration options\n- Best practices and examples\n- Common troubleshooting scenarios\n\n## Key Features\n\n- Production-ready implementation\n- Seamless integration with other ADK components\n- Comprehensive error handling\n- Performance optimizations\n\n## Usage Examples\n\n```python\n# Example implementation\nfrom google.adk.agents import LlmAgent\nfrom google.adk.tools import multi-agent_systems\n\n# Basic usage pattern\nagent = LlmAgent(\n    name=\"example_agent\",\n    model=\"gemini-2.5-flash\",\n    description=\"Example agent using Multi-Agent Systems\",\n    instruction=\"You are an example agent demonstrating Multi-Agent Systems\",\n    tools=[multi-agent_systems]\n)\n```\n\n## Best Practices\n\n1. Always follow ADK naming conventions\n2. Include comprehensive tool docstrings\n3. Handle errors gracefully\n4. Use appropriate tool selection logic\n5. Test thoroughly before deployment\n\n## Related Components\n\n- Works with other ADK tools and agents\n- Integrates with Vertex AI and Cloud Run\n- Supports state management and callbacks\n- Compatible with multi-agent workflows\n\n## Troubleshooting\n\nCommon issues and solutions:\n- Configuration problems\n- Integration challenges\n- Performance concerns\n- Deployment issues\n\nFor more information, see the complete ADK documentation.\n",
+    "metadata": {
+      "source": "adk_knowledge_base",
+      "type": "documentation",
+      "topic": "Multi-Agent Systems",
+      "category": "adk_reference",
+      "indexed_at": "2025-07-22T14:24:58.329514"
+    }
+  },
+  {
+    "id": "adk_kb_tool_registration_27",
+    "content": "# Tool Registration\n\nAdding tools to agents\n\n## Overview\n\nTool Registration is a core component of the Google Agent Development Kit (ADK). This documentation covers:\n\n- Basic usage patterns\n- Advanced configuration options\n- Best practices and examples\n- Common troubleshooting scenarios\n\n## Key Features\n\n- Production-ready implementation\n- Seamless integration with other ADK components\n- Comprehensive error handling\n- Performance optimizations\n\n## Usage Examples\n\n```python\n# Example implementation\nfrom google.adk.agents import LlmAgent\nfrom google.adk.tools import tool_registration\n\n# Basic usage pattern\nagent = LlmAgent(\n    name=\"example_agent\",\n    model=\"gemini-2.5-flash\",\n    description=\"Example agent using Tool Registration\",\n    instruction=\"You are an example agent demonstrating Tool Registration\",\n    tools=[tool_registration]\n)\n```\n\n## Best Practices\n\n1. Always follow ADK naming conventions\n2. Include comprehensive tool docstrings\n3. Handle errors gracefully\n4. Use appropriate tool selection logic\n5. Test thoroughly before deployment\n\n## Related Components\n\n- Works with other ADK tools and agents\n- Integrates with Vertex AI and Cloud Run\n- Supports state management and callbacks\n- Compatible with multi-agent workflows\n\n## Troubleshooting\n\nCommon issues and solutions:\n- Configuration problems\n- Integration challenges\n- Performance concerns\n- Deployment issues\n\nFor more information, see the complete ADK documentation.\n",
+    "metadata": {
+      "source": "adk_knowledge_base",
+      "type": "documentation",
+      "topic": "Tool Registration",
+      "category": "adk_reference",
+      "indexed_at": "2025-07-22T14:24:58.329516"
+    }
+  },
+  {
+    "id": "adk_kb_state_variables_28",
+    "content": "# State Variables\n\nUsing {var} templating in instructions\n\n## Overview\n\nState Variables is a core component of the Google Agent Development Kit (ADK). This documentation covers:\n\n- Basic usage patterns\n- Advanced configuration options\n- Best practices and examples\n- Common troubleshooting scenarios\n\n## Key Features\n\n- Production-ready implementation\n- Seamless integration with other ADK components\n- Comprehensive error handling\n- Performance optimizations\n\n## Usage Examples\n\n```python\n# Example implementation\nfrom google.adk.agents import LlmAgent\nfrom google.adk.tools import state_variables\n\n# Basic usage pattern\nagent = LlmAgent(\n    name=\"example_agent\",\n    model=\"gemini-2.5-flash\",\n    description=\"Example agent using State Variables\",\n    instruction=\"You are an example agent demonstrating State Variables\",\n    tools=[state_variables]\n)\n```\n\n## Best Practices\n\n1. Always follow ADK naming conventions\n2. Include comprehensive tool docstrings\n3. Handle errors gracefully\n4. Use appropriate tool selection logic\n5. Test thoroughly before deployment\n\n## Related Components\n\n- Works with other ADK tools and agents\n- Integrates with Vertex AI and Cloud Run\n- Supports state management and callbacks\n- Compatible with multi-agent workflows\n\n## Troubleshooting\n\nCommon issues and solutions:\n- Configuration problems\n- Integration challenges\n- Performance concerns\n- Deployment issues\n\nFor more information, see the complete ADK documentation.\n",
+    "metadata": {
+      "source": "adk_knowledge_base",
+      "type": "documentation",
+      "topic": "State Variables",
+      "category": "adk_reference",
+      "indexed_at": "2025-07-22T14:24:58.329517"
+    }
+  },
+  {
+    "id": "adk_kb_callbacks_29",
+    "content": "# Callbacks\n\nHandling agent lifecycle events\n\n## Overview\n\nCallbacks is a core component of the Google Agent Development Kit (ADK). This documentation covers:\n\n- Basic usage patterns\n- Advanced configuration options\n- Best practices and examples\n- Common troubleshooting scenarios\n\n## Key Features\n\n- Production-ready implementation\n- Seamless integration with other ADK components\n- Comprehensive error handling\n- Performance optimizations\n\n## Usage Examples\n\n```python\n# Example implementation\nfrom google.adk.agents import LlmAgent\nfrom google.adk.tools import callbacks\n\n# Basic usage pattern\nagent = LlmAgent(\n    name=\"example_agent\",\n    model=\"gemini-2.5-flash\",\n    description=\"Example agent using Callbacks\",\n    instruction=\"You are an example agent demonstrating Callbacks\",\n    tools=[callbacks]\n)\n```\n\n## Best Practices\n\n1. Always follow ADK naming conventions\n2. Include comprehensive tool docstrings\n3. Handle errors gracefully\n4. Use appropriate tool selection logic\n5. Test thoroughly before deployment\n\n## Related Components\n\n- Works with other ADK tools and agents\n- Integrates with Vertex AI and Cloud Run\n- Supports state management and callbacks\n- Compatible with multi-agent workflows\n\n## Troubleshooting\n\nCommon issues and solutions:\n- Configuration problems\n- Integration challenges\n- Performance concerns\n- Deployment issues\n\nFor more information, see the complete ADK documentation.\n",
+    "metadata": {
+      "source": "adk_knowledge_base",
+      "type": "documentation",
+      "topic": "Callbacks",
+      "category": "adk_reference",
+      "indexed_at": "2025-07-22T14:24:58.329518"
+    }
+  },
+  {
+    "id": "adk_kb_workflow_agents_30",
+    "content": "# Workflow Agents\n\nSequential, Parallel, and Loop agents\n\n## Overview\n\nWorkflow Agents is a core component of the Google Agent Development Kit (ADK). This documentation covers:\n\n- Basic usage patterns\n- Advanced configuration options\n- Best practices and examples\n- Common troubleshooting scenarios\n\n## Key Features\n\n- Production-ready implementation\n- Seamless integration with other ADK components\n- Comprehensive error handling\n- Performance optimizations\n\n## Usage Examples\n\n```python\n# Example implementation\nfrom google.adk.agents import LlmAgent\nfrom google.adk.tools import workflow_agents\n\n# Basic usage pattern\nagent = LlmAgent(\n    name=\"example_agent\",\n    model=\"gemini-2.5-flash\",\n    description=\"Example agent using Workflow Agents\",\n    instruction=\"You are an example agent demonstrating Workflow Agents\",\n    tools=[workflow_agents]\n)\n```\n\n## Best Practices\n\n1. Always follow ADK naming conventions\n2. Include comprehensive tool docstrings\n3. Handle errors gracefully\n4. Use appropriate tool selection logic\n5. Test thoroughly before deployment\n\n## Related Components\n\n- Works with other ADK tools and agents\n- Integrates with Vertex AI and Cloud Run\n- Supports state management and callbacks\n- Compatible with multi-agent workflows\n\n## Troubleshooting\n\nCommon issues and solutions:\n- Configuration problems\n- Integration challenges\n- Performance concerns\n- Deployment issues\n\nFor more information, see the complete ADK documentation.\n",
+    "metadata": {
+      "source": "adk_knowledge_base",
+      "type": "documentation",
+      "topic": "Workflow Agents",
+      "category": "adk_reference",
+      "indexed_at": "2025-07-22T14:24:58.329520"
+    }
+  },
+  {
+    "id": "adk_kb_deployment_31",
+    "content": "# Deployment\n\nDeploying agents to Cloud Run\n\n## Overview\n\nDeployment is a core component of the Google Agent Development Kit (ADK). This documentation covers:\n\n- Basic usage patterns\n- Advanced configuration options\n- Best practices and examples\n- Common troubleshooting scenarios\n\n## Key Features\n\n- Production-ready implementation\n- Seamless integration with other ADK components\n- Comprehensive error handling\n- Performance optimizations\n\n## Usage Examples\n\n```python\n# Example implementation\nfrom google.adk.agents import LlmAgent\nfrom google.adk.tools import deployment\n\n# Basic usage pattern\nagent = LlmAgent(\n    name=\"example_agent\",\n    model=\"gemini-2.5-flash\",\n    description=\"Example agent using Deployment\",\n    instruction=\"You are an example agent demonstrating Deployment\",\n    tools=[deployment]\n)\n```\n\n## Best Practices\n\n1. Always follow ADK naming conventions\n2. Include comprehensive tool docstrings\n3. Handle errors gracefully\n4. Use appropriate tool selection logic\n5. Test thoroughly before deployment\n\n## Related Components\n\n- Works with other ADK tools and agents\n- Integrates with Vertex AI and Cloud Run\n- Supports state management and callbacks\n- Compatible with multi-agent workflows\n\n## Troubleshooting\n\nCommon issues and solutions:\n- Configuration problems\n- Integration challenges\n- Performance concerns\n- Deployment issues\n\nFor more information, see the complete ADK documentation.\n",
+    "metadata": {
+      "source": "adk_knowledge_base",
+      "type": "documentation",
+      "topic": "Deployment",
+      "category": "adk_reference",
+      "indexed_at": "2025-07-22T14:24:58.329521"
+    }
+  },
+  {
+    "id": "adk_kb_best_practices_32",
+    "content": "# Best Practices\n\nADK development patterns\n\n## Overview\n\nBest Practices is a core component of the Google Agent Development Kit (ADK). This documentation covers:\n\n- Basic usage patterns\n- Advanced configuration options\n- Best practices and examples\n- Common troubleshooting scenarios\n\n## Key Features\n\n- Production-ready implementation\n- Seamless integration with other ADK components\n- Comprehensive error handling\n- Performance optimizations\n\n## Usage Examples\n\n```python\n# Example implementation\nfrom google.adk.agents import LlmAgent\nfrom google.adk.tools import best_practices\n\n# Basic usage pattern\nagent = LlmAgent(\n    name=\"example_agent\",\n    model=\"gemini-2.5-flash\",\n    description=\"Example agent using Best Practices\",\n    instruction=\"You are an example agent demonstrating Best Practices\",\n    tools=[best_practices]\n)\n```\n\n## Best Practices\n\n1. Always follow ADK naming conventions\n2. Include comprehensive tool docstrings\n3. Handle errors gracefully\n4. Use appropriate tool selection logic\n5. Test thoroughly before deployment\n\n## Related Components\n\n- Works with other ADK tools and agents\n- Integrates with Vertex AI and Cloud Run\n- Supports state management and callbacks\n- Compatible with multi-agent workflows\n\n## Troubleshooting\n\nCommon issues and solutions:\n- Configuration problems\n- Integration challenges\n- Performance concerns\n- Deployment issues\n\nFor more information, see the complete ADK documentation.\n",
+    "metadata": {
+      "source": "adk_knowledge_base",
+      "type": "documentation",
+      "topic": "Best Practices",
+      "category": "adk_reference",
+      "indexed_at": "2025-07-22T14:24:58.329523"
+    }
+  },
+  {
+    "id": "adk_kb_error_handling_33",
+    "content": "# Error Handling\n\nManaging agent failures\n\n## Overview\n\nError Handling is a core component of the Google Agent Development Kit (ADK). This documentation covers:\n\n- Basic usage patterns\n- Advanced configuration options\n- Best practices and examples\n- Common troubleshooting scenarios\n\n## Key Features\n\n- Production-ready implementation\n- Seamless integration with other ADK components\n- Comprehensive error handling\n- Performance optimizations\n\n## Usage Examples\n\n```python\n# Example implementation\nfrom google.adk.agents import LlmAgent\nfrom google.adk.tools import error_handling\n\n# Basic usage pattern\nagent = LlmAgent(\n    name=\"example_agent\",\n    model=\"gemini-2.5-flash\",\n    description=\"Example agent using Error Handling\",\n    instruction=\"You are an example agent demonstrating Error Handling\",\n    tools=[error_handling]\n)\n```\n\n## Best Practices\n\n1. Always follow ADK naming conventions\n2. Include comprehensive tool docstrings\n3. Handle errors gracefully\n4. Use appropriate tool selection logic\n5. Test thoroughly before deployment\n\n## Related Components\n\n- Works with other ADK tools and agents\n- Integrates with Vertex AI and Cloud Run\n- Supports state management and callbacks\n- Compatible with multi-agent workflows\n\n## Troubleshooting\n\nCommon issues and solutions:\n- Configuration problems\n- Integration challenges\n- Performance concerns\n- Deployment issues\n\nFor more information, see the complete ADK documentation.\n",
+    "metadata": {
+      "source": "adk_knowledge_base",
+      "type": "documentation",
+      "topic": "Error Handling",
+      "category": "adk_reference",
+      "indexed_at": "2025-07-22T14:24:58.329524"
+    }
+  },
+  {
+    "id": "adk_kb_performance_34",
+    "content": "# Performance\n\nOptimizing agent performance\n\n## Overview\n\nPerformance is a core component of the Google Agent Development Kit (ADK). This documentation covers:\n\n- Basic usage patterns\n- Advanced configuration options\n- Best practices and examples\n- Common troubleshooting scenarios\n\n## Key Features\n\n- Production-ready implementation\n- Seamless integration with other ADK components\n- Comprehensive error handling\n- Performance optimizations\n\n## Usage Examples\n\n```python\n# Example implementation\nfrom google.adk.agents import LlmAgent\nfrom google.adk.tools import performance\n\n# Basic usage pattern\nagent = LlmAgent(\n    name=\"example_agent\",\n    model=\"gemini-2.5-flash\",\n    description=\"Example agent using Performance\",\n    instruction=\"You are an example agent demonstrating Performance\",\n    tools=[performance]\n)\n```\n\n## Best Practices\n\n1. Always follow ADK naming conventions\n2. Include comprehensive tool docstrings\n3. Handle errors gracefully\n4. Use appropriate tool selection logic\n5. Test thoroughly before deployment\n\n## Related Components\n\n- Works with other ADK tools and agents\n- Integrates with Vertex AI and Cloud Run\n- Supports state management and callbacks\n- Compatible with multi-agent workflows\n\n## Troubleshooting\n\nCommon issues and solutions:\n- Configuration problems\n- Integration challenges\n- Performance concerns\n- Deployment issues\n\nFor more information, see the complete ADK documentation.\n",
+    "metadata": {
+      "source": "adk_knowledge_base",
+      "type": "documentation",
+      "topic": "Performance",
+      "category": "adk_reference",
+      "indexed_at": "2025-07-22T14:24:58.329525"
+    }
+  },
+  {
+    "id": "adk_kb_security_35",
+    "content": "# Security\n\nSecure agent development\n\n## Overview\n\nSecurity is a core component of the Google Agent Development Kit (ADK). This documentation covers:\n\n- Basic usage patterns\n- Advanced configuration options\n- Best practices and examples\n- Common troubleshooting scenarios\n\n## Key Features\n\n- Production-ready implementation\n- Seamless integration with other ADK components\n- Comprehensive error handling\n- Performance optimizations\n\n## Usage Examples\n\n```python\n# Example implementation\nfrom google.adk.agents import LlmAgent\nfrom google.adk.tools import security\n\n# Basic usage pattern\nagent = LlmAgent(\n    name=\"example_agent\",\n    model=\"gemini-2.5-flash\",\n    description=\"Example agent using Security\",\n    instruction=\"You are an example agent demonstrating Security\",\n    tools=[security]\n)\n```\n\n## Best Practices\n\n1. Always follow ADK naming conventions\n2. Include comprehensive tool docstrings\n3. Handle errors gracefully\n4. Use appropriate tool selection logic\n5. Test thoroughly before deployment\n\n## Related Components\n\n- Works with other ADK tools and agents\n- Integrates with Vertex AI and Cloud Run\n- Supports state management and callbacks\n- Compatible with multi-agent workflows\n\n## Troubleshooting\n\nCommon issues and solutions:\n- Configuration problems\n- Integration challenges\n- Performance concerns\n- Deployment issues\n\nFor more information, see the complete ADK documentation.\n",
+    "metadata": {
+      "source": "adk_knowledge_base",
+      "type": "documentation",
+      "topic": "Security",
+      "category": "adk_reference",
+      "indexed_at": "2025-07-22T14:24:58.329528"
+    }
+  },
+  {
+    "id": "adk_kb_testing_36",
+    "content": "# Testing\n\nTesting ADK agents\n\n## Overview\n\nTesting is a core component of the Google Agent Development Kit (ADK). This documentation covers:\n\n- Basic usage patterns\n- Advanced configuration options\n- Best practices and examples\n- Common troubleshooting scenarios\n\n## Key Features\n\n- Production-ready implementation\n- Seamless integration with other ADK components\n- Comprehensive error handling\n- Performance optimizations\n\n## Usage Examples\n\n```python\n# Example implementation\nfrom google.adk.agents import LlmAgent\nfrom google.adk.tools import testing\n\n# Basic usage pattern\nagent = LlmAgent(\n    name=\"example_agent\",\n    model=\"gemini-2.5-flash\",\n    description=\"Example agent using Testing\",\n    instruction=\"You are an example agent demonstrating Testing\",\n    tools=[testing]\n)\n```\n\n## Best Practices\n\n1. Always follow ADK naming conventions\n2. Include comprehensive tool docstrings\n3. Handle errors gracefully\n4. Use appropriate tool selection logic\n5. Test thoroughly before deployment\n\n## Related Components\n\n- Works with other ADK tools and agents\n- Integrates with Vertex AI and Cloud Run\n- Supports state management and callbacks\n- Compatible with multi-agent workflows\n\n## Troubleshooting\n\nCommon issues and solutions:\n- Configuration problems\n- Integration challenges\n- Performance concerns\n- Deployment issues\n\nFor more information, see the complete ADK documentation.\n",
+    "metadata": {
+      "source": "adk_knowledge_base",
+      "type": "documentation",
+      "topic": "Testing",
+      "category": "adk_reference",
+      "indexed_at": "2025-07-22T14:24:58.329529"
+    }
+  },
+  {
+    "id": "adk_kb_debugging_37",
+    "content": "# Debugging\n\nTroubleshooting agents\n\n## Overview\n\nDebugging is a core component of the Google Agent Development Kit (ADK). This documentation covers:\n\n- Basic usage patterns\n- Advanced configuration options\n- Best practices and examples\n- Common troubleshooting scenarios\n\n## Key Features\n\n- Production-ready implementation\n- Seamless integration with other ADK components\n- Comprehensive error handling\n- Performance optimizations\n\n## Usage Examples\n\n```python\n# Example implementation\nfrom google.adk.agents import LlmAgent\nfrom google.adk.tools import debugging\n\n# Basic usage pattern\nagent = LlmAgent(\n    name=\"example_agent\",\n    model=\"gemini-2.5-flash\",\n    description=\"Example agent using Debugging\",\n    instruction=\"You are an example agent demonstrating Debugging\",\n    tools=[debugging]\n)\n```\n\n## Best Practices\n\n1. Always follow ADK naming conventions\n2. Include comprehensive tool docstrings\n3. Handle errors gracefully\n4. Use appropriate tool selection logic\n5. Test thoroughly before deployment\n\n## Related Components\n\n- Works with other ADK tools and agents\n- Integrates with Vertex AI and Cloud Run\n- Supports state management and callbacks\n- Compatible with multi-agent workflows\n\n## Troubleshooting\n\nCommon issues and solutions:\n- Configuration problems\n- Integration challenges\n- Performance concerns\n- Deployment issues\n\nFor more information, see the complete ADK documentation.\n",
+    "metadata": {
+      "source": "adk_knowledge_base",
+      "type": "documentation",
+      "topic": "Debugging",
+      "category": "adk_reference",
+      "indexed_at": "2025-07-22T14:24:58.329531"
+    }
+  },
+  {
+    "id": "adk_kb_integration_38",
+    "content": "# Integration\n\nIntegrating with other services\n\n## Overview\n\nIntegration is a core component of the Google Agent Development Kit (ADK). This documentation covers:\n\n- Basic usage patterns\n- Advanced configuration options\n- Best practices and examples\n- Common troubleshooting scenarios\n\n## Key Features\n\n- Production-ready implementation\n- Seamless integration with other ADK components\n- Comprehensive error handling\n- Performance optimizations\n\n## Usage Examples\n\n```python\n# Example implementation\nfrom google.adk.agents import LlmAgent\nfrom google.adk.tools import integration\n\n# Basic usage pattern\nagent = LlmAgent(\n    name=\"example_agent\",\n    model=\"gemini-2.5-flash\",\n    description=\"Example agent using Integration\",\n    instruction=\"You are an example agent demonstrating Integration\",\n    tools=[integration]\n)\n```\n\n## Best Practices\n\n1. Always follow ADK naming conventions\n2. Include comprehensive tool docstrings\n3. Handle errors gracefully\n4. Use appropriate tool selection logic\n5. Test thoroughly before deployment\n\n## Related Components\n\n- Works with other ADK tools and agents\n- Integrates with Vertex AI and Cloud Run\n- Supports state management and callbacks\n- Compatible with multi-agent workflows\n\n## Troubleshooting\n\nCommon issues and solutions:\n- Configuration problems\n- Integration challenges\n- Performance concerns\n- Deployment issues\n\nFor more information, see the complete ADK documentation.\n",
+    "metadata": {
+      "source": "adk_knowledge_base",
+      "type": "documentation",
+      "topic": "Integration",
+      "category": "adk_reference",
+      "indexed_at": "2025-07-22T14:24:58.329532"
+    }
+  },
+  {
+    "id": "adk_kb_configuration_39",
+    "content": "# Configuration\n\nEnvironment and config management\n\n## Overview\n\nConfiguration is a core component of the Google Agent Development Kit (ADK). This documentation covers:\n\n- Basic usage patterns\n- Advanced configuration options\n- Best practices and examples\n- Common troubleshooting scenarios\n\n## Key Features\n\n- Production-ready implementation\n- Seamless integration with other ADK components\n- Comprehensive error handling\n- Performance optimizations\n\n## Usage Examples\n\n```python\n# Example implementation\nfrom google.adk.agents import LlmAgent\nfrom google.adk.tools import configuration\n\n# Basic usage pattern\nagent = LlmAgent(\n    name=\"example_agent\",\n    model=\"gemini-2.5-flash\",\n    description=\"Example agent using Configuration\",\n    instruction=\"You are an example agent demonstrating Configuration\",\n    tools=[configuration]\n)\n```\n\n## Best Practices\n\n1. Always follow ADK naming conventions\n2. Include comprehensive tool docstrings\n3. Handle errors gracefully\n4. Use appropriate tool selection logic\n5. Test thoroughly before deployment\n\n## Related Components\n\n- Works with other ADK tools and agents\n- Integrates with Vertex AI and Cloud Run\n- Supports state management and callbacks\n- Compatible with multi-agent workflows\n\n## Troubleshooting\n\nCommon issues and solutions:\n- Configuration problems\n- Integration challenges\n- Performance concerns\n- Deployment issues\n\nFor more information, see the complete ADK documentation.\n",
+    "metadata": {
+      "source": "adk_knowledge_base",
+      "type": "documentation",
+      "topic": "Configuration",
+      "category": "adk_reference",
+      "indexed_at": "2025-07-22T14:24:58.329534"
+    }
+  },
+  {
+    "id": "adk_kb_llmagent_40",
+    "content": "# LlmAgent\n\nCore agent class for creating LLM-powered agents\n\n## Overview\n\nLlmAgent is a core component of the Google Agent Development Kit (ADK). This documentation covers:\n\n- Basic usage patterns\n- Advanced configuration options\n- Best practices and examples\n- Common troubleshooting scenarios\n\n## Key Features\n\n- Production-ready implementation\n- Seamless integration with other ADK components\n- Comprehensive error handling\n- Performance optimizations\n\n## Usage Examples\n\n```python\n# Example implementation\nfrom google.adk.agents import LlmAgent\nfrom google.adk.tools import llmagent\n\n# Basic usage pattern\nagent = LlmAgent(\n    name=\"example_agent\",\n    model=\"gemini-2.5-flash\",\n    description=\"Example agent using LlmAgent\",\n    instruction=\"You are an example agent demonstrating LlmAgent\",\n    tools=[llmagent]\n)\n```\n\n## Best Practices\n\n1. Always follow ADK naming conventions\n2. Include comprehensive tool docstrings\n3. Handle errors gracefully\n4. Use appropriate tool selection logic\n5. Test thoroughly before deployment\n\n## Related Components\n\n- Works with other ADK tools and agents\n- Integrates with Vertex AI and Cloud Run\n- Supports state management and callbacks\n- Compatible with multi-agent workflows\n\n## Troubleshooting\n\nCommon issues and solutions:\n- Configuration problems\n- Integration challenges\n- Performance concerns\n- Deployment issues\n\nFor more information, see the complete ADK documentation.\n",
+    "metadata": {
+      "source": "adk_knowledge_base",
+      "type": "documentation",
+      "topic": "LlmAgent",
+      "category": "adk_reference",
+      "indexed_at": "2025-07-22T14:24:58.329536"
+    }
+  },
+  {
+    "id": "adk_kb_functiontool_41",
+    "content": "# FunctionTool\n\nTool wrapper for Python functions\n\n## Overview\n\nFunctionTool is a core component of the Google Agent Development Kit (ADK). This documentation covers:\n\n- Basic usage patterns\n- Advanced configuration options\n- Best practices and examples\n- Common troubleshooting scenarios\n\n## Key Features\n\n- Production-ready implementation\n- Seamless integration with other ADK components\n- Comprehensive error handling\n- Performance optimizations\n\n## Usage Examples\n\n```python\n# Example implementation\nfrom google.adk.agents import LlmAgent\nfrom google.adk.tools import functiontool\n\n# Basic usage pattern\nagent = LlmAgent(\n    name=\"example_agent\",\n    model=\"gemini-2.5-flash\",\n    description=\"Example agent using FunctionTool\",\n    instruction=\"You are an example agent demonstrating FunctionTool\",\n    tools=[functiontool]\n)\n```\n\n## Best Practices\n\n1. Always follow ADK naming conventions\n2. Include comprehensive tool docstrings\n3. Handle errors gracefully\n4. Use appropriate tool selection logic\n5. Test thoroughly before deployment\n\n## Related Components\n\n- Works with other ADK tools and agents\n- Integrates with Vertex AI and Cloud Run\n- Supports state management and callbacks\n- Compatible with multi-agent workflows\n\n## Troubleshooting\n\nCommon issues and solutions:\n- Configuration problems\n- Integration challenges\n- Performance concerns\n- Deployment issues\n\nFor more information, see the complete ADK documentation.\n",
+    "metadata": {
+      "source": "adk_knowledge_base",
+      "type": "documentation",
+      "topic": "FunctionTool",
+      "category": "adk_reference",
+      "indexed_at": "2025-07-22T14:24:58.329537"
+    }
+  },
+  {
+    "id": "adk_kb_agenttool_42",
+    "content": "# AgentTool\n\nTool wrapper for other agents\n\n## Overview\n\nAgentTool is a core component of the Google Agent Development Kit (ADK). This documentation covers:\n\n- Basic usage patterns\n- Advanced configuration options\n- Best practices and examples\n- Common troubleshooting scenarios\n\n## Key Features\n\n- Production-ready implementation\n- Seamless integration with other ADK components\n- Comprehensive error handling\n- Performance optimizations\n\n## Usage Examples\n\n```python\n# Example implementation\nfrom google.adk.agents import LlmAgent\nfrom google.adk.tools import agenttool\n\n# Basic usage pattern\nagent = LlmAgent(\n    name=\"example_agent\",\n    model=\"gemini-2.5-flash\",\n    description=\"Example agent using AgentTool\",\n    instruction=\"You are an example agent demonstrating AgentTool\",\n    tools=[agenttool]\n)\n```\n\n## Best Practices\n\n1. Always follow ADK naming conventions\n2. Include comprehensive tool docstrings\n3. Handle errors gracefully\n4. Use appropriate tool selection logic\n5. Test thoroughly before deployment\n\n## Related Components\n\n- Works with other ADK tools and agents\n- Integrates with Vertex AI and Cloud Run\n- Supports state management and callbacks\n- Compatible with multi-agent workflows\n\n## Troubleshooting\n\nCommon issues and solutions:\n- Configuration problems\n- Integration challenges\n- Performance concerns\n- Deployment issues\n\nFor more information, see the complete ADK documentation.\n",
+    "metadata": {
+      "source": "adk_knowledge_base",
+      "type": "documentation",
+      "topic": "AgentTool",
+      "category": "adk_reference",
+      "indexed_at": "2025-07-22T14:24:58.329538"
+    }
+  },
+  {
+    "id": "adk_kb_google_search_43",
+    "content": "# google_search\n\nBuilt-in web search tool\n\n## Overview\n\ngoogle_search is a core component of the Google Agent Development Kit (ADK). This documentation covers:\n\n- Basic usage patterns\n- Advanced configuration options\n- Best practices and examples\n- Common troubleshooting scenarios\n\n## Key Features\n\n- Production-ready implementation\n- Seamless integration with other ADK components\n- Comprehensive error handling\n- Performance optimizations\n\n## Usage Examples\n\n```python\n# Example implementation\nfrom google.adk.agents import LlmAgent\nfrom google.adk.tools import google_search\n\n# Basic usage pattern\nagent = LlmAgent(\n    name=\"example_agent\",\n    model=\"gemini-2.5-flash\",\n    description=\"Example agent using google_search\",\n    instruction=\"You are an example agent demonstrating google_search\",\n    tools=[google_search]\n)\n```\n\n## Best Practices\n\n1. Always follow ADK naming conventions\n2. Include comprehensive tool docstrings\n3. Handle errors gracefully\n4. Use appropriate tool selection logic\n5. Test thoroughly before deployment\n\n## Related Components\n\n- Works with other ADK tools and agents\n- Integrates with Vertex AI and Cloud Run\n- Supports state management and callbacks\n- Compatible with multi-agent workflows\n\n## Troubleshooting\n\nCommon issues and solutions:\n- Configuration problems\n- Integration challenges\n- Performance concerns\n- Deployment issues\n\nFor more information, see the complete ADK documentation.\n",
+    "metadata": {
+      "source": "adk_knowledge_base",
+      "type": "documentation",
+      "topic": "google_search",
+      "category": "adk_reference",
+      "indexed_at": "2025-07-22T14:24:58.329539"
+    }
+  },
+  {
+    "id": "adk_kb_load_memory_44",
+    "content": "# load_memory\n\nTool for accessing Vertex AI RAG corpus\n\n## Overview\n\nload_memory is a core component of the Google Agent Development Kit (ADK). This documentation covers:\n\n- Basic usage patterns\n- Advanced configuration options\n- Best practices and examples\n- Common troubleshooting scenarios\n\n## Key Features\n\n- Production-ready implementation\n- Seamless integration with other ADK components\n- Comprehensive error handling\n- Performance optimizations\n\n## Usage Examples\n\n```python\n# Example implementation\nfrom google.adk.agents import LlmAgent\nfrom google.adk.tools import load_memory\n\n# Basic usage pattern\nagent = LlmAgent(\n    name=\"example_agent\",\n    model=\"gemini-2.5-flash\",\n    description=\"Example agent using load_memory\",\n    instruction=\"You are an example agent demonstrating load_memory\",\n    tools=[load_memory]\n)\n```\n\n## Best Practices\n\n1. Always follow ADK naming conventions\n2. Include comprehensive tool docstrings\n3. Handle errors gracefully\n4. Use appropriate tool selection logic\n5. Test thoroughly before deployment\n\n## Related Components\n\n- Works with other ADK tools and agents\n- Integrates with Vertex AI and Cloud Run\n- Supports state management and callbacks\n- Compatible with multi-agent workflows\n\n## Troubleshooting\n\nCommon issues and solutions:\n- Configuration problems\n- Integration challenges\n- Performance concerns\n- Deployment issues\n\nFor more information, see the complete ADK documentation.\n",
+    "metadata": {
+      "source": "adk_knowledge_base",
+      "type": "documentation",
+      "topic": "load_memory",
+      "category": "adk_reference",
+      "indexed_at": "2025-07-22T14:24:58.329540"
+    }
+  },
+  {
+    "id": "adk_kb_session_management_45",
+    "content": "# Session Management\n\nManaging state across conversations\n\n## Overview\n\nSession Management is a core component of the Google Agent Development Kit (ADK). This documentation covers:\n\n- Basic usage patterns\n- Advanced configuration options\n- Best practices and examples\n- Common troubleshooting scenarios\n\n## Key Features\n\n- Production-ready implementation\n- Seamless integration with other ADK components\n- Comprehensive error handling\n- Performance optimizations\n\n## Usage Examples\n\n```python\n# Example implementation\nfrom google.adk.agents import LlmAgent\nfrom google.adk.tools import session_management\n\n# Basic usage pattern\nagent = LlmAgent(\n    name=\"example_agent\",\n    model=\"gemini-2.5-flash\",\n    description=\"Example agent using Session Management\",\n    instruction=\"You are an example agent demonstrating Session Management\",\n    tools=[session_management]\n)\n```\n\n## Best Practices\n\n1. Always follow ADK naming conventions\n2. Include comprehensive tool docstrings\n3. Handle errors gracefully\n4. Use appropriate tool selection logic\n5. Test thoroughly before deployment\n\n## Related Components\n\n- Works with other ADK tools and agents\n- Integrates with Vertex AI and Cloud Run\n- Supports state management and callbacks\n- Compatible with multi-agent workflows\n\n## Troubleshooting\n\nCommon issues and solutions:\n- Configuration problems\n- Integration challenges\n- Performance concerns\n- Deployment issues\n\nFor more information, see the complete ADK documentation.\n",
+    "metadata": {
+      "source": "adk_knowledge_base",
+      "type": "documentation",
+      "topic": "Session Management",
+      "category": "adk_reference",
+      "indexed_at": "2025-07-22T14:24:58.329542"
+    }
+  },
+  {
+    "id": "adk_kb_multi-agent_systems_46",
+    "content": "# Multi-Agent Systems\n\nOrchestrating multiple agents\n\n## Overview\n\nMulti-Agent Systems is a core component of the Google Agent Development Kit (ADK). This documentation covers:\n\n- Basic usage patterns\n- Advanced configuration options\n- Best practices and examples\n- Common troubleshooting scenarios\n\n## Key Features\n\n- Production-ready implementation\n- Seamless integration with other ADK components\n- Comprehensive error handling\n- Performance optimizations\n\n## Usage Examples\n\n```python\n# Example implementation\nfrom google.adk.agents import LlmAgent\nfrom google.adk.tools import multi-agent_systems\n\n# Basic usage pattern\nagent = LlmAgent(\n    name=\"example_agent\",\n    model=\"gemini-2.5-flash\",\n    description=\"Example agent using Multi-Agent Systems\",\n    instruction=\"You are an example agent demonstrating Multi-Agent Systems\",\n    tools=[multi-agent_systems]\n)\n```\n\n## Best Practices\n\n1. Always follow ADK naming conventions\n2. Include comprehensive tool docstrings\n3. Handle errors gracefully\n4. Use appropriate tool selection logic\n5. Test thoroughly before deployment\n\n## Related Components\n\n- Works with other ADK tools and agents\n- Integrates with Vertex AI and Cloud Run\n- Supports state management and callbacks\n- Compatible with multi-agent workflows\n\n## Troubleshooting\n\nCommon issues and solutions:\n- Configuration problems\n- Integration challenges\n- Performance concerns\n- Deployment issues\n\nFor more information, see the complete ADK documentation.\n",
+    "metadata": {
+      "source": "adk_knowledge_base",
+      "type": "documentation",
+      "topic": "Multi-Agent Systems",
+      "category": "adk_reference",
+      "indexed_at": "2025-07-22T14:24:58.329545"
+    }
+  },
+  {
+    "id": "adk_kb_tool_registration_47",
+    "content": "# Tool Registration\n\nAdding tools to agents\n\n## Overview\n\nTool Registration is a core component of the Google Agent Development Kit (ADK). This documentation covers:\n\n- Basic usage patterns\n- Advanced configuration options\n- Best practices and examples\n- Common troubleshooting scenarios\n\n## Key Features\n\n- Production-ready implementation\n- Seamless integration with other ADK components\n- Comprehensive error handling\n- Performance optimizations\n\n## Usage Examples\n\n```python\n# Example implementation\nfrom google.adk.agents import LlmAgent\nfrom google.adk.tools import tool_registration\n\n# Basic usage pattern\nagent = LlmAgent(\n    name=\"example_agent\",\n    model=\"gemini-2.5-flash\",\n    description=\"Example agent using Tool Registration\",\n    instruction=\"You are an example agent demonstrating Tool Registration\",\n    tools=[tool_registration]\n)\n```\n\n## Best Practices\n\n1. Always follow ADK naming conventions\n2. Include comprehensive tool docstrings\n3. Handle errors gracefully\n4. Use appropriate tool selection logic\n5. Test thoroughly before deployment\n\n## Related Components\n\n- Works with other ADK tools and agents\n- Integrates with Vertex AI and Cloud Run\n- Supports state management and callbacks\n- Compatible with multi-agent workflows\n\n## Troubleshooting\n\nCommon issues and solutions:\n- Configuration problems\n- Integration challenges\n- Performance concerns\n- Deployment issues\n\nFor more information, see the complete ADK documentation.\n",
+    "metadata": {
+      "source": "adk_knowledge_base",
+      "type": "documentation",
+      "topic": "Tool Registration",
+      "category": "adk_reference",
+      "indexed_at": "2025-07-22T14:24:58.329546"
+    }
+  },
+  {
+    "id": "adk_kb_state_variables_48",
+    "content": "# State Variables\n\nUsing {var} templating in instructions\n\n## Overview\n\nState Variables is a core component of the Google Agent Development Kit (ADK). This documentation covers:\n\n- Basic usage patterns\n- Advanced configuration options\n- Best practices and examples\n- Common troubleshooting scenarios\n\n## Key Features\n\n- Production-ready implementation\n- Seamless integration with other ADK components\n- Comprehensive error handling\n- Performance optimizations\n\n## Usage Examples\n\n```python\n# Example implementation\nfrom google.adk.agents import LlmAgent\nfrom google.adk.tools import state_variables\n\n# Basic usage pattern\nagent = LlmAgent(\n    name=\"example_agent\",\n    model=\"gemini-2.5-flash\",\n    description=\"Example agent using State Variables\",\n    instruction=\"You are an example agent demonstrating State Variables\",\n    tools=[state_variables]\n)\n```\n\n## Best Practices\n\n1. Always follow ADK naming conventions\n2. Include comprehensive tool docstrings\n3. Handle errors gracefully\n4. Use appropriate tool selection logic\n5. Test thoroughly before deployment\n\n## Related Components\n\n- Works with other ADK tools and agents\n- Integrates with Vertex AI and Cloud Run\n- Supports state management and callbacks\n- Compatible with multi-agent workflows\n\n## Troubleshooting\n\nCommon issues and solutions:\n- Configuration problems\n- Integration challenges\n- Performance concerns\n- Deployment issues\n\nFor more information, see the complete ADK documentation.\n",
+    "metadata": {
+      "source": "adk_knowledge_base",
+      "type": "documentation",
+      "topic": "State Variables",
+      "category": "adk_reference",
+      "indexed_at": "2025-07-22T14:24:58.329547"
+    }
+  },
+  {
+    "id": "adk_kb_callbacks_49",
+    "content": "# Callbacks\n\nHandling agent lifecycle events\n\n## Overview\n\nCallbacks is a core component of the Google Agent Development Kit (ADK). This documentation covers:\n\n- Basic usage patterns\n- Advanced configuration options\n- Best practices and examples\n- Common troubleshooting scenarios\n\n## Key Features\n\n- Production-ready implementation\n- Seamless integration with other ADK components\n- Comprehensive error handling\n- Performance optimizations\n\n## Usage Examples\n\n```python\n# Example implementation\nfrom google.adk.agents import LlmAgent\nfrom google.adk.tools import callbacks\n\n# Basic usage pattern\nagent = LlmAgent(\n    name=\"example_agent\",\n    model=\"gemini-2.5-flash\",\n    description=\"Example agent using Callbacks\",\n    instruction=\"You are an example agent demonstrating Callbacks\",\n    tools=[callbacks]\n)\n```\n\n## Best Practices\n\n1. Always follow ADK naming conventions\n2. Include comprehensive tool docstrings\n3. Handle errors gracefully\n4. Use appropriate tool selection logic\n5. Test thoroughly before deployment\n\n## Related Components\n\n- Works with other ADK tools and agents\n- Integrates with Vertex AI and Cloud Run\n- Supports state management and callbacks\n- Compatible with multi-agent workflows\n\n## Troubleshooting\n\nCommon issues and solutions:\n- Configuration problems\n- Integration challenges\n- Performance concerns\n- Deployment issues\n\nFor more information, see the complete ADK documentation.\n",
+    "metadata": {
+      "source": "adk_knowledge_base",
+      "type": "documentation",
+      "topic": "Callbacks",
+      "category": "adk_reference",
+      "indexed_at": "2025-07-22T14:24:58.329548"
+    }
+  },
+  {
+    "id": "adk_kb_workflow_agents_50",
+    "content": "# Workflow Agents\n\nSequential, Parallel, and Loop agents\n\n## Overview\n\nWorkflow Agents is a core component of the Google Agent Development Kit (ADK). This documentation covers:\n\n- Basic usage patterns\n- Advanced configuration options\n- Best practices and examples\n- Common troubleshooting scenarios\n\n## Key Features\n\n- Production-ready implementation\n- Seamless integration with other ADK components\n- Comprehensive error handling\n- Performance optimizations\n\n## Usage Examples\n\n```python\n# Example implementation\nfrom google.adk.agents import LlmAgent\nfrom google.adk.tools import workflow_agents\n\n# Basic usage pattern\nagent = LlmAgent(\n    name=\"example_agent\",\n    model=\"gemini-2.5-flash\",\n    description=\"Example agent using Workflow Agents\",\n    instruction=\"You are an example agent demonstrating Workflow Agents\",\n    tools=[workflow_agents]\n)\n```\n\n## Best Practices\n\n1. Always follow ADK naming conventions\n2. Include comprehensive tool docstrings\n3. Handle errors gracefully\n4. Use appropriate tool selection logic\n5. Test thoroughly before deployment\n\n## Related Components\n\n- Works with other ADK tools and agents\n- Integrates with Vertex AI and Cloud Run\n- Supports state management and callbacks\n- Compatible with multi-agent workflows\n\n## Troubleshooting\n\nCommon issues and solutions:\n- Configuration problems\n- Integration challenges\n- Performance concerns\n- Deployment issues\n\nFor more information, see the complete ADK documentation.\n",
+    "metadata": {
+      "source": "adk_knowledge_base",
+      "type": "documentation",
+      "topic": "Workflow Agents",
+      "category": "adk_reference",
+      "indexed_at": "2025-07-22T14:24:58.329550"
+    }
+  },
+  {
+    "id": "adk_kb_deployment_51",
+    "content": "# Deployment\n\nDeploying agents to Cloud Run\n\n## Overview\n\nDeployment is a core component of the Google Agent Development Kit (ADK). This documentation covers:\n\n- Basic usage patterns\n- Advanced configuration options\n- Best practices and examples\n- Common troubleshooting scenarios\n\n## Key Features\n\n- Production-ready implementation\n- Seamless integration with other ADK components\n- Comprehensive error handling\n- Performance optimizations\n\n## Usage Examples\n\n```python\n# Example implementation\nfrom google.adk.agents import LlmAgent\nfrom google.adk.tools import deployment\n\n# Basic usage pattern\nagent = LlmAgent(\n    name=\"example_agent\",\n    model=\"gemini-2.5-flash\",\n    description=\"Example agent using Deployment\",\n    instruction=\"You are an example agent demonstrating Deployment\",\n    tools=[deployment]\n)\n```\n\n## Best Practices\n\n1. Always follow ADK naming conventions\n2. Include comprehensive tool docstrings\n3. Handle errors gracefully\n4. Use appropriate tool selection logic\n5. Test thoroughly before deployment\n\n## Related Components\n\n- Works with other ADK tools and agents\n- Integrates with Vertex AI and Cloud Run\n- Supports state management and callbacks\n- Compatible with multi-agent workflows\n\n## Troubleshooting\n\nCommon issues and solutions:\n- Configuration problems\n- Integration challenges\n- Performance concerns\n- Deployment issues\n\nFor more information, see the complete ADK documentation.\n",
+    "metadata": {
+      "source": "adk_knowledge_base",
+      "type": "documentation",
+      "topic": "Deployment",
+      "category": "adk_reference",
+      "indexed_at": "2025-07-22T14:24:58.329551"
+    }
+  },
+  {
+    "id": "adk_kb_best_practices_52",
+    "content": "# Best Practices\n\nADK development patterns\n\n## Overview\n\nBest Practices is a core component of the Google Agent Development Kit (ADK). This documentation covers:\n\n- Basic usage patterns\n- Advanced configuration options\n- Best practices and examples\n- Common troubleshooting scenarios\n\n## Key Features\n\n- Production-ready implementation\n- Seamless integration with other ADK components\n- Comprehensive error handling\n- Performance optimizations\n\n## Usage Examples\n\n```python\n# Example implementation\nfrom google.adk.agents import LlmAgent\nfrom google.adk.tools import best_practices\n\n# Basic usage pattern\nagent = LlmAgent(\n    name=\"example_agent\",\n    model=\"gemini-2.5-flash\",\n    description=\"Example agent using Best Practices\",\n    instruction=\"You are an example agent demonstrating Best Practices\",\n    tools=[best_practices]\n)\n```\n\n## Best Practices\n\n1. Always follow ADK naming conventions\n2. Include comprehensive tool docstrings\n3. Handle errors gracefully\n4. Use appropriate tool selection logic\n5. Test thoroughly before deployment\n\n## Related Components\n\n- Works with other ADK tools and agents\n- Integrates with Vertex AI and Cloud Run\n- Supports state management and callbacks\n- Compatible with multi-agent workflows\n\n## Troubleshooting\n\nCommon issues and solutions:\n- Configuration problems\n- Integration challenges\n- Performance concerns\n- Deployment issues\n\nFor more information, see the complete ADK documentation.\n",
+    "metadata": {
+      "source": "adk_knowledge_base",
+      "type": "documentation",
+      "topic": "Best Practices",
+      "category": "adk_reference",
+      "indexed_at": "2025-07-22T14:24:58.329553"
+    }
+  },
+  {
+    "id": "adk_kb_error_handling_53",
+    "content": "# Error Handling\n\nManaging agent failures\n\n## Overview\n\nError Handling is a core component of the Google Agent Development Kit (ADK). This documentation covers:\n\n- Basic usage patterns\n- Advanced configuration options\n- Best practices and examples\n- Common troubleshooting scenarios\n\n## Key Features\n\n- Production-ready implementation\n- Seamless integration with other ADK components\n- Comprehensive error handling\n- Performance optimizations\n\n## Usage Examples\n\n```python\n# Example implementation\nfrom google.adk.agents import LlmAgent\nfrom google.adk.tools import error_handling\n\n# Basic usage pattern\nagent = LlmAgent(\n    name=\"example_agent\",\n    model=\"gemini-2.5-flash\",\n    description=\"Example agent using Error Handling\",\n    instruction=\"You are an example agent demonstrating Error Handling\",\n    tools=[error_handling]\n)\n```\n\n## Best Practices\n\n1. Always follow ADK naming conventions\n2. Include comprehensive tool docstrings\n3. Handle errors gracefully\n4. Use appropriate tool selection logic\n5. Test thoroughly before deployment\n\n## Related Components\n\n- Works with other ADK tools and agents\n- Integrates with Vertex AI and Cloud Run\n- Supports state management and callbacks\n- Compatible with multi-agent workflows\n\n## Troubleshooting\n\nCommon issues and solutions:\n- Configuration problems\n- Integration challenges\n- Performance concerns\n- Deployment issues\n\nFor more information, see the complete ADK documentation.\n",
+    "metadata": {
+      "source": "adk_knowledge_base",
+      "type": "documentation",
+      "topic": "Error Handling",
+      "category": "adk_reference",
+      "indexed_at": "2025-07-22T14:24:58.329554"
+    }
+  },
+  {
+    "id": "adk_kb_performance_54",
+    "content": "# Performance\n\nOptimizing agent performance\n\n## Overview\n\nPerformance is a core component of the Google Agent Development Kit (ADK). This documentation covers:\n\n- Basic usage patterns\n- Advanced configuration options\n- Best practices and examples\n- Common troubleshooting scenarios\n\n## Key Features\n\n- Production-ready implementation\n- Seamless integration with other ADK components\n- Comprehensive error handling\n- Performance optimizations\n\n## Usage Examples\n\n```python\n# Example implementation\nfrom google.adk.agents import LlmAgent\nfrom google.adk.tools import performance\n\n# Basic usage pattern\nagent = LlmAgent(\n    name=\"example_agent\",\n    model=\"gemini-2.5-flash\",\n    description=\"Example agent using Performance\",\n    instruction=\"You are an example agent demonstrating Performance\",\n    tools=[performance]\n)\n```\n\n## Best Practices\n\n1. Always follow ADK naming conventions\n2. Include comprehensive tool docstrings\n3. Handle errors gracefully\n4. Use appropriate tool selection logic\n5. Test thoroughly before deployment\n\n## Related Components\n\n- Works with other ADK tools and agents\n- Integrates with Vertex AI and Cloud Run\n- Supports state management and callbacks\n- Compatible with multi-agent workflows\n\n## Troubleshooting\n\nCommon issues and solutions:\n- Configuration problems\n- Integration challenges\n- Performance concerns\n- Deployment issues\n\nFor more information, see the complete ADK documentation.\n",
+    "metadata": {
+      "source": "adk_knowledge_base",
+      "type": "documentation",
+      "topic": "Performance",
+      "category": "adk_reference",
+      "indexed_at": "2025-07-22T14:24:58.329555"
+    }
+  },
+  {
+    "id": "adk_kb_security_55",
+    "content": "# Security\n\nSecure agent development\n\n## Overview\n\nSecurity is a core component of the Google Agent Development Kit (ADK). This documentation covers:\n\n- Basic usage patterns\n- Advanced configuration options\n- Best practices and examples\n- Common troubleshooting scenarios\n\n## Key Features\n\n- Production-ready implementation\n- Seamless integration with other ADK components\n- Comprehensive error handling\n- Performance optimizations\n\n## Usage Examples\n\n```python\n# Example implementation\nfrom google.adk.agents import LlmAgent\nfrom google.adk.tools import security\n\n# Basic usage pattern\nagent = LlmAgent(\n    name=\"example_agent\",\n    model=\"gemini-2.5-flash\",\n    description=\"Example agent using Security\",\n    instruction=\"You are an example agent demonstrating Security\",\n    tools=[security]\n)\n```\n\n## Best Practices\n\n1. Always follow ADK naming conventions\n2. Include comprehensive tool docstrings\n3. Handle errors gracefully\n4. Use appropriate tool selection logic\n5. Test thoroughly before deployment\n\n## Related Components\n\n- Works with other ADK tools and agents\n- Integrates with Vertex AI and Cloud Run\n- Supports state management and callbacks\n- Compatible with multi-agent workflows\n\n## Troubleshooting\n\nCommon issues and solutions:\n- Configuration problems\n- Integration challenges\n- Performance concerns\n- Deployment issues\n\nFor more information, see the complete ADK documentation.\n",
+    "metadata": {
+      "source": "adk_knowledge_base",
+      "type": "documentation",
+      "topic": "Security",
+      "category": "adk_reference",
+      "indexed_at": "2025-07-22T14:24:58.329557"
+    }
+  },
+  {
+    "id": "adk_kb_testing_56",
+    "content": "# Testing\n\nTesting ADK agents\n\n## Overview\n\nTesting is a core component of the Google Agent Development Kit (ADK). This documentation covers:\n\n- Basic usage patterns\n- Advanced configuration options\n- Best practices and examples\n- Common troubleshooting scenarios\n\n## Key Features\n\n- Production-ready implementation\n- Seamless integration with other ADK components\n- Comprehensive error handling\n- Performance optimizations\n\n## Usage Examples\n\n```python\n# Example implementation\nfrom google.adk.agents import LlmAgent\nfrom google.adk.tools import testing\n\n# Basic usage pattern\nagent = LlmAgent(\n    name=\"example_agent\",\n    model=\"gemini-2.5-flash\",\n    description=\"Example agent using Testing\",\n    instruction=\"You are an example agent demonstrating Testing\",\n    tools=[testing]\n)\n```\n\n## Best Practices\n\n1. Always follow ADK naming conventions\n2. Include comprehensive tool docstrings\n3. Handle errors gracefully\n4. Use appropriate tool selection logic\n5. Test thoroughly before deployment\n\n## Related Components\n\n- Works with other ADK tools and agents\n- Integrates with Vertex AI and Cloud Run\n- Supports state management and callbacks\n- Compatible with multi-agent workflows\n\n## Troubleshooting\n\nCommon issues and solutions:\n- Configuration problems\n- Integration challenges\n- Performance concerns\n- Deployment issues\n\nFor more information, see the complete ADK documentation.\n",
+    "metadata": {
+      "source": "adk_knowledge_base",
+      "type": "documentation",
+      "topic": "Testing",
+      "category": "adk_reference",
+      "indexed_at": "2025-07-22T14:24:58.329559"
+    }
+  },
+  {
+    "id": "adk_kb_debugging_57",
+    "content": "# Debugging\n\nTroubleshooting agents\n\n## Overview\n\nDebugging is a core component of the Google Agent Development Kit (ADK). This documentation covers:\n\n- Basic usage patterns\n- Advanced configuration options\n- Best practices and examples\n- Common troubleshooting scenarios\n\n## Key Features\n\n- Production-ready implementation\n- Seamless integration with other ADK components\n- Comprehensive error handling\n- Performance optimizations\n\n## Usage Examples\n\n```python\n# Example implementation\nfrom google.adk.agents import LlmAgent\nfrom google.adk.tools import debugging\n\n# Basic usage pattern\nagent = LlmAgent(\n    name=\"example_agent\",\n    model=\"gemini-2.5-flash\",\n    description=\"Example agent using Debugging\",\n    instruction=\"You are an example agent demonstrating Debugging\",\n    tools=[debugging]\n)\n```\n\n## Best Practices\n\n1. Always follow ADK naming conventions\n2. Include comprehensive tool docstrings\n3. Handle errors gracefully\n4. Use appropriate tool selection logic\n5. Test thoroughly before deployment\n\n## Related Components\n\n- Works with other ADK tools and agents\n- Integrates with Vertex AI and Cloud Run\n- Supports state management and callbacks\n- Compatible with multi-agent workflows\n\n## Troubleshooting\n\nCommon issues and solutions:\n- Configuration problems\n- Integration challenges\n- Performance concerns\n- Deployment issues\n\nFor more information, see the complete ADK documentation.\n",
+    "metadata": {
+      "source": "adk_knowledge_base",
+      "type": "documentation",
+      "topic": "Debugging",
+      "category": "adk_reference",
+      "indexed_at": "2025-07-22T14:24:58.329560"
+    }
+  },
+  {
+    "id": "adk_kb_integration_58",
+    "content": "# Integration\n\nIntegrating with other services\n\n## Overview\n\nIntegration is a core component of the Google Agent Development Kit (ADK). This documentation covers:\n\n- Basic usage patterns\n- Advanced configuration options\n- Best practices and examples\n- Common troubleshooting scenarios\n\n## Key Features\n\n- Production-ready implementation\n- Seamless integration with other ADK components\n- Comprehensive error handling\n- Performance optimizations\n\n## Usage Examples\n\n```python\n# Example implementation\nfrom google.adk.agents import LlmAgent\nfrom google.adk.tools import integration\n\n# Basic usage pattern\nagent = LlmAgent(\n    name=\"example_agent\",\n    model=\"gemini-2.5-flash\",\n    description=\"Example agent using Integration\",\n    instruction=\"You are an example agent demonstrating Integration\",\n    tools=[integration]\n)\n```\n\n## Best Practices\n\n1. Always follow ADK naming conventions\n2. Include comprehensive tool docstrings\n3. Handle errors gracefully\n4. Use appropriate tool selection logic\n5. Test thoroughly before deployment\n\n## Related Components\n\n- Works with other ADK tools and agents\n- Integrates with Vertex AI and Cloud Run\n- Supports state management and callbacks\n- Compatible with multi-agent workflows\n\n## Troubleshooting\n\nCommon issues and solutions:\n- Configuration problems\n- Integration challenges\n- Performance concerns\n- Deployment issues\n\nFor more information, see the complete ADK documentation.\n",
+    "metadata": {
+      "source": "adk_knowledge_base",
+      "type": "documentation",
+      "topic": "Integration",
+      "category": "adk_reference",
+      "indexed_at": "2025-07-22T14:24:58.329561"
+    }
+  },
+  {
+    "id": "adk_kb_configuration_59",
+    "content": "# Configuration\n\nEnvironment and config management\n\n## Overview\n\nConfiguration is a core component of the Google Agent Development Kit (ADK). This documentation covers:\n\n- Basic usage patterns\n- Advanced configuration options\n- Best practices and examples\n- Common troubleshooting scenarios\n\n## Key Features\n\n- Production-ready implementation\n- Seamless integration with other ADK components\n- Comprehensive error handling\n- Performance optimizations\n\n## Usage Examples\n\n```python\n# Example implementation\nfrom google.adk.agents import LlmAgent\nfrom google.adk.tools import configuration\n\n# Basic usage pattern\nagent = LlmAgent(\n    name=\"example_agent\",\n    model=\"gemini-2.5-flash\",\n    description=\"Example agent using Configuration\",\n    instruction=\"You are an example agent demonstrating Configuration\",\n    tools=[configuration]\n)\n```\n\n## Best Practices\n\n1. Always follow ADK naming conventions\n2. Include comprehensive tool docstrings\n3. Handle errors gracefully\n4. Use appropriate tool selection logic\n5. Test thoroughly before deployment\n\n## Related Components\n\n- Works with other ADK tools and agents\n- Integrates with Vertex AI and Cloud Run\n- Supports state management and callbacks\n- Compatible with multi-agent workflows\n\n## Troubleshooting\n\nCommon issues and solutions:\n- Configuration problems\n- Integration challenges\n- Performance concerns\n- Deployment issues\n\nFor more information, see the complete ADK documentation.\n",
+    "metadata": {
+      "source": "adk_knowledge_base",
+      "type": "documentation",
+      "topic": "Configuration",
+      "category": "adk_reference",
+      "indexed_at": "2025-07-22T14:24:58.329562"
+    }
+  },
+  {
+    "id": "adk_kb_llmagent_60",
+    "content": "# LlmAgent\n\nCore agent class for creating LLM-powered agents\n\n## Overview\n\nLlmAgent is a core component of the Google Agent Development Kit (ADK). This documentation covers:\n\n- Basic usage patterns\n- Advanced configuration options\n- Best practices and examples\n- Common troubleshooting scenarios\n\n## Key Features\n\n- Production-ready implementation\n- Seamless integration with other ADK components\n- Comprehensive error handling\n- Performance optimizations\n\n## Usage Examples\n\n```python\n# Example implementation\nfrom google.adk.agents import LlmAgent\nfrom google.adk.tools import llmagent\n\n# Basic usage pattern\nagent = LlmAgent(\n    name=\"example_agent\",\n    model=\"gemini-2.5-flash\",\n    description=\"Example agent using LlmAgent\",\n    instruction=\"You are an example agent demonstrating LlmAgent\",\n    tools=[llmagent]\n)\n```\n\n## Best Practices\n\n1. Always follow ADK naming conventions\n2. Include comprehensive tool docstrings\n3. Handle errors gracefully\n4. Use appropriate tool selection logic\n5. Test thoroughly before deployment\n\n## Related Components\n\n- Works with other ADK tools and agents\n- Integrates with Vertex AI and Cloud Run\n- Supports state management and callbacks\n- Compatible with multi-agent workflows\n\n## Troubleshooting\n\nCommon issues and solutions:\n- Configuration problems\n- Integration challenges\n- Performance concerns\n- Deployment issues\n\nFor more information, see the complete ADK documentation.\n",
+    "metadata": {
+      "source": "adk_knowledge_base",
+      "type": "documentation",
+      "topic": "LlmAgent",
+      "category": "adk_reference",
+      "indexed_at": "2025-07-22T14:24:58.329564"
+    }
+  },
+  {
+    "id": "adk_kb_functiontool_61",
+    "content": "# FunctionTool\n\nTool wrapper for Python functions\n\n## Overview\n\nFunctionTool is a core component of the Google Agent Development Kit (ADK). This documentation covers:\n\n- Basic usage patterns\n- Advanced configuration options\n- Best practices and examples\n- Common troubleshooting scenarios\n\n## Key Features\n\n- Production-ready implementation\n- Seamless integration with other ADK components\n- Comprehensive error handling\n- Performance optimizations\n\n## Usage Examples\n\n```python\n# Example implementation\nfrom google.adk.agents import LlmAgent\nfrom google.adk.tools import functiontool\n\n# Basic usage pattern\nagent = LlmAgent(\n    name=\"example_agent\",\n    model=\"gemini-2.5-flash\",\n    description=\"Example agent using FunctionTool\",\n    instruction=\"You are an example agent demonstrating FunctionTool\",\n    tools=[functiontool]\n)\n```\n\n## Best Practices\n\n1. Always follow ADK naming conventions\n2. Include comprehensive tool docstrings\n3. Handle errors gracefully\n4. Use appropriate tool selection logic\n5. Test thoroughly before deployment\n\n## Related Components\n\n- Works with other ADK tools and agents\n- Integrates with Vertex AI and Cloud Run\n- Supports state management and callbacks\n- Compatible with multi-agent workflows\n\n## Troubleshooting\n\nCommon issues and solutions:\n- Configuration problems\n- Integration challenges\n- Performance concerns\n- Deployment issues\n\nFor more information, see the complete ADK documentation.\n",
+    "metadata": {
+      "source": "adk_knowledge_base",
+      "type": "documentation",
+      "topic": "FunctionTool",
+      "category": "adk_reference",
+      "indexed_at": "2025-07-22T14:24:58.329565"
+    }
+  },
+  {
+    "id": "adk_kb_agenttool_62",
+    "content": "# AgentTool\n\nTool wrapper for other agents\n\n## Overview\n\nAgentTool is a core component of the Google Agent Development Kit (ADK). This documentation covers:\n\n- Basic usage patterns\n- Advanced configuration options\n- Best practices and examples\n- Common troubleshooting scenarios\n\n## Key Features\n\n- Production-ready implementation\n- Seamless integration with other ADK components\n- Comprehensive error handling\n- Performance optimizations\n\n## Usage Examples\n\n```python\n# Example implementation\nfrom google.adk.agents import LlmAgent\nfrom google.adk.tools import agenttool\n\n# Basic usage pattern\nagent = LlmAgent(\n    name=\"example_agent\",\n    model=\"gemini-2.5-flash\",\n    description=\"Example agent using AgentTool\",\n    instruction=\"You are an example agent demonstrating AgentTool\",\n    tools=[agenttool]\n)\n```\n\n## Best Practices\n\n1. Always follow ADK naming conventions\n2. Include comprehensive tool docstrings\n3. Handle errors gracefully\n4. Use appropriate tool selection logic\n5. Test thoroughly before deployment\n\n## Related Components\n\n- Works with other ADK tools and agents\n- Integrates with Vertex AI and Cloud Run\n- Supports state management and callbacks\n- Compatible with multi-agent workflows\n\n## Troubleshooting\n\nCommon issues and solutions:\n- Configuration problems\n- Integration challenges\n- Performance concerns\n- Deployment issues\n\nFor more information, see the complete ADK documentation.\n",
+    "metadata": {
+      "source": "adk_knowledge_base",
+      "type": "documentation",
+      "topic": "AgentTool",
+      "category": "adk_reference",
+      "indexed_at": "2025-07-22T14:24:58.329566"
+    }
+  },
+  {
+    "id": "adk_kb_google_search_63",
+    "content": "# google_search\n\nBuilt-in web search tool\n\n## Overview\n\ngoogle_search is a core component of the Google Agent Development Kit (ADK). This documentation covers:\n\n- Basic usage patterns\n- Advanced configuration options\n- Best practices and examples\n- Common troubleshooting scenarios\n\n## Key Features\n\n- Production-ready implementation\n- Seamless integration with other ADK components\n- Comprehensive error handling\n- Performance optimizations\n\n## Usage Examples\n\n```python\n# Example implementation\nfrom google.adk.agents import LlmAgent\nfrom google.adk.tools import google_search\n\n# Basic usage pattern\nagent = LlmAgent(\n    name=\"example_agent\",\n    model=\"gemini-2.5-flash\",\n    description=\"Example agent using google_search\",\n    instruction=\"You are an example agent demonstrating google_search\",\n    tools=[google_search]\n)\n```\n\n## Best Practices\n\n1. Always follow ADK naming conventions\n2. Include comprehensive tool docstrings\n3. Handle errors gracefully\n4. Use appropriate tool selection logic\n5. Test thoroughly before deployment\n\n## Related Components\n\n- Works with other ADK tools and agents\n- Integrates with Vertex AI and Cloud Run\n- Supports state management and callbacks\n- Compatible with multi-agent workflows\n\n## Troubleshooting\n\nCommon issues and solutions:\n- Configuration problems\n- Integration challenges\n- Performance concerns\n- Deployment issues\n\nFor more information, see the complete ADK documentation.\n",
+    "metadata": {
+      "source": "adk_knowledge_base",
+      "type": "documentation",
+      "topic": "google_search",
+      "category": "adk_reference",
+      "indexed_at": "2025-07-22T14:24:58.329569"
+    }
+  },
+  {
+    "id": "adk_kb_load_memory_64",
+    "content": "# load_memory\n\nTool for accessing Vertex AI RAG corpus\n\n## Overview\n\nload_memory is a core component of the Google Agent Development Kit (ADK). This documentation covers:\n\n- Basic usage patterns\n- Advanced configuration options\n- Best practices and examples\n- Common troubleshooting scenarios\n\n## Key Features\n\n- Production-ready implementation\n- Seamless integration with other ADK components\n- Comprehensive error handling\n- Performance optimizations\n\n## Usage Examples\n\n```python\n# Example implementation\nfrom google.adk.agents import LlmAgent\nfrom google.adk.tools import load_memory\n\n# Basic usage pattern\nagent = LlmAgent(\n    name=\"example_agent\",\n    model=\"gemini-2.5-flash\",\n    description=\"Example agent using load_memory\",\n    instruction=\"You are an example agent demonstrating load_memory\",\n    tools=[load_memory]\n)\n```\n\n## Best Practices\n\n1. Always follow ADK naming conventions\n2. Include comprehensive tool docstrings\n3. Handle errors gracefully\n4. Use appropriate tool selection logic\n5. Test thoroughly before deployment\n\n## Related Components\n\n- Works with other ADK tools and agents\n- Integrates with Vertex AI and Cloud Run\n- Supports state management and callbacks\n- Compatible with multi-agent workflows\n\n## Troubleshooting\n\nCommon issues and solutions:\n- Configuration problems\n- Integration challenges\n- Performance concerns\n- Deployment issues\n\nFor more information, see the complete ADK documentation.\n",
+    "metadata": {
+      "source": "adk_knowledge_base",
+      "type": "documentation",
+      "topic": "load_memory",
+      "category": "adk_reference",
+      "indexed_at": "2025-07-22T14:24:58.329570"
+    }
+  },
+  {
+    "id": "adk_kb_session_management_65",
+    "content": "# Session Management\n\nManaging state across conversations\n\n## Overview\n\nSession Management is a core component of the Google Agent Development Kit (ADK). This documentation covers:\n\n- Basic usage patterns\n- Advanced configuration options\n- Best practices and examples\n- Common troubleshooting scenarios\n\n## Key Features\n\n- Production-ready implementation\n- Seamless integration with other ADK components\n- Comprehensive error handling\n- Performance optimizations\n\n## Usage Examples\n\n```python\n# Example implementation\nfrom google.adk.agents import LlmAgent\nfrom google.adk.tools import session_management\n\n# Basic usage pattern\nagent = LlmAgent(\n    name=\"example_agent\",\n    model=\"gemini-2.5-flash\",\n    description=\"Example agent using Session Management\",\n    instruction=\"You are an example agent demonstrating Session Management\",\n    tools=[session_management]\n)\n```\n\n## Best Practices\n\n1. Always follow ADK naming conventions\n2. Include comprehensive tool docstrings\n3. Handle errors gracefully\n4. Use appropriate tool selection logic\n5. Test thoroughly before deployment\n\n## Related Components\n\n- Works with other ADK tools and agents\n- Integrates with Vertex AI and Cloud Run\n- Supports state management and callbacks\n- Compatible with multi-agent workflows\n\n## Troubleshooting\n\nCommon issues and solutions:\n- Configuration problems\n- Integration challenges\n- Performance concerns\n- Deployment issues\n\nFor more information, see the complete ADK documentation.\n",
+    "metadata": {
+      "source": "adk_knowledge_base",
+      "type": "documentation",
+      "topic": "Session Management",
+      "category": "adk_reference",
+      "indexed_at": "2025-07-22T14:24:58.329572"
+    }
+  },
+  {
+    "id": "adk_kb_multi-agent_systems_66",
+    "content": "# Multi-Agent Systems\n\nOrchestrating multiple agents\n\n## Overview\n\nMulti-Agent Systems is a core component of the Google Agent Development Kit (ADK). This documentation covers:\n\n- Basic usage patterns\n- Advanced configuration options\n- Best practices and examples\n- Common troubleshooting scenarios\n\n## Key Features\n\n- Production-ready implementation\n- Seamless integration with other ADK components\n- Comprehensive error handling\n- Performance optimizations\n\n## Usage Examples\n\n```python\n# Example implementation\nfrom google.adk.agents import LlmAgent\nfrom google.adk.tools import multi-agent_systems\n\n# Basic usage pattern\nagent = LlmAgent(\n    name=\"example_agent\",\n    model=\"gemini-2.5-flash\",\n    description=\"Example agent using Multi-Agent Systems\",\n    instruction=\"You are an example agent demonstrating Multi-Agent Systems\",\n    tools=[multi-agent_systems]\n)\n```\n\n## Best Practices\n\n1. Always follow ADK naming conventions\n2. Include comprehensive tool docstrings\n3. Handle errors gracefully\n4. Use appropriate tool selection logic\n5. Test thoroughly before deployment\n\n## Related Components\n\n- Works with other ADK tools and agents\n- Integrates with Vertex AI and Cloud Run\n- Supports state management and callbacks\n- Compatible with multi-agent workflows\n\n## Troubleshooting\n\nCommon issues and solutions:\n- Configuration problems\n- Integration challenges\n- Performance concerns\n- Deployment issues\n\nFor more information, see the complete ADK documentation.\n",
+    "metadata": {
+      "source": "adk_knowledge_base",
+      "type": "documentation",
+      "topic": "Multi-Agent Systems",
+      "category": "adk_reference",
+      "indexed_at": "2025-07-22T14:24:58.329574"
+    }
+  },
+  {
+    "id": "adk_kb_tool_registration_67",
+    "content": "# Tool Registration\n\nAdding tools to agents\n\n## Overview\n\nTool Registration is a core component of the Google Agent Development Kit (ADK). This documentation covers:\n\n- Basic usage patterns\n- Advanced configuration options\n- Best practices and examples\n- Common troubleshooting scenarios\n\n## Key Features\n\n- Production-ready implementation\n- Seamless integration with other ADK components\n- Comprehensive error handling\n- Performance optimizations\n\n## Usage Examples\n\n```python\n# Example implementation\nfrom google.adk.agents import LlmAgent\nfrom google.adk.tools import tool_registration\n\n# Basic usage pattern\nagent = LlmAgent(\n    name=\"example_agent\",\n    model=\"gemini-2.5-flash\",\n    description=\"Example agent using Tool Registration\",\n    instruction=\"You are an example agent demonstrating Tool Registration\",\n    tools=[tool_registration]\n)\n```\n\n## Best Practices\n\n1. Always follow ADK naming conventions\n2. Include comprehensive tool docstrings\n3. Handle errors gracefully\n4. Use appropriate tool selection logic\n5. Test thoroughly before deployment\n\n## Related Components\n\n- Works with other ADK tools and agents\n- Integrates with Vertex AI and Cloud Run\n- Supports state management and callbacks\n- Compatible with multi-agent workflows\n\n## Troubleshooting\n\nCommon issues and solutions:\n- Configuration problems\n- Integration challenges\n- Performance concerns\n- Deployment issues\n\nFor more information, see the complete ADK documentation.\n",
+    "metadata": {
+      "source": "adk_knowledge_base",
+      "type": "documentation",
+      "topic": "Tool Registration",
+      "category": "adk_reference",
+      "indexed_at": "2025-07-22T14:24:58.329576"
+    }
+  },
+  {
+    "id": "adk_kb_state_variables_68",
+    "content": "# State Variables\n\nUsing {var} templating in instructions\n\n## Overview\n\nState Variables is a core component of the Google Agent Development Kit (ADK). This documentation covers:\n\n- Basic usage patterns\n- Advanced configuration options\n- Best practices and examples\n- Common troubleshooting scenarios\n\n## Key Features\n\n- Production-ready implementation\n- Seamless integration with other ADK components\n- Comprehensive error handling\n- Performance optimizations\n\n## Usage Examples\n\n```python\n# Example implementation\nfrom google.adk.agents import LlmAgent\nfrom google.adk.tools import state_variables\n\n# Basic usage pattern\nagent = LlmAgent(\n    name=\"example_agent\",\n    model=\"gemini-2.5-flash\",\n    description=\"Example agent using State Variables\",\n    instruction=\"You are an example agent demonstrating State Variables\",\n    tools=[state_variables]\n)\n```\n\n## Best Practices\n\n1. Always follow ADK naming conventions\n2. Include comprehensive tool docstrings\n3. Handle errors gracefully\n4. Use appropriate tool selection logic\n5. Test thoroughly before deployment\n\n## Related Components\n\n- Works with other ADK tools and agents\n- Integrates with Vertex AI and Cloud Run\n- Supports state management and callbacks\n- Compatible with multi-agent workflows\n\n## Troubleshooting\n\nCommon issues and solutions:\n- Configuration problems\n- Integration challenges\n- Performance concerns\n- Deployment issues\n\nFor more information, see the complete ADK documentation.\n",
+    "metadata": {
+      "source": "adk_knowledge_base",
+      "type": "documentation",
+      "topic": "State Variables",
+      "category": "adk_reference",
+      "indexed_at": "2025-07-22T14:24:58.329577"
+    }
+  },
+  {
+    "id": "adk_kb_callbacks_69",
+    "content": "# Callbacks\n\nHandling agent lifecycle events\n\n## Overview\n\nCallbacks is a core component of the Google Agent Development Kit (ADK). This documentation covers:\n\n- Basic usage patterns\n- Advanced configuration options\n- Best practices and examples\n- Common troubleshooting scenarios\n\n## Key Features\n\n- Production-ready implementation\n- Seamless integration with other ADK components\n- Comprehensive error handling\n- Performance optimizations\n\n## Usage Examples\n\n```python\n# Example implementation\nfrom google.adk.agents import LlmAgent\nfrom google.adk.tools import callbacks\n\n# Basic usage pattern\nagent = LlmAgent(\n    name=\"example_agent\",\n    model=\"gemini-2.5-flash\",\n    description=\"Example agent using Callbacks\",\n    instruction=\"You are an example agent demonstrating Callbacks\",\n    tools=[callbacks]\n)\n```\n\n## Best Practices\n\n1. Always follow ADK naming conventions\n2. Include comprehensive tool docstrings\n3. Handle errors gracefully\n4. Use appropriate tool selection logic\n5. Test thoroughly before deployment\n\n## Related Components\n\n- Works with other ADK tools and agents\n- Integrates with Vertex AI and Cloud Run\n- Supports state management and callbacks\n- Compatible with multi-agent workflows\n\n## Troubleshooting\n\nCommon issues and solutions:\n- Configuration problems\n- Integration challenges\n- Performance concerns\n- Deployment issues\n\nFor more information, see the complete ADK documentation.\n",
+    "metadata": {
+      "source": "adk_knowledge_base",
+      "type": "documentation",
+      "topic": "Callbacks",
+      "category": "adk_reference",
+      "indexed_at": "2025-07-22T14:24:58.329578"
+    }
+  },
+  {
+    "id": "adk_kb_workflow_agents_70",
+    "content": "# Workflow Agents\n\nSequential, Parallel, and Loop agents\n\n## Overview\n\nWorkflow Agents is a core component of the Google Agent Development Kit (ADK). This documentation covers:\n\n- Basic usage patterns\n- Advanced configuration options\n- Best practices and examples\n- Common troubleshooting scenarios\n\n## Key Features\n\n- Production-ready implementation\n- Seamless integration with other ADK components\n- Comprehensive error handling\n- Performance optimizations\n\n## Usage Examples\n\n```python\n# Example implementation\nfrom google.adk.agents import LlmAgent\nfrom google.adk.tools import workflow_agents\n\n# Basic usage pattern\nagent = LlmAgent(\n    name=\"example_agent\",\n    model=\"gemini-2.5-flash\",\n    description=\"Example agent using Workflow Agents\",\n    instruction=\"You are an example agent demonstrating Workflow Agents\",\n    tools=[workflow_agents]\n)\n```\n\n## Best Practices\n\n1. Always follow ADK naming conventions\n2. Include comprehensive tool docstrings\n3. Handle errors gracefully\n4. Use appropriate tool selection logic\n5. Test thoroughly before deployment\n\n## Related Components\n\n- Works with other ADK tools and agents\n- Integrates with Vertex AI and Cloud Run\n- Supports state management and callbacks\n- Compatible with multi-agent workflows\n\n## Troubleshooting\n\nCommon issues and solutions:\n- Configuration problems\n- Integration challenges\n- Performance concerns\n- Deployment issues\n\nFor more information, see the complete ADK documentation.\n",
+    "metadata": {
+      "source": "adk_knowledge_base",
+      "type": "documentation",
+      "topic": "Workflow Agents",
+      "category": "adk_reference",
+      "indexed_at": "2025-07-22T14:24:58.329580"
+    }
+  },
+  {
+    "id": "adk_kb_deployment_71",
+    "content": "# Deployment\n\nDeploying agents to Cloud Run\n\n## Overview\n\nDeployment is a core component of the Google Agent Development Kit (ADK). This documentation covers:\n\n- Basic usage patterns\n- Advanced configuration options\n- Best practices and examples\n- Common troubleshooting scenarios\n\n## Key Features\n\n- Production-ready implementation\n- Seamless integration with other ADK components\n- Comprehensive error handling\n- Performance optimizations\n\n## Usage Examples\n\n```python\n# Example implementation\nfrom google.adk.agents import LlmAgent\nfrom google.adk.tools import deployment\n\n# Basic usage pattern\nagent = LlmAgent(\n    name=\"example_agent\",\n    model=\"gemini-2.5-flash\",\n    description=\"Example agent using Deployment\",\n    instruction=\"You are an example agent demonstrating Deployment\",\n    tools=[deployment]\n)\n```\n\n## Best Practices\n\n1. Always follow ADK naming conventions\n2. Include comprehensive tool docstrings\n3. Handle errors gracefully\n4. Use appropriate tool selection logic\n5. Test thoroughly before deployment\n\n## Related Components\n\n- Works with other ADK tools and agents\n- Integrates with Vertex AI and Cloud Run\n- Supports state management and callbacks\n- Compatible with multi-agent workflows\n\n## Troubleshooting\n\nCommon issues and solutions:\n- Configuration problems\n- Integration challenges\n- Performance concerns\n- Deployment issues\n\nFor more information, see the complete ADK documentation.\n",
+    "metadata": {
+      "source": "adk_knowledge_base",
+      "type": "documentation",
+      "topic": "Deployment",
+      "category": "adk_reference",
+      "indexed_at": "2025-07-22T14:24:58.329581"
+    }
+  },
+  {
+    "id": "adk_kb_best_practices_72",
+    "content": "# Best Practices\n\nADK development patterns\n\n## Overview\n\nBest Practices is a core component of the Google Agent Development Kit (ADK). This documentation covers:\n\n- Basic usage patterns\n- Advanced configuration options\n- Best practices and examples\n- Common troubleshooting scenarios\n\n## Key Features\n\n- Production-ready implementation\n- Seamless integration with other ADK components\n- Comprehensive error handling\n- Performance optimizations\n\n## Usage Examples\n\n```python\n# Example implementation\nfrom google.adk.agents import LlmAgent\nfrom google.adk.tools import best_practices\n\n# Basic usage pattern\nagent = LlmAgent(\n    name=\"example_agent\",\n    model=\"gemini-2.5-flash\",\n    description=\"Example agent using Best Practices\",\n    instruction=\"You are an example agent demonstrating Best Practices\",\n    tools=[best_practices]\n)\n```\n\n## Best Practices\n\n1. Always follow ADK naming conventions\n2. Include comprehensive tool docstrings\n3. Handle errors gracefully\n4. Use appropriate tool selection logic\n5. Test thoroughly before deployment\n\n## Related Components\n\n- Works with other ADK tools and agents\n- Integrates with Vertex AI and Cloud Run\n- Supports state management and callbacks\n- Compatible with multi-agent workflows\n\n## Troubleshooting\n\nCommon issues and solutions:\n- Configuration problems\n- Integration challenges\n- Performance concerns\n- Deployment issues\n\nFor more information, see the complete ADK documentation.\n",
+    "metadata": {
+      "source": "adk_knowledge_base",
+      "type": "documentation",
+      "topic": "Best Practices",
+      "category": "adk_reference",
+      "indexed_at": "2025-07-22T14:24:58.329582"
+    }
+  },
+  {
+    "id": "adk_kb_error_handling_73",
+    "content": "# Error Handling\n\nManaging agent failures\n\n## Overview\n\nError Handling is a core component of the Google Agent Development Kit (ADK). This documentation covers:\n\n- Basic usage patterns\n- Advanced configuration options\n- Best practices and examples\n- Common troubleshooting scenarios\n\n## Key Features\n\n- Production-ready implementation\n- Seamless integration with other ADK components\n- Comprehensive error handling\n- Performance optimizations\n\n## Usage Examples\n\n```python\n# Example implementation\nfrom google.adk.agents import LlmAgent\nfrom google.adk.tools import error_handling\n\n# Basic usage pattern\nagent = LlmAgent(\n    name=\"example_agent\",\n    model=\"gemini-2.5-flash\",\n    description=\"Example agent using Error Handling\",\n    instruction=\"You are an example agent demonstrating Error Handling\",\n    tools=[error_handling]\n)\n```\n\n## Best Practices\n\n1. Always follow ADK naming conventions\n2. Include comprehensive tool docstrings\n3. Handle errors gracefully\n4. Use appropriate tool selection logic\n5. Test thoroughly before deployment\n\n## Related Components\n\n- Works with other ADK tools and agents\n- Integrates with Vertex AI and Cloud Run\n- Supports state management and callbacks\n- Compatible with multi-agent workflows\n\n## Troubleshooting\n\nCommon issues and solutions:\n- Configuration problems\n- Integration challenges\n- Performance concerns\n- Deployment issues\n\nFor more information, see the complete ADK documentation.\n",
+    "metadata": {
+      "source": "adk_knowledge_base",
+      "type": "documentation",
+      "topic": "Error Handling",
+      "category": "adk_reference",
+      "indexed_at": "2025-07-22T14:24:58.329583"
+    }
+  },
+  {
+    "id": "adk_kb_performance_74",
+    "content": "# Performance\n\nOptimizing agent performance\n\n## Overview\n\nPerformance is a core component of the Google Agent Development Kit (ADK). This documentation covers:\n\n- Basic usage patterns\n- Advanced configuration options\n- Best practices and examples\n- Common troubleshooting scenarios\n\n## Key Features\n\n- Production-ready implementation\n- Seamless integration with other ADK components\n- Comprehensive error handling\n- Performance optimizations\n\n## Usage Examples\n\n```python\n# Example implementation\nfrom google.adk.agents import LlmAgent\nfrom google.adk.tools import performance\n\n# Basic usage pattern\nagent = LlmAgent(\n    name=\"example_agent\",\n    model=\"gemini-2.5-flash\",\n    description=\"Example agent using Performance\",\n    instruction=\"You are an example agent demonstrating Performance\",\n    tools=[performance]\n)\n```\n\n## Best Practices\n\n1. Always follow ADK naming conventions\n2. Include comprehensive tool docstrings\n3. Handle errors gracefully\n4. Use appropriate tool selection logic\n5. Test thoroughly before deployment\n\n## Related Components\n\n- Works with other ADK tools and agents\n- Integrates with Vertex AI and Cloud Run\n- Supports state management and callbacks\n- Compatible with multi-agent workflows\n\n## Troubleshooting\n\nCommon issues and solutions:\n- Configuration problems\n- Integration challenges\n- Performance concerns\n- Deployment issues\n\nFor more information, see the complete ADK documentation.\n",
+    "metadata": {
+      "source": "adk_knowledge_base",
+      "type": "documentation",
+      "topic": "Performance",
+      "category": "adk_reference",
+      "indexed_at": "2025-07-22T14:24:58.329585"
+    }
+  },
+  {
+    "id": "adk_kb_security_75",
+    "content": "# Security\n\nSecure agent development\n\n## Overview\n\nSecurity is a core component of the Google Agent Development Kit (ADK). This documentation covers:\n\n- Basic usage patterns\n- Advanced configuration options\n- Best practices and examples\n- Common troubleshooting scenarios\n\n## Key Features\n\n- Production-ready implementation\n- Seamless integration with other ADK components\n- Comprehensive error handling\n- Performance optimizations\n\n## Usage Examples\n\n```python\n# Example implementation\nfrom google.adk.agents import LlmAgent\nfrom google.adk.tools import security\n\n# Basic usage pattern\nagent = LlmAgent(\n    name=\"example_agent\",\n    model=\"gemini-2.5-flash\",\n    description=\"Example agent using Security\",\n    instruction=\"You are an example agent demonstrating Security\",\n    tools=[security]\n)\n```\n\n## Best Practices\n\n1. Always follow ADK naming conventions\n2. Include comprehensive tool docstrings\n3. Handle errors gracefully\n4. Use appropriate tool selection logic\n5. Test thoroughly before deployment\n\n## Related Components\n\n- Works with other ADK tools and agents\n- Integrates with Vertex AI and Cloud Run\n- Supports state management and callbacks\n- Compatible with multi-agent workflows\n\n## Troubleshooting\n\nCommon issues and solutions:\n- Configuration problems\n- Integration challenges\n- Performance concerns\n- Deployment issues\n\nFor more information, see the complete ADK documentation.\n",
+    "metadata": {
+      "source": "adk_knowledge_base",
+      "type": "documentation",
+      "topic": "Security",
+      "category": "adk_reference",
+      "indexed_at": "2025-07-22T14:24:58.329586"
+    }
+  },
+  {
+    "id": "adk_kb_testing_76",
+    "content": "# Testing\n\nTesting ADK agents\n\n## Overview\n\nTesting is a core component of the Google Agent Development Kit (ADK). This documentation covers:\n\n- Basic usage patterns\n- Advanced configuration options\n- Best practices and examples\n- Common troubleshooting scenarios\n\n## Key Features\n\n- Production-ready implementation\n- Seamless integration with other ADK components\n- Comprehensive error handling\n- Performance optimizations\n\n## Usage Examples\n\n```python\n# Example implementation\nfrom google.adk.agents import LlmAgent\nfrom google.adk.tools import testing\n\n# Basic usage pattern\nagent = LlmAgent(\n    name=\"example_agent\",\n    model=\"gemini-2.5-flash\",\n    description=\"Example agent using Testing\",\n    instruction=\"You are an example agent demonstrating Testing\",\n    tools=[testing]\n)\n```\n\n## Best Practices\n\n1. Always follow ADK naming conventions\n2. Include comprehensive tool docstrings\n3. Handle errors gracefully\n4. Use appropriate tool selection logic\n5. Test thoroughly before deployment\n\n## Related Components\n\n- Works with other ADK tools and agents\n- Integrates with Vertex AI and Cloud Run\n- Supports state management and callbacks\n- Compatible with multi-agent workflows\n\n## Troubleshooting\n\nCommon issues and solutions:\n- Configuration problems\n- Integration challenges\n- Performance concerns\n- Deployment issues\n\nFor more information, see the complete ADK documentation.\n",
+    "metadata": {
+      "source": "adk_knowledge_base",
+      "type": "documentation",
+      "topic": "Testing",
+      "category": "adk_reference",
+      "indexed_at": "2025-07-22T14:24:58.329587"
+    }
+  },
+  {
+    "id": "adk_kb_debugging_77",
+    "content": "# Debugging\n\nTroubleshooting agents\n\n## Overview\n\nDebugging is a core component of the Google Agent Development Kit (ADK). This documentation covers:\n\n- Basic usage patterns\n- Advanced configuration options\n- Best practices and examples\n- Common troubleshooting scenarios\n\n## Key Features\n\n- Production-ready implementation\n- Seamless integration with other ADK components\n- Comprehensive error handling\n- Performance optimizations\n\n## Usage Examples\n\n```python\n# Example implementation\nfrom google.adk.agents import LlmAgent\nfrom google.adk.tools import debugging\n\n# Basic usage pattern\nagent = LlmAgent(\n    name=\"example_agent\",\n    model=\"gemini-2.5-flash\",\n    description=\"Example agent using Debugging\",\n    instruction=\"You are an example agent demonstrating Debugging\",\n    tools=[debugging]\n)\n```\n\n## Best Practices\n\n1. Always follow ADK naming conventions\n2. Include comprehensive tool docstrings\n3. Handle errors gracefully\n4. Use appropriate tool selection logic\n5. Test thoroughly before deployment\n\n## Related Components\n\n- Works with other ADK tools and agents\n- Integrates with Vertex AI and Cloud Run\n- Supports state management and callbacks\n- Compatible with multi-agent workflows\n\n## Troubleshooting\n\nCommon issues and solutions:\n- Configuration problems\n- Integration challenges\n- Performance concerns\n- Deployment issues\n\nFor more information, see the complete ADK documentation.\n",
+    "metadata": {
+      "source": "adk_knowledge_base",
+      "type": "documentation",
+      "topic": "Debugging",
+      "category": "adk_reference",
+      "indexed_at": "2025-07-22T14:24:58.329588"
+    }
+  },
+  {
+    "id": "adk_kb_integration_78",
+    "content": "# Integration\n\nIntegrating with other services\n\n## Overview\n\nIntegration is a core component of the Google Agent Development Kit (ADK). This documentation covers:\n\n- Basic usage patterns\n- Advanced configuration options\n- Best practices and examples\n- Common troubleshooting scenarios\n\n## Key Features\n\n- Production-ready implementation\n- Seamless integration with other ADK components\n- Comprehensive error handling\n- Performance optimizations\n\n## Usage Examples\n\n```python\n# Example implementation\nfrom google.adk.agents import LlmAgent\nfrom google.adk.tools import integration\n\n# Basic usage pattern\nagent = LlmAgent(\n    name=\"example_agent\",\n    model=\"gemini-2.5-flash\",\n    description=\"Example agent using Integration\",\n    instruction=\"You are an example agent demonstrating Integration\",\n    tools=[integration]\n)\n```\n\n## Best Practices\n\n1. Always follow ADK naming conventions\n2. Include comprehensive tool docstrings\n3. Handle errors gracefully\n4. Use appropriate tool selection logic\n5. Test thoroughly before deployment\n\n## Related Components\n\n- Works with other ADK tools and agents\n- Integrates with Vertex AI and Cloud Run\n- Supports state management and callbacks\n- Compatible with multi-agent workflows\n\n## Troubleshooting\n\nCommon issues and solutions:\n- Configuration problems\n- Integration challenges\n- Performance concerns\n- Deployment issues\n\nFor more information, see the complete ADK documentation.\n",
+    "metadata": {
+      "source": "adk_knowledge_base",
+      "type": "documentation",
+      "topic": "Integration",
+      "category": "adk_reference",
+      "indexed_at": "2025-07-22T14:24:58.329590"
+    }
+  },
+  {
+    "id": "adk_kb_configuration_79",
+    "content": "# Configuration\n\nEnvironment and config management\n\n## Overview\n\nConfiguration is a core component of the Google Agent Development Kit (ADK). This documentation covers:\n\n- Basic usage patterns\n- Advanced configuration options\n- Best practices and examples\n- Common troubleshooting scenarios\n\n## Key Features\n\n- Production-ready implementation\n- Seamless integration with other ADK components\n- Comprehensive error handling\n- Performance optimizations\n\n## Usage Examples\n\n```python\n# Example implementation\nfrom google.adk.agents import LlmAgent\nfrom google.adk.tools import configuration\n\n# Basic usage pattern\nagent = LlmAgent(\n    name=\"example_agent\",\n    model=\"gemini-2.5-flash\",\n    description=\"Example agent using Configuration\",\n    instruction=\"You are an example agent demonstrating Configuration\",\n    tools=[configuration]\n)\n```\n\n## Best Practices\n\n1. Always follow ADK naming conventions\n2. Include comprehensive tool docstrings\n3. Handle errors gracefully\n4. Use appropriate tool selection logic\n5. Test thoroughly before deployment\n\n## Related Components\n\n- Works with other ADK tools and agents\n- Integrates with Vertex AI and Cloud Run\n- Supports state management and callbacks\n- Compatible with multi-agent workflows\n\n## Troubleshooting\n\nCommon issues and solutions:\n- Configuration problems\n- Integration challenges\n- Performance concerns\n- Deployment issues\n\nFor more information, see the complete ADK documentation.\n",
+    "metadata": {
+      "source": "adk_knowledge_base",
+      "type": "documentation",
+      "topic": "Configuration",
+      "category": "adk_reference",
+      "indexed_at": "2025-07-22T14:24:58.329592"
+    }
+  },
+  {
+    "id": "adk_kb_llmagent_80",
+    "content": "# LlmAgent\n\nCore agent class for creating LLM-powered agents\n\n## Overview\n\nLlmAgent is a core component of the Google Agent Development Kit (ADK). This documentation covers:\n\n- Basic usage patterns\n- Advanced configuration options\n- Best practices and examples\n- Common troubleshooting scenarios\n\n## Key Features\n\n- Production-ready implementation\n- Seamless integration with other ADK components\n- Comprehensive error handling\n- Performance optimizations\n\n## Usage Examples\n\n```python\n# Example implementation\nfrom google.adk.agents import LlmAgent\nfrom google.adk.tools import llmagent\n\n# Basic usage pattern\nagent = LlmAgent(\n    name=\"example_agent\",\n    model=\"gemini-2.5-flash\",\n    description=\"Example agent using LlmAgent\",\n    instruction=\"You are an example agent demonstrating LlmAgent\",\n    tools=[llmagent]\n)\n```\n\n## Best Practices\n\n1. Always follow ADK naming conventions\n2. Include comprehensive tool docstrings\n3. Handle errors gracefully\n4. Use appropriate tool selection logic\n5. Test thoroughly before deployment\n\n## Related Components\n\n- Works with other ADK tools and agents\n- Integrates with Vertex AI and Cloud Run\n- Supports state management and callbacks\n- Compatible with multi-agent workflows\n\n## Troubleshooting\n\nCommon issues and solutions:\n- Configuration problems\n- Integration challenges\n- Performance concerns\n- Deployment issues\n\nFor more information, see the complete ADK documentation.\n",
+    "metadata": {
+      "source": "adk_knowledge_base",
+      "type": "documentation",
+      "topic": "LlmAgent",
+      "category": "adk_reference",
+      "indexed_at": "2025-07-22T14:24:58.329594"
+    }
+  },
+  {
+    "id": "adk_kb_functiontool_81",
+    "content": "# FunctionTool\n\nTool wrapper for Python functions\n\n## Overview\n\nFunctionTool is a core component of the Google Agent Development Kit (ADK). This documentation covers:\n\n- Basic usage patterns\n- Advanced configuration options\n- Best practices and examples\n- Common troubleshooting scenarios\n\n## Key Features\n\n- Production-ready implementation\n- Seamless integration with other ADK components\n- Comprehensive error handling\n- Performance optimizations\n\n## Usage Examples\n\n```python\n# Example implementation\nfrom google.adk.agents import LlmAgent\nfrom google.adk.tools import functiontool\n\n# Basic usage pattern\nagent = LlmAgent(\n    name=\"example_agent\",\n    model=\"gemini-2.5-flash\",\n    description=\"Example agent using FunctionTool\",\n    instruction=\"You are an example agent demonstrating FunctionTool\",\n    tools=[functiontool]\n)\n```\n\n## Best Practices\n\n1. Always follow ADK naming conventions\n2. Include comprehensive tool docstrings\n3. Handle errors gracefully\n4. Use appropriate tool selection logic\n5. Test thoroughly before deployment\n\n## Related Components\n\n- Works with other ADK tools and agents\n- Integrates with Vertex AI and Cloud Run\n- Supports state management and callbacks\n- Compatible with multi-agent workflows\n\n## Troubleshooting\n\nCommon issues and solutions:\n- Configuration problems\n- Integration challenges\n- Performance concerns\n- Deployment issues\n\nFor more information, see the complete ADK documentation.\n",
+    "metadata": {
+      "source": "adk_knowledge_base",
+      "type": "documentation",
+      "topic": "FunctionTool",
+      "category": "adk_reference",
+      "indexed_at": "2025-07-22T14:24:58.329595"
+    }
+  },
+  {
+    "id": "adk_kb_agenttool_82",
+    "content": "# AgentTool\n\nTool wrapper for other agents\n\n## Overview\n\nAgentTool is a core component of the Google Agent Development Kit (ADK). This documentation covers:\n\n- Basic usage patterns\n- Advanced configuration options\n- Best practices and examples\n- Common troubleshooting scenarios\n\n## Key Features\n\n- Production-ready implementation\n- Seamless integration with other ADK components\n- Comprehensive error handling\n- Performance optimizations\n\n## Usage Examples\n\n```python\n# Example implementation\nfrom google.adk.agents import LlmAgent\nfrom google.adk.tools import agenttool\n\n# Basic usage pattern\nagent = LlmAgent(\n    name=\"example_agent\",\n    model=\"gemini-2.5-flash\",\n    description=\"Example agent using AgentTool\",\n    instruction=\"You are an example agent demonstrating AgentTool\",\n    tools=[agenttool]\n)\n```\n\n## Best Practices\n\n1. Always follow ADK naming conventions\n2. Include comprehensive tool docstrings\n3. Handle errors gracefully\n4. Use appropriate tool selection logic\n5. Test thoroughly before deployment\n\n## Related Components\n\n- Works with other ADK tools and agents\n- Integrates with Vertex AI and Cloud Run\n- Supports state management and callbacks\n- Compatible with multi-agent workflows\n\n## Troubleshooting\n\nCommon issues and solutions:\n- Configuration problems\n- Integration challenges\n- Performance concerns\n- Deployment issues\n\nFor more information, see the complete ADK documentation.\n",
+    "metadata": {
+      "source": "adk_knowledge_base",
+      "type": "documentation",
+      "topic": "AgentTool",
+      "category": "adk_reference",
+      "indexed_at": "2025-07-22T14:24:58.329596"
+    }
+  },
+  {
+    "id": "adk_kb_google_search_83",
+    "content": "# google_search\n\nBuilt-in web search tool\n\n## Overview\n\ngoogle_search is a core component of the Google Agent Development Kit (ADK). This documentation covers:\n\n- Basic usage patterns\n- Advanced configuration options\n- Best practices and examples\n- Common troubleshooting scenarios\n\n## Key Features\n\n- Production-ready implementation\n- Seamless integration with other ADK components\n- Comprehensive error handling\n- Performance optimizations\n\n## Usage Examples\n\n```python\n# Example implementation\nfrom google.adk.agents import LlmAgent\nfrom google.adk.tools import google_search\n\n# Basic usage pattern\nagent = LlmAgent(\n    name=\"example_agent\",\n    model=\"gemini-2.5-flash\",\n    description=\"Example agent using google_search\",\n    instruction=\"You are an example agent demonstrating google_search\",\n    tools=[google_search]\n)\n```\n\n## Best Practices\n\n1. Always follow ADK naming conventions\n2. Include comprehensive tool docstrings\n3. Handle errors gracefully\n4. Use appropriate tool selection logic\n5. Test thoroughly before deployment\n\n## Related Components\n\n- Works with other ADK tools and agents\n- Integrates with Vertex AI and Cloud Run\n- Supports state management and callbacks\n- Compatible with multi-agent workflows\n\n## Troubleshooting\n\nCommon issues and solutions:\n- Configuration problems\n- Integration challenges\n- Performance concerns\n- Deployment issues\n\nFor more information, see the complete ADK documentation.\n",
+    "metadata": {
+      "source": "adk_knowledge_base",
+      "type": "documentation",
+      "topic": "google_search",
+      "category": "adk_reference",
+      "indexed_at": "2025-07-22T14:24:58.329597"
+    }
+  }
+]

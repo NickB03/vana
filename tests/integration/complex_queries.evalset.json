@@ -1,0 +1,62 @@
+{
+  "eval_set_id": "vana_complex_queries",
+  "description": "Test handling of complex, multi-faceted queries",
+  "eval_cases": [
+    {
+      "eval_id": "research_and_implementation",
+      "description": "Query requiring both research and implementation guidance",
+      "conversation": [
+        {
+          "user_content": {
+            "parts": [{"text": "Research best practices for implementing OAuth2 and provide an implementation guide"}]
+          },
+          "agent_intermediate_responses": [
+            {
+              "sub_agent_responses": [
+                {
+                  "agent_name": "research_specialist",
+                  "response": {"parts": [{"text": "OAuth2 best practices include: 1) Always use HTTPS, 2) Implement PKCE for public clients, 3) Use short-lived access tokens with refresh tokens, 4) Store tokens securely (never in localStorage), 5) Validate all redirects against whitelist."}]}
+                },
+                {
+                  "agent_name": "architecture_specialist",
+                  "response": {"parts": [{"text": "Implementation guide: 1) Choose OAuth2 flow (Authorization Code with PKCE recommended), 2) Register application with provider, 3) Implement authorization endpoint redirect, 4) Handle callback with code exchange, 5) Securely store tokens in backend, 6) Implement token refresh logic, 7) Add logout functionality."}]}
+                }
+              ]
+            }
+          ],
+          "final_response": {
+            "parts": [{"text": "Based on research and architectural analysis for OAuth2 implementation:\n\nBest Practices:\n1. Always use HTTPS for all OAuth2 communications\n2. Implement PKCE (Proof Key for Code Exchange) for enhanced security\n3. Use short-lived access tokens (15-60 minutes) with refresh tokens\n4. Never store tokens in localStorage; use secure HTTP-only cookies or backend storage\n5. Validate all redirect URIs against a strict whitelist\n\nImplementation Guide:\n1. Choose Authorization Code flow with PKCE for web applications\n2. Register your application with the OAuth2 provider to get client credentials\n3. Implement the authorization request with code_challenge parameter\n4. Handle the callback to exchange authorization code for tokens\n5. Store tokens securely on the backend, never expose to frontend\n6. Implement automatic token refresh before expiration\n7. Add proper logout that revokes tokens and clears sessions\n8. Include error handling for all OAuth2 scenarios\n\nThis approach ensures secure, standards-compliant OAuth2 implementation."}]
+          }
+        }
+      ]
+    },
+    {
+      "eval_id": "analysis_and_optimization",
+      "description": "Query requiring analysis followed by optimization recommendations",
+      "conversation": [
+        {
+          "user_content": {
+            "parts": [{"text": "Analyze why our API response times are slow and suggest optimizations"}]
+          },
+          "agent_intermediate_responses": [
+            {
+              "sub_agent_responses": [
+                {
+                  "agent_name": "data_science_specialist",
+                  "response": {"parts": [{"text": "Analysis indicates: 1) Database queries taking 60% of response time with N+1 query patterns, 2) No caching layer present, 3) Large JSON payloads without pagination, 4) Synchronous external API calls blocking responses."}]}
+                },
+                {
+                  "agent_name": "architecture_specialist",
+                  "response": {"parts": [{"text": "Optimization recommendations: 1) Implement database query optimization with eager loading, 2) Add Redis caching with 5-minute TTL for frequently accessed data, 3) Implement pagination with 50-item default limit, 4) Use async processing with message queues for external API calls."}]}
+                }
+              ]
+            }
+          ],
+          "final_response": {
+            "parts": [{"text": "API Performance Analysis and Optimization Plan:\n\nRoot Causes Identified:\n1. Database N+1 queries consuming 60% of response time\n2. No caching layer for repeated queries\n3. Large unpaginated responses (some >10MB)\n4. Synchronous external API calls creating blocking operations\n\nOptimization Strategy:\n1. Database: Replace N+1 queries with eager loading using includes/joins\n2. Caching: Deploy Redis with 5-minute TTL for frequently accessed data\n3. Pagination: Implement cursor-based pagination with 50-item default\n4. Async Processing: Move external API calls to background jobs via RabbitMQ\n5. Response Compression: Enable gzip compression for 70% size reduction\n6. Connection Pooling: Optimize database connection pool size\n\nExpected Impact: 75% reduction in average response time, from 800ms to 200ms."}]
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,28 @@
+{
+  "eval_set_id": "data_science_specialist_evalset",
+  "eval_cases": [
+    {
+      "eval_id": "data_science_analysis_task",
+      "description": "Test data science specialist handles analytical queries",
+      "conversation": [
+        {
+          "user_content": {
+            "parts": [
+              {
+                "text": "What machine learning model would you recommend for customer churn prediction?"
+              }
+            ]
+          },
+          "agent_intermediate_responses": [],
+          "final_response": {
+            "parts": [
+              {
+                "text": "For customer churn prediction, I recommend: 1) XGBoost or LightGBM as the primary model - they handle tabular data well and provide feature importance. 2) Features to include: customer tenure, transaction frequency, support ticket history, product usage metrics, and demographic data. 3) Handle class imbalance using SMOTE or weighted loss functions. 4) Use time-based validation splits to avoid data leakage. 5) Ensemble with Random Forest for robustness. 6) Consider SHAP values for model interpretability. Expected performance: 85-90% AUC-ROC with proper feature engineering. Deploy with real-time scoring API for proactive intervention."
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,39 @@
+{
+  "eval_set_id": "delegation_patterns_evalset",
+  "eval_cases": [
+    {
+      "eval_id": "pure_delegation_agenttool_usage",
+      "description": "Test pure delegation pattern with AgentTool wrapper",
+      "conversation": [
+        {
+          "user_content": {
+            "parts": [
+              {
+                "text": "Analyze the architecture of a microservices system"
+              }
+            ]
+          },
+          "agent_intermediate_responses": [
+            {
+              "tool_uses": [
+                {
+                  "tool_name": "architecture_specialist_agent",
+                  "tool_input": {
+                    "query": "Analyze the architecture of a microservices system"
+                  }
+                }
+              ]
+            }
+          ],
+          "final_response": {
+            "parts": [
+              {
+                "text": "A microservices architecture consists of small, independent services that communicate via APIs. Key components include: 1) Service discovery for locating services dynamically, 2) API gateway for routing requests, 3) Load balancers for distributing traffic, 4) Message queues for asynchronous communication, 5) Container orchestration (e.g., Kubernetes) for deployment and scaling, 6) Monitoring and logging infrastructure for observability."
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

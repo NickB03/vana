@@ -1,0 +1,28 @@
+{
+  "eval_set_id": "devops_specialist_evalset",
+  "eval_cases": [
+    {
+      "eval_id": "devops_deployment_strategy",
+      "description": "Test DevOps specialist provides deployment recommendations",
+      "conversation": [
+        {
+          "user_content": {
+            "parts": [
+              {
+                "text": "How should I set up CI/CD for a microservices application?"
+              }
+            ]
+          },
+          "agent_intermediate_responses": [],
+          "final_response": {
+            "parts": [
+              {
+                "text": "For microservices CI/CD setup: 1) Source Control: Use monorepo with GitLab/GitHub, separate folders per service. 2) CI Pipeline: Jenkins/GitLab CI with stages - lint, test, build, security scan. 3) Container Registry: Harbor or GCR for Docker images with vulnerability scanning. 4) CD Strategy: GitOps with ArgoCD for Kubernetes deployments. 5) Environment Promotion: dev \u2192 staging \u2192 production with manual approval gates. 6) Testing: Unit tests in CI, integration tests in staging, smoke tests post-deployment. 7) Monitoring: Integrate deployment events with Datadog/New Relic. 8) Rollback: Blue-green deployments with instant rollback capability. This ensures reliable, automated deployments with proper quality gates."
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

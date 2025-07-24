@@ -1,0 +1,28 @@
+{
+  "eval_set_id": "simple_search_evalset",
+  "eval_cases": [
+    {
+      "eval_id": "simple_search_basic_query",
+      "description": "Test simple search agent handles basic factual queries",
+      "conversation": [
+        {
+          "user_content": {
+            "parts": [
+              {
+                "text": "What is the capital of Japan?"
+              }
+            ]
+          },
+          "agent_intermediate_responses": [],
+          "final_response": {
+            "parts": [
+              {
+                "text": "The capital of Japan is Tokyo."
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

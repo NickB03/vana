@@ -1,0 +1,28 @@
+{
+  "eval_set_id": "architecture_specialist_evalset",
+  "eval_cases": [
+    {
+      "eval_id": "architecture_specialist_system_design",
+      "description": "Test architecture specialist provides detailed system design analysis",
+      "conversation": [
+        {
+          "user_content": {
+            "parts": [
+              {
+                "text": "Design a scalable e-commerce platform architecture"
+              }
+            ]
+          },
+          "agent_intermediate_responses": [],
+          "final_response": {
+            "parts": [
+              {
+                "text": "Here's a scalable e-commerce platform architecture: 1) Frontend: React/Next.js with CDN distribution for global performance. 2) API Gateway: Kong or AWS API Gateway for request routing and rate limiting. 3) Microservices: Product catalog, user management, order processing, payment, and inventory services. 4) Database: PostgreSQL for transactional data, MongoDB for product catalog, Redis for caching and sessions. 5) Message Queue: RabbitMQ or Kafka for asynchronous processing. 6) Container Orchestration: Kubernetes for service deployment and scaling. 7) Monitoring: Prometheus, Grafana, and ELK stack for observability. This architecture supports horizontal scaling, fault tolerance, and can handle millions of users."
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

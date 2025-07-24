@@ -1,0 +1,42 @@
+[
+  {
+    "category": "Simple Search",
+    "query": "What's the weather in Tokyo?",
+    "success": true,
+    "delegated_to": "simple_search_agent",
+    "response_time": 4.300791025161743,
+    "response_preview": "Okay! The weather in Tokyo is currently clear with a temperature of 83\u00b0F (28\u00b0C), but it feels like 86\u00b0F (30\u00b0C). The humidity is around 81%. Tomorrow will be very hot with a 20% chance of rain. The tem"
+  },
+  {
+    "category": "Architecture",
+    "query": "Design a microservices architecture",
+    "success": true,
+    "delegated_to": "architecture_specialist",
+    "response_time": 3.2087910175323486,
+    "response_preview": "Okay, I understand. The Architecture Specialist can analyze and improve an existing microservices architecture, but cannot design one from scratch. If you have an existing microservices project, the s"
+  },
+  {
+    "category": "Research",
+    "query": "Latest AI breakthroughs in 2024",
+    "success": true,
+    "delegated_to": "research_specialist",
+    "response_time": 16.900947093963623,
+    "response_preview": "Here are some of the latest AI breakthroughs in 2024:\n\n*   **Enhanced Generative AI and Reasoning:** OpenAI's \"o1\" and \"o3\" models showed leaps in AI reasoning, tackling complex problems with near-hum"
+  },
+  {
+    "category": "Data Science",
+    "query": "Recommend ML model for fraud detection",
+    "success": true,
+    "delegated_to": "data_science_specialist",
+    "response_time": 5.972549915313721,
+    "response_preview": "Okay, for fraud detection, the Data Science Specialist recommends Gradient Boosting models (e.g., XGBoost, LightGBM, CatBoost) due to their high accuracy, ability to handle imbalanced data, feature im"
+  },
+  {
+    "category": "DevOps",
+    "query": "Set up Kubernetes deployment",
+    "success": true,
+    "delegated_to": "devops_specialist",
+    "response_time": 4.3392720222473145,
+    "response_preview": "I can help with that! However, I need some more information first. What kind of application are you deploying? Do you have an existing Docker image for your application, or do you need help containeri"
+  }
+]

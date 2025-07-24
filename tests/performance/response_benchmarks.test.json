@@ -1,0 +1,34 @@
+{
+  "eval_set_id": "response_benchmarks_evalset",
+  "eval_cases": [
+    {
+      "eval_id": "performance_response_time_benchmarks",
+      "description": "Benchmark response times for different query types",
+      "performance_thresholds": {
+        "simple_query_max_ms": 5000,
+        "complex_query_max_ms": 10000,
+        "multi_agent_max_ms": 15000
+      },
+      "conversation": [
+        {
+          "user_content": {
+            "parts": [
+              {
+                "text": "What is Python?"
+              }
+            ]
+          },
+          "expected_response_time_ms": 3000,
+          "agent_intermediate_responses": [],
+          "final_response": {
+            "parts": [
+              {
+                "text": "Python is a high-level, interpreted programming language known for its simplicity and readability."
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

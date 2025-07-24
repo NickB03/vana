@@ -1,0 +1,40 @@
+{
+  "eval_set_id": "research_specialist_evalset",
+  "eval_cases": [
+    {
+      "eval_id": "research_complex_topic",
+      "description": "Test research specialist handles complex research queries with tool usage",
+      "conversation": [
+        {
+          "user_content": {
+            "parts": [
+              {
+                "text": "What are the latest breakthroughs in quantum computing?"
+              }
+            ]
+          },
+          "agent_intermediate_responses": [
+            {
+              "tool_uses": [
+                {
+                  "tool_name": "google_search",
+                  "tool_input": {
+                    "query": "quantum computing breakthroughs 2024 2025",
+                    "num_results": 5
+                  }
+                }
+              ]
+            }
+          ],
+          "final_response": {
+            "parts": [
+              {
+                "text": "Recent breakthroughs in quantum computing include: 1) IBM's 1000+ qubit processor demonstrating quantum advantage, 2) Google's error correction milestone achieving below-threshold error rates, 3) Advances in topological qubits for more stable quantum states, 4) Quantum networking protocols enabling distributed quantum computing, and 5) New quantum algorithms for drug discovery and materials science."
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

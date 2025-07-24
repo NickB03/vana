@@ -1,0 +1,40 @@
+{
+  "eval_set_id": "google_search_tool_evalset",
+  "eval_cases": [
+    {
+      "eval_id": "google_search_tool_usage",
+      "description": "Test correct usage of Google search tool with proper parameters",
+      "conversation": [
+        {
+          "user_content": {
+            "parts": [
+              {
+                "text": "Find information about AI trends in 2025"
+              }
+            ]
+          },
+          "agent_intermediate_responses": [
+            {
+              "tool_uses": [
+                {
+                  "tool_name": "google_search",
+                  "tool_input": {
+                    "query": "AI artificial intelligence trends 2025 predictions",
+                    "num_results": 5
+                  }
+                }
+              ]
+            }
+          ],
+          "final_response": {
+            "parts": [
+              {
+                "text": "Based on search results, key AI trends for 2025 include: 1) Multimodal AI systems combining text, vision, and audio, 2) AI agents performing complex multi-step tasks autonomously, 3) Increased focus on AI safety and alignment, 4) Edge AI deployment for real-time processing, 5) AI-powered scientific discovery in drug development and materials science."
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,62 @@
+{
+  "eval_set_id": "vana_multi_agent_integration",
+  "description": "Integration tests for multi-agent workflows in VANA",
+  "eval_cases": [
+    {
+      "eval_id": "research_then_architecture_analysis",
+      "description": "Test workflow requiring research followed by architectural analysis",
+      "conversation": [
+        {
+          "user_content": {
+            "parts": [{"text": "Research microservices patterns and analyze their architecture"}]
+          },
+          "agent_intermediate_responses": [
+            {
+              "sub_agent_responses": [
+                {
+                  "agent_name": "research_specialist",
+                  "response": {"parts": [{"text": "Found information on microservices patterns including: API Gateway, Service Discovery, Circuit Breaker, Event Sourcing, CQRS, and Saga patterns."}]}
+                },
+                {
+                  "agent_name": "architecture_specialist", 
+                  "response": {"parts": [{"text": "Analyzing the architectural patterns: API Gateway provides single entry point, Service Discovery enables dynamic service location, Circuit Breaker prevents cascade failures, Event Sourcing maintains event history, CQRS separates read/write models, and Saga manages distributed transactions."}]}
+                }
+              ]
+            }
+          ],
+          "final_response": {
+            "parts": [{"text": "Based on research and architectural analysis, microservices patterns include: 1) API Gateway for unified entry points and cross-cutting concerns, 2) Service Discovery for dynamic service registration and location, 3) Circuit Breaker for fault tolerance and preventing cascade failures, 4) Event Sourcing for maintaining complete audit trails, 5) CQRS for optimizing read and write operations separately, and 6) Saga pattern for managing distributed transactions across services. These patterns work together to create resilient, scalable microservices architectures."}]
+          }
+        }
+      ]
+    },
+    {
+      "eval_id": "data_analysis_with_devops_deployment",
+      "description": "Test workflow combining data analysis with deployment recommendations",
+      "conversation": [
+        {
+          "user_content": {
+            "parts": [{"text": "Analyze performance metrics from our application logs and suggest deployment optimizations"}]
+          },
+          "agent_intermediate_responses": [
+            {
+              "sub_agent_responses": [
+                {
+                  "agent_name": "data_science_specialist",
+                  "response": {"parts": [{"text": "Performance analysis reveals: 95th percentile latency spikes during peak hours, memory usage patterns suggesting inefficient caching, and CPU utilization averaging 70% with periodic spikes to 95%."}]}
+                },
+                {
+                  "agent_name": "devops_specialist",
+                  "response": {"parts": [{"text": "Recommended optimizations: 1) Implement horizontal pod autoscaling based on CPU/memory metrics, 2) Add Redis caching layer for frequently accessed data, 3) Configure resource limits and requests properly, 4) Enable cluster autoscaling for handling peak loads."}]}
+                }
+              ]
+            }
+          ],
+          "final_response": {
+            "parts": [{"text": "Based on performance analysis and DevOps recommendations: The application shows latency spikes during peak hours with high CPU utilization (70% average, 95% peaks). To optimize deployment: 1) Implement horizontal pod autoscaling (HPA) with CPU threshold at 60%, 2) Deploy Redis caching to reduce database load and improve response times, 3) Set resource requests at current average usage (CPU: 700m, Memory: 1Gi) with limits at peak values, 4) Enable cluster autoscaling to handle traffic spikes automatically. These changes should reduce latency by ~40% and improve system resilience."}]
+          }
+        }
+      ]
+    }
+  ]
+}

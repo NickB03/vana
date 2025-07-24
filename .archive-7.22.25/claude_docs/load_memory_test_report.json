@@ -1,0 +1,42 @@
+{
+  "test_summary": {
+    "timestamp": "2025-01-19T20:15:00Z",
+    "tests_run": 4,
+    "tests_passed": 2,
+    "overall_status": "partial_success"
+  },
+  "detailed_results": {
+    "direct_test": {
+      "passed": true
+    },
+    "agent_test": {
+      "passed": true
+    },
+    "env_test": {
+      "passed": false,
+      "details": {
+        "VANA_RAG_CORPUS_ID": true,
+        "SESSION_SERVICE_TYPE": true,
+        "GOOGLE_GENAI_USE_VERTEXAI": true,
+        "GOOGLE_CLOUD_PROJECT": false,
+        "GOOGLE_API_KEY": true,
+        "corpus_format": true
+      }
+    },
+    "session_test": {
+      "passed": false
+    }
+  },
+  "conclusions": {
+    "load_memory_available": true,
+    "agent_integration": true,
+    "environment_ready": false,
+    "session_context": false
+  },
+  "recommendations": [
+    "load_memory tool exists but may need proper agent runtime context",
+    "Environment configuration appears correct",
+    "Tool integration successful but functionality unverified",
+    "Need real agent execution to test load_memory properly"
+  ]
+}

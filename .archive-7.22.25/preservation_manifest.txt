@@ -1,0 +1,23 @@
+VANA Archive Manifest
+Date: Tue Jul 22 19:18:51 CDT 2025
+Purpose: Archival before Google ADK Sample Agent Kit installation
+
+Archived Items:
+- examples/ (agent examples that might conflict with ADK)
+- tests/unit/agents/ (agent test files)
+- .pytest_cache/ (pytest cache)
+- __pycache__ directories (Python cache)
+- sessions.db (session database)
+- server.log (server logs)
+- logs/ (log directory)
+- .claude_workspace/ (Claude temporary workspace)
+- .development/ (except adk-knowledge-base)
+
+Preserved Items (NOT archived):
+- All .env* files (environment variables)
+- frontend/ directory
+- .vscode/ configuration
+- .claude/ configuration
+- .mcp.json configuration
+- .development/adk-knowledge-base/
+- Core project files (pyproject.toml, poetry.lock, etc.)

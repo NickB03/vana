@@ -1,0 +1,40 @@
+{
+  "eval_set_id": "error_handling_evalset",
+  "eval_cases": [
+    {
+      "eval_id": "orchestrator_error_handling",
+      "description": "Test error handling when specialist fails or is unavailable",
+      "conversation": [
+        {
+          "user_content": {
+            "parts": [
+              {
+                "text": "Query that might fail: $INVALID_QUERY$"
+              }
+            ]
+          },
+          "agent_intermediate_responses": [
+            {
+              "tool_uses": [
+                {
+                  "tool_name": "simple_search_agent",
+                  "tool_input": {
+                    "query": "Query that might fail: $INVALID_QUERY$"
+                  },
+                  "tool_error": "Agent execution failed"
+                }
+              ]
+            }
+          ],
+          "final_response": {
+            "parts": [
+              {
+                "text": "I apologize, but I encountered an error while processing your request. Could you please rephrase your query or provide more specific information?"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}
