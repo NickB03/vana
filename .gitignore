@@ -221,3 +221,6 @@ vana_vscode/
 
 # Test files
 test-connectivity.html
+
+# VS Code workspace files
+*.code-workspace
