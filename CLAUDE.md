@@ -6,19 +6,26 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## WORKSPACE STRUCTURE
 
-**IMPORTANT**: This project uses a dual-directory structure:
+**IMPORTANT**: This project uses a dual-directory structure with a hybrid workflow:
 
 ### `/Users/nick/Development/vana/`
-- **Purpose**: Clean ADK project directory (main repository)
-- **Usage**: All project implementation and ADK setup
-- **Note**: This is where ALL code changes should be made
+- **Purpose**: Main ADK project directory (Git repository)
+- **Usage**: ALL development work happens here
+- **Launch Claude Code from here**: Avoids virtual environment conflicts
+- **Contains**: Project code, .mcp.json config pointing to vana_vscode services
 
 ### `/Users/nick/Development/vana_vscode/`
-- **Purpose**: Local development workspace (NOT tracked in git)
-- **Usage**: Claude Code sessions run from here
-- **Contents**: .claude/, .claude_workspace/, ChromaDB, memory, MCP servers, documentation
+- **Purpose**: MCP data storage and development tools (NOT tracked in git)
+- **Usage**: Stores ChromaDB, memory databases, Claude documentation
+- **Contents**: .claude/, .claude_workspace/, .chroma_db/, .memory_db/, MCP server code
+- **Do NOT launch Claude from here**: Always use /vana directory
 
-**WORKFLOW**: Always run sessions from `/vana_vscode/` but implement changes in `/vana/`
+**HYBRID WORKFLOW** (Updated 2025-01-27):
+1. **Always** launch Claude Code from `/vana/` directory
+2. The `.mcp.json` in `/vana/` points to MCP servers in `/vana_vscode/`
+3. All code changes happen in `/vana/` (no need to switch directories)
+4. MCP data persists in `/vana_vscode/` (not tracked in git)
+5. No virtual environment conflicts - everything just works!
 
 ## Steering Documents
 
@@ -103,7 +110,7 @@ The workspace integrates 5 MCP servers (configured in `.mcp.json`):
 
 3. **firecrawl**: Web scraping and crawling service
    - NPX-based server: `npx -y firecrawl-mcp`
-   - API Key: [Stored in environment variable FIRECRAWL_API_KEY]
+   - API Key: fc-1b62b46d905946d49ca954cc288adbb8
 
 4. **linear**: Linear issue tracking integration
    - NPX-based server: `npx -y @mseep/linear-mcp-server`
@@ -147,6 +154,13 @@ The workspace integrates 5 MCP servers (configured in `.mcp.json`):
 
 ## Development Commands
 
+### Prerequisites
+- **uv**: Python package manager - [Install](https://docs.astral.sh/uv/getting-started/installation/)
+- **Google Cloud SDK**: For GCP services - [Install](https://cloud.google.com/sdk/docs/install)
+- **Terraform**: For infrastructure deployment - [Install](https://developer.hashicorp.com/terraform/downloads)
+- **make**: Build automation tool (pre-installed on most Unix-based systems)
+- **Python 3.10+**: Required for ADK
+
 ### Project Setup (Using ADK Starter Pack)
 ```bash
 # Create new Vana project with ADK
@@ -159,28 +173,32 @@ agent-starter-pack create vana -a adk_gemini_fullstack -d cloud_run --include-da
 ### Local Development
 ```bash
 cd vana
-make install    # Install dependencies
-make dev       # Run both frontend and backend locally
-make playground # Interactive testing environment
+make install       # Install all required dependencies using uv
+make dev          # Run both frontend and backend locally
+make dev-backend  # Start only the ADK API server
+make dev-frontend # Start only the React frontend
+make playground   # Launch local dev with backend and frontend using 'adk web' command
 ```
 
 ### Testing and Validation
 ```bash
-make lint      # Run linters (black, isort, flake8)
-make typecheck # Type checking with mypy
-make test      # Run pytest suite
-python main.py # Test local execution
+make lint          # Run code quality checks (codespell, ruff, mypy)
+make test          # Run unit and integration tests
+uv run jupyter lab # Launch Jupyter notebook for prototyping
 ```
 
 ### Deployment
 ```bash
-# Development deployment
+# Development deployment (manual)
 gcloud config set project analystai-454200
-make setup-dev-env
-make backend
+make setup-dev-env  # Set up development environment resources using Terraform
+make backend        # Deploy agent to Cloud Run (use IAP=true for Identity-Aware Proxy)
 
-# Full CI/CD setup
-uvx agent-starter-pack setup-cicd
+# Production deployment (automated CI/CD)
+uvx agent-starter-pack setup-cicd  # One-command deployment of entire CI/CD pipeline
+
+# Local backend testing
+make local-backend  # Launch local development server
 ```
 
 ### Working with PRP (Project Requirement Plans)
@@ -194,87 +212,225 @@ uvx agent-starter-pack setup-cicd
 
 ## Project Structure
 
-```
-vana/
-├── CLAUDE.md                  # This file - project guidance
-├── .mcp.json                  # MCP server configurations
-├── .claude/                   # Claude-specific documentation
-│   ├── specs/                # Specification documents
-│   │   └── vana-adk-setup/  # ADK setup specifications
-│   │       ├── requirements.md
-│   │       ├── design.md
-│   │       └── tasks.md
-│   ├── steering/             # Steering documents
-│   │   ├── product.md
-│   │   ├── tech.md
-│   │   └── structure.md
-│   └── .archive/             # Archived documentation
-├── .cloudbuild/               # Cloud Build CI/CD configurations
-│   ├── deploy-to-prod.yaml
-│   ├── pr_checks.yaml
-│   └── staging.yaml
-├── app/                       # Backend FastAPI application
-│   ├── agent.py              # Core agent definitions
-│   ├── config.py             # Configuration
-│   ├── server.py             # FastAPI server
-│   └── utils/                # Utility modules
-│       ├── gcs.py
-│       ├── tracing.py
-│       └── typing.py
-├── frontend/                  # React frontend application
-├── deployment/                # Terraform infrastructure
-│   └── terraform/
-│       ├── variables.tf
-│       ├── dev/
-│       │   ├── variables.tf
-│       │   └── vars/
-│       │       └── env.tfvars
-│       └── vars/
-│           └── env.tfvars
-├── tests/                     # Test suite
-├── notebooks/                 # Jupyter notebooks
-├── Makefile                   # Build automation
-├── pyproject.toml            # Python project configuration
-├── README.md                 # Project documentation
-└── .venv/                    # Python virtual environment
+**CRITICAL**: This project uses a dual-directory structure. Understanding which files go where is essential.
 
-vana_vscode/ (separate workspace directory)
-├── .claude_workspace/         # Development tools and scripts
-│   └── scripts/              # Utility scripts
-├── .chroma_db/               # ChromaDB storage
-├── .memory_db/               # Memory graph storage
-└── .vscode/                  # VS Code configuration
-    └── info.md              # Project credentials
+### Directory Structure Overview
+
+```
+/Users/nick/Development/
+├── vana/                      # 🚀 MAIN PROJECT REPOSITORY (Git-tracked)
+│   ├── .gitignore            # Git ignore rules
+│   ├── README.md             # Project documentation
+│   ├── GEMINI.md             # Gemini-specific documentation
+│   ├── Makefile              # Build automation
+│   ├── Dockerfile            # Container configuration
+│   ├── pyproject.toml        # Python project configuration
+│   ├── uv.lock               # UV package lock file
+│   ├── app/                  # Backend FastAPI application
+│   │   ├── __init__.py
+│   │   ├── agent.py          # Core agent definitions
+│   │   ├── config.py         # Configuration
+│   │   ├── server.py         # FastAPI server
+│   │   └── utils/            # Utility modules
+│   │       ├── gcs.py
+│   │       ├── tracing.py
+│   │       └── typing.py
+│   ├── frontend/             # React frontend application
+│   │   ├── package.json      # Node dependencies
+│   │   ├── package-lock.json
+│   │   ├── vite.config.ts    # Vite configuration
+│   │   ├── tsconfig.json     # TypeScript config
+│   │   ├── index.html
+│   │   ├── components.json   # UI component config
+│   │   └── src/
+│   │       ├── App.tsx
+│   │       ├── main.tsx
+│   │       ├── global.css
+│   │       ├── utils.ts
+│   │       └── components/
+│   │           ├── ActivityTimeline.tsx
+│   │           ├── ChatMessagesView.tsx
+│   │           ├── InputForm.tsx
+│   │           ├── WelcomeScreen.tsx
+│   │           └── ui/        # shadcn/ui components
+│   ├── deployment/           # Terraform infrastructure
+│   │   ├── README.md
+│   │   └── terraform/
+│   │       ├── apis.tf
+│   │       ├── build_triggers.tf
+│   │       ├── github.tf
+│   │       ├── iam.tf
+│   │       ├── locals.tf
+│   │       ├── log_sinks.tf
+│   │       ├── providers.tf
+│   │       ├── service.tf
+│   │       ├── service_accounts.tf
+│   │       ├── storage.tf
+│   │       ├── variables.tf
+│   │       ├── dev/          # Dev environment config
+│   │       │   ├── apis.tf
+│   │       │   ├── iam.tf
+│   │       │   ├── log_sinks.tf
+│   │       │   ├── providers.tf
+│   │       │   ├── service.tf
+│   │       │   ├── storage.tf
+│   │       │   ├── variables.tf
+│   │       │   └── vars/
+│   │       │       └── env.tfvars
+│   │       └── vars/
+│   │           └── env.tfvars
+│   ├── tests/                # Test suite
+│   │   ├── unit/
+│   │   │   └── test_dummy.py
+│   │   ├── integration/
+│   │   │   ├── test_agent.py
+│   │   │   └── test_server_e2e.py
+│   │   └── load_test/
+│   │       ├── README.md
+│   │       └── load_test.py
+│   ├── notebooks/            # Jupyter notebooks
+│   │   ├── adk_app_testing.ipynb
+│   │   └── evaluating_adk_agent.ipynb
+│   └── .cloudbuild/          # Cloud Build CI/CD configurations
+│       ├── deploy-to-prod.yaml
+│       ├── pr_checks.yaml
+│       └── staging.yaml
+│
+└── vana_vscode/              # 💻 DEVELOPMENT WORKSPACE (NOT Git-tracked)
+    ├── CLAUDE.md             # Project guidance (master copy)
+    ├── GEMINI.md             # Copy of Gemini documentation
+    ├── requirements.txt      # Python dependencies for MCP servers
+    ├── .mcp.json             # MCP server configurations
+    ├── lib/                  # Python library code
+    │   ├── __init__.py
+    │   └── mcp/
+    │       ├── __init__.py
+    │       └── servers/
+    │           ├── __init__.py
+    │           ├── chroma_server.py
+    │           └── memory_server.py
+    ├── .claude/              # Claude-specific documentation
+    │   ├── .DS_Store
+    │   ├── settings.local.json
+    │   ├── adk-comprehensive-knowledge-base.md
+    │   ├── chromadb-restoration-plan.md
+    │   ├── chromadb-restored.md
+    │   ├── adk-documentation/  # Scraped ADK docs
+    │   ├── agents/           # Agent-specific docs
+    │   ├── commands/         # Command definitions
+    │   ├── settings/         # Settings configs
+    │   ├── specs/            # Specification documents
+    │   │   └── vana-adk-setup/
+    │   │       ├── requirements.md
+    │   │       ├── design.md
+    │   │       └── tasks.md
+    │   ├── steering/         # Steering documents
+    │   │   ├── product.md
+    │   │   ├── tech.md
+    │   │   └── structure.md
+    │   └── system-prompts/   # System prompt templates
+    ├── .claude_workspace/    # Development tools and scripts
+    │   ├── .DS_Store
+    │   ├── README.md
+    │   ├── fix.md
+    │   └── scripts/          # Utility scripts
+    ├── .chroma_db/           # ChromaDB storage (persistent)
+    ├── .memory_db/           # Memory graph storage (persistent)
+    ├── .vscode/              # VS Code configuration
+    │   ├── .DS_Store
+    │   ├── settings.json     # VS Code settings
+    │   └── info.md           # Project credentials
+    └── venv/                 # Python virtual environment for MCP
 
 ```
 
 ### File Organization Rules
-1. **Scripts and tools** → `.claude_workspace/scripts/`
-2. **Documentation** → `.claude/`
-3. **Production code** → Main project directories (`app/`, `lib/`, etc.)
-4. **Temporary files** → Clean up immediately after use
-5. **No loose files in root** → Everything should have a proper location
+
+#### What Goes in `/vana/` (Main Repository)
+- ✅ **All production code**: Python, JavaScript, TypeScript files
+- ✅ **Project configuration**: Makefile, pyproject.toml, package.json
+- ✅ **Application code**: Backend (app/), frontend code
+- ✅ **Infrastructure**: Terraform configurations, Cloud Build files
+- ✅ **Tests**: All test files and test data
+- ✅ **Documentation**: README.md (project docs only)
+- ✅ **Dependencies**: requirements.txt, package-lock.json
+- ✅ **Git files**: .gitignore, .gitattributes
+
+#### What Goes in `/vana_vscode/` (Workspace)
+- 💻 **Claude configuration**: .mcp.json, CLAUDE.md (master)
+- 💻 **AI documentation**: .claude/ directory with specs and steering
+- 💻 **Development tools**: .claude_workspace/scripts/
+- 💻 **Local databases**: .chroma_db/, .memory_db/
+- 💻 **IDE configuration**: .vscode/ settings
+- 💻 **Session artifacts**: Temporary files, logs, debugging outputs
+- 💻 **MCP server data**: All MCP-related storage
+
+#### Synchronization Rules
+1. **CLAUDE.md**: Master copy in `/vana_vscode/`, sync to `/vana/` when updating
+2. **Code changes**: ALWAYS make in `/vana/` directory
+3. **Documentation updates**: Edit in `/vana_vscode/.claude/`, don't sync to main repo
+4. **Scripts and tools**: Keep in `/vana_vscode/.claude_workspace/scripts/`
+
+### Working Directory Guidelines
+
+```bash
+# ALWAYS work from the vana directory
+cd /Users/nick/Development/vana
+
+# Launch Claude Code
+claude-code .
+
+# Run the application
+make dev
+
+# Deploy to development
+make backend
+
+# Run tests
+make test
+```
+
+**Note**: You no longer need to switch between directories or worry about virtual environments!
+
+### Important Reminders
+- 🚨 **NEVER** commit `.mcp.json`, `.chroma_db/`, or `.memory_db/` to git
+- 🚨 **NEVER** create production code in `/vana_vscode/`
+- 🚨 **ALWAYS** run git commands from `/vana/` directory
+- 🚨 **ALWAYS** keep MCP server data in `/vana_vscode/`
 
 ## Development Workflow
 
 ### 1. Initial Setup
-- Install agent-starter-pack and create project structure
-- Configure Google Cloud authentication
-- Set up Python environment with required dependencies
+- Install prerequisites: uv, Google Cloud SDK, Terraform, make
+- Configure Google Cloud authentication with proper project ID
+- Create project using `agent-starter-pack create` command
+- Run `make install` to set up dependencies
 
-### 2. PRP Workflow Guidelines
+### 2. ADK Development Workflow ("Bring Your Own Agent")
+1. **Prototype**: Build your AI agent logic using notebooks in `notebooks/` directory
+   - Use `adk_app_testing.ipynb` for testing agent functionality
+   - Use `evaluating_adk_agent.ipynb` for performance evaluation
+2. **Integrate**: Import your agent into the app by editing `app/agent.py`
+3. **Test**: Use `make playground` to explore agent functionality
+   - Features: chat history, user feedback, various input types
+   - Auto-reloads on code changes
+4. **Deploy**: Set up CI/CD pipelines with `uvx agent-starter-pack setup-cicd`
+5. **Monitor**: Track performance using Cloud Logging, Tracing, and Looker Studio
+
+### 3. PRP Workflow Guidelines
 - PRPs must include comprehensive context, documentation URLs, and code examples
 - Implementation must be broken into small chunks (1-2 features max per chunk)
 - Each chunk requires local testing and dev deployment validation
 - Use ChromaDB to store ADK patterns and implementation decisions
 
-### 3. Iterative Development
+### 4. Iterative Development
 - Use TodoWrite tool to track all tasks
-- Test locally with `make dev` before deployment
-- Deploy to dev environment for validation
+- Test locally with `make dev` or `make playground` before deployment
+- Deploy to dev environment with `make backend` for validation
 - Only proceed to next chunk after successful deployment
+- Use `make lint` and `make test` before committing changes
 
-### 4. MCP Server Usage
+### 5. MCP Server Usage (Local Development Only)
 - **ChromaDB**: Store/retrieve code patterns, documentation, ADK examples
 - **Memory Graph**: Create entities and relations for project knowledge
 - **Kanban Board**: Track implementation tasks and progress
@@ -470,6 +626,20 @@ add_observations([{
 }])
 ```
 
+## Monitoring and Observability
+
+The application uses OpenTelemetry for comprehensive observability:
+- **Cloud Trace**: All traces and spans for performance monitoring
+- **Cloud Logging**: Centralized logging for debugging and audit
+- **BigQuery**: Long-term storage of all events for analysis
+- **Looker Studio Dashboard**: [Template Dashboard](https://lookerstudio.google.com/reporting/46b35167-b38b-4e44-bd37-701ef4307418/page/tEnnC) for visualizing events
+
+### Monitoring Setup
+1. Events are automatically sent to Cloud Trace and Logging
+2. BigQuery stores events for historical analysis
+3. Use the Looker Studio template (see "Setup Instructions" tab in dashboard)
+4. Monitor performance metrics and user interactions
+
 ## Important Implementation Notes
 
 1. **Cloud Run vs Agent Engine**: Vana specifically uses Cloud Run deployment, NOT Google Agent Engine. This affects memory system and instantiation patterns.
@@ -478,11 +648,16 @@ add_observations([{
 
 3. **Frontend Integration**: Agent names in backend must match frontend expectations for proper UI updates and timeline tracking.
 
-4. **Validation Gates**: Always run lint, typecheck, and tests before deployment. Use the make commands for consistency.
+4. **Validation Gates**: Always run `make lint` and `make test` before deployment. Use the make commands for consistency.
 
-5. **Documentation**: Keep all working documentation in `.claude/`. Move inactive docs to `.claude/.archive/`.
+5. **Documentation**: 
+   - Keep all working documentation in `.claude/`
+   - Move inactive docs to `.claude/.archive/`
+   - GEMINI.md provides context for AI tools like Gemini CLI
 
 6. **Memory Systems**: Always use ChromaDB and Knowledge Graph to maintain context and prevent redundant work. Query before implementing, store after learning.
+
+7. **Agent Starter Pack Version**: This project was generated with `googleCloudPlatform/agent-starter-pack` version `0.10.0`
 
 ## Environment Variables
 
@@ -518,6 +693,34 @@ Required environment variables for full functionality:
 - Use `make` commands for consistency
 - Run ADK evaluation tests using CLI methods (not Web UI)
 - Deploy to Cloud Run development environment for testing
+
+## Hybrid Setup Configuration (IMPORTANT)
+
+### Why Hybrid Setup?
+Previously, launching Claude Code from `/vana_vscode/` caused virtual environment conflicts because:
+- The parent shell had `VIRTUAL_ENV` set to `/vana_vscode/venv`
+- UV package manager detected mismatched environments
+- This required complex workarounds and scripts
+
+### Current Configuration
+1. **`.mcp.json` in `/vana/`**: Points to MCP servers in `/vana_vscode/`
+2. **Working directory**: Always `/vana/` (avoids venv conflicts)
+3. **MCP data storage**: Remains in `/vana_vscode/` (not in git)
+4. **No helper scripts needed**: Just `cd /vana` and `claude-code .`
+
+### Key Files
+- `/vana/.mcp.json`: MCP configuration (in .gitignore)
+- `/vana/.venv/`: Project virtual environment (managed by uv)
+- `/vana_vscode/.chroma_db/`: ChromaDB persistent storage
+- `/vana_vscode/.memory_db/`: Knowledge graph storage
+- `/vana_vscode/lib/mcp/servers/`: MCP server implementations
+
+### If You Need to Debug MCP
+```bash
+# Check if MCP servers are accessible
+cd /vana
+# Use ChromaDB or Memory tools - they should work automatically
+```
 
 ## References
 

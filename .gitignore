@@ -205,3 +205,19 @@ vana_vscode/
 .chroma_db/
 *.sqlite3
 *.db
+
+# MCP configuration (contains API keys)
+.mcp.json
+
+# Claude-specific files and directories
+.claude/
+.claude_workspace/
+.mcp.json
+.chroma_db/
+.memory_db/
+
+# Backup files
+*_backup_*.tar.gz
+
+# Test files
+test-connectivity.html
