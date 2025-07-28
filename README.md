@@ -4,13 +4,12 @@
 
 ![Python](https://img.shields.io/badge/Python-3.10%2B-blue?style=for-the-badge&logo=python)
 ![Google Cloud](https://img.shields.io/badge/Google%20Cloud-Powered-4285F4?style=for-the-badge&logo=google-cloud)
-![ADK](https://img.shields.io/badge/ADK-Gemini%20FullStack-FF6F61?style=for-the-badge&logo=google)
 ![License](https://img.shields.io/badge/License-Apache%202.0-green?style=for-the-badge)
 ![Status](https://img.shields.io/badge/Status-Development-orange?style=for-the-badge)
 
 **Production-Ready Multi-Agent AI Research System**
 
-[Quick Start](#-quick-start) • [Architecture](#-architecture) • [Features](#-features) • [Deployment](#-deployment) • [Contributing](#-contributing)
+[Quick Start](#quick-start) • [Architecture](#system-architecture) • [Features](#core-features) • [Deployment](#deployment) • [Contributing](#contributing)
 
 </div>
 
@@ -18,29 +17,29 @@
 
 ## 📋 Table of Contents
 
-- [Overview](#-overview)
-- [Quick Start](#-quick-start)
-- [System Architecture](#-system-architecture)
+- [Overview](#overview)
+- [Quick Start](#quick-start)
+- [System Architecture](#system-architecture)
   - [Multi-Agent Workflow](#multi-agent-workflow)
   - [Component Architecture](#component-architecture)
   - [Data Flow](#data-flow)
-- [Core Features](#-core-features)
-- [Agents & Capabilities](#-agents--capabilities)
+- [Core Features](#core-features)
+- [Agents & Capabilities](#agents--capabilities)
   - [Agent Hierarchy](#agent-hierarchy)
   - [Agent Descriptions](#agent-descriptions)
-- [Tools & Integrations](#-tools--integrations)
-- [Development](#-development)
+- [Tools & Integrations](#tools--integrations)
+- [Development](#development)
   - [Prerequisites](#prerequisites)
   - [Local Development](#local-development)
   - [Testing](#testing)
-- [Deployment](#-deployment)
+- [Deployment](#deployment)
   - [Development Environment](#development-environment)
   - [Production CI/CD](#production-cicd)
-- [API Documentation](#-api-documentation)
-- [Configuration](#-configuration)
-- [Monitoring & Observability](#-monitoring--observability)
-- [Contributing](#-contributing)
-- [License](#-license)
+- [API Documentation](#api-documentation)
+- [Configuration](#configuration)
+- [Monitoring & Observability](#monitoring--observability)
+- [Contributing](#contributing)
+- [License](#license)
 
 ---
 
@@ -146,7 +145,7 @@ graph TB
     
     style IP fill:#4285F4
     style PG fill:#34A853
-    style SR fill:#FBBC05
+    style SR fill:#EA4335
     style RE fill:#EA4335
     style RC fill:#4285F4
 ```
@@ -157,7 +156,7 @@ graph TB
 graph LR
     subgraph "Frontend (React + TypeScript)"
         UI[React UI]
-        UI --> WS[WebSocket Handler]
+        UI --> SSE[SSE Handler]
         UI --> AT[Activity Timeline]
         UI --> CM[Chat Messages]
     end
@@ -278,7 +277,7 @@ graph TD
     
     style IA fill:#1a73e8,color:#fff
     style RP fill:#34a853,color:#fff
-    style RL fill:#fbbc04,color:#000
+    style RL fill:#EA4335,color:#fff
 ```
 
 ### Agent Descriptions
@@ -303,15 +302,14 @@ graph TD
 | Tool | Purpose | Integration |
 |------|---------|-------------|
 | **Google Search** | Web research and information gathering | Native ADK integration |
-| **ChromaDB** | Vector database for documentation | MCP server (local dev) |
-| **Memory Graph** | Knowledge graph for relationships | MCP server (local dev) |
 | **Cloud Storage** | Artifact and large payload storage | GCS buckets |
 | **Session Service** | Conversation state management | In-memory/AlloyDB |
 
-### MCP Servers (Development)
+### MCP Servers (Local Development Only)
 
 ```yaml
-# Local development tools via Model Context Protocol
+# These tools are available in local development via Model Context Protocol
+# They are NOT part of the deployed Vana system
 - chroma-vana: Document storage and retrieval
 - memory-mcp: Graph-based knowledge management  
 - firecrawl: Web scraping capabilities
