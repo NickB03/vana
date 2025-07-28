@@ -1,0 +1,79 @@
+<svg width="1200" height="700" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1200" height="700" fill="#ffffff"/>
+  
+  <text x="600" y="40" font-family="Arial" font-size="32" font-weight="bold" text-anchor="middle">Your AI Research Team</text>
+  <text x="600" y="70" font-family="Arial" font-size="18" text-anchor="middle" fill="#5f6368">8 specialized agents working together</text>
+  
+  <!-- Team Leader -->
+  <g>
+    <rect x="450" y="100" width="300" height="80" rx="12" fill="#4285f4"/>
+    <text x="600" y="130" font-family="Arial" font-size="20" font-weight="bold" text-anchor="middle" fill="white">Team Leader</text>
+    <text x="600" y="155" font-family="Arial" font-size="16" text-anchor="middle" fill="#e8f0fe">Interactive Planner</text>
+  </g>
+  
+  <!-- Connection lines -->
+  <line x1="600" y1="180" x2="200" y2="240" stroke="#dadce0" stroke-width="2"/>
+  <line x1="600" y1="180" x2="600" y2="240" stroke="#dadce0" stroke-width="2"/>
+  <line x1="600" y1="180" x2="1000" y2="240" stroke="#dadce0" stroke-width="2"/>
+  
+  <!-- Planning Team -->
+  <g>
+    <rect x="50" y="240" width="300" height="200" rx="8" fill="#e3f2fd" stroke="#1976d2" stroke-width="2"/>
+    <rect x="50" y="240" width="300" height="40" fill="#1976d2"/>
+    <text x="200" y="265" font-family="Arial" font-size="18" font-weight="bold" text-anchor="middle" fill="white">Planning Team</text>
+    
+    <rect x="70" y="300" width="260" height="60" rx="6" fill="white"/>
+    <text x="200" y="325" font-family="Arial" font-size="16" font-weight="bold" text-anchor="middle" fill="#1565c0">Plan Generator</text>
+    <text x="200" y="345" font-family="Arial" font-size="14" text-anchor="middle" fill="#5f6368">Creates research strategies</text>
+    
+    <rect x="70" y="370" width="260" height="60" rx="6" fill="white"/>
+    <text x="200" y="395" font-family="Arial" font-size="16" font-weight="bold" text-anchor="middle" fill="#1565c0">Section Planner</text>
+    <text x="200" y="415" font-family="Arial" font-size="14" text-anchor="middle" fill="#5f6368">Organizes report structure</text>
+  </g>
+  
+  <!-- Research Team -->
+  <g>
+    <rect x="450" y="240" width="300" height="200" rx="8" fill="#fff8e1" stroke="#f57c00" stroke-width="2"/>
+    <rect x="450" y="240" width="300" height="40" fill="#f57c00"/>
+    <text x="600" y="265" font-family="Arial" font-size="18" font-weight="bold" text-anchor="middle" fill="white">Research Team</text>
+    
+    <rect x="470" y="300" width="260" height="60" rx="6" fill="white"/>
+    <text x="600" y="325" font-family="Arial" font-size="16" font-weight="bold" text-anchor="middle" fill="#e65100">Section Researcher</text>
+    <text x="600" y="345" font-family="Arial" font-size="14" text-anchor="middle" fill="#5f6368">Finds information</text>
+    
+    <rect x="470" y="370" width="260" height="60" rx="6" fill="white"/>
+    <text x="600" y="395" font-family="Arial" font-size="16" font-weight="bold" text-anchor="middle" fill="#e65100">Enhanced Search</text>
+    <text x="600" y="415" font-family="Arial" font-size="14" text-anchor="middle" fill="#5f6368">Deep research</text>
+  </g>
+  
+  <!-- Quality Team -->
+  <g>
+    <rect x="850" y="240" width="300" height="200" rx="8" fill="#ffebee" stroke="#c62828" stroke-width="2"/>
+    <rect x="850" y="240" width="300" height="40" fill="#c62828"/>
+    <text x="1000" y="265" font-family="Arial" font-size="18" font-weight="bold" text-anchor="middle" fill="white">Quality Team</text>
+    
+    <rect x="870" y="300" width="260" height="60" rx="6" fill="white"/>
+    <text x="1000" y="325" font-family="Arial" font-size="16" font-weight="bold" text-anchor="middle" fill="#b71c1c">Research Evaluator</text>
+    <text x="1000" y="345" font-family="Arial" font-size="14" text-anchor="middle" fill="#5f6368">Checks quality</text>
+    
+    <rect x="870" y="370" width="260" height="60" rx="6" fill="white"/>
+    <text x="1000" y="395" font-family="Arial" font-size="16" font-weight="bold" text-anchor="middle" fill="#b71c1c">Escalation Checker</text>
+    <text x="1000" y="415" font-family="Arial" font-size="14" text-anchor="middle" fill="#5f6368">Quality control</text>
+  </g>
+  
+  <!-- Connection lines to Report Writer -->
+  <line x1="200" y1="440" x2="600" y2="500" stroke="#dadce0" stroke-width="2"/>
+  <line x1="600" y1="440" x2="600" y2="500" stroke="#dadce0" stroke-width="2"/>
+  <line x1="1000" y1="440" x2="600" y2="500" stroke="#dadce0" stroke-width="2"/>
+  
+  <!-- Report Writer -->
+  <g>
+    <rect x="400" y="500" width="400" height="80" rx="12" fill="#34a853"/>
+    <text x="600" y="530" font-family="Arial" font-size="20" font-weight="bold" text-anchor="middle" fill="white">Report Writer</text>
+    <text x="600" y="555" font-family="Arial" font-size="16" text-anchor="middle" fill="#e8f5e9">Report Composer - Creates final document</text>
+  </g>
+  
+  <!-- Timeline -->
+  <rect x="200" y="620" width="800" height="50" rx="25" fill="#f5f5f5"/>
+  <text x="600" y="650" font-family="Arial" font-size="16" text-anchor="middle" fill="#5f6368">All teams work in parallel for fast results (5-7 minutes total)</text>
+</svg>

@@ -1,0 +1,162 @@
+<svg width="1400" height="900" viewBox="0 0 1400 900" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background gradient -->
+  <defs>
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#f8f9fa;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#e8eaed;stop-opacity:1" />
+    </linearGradient>
+    
+    <!-- Arrow markers -->
+    <marker id="blueArrow" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#4285f4" />
+    </marker>
+    <marker id="greenArrow" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#34a853" />
+    </marker>
+    <marker id="orangeArrow" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#f9ab00" />
+    </marker>
+    <marker id="grayArrow" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#5f6368" />
+    </marker>
+    
+    <!-- Drop shadow filter -->
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-opacity="0.1"/>
+    </filter>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="1400" height="900" fill="url(#bgGradient)"/>
+  
+  <!-- Title -->
+  <text x="700" y="50" font-family="Google Sans, Arial, sans-serif" font-size="42" font-weight="500" text-anchor="middle" fill="#202124">How Vana Works</text>
+  <text x="700" y="85" font-family="Google Sans, Arial, sans-serif" font-size="20" text-anchor="middle" fill="#5f6368">From your request to complete research in minutes</text>
+  
+  <!-- Phase 1 Container -->
+  <g>
+    <rect x="60" y="130" width="600" height="700" rx="20" fill="#ffffff" filter="url(#shadow)"/>
+    <rect x="60" y="130" width="600" height="80" rx="20" fill="#4285f4"/>
+    <path d="M 60 190 L 660 190 L 660 210 L 60 210 Z" fill="#4285f4"/>
+    <text x="360" y="175" font-family="Google Sans, Arial, sans-serif" font-size="28" font-weight="500" text-anchor="middle" fill="#ffffff">Phase 1: Interactive Planning</text>
+    
+    <!-- Step 1: User Input -->
+    <g transform="translate(360, 280)">
+      <circle r="40" fill="#e8f0fe" stroke="#4285f4" stroke-width="3"/>
+      <text y="8" font-family="Google Sans, Arial, sans-serif" font-size="24" font-weight="500" text-anchor="middle" fill="#4285f4">You</text>
+    </g>
+    
+    <rect x="120" y="340" width="480" height="60" rx="30" fill="#f8f9fa" stroke="#dadce0" stroke-width="1"/>
+    <text x="360" y="375" font-family="Google Sans, Arial, sans-serif" font-size="18" text-anchor="middle" fill="#202124">"Research renewable energy trends for 2025"</text>
+    
+    <!-- Arrow down -->
+    <path d="M 360 410 L 360 460" stroke="#4285f4" stroke-width="3" fill="none" marker-end="url(#blueArrow)"/>
+    
+    <!-- Step 2: AI Planning -->
+    <rect x="160" y="470" width="400" height="100" rx="12" fill="#4285f4" filter="url(#shadow)"/>
+    <text x="360" y="510" font-family="Google Sans, Arial, sans-serif" font-size="22" font-weight="500" text-anchor="middle" fill="#ffffff">AI Analyzes Request</text>
+    <text x="360" y="540" font-family="Google Sans, Arial, sans-serif" font-size="16" text-anchor="middle" fill="#e8f0fe">Creates structured research plan</text>
+    
+    <!-- Arrow down -->
+    <path d="M 360 580 L 360 630" stroke="#4285f4" stroke-width="3" fill="none" marker-end="url(#blueArrow)"/>
+    
+    <!-- Step 3: Review -->
+    <rect x="160" y="640" width="400" height="120" rx="12" fill="#ffffff" stroke="#34a853" stroke-width="3"/>
+    <text x="360" y="680" font-family="Google Sans, Arial, sans-serif" font-size="20" font-weight="500" text-anchor="middle" fill="#202124">Review & Refine Plan</text>
+    <text x="360" y="710" font-family="Google Sans, Arial, sans-serif" font-size="16" text-anchor="middle" fill="#5f6368">✓ Approve as-is</text>
+    <text x="360" y="735" font-family="Google Sans, Arial, sans-serif" font-size="16" text-anchor="middle" fill="#5f6368">✏️ Request changes</text>
+    
+    <!-- Feedback indicator -->
+    <path d="M 160 700 Q 120 700 120 520 Q 120 470 150 470" stroke="#fbbc04" stroke-width="2" fill="none" stroke-dasharray="8,4" opacity="0.6"/>
+    <text x="90" y="600" font-family="Google Sans, Arial, sans-serif" font-size="14" fill="#f9ab00" transform="rotate(-90 90 600)">Optional feedback</text>
+  </g>
+  
+  <!-- Arrow between phases -->
+  <g>
+    <path d="M 680 430 L 720 430" stroke="#5f6368" stroke-width="4" fill="none" marker-end="url(#grayArrow)"/>
+    <rect x="740" y="410" width="100" height="40" rx="20" fill="#202124"/>
+    <text x="790" y="435" font-family="Google Sans, Arial, sans-serif" font-size="16" font-weight="500" text-anchor="middle" fill="#ffffff">Automatic</text>
+  </g>
+  
+  <!-- Phase 2 Container -->
+  <g>
+    <rect x="860" y="130" width="480" height="700" rx="20" fill="#ffffff" filter="url(#shadow)"/>
+    <rect x="860" y="130" width="480" height="80" rx="20" fill="#f9ab00"/>
+    <path d="M 860 190 L 1340 190 L 1340 210 L 860 210 Z" fill="#f9ab00"/>
+    <text x="1100" y="175" font-family="Google Sans, Arial, sans-serif" font-size="28" font-weight="500" text-anchor="middle" fill="#ffffff">Phase 2: Autonomous Research</text>
+    
+    <!-- AI Agents -->
+    <rect x="900" y="240" width="400" height="100" rx="12" fill="#fff8e1" stroke="#f9ab00" stroke-width="2"/>
+    <text x="1100" y="280" font-family="Google Sans, Arial, sans-serif" font-size="22" font-weight="500" text-anchor="middle" fill="#202124">8 Specialized AI Agents</text>
+    <text x="1100" y="310" font-family="Google Sans, Arial, sans-serif" font-size="16" text-anchor="middle" fill="#5f6368">Working in parallel</text>
+    
+    <!-- Agent icons -->
+    <g transform="translate(920, 360)">
+      <circle cx="0" cy="0" r="25" fill="#4285f4" opacity="0.1"/>
+      <text y="8" font-size="20" text-anchor="middle">🔍</text>
+      <text y="50" font-family="Google Sans, Arial, sans-serif" font-size="12" text-anchor="middle" fill="#5f6368">Search</text>
+    </g>
+    <g transform="translate(1020, 360)">
+      <circle cx="0" cy="0" r="25" fill="#ea4335" opacity="0.1"/>
+      <text y="8" font-size="20" text-anchor="middle">📊</text>
+      <text y="50" font-family="Google Sans, Arial, sans-serif" font-size="12" text-anchor="middle" fill="#5f6368">Analyze</text>
+    </g>
+    <g transform="translate(1120, 360)">
+      <circle cx="0" cy="0" r="25" fill="#34a853" opacity="0.1"/>
+      <text y="8" font-size="20" text-anchor="middle">✅</text>
+      <text y="50" font-family="Google Sans, Arial, sans-serif" font-size="12" text-anchor="middle" fill="#5f6368">Verify</text>
+    </g>
+    <g transform="translate(1220, 360)">
+      <circle cx="0" cy="0" r="25" fill="#fbbc04" opacity="0.1"/>
+      <text y="8" font-size="20" text-anchor="middle">📝</text>
+      <text y="50" font-family="Google Sans, Arial, sans-serif" font-size="12" text-anchor="middle" fill="#5f6368">Write</text>
+    </g>
+    
+    <!-- Arrow down -->
+    <path d="M 1100 420 L 1100 470" stroke="#f9ab00" stroke-width="3" fill="none" marker-end="url(#orangeArrow)"/>
+    
+    <!-- Activities -->
+    <rect x="900" y="480" width="400" height="180" rx="12" fill="#f8f9fa"/>
+    <text x="1100" y="515" font-family="Google Sans, Arial, sans-serif" font-size="18" font-weight="500" text-anchor="middle" fill="#202124">Research Activities</text>
+    
+    <g transform="translate(920, 545)">
+      <rect width="160" height="40" rx="8" fill="#ffffff" stroke="#4285f4" stroke-width="1"/>
+      <text x="80" y="26" font-family="Google Sans, Arial, sans-serif" font-size="14" text-anchor="middle" fill="#202124">Web Search</text>
+    </g>
+    <g transform="translate(1120, 545)">
+      <rect width="160" height="40" rx="8" fill="#ffffff" stroke="#4285f4" stroke-width="1"/>
+      <text x="80" y="26" font-family="Google Sans, Arial, sans-serif" font-size="14" text-anchor="middle" fill="#202124">Academic Papers</text>
+    </g>
+    <g transform="translate(920, 600)">
+      <rect width="160" height="40" rx="8" fill="#ffffff" stroke="#4285f4" stroke-width="1"/>
+      <text x="80" y="26" font-family="Google Sans, Arial, sans-serif" font-size="14" text-anchor="middle" fill="#202124">Data Analysis</text>
+    </g>
+    <g transform="translate(1120, 600)">
+      <rect width="160" height="40" rx="8" fill="#ffffff" stroke="#4285f4" stroke-width="1"/>
+      <text x="80" y="26" font-family="Google Sans, Arial, sans-serif" font-size="14" text-anchor="middle" fill="#202124">Fact Checking</text>
+    </g>
+    
+    <!-- Arrow down -->
+    <path d="M 1100 670 L 1100 720" stroke="#34a853" stroke-width="3" fill="none" marker-end="url(#greenArrow)"/>
+    
+    <!-- Final Output -->
+    <rect x="900" y="730" width="400" height="80" rx="12" fill="#34a853" filter="url(#shadow)"/>
+    <text x="1100" y="765" font-family="Google Sans, Arial, sans-serif" font-size="22" font-weight="500" text-anchor="middle" fill="#ffffff">Complete Research Report</text>
+    <text x="1100" y="790" font-family="Google Sans, Arial, sans-serif" font-size="16" text-anchor="middle" fill="#e8f5e9">With citations • Ready to download</text>
+  </g>
+  
+  <!-- Timeline -->
+  <g transform="translate(0, 850)">
+    <rect x="100" y="0" width="1200" height="6" rx="3" fill="#e0e0e0"/>
+    <rect x="100" y="0" width="300" height="6" rx="3" fill="#4285f4"/>
+    <rect x="400" y="0" width="900" height="6" rx="3" fill="#f9ab00"/>
+    
+    <circle cx="250" cy="3" r="12" fill="#4285f4"/>
+    <text x="250" y="35" font-family="Google Sans, Arial, sans-serif" font-size="16" font-weight="500" text-anchor="middle" fill="#4285f4">1-2 minutes</text>
+    
+    <circle cx="850" cy="3" r="12" fill="#f9ab00"/>
+    <text x="850" y="35" font-family="Google Sans, Arial, sans-serif" font-size="16" font-weight="500" text-anchor="middle" fill="#f9ab00">3-5 minutes</text>
+    
+    <text x="700" y="35" font-family="Google Sans, Arial, sans-serif" font-size="18" font-weight="500" text-anchor="middle" fill="#202124">Total time: ~5 minutes</text>
+  </g>
+</svg>

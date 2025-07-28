@@ -1,0 +1,103 @@
+<svg width="1400" height="900" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1400" height="900" fill="#f8f9fa"/>
+  
+  <text x="700" y="40" font-family="Arial" font-size="36" font-weight="bold" text-anchor="middle">Vana System Architecture</text>
+  
+  <!-- User -->
+  <g>
+    <circle cx="100" cy="450" r="35" fill="#4285f4"/>
+    <text x="100" y="460" font-family="Arial" font-size="18" text-anchor="middle" fill="white">User</text>
+    <line x1="135" y1="450" x2="200" y2="450" stroke="#5f6368" stroke-width="2" marker-end="url(#arrow)"/>
+  </g>
+  
+  <!-- Frontend -->
+  <g>
+    <rect x="200" y="400" width="200" height="100" rx="8" fill="white" stroke="#dadce0" stroke-width="1"/>
+    <text x="300" y="430" font-family="Arial" font-size="18" font-weight="bold" text-anchor="middle">Frontend</text>
+    <text x="300" y="455" font-family="Arial" font-size="14" text-anchor="middle" fill="#5f6368">React + TypeScript</text>
+    <text x="300" y="475" font-family="Arial" font-size="14" text-anchor="middle" fill="#5f6368">Real-time UI</text>
+    <line x1="400" y1="450" x2="480" y2="450" stroke="#5f6368" stroke-width="2" marker-end="url(#arrow)"/>
+    <text x="440" y="440" font-family="Arial" font-size="12" text-anchor="middle" fill="#5f6368">SSE</text>
+  </g>
+  
+  <!-- Google Cloud Platform Container -->
+  <g>
+    <rect x="480" y="100" width="880" height="750" rx="12" fill="#e8f5e9" stroke="#34a853" stroke-width="2"/>
+    <text x="920" y="130" font-family="Arial" font-size="24" font-weight="bold" text-anchor="middle" fill="#1b5e20">Google Cloud Platform</text>
+    
+    <!-- Backend -->
+    <rect x="520" y="180" width="350" height="140" rx="8" fill="white" stroke="#dadce0" stroke-width="1"/>
+    <text x="695" y="210" font-family="Arial" font-size="20" font-weight="bold" text-anchor="middle">Backend Services</text>
+    <text x="695" y="240" font-family="Arial" font-size="16" text-anchor="middle" fill="#5f6368">FastAPI + ADK Runner</text>
+    <text x="695" y="265" font-family="Arial" font-size="16" text-anchor="middle" fill="#5f6368">8 Specialized AI Agents</text>
+    <text x="695" y="290" font-family="Arial" font-size="16" text-anchor="middle" fill="#5f6368">Session Management</text>
+    
+    <!-- Phase Boxes -->
+    <g>
+      <rect x="520" y="350" width="160" height="120" rx="8" fill="#e3f2fd" stroke="#1976d2" stroke-width="1"/>
+      <text x="600" y="380" font-family="Arial" font-size="16" font-weight="bold" text-anchor="middle" fill="#1565c0">Phase 1</text>
+      <text x="600" y="405" font-family="Arial" font-size="14" text-anchor="middle">Interactive</text>
+      <text x="600" y="425" font-family="Arial" font-size="14" text-anchor="middle">Planning</text>
+      <text x="600" y="450" font-family="Arial" font-size="12" text-anchor="middle" fill="#1565c0">(Current)</text>
+      
+      <rect x="710" y="350" width="160" height="120" rx="8" fill="#fce4ec" stroke="#c2185b" stroke-width="1" stroke-dasharray="5,5" opacity="0.6"/>
+      <text x="790" y="380" font-family="Arial" font-size="16" font-weight="bold" text-anchor="middle" fill="#ad1457">Phase 2</text>
+      <text x="790" y="405" font-family="Arial" font-size="14" text-anchor="middle">Autonomous</text>
+      <text x="790" y="425" font-family="Arial" font-size="14" text-anchor="middle">Execution</text>
+      <text x="790" y="450" font-family="Arial" font-size="12" text-anchor="middle" fill="#ad1457">(Future)</text>
+    </g>
+    
+    <!-- Core Services -->
+    <g>
+      <!-- LLMs -->
+      <rect x="520" y="500" width="250" height="100" rx="8" fill="white" stroke="#dadce0" stroke-width="1"/>
+      <text x="645" y="530" font-family="Arial" font-size="18" font-weight="bold" text-anchor="middle">Language Models</text>
+      <text x="645" y="555" font-family="Arial" font-size="14" text-anchor="middle" fill="#5f6368">Gemini 2.5 Pro</text>
+      <text x="645" y="575" font-family="Arial" font-size="14" text-anchor="middle" fill="#5f6368">Gemini 2.5 Flash</text>
+      
+      <!-- Search -->
+      <rect x="800" y="500" width="250" height="100" rx="8" fill="white" stroke="#dadce0" stroke-width="1"/>
+      <text x="925" y="530" font-family="Arial" font-size="18" font-weight="bold" text-anchor="middle">Google Search</text>
+      <text x="925" y="555" font-family="Arial" font-size="14" text-anchor="middle" fill="#5f6368">Web Research</text>
+      <text x="925" y="575" font-family="Arial" font-size="14" text-anchor="middle" fill="#5f6368">Source Discovery</text>
+      
+      <!-- Cloud Run -->
+      <rect x="1080" y="500" width="250" height="100" rx="8" fill="white" stroke="#dadce0" stroke-width="1"/>
+      <text x="1205" y="530" font-family="Arial" font-size="18" font-weight="bold" text-anchor="middle">Cloud Run</text>
+      <text x="1205" y="555" font-family="Arial" font-size="14" text-anchor="middle" fill="#5f6368">Auto-scaling</text>
+      <text x="1205" y="575" font-family="Arial" font-size="14" text-anchor="middle" fill="#5f6368">Serverless</text>
+    </g>
+    
+    <!-- Data & Monitoring -->
+    <g>
+      <!-- Storage -->
+      <rect x="520" y="630" width="250" height="100" rx="8" fill="white" stroke="#dadce0" stroke-width="1"/>
+      <text x="645" y="660" font-family="Arial" font-size="18" font-weight="bold" text-anchor="middle">Data Storage</text>
+      <text x="645" y="685" font-family="Arial" font-size="14" text-anchor="middle" fill="#5f6368">Cloud Storage</text>
+      <text x="645" y="705" font-family="Arial" font-size="14" text-anchor="middle" fill="#5f6368">BigQuery</text>
+      
+      <!-- Monitoring -->
+      <rect x="800" y="630" width="250" height="100" rx="8" fill="white" stroke="#dadce0" stroke-width="1"/>
+      <text x="925" y="660" font-family="Arial" font-size="18" font-weight="bold" text-anchor="middle">Monitoring</text>
+      <text x="925" y="685" font-family="Arial" font-size="14" text-anchor="middle" fill="#5f6368">Cloud Trace</text>
+      <text x="925" y="705" font-family="Arial" font-size="14" text-anchor="middle" fill="#5f6368">Looker Studio</text>
+      
+      <!-- CI/CD -->
+      <rect x="1080" y="630" width="250" height="100" rx="8" fill="white" stroke="#dadce0" stroke-width="1"/>
+      <text x="1205" y="660" font-family="Arial" font-size="18" font-weight="bold" text-anchor="middle">DevOps</text>
+      <text x="1205" y="685" font-family="Arial" font-size="14" text-anchor="middle" fill="#5f6368">Cloud Build</text>
+      <text x="1205" y="705" font-family="Arial" font-size="14" text-anchor="middle" fill="#5f6368">Terraform</text>
+    </g>
+    
+    <!-- Infrastructure bar -->
+    <rect x="520" y="760" width="810" height="60" rx="8" fill="white" stroke="#dadce0" stroke-width="1"/>
+    <text x="925" y="795" font-family="Arial" font-size="16" text-anchor="middle" fill="#5f6368">OpenTelemetry • Secret Manager • IAM • GitHub Actions</text>
+  </g>
+  
+  <!-- Arrow definition -->
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" fill="#5f6368">
+      <path d="M0,0 L0,6 L9,3 z"/>
+    </marker>
+  </defs>
+</svg>

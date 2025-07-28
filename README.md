@@ -111,13 +111,13 @@ The application will be available at:
 
 ### Multi-Agent Workflow
 
-![How Vana Creates Your Research](docs/images/agent-flow-enhanced.svg)
+![How Vana Creates Your Research](docs/images/vana-workflow.svg)
 
 *Vana uses a two-phase approach: First, we work together to create the perfect research plan. Then, our AI agents automatically execute the research and deliver a comprehensive report.*
 
 ### Component Architecture
 
-![Vana Technical Architecture](docs/images/vana-architecture-detailed.svg)
+![Vana Technical Architecture](docs/images/architecture-simple.svg)
 
 *A modern, cloud-native architecture built on Google Cloud Platform, featuring auto-scaling, comprehensive monitoring, and enterprise-grade security.*
 
@@ -195,7 +195,7 @@ sequenceDiagram
 
 ### Agent Hierarchy
 
-![Your AI Research Team](docs/images/agent-team-simple.svg)
+![Your AI Research Team](docs/images/agent-team-clean.svg)
 
 *Think of it as your personal research department: A team leader coordinates specialized agents who plan, research, quality-check, and write your reports.*
 
