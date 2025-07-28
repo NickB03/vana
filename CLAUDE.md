@@ -52,6 +52,10 @@ When implementing complex features or following detailed guides:
 4. Each phase requires explicit user approval before proceeding
 5. Implementation should follow tasks.md step-by-step, executing one task at a time
 
+## Important ADK Resource
+
+**GEMINI.md**: Use this file with AI tools to ask questions about the template, ADK concepts, or project structure. **This should be your first resource when working with the ADK Starter Pack project.** It contains a comprehensive ADK Python cheatsheet covering all core concepts, patterns, and best practices.
+
 ## Project Overview: Vana (Virtual Autonomous Network Agents)
 
 Vana is a multi-agent AI system based on Google's Agent Development Kit (ADK) for Python. The project uses the `adk_gemini_fullstack` template as its foundation to create a sophisticated, production-ready research agent system with human-in-the-loop capabilities.
@@ -724,6 +728,7 @@ cd /vana
 
 ## References
 
+- **GEMINI.md**: Comprehensive ADK Python cheatsheet (START HERE for ADK questions!)
 - **ADK Documentation**: `.claude/adk-documentation/`
 - **Google ADK Starter Pack**: https://googlecloudplatform.github.io/agent-starter-pack/
 - **ADK Python SDK**: https://github.com/google/adk-python
