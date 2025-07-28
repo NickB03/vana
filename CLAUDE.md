@@ -17,7 +17,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ### `/Users/nick/Development/vana_vscode/`
 - **Purpose**: MCP data storage and development tools (NOT tracked in git)
 - **Usage**: Stores ChromaDB, memory databases, Claude documentation
-- **Contents**: .claude/, .claude_workspace/, .chroma_db/, .memory_db/, MCP server code
+- **Contents**: .claude/, scripts/, .chroma_db/, .memory_db/, MCP server code
 - **Do NOT launch Claude from here**: Always use /vana directory
 
 **HYBRID WORKFLOW** (Updated 2025-01-27):
@@ -230,6 +230,11 @@ make local-backend  # Launch local development server
 │   ├── Dockerfile            # Container configuration
 │   ├── pyproject.toml        # Python project configuration
 │   ├── uv.lock               # UV package lock file
+│   ├── .claude_workspace/    # Working documents (Git-tracked)
+│   │   ├── README.md         # Workspace documentation
+│   │   ├── plans/            # Implementation and migration plans
+│   │   ├── analysis/         # Technical analysis documents
+│   │   └── guides/           # Implementation guides and references
 │   ├── app/                  # Backend FastAPI application
 │   │   ├── __init__.py
 │   │   ├── agent.py          # Core agent definitions
@@ -333,11 +338,8 @@ make local-backend  # Launch local development server
     │   │   ├── tech.md
     │   │   └── structure.md
     │   └── system-prompts/   # System prompt templates
-    ├── .claude_workspace/    # Development tools and scripts
-    │   ├── .DS_Store
-    │   ├── README.md
-    │   ├── fix.md
-    │   └── scripts/          # Utility scripts
+    ├── scripts/              # Development tools and utilities (NOT Git-tracked)
+    │   └── fix.md            # Temporary debugging scripts
     ├── .chroma_db/           # ChromaDB storage (persistent)
     ├── .memory_db/           # Memory graph storage (persistent)
     ├── .vscode/              # VS Code configuration
@@ -359,11 +361,12 @@ make local-backend  # Launch local development server
 - ✅ **Documentation**: README.md (project docs only)
 - ✅ **Dependencies**: requirements.txt, package-lock.json
 - ✅ **Git files**: .gitignore, .gitattributes
+- ✅ **Working documents**: .claude_workspace/ (plans, analysis, guides)
 
 #### What Goes in `/vana_vscode/` (Workspace)
 - 💻 **Claude configuration**: .mcp.json, CLAUDE.md (master)
 - 💻 **AI documentation**: .claude/ directory with specs and steering
-- 💻 **Development tools**: .claude_workspace/scripts/
+- 💻 **Development utilities**: scripts/ (temporary tools and debugging)
 - 💻 **Local databases**: .chroma_db/, .memory_db/
 - 💻 **IDE configuration**: .vscode/ settings
 - 💻 **Session artifacts**: Temporary files, logs, debugging outputs
@@ -373,7 +376,8 @@ make local-backend  # Launch local development server
 1. **CLAUDE.md**: Master copy in `/vana_vscode/`, sync to `/vana/` when updating
 2. **Code changes**: ALWAYS make in `/vana/` directory
 3. **Documentation updates**: Edit in `/vana_vscode/.claude/`, don't sync to main repo
-4. **Scripts and tools**: Keep in `/vana_vscode/.claude_workspace/scripts/`
+4. **Working documents**: Keep in `/vana/.claude_workspace/` (version controlled)
+5. **Scripts and utilities**: Keep in `/vana_vscode/scripts/` (temporary, not tracked)
 
 ### Working Directory Guidelines
 

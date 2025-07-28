@@ -27,7 +27,7 @@
   <text x="300" y="510" font-family="Arial" font-size="14" text-anchor="middle" fill="#34a853">Ready to research!</text>
   
   <!-- Time indicator -->
-  <text x="300" y="650" font-family="Arial" font-size="16" font-weight="bold" text-anchor="middle" fill="#4285f4">1-2 minutes</text>
+  <text x="300" y="680" font-family="Arial" font-size="16" font-weight="bold" text-anchor="middle" fill="#4285f4">1-2 minutes</text>
   
   <!-- Phase 2 Box -->
   <rect x="650" y="120" width="500" height="600" rx="15" fill="#fff8e1" stroke="#f9ab00" stroke-width="2"/>
@@ -62,7 +62,7 @@
   <text x="900" y="615" font-family="Arial" font-size="14" text-anchor="middle" fill="#e8f5e9">Ready to download</text>
   
   <!-- Time indicator -->
-  <text x="900" y="650" font-family="Arial" font-size="16" font-weight="bold" text-anchor="middle" fill="#f9ab00">3-5 minutes</text>
+  <text x="900" y="680" font-family="Arial" font-size="16" font-weight="bold" text-anchor="middle" fill="#f9ab00">3-5 minutes</text>
   
   <!-- Arrow between phases -->
   <path d="M 560 400 L 640 400" stroke="#5f6368" stroke-width="3" fill="none"/>
