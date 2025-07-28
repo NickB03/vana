@@ -111,79 +111,15 @@ The application will be available at:
 
 ### Multi-Agent Workflow
 
-```mermaid
-graph TB
-    User[User Request] --> IP[Interactive Planner Agent]
-    
-    subgraph "Phase 1: Planning"
-        IP --> PG[Plan Generator]
-        PG --> |Draft Plan| User
-        User --> |Feedback| IP
-        IP --> |Refinement| PG
-        User --> |Approval| IP
-    end
-    
-    subgraph "Phase 2: Execution"
-        IP --> |Delegate| RP[Research Pipeline]
-        
-        subgraph "Research Pipeline"
-            RP --> SP[Section Planner]
-            SP --> SR[Section Researcher]
-            SR --> IRL[Iterative Refinement Loop]
-            
-            subgraph "Quality Loop"
-                IRL --> RE[Research Evaluator]
-                RE --> EC[Escalation Checker]
-                EC --> |Fail| ESE[Enhanced Search Executor]
-                ESE --> RE
-                EC --> |Pass| RC[Report Composer]
-            end
-        end
-    end
-    
-    RC --> |Final Report| User
-    
-    style IP fill:#4285F4
-    style PG fill:#34A853
-    style SR fill:#EA4335
-    style RE fill:#EA4335
-    style RC fill:#4285F4
-```
+![How Vana Creates Your Research](docs/images/agent-flow-enhanced.svg)
+
+*Vana uses a two-phase approach: First, we work together to create the perfect research plan. Then, our AI agents automatically execute the research and deliver a comprehensive report.*
 
 ### Component Architecture
 
-```mermaid
-graph LR
-    subgraph "Frontend (React + TypeScript)"
-        UI[React UI]
-        UI --> SSE[SSE Handler]
-        UI --> AT[Activity Timeline]
-        UI --> CM[Chat Messages]
-    end
-    
-    subgraph "Backend (FastAPI + ADK)"
-        API[FastAPI Server]
-        API --> Runner[ADK Runner]
-        Runner --> Agents[Agent Orchestrator]
-        API --> Session[Session Service]
-        API --> Artifacts[Artifact Storage]
-    end
-    
-    subgraph "Infrastructure"
-        CR[Cloud Run]
-        GCS[Cloud Storage]
-        BQ[BigQuery]
-        CT[Cloud Trace]
-        CL[Cloud Logging]
-    end
-    
-    UI -->|HTTP/SSE| API
-    API --> CR
-    Artifacts --> GCS
-    API --> CT
-    API --> CL
-    CL --> BQ
-```
+![Vana Technical Architecture](docs/images/vana-architecture-detailed.svg)
+
+*A modern, cloud-native architecture built on Google Cloud Platform, featuring auto-scaling, comprehensive monitoring, and enterprise-grade security.*
 
 ### Data Flow
 
@@ -259,26 +195,9 @@ sequenceDiagram
 
 ### Agent Hierarchy
 
-```mermaid
-graph TD
-    IA[Interactive Planner Agent<br/>Primary Interface] 
-    
-    IA --> PG[Plan Generator<br/>Strategy Creation]
-    IA --> RP[Research Pipeline<br/>Execution Orchestrator]
-    
-    RP --> SP[Section Planner<br/>Structure Design]
-    RP --> SR[Section Researcher<br/>Information Gathering]
-    RP --> RL[Refinement Loop<br/>Quality Control]
-    RP --> RC[Report Composer<br/>Final Assembly]
-    
-    RL --> RE[Research Evaluator<br/>Quality Assessment]
-    RL --> EC[Escalation Checker<br/>Loop Control]
-    RL --> ES[Enhanced Search<br/>Gap Filling]
-    
-    style IA fill:#1a73e8,color:#fff
-    style RP fill:#34a853,color:#fff
-    style RL fill:#EA4335,color:#fff
-```
+![Your AI Research Team](docs/images/agent-team-simple.svg)
+
+*Think of it as your personal research department: A team leader coordinates specialized agents who plan, research, quality-check, and write your reports.*
 
 ### Agent Descriptions
 

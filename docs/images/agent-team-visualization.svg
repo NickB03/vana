@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1200" height="700" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="1200" height="700" fill="#ffffff"/>
+  
+  <!-- Title -->
+  <text x="600" y="50" font-family="Arial, sans-serif" font-size="32" font-weight="300" text-anchor="middle" fill="#202124">Your AI Research Team</text>
+  <text x="600" y="80" font-family="Arial, sans-serif" font-size="18" text-anchor="middle" fill="#5f6368">8 specialized agents working together to create perfect research</text>
+  
+  <!-- Team Leader -->
+  <g id="team-leader">
+    <rect x="450" y="120" width="300" height="100" rx="12" fill="#4285f4"/>
+    <circle cx="500" cy="170" r="25" fill="white" opacity="0.9"/>
+    <text x="500" y="178" font-family="Arial, sans-serif" font-size="24" text-anchor="middle" fill="#4285f4">👤</text>
+    <text x="625" y="160" font-family="Arial, sans-serif" font-size="22" font-weight="bold" text-anchor="middle" fill="white">Team Leader</text>
+    <text x="625" y="185" font-family="Arial, sans-serif" font-size="16" text-anchor="middle" fill="white">Interactive Planner</text>
+    <text x="625" y="205" font-family="Arial, sans-serif" font-size="14" text-anchor="middle" fill="#e8f0fe">Coordinates everything</text>
+  </g>
+  
+  <!-- Planning Team -->
+  <g id="planning-team">
+    <text x="200" y="280" font-family="Arial, sans-serif" font-size="20" font-weight="500" text-anchor="middle" fill="#202124">Planning Team</text>
+    
+    <!-- Plan Generator -->
+    <rect x="100" y="300" width="200" height="80" rx="8" fill="#e8f0fe" stroke="#4285f4" stroke-width="2"/>
+    <text x="200" y="330" font-family="Arial, sans-serif" font-size="18" font-weight="500" text-anchor="middle" fill="#1a73e8">Plan Generator</text>
+    <text x="200" y="350" font-family="Arial, sans-serif" font-size="14" text-anchor="middle" fill="#5f6368">Creates research</text>
+    <text x="200" y="368" font-family="Arial, sans-serif" font-size="14" text-anchor="middle" fill="#5f6368">strategies</text>
+    
+    <!-- Section Planner -->
+    <rect x="100" y="400" width="200" height="80" rx="8" fill="#e8f0fe" stroke="#4285f4" stroke-width="2"/>
+    <text x="200" y="430" font-family="Arial, sans-serif" font-size="18" font-weight="500" text-anchor="middle" fill="#1a73e8">Section Planner</text>
+    <text x="200" y="450" font-family="Arial, sans-serif" font-size="14" text-anchor="middle" fill="#5f6368">Organizes report</text>
+    <text x="200" y="468" font-family="Arial, sans-serif" font-size="14" text-anchor="middle" fill="#5f6368">structure</text>
+  </g>
+  
+  <!-- Research Team -->
+  <g id="research-team">
+    <text x="600" y="280" font-family="Arial, sans-serif" font-size="20" font-weight="500" text-anchor="middle" fill="#202124">Research Team</text>
+    
+    <!-- Section Researcher -->
+    <rect x="400" y="300" width="200" height="80" rx="8" fill="#fef7e0" stroke="#fbbc04" stroke-width="2"/>
+    <text x="500" y="330" font-family="Arial, sans-serif" font-size="18" font-weight="500" text-anchor="middle" fill="#f9ab00">Section Researcher</text>
+    <text x="500" y="350" font-family="Arial, sans-serif" font-size="14" text-anchor="middle" fill="#5f6368">Finds information</text>
+    <text x="500" y="368" font-family="Arial, sans-serif" font-size="14" text-anchor="middle" fill="#5f6368">from sources</text>
+    
+    <!-- Enhanced Search -->
+    <rect x="620" y="300" width="200" height="80" rx="8" fill="#fef7e0" stroke="#fbbc04" stroke-width="2"/>
+    <text x="720" y="330" font-family="Arial, sans-serif" font-size="18" font-weight="500" text-anchor="middle" fill="#f9ab00">Enhanced Search</text>
+    <text x="720" y="350" font-family="Arial, sans-serif" font-size="14" text-anchor="middle" fill="#5f6368">Deep dive for</text>
+    <text x="720" y="368" font-family="Arial, sans-serif" font-size="14" text-anchor="middle" fill="#5f6368">missing info</text>
+  </g>
+  
+  <!-- Quality Team -->
+  <g id="quality-team">
+    <text x="1000" y="280" font-family="Arial, sans-serif" font-size="20" font-weight="500" text-anchor="middle" fill="#202124">Quality Team</text>
+    
+    <!-- Research Evaluator -->
+    <rect x="900" y="300" width="200" height="80" rx="8" fill="#fce8e6" stroke="#ea4335" stroke-width="2"/>
+    <text x="1000" y="330" font-family="Arial, sans-serif" font-size="18" font-weight="500" text-anchor="middle" fill="#d33b27">Research Evaluator</text>
+    <text x="1000" y="350" font-family="Arial, sans-serif" font-size="14" text-anchor="middle" fill="#5f6368">Checks quality</text>
+    <text x="1000" y="368" font-family="Arial, sans-serif" font-size="14" text-anchor="middle" fill="#5f6368">& completeness</text>
+    
+    <!-- Escalation Checker -->
+    <rect x="900" y="400" width="200" height="80" rx="8" fill="#fce8e6" stroke="#ea4335" stroke-width="2"/>
+    <text x="1000" y="430" font-family="Arial, sans-serif" font-size="18" font-weight="500" text-anchor="middle" fill="#d33b27">Escalation Checker</text>
+    <text x="1000" y="450" font-family="Arial, sans-serif" font-size="14" text-anchor="middle" fill="#5f6368">Manages quality</text>
+    <text x="1000" y="468" font-family="Arial, sans-serif" font-size="14" text-anchor="middle" fill="#5f6368">iterations</text>
+  </g>
+  
+  <!-- Report Writer -->
+  <g id="report-writer">
+    <rect x="450" y="520" width="300" height="100" rx="12" fill="#34a853"/>
+    <circle cx="500" cy="570" r="25" fill="white" opacity="0.9"/>
+    <text x="500" y="578" font-family="Arial, sans-serif" font-size="24" text-anchor="middle" fill="#34a853">📝</text>
+    <text x="625" y="560" font-family="Arial, sans-serif" font-size="22" font-weight="bold" text-anchor="middle" fill="white">Report Writer</text>
+    <text x="625" y="585" font-family="Arial, sans-serif" font-size="16" text-anchor="middle" fill="white">Report Composer</text>
+    <text x="625" y="605" font-family="Arial, sans-serif" font-size="14" text-anchor="middle" fill="#e6f4ea">Creates final document</text>
+  </g>
+  
+  <!-- Connection Lines -->
+  <line x1="600" y1="220" x2="200" y2="300" stroke="#dadce0" stroke-width="2"/>
+  <line x1="600" y1="220" x2="600" y2="300" stroke="#dadce0" stroke-width="2"/>
+  <line x1="600" y1="220" x2="1000" y2="300" stroke="#dadce0" stroke-width="2"/>
+  
+  <line x1="200" y1="380" x2="600" y2="520" stroke="#dadce0" stroke-width="2"/>
+  <line x1="600" y1="380" x2="600" y2="520" stroke="#dadce0" stroke-width="2"/>
+  <line x1="1000" y1="380" x2="600" y2="520" stroke="#dadce0" stroke-width="2"/>
+  
+  <!-- Process Flow Arrow -->
+  <path d="M 320 560 L 430 560" stroke="#5f6368" stroke-width="3" fill="none" marker-end="url(#process-arrow)"/>
+  <text x="375" y="550" font-family="Arial, sans-serif" font-size="14" text-anchor="middle" fill="#5f6368">All findings go to</text>
+  
+  <!-- Arrow definition -->
+  <defs>
+    <marker id="process-arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L0,6 L9,3 z" fill="#5f6368"/>
+    </marker>
+  </defs>
+</svg>
