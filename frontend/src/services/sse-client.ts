@@ -273,11 +273,35 @@ export class SSEClient extends EventEmitter {
     }
     this.activeSteps.clear();
 
-    // Don't complete the message here - wait for final report or actual completion
-    // The message will be completed when:
-    // 1. final_report_with_citations is received via stateDelta
-    // 2. Or when the research plan is shown as the final content
-    console.log('[SSE] Stream complete but keeping message open for potential final report');
+    // Check if we have report composer content but no final report was delivered
+    const lastReportContent = (this as any)._lastReportComposerContent;
+    const lastReportTime = (this as any)._lastReportComposerTime;
+    
+    if (lastReportContent && lastReportTime && (Date.now() - lastReportTime < 5000)) {
+      console.log('[SSE] ⚠️ Stream ended but we have report_composer content that wasn\'t delivered via stateDelta');
+      console.log('[SSE] Using the saved report composer content as final report');
+      this.handleFinalReport(lastReportContent);
+      
+      // Clear the saved content
+      (this as any)._lastReportComposerContent = null;
+      (this as any)._lastReportComposerTime = null;
+    } else {
+      console.log('[SSE] Stream complete but no recent report composer content found');
+      
+      // If we have a message with content but it wasn't marked as complete, complete it now
+      if (this.currentMessageState && this.currentMessageState.content) {
+        console.log('[SSE] Completing existing message with current content');
+        this.emitUIEvent({
+          type: 'message_update',
+          data: {
+            messageId: this.currentMessageState.id,
+            content: this.currentMessageState.content,
+            isComplete: true
+          }
+        });
+        this.currentMessageState = null;
+      }
+    }
   }
 
   /**
@@ -302,7 +326,9 @@ export class SSEClient extends EventEmitter {
 
     // Handle final report in state delta
     if (event.actions?.stateDelta?.final_report_with_citations) {
-      console.log('[SSE] Final report with citations detected:', event.actions.stateDelta.final_report_with_citations.substring(0, 100) + '...');
+      console.log('[SSE] 🎯 FINAL REPORT DETECTED in stateDelta!');
+      console.log('[SSE] Report length:', event.actions.stateDelta.final_report_with_citations.length);
+      console.log('[SSE] Report preview:', event.actions.stateDelta.final_report_with_citations.substring(0, 200) + '...');
       this.handleFinalReport(event.actions.stateDelta.final_report_with_citations);
     } else if (event.actions?.stateDelta?.research_plan) {
       // Handle research plan as final content if no other content was set
@@ -313,6 +339,7 @@ export class SSEClient extends EventEmitter {
       }
     } else if (event.actions?.stateDelta) {
       console.log('[SSE] State delta keys:', Object.keys(event.actions.stateDelta));
+      console.log('[SSE] Full state delta:', JSON.stringify(event.actions.stateDelta, null, 2));
     }
   }
 
@@ -398,9 +425,17 @@ export class SSEClient extends EventEmitter {
         console.log('[SSE] Text content from', event.author, '- length:', part.text.length);
         console.log('[SSE] Text preview:', part.text.substring(0, 100) + '...');
         
-        // Don't display content from report_composer - it comes via stateDelta
+        // Check if this is the report composer
         if (event.author === 'report_composer_with_citations') {
-          console.log('[SSE] Ignoring direct content from report_composer - waiting for stateDelta');
+          console.log('[SSE] 📝 REPORT COMPOSER CONTENT DETECTED!');
+          console.log('[SSE] Content length:', part.text.length);
+          console.log('[SSE] Should come via stateDelta, but let\'s save it just in case');
+          
+          // Store it temporarily in case stateDelta doesn't arrive
+          (this as any)._lastReportComposerContent = part.text;
+          (this as any)._lastReportComposerTime = Date.now();
+          
+          // Don't display it directly yet
           continue;
         }
         
