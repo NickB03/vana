@@ -253,6 +253,10 @@ export class SSEClient extends EventEmitter {
    * Handle stream completion
    */
   private handleStreamComplete(): void {
+    console.log('[SSE] handleStreamComplete called');
+    console.log('[SSE] Current message state:', this.currentMessageState);
+    console.log('[SSE] Active steps count:', this.activeSteps.size);
+    
     // Complete all active steps
     for (const step of this.activeSteps.values()) {
       const duration = Date.now() - step.startTime;
@@ -271,6 +275,7 @@ export class SSEClient extends EventEmitter {
 
     // Complete the message if it exists
     if (this.currentMessageState) {
+      console.log('[SSE] Completing message with content length:', this.currentMessageState.content?.length || 0);
       this.emitUIEvent({
         type: 'message_update',
         data: {
@@ -287,6 +292,12 @@ export class SSEClient extends EventEmitter {
    * Transform ADK event to UI event
    */
   private transformAndEmitEvent(event: ADKSSEEvent): void {
+    console.log('[SSE] transformAndEmitEvent called with event type:', event.type);
+    console.log('[SSE] Event author:', event.author);
+    console.log('[SSE] Event has content:', !!event.content);
+    console.log('[SSE] Event has actions:', !!event.actions);
+    console.log('[SSE] Event has stateDelta:', !!event.actions?.stateDelta);
+    
     // Handle thinking updates from agents
     if (event.author && event.author !== 'user') {
       this.handleAgentEvent(event);
@@ -308,6 +319,8 @@ export class SSEClient extends EventEmitter {
         console.log('[SSE] Using research plan as final report');
         this.handleFinalReport(event.actions.stateDelta.research_plan);
       }
+    } else if (event.actions?.stateDelta) {
+      console.log('[SSE] State delta keys:', Object.keys(event.actions.stateDelta));
     }
   }
 
