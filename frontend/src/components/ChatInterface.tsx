@@ -1,9 +1,13 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import { AIMessage } from './ui/AIMessage'
 import { AIInput } from './ui/ai-input'
 import { AIConversation } from './ui/ai-conversation'
 import type { ThinkingStep } from './ui/AIReasoning'
-import { useWebSocket } from '../hooks/useWebSocket'
+import { useWebSocket } from '../hooks/useSSE'
+import { ConnectionStatus } from './ConnectionStatus'
+
+// Global state to prevent duplicate initial messages across StrictMode mounts
+const globalInitialMessageState = new Map<string, boolean>();
 
 interface Message {
   id: string
@@ -17,36 +21,30 @@ interface Message {
 interface ChatInterfaceProps {
   onSendMessage?: (message: string) => void
   initialMessages?: Array<{ role: 'user' | 'assistant' | 'system'; content: string }>
-  thinkingSteps?: ThinkingStep[]
-  isProcessing?: boolean
 }
 
 
-export function ChatInterface({ onSendMessage, initialMessages = [], thinkingSteps = [], isProcessing = false }: ChatInterfaceProps) {
-  const { isConnected, sendMessage: wsSendMessage, onThinkingUpdate, onMessageUpdate } = useWebSocket()
-  const [localThinkingSteps, setLocalThinkingSteps] = useState<ThinkingStep[]>(thinkingSteps)
+export function ChatInterface({ onSendMessage, initialMessages = [] }: ChatInterfaceProps) {
+  console.log('[ChatInterface] Component initializing');
+  const { isConnected, sendMessage: wsSendMessage, onThinkingUpdate, onMessageUpdate, connectionStatus } = useWebSocket()
+  console.log('[ChatInterface] WebSocket hook loaded, isConnected:', isConnected, 'status:', connectionStatus);
+  
+  const [localThinkingSteps, setLocalThinkingSteps] = useState<ThinkingStep[]>([])
   const [messages, setMessages] = useState<Message[]>(() => {
-    // Convert initial messages to full Message objects
-    const converted = initialMessages.map((msg, idx) => ({
-      id: idx.toString(),
-      role: msg.role,
-      content: msg.content,
-      timestamp: new Date(),
-      status: 'sent' as const
-    }))
-    
-    // Add welcome message if no initial messages
-    if (converted.length === 0) {
-      converted.push({
+    // Don't convert initial messages here - we'll add them after sending
+    // Just show welcome message if no initial messages
+    if (initialMessages.length === 0) {
+      return [{
         id: '0',
         role: 'system' as const,
         content: 'Welcome to VANA! I\'m your multi-agent AI assistant. How can I help you today?',
         timestamp: new Date(),
         status: 'sent' as const
-      })
+      }];
     }
     
-    return converted
+    // Return empty array if we have initial messages (they'll be added after connection)
+    return [];
   })
   const [isTyping, setIsTyping] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
@@ -57,14 +55,13 @@ export function ChatInterface({ onSendMessage, initialMessages = [], thinkingSte
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
   
-  // Update thinking steps from props
-  useEffect(() => {
-    setLocalThinkingSteps(thinkingSteps)
-  }, [thinkingSteps])
+  
   
   // Set up WebSocket listeners
   useEffect(() => {
+    console.log('[ChatInterface] Setting up WebSocket listeners');
     const unsubThinking = onThinkingUpdate((update) => {
+      console.log('[ChatInterface] Thinking update received:', update);
       setLocalThinkingSteps(prev => {
         const newSteps = [...prev]
         const index = newSteps.findIndex(s => s.id === update.stepId)
@@ -88,6 +85,7 @@ export function ChatInterface({ onSendMessage, initialMessages = [], thinkingSte
     })
     
     const unsubMessage = onMessageUpdate((update) => {
+      console.log('[ChatInterface] Message update received:', update);
       if (currentMessageIdRef.current === update.messageId) {
         setMessages(prev => {
           const newMessages = [...prev]
@@ -114,17 +112,7 @@ export function ChatInterface({ onSendMessage, initialMessages = [], thinkingSte
     }
   }, [onThinkingUpdate, onMessageUpdate])
   
-  const handleFileUpload = (files: FileList) => {
-    // For now, just log the files - later we can implement actual file processing
-    console.log('Files selected:', Array.from(files).map(f => f.name));
-    
-    // Create a message about the uploaded files
-    const fileNames = Array.from(files).map(f => f.name).join(', ');
-    const message = `Please analyze these files: ${fileNames}`;
-    handleSendMessage(message);
-  };
-
-  const handleSendMessage = async (content: string) => {
+  const handleSendMessage = useCallback(async (content: string) => {
     // Add user message
     const userMessage: Message = {
       id: Date.now().toString(),
@@ -137,9 +125,12 @@ export function ChatInterface({ onSendMessage, initialMessages = [], thinkingSte
     setMessages(prev => [...prev, userMessage])
     setIsTyping(true)
     setLocalThinkingSteps([]) // Reset thinking steps for new message
+    currentMessageIdRef.current = null // Reset current message reference
     
     // Use WebSocket if connected, otherwise fall back to parent handler
     if (isConnected) {
+      console.log('[ChatInterface] Sending via SSE:', content);
+      
       // Create placeholder AI message
       const aiMessageId = (Date.now() + 1).toString()
       currentMessageIdRef.current = aiMessageId
@@ -153,8 +144,8 @@ export function ChatInterface({ onSendMessage, initialMessages = [], thinkingSte
       }
       setMessages(prev => [...prev, aiMessage])
       
-      // Send via WebSocket
-      wsSendMessage(content)
+      // Send via WebSocket/SSE with the same message ID
+      wsSendMessage(content, aiMessageId)
     } else if (onSendMessage) {
       // Fall back to parent handler
       onSendMessage(content)
@@ -172,31 +163,55 @@ export function ChatInterface({ onSendMessage, initialMessages = [], thinkingSte
         setIsTyping(false)
       }, 1500)
     }
-  }
+  }, [isConnected, wsSendMessage, onSendMessage])
   
-  // Add AI response when processing completes (only for non-WebSocket mode)
+  const handleFileUpload = (files: FileList) => {
+    // For now, just log the files - later we can implement actual file processing
+    console.log('Files selected:', Array.from(files).map(f => f.name));
+    
+    // Create a message about the uploaded files
+    const fileNames = Array.from(files).map(f => f.name).join(', ');
+    const message = `Please analyze these files: ${fileNames}`;
+    handleSendMessage(message);
+  };
+  
+  // Send initial message if provided
   useEffect(() => {
-    if (!isConnected && !isProcessing && thinkingSteps.length > 0 && thinkingSteps.every(s => s.status === 'complete')) {
-      // Check if we already have an AI message being displayed
-      const hasAIMessage = messages.some(m => m.role === 'assistant' && m.id !== '0')
-      if (!hasAIMessage) {
-        // Add the AI response with the completed thinking steps
-        const aiMessage: Message = {
-          id: (Date.now() + 1).toString(),
-          role: 'assistant',
-          content: 'Based on my analysis, here is what I found for you...',
-          timestamp: new Date(),
-          status: 'sent',
-          thinkingSteps: localThinkingSteps // Use localThinkingSteps to avoid reload
+    if (initialMessages.length > 0 && isConnected) {
+      const userMessage = initialMessages.find(msg => msg.role === 'user');
+      if (userMessage) {
+        // Use message content + timestamp as key to prevent race conditions across multiple component instances
+        const messageKey = `${userMessage.content}_${Date.now()}`;
+        
+        // Atomic check-and-set operation to prevent race conditions
+        const isAlreadySent = globalInitialMessageState.has(userMessage.content);
+        if (!isAlreadySent) {
+          // Immediately set the flag BEFORE any async operations
+          globalInitialMessageState.set(userMessage.content, true);
+          console.log('[ChatInterface] Processing initial message (first time):', userMessage.content);
+          
+          // Send the message
+          handleSendMessage(userMessage.content);
+          
+          // Clear the flag after a delay to allow re-sending if user navigates away and back
+          setTimeout(() => {
+            globalInitialMessageState.delete(userMessage.content);
+          }, 5000);
+        } else {
+          console.log('[ChatInterface] Skipping duplicate initial message:', userMessage.content);
         }
-        setMessages(prev => [...prev, aiMessage])
       }
-      setIsTyping(false)
     }
-  }, [isProcessing, thinkingSteps, isConnected, messages, localThinkingSteps])
+  }, [isConnected, handleSendMessage, initialMessages]);
   
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full relative">
+      {/* Connection status indicator */}
+      <ConnectionStatus 
+        status={connectionStatus} 
+        className="absolute top-4 right-4 z-10"
+      />
+      
       {/* Messages area with AI conversation wrapper */}
       <AIConversation>
         {messages.map((message) => (
@@ -218,12 +233,15 @@ export function ChatInterface({ onSendMessage, initialMessages = [], thinkingSte
           />
         ))}
         
-        {/* Processing indicator with thinking steps */}
-        {(isTyping || localThinkingSteps.length > 0) && !messages.some(m => m.thinkingSteps && m.thinkingSteps.length > 0) && (
+        {/* Processing indicator with thinking steps - only show if no current message exists or it doesn't have thinking steps */}
+        {(isTyping || localThinkingSteps.length > 0) && 
+         (!currentMessageIdRef.current || 
+          !messages.find(m => m.id === currentMessageIdRef.current)) && (
           <AIMessage
+            key="processing-indicator"
             role="assistant"
             content=""
-            isThinking={isTyping || isProcessing}
+            isThinking={isTyping}
             thinkingSteps={localThinkingSteps}
           />
         )}
@@ -237,16 +255,10 @@ export function ChatInterface({ onSendMessage, initialMessages = [], thinkingSte
           <AIInput 
             onSend={handleSendMessage}
             onFileUpload={handleFileUpload}
-            disabled={isTyping || isProcessing}
+            disabled={isTyping}
             placeholder="Message VANA..."
             showTools={false}
           />
-          {/* Connection status indicator */}
-          {!isConnected && (
-            <div className="text-xs text-yellow-500 mt-2">
-              WebSocket disconnected - using fallback mode
-            </div>
-          )}
         </div>
       </div>
     </div>

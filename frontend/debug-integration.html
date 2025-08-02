@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Debug Frontend Integration</title>
+</head>
+<body>
+    <h1>Debug Frontend Integration</h1>
+    <button onclick="testIntegration()">Test Full Integration</button>
+    <button onclick="clearLogs()">Clear Logs</button>
+    <pre id="output" style="background: #f0f0f0; padding: 20px; max-height: 600px; overflow-y: auto;"></pre>
+    
+    <script>
+        const output = document.getElementById('output');
+        
+        function log(msg, isError = false) {
+            const timestamp = new Date().toISOString().split('T')[1].slice(0, -1);
+            const logEntry = `[${timestamp}] ${msg}\n`;
+            output.textContent += logEntry;
+            console.log(msg);
+            if (isError) console.error(msg);
+            output.scrollTop = output.scrollHeight;
+        }
+        
+        function clearLogs() {
+            output.textContent = '';
+        }
+        
+        async function testIntegration() {
+            log('=== Starting Full Integration Test ===');
+            
+            try {
+                // Step 1: Check backend health
+                log('1. Checking backend availability...');
+                try {
+                    const healthResp = await fetch('http://localhost:8000/', { method: 'HEAD' });
+                    log(`   Backend status: ${healthResp.ok ? 'AVAILABLE' : 'UNAVAILABLE'}`);
+                } catch (e) {
+                    log('   Backend is NOT running!', true);
+                    return;
+                }
+                
+                // Step 2: Create session
+                log('2. Creating session...');
+                const sessionResp = await fetch('http://localhost:8000/apps/app/users/test_user/sessions', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({})
+                });
+                
+                if (!sessionResp.ok) {
+                    log(`   Session creation failed: ${sessionResp.status}`, true);
+                    return;
+                }
+                
+                const session = await sessionResp.json();
+                log(`   Session created: ${JSON.stringify(session, null, 2)}`);
+                log(`   Session ID: ${session.id}`);
+                
+                // Step 3: Test SSE with small message
+                log('3. Testing SSE with simple message...');
+                const sseUrl = 'http://localhost:8000/run_sse?alt=sse';
+                const payload = {
+                    app_name: 'app',
+                    user_id: 'test_user',
+                    session_id: session.id,
+                    new_message: {
+                        role: 'user',
+                        parts: [{ text: 'Hi' }]
+                    },
+                    streaming: true
+                };
+                
+                log(`   URL: ${sseUrl}`);
+                log(`   Payload: ${JSON.stringify(payload, null, 2)}`);
+                
+                const response = await fetch(sseUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'text/event-stream'
+                    },
+                    body: JSON.stringify(payload)
+                });
+                
+                log(`   Response status: ${response.status}`);
+                log(`   Response headers: ${response.headers.get('content-type')}`);
+                
+                if (!response.ok) {
+                    const error = await response.text();
+                    log(`   Error: ${error}`, true);
+                    return;
+                }
+                
+                // Step 4: Read SSE stream
+                log('4. Reading SSE stream...');
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                let eventCount = 0;
+                
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+                    
+                    const chunk = decoder.decode(value);
+                    const lines = chunk.split('\n');
+                    
+                    for (const line of lines) {
+                        if (line.trim() === '') continue;
+                        
+                        if (line.startsWith('data: ')) {
+                            eventCount++;
+                            const data = line.slice(6);
+                            try {
+                                const parsed = JSON.parse(data);
+                                log(`   Event ${eventCount}: ${parsed.author || 'unknown'} - ${parsed.content?.parts?.[0]?.text || parsed.content?.parts?.[0]?.functionCall?.name || 'no text'}`);
+                            } catch (e) {
+                                log(`   Event ${eventCount}: ${data.substring(0, 100)}...`);
+                            }
+                        } else {
+                            log(`   Raw: ${line}`);
+                        }
+                    }
+                }
+                
+                log(`5. Test complete! Received ${eventCount} events`);
+                
+            } catch (error) {
+                log(`ERROR: ${error.message}`, true);
+                log(error.stack, true);
+            }
+        }
+        
+        // Auto-run test on load
+        window.addEventListener('load', () => {
+            log('Debug page loaded. Click "Test Full Integration" to begin.');
+        });
+    </script>
+</body>
+</html>

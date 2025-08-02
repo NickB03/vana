@@ -31,8 +31,9 @@ const AIInputTextarea = React.forwardRef<HTMLTextAreaElement, AIInputTextareaPro
       <textarea
         ref={textareaRef}
         className={cn(
-          "w-full resize-none bg-transparent text-base text-white outline-none placeholder:text-gray-400",
-          "min-h-[24px] max-h-[200px] overflow-y-auto scrollbar-thin",
+          "w-full resize-none bg-transparent text-base text-foreground outline-none placeholder:text-foreground-muted",
+          "min-h-[24px] max-h-[200px] overflow-y-auto scrollbar-thin scrollbar-track-transparent scrollbar-thumb-border-muted",
+          "focus:placeholder:text-foreground-subtle transition-colors duration-200",
           className
         )}
         rows={1}

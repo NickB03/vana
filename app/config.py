@@ -13,9 +13,13 @@
 # limitations under the License.
 
 import os
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from typing import Union
 
 import google.auth
+from google.adk.models.lite_llm import LiteLlm
+
+from app.models import CRITIC_MODEL, WORKER_MODEL, ModelType
 
 # To use AI Studio credentials:
 # 1. Create a .env file in the /app directory with:
@@ -33,13 +37,13 @@ class ResearchConfiguration:
     """Configuration for research-related models and parameters.
 
     Attributes:
-        critic_model (str): Model for evaluation tasks.
-        worker_model (str): Model for working/generation tasks.
+        critic_model (Union[str, LiteLlm]): Model for evaluation tasks.
+        worker_model (Union[str, LiteLlm]): Model for working/generation tasks.
         max_search_iterations (int): Maximum search iterations allowed.
     """
 
-    critic_model: str = "gemini-2.5-pro"
-    worker_model: str = "gemini-2.5-flash"
+    critic_model: ModelType = field(default_factory=lambda: CRITIC_MODEL)
+    worker_model: ModelType = field(default_factory=lambda: WORKER_MODEL)
     max_search_iterations: int = 5
 
 

@@ -2,6 +2,8 @@ import { motion } from 'framer-motion'
 import type { ReactNode } from 'react'
 import { Timeline } from './shadcn-timeline'
 import type { ThinkingStep } from './AIReasoning'
+import { AIToolsContainer } from './ai-tool'
+import { transformThinkingStepsToAITools, getToolStats } from '../../utils/ai-tool-transformer'
 import { Sparkles } from 'lucide-react'
 import { useState } from 'react'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from './collapsible'
@@ -84,7 +86,7 @@ export function AIMessage({
                 <Sparkles className={cn("w-5 h-5", isThinking && "gradient-pulse")} />
               </div>
               <span className="text-base font-medium">
-                Show Agent activity
+                Show Agent Activity ({getToolStats(transformThinkingStepsToAITools(thinkingSteps)).completed}/{getToolStats(transformThinkingStepsToAITools(thinkingSteps)).total})
               </span>
               <motion.svg
                 animate={{ rotate: isOpen ? 180 : 0 }}
@@ -106,7 +108,10 @@ export function AIMessage({
               exit={{ opacity: 0 }}
               className="mt-4"
             >
-              <Timeline items={thinkingSteps} />
+              <AIToolsContainer 
+                tools={transformThinkingStepsToAITools(thinkingSteps)}
+                title="Agent Execution"
+              />
             </motion.div>
           </CollapsibleContent>
         </Collapsible>

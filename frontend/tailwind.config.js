@@ -15,52 +15,110 @@ export default {
     },
     extend: {
       colors: {
+        // Core Vana brand colors
+        vana: {
+          primary: '#7c9fff',
+          secondary: '#b794f6',
+          accent: '#f6ad55',
+          warning: '#fc8181',
+          success: '#68d391',
+          info: '#63b3ed',
+        },
+        
+        // Background system
         background: {
-          DEFAULT: '#1a1a1a',
-          element: '#2d2d2d',
-          input: '#3a3a3a',
+          DEFAULT: 'hsl(var(--background) / <alpha-value>)',
+          element: 'hsl(var(--background-element) / <alpha-value>)',
+          input: 'hsl(var(--background-input) / <alpha-value>)',
+          overlay: 'hsl(var(--background-overlay) / <alpha-value>)',
         },
+        
+        // Foreground colors
+        foreground: {
+          DEFAULT: 'hsl(var(--foreground) / <alpha-value>)',
+          muted: 'hsl(var(--foreground-muted) / <alpha-value>)',
+          subtle: 'hsl(var(--foreground-subtle) / <alpha-value>)',
+        },
+        
+        // Border system
         border: {
-          DEFAULT: '#4a4a4a',
+          DEFAULT: 'hsl(var(--border) / <alpha-value>)',
+          muted: 'hsl(var(--border-muted) / <alpha-value>)',
+          strong: 'hsl(var(--border-strong) / <alpha-value>)',
         },
+        
+        // Component colors
         primary: {
-          DEFAULT: '#7c9fff',
-          foreground: '#ffffff',
+          DEFAULT: 'hsl(var(--primary) / <alpha-value>)',
+          foreground: 'hsl(var(--primary-foreground) / <alpha-value>)',
+          muted: 'hsl(var(--primary-muted) / <alpha-value>)',
         },
         secondary: {
-          DEFAULT: '#b794f6',
-          foreground: '#ffffff',
+          DEFAULT: 'hsl(var(--secondary) / <alpha-value>)',
+          foreground: 'hsl(var(--secondary-foreground) / <alpha-value>)',
+          muted: 'hsl(var(--secondary-muted) / <alpha-value>)',
         },
         accent: {
+          DEFAULT: 'hsl(var(--accent) / <alpha-value>)',
+          foreground: 'hsl(var(--accent-foreground) / <alpha-value>)',
           blue: '#7c9fff',
           purple: '#b794f6',
           orange: '#f6ad55',
           red: '#fc8181',
         },
         muted: {
-          DEFAULT: '#3a3a3a',
-          foreground: '#a0a0a0',
+          DEFAULT: 'hsl(var(--muted) / <alpha-value>)',
+          foreground: 'hsl(var(--muted-foreground) / <alpha-value>)',
         },
         card: {
-          DEFAULT: '#2d2d2d',
-          foreground: '#ffffff',
+          DEFAULT: 'hsl(var(--card) / <alpha-value>)',
+          foreground: 'hsl(var(--card-foreground) / <alpha-value>)',
         },
         popover: {
-          DEFAULT: '#2d2d2d',
-          foreground: '#ffffff',
+          DEFAULT: 'hsl(var(--popover) / <alpha-value>)',
+          foreground: 'hsl(var(--popover-foreground) / <alpha-value>)',
         },
         destructive: {
-          DEFAULT: '#fc8181',
-          foreground: '#ffffff',
+          DEFAULT: 'hsl(var(--destructive) / <alpha-value>)',
+          foreground: 'hsl(var(--destructive-foreground) / <alpha-value>)',
         },
       },
       backgroundImage: {
         'gemini-gradient': 'linear-gradient(135deg, #7c9fff 0%, #b794f6 35%, #fc8181 70%, #f6ad55 100%)',
+        'vana-gradient': 'linear-gradient(135deg, var(--vana-primary) 0%, var(--vana-secondary) 50%, var(--vana-accent) 100%)',
       },
       borderRadius: {
-        lg: "var(--radius)",
-        md: "calc(var(--radius) - 2px)",
-        sm: "calc(var(--radius) - 4px)",
+        lg: "var(--radius, 0.5rem)",
+        md: "calc(var(--radius, 0.5rem) - 2px)",
+        sm: "calc(var(--radius, 0.5rem) - 4px)",
+      },
+      fontFamily: {
+        sans: [
+          'Inter',
+          '-apple-system',
+          'BlinkMacSystemFont',
+          'Segoe UI',
+          'Roboto',
+          'Oxygen',
+          'Ubuntu',
+          'Cantarell',
+          'sans-serif'
+        ],
+        mono: [
+          'Fira Code',
+          'JetBrains Mono',
+          'Monaco',
+          'Consolas',
+          'Liberation Mono',
+          'Courier New',
+          'monospace'
+        ],
+      },
+      spacing: {
+        '18': '4.5rem',
+        '88': '22rem',
+        '112': '28rem',
+        '128': '32rem',
       },
       keyframes: {
         "accordion-down": {

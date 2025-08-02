@@ -23,7 +23,7 @@ from google.adk.agents.callback_context import CallbackContext
 from google.adk.agents.invocation_context import InvocationContext
 from google.adk.events import Event, EventActions
 from google.adk.planners import BuiltInPlanner
-from google.adk.tools import google_search
+from app.tools import brave_search  # Compatible with all LLM providers
 from google.adk.tools.agent_tool import AgentTool
 from google.genai import types as genai_types
 from pydantic import BaseModel, Field
@@ -211,11 +211,11 @@ plan_generator = LlmAgent(
 
     **TOOL USE IS STRICTLY LIMITED:**
     Your goal is to create a generic, high-quality plan *without searching*.
-    Only use `google_search` if a topic is ambiguous or time-sensitive and you absolutely cannot create a plan without a key piece of identifying information.
+    Only use `brave_search` if a topic is ambiguous or time-sensitive and you absolutely cannot create a plan without a key piece of identifying information.
     You are explicitly forbidden from researching the *content* or *themes* of the topic. That is the next agent's job. Your search is only to identify the subject, not to investigate it.
     Current date: {datetime.datetime.now().strftime("%Y-%m-%d")}
     """,
-    tools=[google_search],
+    tools=[brave_search],
 )
 
 
@@ -259,7 +259,7 @@ section_researcher = LlmAgent(
     *   **Execution Directive:** You **MUST** systematically process every goal prefixed with `[RESEARCH]` before proceeding to Phase 2.
     *   For each `[RESEARCH]` goal:
         *   **Query Generation:** Formulate a comprehensive set of 4-5 targeted search queries. These queries must be expertly designed to broadly cover the specific intent of the `[RESEARCH]` goal from multiple angles.
-        *   **Execution:** Utilize the `google_search` tool to execute **all** generated queries for the current `[RESEARCH]` goal.
+        *   **Execution:** Utilize the `brave_search` tool to execute **all** generated queries for the current `[RESEARCH]` goal.
         *   **Summarization:** Synthesize the search results into a detailed, coherent summary that directly addresses the objective of the `[RESEARCH]` goal.
         *   **Internal Storage:** Store this summary, clearly tagged or indexed by its corresponding `[RESEARCH]` goal, for later and exclusive use in Phase 2. You **MUST NOT** lose or discard any generated summaries.
 
@@ -283,7 +283,7 @@ section_researcher = LlmAgent(
 
     **Final Output:** Your final output will comprise the complete set of processed summaries from `[RESEARCH]` tasks AND all the generated artifacts from `[DELIVERABLE]` tasks, presented clearly and distinctly.
     """,
-    tools=[google_search],
+    tools=[brave_search],
     output_key="section_research_findings",
     after_agent_callback=collect_research_sources_callback,
 )
@@ -327,11 +327,11 @@ enhanced_search_executor = LlmAgent(
     You have been activated because the previous research was graded as 'fail'.
 
     1.  Review the 'research_evaluation' state key to understand the feedback and required fixes.
-    2.  Execute EVERY query listed in 'follow_up_queries' using the 'google_search' tool.
+    2.  Execute EVERY query listed in 'follow_up_queries' using the 'brave_search' tool.
     3.  Synthesize the new findings and COMBINE them with the existing information in 'section_research_findings'.
     4.  Your output MUST be the new, complete, and improved set of research findings.
     """,
-    tools=[google_search],
+    tools=[brave_search],
     output_key="section_research_findings",
     after_agent_callback=collect_research_sources_callback,
 )
