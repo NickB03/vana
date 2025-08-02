@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>SSE Test</title>
+</head>
+<body>
+    <h1>ADK SSE Test</h1>
+    <button onclick="testSSE()">Test SSE Connection</button>
+    <pre id="output"></pre>
+    
+    <script>
+        const output = document.getElementById('output');
+        
+        function log(msg) {
+            output.textContent += msg + '\n';
+            console.log(msg);
+        }
+        
+        async function testSSE() {
+            log('Starting SSE test...');
+            
+            // First create a session
+            try {
+                log('Creating session...');
+                const sessionResp = await fetch('http://localhost:8000/apps/app/users/test_user/sessions', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({})
+                });
+                
+                if (!sessionResp.ok) {
+                    log('Session creation failed: ' + sessionResp.status);
+                    return;
+                }
+                
+                const session = await sessionResp.json();
+                log('Session created: ' + session.id);
+                
+                // Now test SSE
+                log('Sending SSE request...');
+                const response = await fetch('http://localhost:8000/run_sse?alt=sse', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'text/event-stream'
+                    },
+                    body: JSON.stringify({
+                        app_name: 'app',
+                        user_id: 'test_user',
+                        session_id: session.id,
+                        new_message: {
+                            role: 'user',
+                            parts: [{ text: 'Hello' }]
+                        },
+                        streaming: true
+                    })
+                });
+                
+                log('Response status: ' + response.status);
+                
+                if (!response.ok) {
+                    const error = await response.text();
+                    log('Error: ' + error);
+                    return;
+                }
+                
+                // Read SSE stream
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+                    
+                    const chunk = decoder.decode(value);
+                    log('Received: ' + chunk);
+                }
+                
+            } catch (error) {
+                log('Error: ' + error.message);
+            }
+        }
+    </script>
+</body>
+</html>
