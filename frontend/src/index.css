@@ -12,32 +12,69 @@
   --text-primary: #ffffff;
   --text-secondary: #a0a0a0;
 
-  /* VANA Gradient Colors */
+  /* VANA Brand Colors */
+  --vana-primary: #7c9fff;
+  --vana-secondary: #b794f6;
+  --vana-accent: #f6ad55;
+  --vana-warning: #fc8181;
+  --vana-success: #68d391;
+  --vana-info: #63b3ed;
+
+  /* VANA Gradient Colors (legacy) */
   --accent-blue: #7c9fff;
   --accent-purple: #b794f6;
   --accent-orange: #f6ad55;
   --accent-red: #fc8181;
 
+  /* Semantic Background System */
+  --background: 0 0% 10%;
+  --background-element: 0 0% 18%;
+  --background-input: 0 0% 23%;
+  --background-overlay: 0 0% 8%;
+
+  /* Semantic Foreground System */
+  --foreground: 0 0% 100%;
+  --foreground-muted: 0 0% 63%;
+  --foreground-subtle: 0 0% 45%;
+
+  /* Semantic Border System */
+  --border: 0 0% 29%;
+  --border-muted: 0 0% 20%;
+  --border-strong: 0 0% 45%;
+
   /* Kibo UI / shadcn compatible variables */
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
+  --background-legacy: oklch(1 0 0);
+  --foreground-legacy: oklch(0.145 0 0);
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.145 0 0);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --destructive-foreground: #ffffff;
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
+  /* Component colors using HSL for consistency */
+  --primary: 224 100% 75%;
+  --primary-foreground: 0 0% 100%;
+  --primary-muted: 224 100% 65%;
+
+  --secondary: 273 60% 70%;
+  --secondary-foreground: 0 0% 100%;
+  --secondary-muted: 273 60% 60%;
+
+  --accent: 32 90% 65%;
+  --accent-foreground: 0 0% 100%;
+
+  --muted: 0 0% 23%;
+  --muted-foreground: 0 0% 63%;
+
+  --card: 0 0% 18%;
+  --card-foreground: 0 0% 100%;
+
+  --popover: 0 0% 18%;
+  --popover-foreground: 0 0% 100%;
+
+  --destructive: 0 77% 75%;
+  --destructive-foreground: 0 0% 100%;
+
+  --input: 0 0% 23%;
+  --ring: 224 100% 75%;
   --radius: 0.625rem;
   --chart-1: oklch(0.646 0.222 41.116);
   --chart-2: oklch(0.6 0.118 184.704);
