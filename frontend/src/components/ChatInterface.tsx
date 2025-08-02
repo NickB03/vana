@@ -86,23 +86,35 @@ export function ChatInterface({ onSendMessage, initialMessages = [] }: ChatInter
     
     const unsubMessage = onMessageUpdate((update) => {
       console.log('[ChatInterface] Message update received:', update);
+      console.log('[ChatInterface] Current message ID ref:', currentMessageIdRef.current);
+      console.log('[ChatInterface] Update message ID:', update.messageId);
+      console.log('[ChatInterface] Update content length:', update.content?.length);
+      console.log('[ChatInterface] Update isComplete:', update.isComplete);
+      
       if (currentMessageIdRef.current === update.messageId) {
+        console.log('[ChatInterface] Processing message update for current message');
         setMessages(prev => {
           const newMessages = [...prev]
           const index = newMessages.findIndex(m => m.id === update.messageId)
+          console.log('[ChatInterface] Found message at index:', index);
           if (index !== -1) {
-            newMessages[index] = {
+            const updatedMessage = {
               ...newMessages[index],
               content: update.content,
               status: update.isComplete ? 'sent' : 'sending'
-            }
+            };
+            console.log('[ChatInterface] Updated message:', updatedMessage);
+            newMessages[index] = updatedMessage;
             if (update.isComplete) {
+              console.log('[ChatInterface] Message complete - stopping typing indicator');
               setIsTyping(false)
               currentMessageIdRef.current = null
             }
           }
           return newMessages
         })
+      } else {
+        console.log('[ChatInterface] Message ID mismatch - ignoring update');
       }
     })
     

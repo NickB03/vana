@@ -299,10 +299,13 @@ export class SSEClient extends EventEmitter {
 
     // Handle final report in state delta
     if (event.actions?.stateDelta?.final_report_with_citations) {
+      console.log('[SSE] Final report with citations detected:', event.actions.stateDelta.final_report_with_citations.substring(0, 100) + '...');
       this.handleFinalReport(event.actions.stateDelta.final_report_with_citations);
     } else if (event.actions?.stateDelta?.research_plan) {
       // Handle research plan as final content if no other content was set
+      console.log('[SSE] Research plan detected:', event.actions.stateDelta.research_plan.substring(0, 100) + '...');
       if (!this.currentMessageState?.content || this.currentMessageState.content === '') {
+        console.log('[SSE] Using research plan as final report');
         this.handleFinalReport(event.actions.stateDelta.research_plan);
       }
     }
@@ -408,20 +411,28 @@ export class SSEClient extends EventEmitter {
    * Handle final report completion
    */
   private handleFinalReport(report: string): void {
-    if (!this.currentMessageState) return;
+    console.log('[SSE] handleFinalReport called with report length:', report.length);
+    console.log('[SSE] Current message state:', this.currentMessageState);
+    
+    if (!this.currentMessageState) {
+      console.warn('[SSE] No current message state - cannot display final report');
+      return;
+    }
 
     // Update message content with final report
     this.currentMessageState.content = report;
     this.currentMessageState.isStreaming = false;
-    this.currentMessageState.status = 'sent';
     
-    // Emit message update to notify UI
-    this.emit('messageUpdate', {
-      messageId: this.currentMessageState.id,
-      content: report,
-      isStreaming: false,
-      status: 'sent',
-      thinkingSteps: Array.from(this.activeSteps.values())
+    console.log('[SSE] Emitting message_update event for final report with messageId:', this.currentMessageState.id);
+    
+    // Emit message update using consistent event naming and structure
+    this.emitUIEvent({
+      type: 'message_update',
+      data: {
+        messageId: this.currentMessageState.id,
+        content: report,
+        isComplete: true
+      }
     });
     
     // Clear active thinking steps as the report is complete
@@ -437,9 +448,15 @@ export class SSEClient extends EventEmitter {
         step.status = 'complete';
         const duration = Date.now() - step.startTime;
         
-        this.emit('thinkingStep', {
-          ...step,
-          duration: `${(duration / 1000).toFixed(1)}s`
+        this.emitUIEvent({
+          type: 'thinking_update',
+          data: {
+            stepId: step.id,
+            agent: this.getAgentDisplayName(step.agent),
+            action: step.action,
+            status: 'complete',
+            duration: `${(duration / 1000).toFixed(1)}s`
+          }
         });
       }
     });

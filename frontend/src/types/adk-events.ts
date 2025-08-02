@@ -61,6 +61,7 @@ export interface ADKSSEEvent {
   actions?: ADKActions;
   usageMetadata?: ADKUsageMetadata;
   groundingMetadata?: any;
+  partial?: boolean;
 }
 
 // Agent names that appear in the author field
