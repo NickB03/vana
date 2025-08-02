@@ -273,19 +273,11 @@ export class SSEClient extends EventEmitter {
     }
     this.activeSteps.clear();
 
-    // Complete the message if it exists
-    if (this.currentMessageState) {
-      console.log('[SSE] Completing message with content length:', this.currentMessageState.content?.length || 0);
-      this.emitUIEvent({
-        type: 'message_update',
-        data: {
-          messageId: this.currentMessageState.id,
-          content: this.currentMessageState.content,
-          isComplete: true
-        }
-      });
-      this.currentMessageState = null;
-    }
+    // Don't complete the message here - wait for final report or actual completion
+    // The message will be completed when:
+    // 1. final_report_with_citations is received via stateDelta
+    // 2. Or when the research plan is shown as the final content
+    console.log('[SSE] Stream complete but keeping message open for potential final report');
   }
 
   /**
@@ -406,11 +398,10 @@ export class SSEClient extends EventEmitter {
         console.log('[SSE] Text content from', event.author, '- length:', part.text.length);
         console.log('[SSE] Text preview:', part.text.substring(0, 100) + '...');
         
-        // Check if this might be the final report from report_composer
+        // Don't display content from report_composer - it comes via stateDelta
         if (event.author === 'report_composer_with_citations') {
-          console.log('[SSE] Detected content from report_composer_with_citations - treating as final report');
-          this.handleFinalReport(part.text);
-          return;
+          console.log('[SSE] Ignoring direct content from report_composer - waiting for stateDelta');
+          continue;
         }
         
         if (isPartial) {
@@ -439,15 +430,24 @@ export class SSEClient extends EventEmitter {
   private handleFinalReport(report: string): void {
     console.log('[SSE] handleFinalReport called with report length:', report.length);
     console.log('[SSE] Current message state:', this.currentMessageState);
+    console.log('[SSE] Report preview:', report.substring(0, 200) + '...');
     
     if (!this.currentMessageState) {
-      console.warn('[SSE] No current message state - cannot display final report');
-      return;
+      console.warn('[SSE] No current message state - creating new message for final report');
+      // Create a new message state if needed
+      const messageId = `msg_${Date.now()}`;
+      this.currentMessageState = {
+        id: messageId,
+        content: report,
+        isStreaming: false,
+        status: 'sent'
+      };
+    } else {
+      // Update existing message with final report
+      this.currentMessageState.content = report;
+      this.currentMessageState.isStreaming = false;
+      this.currentMessageState.status = 'sent';
     }
-
-    // Update message content with final report
-    this.currentMessageState.content = report;
-    this.currentMessageState.isStreaming = false;
     
     console.log('[SSE] Emitting message_update event for final report with messageId:', this.currentMessageState.id);
     
@@ -463,6 +463,9 @@ export class SSEClient extends EventEmitter {
     
     // Clear active thinking steps as the report is complete
     this.completeAllThinkingSteps();
+    
+    // Clear the current message state as we're done
+    this.currentMessageState = null;
   }
 
   /**
