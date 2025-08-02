@@ -395,11 +395,24 @@ export class SSEClient extends EventEmitter {
   private handleContentUpdate(event: ADKSSEEvent): void {
     if (!this.currentMessageState || !event.content?.parts) return;
 
+    console.log('[SSE] handleContentUpdate - author:', event.author);
+    console.log('[SSE] handleContentUpdate - parts count:', event.content.parts.length);
+    
     // Check if this is a partial update or complete message
     const isPartial = event.partial === true;
     
     for (const part of event.content.parts) {
       if (part.text) {
+        console.log('[SSE] Text content from', event.author, '- length:', part.text.length);
+        console.log('[SSE] Text preview:', part.text.substring(0, 100) + '...');
+        
+        // Check if this might be the final report from report_composer
+        if (event.author === 'report_composer_with_citations') {
+          console.log('[SSE] Detected content from report_composer_with_citations - treating as final report');
+          this.handleFinalReport(part.text);
+          return;
+        }
+        
         if (isPartial) {
           // For partial updates, accumulate content
           this.currentMessageState.content += part.text;
