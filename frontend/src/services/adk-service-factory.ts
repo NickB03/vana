@@ -28,6 +28,8 @@ interface ADKServiceFactoryOptions {
 export class ADKServiceFactory {
   private static instance: ADKServiceFactory | null = null;
   private serviceCache = new Map<string, ADKServices>();
+  private cleanupTimers = new Map<string, NodeJS.Timeout>();
+  private serviceReferences = new WeakMap<ADKServices, number>();
   private defaultConfig: Partial<ADKConfig>;
 
   constructor(options: ADKServiceFactoryOptions = {}) {
@@ -59,7 +61,10 @@ export class ADKServiceFactory {
     // Return cached services if available
     if (this.serviceCache.has(cacheKey)) {
       const cached = this.serviceCache.get(cacheKey)!;
-      console.log('[ADKServiceFactory] Returning cached services');
+      // Increment reference count
+      const currentRefs = this.serviceReferences.get(cached) || 0;
+      this.serviceReferences.set(cached, currentRefs + 1);
+      console.log('[ADKServiceFactory] Returning cached services (refs:', currentRefs + 1, ')');
       return cached;
     }
 
@@ -68,8 +73,9 @@ export class ADKServiceFactory {
     // Create services
     const services = this.createServices(finalConfig, options);
 
-    // Cache services
+    // Cache services and set initial reference count
     this.serviceCache.set(cacheKey, services);
+    this.serviceReferences.set(services, 1);
     
     // Setup cleanup
     this.setupCleanup(cacheKey, services);
@@ -100,9 +106,44 @@ export class ADKServiceFactory {
   }
 
   /**
+   * Release a reference to services (for manual memory management)
+   */
+  public release(services: ADKServices): void {
+    const currentRefs = this.serviceReferences.get(services) || 0;
+    if (currentRefs <= 1) {
+      // No more references, clean up
+      this.serviceReferences.delete(services);
+      for (const [key, cached] of this.serviceCache.entries()) {
+        if (cached === services) {
+          this.cleanupServices(services);
+          this.serviceCache.delete(key);
+          const timer = this.cleanupTimers.get(key);
+          if (timer) {
+            clearTimeout(timer);
+            this.cleanupTimers.delete(key);
+          }
+          console.log('[ADKServiceFactory] Released services:', key);
+          break;
+        }
+      }
+    } else {
+      // Decrement reference count
+      this.serviceReferences.set(services, currentRefs - 1);
+      console.log('[ADKServiceFactory] Decremented reference count to:', currentRefs - 1);
+    }
+  }
+
+  /**
    * Clear service cache
    */
   public clearCache(): void {
+    // Clear all timers first
+    for (const timer of this.cleanupTimers.values()) {
+      clearTimeout(timer);
+    }
+    this.cleanupTimers.clear();
+
+    // Clean up all services
     for (const [key, services] of this.serviceCache.entries()) {
       this.cleanupServices(services);
     }
@@ -201,14 +242,32 @@ export class ADKServiceFactory {
    * Setup cleanup for cached services
    */
   private setupCleanup(cacheKey: string, services: ADKServices): void {
-    // Cleanup after 30 minutes of inactivity
-    setTimeout(() => {
+    // Clear any existing timer for this cache key
+    const existingTimer = this.cleanupTimers.get(cacheKey);
+    if (existingTimer) {
+      clearTimeout(existingTimer);
+    }
+
+    // Setup new cleanup timer
+    const timer = setTimeout(() => {
       if (this.serviceCache.has(cacheKey)) {
-        this.cleanupServices(services);
-        this.serviceCache.delete(cacheKey);
-        console.log('[ADKServiceFactory] Cleaned up cached services:', cacheKey);
+        // Check if there are still active references
+        const refs = this.serviceReferences.get(services) || 0;
+        if (refs <= 1) {
+          this.cleanupServices(services);
+          this.serviceCache.delete(cacheKey);
+          this.cleanupTimers.delete(cacheKey);
+          this.serviceReferences.delete(services);
+          console.log('[ADKServiceFactory] Auto-cleaned up cached services:', cacheKey);
+        } else {
+          // Reschedule cleanup if still in use
+          this.setupCleanup(cacheKey, services);
+          console.log('[ADKServiceFactory] Rescheduled cleanup for active services:', cacheKey, 'refs:', refs);
+        }
       }
     }, 30 * 60 * 1000);
+
+    this.cleanupTimers.set(cacheKey, timer);
   }
 
   /**
@@ -273,9 +332,9 @@ export function createADKServicesForTest(
 export function getDefaultADKConfig(): ADKConfig {
   return {
     apiUrl: import.meta.env.VITE_API_URL || 'http://localhost:8000',
-    maxRetries: 5,
-    retryDelay: 1000,
-    timeout: 30000,
-    enableLogging: import.meta.env.DEV
+    maxRetries: parseInt(import.meta.env.VITE_MAX_RETRIES || '5'),
+    retryDelay: parseInt(import.meta.env.VITE_RETRY_DELAY || '1000'),
+    timeout: parseInt(import.meta.env.VITE_TIMEOUT || '30000'),
+    enableLogging: import.meta.env.VITE_ENABLE_LOGGING === 'true' || import.meta.env.DEV
   };
 }

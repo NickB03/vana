@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ChevronLeft, ChevronRight, Brain, Search, FileText, CheckCircle } from 'lucide-react'
+import { ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Brain, Search, FileText, CheckCircle, X, Settings } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { ThinkingStep } from './ui/AIReasoning'
+import { AgentProgress } from './AgentProgress'
 
 interface SimplifiedThinkingPanelProps {
   steps: ThinkingStep[]
@@ -63,13 +64,27 @@ const PHASE_INFO: Record<ResearchPhase, Omit<PhaseInfo, 'phase' | 'progress'>> =
 
 export function SimplifiedThinkingPanel({ 
   steps, 
-  defaultExpanded = true,
+  defaultExpanded = false,
   className 
 }: SimplifiedThinkingPanelProps) {
   const [isExpanded, setIsExpanded] = useState(defaultExpanded)
+  const [isMobile, setIsMobile] = useState(false)
   const [currentPhase, setCurrentPhase] = useState<ResearchPhase>('planning')
   const [progress, setProgress] = useState(0)
   const [activeAgents, setActiveAgents] = useState<string[]>([])
+  const [detailLevel, setDetailLevel] = useState<'minimal' | 'summary' | 'detailed'>('summary')
+  const panelRef = useRef<HTMLDivElement>(null)
+  
+  // Detect mobile device
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768) // md breakpoint
+    }
+    
+    checkMobile()
+    window.addEventListener('resize', checkMobile)
+    return () => window.removeEventListener('resize', checkMobile)
+  }, [])
   
   useEffect(() => {
     // Determine current phase and progress based on active steps
@@ -121,7 +136,12 @@ export function SimplifiedThinkingPanel({
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
             transition={{ type: 'spring', damping: 20 }}
-            className="h-full w-80 bg-black/40 backdrop-blur-lg border-l border-[var(--border-primary)]"
+            className={cn(
+              "fixed right-0 top-0 h-full w-80",
+              "bg-black/60 backdrop-blur-lg",
+              "border-l border-[var(--border-primary)]",
+              "shadow-2xl"
+            )}
           >
             {/* Header */}
             <div className="flex items-center justify-between p-4 border-b border-[var(--border-primary)]">
@@ -208,26 +228,13 @@ export function SimplifiedThinkingPanel({
                 </div>
               </div>
               
-              {/* Active Tasks */}
-              {activeAgents.length > 0 && currentPhase !== 'complete' && (
-                <div className="bg-[var(--bg-element)] rounded-lg p-4">
-                  <h4 className="text-sm font-medium mb-2 text-[var(--text-secondary)]">
-                    Currently Active
-                  </h4>
-                  <ul className="space-y-1">
-                    {activeAgents.slice(0, 3).map((agent, index) => (
-                      <li key={index} className="text-sm text-white flex items-center gap-2">
-                        <span className="w-1.5 h-1.5 bg-[var(--accent-blue)] rounded-full animate-pulse" />
-                        {agent}
-                      </li>
-                    ))}
-                    {activeAgents.length > 3 && (
-                      <li className="text-sm text-[var(--text-secondary)]">
-                        and {activeAgents.length - 3} more...
-                      </li>
-                    )}
-                  </ul>
-                </div>
+              {/* Agent Progress with Progressive Disclosure */}
+              {steps.length > 0 && currentPhase !== 'complete' && (
+                <AgentProgress
+                  steps={steps}
+                  detailLevel={detailLevel}
+                  onDetailLevelChange={setDetailLevel}
+                />
               )}
               
               {/* Completion Message */}
@@ -245,29 +252,69 @@ export function SimplifiedThinkingPanel({
             </div>
           </motion.div>
         ) : (
-          <motion.button
+          /* Collapsed state - different for mobile vs desktop */
+          <motion.div
             key="collapsed"
-            initial={{ x: 100 }}
-            animate={{ x: 0 }}
-            exit={{ x: 100 }}
-            onClick={() => setIsExpanded(true)}
+            initial={isMobile ? { y: 20 } : { x: 300 }}
+            animate={isMobile ? { y: 0 } : { x: 0 }}
+            exit={isMobile ? { y: 20 } : { x: 300 }}
             className={cn(
-              "absolute right-0 top-1/2 -translate-y-1/2",
-              "bg-black/60 backdrop-blur-lg border border-[var(--border-primary)]",
-              "rounded-l-lg p-3 hover:bg-black/80 transition-all",
-              "hover:translate-x-0 translate-x-2"
+              "fixed right-0 top-0 h-full",
+              "md:w-16", // Thin collapsed sidebar on desktop
+              isMobile && "w-full bottom-0 top-auto h-auto"
             )}
           >
-            <div className="flex items-center gap-2">
-              <ChevronLeft className="w-5 h-5" />
-              <div className="flex flex-col items-start">
-                <span className="text-xs font-medium">Research</span>
-                <span className="text-xs text-[var(--accent-blue)]">
-                  {progress}%
-                </span>
-              </div>
-            </div>
-          </motion.button>
+            <button
+              onClick={() => setIsExpanded(true)}
+              className={cn(
+                "bg-black/60 backdrop-blur-lg border-l border-[var(--border-primary)]",
+                "hover:bg-black/80 transition-all",
+                "w-full h-full flex items-center justify-center",
+                // Desktop styling - vertical sidebar
+                "md:flex-col md:gap-4 md:py-8",
+                // Mobile styling - horizontal bar at bottom
+                "md:h-full h-16 flex-row gap-4 px-4"
+              )}
+              aria-label="Open research progress"
+            >
+              {isMobile ? (
+                // Mobile - horizontal layout
+                <div className="flex items-center gap-3">
+                  <ChevronUp className="w-5 h-5" />
+                  <span className="text-sm font-medium">Research Progress</span>
+                  {activeAgents.length > 0 && (
+                    <div className="flex items-center gap-1">
+                      <div className="w-2 h-2 bg-[var(--accent-blue)] rounded-full animate-pulse" />
+                      <span className="text-xs text-[var(--accent-blue)]">{activeAgents.length} active</span>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                // Desktop - vertical layout
+                <>
+                  <ChevronLeft className="w-5 h-5" />
+                  <div className="flex flex-col items-center gap-2">
+                    <span 
+                      className="text-xs font-medium"
+                      style={{ writingMode: 'vertical-rl', textOrientation: 'mixed' }}
+                    >
+                      Research
+                    </span>
+                    {activeAgents.length > 0 ? (
+                      <div className="flex flex-col items-center gap-1">
+                        <div className="w-2 h-2 bg-[var(--accent-blue)] rounded-full animate-pulse" />
+                        <span className="text-xs text-[var(--accent-blue)]">{activeAgents.length}</span>
+                      </div>
+                    ) : (
+                      progress > 0 && (
+                        <span className="text-xs text-[var(--accent-blue)]">{progress}%</span>
+                      )
+                    )}
+                  </div>
+                </>
+              )}
+            </button>
+          </motion.div>
         )}
       </AnimatePresence>
     </div>

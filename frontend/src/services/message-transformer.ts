@@ -10,6 +10,7 @@ import type {
   ADKRequestMessage
 } from '../types/adk-service';
 import type { ADKSSEEvent, UIEvent } from '../types/adk-events';
+import { config } from '../lib/config';
 
 interface AgentDisplayInfo {
   name: string;
@@ -45,7 +46,7 @@ export class MessageTransformer implements IMessageTransformer {
     const messageId = metadata?.messageId || this.generateMessageId();
     
     const message: ADKRequestMessage = {
-      app_name: 'app',
+      app_name: config.appName,
       user_id: session.userId,
       session_id: session.id,
       new_message: {

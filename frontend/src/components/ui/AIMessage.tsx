@@ -4,6 +4,8 @@ import { Timeline } from './shadcn-timeline'
 import type { ThinkingStep } from './AIReasoning'
 import { AIToolsContainer } from './ai-tool'
 import { transformThinkingStepsToAITools, getToolStats } from '../../utils/ai-tool-transformer'
+import { ContextualLoading, useElapsedTime } from './ContextualLoading'
+import { MessageActions } from '../MessageActions'
 import { Sparkles } from 'lucide-react'
 import { useState } from 'react'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from './collapsible'
@@ -38,11 +40,23 @@ export function AIMessage({
   const isUser = role === 'user'
   const isSystem = role === 'system'
   const [isOpen, setIsOpen] = useState(true)
+  const [isHovered, setIsHovered] = useState(false)
+  const elapsedTime = useElapsedTime(isThinking)
   
   // Detect if this message contains a research plan
   const isResearchPlan = content.toLowerCase().includes('research plan:') && 
                         content.includes('[RESEARCH]') &&
                         !content.toLowerCase().includes('does this research plan look good')
+  
+  // Action handlers
+  const handleRegenerate = () => {
+    onSendMessage?.('Please regenerate that response')
+  }
+  
+  const handleFeedback = (type: 'positive' | 'negative', feedback?: string) => {
+    console.log(`Feedback: ${type}`, feedback)
+    // Could send feedback to analytics or feedback system
+  }
   
   // Only user messages get bubbles
   if (isUser) {
@@ -79,8 +93,22 @@ export function AIMessage({
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
-      className="mb-8"
+      className="mb-8 relative group"
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
     >
+      {/* Contextual loading for thinking state */}
+      {isThinking && !content && (
+        <div className="mb-4">
+          <ContextualLoading
+            phase="processing"
+            elapsedTime={elapsedTime}
+            showEstimate={false}
+            className="p-4 bg-[var(--bg-element)]/30 rounded-lg"
+          />
+        </div>
+      )}
+
       {/* Response content */}
       {!isThinking || content ? (
         <>
@@ -93,9 +121,21 @@ export function AIMessage({
               className="mb-4"
             />
           ) : (
-            <div className="text-base leading-relaxed text-[var(--text-primary)] whitespace-pre-wrap mb-4">
+            <div className="text-base leading-relaxed text-[var(--text-primary)] whitespace-pre-wrap mb-4 relative">
               {content}
               {children}
+              
+              {/* Message actions - positioned absolutely */}
+              {content && !isThinking && (
+                <div className="absolute -top-2 -right-2">
+                  <MessageActions
+                    content={content}
+                    onRegenerate={onSendMessage ? handleRegenerate : undefined}
+                    onFeedback={handleFeedback}
+                    isVisible={isHovered}
+                  />
+                </div>
+              )}
               
               {/* Quick response buttons for agent questions */}
               {onSendMessage && (

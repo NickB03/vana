@@ -190,21 +190,29 @@ sequenceDiagram
 
 ### 🛠️ Production Infrastructure
 - **Scalable Deployment**: Cloud Run with auto-scaling (4 CPU, 8GB RAM configuration)
-- **Session Management**: In-memory or persistent (AlloyDB) options with state preservation
+- **Session Management**: Persistent sessions using Google Cloud Storage with automatic bucket creation
+- **Health Monitoring**: Dedicated `/health` endpoint for service validation and SSE connection health checks
+- **Enhanced Error Handling**: Comprehensive error recovery across all backend services
+- **Memory Optimization**: WeakMap-based service factory preventing memory leaks
 - **Comprehensive Monitoring**: OpenTelemetry, Cloud Trace, BigQuery analytics with Looker Studio dashboards
 - **CI/CD Pipeline**: Automated testing, staging, and production deployments via Google Cloud Build
 - **Real-time Communication**: WebSocket/SSE-based live updates for thinking steps and message streaming
 
 ### 🎨 Advanced User Interface
 
-- **Real-time Thinking Panel**: Live visualization of agent activities with phase tracking (Planning → Researching → Evaluating → Composing)
+- **Mobile-First Design**: Responsive bottom sheet thinking panel with touch-optimized interactions
+- **Contextual Loading States**: Phase-specific loading messages with progress tracking (Planning → Researching → Evaluating → Composing)
+- **Progressive Disclosure**: Intelligent information architecture reducing cognitive load with collapsible sections
+- **Agent Progress Visualization**: Grouped agent activity display with status indicators and progress bars
+- **Message Actions**: Copy, regenerate, feedback, and sharing capabilities for all responses
+- **Real-time Thinking Panel**: Live visualization of agent activities with phase tracking
 - **Interactive Research Plans**: Inline editing of research plans with structured display and approval workflow
 - **WebSocket Integration**: Real-time message streaming and thinking step updates for responsive user experience
-- **Visual Progress Tracking**: Progress bars, phase indicators, and completion status with animated transitions
+- **Visual Progress Tracking**: Animated progress bars, phase indicators, and completion status
 - **Connection Management**: Automatic connection status monitoring with visual indicators
 - **Quick Testing Tools**: Built-in development buttons for rapid UI and workflow testing
-- **Modern AI Components**: Custom-built ChatInterface, SimplifiedThinkingPanel, and ResearchPlanDisplay components
-- **Responsive Design**: Mobile-friendly interface with collapsible panels and adaptive layouts
+- **Modern AI Components**: Custom-built ChatInterface, ContextualLoading, AgentProgress, and MessageActions components
+- **Design System**: Comprehensive design tokens for spacing, states, and visual hierarchy
 
 ---
 
@@ -289,11 +297,16 @@ make dev
 # Frontend: http://localhost:5173
 # Backend: http://localhost:8000
 # API Docs: http://localhost:8000/docs
+# Health Check: http://localhost:8000/health
 
 # Run individual components
 make dev-backend    # Backend API only
 make dev-frontend   # Frontend only  
 make playground     # ADK playground interface
+
+# Configure frontend environment (copy from example)
+cp frontend/.env.example frontend/.env.local
+# Edit frontend/.env.local with your specific settings
 
 # Testing and quality
 make test          # Unit and integration tests
@@ -348,6 +361,8 @@ Run with: `uv run python run_agent.py`
 - **Unit Tests**: Agent logic, citation processing, configuration
 - **Integration Tests**: Full workflow testing, API endpoints
 - **UI Tests**: Component testing with interactive features
+- **Mobile Testing**: Touch interactions, responsive design validation
+- **Performance Testing**: Loading states, memory management, service lifecycle
 
 ---
 
@@ -416,8 +431,28 @@ graph LR
 | `/api/apps/{app}/users/{user}/sessions` | POST | Create new session |
 | `/api/run_sse` | POST | Execute agent with SSE streaming |
 | `/api/apps` | GET | List available agents |
+| `/health` | GET | Health check and service validation |
 | `/feedback` | POST | Submit user feedback |
 | `/docs` | GET | Interactive API documentation |
+
+### Health Check Endpoint
+
+The `/health` endpoint provides comprehensive service validation:
+
+```bash
+curl http://localhost:8000/health
+```
+
+**Response:**
+```json
+{
+  "status": "healthy",
+  "timestamp": "2025-08-03T10:30:00.000Z", 
+  "service": "vana",
+  "version": "1.0.0",
+  "session_storage_enabled": true
+}
+```
 
 ### Example Request
 
@@ -438,10 +473,72 @@ curl -X POST http://localhost:8000/api/run_sse \
 
 ---
 
+## 🔧 Recent Architectural Improvements
+
+### Backend Enhancements (v1.0.0)
+
+#### Session Management Upgrade
+- **Persistent Storage**: Migrated from in-memory to Google Cloud Storage (`gs://{project_id}-vana-session-storage`)
+- **Automatic Provisioning**: Buckets created automatically during startup
+- **State Preservation**: Sessions persist across server restarts and deployments
+
+#### Service Reliability
+- **Health Monitoring**: New `/health` endpoint for comprehensive service validation
+- **Error Recovery**: Enhanced error handling across all backend services
+- **Memory Management**: WeakMap-based service factory preventing memory leaks
+- **Dependency Cleanup**: Removed unused `socket.io-client` package
+
+#### Configuration Flexibility
+- **Environment-Driven**: App configuration now driven by environment variables
+- **Dynamic Endpoints**: Flexible API endpoint configuration via `VITE_APP_NAME`
+- **Timeout Management**: Configurable timeouts and retry logic
+
+### Frontend Enhancements (v1.0.0)
+
+#### Mobile-First Design System
+- **Responsive Architecture**: Bottom sheet thinking panel for mobile optimization
+- **Touch Interactions**: Optimized for mobile touch interfaces
+- **Progressive Disclosure**: Intelligent information hierarchy reducing cognitive load
+
+#### Advanced UI Components
+
+**ContextualLoading Component** (`/frontend/src/components/ui/ContextualLoading.tsx`)
+- Phase-specific loading states with contextual messaging
+- Progress tracking with time estimates and elapsed time
+- Animated state transitions and visual feedback
+- Support for Planning → Researching → Evaluating → Composing phases
+
+**AgentProgress Component** (`/frontend/src/components/AgentProgress.tsx`)
+- Grouped agent activity visualization
+- Collapsible detail levels (minimal, summary, detailed)
+- Real-time status indicators and progress bars
+- Agent-specific confidence scoring and task tracking
+
+**MessageActions Component** (`/frontend/src/components/MessageActions.tsx`)
+- Copy, regenerate, and feedback actions for all messages
+- Share functionality with native browser sharing API
+- Download/save message content as text files
+- Contextual feedback collection with positive/negative ratings
+
+#### Design System Improvements
+- **Comprehensive Tokens**: Standardized design tokens for spacing, colors, and states
+- **Animation System**: Consistent motion design with Framer Motion
+- **State Management**: Visual state indicators across all interactive elements
+- **Accessibility**: ARIA labels, keyboard navigation, and screen reader support
+
+#### Performance Optimizations
+- **Retry Logic**: Configurable retry attempts with exponential backoff
+- **Timeout Handling**: Request timeouts with graceful failure modes
+- **Debug Logging**: Comprehensive client-side logging for development
+- **Connection Management**: Automatic connection health monitoring
+
+---
+
 ## ⚙️ Configuration
 
 ### Environment Variables
 
+#### Backend Configuration
 ```bash
 # Google Cloud
 GOOGLE_CLOUD_PROJECT=your-project-id
@@ -456,12 +553,30 @@ USE_OPENROUTER=true         # Enable OpenRouter integration
 OPENROUTER_API_KEY=your-key # OpenRouter API key
 BRAVE_API_KEY=your-key      # Brave Search API key
 
-# Session Management
-SESSION_TYPE=in_memory  # or 'alloydb' for production
+# Session Management (automatically configured)
+# Session storage uses Google Cloud Storage with bucket auto-creation
+# Format: gs://{project_id}-vana-session-storage
 
 # Monitoring
 ENABLE_TRACING=true
 LOG_LEVEL=INFO
+```
+
+#### Frontend Configuration
+```bash
+# API Configuration
+VITE_API_URL=http://localhost:8000    # Backend API URL
+VITE_APP_NAME=app                     # App name for API endpoints
+VITE_ENVIRONMENT=development          # Environment setting
+
+# Performance Configuration  
+VITE_MAX_RETRIES=5                    # Maximum retry attempts
+VITE_RETRY_DELAY=1000                 # Delay between retries (ms)
+VITE_TIMEOUT=30000                    # Request timeout (ms)
+VITE_ENABLE_LOGGING=true              # Enable debug logging
+
+# WebSocket Configuration (optional)
+# VITE_WS_URL=ws://localhost:8000     # WebSocket URL if different from API
 ```
 
 ### Model Configuration

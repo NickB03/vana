@@ -66,6 +66,16 @@ export default {
           orange: '#f6ad55',
           red: '#fc8181',
         },
+        
+        // State-based colors
+        state: {
+          idle: 'var(--state-idle)',
+          active: 'var(--state-active)',
+          success: 'var(--state-success)',
+          warning: 'var(--state-warning)',
+          error: 'var(--state-error)',
+          processing: 'var(--state-processing)',
+        },
         muted: {
           DEFAULT: 'hsl(var(--muted) / <alpha-value>)',
           foreground: 'hsl(var(--muted-foreground) / <alpha-value>)',
@@ -119,6 +129,26 @@ export default {
         '88': '22rem',
         '112': '28rem',
         '128': '32rem',
+        // Semantic spacing scale
+        'space-xs': 'var(--space-xs)',
+        'space-sm': 'var(--space-sm)',
+        'space-md': 'var(--space-md)',
+        'space-lg': 'var(--space-lg)',
+        'space-xl': 'var(--space-xl)',
+        'space-2xl': 'var(--space-2xl)',
+        'space-3xl': 'var(--space-3xl)',
+        'space-4xl': 'var(--space-4xl)',
+      },
+      opacity: {
+        'critical': 'var(--opacity-critical)',
+        'high': 'var(--opacity-high)',
+        'medium': 'var(--opacity-medium)',
+        'low': 'var(--opacity-low)',
+        'minimal': 'var(--opacity-minimal)',
+        'disabled': 'var(--opacity-disabled)',
+        'hover': 'var(--opacity-hover)',
+        'pressed': 'var(--opacity-pressed)',
+        'focus': 'var(--opacity-focus)',
       },
       keyframes: {
         "accordion-down": {

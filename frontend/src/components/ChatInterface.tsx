@@ -3,7 +3,7 @@ import { AIMessage } from './ui/AIMessage'
 import { AIInput } from './ui/ai-input'
 import { AIConversation } from './ui/ai-conversation'
 import type { ThinkingStep } from './ui/AIReasoning'
-import { useWebSocket } from '../hooks/useSSE'
+import { useSSE } from '../hooks/useSSE'
 import { ConnectionStatus } from './ConnectionStatus'
 import { SimplifiedThinkingPanel } from './SimplifiedThinkingPanel'
 import { QuickTestButtons } from './QuickTestButtons'
@@ -29,8 +29,8 @@ interface ChatInterfaceProps {
 
 export function ChatInterface({ onSendMessage, initialMessages = [] }: ChatInterfaceProps) {
   console.log('[ChatInterface] Component initializing');
-  const { isConnected, sendMessage: wsSendMessage, onThinkingUpdate, onMessageUpdate, onNewMessage, connectionStatus } = useWebSocket()
-  console.log('[ChatInterface] WebSocket hook loaded, isConnected:', isConnected, 'status:', connectionStatus);
+  const { isConnected, sendMessage: sseSendMessage, onThinkingUpdate, onMessageUpdate, onNewMessage, connectionStatus } = useSSE()
+  console.log('[ChatInterface] SSE hook loaded, isConnected:', isConnected, 'status:', connectionStatus);
   
   const [localThinkingSteps, setLocalThinkingSteps] = useState<ThinkingStep[]>([])
   const [waitingForApproval, setWaitingForApproval] = useState(false)
@@ -187,7 +187,7 @@ export function ChatInterface({ onSendMessage, initialMessages = [] }: ChatInter
     setLocalThinkingSteps([]) // Reset thinking steps for new message
     currentMessageIdRef.current = null // Reset current message reference
     
-    // Use WebSocket if connected, otherwise fall back to parent handler
+    // Use SSE if connected, otherwise fall back to parent handler
     if (isConnected) {
       console.log('[ChatInterface] Sending via SSE:', content);
       
@@ -204,8 +204,8 @@ export function ChatInterface({ onSendMessage, initialMessages = [] }: ChatInter
       }
       setMessages(prev => [...prev, aiMessage])
       
-      // Send via WebSocket/SSE with the same message ID
-      wsSendMessage(content, aiMessageId)
+      // Send via SSE with the same message ID
+      sseSendMessage(content, aiMessageId)
     } else if (onSendMessage) {
       // Fall back to parent handler
       onSendMessage(content)
@@ -223,7 +223,7 @@ export function ChatInterface({ onSendMessage, initialMessages = [] }: ChatInter
         setIsTyping(false)
       }, 1500)
     }
-  }, [isConnected, wsSendMessage, onSendMessage])
+  }, [isConnected, sseSendMessage, onSendMessage])
   
   const handleFileUpload = (files: FileList) => {
     // For now, just log the files - later we can implement actual file processing
@@ -316,7 +316,7 @@ export function ChatInterface({ onSendMessage, initialMessages = [] }: ChatInter
       {/* Simplified thinking panel */}
       <SimplifiedThinkingPanel 
         steps={localThinkingSteps}
-        defaultExpanded={true}
+        defaultExpanded={false}
       />
       
       {/* Approval prompt - commented out in favor of inline plan display */}
@@ -376,7 +376,7 @@ export function ChatInterface({ onSendMessage, initialMessages = [] }: ChatInter
       
       {/* Fixed input area at bottom */}
       <div className="sticky bottom-0 bg-black">
-        <div className="max-w-2xl mx-auto p-4">
+        <div className="max-w-2xl mx-auto p-4 pb-safe">
           {/* Quick test buttons for development */}
           <QuickTestButtons 
             onSendMessage={handleSendMessage}

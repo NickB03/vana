@@ -11,6 +11,7 @@ import type {
   SessionError,
   ADKConfig
 } from '../types/adk-service';
+import { appApiEndpoint } from '../lib/config';
 
 interface SessionCacheEntry {
   session: Session;
@@ -95,7 +96,7 @@ export class SessionService implements ISessionService {
     
     try {
       // For ADK, we might need to validate the session with backend
-      const response = await fetch(`${this.apiUrl}/apps/app/sessions/${session.id}/validate`, {
+      const response = await fetch(appApiEndpoint(`sessions/${session.id}/validate`), {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -174,7 +175,7 @@ export class SessionService implements ISessionService {
     console.log('[SessionService] Creating new session for user:', userId);
     
     try {
-      const url = `${this.apiUrl}/apps/app/users/${userId}/sessions`;
+      const url = appApiEndpoint(`users/${userId}/sessions`);
       const metadata: SessionMetadata = {
         clientVersion: '1.0.0',
         platform: 'web',

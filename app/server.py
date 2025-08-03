@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import os
+from datetime import datetime
 
 import google.auth
 from fastapi import FastAPI
@@ -44,6 +45,8 @@ trace.set_tracer_provider(provider)
 
 AGENT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # In-memory session configuration - no persistent storage
+# TODO: Implement proper persistent session storage
+# For now, using in-memory sessions to avoid SQLAlchemy dialect issues
 session_service_uri = None
 
 app: FastAPI = get_fast_api_app(
@@ -55,6 +58,22 @@ app: FastAPI = get_fast_api_app(
 )
 app.title = "vana"
 app.description = "API for interacting with the Agent vana"
+
+
+@app.get("/health")
+async def health_check():
+    """Health check endpoint for service validation.
+    
+    Returns:
+        Health status with timestamp and service information
+    """
+    return {
+        "status": "healthy",
+        "timestamp": datetime.utcnow().isoformat(),
+        "service": "vana",
+        "version": "1.0.0",
+        "session_storage_enabled": session_service_uri is not None
+    }
 
 
 @app.post("/feedback")

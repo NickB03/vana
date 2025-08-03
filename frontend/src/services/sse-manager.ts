@@ -156,23 +156,58 @@ export class SSEManager extends EventEmitter implements ISSEService {
    */
   private async processSSERequest(request: SSERequest): Promise<void> {
     const url = `${this.config.apiUrl}/run_sse?alt=sse`;
+    let response: Response;
     
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'text/event-stream',
-      },
-      body: JSON.stringify(request.message),
-      signal: request.abortController.signal
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`HTTP ${response.status}: ${errorText}`);
+    try {
+      response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'text/event-stream',
+        },
+        body: JSON.stringify(request.message),
+        signal: request.abortController.signal
+      });
+    } catch (error) {
+      if (error instanceof Error) {
+        if (error.name === 'AbortError') {
+          this.log(`Request ${request.id} was aborted`);
+          throw new Error('Request was cancelled');
+        } else if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
+          this.emit('network_error', { 
+            requestId: request.id, 
+            error: 'Network connection failed. Please check your internet connection.' 
+          });
+          throw new Error('Network connection failed. Please check your internet connection.');
+        }
+      }
+      this.emit('request_error', { requestId: request.id, error });
+      throw new Error(`Request failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
 
-    await this.processSSEStream(response, request);
+    if (!response.ok) {
+      let errorText = 'Unknown server error';
+      try {
+        errorText = await response.text();
+      } catch (e) {
+        this.log('Failed to read error response body');
+      }
+
+      const errorMessage = this.getErrorMessage(response.status, errorText);
+      this.emit('http_error', { 
+        requestId: request.id, 
+        status: response.status, 
+        message: errorMessage 
+      });
+      throw new Error(errorMessage);
+    }
+
+    try {
+      await this.processSSEStream(response, request);
+    } catch (error) {
+      this.emit('stream_error', { requestId: request.id, error });
+      throw error;
+    }
   }
 
   /**
@@ -181,50 +216,113 @@ export class SSEManager extends EventEmitter implements ISSEService {
   private async processSSEStream(response: Response, request: SSERequest): Promise<void> {
     const reader = response.body?.getReader();
     if (!reader) {
-      throw new Error('No response body');
+      const error = new Error('No response body available');
+      this.emit('stream_error', { requestId: request.id, error: error.message });
+      throw error;
     }
 
     const decoder = new TextDecoder();
     let buffer = '';
+    let isStreamCompleted = false;
 
     try {
       this.emit('stream_start', { requestId: request.id });
 
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        buffer += decoder.decode(value, { stream: true });
-        
-        // Process complete lines
-        const lines = buffer.split('\n');
-        buffer = lines.pop() || ''; // Keep incomplete line
-
-        for (const line of lines) {
-          if (line.trim() === '') continue;
-          
-          if (line.startsWith('data: ')) {
-            const data = line.slice(6);
-            
-            if (data === '[DONE]') {
-              this.emit('stream_complete', { requestId: request.id });
-              return;
+      while (!isStreamCompleted) {
+        try {
+          const { done, value } = await reader.read();
+          if (done) {
+            if (!isStreamCompleted) {
+              this.emit('stream_incomplete', { requestId: request.id });
+              this.log(`Stream ended unexpectedly for request ${request.id}`);
             }
+            break;
+          }
+
+          buffer += decoder.decode(value, { stream: true });
+          
+          // Process complete lines
+          const lines = buffer.split('\n');
+          buffer = lines.pop() || ''; // Keep incomplete line
+
+          for (const line of lines) {
+            if (line.trim() === '') continue;
             
-            try {
-              const event: ADKSSEEvent = JSON.parse(data);
-              this.performanceMetrics.messagesReceived++;
-              this.emit('adk_event', event, request.id);
+            if (line.startsWith('data: ')) {
+              const data = line.slice(6);
               
-            } catch (error) {
-              this.log('Failed to parse SSE event:', error, 'Data:', data);
-              this.emit('parse_error', { error, data, requestId: request.id });
+              if (data === '[DONE]') {
+                isStreamCompleted = true;
+                this.emit('stream_complete', { requestId: request.id });
+                return;
+              }
+              
+              try {
+                const event: ADKSSEEvent = JSON.parse(data);
+                this.performanceMetrics.messagesReceived++;
+                this.emit('adk_event', event, request.id);
+                
+              } catch (parseError) {
+                this.log('Failed to parse SSE event:', parseError, 'Data:', data);
+                this.emit('parse_error', { 
+                  error: parseError, 
+                  data, 
+                  requestId: request.id,
+                  message: 'Failed to parse server response. The data may be corrupted.'
+                });
+                // Continue processing other events instead of failing completely
+              }
+            } else if (line.startsWith('event: ') || line.startsWith('id: ')) {
+              // Handle other SSE fields if needed
+              this.log('SSE metadata:', line);
             }
           }
+        } catch (readError) {
+          if (readError instanceof Error && readError.name === 'AbortError') {
+            this.log(`Stream reading aborted for request ${request.id}`);
+            return;
+          }
+          
+          this.emit('stream_read_error', { 
+            requestId: request.id, 
+            error: readError,
+            message: 'Error reading from server stream. Connection may have been interrupted.'
+          });
+          throw new Error(`Stream reading failed: ${readError instanceof Error ? readError.message : 'Unknown error'}`);
         }
       }
     } finally {
-      reader.releaseLock();
+      try {
+        reader.releaseLock();
+      } catch (e) {
+        this.log('Warning: Failed to release reader lock:', e);
+      }
+    }
+  }
+
+  /**
+   * Get user-friendly error message based on HTTP status
+   */
+  private getErrorMessage(status: number, errorText: string): string {
+    switch (status) {
+      case 400:
+        return 'Invalid request. Please check your input and try again.';
+      case 401:
+        return 'Authentication failed. Please log in again.';
+      case 403:
+        return 'Access denied. You don\'t have permission to perform this action.';
+      case 404:
+        return 'Service not found. The requested endpoint may be unavailable.';
+      case 429:
+        return 'Too many requests. Please wait a moment before trying again.';
+      case 500:
+        return 'Server error. Please try again later.';
+      case 502:
+      case 503:
+      case 504:
+        return 'Service temporarily unavailable. Please try again in a few minutes.';
+      default:
+        return `Server error (${status}): ${errorText || 'Unknown error occurred'}`;
     }
   }
 
@@ -232,22 +330,40 @@ export class SSEManager extends EventEmitter implements ISSEService {
    * Validate connection configuration
    */
   private async validateConnection(): Promise<void> {
-    // Simple health check to validate the API endpoint
+    // Enhanced health check with better error handling
     try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000);
+
       const response = await fetch(`${this.config.apiUrl}/health`, {
         method: 'GET',
         headers: { 'Accept': 'application/json' },
-        timeout: 5000
+        signal: controller.signal
       });
       
-      // Don't throw if health check fails - ADK might not have this endpoint
+      clearTimeout(timeoutId);
+      
       if (response.ok) {
         this.log('Health check passed');
+        const healthData = await response.json().catch(() => ({}));
+        this.emit('health_check_success', healthData);
       } else {
-        this.log('Health check failed but continuing');
+        this.log(`Health check failed with status ${response.status}, but continuing`);
+        this.emit('health_check_warning', { status: response.status });
       }
     } catch (error) {
-      this.log('Health check unavailable, continuing anyway');
+      if (error instanceof Error) {
+        if (error.name === 'AbortError') {
+          this.log('Health check timed out, continuing anyway');
+          this.emit('health_check_timeout');
+        } else {
+          this.log('Health check unavailable:', error.message, ', continuing anyway');
+          this.emit('health_check_unavailable', { error: error.message });
+        }
+      } else {
+        this.log('Health check failed with unknown error, continuing anyway');
+        this.emit('health_check_unavailable', { error: 'Unknown error' });
+      }
     }
   }
 

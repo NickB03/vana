@@ -20,6 +20,37 @@
   --vana-success: #68d391;
   --vana-info: #63b3ed;
 
+  /* Semantic Spacing Scale */
+  --space-xs: 0.25rem;    /* 4px */
+  --space-sm: 0.5rem;     /* 8px */
+  --space-md: 0.75rem;    /* 12px */
+  --space-lg: 1rem;       /* 16px */
+  --space-xl: 1.5rem;     /* 24px */
+  --space-2xl: 2rem;      /* 32px */
+  --space-3xl: 3rem;      /* 48px */
+  --space-4xl: 4rem;      /* 64px */
+
+  /* State-based Color System */
+  --state-idle: var(--text-secondary);
+  --state-active: var(--accent-blue);
+  --state-success: var(--vana-success);
+  --state-warning: var(--vana-warning);
+  --state-error: var(--accent-red);
+  --state-processing: var(--accent-purple);
+
+  /* Priority-based Opacity Levels */
+  --opacity-critical: 1.0;     /* Full opacity for critical elements */
+  --opacity-high: 0.9;         /* High priority elements */
+  --opacity-medium: 0.7;       /* Medium priority elements */
+  --opacity-low: 0.5;          /* Low priority elements */
+  --opacity-minimal: 0.3;      /* Minimal visibility */
+  --opacity-disabled: 0.4;     /* Disabled state */
+
+  /* Interactive State Opacities */
+  --opacity-hover: 0.8;        /* On hover */
+  --opacity-pressed: 0.6;      /* On press/active */
+  --opacity-focus: 1.0;        /* On focus */
+
   /* VANA Gradient Colors (legacy) */
   --accent-blue: #7c9fff;
   --accent-purple: #b794f6;
@@ -174,6 +205,115 @@ body {
 
 .gradient-pulse {
   animation: gradient-pulse 2s ease-in-out infinite;
+}
+
+/* Design System Utility Classes */
+
+/* Semantic Spacing */
+.space-xs { gap: var(--space-xs); }
+.space-sm { gap: var(--space-sm); }
+.space-md { gap: var(--space-md); }
+.space-lg { gap: var(--space-lg); }
+.space-xl { gap: var(--space-xl); }
+.space-2xl { gap: var(--space-2xl); }
+.space-3xl { gap: var(--space-3xl); }
+.space-4xl { gap: var(--space-4xl); }
+
+.p-space-xs { padding: var(--space-xs); }
+.p-space-sm { padding: var(--space-sm); }
+.p-space-md { padding: var(--space-md); }
+.p-space-lg { padding: var(--space-lg); }
+.p-space-xl { padding: var(--space-xl); }
+.p-space-2xl { padding: var(--space-2xl); }
+
+.m-space-xs { margin: var(--space-xs); }
+.m-space-sm { margin: var(--space-sm); }
+.m-space-md { margin: var(--space-md); }
+.m-space-lg { margin: var(--space-lg); }
+.m-space-xl { margin: var(--space-xl); }
+.m-space-2xl { margin: var(--space-2xl); }
+
+/* State Colors */
+.state-idle { color: var(--state-idle); }
+.state-active { color: var(--state-active); }
+.state-success { color: var(--state-success); }
+.state-warning { color: var(--state-warning); }
+.state-error { color: var(--state-error); }
+.state-processing { color: var(--state-processing); }
+
+.bg-state-idle { background-color: var(--state-idle); }
+.bg-state-active { background-color: var(--state-active); }
+.bg-state-success { background-color: var(--state-success); }
+.bg-state-warning { background-color: var(--state-warning); }
+.bg-state-error { background-color: var(--state-error); }
+.bg-state-processing { background-color: var(--state-processing); }
+
+/* Priority Opacity */
+.opacity-critical { opacity: var(--opacity-critical); }
+.opacity-high { opacity: var(--opacity-high); }
+.opacity-medium { opacity: var(--opacity-medium); }
+.opacity-low { opacity: var(--opacity-low); }
+.opacity-minimal { opacity: var(--opacity-minimal); }
+.opacity-disabled { opacity: var(--opacity-disabled); }
+
+/* Interactive States */
+.interactive {
+  transition: opacity 0.2s ease-in-out, transform 0.2s ease-in-out;
+}
+
+.interactive:hover {
+  opacity: var(--opacity-hover);
+}
+
+.interactive:active {
+  opacity: var(--opacity-pressed);
+  transform: scale(0.98);
+}
+
+.interactive:focus {
+  opacity: var(--opacity-focus);
+  outline: 2px solid var(--state-active);
+  outline-offset: 2px;
+}
+
+.interactive:disabled {
+  opacity: var(--opacity-disabled);
+  cursor: not-allowed;
+}
+
+/* Touch-friendly elements */
+.touch-target {
+  min-height: 44px;
+  min-width: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Priority hierarchy classes */
+.priority-critical {
+  opacity: var(--opacity-critical);
+  z-index: 50;
+}
+
+.priority-high {
+  opacity: var(--opacity-high);
+  z-index: 40;
+}
+
+.priority-medium {
+  opacity: var(--opacity-medium);
+  z-index: 30;
+}
+
+.priority-low {
+  opacity: var(--opacity-low);
+  z-index: 20;
+}
+
+.priority-minimal {
+  opacity: var(--opacity-minimal);
+  z-index: 10;
 }
 
 @theme inline {
