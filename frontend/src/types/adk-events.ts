@@ -96,6 +96,15 @@ export interface MessageUpdate {
   format?: 'markdown' | 'text' | 'html';
 }
 
+export interface NewMessage {
+  messageId: string;
+  role: 'user' | 'assistant' | 'system';
+  content: string;
+  isComplete: boolean;
+  isFinalReport?: boolean;
+  format?: 'markdown' | 'text' | 'html';
+}
+
 export interface WorkflowUpdate {
   phase: 'planning' | 'research' | 'reporting';
   status: 'pending' | 'active' | 'complete' | 'error';
@@ -106,6 +115,7 @@ export interface WorkflowUpdate {
 export type UIEvent = 
   | { type: 'thinking_update'; data: ThinkingUpdate }
   | { type: 'message_update'; data: MessageUpdate }
+  | { type: 'new_message'; data: NewMessage }
   | { type: 'workflow_update'; data: WorkflowUpdate }
   | { type: 'error'; data: { message: string } }
   | { type: 'connection'; data: { status: 'connected' | 'disconnected' | 'reconnecting' } };

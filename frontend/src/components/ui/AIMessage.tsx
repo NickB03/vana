@@ -8,6 +8,8 @@ import { Sparkles } from 'lucide-react'
 import { useState } from 'react'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from './collapsible'
 import { cn } from '@/lib/utils'
+import { ResearchPlanDisplay } from '../ResearchPlanDisplay'
+import { QuickResponseButtons } from '../QuickResponseButtons'
 
 interface AIMessageProps {
   role: 'user' | 'assistant' | 'system'
@@ -17,6 +19,9 @@ interface AIMessageProps {
   children?: ReactNode
   isThinking?: boolean
   thinkingSteps?: ThinkingStep[]
+  onPlanStart?: () => void
+  onPlanEdit?: (editedPlan: string) => void
+  onSendMessage?: (message: string) => void
 }
 
 export function AIMessage({ 
@@ -25,11 +30,19 @@ export function AIMessage({
   status: _status = 'sent',
   children,
   isThinking = false,
-  thinkingSteps = []
+  thinkingSteps = [],
+  onPlanStart,
+  onPlanEdit,
+  onSendMessage
 }: AIMessageProps) {
   const isUser = role === 'user'
   const isSystem = role === 'system'
   const [isOpen, setIsOpen] = useState(true)
+  
+  // Detect if this message contains a research plan
+  const isResearchPlan = content.toLowerCase().includes('research plan:') && 
+                        content.includes('[RESEARCH]') &&
+                        !content.toLowerCase().includes('does this research plan look good')
   
   // Only user messages get bubbles
   if (isUser) {
@@ -70,10 +83,30 @@ export function AIMessage({
     >
       {/* Response content */}
       {!isThinking || content ? (
-        <div className="text-base leading-relaxed text-[var(--text-primary)] whitespace-pre-wrap mb-4">
-          {content}
-          {children}
-        </div>
+        <>
+          {/* Show research plan with special UI if detected */}
+          {isResearchPlan && onPlanStart && onPlanEdit ? (
+            <ResearchPlanDisplay
+              plan={content}
+              onStart={onPlanStart}
+              onEdit={onPlanEdit}
+              className="mb-4"
+            />
+          ) : (
+            <div className="text-base leading-relaxed text-[var(--text-primary)] whitespace-pre-wrap mb-4">
+              {content}
+              {children}
+              
+              {/* Quick response buttons for agent questions */}
+              {onSendMessage && (
+                <QuickResponseButtons
+                  messageContent={content}
+                  onSendMessage={onSendMessage}
+                />
+              )}
+            </div>
+          )}
+        </>
       ) : null}
 
 

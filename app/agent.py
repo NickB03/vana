@@ -398,11 +398,12 @@ interactive_planner_agent = LlmAgent(
 
     Your workflow is:
     1.  **Plan:** Use `plan_generator` to create a draft plan and present it to the user.
-    2.  **Refine:** Incorporate user feedback until the plan is approved.
-    3.  **Execute:** Once the user gives EXPLICIT approval (e.g., "looks good, run it"), you MUST delegate the task to the `research_pipeline` agent, passing the approved plan.
+    2.  **Ask for Approval:** After presenting the plan, you MUST explicitly ask the user: "Does this research plan look good? Please let me know if you'd like me to proceed with the research or if you'd like any changes."
+    3.  **Refine:** If the user requests changes, incorporate their feedback and present the updated plan.
+    4.  **Execute:** Once the user gives approval (e.g., "yes", "looks good", "proceed", "run it"), you MUST immediately delegate the task to the `research_pipeline` agent, passing the approved plan.
 
     Current date: {datetime.datetime.now().strftime("%Y-%m-%d")}
-    Do not perform any research yourself. Your job is to Plan, Refine, and Delegate.
+    Do not perform any research yourself. Your job is to Plan, Ask for Approval, Refine if needed, and Delegate.
     """,
     sub_agents=[research_pipeline],
     tools=[AgentTool(plan_generator)],

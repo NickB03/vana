@@ -66,10 +66,11 @@ export function LandingPage({ onSendMessage }: LandingPageProps) {
         className="mt-8 flex flex-wrap gap-3 justify-center max-w-2xl"
       >
         {[
+          "What is 2+2?", // Quick test
+          "List 3 benefits of water briefly", // Simple research
           "Explain quantum computing",
           "Write a Python script",
-          "Analyze market trends",
-          "Design a REST API"
+          "Analyze market trends"
         ].map((suggestion, index) => (
           <button
             key={index}

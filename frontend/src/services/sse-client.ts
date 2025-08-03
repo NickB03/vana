@@ -17,6 +17,7 @@ interface MessageState {
   id: string;
   content: string;
   isStreaming: boolean;
+  status?: string;
 }
 
 interface StepState {
@@ -314,6 +315,15 @@ export class SSEClient extends EventEmitter {
     console.log('[SSE] Event has actions:', !!event.actions);
     console.log('[SSE] Event has stateDelta:', !!event.actions?.stateDelta);
     
+    // Log ALL events from report_composer_with_citations
+    if (event.author === 'report_composer_with_citations') {
+      console.log('[SSE] 📊 REPORT COMPOSER EVENT DETECTED!');
+      console.log('[SSE] Event type:', event.type);
+      console.log('[SSE] Has content:', !!event.content);
+      console.log('[SSE] Has actions:', !!event.actions);
+      console.log('[SSE] Full event:', JSON.stringify(event, null, 2));
+    }
+
     // Handle thinking updates from agents
     if (event.author && event.author !== 'user') {
       this.handleAgentEvent(event);
@@ -467,40 +477,41 @@ export class SSEClient extends EventEmitter {
     console.log('[SSE] Current message state:', this.currentMessageState);
     console.log('[SSE] Report preview:', report.substring(0, 200) + '...');
     
-    if (!this.currentMessageState) {
-      console.warn('[SSE] No current message state - creating new message for final report');
-      // Create a new message state if needed
-      const messageId = `msg_${Date.now()}`;
-      this.currentMessageState = {
-        id: messageId,
-        content: report,
-        isStreaming: false,
-        status: 'sent'
-      };
-    } else {
-      // Update existing message with final report
-      this.currentMessageState.content = report;
-      this.currentMessageState.isStreaming = false;
-      this.currentMessageState.status = 'sent';
-    }
+    // Following the original ADK pattern: Create a NEW message for the final report
+    // This is critical - the ADK creates a separate message specifically for the final report
+    const finalReportMessageId = `${Date.now()}_final_report`;
     
-    console.log('[SSE] Emitting message_update event for final report with messageId:', this.currentMessageState.id);
+    console.log('[SSE] Creating NEW message for final report with ID:', finalReportMessageId);
     
-    // Emit message update using consistent event naming and structure
+    // Emit a new message event (not an update to existing message)
     this.emitUIEvent({
-      type: 'message_update',
+      type: 'new_message',
       data: {
-        messageId: this.currentMessageState.id,
+        messageId: finalReportMessageId,
+        role: 'assistant',
         content: report,
-        isComplete: true
+        isComplete: true,
+        isFinalReport: true
       }
     });
     
     // Clear active thinking steps as the report is complete
     this.completeAllThinkingSteps();
     
-    // Clear the current message state as we're done
-    this.currentMessageState = null;
+    // Mark current message as complete if it exists
+    if (this.currentMessageState) {
+      this.currentMessageState.isStreaming = false;
+      this.currentMessageState.status = 'sent';
+      this.emitUIEvent({
+        type: 'message_update',
+        data: {
+          messageId: this.currentMessageState.id,
+          content: this.currentMessageState.content,
+          isComplete: true
+        }
+      });
+      this.currentMessageState = null;
+    }
   }
 
   /**

@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { sseClient } from '../services/sse-client';
-import type { ThinkingUpdate, MessageUpdate } from '../services/websocket';
+import type { ThinkingUpdate, MessageUpdate, NewMessage } from '../types/adk-events';
 
 /**
  * Hook for SSE connection - maintains same interface as useWebSocket
@@ -94,12 +94,18 @@ export function useSSE() {
     return () => sseClient.off('message_update', callback);
   }, []);
 
+  const onNewMessage = useCallback((callback: (message: NewMessage) => void) => {
+    sseClient.on('new_message', callback);
+    return () => sseClient.off('new_message', callback);
+  }, []);
+
   return {
     isConnected,
     error,
     sendMessage,
     onThinkingUpdate,
     onMessageUpdate,
+    onNewMessage,
     connectionStatus,
   };
 }

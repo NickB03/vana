@@ -23,7 +23,7 @@ export function ThinkingPanel({
   
   return (
     <div className={cn(
-      "fixed right-0 top-0 h-full z-20",
+      "fixed right-0 top-0 h-full z-[60]",
       className
     )}>
       <AnimatePresence mode="wait">

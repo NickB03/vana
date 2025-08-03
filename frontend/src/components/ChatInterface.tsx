@@ -5,6 +5,9 @@ import { AIConversation } from './ui/ai-conversation'
 import type { ThinkingStep } from './ui/AIReasoning'
 import { useWebSocket } from '../hooks/useSSE'
 import { ConnectionStatus } from './ConnectionStatus'
+import { SimplifiedThinkingPanel } from './SimplifiedThinkingPanel'
+import { QuickTestButtons } from './QuickTestButtons'
+import { ApprovalPrompt } from './ApprovalPrompt'
 
 // Global state to prevent duplicate initial messages across StrictMode mounts
 const globalInitialMessageState = new Map<string, boolean>();
@@ -26,10 +29,12 @@ interface ChatInterfaceProps {
 
 export function ChatInterface({ onSendMessage, initialMessages = [] }: ChatInterfaceProps) {
   console.log('[ChatInterface] Component initializing');
-  const { isConnected, sendMessage: wsSendMessage, onThinkingUpdate, onMessageUpdate, connectionStatus } = useWebSocket()
+  const { isConnected, sendMessage: wsSendMessage, onThinkingUpdate, onMessageUpdate, onNewMessage, connectionStatus } = useWebSocket()
   console.log('[ChatInterface] WebSocket hook loaded, isConnected:', isConnected, 'status:', connectionStatus);
   
   const [localThinkingSteps, setLocalThinkingSteps] = useState<ThinkingStep[]>([])
+  const [waitingForApproval, setWaitingForApproval] = useState(false)
+  const [approvalMessage, setApprovalMessage] = useState('')
   const [messages, setMessages] = useState<Message[]>(() => {
     // Don't convert initial messages here - we'll add them after sending
     // Just show welcome message if no initial messages
@@ -105,6 +110,23 @@ export function ChatInterface({ onSendMessage, initialMessages = [] }: ChatInter
             };
             console.log('[ChatInterface] Updated message:', updatedMessage);
             newMessages[index] = updatedMessage;
+            
+            // Check if the message is asking for approval or asking to create a plan
+            const lowerContent = update.content.toLowerCase();
+            if (update.isComplete && (
+              lowerContent.includes('does this research plan look good') ||
+              lowerContent.includes('please let me know if you\'d like me to proceed') ||
+              lowerContent.includes('would you like me to proceed') ||
+              lowerContent.includes('please review') ||
+              lowerContent.includes('do you approve') ||
+              (lowerContent.includes('would like me to create a research plan') && lowerContent.includes('any other topic'))
+            )) {
+              console.log('[ChatInterface] Detected approval/plan creation request!');
+              // Don't set waiting for approval for now - let's just make it easier to respond
+              // setWaitingForApproval(true);
+              // setApprovalMessage('The research plan is ready. Would you like to proceed with the research?');
+            }
+            
             if (update.isComplete) {
               console.log('[ChatInterface] Message complete - stopping typing indicator');
               setIsTyping(false)
@@ -118,11 +140,37 @@ export function ChatInterface({ onSendMessage, initialMessages = [] }: ChatInter
       }
     })
     
+    const unsubNewMessage = onNewMessage((newMessage) => {
+      console.log('[ChatInterface] 🎯 New message received:', newMessage);
+      console.log('[ChatInterface] Is final report:', newMessage.isFinalReport);
+      
+      // Create a new message and add it to the conversation
+      const message: Message = {
+        id: newMessage.messageId,
+        role: newMessage.role,
+        content: newMessage.content,
+        timestamp: new Date(),
+        status: newMessage.isComplete ? 'sent' : 'sending'
+      };
+      
+      console.log('[ChatInterface] Adding new message to conversation:', message);
+      setMessages(prev => [...prev, message]);
+      
+      // Stop typing indicator and clear thinking steps when final report arrives
+      if (newMessage.isFinalReport) {
+        console.log('[ChatInterface] Final report received - stopping all indicators');
+        setIsTyping(false);
+        setLocalThinkingSteps([]);
+        currentMessageIdRef.current = null;
+      }
+    })
+    
     return () => {
       unsubThinking()
       unsubMessage()
+      unsubNewMessage()
     }
-  }, [onThinkingUpdate, onMessageUpdate])
+  }, [onThinkingUpdate, onMessageUpdate, onNewMessage])
   
   const handleSendMessage = useCallback(async (content: string) => {
     // Add user message
@@ -187,6 +235,47 @@ export function ChatInterface({ onSendMessage, initialMessages = [] }: ChatInter
     handleSendMessage(message);
   };
   
+  // Approval handlers
+  const handleApprove = useCallback(() => {
+    console.log('[ChatInterface] User approved the plan');
+    setWaitingForApproval(false);
+    setApprovalMessage('');
+    handleSendMessage('yes, proceed with the research');
+  }, [handleSendMessage]);
+  
+  const handleReject = useCallback(() => {
+    console.log('[ChatInterface] User rejected the plan');
+    setWaitingForApproval(false);
+    setApprovalMessage('');
+    handleSendMessage('no, let\'s start over');
+  }, [handleSendMessage]);
+  
+  const handleModify = useCallback((feedback: string) => {
+    console.log('[ChatInterface] User provided feedback:', feedback);
+    setWaitingForApproval(false);
+    setApprovalMessage('');
+    handleSendMessage(feedback);
+  }, [handleSendMessage]);
+  
+  // Keyboard shortcuts for approval
+  useEffect(() => {
+    const handleKeyPress = (e: KeyboardEvent) => {
+      if (!waitingForApproval) return;
+      
+      if (e.key.toLowerCase() === 'y') {
+        handleApprove();
+      } else if (e.key.toLowerCase() === 'n') {
+        handleReject();
+      } else if (e.key.toLowerCase() === 'm') {
+        // Focus on the modify input when 'm' is pressed
+        // The ApprovalPrompt component will handle showing the input
+      }
+    };
+    
+    window.addEventListener('keypress', handleKeyPress);
+    return () => window.removeEventListener('keypress', handleKeyPress);
+  }, [waitingForApproval, handleApprove, handleReject]);
+  
   // Send initial message if provided
   useEffect(() => {
     if (initialMessages.length > 0 && isConnected) {
@@ -224,6 +313,21 @@ export function ChatInterface({ onSendMessage, initialMessages = [] }: ChatInter
         className="absolute top-4 right-4 z-10"
       />
       
+      {/* Simplified thinking panel */}
+      <SimplifiedThinkingPanel 
+        steps={localThinkingSteps}
+        defaultExpanded={true}
+      />
+      
+      {/* Approval prompt - commented out in favor of inline plan display */}
+      {/* <ApprovalPrompt
+        isVisible={waitingForApproval}
+        message={approvalMessage}
+        onApprove={handleApprove}
+        onReject={handleReject}
+        onModify={handleModify}
+      /> */}
+      
       {/* Messages area with AI conversation wrapper */}
       <AIConversation>
         {messages.map((message) => (
@@ -233,15 +337,23 @@ export function ChatInterface({ onSendMessage, initialMessages = [] }: ChatInter
             content={message.content}
             timestamp={message.timestamp}
             status={message.status}
-            thinkingSteps={
-              message.id === currentMessageIdRef.current 
-                ? localThinkingSteps 
-                : message.thinkingSteps
-            }
+            // Don't show thinking steps in individual messages since we have the global panel
+            thinkingSteps={[]}
             isThinking={
               message.id === currentMessageIdRef.current && 
               message.status === 'sending'
             }
+            onPlanStart={() => {
+              console.log('[ChatInterface] User clicked Start Research');
+              setWaitingForApproval(false);
+              handleSendMessage('yes, proceed with the research');
+            }}
+            onPlanEdit={(editedPlan) => {
+              console.log('[ChatInterface] User edited plan:', editedPlan);
+              setWaitingForApproval(false);
+              handleSendMessage(`Please use this updated plan instead:\n${editedPlan}`);
+            }}
+            onSendMessage={handleSendMessage}
           />
         ))}
         
@@ -254,7 +366,8 @@ export function ChatInterface({ onSendMessage, initialMessages = [] }: ChatInter
             role="assistant"
             content=""
             isThinking={isTyping}
-            thinkingSteps={localThinkingSteps}
+            // Don't show thinking steps in individual messages since we have the global panel
+            thinkingSteps={[]}
           />
         )}
         
@@ -264,6 +377,12 @@ export function ChatInterface({ onSendMessage, initialMessages = [] }: ChatInter
       {/* Fixed input area at bottom */}
       <div className="sticky bottom-0 bg-black">
         <div className="max-w-2xl mx-auto p-4">
+          {/* Quick test buttons for development */}
+          <QuickTestButtons 
+            onSendMessage={handleSendMessage}
+            className="mb-4"
+          />
+          
           <AIInput 
             onSend={handleSendMessage}
             onFileUpload={handleFileUpload}
