@@ -49,12 +49,13 @@ Vana is a sophisticated multi-agent AI system built on Google's Agent Developmen
 
 ### Key Highlights
 
-- **🤖 Multi-Agent Architecture**: 8 specialized agents working together through orchestrated workflows
+- **🤖 Multi-Agent Architecture**: Specialized agents working together through orchestrated workflows for research planning, execution, evaluation, and reporting
 - **🔄 Two-Phase Process**: Interactive planning with human-in-the-loop followed by autonomous execution
-- **📊 Quality Assurance**: Built-in research evaluation and iterative refinement loops
+- **📊 Quality Assurance**: Built-in research evaluation and iterative refinement loops with up to 5 quality iterations
 - **🌐 Production-Ready**: Full CI/CD pipeline, monitoring, and scalable Cloud Run deployment
-- **💎 Powered by Gemini**: Leverages Gemini 2.5 Pro and Flash models for optimal performance
-- **🔍 Smart Citations**: Automatic source tracking and inline citation generation
+- **💎 Powered by Advanced Models**: Supports Gemini 2.5 Pro/Flash models plus LiteLLM integration for OpenRouter and other providers
+- **🔍 Smart Citations**: Automatic source tracking and inline citation generation with clickable links
+- **🎨 Modern UI**: Real-time thinking panel, interactive research plan editing, and WebSocket-based live updates
 
 ---
 
@@ -129,7 +130,7 @@ sequenceDiagram
     participant FE as Frontend
     participant API as Backend API
     participant AG as Agents
-    participant GS as Google Search
+    participant GS as Brave Search
     participant DB as Storage
     
     U->>FE: Submit Query
@@ -149,10 +150,11 @@ sequenceDiagram
     FE->>API: Execute Pipeline
     
     loop Research Phase
-        AG->>GS: Search Queries
-        GS->>AG: Results
-        AG->>AG: Evaluate Quality
-        AG->>DB: Store Sources
+        AG->>GS: Search Queries (4-5 per goal)
+        GS->>AG: Results with Grounding
+        AG->>AG: Evaluate Quality (Critic Model)
+        AG->>AG: Generate Follow-up Queries
+        AG->>DB: Store Sources with Citations
     end
     
     AG->>AG: Compose Report
@@ -166,28 +168,43 @@ sequenceDiagram
 ## ✨ Core Features
 
 ### 🎯 Intelligent Planning
-- **Adaptive Plan Generation**: Converts any user request into structured research plans
-- **Task Classification**: Automatically categorizes tasks as [RESEARCH] or [DELIVERABLE]
-- **Human-in-the-Loop**: Interactive refinement ensures plans meet user expectations
-- **Implied Deliverables**: Proactively suggests outputs based on research goals
+- **Adaptive Plan Generation**: Converts any user request into structured 5-point research plans
+- **Task Classification**: Automatically categorizes tasks as [RESEARCH] or [DELIVERABLE] with status tags [MODIFIED], [NEW], [IMPLIED]
+- **Human-in-the-Loop**: Interactive refinement with inline plan editing and approval workflow
+- **Implied Deliverables**: Proactively suggests synthesis outputs based on research goals
+- **Flexible Planning**: Plans can expand beyond initial 5 points based on user feedback and complexity
 
 ### 🔍 Advanced Research Capabilities
-- **Multi-Query Generation**: Each research goal spawns 4-5 targeted search queries
-- **Source Tracking**: Automatic citation management with confidence scores
-- **Iterative Refinement**: Quality evaluation with up to 5 refinement iterations
+- **Multi-Query Generation**: Each research goal spawns 4-5 targeted search queries using Brave Search
+- **Source Tracking**: Automatic citation management with confidence scores and URL-to-short-ID mapping
+- **Iterative Refinement**: Critical quality evaluation with up to 5 refinement iterations using Gemini Pro
 - **Enhanced Search**: Follow-up queries to address identified knowledge gaps
+- **Two-Phase Execution**: Strict separation between information gathering (RESEARCH) and synthesis (DELIVERABLE) tasks
 
 ### 📝 Professional Output
-- **Structured Reports**: Markdown-formatted with 4-6 logical sections
-- **Inline Citations**: Automatic source attribution with clickable links
-- **Quality Assurance**: Multi-model evaluation (Gemini Pro for critical tasks)
-- **Custom Deliverables**: Tables, comparisons, summaries based on plan
+- **Structured Reports**: Markdown-formatted with 4-6 logical sections following generated outline
+- **Inline Citations**: Automatic source attribution with clickable links using `<cite source="src-ID" />` system
+- **Quality Assurance**: Multi-model evaluation with Gemini 2.5 Pro for critical evaluation tasks
+- **Custom Deliverables**: Tables, comparisons, summaries, and other artifacts based on plan requirements
+- **Citation Processing**: Automatic conversion of citation tags to readable markdown links with source titles
 
 ### 🛠️ Production Infrastructure
-- **Scalable Deployment**: Cloud Run with auto-scaling (1-10 instances)
-- **Session Management**: In-memory or persistent (AlloyDB) options
-- **Comprehensive Monitoring**: OpenTelemetry, Cloud Trace, BigQuery analytics
-- **CI/CD Pipeline**: Automated testing, staging, and production deployments
+- **Scalable Deployment**: Cloud Run with auto-scaling (4 CPU, 8GB RAM configuration)
+- **Session Management**: In-memory or persistent (AlloyDB) options with state preservation
+- **Comprehensive Monitoring**: OpenTelemetry, Cloud Trace, BigQuery analytics with Looker Studio dashboards
+- **CI/CD Pipeline**: Automated testing, staging, and production deployments via Google Cloud Build
+- **Real-time Communication**: WebSocket/SSE-based live updates for thinking steps and message streaming
+
+### 🎨 Advanced User Interface
+
+- **Real-time Thinking Panel**: Live visualization of agent activities with phase tracking (Planning → Researching → Evaluating → Composing)
+- **Interactive Research Plans**: Inline editing of research plans with structured display and approval workflow
+- **WebSocket Integration**: Real-time message streaming and thinking step updates for responsive user experience
+- **Visual Progress Tracking**: Progress bars, phase indicators, and completion status with animated transitions
+- **Connection Management**: Automatic connection status monitoring with visual indicators
+- **Quick Testing Tools**: Built-in development buttons for rapid UI and workflow testing
+- **Modern AI Components**: Custom-built ChatInterface, SimplifiedThinkingPanel, and ResearchPlanDisplay components
+- **Responsive Design**: Mobile-friendly interface with collapsible panels and adaptive layouts
 
 ---
 
@@ -203,14 +220,17 @@ sequenceDiagram
 
 | Agent | Model | Purpose | Key Features |
 |-------|-------|---------|--------------|
-| **Interactive Planner** | Gemini 2.5 Flash | Primary user interface and orchestrator | • Converts requests to plans<br/>• Manages user interaction<br/>• Delegates to pipeline |
-| **Plan Generator** | Gemini 2.5 Flash | Creates and refines research strategies | • 5-line action plans<br/>• Task classification<br/>• Minimal search usage |
-| **Section Planner** | Gemini 2.5 Flash | Designs report structure | • 4-6 section outlines<br/>• Logical organization<br/>• Markdown formatting |
-| **Section Researcher** | Gemini 2.5 Flash | Executes research plan | • Multi-query generation<br/>• Source collection<br/>• Synthesis of findings |
-| **Research Evaluator** | Gemini 2.5 Pro | Quality assessment | • Critical evaluation<br/>• Gap identification<br/>• Follow-up queries |
-| **Escalation Checker** | Custom Python | Loop control logic | • Pass/fail detection<br/>• Iteration management<br/>• Flow control |
-| **Enhanced Search** | Gemini 2.5 Flash | Fills knowledge gaps | • Targeted searches<br/>• Integration with findings<br/>• Iterative improvement |
-| **Report Composer** | Gemini 2.5 Pro | Final report generation | • Professional writing<br/>• Citation integration<br/>• Structured output |
+| **interactive_planner_agent** | Worker Model* | Primary user interface and orchestrator | • Converts requests to plans<br/>• Manages user interaction<br/>• Delegates to research pipeline |
+| **plan_generator** | Worker Model* | Creates and refines research strategies | • 5-line action plans<br/>• Task classification [RESEARCH]/[DELIVERABLE]<br/>• Minimal search for topic clarification |
+| **section_planner** | Worker Model* | Designs report structure | • 4-6 section markdown outlines<br/>• Logical organization<br/>• Citation-ready structure |
+| **section_researcher** | Worker Model* | Executes research plan | • Two-phase execution (RESEARCH → DELIVERABLE)<br/>• 4-5 queries per research goal<br/>• Source collection with grounding |
+| **research_evaluator** | Critic Model* | Quality assessment | • Critical evaluation with Feedback schema<br/>• Gap identification<br/>• Follow-up query generation |
+| **escalation_checker** | Custom Python | Loop control logic | • Pass/fail detection from evaluator<br/>• Iteration management<br/>• Flow control for refinement loop |
+| **enhanced_search_executor** | Worker Model* | Fills knowledge gaps | • Executes follow-up queries<br/>• Integrates with existing findings<br/>• Iterative improvement |
+| **report_composer_with_citations** | Critic Model* | Final report generation | • Professional markdown writing<br/>• Citation tag processing<br/>• Structured output with inline links |
+
+*Worker Model: Gemini 2.5 Flash (default) or configurable via LiteLLM  
+*Critic Model: Gemini 2.5 Pro (default) or configurable via LiteLLM
 
 ---
 
@@ -220,9 +240,10 @@ sequenceDiagram
 
 | Tool | Purpose | Integration |
 |------|---------|-------------|
-| **Google Search** | Web research and information gathering | Native ADK integration |
-| **Cloud Storage** | Artifact and large payload storage | GCS buckets |
-| **Session Service** | Conversation state management | In-memory/AlloyDB |
+| **Brave Search** | Web research and information gathering | Custom tool implementation with API integration |
+| **Cloud Storage** | Artifact and large payload storage | GCS buckets for build artifacts and data |
+| **Session Service** | Conversation state management | In-memory/AlloyDB with state preservation |
+| **Citation System** | Source tracking and link generation | Grounding metadata with confidence scores |
 
 ### MCP Servers (Local Development Only)
 
@@ -263,20 +284,31 @@ sequenceDiagram
 # Install all dependencies
 make install
 
-# Run full stack locally
+# Run full stack locally (both frontend and backend)
 make dev
 # Frontend: http://localhost:5173
 # Backend: http://localhost:8000
+# API Docs: http://localhost:8000/docs
 
-# Run tests
-make test
+# Run individual components
+make dev-backend    # Backend API only
+make dev-frontend   # Frontend only  
+make playground     # ADK playground interface
 
-# Code quality checks
-make lint
+# Testing and quality
+make test          # Unit and integration tests
+make lint          # Code quality checks (ruff, mypy, codespell)
 ```
 
 ### Testing
 
+#### Quick UI Testing
+The frontend includes built-in testing tools accessible via QuickTestButtons:
+- **Quick Test**: Minimal query for UI testing (`"What is 2+2?"`)
+- **Simple Research**: Short research task (`"List 3 benefits of water"`)
+- **UI Stress Test**: Full research flow (`"Research the Google Agent Starter Pack"`)
+
+#### Backend Testing
 ```python
 # Create test script: run_agent.py
 import asyncio
@@ -311,6 +343,11 @@ if __name__ == "__main__":
 ```
 
 Run with: `uv run python run_agent.py`
+
+#### Test Coverage
+- **Unit Tests**: Agent logic, citation processing, configuration
+- **Integration Tests**: Full workflow testing, API endpoints
+- **UI Tests**: Component testing with interactive features
 
 ---
 
@@ -414,6 +451,11 @@ GOOGLE_GENAI_USE_VERTEXAI=True
 # API Keys (for AI Studio)
 GOOGLE_API_KEY=your-api-key  # Optional, for AI Studio
 
+# Alternative Model Providers (via LiteLLM)
+USE_OPENROUTER=true         # Enable OpenRouter integration
+OPENROUTER_API_KEY=your-key # OpenRouter API key
+BRAVE_API_KEY=your-key      # Brave Search API key
+
 # Session Management
 SESSION_TYPE=in_memory  # or 'alloydb' for production
 
@@ -424,14 +466,37 @@ LOG_LEVEL=INFO
 
 ### Model Configuration
 
+Vana supports multiple model providers through flexible configuration:
+
+#### Default Gemini Models
 ```python
-# app/config.py
+# app/config.py (default)
 @dataclass
 class ResearchConfiguration:
     critic_model: str = "gemini-2.5-pro"      # For evaluation tasks
     worker_model: str = "gemini-2.5-flash"    # For general tasks
     max_search_iterations: int = 5            # Quality refinement loops
 ```
+
+#### Alternative Models via LiteLLM
+```python
+# app/models.py (when USE_OPENROUTER=true)
+from google.adk.models.lite_llm import LiteLlm
+
+# Example: OpenRouter with Qwen3 Coder Free
+CRITIC_MODEL = LiteLlm(model="openrouter/qwen/qwen3-coder:free")
+WORKER_MODEL = LiteLlm(model="openrouter/qwen/qwen3-coder:free")
+```
+
+#### Supported Providers
+- **Google Gemini**: Default models via Vertex AI or AI Studio
+- **OpenRouter**: Access to multiple model providers (Anthropic, OpenAI, etc.)
+- **LiteLLM Compatible**: Any provider supported by LiteLLM library
+
+#### Model Selection Guidelines
+- **Critic Model**: Used for research evaluation, report composition (requires reasoning capability)
+- **Worker Model**: Used for planning, research, search execution (can be faster/cheaper)
+- **Search Iterations**: Controls quality vs cost trade-off (1-10 recommended)
 
 ---
 
