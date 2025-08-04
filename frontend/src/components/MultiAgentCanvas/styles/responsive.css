@@ -1,0 +1,471 @@
+/**
+ * Mobile Responsive Enhancements for Multi-Agent Canvas
+ * Optimized layouts and interactions for mobile and tablet devices
+ */
+
+/* Mobile-first responsive design */
+.multi-agent-canvas {
+  --mobile-breakpoint: 768px;
+  --tablet-breakpoint: 1024px;
+  --desktop-breakpoint: 1280px;
+}
+
+/* Base mobile styles (applied to all sizes, then enhanced for larger screens) */
+.multi-agent-canvas {
+  /* Mobile-optimized spacing */
+  --responsive-padding: var(--mac-space-md);
+  --responsive-gap: var(--mac-space-sm);
+  --responsive-border-radius: var(--mac-radius-md);
+}
+
+/* Mobile specific styles */
+@media (max-width: 767px) {
+  .multi-agent-canvas {
+    /* Mobile optimizations */
+    --responsive-padding: var(--mac-space-sm);
+    --responsive-gap: var(--mac-space-xs);
+    --responsive-border-radius: var(--mac-radius-sm);
+  }
+
+  /* Stack panels vertically on mobile */
+  .mobile-stack {
+    flex-direction: column !important;
+  }
+
+  /* Adjust panel headers for mobile */
+  .panel-header {
+    padding: var(--mac-space-sm) var(--mac-space-md);
+    min-height: 56px; /* Increased touch target */
+  }
+
+  .panel-title {
+    font-size: var(--mac-text-sm);
+    line-height: var(--mac-leading-tight);
+  }
+
+  /* Mobile-optimized metric cards */
+  .metric-card {
+    padding: var(--mac-space-md);
+    margin-bottom: var(--mac-space-sm);
+  }
+
+  .metric-value {
+    font-size: var(--mac-text-xl);
+    line-height: var(--mac-leading-tight);
+  }
+
+  .metric-label {
+    font-size: var(--mac-text-xs);
+    margin-top: var(--mac-space-2xs);
+  }
+
+  /* Grid adjustments for mobile */
+  .mobile-grid-single {
+    grid-template-columns: 1fr !important;
+    gap: var(--mac-space-sm) !important;
+  }
+
+  .mobile-grid-double {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: var(--mac-space-xs) !important;
+  }
+
+  /* Activity feed optimizations */
+  .activity-item {
+    padding: var(--mac-space-sm);
+    border-radius: var(--mac-radius-md);
+  }
+
+  .activity-timestamp {
+    font-size: 0.625rem; /* 10px */
+    line-height: var(--mac-leading-tight);
+  }
+
+  /* Status indicators for mobile */
+  .status-indicator {
+    padding: var(--mac-space-2xs) var(--mac-space-xs);
+    font-size: 0.625rem;
+    font-weight: var(--mac-font-semibold);
+  }
+
+  /* Button optimizations */
+  .multi-agent-canvas button {
+    min-height: 44px;
+    min-width: 44px;
+    padding: var(--mac-space-sm) var(--mac-space-md);
+    font-size: var(--mac-text-sm);
+  }
+
+  /* Input optimizations */
+  .multi-agent-canvas input,
+  .multi-agent-canvas select {
+    min-height: 44px;
+    padding: var(--mac-space-sm) var(--mac-space-md);
+    font-size: var(--mac-text-base); /* Prevent zoom on iOS */
+  }
+
+  /* Tab navigation for mobile */
+  .panel-tabs {
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .panel-tabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  .panel-tab {
+    flex-shrink: 0;
+    min-width: 80px;
+    padding: var(--mac-space-sm) var(--mac-space-md);
+    font-size: var(--mac-text-sm);
+  }
+
+  /* Resize handles - hide on mobile */
+  .resize-handle-enhanced {
+    display: none;
+  }
+
+  /* Mobile-specific collapsed state */
+  .multi-agent-canvas.mobile-view .collapsed-panel {
+    height: 60px;
+    display: flex;
+    align-items: center;
+    padding: 0 var(--mac-space-md);
+    border-bottom: 1px solid var(--mac-panel-border);
+  }
+
+  /* Loading states for mobile */
+  .loading-skeleton {
+    height: 1rem;
+    margin-bottom: var(--mac-space-xs);
+  }
+
+  .loading-dot {
+    width: 6px;
+    height: 6px;
+  }
+
+  /* Toast/notification positioning for mobile */
+  .mobile-toast {
+    position: fixed;
+    bottom: var(--mac-space-lg);
+    left: var(--mac-space-sm);
+    right: var(--mac-space-sm);
+    z-index: var(--mac-z-toast);
+  }
+}
+
+/* Tablet styles */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .multi-agent-canvas {
+    --responsive-padding: var(--mac-space-lg);
+    --responsive-gap: var(--mac-space-md);
+    --responsive-border-radius: var(--mac-radius-lg);
+  }
+
+  /* Tablet-optimized grid layouts */
+  .tablet-grid-adapt {
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: var(--mac-space-md);
+  }
+
+  /* Tablet panel sizing */
+  .panel-header {
+    padding: var(--mac-space-md) var(--mac-space-lg);
+  }
+
+  .metric-card {
+    padding: var(--mac-space-lg);
+  }
+
+  /* Touch-optimized interactions */
+  .multi-agent-canvas button {
+    min-height: 40px;
+    min-width: 40px;
+  }
+
+  /* Tablet resize handles */
+  .resize-handle-enhanced {
+    width: 8px;
+    height: 8px;
+  }
+
+  .resize-handle-enhanced:hover {
+    width: 12px;
+    height: 12px;
+  }
+}
+
+/* Desktop and larger screens */
+@media (min-width: 1024px) {
+  .multi-agent-canvas {
+    --responsive-padding: var(--mac-space-xl);
+    --responsive-gap: var(--mac-space-lg);
+    --responsive-border-radius: var(--mac-radius-xl);
+  }
+
+  /* Desktop-optimized layouts */
+  .desktop-grid-full {
+    grid-template-columns: repeat(4, 1fr);
+    gap: var(--mac-space-lg);
+  }
+
+  /* Enhanced hover states for desktop */
+  .multi-agent-canvas .hover-enhanced:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--mac-shadow-lg);
+    transition: all var(--mac-duration-normal) var(--mac-ease-out);
+  }
+
+  /* Desktop resize handles */
+  .resize-handle-enhanced {
+    width: 6px;
+    height: 6px;
+  }
+
+  .resize-handle-enhanced:hover {
+    width: 8px;
+    height: 8px;
+  }
+}
+
+/* Orientation-based optimizations */
+@media (orientation: portrait) and (max-width: 768px) {
+  /* Portrait mobile optimizations */
+  .portrait-stack {
+    flex-direction: column;
+  }
+
+  .portrait-full-width {
+    width: 100%;
+    margin-bottom: var(--mac-space-md);
+  }
+
+  /* Optimize for tall, narrow screens */
+  .activity-feed {
+    max-height: 40vh;
+  }
+
+  .metric-card {
+    min-height: unset;
+  }
+}
+
+@media (orientation: landscape) and (max-width: 1024px) {
+  /* Landscape mobile/tablet optimizations */
+  .landscape-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--mac-space-sm);
+  }
+
+  .landscape-compact {
+    padding: var(--mac-space-sm);
+  }
+
+  /* Optimize for short, wide screens */
+  .panel-header {
+    min-height: 48px;
+  }
+
+  .activity-feed {
+    max-height: 200px;
+  }
+}
+
+/* Container queries for responsive panels */
+@container (max-width: 400px) {
+  .metric-card {
+    padding: var(--mac-space-sm);
+  }
+
+  .metric-value {
+    font-size: var(--mac-text-lg);
+  }
+
+  .status-indicator {
+    padding: 2px 6px;
+    font-size: 0.625rem;
+  }
+}
+
+@container (min-width: 401px) and (max-width: 600px) {
+  .metric-card {
+    padding: var(--mac-space-md);
+  }
+
+  .metric-value {
+    font-size: var(--mac-text-xl);
+  }
+}
+
+@container (min-width: 601px) {
+  .metric-card {
+    padding: var(--mac-space-lg);
+  }
+
+  .metric-value {
+    font-size: var(--mac-text-2xl);
+  }
+}
+
+/* Accessibility improvements for mobile */
+@media (max-width: 768px) {
+  /* Larger touch targets */
+  .multi-agent-canvas [role="button"],
+  .multi-agent-canvas button,
+  .multi-agent-canvas input,
+  .multi-agent-canvas select {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* Better focus indicators on mobile */
+  .multi-agent-canvas *:focus-visible {
+    outline-width: 3px;
+    outline-offset: 2px;
+  }
+
+  /* Improved text readability */
+  .multi-agent-canvas {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+
+  /* Better contrast for mobile */
+  .panel-title {
+    font-weight: var(--mac-font-semibold);
+  }
+
+  .metric-label {
+    font-weight: var(--mac-font-medium);
+  }
+}
+
+/* Reduced motion for mobile */
+@media (max-width: 768px) and (prefers-reduced-motion: reduce) {
+  .multi-agent-canvas * {
+    animation: none !important;
+    transition: none !important;
+  }
+
+  .loading-dot {
+    animation: none;
+    opacity: 0.6;
+  }
+
+  .animate-pulse,
+  .animate-ping,
+  .animate-spin {
+    animation: none !important;
+  }
+}
+
+/* High contrast mode mobile optimizations */
+@media (max-width: 768px) and (prefers-contrast: high) {
+  .multi-agent-panel {
+    border-width: 2px;
+  }
+
+  .metric-card {
+    border-width: 2px;
+  }
+
+  .status-indicator {
+    border-width: 2px;
+    font-weight: var(--mac-font-bold);
+  }
+
+  .panel-header {
+    border-bottom-width: 2px;
+  }
+}
+
+/* Dark mode mobile optimizations */
+@media (max-width: 768px) and (prefers-color-scheme: dark) {
+  .multi-agent-canvas {
+    /* Enhanced contrast for mobile dark mode */
+    --mac-panel-bg: hsl(var(--background) / 0.95);
+    --mac-metric-border: hsl(var(--border) / 0.4);
+  }
+
+  .metric-card {
+    box-shadow: var(--mac-shadow-md);
+  }
+
+  .panel-header {
+    backdrop-filter: blur(8px);
+  }
+}
+
+/* Print optimizations for mobile */
+@media print {
+  .multi-agent-canvas {
+    --responsive-padding: 0.5rem;
+    --responsive-gap: 0.25rem;
+  }
+
+  .panel-header {
+    padding: 0.5rem;
+    border-bottom: 1px solid black;
+  }
+
+  .metric-card {
+    padding: 0.5rem;
+    border: 1px solid black;
+    margin-bottom: 0.5rem;
+    page-break-inside: avoid;
+  }
+
+  .activity-feed {
+    max-height: none;
+  }
+
+  .resize-handle-enhanced {
+    display: none;
+  }
+}
+
+/* Progressive enhancement utilities */
+.mobile-only {
+  display: block;
+}
+
+.tablet-up {
+  display: none;
+}
+
+.desktop-up {
+  display: none;
+}
+
+@media (min-width: 768px) {
+  .mobile-only {
+    display: none;
+  }
+  
+  .tablet-up {
+    display: block;
+  }
+}
+
+@media (min-width: 1024px) {
+  .desktop-up {
+    display: block;
+  }
+}
+
+/* Responsive typography utilities */
+.responsive-text {
+  font-size: clamp(var(--mac-text-sm), 2.5vw, var(--mac-text-base));
+}
+
+.responsive-heading {
+  font-size: clamp(var(--mac-text-base), 3.5vw, var(--mac-text-xl));
+}
+
+.responsive-large-text {
+  font-size: clamp(var(--mac-text-lg), 4vw, var(--mac-text-2xl));
+}
