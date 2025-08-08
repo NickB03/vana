@@ -14,45 +14,171 @@
 
 import os
 from datetime import datetime
+import json
+import asyncio
 
 import google.auth
 from fastapi import FastAPI
+from fastapi.responses import StreamingResponse
 from google.adk.cli.fast_api import get_fast_api_app
-from google.cloud import logging as google_cloud_logging
+# Only import cloud logging if we have a real project
+try:
+    from google.cloud import logging as google_cloud_logging
+    USE_CLOUD_LOGGING = True
+except ImportError:
+    USE_CLOUD_LOGGING = False
 from opentelemetry import trace
 from opentelemetry.sdk.trace import TracerProvider, export
 
 from app.utils.gcs import create_bucket_if_not_exists
 from app.utils.tracing import CloudTraceLoggingSpanExporter
 from app.utils.typing import Feedback
+from app.utils.sse_broadcaster import agent_network_event_stream, get_agent_network_event_history
+from app.utils.session_backup import (
+    backup_session_db_to_gcs, 
+    restore_session_db_from_gcs,
+    setup_session_persistence_for_cloud_run,
+    create_periodic_backup_job
+)
 
-_, project_id = google.auth.default()
-logging_client = google_cloud_logging.Client()
-logger = logging_client.logger(__name__)
+# Get the project ID from Google Cloud authentication
+try:
+    _, project_id = google.auth.default()
+    if not project_id:
+        project_id = os.environ.get("GOOGLE_CLOUD_PROJECT", "analystai-454200")
+        print(f"Using project ID from environment/config: {project_id}")
+    else:
+        print(f"Using authenticated project ID: {project_id}")
+except Exception as e:
+    print(f"Authentication setup: {e}")
+    project_id = "analystai-454200"
+    print(f"Using project ID: {project_id}")
+# Set up logging based on environment
+if USE_CLOUD_LOGGING:
+    try:
+        logging_client = google_cloud_logging.Client(project=project_id)
+        logger = logging_client.logger(__name__)
+        print(f"Cloud logging initialized for project: {project_id}")
+    except Exception as e:
+        print(f"Could not initialize cloud logging: {e}")
+        # Fall back to standard logging
+        import logging
+        logging.basicConfig(level=logging.INFO)
+        logger = logging.getLogger(__name__)
+else:
+    # Use standard Python logging if cloud logging not available
+    import logging
+    logging.basicConfig(level=logging.INFO)
+    logger = logging.getLogger(__name__)
 allow_origins = (
     os.getenv("ALLOW_ORIGINS", "").split(",") if os.getenv("ALLOW_ORIGINS") else None
 )
 
+# Create bucket name for the project
 bucket_name = f"gs://{project_id}-vana-logs-data"
-create_bucket_if_not_exists(
-    bucket_name=bucket_name, project=project_id, location="us-central1"
-)
+if bucket_name:
+    try:
+        create_bucket_if_not_exists(
+            bucket_name=bucket_name, project=project_id, location="us-central1"
+        )
+    except Exception as e:
+        logger.log_struct({
+            "message": "Could not create bucket, continuing without it",
+            "error": str(e)
+        }, severity="WARNING")
 
-provider = TracerProvider()
-processor = export.BatchSpanProcessor(CloudTraceLoggingSpanExporter())
-provider.add_span_processor(processor)
-trace.set_tracer_provider(provider)
+# Set up tracing for the project
+try:
+    provider = TracerProvider()
+    processor = export.BatchSpanProcessor(CloudTraceLoggingSpanExporter())
+    provider.add_span_processor(processor)
+    trace.set_tracer_provider(provider)
+    print(f"Tracing initialized for project: {project_id}")
+except Exception as e:
+    print(f"Could not initialize tracing: {e}")
+    # Continue without tracing
 
 AGENT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-# In-memory session configuration - no persistent storage
-# TODO: Implement proper persistent session storage
-# For now, using in-memory sessions to avoid SQLAlchemy dialect issues
-session_service_uri = None
+# Persistent session storage configuration
+# For Cloud Run deployment, we'll use a persistent volume or environment-based configuration
+session_storage_bucket = f"{project_id}-vana-session-storage"
+
+# Determine session storage approach based on environment
+if os.getenv("CLOUD_RUN_SESSION_DB_PATH"):
+    # Production: Use Cloud Run persistent volume with backup/restore
+    session_service_uri = setup_session_persistence_for_cloud_run(
+        project_id=project_id,
+        session_db_path=os.getenv("CLOUD_RUN_SESSION_DB_PATH")
+    )
+    if hasattr(logger, 'log_struct'):
+        logger.log_struct({
+            "message": "Using Cloud Run persistent session storage with backup/restore",
+            "uri": session_service_uri
+        }, severity="INFO")
+    else:
+        logger.info(f"Using Cloud Run persistent session storage with backup/restore: {session_service_uri}")
+elif os.getenv("SESSION_DB_URI"):
+    # Custom database URI (e.g., Cloud SQL)
+    session_service_uri = os.getenv("SESSION_DB_URI")
+    if hasattr(logger, 'log_struct'):
+        logger.log_struct({
+            "message": "Using custom session database",
+            "uri": session_service_uri
+        }, severity="INFO")
+    else:
+        logger.info(f"Using custom session database: {session_service_uri}")
+else:
+    # Development: Use local SQLite with backup to GCS
+    local_session_db = "/tmp/vana_sessions.db"
+    session_service_uri = f"sqlite:///{local_session_db}"
+    
+    # Ensure GCS bucket exists and try to restore from backup
+    try:
+        create_bucket_if_not_exists(
+            bucket_name=session_storage_bucket, 
+            project=project_id, 
+            location="us-central1"
+        )
+        
+        # Try to restore from latest backup if database doesn't exist
+        if not os.path.exists(local_session_db):
+            restore_session_db_from_gcs(
+                local_db_path=local_session_db,
+                bucket_name=session_storage_bucket,
+                project_id=project_id
+            )
+        
+        # Start periodic backup (every 6 hours)
+        create_periodic_backup_job(
+            local_db_path=local_session_db,
+            bucket_name=session_storage_bucket,
+            project_id=project_id,
+            interval_hours=6
+        )
+        
+        if hasattr(logger, 'log_struct'):
+            logger.log_struct({
+                "message": "Session storage configured with local SQLite, GCS backup, and periodic backups",
+                "local_db": local_session_db,
+                "backup_bucket": session_storage_bucket,
+                "uri": session_service_uri
+            }, severity="INFO")
+        else:
+            logger.info(f"Session storage configured with local SQLite: {local_session_db}")
+    except Exception as e:
+        if hasattr(logger, 'log_struct'):
+            logger.log_struct({
+                "message": "Failed to configure session backup, using local-only sessions",
+                "local_db": local_session_db,
+                "error": str(e)
+            }, severity="WARNING")
+        else:
+            logger.warning(f"Failed to configure session backup, using local-only sessions: {e}")
 
 app: FastAPI = get_fast_api_app(
     agents_dir=AGENT_DIR,
     web=True,
-    artifact_service_uri=bucket_name,
+    artifact_service_uri=bucket_name if bucket_name else None,
     allow_origins=allow_origins,
     session_service_uri=session_service_uri,
 )
@@ -72,7 +198,9 @@ async def health_check():
         "timestamp": datetime.utcnow().isoformat(),
         "service": "vana",
         "version": "1.0.0",
-        "session_storage_enabled": session_service_uri is not None
+        "session_storage_enabled": session_service_uri is not None,
+        "session_storage_uri": session_service_uri,
+        "session_storage_bucket": session_storage_bucket
     }
 
 
@@ -86,8 +214,85 @@ def collect_feedback(feedback: Feedback) -> dict[str, str]:
     Returns:
         Success message
     """
-    logger.log_struct(feedback.model_dump(), severity="INFO")
+    if hasattr(logger, 'log_struct'):
+        logger.log_struct(feedback.model_dump(), severity="INFO")
+    else:
+        logger.info(f"Feedback received: {feedback.model_dump()}")
     return {"status": "success"}
+
+
+@app.get("/agent_network_sse/{session_id}")
+async def agent_network_sse(session_id: str) -> StreamingResponse:
+    """Enhanced SSE endpoint for agent network events.
+    
+    This endpoint streams real-time agent network events including:
+    - Agent start/completion events  
+    - Network topology changes
+    - Performance metrics updates
+    - Relationship and data flow tracking
+    - Heartbeat/keepalive messages
+    
+    Args:
+        session_id: The session ID to stream events for
+        
+    Returns:
+        StreamingResponse with text/event-stream media type
+    """
+    async def event_generator():
+        """Generate SSE events for the session."""
+        broadcaster = get_sse_broadcaster()
+        queue = await broadcaster.add_subscriber(session_id)
+        
+        try:
+            # Send initial connection event
+            yield f"data: {json.dumps({'type': 'connection', 'status': 'connected', 'sessionId': session_id, 'timestamp': datetime.now().isoformat()})}\n\n"
+            
+            while True:
+                try:
+                    # Wait for events with timeout to send heartbeat
+                    event = await asyncio.wait_for(queue.get(), timeout=30)
+                    if isinstance(event, str):
+                        yield event
+                    else:
+                        yield event.to_sse_format() if hasattr(event, 'to_sse_format') else str(event)
+                        
+                except asyncio.TimeoutError:
+                    # Send heartbeat to keep connection alive
+                    yield f"data: {json.dumps({'type': 'heartbeat', 'timestamp': datetime.now().isoformat()})}\n\n"
+                    
+        except asyncio.CancelledError:
+            logger.info(f"SSE connection cancelled for session {session_id}")
+        except Exception as e:
+            logger.error(f"Error in SSE stream for session {session_id}: {e}")
+            yield f"data: {json.dumps({'type': 'error', 'message': str(e), 'timestamp': datetime.now().isoformat()})}\n\n"
+        finally:
+            await broadcaster.remove_subscriber(session_id, queue)
+            yield f"data: {json.dumps({'type': 'connection', 'status': 'disconnected', 'sessionId': session_id, 'timestamp': datetime.now().isoformat()})}\n\n"
+    
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",  # Disable nginx buffering
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Headers": "Cache-Control"
+        }
+    )
+
+
+@app.get("/agent_network_history")
+async def get_agent_network_history(limit: int = 50):
+    """Get recent agent network event history.
+    
+    Args:
+        limit: Maximum number of events to return (default: 50)
+        
+    Returns:
+        JSON array of recent agent network events
+    """
+    return get_agent_network_event_history(limit)
 
 
 # Main execution

@@ -29,6 +29,13 @@ from google.genai import types as genai_types
 from pydantic import BaseModel, Field
 
 from .config import config
+from .enhanced_callbacks import (
+    before_agent_callback,
+    after_agent_callback,
+    composite_after_agent_callback_with_research_sources,
+    composite_after_agent_callback_with_citations,
+    agent_network_tracking_callback
+)
 
 
 # --- Structured Output Models ---
@@ -116,6 +123,39 @@ def collect_research_sources_callback(callback_context: CallbackContext) -> None
                         )
     callback_context.state["url_to_short_id"] = url_to_short_id
     callback_context.state["sources"] = sources
+    
+    # Broadcast research sources to SSE
+    if sources:
+        try:
+            from app.utils.sse_broadcaster import broadcast_agent_network_update
+            session_id = getattr(callback_context._invocation_context.session, 'id', None)
+            if session_id:
+                # Convert sources to list and use camelCase
+                sources_list = [
+                    {
+                        "shortId": v["short_id"],
+                        "title": v["title"],
+                        "url": v["url"],
+                        "domain": v["domain"],
+                        "supportedClaims": [
+                            {"textSegment": claim["text_segment"], "confidence": claim["confidence"]}
+                            for claim in v.get("supported_claims", [])
+                        ]
+                    }
+                    for v in sources.values()
+                ]
+                
+                event = {
+                    "type": "research_sources",
+                    "data": {
+                        "sources": sources_list,
+                        "totalSources": len(sources_list),
+                        "timestamp": datetime.now().isoformat()
+                    }
+                }
+                broadcast_agent_network_update(event, session_id)
+        except Exception as e:
+            logging.error(f"Error broadcasting research sources: {e}")
 
 
 def citation_replacement_callback(
@@ -216,6 +256,8 @@ plan_generator = LlmAgent(
     Current date: {datetime.datetime.now().strftime("%Y-%m-%d")}
     """,
     tools=[brave_search],
+    before_agent_callback=before_agent_callback,
+    after_agent_callback=after_agent_callback,
 )
 
 
@@ -235,6 +277,8 @@ section_planner = LlmAgent(
     Do not include a "References" or "Sources" section in your outline. Citations will be handled in-line.
     """,
     output_key="report_sections",
+    before_agent_callback=before_agent_callback,
+    after_agent_callback=after_agent_callback,
 )
 
 
@@ -285,7 +329,8 @@ section_researcher = LlmAgent(
     """,
     tools=[brave_search],
     output_key="section_research_findings",
-    after_agent_callback=collect_research_sources_callback,
+    before_agent_callback=before_agent_callback,
+    after_agent_callback=composite_after_agent_callback_with_research_sources,
 )
 
 research_evaluator = LlmAgent(
@@ -313,6 +358,8 @@ research_evaluator = LlmAgent(
     disallow_transfer_to_parent=True,
     disallow_transfer_to_peers=True,
     output_key="research_evaluation",
+    before_agent_callback=before_agent_callback,
+    after_agent_callback=after_agent_callback,
 )
 
 enhanced_search_executor = LlmAgent(
@@ -333,7 +380,8 @@ enhanced_search_executor = LlmAgent(
     """,
     tools=[brave_search],
     output_key="section_research_findings",
-    after_agent_callback=collect_research_sources_callback,
+    before_agent_callback=before_agent_callback,
+    after_agent_callback=composite_after_agent_callback_with_research_sources,
 )
 
 report_composer = LlmAgent(
@@ -364,7 +412,8 @@ report_composer = LlmAgent(
     Do not include a "References" or "Sources" section; all citations must be in-line.
     """,
     output_key="final_cited_report",
-    after_agent_callback=citation_replacement_callback,
+    before_agent_callback=before_agent_callback,
+    after_agent_callback=composite_after_agent_callback_with_citations,
 )
 
 research_pipeline = SequentialAgent(
@@ -381,9 +430,13 @@ research_pipeline = SequentialAgent(
                 EscalationChecker(name="escalation_checker"),
                 enhanced_search_executor,
             ],
+            before_agent_callback=before_agent_callback,
+            after_agent_callback=agent_network_tracking_callback,
         ),
         report_composer,
     ],
+    before_agent_callback=before_agent_callback,
+    after_agent_callback=agent_network_tracking_callback,
 )
 
 interactive_planner_agent = LlmAgent(
@@ -408,6 +461,8 @@ interactive_planner_agent = LlmAgent(
     sub_agents=[research_pipeline],
     tools=[AgentTool(plan_generator)],
     output_key="research_plan",
+    before_agent_callback=before_agent_callback,
+    after_agent_callback=agent_network_tracking_callback,
 )
 
 root_agent = interactive_planner_agent

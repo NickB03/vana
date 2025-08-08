@@ -30,6 +30,7 @@ from google.adk.agents.invocation_context import InvocationContext
 from google.adk.events.event import Event
 
 from app.utils.sse_broadcaster import broadcast_agent_network_update
+import asyncio
 
 
 logger = logging.getLogger(__name__)
@@ -193,22 +194,27 @@ def before_agent_callback(callback_context: CallbackContext) -> None:
             for key in session_keys:
                 _network_state.add_data_dependency(agent_name, key)
         
-        # Emit agent network event
+        # Emit agent network event (using camelCase for frontend compatibility)
         network_event = {
-            "type": "agent_network_update",
+            "type": "agent_start",
             "data": {
-                "event_type": "agent_start",
-                "agent_name": agent_name,
+                "agentId": f"agent_{agent_name}_{datetime.now().timestamp()}",
+                "agentName": agent_name,
+                "agentType": invocation_ctx.agent.__class__.__name__ if invocation_ctx.agent else "unknown",
+                "action": "Starting",
+                "status": "active",
                 "timestamp": datetime.now().isoformat(),
-                "execution_stack": _network_state.execution_stack.copy(),
-                "active_agents": list(_network_state.active_agents),
-                "parent_agent": _network_state.execution_stack[-2] if len(_network_state.execution_stack) > 1 else None
+                "executionStack": _network_state.execution_stack.copy(),
+                "activeAgents": list(_network_state.active_agents),
+                "parentAgent": _network_state.execution_stack[-2] if len(_network_state.execution_stack) > 1 else None,
+                "sessionId": getattr(invocation_ctx.session, 'id', None) if invocation_ctx.session else None
             }
         }
         
         # Broadcast the event immediately
         session_id = getattr(invocation_ctx.session, 'id', None) if invocation_ctx.session else None
-        broadcast_agent_network_update(network_event, session_id)
+        if session_id:
+            broadcast_agent_network_update(network_event, session_id)
         
         # Also store for legacy compatibility
         callback_context.state["agent_network_event"] = network_event
@@ -289,29 +295,32 @@ def after_agent_callback(callback_context: CallbackContext) -> None:
                 confidence = min(1.0, last_event.usage_metadata.total_token_count / 1000)
                 metrics.add_confidence_score(confidence)
         
-        # Emit completion event
+        # Emit completion event (using camelCase for frontend compatibility)
         network_event = {
-            "type": "agent_network_update", 
+            "type": "agent_complete",
             "data": {
-                "event_type": "agent_complete",
-                "agent_name": agent_name,
+                "agentName": agent_name,
+                "status": "complete",
+                "executionTime": execution_time,
                 "timestamp": datetime.now().isoformat(),
-                "execution_time": execution_time,
+                "sessionId": getattr(invocation_ctx.session, 'id', None) if invocation_ctx.session else None,
+                "hasOutput": bool(state_changes),
                 "success": not has_error,
-                "state_changes": state_changes,
-                "active_agents": list(_network_state.active_agents),
+                "stateChanges": state_changes,
+                "activeAgents": list(_network_state.active_agents),
                 "metrics": {
-                    "invocation_count": metrics.invocation_count,
-                    "average_execution_time": metrics.average_execution_time,
-                    "success_rate": metrics.success_count / (metrics.success_count + metrics.error_count) if (metrics.success_count + metrics.error_count) > 0 else 1.0,
-                    "tools_used": list(metrics.tools_used)
+                    "invocationCount": metrics.invocation_count,
+                    "averageExecutionTime": metrics.average_execution_time,
+                    "successRate": metrics.success_count / (metrics.success_count + metrics.error_count) if (metrics.success_count + metrics.error_count) > 0 else 1.0,
+                    "toolsUsed": list(metrics.tools_used)
                 }
             }
         }
         
         # Broadcast the event immediately
         session_id = getattr(invocation_ctx.session, 'id', None) if invocation_ctx.session else None
-        broadcast_agent_network_update(network_event, session_id)
+        if session_id:
+            broadcast_agent_network_update(network_event, session_id)
         
         # Also store for legacy compatibility
         callback_context.state["agent_network_event"] = network_event

@@ -22,10 +22,11 @@ while maintaining compatibility with the standard ADK event format.
 import json
 import logging
 import threading
-from typing import Any, Dict, List, Optional, AsyncGenerator
+from typing import Any, Dict, List, Optional, AsyncGenerator, Set
 from dataclasses import dataclass
 from datetime import datetime
 import asyncio
+from collections import defaultdict
 
 logger = logging.getLogger(__name__)
 
@@ -55,62 +56,101 @@ class SSEEvent:
         return "\n".join(lines)
 
 
-class SSEBroadcaster:
-    """Manages SSE event broadcasting for agent network updates."""
+class EnhancedSSEBroadcaster:
+    """Enhanced SSE broadcaster with session-aware routing and improved performance."""
     
     def __init__(self):
-        self._subscribers: Dict[str, List[asyncio.Queue]] = {}
+        # Session-specific subscriber queues
+        self._subscribers: Dict[str, List[asyncio.Queue]] = defaultdict(list)
         self._lock = threading.Lock()
-        self._event_history: List[SSEEvent] = []
+        # Session-specific event history
+        self._event_history: Dict[str, List[SSEEvent]] = defaultdict(list)
         self._max_history = 100
+        # Active sessions tracking
+        self._active_sessions: Set[str] = set()
     
-    def subscribe(self, session_id: str, queue: asyncio.Queue) -> None:
-        """Subscribe a queue to receive SSE events for a session."""
+    async def add_subscriber(self, session_id: str) -> asyncio.Queue:
+        """Add a new SSE subscriber for a session and return the queue."""
+        queue = asyncio.Queue(maxsize=50)
+        
         with self._lock:
-            if session_id not in self._subscribers:
-                self._subscribers[session_id] = []
             self._subscribers[session_id].append(queue)
-            logger.info(f"New SSE subscriber for session {session_id}")
+            self._active_sessions.add(session_id)
+            
+            # Send recent history to new subscriber
+            history = self._event_history[session_id][-10:] if session_id in self._event_history else []
+            
+        # Send history asynchronously
+        for event in history:
+            try:
+                await queue.put(event.to_sse_format())
+            except asyncio.QueueFull:
+                break
+                
+        logger.info(f"New SSE subscriber for session {session_id}, total: {len(self._subscribers[session_id])}")
+        return queue
     
-    def unsubscribe(self, session_id: str, queue: asyncio.Queue) -> None:
-        """Unsubscribe a queue from SSE events."""
+    async def remove_subscriber(self, session_id: str, queue: asyncio.Queue) -> None:
+        """Remove an SSE subscriber."""
         with self._lock:
             if session_id in self._subscribers:
                 try:
                     self._subscribers[session_id].remove(queue)
                     if not self._subscribers[session_id]:
                         del self._subscribers[session_id]
-                    logger.info(f"SSE subscriber removed for session {session_id}")
+                        # Clean up session if no more subscribers
+                        if session_id in self._active_sessions:
+                            self._active_sessions.remove(session_id)
+                    logger.info(f"SSE subscriber removed for session {session_id}, remaining: {len(self._subscribers.get(session_id, []))}")
                 except ValueError:
                     pass  # Queue wasn't in the list
     
-    def broadcast_event(self, event: SSEEvent, session_id: Optional[str] = None) -> None:
-        """Broadcast an SSE event to subscribers."""
-        # Store in history
-        self._event_history.append(event)
-        if len(self._event_history) > self._max_history:
-            self._event_history.pop(0)
+    async def broadcast_event(self, session_id: str, event_data: dict) -> None:
+        """Broadcast event to all subscribers of a session."""
+        # Add timestamp if not present
+        if 'timestamp' not in event_data:
+            event_data['timestamp'] = datetime.now().isoformat()
         
+        # Create SSE event
+        event = SSEEvent(
+            type=event_data.get('type', 'agent_update'),
+            data=event_data.get('data', event_data),
+            id=f"{event_data.get('type', 'event')}_{datetime.now().timestamp()}"
+        )
+        
+        # Store in session history
         with self._lock:
-            if session_id:
-                # Broadcast to specific session
-                subscribers = self._subscribers.get(session_id, [])
-            else:
-                # Broadcast to all sessions
-                subscribers = []
-                for session_subscribers in self._subscribers.values():
-                    subscribers.extend(session_subscribers)
+            self._event_history[session_id].append(event)
+            if len(self._event_history[session_id]) > self._max_history:
+                self._event_history[session_id].pop(0)
+            
+            # Get subscribers for this session
+            subscribers = list(self._subscribers.get(session_id, []))
+        
+        # Broadcast to subscribers (outside lock to avoid blocking)
+        if subscribers:
+            dead_queues = []
+            event_str = event.to_sse_format()
             
             for queue in subscribers:
                 try:
-                    # Use put_nowait to avoid blocking
-                    queue.put_nowait(event)
-                except asyncio.QueueFull:
-                    logger.warning(f"SSE queue full, dropping event: {event.type}")
+                    # Non-blocking put with timeout
+                    await asyncio.wait_for(
+                        queue.put(event_str),
+                        timeout=1.0
+                    )
+                except (asyncio.TimeoutError, asyncio.QueueFull):
+                    dead_queues.append(queue)
+                    logger.warning(f"SSE queue full/timeout for session {session_id}")
                 except Exception as e:
-                    logger.error(f"Error broadcasting SSE event: {e}")
+                    logger.error(f"Error broadcasting to queue: {e}")
+                    dead_queues.append(queue)
+            
+            # Clean up dead queues
+            for queue in dead_queues:
+                await self.remove_subscriber(session_id, queue)
     
-    def broadcast_agent_network_event(self, network_event: Dict[str, Any], session_id: Optional[str] = None) -> None:
+    async def broadcast_agent_network_event(self, network_event: Dict[str, Any], session_id: str) -> None:
         """Broadcast an agent network update event."""
         event_type = network_event.get("type", "agent_network_update")
         event_data = network_event.get("data", {})
@@ -121,27 +161,54 @@ class SSEBroadcaster:
             id=f"{event_type}_{datetime.now().timestamp()}"
         )
         
-        self.broadcast_event(sse_event, session_id)
-        logger.debug(f"Broadcasted {event_type} for agent {event_data.get('agent_name', 'unknown')}")
+        await self.broadcast_event(session_id, network_event)
+        logger.debug(f"Broadcasted {event_type} for agent {event_data.get('agentName', event_data.get('agent_name', 'unknown'))}")
     
-    def get_event_history(self, limit: int = 50) -> List[SSEEvent]:
-        """Get recent event history."""
+    def get_event_history(self, session_id: str, limit: int = 50) -> List[SSEEvent]:
+        """Get recent event history for a session."""
         with self._lock:
-            return self._event_history[-limit:] if self._event_history else []
+            if session_id in self._event_history:
+                return self._event_history[session_id][-limit:]
+            return []
     
-    def clear_session(self, session_id: str) -> None:
-        """Clear all subscribers for a session."""
+    async def clear_session(self, session_id: str) -> None:
+        """Clear all subscribers and history for a session."""
         with self._lock:
+            # Clear subscribers
             if session_id in self._subscribers:
                 del self._subscribers[session_id]
-                logger.info(f"Cleared SSE subscribers for session {session_id}")
+            
+            # Clear history
+            if session_id in self._event_history:
+                del self._event_history[session_id]
+            
+            # Remove from active sessions
+            if session_id in self._active_sessions:
+                self._active_sessions.remove(session_id)
+            
+            logger.info(f"Cleared SSE data for session {session_id}")
+    
+    def get_stats(self) -> dict:
+        """Get broadcaster statistics."""
+        with self._lock:
+            return {
+                "totalSessions": len(self._active_sessions),
+                "totalSubscribers": sum(len(queues) for queues in self._subscribers.values()),
+                "sessionStats": {
+                    session_id: {
+                        "subscribers": len(self._subscribers.get(session_id, [])),
+                        "historySize": len(self._event_history.get(session_id, []))
+                    }
+                    for session_id in self._active_sessions
+                }
+            }
 
 
 # Global broadcaster instance
-_broadcaster = SSEBroadcaster()
+_broadcaster = EnhancedSSEBroadcaster()
 
 
-def get_sse_broadcaster() -> SSEBroadcaster:
+def get_sse_broadcaster() -> EnhancedSSEBroadcaster:
     """Get the global SSE broadcaster instance."""
     return _broadcaster
 
@@ -160,10 +227,9 @@ async def agent_network_event_stream(session_id: str) -> AsyncGenerator[str, Non
         SSE-formatted strings containing agent network events
     """
     broadcaster = get_sse_broadcaster()
-    queue: asyncio.Queue = asyncio.Queue(maxsize=100)
     
     try:
-        broadcaster.subscribe(session_id, queue)
+        queue = await broadcaster.add_subscriber(session_id)
         
         # Send initial connection event
         connection_event = SSEEvent(
@@ -209,7 +275,7 @@ async def agent_network_event_stream(session_id: str) -> AsyncGenerator[str, Non
                 break
     
     finally:
-        broadcaster.unsubscribe(session_id, queue)
+        await broadcaster.remove_subscriber(session_id, queue)
         # Send disconnection event
         try:
             disconnect_event = SSEEvent(
@@ -225,7 +291,7 @@ async def agent_network_event_stream(session_id: str) -> AsyncGenerator[str, Non
             pass  # Don't fail on cleanup
 
 
-def broadcast_agent_network_update(network_event: Dict[str, Any], session_id: Optional[str] = None) -> None:
+def broadcast_agent_network_update(network_event: Dict[str, Any], session_id: str) -> None:
     """Utility function to broadcast agent network updates.
     
     This function provides a simple interface for broadcasting agent network
@@ -236,7 +302,16 @@ def broadcast_agent_network_update(network_event: Dict[str, Any], session_id: Op
         session_id: Optional session ID to target specific session
     """
     broadcaster = get_sse_broadcaster()
-    broadcaster.broadcast_agent_network_event(network_event, session_id)
+    # Use asyncio to broadcast without blocking
+    try:
+        loop = asyncio.get_event_loop()
+        if loop.is_running():
+            asyncio.create_task(broadcaster.broadcast_agent_network_event(network_event, session_id))
+        else:
+            loop.run_until_complete(broadcaster.broadcast_agent_network_event(network_event, session_id))
+    except RuntimeError:
+        # No event loop, create a task in a new thread
+        asyncio.run(broadcaster.broadcast_agent_network_event(network_event, session_id))
 
 
 def get_agent_network_event_history(limit: int = 50) -> List[Dict[str, Any]]:
@@ -249,15 +324,22 @@ def get_agent_network_event_history(limit: int = 50) -> List[Dict[str, Any]]:
         List of recent agent network events
     """
     broadcaster = get_sse_broadcaster()
-    events = broadcaster.get_event_history(limit)
+    # Return aggregated history from all sessions for the endpoint
+    all_events = []
     
-    return [
-        {
-            "type": event.type,
-            "data": event.data,
-            "id": event.id,
-            "timestamp": event.data.get("timestamp")
-        }
-        for event in events
-        if event.type in ["agent_network_update", "agent_network_snapshot"]
-    ]
+    with broadcaster._lock:
+        for session_id in broadcaster._active_sessions:
+            events = broadcaster.get_event_history(session_id, limit)
+            for event in events:
+                if event.type in ["agent_network_update", "agent_network_snapshot", "agent_start", "agent_complete"]:
+                    all_events.append({
+                        "type": event.type,
+                        "data": event.data,
+                        "id": event.id,
+                        "sessionId": session_id,
+                        "timestamp": event.data.get("timestamp")
+                    })
+    
+    # Sort by timestamp and return most recent
+    all_events.sort(key=lambda x: x.get('timestamp', ''), reverse=True)
+    return all_events[:limit]
