@@ -31,7 +31,9 @@ def brave_web_search_function(
     """
     try:
         # Use the API key from environment or kwargs
-        api_key = kwargs.get("api_key") or os.getenv("BRAVE_API_KEY", "***REMOVED***")
+        api_key = kwargs.get("api_key") or os.getenv("BRAVE_API_KEY")
+        if not api_key:
+            raise ValueError("BRAVE_API_KEY environment variable is not set")
         
         # Limit count to reasonable number
         count = min(count, 20)

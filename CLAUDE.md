@@ -53,6 +53,7 @@
 
 ## ☁️ CLOUD & RAG CONFIGURATION (READ-ONLY IDENTIFIERS)
 
+- **Project Number:** `960076421399`
 - **Project ID:** `analystai-454200`
 - **Region:** `us-central1`
 - **Secrets:** Google Secret Manager
@@ -71,6 +72,38 @@
 - Vectors: `vector-search`
 
 > These values are **read-only** here. Secrets remain in GSM; `.env*` files must not be written without explicit approval.
+
+---
+
+## 🔐 LOCAL DEVELOPMENT CONFIGURATION
+
+**IMPORTANT:** For local development, use `.env.local` files (NOT `.env`):
+
+1. **Root Directory:** `/Users/nick/Development/vana/.env.local`
+   - Contains API keys for local development (Brave Search, OpenRouter, etc.)
+   - CORS configuration for local dev servers
+   
+2. **App Directory:** `/Users/nick/Development/vana/app/.env.local`
+   - Backend-specific configuration
+   - Session database URIs
+   - Google Cloud project settings
+
+### Configuration Loading
+- The Makefile automatically loads `.env.local` via `uv run --env-file .env.local`
+- **Never commit `.env.local` files** - they contain sensitive API keys
+- `.env.local` is in `.gitignore` to prevent accidental commits
+- For production, secrets are stored in Google Secret Manager (GSM)
+
+### Required Environment Variables for Local Dev
+```bash
+# .env.local
+BRAVE_API_KEY=<get-from-gsm-or-brave-dashboard>
+OPENROUTER_API_KEY=<if-using-openrouter>
+ALLOW_ORIGINS=http://localhost:5173,http://localhost:5174,http://localhost:3000
+GOOGLE_CLOUD_PROJECT=analystai-454200
+```
+
+**Security Note:** The Brave API key was previously exposed in source code and needs rotation. Get the new key from GSM: `projects/960076421399/secrets/brave-api-key`
 
 ---
 

@@ -12,7 +12,7 @@ dev:
 
 # Start the ADK API server
 dev-backend:
-	ALLOW_ORIGINS="*" uv run uvicorn app.server:app --host 0.0.0.0 --port 8000 --reload
+	ALLOW_ORIGINS="*" uv run --env-file .env.local uvicorn app.server:app --host 0.0.0.0 --port 8000 --reload
 
 # Start the React frontend development server
 dev-frontend:
@@ -27,7 +27,7 @@ playground:
 	@echo "|                                                                             |"
 	@echo "| 🔍 IMPORTANT: Select the 'app' folder to interact with your agent.          |"
 	@echo "==============================================================================="
-	uv run adk web --port 8501
+	uv run --env-file .env.local adk web --port 8501
 
 # Deploy the agent remotely
 # Usage: make backend [IAP=true] [PORT=8080] - Set IAP=true to enable Identity-Aware Proxy, PORT to specify container port
@@ -48,7 +48,7 @@ backend:
 
 # Launch local development server with hot-reload
 local-backend:
-	uv run uvicorn app.server:app --host 0.0.0.0 --port 8000 --reload
+	uv run --env-file .env.local uvicorn app.server:app --host 0.0.0.0 --port 8000 --reload
 
 # Set up development environment resources using Terraform
 setup-dev-env:
