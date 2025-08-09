@@ -1,14 +1,60 @@
-# CLAUDE.md
+# Claude Code Configuration - SPARC Development Environment
 
-## 🧠 SYSTEM RULES — DO NOT EDIT
+## 🚨 CRITICAL: Concurrent Execution Rules
 
-**Authoritative Scope:** This file defines the rules Claude Code must follow for this repository. User prompts and ad-hoc instructions must comply with CLAUDE.md.
+**ABSOLUTE RULE**: ALL operations MUST be concurrent/parallel in ONE message:
 
-**CRITICAL REQUIREMENT:** Follow the ADK Starter Pack “Getting Started” guide **exactly**. Before any implementation, query ChromaDB collections `adk_documentation` and `adk_knowledge_base_v2`. If results are unclear, pause and ask for clarification rather than guessing.
+### 🔴 Mandatory Patterns:
+- **TodoWrite**: ALWAYS batch ALL todos in ONE call (5-10+ minimum)
+- **Task tool**: ALWAYS spawn ALL agents in ONE message
+- **File operations**: ALWAYS batch ALL reads/writes/edits
+- **Bash commands**: ALWAYS batch ALL terminal operations
+- **Memory operations**: ALWAYS batch ALL store/retrieve
+
+### ⚡ Golden Rule: "1 MESSAGE = ALL RELATED OPERATIONS"
+
+✅ **CORRECT**: Everything in ONE message
+```javascript
+[Single Message]:
+  - TodoWrite { todos: [10+ todos] }
+  - Task("Agent 1"), Task("Agent 2"), Task("Agent 3")
+  - Read("file1.js"), Read("file2.js")
+  - Write("output1.js"), Write("output2.js")
+  - Bash("npm install"), Bash("npm test")
+```
+
+❌ **WRONG**: Multiple messages (6x slower!)
+
+## 🎯 Claude Code vs MCP Tools
+
+### Claude Code Handles ALL:
+- File operations (Read/Write/Edit/Glob/Grep)
+- Code generation & programming
+- Bash commands & system operations
+- TodoWrite & task management
+- Git operations & package management
+- Testing, debugging & implementation
+
+### MCP Tools ONLY:
+- Coordination & planning
+- Memory management
+- Performance tracking
+- Swarm orchestration
+- GitHub integration
+
+**Key**: MCP coordinates, Claude Code executes!
+
+## 🧭 PROJECT OVERVIEW (Local Dev Only)
+
+**Project:** Vana (Virtual Autonomous Network Agents)  
+**Foundation:** Google ADK `adk_gemini_fullstack`  
+**UI:** 🚧 **FRONTEND REBUILD IN PROGRESS** (2025-08-09 to 2025-08-15)  
+**Backend:** FastAPI + persistent session store ✅ **FULLY FUNCTIONAL**  
+**Deployment:** Local-only in this profile (no prod actions)
+
+**CRITICAL REQUIREMENT:** Follow the ADK Starter Pack "Getting Started" guide **exactly**. Before any implementation, query ChromaDB collections for official Google ADK documentation. If results are unclear, pause and ask for clarification rather than guessing.
 
 **Permissions Source of Truth:** Runtime approvals/config are defined in `.claude/permissions.dev.json`. If that file conflicts with CLAUDE.md wording, **the permissions file wins**.
-
----
 
 ## 📁 WORKSPACE STRUCTURE
 
@@ -16,6 +62,7 @@
 - Main ADK project directory (Git tracked)
 - **Always launch Claude Code from here** (prevents virtualenv/CWD issues)
 - Keep root clean (essential files only)
+- Never save working files, text/mds and tests to the root folder
 
 ### /Users/nick/Development/vana/.claude_workspace/
 - Working area for Claude documentation and planning
@@ -24,6 +71,7 @@
   - `reports/` — implementation & progress reports
   - `archive/` — completed docs (by type)
   - `temp/` — temporary working files
+  - `screenshots/` — Playwright test screenshots
 - Use this for **all** non-essential documentation
 
 ### /Users/nick/Development/vana_vscode/
@@ -38,18 +86,6 @@
 - MCP data persists in `/vana_vscode/`
 - Documentation & reports live in `.claude_workspace/`
 - **Do not** start from `/vana_vscode/` (ensures correct CWD for subagents)
-
----
-
-## 🧭 PROJECT OVERVIEW (Local Dev Only)
-
-**Project:** Vana (Virtual Autonomous Network Agents)  
-**Foundation:** Google ADK `adk_gemini_fullstack`  
-**UI:** 🚧 **FRONTEND REBUILD IN PROGRESS** (2025-08-09 to 2025-08-15)  
-**Backend:** FastAPI + persistent session store ✅ **FULLY FUNCTIONAL**  
-**Deployment:** Local-only in this profile (no prod actions)
-
----
 
 ## ☁️ CLOUD & RAG CONFIGURATION (READ-ONLY IDENTIFIERS)
 
@@ -72,8 +108,6 @@
 - Vectors: `vector-search`
 
 > These values are **read-only** here. Secrets remain in GSM; `.env*` files must not be written without explicit approval.
-
----
 
 ## 🔐 LOCAL DEVELOPMENT CONFIGURATION
 
@@ -102,68 +136,169 @@ OPENROUTER_API_KEY=<if-using-openrouter>
 ALLOW_ORIGINS=http://localhost:5173,http://localhost:5174,http://localhost:3000
 GOOGLE_CLOUD_PROJECT=analystai-454200
 ```
+## 📦 SPARC Commands **Critical this is not part of Vana. This is a function of Claude Flow for local development**
 
-**Security Note:** The Brave API key was previously exposed in source code and needs rotation. Get the new key from GSM: `projects/960076421399/secrets/brave-api-key`
+### Core:
+- `npx claude-flow sparc modes` - List modes
+- `npx claude-flow sparc run <mode> "<task>"` - Execute mode
+- `npx claude-flow sparc tdd "<feature>"` - TDD workflow
+- `npx claude-flow sparc batch <modes> "<task>"` - Parallel modes
+- `npx claude-flow sparc pipeline "<task>"` - Full pipeline
 
----
+### Build:
+- `npm run build/test/lint/typecheck`
+- `make test` - Run Python tests
+- `make lint` - Run linters
+- `make typecheck` - Type checking
+
+## 🤖 Agent Reference (54 Total)
+
+### Core Development
+| Agent | Purpose |
+|-------|---------|
+| coder | Implementation |
+| reviewer | Code quality |
+| tester | Test creation |
+| planner | Strategic planning |
+| researcher | Information gathering |
+
+### Swarm Coordination
+| Agent | Purpose |
+|-------|---------|
+| hierarchical-coordinator | Queen-led |
+| mesh-coordinator | Peer-to-peer |
+| adaptive-coordinator | Dynamic topology |
+| collective-intelligence-coordinator | Hive-mind |
+| swarm-memory-manager | Distributed memory |
+
+### Specialized
+| Agent | Purpose |
+|-------|---------|
+| backend-dev | API development |
+| frontend-api-specialist | Modern frontend & React |
+| mobile-dev | React Native |
+| ml-developer | Machine learning |
+| system-architect | High-level design |
+| sparc-coder | TDD implementation |
+| production-validator | Real validation |
+| adk-multi-agent-engineer | Google ADK specialist |
+
+### GitHub Integration
+| Agent | Purpose |
+|-------|---------|
+| github-modes | Comprehensive integration |
+| pr-manager | Pull requests |
+| code-review-swarm | Multi-agent review |
+| issue-tracker | Issue management |
+| release-manager | Release coordination |
+
+### Performance & Consensus
+| Agent | Purpose |
+|-------|---------|
+| perf-analyzer | Bottleneck identification |
+| performance-benchmarker | Performance testing |
+| byzantine-coordinator | Fault tolerance |
+| raft-manager | Leader election |
+| consensus-builder | Decision-making |
+
+## 🚀 Swarm Patterns
+
+### Full-Stack Swarm (8 agents)
+```bash
+Task("Architecture", "...", "system-architect")
+Task("Backend", "...", "backend-dev")
+Task("Frontend", "...", "frontend-api-specialist")
+Task("Database", "...", "coder")
+Task("API Docs", "...", "api-docs")
+Task("CI/CD", "...", "cicd-engineer")
+Task("Testing", "...", "performance-benchmarker")
+Task("Validation", "...", "production-validator")
+```
+
+### Agent Count Rules
+1. **CLI Args First**: `npx claude-flow@alpha --agents 5`
+2. **Auto-Decide**: Simple (3-4), Medium (5-7), Complex (8-12)
+
+## 📋 Agent Coordination Protocol
+
+### Every Agent MUST:
+
+**1️⃣ START:**
+```bash
+npx claude-flow@alpha hooks pre-task --description "[task]"
+npx claude-flow@alpha hooks session-restore --session-id "swarm-[id]"
+```
+
+**2️⃣ DURING (After EVERY step):**
+```bash
+npx claude-flow@alpha hooks post-edit --file "[file]" --memory-key "swarm/[agent]/[step]"
+npx claude-flow@alpha hooks notify --message "[decision]"
+```
+
+**3️⃣ END:**
+```bash
+npx claude-flow@alpha hooks post-task --task-id "[task]" --analyze-performance true
+npx claude-flow@alpha hooks session-end --export-metrics true
+```
+
+## 🛠️ MCP Setup
+
+```bash
+# Add MCP server
+claude mcp add claude-flow npx claude-flow@alpha mcp start
+```
+
+### Key MCP Tools:
+- `mcp__claude-flow__swarm_init` - Setup topology
+- `mcp__claude-flow__agent_spawn` - Create agents
+- `mcp__claude-flow__task_orchestrate` - Coordinate tasks
+- `mcp__claude-flow__memory_usage` - Persistent memory
+- `mcp__claude-flow__swarm_status` - Monitor progress
+
+### Memory Management:
+- Use `mcp__claude-flow__memory_usage` for persistent memory operations
+- Actions: `store`, `retrieve`, `list`, `delete`, `search`
+- Namespace isolation for different contexts (default: "default")
+- TTL support for time-based expiration
+- Pattern-based search with `mcp__claude-flow__memory_search`
+
+### Memory Best Practices:
+1. **Session Persistence**: Use `mcp__claude-flow__memory_persist` for cross-session data
+2. **Namespace Organization**: Create logical namespaces for different features/modules
+3. **Regular Backups**: Use `mcp__claude-flow__memory_backup` before major changes
+4. **Compression**: Use `mcp__claude-flow__memory_compress` for large datasets
+
+## 🔍 DOCUMENTATION RETRIEVAL (MANDATORY BEFORE NEW FEATURES)
+
+### ChromaDB Collections (Google ADK Official Documentation Only)
+1. **Query Required Collections:**
+   - `adk_documentation` - Official Google ADK documentation
+   - `adk_knowledge_base_v2` - ADK examples and best practices
+   
+2. **Query Strategy:**
+   - Use semantic search for concepts and patterns
+   - Use keyword search for specific APIs and methods
+   - Cross-reference both collections for comprehensive understanding
+
+3. **ChromaDB Usage:**
+   - ChromaDB is **exclusively** for official Google ADK documentation
+   - Do NOT store project-specific data in ChromaDB
+   - Use claude-flow memory system for project state and context
+
+4. **Validation:**
+   - If docs are unclear, **pause and ask questions**
+   - Never proceed with assumptions or guesses
+   - Verify against official ADK patterns before implementation
 
 ## 🧠 PLAN MODE POLICY (LOCAL DEV)
 
 **Default:** OFF for routine local development.
-
-**Start in Plan Mode** only when the task is risky:
-- DB schema/migrations or destructive DB ops
-- Sweeping multi-area refactors
-- RAG ingestion/corpus writes or retrieval pipeline changes
-- Toolchain/infra changes (Node/Python/Docker, CI, MCP routing)
-- Mass file operations (create/move/delete across many paths)
+**plan_mode_default:** false
 
 **While in Plan Mode**
 - Allowed: read/list/grep/search, task planning, web fetch/search (read-only)
 - Disallowed: file writes, package installs, process changes
 - Present a multi-step plan and wait for approval before execution
-
----
-
-## 🛑 MEMORY & CONTEXT HYGIENE
-
-- Do **not** mix Vana project data with `memory-mcp` experimentation data
-- `memory-mcp` usage is for local experiments only
-- Re-read `CLAUDE.md` at session start or when it changes (avoid cached rules)
-
----
-
-## 🧵 PARALLEL EXECUTION DIRECTIVES
-
-Prefer parallelization for larger features using a 7-task split:
-
-1. Component  
-2. Styles  
-3. Tests  
-4. Types  
-5. Hooks  
-6. Integration  
-7. Docs & Validation
-
-**Per-task artifact:** write `./.claude_workspace/reports/<task>.work.txt` including:
-- Files changed
-- Commands run
-- Test status/results
-
-Use `claude-flow` swarm when changes span multiple areas.  
-**Concurrency cap:** aim for ≤4 parallel jobs; exceed only if CPU is idle and work is I/O-bound.
-
----
-
-## 🔍 DOCUMENTATION RETRIEVAL (MANDATORY BEFORE NEW FEATURES)
-
-1. Query ChromaDB:
-   - `adk_documentation`
-   - `adk_knowledge_base_v2`
-2. Use both semantic and keyword queries
-3. If docs are unclear, **pause and ask questions**; do not proceed with guesses
-
----
 
 ## 🧪 TESTING REQUIREMENTS
 
@@ -177,8 +312,6 @@ make lint
 make typecheck
 ```
 - Fail immediately if any command exits with a non-zero code.
-
----
 
 ### 2. Local Runtime Smoke Tests
 
@@ -206,8 +339,6 @@ pytest tests/e2e/test_sse.py --maxfail=1 --disable-warnings -q
 ```
 - Verifies the SSE stream connects and produces valid event data.
 
----
-
 ### 3. End-to-End UI Verification (Playwright MCP)
 Run Playwright MCP tests:
 ```bash
@@ -219,15 +350,11 @@ npx playwright test tests/ui
 .claude_workspace/reports/screenshots/
 ```
 
----
-
 ### 4. Output Proof in Work Report
 For **every** completed task, output a `.claude_workspace/reports/<task>.work.txt` containing:
 - Exact terminal output from **all** test steps above.
 - File paths to Playwright screenshots.
 - SSE/E2E logs if applicable.
-
----
 
 ### Completion Criteria
 A task is **only complete** if:
@@ -235,3 +362,51 @@ A task is **only complete** if:
 2. Frontend responds on port `5173` and backend responds on port `8000` (or SSE passes).
 3. Playwright MCP run confirms correct UI/state.
 4. Required logs and screenshots are saved and referenced in the work report.
+
+## 📊 Progress Format
+
+```
+📊 Progress Overview
+├── Total: X | ✅ Complete: X | 🔄 Active: X | ⭕ Todo: X
+└── Priority: 🔴 HIGH | 🟡 MEDIUM | 🟢 LOW
+```
+
+## 🎯 Performance Tips
+
+1. **Batch Everything** - Multiple operations = 1 message
+2. **Parallel First** - Think concurrent execution
+3. **Memory is Key** - Cross-agent coordination
+4. **Monitor Progress** - Real-time tracking
+5. **Enable Hooks** - Automated coordination
+
+## ⚡ Quick Examples
+
+### Research Task
+```javascript
+// Single message with all operations
+mcp__claude-flow__swarm_init { topology: "mesh", maxAgents: 5 }
+mcp__claude-flow__agent_spawn { type: "researcher" }
+mcp__claude-flow__agent_spawn { type: "code-analyzer" }
+mcp__claude-flow__task_orchestrate { task: "Research patterns" }
+```
+
+### Development Task
+```javascript
+// All todos in ONE call
+TodoWrite { todos: [
+  { id: "1", content: "Design API", status: "in_progress", priority: "high" },
+  { id: "2", content: "Implement auth", status: "pending", priority: "high" },
+  { id: "3", content: "Write tests", status: "pending", priority: "medium" },
+  { id: "4", content: "Documentation", status: "pending", priority: "low" }
+]}
+```
+
+## 🔗 Resources
+
+- Docs: https://github.com/ruvnet/claude-flow
+- Issues: https://github.com/ruvnet/claude-flow/issues
+- SPARC: https://github.com/ruvnet/claude-flow/docs/sparc.md
+
+---
+
+**Remember**: Claude Flow coordinates, Claude Code creates!
