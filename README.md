@@ -13,6 +13,8 @@
 
 </div>
 
+> ⚠️ **Frontend Rebuild In Progress** (2025-08-09): The frontend is currently being rebuilt for enhanced ADK integration. Backend API is fully functional. See [Frontend Integration Plan](.claude_workspace/reports/frontend_rebuild_preparation.md) for details.
+
 ---
 
 ## 📋 Table of Contents
@@ -91,20 +93,20 @@ gcloud config set project analystai-454200
 ### Run Locally
 
 ```bash
-# Option 1: Full development environment (backend + frontend)
-make dev
+# Option 1: Backend API only (recommended during frontend rebuild)
+make dev-backend
 
 # Option 2: ADK Playground (interactive testing)
 make playground
 
-# Option 3: Backend API only
-make dev-backend
+# Option 3: Full development environment (frontend currently being rebuilt)
+# make dev  # Temporarily unavailable during frontend rebuild
 ```
 
 The application will be available at:
-- Frontend: http://localhost:5173
-- Backend API: http://localhost:8000
-- API Docs: http://localhost:8000/docs
+- Frontend: http://localhost:5173 *(currently being rebuilt)*
+- Backend API: http://localhost:8000 ✅
+- API Docs: http://localhost:8000/docs ✅
 
 ---
 
@@ -493,9 +495,11 @@ curl -X POST http://localhost:8000/api/run_sse \
 - **Dynamic Endpoints**: Flexible API endpoint configuration via `VITE_APP_NAME`
 - **Timeout Management**: Configurable timeouts and retry logic
 
-### Frontend Enhancements (v1.0.0)
+### Frontend (🚧 REBUILD IN PROGRESS)
 
-#### Mobile-First Design System
+> **Note**: Frontend is being rebuilt for enhanced ADK integration. Expected completion: 2025-08-15
+
+#### Planned Features (New Frontend)
 - **Responsive Architecture**: Bottom sheet thinking panel for mobile optimization
 - **Touch Interactions**: Optimized for mobile touch interfaces
 - **Progressive Disclosure**: Intelligent information hierarchy reducing cognitive load

@@ -1,9 +1,12 @@
-
 # CLAUDE.md
 
-## 🧠 SYSTEM RULES - DO NOT EDIT
+## 🧠 SYSTEM RULES — DO NOT EDIT
 
-**CRITICAL REQUIREMENT**: Follow the ADK Starter Pack Getting Started guide **EXACTLY**. Query the ChromaDB collections (`adk_documentation` and `adk_knowledge_base_v2`) before any implementation. Any deviation requires explicit user approval.
+**Authoritative Scope:** This file defines the rules Claude Code must follow for this repository. User prompts and ad-hoc instructions must comply with CLAUDE.md.
+
+**CRITICAL REQUIREMENT:** Follow the ADK Starter Pack “Getting Started” guide **exactly**. Before any implementation, query ChromaDB collections `adk_documentation` and `adk_knowledge_base_v2`. If results are unclear, pause and ask for clarification rather than guessing.
+
+**Permissions Source of Truth:** Runtime approvals/config are defined in `.claude/permissions.dev.json`. If that file conflicts with CLAUDE.md wording, **the permissions file wins**.
 
 ---
 
@@ -11,54 +14,55 @@
 
 ### /Users/nick/Development/vana/
 - Main ADK project directory (Git tracked)
-- Launch Claude Code from here (prevents virtualenv issues)
-- Keep root directory clean (essential files only)
+- **Always launch Claude Code from here** (prevents virtualenv/CWD issues)
+- Keep root clean (essential files only)
 
 ### /Users/nick/Development/vana/.claude_workspace/
-- Claude Code working directory for documentation and planning
+- Working area for Claude documentation and planning
 - Structure:
-  - `/planning/` - Active planning documents
-  - `/reports/` - Implementation and progress reports
-  - `/archive/` - Old/completed documents (organized by type)
-  - `/temp/` - Temporary working files
-- Use this for ALL non-essential documentation
+  - `planning/` — active planning docs
+  - `reports/` — implementation & progress reports
+  - `archive/` — completed docs (by type)
+  - `temp/` — temporary working files
+- Use this for **all** non-essential documentation
 
 ### /Users/nick/Development/vana_vscode/
-- MCP data storage (NOT git tracked)
-- Contains: .claude/, .chroma_db/, .memory_db/, MCP server code
-- DO NOT launch Claude from here
+- MCP data storage (**not** Git tracked)
+- Contains: `.claude/`, `.chroma_db/`, `.memory_db/`, MCP server code
+- **Never** launch Claude from here
 
 ### Workflow Rules
-- Always launch Claude from `/vana/`
-- `.mcp.json` in `/vana/` points to MCPs in `/vana_vscode/`
-- All code changes go in `/vana/`
+- Launch from `/vana/` only
+- `/vana/.mcp.json` points to MCPs in `/vana_vscode/` (view-only by default)
+- All **code** changes live in `/vana/`
 - MCP data persists in `/vana_vscode/`
-- Documentation and reports go in `.claude_workspace/`
+- Documentation & reports live in `.claude_workspace/`
+- **Do not** start from `/vana_vscode/` (ensures correct CWD for subagents)
 
 ---
 
-## 🧭 PROJECT OVERVIEW
+## 🧭 PROJECT OVERVIEW (Local Dev Only)
 
-**Project Name**: Vana (Virtual Autonomous Network Agents)  
-**Foundation**: Google ADK `adk_gemini_fullstack`  
-**UI**: Custom React frontend (WebSocket-enabled)  
-**Backend**: FastAPI + persistent session store  
-**Deployment**: Cloud Run, CI/CD via Google ADK pipeline
+**Project:** Vana (Virtual Autonomous Network Agents)  
+**Foundation:** Google ADK `adk_gemini_fullstack`  
+**UI:** 🚧 **FRONTEND REBUILD IN PROGRESS** (2025-08-09 to 2025-08-15)  
+**Backend:** FastAPI + persistent session store ✅ **FULLY FUNCTIONAL**  
+**Deployment:** Local-only in this profile (no prod actions)
 
 ---
 
-## ☁️ CLOUD & RAG CONFIGURATION
+## ☁️ CLOUD & RAG CONFIGURATION (READ-ONLY IDENTIFIERS)
 
-- **Project ID**: analystai-454200
-- **Region**: us-central1
-- **Secrets**: Google Secret Manager
-- **Auth**: Firebase Auth
-- **CI/CD**: Cloud Build pipelines
+- **Project ID:** `analystai-454200`
+- **Region:** `us-central1`
+- **Secrets:** Google Secret Manager
+- **Auth:** Firebase Auth
+- **CI/CD:** Cloud Build (if/when enabled)
 
 ### RAG
-- **Corpus**: `ragCorpora/2305843009213693952`
-- **Embedding Model**: `text-embedding-005`
-- **Vector DB**: `RagManaged`
+- **Corpus:** `ragCorpora/2305843009213693952`
+- **Embedding Model:** `text-embedding-005`
+- **Vector DB:** `RagManaged`
 
 ### Buckets
 - Logs: `vana-logs-data`
@@ -66,39 +70,39 @@
 - Sessions: `vana-session-storage`
 - Vectors: `vector-search`
 
+> These values are **read-only** here. Secrets remain in GSM; `.env*` files must not be written without explicit approval.
+
 ---
 
-## 🧠 PLAN MODE POLICY
+## 🧠 PLAN MODE POLICY (LOCAL DEV)
 
-All implementations involving:
-- Claude Flow orchestration
-- Multi-agent workflows
-- CI/CD operations
-- Data ingestion or RAG changes  
-**MUST start in Plan Mode.**
+**Default:** OFF for routine local development.
 
-Claude must:
-- Present a full multi-step plan
-- Wait for user approval before executing
-- Exit Plan Mode only after permission granted
+**Start in Plan Mode** only when the task is risky:
+- DB schema/migrations or destructive DB ops
+- Sweeping multi-area refactors
+- RAG ingestion/corpus writes or retrieval pipeline changes
+- Toolchain/infra changes (Node/Python/Docker, CI, MCP routing)
+- Mass file operations (create/move/delete across many paths)
+
+**While in Plan Mode**
+- Allowed: read/list/grep/search, task planning, web fetch/search (read-only)
+- Disallowed: file writes, package installs, process changes
+- Present a multi-step plan and wait for approval before execution
 
 ---
 
 ## 🛑 MEMORY & CONTEXT HYGIENE
 
-### Separation Rules
-- Claude MUST NOT mix VANA and memory-MCP data
-- Memory-MCP is for local experimentation only
-
-### Context Refresh
-- Re-read CLAUDE.md on every session start or CLAUDE.md change
-- Avoid using cached rules
+- Do **not** mix Vana project data with `memory-mcp` experimentation data
+- `memory-mcp` usage is for local experiments only
+- Re-read `CLAUDE.md` at session start or when it changes (avoid cached rules)
 
 ---
 
 ## 🧵 PARALLEL EXECUTION DIRECTIVES
 
-Claude must **parallelize all feature requests** via 7-task split:
+Prefer parallelization for larger features using a 7-task split:
 
 1. Component  
 2. Styles  
@@ -108,150 +112,26 @@ Claude must **parallelize all feature requests** via 7-task split:
 6. Integration  
 7. Docs & Validation
 
-Use `claude-flow` swarm if tasks affect multiple areas.
+**Per-task artifact:** write `./.claude_workspace/reports/<task>.work.txt` including:
+- Files changed
+- Commands run
+- Test status/results
+
+Use `claude-flow` swarm when changes span multiple areas.  
+**Concurrency cap:** aim for ≤4 parallel jobs; exceed only if CPU is idle and work is I/O-bound.
 
 ---
 
-## 🔍 DOCUMENTATION RETRIEVAL
+## 🔍 DOCUMENTATION RETRIEVAL (MANDATORY BEFORE NEW FEATURES)
 
-Before implementing **any new feature**:
 1. Query ChromaDB:
    - `adk_documentation`
    - `adk_knowledge_base_v2`
-2. Use semantic and keyword queries
-3. Abort implementation if docs are unclear
+2. Use both semantic and keyword queries
+3. If docs are unclear, **pause and ask questions**; do not proceed with guesses
 
 ---
 
-## 🧪 CLAUDE-FLOW ORCHESTRATION RULES
+## 🧪 CLAUDE-FLOW ORCHESTRATION
 
-Claude-flow is activated via:
-```bash
-npx -y claude-flow@alpha mcp start
-```
-
-Flow mode must:
-- Use swarm spawning for multi-tool coordination
-- Parallelize implementation based on dependency graph
-- Reuse MCP tool interfaces
-
----
-
-## 🚫 FILE SAFETY BOUNDARIES
-
-**Safe to edit**:
-- /vana/src/
-- /vana/tests/
-- /vana/docs/
-
-**Never touch**:
-- /vana_vscode/
-- /venv/
-- /.pytest_cache/
-- /.mcp.json
-
----
-
-## 🧪 TESTING RULES
-
-- Write Pytest-based tests for new endpoints or agents
-- Run tests before every commit:
-```bash
-pytest --maxfail=2
-```
-- Claude MUST NOT deploy without passing tests
-
----
-
-## 🧰 MCP TOOLS INDEX
-
-Documented tools available for:
-- `chroma-vana`: Document storage/query
-- `memory-mcp`: Knowledge graph
-- `firecrawl`: Web scraping/research
-- `docker-mcp`: Container operations
-- `playwright`: Browser automation
-- `browser-tools`: Audit tools (accessibility, SEO, perf)
-- `kibo-ui`: UI design components
-- `claude-flow`: Flow orchestration and agent swarms
-
----
-
-## ✅ COMMITTING & DEPLOYMENT
-
-Claude must:
-- Format code before commits
-- Commit message format:
-```
-<Title> (max 6 words)
-
-Body: Explain what was implemented, tools used, and changes to CLAUDE.md if applicable.
-```
-- Deploy only from main branch after successful tests
-
----
-
-## 🔓 AUTO-APPROVAL PERMISSIONS
-
-### Commands Requiring NO Approval (Auto-Execute):
-- **File Operations:**
-  - Read any file in `/vana/` directory
-  - Edit files in: `/vana/src/`, `/vana/frontend/src/`, `/vana/app/`, `/vana/tests/`
-  - Create test files (`*.test.ts`, `*.test.tsx`, `*.test.py`)
-  - Create type definitions (`*.d.ts`, `types/*.ts`)
-  
-- **Development Commands:**
-  - All npm commands: `npm run dev`, `npm run build`, `npm run test`, `npm run lint`, `npm run typecheck`
-  - Python commands: `pytest`, `python -m`, `pip list`, `pip show`
-  - Git read commands: `git status`, `git diff`, `git log`, `git branch`, `git remote`
-  - Directory navigation: `cd`, `pwd`, `ls`, `find`, `grep`
-  - Process management: `ps`, `kill` (for dev servers only)
-  - Environment checks: `which`, `node -v`, `python --version`, `npm -v`
-  
-- **MCP Operations:**
-  - All ChromaDB queries and document additions
-  - Memory graph operations (create, search, update)
-  - Firecrawl web scraping
-  - Kibo UI component queries
-  - Claude Flow swarm operations (except production deployment)
-  
-- **Testing & Validation:**
-  - Running all test suites
-  - Linting and formatting
-  - Type checking
-  - Building for development
-  - Starting development servers
-
-### Commands Still Requiring Approval:
-- **Critical Operations:**
-  - `git push` to remote repositories
-  - `gcloud` deployment commands
-  - Database migrations or deletions
-  - Production environment changes
-  - Modifying `.env` files with secrets
-  - Installing new packages (`npm install`, `pip install`)
-  - Modifying CI/CD pipeline files
-  - Changes to authentication/security code
-  - Deleting files or directories
-  - Modifying files outside `/vana/` directory
-  
-- **System Operations:**
-  - Creating or modifying shell scripts
-  - Changing file permissions (`chmod`, `chown`)
-  - Network configuration changes
-  - Docker operations on production containers
-  - Modifying `.mcp.json` or MCP server configs
-
-### Auto-Commit Rules:
-- Claude can auto-commit (but NOT push) when:
-  - All tests pass
-  - Linting has no errors
-  - Type checking passes
-  - Changes are within approved directories
-  - Commit follows the specified format
-  
-### Parallel Execution:
-- Claude can run multiple approved commands in parallel without asking
-- Batch operations on multiple files are auto-approved if individual operations would be
-
----
+Activate flow via:
