@@ -132,6 +132,73 @@ Use `claude-flow` swarm when changes span multiple areas.
 
 ---
 
-## 🧪 CLAUDE-FLOW ORCHESTRATION
+## 🧪 TESTING REQUIREMENTS
 
-Activate flow via:
+All tasks **MUST** run the following in order before being marked complete.
+
+### 1. Static & Unit Checks
+Run static analysis and unit tests:
+```bash
+make test
+make lint
+make typecheck
+```
+- Fail immediately if any command exits with a non-zero code.
+
+---
+
+### 2. Local Runtime Smoke Tests
+
+#### Frontend Check (port 5173):
+```bash
+make dev-frontend &
+sleep 10
+curl -f http://localhost:5173 || (echo "❌ Frontend did not respond on port 5173" && exit 1)
+pkill -f "make dev-frontend"
+```
+- Ensures the frontend boots successfully and responds.
+
+#### Backend Check (port 8000):
+```bash
+make dev-backend &
+sleep 10
+curl -f http://localhost:8000/health || (echo "❌ Backend did not respond on port 8000" && exit 1)
+pkill -f "make dev-backend"
+```
+- Ensures the backend boots successfully and responds to a health check.
+
+#### If SSE-only service (no /health endpoint):
+```bash
+pytest tests/e2e/test_sse.py --maxfail=1 --disable-warnings -q
+```
+- Verifies the SSE stream connects and produces valid event data.
+
+---
+
+### 3. End-to-End UI Verification (Playwright MCP)
+Run Playwright MCP tests:
+```bash
+npx playwright test tests/ui
+```
+- Must verify core UI elements or SSE output are visible and correct.
+- Capture screenshots on pass/fail and store them in:
+```
+.claude_workspace/reports/screenshots/
+```
+
+---
+
+### 4. Output Proof in Work Report
+For **every** completed task, output a `.claude_workspace/reports/<task>.work.txt` containing:
+- Exact terminal output from **all** test steps above.
+- File paths to Playwright screenshots.
+- SSE/E2E logs if applicable.
+
+---
+
+### Completion Criteria
+A task is **only complete** if:
+1. All commands exit with code `0`.
+2. Frontend responds on port `5173` and backend responds on port `8000` (or SSE passes).
+3. Playwright MCP run confirms correct UI/state.
+4. Required logs and screenshots are saved and referenced in the work report.
