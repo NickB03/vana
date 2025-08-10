@@ -15,7 +15,7 @@
 
 **Multi-Agent AI Research System Built on Google's Agent Development Kit**
 
-[🚀 Quick Start](#-quick-start) • [🏗️ Architecture](#️-architecture) • [🔐 Security](#-security-features) • [📊 Performance](#-performance) • [📚 Documentation](#-documentation)
+[🚀 Quick Start](#-quick-start) • [🏗️ Architecture](#️-architecture) • [✨ Features](#-key-features) • [🚢 Deployment](#-deployment) • [🤝 Contributing](#-contributing)
 
 </div>
 
