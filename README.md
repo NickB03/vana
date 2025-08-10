@@ -43,7 +43,7 @@ Transform complex research tasks into comprehensive reports with AI agents worki
 
 ## 🎯 Overview
 
-**Vana** is a production-ready multi-agent AI research platform that transforms complex research questions into comprehensive, well-sourced reports. Built on Google's Agent Development Kit (ADK), Vana orchestrates 8 specialized AI agents that work collaboratively to deliver professional-grade research in minutes.
+**Vana** is a comprehensive multi-agent AI research platform that transforms complex research questions into well-sourced reports. Built on Google's Agent Development Kit (ADK), Vana orchestrates 8 specialized AI agents that work collaboratively to deliver professional-grade research in minutes.
 
 ### 🌟 What Makes Vana Special?
 

@@ -3,7 +3,7 @@
 ## About Section
 **Description:**
 ```
-Production-ready multi-agent AI research system powered by Google's ADK. Features 8 specialized AI agents that collaborate to transform complex research questions into comprehensive reports. Two-phase workflow: interactive planning + autonomous execution. FastAPI backend, real-time SSE streaming, enterprise security.
+Enterprise-grade multi-agent AI research system powered by Google's ADK. Features 8 specialized AI agents that collaborate to transform complex research questions into comprehensive reports. Two-phase workflow: interactive planning + autonomous execution. FastAPI backend, real-time SSE streaming, enterprise security.
 ```
 
 **Website:** `vana-three.vercel.app`
@@ -16,7 +16,6 @@ Production-ready multi-agent AI research system powered by Google's ADK. Feature
 - `fastapi`
 - `gemini-ai`
 - `server-sent-events`
-- `production-ready`
 - `python`
 - `google-cloud`
 - `oauth2-jwt`
