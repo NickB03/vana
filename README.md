@@ -2,11 +2,6 @@
 
 <div align="center">
 
-[![GitHub stars](https://img.shields.io/github/stars/NickB03/vana?style=for-the-badge&logo=github)](https://github.com/NickB03/vana/stargazers)
-[![Build Status](https://img.shields.io/badge/Build-Passing-brightgreen?style=for-the-badge)](https://github.com/NickB03/vana/actions)
-[![Tests](https://img.shields.io/badge/Tests-342%20Passing-success?style=for-the-badge)](https://github.com/NickB03/vana/actions)
-[![Security](https://img.shields.io/badge/Security-OAuth2%2FJWT-blue?style=for-the-badge)](#-security-features)
-
 [![Python](https://img.shields.io/badge/Python-3.10%2B-blue?style=flat-square&logo=python)](https://www.python.org/downloads/)
 [![Google ADK](https://img.shields.io/badge/Google%20ADK-1.8.0-4285F4?style=flat-square&logo=google-cloud)](https://cloud.google.com/products/ai)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.115.8-009485?style=flat-square&logo=fastapi)](https://fastapi.tiangolo.com/)
@@ -756,27 +751,12 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-## 🙏 Acknowledgments
-
-Vana is built on the shoulders of giants:
-
-- **[Google Agent Development Kit (ADK)](https://cloud.google.com/products/ai)** - The foundation that makes multi-agent orchestration possible
-- **[FastAPI](https://fastapi.tiangolo.com/)** - High-performance web framework powering our APIs
-- **[Brave Search API](https://brave.com/search/api/)** - Privacy-focused search capabilities
-- **[Google Cloud Platform](https://cloud.google.com/)** - Reliable, scalable infrastructure
-- **Open Source Community** - The countless developers who make projects like this possible
-
----
-
 <div align="center">
 
 **🚀 Transform Your Research with AI Agents**
 
 Vana makes comprehensive research accessible to everyone. Whether you're a student, researcher, analyst, or developer, our AI agents are ready to help you discover, analyze, and synthesize information like never before.
 
-[![⭐ Star on GitHub](https://img.shields.io/github/stars/NickB03/vana?style=for-the-badge&logo=github)](https://github.com/NickB03/vana/stargazers)
-[![🐛 Report Issues](https://img.shields.io/github/issues/NickB03/vana?style=for-the-badge&logo=github)](https://github.com/NickB03/vana/issues)
-[![💬 Join Discussions](https://img.shields.io/github/discussions/NickB03/vana?style=for-the-badge&logo=github)](https://github.com/NickB03/vana/discussions)
 
 **Ready to get started?** [Jump to Quick Start ⬆️](#-quick-start)
 
