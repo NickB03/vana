@@ -4,8 +4,8 @@
 
 [![Build Status](https://img.shields.io/badge/Build-Passing-brightgreen?style=for-the-badge)](https://github.com/NickB03/vana/actions)
 [![Tests](https://img.shields.io/badge/Tests-342%20Passing-success?style=for-the-badge)](https://github.com/NickB03/vana/actions)
-[![Security](https://img.shields.io/badge/Security-OAuth2%2FJWT-blue?style=for-the-badge)](docs/SECURITY.md)
-[![Performance](https://img.shields.io/badge/Performance-3--5x%20Faster-orange?style=for-the-badge)](docs/PERFORMANCE.md)
+[![Security](https://img.shields.io/badge/Security-OAuth2%2FJWT-blue?style=for-the-badge)](#-security-features)
+[![Performance](https://img.shields.io/badge/Performance-3--5x%20Faster-orange?style=for-the-badge)](#-performance)
 
 [![Python](https://img.shields.io/badge/Python-3.10%2B-blue?style=flat-square&logo=python)](https://www.python.org/downloads/)
 [![Google ADK](https://img.shields.io/badge/Google%20ADK-1.8.0-4285F4?style=flat-square&logo=google-cloud)](https://cloud.google.com/products/ai)
@@ -15,7 +15,7 @@
 
 **Multi-Agent AI Research System Built on Google's Agent Development Kit**
 
-[🚀 Quick Start](#-quick-start) • [🏗️ Architecture](#️-architecture) • [✨ Features](#-key-features) • [🚢 Deployment](#-deployment) • [🤝 Contributing](#-contributing)
+[🚀 Quick Start](#-quick-start) • [🏗️ Architecture](#-architecture) • [✨ Features](#-key-features) • [🚢 Deployment](#-deployment) • [🤝 Contributing](#-contributing)
 
 </div>
 
@@ -25,17 +25,17 @@
 
 - [🎯 Overview](#-overview)
 - [✨ Key Features](#-key-features)
-- [🏗️ Architecture](#️-architecture)
 - [🚀 Quick Start](#-quick-start)
-- [📦 Installation](#-installation)
-- [🔧 Configuration](#-configuration)
+- [🏗️ Architecture](#-architecture)
 - [🤖 Agent Capabilities](#-agent-capabilities)
 - [🔐 Security Features](#-security-features)
 - [📊 Performance](#-performance)
 - [📚 API Reference](#-api-reference)
+- [🔧 API Examples](#-api-examples)
+- [💻 Development](#-development)
 - [🧪 Testing](#-testing)
 - [🚢 Deployment](#-deployment)
-- [🛣️ Roadmap](#️-roadmap)
+- [🛣️ Roadmap](#-roadmap)
 - [📚 Documentation](#-documentation)
 - [🤝 Contributing](#-contributing)
 - [📄 License](#-license)
@@ -915,7 +915,7 @@ uvx agent-starter-pack setup-cicd \
 - [ ] Mobile applications
 - [ ] AI model fine-tuning
 
-See [ROADMAP.md](docs/ROADMAP.md) for detailed milestone planning.
+See the [Roadmap](#-roadmap) section above for detailed milestone planning.
 
 ---
 
@@ -925,28 +925,26 @@ See [ROADMAP.md](docs/ROADMAP.md) for detailed milestone planning.
 
 | Document | Description |
 |----------|-------------|
-| [🚀 Quick Start](docs/QUICKSTART.md) | Get running in 5 minutes |
-| [📦 Installation](docs/INSTALLATION.md) | Detailed setup guide |
-| [🏗️ Architecture](docs/ARCHITECTURE.md) | System design details |
-| [🔐 Security](docs/SECURITY.md) | Authentication & security |
-| [📊 API Reference](docs/API_REFERENCE.md) | Complete API docs |
-| [🧪 Testing](docs/TESTING.md) | Testing guide |
-| [🚢 Deployment](docs/DEPLOYMENT.md) | Production deployment |
-| [📖 ADK Guide](docs/ADK_REFERENCE.md) | Google ADK integration |
+| [📊 API Reference](docs/API.md) | Complete API documentation |
+| [🚀 Quick Start](#-quick-start) | Get running in 5 minutes |
+| [🏗️ Architecture](#-architecture) | System design and workflow |
+| [🧪 Testing](#-testing) | Testing guide and examples |
+| [🚢 Deployment](#-deployment) | Production deployment guide |
+| [🔐 Security](#-security-features) | Authentication & security features |
 
 ### For Developers
 
 - [Contributing Guide](CONTRIBUTING.md) - How to contribute
-- [Development Setup](docs/DEVELOPMENT.md) - Dev environment setup
-- [Code Style Guide](docs/CODE_STYLE.md) - Coding standards
-- [Testing Strategy](docs/TESTING.md) - Test requirements
+- [Development Guide](#-development) - Local setup and development
+- [Testing Guide](#-testing) - Comprehensive testing framework
+- [API Examples](#-api-examples) - Code examples and usage
 
 ### For Users
 
-- [User Guide](docs/USER_GUIDE.md) - Using Vana
-- [FAQ](docs/FAQ.md) - Common questions
-- [Troubleshooting](docs/TROUBLESHOOTING.md) - Problem solving
-- [Examples](docs/EXAMPLES.md) - Usage examples
+- [Getting Started](#-quick-start) - Quick start guide
+- [Agent Capabilities](#-agent-capabilities) - Understanding the AI agents
+- [Performance Metrics](#-performance) - System performance data
+- [Security Features](#-security-features) - Authentication and protection
 
 ---
 
