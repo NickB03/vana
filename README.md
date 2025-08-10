@@ -271,8 +271,8 @@ graph TB
     end
     
     subgraph "AI Models"
-        GEM[Gemini 2.0 Flash]
-        LITE[LiteLLM/OpenRouter]
+        GEM[Gemini 2.0 Flash Lite]
+        LITE[OpenRouter/Qwen3 Coder]
         EMB[Text Embeddings]
     end
     
