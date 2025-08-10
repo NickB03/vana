@@ -15,7 +15,7 @@
 
 **Multi-Agent AI Research System Built on Google's Agent Development Kit**
 
-[🚀 Quick Start](#-quick-start) • [🏗️ Architecture](#-architecture) • [✨ Features](#-key-features) • [🚢 Deployment](#-deployment) • [🤝 Contributing](#-contributing)
+[🚀 Quick Start](#-quick-start) • [🏗️ Architecture](#️-architecture) • [✨ Features](#-key-features) • [🚢 Deployment](#-deployment) • [🤝 Contributing](#-contributing)
 
 </div>
 
@@ -26,7 +26,7 @@
 - [🎯 Overview](#-overview)
 - [✨ Key Features](#-key-features)
 - [🚀 Quick Start](#-quick-start)
-- [🏗️ Architecture](#-architecture)
+- [🏗️ Architecture](#️-architecture)
 - [🤖 Agent Capabilities](#-agent-capabilities)
 - [🔐 Security Features](#-security-features)
 - [📊 Performance](#-performance)
@@ -35,8 +35,8 @@
 - [💻 Development](#-development)
 - [🧪 Testing](#-testing)
 - [🚢 Deployment](#-deployment)
-- [🛣️ Roadmap](#-roadmap)
-- [📚 Documentation](#-documentation)
+- [🛣️ Roadmap](#️-roadmap)
+- [📚 Documentation](#-documentation-1)
 - [🤝 Contributing](#-contributing)
 - [📄 License](#-license)
 
@@ -271,7 +271,7 @@ graph TB
     end
     
     subgraph "AI Models"
-        GEM[Gemini 2.0 Flash Lite]
+        GEM[Gemini 2.5 Flash]
         LITE[OpenRouter/Qwen3 Coder]
         EMB[Text Embeddings]
     end
@@ -915,7 +915,7 @@ uvx agent-starter-pack setup-cicd \
 - [ ] Mobile applications
 - [ ] AI model fine-tuning
 
-See the [Roadmap](#-roadmap) section above for detailed milestone planning.
+See the [Roadmap](#️-roadmap) section above for detailed milestone planning.
 
 ---
 
@@ -927,7 +927,7 @@ See the [Roadmap](#-roadmap) section above for detailed milestone planning.
 |----------|-------------|
 | [📊 API Reference](docs/API.md) | Complete API documentation |
 | [🚀 Quick Start](#-quick-start) | Get running in 5 minutes |
-| [🏗️ Architecture](#-architecture) | System design and workflow |
+| [🏗️ Architecture](#️-architecture) | System design and workflow |
 | [🧪 Testing](#-testing) | Testing guide and examples |
 | [🚢 Deployment](#-deployment) | Production deployment guide |
 | [🔐 Security](#-security-features) | Authentication & security features |
