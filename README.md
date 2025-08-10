@@ -1,291 +1,488 @@
-# Vana - Virtual Autonomous Network Agents
+# 🚀 Vana - Virtual Autonomous Network Agents
 
 <div align="center">
 
-![Python](https://img.shields.io/badge/Python-3.10%2B-blue?style=for-the-badge&logo=python)
-![Google Cloud](https://img.shields.io/badge/Google%20Cloud-Powered-4285F4?style=for-the-badge&logo=google-cloud)
-![License](https://img.shields.io/badge/License-Apache%202.0-green?style=for-the-badge)
-![Status](https://img.shields.io/badge/Status-Development-orange?style=for-the-badge)
+[![Python](https://img.shields.io/badge/Python-3.10%2B-blue?style=flat-square&logo=python)](https://www.python.org/downloads/)
+[![Google ADK](https://img.shields.io/badge/Google%20ADK-1.8.0-4285F4?style=flat-square&logo=google-cloud)](https://cloud.google.com/products/ai)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.115.8-009485?style=flat-square&logo=fastapi)](https://fastapi.tiangolo.com/)
+[![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)](LICENSE)
 
-**Production-Ready Multi-Agent AI Research System**
+**Multi-Agent AI Research System Built on Google's Agent Development Kit**
 
-[Quick Start](#quick-start) • [Architecture](#system-architecture) • [Features](#core-features) • [Deployment](#deployment) • [Contributing](#contributing)
+Transform complex research tasks into comprehensive reports with AI agents working collaboratively
+
+[🚀 Quick Start](#-quick-start) • [🤖 How It Works](#-how-it-works) • [✨ Features](#-key-features) • [🏗️ Architecture](#️-architecture) • [📚 Documentation](#-documentation)
 
 </div>
 
-> ⚠️ **Frontend Rebuild In Progress** (2025-08-09): The frontend is currently being rebuilt for enhanced ADK integration. Backend API is fully functional. See [Frontend Integration Plan](.claude_workspace/reports/frontend_rebuild_preparation.md) for details.
+---
+
+## 📑 Table of Contents
+
+- [🎯 Overview](#-overview)
+- [🤖 How It Works](#-how-it-works)
+- [✨ Key Features](#-key-features)
+- [🚀 Quick Start](#-quick-start)
+- [🏗️ Architecture](#️-architecture)
+- [🔐 Security Features](#-security-features)
+- [📚 API Reference](#-api-reference)
+- [💻 Development](#-development)
+- [🧪 Testing](#-testing)
+- [🚢 Deployment](#-deployment)
+- [🛣️ Roadmap](#️-roadmap)
+- [📚 Documentation](#-documentation)
+- [🤝 Contributing](#-contributing)
+- [📄 License](#-license)
 
 ---
 
-## 📋 Table of Contents
+## 🎯 Overview
 
-- [Overview](#overview)
-- [Quick Start](#quick-start)
-- [System Architecture](#system-architecture)
-  - [Multi-Agent Workflow](#multi-agent-workflow)
-  - [Component Architecture](#component-architecture)
-  - [Data Flow](#data-flow)
-- [Core Features](#core-features)
-- [Agents & Capabilities](#agents--capabilities)
-  - [Agent Hierarchy](#agent-hierarchy)
-  - [Agent Descriptions](#agent-descriptions)
-- [Tools & Integrations](#tools--integrations)
-- [Development](#development)
-  - [Prerequisites](#prerequisites)
-  - [Local Development](#local-development)
-  - [Testing](#testing)
-- [Deployment](#deployment)
-  - [Development Environment](#development-environment)
-  - [Production CI/CD](#production-cicd)
-- [API Documentation](#api-documentation)
-- [Configuration](#configuration)
-- [Monitoring & Observability](#monitoring--observability)
-- [Contributing](#contributing)
-- [License](#license)
+**Vana** is a comprehensive multi-agent AI research platform that transforms complex research questions into well-sourced reports. Built on Google's Agent Development Kit (ADK), Vana orchestrates 8 specialized AI agents that work collaboratively to deliver professional-grade research in minutes.
 
----
+### 🌟 What Makes Vana Special?
 
-## 🚀 Overview
+<div align="center">
 
-Vana is a sophisticated multi-agent AI system built on Google's Agent Development Kit (ADK) that transforms any user request into comprehensive, well-researched reports. Using a two-phase workflow (Plan & Execute), Vana leverages multiple specialized Gemini agents working in concert to deliver production-quality research outputs with proper citations and iterative quality control.
+![System Architecture](docs/images/architecture-simple.svg)
 
-### Key Highlights
+</div>
 
-- **🤖 Multi-Agent Architecture**: Specialized agents working together through orchestrated workflows for research planning, execution, evaluation, and reporting
-- **🔄 Two-Phase Process**: Interactive planning with human-in-the-loop followed by autonomous execution
-- **📊 Quality Assurance**: Built-in research evaluation and iterative refinement loops with up to 5 quality iterations
-- **🌐 Production-Ready**: Full CI/CD pipeline, monitoring, and scalable Cloud Run deployment
-- **💎 Powered by Advanced Models**: Supports Gemini 2.5 Pro/Flash models plus LiteLLM integration for OpenRouter and other providers
-- **🔍 Smart Citations**: Automatic source tracking and inline citation generation with clickable links
-- **🎨 Modern UI**: Real-time thinking panel, interactive research plan editing, and WebSocket-based live updates
+- **🧠 Google ADK Foundation**: Built on Google's enterprise-grade Agent Development Kit for reliability and scalability
+- **🤖 8 Specialized AI Agents**: Each agent has specific expertise - from planning and research to quality assurance and report generation
+- **⚡ Real-time Streaming**: Watch your research come together with live updates via Server-Sent Events (SSE)
+- **🔐 Enterprise Security**: OAuth2/JWT authentication, role-based access, and secure session management
+- **📊 Production Quality**: Comprehensive testing suite with 342+ tests ensuring reliability and performance
+
+### 🎯 Perfect For
+
+- **Researchers** who need comprehensive literature reviews and analysis
+- **Analysts** requiring multi-source data synthesis and reporting  
+- **Students** working on research papers and academic projects
+- **Professionals** needing market research, competitive analysis, or technical documentation
+- **Developers** building AI-powered research tools and applications
 
 ---
 
-## ⚡ Quick Start
+## 🤖 How It Works
+
+Vana uses a two-phase approach that combines human oversight with AI automation for optimal results:
+
+<div align="center">
+
+![Vana Workflow](docs/images/vana-workflow.svg)
+
+</div>
+
+### Phase 1: Interactive Planning (1-2 minutes)
+1. **You describe** your research need in natural language
+2. **AI creates a structured plan** breaking down your request into research sections
+3. **You review and approve** the plan, making any adjustments needed
+4. **Research begins** with your approval
+
+### Phase 2: Autonomous Research (3-5 minutes)
+1. **8 AI agents activate** - each with specialized roles and capabilities
+2. **Parallel execution** - agents work simultaneously for maximum efficiency
+3. **Quality assurance** - built-in evaluation and refinement processes
+4. **Complete report delivered** - properly formatted with citations and sources
+
+### Meet Your AI Research Team
+
+<div align="center">
+
+![AI Team](docs/images/agent-team-clean.svg)
+
+</div>
+
+**🎯 Team Leader**: Coordinates the entire research process and manages task distribution
+
+**📋 Planning Team**: Creates research strategies and organizes report structure
+- Plan Generator: Develops comprehensive research strategies
+- Section Planner: Structures and organizes content flow
+
+**🔍 Research Team**: Executes the actual information gathering and analysis
+- Section Researcher: Finds and processes relevant information
+- Enhanced Search: Performs deep research using advanced search techniques
+
+**✅ Quality Team**: Ensures accuracy and completeness of research
+- Research Evaluator: Validates information quality and relevance
+- Escalation Checker: Final quality control and consistency verification
+
+**📝 Report Writer**: Synthesizes all findings into a professional, well-cited report
+
+---
+
+## ✨ Key Features
+
+### 🧠 **Powered by Google ADK**
+- **Enterprise-Grade Foundation**: Built on Google's Agent Development Kit for reliability and scale
+- **Gemini AI Models**: Access to Google's most advanced language models (Gemini 2.5 Pro/Flash)
+- **Cloud-Native Design**: Seamless integration with Google Cloud Platform services
+- **Production Ready**: Comprehensive testing and monitoring for enterprise deployment
+
+### 🤖 **Multi-Agent Intelligence**
+- **8 Specialized AI Agents**: Each agent optimized for specific research tasks
+- **Parallel Processing**: Agents work simultaneously for maximum efficiency
+- **Quality Assurance**: Built-in evaluation, fact-checking, and refinement processes
+- **Intelligent Coordination**: Advanced orchestration ensures optimal task distribution
+
+### 🔐 **Enterprise Security**
+- **Multiple Auth Methods**: OAuth2/JWT, Firebase Auth, API keys, or development mode
+- **Role-Based Access**: Fine-grained permissions and user isolation
+- **Data Protection**: End-to-end encryption, secure sessions, CORS protection
+- **Audit Trail**: Complete logging and monitoring of all activities
+
+### ⚡ **Real-Time Experience**
+- **Live Updates**: Watch research progress with Server-Sent Events (SSE) streaming
+- **Interactive Planning**: Review and approve research plans before execution
+- **Session Persistence**: Resume work seamlessly across sessions and restarts
+- **Zero Memory Leaks**: Optimized for long-running production deployments
+
+### 📊 **Professional Output**
+- **Comprehensive Reports**: Well-structured documents with proper citations
+- **Multiple Formats**: Support for various output formats and styles
+- **Source Tracking**: Full attribution and reference management
+- **Quality Control**: Multi-stage validation ensures accuracy and completeness
+
+---
+
+## 🚀 Quick Start
+
+Get Vana running locally in just a few minutes:
 
 ### Prerequisites
 
 ```bash
-# Required tools
+# Required tools (install these first)
 - Python 3.10+
 - uv (Python package manager)
 - Google Cloud SDK
-- Terraform
-- Node.js & npm
 - make
 ```
 
 ### Installation
 
 ```bash
-# Clone the repository
-git clone https://github.com/vana-project/vana.git
+# 1. Clone the repository
+git clone https://github.com/NickB03/vana.git
 cd vana
 
-# Install dependencies
+# 2. Install all dependencies
 make install
 
-# Set up Google Cloud authentication
+# 3. Set up Google Cloud authentication
 gcloud auth application-default login
-gcloud config set project analystai-454200
+gcloud config set project your-project-id
 ```
 
-### Run Locally
+### Configuration
+
+Create `.env.local` in the root directory:
 
 ```bash
-# Option 1: Backend API only (recommended during frontend rebuild)
-make dev-backend
+# Required API keys
+BRAVE_API_KEY=your-brave-search-api-key
+GOOGLE_CLOUD_PROJECT=your-project-id
 
-# Option 2: ADK Playground (interactive testing)
-make playground
+# Authentication (choose one)
+JWT_SECRET_KEY=your-jwt-secret-key    # For JWT auth
+# OR set AUTH_REQUIRED=false for development
 
-# Option 3: Full development environment (frontend currently being rebuilt)
-# make dev  # Temporarily unavailable during frontend rebuild
+# Optional: Use OpenRouter for faster responses
+OPENROUTER_API_KEY=your-openrouter-key
 ```
 
-The application will be available at:
-- Frontend: http://localhost:5173 *(currently being rebuilt)*
-- Backend API: http://localhost:8000 ✅
-- API Docs: http://localhost:8000/docs ✅
+### Launch Vana
+
+```bash
+# Start the backend service
+make dev-backend
+
+# 🎉 Vana is now running!
+# • API: http://localhost:8000
+# • Interactive Docs: http://localhost:8000/docs
+# • Health Check: http://localhost:8000/health
+
+# Optional: Start ADK playground for testing
+make playground  # http://localhost:8501
+```
+
+### Your First Research Request
+
+```bash
+# Test with curl
+curl -X POST http://localhost:8000/api/run_sse \
+  -H "Content-Type: application/json" \
+  -d '{
+    "appName": "app",
+    "userId": "user123",
+    "newMessage": {
+      "parts": [{"text": "Research the latest trends in renewable energy"}],
+      "role": "user"
+    },
+    "streaming": true
+  }'
+```
+
+🚀 **That's it!** Your research request will be processed by 8 AI agents working in parallel.
 
 ---
 
-## 🏗️ System Architecture
+## 🏗️ Architecture
+
+### System Architecture
+
+```mermaid
+graph TB
+    subgraph "Client Applications"
+        WEB[Web Interface]
+        API[API Clients]
+        SDK[SDKs]
+    end
+    
+    subgraph "Security Layer"
+        AUTH[Authentication Service]
+        OAUTH[OAuth2/JWT]
+        FB[Firebase Auth]
+        IAM[Google Cloud IAM]
+    end
+    
+    subgraph "API Gateway"
+        FAST[FastAPI Server]
+        WS[WebSocket Handler]
+        SSE[SSE Broadcaster]
+        CORS[CORS Protection]
+    end
+    
+    subgraph "Google ADK Core"
+        ADK[ADK Runtime]
+        ORCH[Agent Orchestrator]
+        TOOLS[Tool Registry]
+        MEM[Memory Store]
+    end
+    
+    subgraph "Agent Fleet"
+        RA[Research Agent]
+        PA[Planning Agent]
+        AA[Analysis Agent]
+        CA[Composer Agent]
+        EA[Evaluator Agent]
+    end
+    
+    subgraph "AI Models"
+        GEM[Gemini 2.5 Flash]
+        LITE[OpenRouter/Qwen3 Coder]
+        EMB[Text Embeddings]
+    end
+    
+    subgraph "Data Services"
+        BRAVE[Brave Search API]
+        VS[Vector Store]
+        SS[Session Storage]
+        GCS[Cloud Storage]
+    end
+    
+    subgraph "Monitoring"
+        TRACE[Cloud Trace]
+        LOG[Cloud Logging]
+        METRIC[Cloud Monitoring]
+    end
+    
+    WEB --> AUTH
+    API --> AUTH
+    SDK --> AUTH
+    
+    AUTH --> OAUTH
+    AUTH --> FB
+    OAUTH --> IAM
+    
+    AUTH --> FAST
+    FAST --> CORS
+    FAST --> WS
+    FAST --> SSE
+    
+    FAST --> ADK
+    ADK --> ORCH
+    ADK --> TOOLS
+    ADK --> MEM
+    
+    ORCH --> RA
+    ORCH --> PA
+    ORCH --> AA
+    ORCH --> CA
+    ORCH --> EA
+    
+    RA --> GEM
+    RA --> LITE
+    RA --> BRAVE
+    AA --> EMB
+    
+    ADK --> VS
+    ADK --> SS
+    SS --> GCS
+    
+    FAST --> TRACE
+    FAST --> LOG
+    FAST --> METRIC
+    
+    style ADK fill:#4285F4,color:#fff
+    style ORCH fill:#34A853,color:#fff
+    style AUTH fill:#EA4335,color:#fff
+    style FAST fill:#009485,color:#fff
+```
 
 ### Multi-Agent Workflow
 
-![How Vana Creates Your Research](docs/images/vana-workflow.svg)
-
-*Vana uses a two-phase approach: First, we work together to create the perfect research plan. Then, our AI agents automatically execute the research and deliver a comprehensive report.*
-
-### Component Architecture
-
-![Vana Technical Architecture](docs/images/architecture-simple.svg)
-
-*A modern, cloud-native architecture built on Google Cloud Platform, featuring auto-scaling, comprehensive monitoring, and enterprise-grade security.*
-
-### Data Flow
-
 ```mermaid
 sequenceDiagram
-    participant U as User
-    participant FE as Frontend
-    participant API as Backend API
-    participant AG as Agents
-    participant GS as Brave Search
-    participant DB as Storage
+    participant User
+    participant Auth as Auth Service
+    participant API as FastAPI Gateway
+    participant ADK as Google ADK
+    participant Plan as Planning Agent
+    participant Research as Research Agent
+    participant Eval as Evaluator Agent
+    participant Compose as Composer Agent
+    participant Store as Storage
     
-    U->>FE: Submit Query
-    FE->>API: POST /api/run_sse
-    API->>AG: Initialize Session
+    User->>Auth: Authenticate
+    Auth-->>User: JWT Token
     
-    loop Planning Phase
-        AG->>AG: Generate Plan
-        AG->>API: Stream Plan
-        API->>FE: SSE Events
-        FE->>U: Display Plan
-        U->>FE: Provide Feedback
-        FE->>API: Continue Session
-    end
+    User->>API: Research Request + JWT
+    API->>API: Validate Token
+    API->>ADK: Initialize Session
     
-    U->>FE: Approve Plan
-    FE->>API: Execute Pipeline
+    ADK->>Plan: Create Research Plan
+    Plan-->>User: Present Plan (via SSE)
+    User->>API: Approve Plan
     
     loop Research Phase
-        AG->>GS: Search Queries (4-5 per goal)
-        GS->>AG: Results with Grounding
-        AG->>AG: Evaluate Quality (Critic Model)
-        AG->>AG: Generate Follow-up Queries
-        AG->>DB: Store Sources with Citations
+        API->>Research: Execute Research Task
+        Research->>Research: Search & Analyze
+        Research-->>User: Progress Updates (SSE)
+        Research->>Store: Save Results
     end
     
-    AG->>AG: Compose Report
-    AG->>API: Final Report
-    API->>FE: Stream Report
-    FE->>U: Display Results
+    Research->>Eval: Evaluate Quality
+    
+    alt Quality Check Failed
+        Eval->>Research: Request Refinement
+        Research->>Research: Refine Results
+    else Quality Check Passed
+        Eval->>Compose: Generate Report
+    end
+    
+    Compose->>Compose: Format & Citations
+    Compose->>Store: Save Final Report
+    Compose-->>User: Deliver Report (SSE)
+    
+    API->>Store: Persist Session
 ```
 
 ---
 
-## ✨ Core Features
+## 🔐 Security Features
 
-### 🎯 Intelligent Planning
-- **Adaptive Plan Generation**: Converts any user request into structured 5-point research plans
-- **Task Classification**: Automatically categorizes tasks as [RESEARCH] or [DELIVERABLE] with status tags [MODIFIED], [NEW], [IMPLIED]
-- **Human-in-the-Loop**: Interactive refinement with inline plan editing and approval workflow
-- **Implied Deliverables**: Proactively suggests synthesis outputs based on research goals
-- **Flexible Planning**: Plans can expand beyond initial 5 points based on user feedback and complexity
+Vana implements enterprise-grade security to protect your research data and ensure safe operation:
 
-### 🔍 Advanced Research Capabilities
-- **Multi-Query Generation**: Each research goal spawns 4-5 targeted search queries using Brave Search
-- **Source Tracking**: Automatic citation management with confidence scores and URL-to-short-ID mapping
-- **Iterative Refinement**: Critical quality evaluation with up to 5 refinement iterations using Gemini Pro
-- **Enhanced Search**: Follow-up queries to address identified knowledge gaps
-- **Two-Phase Execution**: Strict separation between information gathering (RESEARCH) and synthesis (DELIVERABLE) tasks
+### 🔑 **Multiple Authentication Options**
+- **OAuth2/JWT**: Industry-standard token-based authentication
+- **Firebase Auth**: Google's managed authentication service
+- **API Keys**: Simple key-based access for API clients
+- **Development Mode**: Optional auth bypass for local development
 
-### 📝 Professional Output
-- **Structured Reports**: Markdown-formatted with 4-6 logical sections following generated outline
-- **Inline Citations**: Automatic source attribution with clickable links using `<cite source="src-ID" />` system
-- **Quality Assurance**: Multi-model evaluation with Gemini 2.5 Pro for critical evaluation tasks
-- **Custom Deliverables**: Tables, comparisons, summaries, and other artifacts based on plan requirements
-- **Citation Processing**: Automatic conversion of citation tags to readable markdown links with source titles
+### 🛡️ **Data Protection**
+- **End-to-End Encryption**: All data encrypted in transit and at rest
+- **Session Security**: Secure session management with automatic cleanup
+- **CORS Protection**: Cross-origin resource sharing controls
+- **Rate Limiting**: Protection against abuse and DDoS attacks
 
-### 🛠️ Production Infrastructure
-- **Scalable Deployment**: Cloud Run with auto-scaling (4 CPU, 8GB RAM configuration)
-- **Session Management**: Persistent sessions using Google Cloud Storage with automatic bucket creation
-- **Health Monitoring**: Dedicated `/health` endpoint for service validation and SSE connection health checks
-- **Enhanced Error Handling**: Comprehensive error recovery across all backend services
-- **Memory Optimization**: WeakMap-based service factory preventing memory leaks
-- **Comprehensive Monitoring**: OpenTelemetry, Cloud Trace, BigQuery analytics with Looker Studio dashboards
-- **CI/CD Pipeline**: Automated testing, staging, and production deployments via Google Cloud Build
-- **Real-time Communication**: WebSocket/SSE-based live updates for thinking steps and message streaming
-
-### 🎨 Advanced User Interface
-
-- **Mobile-First Design**: Responsive bottom sheet thinking panel with touch-optimized interactions
-- **Contextual Loading States**: Phase-specific loading messages with progress tracking (Planning → Researching → Evaluating → Composing)
-- **Progressive Disclosure**: Intelligent information architecture reducing cognitive load with collapsible sections
-- **Agent Progress Visualization**: Grouped agent activity display with status indicators and progress bars
-- **Message Actions**: Copy, regenerate, feedback, and sharing capabilities for all responses
-- **Real-time Thinking Panel**: Live visualization of agent activities with phase tracking
-- **Interactive Research Plans**: Inline editing of research plans with structured display and approval workflow
-- **WebSocket Integration**: Real-time message streaming and thinking step updates for responsive user experience
-- **Visual Progress Tracking**: Animated progress bars, phase indicators, and completion status
-- **Connection Management**: Automatic connection status monitoring with visual indicators
-- **Quick Testing Tools**: Built-in development buttons for rapid UI and workflow testing
-- **Modern AI Components**: Custom-built ChatInterface, ContextualLoading, AgentProgress, and MessageActions components
-- **Design System**: Comprehensive design tokens for spacing, states, and visual hierarchy
+### 👥 **Access Control**
+- **Role-Based Permissions**: Fine-grained access control (RBAC)
+- **User Isolation**: Complete separation of user data and sessions  
+- **Audit Trail**: Comprehensive logging of all activities
+- **Token Management**: Automatic refresh and secure token storage
 
 ---
 
-## 🤖 Agents & Capabilities
+## 📚 API Reference
 
-### Agent Hierarchy
+### Core Endpoints
 
-![Your AI Research Team](docs/images/agent-team-clean.svg)
+| Endpoint | Method | Auth | Description |
+|----------|--------|------|-------------|
+| `/health` | GET | ❌ | Health check and service status |
+| `/api/run_sse` | POST | ✅ | Execute research tasks with real-time streaming |
+| `/api/apps/{app}/users/{user}/sessions` | GET/POST | ✅ | Manage user sessions |
+| `/auth/login` | POST | ❌ | Authenticate and receive JWT token |
 
-*Think of it as your personal research department: A team leader coordinates specialized agents who plan, research, quality-check, and write your reports.*
+### Quick Examples
 
-### Agent Descriptions
-
-| Agent | Model | Purpose | Key Features |
-|-------|-------|---------|--------------|
-| **interactive_planner_agent** | Worker Model* | Primary user interface and orchestrator | • Converts requests to plans<br/>• Manages user interaction<br/>• Delegates to research pipeline |
-| **plan_generator** | Worker Model* | Creates and refines research strategies | • 5-line action plans<br/>• Task classification [RESEARCH]/[DELIVERABLE]<br/>• Minimal search for topic clarification |
-| **section_planner** | Worker Model* | Designs report structure | • 4-6 section markdown outlines<br/>• Logical organization<br/>• Citation-ready structure |
-| **section_researcher** | Worker Model* | Executes research plan | • Two-phase execution (RESEARCH → DELIVERABLE)<br/>• 4-5 queries per research goal<br/>• Source collection with grounding |
-| **research_evaluator** | Critic Model* | Quality assessment | • Critical evaluation with Feedback schema<br/>• Gap identification<br/>• Follow-up query generation |
-| **escalation_checker** | Custom Python | Loop control logic | • Pass/fail detection from evaluator<br/>• Iteration management<br/>• Flow control for refinement loop |
-| **enhanced_search_executor** | Worker Model* | Fills knowledge gaps | • Executes follow-up queries<br/>• Integrates with existing findings<br/>• Iterative improvement |
-| **report_composer_with_citations** | Critic Model* | Final report generation | • Professional markdown writing<br/>• Citation tag processing<br/>• Structured output with inline links |
-
-*Worker Model: Gemini 2.5 Flash (default) or configurable via LiteLLM  
-*Critic Model: Gemini 2.5 Pro (default) or configurable via LiteLLM
-
----
-
-## 🔧 Tools & Integrations
-
-### Core Tools
-
-| Tool | Purpose | Integration |
-|------|---------|-------------|
-| **Brave Search** | Web research and information gathering | Custom tool implementation with API integration |
-| **Cloud Storage** | Artifact and large payload storage | GCS buckets for build artifacts and data |
-| **Session Service** | Conversation state management | In-memory/AlloyDB with state preservation |
-| **Citation System** | Source tracking and link generation | Grounding metadata with confidence scores |
-
-### MCP Servers (Local Development Only)
-
-```yaml
-# These tools are available in local development via Model Context Protocol
-# They are NOT part of the deployed Vana system
-- chroma-vana: Document storage and retrieval
-- memory-mcp: Graph-based knowledge management  
-- firecrawl: Web scraping capabilities
-- linear: Issue tracking integration
-- kanban-board: Task management
+**Health Check:**
+```bash
+curl http://localhost:8000/health
 ```
+
+**Research Request:**
+```bash
+# With authentication
+curl -X POST http://localhost:8000/api/run_sse \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $YOUR_TOKEN" \
+  -d '{
+    "appName": "app",
+    "userId": "user123",
+    "newMessage": {
+      "parts": [{"text": "Research the latest AI developments"}],
+      "role": "user"
+    },
+    "streaming": true
+  }'
+```
+
+**Python Client Example:**
+```python
+import httpx
+
+# Simple research request
+response = httpx.post("http://localhost:8000/api/run_sse", json={
+    "appName": "app", 
+    "userId": "user123",
+    "newMessage": {"parts": [{"text": "Your research topic"}], "role": "user"},
+    "streaming": True
+})
+```
+
+📖 **Complete API documentation available at:** `http://localhost:8000/docs` when running locally
 
 ---
 
 ## 💻 Development
 
-### Prerequisites
+### Environment Setup
 
-1. **Install Required Tools**:
+1. **Install Tools**:
    ```bash
    # Install uv (Python package manager)
    curl -LsSf https://astral.sh/uv/install.sh | sh
    
-   # Install other tools via package manager
-   brew install google-cloud-sdk terraform node
+   # Install other tools
+   brew install google-cloud-sdk node
    ```
 
 2. **Google Cloud Setup**:
    ```bash
    gcloud auth application-default login
-   gcloud config set project analystai-454200
+   gcloud config set project your-project-id
+   ```
+
+3. **Environment Configuration**:
+   ```bash
+   # Copy example environment file
+   cp .env.example .env.local
+   
+   # Edit .env.local with your settings
+   vim .env.local
    ```
 
 ### Local Development
@@ -294,390 +491,273 @@ sequenceDiagram
 # Install all dependencies
 make install
 
-# Run full stack locally (both frontend and backend)
-make dev
-# Frontend: http://localhost:5173
-# Backend: http://localhost:8000
+# Run development server
+make dev-backend    # Backend only
+make dev-frontend   # Frontend only (when available)
+make dev           # Full stack
+
+# Development URLs
+# Backend API: http://localhost:8000
+# Frontend: http://localhost:5173 (when available)
 # API Docs: http://localhost:8000/docs
-# Health Check: http://localhost:8000/health
-
-# Run individual components
-make dev-backend    # Backend API only
-make dev-frontend   # Frontend only  
-make playground     # ADK playground interface
-
-# Configure frontend environment (copy from example)
-cp frontend/.env.example frontend/.env.local
-# Edit frontend/.env.local with your specific settings
-
-# Testing and quality
-make test          # Unit and integration tests
-make lint          # Code quality checks (ruff, mypy, codespell)
+# Health: http://localhost:8000/health
 ```
 
-### Testing
+### Code Quality
 
-#### Quick UI Testing
-The frontend includes built-in testing tools accessible via QuickTestButtons:
-- **Quick Test**: Minimal query for UI testing (`"What is 2+2?"`)
-- **Simple Research**: Short research task (`"List 3 benefits of water"`)
-- **UI Stress Test**: Full research flow (`"Research the Google Agent Starter Pack"`)
+```bash
+# Run all tests
+make test
 
-#### Backend Testing
-```python
-# Create test script: run_agent.py
-import asyncio
-from google.adk.runners import Runner
-from google.adk.sessions import InMemorySessionService
-from app.agent import root_agent
-from google.genai import types as genai_types
+# Code linting and formatting
+make lint
 
-async def main():
-    session_service = InMemorySessionService()
-    await session_service.create_session(
-        app_name="app", user_id="test_user", session_id="test_session"
-    )
-    runner = Runner(
-        agent=root_agent, app_name="app", session_service=session_service
-    )
-    
-    query = "Create a comprehensive report on sustainable energy solutions"
-    async for event in runner.run_async(
-        user_id="test_user",
-        session_id="test_session",
-        new_message=genai_types.Content(
-            role="user", 
-            parts=[genai_types.Part.from_text(text=query)]
-        ),
-    ):
-        if event.is_final_response():
-            print(event.content.parts[0].text)
+# Type checking
+make typecheck
 
-if __name__ == "__main__":
-    asyncio.run(main())
+# All quality checks
+make test && make lint && make typecheck
 ```
-
-Run with: `uv run python run_agent.py`
-
-#### Test Coverage
-- **Unit Tests**: Agent logic, citation processing, configuration
-- **Integration Tests**: Full workflow testing, API endpoints
-- **UI Tests**: Component testing with interactive features
-- **Mobile Testing**: Touch interactions, responsive design validation
-- **Performance Testing**: Loading states, memory management, service lifecycle
 
 ---
 
-## 🚀 Deployment
+## 🧪 Testing
 
-### Development Environment
+### Comprehensive Test Suite
+
+Vana includes a complete testing framework designed to ensure reliability and help developers understand the codebase:
+
+#### Test Categories
+
+| Category | Purpose | Location |
+|----------|---------|----------|
+| **Unit Tests** | Test individual components in isolation | `tests/unit/` |
+| **Integration Tests** | Test component interactions and API endpoints | `tests/integration/` |
+| **Performance Tests** | Benchmark performance and detect memory leaks | `tests/performance/` |
+| **E2E Tests** | Full workflow testing from API to agent execution | `tests/e2e/` |
+
+#### Running Tests
 
 ```bash
-# Set up infrastructure
-make setup-dev-env
+# Run all tests
+make test
 
-# Deploy to Cloud Run
-make backend
+# Run specific test categories
+uv run pytest tests/unit -v           # Unit tests only
+uv run pytest tests/integration -v    # Integration tests only
+uv run pytest tests/performance -v    # Performance tests only
 
-# Deploy with UI (Identity-Aware Proxy)
-make backend IAP=true
+# Run tests with coverage report
+uv run pytest --cov=app --cov-report=html tests/
+open htmlcov/index.html  # View coverage report
 ```
 
-### Production CI/CD
+#### Key Test Files for Understanding the System
 
 ```bash
-# One-command CI/CD setup
+# Authentication system
+tests/unit/test_auth.py              # JWT and OAuth2 logic
+tests/integration/test_auth_api.py   # Authentication endpoints
+
+# Agent system
+tests/integration/test_adk_integration.py  # ADK agent tests
+tests/integration/test_agent.py            # Agent orchestration
+
+# Real-time streaming
+tests/unit/test_sse_broadcaster.py         # SSE implementation
+tests/integration/test_sse_connections.py  # SSE API tests
+
+# Session management
+tests/integration/test_session_management.py  # Session persistence
+
+# Memory leak prevention
+tests/unit/test_sse_memory_leak_fixes.py     # Memory management tests
+```
+
+#### Writing Your Own Tests
+
+```python
+# Example test structure
+import pytest
+from app.agent import ResearchAgent
+
+@pytest.mark.asyncio
+async def test_research_agent():
+    """Test the research agent's ability to process queries."""
+    agent = ResearchAgent()
+    result = await agent.research("test query")
+    assert result is not None
+    assert "citations" in result
+```
+
+The test suite serves as living documentation - explore the tests to understand how each component works.
+
+---
+
+## 🚢 Deployment
+
+### Quick Deployment
+
+```bash
+# Development
+make dev                    # Full local stack
+make dev-backend           # Backend only (port 8000)
+make playground            # ADK playground (port 8501)
+
+# Production
+make backend               # Deploy to Cloud Run
+make backend IAP=true      # Deploy with IAP authentication
+```
+
+### Production Architecture
+
+```mermaid
+graph TB
+    subgraph "Load Balancing"
+        GLB[Global Load Balancer]
+        CDN[Cloud CDN]
+    end
+    
+    subgraph "Compute"
+        CR1[Cloud Run Instance 1<br/>1 vCPU, 512MB RAM]
+        CR2[Cloud Run Instance 2<br/>1 vCPU, 512MB RAM]
+        CRN[Cloud Run Instance N<br/>Auto-scaling]
+    end
+    
+    subgraph "Storage"
+        GCS[Cloud Storage<br/>Sessions]
+        VS[Vector Store<br/>RAG Data]
+        FB[Firestore<br/>User Data]
+    end
+    
+    subgraph "Security"
+        IAP[Identity-Aware Proxy]
+        FW[Cloud Armor]
+        KMS[Key Management]
+    end
+    
+    GLB --> CDN
+    CDN --> IAP
+    IAP --> FW
+    FW --> CR1
+    FW --> CR2
+    FW --> CRN
+    
+    CR1 --> GCS
+    CR2 --> VS
+    CRN --> FB
+    
+    CR1 --> KMS
+    CR2 --> KMS
+    CRN --> KMS
+```
+
+### CI/CD Pipeline
+
+```bash
+# Automated setup
 uvx agent-starter-pack setup-cicd \
-  --staging-project analystai-staging \
-  --prod-project analystai-454200 \
+  --staging-project your-staging \
+  --prod-project your-prod \
   --repository-name vana \
-  --repository-owner vana-project \
+  --repository-owner NickB03 \
   --git-provider github \
   --auto-approve
 ```
 
-### Deployment Architecture
+---
 
-```mermaid
-graph LR
-    subgraph "CI/CD Pipeline"
-        GH[GitHub] --> CB[Cloud Build]
-        CB --> |Test| ST[Staging]
-        CB --> |Approve| PR[Production]
-    end
-    
-    subgraph "Runtime Environment"
-        CR[Cloud Run<br/>4 CPU, 8GB RAM]
-        CR --> SA[Service Account]
-        SA --> GCS[Cloud Storage]
-        SA --> VA[Vertex AI]
-        SA --> SE[Secret Manager]
-    end
-    
-    subgraph "Monitoring"
-        CR --> CT[Cloud Trace]
-        CR --> CL[Cloud Logging]
-        CL --> BQ[BigQuery]
-        BQ --> LS[Looker Studio]
-    end
-```
+## 🛣️ Roadmap
+
+### Current: Research Platform ✅
+- **Multi-Agent Research System**: 8 specialized AI agents working collaboratively
+- **Google ADK Integration**: Full compatibility with ADK 1.8.0 and Gemini models
+- **Production Ready**: Comprehensive security, testing, and monitoring
+- **Real-time Streaming**: Live updates with Server-Sent Events (SSE)
+
+### Next: Enhanced Frontend 🚧
+- **Phase 2: shadcn-based multi-agent frontend** - Modern, interactive interface for seamless research experiences
+
+### Future Enhancements 🔮
+- Additional agent specializations (code, data analysis, integration)
+- Enterprise features (team workspaces, admin dashboard)
+- Plugin ecosystem and custom agent development
+- Mobile applications and multi-platform support
+
+**Want to influence our roadmap?** [Open an issue](https://github.com/NickB03/vana/issues) or [start a discussion](https://github.com/NickB03/vana/discussions) to share your ideas!
 
 ---
 
-## 📚 API Documentation
+## 📚 Documentation
 
-### Core Endpoints
+### 🚀 Getting Started
+- **[Quick Start Guide](#-quick-start)** - Get running in minutes
+- **[How It Works](#-how-it-works)** - Understand the two-phase research process
+- **[API Reference](#-api-reference)** - Essential endpoints and examples
 
-| Endpoint | Method | Description |
-|----------|---------|-------------|
-| `/api/apps/{app}/users/{user}/sessions` | POST | Create new session |
-| `/api/run_sse` | POST | Execute agent with SSE streaming |
-| `/api/apps` | GET | List available agents |
-| `/health` | GET | Health check and service validation |
-| `/feedback` | POST | Submit user feedback |
-| `/docs` | GET | Interactive API documentation |
+### 🔧 For Developers
+- **[Development Setup](#-development)** - Local development environment
+- **[Testing Framework](#-testing)** - Comprehensive test suite and coverage
+- **[Deployment Guide](#-deployment)** - Production deployment options
+- **[Contributing Guidelines](CONTRIBUTING.md)** - How to contribute to Vana
 
-### Health Check Endpoint
+### 🏗️ Architecture & Advanced Topics
+- **[System Architecture](#️-architecture)** - Technical system design
+- **[Security Implementation](#-security-features)** - Authentication and data protection
+- **[Performance Details](CHANGELOG.md)** - Performance improvements and metrics
 
-The `/health` endpoint provides comprehensive service validation:
-
-```bash
-curl http://localhost:8000/health
-```
-
-**Response:**
-```json
-{
-  "status": "healthy",
-  "timestamp": "2025-08-03T10:30:00.000Z", 
-  "service": "vana",
-  "version": "1.0.0",
-  "session_storage_enabled": true
-}
-```
-
-### Example Request
-
-```bash
-curl -X POST http://localhost:8000/api/run_sse \
-  -H "Content-Type: application/json" \
-  -d '{
-    "appName": "app",
-    "userId": "user123",
-    "sessionId": "session456",
-    "newMessage": {
-      "parts": [{"text": "Research the latest AI trends"}],
-      "role": "user"
-    },
-    "streaming": true
-  }'
-```
-
----
-
-## 🔧 Recent Architectural Improvements
-
-### Backend Enhancements (v1.0.0)
-
-#### Session Management Upgrade
-- **Persistent Storage**: Migrated from in-memory to Google Cloud Storage (`gs://{project_id}-vana-session-storage`)
-- **Automatic Provisioning**: Buckets created automatically during startup
-- **State Preservation**: Sessions persist across server restarts and deployments
-
-#### Service Reliability
-- **Health Monitoring**: New `/health` endpoint for comprehensive service validation
-- **Error Recovery**: Enhanced error handling across all backend services
-- **Memory Management**: WeakMap-based service factory preventing memory leaks
-- **Dependency Cleanup**: Removed unused `socket.io-client` package
-
-#### Configuration Flexibility
-- **Environment-Driven**: App configuration now driven by environment variables
-- **Dynamic Endpoints**: Flexible API endpoint configuration via `VITE_APP_NAME`
-- **Timeout Management**: Configurable timeouts and retry logic
-
-### Frontend (🚧 REBUILD IN PROGRESS)
-
-> **Note**: Frontend is being rebuilt for enhanced ADK integration. Expected completion: 2025-08-15
-
-#### Planned Features (New Frontend)
-- **Responsive Architecture**: Bottom sheet thinking panel for mobile optimization
-- **Touch Interactions**: Optimized for mobile touch interfaces
-- **Progressive Disclosure**: Intelligent information hierarchy reducing cognitive load
-
-#### Advanced UI Components
-
-**ContextualLoading Component** (`/frontend/src/components/ui/ContextualLoading.tsx`)
-- Phase-specific loading states with contextual messaging
-- Progress tracking with time estimates and elapsed time
-- Animated state transitions and visual feedback
-- Support for Planning → Researching → Evaluating → Composing phases
-
-**AgentProgress Component** (`/frontend/src/components/AgentProgress.tsx`)
-- Grouped agent activity visualization
-- Collapsible detail levels (minimal, summary, detailed)
-- Real-time status indicators and progress bars
-- Agent-specific confidence scoring and task tracking
-
-**MessageActions Component** (`/frontend/src/components/MessageActions.tsx`)
-- Copy, regenerate, and feedback actions for all messages
-- Share functionality with native browser sharing API
-- Download/save message content as text files
-- Contextual feedback collection with positive/negative ratings
-
-#### Design System Improvements
-- **Comprehensive Tokens**: Standardized design tokens for spacing, colors, and states
-- **Animation System**: Consistent motion design with Framer Motion
-- **State Management**: Visual state indicators across all interactive elements
-- **Accessibility**: ARIA labels, keyboard navigation, and screen reader support
-
-#### Performance Optimizations
-- **Retry Logic**: Configurable retry attempts with exponential backoff
-- **Timeout Handling**: Request timeouts with graceful failure modes
-- **Debug Logging**: Comprehensive client-side logging for development
-- **Connection Management**: Automatic connection health monitoring
-
----
-
-## ⚙️ Configuration
-
-### Environment Variables
-
-#### Backend Configuration
-```bash
-# Google Cloud
-GOOGLE_CLOUD_PROJECT=your-project-id
-GOOGLE_CLOUD_LOCATION=us-central1
-GOOGLE_GENAI_USE_VERTEXAI=True
-
-# API Keys (for AI Studio)
-GOOGLE_API_KEY=your-api-key  # Optional, for AI Studio
-
-# Alternative Model Providers (via LiteLLM)
-USE_OPENROUTER=true         # Enable OpenRouter integration
-OPENROUTER_API_KEY=your-key # OpenRouter API key
-BRAVE_API_KEY=your-key      # Brave Search API key
-
-# Session Management (automatically configured)
-# Session storage uses Google Cloud Storage with bucket auto-creation
-# Format: gs://{project_id}-vana-session-storage
-
-# Monitoring
-ENABLE_TRACING=true
-LOG_LEVEL=INFO
-```
-
-#### Frontend Configuration
-```bash
-# API Configuration
-VITE_API_URL=http://localhost:8000    # Backend API URL
-VITE_APP_NAME=app                     # App name for API endpoints
-VITE_ENVIRONMENT=development          # Environment setting
-
-# Performance Configuration  
-VITE_MAX_RETRIES=5                    # Maximum retry attempts
-VITE_RETRY_DELAY=1000                 # Delay between retries (ms)
-VITE_TIMEOUT=30000                    # Request timeout (ms)
-VITE_ENABLE_LOGGING=true              # Enable debug logging
-
-# WebSocket Configuration (optional)
-# VITE_WS_URL=ws://localhost:8000     # WebSocket URL if different from API
-```
-
-### Model Configuration
-
-Vana supports multiple model providers through flexible configuration:
-
-#### Default Gemini Models
-```python
-# app/config.py (default)
-@dataclass
-class ResearchConfiguration:
-    critic_model: str = "gemini-2.5-pro"      # For evaluation tasks
-    worker_model: str = "gemini-2.5-flash"    # For general tasks
-    max_search_iterations: int = 5            # Quality refinement loops
-```
-
-#### Alternative Models via LiteLLM
-```python
-# app/models.py (when USE_OPENROUTER=true)
-from google.adk.models.lite_llm import LiteLlm
-
-# Example: OpenRouter with Qwen3 Coder Free
-CRITIC_MODEL = LiteLlm(model="openrouter/qwen/qwen3-coder:free")
-WORKER_MODEL = LiteLlm(model="openrouter/qwen/qwen3-coder:free")
-```
-
-#### Supported Providers
-- **Google Gemini**: Default models via Vertex AI or AI Studio
-- **OpenRouter**: Access to multiple model providers (Anthropic, OpenAI, etc.)
-- **LiteLLM Compatible**: Any provider supported by LiteLLM library
-
-#### Model Selection Guidelines
-- **Critic Model**: Used for research evaluation, report composition (requires reasoning capability)
-- **Worker Model**: Used for planning, research, search execution (can be faster/cheaper)
-- **Search Iterations**: Controls quality vs cost trade-off (1-10 recommended)
-
----
-
-## 📊 Monitoring & Observability
-
-### Metrics Dashboard
-
-Access the Looker Studio template: [Dashboard Template](https://lookerstudio.google.com/reporting/46b35167-b38b-4e44-bd37-701ef4307418/page/tEnnC)
-
-### Key Metrics
-
-- **Performance**: Request latency, token usage, agent execution time
-- **Quality**: Research evaluation scores, iteration counts, source quality
-- **Usage**: Active sessions, request volume, user engagement
-- **Errors**: Failed searches, timeout rates, API errors
-
-### Logging
-
-```python
-# Structured logging example
-logger.log_struct({
-    "event": "research_complete",
-    "agent": "section_researcher",
-    "sources_found": 12,
-    "execution_time": 45.2,
-    "quality_score": 0.92
-}, severity="INFO")
-```
+### 💬 Community & Support
+- **[GitHub Issues](https://github.com/NickB03/vana/issues)** - Bug reports and feature requests
+- **[Discussions](https://github.com/NickB03/vana/discussions)** - Community Q&A and ideas
+- **[Interactive API Docs](http://localhost:8000/docs)** - Available when running locally
 
 ---
 
 ## 🤝 Contributing
 
-We welcome contributions! Please see our [Contributing Guidelines](CONTRIBUTING.md) for details.
+We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
 
-### Development Process
+### Quick Contribution Steps
 
 1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+2. Create a feature branch (`git checkout -b feature/amazing`)
 3. Make your changes
-4. Run tests (`make test`) and linting (`make lint`)
-5. Commit your changes (`git commit -m 'Add amazing feature'`)
-6. Push to the branch (`git push origin feature/amazing-feature`)
-7. Open a Pull Request
+4. Run tests (`make test`)
+5. Submit a Pull Request
 
-### Code Style
+### Development Requirements
 
-- Python: Follow PEP 8, use type hints
-- TypeScript: Use ESLint configuration
-- Documentation: Update README and inline comments
-- Testing: Maintain >80% coverage
+- Python 3.10+
+- Google Cloud SDK
+- Make
+- UV package manager
+
+```bash
+# Setup development environment
+make install
+make dev-setup
+
+# Run quality checks
+make test          # Run tests
+make lint          # Check code style
+make typecheck     # Type checking
+```
 
 ---
 
 ## 📄 License
 
-This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ---
 
 <div align="center">
 
-[Report Issues](https://github.com/vana-project/vana/issues) • [Documentation](https://github.com/vana-project/vana/wiki) • [Discussions](https://github.com/vana-project/vana/discussions)
+**🚀 Transform Your Research with AI Agents**
+
+Vana makes comprehensive research accessible to everyone. Whether you're a student, researcher, analyst, or developer, our AI agents are ready to help you discover, analyze, and synthesize information like never before.
+
+
+**Ready to get started?** [Jump to Quick Start ⬆️](#-quick-start)
 
 </div>
