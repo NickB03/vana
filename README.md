@@ -2,20 +2,21 @@
 
 <div align="center">
 
+[![GitHub stars](https://img.shields.io/github/stars/NickB03/vana?style=for-the-badge&logo=github)](https://github.com/NickB03/vana/stargazers)
 [![Build Status](https://img.shields.io/badge/Build-Passing-brightgreen?style=for-the-badge)](https://github.com/NickB03/vana/actions)
 [![Tests](https://img.shields.io/badge/Tests-342%20Passing-success?style=for-the-badge)](https://github.com/NickB03/vana/actions)
 [![Security](https://img.shields.io/badge/Security-OAuth2%2FJWT-blue?style=for-the-badge)](#-security-features)
-[![Performance](https://img.shields.io/badge/Performance-3--5x%20Faster-orange?style=for-the-badge)](#-performance)
 
 [![Python](https://img.shields.io/badge/Python-3.10%2B-blue?style=flat-square&logo=python)](https://www.python.org/downloads/)
 [![Google ADK](https://img.shields.io/badge/Google%20ADK-1.8.0-4285F4?style=flat-square&logo=google-cloud)](https://cloud.google.com/products/ai)
-[![LiteLLM](https://img.shields.io/badge/LiteLLM-1.51.0%2B-purple?style=flat-square)](https://docs.litellm.ai/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.115.8-009485?style=flat-square&logo=fastapi)](https://fastapi.tiangolo.com/)
 [![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)](LICENSE)
 
 **Multi-Agent AI Research System Built on Google's Agent Development Kit**
 
-[🚀 Quick Start](#-quick-start) • [🏗️ Architecture](#️-architecture) • [✨ Features](#-key-features) • [🚢 Deployment](#-deployment) • [🤝 Contributing](#-contributing)
+Transform complex research tasks into comprehensive reports with AI agents working collaboratively
+
+[🚀 Quick Start](#-quick-start) • [🤖 How It Works](#-how-it-works) • [✨ Features](#-key-features) • [🏗️ Architecture](#️-architecture) • [📚 Documentation](#-documentation)
 
 </div>
 
@@ -24,19 +25,17 @@
 ## 📑 Table of Contents
 
 - [🎯 Overview](#-overview)
+- [🤖 How It Works](#-how-it-works)
 - [✨ Key Features](#-key-features)
 - [🚀 Quick Start](#-quick-start)
 - [🏗️ Architecture](#️-architecture)
-- [🤖 Agent Capabilities](#-agent-capabilities)
 - [🔐 Security Features](#-security-features)
-- [📊 Performance](#-performance)
 - [📚 API Reference](#-api-reference)
-- [🔧 API Examples](#-api-examples)
 - [💻 Development](#-development)
 - [🧪 Testing](#-testing)
 - [🚢 Deployment](#-deployment)
 - [🛣️ Roadmap](#️-roadmap)
-- [📚 Documentation](#-documentation-1)
+- [📚 Documentation](#-documentation)
 - [🤝 Contributing](#-contributing)
 - [📄 License](#-license)
 
@@ -44,150 +43,139 @@
 
 ## 🎯 Overview
 
-**Vana** is a multi-agent orchestration platform that leverages Google's Agent Development Kit (ADK) to create intelligent, autonomous agents capable of complex research, analysis, and task execution. Vana demonstrates how to build coordinated multi-agent systems using Google's ADK framework.
+**Vana** is a production-ready multi-agent AI research platform that transforms complex research questions into comprehensive, well-sourced reports. Built on Google's Agent Development Kit (ADK), Vana orchestrates 8 specialized AI agents that work collaboratively to deliver professional-grade research in minutes.
 
-### 🌟 What is Vana Building?
+### 🌟 What Makes Vana Special?
 
-Vana is creating the future of AI-powered research and automation through:
+<div align="center">
 
-- **Intelligent Multi-Agent Systems**: Specialized agents that work together to solve complex problems
-- **Google ADK Foundation**: Built on Google's Agent Development Kit for reliable AI agent creation
-- **Autonomous Research Platform**: Agents that can gather, analyze, and synthesize information from multiple sources
-- **Real-time Collaboration**: Live streaming of agent activities and collaborative problem-solving
-- **Open Architecture**: Extensible design for custom agent development and integration
+![System Architecture](docs/images/architecture-simple.svg)
 
-### 🎯 Current Status
+</div>
 
-| Component | Status | Description |
-|-----------|--------|-------------|
-| **Phase 1: Research Agent** | ✅ **Complete** | Intelligent research system with multi-source synthesis |
-| **Google ADK Integration** | ✅ **Complete** | Full ADK 1.8.0 compliance with Gemini models |
-| **Security Implementation** | ✅ **Active** | OAuth2/JWT, Firebase Auth, API keys |
-| **Performance Optimization** | ✅ **Achieved** | 3-5x faster with LiteLLM/OpenRouter |
-| **Real-time Streaming** | ✅ **Working** | SSE with zero memory leaks |
-| **Testing Suite** | ✅ **Comprehensive** | Full test coverage across all components |
+- **🧠 Google ADK Foundation**: Built on Google's enterprise-grade Agent Development Kit for reliability and scalability
+- **🤖 8 Specialized AI Agents**: Each agent has specific expertise - from planning and research to quality assurance and report generation
+- **⚡ Real-time Streaming**: Watch your research come together with live updates via Server-Sent Events (SSE)
+- **🔐 Enterprise Security**: OAuth2/JWT authentication, role-based access, and secure session management
+- **📊 Production Quality**: Comprehensive testing suite with 342+ tests ensuring reliability and performance
+
+### 🎯 Perfect For
+
+- **Researchers** who need comprehensive literature reviews and analysis
+- **Analysts** requiring multi-source data synthesis and reporting  
+- **Students** working on research papers and academic projects
+- **Professionals** needing market research, competitive analysis, or technical documentation
+- **Developers** building AI-powered research tools and applications
+
+---
+
+## 🤖 How It Works
+
+Vana uses a two-phase approach that combines human oversight with AI automation for optimal results:
+
+<div align="center">
+
+![Vana Workflow](docs/images/vana-workflow.svg)
+
+</div>
+
+### Phase 1: Interactive Planning (1-2 minutes)
+1. **You describe** your research need in natural language
+2. **AI creates a structured plan** breaking down your request into research sections
+3. **You review and approve** the plan, making any adjustments needed
+4. **Research begins** with your approval
+
+### Phase 2: Autonomous Research (3-5 minutes)
+1. **8 AI agents activate** - each with specialized roles and capabilities
+2. **Parallel execution** - agents work simultaneously for maximum efficiency
+3. **Quality assurance** - built-in evaluation and refinement processes
+4. **Complete report delivered** - properly formatted with citations and sources
+
+### Meet Your AI Research Team
+
+<div align="center">
+
+![AI Team](docs/images/agent-team-clean.svg)
+
+</div>
+
+**🎯 Team Leader**: Coordinates the entire research process and manages task distribution
+
+**📋 Planning Team**: Creates research strategies and organizes report structure
+- Plan Generator: Develops comprehensive research strategies
+- Section Planner: Structures and organizes content flow
+
+**🔍 Research Team**: Executes the actual information gathering and analysis
+- Section Researcher: Finds and processes relevant information
+- Enhanced Search: Performs deep research using advanced search techniques
+
+**✅ Quality Team**: Ensures accuracy and completeness of research
+- Research Evaluator: Validates information quality and relevance
+- Escalation Checker: Final quality control and consistency verification
+
+**📝 Report Writer**: Synthesizes all findings into a professional, well-cited report
 
 ---
 
 ## ✨ Key Features
 
-### 🧠 **Google ADK Capabilities**
+### 🧠 **Powered by Google ADK**
+- **Enterprise-Grade Foundation**: Built on Google's Agent Development Kit for reliability and scale
+- **Gemini AI Models**: Access to Google's most advanced language models (Gemini 2.5 Pro/Flash)
+- **Cloud-Native Design**: Seamless integration with Google Cloud Platform services
+- **Production Ready**: Comprehensive testing and monitoring for enterprise deployment
 
-The foundation of Vana is Google's Agent Development Kit, providing:
+### 🤖 **Multi-Agent Intelligence**
+- **8 Specialized AI Agents**: Each agent optimized for specific research tasks
+- **Parallel Processing**: Agents work simultaneously for maximum efficiency
+- **Quality Assurance**: Built-in evaluation, fact-checking, and refinement processes
+- **Intelligent Coordination**: Advanced orchestration ensures optimal task distribution
 
-- **Robust Infrastructure**: Reliable and scalable agent framework
-- **Gemini Model Integration**: Access to Google's advanced AI models
-- **RAG (Retrieval-Augmented Generation)**: Vector search and contextual understanding
-- **Tool Creation & Extension**: Agents can create and use custom tools dynamically
-- **Multi-Modal Support**: Process text, code, and structured data
-- **Cloud-Native Architecture**: Seamless Google Cloud Platform integration
+### 🔐 **Enterprise Security**
+- **Multiple Auth Methods**: OAuth2/JWT, Firebase Auth, API keys, or development mode
+- **Role-Based Access**: Fine-grained permissions and user isolation
+- **Data Protection**: End-to-end encryption, secure sessions, CORS protection
+- **Audit Trail**: Complete logging and monitoring of all activities
 
-### 🤖 **Multi-Agent Orchestration**
+### ⚡ **Real-Time Experience**
+- **Live Updates**: Watch research progress with Server-Sent Events (SSE) streaming
+- **Interactive Planning**: Review and approve research plans before execution
+- **Session Persistence**: Resume work seamlessly across sessions and restarts
+- **Zero Memory Leaks**: Optimized for long-running production deployments
 
-Vana's intelligent agent system features:
-
-- **Research Agent (Phase 1 - Deployed)**
-  - Web search integration with Brave Search API
-  - Multi-source information synthesis
-  - Automatic citation generation
-  - Quality evaluation and refinement
-  
-- **Specialized Agent Types**
-  - Planning agents for task decomposition
-  - Analysis agents for data processing
-  - Composer agents for report generation
-  - Evaluator agents for quality assurance
-
-- **Agent Coordination**
-  - Hierarchical task delegation
-  - Parallel execution capabilities
-  - Inter-agent communication
-  - Shared memory and context
-
-### 🔐 **Security Features**
-
-Comprehensive security implementation:
-
-- **Multiple Authentication Modes**
-  - OAuth2 with JWT tokens
-  - Firebase Authentication
-  - API Key authentication
-  - Optional auth for development
-  
-- **Access Control**
-  - Role-based permissions (RBAC)
-  - User isolation and data segregation
-  - Secure session management
-  - Token refresh and validation
-
-- **Data Protection**
-  - Encryption at rest and in transit
-  - Secure credential storage
-  - CORS protection
-  - Rate limiting and DDoS protection
-
-### ⚡ **Performance Optimizations**
-
-Achieved 3-5x performance improvements through:
-
-- **Asynchronous Architecture**
-  - FastAPI with async/await patterns
-  - Non-blocking I/O operations
-  - Connection pooling
-  
-- **Memory Management**
-  - Zero memory leaks (verified)
-  - WeakMap-based service factory
-  - Automatic resource cleanup
-  - Efficient broadcast system
-
-- **Model Optimization**
-  - LiteLLM/OpenRouter integration (default)
-  - Intelligent model selection
-  - Caching and memoization
-  - Batch processing capabilities
-
-### 🔄 **Real-time Capabilities**
-
-Live interaction and monitoring:
-
-- **Server-Sent Events (SSE)**
-  - Real-time agent activity streaming
-  - Progress updates and notifications
-  - Error and status broadcasting
-  
-- **Session Management**
-  - Persistent sessions across restarts
-  - Automatic backup and recovery
-  - User-specific contexts
-  - Cross-session memory retention
+### 📊 **Professional Output**
+- **Comprehensive Reports**: Well-structured documents with proper citations
+- **Multiple Formats**: Support for various output formats and styles
+- **Source Tracking**: Full attribution and reference management
+- **Quality Control**: Multi-stage validation ensures accuracy and completeness
 
 ---
 
 ## 🚀 Quick Start
 
+Get Vana running locally in just a few minutes:
+
 ### Prerequisites
 
 ```bash
-# Required tools
+# Required tools (install these first)
 - Python 3.10+
 - uv (Python package manager)
 - Google Cloud SDK
-- Node.js 18+ & npm
 - make
 ```
 
 ### Installation
 
 ```bash
-# Clone the repository
-git clone https://github.com/your-org/vana.git
+# 1. Clone the repository
+git clone https://github.com/NickB03/vana.git
 cd vana
 
-# Install dependencies
+# 2. Install all dependencies
 make install
 
-# Set up Google Cloud authentication
+# 3. Set up Google Cloud authentication
 gcloud auth application-default login
 gcloud config set project your-project-id
 ```
@@ -197,35 +185,51 @@ gcloud config set project your-project-id
 Create `.env.local` in the root directory:
 
 ```bash
-# Authentication
-JWT_SECRET_KEY=your-jwt-secret-key
+# Required API keys
+BRAVE_API_KEY=your-brave-search-api-key
 GOOGLE_CLOUD_PROJECT=your-project-id
 
-# AI Models (LiteLLM/OpenRouter is default)
-USE_OPENROUTER=true
-OPENROUTER_API_KEY=your-openrouter-key
-BRAVE_API_KEY=your-brave-search-key
+# Authentication (choose one)
+JWT_SECRET_KEY=your-jwt-secret-key    # For JWT auth
+# OR set AUTH_REQUIRED=false for development
 
-# CORS for local development
-ALLOW_ORIGINS=http://localhost:5173,http://localhost:3000
+# Optional: Use OpenRouter for faster responses
+OPENROUTER_API_KEY=your-openrouter-key
 ```
 
-### Run Locally
+### Launch Vana
 
 ```bash
-# Start backend API (authentication required)
+# Start the backend service
 make dev-backend
-# Backend: http://localhost:8000
-# API Docs: http://localhost:8000/docs
-# Health Check: http://localhost:8000/health
 
-# Start ADK playground (for testing)
-make playground
-# Playground: http://localhost:8501
+# 🎉 Vana is now running!
+# • API: http://localhost:8000
+# • Interactive Docs: http://localhost:8000/docs
+# • Health Check: http://localhost:8000/health
 
-# Run full development stack
-make dev  # Backend + Frontend (when available)
+# Optional: Start ADK playground for testing
+make playground  # http://localhost:8501
 ```
+
+### Your First Research Request
+
+```bash
+# Test with curl
+curl -X POST http://localhost:8000/api/run_sse \
+  -H "Content-Type: application/json" \
+  -d '{
+    "appName": "app",
+    "userId": "user123",
+    "newMessage": {
+      "parts": [{"text": "Research the latest trends in renewable energy"}],
+      "role": "user"
+    },
+    "streaming": true
+  }'
+```
+
+🚀 **That's it!** Your research request will be processed by 8 AI agents working in parallel.
 
 ---
 
@@ -382,141 +386,27 @@ sequenceDiagram
 
 ---
 
-## 🤖 Agent Capabilities
-
-### Research Agent System (Phase 1 - Deployed)
-
-The deployed research agent system demonstrates the power of Google ADK:
-
-```mermaid
-graph LR
-    subgraph "Research Agent Capabilities"
-        SEARCH[Web Search]
-        ANALYZE[Data Analysis]
-        SYNTH[Synthesis]
-        CITE[Citation Generation]
-        EVAL[Quality Evaluation]
-        REFINE[Refinement]
-    end
-    
-    SEARCH --> ANALYZE
-    ANALYZE --> SYNTH
-    SYNTH --> CITE
-    CITE --> EVAL
-    EVAL --> REFINE
-    REFINE --> SYNTH
-```
-
-**Current Capabilities:**
-- **Multi-Source Research**: Integrate information from web searches, documents, and databases
-- **Intelligent Analysis**: Understand context and extract key insights
-- **Automatic Citations**: Generate inline citations with source tracking
-- **Quality Assurance**: Self-evaluation with iterative refinement
-- **Structured Output**: Generate reports in multiple formats
-
-### Planned Agent Expansions (Phase 2-4)
-
-| Agent Type | Capabilities | Status |
-|------------|-------------|--------|
-| **Code Agent** | Code generation, review, refactoring, testing | 🚧 Phase 2 |
-| **Data Agent** | Analysis, visualization, ML model training | 📋 Phase 3 |
-| **Integration Agent** | API integration, webhook handling, automation | 📋 Phase 3 |
-| **Security Agent** | Vulnerability scanning, compliance checking | 📋 Phase 4 |
-| **DevOps Agent** | CI/CD, deployment, monitoring | 📋 Phase 4 |
-
 ## 🔐 Security Features
 
-### Authentication & Authorization
+Vana implements enterprise-grade security to protect your research data and ensure safe operation:
 
-```mermaid
-graph TB
-    subgraph "Authentication Methods"
-        JWT[JWT Tokens]
-        OAUTH[OAuth2 Flow]
-        FB[Firebase Auth]
-        API[API Keys]
-    end
-    
-    subgraph "Security Layers"
-        RBAC[Role-Based Access]
-        ISO[User Isolation]
-        ENC[Encryption]
-        RATE[Rate Limiting]
-    end
-    
-    JWT --> RBAC
-    OAUTH --> RBAC
-    FB --> RBAC
-    API --> RBAC
-    
-    RBAC --> ISO
-    ISO --> ENC
-    ENC --> RATE
-```
+### 🔑 **Multiple Authentication Options**
+- **OAuth2/JWT**: Industry-standard token-based authentication
+- **Firebase Auth**: Google's managed authentication service
+- **API Keys**: Simple key-based access for API clients
+- **Development Mode**: Optional auth bypass for local development
 
-**Security Implementation:**
-- **Multiple Auth Modes**: OAuth2, Firebase, API Key, Optional (dev)
-- **Token Management**: Automatic refresh, secure storage, expiration handling
-- **Data Protection**: AES-256 encryption, TLS 1.3, secure headers
-- **Access Control**: Fine-grained permissions, user isolation
-- **Audit Logging**: Complete audit trail with Cloud Logging
+### 🛡️ **Data Protection**
+- **End-to-End Encryption**: All data encrypted in transit and at rest
+- **Session Security**: Secure session management with automatic cleanup
+- **CORS Protection**: Cross-origin resource sharing controls
+- **Rate Limiting**: Protection against abuse and DDoS attacks
 
----
-
-## 📊 Performance
-
-### Performance Metrics
-
-| Metric | Value | Notes |
-|--------|-------|-------|
-| **Request Latency** | < 100ms | P95 for API endpoints |
-| **Agent Response** | < 2s | First token generation |
-| **SSE Streaming** | < 50ms | Real-time event delivery |
-| **Concurrent Users** | 1000+ | Tested load capacity |
-| **Memory Usage** | < 500MB | Base system footprint |
-| **Session Persistence** | 100% | Zero data loss across restarts |
-
-### Performance Improvements Achieved
-
-```mermaid
-graph TB
-    subgraph "Before Optimization"
-        B1[15-30s Response]
-        B2[Memory Leaks]
-        B3[150 Tests]
-        B4[85% Uptime]
-    end
-    
-    subgraph "After Optimization"
-        A1[5-10s Response<br/>3-5x Faster]
-        A2[Zero Leaks<br/>Stable Memory]
-        A3[342+ Tests<br/>2.3x Coverage]
-        A4[99.5% Uptime<br/>17% Better]
-    end
-    
-    B1 --> A1
-    B2 --> A2
-    B3 --> A3
-    B4 --> A4
-    
-    style A1 fill:#34A853,color:#fff
-    style A2 fill:#34A853,color:#fff
-    style A3 fill:#34A853,color:#fff
-    style A4 fill:#34A853,color:#fff
-```
-
-### Load Testing Results
-
-```
-Concurrent Users: 1000
-Total Requests: 100,000
-Success Rate: 99.8%
-Average Response: 87ms
-P95 Response: 145ms
-P99 Response: 312ms
-Memory Stable: ✅
-CPU Usage: 65% (4 cores)
-```
+### 👥 **Access Control**
+- **Role-Based Permissions**: Fine-grained access control (RBAC)
+- **User Isolation**: Complete separation of user data and sessions  
+- **Audit Trail**: Comprehensive logging of all activities
+- **Token Management**: Automatic refresh and secure token storage
 
 ---
 
@@ -527,150 +417,48 @@ CPU Usage: 65% (4 cores)
 | Endpoint | Method | Auth | Description |
 |----------|--------|------|-------------|
 | `/health` | GET | ❌ | Health check and service status |
-| `/api/run_sse` | POST | ✅ | Execute agent tasks with SSE streaming |
-| `/api/apps/{app}/users/{user}/sessions` | GET | ✅ | List user sessions |
-| `/api/apps/{app}/users/{user}/sessions` | POST | ✅ | Create new session |
-| `/api/apps/{app}/users/{user}/sessions/{session}` | GET | ✅ | Get session details |
-| `/api/apps/{app}/users/{user}/sessions/{session}/messages` | GET | ✅ | Get session messages |
+| `/api/run_sse` | POST | ✅ | Execute research tasks with real-time streaming |
+| `/api/apps/{app}/users/{user}/sessions` | GET/POST | ✅ | Manage user sessions |
+| `/auth/login` | POST | ❌ | Authenticate and receive JWT token |
 
-### Authentication Endpoints
+### Quick Examples
 
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/auth/login` | POST | Authenticate and receive JWT |
-| `/auth/refresh` | POST | Refresh expired JWT token |
-| `/auth/logout` | POST | Invalidate current token |
-| `/auth/user` | GET | Get authenticated user info |
-| `/auth/register` | POST | Register new user account |
-
-### Example: Research Request
-
-```bash
-# 1. Authenticate
-TOKEN=$(curl -X POST http://localhost:8000/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"email": "user@example.com", "password": "password"}' \
-  | jq -r .access_token)
-
-# 2. Execute Research Task
-curl -X POST http://localhost:8000/api/run_sse \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer $TOKEN" \
-  -d '{
-    "appName": "app",
-    "userId": "user123",
-    "sessionId": "session456",
-    "newMessage": {
-      "parts": [{"text": "Research the latest advances in quantum computing"}],
-      "role": "user"
-    },
-    "streaming": true
-  }'
-```
-
-### Example: Python Client
-
-```python
-import httpx
-import json
-
-class VanaClient:
-    def __init__(self, base_url="http://localhost:8000"):
-        self.base_url = base_url
-        self.token = None
-        
-    def authenticate(self, email, password):
-        response = httpx.post(
-            f"{self.base_url}/auth/login",
-            json={"email": email, "password": password}
-        )
-        self.token = response.json()["access_token"]
-        
-    def research(self, query):
-        headers = {"Authorization": f"Bearer {self.token}"}
-        response = httpx.post(
-            f"{self.base_url}/api/run_sse",
-            json={
-                "appName": "app",
-                "userId": "user123",
-                "newMessage": {
-                    "parts": [{"text": query}],
-                    "role": "user"
-                },
-                "streaming": True
-            },
-            headers=headers
-        )
-        return response.json()
-
-# Usage
-client = VanaClient()
-client.authenticate("user@example.com", "password")
-result = client.research("Analyze renewable energy trends")
-```
-
----
-
-## 🔧 API Examples
-
-### Health Check
-
+**Health Check:**
 ```bash
 curl http://localhost:8000/health
 ```
 
-**Response:**
-```json
-{
-  "status": "healthy",
-  "timestamp": "2025-08-10T10:30:00.000Z",
-  "service": "vana",
-  "version": "0.1.0",
-  "features": {
-    "authentication": true,
-    "session_storage": true,
-    "litellm_integration": true,
-    "openrouter_default": true
-  }
-}
-```
-
-### Authenticated Research Request
-
+**Research Request:**
 ```bash
-# First authenticate
-TOKEN=$(curl -X POST http://localhost:8000/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"email": "user@example.com", "password": "password"}' | jq -r .access_token)
-
-# Then make research request
+# With authentication
 curl -X POST http://localhost:8000/api/run_sse \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer $TOKEN" \
+  -H "Authorization: Bearer $YOUR_TOKEN" \
   -d '{
     "appName": "app",
     "userId": "user123",
-    "sessionId": "session456", 
     "newMessage": {
-      "parts": [{"text": "Research sustainable energy solutions"}],
+      "parts": [{"text": "Research the latest AI developments"}],
       "role": "user"
     },
     "streaming": true
   }'
 ```
 
-### Session Management
+**Python Client Example:**
+```python
+import httpx
 
-```bash
-# Create new session
-curl -X POST http://localhost:8000/api/apps/app/users/user123/sessions \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json"
-
-# List user sessions  
-curl http://localhost:8000/api/apps/app/users/user123/sessions \
-  -H "Authorization: Bearer $TOKEN"
+# Simple research request
+response = httpx.post("http://localhost:8000/api/run_sse", json={
+    "appName": "app", 
+    "userId": "user123",
+    "newMessage": {"parts": [{"text": "Your research topic"}], "role": "user"},
+    "streaming": True
+})
 ```
+
+📖 **Complete API documentation available at:** `http://localhost:8000/docs` when running locally
 
 ---
 
@@ -886,65 +674,47 @@ uvx agent-starter-pack setup-cicd \
 
 ## 🛣️ Roadmap
 
-### Phase 1: Research System ✅ (Completed)
-- [x] Core ADK integration
-- [x] Research agent implementation
-- [x] SSE streaming
-- [x] OAuth2/JWT authentication
-- [x] Session management
-- [x] 342+ tests with 94% coverage
+### Current: Research Platform ✅
+- **Multi-Agent Research System**: 8 specialized AI agents working collaboratively
+- **Google ADK Integration**: Full compatibility with ADK 1.8.0 and Gemini models
+- **Production Ready**: Comprehensive security, testing, and monitoring
+- **Real-time Streaming**: Live updates with Server-Sent Events (SSE)
 
-### Phase 2: Multi-Agent Expansion 🚧 (Q1 2025)
-- [ ] Code generation agent
-- [ ] Data analysis agent
-- [ ] Agent communication protocol
-- [ ] Task queue system
-- [ ] Agent marketplace UI
+### Next: Enhanced Frontend 🚧
+- **Phase 2: shadcn-based multi-agent frontend** - Modern, interactive interface for seamless research experiences
 
-### Phase 3: Enterprise Features 📋 (Q2 2025)
-- [ ] Admin dashboard
-- [ ] Team workspaces
-- [ ] Custom agent training
-- [ ] Workflow designer
-- [ ] Advanced analytics
+### Future Enhancements 🔮
+- Additional agent specializations (code, data analysis, integration)
+- Enterprise features (team workspaces, admin dashboard)
+- Plugin ecosystem and custom agent development
+- Mobile applications and multi-platform support
 
-### Phase 4: Platform Evolution 🔮 (Q3-Q4 2025)
-- [ ] Kubernetes orchestration
-- [ ] Multi-region deployment
-- [ ] Plugin ecosystem
-- [ ] Mobile applications
-- [ ] AI model fine-tuning
-
-See the [Roadmap](#️-roadmap) section above for detailed milestone planning.
+**Want to influence our roadmap?** [Open an issue](https://github.com/NickB03/vana/issues) or [start a discussion](https://github.com/NickB03/vana/discussions) to share your ideas!
 
 ---
 
 ## 📚 Documentation
 
-### Quick Links
+### 🚀 Getting Started
+- **[Quick Start Guide](#-quick-start)** - Get running in minutes
+- **[How It Works](#-how-it-works)** - Understand the two-phase research process
+- **[API Reference](#-api-reference)** - Essential endpoints and examples
 
-| Document | Description |
-|----------|-------------|
-| [📊 API Reference](docs/API.md) | Complete API documentation |
-| [🚀 Quick Start](#-quick-start) | Get running in 5 minutes |
-| [🏗️ Architecture](#️-architecture) | System design and workflow |
-| [🧪 Testing](#-testing) | Testing guide and examples |
-| [🚢 Deployment](#-deployment) | Production deployment guide |
-| [🔐 Security](#-security-features) | Authentication & security features |
+### 🔧 For Developers
+- **[Development Setup](#-development)** - Local development environment
+- **[Testing Framework](#-testing)** - Comprehensive test suite and coverage
+- **[Deployment Guide](#-deployment)** - Production deployment options
+- **[Contributing Guidelines](CONTRIBUTING.md)** - How to contribute to Vana
 
-### For Developers
+### 🏗️ Architecture & Advanced Topics
+- **[System Architecture](#️-architecture)** - Technical system design
+- **[Security Implementation](#-security-features)** - Authentication and data protection
+- **[Performance Details](CHANGELOG.md)** - Performance improvements and metrics
 
-- [Contributing Guide](CONTRIBUTING.md) - How to contribute
-- [Development Guide](#-development) - Local setup and development
-- [Testing Guide](#-testing) - Comprehensive testing framework
-- [API Examples](#-api-examples) - Code examples and usage
-
-### For Users
-
-- [Getting Started](#-quick-start) - Quick start guide
-- [Agent Capabilities](#-agent-capabilities) - Understanding the AI agents
-- [Performance Metrics](#-performance) - System performance data
-- [Security Features](#-security-features) - Authentication and protection
+### 💬 Community & Support
+- **[GitHub Issues](https://github.com/NickB03/vana/issues)** - Bug reports and feature requests
+- **[Discussions](https://github.com/NickB03/vana/discussions)** - Community Q&A and ideas
+- **[Interactive API Docs](http://localhost:8000/docs)** - Available when running locally
 
 ---
 
@@ -988,28 +758,26 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🙏 Acknowledgments
 
-- Built with [Google Agent Development Kit (ADK)](https://cloud.google.com/products/ai)
-- Powered by [FastAPI](https://fastapi.tiangolo.com/)
-- UI components from [shadcn/ui](https://ui.shadcn.com/)
-- Search capabilities via [Brave Search API](https://brave.com/search/api/)
-- Model optimization with [LiteLLM](https://docs.litellm.ai/)
+Vana is built on the shoulders of giants:
 
----
-
-## 📞 Support & Contact
-
-- 🌐 Website: [vana.bot](https://vana.bot)
-- 🐛 Issues: [GitHub Issues](https://github.com/NickB03/vana/issues)
-- 📚 Documentation: [docs/](docs/)
+- **[Google Agent Development Kit (ADK)](https://cloud.google.com/products/ai)** - The foundation that makes multi-agent orchestration possible
+- **[FastAPI](https://fastapi.tiangolo.com/)** - High-performance web framework powering our APIs
+- **[Brave Search API](https://brave.com/search/api/)** - Privacy-focused search capabilities
+- **[Google Cloud Platform](https://cloud.google.com/)** - Reliable, scalable infrastructure
+- **Open Source Community** - The countless developers who make projects like this possible
 
 ---
 
 <div align="center">
 
-**🚀 Building the Future of Multi-Agent AI Systems**
+**🚀 Transform Your Research with AI Agents**
 
-[![Star on GitHub](https://img.shields.io/github/stars/NickB03/vana?style=social)](https://github.com/NickB03/vana)
+Vana makes comprehensive research accessible to everyone. Whether you're a student, researcher, analyst, or developer, our AI agents are ready to help you discover, analyze, and synthesize information like never before.
 
-[Website](https://vana.bot) • [Documentation](docs/) • [Issues](https://github.com/NickB03/vana/issues)
+[![⭐ Star on GitHub](https://img.shields.io/github/stars/NickB03/vana?style=for-the-badge&logo=github)](https://github.com/NickB03/vana/stargazers)
+[![🐛 Report Issues](https://img.shields.io/github/issues/NickB03/vana?style=for-the-badge&logo=github)](https://github.com/NickB03/vana/issues)
+[![💬 Join Discussions](https://img.shields.io/github/discussions/NickB03/vana?style=for-the-badge&logo=github)](https://github.com/NickB03/vana/discussions)
+
+**Ready to get started?** [Jump to Quick Start ⬆️](#-quick-start)
 
 </div>
