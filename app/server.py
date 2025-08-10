@@ -16,9 +16,10 @@ import os
 from datetime import datetime
 import json
 import asyncio
+from typing import Optional
 
 import google.auth
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends
 from fastapi.responses import StreamingResponse
 from google.adk.cli.fast_api import get_fast_api_app
 # Only import cloud logging if we have a real project
@@ -33,7 +34,7 @@ from opentelemetry.sdk.trace import TracerProvider, export
 from app.utils.gcs import create_bucket_if_not_exists
 from app.utils.tracing import CloudTraceLoggingSpanExporter
 from app.utils.typing import Feedback
-from app.utils.sse_broadcaster import agent_network_event_stream, get_agent_network_event_history
+from app.utils.sse_broadcaster import agent_network_event_stream, get_agent_network_event_history, get_sse_broadcaster
 from app.utils.session_backup import (
     backup_session_db_to_gcs, 
     restore_session_db_from_gcs,
@@ -175,6 +176,25 @@ else:
         else:
             logger.warning(f"Failed to configure session backup, using local-only sessions: {e}")
 
+# Initialize authentication database
+from app.auth.database import init_auth_db
+from app.auth.routes import auth_router, users_router, admin_router
+from app.auth.middleware import (
+    SecurityHeadersMiddleware, 
+    RateLimitMiddleware,
+    AuditLogMiddleware
+)
+from app.auth.security import get_current_active_user, get_current_user_for_sse
+from app.auth.models import User
+from app.auth.config import get_auth_settings
+
+# Initialize auth database
+try:
+    init_auth_db()
+    print("Authentication database initialized")
+except Exception as e:
+    print(f"Warning: Could not initialize auth database: {e}")
+
 app: FastAPI = get_fast_api_app(
     agents_dir=AGENT_DIR,
     web=True,
@@ -184,6 +204,16 @@ app: FastAPI = get_fast_api_app(
 )
 app.title = "vana"
 app.description = "API for interacting with the Agent vana"
+
+# Add authentication routers
+app.include_router(auth_router)
+app.include_router(users_router)
+app.include_router(admin_router)
+
+# Add security middleware
+app.add_middleware(SecurityHeadersMiddleware)
+app.add_middleware(RateLimitMiddleware, calls=100, period=60)
+app.add_middleware(AuditLogMiddleware)
 
 
 @app.get("/health")
@@ -205,25 +235,36 @@ async def health_check():
 
 
 @app.post("/feedback")
-def collect_feedback(feedback: Feedback) -> dict[str, str]:
+def collect_feedback(
+    feedback: Feedback, 
+    current_user: User = Depends(get_current_active_user)
+) -> dict[str, str]:
     """Collect and log feedback.
 
     Args:
         feedback: The feedback data to log
+        current_user: Current authenticated user
 
     Returns:
         Success message
     """
+    feedback_data = feedback.model_dump()
+    feedback_data["user_id"] = current_user.id
+    feedback_data["user_email"] = current_user.email
+    
     if hasattr(logger, 'log_struct'):
-        logger.log_struct(feedback.model_dump(), severity="INFO")
+        logger.log_struct(feedback_data, severity="INFO")
     else:
-        logger.info(f"Feedback received: {feedback.model_dump()}")
+        logger.info(f"Feedback received from user {current_user.id}: {feedback_data}")
     return {"status": "success"}
 
 
 @app.get("/agent_network_sse/{session_id}")
-async def agent_network_sse(session_id: str) -> StreamingResponse:
-    """Enhanced SSE endpoint for agent network events.
+async def agent_network_sse(
+    session_id: str, 
+    current_user: Optional[User] = Depends(get_current_user_for_sse)
+) -> StreamingResponse:
+    """Enhanced SSE endpoint for agent network events with optional authentication.
     
     This endpoint streams real-time agent network events including:
     - Agent start/completion events  
@@ -232,8 +273,13 @@ async def agent_network_sse(session_id: str) -> StreamingResponse:
     - Relationship and data flow tracking
     - Heartbeat/keepalive messages
     
+    Authentication behavior depends on REQUIRE_SSE_AUTH environment variable:
+    - True (production): Requires valid JWT token
+    - False (demo): Optional authentication, logs access regardless
+    
     Args:
         session_id: The session ID to stream events for
+        current_user: Optional authenticated user (required in production mode)
         
     Returns:
         StreamingResponse with text/event-stream media type
@@ -244,8 +290,36 @@ async def agent_network_sse(session_id: str) -> StreamingResponse:
         queue = await broadcaster.add_subscriber(session_id)
         
         try:
-            # Send initial connection event
-            yield f"data: {json.dumps({'type': 'connection', 'status': 'connected', 'sessionId': session_id, 'timestamp': datetime.now().isoformat()})}\n\n"
+            # Log SSE access for audit trail
+            auth_settings = get_auth_settings()
+            user_info = {
+                "user_id": current_user.id if current_user else None,
+                "user_email": current_user.email if current_user else None,
+                "authenticated": current_user is not None,
+                "auth_required": auth_settings.require_sse_auth,
+                "session_id": session_id,
+                "timestamp": datetime.now().isoformat(),
+                "access_type": "sse_connection"
+            }
+            
+            if hasattr(logger, 'log_struct'):
+                logger.log_struct({
+                    "message": "SSE connection established",
+                    **user_info
+                }, severity="INFO")
+            else:
+                logger.info(f"SSE connection established: {user_info}")
+            
+            # Send initial connection event with user context
+            connection_data = {
+                'type': 'connection', 
+                'status': 'connected', 
+                'sessionId': session_id, 
+                'timestamp': datetime.now().isoformat(),
+                'authenticated': current_user is not None,
+                'userId': current_user.id if current_user else None
+            }
+            yield f"data: {json.dumps(connection_data)}\n\n"
             
             while True:
                 try:
@@ -261,12 +335,38 @@ async def agent_network_sse(session_id: str) -> StreamingResponse:
                     yield f"data: {json.dumps({'type': 'heartbeat', 'timestamp': datetime.now().isoformat()})}\n\n"
                     
         except asyncio.CancelledError:
-            logger.info(f"SSE connection cancelled for session {session_id}")
+            logger.info(f"SSE connection cancelled for session {session_id}, user: {current_user.id if current_user else 'anonymous'}")
         except Exception as e:
-            logger.error(f"Error in SSE stream for session {session_id}: {e}")
+            error_info = {
+                "message": "SSE stream error",
+                "session_id": session_id,
+                "user_id": current_user.id if current_user else None,
+                "error": str(e),
+                "timestamp": datetime.now().isoformat()
+            }
+            
+            if hasattr(logger, 'log_struct'):
+                logger.log_struct(error_info, severity="ERROR")
+            else:
+                logger.error(f"Error in SSE stream: {error_info}")
+            
             yield f"data: {json.dumps({'type': 'error', 'message': str(e), 'timestamp': datetime.now().isoformat()})}\n\n"
         finally:
             await broadcaster.remove_subscriber(session_id, queue)
+            
+            # Log disconnection
+            disconnect_info = {
+                "message": "SSE connection closed",
+                "session_id": session_id,
+                "user_id": current_user.id if current_user else None,
+                "timestamp": datetime.now().isoformat()
+            }
+            
+            if hasattr(logger, 'log_struct'):
+                logger.log_struct(disconnect_info, severity="INFO")
+            else:
+                logger.info(f"SSE connection closed: {disconnect_info}")
+            
             yield f"data: {json.dumps({'type': 'connection', 'status': 'disconnected', 'sessionId': session_id, 'timestamp': datetime.now().isoformat()})}\n\n"
     
     return StreamingResponse(
@@ -283,16 +383,50 @@ async def agent_network_sse(session_id: str) -> StreamingResponse:
 
 
 @app.get("/agent_network_history")
-async def get_agent_network_history(limit: int = 50):
-    """Get recent agent network event history.
+async def get_agent_network_history(
+    limit: int = 50, 
+    current_user: Optional[User] = Depends(get_current_user_for_sse)
+):
+    """Get recent agent network event history with optional authentication.
+    
+    Authentication behavior depends on REQUIRE_SSE_AUTH environment variable:
+    - True (production): Requires valid JWT token
+    - False (demo): Optional authentication, logs access regardless
     
     Args:
         limit: Maximum number of events to return (default: 50)
+        current_user: Optional authenticated user (required in production mode)
         
     Returns:
         JSON array of recent agent network events
     """
-    return get_agent_network_event_history(limit)
+    
+    # Log history access for audit trail
+    auth_settings = get_auth_settings()
+    access_info = {
+        "message": "Agent network history accessed",
+        "user_id": current_user.id if current_user else None,
+        "user_email": current_user.email if current_user else None,
+        "authenticated": current_user is not None,
+        "auth_required": auth_settings.require_sse_auth,
+        "limit": limit,
+        "timestamp": datetime.now().isoformat(),
+        "access_type": "history_request"
+    }
+    
+    if hasattr(logger, 'log_struct'):
+        logger.log_struct(access_info, severity="INFO")
+    else:
+        logger.info(f"Agent network history accessed: {access_info}")
+    history = get_agent_network_event_history(limit)
+    
+    # Add user context to response if available
+    return {
+        "events": history,
+        "authenticated": current_user is not None,
+        "user_id": current_user.id if current_user else None,
+        "timestamp": datetime.now().isoformat()
+    }
 
 
 # Main execution

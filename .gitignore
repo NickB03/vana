@@ -232,6 +232,23 @@ test-connectivity.html
 .env.example
 
 
+
+# Local development
+.claude-flow/
+.roo/
+.roomodes
+scripts/setup-mcp-servers.sh
+
+# Temp files
+*.pid
+*.log
+frontend-backup-*.tar.gz
+
+# Node modules (for when we rebuild frontend)  
+node_modules/
+dist/
+.vite/
+
 # Claude Flow generated files
 .claude/settings.local.json
 .mcp.json
@@ -256,20 +273,3 @@ claude-flow
 claude-flow.bat
 claude-flow.ps1
 hive-mind-prompt-*.txt
-
-
-# Local development
-.claude-flow/
-.roo/
-.roomodes
-scripts/setup-mcp-servers.sh
-
-# Temp files
-*.pid
-*.log
-frontend-backup-*.tar.gz
-
-# Node modules (for when we rebuild frontend)  
-node_modules/
-dist/
-.vite/

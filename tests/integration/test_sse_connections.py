@@ -15,7 +15,7 @@ from collections import defaultdict
 from app.utils.sse_broadcaster import (
     agent_network_event_stream, 
     get_agent_network_event_history,
-    AgentNetworkEventBroadcaster
+    EnhancedSSEBroadcaster
 )
 
 
@@ -37,7 +37,7 @@ class TestSSEBroadcaster:
     def setup_method(self):
         """Set up test environment."""
         self.session_id = str(uuid.uuid4())
-        self.broadcaster = AgentNetworkEventBroadcaster()
+        self.broadcaster = EnhancedSSEBroadcaster()
         
     def teardown_method(self):
         """Clean up after tests."""
@@ -277,7 +277,7 @@ class TestSSEConnectionHandling:
         
         async def test_format():
             # Generate a single event and check format
-            broadcaster = AgentNetworkEventBroadcaster()
+            broadcaster = EnhancedSSEBroadcaster()
             broadcaster.broadcast_event(self.session_id, test_event)
             
             events = []
@@ -331,7 +331,7 @@ class TestSSEConnectionHandling:
             {"invalid": "structure"},  # Unexpected structure
         ]
         
-        broadcaster = AgentNetworkEventBroadcaster()
+        broadcaster = EnhancedSSEBroadcaster()
         
         for malformed_event in malformed_events:
             try:
@@ -350,7 +350,7 @@ class TestSSEConnectionHandling:
         initial_memory = process.memory_info().rss
         
         # Generate many events
-        broadcaster = AgentNetworkEventBroadcaster()
+        broadcaster = EnhancedSSEBroadcaster()
         
         async def generate_many_events():
             for i in range(1000):
@@ -392,7 +392,7 @@ class TestRealTimeEventProcessing:
         received_timestamps = []
         
         async def measure_latency():
-            broadcaster = AgentNetworkEventBroadcaster()
+            broadcaster = EnhancedSSEBroadcaster()
             
             # Start collecting events
             async def collect_events():
@@ -445,7 +445,7 @@ class TestRealTimeEventProcessing:
         async def high_frequency_test():
             nonlocal events_sent, events_received
             
-            broadcaster = AgentNetworkEventBroadcaster()
+            broadcaster = EnhancedSSEBroadcaster()
             
             async def rapid_sender():
                 nonlocal events_sent
@@ -495,7 +495,7 @@ class TestRealTimeEventProcessing:
                 nonlocal events_received
                 events_received = 0
                 
-                broadcaster = AgentNetworkEventBroadcaster()
+                broadcaster = EnhancedSSEBroadcaster()
                 
                 async def send_burst():
                     # Send a burst of events all at once

@@ -165,9 +165,9 @@ class TestSSEErrorScenarios:
         
     def test_malformed_sse_events(self):
         """Test handling of malformed SSE events."""
-        from app.utils.sse_broadcaster import AgentNetworkEventBroadcaster
+        from app.utils.sse_broadcaster import EnhancedSSEBroadcaster
         
-        broadcaster = AgentNetworkEventBroadcaster()
+        broadcaster = EnhancedSSEBroadcaster()
         
         malformed_events = [
             None,  # Null event
@@ -194,9 +194,9 @@ class TestSSEErrorScenarios:
         
     def test_sse_memory_pressure(self):
         """Test SSE behavior under memory pressure."""
-        from app.utils.sse_broadcaster import AgentNetworkEventBroadcaster
+        from app.utils.sse_broadcaster import EnhancedSSEBroadcaster
         
-        broadcaster = AgentNetworkEventBroadcaster()
+        broadcaster = EnhancedSSEBroadcaster()
         
         # Generate many large events
         large_event_count = 1000

@@ -20,7 +20,8 @@ from app.utils.session_backup import (
     setup_session_persistence_for_cloud_run,
     create_periodic_backup_job
 )
-from app.models import User, Session
+# Note: User and Session models are not currently defined in app.models
+# from app.models import User, Session
 
 
 @dataclass

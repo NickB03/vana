@@ -13,10 +13,10 @@ import tempfile
 import os
 
 # Import ADK-related modules
-from app.agent import create_agent
-from app.config import get_config
-from app.enhanced_callbacks import EnhancedCallbackHandler
-from app.models import User, Session
+from app.agent import root_agent
+# Note: get_config function not available in app.config
+# from app.config import get_config
+from app.enhanced_callbacks import after_agent_callback, before_agent_callback
 
 
 @dataclass

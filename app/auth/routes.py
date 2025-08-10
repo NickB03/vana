@@ -1,0 +1,649 @@
+"""Authentication and user management routes."""
+
+from datetime import datetime, timezone
+from typing import List, Optional
+
+from fastapi import APIRouter, Depends, HTTPException, status, Request, BackgroundTasks
+from sqlalchemy.orm import Session
+from sqlalchemy.exc import IntegrityError
+
+from .database import get_auth_db
+from .models import User, Role, Permission, RefreshToken
+from .schemas import (
+    UserCreate, UserResponse, UserUpdate, UserLogin, Token, 
+    RefreshTokenRequest, ChangePassword, PasswordResetRequest, 
+    PasswordReset, RoleCreate, RoleUpdate, Role as RoleSchema,
+    Permission as PermissionSchema, GoogleCloudIdentity, OAuth2ErrorResponse
+)
+from .security import (
+    authenticate_user, create_access_token, create_refresh_token,
+    verify_refresh_token, revoke_refresh_token, revoke_all_user_tokens,
+    get_current_user, get_current_active_user, get_current_superuser,
+    get_password_hash, validate_password_strength, require_permissions,
+    create_password_reset_token, verify_password_reset_token
+)
+from .google_cloud import verify_google_identity, get_google_user_info
+
+
+# Create router
+auth_router = APIRouter(prefix="/auth", tags=["Authentication"])
+users_router = APIRouter(prefix="/users", tags=["User Management"])
+admin_router = APIRouter(prefix="/admin", tags=["Administration"])
+
+
+# Authentication endpoints
+@auth_router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
+async def register_user(
+    user: UserCreate, 
+    db: Session = Depends(get_auth_db)
+) -> UserResponse:
+    """Register a new user."""
+    # Validate password strength
+    if not validate_password_strength(user.password):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Password does not meet security requirements"
+        )
+    
+    # Check if user already exists
+    existing_user = db.query(User).filter(
+        (User.email == user.email) | (User.username == user.username)
+    ).first()
+    
+    if existing_user:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="User with this email or username already exists"
+        )
+    
+    try:
+        # Create new user
+        db_user = User(
+            email=user.email,
+            username=user.username,
+            first_name=user.first_name,
+            last_name=user.last_name,
+            hashed_password=get_password_hash(user.password),
+            is_active=user.is_active,
+            is_verified=user.is_verified
+        )
+        
+        db.add(db_user)
+        db.flush()  # Get the ID
+        
+        # Assign roles if specified
+        if user.role_ids:
+            roles = db.query(Role).filter(Role.id.in_(user.role_ids)).all()
+            db_user.roles.extend(roles)
+        else:
+            # Assign default "user" role
+            default_role = db.query(Role).filter(Role.name == "user").first()
+            if default_role:
+                db_user.roles.append(default_role)
+        
+        db.commit()
+        db.refresh(db_user)
+        
+        return UserResponse.model_validate(db_user)
+    
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="User with this email or username already exists"
+        )
+
+
+@auth_router.post("/login", response_model=Token)
+async def login_user(
+    request: Request,
+    db: Session = Depends(get_auth_db)
+) -> Token:
+    """OAuth2-compliant login endpoint that accepts both form and JSON data.
+    
+    Supports:
+    - application/x-www-form-urlencoded (OAuth2 standard)  
+    - application/json (backward compatibility)
+    """
+    content_type = request.headers.get("content-type", "").lower()
+    
+    # Parse request data based on content type
+    if content_type.startswith("application/x-www-form-urlencoded"):
+        # OAuth2 form request
+        form_data = await request.form()
+        
+        username = form_data.get("username")
+        password = form_data.get("password") 
+        grant_type = form_data.get("grant_type")
+        
+        if not username or not password:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="invalid_request",
+                headers={
+                    "Content-Type": "application/json",
+                    "Cache-Control": "no-store"
+                }
+            )
+        
+        # Validate grant_type for OAuth2 compliance (optional but recommended)
+        if grant_type and grant_type != "password":
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="unsupported_grant_type", 
+                headers={
+                    "Content-Type": "application/json",
+                    "Cache-Control": "no-store"
+                }
+            )
+    
+    elif content_type.startswith("application/json"):
+        # JSON request (backward compatibility)
+        try:
+            import json
+            body = await request.body()
+            if not body:
+                raise ValueError("Empty body")
+            
+            json_data = json.loads(body.decode('utf-8'))
+            username = json_data.get('username')
+            password = json_data.get('password')
+            
+            if not username or not password:
+                raise ValueError("Missing credentials")
+                
+        except Exception:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="invalid_request",
+                headers={
+                    "Content-Type": "application/json",
+                    "Cache-Control": "no-store"
+                }
+            )
+    
+    else:
+        # Unsupported content type
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="invalid_request",
+            headers={
+                "Content-Type": "application/json",
+                "Cache-Control": "no-store"
+            }
+        )
+    
+    # Authenticate user
+    user = authenticate_user(username, password, db)
+    
+    if not user:
+        # OAuth2 compliant error response
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="invalid_grant",
+            headers={
+                "Content-Type": "application/json",
+                "Cache-Control": "no-store",
+                "WWW-Authenticate": 'Bearer realm="vana"'
+            }
+        )
+    
+    if not user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, 
+            detail="invalid_grant",
+            headers={
+                "Content-Type": "application/json",
+                "Cache-Control": "no-store"
+            }
+        )
+    
+    # Create tokens
+    access_token = create_access_token(data={"sub": str(user.id), "email": user.email})
+    refresh_token = create_refresh_token(
+        user_id=user.id,
+        db=db,
+        device_info=request.headers.get("User-Agent"),
+        ip_address=request.client.host if request.client else None
+    )
+    
+    return Token(
+        access_token=access_token,
+        refresh_token=refresh_token,
+        token_type="bearer",
+        expires_in=30 * 60  # 30 minutes
+    )
+
+
+@auth_router.post("/refresh", response_model=Token)
+async def refresh_access_token(
+    request: Request,
+    refresh_data: RefreshTokenRequest,
+    db: Session = Depends(get_auth_db)
+) -> Token:
+    """Refresh access token using refresh token."""
+    user = verify_refresh_token(refresh_data.refresh_token, db)
+    
+    if not user or not user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid refresh token"
+        )
+    
+    # Revoke the old refresh token
+    revoke_refresh_token(refresh_data.refresh_token, db)
+    
+    # Create new tokens
+    access_token = create_access_token(data={"sub": str(user.id), "email": user.email})
+    new_refresh_token = create_refresh_token(
+        user_id=user.id,
+        db=db,
+        device_info=request.headers.get("User-Agent"),
+        ip_address=request.client.host if request.client else None
+    )
+    
+    return Token(
+        access_token=access_token,
+        refresh_token=new_refresh_token,
+        token_type="bearer",
+        expires_in=30 * 60  # 30 minutes
+    )
+
+
+@auth_router.post("/logout")
+async def logout_user(
+    refresh_data: RefreshTokenRequest,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_auth_db)
+):
+    """Logout user by revoking refresh token."""
+    revoked = revoke_refresh_token(refresh_data.refresh_token, db)
+    
+    if not revoked:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid refresh token"
+        )
+    
+    return {"message": "Successfully logged out"}
+
+
+@auth_router.post("/logout-all")
+async def logout_all_devices(
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_auth_db)
+):
+    """Logout user from all devices by revoking all refresh tokens."""
+    count = revoke_all_user_tokens(current_user.id, db)
+    return {"message": f"Logged out from {count} devices"}
+
+
+@auth_router.get("/me", response_model=UserResponse)
+async def get_current_user_info(
+    current_user: User = Depends(get_current_active_user)
+) -> UserResponse:
+    """Get current user information."""
+    return UserResponse.model_validate(current_user)
+
+
+@auth_router.put("/me", response_model=UserResponse)
+async def update_current_user(
+    user_update: UserUpdate,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_auth_db)
+) -> UserResponse:
+    """Update current user information."""
+    update_data = user_update.model_dump(exclude_unset=True)
+    
+    # Handle password update
+    if "password" in update_data:
+        if not validate_password_strength(update_data["password"]):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Password does not meet security requirements"
+            )
+        update_data["hashed_password"] = get_password_hash(update_data.pop("password"))
+    
+    # Handle role updates (only superusers can change their own roles)
+    if "role_ids" in update_data and not current_user.is_superuser:
+        update_data.pop("role_ids")
+    
+    # Update user fields
+    for field, value in update_data.items():
+        if field != "role_ids":
+            setattr(current_user, field, value)
+    
+    # Handle role updates for superusers
+    if "role_ids" in update_data and current_user.is_superuser:
+        roles = db.query(Role).filter(Role.id.in_(update_data["role_ids"])).all()
+        current_user.roles = roles
+    
+    current_user.updated_at = datetime.now(timezone.utc)
+    db.commit()
+    db.refresh(current_user)
+    
+    return UserResponse.model_validate(current_user)
+
+
+@auth_router.post("/change-password")
+async def change_password(
+    password_data: ChangePassword,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_auth_db)
+):
+    """Change user password."""
+    from .security import verify_password
+    
+    # Verify current password
+    if not verify_password(password_data.current_password, current_user.hashed_password):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Incorrect current password"
+        )
+    
+    # Validate new password
+    if not validate_password_strength(password_data.new_password):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="New password does not meet security requirements"
+        )
+    
+    # Update password
+    current_user.hashed_password = get_password_hash(password_data.new_password)
+    current_user.updated_at = datetime.now(timezone.utc)
+    db.commit()
+    
+    # Revoke all refresh tokens to force re-authentication
+    revoke_all_user_tokens(current_user.id, db)
+    
+    return {"message": "Password changed successfully. Please log in again."}
+
+
+@auth_router.post("/forgot-password")
+async def forgot_password(
+    request_data: PasswordResetRequest,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_auth_db)
+):
+    """Request password reset."""
+    user = db.query(User).filter(User.email == request_data.email).first()
+    
+    # Always return success to prevent email enumeration
+    if user and user.is_active:
+        reset_token = create_password_reset_token(user.email)
+        
+        # In production, send email with reset token
+        # background_tasks.add_task(send_password_reset_email, user.email, reset_token)
+        
+        # For development, log the token
+        print(f"Password reset token for {user.email}: {reset_token}")
+    
+    return {"message": "If the email exists, a password reset link has been sent."}
+
+
+@auth_router.post("/reset-password")
+async def reset_password(
+    reset_data: PasswordReset,
+    db: Session = Depends(get_auth_db)
+):
+    """Reset password using reset token."""
+    email = verify_password_reset_token(reset_data.token)
+    
+    if not email:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid or expired reset token"
+        )
+    
+    user = db.query(User).filter(User.email == email).first()
+    if not user or not user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid or expired reset token"
+        )
+    
+    # Validate new password
+    if not validate_password_strength(reset_data.new_password):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Password does not meet security requirements"
+        )
+    
+    # Update password
+    user.hashed_password = get_password_hash(reset_data.new_password)
+    user.updated_at = datetime.now(timezone.utc)
+    db.commit()
+    
+    # Revoke all refresh tokens
+    revoke_all_user_tokens(user.id, db)
+    
+    return {"message": "Password reset successfully"}
+
+
+@auth_router.post("/google", response_model=Token)
+async def google_login(
+    request: Request,
+    google_data: GoogleCloudIdentity,
+    db: Session = Depends(get_auth_db)
+) -> Token:
+    """Login or register user with Google Cloud Identity."""
+    try:
+        # Verify Google ID token
+        google_user = verify_google_identity(google_data.id_token)
+        
+        # Find or create user
+        user = db.query(User).filter(
+            (User.email == google_user["email"]) |
+            (User.google_cloud_identity == google_user["sub"])
+        ).first()
+        
+        if not user:
+            # Create new user
+            user = User(
+                email=google_user["email"],
+                username=google_user["email"].split("@")[0],
+                first_name=google_user.get("given_name", ""),
+                last_name=google_user.get("family_name", ""),
+                hashed_password="",  # No password for Google users
+                is_active=True,
+                is_verified=True,  # Google users are pre-verified
+                google_cloud_identity=google_user["sub"]
+            )
+            
+            # Assign default user role
+            default_role = db.query(Role).filter(Role.name == "user").first()
+            if default_role:
+                user.roles.append(default_role)
+            
+            db.add(user)
+            db.commit()
+            db.refresh(user)
+        else:
+            # Update Google identity if not set
+            if not user.google_cloud_identity:
+                user.google_cloud_identity = google_user["sub"]
+                db.commit()
+        
+        if not user.is_active:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="User account is deactivated"
+            )
+        
+        # Update last login
+        user.last_login = datetime.now(timezone.utc)
+        db.commit()
+        
+        # Create tokens
+        access_token = create_access_token(data={"sub": str(user.id), "email": user.email})
+        refresh_token = create_refresh_token(
+            user_id=user.id,
+            db=db,
+            device_info=request.headers.get("User-Agent"),
+            ip_address=request.client.host if request.client else None
+        )
+        
+        return Token(
+            access_token=access_token,
+            refresh_token=refresh_token,
+            token_type="bearer",
+            expires_in=30 * 60  # 30 minutes
+        )
+    
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=f"Google authentication failed: {str(e)}"
+        )
+
+
+# User management endpoints
+@users_router.get("/", response_model=List[UserResponse])
+async def list_users(
+    skip: int = 0,
+    limit: int = 100,
+    current_user: User = Depends(require_permissions(["users:read"])),
+    db: Session = Depends(get_auth_db)
+) -> List[UserResponse]:
+    """List all users (requires users:read permission)."""
+    users = db.query(User).offset(skip).limit(limit).all()
+    return [UserResponse.model_validate(user) for user in users]
+
+
+@users_router.get("/{user_id}", response_model=UserResponse)
+async def get_user(
+    user_id: int,
+    current_user: User = Depends(require_permissions(["users:read"])),
+    db: Session = Depends(get_auth_db)
+) -> UserResponse:
+    """Get user by ID (requires users:read permission)."""
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
+    return UserResponse.model_validate(user)
+
+
+@users_router.put("/{user_id}", response_model=UserResponse)
+async def update_user(
+    user_id: int,
+    user_update: UserUpdate,
+    current_user: User = Depends(require_permissions(["users:update"])),
+    db: Session = Depends(get_auth_db)
+) -> UserResponse:
+    """Update user (requires users:update permission)."""
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
+    
+    update_data = user_update.model_dump(exclude_unset=True)
+    
+    # Handle password update
+    if "password" in update_data:
+        if not validate_password_strength(update_data["password"]):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Password does not meet security requirements"
+            )
+        update_data["hashed_password"] = get_password_hash(update_data.pop("password"))
+    
+    # Update user fields
+    for field, value in update_data.items():
+        if field != "role_ids":
+            setattr(user, field, value)
+    
+    # Handle role updates
+    if "role_ids" in update_data:
+        roles = db.query(Role).filter(Role.id.in_(update_data["role_ids"])).all()
+        user.roles = roles
+    
+    user.updated_at = datetime.now(timezone.utc)
+    db.commit()
+    db.refresh(user)
+    
+    return UserResponse.model_validate(user)
+
+
+@users_router.delete("/{user_id}")
+async def delete_user(
+    user_id: int,
+    current_user: User = Depends(require_permissions(["users:delete"])),
+    db: Session = Depends(get_auth_db)
+):
+    """Delete user (requires users:delete permission)."""
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
+    
+    # Prevent deleting superusers unless current user is also superuser
+    if user.is_superuser and not current_user.is_superuser:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Cannot delete superuser"
+        )
+    
+    # Prevent self-deletion
+    if user.id == current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Cannot delete yourself"
+        )
+    
+    db.delete(user)
+    db.commit()
+    
+    return {"message": "User deleted successfully"}
+
+
+# Admin endpoints
+@admin_router.get("/roles", response_model=List[RoleSchema])
+async def list_roles(
+    current_user: User = Depends(get_current_superuser),
+    db: Session = Depends(get_auth_db)
+) -> List[RoleSchema]:
+    """List all roles (superuser only)."""
+    roles = db.query(Role).all()
+    return [RoleSchema.model_validate(role) for role in roles]
+
+
+@admin_router.post("/roles", response_model=RoleSchema, status_code=status.HTTP_201_CREATED)
+async def create_role(
+    role: RoleCreate,
+    current_user: User = Depends(get_current_superuser),
+    db: Session = Depends(get_auth_db)
+) -> RoleSchema:
+    """Create new role (superuser only)."""
+    db_role = Role(
+        name=role.name,
+        description=role.description,
+        is_active=role.is_active
+    )
+    
+    # Assign permissions if specified
+    if role.permission_ids:
+        permissions = db.query(Permission).filter(Permission.id.in_(role.permission_ids)).all()
+        db_role.permissions.extend(permissions)
+    
+    db.add(db_role)
+    db.commit()
+    db.refresh(db_role)
+    
+    return RoleSchema.model_validate(db_role)
+
+
+@admin_router.get("/permissions", response_model=List[PermissionSchema])
+async def list_permissions(
+    current_user: User = Depends(get_current_superuser),
+    db: Session = Depends(get_auth_db)
+) -> List[PermissionSchema]:
+    """List all permissions (superuser only)."""
+    permissions = db.query(Permission).all()
+    return [PermissionSchema.model_validate(permission) for permission in permissions]

@@ -11,18 +11,20 @@ import json
 from typing import Dict, Any
 
 # Import the ADK Expert Agent modules
-from app.agents.adk_expert_agent import (
-    ADKExpertAgent,
-    create_adk_expert_llm_agent,
-    query_adk_expert,
-    ADKQueryType,
-    ADKQueryRequest
-)
-from app.agents.adk_expert_claude_flow import (
-    ADKExpertClaudeFlow,
-    query_adk_chromadb,
-    adk_expert_mcp_tool
-)
+# Note: app.agents module structure has changed or moved
+# from app.agents.adk_expert_agent import (
+#     ADKExpertAgent,
+#     create_adk_expert_llm_agent,
+#     query_adk_expert,
+#     ADKQueryType,
+#     ADKQueryRequest
+# )
+# from app.agents.adk_expert_claude_flow import (
+#     ADKExpertClaudeFlow,
+#     query_adk_chromadb,
+#     adk_expert_mcp_tool
+# )
+from app.agent import root_agent
 
 
 async def test_basic_agent():

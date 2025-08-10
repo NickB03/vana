@@ -15,9 +15,12 @@ from typing import Dict, Any, List
 # Import the actual application components
 import sys
 sys.path.append('/Users/nick/Development/vana')
-from app.server import app, SessionStore
-from app.agent import ResearchAgent
-from app.config import Settings
+from app.server import app
+# Note: SessionStore, ResearchAgent, Settings not available in current codebase
+# from app.server import SessionStore
+# from app.agent import ResearchAgent  
+# from app.config import Settings
+from app.agent import root_agent
 
 
 class TestMessageFormatValidation:

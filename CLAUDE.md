@@ -25,6 +25,17 @@
 
 ❌ **WRONG**: Multiple messages (6x slower!)
 
+### 📁 File Organization Rules
+
+**NEVER save to root folder. Use these directories:**
+- `/src` - Source code files
+- `/tests` - Test files
+- `/docs` - Documentation and markdown files
+- `/config` - Configuration files
+- `/scripts` - Utility scripts
+- `/examples` - Example code
+- `.claude_workspace/` - Claude-specific working files
+
 ## 🎯 Claude Code vs MCP Tools
 
 ### Claude Code Handles ALL:
@@ -36,11 +47,14 @@
 - Testing, debugging & implementation
 
 ### MCP Tools ONLY:
-- Coordination & planning
-- Memory management
-- Performance tracking
-- Swarm orchestration
-- GitHub integration
+- **claude-flow**: Swarm orchestration, SPARC modes, neural training
+- **ruv-swarm**: Advanced swarm coordination, DAA agents
+- **chroma-vana**: ChromaDB for ADK documentation queries
+- **memory-mcp**: Knowledge graph and entity relationships
+- **firecrawl**: Web scraping, search, and research
+- **kibo-ui**: UI component library and templates
+- **playwright**: Browser automation and testing
+- **browser-tools-mcp**: Browser debugging and audits
 
 **Key**: MCP coordinates, Claude Code executes!
 
@@ -53,8 +67,6 @@
 **Deployment:** Local-only in this profile (no prod actions)
 
 **CRITICAL REQUIREMENT:** Follow the ADK Starter Pack "Getting Started" guide **exactly**. Before any implementation, query ChromaDB collections for official Google ADK documentation. If results are unclear, pause and ask for clarification rather than guessing.
-
-**Permissions Source of Truth:** Runtime approvals/config are defined in `.claude/permissions.dev.json`. If that file conflicts with CLAUDE.md wording, **the permissions file wins**.
 
 ## 📁 WORKSPACE STRUCTURE
 
@@ -136,7 +148,8 @@ OPENROUTER_API_KEY=<if-using-openrouter>
 ALLOW_ORIGINS=http://localhost:5173,http://localhost:5174,http://localhost:3000
 GOOGLE_CLOUD_PROJECT=analystai-454200
 ```
-## 📦 SPARC Commands **Critical this is not part of Vana. This is a function of Claude Flow for local development**
+
+## 📦 SPARC Commands (Claude Flow Integration)
 
 ### Core:
 - `npx claude-flow sparc modes` - List modes
@@ -145,11 +158,12 @@ GOOGLE_CLOUD_PROJECT=analystai-454200
 - `npx claude-flow sparc batch <modes> "<task>"` - Parallel modes
 - `npx claude-flow sparc pipeline "<task>"` - Full pipeline
 
-### Build:
-- `npm run build/test/lint/typecheck`
+### Build (Vana Project):
 - `make test` - Run Python tests
 - `make lint` - Run linters
 - `make typecheck` - Type checking
+- `make dev-frontend` - Start frontend (port 5173)
+- `make dev-backend` - Start backend (port 8000)
 
 ## 🤖 Agent Reference (54 Total)
 
@@ -242,11 +256,6 @@ npx claude-flow@alpha hooks session-end --export-metrics true
 ```
 
 ## 🛠️ MCP Setup
-
-```bash
-# Add MCP server
-claude mcp add claude-flow npx claude-flow@alpha mcp start
-```
 
 ### Key MCP Tools:
 - `mcp__claude-flow__swarm_init` - Setup topology
@@ -371,6 +380,13 @@ A task is **only complete** if:
 └── Priority: 🔴 HIGH | 🟡 MEDIUM | 🟢 LOW
 ```
 
+## 📈 Performance Benefits
+
+- **84.8% SWE-Bench solve rate**
+- **32.3% token reduction**
+- **2.8-4.4x speed improvement**
+- **27+ neural models**
+
 ## 🎯 Performance Tips
 
 1. **Batch Everything** - Multiple operations = 1 message
@@ -378,6 +394,38 @@ A task is **only complete** if:
 3. **Memory is Key** - Cross-agent coordination
 4. **Monitor Progress** - Real-time tracking
 5. **Enable Hooks** - Automated coordination
+
+## 🔄 Hooks Integration
+
+### Pre-Operation
+- Auto-assign agents by file type
+- Validate commands for safety
+- Prepare resources automatically
+- Optimize topology by complexity
+- Cache searches
+
+### Post-Operation
+- Auto-format code
+- Train neural patterns
+- Update memory
+- Analyze performance
+- Track token usage
+
+### Session Management
+- Generate summaries
+- Persist state
+- Track metrics
+- Restore context
+- Export workflows
+
+## 💡 Integration Tips
+1. Start with basic swarm init
+2. Scale agents gradually
+3. Use memory for context
+4. Monitor progress regularly
+5. Train patterns from success
+6. Enable hooks automation
+7. Use GitHub tools first
 
 ## ⚡ Quick Examples
 
@@ -403,10 +451,23 @@ TodoWrite { todos: [
 
 ## 🔗 Resources
 
-- Docs: https://github.com/ruvnet/claude-flow
+- Vana ADK Project: https://github.com/NickB03/vana
+- Claude Flow Docs: https://github.com/ruvnet/claude-flow
 - Issues: https://github.com/ruvnet/claude-flow/issues
 - SPARC: https://github.com/ruvnet/claude-flow/docs/sparc.md
+
+## 📞 Support
+
+- Documentation: https://github.com/ruvnet/claude-flow
+- Issues: https://github.com/ruvnet/claude-flow/issues
+- Version: Claude Flow v2.0.0
 
 ---
 
 **Remember**: Claude Flow coordinates, Claude Code creates!
+
+# important-instruction-reminders
+Do what has been asked; nothing more, nothing less.
+NEVER create files unless they're absolutely necessary for achieving your goal.
+ALWAYS prefer editing an existing file to creating a new one.
+NEVER proactively create documentation files (*.md) or README files. Only create documentation files if explicitly requested by the User.

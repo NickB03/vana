@@ -22,7 +22,7 @@ from datetime import datetime
 
 from app.utils.sse_broadcaster import (
     SSEEvent,
-    SSEBroadcaster,
+    EnhancedSSEBroadcaster,
     get_sse_broadcaster,
     broadcast_agent_network_update,
     agent_network_event_stream,
@@ -82,11 +82,11 @@ class TestSSEEvent:
 
 
 class TestSSEBroadcaster:
-    """Test cases for SSEBroadcaster class."""
+    """Test cases for EnhancedSSEBroadcaster class."""
     
     def setup_method(self):
         """Set up test environment."""
-        self.broadcaster = SSEBroadcaster()
+        self.broadcaster = EnhancedSSEBroadcaster()
     
     def test_subscribe_and_unsubscribe(self):
         """Test subscription management."""
@@ -243,7 +243,7 @@ class TestGlobalFunctions:
         broadcaster2 = get_sse_broadcaster()
         
         assert broadcaster1 is broadcaster2
-        assert isinstance(broadcaster1, SSEBroadcaster)
+        assert isinstance(broadcaster1, EnhancedSSEBroadcaster)
     
     @patch('app.utils.sse_broadcaster.get_sse_broadcaster')
     def test_broadcast_agent_network_update(self, mock_get_broadcaster):
@@ -290,7 +290,7 @@ class TestAgentNetworkEventStream:
     @pytest.mark.asyncio
     async def test_event_stream_basic_flow(self):
         """Test basic event stream functionality."""
-        broadcaster = SSEBroadcaster()
+        broadcaster = EnhancedSSEBroadcaster()
         session_id = "test_session"
         
         # Start the stream
