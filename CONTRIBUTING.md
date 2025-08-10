@@ -2,388 +2,247 @@
 
 Thank you for your interest in contributing to Vana! This document provides guidelines and instructions for contributing to the project.
 
-## Table of Contents
+## 🎯 Getting Started
 
-- [Code of Conduct](#code-of-conduct)
-- [Getting Started](#getting-started)
-- [Development Setup](#development-setup)
-- [How to Contribute](#how-to-contribute)
-- [Development Workflow](#development-workflow)
-- [Code Standards](#code-standards)
-- [Testing Guidelines](#testing-guidelines)
-- [Documentation](#documentation)
-- [Submitting Changes](#submitting-changes)
-- [Community](#community)
-
-## Code of Conduct
-
-This project adheres to the [Google Open Source Code of Conduct](https://opensource.google/conduct/). By participating, you are expected to uphold this code.
-
-## Getting Started
-
-1. **Fork the Repository**: Click the "Fork" button on the GitHub repository page
-2. **Clone Your Fork**:
+1. **Fork the Repository**
+   - Fork the project on GitHub
+   - Clone your fork locally
    ```bash
    git clone https://github.com/YOUR_USERNAME/vana.git
    cd vana
    ```
-3. **Add Upstream Remote**:
+
+2. **Set Up Development Environment**
    ```bash
-   git remote add upstream https://github.com/original-org/vana.git
+   # Install dependencies
+   make install
+   
+   # Set up Google Cloud authentication
+   gcloud auth application-default login
+   
+   # Configure environment
+   cp .env.example .env.local
+   # Edit .env.local with your API keys
    ```
 
-## Development Setup
+3. **Create a Branch**
+   ```bash
+   git checkout -b feature/your-feature-name
+   ```
 
-### Prerequisites
+## 📝 Development Guidelines
 
-- Python 3.10+
-- uv (Python package manager)
-- Node.js 18+
-- Google Cloud SDK
-- Terraform
-- make
+### Code Style
 
-### Initial Setup
+- **Python**: Follow PEP 8
+- **Type Hints**: Use type hints for all function parameters and returns
+- **Docstrings**: Add docstrings to all public functions and classes
+- **Comments**: Write clear comments for complex logic
 
-```bash
-# Install dependencies
-make install
+### Testing
 
-# Set up pre-commit hooks
-uv run pre-commit install
-
-# Configure Google Cloud (for testing)
-gcloud auth application-default login
-```
-
-### Environment Configuration
-
-Create a `.env` file in the project root:
+All contributions must include appropriate tests:
 
 ```bash
-# For local development with AI Studio
-GOOGLE_GENAI_USE_VERTEXAI=False
-GOOGLE_API_KEY=your-api-key-here
+# Run tests before submitting
+make test
 
-# For Vertex AI development
-# GOOGLE_GENAI_USE_VERTEXAI=True
-# GOOGLE_CLOUD_PROJECT=your-project-id
-# GOOGLE_CLOUD_LOCATION=us-central1
+# Check code style
+make lint
+
+# Type checking
+make typecheck
 ```
-
-## How to Contribute
-
-### Types of Contributions
-
-- **Bug Fixes**: Fix issues reported in GitHub Issues
-- **Features**: Implement new functionality (discuss first in Issues)
-- **Documentation**: Improve README, docstrings, or wiki
-- **Tests**: Add missing tests or improve test coverage
-- **Performance**: Optimize code for better performance
-- **Refactoring**: Improve code structure and maintainability
-
-### Contribution Process
-
-1. **Check Existing Issues**: Look for open issues or create a new one
-2. **Discuss**: For major changes, discuss your approach in the issue
-3. **Implement**: Make your changes following our guidelines
-4. **Test**: Ensure all tests pass and add new ones if needed
-5. **Submit**: Create a pull request with a clear description
-
-## Development Workflow
-
-### Branch Naming
-
-- `feature/description` - New features
-- `fix/description` - Bug fixes
-- `docs/description` - Documentation updates
-- `refactor/description` - Code refactoring
-- `test/description` - Test improvements
 
 ### Commit Messages
 
-Follow the [Conventional Commits](https://www.conventionalcommits.org/) specification:
+Follow conventional commit format:
 
 ```
-type(scope): subject
+type(scope): description
 
-body (optional)
+[optional body]
 
-footer (optional)
+[optional footer]
 ```
 
 Types:
 - `feat`: New feature
 - `fix`: Bug fix
 - `docs`: Documentation changes
-- `style`: Code style changes (formatting, etc.)
+- `style`: Code style changes
 - `refactor`: Code refactoring
-- `test`: Test changes
-- `chore`: Build process or auxiliary tool changes
+- `test`: Test additions or changes
+- `chore`: Maintenance tasks
 
 Example:
 ```
-feat(agents): add timeout handling to research evaluator
+feat(agent): add data analysis agent
 
-- Implement configurable timeout for evaluation phase
-- Add retry logic for transient failures
-- Update tests to cover timeout scenarios
+Implements a new agent type for data analysis with support for
+CSV, JSON, and Excel file processing.
 
 Closes #123
 ```
 
-## Code Standards
+## 🔄 Pull Request Process
 
-### Python Code Style
+1. **Update Documentation**
+   - Update README.md if needed
+   - Add/update docstrings
+   - Update CHANGELOG.md
 
-- Follow PEP 8
-- Use type hints for all functions
-- Maximum line length: 88 characters (Black default)
-- Use descriptive variable and function names
-- Add docstrings to all public functions and classes
+2. **Ensure Tests Pass**
+   ```bash
+   make test
+   make lint
+   make typecheck
+   ```
 
-Example:
-```python
-from typing import Dict, List, Optional
+3. **Create Pull Request**
+   - Use a clear, descriptive title
+   - Reference any related issues
+   - Describe what changes were made and why
+   - Include screenshots for UI changes
 
-def process_research_findings(
-    findings: List[Dict[str, Any]], 
-    confidence_threshold: float = 0.8
-) -> Optional[Dict[str, Any]]:
-    """Process research findings and filter by confidence.
-    
-    Args:
-        findings: List of research finding dictionaries
-        confidence_threshold: Minimum confidence score (0.0-1.0)
-        
-    Returns:
-        Filtered findings dictionary or None if no findings meet threshold
-        
-    Raises:
-        ValueError: If confidence_threshold is not between 0.0 and 1.0
-    """
-    if not 0.0 <= confidence_threshold <= 1.0:
-        raise ValueError("Confidence threshold must be between 0.0 and 1.0")
-    
-    # Implementation here
-    ...
+4. **PR Template**
+   ```markdown
+   ## Description
+   Brief description of changes
+   
+   ## Type of Change
+   - [ ] Bug fix
+   - [ ] New feature
+   - [ ] Breaking change
+   - [ ] Documentation update
+   
+   ## Testing
+   - [ ] Tests pass locally
+   - [ ] Added new tests
+   - [ ] Updated existing tests
+   
+   ## Checklist
+   - [ ] Code follows project style
+   - [ ] Self-review completed
+   - [ ] Documentation updated
+   - [ ] No new warnings
+   ```
+
+## 🏗️ Project Structure
+
+```
+vana/
+├── app/                 # Main application code
+│   ├── agent.py        # Agent implementation
+│   ├── server.py       # FastAPI server
+│   └── auth/           # Authentication system
+├── tests/              # Test suites
+│   ├── unit/          # Unit tests
+│   ├── integration/   # Integration tests
+│   └── performance/   # Performance tests
+├── docs/              # Documentation
+└── scripts/           # Utility scripts
 ```
 
-### TypeScript/React Code Style
-
-- Use ESLint and Prettier configurations
-- Prefer functional components with hooks
-- Use TypeScript strict mode
-- Define interfaces for all props
-
-Example:
-```typescript
-interface ResearchResultProps {
-  findings: Finding[];
-  onSelect: (finding: Finding) => void;
-  isLoading?: boolean;
-}
-
-export const ResearchResult: React.FC<ResearchResultProps> = ({
-  findings,
-  onSelect,
-  isLoading = false,
-}) => {
-  // Component implementation
-};
-```
-
-## Testing Guidelines
-
-### Running Tests
-
-```bash
-# Run all tests
-make test
-
-# Run specific test file
-uv run pytest tests/unit/test_agent.py
-
-# Run with coverage
-uv run pytest --cov=app tests/
-
-# Run linting
-make lint
-```
+## 🧪 Testing Guidelines
 
 ### Writing Tests
 
-- Aim for >80% code coverage
-- Write unit tests for all new functions
-- Include integration tests for agent workflows
-- Use meaningful test names that describe the scenario
-
-Example:
 ```python
+# Example test structure
 import pytest
-from app.agent import plan_generator
+from app.agent import ResearchAgent
 
-@pytest.mark.asyncio
-async def test_plan_generator_creates_five_line_plan():
-    """Test that plan generator creates exactly 5 research lines."""
-    # Test implementation
-    ...
-
-@pytest.mark.asyncio
-async def test_plan_generator_handles_ambiguous_topics():
-    """Test that plan generator uses search for ambiguous topics."""
-    # Test implementation
-    ...
+class TestResearchAgent:
+    @pytest.fixture
+    def agent(self):
+        return ResearchAgent()
+    
+    @pytest.mark.asyncio
+    async def test_research_query(self, agent):
+        result = await agent.research("test query")
+        assert result is not None
+        assert "citations" in result
 ```
 
-### Testing Agents
+### Test Categories
 
-Use the ADK evaluation framework:
+- **Unit Tests**: Test individual functions/methods
+- **Integration Tests**: Test component interactions
+- **Performance Tests**: Test speed and memory usage
+- **E2E Tests**: Test complete workflows
 
-```python
-# tests/integration/test_research_pipeline.evalset.json
-{
-  "eval_set_id": "research_pipeline_eval",
-  "eval_cases": [
-    {
-      "eval_id": "sustainability_research",
-      "conversation": [
-        {
-          "user_content": {
-            "parts": [{"text": "Research sustainable energy solutions"}]
-          },
-          "expected_plan_elements": ["solar", "wind", "storage"],
-          "min_sources": 5
-        }
-      ]
-    }
-  ]
-}
-```
+## 🐛 Reporting Issues
 
-## Documentation
+### Bug Reports
 
-### Code Documentation
+Please include:
+- Python version
+- OS and version
+- Steps to reproduce
+- Expected behavior
+- Actual behavior
+- Error messages/logs
 
-- Add docstrings to all public functions and classes
-- Include parameter descriptions and return types
-- Document exceptions that may be raised
-- Add inline comments for complex logic
+### Feature Requests
 
-### README Updates
+Please include:
+- Use case description
+- Proposed solution
+- Alternative solutions considered
+- Additional context
 
-When adding features, update the README:
-- Add to feature list if significant
-- Update configuration section if new settings
-- Add to API documentation if new endpoints
-- Include in architecture diagrams if structural
+## 💡 Areas for Contribution
 
-### Architecture Decisions
+### Good First Issues
 
-For significant changes, create an ADR (Architecture Decision Record):
+Look for issues labeled `good first issue`:
+- Documentation improvements
+- Test coverage additions
+- Bug fixes
+- Code refactoring
 
-```markdown
-# ADR-001: Use ChromaDB for Document Storage
+### Priority Areas
 
-## Status
-Accepted
+- **Agent Development**: New agent types and capabilities
+- **Testing**: Increase test coverage
+- **Documentation**: Improve guides and examples
+- **Performance**: Optimization opportunities
+- **Security**: Security enhancements
 
-## Context
-We need a vector database for storing and retrieving documentation...
+## 📚 Resources
 
-## Decision
-We will use ChromaDB because...
+- [Google ADK Documentation](https://cloud.google.com/products/ai)
+- [FastAPI Documentation](https://fastapi.tiangolo.com/)
+- [Python Style Guide (PEP 8)](https://www.python.org/dev/peps/pep-0008/)
+- [Conventional Commits](https://www.conventionalcommits.org/)
 
-## Consequences
-- Positive: Fast semantic search...
-- Negative: Additional dependency...
-```
+## 🤝 Code of Conduct
 
-## Submitting Changes
+### Our Standards
 
-### Pull Request Process
+- Be respectful and inclusive
+- Welcome newcomers and help them get started
+- Accept constructive criticism gracefully
+- Focus on what's best for the community
 
-1. **Update your fork**:
-   ```bash
-   git fetch upstream
-   git checkout main
-   git merge upstream/main
-   ```
+### Unacceptable Behavior
 
-2. **Create feature branch**:
-   ```bash
-   git checkout -b feature/your-feature
-   ```
+- Harassment or discrimination
+- Trolling or insulting comments
+- Public or private harassment
+- Publishing private information without permission
 
-3. **Make changes and commit**:
-   ```bash
-   git add .
-   git commit -m "feat: add awesome feature"
-   ```
+## 📞 Getting Help
 
-4. **Push to your fork**:
-   ```bash
-   git push origin feature/your-feature
-   ```
+- Check existing [issues](https://github.com/NickB03/vana/issues)
+- Review [documentation](docs/)
+- Ask questions in issues with the `question` label
 
-5. **Create Pull Request** on GitHub
+## 📄 License
 
-### Pull Request Template
+By contributing, you agree that your contributions will be licensed under the MIT License.
 
-```markdown
-## Description
-Brief description of changes
+---
 
-## Related Issue
-Fixes #(issue number)
-
-## Type of Change
-- [ ] Bug fix
-- [ ] New feature
-- [ ] Breaking change
-- [ ] Documentation update
-
-## Testing
-- [ ] Unit tests pass
-- [ ] Integration tests pass
-- [ ] Manual testing completed
-
-## Checklist
-- [ ] Code follows style guidelines
-- [ ] Self-review completed
-- [ ] Comments added for complex code
-- [ ] Documentation updated
-- [ ] No new warnings generated
-```
-
-### Review Process
-
-1. **Automated Checks**: CI/CD runs tests and linting
-2. **Code Review**: Maintainers review code quality and design
-3. **Feedback**: Address review comments
-4. **Approval**: Requires approval from at least one maintainer
-5. **Merge**: Maintainer merges using squash and merge
-
-## Community
-
-### Getting Help
-
-- **GitHub Issues**: For bugs and feature requests
-- **Discussions**: For questions and ideas
-- **Wiki**: For detailed documentation
-
-### Communication Guidelines
-
-- Be respectful and constructive
-- Provide context and examples
-- Search existing issues before creating new ones
-- Use clear, descriptive titles
-
-### Recognition
-
-Contributors are recognized in:
-- Release notes
-- Contributors file
-- Project documentation
-
-Thank you for contributing to Vana! Your efforts help make this project better for everyone.
+Thank you for contributing to Vana! 🚀
