@@ -59,9 +59,34 @@ setup-dev-env:
 test:
 	uv run pytest tests/unit && uv run pytest tests/integration
 
+# Run frontend unit tests
+test-frontend:
+	cd tests/frontend && npm run test
+
+# Run frontend E2E tests
+test-frontend-e2e:
+	cd tests/frontend && npm run test:e2e
+
+# Run frontend accessibility tests
+test-frontend-a11y:
+	cd tests/frontend && npm run test:accessibility
+
+# Run frontend performance tests
+test-frontend-perf:
+	cd tests/frontend && npm run test:performance
+
+# Run all frontend tests
+test-frontend-all:
+	cd tests/frontend && npm run test:all
+
 # Run code quality checks (codespell, ruff, mypy)
 lint:
 	uv run codespell app/ tests/ *.md *.py --skip="venv/,.venv/,__pycache__/" --ignore-words-list="rouge,DAA,deques"
 	uv run ruff check . --diff
 	uv run ruff format . --check --diff
 	uv run mypy .
+
+# Combined type checking (Python + TypeScript)
+typecheck:
+	uv run mypy .
+	cd tests/frontend && npx tsc --noEmit
