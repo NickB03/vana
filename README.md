@@ -27,6 +27,7 @@ Transform complex research tasks into comprehensive reports with AI agents worki
 - [🔐 Security Features](#-security-features)
 - [📚 API Reference](#-api-reference)
 - [💻 Development](#-development)
+- [⚡ AI Model Configuration](#-ai-model-configuration)
 - [🧪 Testing](#-testing)
 - [🚢 Deployment](#-deployment)
 - [🛣️ Roadmap](#️-roadmap)
@@ -114,9 +115,10 @@ Vana uses a two-phase approach that combines human oversight with AI automation 
 
 ## ✨ Key Features
 
-### 🧠 **Powered by Google ADK**
+### 🧠 **Powered by Google ADK & Modern AI Models**
 - **Enterprise-Grade Foundation**: Built on Google's Agent Development Kit for reliability and scale
-- **Gemini AI Models**: Access to Google's most advanced language models (Gemini 2.5 Pro/Flash)
+- **LiteLLM + OpenRouter (PRIMARY)**: Free, fast Qwen 3 Coder model for optimal performance
+- **Google Gemini (FALLBACK)**: Enterprise-grade Gemini 2.5 Pro/Flash when OpenRouter unavailable
 - **Cloud-Native Design**: Seamless integration with Google Cloud Platform services
 - **Production Ready**: Comprehensive testing and monitoring for enterprise deployment
 
@@ -125,6 +127,12 @@ Vana uses a two-phase approach that combines human oversight with AI automation 
 - **Parallel Processing**: Agents work simultaneously for maximum efficiency
 - **Quality Assurance**: Built-in evaluation, fact-checking, and refinement processes
 - **Intelligent Coordination**: Advanced orchestration ensures optimal task distribution
+
+### ⚡ **Smart AI Model Selection**
+- **PRIMARY: OpenRouter + Qwen 3 Coder**: Free, fast, and capable - automatically used when `OPENROUTER_API_KEY` is set
+- **FALLBACK: Google Gemini**: Enterprise-grade Gemini 2.5 Pro/Flash when OpenRouter unavailable
+- **Automatic Switching**: No configuration needed - system intelligently selects best available model
+- **Cost Optimization**: Free tier usage with OpenRouter, only uses paid Gemini models as fallback
 
 ### 🔐 **Enterprise Security**
 - **Multiple Auth Methods**: OAuth2/JWT, Firebase Auth, API keys, or development mode
@@ -184,12 +192,15 @@ Create `.env.local` in the root directory:
 BRAVE_API_KEY=your-brave-search-api-key
 GOOGLE_CLOUD_PROJECT=your-project-id
 
+# PRIMARY Model Provider (Recommended - FREE tier)
+OPENROUTER_API_KEY=your-openrouter-key  # Enables free Qwen 3 Coder model
+
 # Authentication (choose one)
 JWT_SECRET_KEY=your-jwt-secret-key    # For JWT auth
 # OR set AUTH_REQUIRED=false for development
 
-# Optional: Use OpenRouter for faster responses
-OPENROUTER_API_KEY=your-openrouter-key
+# Optional: Force Gemini instead of OpenRouter
+# USE_OPENROUTER=false  # Only if you want to use Gemini fallback
 ```
 
 ### Launch Vana
@@ -202,6 +213,10 @@ make dev-backend
 # • API: http://localhost:8000
 # • Interactive Docs: http://localhost:8000/docs
 # • Health Check: http://localhost:8000/health
+
+# ✨ Pro Tip: Check your model configuration
+# • With OPENROUTER_API_KEY: Uses FREE Qwen 3 Coder (recommended)
+# • Without: Falls back to Gemini models (requires Google Cloud auth)
 
 # Optional: Start ADK playground for testing
 make playground  # http://localhost:8501
@@ -270,8 +285,8 @@ graph TB
     end
     
     subgraph "AI Models"
-        GEM[Gemini 2.5 Flash]
-        LITE[OpenRouter/Qwen3 Coder]
+        LITE["PRIMARY: OpenRouter/Qwen3 Coder (FREE)"]
+        GEM["FALLBACK: Gemini 2.5 Pro/Flash"]
         EMB[Text Embeddings]
     end
     
@@ -312,8 +327,8 @@ graph TB
     ORCH --> CA
     ORCH --> EA
     
-    RA --> GEM
     RA --> LITE
+    RA --> GEM  
     RA --> BRAVE
     AA --> EMB
     
@@ -521,6 +536,93 @@ make test && make lint && make typecheck
 
 ---
 
+## ⚡ AI Model Configuration
+
+Vana uses an intelligent two-tier AI model system that automatically selects the best available model for optimal performance and cost efficiency.
+
+### 🔄 How Model Selection Works
+
+The system automatically chooses models based on available configuration:
+
+1. **PRIMARY (Recommended)**: When `OPENROUTER_API_KEY` is set → Uses **LiteLLM + OpenRouter with Qwen 3 Coder (FREE)**
+2. **FALLBACK**: When no OpenRouter key → Uses **Google Gemini 2.5 Pro/Flash** (requires Google Cloud auth)
+
+### ⚙️ Configuration Options
+
+**Option 1: OpenRouter (Recommended - FREE)**
+```bash
+# .env.local
+OPENROUTER_API_KEY=sk-or-v1-your-key-here
+# That's it! System automatically uses OpenRouter
+```
+
+**Option 2: Force Gemini Models**
+```bash
+# .env.local
+OPENROUTER_API_KEY=sk-or-v1-your-key-here
+USE_OPENROUTER=false  # Explicitly disable OpenRouter
+```
+
+**Option 3: Gemini Only (No OpenRouter)**
+```bash
+# .env.local
+# No OPENROUTER_API_KEY set
+# System automatically falls back to Gemini
+```
+
+### 🆓 Why OpenRouter is Primary
+
+| Feature | OpenRouter + Qwen 3 Coder | Google Gemini |
+|---------|---------------------------|---------------|
+| **Cost** | **FREE** (no usage limits) | Pay-per-token |
+| **Speed** | **Fast** responses | Standard speed |
+| **Setup** | Just API key needed | Google Cloud auth required |
+| **Capability** | Excellent for code & research | Enterprise-grade |
+
+### 🔍 Model Details
+
+**PRIMARY: Qwen 3 Coder via OpenRouter**
+- **Model**: `openrouter/qwen/qwen-3-coder:free`
+- **Provider**: OpenRouter (via LiteLLM)
+- **Cost**: Free tier with no usage limits
+- **Use Cases**: Code generation, research, analysis
+- **Activation**: Automatic when `OPENROUTER_API_KEY` is present
+
+**FALLBACK: Google Gemini**
+- **Critic Model**: `gemini-2.5-pro` (planning, evaluation)
+- **Worker Model**: `gemini-2.5-flash` (research, content generation)
+- **Provider**: Google Cloud Vertex AI
+- **Cost**: Pay-per-token pricing
+- **Use Cases**: Enterprise applications, high-scale deployments
+- **Activation**: When OpenRouter unavailable or explicitly disabled
+
+### 📊 Getting OpenRouter API Key
+
+1. Visit [OpenRouter](https://openrouter.ai/)
+2. Sign up for a free account
+3. Generate an API key
+4. Add to your `.env.local` file as `OPENROUTER_API_KEY`
+5. Restart Vana - it will automatically use OpenRouter!
+
+### 🛠️ Troubleshooting
+
+**Check Your Current Model Configuration:**
+```bash
+# Start Vana and check the logs
+make dev-backend
+
+# Look for startup messages:
+# ✅ PRIMARY: Using OpenRouter with Qwen 3 Coder model (FREE tier)
+# ⚠️ FALLBACK: Using Gemini models (OpenRouter API key not configured)
+```
+
+**Common Issues:**
+- **Invalid OpenRouter Key**: System falls back to Gemini automatically
+- **No Google Cloud Auth**: Set up `gcloud auth application-default login`
+- **Environment Variables**: Ensure `.env.local` is in the project root
+
+---
+
 ## 🧪 Testing
 
 ### Comprehensive Test Suite
@@ -671,7 +773,7 @@ uvx agent-starter-pack setup-cicd \
 
 ### Current: Research Platform ✅
 - **Multi-Agent Research System**: 8 specialized AI agents working collaboratively
-- **Google ADK Integration**: Full compatibility with ADK 1.8.0 and Gemini models
+- **Google ADK Integration**: Full compatibility with ADK 1.8.0, LiteLLM, and modern AI models
 - **Production Ready**: Comprehensive security, testing, and monitoring
 - **Real-time Streaming**: Live updates with Server-Sent Events (SSE)
 
@@ -697,6 +799,7 @@ uvx agent-starter-pack setup-cicd \
 
 ### 🔧 For Developers
 - **[Development Setup](#-development)** - Local development environment
+- **[⚡ AI Model Configuration](#-ai-model-configuration)** - Understanding the two-tier model system
 - **[Testing Framework](#-testing)** - Comprehensive test suite and coverage
 - **[Deployment Guide](#-deployment)** - Production deployment options
 - **[Contributing Guidelines](CONTRIBUTING.md)** - How to contribute to Vana

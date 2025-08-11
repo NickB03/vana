@@ -50,48 +50,51 @@
     <!-- Core Services -->
     <g>
       <!-- LLMs -->
-      <rect x="520" y="500" width="250" height="100" rx="8" fill="white" stroke="#dadce0" stroke-width="1"/>
+      <rect x="520" y="500" width="250" height="120" rx="8" fill="white" stroke="#dadce0" stroke-width="1"/>
       <text x="645" y="530" font-family="Arial" font-size="18" font-weight="bold" text-anchor="middle">Language Models</text>
-      <text x="645" y="555" font-family="Arial" font-size="14" text-anchor="middle" fill="#5f6368">Gemini 2.5 Pro</text>
-      <text x="645" y="575" font-family="Arial" font-size="14" text-anchor="middle" fill="#5f6368">Gemini 2.5 Flash</text>
+      <text x="645" y="555" font-family="Arial" font-size="14" text-anchor="middle" fill="#34a853">PRIMARY: Qwen 3 Coder (FREE)</text>
+      <text x="645" y="575" font-family="Arial" font-size="14" text-anchor="middle" fill="#5f6368">FALLBACK: Gemini 2.5 Pro</text>
+      <text x="645" y="595" font-family="Arial" font-size="14" text-anchor="middle" fill="#5f6368">FALLBACK: Gemini 2.5 Flash</text>
       
       <!-- Search -->
-      <rect x="800" y="500" width="250" height="100" rx="8" fill="white" stroke="#dadce0" stroke-width="1"/>
-      <text x="925" y="530" font-family="Arial" font-size="18" font-weight="bold" text-anchor="middle">Google Search</text>
-      <text x="925" y="555" font-family="Arial" font-size="14" text-anchor="middle" fill="#5f6368">Web Research</text>
-      <text x="925" y="575" font-family="Arial" font-size="14" text-anchor="middle" fill="#5f6368">Source Discovery</text>
+      <rect x="800" y="500" width="250" height="120" rx="8" fill="white" stroke="#dadce0" stroke-width="1"/>
+      <text x="925" y="530" font-family="Arial" font-size="18" font-weight="bold" text-anchor="middle">Search & Data</text>
+      <text x="925" y="555" font-family="Arial" font-size="14" text-anchor="middle" fill="#5f6368">Brave Search API</text>
+      <text x="925" y="575" font-family="Arial" font-size="14" text-anchor="middle" fill="#5f6368">Web Research</text>
+      <text x="925" y="595" font-family="Arial" font-size="14" text-anchor="middle" fill="#5f6368">Source Discovery</text>
       
       <!-- Cloud Run -->
-      <rect x="1080" y="500" width="250" height="100" rx="8" fill="white" stroke="#dadce0" stroke-width="1"/>
-      <text x="1205" y="530" font-family="Arial" font-size="18" font-weight="bold" text-anchor="middle">Cloud Run</text>
-      <text x="1205" y="555" font-family="Arial" font-size="14" text-anchor="middle" fill="#5f6368">Auto-scaling</text>
-      <text x="1205" y="575" font-family="Arial" font-size="14" text-anchor="middle" fill="#5f6368">Serverless</text>
+      <rect x="1080" y="500" width="250" height="120" rx="8" fill="white" stroke="#dadce0" stroke-width="1"/>
+      <text x="1205" y="530" font-family="Arial" font-size="18" font-weight="bold" text-anchor="middle">Infrastructure</text>
+      <text x="1205" y="555" font-family="Arial" font-size="14" text-anchor="middle" fill="#5f6368">Cloud Run</text>
+      <text x="1205" y="575" font-family="Arial" font-size="14" text-anchor="middle" fill="#5f6368">Auto-scaling</text>
+      <text x="1205" y="595" font-family="Arial" font-size="14" text-anchor="middle" fill="#5f6368">Serverless</text>
     </g>
     
     <!-- Data & Monitoring -->
     <g>
       <!-- Storage -->
-      <rect x="520" y="630" width="250" height="100" rx="8" fill="white" stroke="#dadce0" stroke-width="1"/>
-      <text x="645" y="660" font-family="Arial" font-size="18" font-weight="bold" text-anchor="middle">Data Storage</text>
-      <text x="645" y="685" font-family="Arial" font-size="14" text-anchor="middle" fill="#5f6368">Cloud Storage</text>
-      <text x="645" y="705" font-family="Arial" font-size="14" text-anchor="middle" fill="#5f6368">BigQuery</text>
+      <rect x="520" y="650" width="250" height="100" rx="8" fill="white" stroke="#dadce0" stroke-width="1"/>
+      <text x="645" y="680" font-family="Arial" font-size="18" font-weight="bold" text-anchor="middle">Data Storage</text>
+      <text x="645" y="705" font-family="Arial" font-size="14" text-anchor="middle" fill="#5f6368">Cloud Storage</text>
+      <text x="645" y="725" font-family="Arial" font-size="14" text-anchor="middle" fill="#5f6368">Session Management</text>
       
       <!-- Monitoring -->
-      <rect x="800" y="630" width="250" height="100" rx="8" fill="white" stroke="#dadce0" stroke-width="1"/>
-      <text x="925" y="660" font-family="Arial" font-size="18" font-weight="bold" text-anchor="middle">Monitoring</text>
-      <text x="925" y="685" font-family="Arial" font-size="14" text-anchor="middle" fill="#5f6368">Cloud Trace</text>
-      <text x="925" y="705" font-family="Arial" font-size="14" text-anchor="middle" fill="#5f6368">Looker Studio</text>
+      <rect x="800" y="650" width="250" height="100" rx="8" fill="white" stroke="#dadce0" stroke-width="1"/>
+      <text x="925" y="680" font-family="Arial" font-size="18" font-weight="bold" text-anchor="middle">Monitoring</text>
+      <text x="925" y="705" font-family="Arial" font-size="14" text-anchor="middle" fill="#5f6368">Cloud Trace</text>
+      <text x="925" y="725" font-family="Arial" font-size="14" text-anchor="middle" fill="#5f6368">Performance Analytics</text>
       
       <!-- CI/CD -->
-      <rect x="1080" y="630" width="250" height="100" rx="8" fill="white" stroke="#dadce0" stroke-width="1"/>
-      <text x="1205" y="660" font-family="Arial" font-size="18" font-weight="bold" text-anchor="middle">DevOps</text>
-      <text x="1205" y="685" font-family="Arial" font-size="14" text-anchor="middle" fill="#5f6368">Cloud Build</text>
-      <text x="1205" y="705" font-family="Arial" font-size="14" text-anchor="middle" fill="#5f6368">Terraform</text>
+      <rect x="1080" y="650" width="250" height="100" rx="8" fill="white" stroke="#dadce0" stroke-width="1"/>
+      <text x="1205" y="680" font-family="Arial" font-size="18" font-weight="bold" text-anchor="middle">DevOps</text>
+      <text x="1205" y="705" font-family="Arial" font-size="14" text-anchor="middle" fill="#5f6368">Cloud Build</text>
+      <text x="1205" y="725" font-family="Arial" font-size="14" text-anchor="middle" fill="#5f6368">GitHub Actions</text>
     </g>
     
     <!-- Infrastructure bar -->
-    <rect x="520" y="760" width="810" height="60" rx="8" fill="white" stroke="#dadce0" stroke-width="1"/>
-    <text x="925" y="795" font-family="Arial" font-size="16" text-anchor="middle" fill="#5f6368">OpenTelemetry • Secret Manager • IAM • GitHub Actions</text>
+    <rect x="520" y="780" width="810" height="60" rx="8" fill="white" stroke="#dadce0" stroke-width="1"/>
+    <text x="925" y="815" font-family="Arial" font-size="16" text-anchor="middle" fill="#5f6368">LiteLLM • OpenRouter • Secret Manager • IAM • Authentication</text>
   </g>
   
   <!-- Arrow definition -->
