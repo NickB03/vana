@@ -1,0 +1,54 @@
+{
+  "http": {
+    "concurrent": {
+      "test_type": "concurrent_http",
+      "iterations": 5,
+      "runs": 3,
+      "mean_time": 0.10130031903584798,
+      "min_time": 0.10118603706359863,
+      "max_time": 0.10145306587219238,
+      "theoretical_sequential_time": 0.5,
+      "concurrency_speedup": 4.935818611025903
+    },
+    "sequential": {
+      "test_type": "sequential_http",
+      "iterations": 5,
+      "runs": 3,
+      "mean_time": 0.518979549407959,
+      "min_time": 0.5176939964294434,
+      "max_time": 0.5199799537658691
+    },
+    "speedup": 5.1231778374192825
+  },
+  "file_ops": {
+    "async": {
+      "test_type": "async_file_ops",
+      "iterations": 10,
+      "runs": 3,
+      "mean_time": 0.004272937774658203,
+      "min_time": 0.002991914749145508,
+      "max_time": 0.006424903869628906
+    },
+    "sync": {
+      "test_type": "sync_file_ops",
+      "iterations": 10,
+      "runs": 3,
+      "mean_time": 0.001665671666463216,
+      "min_time": 0.001461029052734375,
+      "max_time": 0.0018491744995117188
+    },
+    "speedup": 0.38981884462299593
+  },
+  "mixed_workload": {
+    "async_time": 0.3049957752227783,
+    "sync_time": 0.9301540851593018,
+    "speedup": 3.0497277691138134
+  },
+  "summary": {
+    "timestamp": "2025-08-09T19:51:24.248853",
+    "http_speedup": 5.1231778374192825,
+    "file_ops_speedup": 0.38981884462299593,
+    "mixed_workload_speedup": 3.0497277691138134,
+    "average_speedup": 2.854241483718697
+  }
+}
