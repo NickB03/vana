@@ -1,0 +1,132 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 210 11% 15%;
+    --foreground: 213 27% 84%;
+    --background-secondary: 210 11% 20%;
+    --foreground-muted: 215 11% 65%;
+    
+    --card: 210 11% 18%;
+    --card-foreground: 213 27% 84%;
+    
+    --popover: 210 11% 18%;
+    --popover-foreground: 213 27% 84%;
+    
+    --primary: 217 91% 60%;
+    --primary-foreground: 0 0% 100%;
+    
+    --secondary: 210 11% 22%;
+    --secondary-foreground: 213 27% 84%;
+    
+    --muted: 210 11% 22%;
+    --muted-foreground: 215 11% 65%;
+    
+    --accent: 263 70% 65%;
+    --accent-foreground: 0 0% 100%;
+    
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    
+    --border: 210 11% 25%;
+    --input: 210 11% 25%;
+    --ring: 217 91% 60%;
+    
+    --radius: 0.5rem;
+    
+    --editor-background: 210 11% 10%;
+    --editor-foreground: 213 27% 84%;
+    --editor-selection: 217 91% 60% / 0.3;
+    --editor-line: 210 11% 12%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+  
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  
+  ::-webkit-scrollbar-track {
+    @apply bg-muted/30;
+  }
+  
+  ::-webkit-scrollbar-thumb {
+    @apply bg-muted rounded-full;
+  }
+  
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-muted-foreground/50;
+  }
+}
+
+@layer components {
+  .gradient-text {
+    @apply bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent;
+    background-size: 200% 100%;
+    animation: gradient-shift 3s ease-in-out infinite;
+  }
+  
+  .shimmer {
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      rgba(255, 255, 255, 0.1) 50%,
+      transparent 100%
+    );
+    animation: shimmer 2s infinite;
+  }
+  
+  .card-hover {
+    @apply transition-all duration-200 ease-in-out;
+    @apply hover:scale-[1.02] hover:shadow-lg hover:shadow-primary/20;
+    @apply hover:border-primary/40;
+  }
+}
+
+@keyframes gradient-shift {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
+.float-animation {
+  animation: float 3s ease-in-out infinite;
+}
+
+/* Focus styles for accessibility */
+.focus\:ring-custom:focus {
+  @apply outline-none ring-2 ring-primary ring-offset-2 ring-offset-background;
+}

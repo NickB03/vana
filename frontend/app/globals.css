@@ -1,0 +1,240 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --background-secondary: 0 0% 96%;
+    --foreground: 222.2 84% 4.9%;
+    --foreground-muted: 215.4 16.3% 46.9%;
+    
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+    
+    --primary: 221.2 83.2% 53.3%;
+    --primary-foreground: 210 40% 98%;
+    
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 222.2 84% 4.9%;
+    
+    --muted: 210 40% 96%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    
+    --accent: 210 40% 96%;
+    --accent-foreground: 222.2 84% 4.9%;
+    
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 221.2 83.2% 53.3%;
+    
+    --chart-1: 12 76% 61%;
+    --chart-2: 173 58% 39%;
+    --chart-3: 197 37% 24%;
+    --chart-4: 43 74% 66%;
+    --chart-5: 27 87% 67%;
+    
+    --canvas-background: 0 0% 100%;
+    --canvas-border: 214.3 31.8% 91.4%;
+    --canvas-toolbar: 210 40% 98%;
+    
+    --editor-background: 0 0% 100%;
+    --editor-foreground: 222.2 84% 4.9%;
+    --editor-selection: 210 40% 90%;
+    --editor-line: 214.3 31.8% 95%;
+    
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    /* Gemini-Style Dark Theme - Exact Colors */
+    --background: 216 7% 12%; /* #1e1f20 - Main background */
+    --background-secondary: 215 7% 7.5%; /* #131314 - Sidebar background */
+    --foreground: 0 0% 89%; /* #e3e3e3 - Primary text */
+    --foreground-muted: 220 9% 62%; /* #9aa0a6 - Muted text */
+    
+    --card: 218 11% 17%; /* #2a2b2c - Card background */
+    --card-foreground: 0 0% 89%; /* #e3e3e3 - Card text */
+    --popover: 218 11% 17%;
+    --popover-foreground: 0 0% 89%;
+    
+    --primary: 212 100% 79%; /* #8ab4f8 - Gemini blue */
+    --primary-foreground: 216 7% 12%; /* Dark background for contrast */
+    
+    --secondary: 218 11% 23%; /* #3a3b3c - Hover states */
+    --secondary-foreground: 0 0% 89%;
+    
+    --muted: 218 11% 17%; /* #2a2b2c - Same as card */
+    --muted-foreground: 220 9% 62%; /* #9aa0a6 - Muted text */
+    
+    --accent: 212 100% 79%; /* #8ab4f8 - Same as primary */
+    --accent-foreground: 216 7% 12%;
+    
+    --destructive: 0 84.2% 60.2%; /* Red for errors */
+    --destructive-foreground: 0 0% 98%;
+    
+    --border: 220 13% 25%; /* #3c4043 - Subtle borders */
+    --input: 218 11% 17%; /* #2a2b2c - Input backgrounds */
+    --ring: 212 100% 79%; /* #8ab4f8 - Focus rings */
+    
+    --chart-1: 220 70% 50%;
+    --chart-2: 160 60% 45%;
+    --chart-3: 30 80% 55%;
+    --chart-4: 280 65% 60%;
+    --chart-5: 340 75% 55%;
+    
+    --canvas-background: 216 7% 9%; /* Slightly darker than main bg */
+    --canvas-border: 220 13% 25%; /* #3c4043 - Canvas borders */
+    --canvas-toolbar: 218 11% 15%; /* Toolbar background */
+    
+    --editor-background: 216 7% 8%; /* Editor background */
+    --editor-foreground: 0 0% 89%;
+    --editor-selection: 212 100% 79% / 0.3; /* Blue selection */
+    --editor-line: 218 11% 10%; /* Line highlight */
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  
+  body {
+    @apply bg-background text-foreground;
+  }
+  
+  html {
+    scroll-behavior: smooth;
+  }
+  
+  /* Custom scrollbar styles for dark theme */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  
+  ::-webkit-scrollbar-track {
+    @apply bg-secondary;
+  }
+  
+  ::-webkit-scrollbar-thumb {
+    @apply bg-muted-foreground/30 rounded-md;
+  }
+  
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-muted-foreground/50;
+  }
+  
+  /* Focus styles */
+  :focus-visible {
+    @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
+  }
+  
+  /* Selection styles */
+  ::selection {
+    @apply bg-primary/20;
+  }
+  
+  /* Typography improvements */
+  h1, h2, h3, h4, h5, h6 {
+    @apply scroll-m-20 tracking-tight;
+  }
+  
+  h1 {
+    @apply text-4xl font-extrabold lg:text-5xl;
+  }
+  
+  h2 {
+    @apply text-3xl font-semibold;
+  }
+  
+  h3 {
+    @apply text-2xl font-semibold;
+  }
+  
+  h4 {
+    @apply text-xl font-semibold;
+  }
+  
+  /* Code styling */
+  code {
+    @apply relative rounded bg-muted px-[0.3rem] py-[0.2rem] font-mono text-sm font-semibold;
+  }
+  
+  pre {
+    @apply overflow-x-auto rounded-lg bg-muted p-4;
+  }
+  
+  /* Animation utilities */
+  .animate-in {
+    animation: fadeIn 0.2s ease-in-out;
+  }
+  
+  .animate-out {
+    animation: fadeOut 0.2s ease-in-out;
+  }
+  
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(-10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  @keyframes fadeOut {
+    from {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    to {
+      opacity: 0;
+      transform: translateY(-10px);
+    }
+  }
+  
+  /* Gemini-style gradient text */
+  .gradient-text {
+    background: linear-gradient(135deg, #8ab4f8 0%, #a8c7fa  50%, #c3d5ff 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  
+  /* Gemini-style hover effects */
+  .gemini-card {
+    @apply bg-card border border-border rounded-[12px] transition-all duration-200;
+  }
+  
+  .gemini-card:hover {
+    @apply bg-secondary border-primary/30 shadow-lg;
+  }
+  
+  /* Gemini sidebar styling */
+  .gemini-sidebar {
+    @apply bg-[hsl(var(--background-secondary))] border-r border-border;
+    width: 280px;
+  }
+  
+  /* Float animation for greeting */
+  .float-animation {
+    animation: float 3s ease-in-out infinite;
+  }
+  
+  @keyframes float {
+    0%, 100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-5px);
+    }
+  }
+}
