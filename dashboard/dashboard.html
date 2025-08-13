@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vana Server Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 40px;
+            max-width: 900px;
+            width: 100%;
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 30px;
+            text-align: center;
+            font-size: 2.5rem;
+        }
+        
+        .servers {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+        
+        .server-card {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 25px;
+            border: 2px solid #e9ecef;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        .server-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        
+        .server-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .server-name {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #495057;
+        }
+        
+        .status-indicator {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+        
+        .status-indicator.running {
+            background: #28a745;
+        }
+        
+        .status-indicator.stopped {
+            background: #dc3545;
+            animation: none;
+        }
+        
+        .status-indicator.starting {
+            background: #ffc107;
+        }
+        
+        @keyframes pulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(40, 167, 69, 0.7);
+            }
+            70% {
+                box-shadow: 0 0 0 10px rgba(40, 167, 69, 0);
+            }
+            100% {
+                box-shadow: 0 0 0 0 rgba(40, 167, 69, 0);
+            }
+        }
+        
+        .server-info {
+            margin-bottom: 20px;
+        }
+        
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #dee2e6;
+        }
+        
+        .info-label {
+            color: #6c757d;
+            font-weight: 500;
+        }
+        
+        .info-value {
+            color: #212529;
+            font-family: 'Courier New', monospace;
+        }
+        
+        .controls {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .btn {
+            flex: 1;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-transform: uppercase;
+            font-size: 0.85rem;
+            letter-spacing: 0.5px;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        
+        .btn:active {
+            transform: translateY(0);
+        }
+        
+        .btn-start {
+            background: #28a745;
+            color: white;
+        }
+        
+        .btn-stop {
+            background: #dc3545;
+            color: white;
+        }
+        
+        .btn-restart {
+            background: #007bff;
+            color: white;
+        }
+        
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .logs {
+            margin-top: 30px;
+            background: #1e1e1e;
+            border-radius: 10px;
+            padding: 20px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .logs h3 {
+            color: #fff;
+            margin-bottom: 15px;
+            font-size: 1.2rem;
+        }
+        
+        .log-entry {
+            color: #abb2bf;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            line-height: 1.6;
+            margin-bottom: 5px;
+        }
+        
+        .log-entry.error {
+            color: #e06c75;
+        }
+        
+        .log-entry.success {
+            color: #98c379;
+        }
+        
+        .log-entry.info {
+            color: #61afef;
+        }
+        
+        .refresh-info {
+            text-align: center;
+            color: #6c757d;
+            font-size: 0.9rem;
+            margin-top: 20px;
+        }
+        
+        .loader {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .port-status {
+            margin-top: 30px;
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 25px;
+            min-height: 200px;
+        }
+        
+        .port-status h3 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 1.3rem;
+        }
+        
+        .port-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            min-height: 150px;
+        }
+        
+        .port-category {
+            background: white;
+            border-radius: 10px;
+            padding: 15px;
+            border: 1px solid #e9ecef;
+        }
+        
+        .port-category h4 {
+            color: #495057;
+            margin-bottom: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+        }
+        
+        .port-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        
+        .port-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+        }
+        
+        .port-item.free {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .port-item.occupied {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .port-item:hover {
+            transform: scale(1.05);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .port-item .port-number {
+            font-weight: 700;
+        }
+        
+        .port-item .kill-btn {
+            margin-left: 5px;
+            padding: 2px 6px;
+            background: #dc3545;
+            color: white;
+            border-radius: 10px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+        }
+        
+        .port-item .kill-btn:hover {
+            background: #c82333;
+        }
+        
+        .port-tooltip {
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #333;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 0.75rem;
+            white-space: nowrap;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s;
+            margin-bottom: 5px;
+        }
+        
+        .port-item:hover .port-tooltip {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 Vana Server Dashboard</h1>
+        
+        <div class="servers">
+            <div class="server-card">
+                <div class="server-header">
+                    <span class="server-name">Backend Server</span>
+                    <div class="status-indicator stopped" id="backend-status"></div>
+                </div>
+                <div class="server-info">
+                    <div class="info-row">
+                        <span class="info-label">Status:</span>
+                        <span class="info-value" id="backend-status-text">Checking...</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Port:</span>
+                        <span class="info-value" id="backend-port">Detecting...</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">URL:</span>
+                        <span class="info-value" id="backend-url"><a href="#" target="_blank">-</a></span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">PID:</span>
+                        <span class="info-value" id="backend-pid">-</span>
+                    </div>
+                </div>
+                <div class="controls">
+                    <button class="btn btn-start" onclick="controlServer('backend', 'start')">Start</button>
+                    <button class="btn btn-stop" onclick="controlServer('backend', 'stop')">Stop</button>
+                    <button class="btn btn-restart" onclick="controlServer('backend', 'restart')">Restart</button>
+                </div>
+            </div>
+            
+            <div class="server-card">
+                <div class="server-header">
+                    <span class="server-name">Frontend Server</span>
+                    <div class="status-indicator stopped" id="frontend-status"></div>
+                </div>
+                <div class="server-info">
+                    <div class="info-row">
+                        <span class="info-label">Status:</span>
+                        <span class="info-value" id="frontend-status-text">Checking...</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Port:</span>
+                        <span class="info-value" id="frontend-port">Detecting...</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">URL:</span>
+                        <span class="info-value" id="frontend-url"><a href="#" target="_blank">-</a></span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">PID:</span>
+                        <span class="info-value" id="frontend-pid">-</span>
+                    </div>
+                </div>
+                <div class="controls">
+                    <button class="btn btn-start" onclick="controlServer('frontend', 'start')">Start</button>
+                    <button class="btn btn-stop" onclick="controlServer('frontend', 'stop')">Stop</button>
+                    <button class="btn btn-restart" onclick="controlServer('frontend', 'restart')">Restart</button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="port-status">
+            <h3>🔌 Port Status</h3>
+            <div class="port-grid" id="port-grid">
+                <!-- Port status will be populated here -->
+            </div>
+        </div>
+        
+        <div class="logs">
+            <h3>📋 Recent Activity</h3>
+            <div id="log-container"></div>
+        </div>
+        
+        <div class="refresh-info">
+            Auto-refreshing every 2 seconds
+        </div>
+    </div>
+    
+    <script>
+        let logs = [];
+        
+        function addLog(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            logs.unshift({ message, type, timestamp });
+            logs = logs.slice(0, 20); // Keep only last 20 logs
+            renderLogs();
+        }
+        
+        function renderLogs() {
+            const container = document.getElementById('log-container');
+            container.innerHTML = logs.map(log => 
+                `<div class="log-entry ${log.type}">[${log.timestamp}] ${log.message}</div>`
+            ).join('');
+        }
+        
+        async function checkStatus() {
+            try {
+                const response = await fetch('/api/status');
+                const data = await response.json();
+                
+                updateServerStatus('backend', data.backend);
+                updateServerStatus('frontend', data.frontend);
+            } catch (error) {
+                console.error('Error checking status:', error);
+            }
+        }
+        
+        async function checkPorts() {
+            try {
+                const response = await fetch('/api/ports');
+                const data = await response.json();
+                console.log('Port data received:', data);
+                updatePortStatus(data);
+            } catch (error) {
+                console.error('Error checking ports:', error);
+                addLog('Failed to load port status', 'error');
+            }
+        }
+        
+        function updatePortStatus(portData) {
+            const container = document.getElementById('port-grid');
+            let html = '';
+            
+            for (const [category, ports] of Object.entries(portData)) {
+                html += `
+                    <div class="port-category">
+                        <h4>${category} Ports</h4>
+                        <div class="port-list">
+                `;
+                
+                for (const port of ports) {
+                    const statusClass = port.in_use ? 'occupied' : 'free';
+                    const statusText = port.in_use ? 'In Use' : 'Free';
+                    
+                    html += `
+                        <div class="port-item ${statusClass}">
+                            <span class="port-number">${port.port}</span>
+                            ${port.in_use ? `
+                                <button class="kill-btn" onclick="killPort(${port.port})">Kill</button>
+                                <div class="port-tooltip">
+                                    PID: ${port.pid || 'Unknown'}<br>
+                                    Process: ${port.process || 'Unknown'}
+                                </div>
+                            ` : `
+                                <div class="port-tooltip">${statusText}</div>
+                            `}
+                        </div>
+                    `;
+                }
+                
+                html += `
+                        </div>
+                    </div>
+                `;
+            }
+            
+            container.innerHTML = html;
+        }
+        
+        async function killPort(port) {
+            if (!confirm(`Kill process on port ${port}?`)) {
+                return;
+            }
+            
+            try {
+                addLog(`Killing process on port ${port}...`, 'info');
+                
+                const response = await fetch(`/api/kill-port/${port}`, {
+                    method: 'POST'
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    addLog(data.message || `Successfully killed process on port ${port}`, 'success');
+                } else {
+                    addLog(data.error || `Failed to kill process on port ${port}`, 'error');
+                }
+                
+                // Refresh status
+                setTimeout(() => {
+                    checkStatus();
+                    checkPorts();
+                }, 500);
+            } catch (error) {
+                addLog(`Error: ${error.message}`, 'error');
+            }
+        }
+        
+        function updateServerStatus(server, status) {
+            const statusIndicator = document.getElementById(`${server}-status`);
+            const statusText = document.getElementById(`${server}-status-text`);
+            const pidElement = document.getElementById(`${server}-pid`);
+            const portElement = document.getElementById(`${server}-port`);
+            const urlElement = document.getElementById(`${server}-url`);
+            
+            if (status.running) {
+                statusIndicator.className = 'status-indicator running';
+                statusText.textContent = 'Running';
+                statusText.style.color = '#28a745';
+                pidElement.textContent = status.pid || '-';
+                
+                // Update port and URL
+                const port = status.port || (server === 'backend' ? 8000 : 5173);
+                portElement.textContent = port;
+                portElement.style.color = status.port ? '#212529' : '#6c757d';
+                urlElement.innerHTML = `<a href="http://localhost:${port}" target="_blank">localhost:${port}</a>`;
+            } else {
+                statusIndicator.className = 'status-indicator stopped';
+                statusText.textContent = 'Stopped';
+                statusText.style.color = '#dc3545';
+                pidElement.textContent = '-';
+                
+                // Show default ports when stopped
+                const defaultPort = server === 'backend' ? 8000 : 5173;
+                portElement.textContent = `${defaultPort} (default)`;
+                portElement.style.color = '#6c757d';
+                urlElement.innerHTML = `<span style="color: #6c757d">-</span>`;
+            }
+        }
+        
+        async function controlServer(server, action) {
+            const buttons = document.querySelectorAll('.btn');
+            buttons.forEach(btn => btn.disabled = true);
+            
+            try {
+                addLog(`${action.charAt(0).toUpperCase() + action.slice(1)}ing ${server} server...`, 'info');
+                
+                const response = await fetch(`/api/control/${server}/${action}`, {
+                    method: 'POST'
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    addLog(`${server} server ${action}ed successfully`, 'success');
+                } else {
+                    addLog(`Failed to ${action} ${server} server: ${data.error}`, 'error');
+                }
+                
+                // Refresh status after action
+                setTimeout(checkStatus, 1000);
+            } catch (error) {
+                addLog(`Error: ${error.message}`, 'error');
+            } finally {
+                buttons.forEach(btn => btn.disabled = false);
+            }
+        }
+        
+        // Initial status check
+        checkStatus();
+        checkPorts();
+        addLog('Dashboard initialized', 'success');
+        
+        // Auto-refresh every 2 seconds
+        setInterval(() => {
+            checkStatus();
+            checkPorts();
+        }, 2000);
+    </script>
+</body>
+</html>
