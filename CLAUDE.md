@@ -48,7 +48,7 @@
 
 ### MCP Tools ONLY:
 - **claude-flow**: Swarm orchestration, SPARC modes, neural training
-- **ruv-swarm**: Advanced swarm coordination, DAA agents
+- **ruv-swarm**: Advanced swarm coordination, Decentralized Autonomous Agents
 - **firecrawl**: Web scraping, search, and research
 - **kibo-ui**: UI component library and templates
 - **playwright**: Browser automation and testing
