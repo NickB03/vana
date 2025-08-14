@@ -1,0 +1,18 @@
+{
+  "test": [
+    {
+      "key": "benchmark_test",
+      "value": "performance test data",
+      "namespace": "test",
+      "timestamp": 1755130039887
+    }
+  ],
+  "debug": [
+    {
+      "key": "benchmark_results",
+      "value": "{\"memory_ops\": 759, \"timestamp\": \"2025-08-13T19:07:21-05:00\"}",
+      "namespace": "debug",
+      "timestamp": 1755130042345
+    }
+  ]
+}
