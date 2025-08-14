@@ -65,3 +65,98 @@ lint:
 	uv run ruff check . --diff
 	uv run ruff format . --check --diff
 	uv run mypy .
+
+# Run type checking
+typecheck:
+	uv run mypy .
+
+# Claude Flow Hooks Integration
+TASK_ID ?= $(shell date +%s)
+SESSION_ID ?= session-$(shell date +%Y%m%d-%H%M%S)
+
+.PHONY: cf-pre-task cf-post-task cf-pre-edit cf-post-edit cf-session-end
+
+# Hook: Before starting any development task
+cf-pre-task:
+	@echo "🚀 Initializing Claude Flow task coordination..."
+	@npx claude-flow hooks pre-task \
+		--description "$(TASK_DESC)" \
+		--task-id "$(TASK_ID)" \
+		--auto-spawn-agents
+
+# Hook: After completing development task  
+cf-post-task:
+	@echo "✅ Completing Claude Flow task analysis..."
+	@npx claude-flow hooks post-task \
+		--task-id "$(TASK_ID)" \
+		--analyze-performance \
+		--generate-insights
+
+# Hook: Before file modifications
+cf-pre-edit:
+	@echo "📝 Preparing file modification coordination..."
+	@npx claude-flow hooks pre-edit \
+		--file "$(FILE_PATH)" \
+		--operation "$(EDIT_OP)"
+
+# Hook: After file modifications
+cf-post-edit:
+	@echo "💾 Updating coordination memory..."
+	@npx claude-flow hooks post-edit \
+		--file "$(FILE_PATH)" \
+		--memory-key "swarm/$(SESSION_ID)/$(notdir $(FILE_PATH))"
+
+# Hook: End of development session
+cf-session-end:
+	@echo "🏁 Finalizing session and exporting metrics..."
+	@npx claude-flow hooks session-end \
+		--export-metrics \
+		--generate-summary \
+		--session-id "$(SESSION_ID)"
+
+# Integrated development commands with hooks
+dev-with-hooks: cf-pre-task
+	$(MAKE) dev-frontend &
+	$(MAKE) dev-backend &
+	@echo "Development servers started with Claude Flow coordination"
+	$(MAKE) cf-post-task TASK_DESC="Start development servers"
+
+test-with-hooks: cf-pre-task  
+	$(MAKE) test
+	$(MAKE) lint  
+	$(MAKE) typecheck
+	$(MAKE) cf-post-task TASK_DESC="Run test suite"
+
+build-with-hooks: cf-pre-task
+	$(MAKE) test-with-hooks
+	@echo "Build completed successfully"
+	$(MAKE) cf-post-task TASK_DESC="Complete build pipeline"
+
+# Session management
+save-session:
+	@./.claude_workspace/sessions/save-session.sh $(SESSION_ID)
+
+restore-session:
+	@./.claude_workspace/sessions/restore-session.sh $(SESSION_ID)
+
+list-sessions:
+	@ls -la .claude_workspace/sessions/
+
+# Performance monitoring
+monitor:
+	@./.claude_workspace/scripts/performance-monitor.sh
+
+neural-train:
+	@./.claude_workspace/scripts/neural-training.sh
+
+# Weekly optimization
+weekly-optimization:
+	$(MAKE) neural-train
+	$(MAKE) save-session SESSION_ID=weekly-backup-$(shell date +%Y%m%d)
+
+# Testing and validation
+test-claude-flow:
+	@./.claude_workspace/scripts/test-claude-flow.sh
+
+benchmark:
+	@./.claude_workspace/scripts/benchmark-claude-flow.sh
