@@ -49,12 +49,12 @@
 ### MCP Tools ONLY:
 - **claude-flow**: Swarm orchestration, SPARC modes, neural training
 - **ruv-swarm**: Advanced swarm coordination, DAA agents
-- **chroma-vana**: ChromaDB for ADK documentation queries
-- **memory-mcp**: Knowledge graph and entity relationships
 - **firecrawl**: Web scraping, search, and research
 - **kibo-ui**: UI component library and templates
 - **playwright**: Browser automation and testing
 - **browser-tools-mcp**: Browser debugging and audits
+- **shadcn-ui**: UI component library and templates
+- **kibo-ui**: UI component library and templates specific to Kibo (shadcn variant)
 
 **Key**: MCP coordinates, Claude Code executes!
 
