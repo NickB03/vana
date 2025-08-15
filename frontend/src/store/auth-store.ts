@@ -167,8 +167,12 @@ export const useAuthStore = create<AuthStore>()(
       
       checkAuth: async () => {
         try {
-          // Don't show loading spinner on initial auth check if we have no stored user
+          // Prevent rapid-fire auth checks (rate limiting protection)
           const currentState = get();
+          if (currentState.isLoading) {
+            return; // Already checking auth
+          }
+          
           const shouldShowLoading = !!currentState.user;
           
           if (shouldShowLoading) {

@@ -25,7 +25,7 @@ export function useAuth() {
   // Check authentication on mount
   useEffect(() => {
     checkAuth();
-  }, [checkAuth]);
+  }, []); // Remove checkAuth from dependencies to prevent infinite loop
 
   // Auto-refresh token
   useEffect(() => {
