@@ -175,3 +175,15 @@ class OAuth2TokenRequest(BaseModel):
     username: str = Field(..., description="Username or email")
     password: str = Field(..., description="User password")
     scope: Optional[str] = Field(None, description="Requested scope")
+
+
+class AuthResponse(BaseModel):
+    """Standardized authentication response schema."""
+    user: UserResponse = Field(..., description="Authenticated user information")
+    tokens: Token = Field(..., description="Access and refresh tokens")
+    
+    
+class GoogleOAuthCallbackRequest(BaseModel):
+    """Google OAuth callback request schema."""
+    code: str = Field(..., description="Authorization code from Google")
+    state: str = Field(..., description="State parameter for CSRF protection")

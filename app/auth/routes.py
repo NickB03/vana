@@ -13,7 +13,8 @@ from .schemas import (
     UserCreate, UserResponse, UserUpdate, UserLogin, Token, 
     RefreshTokenRequest, ChangePassword, PasswordResetRequest, 
     PasswordReset, RoleCreate, RoleUpdate, Role as RoleSchema,
-    Permission as PermissionSchema, GoogleCloudIdentity, OAuth2ErrorResponse
+    Permission as PermissionSchema, GoogleCloudIdentity, OAuth2ErrorResponse,
+    AuthResponse, GoogleOAuthCallbackRequest
 )
 from .security import (
     authenticate_user, create_access_token, create_refresh_token,
@@ -32,11 +33,12 @@ admin_router = APIRouter(prefix="/admin", tags=["Administration"])
 
 
 # Authentication endpoints
-@auth_router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
+@auth_router.post("/register", response_model=AuthResponse, status_code=status.HTTP_201_CREATED)
 async def register_user(
     user: UserCreate, 
+    request: Request,
     db: Session = Depends(get_auth_db)
-) -> UserResponse:
+) -> AuthResponse:
     """Register a new user."""
     # Validate password strength
     if not validate_password_strength(user.password):
@@ -84,7 +86,26 @@ async def register_user(
         db.commit()
         db.refresh(db_user)
         
-        return UserResponse.model_validate(db_user)
+        # Create tokens for immediate login after registration
+        access_token = create_access_token(data={"sub": str(db_user.id), "email": db_user.email})
+        refresh_token = create_refresh_token(
+            user_id=db_user.id,
+            db=db,
+            device_info=request.headers.get("User-Agent"),
+            ip_address=request.client.host if request.client else None
+        )
+        
+        tokens = Token(
+            access_token=access_token,
+            refresh_token=refresh_token,
+            token_type="bearer",
+            expires_in=30 * 60  # 30 minutes
+        )
+        
+        return AuthResponse(
+            user=UserResponse.model_validate(db_user),
+            tokens=tokens
+        )
     
     except IntegrityError:
         db.rollback()
@@ -94,11 +115,11 @@ async def register_user(
         )
 
 
-@auth_router.post("/login", response_model=Token)
+@auth_router.post("/login", response_model=AuthResponse)
 async def login_user(
     request: Request,
     db: Session = Depends(get_auth_db)
-) -> Token:
+) -> AuthResponse:
     """OAuth2-compliant login endpoint that accepts both form and JSON data.
     
     Supports:
@@ -113,7 +134,11 @@ async def login_user(
         form_data = await request.form()
         
         username = form_data.get("username")
-        password = form_data.get("password") 
+        password = form_data.get("password")
+        
+        # Normalize values by trimming whitespace
+        username = username.strip() if username else None
+        password = password.strip() if password else None 
         grant_type = form_data.get("grant_type")
         
         if not username or not password:
@@ -146,12 +171,34 @@ async def login_user(
                 raise ValueError("Empty body")
             
             json_data = json.loads(body.decode('utf-8'))
-            username = json_data.get('username')
+            # Accept both username and email for backward compatibility
+            username_field = json_data.get('username')
+            email_field = json_data.get('email')
+            
+            # Normalize values by trimming whitespace
+            username_field = username_field.strip() if username_field else None
+            email_field = email_field.strip() if email_field else None
+            
+            # Validate that if both username and email are provided, they must match
+            if username_field and email_field and username_field != email_field:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="username and email fields must have the same value when both are provided",
+                    headers={
+                        "Content-Type": "application/json",
+                        "Cache-Control": "no-store"
+                    }
+                )
+            
+            username = username_field or email_field
             password = json_data.get('password')
             
             if not username or not password:
                 raise ValueError("Missing credentials")
                 
+        except HTTPException:
+            # Re-raise HTTPException to preserve specific error responses
+            raise
         except Exception:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -198,6 +245,10 @@ async def login_user(
             }
         )
     
+    # Update last login
+    user.last_login = datetime.now(timezone.utc)
+    db.commit()
+    
     # Create tokens
     access_token = create_access_token(data={"sub": str(user.id), "email": user.email})
     refresh_token = create_refresh_token(
@@ -207,11 +258,16 @@ async def login_user(
         ip_address=request.client.host if request.client else None
     )
     
-    return Token(
+    tokens = Token(
         access_token=access_token,
         refresh_token=refresh_token,
         token_type="bearer",
         expires_in=30 * 60  # 30 minutes
+    )
+    
+    return AuthResponse(
+        user=UserResponse.model_validate(user),
+        tokens=tokens
     )
 
 
@@ -420,12 +476,12 @@ async def reset_password(
     return {"message": "Password reset successfully"}
 
 
-@auth_router.post("/google", response_model=Token)
+@auth_router.post("/google", response_model=AuthResponse)
 async def google_login(
     request: Request,
     google_data: GoogleCloudIdentity,
     db: Session = Depends(get_auth_db)
-) -> Token:
+) -> AuthResponse:
     """Login or register user with Google Cloud Identity."""
     try:
         # Verify Google ID token
@@ -483,17 +539,54 @@ async def google_login(
             ip_address=request.client.host if request.client else None
         )
         
-        return Token(
+        tokens = Token(
             access_token=access_token,
             refresh_token=refresh_token,
             token_type="bearer",
             expires_in=30 * 60  # 30 minutes
+        )
+        
+        return AuthResponse(
+            user=UserResponse.model_validate(user),
+            tokens=tokens
         )
     
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail=f"Google authentication failed: {str(e)}"
+        )
+
+
+@auth_router.post("/google/callback", response_model=AuthResponse)
+async def google_oauth_callback(
+    request: Request,
+    callback_data: GoogleOAuthCallbackRequest,
+    db: Session = Depends(get_auth_db)
+) -> AuthResponse:
+    """Handle Google OAuth callback with authorization code."""
+    try:
+        # In production, you would exchange the code for an access token
+        # and then use that to get user info from Google
+        # For now, this is a placeholder implementation
+        
+        # TODO: Implement proper OAuth2 flow:
+        # 1. Exchange authorization code for access token
+        # 2. Use access token to get user info from Google API
+        # 3. Create or update user based on Google info
+        
+        # For development, return error indicating incomplete implementation
+        raise HTTPException(
+            status_code=status.HTTP_501_NOT_IMPLEMENTED,
+            detail="Google OAuth callback not fully implemented. Use /auth/google endpoint instead."
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Google OAuth callback failed: {str(e)}"
         )
 
 
