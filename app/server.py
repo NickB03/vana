@@ -182,7 +182,8 @@ from app.auth.routes import auth_router, users_router, admin_router
 from app.auth.middleware import (
     SecurityHeadersMiddleware, 
     RateLimitMiddleware,
-    AuditLogMiddleware
+    AuditLogMiddleware,
+    CORSMiddleware
 )
 from app.auth.security import get_current_active_user, get_current_user_for_sse
 from app.auth.models import User
@@ -211,6 +212,7 @@ app.include_router(users_router)
 app.include_router(admin_router)
 
 # Add security middleware
+app.add_middleware(CORSMiddleware, allowed_origins=allow_origins)
 app.add_middleware(SecurityHeadersMiddleware)
 app.add_middleware(RateLimitMiddleware, calls=100, period=60)
 app.add_middleware(AuditLogMiddleware)
