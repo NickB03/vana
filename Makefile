@@ -154,7 +154,58 @@ weekly-optimization:
 	$(MAKE) neural-train
 	$(MAKE) save-session SESSION_ID=weekly-backup-$(shell date +%Y%m%d)
 
-# Testing and validation
+# Hook Testing Framework Commands
+.PHONY: test-hooks test-hooks-functional test-hooks-performance test-hooks-integration test-hooks-stress test-hooks-ci hooks-report
+
+# Run complete hook testing suite
+test-hooks:
+	@echo "🔗 Running comprehensive hook testing framework..."
+	@./tests/hooks/automation/run-hook-tests.sh
+	$(MAKE) cf-post-task TASK_DESC="Complete hook testing suite"
+
+# Run functional hook validation only
+test-hooks-functional:
+	@echo "🧪 Running functional hook validation..."
+	@node tests/hooks/automation/hook-test-runner.js functional
+	@echo "📊 Functional test results saved to .claude_workspace/reports/hook-tests/functional/"
+
+# Run performance benchmarks only
+test-hooks-performance:
+	@echo "⚡ Running hook performance benchmarks..."
+	@node tests/hooks/automation/hook-test-runner.js performance
+	@echo "📊 Performance report saved to .claude_workspace/reports/hook-tests/performance/"
+
+# Run integration tests with Playwright
+test-hooks-integration:
+	@echo "🔗 Running hook integration tests..."
+	@npx playwright test tests/hooks/e2e/ --reporter=html --output-dir=.claude_workspace/reports/hook-tests/integration/
+	$(MAKE) cf-post-task TASK_DESC="Hook integration testing"
+
+# Run stress tests (long-running)
+test-hooks-stress:
+	@echo "💪 Running hook stress tests..."
+	@node tests/hooks/automation/hook-test-runner.js stress
+	@echo "🏋️ Stress test results saved to .claude_workspace/reports/hook-tests/stress/"
+
+# Run hooks tests in CI/CD mode
+test-hooks-ci:
+	@echo "🚀 Running CI/CD hook validation..."
+	@PARALLEL=true TIMEOUT=300 ./tests/hooks/automation/run-hook-tests.sh
+	$(MAKE) cf-post-task TASK_DESC="CI/CD hook validation complete"
+
+# Generate comprehensive hook testing report
+hooks-report:
+	@echo "📊 Generating comprehensive hook testing report..."
+	@node tests/hooks/automation/hook-test-runner.js --output .claude_workspace/reports/hook-tests report
+	@echo "📄 Report available at .claude_workspace/reports/hook-tests/hook-test-report.html"
+
+# Quick hook validation (development mode)
+hooks-dev:
+	@echo "🛠️ Running development hook validation..."
+	@SKIP_STRESS=true TIMEOUT=180 ./tests/hooks/automation/run-hook-tests.sh
+	@echo "✅ Development hook validation complete"
+
+# Testing and validation (legacy)
 test-claude-flow:
 	@./.claude_workspace/scripts/test-claude-flow.sh
 
