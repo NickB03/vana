@@ -2,10 +2,12 @@
 
 from datetime import datetime, timezone
 from typing import List, Optional
+import os
 
 from fastapi import APIRouter, Depends, HTTPException, status, Request, BackgroundTasks
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
+import httpx
 
 from .database import get_auth_db
 from .models import User, Role, Permission, RefreshToken
@@ -564,23 +566,41 @@ async def google_oauth_callback(
     callback_data: GoogleOAuthCallbackRequest,
     db: Session = Depends(get_auth_db)
 ) -> AuthResponse:
-    """Handle Google OAuth callback with authorization code."""
+    """Handle Google OAuth callback by exchanging code for tokens and logging in user."""
     try:
-        # In production, you would exchange the code for an access token
-        # and then use that to get user info from Google
-        # For now, this is a placeholder implementation
-        
-        # TODO: Implement proper OAuth2 flow:
-        # 1. Exchange authorization code for access token
-        # 2. Use access token to get user info from Google API
-        # 3. Create or update user based on Google info
-        
-        # For development, return error indicating incomplete implementation
-        raise HTTPException(
-            status_code=status.HTTP_501_NOT_IMPLEMENTED,
-            detail="Google OAuth callback not fully implemented. Use /auth/google endpoint instead."
+        client_id = os.getenv("GOOGLE_OAUTH_CLIENT_ID")
+        client_secret = os.getenv("GOOGLE_OAUTH_CLIENT_SECRET")
+        redirect_uri = os.getenv("GOOGLE_OAUTH_REDIRECT_URI")
+
+        if not all([client_id, client_secret, redirect_uri]):
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=(
+                    "Google OAuth credentials not configured. Set GOOGLE_OAUTH_CLIENT_ID, "
+                    "GOOGLE_OAUTH_CLIENT_SECRET, and GOOGLE_OAUTH_REDIRECT_URI from Google Cloud Console."
+                )
+            )
+
+        token_response = httpx.post(
+            "https://oauth2.googleapis.com/token",
+            data={
+                "code": callback_data.code,
+                "client_id": client_id,
+                "client_secret": client_secret,
+                "redirect_uri": redirect_uri,
+                "grant_type": "authorization_code"
+            }
         )
-        
+        token_response.raise_for_status()
+        token_data = token_response.json()
+
+        google_identity = GoogleCloudIdentity(
+            id_token=token_data.get("id_token"),
+            access_token=token_data.get("access_token")
+        )
+
+        return await google_login(request, google_identity, db)
+
     except HTTPException:
         raise
     except Exception as e:
