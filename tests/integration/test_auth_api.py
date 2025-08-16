@@ -1,6 +1,5 @@
 """Integration tests for authentication API endpoints."""
 
-
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
@@ -20,7 +19,7 @@ def test_db():
     engine = create_engine(
         "sqlite:///:memory:",
         connect_args={"check_same_thread": False},
-        poolclass=StaticPool
+        poolclass=StaticPool,
     )
     Base.metadata.create_all(engine)
     SessionLocal = sessionmaker(bind=engine)
@@ -78,7 +77,7 @@ def test_user_data():
         "username": "testuser",
         "password": "TestPassword123!",
         "first_name": "Test",
-        "last_name": "User"
+        "last_name": "User",
     }
 
 
@@ -94,7 +93,7 @@ def test_admin_user(test_db):
         hashed_password=get_password_hash("AdminPassword123!"),
         is_active=True,
         is_superuser=True,
-        is_verified=True
+        is_verified=True,
     )
     user.roles = [admin_role]
     test_db.add(user)
@@ -106,10 +105,9 @@ def test_admin_user(test_db):
 @pytest.fixture
 def admin_token(client, test_admin_user):
     """Get admin authentication token."""
-    response = client.post("/auth/login", json={
-        "username": "admin",
-        "password": "AdminPassword123!"
-    })
+    response = client.post(
+        "/auth/login", json={"username": "admin", "password": "AdminPassword123!"}
+    )
     assert response.status_code == 200
     return response.json()["access_token"]
 
@@ -178,10 +176,13 @@ class TestUserLogin:
         client.post("/auth/register", json=test_user_data)
 
         # Login with JSON
-        response = client.post("/auth/login", json={
-            "username": test_user_data["username"],
-            "password": test_user_data["password"]
-        })
+        response = client.post(
+            "/auth/login",
+            json={
+                "username": test_user_data["username"],
+                "password": test_user_data["password"],
+            },
+        )
 
         assert response.status_code == 200
         data = response.json()
@@ -196,13 +197,14 @@ class TestUserLogin:
         client.post("/auth/register", json=test_user_data)
 
         # Login with form data
-        response = client.post("/auth/login",
+        response = client.post(
+            "/auth/login",
             data={
                 "username": test_user_data["username"],
                 "password": test_user_data["password"],
-                "grant_type": "password"
+                "grant_type": "password",
             },
-            headers={"Content-Type": "application/x-www-form-urlencoded"}
+            headers={"Content-Type": "application/x-www-form-urlencoded"},
         )
 
         assert response.status_code == 200
@@ -218,12 +220,13 @@ class TestUserLogin:
         client.post("/auth/register", json=test_user_data)
 
         # Login with form data but no grant_type
-        response = client.post("/auth/login",
+        response = client.post(
+            "/auth/login",
             data={
                 "username": test_user_data["username"],
-                "password": test_user_data["password"]
+                "password": test_user_data["password"],
             },
-            headers={"Content-Type": "application/x-www-form-urlencoded"}
+            headers={"Content-Type": "application/x-www-form-urlencoded"},
         )
 
         assert response.status_code == 200
@@ -236,13 +239,14 @@ class TestUserLogin:
         client.post("/auth/register", json=test_user_data)
 
         # Login with invalid grant_type
-        response = client.post("/auth/login",
+        response = client.post(
+            "/auth/login",
             data={
                 "username": test_user_data["username"],
                 "password": test_user_data["password"],
-                "grant_type": "authorization_code"  # Invalid for this endpoint
+                "grant_type": "authorization_code",  # Invalid for this endpoint
             },
-            headers={"Content-Type": "application/x-www-form-urlencoded"}
+            headers={"Content-Type": "application/x-www-form-urlencoded"},
         )
 
         assert response.status_code == 400
@@ -255,11 +259,10 @@ class TestUserLogin:
     def test_login_form_data_missing_credentials(self, client):
         """Test login with form data but missing credentials."""
         # Login with missing password
-        response = client.post("/auth/login",
-            data={
-                "username": "test"
-            },
-            headers={"Content-Type": "application/x-www-form-urlencoded"}
+        response = client.post(
+            "/auth/login",
+            data={"username": "test"},
+            headers={"Content-Type": "application/x-www-form-urlencoded"},
         )
 
         assert response.status_code == 400
@@ -271,9 +274,10 @@ class TestUserLogin:
 
     def test_login_unsupported_content_type(self, client):
         """Test login with unsupported content type."""
-        response = client.post("/auth/login",
+        response = client.post(
+            "/auth/login",
             data="<xml>invalid</xml>",
-            headers={"Content-Type": "application/xml"}
+            headers={"Content-Type": "application/xml"},
         )
 
         assert response.status_code == 400
@@ -286,10 +290,13 @@ class TestUserLogin:
         client.post("/auth/register", json=test_user_data)
 
         # Login with email
-        response = client.post("/auth/login", json={
-            "username": test_user_data["email"],
-            "password": test_user_data["password"]
-        })
+        response = client.post(
+            "/auth/login",
+            json={
+                "username": test_user_data["email"],
+                "password": test_user_data["password"],
+            },
+        )
 
         assert response.status_code == 200
         assert "access_token" in response.json()
@@ -300,13 +307,14 @@ class TestUserLogin:
         client.post("/auth/register", json=test_user_data)
 
         # Login with email using form data
-        response = client.post("/auth/login",
+        response = client.post(
+            "/auth/login",
             data={
                 "username": test_user_data["email"],
                 "password": test_user_data["password"],
-                "grant_type": "password"
+                "grant_type": "password",
             },
-            headers={"Content-Type": "application/x-www-form-urlencoded"}
+            headers={"Content-Type": "application/x-www-form-urlencoded"},
         )
 
         assert response.status_code == 200
@@ -318,10 +326,10 @@ class TestUserLogin:
         client.post("/auth/register", json=test_user_data)
 
         # Login with wrong password
-        response = client.post("/auth/login", json={
-            "username": test_user_data["username"],
-            "password": "wrongpassword"
-        })
+        response = client.post(
+            "/auth/login",
+            json={"username": test_user_data["username"], "password": "wrongpassword"},
+        )
 
         assert response.status_code == 401
         # OAuth2-compliant error response
@@ -336,13 +344,14 @@ class TestUserLogin:
         client.post("/auth/register", json=test_user_data)
 
         # Login with wrong password using form data
-        response = client.post("/auth/login",
+        response = client.post(
+            "/auth/login",
             data={
                 "username": test_user_data["username"],
                 "password": "wrongpassword",
-                "grant_type": "password"
+                "grant_type": "password",
             },
-            headers={"Content-Type": "application/x-www-form-urlencoded"}
+            headers={"Content-Type": "application/x-www-form-urlencoded"},
         )
 
         assert response.status_code == 401
@@ -361,10 +370,13 @@ class TestUserLogin:
         test_db.commit()
 
         # Try to login
-        response = client.post("/auth/login", json={
-            "username": test_user_data["username"],
-            "password": test_user_data["password"]
-        })
+        response = client.post(
+            "/auth/login",
+            json={
+                "username": test_user_data["username"],
+                "password": test_user_data["password"],
+            },
+        )
 
         assert response.status_code == 401
         # OAuth2-compliant error response
@@ -381,13 +393,14 @@ class TestUserLogin:
         test_db.commit()
 
         # Try to login using form data
-        response = client.post("/auth/login",
+        response = client.post(
+            "/auth/login",
             data={
                 "username": test_user_data["username"],
                 "password": test_user_data["password"],
-                "grant_type": "password"
+                "grant_type": "password",
             },
-            headers={"Content-Type": "application/x-www-form-urlencoded"}
+            headers={"Content-Type": "application/x-www-form-urlencoded"},
         )
 
         assert response.status_code == 401
@@ -402,13 +415,14 @@ class TestOAuth2Compliance:
 
     def test_oauth2_error_response_structure(self, client):
         """Test that error responses follow OAuth2 spec structure."""
-        response = client.post("/auth/login",
+        response = client.post(
+            "/auth/login",
             data={
                 "username": "nonexistent",
                 "password": "invalid",
-                "grant_type": "password"
+                "grant_type": "password",
             },
-            headers={"Content-Type": "application/x-www-form-urlencoded"}
+            headers={"Content-Type": "application/x-www-form-urlencoded"},
         )
 
         assert response.status_code == 401
@@ -430,24 +444,26 @@ class TestOAuth2Compliance:
         client.post("/auth/register", json=test_user_data)
 
         # Test valid grant_type
-        response = client.post("/auth/login",
+        response = client.post(
+            "/auth/login",
             data={
                 "username": test_user_data["username"],
                 "password": test_user_data["password"],
-                "grant_type": "password"
+                "grant_type": "password",
             },
-            headers={"Content-Type": "application/x-www-form-urlencoded"}
+            headers={"Content-Type": "application/x-www-form-urlencoded"},
         )
         assert response.status_code == 200
 
         # Test invalid grant_type
-        response = client.post("/auth/login",
+        response = client.post(
+            "/auth/login",
             data={
                 "username": test_user_data["username"],
                 "password": test_user_data["password"],
-                "grant_type": "client_credentials"
+                "grant_type": "client_credentials",
             },
-            headers={"Content-Type": "application/x-www-form-urlencoded"}
+            headers={"Content-Type": "application/x-www-form-urlencoded"},
         )
         assert response.status_code == 400
         assert response.json()["detail"] == "unsupported_grant_type"
@@ -455,9 +471,10 @@ class TestOAuth2Compliance:
     def test_oauth2_malformed_request(self, client):
         """Test malformed OAuth2 request handling."""
         # Empty form data
-        response = client.post("/auth/login",
+        response = client.post(
+            "/auth/login",
             data={},
-            headers={"Content-Type": "application/x-www-form-urlencoded"}
+            headers={"Content-Type": "application/x-www-form-urlencoded"},
         )
 
         assert response.status_code == 400
@@ -469,22 +486,26 @@ class TestOAuth2Compliance:
         client.post("/auth/register", json=test_user_data)
 
         # Test with proper form content type
-        response = client.post("/auth/login",
+        response = client.post(
+            "/auth/login",
             data={
                 "username": test_user_data["username"],
-                "password": test_user_data["password"]
+                "password": test_user_data["password"],
             },
-            headers={"Content-Type": "application/x-www-form-urlencoded"}
+            headers={"Content-Type": "application/x-www-form-urlencoded"},
         )
         assert response.status_code == 200
 
         # Test with charset in content type
-        response = client.post("/auth/login",
+        response = client.post(
+            "/auth/login",
             data={
                 "username": test_user_data["username"],
-                "password": test_user_data["password"]
+                "password": test_user_data["password"],
             },
-            headers={"Content-Type": "application/x-www-form-urlencoded; charset=utf-8"}
+            headers={
+                "Content-Type": "application/x-www-form-urlencoded; charset=utf-8"
+            },
         )
         assert response.status_code == 200
 
@@ -494,12 +515,13 @@ class TestOAuth2Compliance:
         client.post("/auth/register", json=test_user_data)
 
         # Successful login should have proper headers
-        response = client.post("/auth/login",
+        response = client.post(
+            "/auth/login",
             data={
                 "username": test_user_data["username"],
-                "password": test_user_data["password"]
+                "password": test_user_data["password"],
             },
-            headers={"Content-Type": "application/x-www-form-urlencoded"}
+            headers={"Content-Type": "application/x-www-form-urlencoded"},
         )
 
         assert response.status_code == 200
@@ -515,16 +537,17 @@ class TestTokenRefresh:
         """Test successful token refresh."""
         # Register and login user
         client.post("/auth/register", json=test_user_data)
-        login_response = client.post("/auth/login", json={
-            "username": test_user_data["username"],
-            "password": test_user_data["password"]
-        })
+        login_response = client.post(
+            "/auth/login",
+            json={
+                "username": test_user_data["username"],
+                "password": test_user_data["password"],
+            },
+        )
         refresh_token = login_response.json()["refresh_token"]
 
         # Refresh token
-        response = client.post("/auth/refresh", json={
-            "refresh_token": refresh_token
-        })
+        response = client.post("/auth/refresh", json={"refresh_token": refresh_token})
 
         assert response.status_code == 200
         data = response.json()
@@ -534,9 +557,7 @@ class TestTokenRefresh:
 
     def test_refresh_token_invalid(self, client):
         """Test refresh with invalid token."""
-        response = client.post("/auth/refresh", json={
-            "refresh_token": "invalid_token"
-        })
+        response = client.post("/auth/refresh", json={"refresh_token": "invalid_token"})
 
         assert response.status_code == 401
         assert "Invalid refresh token" in response.json()["detail"]
@@ -549,16 +570,17 @@ class TestUserInfo:
         """Test getting current user information."""
         # Register and login user
         client.post("/auth/register", json=test_user_data)
-        login_response = client.post("/auth/login", json={
-            "username": test_user_data["username"],
-            "password": test_user_data["password"]
-        })
+        login_response = client.post(
+            "/auth/login",
+            json={
+                "username": test_user_data["username"],
+                "password": test_user_data["password"],
+            },
+        )
         token = login_response.json()["access_token"]
 
         # Get user info
-        response = client.get("/auth/me", headers={
-            "Authorization": f"Bearer {token}"
-        })
+        response = client.get("/auth/me", headers={"Authorization": f"Bearer {token}"})
 
         assert response.status_code == 200
         data = response.json()
@@ -575,20 +597,19 @@ class TestUserInfo:
         """Test updating current user information."""
         # Register and login user
         client.post("/auth/register", json=test_user_data)
-        login_response = client.post("/auth/login", json={
-            "username": test_user_data["username"],
-            "password": test_user_data["password"]
-        })
+        login_response = client.post(
+            "/auth/login",
+            json={
+                "username": test_user_data["username"],
+                "password": test_user_data["password"],
+            },
+        )
         token = login_response.json()["access_token"]
 
         # Update user
-        update_data = {
-            "first_name": "Updated",
-            "last_name": "Name"
-        }
-        response = client.put("/auth/me",
-            headers={"Authorization": f"Bearer {token}"},
-            json=update_data
+        update_data = {"first_name": "Updated", "last_name": "Name"}
+        response = client.put(
+            "/auth/me", headers={"Authorization": f"Bearer {token}"}, json=update_data
         )
 
         assert response.status_code == 200
@@ -604,48 +625,59 @@ class TestPasswordManagement:
         """Test changing password."""
         # Register and login user
         client.post("/auth/register", json=test_user_data)
-        login_response = client.post("/auth/login", json={
-            "username": test_user_data["username"],
-            "password": test_user_data["password"]
-        })
+        login_response = client.post(
+            "/auth/login",
+            json={
+                "username": test_user_data["username"],
+                "password": test_user_data["password"],
+            },
+        )
         token = login_response.json()["access_token"]
 
         # Change password
-        response = client.post("/auth/change-password",
+        response = client.post(
+            "/auth/change-password",
             headers={"Authorization": f"Bearer {token}"},
             json={
                 "current_password": test_user_data["password"],
-                "new_password": "NewPassword123!"
-            }
+                "new_password": "NewPassword123!",
+            },
         )
 
         assert response.status_code == 200
         assert "Password changed successfully" in response.json()["message"]
 
         # Test login with new password
-        login_response = client.post("/auth/login", json={
-            "username": test_user_data["username"],
-            "password": "NewPassword123!"
-        })
+        login_response = client.post(
+            "/auth/login",
+            json={
+                "username": test_user_data["username"],
+                "password": "NewPassword123!",
+            },
+        )
         assert login_response.status_code == 200
 
     def test_change_password_wrong_current(self, client, test_db, test_user_data):
         """Test changing password with wrong current password."""
         # Register and login user
         client.post("/auth/register", json=test_user_data)
-        login_response = client.post("/auth/login", json={
-            "username": test_user_data["username"],
-            "password": test_user_data["password"]
-        })
+        login_response = client.post(
+            "/auth/login",
+            json={
+                "username": test_user_data["username"],
+                "password": test_user_data["password"],
+            },
+        )
         token = login_response.json()["access_token"]
 
         # Try to change password with wrong current password
-        response = client.post("/auth/change-password",
+        response = client.post(
+            "/auth/change-password",
             headers={"Authorization": f"Bearer {token}"},
             json={
                 "current_password": "wrongpassword",
-                "new_password": "NewPassword123!"
-            }
+                "new_password": "NewPassword123!",
+            },
         )
 
         assert response.status_code == 400
@@ -711,7 +743,7 @@ class TestRoleManagement:
             "name": "test_role",
             "description": "Test role for testing",
             "is_active": True,
-            "permission_ids": []
+            "permission_ids": [],
         }
 
         response = client.post("/admin/roles", headers=auth_headers, json=role_data)
@@ -755,10 +787,9 @@ class TestSecurityMiddleware:
         # Make many requests quickly
         responses = []
         for i in range(110):  # More than the limit of 100
-            response = client.post("/auth/login", json={
-                "username": "test",
-                "password": "test"
-            })
+            response = client.post(
+                "/auth/login", json={"username": "test", "password": "test"}
+            )
             responses.append(response.status_code)
 
         # Should eventually get rate limited
@@ -770,29 +801,29 @@ class TestProtectedEndpoints:
 
     def test_feedback_requires_auth(self, client):
         """Test feedback endpoint requires authentication."""
-        response = client.post("/feedback", json={
-            "rating": 5,
-            "comment": "Test feedback"
-        })
+        response = client.post(
+            "/feedback", json={"rating": 5, "comment": "Test feedback"}
+        )
         assert response.status_code == 401
 
     def test_feedback_with_auth(self, client, test_db, test_user_data):
         """Test feedback endpoint with authentication."""
         # Register and login user
         client.post("/auth/register", json=test_user_data)
-        login_response = client.post("/auth/login", json={
-            "username": test_user_data["username"],
-            "password": test_user_data["password"]
-        })
+        login_response = client.post(
+            "/auth/login",
+            json={
+                "username": test_user_data["username"],
+                "password": test_user_data["password"],
+            },
+        )
         token = login_response.json()["access_token"]
 
         # Submit feedback
-        response = client.post("/feedback",
+        response = client.post(
+            "/feedback",
             headers={"Authorization": f"Bearer {token}"},
-            json={
-                "rating": 5,
-                "comment": "Test feedback"
-            }
+            json={"rating": 5, "comment": "Test feedback"},
         )
         assert response.status_code == 200
 

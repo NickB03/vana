@@ -25,6 +25,7 @@ from shell_validator import Severity, ShellValidator, ValidationResult
 @dataclass
 class GitHookConfig:
     """Configuration for Git hook integration"""
+
     hook_type: str = "pre-commit"
     fail_on_critical: bool = True
     fail_on_warnings: bool = False
@@ -40,7 +41,7 @@ class GitHookConfig:
                 ".git/**",
                 "vendor/**",
                 "build/**",
-                "dist/**"
+                "dist/**",
             ]
 
 
@@ -56,13 +57,15 @@ class GitHookValidator:
         try:
             # Get staged files
             result = subprocess.run(
-                ['git', 'diff', '--cached', '--name-only', '--diff-filter=ACM'],
+                ["git", "diff", "--cached", "--name-only", "--diff-filter=ACM"],
                 capture_output=True,
                 text=True,
-                check=True
+                check=True,
             )
 
-            staged_files = result.stdout.strip().split('\n') if result.stdout.strip() else []
+            staged_files = (
+                result.stdout.strip().split("\n") if result.stdout.strip() else []
+            )
 
             # Filter for shell scripts
             shell_files = []
@@ -81,15 +84,17 @@ class GitHookValidator:
         path = Path(file_path)
 
         # Check file extension
-        if path.suffix in ['.sh', '.bash', '.zsh']:
+        if path.suffix in [".sh", ".bash", ".zsh"]:
             return True
 
         # Check shebang for files without extension
         try:
             if path.exists() and path.is_file():
-                with open(path, encoding='utf-8') as f:
+                with open(path, encoding="utf-8") as f:
                     first_line = f.readline().strip()
-                    if first_line.startswith('#!') and any(shell in first_line for shell in ['bash', 'sh', 'zsh']):
+                    if first_line.startswith("#!") and any(
+                        shell in first_line for shell in ["bash", "sh", "zsh"]
+                    ):
                         return True
         except (UnicodeDecodeError, PermissionError):
             pass
@@ -148,10 +153,14 @@ class GitHookValidator:
 
         # Generate summary
         total_issues = sum(len(result.issues) for result in results)
-        critical_issues = sum(len([i for i in result.issues if i.severity == Severity.CRITICAL])
-                            for result in results)
-        warning_issues = sum(len([i for i in result.issues if i.severity == Severity.WARNING])
-                           for result in results)
+        critical_issues = sum(
+            len([i for i in result.issues if i.severity == Severity.CRITICAL])
+            for result in results
+        )
+        warning_issues = sum(
+            len([i for i in result.issues if i.severity == Severity.WARNING])
+            for result in results
+        )
 
         print("📊 Validation Summary:")
         print(f"   Files checked: {len(results)}")
@@ -165,8 +174,12 @@ class GitHookValidator:
                 print(f"\n📄 {result.file_path} ({result.execution_time_ms:.1f}ms):")
 
                 # Group issues by severity for better readability
-                critical_issues = [i for i in result.issues if i.severity == Severity.CRITICAL]
-                warning_issues = [i for i in result.issues if i.severity == Severity.WARNING]
+                critical_issues = [
+                    i for i in result.issues if i.severity == Severity.CRITICAL
+                ]
+                warning_issues = [
+                    i for i in result.issues if i.severity == Severity.WARNING
+                ]
                 info_issues = [i for i in result.issues if i.severity == Severity.INFO]
 
                 if critical_issues:
@@ -197,14 +210,16 @@ class GitHookValidator:
         if self.config.generate_report:
             report = self.validator.generate_report(results, "json")
             os.makedirs(os.path.dirname(self.config.report_path), exist_ok=True)
-            with open(self.config.report_path, 'w') as f:
+            with open(self.config.report_path, "w") as f:
                 f.write(report)
             print(f"\n📄 Detailed report saved to: {self.config.report_path}")
 
         if should_pass:
             print("\n✅ Shell script validation passed!")
             if total_issues > 0:
-                print(f"   📊 Found {total_issues} non-critical issues that can be addressed later.")
+                print(
+                    f"   📊 Found {total_issues} non-critical issues that can be addressed later."
+                )
             return 0
         else:
             print("\n❌ Shell script validation failed!")
@@ -218,10 +233,12 @@ class GitHookValidator:
 
             # Provide helpful tips
             print("\n🔧 Quick fixes:")
-            print("   • Quote variables: echo \"$var\" instead of echo $var")
+            print('   • Quote variables: echo "$var" instead of echo $var')
             print("   • Use $() instead of backticks: $(command) instead of `command`")
             print("   • Add set options: set -euo pipefail at script start")
-            print("   • Use >> for append: echo \"text\" >> file instead of > for subsequent writes")
+            print(
+                '   • Use >> for append: echo "text" >> file instead of > for subsequent writes'
+            )
 
             return 1
 
@@ -233,14 +250,17 @@ class GitHookValidator:
         try:
             # Get all tracked files
             result = subprocess.run(
-                ['git', 'ls-files'],
-                capture_output=True,
-                text=True,
-                check=True
+                ["git", "ls-files"], capture_output=True, text=True, check=True
             )
 
-            all_files = result.stdout.strip().split('\n') if result.stdout.strip() else []
-            shell_files = [f for f in all_files if self._is_shell_script(f) and not self._should_exclude_file(f)]
+            all_files = (
+                result.stdout.strip().split("\n") if result.stdout.strip() else []
+            )
+            shell_files = [
+                f
+                for f in all_files
+                if self._is_shell_script(f) and not self._should_exclude_file(f)
+            ]
 
             if not shell_files:
                 print("ℹ️  No shell script files found in repository.")
@@ -256,8 +276,10 @@ class GitHookValidator:
 
             # Generate summary
             total_issues = sum(len(result.issues) for result in results)
-            critical_issues = sum(len([i for i in result.issues if i.severity == Severity.CRITICAL])
-                                for result in results)
+            critical_issues = sum(
+                len([i for i in result.issues if i.severity == Severity.CRITICAL])
+                for result in results
+            )
 
             print("📊 Repository Validation Summary:")
             print(f"   Files checked: {len(results)}")
@@ -308,7 +330,7 @@ class GitHookInstaller:
         # Handle existing hook
         if hook_file.exists():
             # Backup existing hook
-            backup_file = hook_file.with_suffix('.backup')
+            backup_file = hook_file.with_suffix(".backup")
             hook_file.rename(backup_file)
             print(f"📋 Existing pre-commit hook backed up to {backup_file.name}")
 
@@ -333,7 +355,7 @@ class GitHookInstaller:
         hook_script = self._generate_pre_push_script(config)
 
         if hook_file.exists():
-            backup_file = hook_file.with_suffix('.backup')
+            backup_file = hook_file.with_suffix(".backup")
             hook_file.rename(backup_file)
             print(f"📋 Existing pre-push hook backed up to {backup_file.name}")
 
@@ -436,67 +458,86 @@ def main():
         description="Git Hooks Integration for Shell Script Validator"
     )
 
-    subparsers = parser.add_subparsers(dest='command', help='Available commands')
+    subparsers = parser.add_subparsers(dest="command", help="Available commands")
 
     # Install command
-    install_parser = subparsers.add_parser('install', help='Install Git hooks')
-    install_parser.add_argument('--hook-type', choices=['pre-commit', 'pre-push', 'both'],
-                               default='pre-commit', help='Type of hook to install')
-    install_parser.add_argument('--fail-on-critical', action='store_true', default=True,
-                               help='Fail on critical issues')
-    install_parser.add_argument('--fail-on-warnings', action='store_true',
-                               help='Fail on warning issues')
-    install_parser.add_argument('--project-root', default='.',
-                               help='Project root directory')
+    install_parser = subparsers.add_parser("install", help="Install Git hooks")
+    install_parser.add_argument(
+        "--hook-type",
+        choices=["pre-commit", "pre-push", "both"],
+        default="pre-commit",
+        help="Type of hook to install",
+    )
+    install_parser.add_argument(
+        "--fail-on-critical",
+        action="store_true",
+        default=True,
+        help="Fail on critical issues",
+    )
+    install_parser.add_argument(
+        "--fail-on-warnings", action="store_true", help="Fail on warning issues"
+    )
+    install_parser.add_argument(
+        "--project-root", default=".", help="Project root directory"
+    )
 
     # Uninstall command
-    uninstall_parser = subparsers.add_parser('uninstall', help='Uninstall Git hooks')
-    uninstall_parser.add_argument('--project-root', default='.',
-                                 help='Project root directory')
+    uninstall_parser = subparsers.add_parser("uninstall", help="Uninstall Git hooks")
+    uninstall_parser.add_argument(
+        "--project-root", default=".", help="Project root directory"
+    )
 
     # Hook execution commands (called by Git)
-    hook_parser = subparsers.add_parser('run-hook', help='Run validation hook (internal)')
-    hook_parser.add_argument('--hook-type', choices=['pre-commit', 'pre-push'],
-                            required=True, help='Type of hook to run')
-    hook_parser.add_argument('--fail-on-critical', type=bool, default=True)
-    hook_parser.add_argument('--fail-on-warnings', type=bool, default=False)
-    hook_parser.add_argument('--generate-report', type=bool, default=True)
-    hook_parser.add_argument('--report-path', default='.git/shell-validation-report.json')
+    hook_parser = subparsers.add_parser(
+        "run-hook", help="Run validation hook (internal)"
+    )
+    hook_parser.add_argument(
+        "--hook-type",
+        choices=["pre-commit", "pre-push"],
+        required=True,
+        help="Type of hook to run",
+    )
+    hook_parser.add_argument("--fail-on-critical", type=bool, default=True)
+    hook_parser.add_argument("--fail-on-warnings", type=bool, default=False)
+    hook_parser.add_argument("--generate-report", type=bool, default=True)
+    hook_parser.add_argument(
+        "--report-path", default=".git/shell-validation-report.json"
+    )
 
     args = parser.parse_args()
 
-    if args.command == 'install':
+    if args.command == "install":
         installer = GitHookInstaller(args.project_root)
         config = GitHookConfig(
             fail_on_critical=args.fail_on_critical,
-            fail_on_warnings=args.fail_on_warnings
+            fail_on_warnings=args.fail_on_warnings,
         )
 
-        if args.hook_type in ['pre-commit', 'both']:
+        if args.hook_type in ["pre-commit", "both"]:
             installer.install_pre_commit_hook(config)
 
-        if args.hook_type in ['pre-push', 'both']:
-            config.hook_type = 'pre-push'
+        if args.hook_type in ["pre-push", "both"]:
+            config.hook_type = "pre-push"
             installer.install_pre_push_hook(config)
 
-    elif args.command == 'uninstall':
+    elif args.command == "uninstall":
         installer = GitHookInstaller(args.project_root)
         installer.uninstall_hooks()
 
-    elif args.command == 'run-hook':
+    elif args.command == "run-hook":
         config = GitHookConfig(
             hook_type=args.hook_type,
             fail_on_critical=args.fail_on_critical,
             fail_on_warnings=args.fail_on_warnings,
             generate_report=args.generate_report,
-            report_path=args.report_path
+            report_path=args.report_path,
         )
 
         hook_validator = GitHookValidator(config)
 
-        if args.hook_type == 'pre-commit':
+        if args.hook_type == "pre-commit":
             return hook_validator.run_pre_commit_hook()
-        elif args.hook_type == 'pre-push':
+        elif args.hook_type == "pre-push":
             return hook_validator.run_pre_push_hook()
 
     else:

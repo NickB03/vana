@@ -46,5 +46,5 @@ __all__ = [
     "intercept_bash",
     "intercept_multi_edit",
     "intercept_write",
-    "reset_orchestrator"
+    "reset_orchestrator",
 ]

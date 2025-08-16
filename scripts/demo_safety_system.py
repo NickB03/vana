@@ -38,10 +38,16 @@ async def demo_basic_operations():
 
     # Test different enforcement levels
     print("\n2. Enforcement Level Changes:")
-    for level in [EnforcementLevel.MONITOR, EnforcementLevel.WARN, EnforcementLevel.ENFORCE]:
+    for level in [
+        EnforcementLevel.MONITOR,
+        EnforcementLevel.WARN,
+        EnforcementLevel.ENFORCE,
+    ]:
         safety_system.enforcement_level = level
         result = await safety_system.validate_operation("write", "test.txt", "content")
-        print(f"   {level.value.upper():8}: {result['safety_metadata']['enforcement_action']}")
+        print(
+            f"   {level.value.upper():8}: {result['safety_metadata']['enforcement_action']}"
+        )
 
     print("\n✅ Basic operations demo completed\n")
 
@@ -55,7 +61,7 @@ async def demo_emergency_bypass():
 
     # Show available bypass codes
     print("1. Available Bypass Codes:")
-    for code_id, code_info in safety_system.get_system_status()['bypass_codes'].items():
+    for code_id, code_info in safety_system.get_system_status()["bypass_codes"].items():
         print(f"   {code_id:12}: {code_info['uses_remaining']} uses remaining")
 
     # Generate a new bypass code
@@ -68,8 +74,8 @@ async def demo_emergency_bypass():
 
     # Use the bypass code
     print("\n3. Using Bypass Code:")
-    use_result = safety_system.use_bypass_code(result['code'], "Demo emergency")
-    if use_result['success']:
+    use_result = safety_system.use_bypass_code(result["code"], "Demo emergency")
+    if use_result["success"]:
         print(f"   ✅ Bypass activated: {use_result['enforcement_level']}")
         print(f"   Duration: {use_result['duration_minutes']} minutes")
     else:
@@ -99,7 +105,9 @@ async def demo_health_monitoring():
 
     for metric_name, value in metrics:
         await alert_manager.record_metric(metric_name, value)
-        await safety_system._record_metrics(100, {"metric": metric_name, "value": value})
+        await safety_system._record_metrics(
+            100, {"metric": metric_name, "value": value}
+        )
         print(f"   {metric_name}: {value}")
 
     # Wait for alert processing
@@ -115,7 +123,7 @@ async def demo_health_monitoring():
     # Show active alerts
     print("\n3. Active Alerts:")
     alert_summary = alert_manager.get_alert_summary()
-    if alert_summary['total_active_alerts'] > 0:
+    if alert_summary["total_active_alerts"] > 0:
         alerts = alert_manager.get_active_alerts()
         for alert in alerts[-3:]:  # Show last 3
             print(f"   🚨 {alert['severity'].upper()}: {alert['name']}")
@@ -137,7 +145,9 @@ async def demo_config_management():
     print("1. Current Configuration:")
     print(f"   Enforcement Mode: {config_manager.get_current_enforcement_mode().value}")
     print(f"   Rollback Enabled: {config_manager.rollback.enabled}")
-    print(f"   Auto Escalation: {config_manager.graduated_enforcement.auto_escalation_enabled}")
+    print(
+        f"   Auto Escalation: {config_manager.graduated_enforcement.auto_escalation_enabled}"
+    )
 
     # Test mode changes
     print("\n2. Changing Enforcement Mode:")
@@ -149,7 +159,9 @@ async def demo_config_management():
     print("\n3. Testing Escalation Logic:")
     test_metrics = {"error_rate": 0.25}  # Above threshold
     should_escalate = config_manager.should_escalate_enforcement(test_metrics)
-    print(f"   Error rate 25%: {'Should escalate' if should_escalate else 'No escalation needed'}")
+    print(
+        f"   Error rate 25%: {'Should escalate' if should_escalate else 'No escalation needed'}"
+    )
 
     # Restore original mode
     config_manager.set_enforcement_mode(original_mode)
@@ -185,22 +197,24 @@ async def demo_production_scenario():
     print("\n2. System Response:")
     status = safety_system.get_system_status()
     print(f"   Final Health: {status['health_status']}")
-    print(f"   Emergency Mode: {'🆘 ACTIVE' if status['emergency_mode'] else '✅ Normal'}")
+    print(
+        f"   Emergency Mode: {'🆘 ACTIVE' if status['emergency_mode'] else '✅ Normal'}"
+    )
     print(f"   Enforcement Level: {status['enforcement_level']}")
 
     # Show alerts triggered
     alert_summary = alert_manager.get_alert_summary()
     print(f"   Active Alerts: {alert_summary['total_active_alerts']}")
 
-    if alert_summary['total_active_alerts'] > 0:
+    if alert_summary["total_active_alerts"] > 0:
         alerts = alert_manager.get_active_alerts()
         for alert in alerts[-2:]:  # Show last 2
             severity_emoji = {"warning": "⚠️", "critical": "🔴", "emergency": "🆘"}
-            emoji = severity_emoji.get(alert['severity'], "❓")
+            emoji = severity_emoji.get(alert["severity"], "❓")
             print(f"   {emoji} {alert['name']}: {alert['message'][:50]}...")
 
     print("\n3. Recovery Actions:")
-    if status['emergency_mode']:
+    if status["emergency_mode"]:
         print("   🆘 Emergency mode activated automatically")
         print("   📋 Follow emergency procedures")
         print("   🔄 System will auto-recover in 30 minutes")
@@ -226,7 +240,7 @@ async def demo_cli_operations():
         "safety_system_cli.py monitor --duration 300",
         "safety_system_cli.py alerts list",
         "safety_system_cli.py config set-mode warn",
-        "safety_system_cli.py validate write file.txt"
+        "safety_system_cli.py validate write file.txt",
     ]
 
     for cmd in commands:
@@ -240,7 +254,9 @@ async def demo_cli_operations():
     print("   Emergency Mode: ✅ Normal")
     print()
     print("   # Use emergency bypass")
-    print("   $ python src/core/safety_system_cli.py bypass a1b2c3d4 \"Critical deployment\"")
+    print(
+        '   $ python src/core/safety_system_cli.py bypass a1b2c3d4 "Critical deployment"'
+    )
     print("   ✅ Bypass code activated: emergency")
     print("   Duration: 60 minutes")
     print()
@@ -273,7 +289,7 @@ async def main():
         demo_health_monitoring,
         demo_config_management,
         demo_production_scenario,
-        demo_cli_operations
+        demo_cli_operations,
     ]
 
     for i, demo in enumerate(demos, 1):

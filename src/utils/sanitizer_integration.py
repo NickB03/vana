@@ -30,9 +30,9 @@ class SanitizerIntegration:
         """Setup default integration with Claude Code pipeline"""
         # Register as high-priority pre-generation hook
         register_hook(
-            'pre_generation',
+            "pre_generation",
             self._sanitize_context_hook,
-            priority=HookPriority.HIGH.value
+            priority=HookPriority.HIGH.value,
         )
 
         self.logger.info("Context sanitizer integrated with generation pipeline")
@@ -56,10 +56,12 @@ class SanitizerIntegration:
     def configure_for_project(self, project_config: dict[str, Any]):
         """Configure sanitizer for specific project needs"""
         config = SanitizationConfig(
-            enabled_patterns=project_config.get('enabled_patterns'),
-            disabled_patterns=project_config.get('disabled_patterns'),
-            placeholder_style=PlaceholderStyle(project_config.get('placeholder_style', 'contextual')),
-            performance_mode=project_config.get('performance_mode', False)
+            enabled_patterns=project_config.get("enabled_patterns"),
+            disabled_patterns=project_config.get("disabled_patterns"),
+            placeholder_style=PlaceholderStyle(
+                project_config.get("placeholder_style", "contextual")
+            ),
+            performance_mode=project_config.get("performance_mode", False),
         )
 
         self.sanitizer = ContextSanitizer(config=config)
@@ -75,30 +77,28 @@ def setup_vana_project_sanitization():
             name="vana_project_paths",
             pattern=r"/Users/[^/]+/Development/vana[^\s]*",
             placeholder=lambda m, c: m.group(0).replace(
-                m.group(0).split('/')[2], 'USER'
+                m.group(0).split("/")[2], "USER"
             ),
             confidence=0.95,
             category="vana_specific",
-            description="Vana project file paths"
+            description="Vana project file paths",
         ),
-
         SensitivePattern(
             name="adk_project_id",
             pattern=r"analystai-454200",
             placeholder="your-adk-project-id",
             confidence=1.0,
             category="vana_specific",
-            description="Vana ADK project ID"
+            description="Vana ADK project ID",
         ),
-
         SensitivePattern(
             name="vana_bucket_names",
             pattern=r"vana-(?:logs-data|builds|session-storage)",
             placeholder="your-vana-bucket",
             confidence=0.95,
             category="vana_specific",
-            description="Vana Google Cloud Storage buckets"
-        )
+            description="Vana Google Cloud Storage buckets",
+        ),
     ]
 
     # Configuration for Vana development
@@ -106,7 +106,7 @@ def setup_vana_project_sanitization():
         enabled_categories=["authentication", "infrastructure", "vana_specific"],
         placeholder_style=PlaceholderStyle.CONTEXTUAL,
         preserve_structure=True,
-        performance_mode=False  # Prioritize accuracy for development
+        performance_mode=False,  # Prioritize accuracy for development
     )
 
     # Create custom sanitizer
@@ -126,24 +126,22 @@ def demo_sanitization_examples():
 
     examples = [
         # Example 1: Environment configuration
-        '''
+        """
         # .env.local configuration
         GOOGLE_CLOUD_PROJECT=analystai-454200
         OPENAI_API_KEY=sk-1234567890abcdef1234567890abcdef12345678
         BRAVE_API_KEY=BSA-1234567890
         DATABASE_URL=postgresql://user:password@localhost:5432/vana
-        ''',
-
+        """,
         # Example 2: Code with file paths
-        '''
+        """
         def load_config():
             config_path = "/Users/nick/Development/vana/.env.local"
             with open(config_path) as f:
                 return f.read()
-        ''',
-
+        """,
         # Example 3: API integration code
-        '''
+        """
         import openai
         
         openai.api_key = "sk-abcd1234567890efgh1234567890ijkl1234567890"
@@ -154,10 +152,9 @@ def demo_sanitization_examples():
                 messages=[{"role": "user", "content": "Hello"}]
             )
             return response
-        ''',
-
+        """,
         # Example 4: Cloud configuration
-        '''
+        """
         PROJECT_ID = "analystai-454200"
         REGION = "us-central1"
         BUCKET_NAME = "vana-logs-data"
@@ -167,10 +164,9 @@ def demo_sanitization_examples():
             client = storage.Client(project=PROJECT_ID)
             bucket = client.bucket(BUCKET_NAME)
             return bucket
-        ''',
-
+        """,
         # Example 5: Docker and deployment
-        '''
+        """
         # Dockerfile
         ENV GOOGLE_CLOUD_PROJECT=analystai-454200
         ENV API_KEY=sk-1234567890abcdef1234567890abcdef12345678
@@ -180,7 +176,7 @@ def demo_sanitization_examples():
           --project=analystai-454200 \\
           --region=us-central1 \\
           --source=/Users/nick/Development/vana
-        '''
+        """,
     ]
 
     print("🔒 Context Sanitization Examples\n")
@@ -206,7 +202,7 @@ def benchmark_performance():
     sanitizer = ContextSanitizer()
 
     # Generate test contexts of various sizes
-    test_sizes = [1024, 10*1024, 100*1024]  # 1KB, 10KB, 100KB
+    test_sizes = [1024, 10 * 1024, 100 * 1024]  # 1KB, 10KB, 100KB
 
     for size in test_sizes:
         # Create test context with mixed sensitive data
@@ -219,9 +215,11 @@ def benchmark_performance():
 
         processing_time = (end_time - start_time) * 1000  # ms
 
-        print(f"📊 Performance: {size//1024}KB context")
+        print(f"📊 Performance: {size // 1024}KB context")
         print(f"   Processing time: {processing_time:.2f}ms")
-        print(f"   Target: {'✅ PASS' if processing_time < (100 if size <= 10*1024 else 1000) else '❌ FAIL'}")
+        print(
+            f"   Target: {'✅ PASS' if processing_time < (100 if size <= 10 * 1024 else 1000) else '❌ FAIL'}"
+        )
         print()
 
 
@@ -235,7 +233,7 @@ def generate_test_context(size_bytes: int) -> str:
         "Server: 192.168.1.100:8080\n",
         "Database: postgresql://user:pass@db.example.com:5432/app\n",
         "JWT: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.payload.signature\n",
-        "Normal code line without sensitive data\n"
+        "Normal code line without sensitive data\n",
     ]
 
     content = ""
@@ -252,24 +250,26 @@ def validate_integration():
     from .pipeline_hooks import execute_hooks
 
     # Test context with sensitive data
-    test_context = '''
+    test_context = """
     Project configuration:
     GOOGLE_CLOUD_PROJECT=analystai-454200
     API_KEY=sk-1234567890abcdef1234567890abcdef12345678
     Config path: /Users/nick/Development/vana/.env.local
-    '''
+    """
 
     # Execute pre-generation hooks (should include sanitization)
-    sanitized_context = execute_hooks('pre_generation', test_context)
+    sanitized_context = execute_hooks("pre_generation", test_context)
 
     # Validate sanitization occurred
     sensitive_patterns = [
-        'analystai-454200',
-        'sk-1234567890abcdef1234567890abcdef12345678',
-        '/Users/nick/'
+        "analystai-454200",
+        "sk-1234567890abcdef1234567890abcdef12345678",
+        "/Users/nick/",
     ]
 
-    all_sanitized = all(pattern not in sanitized_context for pattern in sensitive_patterns)
+    all_sanitized = all(
+        pattern not in sanitized_context for pattern in sensitive_patterns
+    )
 
     print(f"🔍 Integration Validation: {'✅ PASS' if all_sanitized else '❌ FAIL'}")
 

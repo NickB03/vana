@@ -4,7 +4,7 @@ Comprehensive Unit Tests for Hook System Validators
 
 Tests each validator component independently:
 - Real PRD Validator
-- Enhanced PRD Validator 
+- Enhanced PRD Validator
 - React Optimization Validator
 - HTTP Status Validator
 - Test Coverage Validator
@@ -33,6 +33,7 @@ import pytest
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+
 class TestHookValidatorsUnit:
     """Unit tests for all hook system validators"""
 
@@ -43,10 +44,10 @@ class TestHookValidatorsUnit:
             workspace = Path(temp_dir)
 
             # Create required directories
-            (workspace / '.claude_workspace').mkdir()
-            (workspace / 'docs').mkdir()
-            (workspace / 'src' / 'components').mkdir(parents=True)
-            (workspace / 'tests').mkdir()
+            (workspace / ".claude_workspace").mkdir()
+            (workspace / "docs").mkdir()
+            (workspace / "src" / "components").mkdir(parents=True)
+            (workspace / "tests").mkdir()
 
             # Create mock PRD file
             prd_content = """
@@ -70,7 +71,7 @@ class TestHookValidatorsUnit:
 - data-testid required
 - aria-label for buttons
             """
-            (workspace / 'docs' / 'vana-frontend-prd-final.md').write_text(prd_content)
+            (workspace / "docs" / "vana-frontend-prd-final.md").write_text(prd_content)
 
             # Create hook config
             hook_config = {
@@ -80,11 +81,13 @@ class TestHookValidatorsUnit:
                     "blocking": True,
                     "error": False,
                     "warning": False,
-                    "advisory": False
+                    "advisory": False,
                 },
-                "currentMode": "prd_development"
+                "currentMode": "prd_development",
             }
-            (workspace / '.claude_workspace' / 'hook-config.json').write_text(json.dumps(hook_config))
+            (workspace / ".claude_workspace" / "hook-config.json").write_text(
+                json.dumps(hook_config)
+            )
 
             yield workspace
 
@@ -229,6 +232,7 @@ def get_user(user_id):
         return {"message": "created"}  # No status code
         """
 
+
 class TestRealPRDValidator:
     """Test Real PRD Validator component"""
 
@@ -239,114 +243,141 @@ class TestRealPRDValidator:
     def teardown_method(self):
         """Verify performance requirement"""
         execution_time = (time.time() - self.start_time) * 1000
-        assert execution_time < 500, f"Test took {execution_time:.2f}ms, should be <500ms"
+        assert execution_time < 500, (
+            f"Test took {execution_time:.2f}ms, should be <500ms"
+        )
 
     @pytest.mark.asyncio
     async def test_prd_validator_initialization(self, temp_workspace):
         """Test PRD validator can initialize and parse requirements"""
         os.chdir(temp_workspace)
 
-        result = subprocess.run([
-            'node',
-            '/Users/nick/Development/vana/tests/hooks/validation/real-prd-validator.js',
-            'init'
-        ], capture_output=True, text=True, cwd=temp_workspace)
+        result = subprocess.run(
+            [
+                "node",
+                "/Users/nick/Development/vana/tests/hooks/validation/real-prd-validator.js",
+                "init",
+            ],
+            capture_output=True,
+            text=True,
+            cwd=temp_workspace,
+        )
 
         assert result.returncode == 0
         assert "PRD Validator initialized successfully" in result.stdout
 
         # Verify JSON output is valid
-        lines = result.stdout.strip().split('\n')
+        lines = result.stdout.strip().split("\n")
         json_start = None
         for i, line in enumerate(lines):
-            if line.startswith('{'):
+            if line.startswith("{"):
                 json_start = i
                 break
 
         if json_start is not None:
-            json_output = '\n'.join(lines[json_start:])
+            json_output = "\n".join(lines[json_start:])
             parsed = json.loads(json_output)
 
             # Verify required sections exist
-            assert 'technology_stack' in parsed
-            assert 'performance' in parsed
-            assert 'security' in parsed
-            assert 'accessibility' in parsed
-            assert 'file_organization' in parsed
+            assert "technology_stack" in parsed
+            assert "performance" in parsed
+            assert "security" in parsed
+            assert "accessibility" in parsed
+            assert "file_organization" in parsed
 
     @pytest.mark.asyncio
-    async def test_prd_validator_good_component(self, temp_workspace, sample_react_component):
+    async def test_prd_validator_good_component(
+        self, temp_workspace, sample_react_component
+    ):
         """Test PRD validator with compliant React component"""
         os.chdir(temp_workspace)
 
         # Write sample component
-        component_path = temp_workspace / 'src' / 'components' / 'UserProfile.tsx'
+        component_path = temp_workspace / "src" / "components" / "UserProfile.tsx"
         component_path.write_text(sample_react_component)
 
         # Write content to temp file for validation
-        content_file = temp_workspace / 'temp_content.tsx'
+        content_file = temp_workspace / "temp_content.tsx"
         content_file.write_text(sample_react_component)
 
-        result = subprocess.run([
-            'node',
-            '/Users/nick/Development/vana/tests/hooks/validation/real-prd-validator.js',
-            'validate',
-            str(component_path),
-            str(content_file)
-        ], capture_output=True, text=True, cwd=temp_workspace)
+        result = subprocess.run(
+            [
+                "node",
+                "/Users/nick/Development/vana/tests/hooks/validation/real-prd-validator.js",
+                "validate",
+                str(component_path),
+                str(content_file),
+            ],
+            capture_output=True,
+            text=True,
+            cwd=temp_workspace,
+        )
 
         assert result.returncode == 0
 
         validation_result = json.loads(result.stdout)
 
         # Verify validation structure
-        assert 'validated' in validation_result
-        assert 'violations' in validation_result
-        assert 'warnings' in validation_result
-        assert 'suggestions' in validation_result
-        assert 'compliance_score' in validation_result
+        assert "validated" in validation_result
+        assert "violations" in validation_result
+        assert "warnings" in validation_result
+        assert "suggestions" in validation_result
+        assert "compliance_score" in validation_result
 
         # Good component should have high compliance score
-        assert validation_result['compliance_score'] >= 80
+        assert validation_result["compliance_score"] >= 80
 
         # Should have minimal violations
-        assert len(validation_result['violations']) <= 2
+        assert len(validation_result["violations"]) <= 2
 
     @pytest.mark.asyncio
-    async def test_prd_validator_bad_component(self, temp_workspace, bad_react_component):
+    async def test_prd_validator_bad_component(
+        self, temp_workspace, bad_react_component
+    ):
         """Test PRD validator detects violations in bad component"""
         os.chdir(temp_workspace)
 
         # Write bad component
-        component_path = temp_workspace / 'src' / 'components' / 'BadComponent.tsx'
+        component_path = temp_workspace / "src" / "components" / "BadComponent.tsx"
         component_path.write_text(bad_react_component)
 
-        content_file = temp_workspace / 'temp_content.tsx'
+        content_file = temp_workspace / "temp_content.tsx"
         content_file.write_text(bad_react_component)
 
-        result = subprocess.run([
-            'node',
-            '/Users/nick/Development/vana/tests/hooks/validation/real-prd-validator.js',
-            'validate',
-            str(component_path),
-            str(content_file)
-        ], capture_output=True, text=True, cwd=temp_workspace)
+        result = subprocess.run(
+            [
+                "node",
+                "/Users/nick/Development/vana/tests/hooks/validation/real-prd-validator.js",
+                "validate",
+                str(component_path),
+                str(content_file),
+            ],
+            capture_output=True,
+            text=True,
+            cwd=temp_workspace,
+        )
 
         assert result.returncode == 0
 
         validation_result = json.loads(result.stdout)
 
         # Bad component should have violations
-        assert validation_result['validated'] == False
-        assert len(validation_result['violations']) >= 3
+        assert validation_result["validated"] == False
+        assert len(validation_result["violations"]) >= 3
 
         # Should detect specific violations
-        violations_text = ' '.join(validation_result['violations'])
-        assert 'dangerouslySetInnerHTML' in violations_text or 'Security risk' in violations_text
-        assert '@mui/material' in violations_text or 'Forbidden UI framework' in violations_text
+        violations_text = " ".join(validation_result["violations"])
+        assert (
+            "dangerouslySetInnerHTML" in violations_text
+            or "Security risk" in violations_text
+        )
+        assert (
+            "@mui/material" in violations_text
+            or "Forbidden UI framework" in violations_text
+        )
 
         # Low compliance score
-        assert validation_result['compliance_score'] < 50
+        assert validation_result["compliance_score"] < 50
 
     @pytest.mark.asyncio
     async def test_prd_validator_bypass_mechanism(self, temp_workspace):
@@ -354,36 +385,41 @@ class TestRealPRDValidator:
         os.chdir(temp_workspace)
 
         # Disable hooks
-        hook_config = {
-            "enabled": False,
-            "bypassReason": "Testing bypass mechanism"
-        }
-        (temp_workspace / '.claude_workspace' / 'hook-config.json').write_text(json.dumps(hook_config))
+        hook_config = {"enabled": False, "bypassReason": "Testing bypass mechanism"}
+        (temp_workspace / ".claude_workspace" / "hook-config.json").write_text(
+            json.dumps(hook_config)
+        )
 
         # Test with bad component
-        component_path = temp_workspace / 'src' / 'components' / 'TestComponent.tsx'
+        component_path = temp_workspace / "src" / "components" / "TestComponent.tsx"
         bad_content = "import { Button } from '@mui/material'; // Should be bypassed"
 
-        content_file = temp_workspace / 'temp_content.tsx'
+        content_file = temp_workspace / "temp_content.tsx"
         content_file.write_text(bad_content)
 
-        result = subprocess.run([
-            'node',
-            '/Users/nick/Development/vana/tests/hooks/validation/real-prd-validator.js',
-            'validate',
-            str(component_path),
-            str(content_file)
-        ], capture_output=True, text=True, cwd=temp_workspace)
+        result = subprocess.run(
+            [
+                "node",
+                "/Users/nick/Development/vana/tests/hooks/validation/real-prd-validator.js",
+                "validate",
+                str(component_path),
+                str(content_file),
+            ],
+            capture_output=True,
+            text=True,
+            cwd=temp_workspace,
+        )
 
         assert result.returncode == 0
 
         validation_result = json.loads(result.stdout)
 
         # Should be bypassed
-        assert 'bypassed' in validation_result
-        assert validation_result['bypassed'] == True
-        assert 'bypassReason' in validation_result
-        assert validation_result['bypassReason'] == "Testing bypass mechanism"
+        assert "bypassed" in validation_result
+        assert validation_result["bypassed"] == True
+        assert "bypassReason" in validation_result
+        assert validation_result["bypassReason"] == "Testing bypass mechanism"
+
 
 class TestEnhancedPRDValidator:
     """Test Enhanced PRD Validator integration"""
@@ -395,62 +431,77 @@ class TestEnhancedPRDValidator:
     def teardown_method(self):
         """Verify performance requirement"""
         execution_time = (time.time() - self.start_time) * 1000
-        assert execution_time < 500, f"Test took {execution_time:.2f}ms, should be <500ms"
+        assert execution_time < 500, (
+            f"Test took {execution_time:.2f}ms, should be <500ms"
+        )
 
     @pytest.mark.asyncio
     async def test_enhanced_validator_initialization(self, temp_workspace):
         """Test Enhanced validator initializes all sub-validators"""
         os.chdir(temp_workspace)
 
-        result = subprocess.run([
-            'node',
-            '/Users/nick/Development/vana/tests/hooks/integration/enhanced-prd-validator.js',
-            str(temp_workspace / 'src' / 'components' / 'test.tsx')
-        ], capture_output=True, text=True, cwd=temp_workspace)
+        result = subprocess.run(
+            [
+                "node",
+                "/Users/nick/Development/vana/tests/hooks/integration/enhanced-prd-validator.js",
+                str(temp_workspace / "src" / "components" / "test.tsx"),
+            ],
+            capture_output=True,
+            text=True,
+            cwd=temp_workspace,
+        )
 
         # Should handle missing file gracefully
         assert result.returncode == 1  # Expected to fail for missing file
         assert "File not found" in result.stderr
 
     @pytest.mark.asyncio
-    async def test_enhanced_validator_comprehensive_analysis(self, temp_workspace, sample_react_component):
+    async def test_enhanced_validator_comprehensive_analysis(
+        self, temp_workspace, sample_react_component
+    ):
         """Test Enhanced validator provides comprehensive analysis"""
         os.chdir(temp_workspace)
 
         # Write sample component
-        component_path = temp_workspace / 'src' / 'components' / 'UserProfile.tsx'
+        component_path = temp_workspace / "src" / "components" / "UserProfile.tsx"
         component_path.write_text(sample_react_component)
 
-        result = subprocess.run([
-            'node',
-            '/Users/nick/Development/vana/tests/hooks/integration/enhanced-prd-validator.js',
-            str(component_path)
-        ], capture_output=True, text=True, cwd=temp_workspace)
+        result = subprocess.run(
+            [
+                "node",
+                "/Users/nick/Development/vana/tests/hooks/integration/enhanced-prd-validator.js",
+                str(component_path),
+            ],
+            capture_output=True,
+            text=True,
+            cwd=temp_workspace,
+        )
 
         if result.returncode == 0:
             validation_result = json.loads(result.stdout)
 
             # Verify comprehensive structure
-            assert 'valid' in validation_result
-            assert 'overallScore' in validation_result
-            assert 'results' in validation_result
-            assert 'violations' in validation_result
-            assert 'suggestions' in validation_result
-            assert 'summary' in validation_result
-            assert 'recommendations' in validation_result
+            assert "valid" in validation_result
+            assert "overallScore" in validation_result
+            assert "results" in validation_result
+            assert "violations" in validation_result
+            assert "suggestions" in validation_result
+            assert "summary" in validation_result
+            assert "recommendations" in validation_result
 
             # Verify individual validator results exist
-            results = validation_result['results']
+            results = validation_result["results"]
             expected_validators = [
-                'reactOptimization',
-                'httpStatus',
-                'testCoverage',
-                'productionConfig',
-                'advancedSecurity'
+                "reactOptimization",
+                "httpStatus",
+                "testCoverage",
+                "productionConfig",
+                "advancedSecurity",
             ]
 
             for validator_name in expected_validators:
                 assert validator_name in results
+
 
 class TestReactOptimizationValidator:
     """Test React Optimization Validator"""
@@ -462,7 +513,9 @@ class TestReactOptimizationValidator:
     def teardown_method(self):
         """Verify performance requirement"""
         execution_time = (time.time() - self.start_time) * 1000
-        assert execution_time < 500, f"Test took {execution_time:.2f}ms, should be <500ms"
+        assert execution_time < 500, (
+            f"Test took {execution_time:.2f}ms, should be <500ms"
+        )
 
     def test_react_optimization_detects_performance_issues(self, bad_react_component):
         """Test React optimization validator detects performance issues"""
@@ -480,7 +533,7 @@ class TestReactOptimizationValidator:
             "Too many useState hooks",
             "Too many useEffect hooks",
             "Missing React.memo",
-            "Missing useCallback"
+            "Missing useCallback",
         ]
 
         # This test validates our understanding of what should be caught
@@ -499,10 +552,11 @@ class TestReactOptimizationValidator:
             "interface" in sample_react_component,
             "try" in sample_react_component and "catch" in sample_react_component,
             sample_react_component.count("useState") <= 5,
-            sample_react_component.count("useEffect") <= 3
+            sample_react_component.count("useEffect") <= 3,
         ]
 
         assert all(good_practices)
+
 
 class TestSecurityValidator:
     """Test Advanced Security Validator"""
@@ -514,7 +568,9 @@ class TestSecurityValidator:
     def teardown_method(self):
         """Verify performance requirement"""
         execution_time = (time.time() - self.start_time) * 1000
-        assert execution_time < 500, f"Test took {execution_time:.2f}ms, should be <500ms"
+        assert execution_time < 500, (
+            f"Test took {execution_time:.2f}ms, should be <500ms"
+        )
 
     def test_security_validator_detects_xss_vulnerabilities(self):
         """Test security validator detects XSS vulnerabilities"""
@@ -532,7 +588,7 @@ class TestSecurityValidator:
         security_issues = [
             "XSS vulnerability",
             "Unsanitized HTML injection",
-            "Critical security risk"
+            "Critical security risk",
         ]
 
         assert len(security_issues) >= 3
@@ -547,7 +603,7 @@ class TestSecurityValidator:
         injection_indicators = [
             "SQL injection risk",
             "Unsanitized database query",
-            "Critical vulnerability"
+            "Critical vulnerability",
         ]
 
         assert len(injection_indicators) >= 3
@@ -579,6 +635,7 @@ class TestSecurityValidator:
         # Sanitized should pass
         assert "DOMPurify.sanitize" in sanitized_input
 
+
 class TestTestCoverageValidator:
     """Test Test Coverage Validator"""
 
@@ -589,21 +646,23 @@ class TestTestCoverageValidator:
     def teardown_method(self):
         """Verify performance requirement"""
         execution_time = (time.time() - self.start_time) * 1000
-        assert execution_time < 500, f"Test took {execution_time:.2f}ms, should be <500ms"
+        assert execution_time < 500, (
+            f"Test took {execution_time:.2f}ms, should be <500ms"
+        )
 
     def test_coverage_validator_detects_missing_tests(self, temp_workspace):
         """Test coverage validator detects missing test files"""
         os.chdir(temp_workspace)
 
         # Create component without corresponding test
-        component_path = temp_workspace / 'src' / 'components' / 'UserProfile.tsx'
+        component_path = temp_workspace / "src" / "components" / "UserProfile.tsx"
         component_path.write_text("export const UserProfile = () => <div>Test</div>;")
 
         # Test file should be expected at:
         expected_test_paths = [
-            'tests/unit/components/UserProfile.test.tsx',
-            'src/components/__tests__/UserProfile.test.tsx',
-            'src/components/UserProfile.test.tsx'
+            "tests/unit/components/UserProfile.test.tsx",
+            "src/components/__tests__/UserProfile.test.tsx",
+            "src/components/UserProfile.test.tsx",
         ]
 
         # None of these exist, so coverage validator should flag it
@@ -615,7 +674,7 @@ class TestTestCoverageValidator:
         missing_coverage_issues = [
             "Missing test file for component",
             "No unit tests found",
-            "Test coverage below threshold"
+            "Test coverage below threshold",
         ]
 
         assert len(missing_coverage_issues) >= 3
@@ -667,7 +726,7 @@ class TestTestCoverageValidator:
         bad_test_issues = [
             "expect" not in bad_test,
             "fireEvent" not in bad_test,
-            "error" not in bad_test.lower()
+            "error" not in bad_test.lower(),
         ]
 
         # Good test should pass for:
@@ -676,11 +735,12 @@ class TestTestCoverageValidator:
             "fireEvent" in good_test,
             "waitFor" in good_test,
             "error" in good_test.lower(),
-            good_test.count("test(") >= 3
+            good_test.count("test(") >= 3,
         ]
 
         assert any(bad_test_issues)  # Bad test should have issues
         assert all(good_test_qualities)  # Good test should have all qualities
+
 
 class TestHTTPStatusValidator:
     """Test HTTP Status Code Validator"""
@@ -692,7 +752,9 @@ class TestHTTPStatusValidator:
     def teardown_method(self):
         """Verify performance requirement"""
         execution_time = (time.time() - self.start_time) * 1000
-        assert execution_time < 500, f"Test took {execution_time:.2f}ms, should be <500ms"
+        assert execution_time < 500, (
+            f"Test took {execution_time:.2f}ms, should be <500ms"
+        )
 
     def test_http_validator_proper_status_codes(self, sample_api_file):
         """Test HTTP validator recognizes proper status codes"""
@@ -702,7 +764,7 @@ class TestHTTPStatusValidator:
             "status.HTTP_404_NOT_FOUND" in sample_api_file,
             "status.HTTP_200_OK" in sample_api_file,
             "status.HTTP_500_INTERNAL_SERVER_ERROR" in sample_api_file,
-            "HTTPException" in sample_api_file
+            "HTTPException" in sample_api_file,
         ]
 
         assert all(status_indicators)
@@ -720,10 +782,11 @@ class TestHTTPStatusValidator:
             "status" not in bad_api_file.lower() or "HTTP" not in bad_api_file,
             "return {" in bad_api_file,  # Generic dict return
             "SELECT * FROM users WHERE id = " in bad_api_file,  # SQL injection
-            "HTTPException" not in bad_api_file
+            "HTTPException" not in bad_api_file,
         ]
 
         assert any(api_issues)  # Should detect multiple issues
+
 
 class TestProductionConfigValidator:
     """Test Production Configuration Validator"""
@@ -735,7 +798,9 @@ class TestProductionConfigValidator:
     def teardown_method(self):
         """Verify performance requirement"""
         execution_time = (time.time() - self.start_time) * 1000
-        assert execution_time < 500, f"Test took {execution_time:.2f}ms, should be <500ms"
+        assert execution_time < 500, (
+            f"Test took {execution_time:.2f}ms, should be <500ms"
+        )
 
     def test_production_config_env_variables(self, temp_workspace):
         """Test production config validator checks environment variables"""
@@ -762,14 +827,14 @@ class TestProductionConfigValidator:
         bad_config_issues = [
             "sk-" in bad_config,  # API key pattern
             "password" in bad_config,  # Hardcoded password
-            "my-secret-key" in bad_config  # Hardcoded secret
+            "my-secret-key" in bad_config,  # Hardcoded secret
         ]
 
         # Good config should use environment variables
         good_config_practices = [
             "process.env" in good_config,
             "API_KEY" in good_config,
-            "DATABASE_URL" in good_config
+            "DATABASE_URL" in good_config,
         ]
 
         assert any(bad_config_issues)
@@ -808,30 +873,38 @@ class TestProductionConfigValidator:
         assert "catch" in good_error_handling
         assert "logger" in good_error_handling
 
+
 class TestValidatorPerformance:
     """Test validator performance requirements"""
 
     @pytest.mark.asyncio
-    async def test_all_validators_under_500ms(self, temp_workspace, sample_react_component):
+    async def test_all_validators_under_500ms(
+        self, temp_workspace, sample_react_component
+    ):
         """Test all validators complete within 500ms requirement"""
         os.chdir(temp_workspace)
 
         # Write test component
-        component_path = temp_workspace / 'src' / 'components' / 'TestComponent.tsx'
+        component_path = temp_workspace / "src" / "components" / "TestComponent.tsx"
         component_path.write_text(sample_react_component)
 
-        content_file = temp_workspace / 'temp_content.tsx'
+        content_file = temp_workspace / "temp_content.tsx"
         content_file.write_text(sample_react_component)
 
         # Test Real PRD Validator performance
         start_time = time.time()
-        result = subprocess.run([
-            'node',
-            '/Users/nick/Development/vana/tests/hooks/validation/real-prd-validator.js',
-            'validate',
-            str(component_path),
-            str(content_file)
-        ], capture_output=True, text=True, cwd=temp_workspace)
+        result = subprocess.run(
+            [
+                "node",
+                "/Users/nick/Development/vana/tests/hooks/validation/real-prd-validator.js",
+                "validate",
+                str(component_path),
+                str(content_file),
+            ],
+            capture_output=True,
+            text=True,
+            cwd=temp_workspace,
+        )
 
         real_prd_time = (time.time() - start_time) * 1000
 
@@ -839,17 +912,20 @@ class TestValidatorPerformance:
         assert real_prd_time < 500, f"Real PRD Validator took {real_prd_time:.2f}ms"
 
         # Test Enhanced PRD Validator performance (if component exists)
-        enhanced_validator_path = '/Users/nick/Development/vana/tests/hooks/integration/enhanced-prd-validator.js'
+        enhanced_validator_path = "/Users/nick/Development/vana/tests/hooks/integration/enhanced-prd-validator.js"
         if os.path.exists(enhanced_validator_path):
             start_time = time.time()
-            result = subprocess.run([
-                'node',
-                enhanced_validator_path,
-                str(component_path)
-            ], capture_output=True, text=True, cwd=temp_workspace)
+            result = subprocess.run(
+                ["node", enhanced_validator_path, str(component_path)],
+                capture_output=True,
+                text=True,
+                cwd=temp_workspace,
+            )
 
             enhanced_time = (time.time() - start_time) * 1000
-            assert enhanced_time < 500, f"Enhanced PRD Validator took {enhanced_time:.2f}ms"
+            assert enhanced_time < 500, (
+                f"Enhanced PRD Validator took {enhanced_time:.2f}ms"
+            )
 
     @pytest.mark.asyncio
     async def test_concurrent_validation_performance(self, temp_workspace):
@@ -859,7 +935,7 @@ class TestValidatorPerformance:
         # Create multiple test files
         test_files = []
         for i in range(10):
-            file_path = temp_workspace / f'src/components/Component{i}.tsx'
+            file_path = temp_workspace / f"src/components/Component{i}.tsx"
             file_path.write_text(f"""
 import React from 'react';
 import {{ Button }} from '@/components/ui/button';
@@ -877,16 +953,21 @@ export default Component{i};
 
         processes = []
         for file_path in test_files:
-            content_file = temp_workspace / f'temp_content_{file_path.stem}.tsx'
+            content_file = temp_workspace / f"temp_content_{file_path.stem}.tsx"
             content_file.write_text(file_path.read_text())
 
-            proc = subprocess.Popen([
-                'node',
-                '/Users/nick/Development/vana/tests/hooks/validation/real-prd-validator.js',
-                'validate',
-                str(file_path),
-                str(content_file)
-            ], stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=temp_workspace)
+            proc = subprocess.Popen(
+                [
+                    "node",
+                    "/Users/nick/Development/vana/tests/hooks/validation/real-prd-validator.js",
+                    "validate",
+                    str(file_path),
+                    str(content_file),
+                ],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                cwd=temp_workspace,
+            )
             processes.append(proc)
 
         # Wait for all to complete
@@ -905,7 +986,10 @@ export default Component{i};
         # 10 concurrent validations should complete in under 2 seconds
         assert total_time < 2000, f"Concurrent validations took {total_time:.2f}ms"
 
-        logger.info(f"Concurrent validation of {len(test_files)} files completed in {total_time:.2f}ms")
+        logger.info(
+            f"Concurrent validation of {len(test_files)} files completed in {total_time:.2f}ms"
+        )
+
 
 class TestValidatorErrorConditions:
     """Test validator error handling and edge cases"""
@@ -917,21 +1001,28 @@ class TestValidatorErrorConditions:
     def teardown_method(self):
         """Verify performance requirement"""
         execution_time = (time.time() - self.start_time) * 1000
-        assert execution_time < 500, f"Test took {execution_time:.2f}ms, should be <500ms"
+        assert execution_time < 500, (
+            f"Test took {execution_time:.2f}ms, should be <500ms"
+        )
 
     @pytest.mark.asyncio
     async def test_validator_handles_missing_files(self, temp_workspace):
         """Test validators handle missing files gracefully"""
         os.chdir(temp_workspace)
 
-        missing_file = temp_workspace / 'nonexistent.tsx'
+        missing_file = temp_workspace / "nonexistent.tsx"
 
-        result = subprocess.run([
-            'node',
-            '/Users/nick/Development/vana/tests/hooks/validation/real-prd-validator.js',
-            'validate',
-            str(missing_file)
-        ], capture_output=True, text=True, cwd=temp_workspace)
+        result = subprocess.run(
+            [
+                "node",
+                "/Users/nick/Development/vana/tests/hooks/validation/real-prd-validator.js",
+                "validate",
+                str(missing_file),
+            ],
+            capture_output=True,
+            text=True,
+            cwd=temp_workspace,
+        )
 
         # Should handle gracefully without crashing
         # May return error code but should not crash
@@ -943,7 +1034,7 @@ class TestValidatorErrorConditions:
         os.chdir(temp_workspace)
 
         # Create file with invalid TypeScript syntax
-        invalid_file = temp_workspace / 'src/components/Invalid.tsx'
+        invalid_file = temp_workspace / "src/components/Invalid.tsx"
         invalid_file.write_text("""
 import React from 'react
 // Missing closing quote and semicolon
@@ -953,16 +1044,21 @@ const Invalid = ( => {
 // Missing closing brace and semicolon
         """)
 
-        content_file = temp_workspace / 'temp_invalid.tsx'
+        content_file = temp_workspace / "temp_invalid.tsx"
         content_file.write_text(invalid_file.read_text())
 
-        result = subprocess.run([
-            'node',
-            '/Users/nick/Development/vana/tests/hooks/validation/real-prd-validator.js',
-            'validate',
-            str(invalid_file),
-            str(content_file)
-        ], capture_output=True, text=True, cwd=temp_workspace)
+        result = subprocess.run(
+            [
+                "node",
+                "/Users/nick/Development/vana/tests/hooks/validation/real-prd-validator.js",
+                "validate",
+                str(invalid_file),
+                str(content_file),
+            ],
+            capture_output=True,
+            text=True,
+            cwd=temp_workspace,
+        )
 
         # Should handle invalid syntax without crashing
         assert result.returncode in [0, 1]
@@ -971,7 +1067,7 @@ const Invalid = ( => {
             # If successful, should indicate syntax issues in warnings
             validation_result = json.loads(result.stdout)
             # May have warnings about unusual patterns
-            assert 'warnings' in validation_result
+            assert "warnings" in validation_result
 
     @pytest.mark.asyncio
     async def test_validator_handles_large_files(self, temp_workspace):
@@ -1021,32 +1117,44 @@ const LargeComponent: React.FC<LargeComponentProps> = ({ data }) => {
 export default LargeComponent;
         """
 
-        large_file = temp_workspace / 'src/components/LargeComponent.tsx'
+        large_file = temp_workspace / "src/components/LargeComponent.tsx"
         large_file.write_text(large_content)
 
-        content_file = temp_workspace / 'temp_large.tsx'
+        content_file = temp_workspace / "temp_large.tsx"
         content_file.write_text(large_content)
 
         # Measure performance with large file
         start_time = time.time()
 
-        result = subprocess.run([
-            'node',
-            '/Users/nick/Development/vana/tests/hooks/validation/real-prd-validator.js',
-            'validate',
-            str(large_file),
-            str(content_file)
-        ], capture_output=True, text=True, cwd=temp_workspace, timeout=10)
+        result = subprocess.run(
+            [
+                "node",
+                "/Users/nick/Development/vana/tests/hooks/validation/real-prd-validator.js",
+                "validate",
+                str(large_file),
+                str(content_file),
+            ],
+            capture_output=True,
+            text=True,
+            cwd=temp_workspace,
+            timeout=10,
+        )
 
         validation_time = (time.time() - start_time) * 1000
 
         assert result.returncode == 0
-        assert validation_time < 1000, f"Large file validation took {validation_time:.2f}ms"
+        assert validation_time < 1000, (
+            f"Large file validation took {validation_time:.2f}ms"
+        )
 
         # Should detect large file size warning
         validation_result = json.loads(result.stdout)
-        warnings_text = ' '.join(validation_result.get('warnings', []))
-        assert 'Large component file' in warnings_text or 'file size' in warnings_text.lower()
+        warnings_text = " ".join(validation_result.get("warnings", []))
+        assert (
+            "Large component file" in warnings_text
+            or "file size" in warnings_text.lower()
+        )
 
-if __name__ == '__main__':
-    pytest.main([__file__, '-v'])
+
+if __name__ == "__main__":
+    pytest.main([__file__, "-v"])

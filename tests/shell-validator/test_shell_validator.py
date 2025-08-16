@@ -58,8 +58,11 @@ class TestShellValidationRules(unittest.TestCase):
 
         for line, expected_issues in test_cases:
             issues = rule.check(line, 1, {})
-            self.assertEqual(len(issues), expected_issues,
-                           f"Expected {expected_issues} issues for: {line}")
+            self.assertEqual(
+                len(issues),
+                expected_issues,
+                f"Expected {expected_issues} issues for: {line}",
+            )
             if issues:
                 self.assertEqual(issues[0].severity, Severity.WARNING)
                 self.assertIn('"', issues[0].suggested_fix)
@@ -73,8 +76,8 @@ class TestShellValidationRules(unittest.TestCase):
             'echo "$var"',
             'cd "${HOME}/test"',
             'cp "$file1" "$file2"',
-            '# Comment with $var',
-            'var="$other_var"'
+            "# Comment with $var",
+            'var="$other_var"',
         ]
 
         for line in good_cases:
@@ -87,8 +90,8 @@ class TestShellValidationRules(unittest.TestCase):
 
         unsafe_cases = [
             "command > file1 > file2",  # Multiple redirections
-            "eval something > file",    # Eval with redirection
-            "echo 'danger' > /dev/sda", # Redirection to device
+            "eval something > file",  # Eval with redirection
+            "echo 'danger' > /dev/sda",  # Redirection to device
         ]
 
         for line in unsafe_cases:
@@ -107,7 +110,7 @@ class TestShellValidationRules(unittest.TestCase):
             if line_num == 20:
                 # Should detect missing options on line 20
                 self.assertGreater(len(issues), 0)
-                found_set_e = any('set -e' in issue.suggested_fix for issue in issues)
+                found_set_e = any("set -e" in issue.suggested_fix for issue in issues)
                 self.assertTrue(found_set_e, "Should suggest 'set -e'")
 
     def test_command_substitution_rule(self):
@@ -203,7 +206,9 @@ class TestShellValidationRules(unittest.TestCase):
             self.assertEqual(len(issues), 1, f"Expected SC2155 issue for: {line}")
             self.assertEqual(issues[0].severity, Severity.WARNING)
             self.assertIn("SC2155", issues[0].message)
-            self.assertIn("\n", issues[0].suggested_fix)  # Should suggest separate lines
+            self.assertIn(
+                "\n", issues[0].suggested_fix
+            )  # Should suggest separate lines
 
     def test_useless_cat_rule(self):
         """Test detection of useless cat usage"""
@@ -242,7 +247,9 @@ fi
 
         self.assertIsInstance(result, ValidationResult)
         self.assertGreater(len(result.issues), 0)
-        self.assertTrue(any(issue.severity == Severity.WARNING for issue in result.issues))
+        self.assertTrue(
+            any(issue.severity == Severity.WARNING for issue in result.issues)
+        )
 
     def test_validate_file_not_exists(self):
         """Test validation of non-existent file"""
@@ -267,12 +274,16 @@ fi
 
         # Should complete within performance target
         self.assertLess(execution_time, 200, "Validation should complete within 200ms")
-        self.assertLess(result.lines_checked, result.total_lines,
-                       "Performance mode should skip comment lines")
+        self.assertLess(
+            result.lines_checked,
+            result.total_lines,
+            "Performance mode should skip comment lines",
+        )
 
     def test_custom_rule_addition(self):
         """Test adding custom validation rules"""
-        class CustomRule(rule_class := type('rule_class', (), {})):
+
+        class CustomRule(rule_class := type("rule_class", (), {})):
             def __init__(self):
                 self.rule_id = "CUSTOM001"
                 self.severity = Severity.INFO
@@ -280,17 +291,19 @@ fi
 
             def check(self, line, line_number, context):
                 if "custom_pattern" in line:
-                    return [ValidationIssue(
-                        rule_id=self.rule_id,
-                        severity=self.severity,
-                        line_number=line_number,
-                        column=0,
-                        message="Custom pattern detected",
-                        original_code=line.strip(),
-                        suggested_fix="Fix custom pattern",
-                        fix_explanation="This is a custom rule",
-                        rule_category=self.category
-                    )]
+                    return [
+                        ValidationIssue(
+                            rule_id=self.rule_id,
+                            severity=self.severity,
+                            line_number=line_number,
+                            column=0,
+                            message="Custom pattern detected",
+                            original_code=line.strip(),
+                            suggested_fix="Fix custom pattern",
+                            fix_explanation="This is a custom rule",
+                            rule_category=self.category,
+                        )
+                    ]
                 return []
 
         # Add custom rule
@@ -300,7 +313,9 @@ fi
 
         # Test custom rule detection
         result = self.validator.validate_content("echo custom_pattern")
-        custom_issues = [issue for issue in result.issues if issue.rule_id == "CUSTOM001"]
+        custom_issues = [
+            issue for issue in result.issues if issue.rule_id == "CUSTOM001"
+        ]
         self.assertEqual(len(custom_issues), 1)
 
     def test_rule_removal(self):
@@ -322,15 +337,27 @@ class TestValidationResult(unittest.TestCase):
     def test_severity_properties(self):
         """Test severity-based properties"""
         critical_issue = ValidationIssue(
-            rule_id="TEST", severity=Severity.CRITICAL, line_number=1, column=0,
-            message="Test", original_code="test", suggested_fix="fix",
-            fix_explanation="explain", rule_category="test"
+            rule_id="TEST",
+            severity=Severity.CRITICAL,
+            line_number=1,
+            column=0,
+            message="Test",
+            original_code="test",
+            suggested_fix="fix",
+            fix_explanation="explain",
+            rule_category="test",
         )
 
         warning_issue = ValidationIssue(
-            rule_id="TEST", severity=Severity.WARNING, line_number=2, column=0,
-            message="Test", original_code="test", suggested_fix="fix",
-            fix_explanation="explain", rule_category="test"
+            rule_id="TEST",
+            severity=Severity.WARNING,
+            line_number=2,
+            column=0,
+            message="Test",
+            original_code="test",
+            suggested_fix="fix",
+            fix_explanation="explain",
+            rule_category="test",
         )
 
         result = ValidationResult(
@@ -338,7 +365,7 @@ class TestValidationResult(unittest.TestCase):
             issues=[critical_issue, warning_issue],
             execution_time_ms=100.0,
             total_lines=10,
-            lines_checked=8
+            lines_checked=8,
         )
 
         self.assertTrue(result.has_critical_issues)
@@ -361,15 +388,20 @@ class TestReportGeneration(unittest.TestCase):
             file_path="test.sh",
             issues=[
                 ValidationIssue(
-                    rule_id="SV001", severity=Severity.WARNING, line_number=1, column=0,
-                    message="Test issue", original_code="echo $var",
-                    suggested_fix='echo "$var"', fix_explanation="Quote variable",
-                    rule_category="quoting"
+                    rule_id="SV001",
+                    severity=Severity.WARNING,
+                    line_number=1,
+                    column=0,
+                    message="Test issue",
+                    original_code="echo $var",
+                    suggested_fix='echo "$var"',
+                    fix_explanation="Quote variable",
+                    rule_category="quoting",
                 )
             ],
             execution_time_ms=50.0,
             total_lines=5,
-            lines_checked=3
+            lines_checked=3,
         )
 
     def test_json_report_generation(self):
@@ -481,7 +513,7 @@ class TestGitHooksIntegration(unittest.TestCase):
         self.assertFalse((self.hooks_dir / "pre-commit").exists())
         self.assertFalse((self.hooks_dir / "pre-push").exists())
 
-    @patch('subprocess.run')
+    @patch("subprocess.run")
     def test_staged_files_detection(self, mock_run):
         """Test detection of staged shell script files"""
         # Mock git diff output
@@ -491,8 +523,8 @@ class TestGitHooksIntegration(unittest.TestCase):
         config = GitHookConfig()
         hook_validator = GitHookValidator(config)
 
-        with patch.object(hook_validator, '_is_shell_script') as mock_is_shell:
-            mock_is_shell.side_effect = lambda f: f.endswith(('.sh', '.bash'))
+        with patch.object(hook_validator, "_is_shell_script") as mock_is_shell:
+            mock_is_shell.side_effect = lambda f: f.endswith((".sh", ".bash"))
 
             staged_files = hook_validator.get_staged_shell_files()
 
@@ -520,7 +552,9 @@ class TestPerformanceBenchmarks(unittest.TestCase):
         execution_time = (time.time() - start_time) * 1000
 
         # Performance requirements
-        self.assertLess(execution_time, 200, "Large file validation should complete in <200ms")
+        self.assertLess(
+            execution_time, 200, "Large file validation should complete in <200ms"
+        )
         self.assertGreater(len(result.issues), 0, "Should detect issues in large file")
 
     def test_multiple_files_performance(self):
@@ -539,8 +573,10 @@ fi
             scripts.append(content)
 
         start_time = time.time()
-        results = [validator.validate_content(script, f"script{i}.sh")
-                  for i, script in enumerate(scripts)]
+        results = [
+            validator.validate_content(script, f"script{i}.sh")
+            for i, script in enumerate(scripts)
+        ]
         total_time = (time.time() - start_time) * 1000
 
         # Should average less than 200ms per file
@@ -588,8 +624,7 @@ echo "Setup complete!"
         result = self.validator.validate_content(setup_script)
 
         # Should detect some quoting issues
-        unquoted_issues = [issue for issue in result.issues
-                          if issue.rule_id == "SV001"]
+        unquoted_issues = [issue for issue in result.issues if issue.rule_id == "SV001"]
         self.assertGreater(len(unquoted_issues), 0)
 
         # Should suggest proper quoting
@@ -622,13 +657,13 @@ echo "Deployment complete"
         result = self.validator.validate_content(deploy_script)
 
         # Should detect missing set options
-        set_option_issues = [issue for issue in result.issues
-                           if issue.rule_id == "SV003"]
+        set_option_issues = [
+            issue for issue in result.issues if issue.rule_id == "SV003"
+        ]
         self.assertGreater(len(set_option_issues), 0)
 
         # Should detect backtick usage
-        backtick_issues = [issue for issue in result.issues
-                         if issue.rule_id == "SV004"]
+        backtick_issues = [issue for issue in result.issues if issue.rule_id == "SV004"]
         self.assertGreater(len(backtick_issues), 0)
 
 

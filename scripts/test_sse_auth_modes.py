@@ -9,14 +9,13 @@ from typing import Any
 import requests
 
 
-def test_sse_endpoint(session_id: str = "test-session", auth_token: str = None) -> dict[str, Any]:
+def test_sse_endpoint(
+    session_id: str = "test-session", auth_token: str = None
+) -> dict[str, Any]:
     """Test the SSE endpoint with optional authentication."""
 
     url = f"http://localhost:8000/agent_network_sse/{session_id}"
-    headers = {
-        "Accept": "text/event-stream",
-        "User-Agent": "SSE-Test-Client/1.0"
-    }
+    headers = {"Accept": "text/event-stream", "User-Agent": "SSE-Test-Client/1.0"}
 
     if auth_token:
         headers["Authorization"] = f"Bearer {auth_token}"
@@ -32,7 +31,7 @@ def test_sse_endpoint(session_id: str = "test-session", auth_token: str = None) 
         result = {
             "status_code": response.status_code,
             "headers": dict(response.headers),
-            "success": response.status_code == 200
+            "success": response.status_code == 200,
         }
 
         if response.status_code == 200:
@@ -42,7 +41,7 @@ def test_sse_endpoint(session_id: str = "test-session", auth_token: str = None) 
             # Try to read first event
             try:
                 for line in response.iter_lines(decode_unicode=True):
-                    if line.startswith('data: '):
+                    if line.startswith("data: "):
                         event_data = json.loads(line[6:])  # Remove 'data: ' prefix
                         result["first_event"] = event_data
                         print(f"First event: {json.dumps(event_data, indent=2)}")
@@ -87,7 +86,7 @@ def test_history_endpoint(auth_token: str = None) -> dict[str, Any]:
 
         result = {
             "status_code": response.status_code,
-            "success": response.status_code == 200
+            "success": response.status_code == 200,
         }
 
         if response.status_code == 200:
@@ -144,7 +143,7 @@ def main():
             "name": "History without authentication",
             "test_func": lambda: test_history_endpoint(),
             "expected_auth_required": True,  # Default is auth required
-        }
+        },
     ]
 
     results = []
@@ -160,8 +159,15 @@ def main():
     print("TEST SUMMARY")
     print("=" * 60)
 
-    auth_required = os.getenv("AUTH_REQUIRE_SSE_AUTH", "true").lower() in ("true", "1", "yes", "on")
-    print(f"AUTH_REQUIRE_SSE_AUTH: {os.getenv('AUTH_REQUIRE_SSE_AUTH', 'true')} (requires auth: {auth_required})")
+    auth_required = os.getenv("AUTH_REQUIRE_SSE_AUTH", "true").lower() in (
+        "true",
+        "1",
+        "yes",
+        "on",
+    )
+    print(
+        f"AUTH_REQUIRE_SSE_AUTH: {os.getenv('AUTH_REQUIRE_SSE_AUTH', 'true')} (requires auth: {auth_required})"
+    )
     print()
 
     for test_result in results:
@@ -172,14 +178,20 @@ def main():
 
         if auth_required:
             # In auth required mode, should fail without token
-            expected_result = "❌ 401 (auth required)" if status_code == 401 else f"✅ {status_code}"
+            expected_result = (
+                "❌ 401 (auth required)" if status_code == 401 else f"✅ {status_code}"
+            )
             expected = status_code == 401
         else:
             # In optional auth mode, should succeed
             expected_result = f"✅ {status_code}" if success else f"❌ {status_code}"
             expected = success
 
-        status = "✅ PASS" if (auth_required and status_code == 401) or (not auth_required and success) else "❌ FAIL"
+        status = (
+            "✅ PASS"
+            if (auth_required and status_code == 401) or (not auth_required and success)
+            else "❌ FAIL"
+        )
         print(f"{status} {name}: {expected_result}")
 
     print()

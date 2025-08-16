@@ -33,7 +33,7 @@ class TestSensitivePatternDetection:
             "GOOGLE_CLOUD_PROJECT=my-project-123456",
             "project_id = 'test-env-789012'",
             "gs://my-bucket-345678/data",
-            "--project=production-456789"
+            "--project=production-456789",
         ]
 
         for context in contexts:
@@ -45,7 +45,9 @@ class TestSensitivePatternDetection:
             assert "my-bucket-345678" not in result
             assert "production-456789" not in result
             # Should contain appropriate placeholders (check if context was modified)
-            assert result != context, f"Context should be modified: {context} -> {result}"
+            assert result != context, (
+                f"Context should be modified: {context} -> {result}"
+            )
 
     def test_detect_personal_file_paths(self):
         """Test detection of personal file paths"""
@@ -54,7 +56,7 @@ class TestSensitivePatternDetection:
             "C:\\Users\\john\\Documents\\project",
             "/home/alice/workspace/app",
             "~/Documents/secret-project",
-            "/Users/nick/Development/vana/.env.local"
+            "/Users/nick/Development/vana/.env.local",
         ]
 
         for context in contexts:
@@ -66,9 +68,12 @@ class TestSensitivePatternDetection:
             # Should be modified to contain USER or generic placeholder
             assert result != context, f"Path should be sanitized: {context} -> {result}"
             # Check that it contains either USER or a generic path placeholder
-            assert ("USER" in result or "PROJECT" in result or
-                   result.startswith("~/") or result.startswith("/Users/USER")), \
-                   f"Should contain appropriate placeholder: {result}"
+            assert (
+                "USER" in result
+                or "PROJECT" in result
+                or result.startswith("~/")
+                or result.startswith("/Users/USER")
+            ), f"Should contain appropriate placeholder: {result}"
 
     def test_detect_api_keys_and_tokens(self):
         """Test detection of API keys and tokens"""
@@ -77,7 +82,7 @@ class TestSensitivePatternDetection:
             "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9",
             "api_key: AIzaSyD1234567890abcdef",
             "BRAVE_API_KEY=BSA-1234567890",
-            "github_token=ghp_1234567890abcdef"
+            "github_token=ghp_1234567890abcdef",
         ]
 
         for context in contexts:
@@ -88,14 +93,16 @@ class TestSensitivePatternDetection:
             assert "BSA-1234567890" not in result
             assert "ghp_1234567890abcdef" not in result
             # Should be modified and contain some form of masking
-            assert result != context, f"API key should be sanitized: {context} -> {result}"
+            assert result != context, (
+                f"API key should be sanitized: {context} -> {result}"
+            )
 
     def test_detect_email_addresses(self):
         """Test detection of email addresses"""
         contexts = [
             "Contact: nick@example.com",
             "Email: user.name@company.org",
-            "Support: support+help@domain.co.uk"
+            "Support: support+help@domain.co.uk",
         ]
 
         for context in contexts:
@@ -105,15 +112,19 @@ class TestSensitivePatternDetection:
             assert "user.name@company.org" not in result
             assert "support+help@domain.co.uk" not in result
             # Should be modified to contain generic email placeholder
-            assert result != context, f"Email should be sanitized: {context} -> {result}"
-            assert "user@example.com" in result, f"Should contain generic email: {result}"
+            assert result != context, (
+                f"Email should be sanitized: {context} -> {result}"
+            )
+            assert "user@example.com" in result, (
+                f"Should contain generic email: {result}"
+            )
 
     def test_detect_ip_addresses_and_ports(self):
         """Test detection of IP addresses and ports"""
         contexts = [
             "Server: 192.168.1.100:8080",
             "Database: 10.0.0.5:5432",
-            "API endpoint: http://203.0.113.1:3000"
+            "API endpoint: http://203.0.113.1:3000",
         ]
 
         for context in contexts:
@@ -131,7 +142,7 @@ class TestSensitivePatternDetection:
         contexts = [
             "postgresql://user:password@localhost:5432/dbname",
             "mysql://admin:secret123@db.example.com/prod",
-            "redis://user:pass@redis.example.com:6379"
+            "redis://user:pass@redis.example.com:6379",
         ]
 
         for context in contexts:
@@ -141,7 +152,9 @@ class TestSensitivePatternDetection:
             assert "secret123" not in result
             assert "pass" not in result
             # Should be modified to mask credentials
-            assert result != context, f"Database URL should be sanitized: {context} -> {result}"
+            assert result != context, (
+                f"Database URL should be sanitized: {context} -> {result}"
+            )
 
 
 class TestPlaceholderGeneration:
@@ -185,7 +198,7 @@ class TestPlaceholderGeneration:
             "OpenAI API": "OPENAI_API_KEY",
             "GitHub token": "GITHUB_TOKEN",
             "email address": "user@example.com",
-            "file path": "/Users/USER"
+            "file path": "/Users/USER",
         }
 
         for context_type, expected_placeholder in contexts.items():
@@ -210,7 +223,9 @@ class TestPerformanceRequirements:
         end_time = time.time()
 
         processing_time = (end_time - start_time) * 1000  # Convert to ms
-        assert processing_time < 100, f"Processing took {processing_time}ms, should be <100ms"
+        assert processing_time < 100, (
+            f"Processing took {processing_time}ms, should be <100ms"
+        )
         assert len(result) > 0, "Should return sanitized content"
 
     def test_performance_100kb_context(self):
@@ -223,7 +238,9 @@ class TestPerformanceRequirements:
         end_time = time.time()
 
         processing_time = (end_time - start_time) * 1000
-        assert processing_time < 1000, f"Processing took {processing_time}ms, should be <1000ms"
+        assert processing_time < 1000, (
+            f"Processing took {processing_time}ms, should be <1000ms"
+        )
 
     def test_memory_efficiency(self):
         """Test memory efficiency with large contexts"""
@@ -238,7 +255,7 @@ class TestPerformanceRequirements:
         snapshot2 = tracemalloc.take_snapshot()
 
         # Calculate memory difference
-        top_stats = snapshot2.compare_to(snapshot1, 'lineno')
+        top_stats = snapshot2.compare_to(snapshot1, "lineno")
         total_memory = sum(stat.size_diff for stat in top_stats)
 
         # Should not use excessive memory (less than 10x input size)
@@ -253,7 +270,7 @@ class TestPerformanceRequirements:
             "OPENAI_API_KEY=sk-1234567890abcdef\n",
             "email: nick@example.com\n",
             "Server: 192.168.1.100:8080\n",
-            "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9\n"
+            "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9\n",
         ]
 
         content = ""
@@ -280,7 +297,7 @@ class TestExtensibilityAndConfiguration:
             name="credit_card",
             pattern=r"\b\d{4}[\s-]?\d{4}[\s-]?\d{4}[\s-]?\d{4}\b",
             placeholder="XXXX-XXXX-XXXX-XXXX",
-            confidence=0.9
+            confidence=0.9,
         )
 
         self.pattern_registry.add_pattern(custom_pattern)
@@ -299,14 +316,14 @@ class TestExtensibilityAndConfiguration:
             name="specific_api_key",
             pattern=r"sk-[a-zA-Z0-9]{48}",
             placeholder="sk-***API_KEY***",
-            confidence=0.95
+            confidence=0.95,
         )
 
         low_confidence = SensitivePattern(
             name="generic_key",
             pattern=r"sk-\w+",
             placeholder="sk-GENERIC",
-            confidence=0.6
+            confidence=0.6,
         )
 
         registry = PatternRegistry()
@@ -327,7 +344,7 @@ class TestExtensibilityAndConfiguration:
             enabled_patterns=["google_project_id", "user_file_path"],
             disabled_patterns=["email_address"],
             placeholder_style=PlaceholderStyle.MASKED,
-            preserve_structure=True
+            preserve_structure=True,
         )
 
         sanitizer = ContextSanitizer(config=config)
@@ -352,15 +369,25 @@ class TestExtensibilityAndConfiguration:
         registry = PatternRegistry()
 
         # Add patterns by category
-        registry.add_pattern_to_category("authentication", SensitivePattern(
-            name="api_key", pattern=r"api[_-]?key\s*[:=]\s*[\w-]+",
-            placeholder="API_KEY", confidence=0.8
-        ))
+        registry.add_pattern_to_category(
+            "authentication",
+            SensitivePattern(
+                name="api_key",
+                pattern=r"api[_-]?key\s*[:=]\s*[\w-]+",
+                placeholder="API_KEY",
+                confidence=0.8,
+            ),
+        )
 
-        registry.add_pattern_to_category("infrastructure", SensitivePattern(
-            name="server_ip", pattern=r"\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b",
-            placeholder="IP_ADDRESS", confidence=0.7
-        ))
+        registry.add_pattern_to_category(
+            "infrastructure",
+            SensitivePattern(
+                name="server_ip",
+                pattern=r"\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b",
+                placeholder="IP_ADDRESS",
+                confidence=0.7,
+            ),
+        )
 
         # Test category-based enabling/disabling
         config = SanitizationConfig(enabled_categories=["authentication"])
@@ -370,7 +397,7 @@ class TestExtensibilityAndConfiguration:
         result = sanitizer.sanitize(context)
 
         assert "secret123" not in result  # Authentication pattern enabled
-        assert "192.168.1.1" in result    # Infrastructure pattern disabled
+        assert "192.168.1.1" in result  # Infrastructure pattern disabled
 
 
 class TestPipelineIntegration:
@@ -379,24 +406,24 @@ class TestPipelineIntegration:
     def test_hook_integration(self):
         """Test integration as a pre-generation hook"""
         # Mock the pipeline hook system
-        with patch('src.utils.pipeline_hooks.register_hook') as mock_register:
+        with patch("src.utils.pipeline_hooks.register_hook") as mock_register:
             sanitizer = ContextSanitizer()
             sanitizer.register_as_hook()
 
             mock_register.assert_called_once_with(
-                'pre_generation',
+                "pre_generation",
                 sanitizer.sanitize,
-                priority=100  # High priority for security
+                priority=100,  # High priority for security
             )
 
     def test_context_preservation(self):
         """Test that sanitization preserves code context for generation"""
-        code_context = '''
+        code_context = """
         def setup_google_cloud():
             project_id = "analystai-454200"
             credentials_path = "/Users/nick/.config/gcloud/key.json"
             return GoogleCloudClient(project_id, credentials_path)
-        '''
+        """
 
         sanitizer = ContextSanitizer()
         result = sanitizer.sanitize(code_context)
@@ -416,7 +443,7 @@ class TestPipelineIntegration:
         contexts = [
             "Project: analystai-454200",
             "Path: /Users/nick/Development/vana",
-            "API Key: sk-1234567890abcdef"
+            "API Key: sk-1234567890abcdef",
         ]
 
         sanitizer = ContextSanitizer()
@@ -442,7 +469,7 @@ class TestErrorHandling:
                 name="invalid",
                 pattern="[unclosed_bracket",  # Invalid regex
                 placeholder="PLACEHOLDER",
-                confidence=0.8
+                confidence=0.8,
             )
             registry = PatternRegistry()
             registry.add_pattern(invalid_pattern)

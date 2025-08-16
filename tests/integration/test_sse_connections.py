@@ -20,6 +20,7 @@ from app.utils.sse_broadcaster import (
 @dataclass
 class MockSSEEvent:
     """Mock SSE event for testing."""
+
     event_type: str
     data: dict[str, Any]
     timestamp: float = None
@@ -40,7 +41,7 @@ class TestSSEBroadcaster:
     def teardown_method(self):
         """Clean up after tests."""
         # Clear any existing events
-        if hasattr(self.broadcaster, 'clear_events'):
+        if hasattr(self.broadcaster, "clear_events"):
             self.broadcaster.clear_events()
 
     def test_event_broadcasting_basic(self):
@@ -49,7 +50,7 @@ class TestSSEBroadcaster:
             "type": "agent_start",
             "agent_id": "test_agent_001",
             "timestamp": time.time(),
-            "session_id": self.session_id
+            "session_id": self.session_id,
         }
 
         # Add event to broadcaster
@@ -94,22 +95,22 @@ class TestSSEBroadcaster:
                     "type": "agent_start",
                     "agent_id": "agent_001",
                     "timestamp": time.time(),
-                    "session_id": self.session_id
+                    "session_id": self.session_id,
                 },
                 {
                     "type": "agent_progress",
                     "agent_id": "agent_001",
                     "progress": 0.5,
                     "timestamp": time.time(),
-                    "session_id": self.session_id
+                    "session_id": self.session_id,
                 },
                 {
                     "type": "agent_complete",
                     "agent_id": "agent_001",
                     "result": "success",
                     "timestamp": time.time(),
-                    "session_id": self.session_id
-                }
+                    "session_id": self.session_id,
+                },
             ]
 
             for event in test_events:
@@ -118,10 +119,7 @@ class TestSSEBroadcaster:
 
         # Run the event collection and sending concurrently
         async def run_test():
-            await asyncio.gather(
-                collect_events(),
-                send_test_events()
-            )
+            await asyncio.gather(collect_events(), send_test_events())
 
         # Execute the async test
         asyncio.run(run_test())
@@ -143,13 +141,13 @@ class TestSSEBroadcaster:
         event1 = {
             "type": "agent_start",
             "agent_id": "session1_agent",
-            "session_id": session1
+            "session_id": session1,
         }
 
         event2 = {
             "type": "agent_start",
             "agent_id": "session2_agent",
-            "session_id": session2
+            "session_id": session2,
         }
 
         self.broadcaster.broadcast_event(session1, event1)
@@ -181,7 +179,7 @@ class TestSSEBroadcaster:
                 "type": "test_event",
                 "event_number": i,
                 "timestamp": time.time(),
-                "session_id": self.session_id
+                "session_id": self.session_id,
             }
             self.broadcaster.broadcast_event(self.session_id, event)
 
@@ -198,8 +196,9 @@ class TestSSEBroadcaster:
         if len(history_10) > 1:
             timestamps = [event.get("timestamp", 0) for event in history_10]
             # Either ascending or descending order is fine
-            is_ordered = (timestamps == sorted(timestamps) or
-                         timestamps == sorted(timestamps, reverse=True))
+            is_ordered = timestamps == sorted(timestamps) or timestamps == sorted(
+                timestamps, reverse=True
+            )
             assert is_ordered
 
     def test_concurrent_event_broadcasting(self):
@@ -217,7 +216,7 @@ class TestSSEBroadcaster:
                     "thread_id": thread_id,
                     "event_id": i,
                     "timestamp": time.time(),
-                    "session_id": self.session_id
+                    "session_id": self.session_id,
                 }
                 self.broadcaster.broadcast_event(self.session_id, event)
                 thread_events.append(event)
@@ -249,8 +248,7 @@ class TestSSEBroadcaster:
 
         history = get_agent_network_event_history(limit=total_expected + 10)
         concurrent_events = [
-            event for event in history
-            if event.get("type") == "concurrent_test"
+            event for event in history if event.get("type") == "concurrent_test"
         ]
 
         # Should have received all events (or at least most of them)
@@ -270,7 +268,7 @@ class TestSSEConnectionHandling:
         test_event = {
             "type": "format_test",
             "data": {"message": "test"},
-            "session_id": self.session_id
+            "session_id": self.session_id,
         }
 
         async def test_format():
@@ -295,6 +293,7 @@ class TestSSEConnectionHandling:
 
     def test_stream_connection_timeout(self):
         """Test stream behavior with connection timeout."""
+
         async def test_timeout():
             start_time = time.time()
             events_received = 0
@@ -323,7 +322,7 @@ class TestSSEConnectionHandling:
         """Test handling of malformed events."""
         malformed_events = [
             None,  # Null event
-            "",    # Empty string
+            "",  # Empty string
             {"type": "test"},  # Missing session_id
             {"session_id": "different_session"},  # Wrong session
             {"invalid": "structure"},  # Unexpected structure
@@ -358,7 +357,7 @@ class TestSSEConnectionHandling:
                     "event_id": i,
                     "large_data": "x" * 1000,  # 1KB of data per event
                     "timestamp": time.time(),
-                    "session_id": self.session_id
+                    "session_id": self.session_id,
                 }
                 broadcaster.broadcast_event(self.session_id, event)
 
@@ -412,7 +411,7 @@ class TestRealTimeEventProcessing:
                         "type": "latency_test",
                         "event_id": i,
                         "send_time": event_time,
-                        "session_id": self.session_id
+                        "session_id": self.session_id,
                     }
 
                     broadcaster.broadcast_event(self.session_id, event)
@@ -426,7 +425,9 @@ class TestRealTimeEventProcessing:
         if len(event_timestamps) == len(received_timestamps):
             latencies = [
                 received - sent
-                for sent, received in zip(event_timestamps, received_timestamps, strict=False)
+                for sent, received in zip(
+                    event_timestamps, received_timestamps, strict=False
+                )
             ]
 
             avg_latency = sum(latencies) / len(latencies)
@@ -434,7 +435,7 @@ class TestRealTimeEventProcessing:
 
             # Latency should be reasonable (under 100ms average)
             assert avg_latency < 0.1  # 100ms
-            assert max_latency < 0.5   # 500ms max
+            assert max_latency < 0.5  # 500ms max
 
     def test_high_frequency_events(self):
         """Test handling of high-frequency event streams."""
@@ -453,7 +454,7 @@ class TestRealTimeEventProcessing:
                         "type": "high_frequency",
                         "event_id": i,
                         "timestamp": time.time(),
-                        "session_id": self.session_id
+                        "session_id": self.session_id,
                     }
                     broadcaster.broadcast_event(self.session_id, event)
                     events_sent += 1
@@ -471,7 +472,10 @@ class TestRealTimeEventProcessing:
                         events_received += 1
 
                     # Break if we've received enough or timed out
-                    if events_received >= events_sent or (time.time() - start_time) > timeout:
+                    if (
+                        events_received >= events_sent
+                        or (time.time() - start_time) > timeout
+                    ):
                         break
 
             await asyncio.gather(rapid_sender(), receiver())
@@ -504,7 +508,7 @@ class TestRealTimeEventProcessing:
                             "burst_size": size,
                             "event_id": i,
                             "timestamp": time.time(),
-                            "session_id": self.session_id
+                            "session_id": self.session_id,
                         }
                         broadcaster.broadcast_event(self.session_id, event)
 
@@ -514,11 +518,16 @@ class TestRealTimeEventProcessing:
                     start_time = time.time()
 
                     async for event_data in agent_network_event_stream(self.session_id):
-                        if (event_data.get("type") == "burst_test" and
-                            event_data.get("burst_size") == size):
+                        if (
+                            event_data.get("type") == "burst_test"
+                            and event_data.get("burst_size") == size
+                        ):
                             events_received += 1
 
-                        if events_received >= size or (time.time() - start_time) > timeout:
+                        if (
+                            events_received >= size
+                            or (time.time() - start_time) > timeout
+                        ):
                             break
 
                 await asyncio.gather(send_burst(), receive_burst())
@@ -529,7 +538,9 @@ class TestRealTimeEventProcessing:
 
         # All burst sizes should be handled well
         for burst_size, success_rate in results.items():
-            assert success_rate > 0.8, f"Burst size {burst_size} had low success rate: {success_rate}"
+            assert success_rate > 0.8, (
+                f"Burst size {burst_size} had low success rate: {success_rate}"
+            )
 
 
 if __name__ == "__main__":

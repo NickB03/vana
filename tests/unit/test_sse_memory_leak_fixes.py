@@ -39,7 +39,7 @@ class TestSSEEventTTL:
         event = SSEEvent(
             type="test_event",
             data={"test": "data"},
-            ttl=5.0  # 5 seconds
+            ttl=5.0,  # 5 seconds
         )
 
         assert event.ttl == 5.0
@@ -52,7 +52,7 @@ class TestSSEEventTTL:
         event = SSEEvent(
             type="test_event",
             data={"test": "data"},
-            ttl=0.001  # 1 millisecond
+            ttl=0.001,  # 1 millisecond
         )
 
         # Wait for expiration
@@ -64,7 +64,7 @@ class TestSSEEventTTL:
         """Test events without TTL never expire."""
         event = SSEEvent(
             type="test_event",
-            data={"test": "data"}
+            data={"test": "data"},
             # No TTL specified
         )
 
@@ -205,7 +205,7 @@ class TestEnhancedSSEBroadcasterMemoryManagement:
             max_history_per_session=20,
             event_ttl=0.5,  # Short TTL for testing
             session_ttl=2.0,
-            cleanup_interval=0.1  # Fast cleanup for testing
+            cleanup_interval=0.1,  # Fast cleanup for testing
         )
         self.broadcaster = EnhancedSSEBroadcaster(self.config)
 
@@ -220,10 +220,9 @@ class TestEnhancedSSEBroadcasterMemoryManagement:
 
         # Send more events than the limit
         for i in range(30):  # More than max_history_per_session (20)
-            await self.broadcaster.broadcast_event(session_id, {
-                "type": "test_event",
-                "data": {"event_id": i}
-            })
+            await self.broadcaster.broadcast_event(
+                session_id, {"type": "test_event", "data": {"event_id": i}}
+            )
 
         # Check history size
         history = self.broadcaster.get_event_history(session_id)
@@ -240,10 +239,9 @@ class TestEnhancedSSEBroadcasterMemoryManagement:
 
         # Send events
         for i in range(5):
-            await self.broadcaster.broadcast_event(session_id, {
-                "type": "test_event",
-                "data": {"event_id": i}
-            })
+            await self.broadcaster.broadcast_event(
+                session_id, {"type": "test_event", "data": {"event_id": i}}
+            )
 
         # Check initial history
         history = self.broadcaster.get_event_history(session_id)
@@ -288,10 +286,9 @@ class TestEnhancedSSEBroadcasterMemoryManagement:
 
         # Add subscriber and send events
         queue = await self.broadcaster.add_subscriber(session_id)
-        await self.broadcaster.broadcast_event(session_id, {
-            "type": "test_event",
-            "data": {"test": "data"}
-        })
+        await self.broadcaster.broadcast_event(
+            session_id, {"type": "test_event", "data": {"test": "data"}}
+        )
 
         # Remove subscriber
         await self.broadcaster.remove_subscriber(session_id, queue)
@@ -318,10 +315,13 @@ class TestEnhancedSSEBroadcasterMemoryManagement:
         # Add data
         queue = await self.broadcaster.add_subscriber(session_id)
         for i in range(10):
-            await self.broadcaster.broadcast_event(session_id, {
-                "type": "test_event",
-                "data": {"event_id": i, "large_data": "x" * 100}
-            })
+            await self.broadcaster.broadcast_event(
+                session_id,
+                {
+                    "type": "test_event",
+                    "data": {"event_id": i, "large_data": "x" * 100},
+                },
+            )
 
         # Updated metrics
         await self.broadcaster._update_memory_metrics()
@@ -347,7 +347,7 @@ class TestMemoryLeakPrevention:
             max_history_per_session=100,
             event_ttl=1.0,
             session_ttl=5.0,
-            cleanup_interval=0.1
+            cleanup_interval=0.1,
         )
         broadcaster = EnhancedSSEBroadcaster(config)
 
@@ -373,14 +373,17 @@ class TestMemoryLeakPrevention:
             # Generate many events
             for session_id in sessions:
                 for j in range(events_per_session):
-                    await broadcaster.broadcast_event(session_id, {
-                        "type": "load_test",
-                        "data": {
-                            "event_id": j,
-                            "session": session_id,
-                            "payload": "x" * 200  # 200 bytes payload
-                        }
-                    })
+                    await broadcaster.broadcast_event(
+                        session_id,
+                        {
+                            "type": "load_test",
+                            "data": {
+                                "event_id": j,
+                                "session": session_id,
+                                "payload": "x" * 200,  # 200 bytes payload
+                            },
+                        },
+                    )
 
                     # Yield control periodically
                     if j % 20 == 0:
@@ -405,8 +408,9 @@ class TestMemoryLeakPrevention:
 
             # Memory increase should be reasonable (less than 50MB)
             max_acceptable_increase = 50 * 1024 * 1024  # 50MB
-            assert memory_increase < max_acceptable_increase, \
+            assert memory_increase < max_acceptable_increase, (
                 f"Memory increase too large: {memory_increase / 1024 / 1024:.2f} MB"
+            )
 
         finally:
             await broadcaster.shutdown()
@@ -421,12 +425,11 @@ class TestMemoryLeakPrevention:
             queue = await broadcaster.add_subscriber(session_id)
 
             # Simulate exception during processing
-            with patch.object(queue, 'put', side_effect=Exception("Test exception")):
+            with patch.object(queue, "put", side_effect=Exception("Test exception")):
                 # This should not leave lingering resources
-                await broadcaster.broadcast_event(session_id, {
-                    "type": "test_event",
-                    "data": {"test": "data"}
-                })
+                await broadcaster.broadcast_event(
+                    session_id, {"type": "test_event", "data": {"test": "data"}}
+                )
 
             # Force cleanup
             await broadcaster._perform_cleanup()
@@ -447,10 +450,9 @@ class TestMemoryLeakPrevention:
             # Use context manager
             async with broadcaster.subscribe(session_id) as queue:
                 # Send some events
-                await broadcaster.broadcast_event(session_id, {
-                    "type": "test_event",
-                    "data": {"test": "data"}
-                })
+                await broadcaster.broadcast_event(
+                    session_id, {"type": "test_event", "data": {"test": "data"}}
+                )
 
                 # Verify queue is active
                 assert not queue._closed
@@ -488,10 +490,9 @@ class TestPerformanceMetrics:
         queue = await self.broadcaster.add_subscriber(session_id)
 
         for i in range(5):
-            await self.broadcaster.broadcast_event(session_id, {
-                "type": "test_event",
-                "data": {"event_id": i}
-            })
+            await self.broadcaster.broadcast_event(
+                session_id, {"type": "test_event", "data": {"event_id": i}}
+            )
 
         # Update metrics
         await self.broadcaster._update_memory_metrics()
@@ -559,7 +560,7 @@ class TestRegressionPrevention:
         """Test that no data structures grow unboundedly."""
         config = BroadcasterConfig(
             max_history_per_session=10,
-            event_ttl=0.1  # Very short TTL
+            event_ttl=0.1,  # Very short TTL
         )
         broadcaster = EnhancedSSEBroadcaster(config)
 
@@ -568,10 +569,9 @@ class TestRegressionPrevention:
 
             # Generate many events
             for i in range(100):
-                await broadcaster.broadcast_event(session_id, {
-                    "type": "regression_test",
-                    "data": {"event_id": i}
-                })
+                await broadcaster.broadcast_event(
+                    session_id, {"type": "regression_test", "data": {"event_id": i}}
+                )
 
                 # Periodic cleanup
                 if i % 20 == 0:

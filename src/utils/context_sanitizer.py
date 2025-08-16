@@ -27,19 +27,22 @@ from re import Pattern
 
 class SanitizationError(Exception):
     """Custom exception for sanitization errors"""
+
     pass
 
 
 class PlaceholderStyle(Enum):
     """Placeholder generation styles"""
-    MASKED = "masked"        # e.g., sk-***KEY***
-    GENERIC = "generic"      # e.g., API_KEY
+
+    MASKED = "masked"  # e.g., sk-***KEY***
+    GENERIC = "generic"  # e.g., API_KEY
     CONTEXTUAL = "contextual"  # e.g., your-project-id
 
 
 @dataclass
 class SensitivePattern:
     """Definition of a sensitive data pattern"""
+
     name: str
     pattern: str  # Regex pattern
     placeholder: str | callable  # Static placeholder or generator function
@@ -59,6 +62,7 @@ class SensitivePattern:
 @dataclass
 class SanitizationConfig:
     """Configuration for sanitization behavior"""
+
     enabled_patterns: list[str] | None = None
     disabled_patterns: list[str] | None = None
     enabled_categories: list[str] | None = None
@@ -79,7 +83,7 @@ class PlaceholderGenerator:
         original = match_obj.group(0)
 
         # Preserve format for environment variables
-        if "=" in context[:match_obj.start()] + context[match_obj.end():]:
+        if "=" in context[: match_obj.start()] + context[match_obj.end() :]:
             return "your-project-id"
 
         # Preserve format for CLI arguments
@@ -101,7 +105,9 @@ class PlaceholderGenerator:
                 return original_path.replace(user_match.group(1), "USER")
         elif "C:\\Users\\" in original_path or "C:/Users/" in original_path:
             # Handle both forward and backward slashes
-            return re.sub(r"C:[\\/]Users[\\/][^\\/]+", r"C:\\Users\\USER", original_path)
+            return re.sub(
+                r"C:[\\/]Users[\\/][^\\/]+", r"C:\\Users\\USER", original_path
+            )
         elif "/home/" in original_path:
             return re.sub(r"/home/[^/]+", "/home/USER", original_path)
         elif original_path.startswith("~/"):
@@ -163,9 +169,8 @@ class PatternRegistry:
                 placeholder=PlaceholderGenerator.generate_project_id_placeholder,
                 confidence=0.9,
                 category="infrastructure",
-                description="Google Cloud project IDs"
+                description="Google Cloud project IDs",
             ),
-
             # Google Cloud Storage bucket names
             SensitivePattern(
                 name="gcs_bucket_name",
@@ -173,9 +178,8 @@ class PatternRegistry:
                 placeholder="gs://your-bucket-name",
                 confidence=0.95,
                 category="infrastructure",
-                description="Google Cloud Storage bucket URLs"
+                description="Google Cloud Storage bucket URLs",
             ),
-
             # File paths with usernames
             SensitivePattern(
                 name="user_file_path",
@@ -183,9 +187,8 @@ class PatternRegistry:
                 placeholder=PlaceholderGenerator.generate_path_placeholder,
                 confidence=0.95,
                 category="filesystem",
-                description="File paths containing usernames"
+                description="File paths containing usernames",
             ),
-
             # API Keys (OpenAI, Google, etc.)
             SensitivePattern(
                 name="openai_api_key",
@@ -193,36 +196,32 @@ class PatternRegistry:
                 placeholder=PlaceholderGenerator.generate_api_key_placeholder,
                 confidence=0.98,
                 category="authentication",
-                description="OpenAI API keys"
+                description="OpenAI API keys",
             ),
-
             SensitivePattern(
                 name="google_api_key",
                 pattern=r"AIzaSy[a-zA-Z0-9_-]{35}",
                 placeholder=PlaceholderGenerator.generate_api_key_placeholder,
                 confidence=0.98,
                 category="authentication",
-                description="Google API keys"
+                description="Google API keys",
             ),
-
             SensitivePattern(
                 name="github_token",
                 pattern=r"ghp_[a-zA-Z0-9]{36}",
                 placeholder=PlaceholderGenerator.generate_api_key_placeholder,
                 confidence=0.98,
                 category="authentication",
-                description="GitHub personal access tokens"
+                description="GitHub personal access tokens",
             ),
-
             SensitivePattern(
                 name="brave_api_key",
                 pattern=r"BSA-[a-zA-Z0-9]{10,}",
                 placeholder=PlaceholderGenerator.generate_api_key_placeholder,
                 confidence=0.95,
                 category="authentication",
-                description="Brave Search API keys"
+                description="Brave Search API keys",
             ),
-
             # Generic API key patterns
             SensitivePattern(
                 name="generic_api_key",
@@ -230,9 +229,8 @@ class PatternRegistry:
                 placeholder="API_KEY_VALUE",
                 confidence=0.7,
                 category="authentication",
-                description="Generic API key patterns"
+                description="Generic API key patterns",
             ),
-
             # JWT Tokens
             SensitivePattern(
                 name="jwt_token",
@@ -240,9 +238,8 @@ class PatternRegistry:
                 placeholder="***JWT_TOKEN***",
                 confidence=0.95,
                 category="authentication",
-                description="JWT tokens"
+                description="JWT tokens",
             ),
-
             # Email addresses
             SensitivePattern(
                 name="email_address",
@@ -250,9 +247,8 @@ class PatternRegistry:
                 placeholder=PlaceholderGenerator.generate_email_placeholder,
                 confidence=0.9,
                 category="personal",
-                description="Email addresses"
+                description="Email addresses",
             ),
-
             # IP Addresses with ports
             SensitivePattern(
                 name="ip_address",
@@ -260,9 +256,8 @@ class PatternRegistry:
                 placeholder=PlaceholderGenerator.generate_ip_placeholder,
                 confidence=0.85,
                 category="network",
-                description="IP addresses with optional ports"
+                description="IP addresses with optional ports",
             ),
-
             # Database connection strings
             SensitivePattern(
                 name="database_url",
@@ -270,18 +265,18 @@ class PatternRegistry:
                 placeholder="database://user:***PASSWORD***@host/db",
                 confidence=0.95,
                 category="database",
-                description="Database connection URLs with credentials"
+                description="Database connection URLs with credentials",
             ),
-
             # Environment variable assignments with sensitive values
             SensitivePattern(
                 name="env_var_sensitive",
                 pattern=r"(?:SECRET|PASSWORD|KEY|TOKEN)[\w]*\s*[:=]\s*[\"']?[a-zA-Z0-9_-]{8,}[\"']?",
-                placeholder=lambda m, c: f"{m.group(0).split('=')[0] if '=' in m.group(0) else m.group(0).split(':')[0]}=***VALUE***",
+                placeholder=lambda m,
+                c: f"{m.group(0).split('=')[0] if '=' in m.group(0) else m.group(0).split(':')[0]}=***VALUE***",
                 confidence=0.8,
                 category="configuration",
-                description="Environment variables with sensitive values"
-            )
+                description="Environment variables with sensitive values",
+            ),
         ]
 
         for pattern in default_patterns:
@@ -312,7 +307,9 @@ class PatternRegistry:
         pattern_names = self.categories.get(category, [])
         return [self.patterns[name] for name in pattern_names]
 
-    def get_enabled_patterns(self, config: SanitizationConfig) -> list[tuple[str, SensitivePattern, Pattern]]:
+    def get_enabled_patterns(
+        self, config: SanitizationConfig
+    ) -> list[tuple[str, SensitivePattern, Pattern]]:
         """Get enabled patterns based on configuration"""
         enabled_patterns = []
 
@@ -322,7 +319,10 @@ class PatternRegistry:
                 continue
 
             # Check if category is disabled
-            if config.disabled_categories and pattern.category in config.disabled_categories:
+            if (
+                config.disabled_categories
+                and pattern.category in config.disabled_categories
+            ):
                 continue
 
             # Check if only specific patterns are enabled
@@ -330,7 +330,10 @@ class PatternRegistry:
                 continue
 
             # Check if only specific categories are enabled
-            if config.enabled_categories and pattern.category not in config.enabled_categories:
+            if (
+                config.enabled_categories
+                and pattern.category not in config.enabled_categories
+            ):
                 continue
 
             enabled_patterns.append((name, pattern, self.compiled_patterns[name]))
@@ -343,8 +346,11 @@ class PatternRegistry:
 class ContextSanitizer:
     """Main context sanitization engine"""
 
-    def __init__(self, pattern_registry: PatternRegistry | None = None,
-                 config: SanitizationConfig | None = None):
+    def __init__(
+        self,
+        pattern_registry: PatternRegistry | None = None,
+        config: SanitizationConfig | None = None,
+    ):
         self.pattern_registry = pattern_registry or PatternRegistry()
         self.config = config or SanitizationConfig()
         self.logger = logging.getLogger(__name__)
@@ -355,10 +361,10 @@ class ContextSanitizer:
     def sanitize(self, context: str) -> str:
         """
         Sanitize a single context string
-        
+
         Args:
             context: The input context to sanitize
-            
+
         Returns:
             Sanitized context with sensitive data replaced
         """
@@ -366,8 +372,10 @@ class ContextSanitizer:
             return context or ""
 
         if len(context) > self.config.max_context_size:
-            self.logger.warning(f"Context size {len(context)} exceeds limit {self.config.max_context_size}")
-            context = context[:self.config.max_context_size]
+            self.logger.warning(
+                f"Context size {len(context)} exceeds limit {self.config.max_context_size}"
+            )
+            context = context[: self.config.max_context_size]
 
         start_time = time.time()
 
@@ -416,7 +424,9 @@ class ContextSanitizer:
                 return True
         return False
 
-    def _generate_placeholder(self, pattern: SensitivePattern, match: re.Match, context: str) -> str:
+    def _generate_placeholder(
+        self, pattern: SensitivePattern, match: re.Match, context: str
+    ) -> str:
         """Generate appropriate placeholder for a match"""
         if callable(pattern.placeholder):
             return pattern.placeholder(match, context)
@@ -426,10 +436,10 @@ class ContextSanitizer:
     def sanitize_batch(self, contexts: list[str]) -> list[str]:
         """
         Sanitize multiple contexts efficiently
-        
+
         Args:
             contexts: List of context strings to sanitize
-            
+
         Returns:
             List of sanitized contexts
         """
@@ -447,7 +457,7 @@ class ContextSanitizer:
             (r"sk-[a-zA-Z0-9]{48}", "sk-***API_KEY***"),
             (r"/Users/[^/\s]+", "/Users/USER"),
             (r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[A-Z|a-z]{2,}", "user@example.com"),
-            (r"\b[a-z][a-z0-9-]{4,28}[a-z0-9]\b", "PROJECT_ID")
+            (r"\b[a-z][a-z0-9-]{4,28}[a-z0-9]\b", "PROJECT_ID"),
         ]
 
         result = context
@@ -460,7 +470,8 @@ class ContextSanitizer:
         """Register sanitizer as a pre-generation pipeline hook"""
         try:
             from src.utils.pipeline_hooks import register_hook
-            register_hook('pre_generation', self.sanitize, priority=100)
+
+            register_hook("pre_generation", self.sanitize, priority=100)
             self.logger.info("Registered sanitizer as pre-generation hook")
         except ImportError:
             self.logger.warning("Pipeline hooks module not available")
@@ -469,13 +480,15 @@ class ContextSanitizer:
         """Get sanitization statistics"""
         return {
             "total_patterns": len(self.pattern_registry.patterns),
-            "enabled_patterns": len(self.pattern_registry.get_enabled_patterns(self.config)),
+            "enabled_patterns": len(
+                self.pattern_registry.get_enabled_patterns(self.config)
+            ),
             "categories": list(self.pattern_registry.categories.keys()),
             "config": {
                 "placeholder_style": self.config.placeholder_style.value,
                 "preserve_structure": self.config.preserve_structure,
-                "performance_mode": self.config.performance_mode
-            }
+                "performance_mode": self.config.performance_mode,
+            },
         }
 
 
@@ -486,8 +499,10 @@ def sanitize_context(context: str, config: SanitizationConfig | None = None) -> 
     return sanitizer.sanitize(context)
 
 
-def create_custom_sanitizer(additional_patterns: list[SensitivePattern] = None,
-                          config: SanitizationConfig | None = None) -> ContextSanitizer:
+def create_custom_sanitizer(
+    additional_patterns: list[SensitivePattern] = None,
+    config: SanitizationConfig | None = None,
+) -> ContextSanitizer:
     """Create a custom sanitizer with additional patterns"""
     registry = PatternRegistry()
 
@@ -500,13 +515,13 @@ def create_custom_sanitizer(additional_patterns: list[SensitivePattern] = None,
 
 # Export main classes and functions
 __all__ = [
-    'ContextSanitizer',
-    'PatternRegistry',
-    'PlaceholderGenerator',
-    'PlaceholderStyle',
-    'SanitizationConfig',
-    'SanitizationError',
-    'SensitivePattern',
-    'create_custom_sanitizer',
-    'sanitize_context'
+    "ContextSanitizer",
+    "PatternRegistry",
+    "PlaceholderGenerator",
+    "PlaceholderStyle",
+    "SanitizationConfig",
+    "SanitizationError",
+    "SensitivePattern",
+    "create_custom_sanitizer",
+    "sanitize_context",
 ]

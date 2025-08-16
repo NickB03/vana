@@ -33,6 +33,7 @@ from .git_performance_benchmarks import GitPerformanceBenchmarker
 @dataclass
 class CITestResult:
     """Result from CI/CD automated test execution"""
+
     test_suite: str
     success: bool
     execution_time_ms: float
@@ -53,6 +54,7 @@ class CITestResult:
 @dataclass
 class CIPipelineReport:
     """Comprehensive CI/CD pipeline test report"""
+
     pipeline_id: str
     branch: str
     commit_hash: str
@@ -78,7 +80,9 @@ class GitTestAutomation:
         self.workspace_path = workspace_path
         self.config = config or self._load_default_config()
         self.pipeline_id = f"git-ci-{int(time.time())}"
-        self.artifacts_dir = workspace_path / ".claude_workspace" / "ci-artifacts" / self.pipeline_id
+        self.artifacts_dir = (
+            workspace_path / ".claude_workspace" / "ci-artifacts" / self.pipeline_id
+        )
         self.artifacts_dir.mkdir(parents=True, exist_ok=True)
 
     def _load_default_config(self) -> dict[str, Any]:
@@ -88,23 +92,25 @@ class GitTestAutomation:
             "performance_thresholds": {
                 "max_regression_percent": 10,
                 "min_success_rate": 0.90,
-                "max_execution_time_ms": 30000
+                "max_execution_time_ms": 30000,
             },
             "coverage_thresholds": {
                 "min_coverage_percent": 80,
-                "min_hook_coverage_percent": 95
+                "min_hook_coverage_percent": 95,
             },
             "notification_settings": {
                 "on_failure": True,
                 "on_regression": True,
-                "on_success": False
+                "on_success": False,
             },
             "artifact_retention_days": 30,
             "parallel_execution": True,
-            "fail_fast": False
+            "fail_fast": False,
         }
 
-    def run_automated_ci_pipeline(self, branch: str = None, commit_hash: str = None) -> CIPipelineReport:
+    def run_automated_ci_pipeline(
+        self, branch: str = None, commit_hash: str = None
+    ) -> CIPipelineReport:
         """Run complete automated CI/CD pipeline for Git hooks"""
         start_time = time.time()
 
@@ -154,7 +160,7 @@ class GitTestAutomation:
                     coverage_percentage=0,
                     error_details=str(e),
                     artifacts_path=str(self.artifacts_dir),
-                    timestamp=datetime.now().isoformat()
+                    timestamp=datetime.now().isoformat(),
                 )
                 test_results.append(error_result)
                 pipeline_success = False
@@ -170,7 +176,9 @@ class GitTestAutomation:
         coverage_regression = self._detect_coverage_regression(test_results)
 
         # Generate recommendations and next actions
-        recommendations = self._generate_recommendations(test_results, performance_regression, coverage_regression)
+        recommendations = self._generate_recommendations(
+            test_results, performance_regression, coverage_regression
+        )
         next_actions = self._generate_next_actions(test_results, critical_failures)
 
         # Create comprehensive report
@@ -187,7 +195,7 @@ class GitTestAutomation:
             recommendations=recommendations,
             next_actions=next_actions,
             artifacts=self._collect_artifacts(),
-            timestamp=datetime.now().isoformat()
+            timestamp=datetime.now().isoformat(),
         )
 
         # Save and publish report
@@ -233,7 +241,7 @@ class GitTestAutomation:
                 ("pre_commit_violation", False),
                 ("post_commit_automation", True),
                 ("pre_push_safety", True),
-                ("emergency_bypass", True)
+                ("emergency_bypass", True),
             ]
 
             tests_run = len(test_cases)
@@ -241,20 +249,26 @@ class GitTestAutomation:
             test_results = []
 
             for test_name, expected_success in test_cases:
-                test_result = self._execute_unit_test_case(git_env, test_name, expected_success)
+                test_result = self._execute_unit_test_case(
+                    git_env, test_name, expected_success
+                )
                 test_results.append(test_result)
                 if test_result["success"]:
                     tests_passed += 1
 
             # Save detailed results
             unit_report_path = artifacts_path / "unit_test_results.json"
-            with open(unit_report_path, 'w') as f:
-                json.dump({
-                    "tests_run": tests_run,
-                    "tests_passed": tests_passed,
-                    "test_results": test_results,
-                    "coverage": self._calculate_unit_test_coverage(test_results)
-                }, f, indent=2)
+            with open(unit_report_path, "w") as f:
+                json.dump(
+                    {
+                        "tests_run": tests_run,
+                        "tests_passed": tests_passed,
+                        "test_results": test_results,
+                        "coverage": self._calculate_unit_test_coverage(test_results),
+                    },
+                    f,
+                    indent=2,
+                )
 
             execution_time = (time.time() - start_time) * 1000
             success = tests_passed == tests_run
@@ -272,7 +286,7 @@ class GitTestAutomation:
                 coverage_percentage=coverage,
                 error_details=None,
                 artifacts_path=str(artifacts_path),
-                timestamp=datetime.now().isoformat()
+                timestamp=datetime.now().isoformat(),
             )
 
         except Exception as e:
@@ -289,7 +303,7 @@ class GitTestAutomation:
                 coverage_percentage=0,
                 error_details=str(e),
                 artifacts_path=str(artifacts_path),
-                timestamp=datetime.now().isoformat()
+                timestamp=datetime.now().isoformat(),
             )
 
     def _run_integration_tests(self, artifacts_path: Path) -> CITestResult:
@@ -306,7 +320,7 @@ class GitTestAutomation:
                 "frontend_component_workflow",
                 "backend_api_workflow",
                 "security_violation_blocking",
-                "emergency_hotfix_workflow"
+                "emergency_hotfix_workflow",
             ]
 
             tests_run = len(ci_scenarios)
@@ -316,28 +330,37 @@ class GitTestAutomation:
             for scenario_name in ci_scenarios:
                 description = f"CI integration test: {scenario_name}"
                 try:
-                    result = self._execute_integration_scenario(integration_runner, scenario_name, description)
+                    result = self._execute_integration_scenario(
+                        integration_runner, scenario_name, description
+                    )
                     scenario_results.append(result)
                     if result.success:
                         tests_passed += 1
                 except Exception as e:
-                    scenario_results.append({
-                        "scenario": scenario_name,
-                        "success": False,
-                        "error": str(e)
-                    })
+                    scenario_results.append(
+                        {"scenario": scenario_name, "success": False, "error": str(e)}
+                    )
 
             # Save integration results
             integration_report_path = artifacts_path / "integration_test_results.json"
-            with open(integration_report_path, 'w') as f:
-                json.dump({
-                    "tests_run": tests_run,
-                    "tests_passed": tests_passed,
-                    "scenario_results": [r.to_dict() if hasattr(r, 'to_dict') else r for r in scenario_results]
-                }, f, indent=2)
+            with open(integration_report_path, "w") as f:
+                json.dump(
+                    {
+                        "tests_run": tests_run,
+                        "tests_passed": tests_passed,
+                        "scenario_results": [
+                            r.to_dict() if hasattr(r, "to_dict") else r
+                            for r in scenario_results
+                        ],
+                    },
+                    f,
+                    indent=2,
+                )
 
             execution_time = (time.time() - start_time) * 1000
-            success = tests_passed >= tests_run * 0.75  # 75% success threshold for integration
+            success = (
+                tests_passed >= tests_run * 0.75
+            )  # 75% success threshold for integration
 
             return CITestResult(
                 test_suite="integration",
@@ -346,12 +369,16 @@ class GitTestAutomation:
                 tests_run=tests_run,
                 tests_passed=tests_passed,
                 tests_failed=tests_run - tests_passed,
-                performance_grade="A" if tests_passed == tests_run else "B" if success else "C",
+                performance_grade="A"
+                if tests_passed == tests_run
+                else "B"
+                if success
+                else "C",
                 regression_detected=False,
                 coverage_percentage=85.0,  # Integration coverage estimate
                 error_details=None,
                 artifacts_path=str(artifacts_path),
-                timestamp=datetime.now().isoformat()
+                timestamp=datetime.now().isoformat(),
             )
 
         except Exception as e:
@@ -368,7 +395,7 @@ class GitTestAutomation:
                 coverage_percentage=0,
                 error_details=str(e),
                 artifacts_path=str(artifacts_path),
-                timestamp=datetime.now().isoformat()
+                timestamp=datetime.now().isoformat(),
             )
 
     def _run_performance_tests(self, artifacts_path: Path) -> CITestResult:
@@ -382,22 +409,34 @@ class GitTestAutomation:
 
             # Run performance benchmarks
             benchmark_results = {
-                "pre_commit": benchmarker.benchmark_pre_commit_performance(iterations=5),
-                "post_commit": benchmarker.benchmark_post_commit_performance(iterations=5),
-                "full_workflow": benchmarker.benchmark_full_workflow_performance(iterations=3)
+                "pre_commit": benchmarker.benchmark_pre_commit_performance(
+                    iterations=5
+                ),
+                "post_commit": benchmarker.benchmark_post_commit_performance(
+                    iterations=5
+                ),
+                "full_workflow": benchmarker.benchmark_full_workflow_performance(
+                    iterations=3
+                ),
             }
 
             # Save performance results
             perf_report_path = artifacts_path / "performance_test_results.json"
-            with open(perf_report_path, 'w') as f:
-                json.dump({k: v.to_dict() for k, v in benchmark_results.items()}, f, indent=2)
+            with open(perf_report_path, "w") as f:
+                json.dump(
+                    {k: v.to_dict() for k, v in benchmark_results.items()}, f, indent=2
+                )
 
             # Analyze performance
             tests_run = len(benchmark_results)
-            tests_passed = sum(1 for result in benchmark_results.values() if result.meets_thresholds)
+            tests_passed = sum(
+                1 for result in benchmark_results.values() if result.meets_thresholds
+            )
 
             overall_grade = self._calculate_overall_performance_grade(benchmark_results)
-            regression_detected = self._detect_performance_regression_in_benchmarks(benchmark_results)
+            regression_detected = self._detect_performance_regression_in_benchmarks(
+                benchmark_results
+            )
 
             execution_time = (time.time() - start_time) * 1000
             success = tests_passed >= tests_run * 0.8  # 80% must meet thresholds
@@ -414,7 +453,7 @@ class GitTestAutomation:
                 coverage_percentage=90.0,  # Performance coverage
                 error_details=None,
                 artifacts_path=str(artifacts_path),
-                timestamp=datetime.now().isoformat()
+                timestamp=datetime.now().isoformat(),
             )
 
         except Exception as e:
@@ -431,7 +470,7 @@ class GitTestAutomation:
                 coverage_percentage=0,
                 error_details=str(e),
                 artifacts_path=str(artifacts_path),
-                timestamp=datetime.now().isoformat()
+                timestamp=datetime.now().isoformat(),
             )
 
     def _run_e2e_tests(self, artifacts_path: Path) -> CITestResult:
@@ -446,9 +485,12 @@ class GitTestAutomation:
 
             # Define E2E test scenarios
             e2e_scenarios = [
-                ("complete_feature_development", self._e2e_complete_feature_development),
+                (
+                    "complete_feature_development",
+                    self._e2e_complete_feature_development,
+                ),
                 ("hotfix_deployment", self._e2e_hotfix_deployment),
-                ("code_review_workflow", self._e2e_code_review_workflow)
+                ("code_review_workflow", self._e2e_code_review_workflow),
             ]
 
             tests_run = len(e2e_scenarios)
@@ -458,29 +500,33 @@ class GitTestAutomation:
             for scenario_name, scenario_func in e2e_scenarios:
                 try:
                     result = scenario_func(git_env)
-                    e2e_results.append({
-                        "scenario": scenario_name,
-                        "success": result["success"],
-                        "duration_ms": result.get("duration_ms", 0),
-                        "steps_completed": result.get("steps_completed", 0)
-                    })
+                    e2e_results.append(
+                        {
+                            "scenario": scenario_name,
+                            "success": result["success"],
+                            "duration_ms": result.get("duration_ms", 0),
+                            "steps_completed": result.get("steps_completed", 0),
+                        }
+                    )
                     if result["success"]:
                         tests_passed += 1
                 except Exception as e:
-                    e2e_results.append({
-                        "scenario": scenario_name,
-                        "success": False,
-                        "error": str(e)
-                    })
+                    e2e_results.append(
+                        {"scenario": scenario_name, "success": False, "error": str(e)}
+                    )
 
             # Save E2E results
             e2e_report_path = artifacts_path / "e2e_test_results.json"
-            with open(e2e_report_path, 'w') as f:
-                json.dump({
-                    "tests_run": tests_run,
-                    "tests_passed": tests_passed,
-                    "e2e_results": e2e_results
-                }, f, indent=2)
+            with open(e2e_report_path, "w") as f:
+                json.dump(
+                    {
+                        "tests_run": tests_run,
+                        "tests_passed": tests_passed,
+                        "e2e_results": e2e_results,
+                    },
+                    f,
+                    indent=2,
+                )
 
             execution_time = (time.time() - start_time) * 1000
             success = tests_passed >= tests_run * 0.8  # 80% success threshold
@@ -497,7 +543,7 @@ class GitTestAutomation:
                 coverage_percentage=75.0,  # E2E coverage estimate
                 error_details=None,
                 artifacts_path=str(artifacts_path),
-                timestamp=datetime.now().isoformat()
+                timestamp=datetime.now().isoformat(),
             )
 
         except Exception as e:
@@ -514,20 +560,32 @@ class GitTestAutomation:
                 coverage_percentage=0,
                 error_details=str(e),
                 artifacts_path=str(artifacts_path),
-                timestamp=datetime.now().isoformat()
+                timestamp=datetime.now().isoformat(),
             )
 
-    def _execute_unit_test_case(self, git_env: GitTestEnvironment, test_name: str, expected_success: bool) -> dict[str, Any]:
+    def _execute_unit_test_case(
+        self, git_env: GitTestEnvironment, test_name: str, expected_success: bool
+    ) -> dict[str, Any]:
         """Execute a single unit test case"""
         if test_name == "pre_commit_compliant":
-            files = {"test.tsx": 'import { Button } from "@/components/ui/button"\nexport const Test = () => <Button data-testid="test">Test</Button>'}
-            result = git_env.simulate_commit(files, "Add compliant component", expect_success=True)
+            files = {
+                "test.tsx": 'import { Button } from "@/components/ui/button"\nexport const Test = () => <Button data-testid="test">Test</Button>'
+            }
+            result = git_env.simulate_commit(
+                files, "Add compliant component", expect_success=True
+            )
         elif test_name == "pre_commit_violation":
-            files = {"bad.tsx": 'import { Button } from "@mui/material"\nexport const Bad = () => <Button>Bad</Button>'}
-            result = git_env.simulate_commit(files, "Add violating component", expect_success=False)
+            files = {
+                "bad.tsx": 'import { Button } from "@mui/material"\nexport const Bad = () => <Button>Bad</Button>'
+            }
+            result = git_env.simulate_commit(
+                files, "Add violating component", expect_success=False
+            )
         elif test_name == "post_commit_automation":
             files = {"config.json": '{"test": true}'}
-            result = git_env.simulate_commit(files, "Update config", expect_success=True)
+            result = git_env.simulate_commit(
+                files, "Update config", expect_success=True
+            )
         elif test_name == "pre_push_safety":
             files = {"safe.txt": "Safe content"}
             commit_result = git_env.simulate_commit(files, "Safe commit")
@@ -545,15 +603,22 @@ class GitTestAutomation:
             "success": result["success"] == expected_success,
             "expected_success": expected_success,
             "actual_success": result["success"],
-            "details": result
+            "details": result,
         }
 
-    def _execute_integration_scenario(self, runner: GitIntegrationTestRunner, scenario_name: str, description: str):
+    def _execute_integration_scenario(
+        self, runner: GitIntegrationTestRunner, scenario_name: str, description: str
+    ):
         """Execute integration test scenario"""
         import asyncio
-        return asyncio.run(runner._execute_integration_scenario(scenario_name, description))
 
-    def _e2e_complete_feature_development(self, git_env: GitTestEnvironment) -> dict[str, Any]:
+        return asyncio.run(
+            runner._execute_integration_scenario(scenario_name, description)
+        )
+
+    def _e2e_complete_feature_development(
+        self, git_env: GitTestEnvironment
+    ) -> dict[str, Any]:
         """E2E test: Complete feature development workflow"""
         start_time = time.time()
         steps_completed = 0
@@ -565,15 +630,15 @@ class GitTestAutomation:
 
             # Step 2: Implement feature
             feature_files = {
-                "frontend/src/components/NewFeature.tsx": '''
+                "frontend/src/components/NewFeature.tsx": """
 import React from 'react'
 import { Button } from '@/components/ui/button'
 
 export const NewFeature = () => (
   <Button data-testid="new-feature">New Feature</Button>
 )
-''',
-                "frontend/src/components/__tests__/NewFeature.test.tsx": '''
+""",
+                "frontend/src/components/__tests__/NewFeature.test.tsx": """
 import { render, screen } from '@testing-library/react'
 import { NewFeature } from '../NewFeature'
 
@@ -581,7 +646,7 @@ test('renders new feature', () => {
   render(<NewFeature />)
   expect(screen.getByTestId('new-feature')).toBeInTheDocument()
 })
-'''
+""",
             }
 
             result = git_env.simulate_commit(feature_files, "Implement new feature")
@@ -602,7 +667,7 @@ test('renders new feature', () => {
             return {
                 "success": success,
                 "steps_completed": steps_completed,
-                "duration_ms": duration_ms
+                "duration_ms": duration_ms,
             }
 
         except Exception as e:
@@ -610,7 +675,7 @@ test('renders new feature', () => {
                 "success": False,
                 "steps_completed": steps_completed,
                 "duration_ms": (time.time() - start_time) * 1000,
-                "error": str(e)
+                "error": str(e),
             }
 
     def _e2e_hotfix_deployment(self, git_env: GitTestEnvironment) -> dict[str, Any]:
@@ -626,7 +691,7 @@ test('renders new feature', () => {
             return {
                 "success": success,
                 "steps_completed": 1 if success else 0,
-                "duration_ms": (time.time() - start_time) * 1000
+                "duration_ms": (time.time() - start_time) * 1000,
             }
 
         except Exception as e:
@@ -634,7 +699,7 @@ test('renders new feature', () => {
                 "success": False,
                 "steps_completed": 0,
                 "duration_ms": (time.time() - start_time) * 1000,
-                "error": str(e)
+                "error": str(e),
             }
 
     def _e2e_code_review_workflow(self, git_env: GitTestEnvironment) -> dict[str, Any]:
@@ -643,14 +708,16 @@ test('renders new feature', () => {
 
         try:
             # Simulate code review workflow
-            review_files = {"review.tsx": 'import { Button } from "@/components/ui/button"\nexport const Review = () => <Button data-testid="review">Review</Button>'}
+            review_files = {
+                "review.tsx": 'import { Button } from "@/components/ui/button"\nexport const Review = () => <Button data-testid="review">Review</Button>'
+            }
             result = git_env.simulate_commit(review_files, "Code for review")
 
             success = result["success"]
             return {
                 "success": success,
                 "steps_completed": 1 if success else 0,
-                "duration_ms": (time.time() - start_time) * 1000
+                "duration_ms": (time.time() - start_time) * 1000,
             }
 
         except Exception as e:
@@ -658,10 +725,12 @@ test('renders new feature', () => {
                 "success": False,
                 "steps_completed": 0,
                 "duration_ms": (time.time() - start_time) * 1000,
-                "error": str(e)
+                "error": str(e),
             }
 
-    def _calculate_unit_test_coverage(self, test_results: list[dict[str, Any]]) -> float:
+    def _calculate_unit_test_coverage(
+        self, test_results: list[dict[str, Any]]
+    ) -> float:
         """Calculate unit test coverage percentage"""
         if not test_results:
             return 0.0
@@ -669,7 +738,9 @@ test('renders new feature', () => {
         successful_tests = sum(1 for result in test_results if result["success"])
         return (successful_tests / len(test_results)) * 100
 
-    def _calculate_overall_performance_grade(self, benchmark_results: dict[str, Any]) -> str:
+    def _calculate_overall_performance_grade(
+        self, benchmark_results: dict[str, Any]
+    ) -> str:
         """Calculate overall performance grade from benchmarks"""
         grades = [result.performance_grade for result in benchmark_results.values()]
         grade_scores = {"A": 4, "B": 3, "C": 2, "D": 1, "F": 0}
@@ -699,45 +770,71 @@ test('renders new feature', () => {
             return False
 
         perf_result = performance_results[0]
-        return perf_result.regression_detected or perf_result.performance_grade in ["D", "F"]
+        return perf_result.regression_detected or perf_result.performance_grade in [
+            "D",
+            "F",
+        ]
 
     def _detect_coverage_regression(self, test_results: list[CITestResult]) -> bool:
         """Detect test coverage regression"""
-        avg_coverage = sum(r.coverage_percentage for r in test_results) / len(test_results) if test_results else 0
+        avg_coverage = (
+            sum(r.coverage_percentage for r in test_results) / len(test_results)
+            if test_results
+            else 0
+        )
         min_coverage = self.config["coverage_thresholds"]["min_coverage_percent"]
 
         return avg_coverage < min_coverage
 
-    def _detect_performance_regression_in_benchmarks(self, benchmark_results: dict[str, Any]) -> bool:
+    def _detect_performance_regression_in_benchmarks(
+        self, benchmark_results: dict[str, Any]
+    ) -> bool:
         """Detect performance regression in benchmark results"""
         # Check if any benchmark fails to meet thresholds
         return any(not result.meets_thresholds for result in benchmark_results.values())
 
-    def _generate_recommendations(self, test_results: list[CITestResult], perf_regression: bool, coverage_regression: bool) -> list[str]:
+    def _generate_recommendations(
+        self,
+        test_results: list[CITestResult],
+        perf_regression: bool,
+        coverage_regression: bool,
+    ) -> list[str]:
         """Generate recommendations based on test results"""
         recommendations = []
 
         failed_suites = [r.test_suite for r in test_results if not r.success]
 
         if failed_suites:
-            recommendations.append(f"Fix failing test suites: {', '.join(failed_suites)}")
+            recommendations.append(
+                f"Fix failing test suites: {', '.join(failed_suites)}"
+            )
 
         if perf_regression:
-            recommendations.append("Investigate performance regression and optimize hook execution")
+            recommendations.append(
+                "Investigate performance regression and optimize hook execution"
+            )
 
         if coverage_regression:
             recommendations.append("Improve test coverage to meet minimum thresholds")
 
-        low_grade_suites = [r.test_suite for r in test_results if r.performance_grade in ["D", "F"]]
+        low_grade_suites = [
+            r.test_suite for r in test_results if r.performance_grade in ["D", "F"]
+        ]
         if low_grade_suites:
-            recommendations.append(f"Improve performance of test suites: {', '.join(low_grade_suites)}")
+            recommendations.append(
+                f"Improve performance of test suites: {', '.join(low_grade_suites)}"
+            )
 
         if not recommendations:
-            recommendations.append("All tests passing - consider optimizing for better performance")
+            recommendations.append(
+                "All tests passing - consider optimizing for better performance"
+            )
 
         return recommendations
 
-    def _generate_next_actions(self, test_results: list[CITestResult], critical_failures: list[str]) -> list[str]:
+    def _generate_next_actions(
+        self, test_results: list[CITestResult], critical_failures: list[str]
+    ) -> list[str]:
         """Generate next actions based on test results"""
         actions = []
 
@@ -752,8 +849,15 @@ test('renders new feature', () => {
         if any(r.regression_detected for r in test_results):
             actions.append("Investigate and resolve performance regressions")
 
-        avg_execution_time = sum(r.execution_time_ms for r in test_results) / len(test_results) if test_results else 0
-        if avg_execution_time > self.config["performance_thresholds"]["max_execution_time_ms"]:
+        avg_execution_time = (
+            sum(r.execution_time_ms for r in test_results) / len(test_results)
+            if test_results
+            else 0
+        )
+        if (
+            avg_execution_time
+            > self.config["performance_thresholds"]["max_execution_time_ms"]
+        ):
             actions.append("Optimize test execution time")
 
         if not actions:
@@ -776,13 +880,13 @@ test('renders new feature', () => {
         """Save comprehensive CI report"""
         # Save JSON report
         json_report_path = self.artifacts_dir / "ci_pipeline_report.json"
-        with open(json_report_path, 'w') as f:
+        with open(json_report_path, "w") as f:
             json.dump(report.to_dict(), f, indent=2)
 
         # Save HTML report
         html_report_path = self.artifacts_dir / "ci_pipeline_report.html"
         html_content = self._generate_ci_html_report(report)
-        with open(html_report_path, 'w') as f:
+        with open(html_report_path, "w") as f:
             f.write(html_content)
 
         print(f"📊 CI report saved to {json_report_path}")
@@ -842,7 +946,7 @@ test('renders new feature', () => {
     <div class="container">
         <div class="header">
             <h1>🔧 Git Hook CI Pipeline Report</h1>
-            <div class="status">{status_icon} Pipeline {('SUCCESS' if report.pipeline_success else 'FAILED')}</div>
+            <div class="status">{status_icon} Pipeline {("SUCCESS" if report.pipeline_success else "FAILED")}</div>
         </div>
         
         <div class="pipeline-info">
@@ -857,19 +961,19 @@ test('renders new feature', () => {
             {suites_html}
         </div>
         
-        {('<div class="critical-failures"><h3>🚨 Critical Failures</h3><ul>' + ''.join(f'<li>{failure}</li>' for failure in report.critical_failures) + '</ul></div>') if report.critical_failures else ''}
+        {('<div class="critical-failures"><h3>🚨 Critical Failures</h3><ul>' + "".join(f"<li>{failure}</li>" for failure in report.critical_failures) + "</ul></div>") if report.critical_failures else ""}
         
         <div class="recommendations">
             <h3>💡 Recommendations</h3>
             <ul>
-                {''.join(f'<li>{rec}</li>' for rec in report.recommendations)}
+                {"".join(f"<li>{rec}</li>" for rec in report.recommendations)}
             </ul>
         </div>
         
         <div class="next-actions">
             <h3>🎯 Next Actions</h3>
             <ul>
-                {''.join(f'<li>{action}</li>' for action in report.next_actions)}
+                {"".join(f"<li>{action}</li>" for action in report.next_actions)}
             </ul>
         </div>
         
@@ -891,8 +995,12 @@ test('renders new feature', () => {
 
         print("📤 Publishing CI results...")
         print(f"   Status: {'✅ SUCCESS' if report.pipeline_success else '❌ FAILURE'}")
-        print(f"   Test Suites: {sum(1 for s in report.test_suites if s.success)}/{len(report.test_suites)} passed")
-        print(f"   Performance: {(report.performance_regression and '⚠️ Regression detected') or '✅ No regressions'}")
+        print(
+            f"   Test Suites: {sum(1 for s in report.test_suites if s.success)}/{len(report.test_suites)} passed"
+        )
+        print(
+            f"   Performance: {(report.performance_regression and '⚠️ Regression detected') or '✅ No regressions'}"
+        )
 
     def _should_notify(self, report: CIPipelineReport) -> bool:
         """Determine if notifications should be sent"""
@@ -924,8 +1032,12 @@ test('renders new feature', () => {
     def _get_current_branch(self) -> str:
         """Get current Git branch"""
         try:
-            result = subprocess.run(["git", "branch", "--show-current"],
-                                   cwd=self.workspace_path, capture_output=True, text=True)
+            result = subprocess.run(
+                ["git", "branch", "--show-current"],
+                cwd=self.workspace_path,
+                capture_output=True,
+                text=True,
+            )
             return result.stdout.strip() or "main"
         except:
             return "main"
@@ -933,8 +1045,12 @@ test('renders new feature', () => {
     def _get_current_commit_hash(self) -> str:
         """Get current Git commit hash"""
         try:
-            result = subprocess.run(["git", "rev-parse", "HEAD"],
-                                   cwd=self.workspace_path, capture_output=True, text=True)
+            result = subprocess.run(
+                ["git", "rev-parse", "HEAD"],
+                cwd=self.workspace_path,
+                capture_output=True,
+                text=True,
+            )
             return result.stdout.strip() or "unknown"
         except:
             return "unknown"
@@ -943,13 +1059,21 @@ test('renders new feature', () => {
 def main():
     """CLI interface for Git test automation"""
     parser = argparse.ArgumentParser(description="Git Hook Test Automation for CI/CD")
-    parser.add_argument("--workspace", type=str, default=".", help="Workspace directory")
+    parser.add_argument(
+        "--workspace", type=str, default=".", help="Workspace directory"
+    )
     parser.add_argument("--branch", type=str, help="Git branch to test")
     parser.add_argument("--commit", type=str, help="Git commit hash")
     parser.add_argument("--config", type=str, help="Configuration file path")
-    parser.add_argument("--suites", nargs="+", choices=["unit", "integration", "performance", "e2e"],
-                       help="Test suites to run")
-    parser.add_argument("--fail-fast", action="store_true", help="Stop on first failure")
+    parser.add_argument(
+        "--suites",
+        nargs="+",
+        choices=["unit", "integration", "performance", "e2e"],
+        help="Test suites to run",
+    )
+    parser.add_argument(
+        "--fail-fast", action="store_true", help="Stop on first failure"
+    )
     parser.add_argument("--parallel", action="store_true", help="Run tests in parallel")
     parser.add_argument("--output", type=str, help="Output directory for artifacts")
 

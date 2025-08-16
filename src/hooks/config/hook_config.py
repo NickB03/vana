@@ -28,15 +28,17 @@ logger = logging.getLogger(__name__)
 
 class ValidationLevel(Enum):
     """Validation levels for the hook system."""
-    NONE = "none"          # No validation
-    BASIC = "basic"        # Essential validations only
+
+    NONE = "none"  # No validation
+    BASIC = "basic"  # Essential validations only
     STANDARD = "standard"  # Most validations (default)
-    STRICT = "strict"      # All validations including performance-heavy ones
+    STRICT = "strict"  # All validations including performance-heavy ones
 
 
 @dataclass
 class ValidatorConfig:
     """Configuration for individual validators."""
+
     enabled: bool = True
     timeout: float = 5.0
     retry_count: int = 1
@@ -47,34 +49,91 @@ class ValidatorConfig:
 @dataclass
 class ContextSanitizerConfig(ValidatorConfig):
     """Configuration for context sanitizer."""
+
     max_file_size: int = 10 * 1024 * 1024  # 10MB
-    allowed_extensions: list[str] = field(default_factory=lambda: [
-        '.py', '.js', '.ts', '.tsx', '.jsx', '.json', '.yaml', '.yml',
-        '.md', '.txt', '.html', '.css', '.scss', '.sql'
-    ])
-    blocked_paths: list[str] = field(default_factory=lambda: [
-        '/.env', '/.env.local', '/secrets/', '/private/', '/.ssh/'
-    ])
-    sensitive_patterns: list[str] = field(default_factory=lambda: [
-        r'password\s*=\s*["\'][^"\']+["\']',
-        r'api_key\s*=\s*["\'][^"\']+["\']',
-        r'token\s*=\s*["\'][^"\']+["\']',
-        r'secret\s*=\s*["\'][^"\']+["\']'
-    ])
+    allowed_extensions: list[str] = field(
+        default_factory=lambda: [
+            ".py",
+            ".js",
+            ".ts",
+            ".tsx",
+            ".jsx",
+            ".json",
+            ".yaml",
+            ".yml",
+            ".md",
+            ".txt",
+            ".html",
+            ".css",
+            ".scss",
+            ".sql",
+        ]
+    )
+    blocked_paths: list[str] = field(
+        default_factory=lambda: [
+            "/.env",
+            "/.env.local",
+            "/secrets/",
+            "/private/",
+            "/.ssh/",
+        ]
+    )
+    sensitive_patterns: list[str] = field(
+        default_factory=lambda: [
+            r'password\s*=\s*["\'][^"\']+["\']',
+            r'api_key\s*=\s*["\'][^"\']+["\']',
+            r'token\s*=\s*["\'][^"\']+["\']',
+            r'secret\s*=\s*["\'][^"\']+["\']',
+        ]
+    )
 
 
 @dataclass
 class ShellValidatorConfig(ValidatorConfig):
     """Configuration for shell validator."""
-    dangerous_commands: list[str] = field(default_factory=lambda: [
-        'rm -rf', 'sudo rm', 'dd if=', 'mkfs', 'fdisk', 'parted',
-        'shutdown', 'reboot', 'halt', 'poweroff', 'init 0', 'init 6',
-        'chmod -R 777', 'chown -R root', 'passwd', 'su -', 'sudo su'
-    ])
-    allowed_commands: list[str] = field(default_factory=lambda: [
-        'ls', 'cd', 'pwd', 'echo', 'cat', 'grep', 'find', 'head', 'tail',
-        'git', 'npm', 'pip', 'python', 'node', 'make', 'docker', 'kubectl'
-    ])
+
+    dangerous_commands: list[str] = field(
+        default_factory=lambda: [
+            "rm -rf",
+            "sudo rm",
+            "dd if=",
+            "mkfs",
+            "fdisk",
+            "parted",
+            "shutdown",
+            "reboot",
+            "halt",
+            "poweroff",
+            "init 0",
+            "init 6",
+            "chmod -R 777",
+            "chown -R root",
+            "passwd",
+            "su -",
+            "sudo su",
+        ]
+    )
+    allowed_commands: list[str] = field(
+        default_factory=lambda: [
+            "ls",
+            "cd",
+            "pwd",
+            "echo",
+            "cat",
+            "grep",
+            "find",
+            "head",
+            "tail",
+            "git",
+            "npm",
+            "pip",
+            "python",
+            "node",
+            "make",
+            "docker",
+            "kubectl",
+        ]
+    )
     max_command_length: int = 1000
     allow_pipes: bool = True
     allow_redirects: bool = True
@@ -84,6 +143,7 @@ class ShellValidatorConfig(ValidatorConfig):
 @dataclass
 class SecurityScannerConfig(ValidatorConfig):
     """Configuration for security scanner."""
+
     scan_depth: str = "standard"  # basic, standard, deep
     check_xss: bool = True
     check_sql_injection: bool = True
@@ -97,6 +157,7 @@ class SecurityScannerConfig(ValidatorConfig):
 @dataclass
 class PerformanceConfig:
     """Configuration for performance monitoring."""
+
     enabled: bool = True
     max_validation_time: float = 10.0  # seconds
     track_memory_usage: bool = True
@@ -108,6 +169,7 @@ class PerformanceConfig:
 @dataclass
 class FeedbackConfig:
     """Configuration for real-time feedback."""
+
     enabled: bool = True
     websocket_port: int = 8765
     broadcast_updates: bool = True
@@ -118,6 +180,7 @@ class FeedbackConfig:
 @dataclass
 class HookConfig:
     """Main configuration for the hook orchestration system."""
+
     enabled: bool = True
     validation_level: ValidationLevel = ValidationLevel.STANDARD
     proceed_on_warnings: bool = True
@@ -125,9 +188,13 @@ class HookConfig:
     max_concurrent_validations: int = 10
 
     # Validator configurations
-    context_sanitizer: ContextSanitizerConfig = field(default_factory=ContextSanitizerConfig)
+    context_sanitizer: ContextSanitizerConfig = field(
+        default_factory=ContextSanitizerConfig
+    )
     shell_validator: ShellValidatorConfig = field(default_factory=ShellValidatorConfig)
-    security_scanner: SecurityScannerConfig = field(default_factory=SecurityScannerConfig)
+    security_scanner: SecurityScannerConfig = field(
+        default_factory=SecurityScannerConfig
+    )
 
     # System configurations
     performance: PerformanceConfig = field(default_factory=PerformanceConfig)
@@ -144,7 +211,7 @@ class HookConfig:
     log_format: str = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 
     @classmethod
-    def load(cls, config_path: str | None = None) -> 'HookConfig':
+    def load(cls, config_path: str | None = None) -> "HookConfig":
         """Load configuration from file or create default."""
         if config_path is None:
             config_path = Path.cwd() / "hook-config.json"
@@ -157,18 +224,18 @@ class HookConfig:
                     config_data = json.load(f)
 
                 # Convert validation_level string to enum
-                if 'validation_level' in config_data:
-                    config_data['validation_level'] = ValidationLevel(
-                        config_data['validation_level']
+                if "validation_level" in config_data:
+                    config_data["validation_level"] = ValidationLevel(
+                        config_data["validation_level"]
                     )
 
                 # Create nested configs
                 nested_configs = {
-                    'context_sanitizer': ContextSanitizerConfig,
-                    'shell_validator': ShellValidatorConfig,
-                    'security_scanner': SecurityScannerConfig,
-                    'performance': PerformanceConfig,
-                    'feedback': FeedbackConfig
+                    "context_sanitizer": ContextSanitizerConfig,
+                    "shell_validator": ShellValidatorConfig,
+                    "security_scanner": SecurityScannerConfig,
+                    "performance": PerformanceConfig,
+                    "feedback": FeedbackConfig,
                 }
 
                 for key, config_class in nested_configs.items():
@@ -180,8 +247,11 @@ class HookConfig:
                 return config
 
             except Exception as e:
-                logger.warning("Failed to load config from %s: %s. Using defaults.",
-                             config_path, str(e))
+                logger.warning(
+                    "Failed to load config from %s: %s. Using defaults.",
+                    config_path,
+                    str(e),
+                )
                 return cls()
         else:
             logger.info("Config file not found at %s. Using defaults.", config_path)
@@ -199,10 +269,10 @@ class HookConfig:
 
         # Convert to dict and handle enum serialization
         config_dict = asdict(self)
-        config_dict['validation_level'] = self.validation_level.value
+        config_dict["validation_level"] = self.validation_level.value
 
         try:
-            with open(config_path, 'w') as f:
+            with open(config_path, "w") as f:
                 json.dump(config_dict, f, indent=2, default=str)
 
             logger.info("Saved hook configuration to: %s", config_path)
@@ -215,7 +285,7 @@ class HookConfig:
         """Update configuration with new values."""
         for key, value in updates.items():
             if hasattr(self, key):
-                if key == 'validation_level' and isinstance(value, str):
+                if key == "validation_level" and isinstance(value, str):
                     value = ValidationLevel(value)
                 setattr(self, key, value)
                 logger.debug("Updated config: %s = %s", key, value)
@@ -225,7 +295,7 @@ class HookConfig:
     def to_dict(self) -> dict[str, Any]:
         """Convert configuration to dictionary."""
         config_dict = asdict(self)
-        config_dict['validation_level'] = self.validation_level.value
+        config_dict["validation_level"] = self.validation_level.value
         return config_dict
 
     def validate(self) -> list[str]:
@@ -277,7 +347,7 @@ def create_production_config() -> HookConfig:
         validation_level=ValidationLevel.STRICT,
         proceed_on_warnings=False,
         graceful_degradation=True,
-        max_concurrent_validations=20
+        max_concurrent_validations=20,
     )
 
     # Enhanced security settings
@@ -301,7 +371,7 @@ def create_development_config() -> HookConfig:
         validation_level=ValidationLevel.BASIC,
         proceed_on_warnings=True,
         graceful_degradation=True,
-        max_concurrent_validations=5
+        max_concurrent_validations=5,
     )
 
     # Relaxed settings for development

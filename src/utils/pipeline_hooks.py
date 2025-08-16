@@ -14,15 +14,17 @@ from typing import Any
 
 class HookPriority(Enum):
     """Hook execution priority levels"""
+
     CRITICAL = 1000  # Security, validation
-    HIGH = 100       # Context sanitization, formatting
-    MEDIUM = 50      # Code analysis, optimization
-    LOW = 10         # Logging, metrics
+    HIGH = 100  # Context sanitization, formatting
+    MEDIUM = 50  # Code analysis, optimization
+    LOW = 10  # Logging, metrics
 
 
 @dataclass
 class Hook:
     """Represents a pipeline hook"""
+
     name: str
     function: Callable
     priority: int = HookPriority.MEDIUM.value
@@ -35,17 +37,21 @@ class HookRegistry:
 
     def __init__(self):
         self.hooks: dict[str, list[Hook]] = {
-            'pre_generation': [],
-            'post_generation': [],
-            'pre_validation': [],
-            'post_validation': [],
-            'error_handler': []
+            "pre_generation": [],
+            "post_generation": [],
+            "pre_validation": [],
+            "post_validation": [],
+            "error_handler": [],
         }
         self.logger = logging.getLogger(__name__)
 
-    def register_hook(self, stage: str, function: Callable,
-                     priority: int = HookPriority.MEDIUM.value,
-                     name: str | None = None) -> None:
+    def register_hook(
+        self,
+        stage: str,
+        function: Callable,
+        priority: int = HookPriority.MEDIUM.value,
+        name: str | None = None,
+    ) -> None:
         """Register a hook for a specific stage"""
         hook_name = name or f"{function.__name__}_{len(self.hooks[stage])}"
 
@@ -53,7 +59,7 @@ class HookRegistry:
             name=hook_name,
             function=function,
             priority=priority,
-            description=getattr(function, '__doc__', '')
+            description=getattr(function, "__doc__", ""),
         )
 
         if stage not in self.hooks:
@@ -63,7 +69,9 @@ class HookRegistry:
         # Sort by priority (highest first)
         self.hooks[stage].sort(key=lambda h: h.priority, reverse=True)
 
-        self.logger.info(f"Registered hook '{hook_name}' for stage '{stage}' with priority {priority}")
+        self.logger.info(
+            f"Registered hook '{hook_name}' for stage '{stage}' with priority {priority}"
+        )
 
     def execute_hooks(self, stage: str, data: Any, **kwargs) -> Any:
         """Execute all hooks for a given stage"""
@@ -89,7 +97,9 @@ _hook_registry = HookRegistry()
 
 
 # Convenience functions
-def register_hook(stage: str, function: Callable, priority: int = HookPriority.MEDIUM.value) -> None:
+def register_hook(
+    stage: str, function: Callable, priority: int = HookPriority.MEDIUM.value
+) -> None:
     """Register a hook function"""
     _hook_registry.register_hook(stage, function, priority)
 

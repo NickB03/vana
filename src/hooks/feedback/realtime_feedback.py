@@ -41,6 +41,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class FeedbackEvent:
     """Represents a feedback event."""
+
     event_type: str
     timestamp: datetime
     session_id: str | None
@@ -58,7 +59,7 @@ class FeedbackEvent:
 class RealtimeFeedback:
     """
     Real-time feedback system for validation results.
-    
+
     Features:
     - WebSocket-based real-time updates
     - Event buffering and replay
@@ -82,10 +83,10 @@ class RealtimeFeedback:
 
         # Metrics
         self.metrics = {
-            'events_sent': 0,
-            'clients_connected': 0,
-            'errors': 0,
-            'uptime_start': datetime.now()
+            "events_sent": 0,
+            "clients_connected": 0,
+            "errors": 0,
+            "uptime_start": datetime.now(),
         }
 
         # Threading
@@ -95,12 +96,15 @@ class RealtimeFeedback:
         # SSE integration (if available)
         try:
             from app.utils.sse_broadcaster import broadcast_agent_network_update
+
             self.sse_broadcaster = broadcast_agent_network_update
         except ImportError:
             self.sse_broadcaster = None
             logger.info("SSE broadcaster not available - WebSocket only mode")
 
-        logger.info("Real-time feedback system initialized (enabled: %s)", self.is_enabled)
+        logger.info(
+            "Real-time feedback system initialized (enabled: %s)", self.is_enabled
+        )
 
     async def start(self):
         """Start the feedback system."""
@@ -111,7 +115,9 @@ class RealtimeFeedback:
         try:
             # Start WebSocket server
             await self._start_websocket_server()
-            logger.info("Feedback system started on port %d", self.config.websocket_port)
+            logger.info(
+                "Feedback system started on port %d", self.config.websocket_port
+            )
 
         except Exception as e:
             logger.error("Failed to start feedback system: %s", str(e))
@@ -143,13 +149,13 @@ class RealtimeFeedback:
                 issues=validation_report.errors,
                 warnings=validation_report.warnings,
                 recommendations=validation_report.recommendations,
-                metadata=validation_report.tool_call.metadata
+                metadata=validation_report.tool_call.metadata,
             )
 
             # Add to buffer
             with self._lock:
                 self.event_buffer.append(event)
-                self.metrics['events_sent'] += 1
+                self.metrics["events_sent"] += 1
 
             # Send to WebSocket clients
             await self._broadcast_to_websockets(event)
@@ -163,7 +169,7 @@ class RealtimeFeedback:
         except Exception as e:
             logger.error("Error sending validation update: %s", str(e))
             with self._lock:
-                self.metrics['errors'] += 1
+                self.metrics["errors"] += 1
 
     async def send_system_update(self, update_type: str, data: dict[str, Any]) -> None:
         """Send system-level update."""
@@ -174,8 +180,8 @@ class RealtimeFeedback:
             event = FeedbackEvent(
                 event_type=update_type,
                 timestamp=datetime.now(),
-                session_id=data.get('session_id'),
-                agent_id=data.get('agent_id'),
+                session_id=data.get("session_id"),
+                agent_id=data.get("agent_id"),
                 tool_type="system",
                 validation_result="info",
                 security_score=1.0,
@@ -183,7 +189,7 @@ class RealtimeFeedback:
                 issues=[],
                 warnings=[],
                 recommendations=[],
-                metadata=data
+                metadata=data,
             )
 
             await self._broadcast_to_websockets(event)
@@ -200,7 +206,7 @@ class RealtimeFeedback:
                 "localhost",
                 self.config.websocket_port,
                 ping_interval=30,
-                ping_timeout=10
+                ping_timeout=10,
             )
 
         except Exception as e:
@@ -214,16 +220,20 @@ class RealtimeFeedback:
 
         with self._lock:
             self.connected_clients.add(websocket)
-            self.metrics['clients_connected'] = len(self.connected_clients)
+            self.metrics["clients_connected"] = len(self.connected_clients)
 
         try:
             # Send connection acknowledgment
-            await websocket.send(json.dumps({
-                'type': 'connection_ack',
-                'timestamp': datetime.now().isoformat(),
-                'client_id': client_id,
-                'buffer_size': len(self.event_buffer)
-            }))
+            await websocket.send(
+                json.dumps(
+                    {
+                        "type": "connection_ack",
+                        "timestamp": datetime.now().isoformat(),
+                        "client_id": client_id,
+                        "buffer_size": len(self.event_buffer),
+                    }
+                )
+            )
 
             # Send recent events from buffer
             await self._send_buffered_events(websocket)
@@ -234,9 +244,13 @@ class RealtimeFeedback:
                     data = json.loads(message)
                     await self._handle_client_message(websocket, data)
                 except json.JSONDecodeError:
-                    logger.warning("Invalid JSON from client %s: %s", client_id, message)
+                    logger.warning(
+                        "Invalid JSON from client %s: %s", client_id, message
+                    )
                 except Exception as e:
-                    logger.error("Error handling message from %s: %s", client_id, str(e))
+                    logger.error(
+                        "Error handling message from %s: %s", client_id, str(e)
+                    )
 
         except websockets.exceptions.ConnectionClosed:
             logger.info("WebSocket client disconnected: %s", client_id)
@@ -245,32 +259,30 @@ class RealtimeFeedback:
         finally:
             with self._lock:
                 self.connected_clients.discard(websocket)
-                self.metrics['clients_connected'] = len(self.connected_clients)
+                self.metrics["clients_connected"] = len(self.connected_clients)
 
     async def _handle_client_message(self, websocket, data: dict[str, Any]):
         """Handle incoming message from WebSocket client."""
-        message_type = data.get('type')
+        message_type = data.get("type")
 
-        if message_type == 'subscribe':
+        if message_type == "subscribe":
             # Client requesting specific event types
-            event_types = data.get('event_types', [])
+            event_types = data.get("event_types", [])
             # Store subscription preferences (could be enhanced)
-            await websocket.send(json.dumps({
-                'type': 'subscription_ack',
-                'subscribed_events': event_types
-            }))
+            await websocket.send(
+                json.dumps(
+                    {"type": "subscription_ack", "subscribed_events": event_types}
+                )
+            )
 
-        elif message_type == 'get_metrics':
+        elif message_type == "get_metrics":
             # Client requesting current metrics
             metrics = await self.get_status()
-            await websocket.send(json.dumps({
-                'type': 'metrics',
-                'data': metrics
-            }))
+            await websocket.send(json.dumps({"type": "metrics", "data": metrics}))
 
-        elif message_type == 'ping':
+        elif message_type == "ping":
             # Simple ping/pong
-            await websocket.send(json.dumps({'type': 'pong'}))
+            await websocket.send(json.dumps({"type": "pong"}))
 
         else:
             logger.warning("Unknown message type from client: %s", message_type)
@@ -283,12 +295,9 @@ class RealtimeFeedback:
 
             if events:
                 for event in events:
-                    event_data = {
-                        'type': 'buffered_event',
-                        'event': asdict(event)
-                    }
+                    event_data = {"type": "buffered_event", "event": asdict(event)}
                     # Convert datetime to ISO string
-                    event_data['event']['timestamp'] = event.timestamp.isoformat()
+                    event_data["event"]["timestamp"] = event.timestamp.isoformat()
 
                     await websocket.send(json.dumps(event_data))
 
@@ -300,12 +309,9 @@ class RealtimeFeedback:
         if not self.connected_clients:
             return
 
-        event_data = {
-            'type': 'validation_event',
-            'event': asdict(event)
-        }
+        event_data = {"type": "validation_event", "event": asdict(event)}
         # Convert datetime to ISO string
-        event_data['event']['timestamp'] = event.timestamp.isoformat()
+        event_data["event"]["timestamp"] = event.timestamp.isoformat()
 
         message = json.dumps(event_data)
 
@@ -325,7 +331,7 @@ class RealtimeFeedback:
         if disconnected_clients:
             with self._lock:
                 self.connected_clients -= disconnected_clients
-                self.metrics['clients_connected'] = len(self.connected_clients)
+                self.metrics["clients_connected"] = len(self.connected_clients)
 
     async def _broadcast_to_sse(self, event: FeedbackEvent):
         """Broadcast event to SSE clients."""
@@ -335,19 +341,19 @@ class RealtimeFeedback:
         try:
             # Convert event to SSE-compatible format
             sse_data = {
-                'type': 'hook_validation',
-                'timestamp': event.timestamp.isoformat(),
-                'validation_result': event.validation_result,
-                'tool_type': event.tool_type,
-                'security_score': event.security_score,
-                'execution_time': event.execution_time,
-                'session_id': event.session_id,
-                'agent_id': event.agent_id,
-                'summary': {
-                    'issues_count': len(event.issues),
-                    'warnings_count': len(event.warnings),
-                    'recommendations_count': len(event.recommendations)
-                }
+                "type": "hook_validation",
+                "timestamp": event.timestamp.isoformat(),
+                "validation_result": event.validation_result,
+                "tool_type": event.tool_type,
+                "security_score": event.security_score,
+                "execution_time": event.execution_time,
+                "session_id": event.session_id,
+                "agent_id": event.agent_id,
+                "summary": {
+                    "issues_count": len(event.issues),
+                    "warnings_count": len(event.warnings),
+                    "recommendations_count": len(event.recommendations),
+                },
             }
 
             # Send via SSE broadcaster
@@ -381,18 +387,18 @@ class RealtimeFeedback:
     async def get_status(self) -> dict[str, Any]:
         """Get current feedback system status."""
         with self._lock:
-            uptime = (datetime.now() - self.metrics['uptime_start']).total_seconds()
+            uptime = (datetime.now() - self.metrics["uptime_start"]).total_seconds()
 
             return {
-                'enabled': self.is_enabled,
-                'websocket_server_running': self.websocket_server is not None,
-                'connected_clients': self.metrics['clients_connected'],
-                'events_sent': self.metrics['events_sent'],
-                'errors': self.metrics['errors'],
-                'uptime_seconds': uptime,
-                'buffer_size': len(self.event_buffer),
-                'buffer_capacity': self.config.buffer_size,
-                'sse_available': self.sse_broadcaster is not None
+                "enabled": self.is_enabled,
+                "websocket_server_running": self.websocket_server is not None,
+                "connected_clients": self.metrics["clients_connected"],
+                "events_sent": self.metrics["events_sent"],
+                "errors": self.metrics["errors"],
+                "uptime_seconds": uptime,
+                "buffer_size": len(self.event_buffer),
+                "buffer_capacity": self.config.buffer_size,
+                "sse_available": self.sse_broadcaster is not None,
             }
 
     def get_recent_events(self, count: int = 10) -> list[dict[str, Any]]:
@@ -401,10 +407,7 @@ class RealtimeFeedback:
             recent_events = list(self.event_buffer)[-count:]
 
         return [
-            {
-                **asdict(event),
-                'timestamp': event.timestamp.isoformat()
-            }
+            {**asdict(event), "timestamp": event.timestamp.isoformat()}
             for event in recent_events
         ]
 

@@ -37,7 +37,9 @@ async def test_safety_system_basic():
             print("✅ Initialization test passed")
 
             # Test validation
-            result = await safety_system.validate_operation("write", "test.txt", "content")
+            result = await safety_system.validate_operation(
+                "write", "test.txt", "content"
+            )
             assert "validated" in result
             assert "enforcement_level" in result
             assert "safety_metadata" in result
@@ -45,20 +47,29 @@ async def test_safety_system_basic():
 
             # Test enforcement levels
             safety_system.enforcement_level = EnforcementLevel.MONITOR
-            result = await safety_system.validate_operation("write", "test.txt", "content")
+            result = await safety_system.validate_operation(
+                "write", "test.txt", "content"
+            )
             assert result["validated"] is True
             print("✅ Monitor mode test passed")
 
             safety_system.enforcement_level = EnforcementLevel.WARN
-            result = await safety_system.validate_operation("write", "test.txt", "content")
+            result = await safety_system.validate_operation(
+                "write", "test.txt", "content"
+            )
             assert result["validated"] is True
             print("✅ Warn mode test passed")
 
             # Test system status
             status = safety_system.get_system_status()
             required_fields = [
-                "timestamp", "health_status", "enforcement_level", "emergency_mode",
-                "monitoring_active", "metrics", "bypass_codes"
+                "timestamp",
+                "health_status",
+                "enforcement_level",
+                "emergency_mode",
+                "monitoring_active",
+                "metrics",
+                "bypass_codes",
             ]
             for field in required_fields:
                 assert field in status
@@ -78,8 +89,11 @@ async def test_bypass_codes():
 
         try:
             # Get emergency bypass code
-            emergency_codes = [code for code_id, code in safety_system.bypass_codes.items()
-                              if code_id == "emergency"]
+            emergency_codes = [
+                code
+                for code_id, code in safety_system.bypass_codes.items()
+                if code_id == "emergency"
+            ]
             assert len(emergency_codes) > 0
             emergency_code = emergency_codes[0]
             print("✅ Emergency code found")
@@ -98,7 +112,11 @@ async def test_bypass_codes():
 
             # Test bypass code generation
             result = safety_system.generate_new_bypass_code(
-                "test_code", "Test purpose", expiry_hours=1, max_uses=3, created_by="test"
+                "test_code",
+                "Test purpose",
+                expiry_hours=1,
+                max_uses=3,
+                created_by="test",
             )
             assert result["code_type"] == "test_code"
             assert "code" in result
@@ -166,7 +184,7 @@ async def test_alert_manager():
                 severity=AlertSeverity.WARNING,
                 message="Test alert message",
                 details={"test": True},
-                tags=["test"]
+                tags=["test"],
             )
             assert alert_id is not None
             assert alert_id in alert_manager.active_alerts
@@ -184,7 +202,9 @@ async def test_alert_manager():
             # Test alert summary
             summary = alert_manager.get_alert_summary()
             required_fields = [
-                "total_active_alerts", "active_by_severity", "notification_targets"
+                "total_active_alerts",
+                "active_by_severity",
+                "notification_targets",
             ]
             for field in required_fields:
                 assert field in summary
@@ -233,6 +253,7 @@ async def test_cli_integration():
 
     try:
         from safety_system_cli import SafetySystemCLI
+
         cli = SafetySystemCLI()
 
         # Test parser creation

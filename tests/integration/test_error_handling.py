@@ -29,27 +29,25 @@ class TestNetworkErrorHandling:
 
     def test_connection_timeout_handling(self):
         """Test handling of connection timeouts."""
-        with patch('requests.post') as mock_post:
+        with patch("requests.post") as mock_post:
             mock_post.side_effect = Timeout("Connection timed out")
 
             # Simulate timeout in feedback endpoint
             feedback_data = {
                 "score": 4,
                 "invocation_id": str(uuid.uuid4()),
-                "text": "Test feedback"
+                "text": "Test feedback",
             }
 
             with pytest.raises(Timeout):
                 # Direct requests would timeout, but our app should handle it
                 requests.post(
-                    f"{self.base_url}/feedback",
-                    json=feedback_data,
-                    timeout=1
+                    f"{self.base_url}/feedback", json=feedback_data, timeout=1
                 )
 
     def test_connection_refused_handling(self):
         """Test handling when backend is unavailable."""
-        with patch('requests.get') as mock_get:
+        with patch("requests.get") as mock_get:
             mock_get.side_effect = ConnectionError("Connection refused")
 
             with pytest.raises(ConnectionError):
@@ -72,7 +70,7 @@ class TestNetworkErrorHandling:
                 mock_response.json.return_value = {"status": "success"}
                 return mock_response
 
-        with patch('requests.post', side_effect=mock_request):
+        with patch("requests.post", side_effect=mock_request):
             # Implement retry logic
             max_retries = 3
             for attempt in range(max_retries):
@@ -83,12 +81,13 @@ class TestNetworkErrorHandling:
                 except ConnectionError:
                     if attempt == max_retries - 1:
                         raise
-                    time.sleep(0.1 * (2 ** attempt))  # Exponential backoff
+                    time.sleep(0.1 * (2**attempt))  # Exponential backoff
 
             assert call_count == 3  # Should succeed on third attempt
 
     def test_slow_network_response(self):
         """Test handling of very slow network responses."""
+
         def slow_response(*args, **kwargs):
             time.sleep(2)  # Simulate 2-second delay
             mock_response = Mock()
@@ -96,7 +95,7 @@ class TestNetworkErrorHandling:
             mock_response.json.return_value = {"status": "delayed_success"}
             return mock_response
 
-        with patch('requests.get', side_effect=slow_response):
+        with patch("requests.get", side_effect=slow_response):
             start_time = time.time()
 
             try:
@@ -127,32 +126,31 @@ class TestSSEErrorScenarios:
         async def monitor_sse_connection():
             """Monitor SSE connection and track events."""
             try:
-                async for event_data in agent_network_event_stream(self.test_session_id):
-                    connection_events.append({
-                        "type": "event_received",
-                        "data": event_data,
-                        "timestamp": time.time()
-                    })
+                async for event_data in agent_network_event_stream(
+                    self.test_session_id
+                ):
+                    connection_events.append(
+                        {
+                            "type": "event_received",
+                            "data": event_data,
+                            "timestamp": time.time(),
+                        }
+                    )
 
                     # Stop after receiving a few events
                     if len(connection_events) >= 3:
                         break
 
             except Exception as e:
-                connection_events.append({
-                    "type": "error",
-                    "error": str(e),
-                    "timestamp": time.time()
-                })
+                connection_events.append(
+                    {"type": "error", "error": str(e), "timestamp": time.time()}
+                )
 
         # Run SSE monitoring with timeout
         try:
             asyncio.run(asyncio.wait_for(monitor_sse_connection(), timeout=5.0))
         except asyncio.TimeoutError:
-            connection_events.append({
-                "type": "timeout",
-                "timestamp": time.time()
-            })
+            connection_events.append({"type": "timeout", "timestamp": time.time()})
 
         # Should handle connection gracefully
         assert len(connection_events) >= 1
@@ -165,7 +163,7 @@ class TestSSEErrorScenarios:
 
         malformed_events = [
             None,  # Null event
-            "",    # Empty string
+            "",  # Empty string
             {"type": "test"},  # Missing session_id
             {"session_id": "wrong_session"},  # Wrong session
             {"malformed": True},  # Unexpected structure
@@ -206,7 +204,7 @@ class TestSSEErrorScenarios:
                     "event_id": i,
                     "large_data": "x" * large_event_size,
                     "timestamp": time.time(),
-                    "session_id": self.test_session_id
+                    "session_id": self.test_session_id,
                 }
 
                 broadcaster.broadcast_event(self.test_session_id, large_event)
@@ -215,6 +213,7 @@ class TestSSEErrorScenarios:
                 # Periodic memory check (simplified)
                 if i % 100 == 0:
                     import psutil
+
                     memory_percent = psutil.virtual_memory().percent
                     if memory_percent > 90:  # If memory usage too high
                         break
@@ -245,35 +244,36 @@ class TestSSEErrorScenarios:
                     if events_received >= 2:  # Limit events per connection
                         break
 
-                connection_results.append({
-                    "connection_id": connection_id,
-                    "session_id": session_id,
-                    "status": "success",
-                    "events_received": events_received
-                })
+                connection_results.append(
+                    {
+                        "connection_id": connection_id,
+                        "session_id": session_id,
+                        "status": "success",
+                        "events_received": events_received,
+                    }
+                )
 
             except Exception as e:
-                connection_results.append({
-                    "connection_id": connection_id,
-                    "session_id": session_id,
-                    "status": "error",
-                    "error": str(e)
-                })
+                connection_results.append(
+                    {
+                        "connection_id": connection_id,
+                        "session_id": session_id,
+                        "status": "error",
+                        "error": str(e),
+                    }
+                )
 
         async def run_concurrent_connections():
             """Run multiple concurrent SSE connections."""
             tasks = []
             for i, session_id in enumerate(session_ids):
-                task = asyncio.create_task(
-                    test_concurrent_connection(session_id, i)
-                )
+                task = asyncio.create_task(test_concurrent_connection(session_id, i))
                 tasks.append(task)
 
             # Wait for all connections with timeout
             try:
                 await asyncio.wait_for(
-                    asyncio.gather(*tasks, return_exceptions=True),
-                    timeout=10.0
+                    asyncio.gather(*tasks, return_exceptions=True), timeout=10.0
                 )
             except asyncio.TimeoutError:
                 # Some connections may timeout, which is acceptable
@@ -283,10 +283,14 @@ class TestSSEErrorScenarios:
         asyncio.run(run_concurrent_connections())
 
         # Verify results
-        successful_connections = [r for r in connection_results if r["status"] == "success"]
+        successful_connections = [
+            r for r in connection_results if r["status"] == "success"
+        ]
 
         # Should handle at least some concurrent connections
-        assert len(successful_connections) >= len(session_ids) * 0.5  # At least 50% success
+        assert (
+            len(successful_connections) >= len(session_ids) * 0.5
+        )  # At least 50% success
 
 
 class TestDataValidationErrors:
@@ -303,21 +307,21 @@ class TestDataValidationErrors:
             '{"unclosed": "string}',  # Unclosed string
             '{invalid_key: "value"}',  # Invalid key format
             '{"trailing": "comma",}',  # Trailing comma
-            '',  # Empty string
-            'not json at all',  # Not JSON
+            "",  # Empty string
+            "not json at all",  # Not JSON
         ]
 
         for malformed_json in malformed_json_cases:
             response = self.client.post(
                 "/feedback",
                 data=malformed_json,  # Send raw data instead of json
-                headers={"Content-Type": "application/json"}
+                headers={"Content-Type": "application/json"},
             )
 
             # Should return 422 for malformed JSON
             assert response.status_code in [
                 status.HTTP_422_UNPROCESSABLE_ENTITY,
-                status.HTTP_400_BAD_REQUEST
+                status.HTTP_400_BAD_REQUEST,
             ]
 
     def test_injection_attack_prevention(self):
@@ -327,16 +331,13 @@ class TestDataValidationErrors:
             "'; DROP TABLE sessions; --",
             "' OR '1'='1",
             "1; DELETE FROM users WHERE 1=1; --",
-
             # XSS attempts
             "<script>alert('xss')</script>",
             "javascript:alert('xss')",
             "<img src=x onerror=alert('xss')>",
-
             # Path traversal attempts
             "../../../etc/passwd",
             "..\\..\\..\\windows\\system32\\config\\sam",
-
             # Command injection attempts
             "; cat /etc/passwd",
             "| whoami",
@@ -348,7 +349,7 @@ class TestDataValidationErrors:
             feedback_data = {
                 "score": 3,
                 "invocation_id": str(uuid.uuid4()),
-                "text": payload
+                "text": payload,
             }
 
             response = self.client.post("/feedback", json=feedback_data)
@@ -357,7 +358,7 @@ class TestDataValidationErrors:
             assert response.status_code in [
                 status.HTTP_200_OK,  # Accepted with sanitization
                 status.HTTP_422_UNPROCESSABLE_ENTITY,  # Rejected
-                status.HTTP_400_BAD_REQUEST  # Bad request
+                status.HTTP_400_BAD_REQUEST,  # Bad request
             ]
 
             # Server should not crash or return 500 errors
@@ -371,7 +372,7 @@ class TestDataValidationErrors:
                 assert sse_response.status_code in [
                     status.HTTP_200_OK,  # Accepted
                     status.HTTP_422_UNPROCESSABLE_ENTITY,  # Validation error
-                    status.HTTP_400_BAD_REQUEST  # Bad request
+                    status.HTTP_400_BAD_REQUEST,  # Bad request
                 ]
 
     def test_oversized_request_handling(self):
@@ -382,7 +383,7 @@ class TestDataValidationErrors:
         feedback_data = {
             "score": 4,
             "invocation_id": str(uuid.uuid4()),
-            "text": oversized_text
+            "text": oversized_text,
         }
 
         response = self.client.post("/feedback", json=feedback_data)
@@ -391,7 +392,7 @@ class TestDataValidationErrors:
         assert response.status_code in [
             status.HTTP_200_OK,  # Accepted
             status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,  # Too large
-            status.HTTP_422_UNPROCESSABLE_ENTITY  # Validation error
+            status.HTTP_422_UNPROCESSABLE_ENTITY,  # Validation error
         ]
 
     def test_unicode_and_encoding_errors(self):
@@ -409,7 +410,7 @@ class TestDataValidationErrors:
             feedback_data = {
                 "score": 3,
                 "invocation_id": str(uuid.uuid4()),
-                "text": unicode_text
+                "text": unicode_text,
             }
 
             try:
@@ -418,7 +419,7 @@ class TestDataValidationErrors:
                 # Should handle Unicode gracefully
                 assert response.status_code in [
                     status.HTTP_200_OK,
-                    status.HTTP_422_UNPROCESSABLE_ENTITY
+                    status.HTTP_422_UNPROCESSABLE_ENTITY,
                 ]
 
             except UnicodeError:
@@ -431,16 +432,17 @@ class TestDataValidationErrors:
             # Wrong score types
             {"score": "five", "invocation_id": str(uuid.uuid4()), "text": "test"},
             {"score": [1, 2, 3], "invocation_id": str(uuid.uuid4()), "text": "test"},
-            {"score": {"nested": "object"}, "invocation_id": str(uuid.uuid4()), "text": "test"},
-
+            {
+                "score": {"nested": "object"},
+                "invocation_id": str(uuid.uuid4()),
+                "text": "test",
+            },
             # Wrong invocation_id types
             {"score": 4, "invocation_id": 123, "text": "test"},
             {"score": 4, "invocation_id": ["list", "id"], "text": "test"},
-
             # Wrong text types
             {"score": 4, "invocation_id": str(uuid.uuid4()), "text": 123},
             {"score": 4, "invocation_id": str(uuid.uuid4()), "text": ["array", "text"]},
-
             # Missing required fields
             {"score": 4},  # Missing invocation_id and text
             {"invocation_id": str(uuid.uuid4())},  # Missing score and text
@@ -470,7 +472,7 @@ class TestEdgeCaseScenarios:
             feedback_data = {
                 "score": score,
                 "invocation_id": str(uuid.uuid4()),
-                "text": "Boundary test"
+                "text": "Boundary test",
             }
 
             response = self.client.post("/feedback", json=feedback_data)
@@ -496,7 +498,7 @@ class TestEdgeCaseScenarios:
             # Should handle null/empty values appropriately
             assert response.status_code in [
                 status.HTTP_200_OK,  # If nulls/empty strings are acceptable
-                status.HTTP_422_UNPROCESSABLE_ENTITY  # If validation rejects them
+                status.HTTP_422_UNPROCESSABLE_ENTITY,  # If validation rejects them
             ]
 
     def test_concurrent_session_access(self):
@@ -510,14 +512,10 @@ class TestEdgeCaseScenarios:
                 return {
                     "thread_id": thread_id,
                     "status_code": response.status_code,
-                    "success": response.status_code == 200
+                    "success": response.status_code == 200,
                 }
             except Exception as e:
-                return {
-                    "thread_id": thread_id,
-                    "error": str(e),
-                    "success": False
-                }
+                return {"thread_id": thread_id, "error": str(e), "success": False}
 
         # Create concurrent access threads
         threads = []
@@ -549,17 +547,17 @@ class TestEdgeCaseScenarios:
         for i in range(100):
             try:
                 response = self.client.get("/health")
-                rapid_requests.append({
-                    "request_id": i,
-                    "status_code": response.status_code,
-                    "response_time": 0.01  # Estimated
-                })
+                rapid_requests.append(
+                    {
+                        "request_id": i,
+                        "status_code": response.status_code,
+                        "response_time": 0.01,  # Estimated
+                    }
+                )
             except Exception as e:
-                rapid_requests.append({
-                    "request_id": i,
-                    "error": str(e),
-                    "failed": True
-                })
+                rapid_requests.append(
+                    {"request_id": i, "error": str(e), "failed": True}
+                )
 
         # Should handle rapid requests without crashing
         successful_requests = [r for r in rapid_requests if "error" not in r]
@@ -590,7 +588,7 @@ class TestEdgeCaseScenarios:
                 assert response.status_code in [
                     status.HTTP_200_OK,
                     status.HTTP_400_BAD_REQUEST,
-                    status.HTTP_422_UNPROCESSABLE_ENTITY
+                    status.HTTP_422_UNPROCESSABLE_ENTITY,
                 ]
 
             except Exception as e:
@@ -617,21 +615,21 @@ class TestSystemLimitsAndBoundaries:
                 session_id = f"conn_test_{connection_id}"
                 response = self.client.get(f"/agent_network_sse/{session_id}")
 
-                connection_attempts.append({
-                    "connection_id": connection_id,
-                    "status_code": response.status_code,
-                    "success": response.status_code == 200
-                })
+                connection_attempts.append(
+                    {
+                        "connection_id": connection_id,
+                        "status_code": response.status_code,
+                        "success": response.status_code == 200,
+                    }
+                )
 
                 # Keep connection open briefly
                 time.sleep(0.1)
 
             except Exception as e:
-                connection_attempts.append({
-                    "connection_id": connection_id,
-                    "error": str(e),
-                    "success": False
-                })
+                connection_attempts.append(
+                    {"connection_id": connection_id, "error": str(e), "success": False}
+                )
 
         # Create many concurrent connections
         threads = []
@@ -644,7 +642,9 @@ class TestSystemLimitsAndBoundaries:
         for thread in threads:
             thread.join(timeout=10.0)
 
-        successful_connections = [c for c in connection_attempts if c.get("success", False)]
+        successful_connections = [
+            c for c in connection_attempts if c.get("success", False)
+        ]
 
         # Should handle reasonable number of connections
         assert len(successful_connections) >= max_connections * 0.5  # At least 50%
@@ -664,26 +664,30 @@ class TestSystemLimitsAndBoundaries:
             operations = [
                 lambda: self.client.get("/health"),
                 lambda: self.client.get("/agent_network_history?limit=100"),
-                lambda: self.client.post("/feedback", json={
-                    "score": 3,
-                    "invocation_id": str(uuid.uuid4()),
-                    "text": f"Load test {i}"
-                })
+                lambda: self.client.post(
+                    "/feedback",
+                    json={
+                        "score": 3,
+                        "invocation_id": str(uuid.uuid4()),
+                        "text": f"Load test {i}",
+                    },
+                ),
             ]
 
             for operation in operations:
                 try:
                     result = operation()
-                    load_operations.append({
-                        "operation": operation.__name__,
-                        "success": True
-                    })
+                    load_operations.append(
+                        {"operation": operation.__name__, "success": True}
+                    )
                 except Exception as e:
-                    load_operations.append({
-                        "operation": operation.__name__,
-                        "error": str(e),
-                        "success": False
-                    })
+                    load_operations.append(
+                        {
+                            "operation": operation.__name__,
+                            "error": str(e),
+                            "success": False,
+                        }
+                    )
 
         # Check memory usage after load
         final_memory = process.memory_info().rss
@@ -694,7 +698,9 @@ class TestSystemLimitsAndBoundaries:
         assert memory_increase < max_acceptable_increase
 
         # Most operations should succeed
-        successful_operations = [op for op in load_operations if op.get("success", False)]
+        successful_operations = [
+            op for op in load_operations if op.get("success", False)
+        ]
         success_rate = len(successful_operations) / len(load_operations)
         assert success_rate > 0.8  # At least 80% success
 

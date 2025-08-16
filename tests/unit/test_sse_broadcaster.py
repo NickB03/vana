@@ -36,10 +36,7 @@ class TestSSEEvent:
     def test_initialization(self):
         """Test SSEEvent initialization."""
         event = SSEEvent(
-            type="test_event",
-            data={"key": "value"},
-            id="test_id",
-            retry=5000
+            type="test_event", data={"key": "value"}, id="test_id", retry=5000
         )
 
         assert event.type == "test_event"
@@ -50,14 +47,11 @@ class TestSSEEvent:
     def test_to_sse_format(self):
         """Test SSE format conversion."""
         event = SSEEvent(
-            type="test_event",
-            data={"message": "hello world"},
-            id="test_id",
-            retry=3000
+            type="test_event", data={"message": "hello world"}, id="test_id", retry=3000
         )
 
         sse_string = event.to_sse_format()
-        lines = sse_string.split('\n')
+        lines = sse_string.split("\n")
 
         assert "id: test_id" in lines
         assert "retry: 3000" in lines
@@ -67,13 +61,10 @@ class TestSSEEvent:
 
     def test_to_sse_format_minimal(self):
         """Test SSE format with minimal fields."""
-        event = SSEEvent(
-            type="simple_event",
-            data={"test": True}
-        )
+        event = SSEEvent(type="simple_event", data={"test": True})
 
         sse_string = event.to_sse_format()
-        lines = sse_string.split('\n')
+        lines = sse_string.split("\n")
 
         assert "event: simple_event" in lines
         assert 'data: {"test": true}' in lines
@@ -205,8 +196,8 @@ class TestSSEBroadcaster:
             "data": {
                 "event_type": "agent_start",
                 "agent_name": "test_agent",
-                "timestamp": datetime.now().isoformat()
-            }
+                "timestamp": datetime.now().isoformat(),
+            },
         }
 
         self.broadcaster.broadcast_agent_network_event(network_event, session_id)
@@ -245,7 +236,7 @@ class TestGlobalFunctions:
         assert broadcaster1 is broadcaster2
         assert isinstance(broadcaster1, EnhancedSSEBroadcaster)
 
-    @patch('app.utils.sse_broadcaster.get_sse_broadcaster')
+    @patch("app.utils.sse_broadcaster.get_sse_broadcaster")
     def test_broadcast_agent_network_update(self, mock_get_broadcaster):
         """Test the utility function for broadcasting updates."""
         mock_broadcaster = Mock()
@@ -260,7 +251,7 @@ class TestGlobalFunctions:
             network_event, session_id
         )
 
-    @patch('app.utils.sse_broadcaster.get_sse_broadcaster')
+    @patch("app.utils.sse_broadcaster.get_sse_broadcaster")
     def test_get_agent_network_event_history(self, mock_get_broadcaster):
         """Test getting agent network event history."""
         mock_broadcaster = Mock()
@@ -302,10 +293,7 @@ class TestAgentNetworkEventStream:
         assert "connected" in connection_event
 
         # Send a test event
-        test_event = {
-            "type": "agent_network_update",
-            "data": {"test": "data"}
-        }
+        test_event = {"type": "agent_network_update", "data": {"test": "data"}}
         broadcaster.broadcast_agent_network_event(test_event, session_id)
 
         # Should receive the event
@@ -319,7 +307,7 @@ class TestAgentNetworkEventStream:
         session_id = "test_session"
 
         # Create stream with very short timeout for testing
-        with patch('app.utils.sse_broadcaster.asyncio.wait_for') as mock_wait_for:
+        with patch("app.utils.sse_broadcaster.asyncio.wait_for") as mock_wait_for:
             mock_wait_for.side_effect = asyncio.TimeoutError()
 
             stream_gen = agent_network_event_stream(session_id)
@@ -395,16 +383,16 @@ class TestIntegration:
             "data": {
                 "event_type": "agent_start",
                 "agent_name": "test_agent1",
-                "timestamp": datetime.now().isoformat()
-            }
+                "timestamp": datetime.now().isoformat(),
+            },
         }
 
         test_event2 = {
             "type": "agent_network_snapshot",
             "data": {
                 "timestamp": datetime.now().isoformat(),
-                "agents": {"test_agent1": {"is_active": True}}
-            }
+                "agents": {"test_agent1": {"is_active": True}},
+            },
         }
 
         broadcast_agent_network_update(test_event1, session_id)
@@ -421,8 +409,12 @@ class TestIntegration:
 
         # Subsequent events should be the test events
         event_contents = [event for event in received_events[1:]]
-        agent_update_found = any("agent_network_update" in event for event in event_contents)
-        agent_snapshot_found = any("agent_network_snapshot" in event for event in event_contents)
+        agent_update_found = any(
+            "agent_network_update" in event for event in event_contents
+        )
+        agent_snapshot_found = any(
+            "agent_network_snapshot" in event for event in event_contents
+        )
 
         assert agent_update_found
         assert agent_snapshot_found

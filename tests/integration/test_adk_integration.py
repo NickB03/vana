@@ -20,6 +20,7 @@ import pytest
 @dataclass
 class MockADKResponse:
     """Mock ADK response for testing."""
+
     content: str
     metadata: dict[str, Any]
     status: str = "complete"
@@ -36,16 +37,14 @@ class TestADKAgentIntegration:
 
         # Create test user and session
         self.test_user = User(
-            id=self.test_user_id,
-            email="test@example.com",
-            display_name="Test User"
+            id=self.test_user_id, email="test@example.com", display_name="Test User"
         )
 
         self.test_session = Session(
             id=self.test_session_id,
             user_id=self.test_user_id,
             created_at=time.time(),
-            state={"preferred_language": "English"}
+            state={"preferred_language": "English"},
         )
 
     def teardown_method(self):
@@ -60,12 +59,12 @@ class TestADKAgentIntegration:
             assert agent is not None
 
             # Agent should have required attributes/methods
-            assert hasattr(agent, 'process_message') or callable(agent)
+            assert hasattr(agent, "process_message") or callable(agent)
 
         except Exception as e:
             pytest.fail(f"Agent creation failed: {e}")
 
-    @patch('google.adk.cli.fast_api.get_fast_api_app')
+    @patch("google.adk.cli.fast_api.get_fast_api_app")
     def test_adk_app_configuration(self, mock_get_app):
         """Test ADK FastAPI app configuration."""
         from app.server import AGENT_DIR
@@ -75,10 +74,10 @@ class TestADKAgentIntegration:
         call_args = mock_get_app.call_args
 
         # Check that essential parameters were provided
-        assert 'agents_dir' in call_args.kwargs
-        assert call_args.kwargs['agents_dir'] == AGENT_DIR
-        assert 'web' in call_args.kwargs
-        assert call_args.kwargs['web'] is True
+        assert "agents_dir" in call_args.kwargs
+        assert call_args.kwargs["agents_dir"] == AGENT_DIR
+        assert "web" in call_args.kwargs
+        assert call_args.kwargs["web"] is True
 
     def test_enhanced_callback_handler(self):
         """Test the enhanced callback handler functionality."""
@@ -88,7 +87,12 @@ class TestADKAgentIntegration:
         assert callback_handler is not None
 
         # Test that it has required callback methods
-        required_methods = ['on_agent_action', 'on_agent_finish', 'on_chain_start', 'on_chain_end']
+        required_methods = [
+            "on_agent_action",
+            "on_agent_finish",
+            "on_chain_start",
+            "on_chain_end",
+        ]
 
         for method in required_methods:
             if hasattr(callback_handler, method):
@@ -99,7 +103,7 @@ class TestADKAgentIntegration:
         # Create a mock message
         test_message = {
             "role": "user",
-            "parts": [{"text": "What is the capital of France?"}]
+            "parts": [{"text": "What is the capital of France?"}],
         }
 
         # Test message processing through ADK pipeline
@@ -107,7 +111,7 @@ class TestADKAgentIntegration:
             agent = create_agent(self.config)
 
             # If agent has a process_message method
-            if hasattr(agent, 'process_message'):
+            if hasattr(agent, "process_message"):
                 result = agent.process_message(test_message)
                 assert result is not None
 
@@ -130,8 +134,8 @@ class TestADKAgentIntegration:
             "state": {
                 "context": "research",
                 "language": "en",
-                "preferences": {"verbose": True}
-            }
+                "preferences": {"verbose": True},
+            },
         }
 
         # Verify session data structure
@@ -147,7 +151,7 @@ class TestADKAgentIntegration:
             {"type": "start", "content": "Starting research..."},
             {"type": "progress", "content": "Analyzing data..."},
             {"type": "result", "content": "The capital of France is Paris."},
-            {"type": "complete", "content": "Research complete."}
+            {"type": "complete", "content": "Research complete."},
         ]
 
         # Test streaming data structure
@@ -186,16 +190,12 @@ class TestADKConfigurationHandling:
         assert config is not None
 
         # Configuration should load without errors
-        assert hasattr(config, 'project_id') or 'project' in str(config).lower()
+        assert hasattr(config, "project_id") or "project" in str(config).lower()
 
     def test_config_defaults(self):
         """Test configuration defaults when environment variables are missing."""
         # Clear relevant environment variables
-        env_vars_to_clear = [
-            "GOOGLE_CLOUD_PROJECT",
-            "ADK_MODEL_NAME",
-            "ADK_API_KEY"
-        ]
+        env_vars_to_clear = ["GOOGLE_CLOUD_PROJECT", "ADK_MODEL_NAME", "ADK_API_KEY"]
 
         for var in env_vars_to_clear:
             if var in os.environ:
@@ -230,10 +230,7 @@ class TestADKMessageTransformation:
         user_input = "What are the latest trends in AI?"
 
         # Standard ADK message format
-        expected_structure = {
-            "role": "user",
-            "parts": [{"text": user_input}]
-        }
+        expected_structure = {"role": "user", "parts": [{"text": user_input}]}
 
         # Test message structure
         assert "role" in expected_structure
@@ -246,10 +243,7 @@ class TestADKMessageTransformation:
         """Test transformation of system messages."""
         system_prompt = "You are a helpful AI research assistant."
 
-        system_message = {
-            "role": "system",
-            "parts": [{"text": system_prompt}]
-        }
+        system_message = {"role": "system", "parts": [{"text": system_prompt}]}
 
         # Verify system message structure
         assert system_message["role"] == "system"
@@ -263,8 +257,8 @@ class TestADKMessageTransformation:
             "parts": [
                 {"text": "Please analyze this data:"},
                 {"text": "Data: [1, 2, 3, 4, 5]"},
-                {"text": "What patterns do you see?"}
-            ]
+                {"text": "What patterns do you see?"},
+            ],
         }
 
         # Verify multi-part structure
@@ -282,8 +276,8 @@ class TestADKMessageTransformation:
                 "session_id": self.test_session_id,
                 "timestamp": time.time(),
                 "user_id": "test_user_123",
-                "request_id": str(uuid.uuid4())
-            }
+                "request_id": str(uuid.uuid4()),
+            },
         }
 
         # Verify metadata structure
@@ -298,7 +292,7 @@ class TestADKMessageTransformation:
         """Test handling of error scenarios in message transformation."""
         error_cases = [
             None,  # Null message
-            "",    # Empty string
+            "",  # Empty string
             {"role": "user"},  # Missing parts
             {"parts": [{"text": "test"}]},  # Missing role
             {"role": "invalid", "parts": []},  # Invalid role with empty parts
@@ -314,9 +308,11 @@ class TestADKMessageTransformation:
                     # Check required fields
                     has_role = "role" in error_case
                     has_parts = "parts" in error_case
-                    has_valid_parts = (has_parts and
-                                     isinstance(error_case["parts"], list) and
-                                     len(error_case["parts"]) > 0)
+                    has_valid_parts = (
+                        has_parts
+                        and isinstance(error_case["parts"], list)
+                        and len(error_case["parts"]) > 0
+                    )
 
                     # Invalid cases should be identifiable
                     is_valid = has_role and has_valid_parts
@@ -354,7 +350,7 @@ class TestADKRealTimeIntegration:
                     "request_id": request_id,
                     "status": "success",
                     "response": f"Response for request {request_id}",
-                    "timestamp": time.time()
+                    "timestamp": time.time(),
                 }
                 results.append(result)
 
@@ -403,7 +399,7 @@ class TestADKRealTimeIntegration:
                 "user_id": self.test_user_id,
                 "message": request["message"],
                 "sequence": request["sequence"],
-                "session_state": session_state.copy()
+                "session_state": session_state.copy(),
             }
 
             # Simulate session state updates
@@ -432,20 +428,25 @@ class TestADKRealTimeIntegration:
             # Simulate typical ADK streaming pattern
             stream_data = [
                 {"type": "thinking", "content": "Analyzing your question..."},
-                {"type": "research", "content": "Searching for relevant information..."},
+                {
+                    "type": "research",
+                    "content": "Searching for relevant information...",
+                },
                 {"type": "synthesis", "content": "Combining findings..."},
                 {"type": "response", "content": "Based on my research..."},
-                {"type": "complete", "content": "Response complete."}
+                {"type": "complete", "content": "Response complete."},
             ]
 
             for i, item in enumerate(stream_data):
                 event_time = time.time()
-                stream_events.append({
-                    **item,
-                    "timestamp": event_time,
-                    "elapsed": event_time - start_time,
-                    "sequence": i
-                })
+                stream_events.append(
+                    {
+                        **item,
+                        "timestamp": event_time,
+                        "elapsed": event_time - start_time,
+                        "sequence": i,
+                    }
+                )
 
                 # Simulate realistic streaming delays
                 await asyncio.sleep(0.1)  # 100ms between events
@@ -462,8 +463,8 @@ class TestADKRealTimeIntegration:
 
         # Events should be in order
         for i in range(len(stream_events) - 1):
-            assert stream_events[i]["sequence"] < stream_events[i+1]["sequence"]
-            assert stream_events[i]["timestamp"] <= stream_events[i+1]["timestamp"]
+            assert stream_events[i]["sequence"] < stream_events[i + 1]["sequence"]
+            assert stream_events[i]["timestamp"] <= stream_events[i + 1]["timestamp"]
 
     def test_adk_error_recovery(self):
         """Test ADK error recovery scenarios."""
@@ -471,7 +472,10 @@ class TestADKRealTimeIntegration:
             {"type": "timeout", "message": "Request timeout"},
             {"type": "rate_limit", "message": "Rate limit exceeded"},
             {"type": "invalid_input", "message": "Invalid input format"},
-            {"type": "service_unavailable", "message": "Service temporarily unavailable"}
+            {
+                "type": "service_unavailable",
+                "message": "Service temporarily unavailable",
+            },
         ]
 
         for scenario in error_scenarios:

@@ -27,7 +27,8 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
 
         # Clean old entries
         self.clients[client_ip] = [
-            timestamp for timestamp in self.clients[client_ip]
+            timestamp
+            for timestamp in self.clients[client_ip]
             if now - timestamp < self.period
         ]
 
@@ -37,8 +38,8 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
                 status_code=status.HTTP_429_TOO_MANY_REQUESTS,
                 content={
                     "detail": "Rate limit exceeded. Please try again later.",
-                    "retry_after": self.period
-                }
+                    "retry_after": self.period,
+                },
             )
 
         # Add current request
@@ -69,11 +70,15 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         response.headers["X-Content-Type-Options"] = "nosniff"
         response.headers["X-Frame-Options"] = "DENY"
         response.headers["X-XSS-Protection"] = "1; mode=block"
-        response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+        response.headers["Strict-Transport-Security"] = (
+            "max-age=31536000; includeSubDomains"
+        )
         response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
 
         # Content Security Policy for API endpoints
-        if request.url.path.startswith("/auth/") or request.url.path.startswith("/api/"):
+        if request.url.path.startswith("/auth/") or request.url.path.startswith(
+            "/api/"
+        ):
             response.headers["Content-Security-Policy"] = (
                 "default-src 'none'; "
                 "frame-ancestors 'none'; "
@@ -116,7 +121,7 @@ class AuthenticationMiddleware(BaseHTTPMiddleware):
             return JSONResponse(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 content={"detail": "Authorization header required"},
-                headers={"WWW-Authenticate": "Bearer"}
+                headers={"WWW-Authenticate": "Bearer"},
             )
 
         try:
@@ -128,7 +133,7 @@ class AuthenticationMiddleware(BaseHTTPMiddleware):
             return JSONResponse(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 content={"detail": "Invalid authentication credentials"},
-                headers={"WWW-Authenticate": "Bearer"}
+                headers={"WWW-Authenticate": "Bearer"},
             )
 
 
@@ -137,11 +142,7 @@ class AuditLogMiddleware(BaseHTTPMiddleware):
 
     def __init__(self, app, log_paths: list | None = None):
         super().__init__(app)
-        self.log_paths = log_paths or [
-            "/auth/",
-            "/admin/",
-            "/users/"
-        ]
+        self.log_paths = log_paths or ["/auth/", "/admin/", "/users/"]
 
     async def dispatch(self, request: Request, call_next):
         # Only log specific paths
@@ -178,7 +179,7 @@ class AuditLogMiddleware(BaseHTTPMiddleware):
             "user_agent": user_agent,
             "user": user_info,
             "status_code": response.status_code,
-            "duration_ms": round(duration * 1000, 2)
+            "duration_ms": round(duration * 1000, 2),
         }
 
         # In production, you would send this to your logging system
@@ -205,17 +206,27 @@ class AuditLogMiddleware(BaseHTTPMiddleware):
 class CORSMiddleware(BaseHTTPMiddleware):
     """Custom CORS middleware with security considerations."""
 
-    def __init__(self, app, allowed_origins: list | None = None,
-                 allowed_methods: list | None = None,
-                 allowed_headers: list | None = None):
+    def __init__(
+        self,
+        app,
+        allowed_origins: list | None = None,
+        allowed_methods: list | None = None,
+        allowed_headers: list | None = None,
+    ):
         super().__init__(app)
         self.allowed_origins = allowed_origins or ["http://localhost:5173"]
-        self.allowed_methods = allowed_methods or ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+        self.allowed_methods = allowed_methods or [
+            "GET",
+            "POST",
+            "PUT",
+            "DELETE",
+            "OPTIONS",
+        ]
         self.allowed_headers = allowed_headers or [
             "Authorization",
             "Content-Type",
             "Accept",
-            "X-Requested-With"
+            "X-Requested-With",
         ]
 
     async def dispatch(self, request: Request, call_next):
@@ -231,8 +242,12 @@ class CORSMiddleware(BaseHTTPMiddleware):
         if origin and (origin in self.allowed_origins or "*" in self.allowed_origins):
             response.headers["Access-Control-Allow-Origin"] = origin
             response.headers["Access-Control-Allow-Credentials"] = "true"
-            response.headers["Access-Control-Allow-Methods"] = ", ".join(self.allowed_methods)
-            response.headers["Access-Control-Allow-Headers"] = ", ".join(self.allowed_headers)
+            response.headers["Access-Control-Allow-Methods"] = ", ".join(
+                self.allowed_methods
+            )
+            response.headers["Access-Control-Allow-Headers"] = ", ".join(
+                self.allowed_headers
+            )
             response.headers["Access-Control-Max-Age"] = "86400"  # 24 hours
 
         return response

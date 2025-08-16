@@ -33,15 +33,17 @@ import psutil
 
 class EnforcementLevel(Enum):
     """Hook enforcement levels for graduated enforcement"""
-    MONITOR = "monitor"      # Log only, no blocking
-    WARN = "warn"           # Log warnings, no blocking
-    SOFT = "soft"           # Block with override option
-    ENFORCE = "enforce"     # Full blocking enforcement
-    EMERGENCY = "emergency" # Emergency mode - bypass all
+
+    MONITOR = "monitor"  # Log only, no blocking
+    WARN = "warn"  # Log warnings, no blocking
+    SOFT = "soft"  # Block with override option
+    ENFORCE = "enforce"  # Full blocking enforcement
+    EMERGENCY = "emergency"  # Emergency mode - bypass all
 
 
 class HealthStatus(Enum):
     """System health status levels"""
+
     HEALTHY = "healthy"
     DEGRADED = "degraded"
     FAILING = "failing"
@@ -52,6 +54,7 @@ class HealthStatus(Enum):
 @dataclass
 class BypassCode:
     """Emergency bypass code configuration"""
+
     code: str
     purpose: str
     expiry: datetime | None
@@ -64,6 +67,7 @@ class BypassCode:
 @dataclass
 class SafetyMetrics:
     """Safety system performance metrics"""
+
     timestamp: datetime
     hook_execution_time_ms: float
     memory_usage_mb: float
@@ -78,6 +82,7 @@ class SafetyMetrics:
 @dataclass
 class AlertRule:
     """Alert rule configuration"""
+
     name: str
     condition: str
     threshold: float
@@ -94,8 +99,12 @@ class HookSafetySystem:
         if config_path:
             self.config_path = Path(config_path)
         else:
-            self.config_path = Path.cwd() / ".claude_workspace" / "hook-safety-config.json"
-        self.metrics_path = Path.cwd() / ".claude_workspace" / "hook-safety-metrics.json"
+            self.config_path = (
+                Path.cwd() / ".claude_workspace" / "hook-safety-config.json"
+            )
+        self.metrics_path = (
+            Path.cwd() / ".claude_workspace" / "hook-safety-metrics.json"
+        )
         self.alerts_path = Path.cwd() / ".claude_workspace" / "hook-safety-alerts.json"
 
         # Setup logging first
@@ -106,7 +115,9 @@ class HookSafetySystem:
         self.bypass_codes = self._load_bypass_codes()
         self.metrics_history = []
         self.active_alerts = []
-        self.enforcement_level = EnforcementLevel(self.config.get("enforcement_level", "enforce"))
+        self.enforcement_level = EnforcementLevel(
+            self.config.get("enforcement_level", "enforce")
+        )
         self.health_status = HealthStatus.HEALTHY
 
         # Monitoring
@@ -141,7 +152,7 @@ class HookSafetySystem:
 
             # Formatter
             formatter = logging.Formatter(
-                '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+                "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
             )
             file_handler.setFormatter(formatter)
             console_handler.setFormatter(formatter)
@@ -166,7 +177,7 @@ class HookSafetySystem:
                 "enabled": True,
                 "escalation_delay_minutes": 10,
                 "degradation_threshold": 0.3,
-                "recovery_threshold": 0.1
+                "recovery_threshold": 0.1,
             },
             "alert_rules": [
                 {
@@ -175,7 +186,7 @@ class HookSafetySystem:
                     "threshold": 0.2,
                     "duration_minutes": 5,
                     "severity": "warning",
-                    "enabled": True
+                    "enabled": True,
                 },
                 {
                     "name": "critical_error_rate",
@@ -183,7 +194,7 @@ class HookSafetySystem:
                     "threshold": 0.5,
                     "duration_minutes": 2,
                     "severity": "critical",
-                    "enabled": True
+                    "enabled": True,
                 },
                 {
                     "name": "high_memory_usage",
@@ -191,7 +202,7 @@ class HookSafetySystem:
                     "threshold": 500.0,
                     "duration_minutes": 10,
                     "severity": "warning",
-                    "enabled": True
+                    "enabled": True,
                 },
                 {
                     "name": "slow_hook_execution",
@@ -199,9 +210,9 @@ class HookSafetySystem:
                     "threshold": 5000.0,
                     "duration_minutes": 5,
                     "severity": "warning",
-                    "enabled": True
-                }
-            ]
+                    "enabled": True,
+                },
+            ],
         }
 
         try:
@@ -224,7 +235,7 @@ class HookSafetySystem:
         """Save configuration to file"""
         try:
             self.config_path.parent.mkdir(parents=True, exist_ok=True)
-            with open(self.config_path, 'w') as f:
+            with open(self.config_path, "w") as f:
                 json.dump(config, f, indent=2, default=str)
         except Exception as e:
             self.logger.error(f"Failed to save config: {e}")
@@ -239,8 +250,8 @@ class HookSafetySystem:
                     codes_data = json.load(f)
                     codes = {}
                     for code_id, data in codes_data.items():
-                        if data.get('expiry'):
-                            data['expiry'] = datetime.fromisoformat(data['expiry'])
+                        if data.get("expiry"):
+                            data["expiry"] = datetime.fromisoformat(data["expiry"])
                         codes[code_id] = BypassCode(**data)
                     return codes
         except Exception as e:
@@ -254,7 +265,9 @@ class HookSafetySystem:
         codes = {}
 
         # Emergency bypass code
-        emergency_code = hashlib.sha256(f"emergency_{int(time.time())}".encode()).hexdigest()[:12]
+        emergency_code = hashlib.sha256(
+            f"emergency_{int(time.time())}".encode()
+        ).hexdigest()[:12]
         codes["emergency"] = BypassCode(
             code=emergency_code,
             purpose="Emergency system bypass for critical issues",
@@ -262,11 +275,13 @@ class HookSafetySystem:
             max_uses=10,
             uses_remaining=10,
             created_by="system",
-            reason="Default emergency bypass"
+            reason="Default emergency bypass",
         )
 
         # Hotfix bypass code
-        hotfix_code = hashlib.sha256(f"hotfix_{int(time.time())}".encode()).hexdigest()[:12]
+        hotfix_code = hashlib.sha256(f"hotfix_{int(time.time())}".encode()).hexdigest()[
+            :12
+        ]
         codes["hotfix"] = BypassCode(
             code=hotfix_code,
             purpose="Hotfix deployment bypass",
@@ -274,11 +289,13 @@ class HookSafetySystem:
             max_uses=5,
             uses_remaining=5,
             created_by="system",
-            reason="Default hotfix bypass"
+            reason="Default hotfix bypass",
         )
 
         # Maintenance bypass code
-        maintenance_code = hashlib.sha256(f"maintenance_{int(time.time())}".encode()).hexdigest()[:12]
+        maintenance_code = hashlib.sha256(
+            f"maintenance_{int(time.time())}".encode()
+        ).hexdigest()[:12]
         codes["maintenance"] = BypassCode(
             code=maintenance_code,
             purpose="Maintenance window bypass",
@@ -286,7 +303,7 @@ class HookSafetySystem:
             max_uses=20,
             uses_remaining=20,
             created_by="system",
-            reason="Default maintenance bypass"
+            reason="Default maintenance bypass",
         )
 
         self._save_bypass_codes(codes)
@@ -301,15 +318,17 @@ class HookSafetySystem:
             for code_id, code in codes.items():
                 codes_data[code_id] = asdict(code)
 
-            with open(codes_path, 'w') as f:
+            with open(codes_path, "w") as f:
                 json.dump(codes_data, f, indent=2, default=str)
         except Exception as e:
             self.logger.error(f"Failed to save bypass codes: {e}")
 
-    async def validate_operation(self, operation: str, file_path: str, content: str = None) -> dict[str, Any]:
+    async def validate_operation(
+        self, operation: str, file_path: str, content: str = None
+    ) -> dict[str, Any]:
         """
         Main validation entry point with safety checks
-        
+
         Returns:
             Dict containing validation result with safety metadata
         """
@@ -318,11 +337,15 @@ class HookSafetySystem:
         try:
             # Check for emergency mode
             if self.emergency_mode:
-                return self._emergency_bypass_result(operation, file_path, "Emergency mode active")
+                return self._emergency_bypass_result(
+                    operation, file_path, "Emergency mode active"
+                )
 
             # Check enforcement level
             if self.enforcement_level == EnforcementLevel.EMERGENCY:
-                return self._emergency_bypass_result(operation, file_path, "Emergency enforcement level")
+                return self._emergency_bypass_result(
+                    operation, file_path, "Emergency enforcement level"
+                )
 
             # Health check
             if not self._is_system_healthy():
@@ -352,7 +375,9 @@ class HookSafetySystem:
             # Return safe default based on enforcement level
             return self._safe_default_result(operation, file_path, str(e))
 
-    async def _perform_validation(self, operation: str, file_path: str, content: str) -> dict[str, Any]:
+    async def _perform_validation(
+        self, operation: str, file_path: str, content: str
+    ) -> dict[str, Any]:
         """Perform actual validation with enforcement level consideration"""
 
         # Mock validation for now - replace with actual hook validation
@@ -369,8 +394,8 @@ class HookSafetySystem:
             "safety_metadata": {
                 "health_status": self.health_status.value,
                 "bypass_available": len(self.bypass_codes) > 0,
-                "monitoring_active": self.monitoring_active
-            }
+                "monitoring_active": self.monitoring_active,
+            },
         }
 
         # Apply enforcement level logic
@@ -391,7 +416,9 @@ class HookSafetySystem:
             # Allow with override option
             if validation_result["violations"]:
                 validation_result["safety_metadata"]["override_available"] = True
-                validation_result["safety_metadata"]["override_codes"] = list(self.bypass_codes.keys())
+                validation_result["safety_metadata"]["override_codes"] = list(
+                    self.bypass_codes.keys()
+                )
             validation_result["safety_metadata"]["enforcement_action"] = "soft_enforce"
 
         elif self.enforcement_level == EnforcementLevel.ENFORCE:
@@ -400,7 +427,9 @@ class HookSafetySystem:
 
         return validation_result
 
-    def _emergency_bypass_result(self, operation: str, file_path: str, reason: str) -> dict[str, Any]:
+    def _emergency_bypass_result(
+        self, operation: str, file_path: str, reason: str
+    ) -> dict[str, Any]:
         """Generate emergency bypass result"""
         return {
             "validated": True,
@@ -411,15 +440,19 @@ class HookSafetySystem:
             "file_path": file_path,
             "timestamp": datetime.now().isoformat(),
             "warnings": [f"⚠️ EMERGENCY BYPASS ACTIVE: {reason}"],
-            "suggestions": ["Contact system administrator to resolve emergency conditions"],
+            "suggestions": [
+                "Contact system administrator to resolve emergency conditions"
+            ],
             "safety_metadata": {
                 "emergency_mode": True,
                 "enforcement_level": self.enforcement_level.value,
-                "health_status": self.health_status.value
-            }
+                "health_status": self.health_status.value,
+            },
         }
 
-    def _safe_default_result(self, operation: str, file_path: str, error: str) -> dict[str, Any]:
+    def _safe_default_result(
+        self, operation: str, file_path: str, error: str
+    ) -> dict[str, Any]:
         """Generate safe default result for errors"""
         # Default to allowing operation in case of safety system failure
         return {
@@ -434,16 +467,20 @@ class HookSafetySystem:
             "safety_metadata": {
                 "safe_default": True,
                 "enforcement_level": self.enforcement_level.value,
-                "health_status": self.health_status.value
-            }
+                "health_status": self.health_status.value,
+            },
         }
 
-    async def _handle_unhealthy_system(self, operation: str, file_path: str) -> dict[str, Any]:
+    async def _handle_unhealthy_system(
+        self, operation: str, file_path: str
+    ) -> dict[str, Any]:
         """Handle validation when system is unhealthy"""
         if self.health_status in [HealthStatus.CRITICAL, HealthStatus.EMERGENCY]:
             # Auto-rollback or emergency mode
             await self._trigger_emergency_mode("System health critical")
-            return self._emergency_bypass_result(operation, file_path, "System health critical")
+            return self._emergency_bypass_result(
+                operation, file_path, "System health critical"
+            )
 
         elif self.health_status == HealthStatus.FAILING:
             # Degraded enforcement
@@ -453,7 +490,9 @@ class HookSafetySystem:
         else:
             # Continue with validation but add health warnings
             result = await self._perform_validation(operation, file_path, None)
-            result["warnings"].append(f"⚠️ System health degraded: {self.health_status.value}")
+            result["warnings"].append(
+                f"⚠️ System health degraded: {self.health_status.value}"
+            )
             return result
 
     def use_bypass_code(self, code: str, reason: str) -> dict[str, Any]:
@@ -474,7 +513,7 @@ class HookSafetySystem:
             return {
                 "success": False,
                 "error": "Invalid bypass code",
-                "timestamp": datetime.now().isoformat()
+                "timestamp": datetime.now().isoformat(),
             }
 
         # Check expiry
@@ -484,7 +523,7 @@ class HookSafetySystem:
                 "success": False,
                 "error": "Bypass code expired",
                 "expiry": matching_code.expiry.isoformat(),
-                "timestamp": datetime.now().isoformat()
+                "timestamp": datetime.now().isoformat(),
             }
 
         # Check usage limit
@@ -493,7 +532,7 @@ class HookSafetySystem:
             return {
                 "success": False,
                 "error": "Bypass code usage limit exceeded",
-                "timestamp": datetime.now().isoformat()
+                "timestamp": datetime.now().isoformat(),
             }
 
         # Use the code
@@ -527,16 +566,23 @@ class HookSafetySystem:
             "enforcement_level": self.enforcement_level.value,
             "duration_minutes": duration,
             "reason": reason,
-            "timestamp": datetime.now().isoformat()
+            "timestamp": datetime.now().isoformat(),
         }
 
-    def generate_new_bypass_code(self, code_type: str, purpose: str,
-                                expiry_hours: int = 24, max_uses: int = 5,
-                                created_by: str = "admin") -> dict[str, Any]:
+    def generate_new_bypass_code(
+        self,
+        code_type: str,
+        purpose: str,
+        expiry_hours: int = 24,
+        max_uses: int = 5,
+        created_by: str = "admin",
+    ) -> dict[str, Any]:
         """Generate a new emergency bypass code"""
 
         # Generate secure code
-        code = hashlib.sha256(f"{code_type}_{purpose}_{int(time.time())}".encode()).hexdigest()[:16]
+        code = hashlib.sha256(
+            f"{code_type}_{purpose}_{int(time.time())}".encode()
+        ).hexdigest()[:16]
 
         # Create bypass code object
         bypass_code = BypassCode(
@@ -546,7 +592,7 @@ class HookSafetySystem:
             max_uses=max_uses,
             uses_remaining=max_uses,
             created_by=created_by,
-            reason=f"Generated bypass for {purpose}"
+            reason=f"Generated bypass for {purpose}",
         )
 
         # Store the code
@@ -562,7 +608,7 @@ class HookSafetySystem:
             "expiry": bypass_code.expiry.isoformat(),
             "max_uses": max_uses,
             "created_by": created_by,
-            "timestamp": datetime.now().isoformat()
+            "timestamp": datetime.now().isoformat(),
         }
 
     async def _record_metrics(self, execution_time_ms: float, result: dict[str, Any]):
@@ -574,7 +620,9 @@ class HookSafetySystem:
         cpu_usage = process.cpu_percent()
 
         # Count errors and warnings
-        error_count = 1 if result.get("error") or result.get("safety_system_error") else 0
+        error_count = (
+            1 if result.get("error") or result.get("safety_system_error") else 0
+        )
         warning_count = len(result.get("warnings", []))
         bypass_count = 1 if result.get("bypassed") else 0
 
@@ -588,15 +636,19 @@ class HookSafetySystem:
             warning_count=warning_count,
             bypass_count=bypass_count,
             enforcement_level=self.enforcement_level,
-            health_status=self.health_status
+            health_status=self.health_status,
         )
 
         # Add to history
         self.metrics_history.append(metrics)
 
         # Cleanup old metrics
-        cutoff_time = datetime.now() - timedelta(hours=self.config.get("metrics_retention_hours", 24))
-        self.metrics_history = [m for m in self.metrics_history if m.timestamp > cutoff_time]
+        cutoff_time = datetime.now() - timedelta(
+            hours=self.config.get("metrics_retention_hours", 24)
+        )
+        self.metrics_history = [
+            m for m in self.metrics_history if m.timestamp > cutoff_time
+        ]
 
         # Save metrics to file
         await self._save_metrics()
@@ -607,8 +659,10 @@ class HookSafetySystem:
     async def _save_metrics(self):
         """Save metrics to file"""
         try:
-            metrics_data = [asdict(m) for m in self.metrics_history[-100:]]  # Keep last 100 entries
-            with open(self.metrics_path, 'w') as f:
+            metrics_data = [
+                asdict(m) for m in self.metrics_history[-100:]
+            ]  # Keep last 100 entries
+            with open(self.metrics_path, "w") as f:
                 json.dump(metrics_data, f, indent=2, default=str)
         except Exception as e:
             self.logger.error(f"Failed to save metrics: {e}")
@@ -644,15 +698,21 @@ class HookSafetySystem:
         if "error_rate" in rule.condition:
             total_operations = len(recent_metrics)
             error_operations = sum(1 for m in recent_metrics if m.error_count > 0)
-            error_rate = error_operations / total_operations if total_operations > 0 else 0
+            error_rate = (
+                error_operations / total_operations if total_operations > 0 else 0
+            )
             return error_rate > rule.threshold
 
         elif "memory_usage_mb" in rule.condition:
-            avg_memory = sum(m.memory_usage_mb for m in recent_metrics) / len(recent_metrics)
+            avg_memory = sum(m.memory_usage_mb for m in recent_metrics) / len(
+                recent_metrics
+            )
             return avg_memory > rule.threshold
 
         elif "avg_execution_time_ms" in rule.condition:
-            avg_execution_time = sum(m.hook_execution_time_ms for m in recent_metrics) / len(recent_metrics)
+            avg_execution_time = sum(
+                m.hook_execution_time_ms for m in recent_metrics
+            ) / len(recent_metrics)
             return avg_execution_time > rule.threshold
 
         return False
@@ -667,7 +727,9 @@ class HookSafetySystem:
         for alert in self.active_alerts:
             if alert["id"] == alert_id:
                 last_triggered = datetime.fromisoformat(alert["last_triggered"])
-                if datetime.now() - last_triggered < timedelta(minutes=rule.cooldown_minutes):
+                if datetime.now() - last_triggered < timedelta(
+                    minutes=rule.cooldown_minutes
+                ):
                     return  # Still in cooldown
 
         # Create alert
@@ -680,7 +742,7 @@ class HookSafetySystem:
             "message": f"Alert: {rule.name} - {rule.condition} exceeded threshold {rule.threshold}",
             "triggered": datetime.now().isoformat(),
             "last_triggered": datetime.now().isoformat(),
-            "count": 1
+            "count": 1,
         }
 
         # Update or add alert
@@ -691,7 +753,9 @@ class HookSafetySystem:
                 break
 
         if existing_alert is not None:
-            self.active_alerts[existing_alert]["last_triggered"] = alert["last_triggered"]
+            self.active_alerts[existing_alert]["last_triggered"] = alert[
+                "last_triggered"
+            ]
             self.active_alerts[existing_alert]["count"] += 1
         else:
             self.active_alerts.append(alert)
@@ -711,7 +775,9 @@ class HookSafetySystem:
 
         if rule.name == "critical_error_rate":
             # High error rate - consider emergency mode
-            await self._trigger_emergency_mode(f"Critical error rate: {alert['message']}")
+            await self._trigger_emergency_mode(
+                f"Critical error rate: {alert['message']}"
+            )
 
         elif rule.name == "system_failure":
             # System failure - immediate rollback
@@ -720,7 +786,7 @@ class HookSafetySystem:
     async def _save_alerts(self):
         """Save active alerts to file"""
         try:
-            with open(self.alerts_path, 'w') as f:
+            with open(self.alerts_path, "w") as f:
                 json.dump(self.active_alerts, f, indent=2, default=str)
         except Exception as e:
             self.logger.error(f"Failed to save alerts: {e}")
@@ -735,7 +801,9 @@ class HookSafetySystem:
             return
 
         self.monitoring_active = True
-        self.monitoring_thread = threading.Thread(target=self._monitoring_loop, daemon=True)
+        self.monitoring_thread = threading.Thread(
+            target=self._monitoring_loop, daemon=True
+        )
         self.monitoring_thread.start()
         self.logger.info("Safety monitoring started")
 
@@ -764,9 +832,15 @@ class HookSafetySystem:
             recent_metrics = self.metrics_history[-10:]
 
             # Calculate health metrics
-            error_rate = sum(1 for m in recent_metrics if m.error_count > 0) / len(recent_metrics)
-            avg_execution_time = sum(m.hook_execution_time_ms for m in recent_metrics) / len(recent_metrics)
-            avg_memory = sum(m.memory_usage_mb for m in recent_metrics) / len(recent_metrics)
+            error_rate = sum(1 for m in recent_metrics if m.error_count > 0) / len(
+                recent_metrics
+            )
+            avg_execution_time = sum(
+                m.hook_execution_time_ms for m in recent_metrics
+            ) / len(recent_metrics)
+            avg_memory = sum(m.memory_usage_mb for m in recent_metrics) / len(
+                recent_metrics
+            )
 
             # Determine health status
             if error_rate > 0.8:
@@ -784,15 +858,23 @@ class HookSafetySystem:
         """Automatically degrade enforcement level due to health issues"""
         if self.enforcement_level == EnforcementLevel.ENFORCE:
             self.enforcement_level = EnforcementLevel.SOFT
-            self.logger.warning("Enforcement level degraded to SOFT due to health issues")
+            self.logger.warning(
+                "Enforcement level degraded to SOFT due to health issues"
+            )
         elif self.enforcement_level == EnforcementLevel.SOFT:
             self.enforcement_level = EnforcementLevel.WARN
-            self.logger.warning("Enforcement level degraded to WARN due to health issues")
+            self.logger.warning(
+                "Enforcement level degraded to WARN due to health issues"
+            )
 
     def _restore_enforcement_level(self):
         """Restore normal enforcement level"""
-        self.enforcement_level = EnforcementLevel(self.config.get("enforcement_level", "enforce"))
-        self.logger.info(f"Enforcement level restored to {self.enforcement_level.value}")
+        self.enforcement_level = EnforcementLevel(
+            self.config.get("enforcement_level", "enforce")
+        )
+        self.logger.info(
+            f"Enforcement level restored to {self.enforcement_level.value}"
+        )
 
     async def _trigger_emergency_mode(self, reason: str):
         """Trigger emergency mode"""
@@ -810,7 +892,9 @@ class HookSafetySystem:
         """Recover from emergency mode"""
         self.emergency_mode = False
         self._restore_enforcement_level()
-        self.health_status = HealthStatus.DEGRADED  # Start degraded and let health checks improve
+        self.health_status = (
+            HealthStatus.DEGRADED
+        )  # Start degraded and let health checks improve
 
         self.logger.info("Recovered from emergency mode")
 
@@ -827,7 +911,9 @@ class HookSafetySystem:
         recent_metrics = [m for m in self.metrics_history if m.timestamp > cutoff_time]
 
         if len(recent_metrics) >= 5:
-            error_rate = sum(1 for m in recent_metrics if m.error_count > 0) / len(recent_metrics)
+            error_rate = sum(1 for m in recent_metrics if m.error_count > 0) / len(
+                recent_metrics
+            )
 
             if error_rate >= emergency_threshold:
                 await self.emergency_rollback(f"High error rate: {error_rate:.2%}")
@@ -841,7 +927,7 @@ class HookSafetySystem:
             "enforcement_level": self.enforcement_level.value,
             "config": self.config.copy(),
             "timestamp": datetime.now().isoformat(),
-            "reason": reason
+            "reason": reason,
         }
         self.rollback_stack.append(current_state)
 
@@ -863,9 +949,15 @@ class HookSafetySystem:
         recent_metrics = self.metrics_history[-10:] if self.metrics_history else []
 
         if recent_metrics:
-            error_rate = sum(1 for m in recent_metrics if m.error_count > 0) / len(recent_metrics)
-            avg_execution_time = sum(m.hook_execution_time_ms for m in recent_metrics) / len(recent_metrics)
-            avg_memory = sum(m.memory_usage_mb for m in recent_metrics) / len(recent_metrics)
+            error_rate = sum(1 for m in recent_metrics if m.error_count > 0) / len(
+                recent_metrics
+            )
+            avg_execution_time = sum(
+                m.hook_execution_time_ms for m in recent_metrics
+            ) / len(recent_metrics)
+            avg_memory = sum(m.memory_usage_mb for m in recent_metrics) / len(
+                recent_metrics
+            )
         else:
             error_rate = 0
             avg_execution_time = 0
@@ -882,18 +974,18 @@ class HookSafetySystem:
                 "total_operations": len(self.metrics_history),
                 "recent_error_rate": error_rate,
                 "avg_execution_time_ms": avg_execution_time,
-                "avg_memory_usage_mb": avg_memory
+                "avg_memory_usage_mb": avg_memory,
             },
             "bypass_codes": {
                 code_id: {
                     "purpose": code.purpose,
                     "uses_remaining": code.uses_remaining,
-                    "expiry": code.expiry.isoformat() if code.expiry else None
+                    "expiry": code.expiry.isoformat() if code.expiry else None,
                 }
                 for code_id, code in self.bypass_codes.items()
             },
             "active_alerts": len(self.active_alerts),
-            "rollback_states_available": len(self.rollback_stack)
+            "rollback_states_available": len(self.rollback_stack),
         }
 
 
@@ -962,7 +1054,9 @@ if __name__ == "__main__":
                 while True:
                     await asyncio.sleep(60)
                     status = safety_system.get_system_status()
-                    print(f"Health: {status['health_status']}, Alerts: {status['active_alerts']}")
+                    print(
+                        f"Health: {status['health_status']}, Alerts: {status['active_alerts']}"
+                    )
             except KeyboardInterrupt:
                 safety_system.stop_monitoring()
                 print("Monitoring stopped")

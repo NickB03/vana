@@ -21,28 +21,33 @@ import yaml
 
 class ConfigurationError(Exception):
     """Configuration-related errors"""
+
     pass
 
 
 class EnforcementMode(Enum):
     """Available enforcement modes"""
-    MONITOR = "monitor"          # Log only, no blocking
-    WARN = "warn"               # Log warnings, no blocking
-    SOFT_ENFORCE = "soft"       # Block with override option
-    ENFORCE = "enforce"         # Full blocking enforcement
+
+    MONITOR = "monitor"  # Log only, no blocking
+    WARN = "warn"  # Log warnings, no blocking
+    SOFT_ENFORCE = "soft"  # Block with override option
+    ENFORCE = "enforce"  # Full blocking enforcement
     EMERGENCY_BYPASS = "emergency"  # Emergency mode - bypass all
 
 
 @dataclass
 class GraduatedEnforcementConfig:
     """Configuration for graduated enforcement"""
+
     enabled: bool = True
     initial_mode: EnforcementMode = EnforcementMode.MONITOR
-    escalation_thresholds: dict[str, float] = field(default_factory=lambda: {
-        "error_rate": 0.1,
-        "warning_rate": 0.3,
-        "performance_degradation": 0.2
-    })
+    escalation_thresholds: dict[str, float] = field(
+        default_factory=lambda: {
+            "error_rate": 0.1,
+            "warning_rate": 0.3,
+            "performance_degradation": 0.2,
+        }
+    )
     escalation_delay_minutes: int = 15
     degradation_recovery_threshold: float = 0.05
     auto_escalation_enabled: bool = True
@@ -53,14 +58,17 @@ class GraduatedEnforcementConfig:
 @dataclass
 class RollbackConfig:
     """Configuration for automatic rollback"""
+
     enabled: bool = True
-    triggers: dict[str, Any] = field(default_factory=lambda: {
-        "error_rate_threshold": 0.5,
-        "error_rate_duration_minutes": 5,
-        "consecutive_failures": 10,
-        "memory_threshold_mb": 1000,
-        "execution_time_threshold_ms": 30000
-    })
+    triggers: dict[str, Any] = field(
+        default_factory=lambda: {
+            "error_rate_threshold": 0.5,
+            "error_rate_duration_minutes": 5,
+            "consecutive_failures": 10,
+            "memory_threshold_mb": 1000,
+            "execution_time_threshold_ms": 30000,
+        }
+    )
     auto_rollback_delay_minutes: int = 2
     max_rollback_states: int = 10
     rollback_to_safe_mode: bool = True
@@ -70,6 +78,7 @@ class RollbackConfig:
 @dataclass
 class MonitoringConfig:
     """Configuration for system monitoring"""
+
     enabled: bool = True
     health_check_interval_seconds: int = 30
     metrics_retention_hours: int = 24
@@ -83,23 +92,31 @@ class MonitoringConfig:
 @dataclass
 class AlertingConfig:
     """Configuration for alerting system"""
+
     enabled: bool = True
     notification_channels: list[str] = field(default_factory=lambda: ["log", "file"])
-    severity_levels: list[str] = field(default_factory=lambda: ["info", "warning", "critical", "emergency"])
-    rate_limiting: dict[str, int] = field(default_factory=lambda: {
-        "max_alerts_per_minute": 10,
-        "cooldown_minutes": 30,
-        "burst_threshold": 5
-    })
-    escalation_rules: dict[str, Any] = field(default_factory=lambda: {
-        "critical_alert_threshold": 3,
-        "emergency_escalation_minutes": 10
-    })
+    severity_levels: list[str] = field(
+        default_factory=lambda: ["info", "warning", "critical", "emergency"]
+    )
+    rate_limiting: dict[str, int] = field(
+        default_factory=lambda: {
+            "max_alerts_per_minute": 10,
+            "cooldown_minutes": 30,
+            "burst_threshold": 5,
+        }
+    )
+    escalation_rules: dict[str, Any] = field(
+        default_factory=lambda: {
+            "critical_alert_threshold": 3,
+            "emergency_escalation_minutes": 10,
+        }
+    )
 
 
 @dataclass
 class SecurityConfig:
     """Security configuration for safety system"""
+
     bypass_code_expiry_hours: int = 24
     max_bypass_uses: int = 10
     audit_logging: bool = True
@@ -112,6 +129,7 @@ class SecurityConfig:
 @dataclass
 class PerformanceConfig:
     """Performance tuning configuration"""
+
     max_validation_time_ms: int = 5000
     concurrent_validations: int = 5
     cache_enabled: bool = True
@@ -125,7 +143,11 @@ class HookSafetyConfigManager:
     """Comprehensive configuration manager for hook safety system"""
 
     def __init__(self, config_dir: str | None = None):
-        self.config_dir = Path(config_dir) if config_dir else Path.cwd() / ".claude_workspace" / "safety"
+        self.config_dir = (
+            Path(config_dir)
+            if config_dir
+            else Path.cwd() / ".claude_workspace" / "safety"
+        )
         self.config_dir.mkdir(parents=True, exist_ok=True)
 
         # Configuration files
@@ -176,64 +198,65 @@ class HookSafetyConfigManager:
     def load_enforcement_config(self) -> GraduatedEnforcementConfig:
         """Load graduated enforcement configuration"""
         config_data = self._load_config_file(
-            self.enforcement_config_file,
-            self._get_default_enforcement_config()
+            self.enforcement_config_file, self._get_default_enforcement_config()
         )
 
         # Convert string enum values
-        if 'initial_mode' in config_data:
-            config_data['initial_mode'] = EnforcementMode(config_data['initial_mode'])
-        if 'max_enforcement_level' in config_data:
-            config_data['max_enforcement_level'] = EnforcementMode(config_data['max_enforcement_level'])
+        if "initial_mode" in config_data:
+            config_data["initial_mode"] = EnforcementMode(config_data["initial_mode"])
+        if "max_enforcement_level" in config_data:
+            config_data["max_enforcement_level"] = EnforcementMode(
+                config_data["max_enforcement_level"]
+            )
 
         return GraduatedEnforcementConfig(**config_data)
 
     def load_rollback_config(self) -> RollbackConfig:
         """Load rollback configuration"""
         config_data = self._load_config_file(
-            self.rollback_config_file,
-            self._get_default_rollback_config()
+            self.rollback_config_file, self._get_default_rollback_config()
         )
         return RollbackConfig(**config_data)
 
     def load_monitoring_config(self) -> MonitoringConfig:
         """Load monitoring configuration"""
         config_data = self._load_config_file(
-            self.monitoring_config_file,
-            self._get_default_monitoring_config()
+            self.monitoring_config_file, self._get_default_monitoring_config()
         )
         return MonitoringConfig(**config_data)
 
     def load_alerting_config(self) -> AlertingConfig:
         """Load alerting configuration"""
         config_data = self._load_config_file(
-            self.alerting_config_file,
-            self._get_default_alerting_config()
+            self.alerting_config_file, self._get_default_alerting_config()
         )
         return AlertingConfig(**config_data)
 
     def load_security_config(self) -> SecurityConfig:
         """Load security configuration"""
         config_data = self._load_config_file(
-            self.security_config_file,
-            self._get_default_security_config()
+            self.security_config_file, self._get_default_security_config()
         )
         return SecurityConfig(**config_data)
 
     def load_performance_config(self) -> PerformanceConfig:
         """Load performance configuration"""
         config_data = self._load_config_file(
-            self.performance_config_file,
-            self._get_default_performance_config()
+            self.performance_config_file, self._get_default_performance_config()
         )
         return PerformanceConfig(**config_data)
 
-    def _load_config_file(self, file_path: Path, default_config: dict[str, Any]) -> dict[str, Any]:
+    def _load_config_file(
+        self, file_path: Path, default_config: dict[str, Any]
+    ) -> dict[str, Any]:
         """Load configuration from file with fallback to defaults"""
         try:
             if file_path.exists():
                 with open(file_path) as f:
-                    if file_path.suffix.lower() == '.yaml' or file_path.suffix.lower() == '.yml':
+                    if (
+                        file_path.suffix.lower() == ".yaml"
+                        or file_path.suffix.lower() == ".yml"
+                    ):
                         config = yaml.safe_load(f) or {}
                     else:
                         config = json.load(f)
@@ -254,8 +277,11 @@ class HookSafetyConfigManager:
     def _save_config_file(self, file_path: Path, config: dict[str, Any]):
         """Save configuration to file"""
         try:
-            with open(file_path, 'w') as f:
-                if file_path.suffix.lower() == '.yaml' or file_path.suffix.lower() == '.yml':
+            with open(file_path, "w") as f:
+                if (
+                    file_path.suffix.lower() == ".yaml"
+                    or file_path.suffix.lower() == ".yml"
+                ):
                     yaml.dump(config, f, default_flow_style=False, indent=2)
                 else:
                     json.dump(config, f, indent=2, default=str)
@@ -271,7 +297,7 @@ class HookSafetyConfigManager:
             (self.monitoring_config_file, asdict(self.monitoring)),
             (self.alerting_config_file, asdict(self.alerting)),
             (self.security_config_file, asdict(self.security)),
-            (self.performance_config_file, asdict(self.performance))
+            (self.performance_config_file, asdict(self.performance)),
         ]
 
         for file_path, config in configs:
@@ -285,13 +311,23 @@ class HookSafetyConfigManager:
         current_config.update(updates)
 
         # Handle enum conversions
-        if 'initial_mode' in current_config and isinstance(current_config['initial_mode'], str):
-            current_config['initial_mode'] = EnforcementMode(current_config['initial_mode'])
-        if 'max_enforcement_level' in current_config and isinstance(current_config['max_enforcement_level'], str):
-            current_config['max_enforcement_level'] = EnforcementMode(current_config['max_enforcement_level'])
+        if "initial_mode" in current_config and isinstance(
+            current_config["initial_mode"], str
+        ):
+            current_config["initial_mode"] = EnforcementMode(
+                current_config["initial_mode"]
+            )
+        if "max_enforcement_level" in current_config and isinstance(
+            current_config["max_enforcement_level"], str
+        ):
+            current_config["max_enforcement_level"] = EnforcementMode(
+                current_config["max_enforcement_level"]
+            )
 
         self.graduated_enforcement = GraduatedEnforcementConfig(**current_config)
-        self._save_config_file(self.enforcement_config_file, asdict(self.graduated_enforcement))
+        self._save_config_file(
+            self.enforcement_config_file, asdict(self.graduated_enforcement)
+        )
 
         self.logger.info(f"Enforcement configuration updated: {updates}")
 
@@ -349,13 +385,15 @@ class HookSafetyConfigManager:
 
         return False
 
-    def get_escalated_enforcement_mode(self, current_mode: EnforcementMode) -> EnforcementMode:
+    def get_escalated_enforcement_mode(
+        self, current_mode: EnforcementMode
+    ) -> EnforcementMode:
         """Get the next escalated enforcement mode"""
         escalation_order = [
             EnforcementMode.MONITOR,
             EnforcementMode.WARN,
             EnforcementMode.SOFT_ENFORCE,
-            EnforcementMode.ENFORCE
+            EnforcementMode.ENFORCE,
         ]
 
         try:
@@ -364,7 +402,9 @@ class HookSafetyConfigManager:
                 next_mode = escalation_order[current_index + 1]
 
                 # Respect maximum enforcement level
-                max_level_index = escalation_order.index(self.graduated_enforcement.max_enforcement_level)
+                max_level_index = escalation_order.index(
+                    self.graduated_enforcement.max_enforcement_level
+                )
                 if escalation_order.index(next_mode) <= max_level_index:
                     return next_mode
 
@@ -381,23 +421,26 @@ class HookSafetyConfigManager:
         triggers = self.rollback.triggers
 
         # Check error rate threshold
-        if 'error_rate' in metrics:
-            if metrics['error_rate'] >= triggers['error_rate_threshold']:
+        if "error_rate" in metrics:
+            if metrics["error_rate"] >= triggers["error_rate_threshold"]:
                 return True
 
         # Check consecutive failures
-        if 'consecutive_failures' in metrics:
-            if metrics['consecutive_failures'] >= triggers['consecutive_failures']:
+        if "consecutive_failures" in metrics:
+            if metrics["consecutive_failures"] >= triggers["consecutive_failures"]:
                 return True
 
         # Check memory threshold
-        if 'memory_usage_mb' in metrics:
-            if metrics['memory_usage_mb'] >= triggers['memory_threshold_mb']:
+        if "memory_usage_mb" in metrics:
+            if metrics["memory_usage_mb"] >= triggers["memory_threshold_mb"]:
                 return True
 
         # Check execution time threshold
-        if 'avg_execution_time_ms' in metrics:
-            if metrics['avg_execution_time_ms'] >= triggers['execution_time_threshold_ms']:
+        if "avg_execution_time_ms" in metrics:
+            if (
+                metrics["avg_execution_time_ms"]
+                >= triggers["execution_time_threshold_ms"]
+            ):
                 return True
 
         return False
@@ -408,20 +451,20 @@ class HookSafetyConfigManager:
 
         # Add alert-specific configuration if needed
         if alert_type == "performance":
-            base_config['thresholds'] = {
-                'execution_time_ms': 5000,
-                'memory_usage_mb': 500,
-                'error_rate': 0.1
+            base_config["thresholds"] = {
+                "execution_time_ms": 5000,
+                "memory_usage_mb": 500,
+                "error_rate": 0.1,
             }
         elif alert_type == "security":
-            base_config['thresholds'] = {
-                'failed_validations': 10,
-                'bypass_usage_rate': 0.2
+            base_config["thresholds"] = {
+                "failed_validations": 10,
+                "bypass_usage_rate": 0.2,
             }
         elif alert_type == "health":
-            base_config['thresholds'] = {
-                'system_availability': 0.95,
-                'response_time_ms': 1000
+            base_config["thresholds"] = {
+                "system_availability": 0.95,
+                "response_time_ms": 1000,
             }
 
         return base_config
@@ -436,7 +479,7 @@ class HookSafetyConfigManager:
             "security": asdict(self.security),
             "performance": asdict(self.performance),
             "exported_at": datetime.now().isoformat(),
-            "version": "1.0"
+            "version": "1.0",
         }
 
         if format.lower() == "yaml":
@@ -459,11 +502,17 @@ class HookSafetyConfigManager:
             # Update configurations
             if "graduated_enforcement" in config:
                 enforcement_data = config["graduated_enforcement"]
-                if 'initial_mode' in enforcement_data:
-                    enforcement_data['initial_mode'] = EnforcementMode(enforcement_data['initial_mode'])
-                if 'max_enforcement_level' in enforcement_data:
-                    enforcement_data['max_enforcement_level'] = EnforcementMode(enforcement_data['max_enforcement_level'])
-                self.graduated_enforcement = GraduatedEnforcementConfig(**enforcement_data)
+                if "initial_mode" in enforcement_data:
+                    enforcement_data["initial_mode"] = EnforcementMode(
+                        enforcement_data["initial_mode"]
+                    )
+                if "max_enforcement_level" in enforcement_data:
+                    enforcement_data["max_enforcement_level"] = EnforcementMode(
+                        enforcement_data["max_enforcement_level"]
+                    )
+                self.graduated_enforcement = GraduatedEnforcementConfig(
+                    **enforcement_data
+                )
 
             if "rollback" in config:
                 self.rollback = RollbackConfig(**config["rollback"])
@@ -491,18 +540,16 @@ class HookSafetyConfigManager:
 
     def validate_configuration(self) -> dict[str, list[str]]:
         """Validate all configurations"""
-        issues = {
-            "errors": [],
-            "warnings": [],
-            "suggestions": []
-        }
+        issues = {"errors": [], "warnings": [], "suggestions": []}
 
         # Validate enforcement configuration
         if self.graduated_enforcement.escalation_delay_minutes < 1:
             issues["errors"].append("Escalation delay must be at least 1 minute")
 
         if self.graduated_enforcement.escalation_delay_minutes > 60:
-            issues["warnings"].append("Escalation delay > 60 minutes may delay important responses")
+            issues["warnings"].append(
+                "Escalation delay > 60 minutes may delay important responses"
+            )
 
         # Validate rollback configuration
         if self.rollback.auto_rollback_delay_minutes < 1:
@@ -514,15 +561,21 @@ class HookSafetyConfigManager:
 
         # Validate monitoring configuration
         if self.monitoring.health_check_interval_seconds < 10:
-            issues["warnings"].append("Health check interval < 10 seconds may impact performance")
+            issues["warnings"].append(
+                "Health check interval < 10 seconds may impact performance"
+            )
 
         if self.monitoring.metrics_retention_hours > 168:  # 7 days
-            issues["warnings"].append("Long metrics retention may consume significant storage")
+            issues["warnings"].append(
+                "Long metrics retention may consume significant storage"
+            )
 
         # Validate alerting configuration
         rate_limits = self.alerting.rate_limiting
         if rate_limits.get("max_alerts_per_minute", 0) > 100:
-            issues["warnings"].append("High alert rate limit may cause notification flooding")
+            issues["warnings"].append(
+                "High alert rate limit may cause notification flooding"
+            )
 
         # Validate security configuration
         if self.security.bypass_code_expiry_hours > 168:  # 7 days
@@ -545,13 +598,13 @@ class HookSafetyConfigManager:
             "escalation_thresholds": {
                 "error_rate": 0.1,
                 "warning_rate": 0.3,
-                "performance_degradation": 0.2
+                "performance_degradation": 0.2,
             },
             "escalation_delay_minutes": 15,
             "degradation_recovery_threshold": 0.05,
             "auto_escalation_enabled": True,
             "max_enforcement_level": "enforce",
-            "cooldown_minutes": 30
+            "cooldown_minutes": 30,
         }
 
     def _get_default_rollback_config(self) -> dict[str, Any]:
@@ -563,12 +616,12 @@ class HookSafetyConfigManager:
                 "error_rate_duration_minutes": 5,
                 "consecutive_failures": 10,
                 "memory_threshold_mb": 1000,
-                "execution_time_threshold_ms": 30000
+                "execution_time_threshold_ms": 30000,
             },
             "auto_rollback_delay_minutes": 2,
             "max_rollback_states": 10,
             "rollback_to_safe_mode": True,
-            "notification_enabled": True
+            "notification_enabled": True,
         }
 
     def _get_default_monitoring_config(self) -> dict[str, Any]:
@@ -581,7 +634,7 @@ class HookSafetyConfigManager:
             "alert_aggregation_minutes": 5,
             "dashboard_update_interval_seconds": 10,
             "export_metrics": True,
-            "export_format": "json"
+            "export_format": "json",
         }
 
     def _get_default_alerting_config(self) -> dict[str, Any]:
@@ -593,12 +646,12 @@ class HookSafetyConfigManager:
             "rate_limiting": {
                 "max_alerts_per_minute": 10,
                 "cooldown_minutes": 30,
-                "burst_threshold": 5
+                "burst_threshold": 5,
             },
             "escalation_rules": {
                 "critical_alert_threshold": 3,
-                "emergency_escalation_minutes": 10
-            }
+                "emergency_escalation_minutes": 10,
+            },
         }
 
     def _get_default_security_config(self) -> dict[str, Any]:
@@ -610,7 +663,7 @@ class HookSafetyConfigManager:
             "secure_bypass_generation": True,
             "require_reason": True,
             "administrator_approval": False,
-            "encryption_enabled": True
+            "encryption_enabled": True,
         }
 
     def _get_default_performance_config(self) -> dict[str, Any]:
@@ -622,7 +675,7 @@ class HookSafetyConfigManager:
             "cache_ttl_minutes": 60,
             "async_processing": True,
             "background_cleanup": True,
-            "optimization_enabled": True
+            "optimization_enabled": True,
         }
 
 
@@ -691,7 +744,7 @@ if __name__ == "__main__":
                 "rollback_enabled": config_manager.rollback.enabled,
                 "monitoring_enabled": config_manager.monitoring.enabled,
                 "alerting_enabled": config_manager.alerting.enabled,
-                "last_reload": config_manager.last_reload.isoformat()
+                "last_reload": config_manager.last_reload.isoformat(),
             }
             print(json.dumps(status, indent=2))
 

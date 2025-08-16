@@ -15,35 +15,33 @@ from typing import Any
 @dataclass
 class MCPChromaConfig:
     """Configuration for MCP ChromaDB integration."""
+
     tool_prefix: str = "mcp__chroma-vana"
     collections: list[str] = None
 
     def __post_init__(self):
         if self.collections is None:
-            self.collections = [
-                "adk_documentation",
-                "adk_knowledge_base_v2"
-            ]
+            self.collections = ["adk_documentation", "adk_knowledge_base_v2"]
 
 
 async def query_adk_chromadb(
     query: str,
     collection_name: str = "adk_documentation",
     n_results: int = 10,
-    filter_dict: dict | None = None
+    filter_dict: dict | None = None,
 ) -> dict[str, Any]:
     """
     Query ADK documentation in ChromaDB using MCP tools.
-    
+
     This function interfaces with the MCP ChromaDB tool to query
     the indexed ADK documentation.
-    
+
     Args:
         query: The search query
         collection_name: Name of the ChromaDB collection
         n_results: Number of results to return
         filter_dict: Optional metadata filters
-        
+
     Returns:
         Dictionary containing query results
     """
@@ -53,8 +51,8 @@ async def query_adk_chromadb(
         "parameters": {
             "collection_name": collection_name,
             "query_texts": [query],
-            "n_results": n_results
-        }
+            "n_results": n_results,
+        },
     }
 
     if filter_dict:
@@ -66,14 +64,14 @@ async def query_adk_chromadb(
         "query": query,
         "collection": collection_name,
         "mcp_query": mcp_query,
-        "status": "ready_for_execution"
+        "status": "ready_for_execution",
     }
 
 
 class ADKExpertClaudeFlow:
     """
     Claude Flow orchestrator for ADK Expert Agent.
-    
+
     This class manages the interaction between Claude Flow and the ADK Expert Agent,
     handling ChromaDB queries and response synthesis.
     """
@@ -83,17 +81,15 @@ class ADKExpertClaudeFlow:
         self.query_cache = {}
 
     async def process_adk_query(
-        self,
-        user_query: str,
-        context: dict[str, Any] | None = None
+        self, user_query: str, context: dict[str, Any] | None = None
     ) -> dict[str, Any]:
         """
         Process an ADK query through Claude Flow.
-        
+
         Args:
             user_query: The user's ADK-related question
             context: Optional context for the query
-            
+
         Returns:
             Structured response with ADK guidance
         """
@@ -108,9 +104,7 @@ class ADKExpertClaudeFlow:
         for collection in self.mcp_config.collections:
             for search_query in search_queries:
                 results = await query_adk_chromadb(
-                    search_query,
-                    collection_name=collection,
-                    n_results=5
+                    search_query, collection_name=collection, n_results=5
                 )
                 all_results.append(results)
 
@@ -126,9 +120,13 @@ class ADKExpertClaudeFlow:
         """Analyze the intent of the user's query."""
         query_lower = query.lower()
 
-        if any(word in query_lower for word in ["how to", "implement", "create", "build"]):
+        if any(
+            word in query_lower for word in ["how to", "implement", "create", "build"]
+        ):
             return "implementation"
-        elif any(word in query_lower for word in ["best practice", "recommended", "should"]):
+        elif any(
+            word in query_lower for word in ["best practice", "recommended", "should"]
+        ):
             return "best_practice"
         elif any(word in query_lower for word in ["error", "issue", "problem", "fix"]):
             return "troubleshooting"
@@ -145,31 +143,34 @@ class ADKExpertClaudeFlow:
 
         # Add intent-specific queries
         if intent == "implementation":
-            queries.extend([
-                f"ADK implementation {user_query}",
-                f"How to {user_query} in Google ADK",
-                f"Code example {user_query} ADK"
-            ])
+            queries.extend(
+                [
+                    f"ADK implementation {user_query}",
+                    f"How to {user_query} in Google ADK",
+                    f"Code example {user_query} ADK",
+                ]
+            )
         elif intent == "best_practice":
-            queries.extend([
-                f"ADK best practices {user_query}",
-                f"Recommended {user_query} Google ADK",
-                f"ADK guidelines {user_query}"
-            ])
+            queries.extend(
+                [
+                    f"ADK best practices {user_query}",
+                    f"Recommended {user_query} Google ADK",
+                    f"ADK guidelines {user_query}",
+                ]
+            )
         elif intent == "troubleshooting":
-            queries.extend([
-                f"Fix {user_query} ADK",
-                f"ADK error {user_query}",
-                f"Troubleshoot {user_query} Google ADK"
-            ])
+            queries.extend(
+                [
+                    f"Fix {user_query} ADK",
+                    f"ADK error {user_query}",
+                    f"Troubleshoot {user_query} Google ADK",
+                ]
+            )
 
         return queries[:4]  # Limit to 4 queries
 
     def _synthesize_response(
-        self,
-        results: list[dict[str, Any]],
-        original_query: str,
-        intent: str
+        self, results: list[dict[str, Any]], original_query: str, intent: str
     ) -> dict[str, Any]:
         """Synthesize a comprehensive response from query results."""
         return {
@@ -179,7 +180,7 @@ class ADKExpertClaudeFlow:
             "guidance": self._extract_guidance(results),
             "examples": self._extract_examples(results),
             "best_practices": self._extract_best_practices(results),
-            "status": "success"
+            "status": "success",
         }
 
     def _extract_guidance(self, results: list[dict[str, Any]]) -> str:
@@ -202,7 +203,7 @@ class ADKExpertClaudeFlow:
 def create_claude_flow_adk_agent():
     """
     Create a Claude Flow agent configuration for ADK expertise.
-    
+
     This configuration can be registered with Claude Flow for orchestration.
     """
     return {
@@ -213,32 +214,29 @@ def create_claude_flow_adk_agent():
             "adk-implementation",
             "adk-validation",
             "adk-troubleshooting",
-            "chromadb-query"
+            "chromadb-query",
         ],
         "description": "Expert agent for Google ADK guidance using ChromaDB knowledge base",
         "tools": [
             {
                 "name": "query_adk_chromadb",
                 "type": "mcp_tool",
-                "mcp_tool": "mcp__chroma-vana__chroma_query_documents"
+                "mcp_tool": "mcp__chroma-vana__chroma_query_documents",
             }
         ],
         "configuration": {
             "model": "gemini-2.5-flash",
             "temperature": 0.3,
             "max_tokens": 2048,
-            "collections": [
-                "adk_documentation",
-                "adk_knowledge_base_v2"
-            ]
+            "collections": ["adk_documentation", "adk_knowledge_base_v2"],
         },
         "prompts": {
             "system": """You are an ADK expert agent with access to the complete Google ADK documentation indexed in ChromaDB.
             Always query the ChromaDB collections before providing guidance.
             Base all responses on official ADK documentation.
             Provide specific examples and best practices from the documentation.""",
-            "query_template": "Query ADK documentation for: {query}"
-        }
+            "query_template": "Query ADK documentation for: {query}",
+        },
     }
 
 
@@ -269,7 +267,7 @@ async def example_validation_query():
 
     result = await flow.process_adk_query(
         f"Validate this agent implementation: {code_sample}",
-        context={"code": code_sample}
+        context={"code": code_sample},
     )
 
     print(json.dumps(result, indent=2))
@@ -292,7 +290,7 @@ async def example_troubleshooting():
 def register_with_claude_flow():
     """
     Register the ADK Expert Agent with Claude Flow.
-    
+
     This function would be called during Claude Flow initialization
     to make the agent available for orchestration.
     """
@@ -305,41 +303,39 @@ def register_with_claude_flow():
         "agent_config": agent_config,
         "mcp_tools": [
             "mcp__chroma-vana__chroma_query_documents",
-            "mcp__chroma-vana__chroma_list_collections"
-        ]
+            "mcp__chroma-vana__chroma_list_collections",
+        ],
     }
 
 
 # Direct MCP tool wrapper for Claude Flow
 async def adk_expert_mcp_tool(
-    action: str,
-    parameters: dict[str, Any]
+    action: str, parameters: dict[str, Any]
 ) -> dict[str, Any]:
     """
     MCP tool wrapper for ADK Expert functionality.
-    
+
     This allows Claude Flow to directly invoke ADK expert capabilities
     through the MCP tool interface.
-    
+
     Args:
         action: The action to perform (query, validate, etc.)
         parameters: Parameters for the action
-        
+
     Returns:
         Action results
     """
     if action == "query":
         flow = ADKExpertClaudeFlow()
         return await flow.process_adk_query(
-            parameters.get("query", ""),
-            parameters.get("context")
+            parameters.get("query", ""), parameters.get("context")
         )
 
     elif action == "validate":
         # Validation logic
         return {
             "status": "success",
-            "validation": "Code validation against ADK patterns"
+            "validation": "Code validation against ADK patterns",
         }
 
     elif action == "list_patterns":
@@ -350,15 +346,12 @@ async def adk_expert_mcp_tool(
                 "hierarchical-planner-executor",
                 "sequential-pipeline",
                 "parallel-fan-out",
-                "loop-with-escalation"
+                "loop-with-escalation",
             ]
         }
 
     else:
-        return {
-            "status": "error",
-            "message": f"Unknown action: {action}"
-        }
+        return {"status": "error", "message": f"Unknown action: {action}"}
 
 
 if __name__ == "__main__":

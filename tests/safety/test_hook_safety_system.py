@@ -93,8 +93,11 @@ class TestHookSafetySystem:
         """Test emergency bypass code functionality"""
 
         # Get an emergency bypass code
-        emergency_codes = [code for code_id, code in safety_system.bypass_codes.items()
-                          if code_id == "emergency"]
+        emergency_codes = [
+            code
+            for code_id, code in safety_system.bypass_codes.items()
+            if code_id == "emergency"
+        ]
         assert len(emergency_codes) > 0
 
         emergency_code = emergency_codes[0]
@@ -127,7 +130,7 @@ class TestHookSafetySystem:
             max_uses=5,
             uses_remaining=5,
             created_by="test",
-            reason="Test expiry"
+            reason="Test expiry",
         )
         safety_system.bypass_codes["test_expired"] = expired_code
 
@@ -140,7 +143,11 @@ class TestHookSafetySystem:
     async def test_new_bypass_code_generation(self, safety_system):
         """Test new bypass code generation"""
         result = safety_system.generate_new_bypass_code(
-            "test_code", "Test purpose", expiry_hours=1, max_uses=3, created_by="test_user"
+            "test_code",
+            "Test purpose",
+            expiry_hours=1,
+            max_uses=3,
+            created_by="test_user",
         )
 
         assert result["code_type"] == "test_code"
@@ -167,7 +174,11 @@ class TestHookSafetySystem:
         safety_system._perform_health_check()
 
         # Health should have degraded
-        assert safety_system.health_status in [HealthStatus.DEGRADED, HealthStatus.FAILING, HealthStatus.CRITICAL]
+        assert safety_system.health_status in [
+            HealthStatus.DEGRADED,
+            HealthStatus.FAILING,
+            HealthStatus.CRITICAL,
+        ]
 
     @pytest.mark.asyncio
     async def test_emergency_mode_trigger(self, safety_system):
@@ -229,16 +240,35 @@ class TestHookSafetySystem:
         status = safety_system.get_system_status()
 
         required_fields = [
-            "timestamp", "health_status", "enforcement_level", "emergency_mode",
-            "monitoring_active", "last_health_check", "metrics", "bypass_codes",
-            "active_alerts", "rollback_states_available"
+            "timestamp",
+            "health_status",
+            "enforcement_level",
+            "emergency_mode",
+            "monitoring_active",
+            "last_health_check",
+            "metrics",
+            "bypass_codes",
+            "active_alerts",
+            "rollback_states_available",
         ]
 
         for field in required_fields:
             assert field in status
 
-        assert status["health_status"] in ["healthy", "degraded", "failing", "critical", "emergency"]
-        assert status["enforcement_level"] in ["monitor", "warn", "soft", "enforce", "emergency"]
+        assert status["health_status"] in [
+            "healthy",
+            "degraded",
+            "failing",
+            "critical",
+            "emergency",
+        ]
+        assert status["enforcement_level"] in [
+            "monitor",
+            "warn",
+            "soft",
+            "enforce",
+            "emergency",
+        ]
         assert isinstance(status["emergency_mode"], bool)
         assert isinstance(status["monitoring_active"], bool)
 
@@ -266,10 +296,7 @@ class TestHookSafetyConfigManager:
         """Test enforcement configuration updates"""
 
         # Update enforcement config
-        updates = {
-            "auto_escalation_enabled": False,
-            "escalation_delay_minutes": 30
-        }
+        updates = {"auto_escalation_enabled": False, "escalation_delay_minutes": 30}
         config_manager.update_enforcement_config(updates)
 
         assert config_manager.graduated_enforcement.auto_escalation_enabled is False
@@ -373,7 +400,7 @@ class TestAlertManager:
             severity=AlertSeverity.WARNING,
             message="Test alert message",
             details={"test": True},
-            tags=["test"]
+            tags=["test"],
         )
 
         assert alert_id is not None
@@ -451,8 +478,11 @@ class TestAlertManager:
         await asyncio.sleep(0.1)
 
         # Check if alert was triggered
-        error_alerts = [alert for alert in alert_manager.active_alerts.values()
-                       if "error_rate" in alert.name]
+        error_alerts = [
+            alert
+            for alert in alert_manager.active_alerts.values()
+            if "error_rate" in alert.name
+        ]
         assert len(error_alerts) > 0
 
     @pytest.mark.asyncio
@@ -476,8 +506,12 @@ class TestAlertManager:
         summary = alert_manager.get_alert_summary()
 
         required_fields = [
-            "total_active_alerts", "active_by_severity", "total_historical_alerts",
-            "recent_alert_rate_per_hour", "notification_targets", "metric_thresholds"
+            "total_active_alerts",
+            "active_by_severity",
+            "total_historical_alerts",
+            "recent_alert_rate_per_hour",
+            "notification_targets",
+            "metric_thresholds",
         ]
 
         for field in required_fields:
@@ -506,7 +540,7 @@ class TestProductionScenarios:
             yield {
                 "safety_system": safety_system,
                 "alert_manager": alert_manager,
-                "config_manager": config_manager
+                "config_manager": config_manager,
             }
 
             # Cleanup
@@ -528,12 +562,18 @@ class TestProductionScenarios:
         safety_system._perform_health_check()
 
         # System should degrade enforcement or trigger emergency mode
-        assert safety_system.health_status in [HealthStatus.FAILING, HealthStatus.CRITICAL]
+        assert safety_system.health_status in [
+            HealthStatus.FAILING,
+            HealthStatus.CRITICAL,
+        ]
 
         # Check if alerts were triggered
         await asyncio.sleep(0.1)
-        error_alerts = [alert for alert in alert_manager.active_alerts.values()
-                       if "error" in alert.name.lower()]
+        error_alerts = [
+            alert
+            for alert in alert_manager.active_alerts.values()
+            if "error" in alert.name.lower()
+        ]
         assert len(error_alerts) > 0
 
     @pytest.mark.asyncio
@@ -545,12 +585,17 @@ class TestProductionScenarios:
         # Simulate memory pressure
         for i in range(10):
             await safety_system._record_metrics(100, {"validated": True})
-            await alert_manager.record_metric("memory_usage_mb", 800 + (i * 50))  # Increasing memory
+            await alert_manager.record_metric(
+                "memory_usage_mb", 800 + (i * 50)
+            )  # Increasing memory
 
         # Check alerts
         await asyncio.sleep(0.1)
-        memory_alerts = [alert for alert in alert_manager.active_alerts.values()
-                        if "memory" in alert.name.lower()]
+        memory_alerts = [
+            alert
+            for alert in alert_manager.active_alerts.values()
+            if "memory" in alert.name.lower()
+        ]
         assert len(memory_alerts) > 0
 
     @pytest.mark.asyncio
@@ -567,8 +612,11 @@ class TestProductionScenarios:
 
         # Check for performance alerts
         await asyncio.sleep(0.1)
-        perf_alerts = [alert for alert in alert_manager.active_alerts.values()
-                      if "execution" in alert.name.lower() or "slow" in alert.name.lower()]
+        perf_alerts = [
+            alert
+            for alert in alert_manager.active_alerts.values()
+            if "execution" in alert.name.lower() or "slow" in alert.name.lower()
+        ]
         assert len(perf_alerts) > 0
 
     @pytest.mark.asyncio
@@ -596,7 +644,11 @@ class TestProductionScenarios:
 
         # Change configuration
         original_mode = config_manager.get_current_enforcement_mode()
-        new_mode = EnforcementMode.WARN if original_mode != EnforcementMode.WARN else EnforcementMode.MONITOR
+        new_mode = (
+            EnforcementMode.WARN
+            if original_mode != EnforcementMode.WARN
+            else EnforcementMode.MONITOR
+        )
 
         config_manager.set_enforcement_mode(new_mode)
 
@@ -615,8 +667,11 @@ class TestProductionScenarios:
 
         # Generate new bypass code
         result = safety_system.generate_new_bypass_code(
-            "maintenance", "Scheduled maintenance",
-            expiry_hours=2, max_uses=5, created_by="admin"
+            "maintenance",
+            "Scheduled maintenance",
+            expiry_hours=2,
+            max_uses=5,
+            created_by="admin",
         )
 
         assert result["success"] is True
@@ -631,7 +686,7 @@ class TestProductionScenarios:
 
         # Use code multiple times
         for i in range(4):  # Use remaining uses
-            use_result = safety_system.use_bypass_code(code, f"Use {i+2}")
+            use_result = safety_system.use_bypass_code(code, f"Use {i + 2}")
             assert use_result["success"] is True
 
         # Should be exhausted now
@@ -676,8 +731,7 @@ class TestLoadAndStress:
         # Record 1000 metrics rapidly
         for i in range(1000):
             await stress_safety_system._record_metrics(
-                100 + (i % 50),
-                {"validated": i % 10 != 0, "operation": f"test_{i}"}
+                100 + (i % 50), {"validated": i % 10 != 0, "operation": f"test_{i}"}
             )
 
         # Check metrics were recorded
@@ -685,7 +739,10 @@ class TestLoadAndStress:
 
         # Performance should still be acceptable
         status = stress_safety_system.get_system_status()
-        assert status["health_status"] in ["healthy", "degraded"]  # Not failing/critical
+        assert status["health_status"] in [
+            "healthy",
+            "degraded",
+        ]  # Not failing/critical
 
     @pytest.mark.asyncio
     async def test_alert_storm_handling(self):
@@ -700,7 +757,7 @@ class TestLoadAndStress:
                     alert_id = await alert_manager.trigger_alert(
                         f"storm_alert_{i % 5}",  # 5 different alert types
                         AlertSeverity.WARNING,
-                        f"Storm alert {i}"
+                        f"Storm alert {i}",
                     )
                     alert_ids.append(alert_id)
 

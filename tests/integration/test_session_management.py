@@ -27,6 +27,7 @@ from app.utils.session_backup import (
 @dataclass
 class MockGCSBlob:
     """Mock GCS blob for testing."""
+
     name: str
     updated: datetime
     size: int = 1024
@@ -34,7 +35,7 @@ class MockGCSBlob:
     def download_to_filename(self, filename: str):
         """Mock download functionality."""
         # Create a dummy file
-        with open(filename, 'w') as f:
+        with open(filename, "w") as f:
             f.write('{"mock": "session_data"}')
 
     def upload_from_filename(self, filename: str):
@@ -53,7 +54,7 @@ class TestSessionPersistence:
         self.test_bucket_name = f"{self.test_project_id}-vana-session-storage"
 
         # Create temporary database for testing
-        self.temp_db_fd, self.temp_db_path = tempfile.mkstemp(suffix='.db')
+        self.temp_db_fd, self.temp_db_path = tempfile.mkstemp(suffix=".db")
         os.close(self.temp_db_fd)  # Close the file descriptor, keep the path
 
     def teardown_method(self):
@@ -68,7 +69,7 @@ class TestSessionPersistence:
         cursor = conn.cursor()
 
         # Create sessions table (simplified structure)
-        cursor.execute('''
+        cursor.execute("""
             CREATE TABLE IF NOT EXISTS sessions (
                 id TEXT PRIMARY KEY,
                 user_id TEXT NOT NULL,
@@ -77,7 +78,7 @@ class TestSessionPersistence:
                 state TEXT,
                 metadata TEXT
             )
-        ''')
+        """)
 
         # Insert test data
         test_sessions = [
@@ -87,26 +88,35 @@ class TestSessionPersistence:
                 "created_at": int(time.time()),
                 "updated_at": int(time.time()),
                 "state": json.dumps({"step": "research", "topic": "AI testing"}),
-                "metadata": json.dumps({"source": "test", "version": "1.0"})
+                "metadata": json.dumps({"source": "test", "version": "1.0"}),
             },
             {
                 "id": str(uuid.uuid4()),
                 "user_id": "another_user",
                 "created_at": int(time.time() - 3600),
                 "updated_at": int(time.time() - 1800),
-                "state": json.dumps({"step": "complete", "results": ["test1", "test2"]}),
-                "metadata": json.dumps({"source": "test", "archived": True})
-            }
+                "state": json.dumps(
+                    {"step": "complete", "results": ["test1", "test2"]}
+                ),
+                "metadata": json.dumps({"source": "test", "archived": True}),
+            },
         ]
 
         for session in test_sessions:
-            cursor.execute('''
+            cursor.execute(
+                """
                 INSERT INTO sessions (id, user_id, created_at, updated_at, state, metadata)
                 VALUES (?, ?, ?, ?, ?, ?)
-            ''', (
-                session["id"], session["user_id"], session["created_at"],
-                session["updated_at"], session["state"], session["metadata"]
-            ))
+            """,
+                (
+                    session["id"],
+                    session["user_id"],
+                    session["created_at"],
+                    session["updated_at"],
+                    session["state"],
+                    session["metadata"],
+                ),
+            )
 
         conn.commit()
         conn.close()
@@ -116,9 +126,10 @@ class TestSessionPersistence:
         self.create_test_session_db()
 
         # Mock GCS client and bucket
-        with patch('google.cloud.storage.Client') as mock_storage_client, \
-             patch('app.utils.session_backup.logger') as mock_logger:
-
+        with (
+            patch("google.cloud.storage.Client") as mock_storage_client,
+            patch("app.utils.session_backup.logger") as mock_logger,
+        ):
             mock_client = Mock()
             mock_bucket = Mock()
             mock_blob = Mock()
@@ -131,7 +142,7 @@ class TestSessionPersistence:
             backup_session_db_to_gcs(
                 local_db_path=self.temp_db_path,
                 bucket_name=self.test_bucket_name,
-                project_id=self.test_project_id
+                project_id=self.test_project_id,
             )
 
             # Verify backup was attempted
@@ -143,14 +154,14 @@ class TestSessionPersistence:
         # Create mock backup file
         backup_data = {"sessions": [{"id": "test_session", "user_id": "test_user"}]}
 
-        with patch('google.cloud.storage.Client') as mock_storage_client, \
-             patch('app.utils.session_backup.logger') as mock_logger:
-
+        with (
+            patch("google.cloud.storage.Client") as mock_storage_client,
+            patch("app.utils.session_backup.logger") as mock_logger,
+        ):
             mock_client = Mock()
             mock_bucket = Mock()
             mock_blob = MockGCSBlob(
-                name="session_backup_latest.db",
-                updated=datetime.now()
+                name="session_backup_latest.db", updated=datetime.now()
             )
 
             mock_storage_client.return_value = mock_client
@@ -162,7 +173,7 @@ class TestSessionPersistence:
             restore_session_db_from_gcs(
                 local_db_path=self.temp_db_path,
                 bucket_name=self.test_bucket_name,
-                project_id=self.test_project_id
+                project_id=self.test_project_id,
             )
 
             # Verify restore was attempted
@@ -176,12 +187,16 @@ class TestSessionPersistence:
         """Test Cloud Run session persistence setup."""
         cloud_run_db_path = "/tmp/cloud_run_sessions.db"
 
-        with patch('app.utils.session_backup.restore_session_db_from_gcs') as mock_restore, \
-             patch('app.utils.session_backup.create_periodic_backup_job') as mock_backup_job:
-
+        with (
+            patch(
+                "app.utils.session_backup.restore_session_db_from_gcs"
+            ) as mock_restore,
+            patch(
+                "app.utils.session_backup.create_periodic_backup_job"
+            ) as mock_backup_job,
+        ):
             session_uri = setup_session_persistence_for_cloud_run(
-                project_id=self.test_project_id,
-                session_db_path=cloud_run_db_path
+                project_id=self.test_project_id, session_db_path=cloud_run_db_path
             )
 
             # Verify setup
@@ -193,23 +208,24 @@ class TestSessionPersistence:
         """Test periodic backup job creation."""
         self.create_test_session_db()
 
-        with patch('threading.Thread') as mock_thread, \
-             patch('app.utils.session_backup.backup_session_db_to_gcs') as mock_backup:
-
+        with (
+            patch("threading.Thread") as mock_thread,
+            patch("app.utils.session_backup.backup_session_db_to_gcs") as mock_backup,
+        ):
             # Create periodic backup job
             create_periodic_backup_job(
                 local_db_path=self.temp_db_path,
                 bucket_name=self.test_bucket_name,
                 project_id=self.test_project_id,
-                interval_hours=1  # Short interval for testing
+                interval_hours=1,  # Short interval for testing
             )
 
             # Verify thread was created for periodic backup
             mock_thread.assert_called_once()
             thread_args = mock_thread.call_args
-            assert 'target' in thread_args.kwargs
-            assert 'daemon' in thread_args.kwargs
-            assert thread_args.kwargs['daemon'] is True
+            assert "target" in thread_args.kwargs
+            assert "daemon" in thread_args.kwargs
+            assert thread_args.kwargs["daemon"] is True
 
 
 class TestSessionLifecycle:
@@ -220,7 +236,7 @@ class TestSessionLifecycle:
         self.test_user = User(
             id="lifecycle_user_123",
             email="lifecycle@test.com",
-            display_name="Lifecycle Test User"
+            display_name="Lifecycle Test User",
         )
 
     def test_session_creation(self):
@@ -230,8 +246,8 @@ class TestSessionLifecycle:
             "initial_state": {
                 "research_topic": "Machine Learning Testing",
                 "preferred_language": "English",
-                "session_type": "research"
-            }
+                "session_type": "research",
+            },
         }
 
         # Create session
@@ -239,7 +255,7 @@ class TestSessionLifecycle:
             id=str(uuid.uuid4()),
             user_id=session_data["user_id"],
             created_at=time.time(),
-            state=session_data["initial_state"]
+            state=session_data["initial_state"],
         )
 
         # Verify session properties
@@ -256,15 +272,19 @@ class TestSessionLifecycle:
             id=str(uuid.uuid4()),
             user_id=self.test_user.id,
             created_at=time.time(),
-            state={"step": "initial", "progress": 0}
+            state={"step": "initial", "progress": 0},
         )
 
         # Simulate state updates during session
         state_updates = [
             {"step": "research", "progress": 0.2, "current_task": "data_collection"},
-            {"step": "analysis", "progress": 0.6, "current_task": "pattern_recognition"},
+            {
+                "step": "analysis",
+                "progress": 0.6,
+                "current_task": "pattern_recognition",
+            },
             {"step": "synthesis", "progress": 0.9, "current_task": "report_generation"},
-            {"step": "complete", "progress": 1.0, "results": ["finding1", "finding2"]}
+            {"step": "complete", "progress": 1.0, "results": ["finding1", "finding2"]},
         ]
 
         for i, update in enumerate(state_updates):
@@ -289,7 +309,7 @@ class TestSessionLifecycle:
                 id=str(uuid.uuid4()),
                 user_id=self.test_user.id,
                 created_at=time.time() - (i * 3600),  # Stagger creation times
-                state={"step": f"test_step_{i}", "data": f"test_data_{i}"}
+                state={"step": f"test_step_{i}", "data": f"test_data_{i}"},
             )
             sessions.append(session)
 
@@ -322,7 +342,7 @@ class TestSessionLifecycle:
             id=str(uuid.uuid4()),
             user_id=self.test_user.id,
             created_at=time.time(),
-            state={"counter": 0, "operations": []}
+            state={"counter": 0, "operations": []},
         )
 
         def update_session(operation_id):
@@ -358,12 +378,13 @@ class TestSessionStorage:
         self.temp_dir = tempfile.mkdtemp()
         self.storage_configs = [
             {"type": "sqlite", "path": os.path.join(self.temp_dir, "test.db")},
-            {"type": "memory", "path": ":memory:"}
+            {"type": "memory", "path": ":memory:"},
         ]
 
     def teardown_method(self):
         """Clean up storage test files."""
         import shutil
+
         if os.path.exists(self.temp_dir):
             shutil.rmtree(self.temp_dir)
 
@@ -375,14 +396,14 @@ class TestSessionStorage:
         conn = sqlite3.connect(storage_config["path"])
         cursor = conn.cursor()
 
-        cursor.execute('''
+        cursor.execute("""
             CREATE TABLE sessions (
                 id TEXT PRIMARY KEY,
                 user_id TEXT,
                 data TEXT,
                 created_at INTEGER
             )
-        ''')
+        """)
 
         # Test storage operations
         test_sessions = []
@@ -395,18 +416,21 @@ class TestSessionStorage:
             session_data = {
                 "user_id": f"user_{i}",
                 "state": {"step": f"step_{i}", "data": f"data_{i}"},
-                "created_at": time.time()
+                "created_at": time.time(),
             }
 
-            cursor.execute('''
+            cursor.execute(
+                """
                 INSERT INTO sessions (id, user_id, data, created_at)
                 VALUES (?, ?, ?, ?)
-            ''', (
-                session_id,
-                session_data["user_id"],
-                json.dumps(session_data["state"]),
-                session_data["created_at"]
-            ))
+            """,
+                (
+                    session_id,
+                    session_data["user_id"],
+                    json.dumps(session_data["state"]),
+                    session_data["created_at"],
+                ),
+            )
 
             test_sessions.append(session_id)
 
@@ -417,7 +441,7 @@ class TestSessionStorage:
         start_time = time.time()
 
         for session_id in test_sessions:
-            cursor.execute('SELECT * FROM sessions WHERE id = ?', (session_id,))
+            cursor.execute("SELECT * FROM sessions WHERE id = ?", (session_id,))
             result = cursor.fetchone()
             assert result is not None
 
@@ -437,14 +461,14 @@ class TestSessionStorage:
         conn = sqlite3.connect(storage_config["path"])
         cursor = conn.cursor()
 
-        cursor.execute('''
+        cursor.execute("""
             CREATE TABLE sessions (
                 id TEXT PRIMARY KEY,
                 user_id TEXT,
                 data TEXT,
                 created_at INTEGER
             )
-        ''')
+        """)
 
         # Test high-frequency operations
         num_operations = 1000
@@ -454,20 +478,26 @@ class TestSessionStorage:
             session_id = f"mem_session_{i}"
 
             # Insert
-            cursor.execute('''
+            cursor.execute(
+                """
                 INSERT INTO sessions (id, user_id, data, created_at)
                 VALUES (?, ?, ?, ?)
-            ''', (session_id, f"user_{i}", f'{{"data": "test_{i}"}}', time.time()))
+            """,
+                (session_id, f"user_{i}", f'{{"data": "test_{i}"}}', time.time()),
+            )
 
             # Read
-            cursor.execute('SELECT data FROM sessions WHERE id = ?', (session_id,))
+            cursor.execute("SELECT data FROM sessions WHERE id = ?", (session_id,))
             result = cursor.fetchone()
             assert result is not None
 
             # Update
-            cursor.execute('''
+            cursor.execute(
+                """
                 UPDATE sessions SET data = ? WHERE id = ?
-            ''', (f'{{"data": "updated_{i}"}}', session_id))
+            """,
+                (f'{{"data": "updated_{i}"}}', session_id),
+            )
 
         operation_time = time.time() - start_time
 
@@ -483,14 +513,14 @@ class TestSessionStorage:
         conn = sqlite3.connect(storage_config["path"])
         cursor = conn.cursor()
 
-        cursor.execute('''
+        cursor.execute("""
             CREATE TABLE sessions (
                 id TEXT PRIMARY KEY,
                 user_id TEXT,
                 large_data TEXT,
                 created_at INTEGER
             )
-        ''')
+        """)
 
         # Test with large session data
         large_data = json.dumps({"data": "x" * 10000})  # 10KB per session
@@ -499,10 +529,13 @@ class TestSessionStorage:
         try:
             for i in range(1000):  # Attempt 1000 sessions × 10KB = 10MB
                 session_id = f"large_session_{i}"
-                cursor.execute('''
+                cursor.execute(
+                    """
                     INSERT INTO sessions (id, user_id, large_data, created_at)
                     VALUES (?, ?, ?, ?)
-                ''', (session_id, f"user_{i}", large_data, time.time()))
+                """,
+                    (session_id, f"user_{i}", large_data, time.time()),
+                )
 
                 sessions_created += 1
 
@@ -538,7 +571,7 @@ class TestSessionSecurity:
 
             # Verify format
             assert len(session_id) == 36  # UUID format length
-            assert session_id.count('-') == 4  # UUID dash pattern
+            assert session_id.count("-") == 4  # UUID dash pattern
 
         # All IDs should be unique
         assert len(session_ids) == num_ids
@@ -550,13 +583,13 @@ class TestSessionSecurity:
             "'; DROP TABLE sessions; --",
             "../../../etc/passwd",
             "javascript:alert('xss')",
-            "<iframe src='http://evil.com'></iframe>"
+            "<iframe src='http://evil.com'></iframe>",
         ]
 
         for harmful_input in potentially_harmful_inputs:
             session_data = {
                 "user_input": harmful_input,
-                "state": {"query": harmful_input}
+                "state": {"query": harmful_input},
             }
 
             # Sanitize or validate session data
@@ -570,7 +603,9 @@ class TestSessionSecurity:
                     sanitized_dict = {}
                     for sub_key, sub_value in value.items():
                         if isinstance(sub_value, str):
-                            sanitized_dict[sub_key] = sub_value.replace("<", "&lt;").replace(">", "&gt;")
+                            sanitized_dict[sub_key] = sub_value.replace(
+                                "<", "&lt;"
+                            ).replace(">", "&gt;")
                         else:
                             sanitized_dict[sub_key] = sub_value
                     sanitized_data[key] = sanitized_dict
@@ -579,7 +614,9 @@ class TestSessionSecurity:
 
             # Verify sanitization worked
             assert "<script>" not in json.dumps(sanitized_data)
-            assert "DROP TABLE" in json.dumps(sanitized_data)  # SQL injection strings may remain but be escaped
+            assert "DROP TABLE" in json.dumps(
+                sanitized_data
+            )  # SQL injection strings may remain but be escaped
 
     def test_session_access_control(self):
         """Test session access control."""
@@ -588,20 +625,44 @@ class TestSessionSecurity:
         user2_id = "user_002"
 
         user1_sessions = [
-            Session(id=str(uuid.uuid4()), user_id=user1_id, created_at=time.time(), state={"private": "data1"}),
-            Session(id=str(uuid.uuid4()), user_id=user1_id, created_at=time.time(), state={"private": "data2"})
+            Session(
+                id=str(uuid.uuid4()),
+                user_id=user1_id,
+                created_at=time.time(),
+                state={"private": "data1"},
+            ),
+            Session(
+                id=str(uuid.uuid4()),
+                user_id=user1_id,
+                created_at=time.time(),
+                state={"private": "data2"},
+            ),
         ]
 
         user2_sessions = [
-            Session(id=str(uuid.uuid4()), user_id=user2_id, created_at=time.time(), state={"private": "data3"}),
-            Session(id=str(uuid.uuid4()), user_id=user2_id, created_at=time.time(), state={"private": "data4"})
+            Session(
+                id=str(uuid.uuid4()),
+                user_id=user2_id,
+                created_at=time.time(),
+                state={"private": "data3"},
+            ),
+            Session(
+                id=str(uuid.uuid4()),
+                user_id=user2_id,
+                created_at=time.time(),
+                state={"private": "data4"},
+            ),
         ]
 
         all_sessions = user1_sessions + user2_sessions
 
         # Test access control logic
         def get_user_sessions(requesting_user_id, all_sessions):
-            return [session for session in all_sessions if session.user_id == requesting_user_id]
+            return [
+                session
+                for session in all_sessions
+                if session.user_id == requesting_user_id
+            ]
 
         # User 1 should only see their sessions
         user1_accessible = get_user_sessions(user1_id, all_sessions)

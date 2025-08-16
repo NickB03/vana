@@ -39,5 +39,5 @@ __all__ = [
     "ValidatorConfig",
     "create_default_config",
     "create_development_config",
-    "create_production_config"
+    "create_production_config",
 ]

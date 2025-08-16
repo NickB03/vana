@@ -34,6 +34,7 @@ import pytest
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+
 class TestHookIntegrationComprehensive:
     """Comprehensive integration tests for the entire hook system"""
 
@@ -45,22 +46,22 @@ class TestHookIntegrationComprehensive:
 
             # Create complete project structure
             directories = [
-                '.claude_workspace',
-                '.claude_workspace/reports',
-                '.claude_workspace/planning',
-                'docs',
-                'src/components',
-                'src/components/ui',
-                'src/hooks',
-                'src/lib',
-                'src/types',
-                'tests/unit',
-                'tests/integration',
-                'tests/e2e',
-                'app/api',
-                'app/auth',
-                'config',
-                'scripts'
+                ".claude_workspace",
+                ".claude_workspace/reports",
+                ".claude_workspace/planning",
+                "docs",
+                "src/components",
+                "src/components/ui",
+                "src/hooks",
+                "src/lib",
+                "src/types",
+                "tests/unit",
+                "tests/integration",
+                "tests/e2e",
+                "app/api",
+                "app/auth",
+                "config",
+                "scripts",
             ]
 
             for dir_path in directories:
@@ -153,7 +154,7 @@ class TestHookIntegrationComprehensive:
 - Performance tests for components with complex logic
 - Accessibility tests using testing-library/jest-dom
             """
-            (workspace / 'docs' / 'vana-frontend-prd-final.md').write_text(prd_content)
+            (workspace / "docs" / "vana-frontend-prd-final.md").write_text(prd_content)
 
             # Create hook configuration
             hook_config = {
@@ -163,7 +164,7 @@ class TestHookIntegrationComprehensive:
                     "blocking": True,
                     "error": True,
                     "warning": False,
-                    "advisory": False
+                    "advisory": False,
                 },
                 "currentMode": "prd_development",
                 "validationTimeout": 500,
@@ -174,15 +175,17 @@ class TestHookIntegrationComprehensive:
                 "performance": {
                     "enableMetrics": True,
                     "slowValidationThreshold": 300,
-                    "enableCaching": True
+                    "enableCaching": True,
                 },
                 "safety": {
                     "enableRollback": True,
                     "backupBeforeChanges": True,
-                    "emergencyBypass": False
-                }
+                    "emergencyBypass": False,
+                },
             }
-            (workspace / '.claude_workspace' / 'hook-config.json').write_text(json.dumps(hook_config, indent=2))
+            (workspace / ".claude_workspace" / "hook-config.json").write_text(
+                json.dumps(hook_config, indent=2)
+            )
 
             # Create package.json for Node.js compatibility
             package_json = {
@@ -192,10 +195,10 @@ class TestHookIntegrationComprehensive:
                 "dependencies": {
                     "react": "^18.0.0",
                     "@types/react": "^18.0.0",
-                    "typescript": "^5.0.0"
-                }
+                    "typescript": "^5.0.0",
+                },
             }
-            (workspace / 'package.json').write_text(json.dumps(package_json, indent=2))
+            (workspace / "package.json").write_text(json.dumps(package_json, indent=2))
 
             # Create .gitignore
             gitignore_content = """
@@ -208,7 +211,7 @@ build/
 .DS_Store
 .claude_workspace/temp/
             """
-            (workspace / '.gitignore').write_text(gitignore_content)
+            (workspace / ".gitignore").write_text(gitignore_content)
 
             yield workspace
 
@@ -216,8 +219,8 @@ build/
     def sample_components(self):
         """Sample components for testing"""
         return {
-            'good': {
-                'UserProfile.tsx': """
+            "good": {
+                "UserProfile.tsx": """
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
@@ -406,7 +409,7 @@ UserProfile.displayName = 'UserProfile';
 
 export default UserProfile;
                 """,
-                'UserProfile.test.tsx': """
+                "UserProfile.test.tsx": """
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { vi } from 'vitest';
@@ -550,10 +553,10 @@ describe('UserProfile', () => {
     expect(screen.getByLabelText('Email')).toBeInTheDocument();
   });
 });
-                """
+                """,
             },
-            'bad': {
-                'BadComponent.tsx': """
+            "bad": {
+                "BadComponent.tsx": """
 import React, { useState, useEffect } from 'react';
 import { Button as MaterialButton } from '@mui/material'; // Forbidden framework
 import { AntButton } from 'antd'; // Another forbidden framework
@@ -648,7 +651,7 @@ const BadComponent = (props) => {
 
 export default BadComponent;
                 """,
-                'BadAPI.py': """
+                "BadAPI.py": """
 # Bad API with multiple violations
 
 def get_user(user_id):
@@ -691,16 +694,16 @@ def update_user(user_id, request):
     except:
         # Generic exception handling
         return {"error": "something went wrong"}
-                """
-            }
+                """,
+            },
         }
 
     @pytest.fixture
     def api_samples(self):
         """Sample API files for testing"""
         return {
-            'good': {
-                'user_routes.py': '''
+            "good": {
+                "user_routes.py": '''
 from fastapi import APIRouter, HTTPException, status, Depends
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
@@ -817,6 +820,7 @@ async def create_user(
             }
         }
 
+
 class TestHookExecutionPipeline:
     """Test complete hook execution pipeline"""
 
@@ -827,147 +831,186 @@ class TestHookExecutionPipeline:
     def teardown_method(self):
         """Verify performance requirements"""
         execution_time = (time.time() - self.start_time) * 1000
-        assert execution_time < 5000, f"Integration test took {execution_time:.2f}ms, should be <5000ms"
+        assert execution_time < 5000, (
+            f"Integration test took {execution_time:.2f}ms, should be <5000ms"
+        )
 
     @pytest.mark.asyncio
-    async def test_complete_validation_pipeline_good_files(self, test_workspace, sample_components):
+    async def test_complete_validation_pipeline_good_files(
+        self, test_workspace, sample_components
+    ):
         """Test complete validation pipeline with good files"""
         os.chdir(test_workspace)
 
         # Write good components
-        good_component_path = test_workspace / 'src/components/UserProfile.tsx'
-        good_component_path.write_text(sample_components['good']['UserProfile.tsx'])
+        good_component_path = test_workspace / "src/components/UserProfile.tsx"
+        good_component_path.write_text(sample_components["good"]["UserProfile.tsx"])
 
-        good_test_path = test_workspace / 'tests/unit/UserProfile.test.tsx'
-        good_test_path.write_text(sample_components['good']['UserProfile.test.tsx'])
+        good_test_path = test_workspace / "tests/unit/UserProfile.test.tsx"
+        good_test_path.write_text(sample_components["good"]["UserProfile.test.tsx"])
 
         # Test Real PRD Validator
-        content_file = test_workspace / 'temp_good_content.tsx'
-        content_file.write_text(sample_components['good']['UserProfile.tsx'])
+        content_file = test_workspace / "temp_good_content.tsx"
+        content_file.write_text(sample_components["good"]["UserProfile.tsx"])
 
-        result = subprocess.run([
-            'node',
-            '/Users/nick/Development/vana/tests/hooks/validation/real-prd-validator.js',
-            'validate',
-            str(good_component_path),
-            str(content_file)
-        ], capture_output=True, text=True, cwd=test_workspace, timeout=30)
+        result = subprocess.run(
+            [
+                "node",
+                "/Users/nick/Development/vana/tests/hooks/validation/real-prd-validator.js",
+                "validate",
+                str(good_component_path),
+                str(content_file),
+            ],
+            capture_output=True,
+            text=True,
+            cwd=test_workspace,
+            timeout=30,
+        )
 
         assert result.returncode == 0, f"Validation failed: {result.stderr}"
 
         validation_result = json.loads(result.stdout)
 
         # Verify good file passes validation
-        assert validation_result['compliance_score'] >= 80
-        assert len(validation_result['violations']) <= 3  # Minor violations acceptable
-        assert validation_result.get('realValidation') == True
-        assert 'enhanced_validation' in validation_result
+        assert validation_result["compliance_score"] >= 80
+        assert len(validation_result["violations"]) <= 3  # Minor violations acceptable
+        assert validation_result.get("realValidation") == True
+        assert "enhanced_validation" in validation_result
 
-        logger.info(f"Good component validation score: {validation_result['compliance_score']}")
+        logger.info(
+            f"Good component validation score: {validation_result['compliance_score']}"
+        )
 
     @pytest.mark.asyncio
-    async def test_complete_validation_pipeline_bad_files(self, test_workspace, sample_components):
+    async def test_complete_validation_pipeline_bad_files(
+        self, test_workspace, sample_components
+    ):
         """Test complete validation pipeline detects issues in bad files"""
         os.chdir(test_workspace)
 
         # Write bad component
-        bad_component_path = test_workspace / 'src/components/BadComponent.tsx'
-        bad_component_path.write_text(sample_components['bad']['BadComponent.tsx'])
+        bad_component_path = test_workspace / "src/components/BadComponent.tsx"
+        bad_component_path.write_text(sample_components["bad"]["BadComponent.tsx"])
 
-        content_file = test_workspace / 'temp_bad_content.tsx'
-        content_file.write_text(sample_components['bad']['BadComponent.tsx'])
+        content_file = test_workspace / "temp_bad_content.tsx"
+        content_file.write_text(sample_components["bad"]["BadComponent.tsx"])
 
-        result = subprocess.run([
-            'node',
-            '/Users/nick/Development/vana/tests/hooks/validation/real-prd-validator.js',
-            'validate',
-            str(bad_component_path),
-            str(content_file)
-        ], capture_output=True, text=True, cwd=test_workspace, timeout=30)
+        result = subprocess.run(
+            [
+                "node",
+                "/Users/nick/Development/vana/tests/hooks/validation/real-prd-validator.js",
+                "validate",
+                str(bad_component_path),
+                str(content_file),
+            ],
+            capture_output=True,
+            text=True,
+            cwd=test_workspace,
+            timeout=30,
+        )
 
         assert result.returncode == 0, f"Validation script failed: {result.stderr}"
 
         validation_result = json.loads(result.stdout)
 
         # Verify bad file fails validation
-        assert validation_result['validated'] == False
-        assert len(validation_result['violations']) >= 5  # Should detect multiple issues
-        assert validation_result['compliance_score'] < 50  # Low score
+        assert validation_result["validated"] == False
+        assert (
+            len(validation_result["violations"]) >= 5
+        )  # Should detect multiple issues
+        assert validation_result["compliance_score"] < 50  # Low score
 
         # Check for specific violations
-        violations_text = ' '.join(validation_result['violations'] + validation_result.get('warnings', []))
+        violations_text = " ".join(
+            validation_result["violations"] + validation_result.get("warnings", [])
+        )
 
         # Should detect forbidden frameworks
-        assert '@mui/material' in violations_text or 'Forbidden UI framework' in violations_text
+        assert (
+            "@mui/material" in violations_text
+            or "Forbidden UI framework" in violations_text
+        )
 
         # Should detect security issues
-        assert 'dangerouslySetInnerHTML' in violations_text or 'Security risk' in violations_text
+        assert (
+            "dangerouslySetInnerHTML" in violations_text
+            or "Security risk" in violations_text
+        )
 
         # Should detect performance issues
-        assert 'Too many' in violations_text or 'useState' in violations_text
+        assert "Too many" in violations_text or "useState" in violations_text
 
         logger.info(f"Bad component violations: {len(validation_result['violations'])}")
 
     @pytest.mark.asyncio
-    async def test_enhanced_validation_integration(self, test_workspace, sample_components):
+    async def test_enhanced_validation_integration(
+        self, test_workspace, sample_components
+    ):
         """Test Enhanced PRD Validator integration"""
         os.chdir(test_workspace)
 
         # Write component for enhanced validation
-        component_path = test_workspace / 'src/components/TestComponent.tsx'
-        component_path.write_text(sample_components['good']['UserProfile.tsx'])
+        component_path = test_workspace / "src/components/TestComponent.tsx"
+        component_path.write_text(sample_components["good"]["UserProfile.tsx"])
 
-        enhanced_validator_path = '/Users/nick/Development/vana/tests/hooks/integration/enhanced-prd-validator.js'
+        enhanced_validator_path = "/Users/nick/Development/vana/tests/hooks/integration/enhanced-prd-validator.js"
 
         if os.path.exists(enhanced_validator_path):
-            result = subprocess.run([
-                'node',
-                enhanced_validator_path,
-                str(component_path)
-            ], capture_output=True, text=True, cwd=test_workspace, timeout=30)
+            result = subprocess.run(
+                ["node", enhanced_validator_path, str(component_path)],
+                capture_output=True,
+                text=True,
+                cwd=test_workspace,
+                timeout=30,
+            )
 
             if result.returncode == 0:
                 validation_result = json.loads(result.stdout)
 
                 # Verify enhanced validation structure
-                assert 'valid' in validation_result
-                assert 'overallScore' in validation_result
-                assert 'results' in validation_result
-                assert 'summary' in validation_result
+                assert "valid" in validation_result
+                assert "overallScore" in validation_result
+                assert "results" in validation_result
+                assert "summary" in validation_result
 
                 # Check individual validator results
-                results = validation_result['results']
+                results = validation_result["results"]
 
                 # Should have results from multiple validators
                 assert len(results) >= 3
 
-                logger.info(f"Enhanced validation overall score: {validation_result['overallScore']}")
+                logger.info(
+                    f"Enhanced validation overall score: {validation_result['overallScore']}"
+                )
             else:
                 logger.warning(f"Enhanced validator failed: {result.stderr}")
         else:
             logger.warning("Enhanced validator not found, skipping test")
 
+
 class TestHookPerformanceLoad:
     """Test hook system performance under load"""
 
     @pytest.mark.asyncio
-    async def test_concurrent_validation_performance(self, test_workspace, sample_components):
+    async def test_concurrent_validation_performance(
+        self, test_workspace, sample_components
+    ):
         """Test hook system handles concurrent validations efficiently"""
         os.chdir(test_workspace)
 
         # Create multiple test files
         test_files = []
         for i in range(20):  # Increased load
-            file_path = test_workspace / f'src/components/Component{i}.tsx'
+            file_path = test_workspace / f"src/components/Component{i}.tsx"
 
             # Alternate between good and bad components
             if i % 2 == 0:
-                content = sample_components['good']['UserProfile.tsx'].replace(
-                    'UserProfile', f'Component{i}'
+                content = sample_components["good"]["UserProfile.tsx"].replace(
+                    "UserProfile", f"Component{i}"
                 )
             else:
-                content = sample_components['bad']['BadComponent.tsx'].replace(
-                    'BadComponent', f'Component{i}'
+                content = sample_components["bad"]["BadComponent.tsx"].replace(
+                    "BadComponent", f"Component{i}"
                 )
 
             file_path.write_text(content)
@@ -977,18 +1020,18 @@ class TestHookPerformanceLoad:
         start_time = time.time()
 
         async def validate_file(file_path, content):
-            content_file = test_workspace / f'temp_content_{file_path.stem}.tsx'
+            content_file = test_workspace / f"temp_content_{file_path.stem}.tsx"
             content_file.write_text(content)
 
             proc = await asyncio.create_subprocess_exec(
-                'node',
-                '/Users/nick/Development/vana/tests/hooks/validation/real-prd-validator.js',
-                'validate',
+                "node",
+                "/Users/nick/Development/vana/tests/hooks/validation/real-prd-validator.js",
+                "validate",
                 str(file_path),
                 str(content_file),
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
-                cwd=test_workspace
+                cwd=test_workspace,
             )
 
             stdout, stderr = await proc.communicate()
@@ -1016,7 +1059,7 @@ class TestHookPerformanceLoad:
             if returncode == 0:
                 try:
                     validation_result = json.loads(stdout)
-                    validation_scores.append(validation_result['compliance_score'])
+                    validation_scores.append(validation_result["compliance_score"])
                     successful_validations += 1
                 except json.JSONDecodeError:
                     logger.error(f"Invalid JSON from validation {i}: {stdout}")
@@ -1026,14 +1069,20 @@ class TestHookPerformanceLoad:
                 failed_validations += 1
 
         # Performance assertions
-        assert total_time < 10000, f"Concurrent validations took {total_time:.2f}ms, should be <10s"
-        assert successful_validations >= len(test_files) * 0.8, f"Only {successful_validations}/{len(test_files)} validations succeeded"
+        assert total_time < 10000, (
+            f"Concurrent validations took {total_time:.2f}ms, should be <10s"
+        )
+        assert successful_validations >= len(test_files) * 0.8, (
+            f"Only {successful_validations}/{len(test_files)} validations succeeded"
+        )
 
         # Verify score distribution (good vs bad components)
         if validation_scores:
             avg_score = sum(validation_scores) / len(validation_scores)
             logger.info(f"Average validation score: {avg_score:.1f}")
-            logger.info(f"Concurrent validation of {len(test_files)} files completed in {total_time:.2f}ms")
+            logger.info(
+                f"Concurrent validation of {len(test_files)} files completed in {total_time:.2f}ms"
+            )
 
     @pytest.mark.asyncio
     async def test_validation_timeout_handling(self, test_workspace):
@@ -1063,23 +1112,29 @@ const LargeComponent: React.FC = () => {
 export default LargeComponent;
         """
 
-        large_file = test_workspace / 'src/components/LargeComponent.tsx'
+        large_file = test_workspace / "src/components/LargeComponent.tsx"
         large_file.write_text(large_content)
 
-        content_file = test_workspace / 'temp_large.tsx'
+        content_file = test_workspace / "temp_large.tsx"
         content_file.write_text(large_content)
 
         # Test with timeout
         start_time = time.time()
 
         try:
-            result = subprocess.run([
-                'node',
-                '/Users/nick/Development/vana/tests/hooks/validation/real-prd-validator.js',
-                'validate',
-                str(large_file),
-                str(content_file)
-            ], capture_output=True, text=True, cwd=test_workspace, timeout=5)  # 5 second timeout
+            result = subprocess.run(
+                [
+                    "node",
+                    "/Users/nick/Development/vana/tests/hooks/validation/real-prd-validator.js",
+                    "validate",
+                    str(large_file),
+                    str(content_file),
+                ],
+                capture_output=True,
+                text=True,
+                cwd=test_workspace,
+                timeout=5,
+            )  # 5 second timeout
 
             execution_time = (time.time() - start_time) * 1000
 
@@ -1087,11 +1142,16 @@ export default LargeComponent;
                 validation_result = json.loads(result.stdout)
 
                 # Should detect performance issues in large file
-                assert 'warnings' in validation_result
-                warnings_text = ' '.join(validation_result['warnings'])
-                assert 'Large component' in warnings_text or 'file size' in warnings_text.lower()
+                assert "warnings" in validation_result
+                warnings_text = " ".join(validation_result["warnings"])
+                assert (
+                    "Large component" in warnings_text
+                    or "file size" in warnings_text.lower()
+                )
 
-                logger.info(f"Large file validation completed in {execution_time:.2f}ms")
+                logger.info(
+                    f"Large file validation completed in {execution_time:.2f}ms"
+                )
             else:
                 logger.warning(f"Large file validation failed: {result.stderr}")
 
@@ -1099,6 +1159,7 @@ export default LargeComponent;
             logger.info("Validation timed out as expected for very large file")
             # Timeout is acceptable for extremely large files
             pass
+
 
 class TestHookSafetyMechanisms:
     """Test hook safety mechanisms and bypass functionality"""
@@ -1110,7 +1171,9 @@ class TestHookSafetyMechanisms:
     def teardown_method(self):
         """Verify performance requirements"""
         execution_time = (time.time() - self.start_time) * 1000
-        assert execution_time < 1000, f"Safety test took {execution_time:.2f}ms, should be <1000ms"
+        assert execution_time < 1000, (
+            f"Safety test took {execution_time:.2f}ms, should be <1000ms"
+        )
 
     @pytest.mark.asyncio
     async def test_hook_disable_mechanism(self, test_workspace, sample_components):
@@ -1121,33 +1184,42 @@ class TestHookSafetyMechanisms:
         hook_config = {
             "enabled": False,
             "bypassReason": "Testing disable mechanism",
-            "bypassUntil": None
+            "bypassUntil": None,
         }
-        (test_workspace / '.claude_workspace' / 'hook-config.json').write_text(json.dumps(hook_config))
+        (test_workspace / ".claude_workspace" / "hook-config.json").write_text(
+            json.dumps(hook_config)
+        )
 
         # Test with bad component (should be bypassed)
-        bad_component_path = test_workspace / 'src/components/TestComponent.tsx'
-        bad_component_path.write_text(sample_components['bad']['BadComponent.tsx'])
+        bad_component_path = test_workspace / "src/components/TestComponent.tsx"
+        bad_component_path.write_text(sample_components["bad"]["BadComponent.tsx"])
 
-        content_file = test_workspace / 'temp_test.tsx'
-        content_file.write_text(sample_components['bad']['BadComponent.tsx'])
+        content_file = test_workspace / "temp_test.tsx"
+        content_file.write_text(sample_components["bad"]["BadComponent.tsx"])
 
-        result = subprocess.run([
-            'node',
-            '/Users/nick/Development/vana/tests/hooks/validation/real-prd-validator.js',
-            'validate',
-            str(bad_component_path),
-            str(content_file)
-        ], capture_output=True, text=True, cwd=test_workspace)
+        result = subprocess.run(
+            [
+                "node",
+                "/Users/nick/Development/vana/tests/hooks/validation/real-prd-validator.js",
+                "validate",
+                str(bad_component_path),
+                str(content_file),
+            ],
+            capture_output=True,
+            text=True,
+            cwd=test_workspace,
+        )
 
         assert result.returncode == 0
 
         validation_result = json.loads(result.stdout)
 
         # Should be bypassed
-        assert validation_result.get('bypassed') == True
-        assert validation_result.get('bypassReason') == "Testing disable mechanism"
-        assert 'Hook validation bypassed' in ' '.join(validation_result.get('suggestions', []))
+        assert validation_result.get("bypassed") == True
+        assert validation_result.get("bypassReason") == "Testing disable mechanism"
+        assert "Hook validation bypassed" in " ".join(
+            validation_result.get("suggestions", [])
+        )
 
         logger.info("Hook disable mechanism working correctly")
 
@@ -1162,32 +1234,39 @@ class TestHookSafetyMechanisms:
         hook_config = {
             "enabled": True,
             "bypassReason": "Emergency maintenance",
-            "bypassUntil": bypass_until
+            "bypassUntil": bypass_until,
         }
-        (test_workspace / '.claude_workspace' / 'hook-config.json').write_text(json.dumps(hook_config))
+        (test_workspace / ".claude_workspace" / "hook-config.json").write_text(
+            json.dumps(hook_config)
+        )
 
         # Test validation with bypass active
-        component_path = test_workspace / 'src/components/TestComponent.tsx'
-        component_path.write_text(sample_components['bad']['BadComponent.tsx'])
+        component_path = test_workspace / "src/components/TestComponent.tsx"
+        component_path.write_text(sample_components["bad"]["BadComponent.tsx"])
 
-        content_file = test_workspace / 'temp_test.tsx'
-        content_file.write_text(sample_components['bad']['BadComponent.tsx'])
+        content_file = test_workspace / "temp_test.tsx"
+        content_file.write_text(sample_components["bad"]["BadComponent.tsx"])
 
-        result = subprocess.run([
-            'node',
-            '/Users/nick/Development/vana/tests/hooks/validation/real-prd-validator.js',
-            'validate',
-            str(component_path),
-            str(content_file)
-        ], capture_output=True, text=True, cwd=test_workspace)
+        result = subprocess.run(
+            [
+                "node",
+                "/Users/nick/Development/vana/tests/hooks/validation/real-prd-validator.js",
+                "validate",
+                str(component_path),
+                str(content_file),
+            ],
+            capture_output=True,
+            text=True,
+            cwd=test_workspace,
+        )
 
         assert result.returncode == 0
 
         validation_result = json.loads(result.stdout)
 
         # Should be bypassed temporarily
-        assert validation_result.get('bypassed') == True
-        assert validation_result.get('bypassReason') == "Emergency maintenance"
+        assert validation_result.get("bypassed") == True
+        assert validation_result.get("bypassReason") == "Emergency maintenance"
 
         logger.info("Temporary bypass mechanism working correctly")
 
@@ -1202,35 +1281,43 @@ class TestHookSafetyMechanisms:
         hook_config = {
             "enabled": True,
             "bypassReason": "Expired maintenance",
-            "bypassUntil": bypass_until
+            "bypassUntil": bypass_until,
         }
-        (test_workspace / '.claude_workspace' / 'hook-config.json').write_text(json.dumps(hook_config))
+        (test_workspace / ".claude_workspace" / "hook-config.json").write_text(
+            json.dumps(hook_config)
+        )
 
         # Test validation with expired bypass
-        component_path = test_workspace / 'src/components/TestComponent.tsx'
-        component_path.write_text(sample_components['bad']['BadComponent.tsx'])
+        component_path = test_workspace / "src/components/TestComponent.tsx"
+        component_path.write_text(sample_components["bad"]["BadComponent.tsx"])
 
-        content_file = test_workspace / 'temp_test.tsx'
-        content_file.write_text(sample_components['bad']['BadComponent.tsx'])
+        content_file = test_workspace / "temp_test.tsx"
+        content_file.write_text(sample_components["bad"]["BadComponent.tsx"])
 
-        result = subprocess.run([
-            'node',
-            '/Users/nick/Development/vana/tests/hooks/validation/real-prd-validator.js',
-            'validate',
-            str(component_path),
-            str(content_file)
-        ], capture_output=True, text=True, cwd=test_workspace)
+        result = subprocess.run(
+            [
+                "node",
+                "/Users/nick/Development/vana/tests/hooks/validation/real-prd-validator.js",
+                "validate",
+                str(component_path),
+                str(content_file),
+            ],
+            capture_output=True,
+            text=True,
+            cwd=test_workspace,
+        )
 
         assert result.returncode == 0
 
         validation_result = json.loads(result.stdout)
 
         # Should NOT be bypassed (expired)
-        assert validation_result.get('bypassed') != True
-        assert validation_result.get('validated') == False  # Bad component should fail
-        assert len(validation_result.get('violations', [])) > 0
+        assert validation_result.get("bypassed") != True
+        assert validation_result.get("validated") == False  # Bad component should fail
+        assert len(validation_result.get("violations", [])) > 0
 
         logger.info("Expired bypass correctly ignored")
+
 
 class TestHookErrorRecovery:
     """Test hook system error recovery and resilience"""
@@ -1242,7 +1329,9 @@ class TestHookErrorRecovery:
     def teardown_method(self):
         """Verify performance requirements"""
         execution_time = (time.time() - self.start_time) * 1000
-        assert execution_time < 2000, f"Error recovery test took {execution_time:.2f}ms, should be <2000ms"
+        assert execution_time < 2000, (
+            f"Error recovery test took {execution_time:.2f}ms, should be <2000ms"
+        )
 
     @pytest.mark.asyncio
     async def test_corrupted_config_recovery(self, test_workspace):
@@ -1250,24 +1339,29 @@ class TestHookErrorRecovery:
         os.chdir(test_workspace)
 
         # Create corrupted hook config
-        (test_workspace / '.claude_workspace' / 'hook-config.json').write_text(
+        (test_workspace / ".claude_workspace" / "hook-config.json").write_text(
             '{"enabled": true, "invalid": json}'
         )
 
         # Test validation with corrupted config
-        test_file = test_workspace / 'src/components/TestComponent.tsx'
-        test_file.write_text('export const Test = () => <div>Test</div>;')
+        test_file = test_workspace / "src/components/TestComponent.tsx"
+        test_file.write_text("export const Test = () => <div>Test</div>;")
 
-        content_file = test_workspace / 'temp_test.tsx'
+        content_file = test_workspace / "temp_test.tsx"
         content_file.write_text(test_file.read_text())
 
-        result = subprocess.run([
-            'node',
-            '/Users/nick/Development/vana/tests/hooks/validation/real-prd-validator.js',
-            'validate',
-            str(test_file),
-            str(content_file)
-        ], capture_output=True, text=True, cwd=test_workspace)
+        result = subprocess.run(
+            [
+                "node",
+                "/Users/nick/Development/vana/tests/hooks/validation/real-prd-validator.js",
+                "validate",
+                str(test_file),
+                str(content_file),
+            ],
+            capture_output=True,
+            text=True,
+            cwd=test_workspace,
+        )
 
         # Should handle gracefully and use default config
         assert result.returncode == 0
@@ -1275,7 +1369,7 @@ class TestHookErrorRecovery:
         validation_result = json.loads(result.stdout)
 
         # Should use default configuration
-        assert 'hookEnabled' in validation_result
+        assert "hookEnabled" in validation_result
 
         logger.info("Corrupted config handled gracefully")
 
@@ -1285,24 +1379,29 @@ class TestHookErrorRecovery:
         os.chdir(test_workspace)
 
         # Remove PRD file
-        prd_file = test_workspace / 'docs' / 'vana-frontend-prd-final.md'
+        prd_file = test_workspace / "docs" / "vana-frontend-prd-final.md"
         if prd_file.exists():
             prd_file.unlink()
 
         # Test validation without PRD file
-        test_file = test_workspace / 'src/components/TestComponent.tsx'
-        test_file.write_text('export const Test = () => <div>Test</div>;')
+        test_file = test_workspace / "src/components/TestComponent.tsx"
+        test_file.write_text("export const Test = () => <div>Test</div>;")
 
-        content_file = test_workspace / 'temp_test.tsx'
+        content_file = test_workspace / "temp_test.tsx"
         content_file.write_text(test_file.read_text())
 
-        result = subprocess.run([
-            'node',
-            '/Users/nick/Development/vana/tests/hooks/validation/real-prd-validator.js',
-            'validate',
-            str(test_file),
-            str(content_file)
-        ], capture_output=True, text=True, cwd=test_workspace)
+        result = subprocess.run(
+            [
+                "node",
+                "/Users/nick/Development/vana/tests/hooks/validation/real-prd-validator.js",
+                "validate",
+                str(test_file),
+                str(content_file),
+            ],
+            capture_output=True,
+            text=True,
+            cwd=test_workspace,
+        )
 
         # Should fail gracefully with proper error message
         if result.returncode != 0:
@@ -1320,12 +1419,12 @@ class TestHookErrorRecovery:
         os.chdir(test_workspace)
 
         # Test with non-existent validator (should handle gracefully)
-        result = subprocess.run([
-            'node',
-            '/non/existent/validator.js',
-            'validate',
-            'test.tsx'
-        ], capture_output=True, text=True, cwd=test_workspace)
+        result = subprocess.run(
+            ["node", "/non/existent/validator.js", "validate", "test.tsx"],
+            capture_output=True,
+            text=True,
+            cwd=test_workspace,
+        )
 
         # Should fail with proper error code
         assert result.returncode != 0
@@ -1335,11 +1434,14 @@ class TestHookErrorRecovery:
 
         logger.info("Non-existent validator handled with proper error")
 
+
 class TestHookRealWorldScenarios:
     """Test hook system with realistic development scenarios"""
 
     @pytest.mark.asyncio
-    async def test_typical_development_workflow(self, test_workspace, sample_components, api_samples):
+    async def test_typical_development_workflow(
+        self, test_workspace, sample_components, api_samples
+    ):
         """Test hook system in a typical development workflow"""
         os.chdir(test_workspace)
 
@@ -1347,42 +1449,42 @@ class TestHookRealWorldScenarios:
         workflow_steps = [
             # Step 1: Create new component
             {
-                'action': 'create',
-                'file': 'src/components/UserDashboard.tsx',
-                'content': sample_components['good']['UserProfile.tsx'].replace(
-                    'UserProfile', 'UserDashboard'
-                )
+                "action": "create",
+                "file": "src/components/UserDashboard.tsx",
+                "content": sample_components["good"]["UserProfile.tsx"].replace(
+                    "UserProfile", "UserDashboard"
+                ),
             },
             # Step 2: Create corresponding test
             {
-                'action': 'create',
-                'file': 'tests/unit/UserDashboard.test.tsx',
-                'content': sample_components['good']['UserProfile.test.tsx'].replace(
-                    'UserProfile', 'UserDashboard'
-                )
+                "action": "create",
+                "file": "tests/unit/UserDashboard.test.tsx",
+                "content": sample_components["good"]["UserProfile.test.tsx"].replace(
+                    "UserProfile", "UserDashboard"
+                ),
             },
             # Step 3: Create API route
             {
-                'action': 'create',
-                'file': 'app/api/dashboard.py',
-                'content': api_samples['good']['user_routes.py']
+                "action": "create",
+                "file": "app/api/dashboard.py",
+                "content": api_samples["good"]["user_routes.py"],
             },
             # Step 4: Modify component (introduce issues)
             {
-                'action': 'modify',
-                'file': 'src/components/UserDashboard.tsx',
-                'content': sample_components['bad']['BadComponent.tsx'].replace(
-                    'BadComponent', 'UserDashboard'
-                )
+                "action": "modify",
+                "file": "src/components/UserDashboard.tsx",
+                "content": sample_components["bad"]["BadComponent.tsx"].replace(
+                    "BadComponent", "UserDashboard"
+                ),
             },
             # Step 5: Fix issues
             {
-                'action': 'fix',
-                'file': 'src/components/UserDashboard.tsx',
-                'content': sample_components['good']['UserProfile.tsx'].replace(
-                    'UserProfile', 'UserDashboard'
-                )
-            }
+                "action": "fix",
+                "file": "src/components/UserDashboard.tsx",
+                "content": sample_components["good"]["UserProfile.tsx"].replace(
+                    "UserProfile", "UserDashboard"
+                ),
+            },
         ]
 
         validation_results = []
@@ -1391,46 +1493,62 @@ class TestHookRealWorldScenarios:
             logger.info(f"Workflow step: {step['action']} {step['file']}")
 
             # Write file
-            file_path = test_workspace / step['file']
+            file_path = test_workspace / step["file"]
             file_path.parent.mkdir(parents=True, exist_ok=True)
-            file_path.write_text(step['content'])
+            file_path.write_text(step["content"])
 
             # Validate if it's a React component
-            if file_path.suffix == '.tsx' and 'components' in str(file_path):
-                content_file = test_workspace / f'temp_{file_path.stem}.tsx'
-                content_file.write_text(step['content'])
+            if file_path.suffix == ".tsx" and "components" in str(file_path):
+                content_file = test_workspace / f"temp_{file_path.stem}.tsx"
+                content_file.write_text(step["content"])
 
-                result = subprocess.run([
-                    'node',
-                    '/Users/nick/Development/vana/tests/hooks/validation/real-prd-validator.js',
-                    'validate',
-                    str(file_path),
-                    str(content_file)
-                ], capture_output=True, text=True, cwd=test_workspace, timeout=10)
+                result = subprocess.run(
+                    [
+                        "node",
+                        "/Users/nick/Development/vana/tests/hooks/validation/real-prd-validator.js",
+                        "validate",
+                        str(file_path),
+                        str(content_file),
+                    ],
+                    capture_output=True,
+                    text=True,
+                    cwd=test_workspace,
+                    timeout=10,
+                )
 
                 if result.returncode == 0:
                     validation_result = json.loads(result.stdout)
-                    validation_results.append({
-                        'step': step['action'],
-                        'file': step['file'],
-                        'score': validation_result['compliance_score'],
-                        'violations': len(validation_result.get('violations', [])),
-                        'validated': validation_result.get('validated', False)
-                    })
+                    validation_results.append(
+                        {
+                            "step": step["action"],
+                            "file": step["file"],
+                            "score": validation_result["compliance_score"],
+                            "violations": len(validation_result.get("violations", [])),
+                            "validated": validation_result.get("validated", False),
+                        }
+                    )
 
-                    logger.info(f"  Validation score: {validation_result['compliance_score']}")
-                    logger.info(f"  Violations: {len(validation_result.get('violations', []))}")
+                    logger.info(
+                        f"  Validation score: {validation_result['compliance_score']}"
+                    )
+                    logger.info(
+                        f"  Violations: {len(validation_result.get('violations', []))}"
+                    )
 
         # Analyze workflow results
         assert len(validation_results) >= 3, "Should have validated multiple components"
 
         # Should detect improvement from 'modify' to 'fix'
-        modify_results = [r for r in validation_results if r['step'] == 'modify']
-        fix_results = [r for r in validation_results if r['step'] == 'fix']
+        modify_results = [r for r in validation_results if r["step"] == "modify"]
+        fix_results = [r for r in validation_results if r["step"] == "fix"]
 
         if modify_results and fix_results:
-            assert fix_results[0]['score'] > modify_results[0]['score'], "Fix should improve score"
-            assert fix_results[0]['violations'] < modify_results[0]['violations'], "Fix should reduce violations"
+            assert fix_results[0]["score"] > modify_results[0]["score"], (
+                "Fix should improve score"
+            )
+            assert fix_results[0]["violations"] < modify_results[0]["violations"], (
+                "Fix should reduce violations"
+            )
 
         logger.info(f"Completed workflow with {len(validation_results)} validations")
 
@@ -1442,67 +1560,89 @@ class TestHookRealWorldScenarios:
         # Simulate team members with different skill levels
         team_scenarios = [
             {
-                'developer': 'senior',
-                'component': sample_components['good']['UserProfile.tsx'],
-                'expected_score': 80
+                "developer": "senior",
+                "component": sample_components["good"]["UserProfile.tsx"],
+                "expected_score": 80,
             },
             {
-                'developer': 'junior',
-                'component': sample_components['bad']['BadComponent.tsx'],
-                'expected_score': 40
+                "developer": "junior",
+                "component": sample_components["bad"]["BadComponent.tsx"],
+                "expected_score": 40,
             },
             {
-                'developer': 'intermediate',
-                'component': sample_components['good']['UserProfile.tsx'].replace(
-                    'React.memo', 'React.Component'  # Slight degradation
+                "developer": "intermediate",
+                "component": sample_components["good"]["UserProfile.tsx"].replace(
+                    "React.memo",
+                    "React.Component",  # Slight degradation
                 ),
-                'expected_score': 70
-            }
+                "expected_score": 70,
+            },
         ]
 
         validation_results = []
 
         for i, scenario in enumerate(team_scenarios):
-            component_path = test_workspace / f'src/components/Team{i}Component.tsx'
-            component_path.write_text(scenario['component'])
+            component_path = test_workspace / f"src/components/Team{i}Component.tsx"
+            component_path.write_text(scenario["component"])
 
-            content_file = test_workspace / f'temp_team_{i}.tsx'
-            content_file.write_text(scenario['component'])
+            content_file = test_workspace / f"temp_team_{i}.tsx"
+            content_file.write_text(scenario["component"])
 
-            result = subprocess.run([
-                'node',
-                '/Users/nick/Development/vana/tests/hooks/validation/real-prd-validator.js',
-                'validate',
-                str(component_path),
-                str(content_file)
-            ], capture_output=True, text=True, cwd=test_workspace, timeout=15)
+            result = subprocess.run(
+                [
+                    "node",
+                    "/Users/nick/Development/vana/tests/hooks/validation/real-prd-validator.js",
+                    "validate",
+                    str(component_path),
+                    str(content_file),
+                ],
+                capture_output=True,
+                text=True,
+                cwd=test_workspace,
+                timeout=15,
+            )
 
             if result.returncode == 0:
                 validation_result = json.loads(result.stdout)
 
-                validation_results.append({
-                    'developer': scenario['developer'],
-                    'score': validation_result['compliance_score'],
-                    'violations': validation_result.get('violations', []),
-                    'suggestions': validation_result.get('suggestions', [])
-                })
+                validation_results.append(
+                    {
+                        "developer": scenario["developer"],
+                        "score": validation_result["compliance_score"],
+                        "violations": validation_result.get("violations", []),
+                        "suggestions": validation_result.get("suggestions", []),
+                    }
+                )
 
-                logger.info(f"{scenario['developer']} developer score: {validation_result['compliance_score']}")
+                logger.info(
+                    f"{scenario['developer']} developer score: {validation_result['compliance_score']}"
+                )
 
         # Verify team scenario results
         assert len(validation_results) == len(team_scenarios)
 
         # Senior developer should have highest score
-        senior_result = next(r for r in validation_results if r['developer'] == 'senior')
-        junior_result = next(r for r in validation_results if r['developer'] == 'junior')
+        senior_result = next(
+            r for r in validation_results if r["developer"] == "senior"
+        )
+        junior_result = next(
+            r for r in validation_results if r["developer"] == "junior"
+        )
 
-        assert senior_result['score'] > junior_result['score'], "Senior should outperform junior"
-        assert len(senior_result['violations']) < len(junior_result['violations']), "Senior should have fewer violations"
+        assert senior_result["score"] > junior_result["score"], (
+            "Senior should outperform junior"
+        )
+        assert len(senior_result["violations"]) < len(junior_result["violations"]), (
+            "Senior should have fewer violations"
+        )
 
         # Junior should have helpful suggestions
-        assert len(junior_result['suggestions']) > 0, "Junior should receive suggestions"
+        assert len(junior_result["suggestions"]) > 0, (
+            "Junior should receive suggestions"
+        )
 
         logger.info("Team collaboration scenario completed successfully")
 
-if __name__ == '__main__':
-    pytest.main([__file__, '-v', '--tb=short'])
+
+if __name__ == "__main__":
+    pytest.main([__file__, "-v", "--tb=short"])

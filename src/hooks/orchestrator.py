@@ -41,6 +41,7 @@ logger = logging.getLogger(__name__)
 
 class ToolType(Enum):
     """Supported tool types for interception."""
+
     WRITE = "write"
     MULTI_EDIT = "multi_edit"
     BASH = "bash"
@@ -50,6 +51,7 @@ class ToolType(Enum):
 
 class ValidationResult(Enum):
     """Validation result status."""
+
     PASSED = "passed"
     FAILED = "failed"
     WARNING = "warning"
@@ -60,6 +62,7 @@ class ValidationResult(Enum):
 @dataclass
 class ToolCall:
     """Represents a tool call to be validated."""
+
     tool_type: ToolType
     parameters: dict[str, Any]
     metadata: dict[str, Any] = field(default_factory=dict)
@@ -71,6 +74,7 @@ class ToolCall:
 @dataclass
 class ValidationReport:
     """Comprehensive validation report."""
+
     tool_call: ToolCall
     validation_result: ValidationResult
     execution_time: float
@@ -86,7 +90,7 @@ class ValidationReport:
 class HookOrchestrator:
     """
     Main orchestrator for hook system integration with Claude Code tool pipeline.
-    
+
     Features:
     - Tool call interception and validation
     - Real-time feedback integration
@@ -116,7 +120,7 @@ class HookOrchestrator:
             ToolType.MULTI_EDIT: [self.context_sanitizer, self.security_scanner],
             ToolType.BASH: [self.shell_validator, self.security_scanner],
             ToolType.READ: [self.context_sanitizer],
-            ToolType.EDIT: [self.context_sanitizer, self.security_scanner]
+            ToolType.EDIT: [self.context_sanitizer, self.security_scanner],
         }
 
         # Metrics storage
@@ -128,25 +132,31 @@ class HookOrchestrator:
             "average_execution_time": 0.0,
             "validator_performance": {},
             "security_incidents": 0,
-            "performance_improvements": 0
+            "performance_improvements": 0,
         }
 
         # Thread safety
         self._lock = threading.RLock()
 
-        logger.info("Hook orchestrator initialized with validation level: %s",
-                   self.validation_level.value)
+        logger.info(
+            "Hook orchestrator initialized with validation level: %s",
+            self.validation_level.value,
+        )
 
-    async def intercept_tool_call(self, tool_type: str, parameters: dict[str, Any],
-                                 metadata: dict[str, Any] | None = None) -> tuple[bool, ValidationReport]:
+    async def intercept_tool_call(
+        self,
+        tool_type: str,
+        parameters: dict[str, Any],
+        metadata: dict[str, Any] | None = None,
+    ) -> tuple[bool, ValidationReport]:
         """
         Intercept and validate a tool call before execution.
-        
+
         Args:
             tool_type: Type of tool being called
             parameters: Tool parameters
             metadata: Optional metadata for context
-            
+
         Returns:
             Tuple of (should_proceed, validation_report)
         """
@@ -162,7 +172,7 @@ class HookOrchestrator:
                 parameters=parameters,
                 metadata=metadata or {},
                 session_id=metadata.get("session_id") if metadata else None,
-                agent_id=metadata.get("agent_id") if metadata else None
+                agent_id=metadata.get("agent_id") if metadata else None,
             )
 
             # Run validation pipeline
@@ -178,8 +188,12 @@ class HookOrchestrator:
             # Determine if execution should proceed
             should_proceed = self._should_proceed(validation_report)
 
-            logger.info("Tool call validation completed: %s -> %s (%.3fs)",
-                       tool_type, validation_report.validation_result.value, execution_time)
+            logger.info(
+                "Tool call validation completed: %s -> %s (%.3fs)",
+                tool_type,
+                validation_report.validation_result.value,
+                execution_time,
+            )
 
             return should_proceed, validation_report
 
@@ -191,7 +205,7 @@ class HookOrchestrator:
                 tool_call=ToolCall(ToolType(tool_type.lower()), parameters),
                 validation_result=ValidationResult.ERROR,
                 execution_time=time.time() - start_time,
-                errors=[f"Validation error: {e!s}"]
+                errors=[f"Validation error: {e!s}"],
             )
 
             # In case of error, proceed if graceful degradation is enabled
@@ -205,7 +219,7 @@ class HookOrchestrator:
         validation_report = ValidationReport(
             tool_call=tool_call,
             validation_result=ValidationResult.PASSED,
-            execution_time=0.0
+            execution_time=0.0,
         )
 
         # Skip validation if level is set to NONE
@@ -235,7 +249,9 @@ class HookOrchestrator:
                 validator_results[validator_name] = result
 
                 # Update validation report based on result
-                self._process_validator_result(validation_report, validator_name, result)
+                self._process_validator_result(
+                    validation_report, validator_name, result
+                )
 
             except Exception as e:
                 logger.error("Validator %s failed: %s", validator_name, str(e))
@@ -248,37 +264,35 @@ class HookOrchestrator:
         validation_report.validator_results = validator_results
 
         # Calculate overall security score
-        validation_report.security_score = self._calculate_security_score(validator_results)
+        validation_report.security_score = self._calculate_security_score(
+            validator_results
+        )
 
         return validation_report
 
-    async def _run_single_validator(self, validator, tool_call: ToolCall) -> dict[str, Any]:
+    async def _run_single_validator(
+        self, validator, tool_call: ToolCall
+    ) -> dict[str, Any]:
         """Run a single validator and return its result."""
         try:
-            if hasattr(validator, 'validate_async'):
+            if hasattr(validator, "validate_async"):
                 return await validator.validate_async(tool_call)
             else:
                 # Run sync validator in thread pool
                 loop = asyncio.get_event_loop()
-                return await loop.run_in_executor(
-                    None, validator.validate, tool_call
-                )
+                return await loop.run_in_executor(None, validator.validate, tool_call)
         except Exception as e:
             logger.error("Validator %s error: %s", validator.__class__.__name__, str(e))
-            return {
-                "status": "error",
-                "error": str(e),
-                "passed": False
-            }
+            return {"status": "error", "error": str(e), "passed": False}
 
     def _filter_validators_by_level(self, validators: list) -> list:
         """Filter validators based on current validation level."""
         if self.validation_level == ValidationLevel.BASIC:
             # Only run essential validators
-            return [v for v in validators if getattr(v, 'essential', False)]
+            return [v for v in validators if getattr(v, "essential", False)]
         elif self.validation_level == ValidationLevel.STANDARD:
             # Run most validators except performance-heavy ones
-            return [v for v in validators if not getattr(v, 'performance_heavy', False)]
+            return [v for v in validators if not getattr(v, "performance_heavy", False)]
         else:  # STRICT
             # Run all validators
             return validators
@@ -295,15 +309,16 @@ class HookOrchestrator:
             return False
 
         # Check bypass conditions
-        bypass_conditions = getattr(validator, 'bypass_conditions', [])
+        bypass_conditions = getattr(validator, "bypass_conditions", [])
         for condition in bypass_conditions:
             if condition(tool_call):
                 return False
 
         return True
 
-    def _process_validator_result(self, report: ValidationReport,
-                                validator_name: str, result: dict[str, Any]):
+    def _process_validator_result(
+        self, report: ValidationReport, validator_name: str, result: dict[str, Any]
+    ):
         """Process a single validator result and update the report."""
         if not result.get("passed", True):
             if result.get("severity", "error") == "warning":
@@ -328,7 +343,9 @@ class HookOrchestrator:
 
         for validator_name, result in validator_results.items():
             weight = result.get("weight", 1.0)
-            score = result.get("security_score", 1.0 if result.get("passed", True) else 0.0)
+            score = result.get(
+                "security_score", 1.0 if result.get("passed", True) else 0.0
+            )
 
             total_score += score * weight
             total_weight += weight
@@ -364,17 +381,20 @@ class HookOrchestrator:
             total = self.validation_metrics["total_validations"]
             current_avg = self.validation_metrics["average_execution_time"]
             self.validation_metrics["average_execution_time"] = (
-                (current_avg * (total - 1) + execution_time) / total
-            )
+                current_avg * (total - 1) + execution_time
+            ) / total
 
             # Update validator performance metrics
             for validator_name, result in report.validator_results.items():
-                if validator_name not in self.validation_metrics["validator_performance"]:
+                if (
+                    validator_name
+                    not in self.validation_metrics["validator_performance"]
+                ):
                     self.validation_metrics["validator_performance"][validator_name] = {
                         "total_runs": 0,
                         "total_time": 0.0,
                         "errors": 0,
-                        "average_time": 0.0
+                        "average_time": 0.0,
                     }
 
                 perf = self.validation_metrics["validator_performance"][validator_name]
@@ -390,13 +410,15 @@ class HookOrchestrator:
             if report.security_score < 0.7:
                 self.validation_metrics["security_incidents"] += 1
 
-    def _create_bypassed_report(self, tool_type: str, parameters: dict[str, Any]) -> ValidationReport:
+    def _create_bypassed_report(
+        self, tool_type: str, parameters: dict[str, Any]
+    ) -> ValidationReport:
         """Create a validation report for bypassed validation."""
         return ValidationReport(
             tool_call=ToolCall(ToolType(tool_type.lower()), parameters),
             validation_result=ValidationResult.BYPASSED,
             execution_time=0.0,
-            bypassed_validators=["ALL - System Disabled"]
+            bypassed_validators=["ALL - System Disabled"],
         )
 
     # Configuration Management Methods
@@ -435,15 +457,19 @@ class HookOrchestrator:
             "enabled": self.is_enabled,
             "validation_level": self.validation_level.value,
             "metrics": self.get_metrics(),
-            "active_validators": len([v for validators in self.validators.values() for v in validators]),
+            "active_validators": len(
+                [v for validators in self.validators.values() for v in validators]
+            ),
             "performance_monitor": await self.performance_monitor.get_status(),
-            "feedback_system": await self.feedback.get_status()
+            "feedback_system": await self.feedback.get_status(),
         }
 
     async def generate_report(self, timeframe: str = "24h") -> dict[str, Any]:
         """Generate comprehensive validation report."""
         metrics = self.get_metrics()
-        performance_data = await self.performance_monitor.get_performance_report(timeframe)
+        performance_data = await self.performance_monitor.get_performance_report(
+            timeframe
+        )
 
         return {
             "timestamp": datetime.now().isoformat(),
@@ -451,14 +477,16 @@ class HookOrchestrator:
             "summary": {
                 "total_validations": metrics["total_validations"],
                 "success_rate": (
-                    metrics["passed_validations"] / max(metrics["total_validations"], 1) * 100
+                    metrics["passed_validations"]
+                    / max(metrics["total_validations"], 1)
+                    * 100
                 ),
                 "average_execution_time": metrics["average_execution_time"],
-                "security_incidents": metrics["security_incidents"]
+                "security_incidents": metrics["security_incidents"],
             },
             "validator_performance": metrics["validator_performance"],
             "performance_impact": performance_data,
-            "recommendations": self._generate_recommendations(metrics)
+            "recommendations": self._generate_recommendations(metrics),
         }
 
     def _generate_recommendations(self, metrics: dict[str, Any]) -> list[str]:
@@ -539,23 +567,24 @@ def reset_orchestrator():
 
 # Convenience functions for tool interception
 
-async def intercept_write(file_path: str, content: str, **metadata) -> tuple[bool, ValidationReport]:
+
+async def intercept_write(
+    file_path: str, content: str, **metadata
+) -> tuple[bool, ValidationReport]:
     """Intercept Write tool call."""
     orchestrator = get_orchestrator()
     return await orchestrator.intercept_tool_call(
-        "write",
-        {"file_path": file_path, "content": content},
-        metadata
+        "write", {"file_path": file_path, "content": content}, metadata
     )
 
 
-async def intercept_multi_edit(file_path: str, edits: list[dict], **metadata) -> tuple[bool, ValidationReport]:
+async def intercept_multi_edit(
+    file_path: str, edits: list[dict], **metadata
+) -> tuple[bool, ValidationReport]:
     """Intercept MultiEdit tool call."""
     orchestrator = get_orchestrator()
     return await orchestrator.intercept_tool_call(
-        "multi_edit",
-        {"file_path": file_path, "edits": edits},
-        metadata
+        "multi_edit", {"file_path": file_path, "edits": edits}, metadata
     )
 
 
@@ -563,7 +592,5 @@ async def intercept_bash(command: str, **metadata) -> tuple[bool, ValidationRepo
     """Intercept Bash tool call."""
     orchestrator = get_orchestrator()
     return await orchestrator.intercept_tool_call(
-        "bash",
-        {"command": command},
-        metadata
+        "bash", {"command": command}, metadata
     )

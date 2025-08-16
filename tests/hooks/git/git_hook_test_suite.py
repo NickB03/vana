@@ -6,7 +6,7 @@ This module provides comprehensive testing for Git hook integration with the Cla
 and Claude Flow systems. Tests cover all Git workflow scenarios including:
 
 - Pre-commit validation with compliant/non-compliant code
-- Pre-push safety checks and blocking scenarios  
+- Pre-push safety checks and blocking scenarios
 - Post-commit automation and cleanup
 - Hook behavior with merge conflicts and rebases
 - Edge cases: large commits, binary files, emergency bypass
@@ -78,21 +78,22 @@ class GitTestEnvironment:
             "app",
             "tests/unit",
             "tests/integration",
-            ".claude_workspace/reports"
+            ".claude_workspace/reports",
         ]
 
         for dir_path in frontend_dirs:
             (self.workspace_path / dir_path).mkdir(parents=True, exist_ok=True)
 
         # Package files
-        (self.workspace_path / "frontend" / "package.json").write_text(json.dumps({
-            "name": "test-frontend",
-            "version": "1.0.0",
-            "dependencies": {
-                "react": "^18.3.1",
-                "next": "^15.4.6"
-            }
-        }))
+        (self.workspace_path / "frontend" / "package.json").write_text(
+            json.dumps(
+                {
+                    "name": "test-frontend",
+                    "version": "1.0.0",
+                    "dependencies": {"react": "^18.3.1", "next": "^15.4.6"},
+                }
+            )
+        )
 
         (self.workspace_path / "pyproject.toml").write_text("""
 [project]
@@ -379,8 +380,9 @@ echo "$(date): Post-commit hook completed" >> .claude_workspace/reports/git-hook
 echo "✅ Post-commit automation completed"
 """
 
-    def simulate_commit(self, files: dict[str, str], commit_message: str,
-                       expect_success: bool = True) -> dict[str, Any]:
+    def simulate_commit(
+        self, files: dict[str, str], commit_message: str, expect_success: bool = True
+    ) -> dict[str, Any]:
         """Simulate a Git commit with the given files and message"""
         start_time = time.time()
 
@@ -416,14 +418,14 @@ echo "✅ Post-commit automation completed"
                 "execution_time_ms": execution_time,
                 "error": error,
                 "hooks_executed": self.hooks_installed,
-                "timestamp": time.time()
+                "timestamp": time.time(),
             }
 
             # Log execution
             self.hook_execution_log.append(result)
 
             # Validate result matches expectation
-            result["validation_passed"] = (success == expect_success)
+            result["validation_passed"] = success == expect_success
 
             return result
 
@@ -433,7 +435,7 @@ echo "✅ Post-commit automation completed"
                 "expected_success": expect_success,
                 "error": f"Simulation failed: {e}",
                 "execution_time_ms": (time.time() - start_time) * 1000,
-                "validation_passed": False
+                "validation_passed": False,
             }
 
     def simulate_push(self, branch: str = None, force: bool = False) -> dict[str, Any]:
@@ -453,10 +455,7 @@ echo "✅ Post-commit automation completed"
 
             # Execute in subprocess to trigger hooks
             result = subprocess.run(
-                push_command,
-                cwd=self.workspace_path,
-                capture_output=True,
-                text=True
+                push_command, cwd=self.workspace_path, capture_output=True, text=True
             )
 
             execution_time = (time.time() - start_time) * 1000
@@ -468,14 +467,14 @@ echo "✅ Post-commit automation completed"
                 "stdout": result.stdout,
                 "stderr": result.stderr,
                 "execution_time_ms": execution_time,
-                "hooks_executed": self.hooks_installed
+                "hooks_executed": self.hooks_installed,
             }
 
         except Exception as e:
             return {
                 "success": False,
                 "error": f"Push simulation failed: {e}",
-                "execution_time_ms": (time.time() - start_time) * 1000
+                "execution_time_ms": (time.time() - start_time) * 1000,
             }
 
     def get_hook_performance_metrics(self) -> dict[str, Any]:
@@ -484,7 +483,9 @@ echo "✅ Post-commit automation completed"
             return {"total_executions": 0}
 
         execution_times = [log["execution_time_ms"] for log in self.hook_execution_log]
-        success_rate = sum(1 for log in self.hook_execution_log if log["success"]) / len(self.hook_execution_log)
+        success_rate = sum(
+            1 for log in self.hook_execution_log if log["success"]
+        ) / len(self.hook_execution_log)
 
         return {
             "total_executions": len(self.hook_execution_log),
@@ -492,7 +493,7 @@ echo "✅ Post-commit automation completed"
             "avg_execution_time_ms": sum(execution_times) / len(execution_times),
             "min_execution_time_ms": min(execution_times),
             "max_execution_time_ms": max(execution_times),
-            "hooks_installed": self.hooks_installed
+            "hooks_installed": self.hooks_installed,
         }
 
 
@@ -541,7 +542,9 @@ export const CompliantComponent: React.FC<CompliantComponentProps> = ({ title, o
 """
 
         files = {"frontend/src/components/CompliantComponent.tsx": compliant_component}
-        result = git_test_env.simulate_commit(files, "Add PRD-compliant component", expect_success=True)
+        result = git_test_env.simulate_commit(
+            files, "Add PRD-compliant component", expect_success=True
+        )
 
         assert result["validation_passed"]
         assert result["success"] == True
@@ -570,7 +573,9 @@ export const ViolatingComponent = () => {
 """
 
         files = {"frontend/src/components/ViolatingComponent.tsx": violating_component}
-        result = git_test_env.simulate_commit(files, "Add component with violations", expect_success=False)
+        result = git_test_env.simulate_commit(
+            files, "Add component with violations", expect_success=False
+        )
 
         assert result["validation_passed"]  # Expectation was failure
         assert result["success"] == False  # Commit should be blocked
@@ -591,7 +596,10 @@ export const ViolatingComponent = () => {
         # Test force push blocking (should be prevented on main)
         force_push_result = git_test_env.simulate_push("main", force=True)
         # This may succeed in test environment but should log warning
-        assert "force" not in force_push_result.get("stdout", "").lower() or not force_push_result["success"]
+        assert (
+            "force" not in force_push_result.get("stdout", "").lower()
+            or not force_push_result["success"]
+        )
 
     @pytest.mark.asyncio
     async def test_post_commit_automation(self, git_test_env):
@@ -600,14 +608,21 @@ export const ViolatingComponent = () => {
         important_files = {
             "pyproject.toml": '[project]\nname = "test"\nversion = "1.0.0"',
             "frontend/package.json": '{"name": "test", "version": "1.0.0"}',
-            "Makefile": "test:\n\techo 'test'"
+            "Makefile": "test:\n\techo 'test'",
         }
 
-        result = git_test_env.simulate_commit(important_files, "Update configuration files")
+        result = git_test_env.simulate_commit(
+            important_files, "Update configuration files"
+        )
         assert result["success"]
 
         # Check if metrics file was created
-        metrics_file = git_test_env.workspace_path / ".claude_workspace" / "reports" / "git-metrics.json"
+        metrics_file = (
+            git_test_env.workspace_path
+            / ".claude_workspace"
+            / "reports"
+            / "git-metrics.json"
+        )
         assert metrics_file.exists()
 
         # Verify metrics content
@@ -625,25 +640,32 @@ export const ViolatingComponent = () => {
         # Create 50 files to simulate large commit
         large_commit_files = {}
         for i in range(50):
-            content = f"// Generated file {i}\n" + "export const data = " + "x" * 1000  # ~1KB each
+            content = (
+                f"// Generated file {i}\n" + "export const data = " + "x" * 1000
+            )  # ~1KB each
             large_commit_files[f"frontend/src/generated/file_{i}.ts"] = content
 
         result = git_test_env.simulate_commit(
             large_commit_files,
             "Add 50 generated files for bulk import feature",
-            expect_success=True
+            expect_success=True,
         )
 
         assert result["validation_passed"]
         assert result["success"] == True
-        assert result["execution_time_ms"] < 10000  # Should handle large commits efficiently
+        assert (
+            result["execution_time_ms"] < 10000
+        )  # Should handle large commits efficiently
         assert len(result["files_changed"]) == 50
 
     @pytest.mark.asyncio
     async def test_binary_file_handling(self, git_test_env):
         """Test Git hook behavior with binary files"""
         # Create binary-like file content
-        binary_content = b'\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x02\x00\x00\x00\x90wS\xde' * 100
+        binary_content = (
+            b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x02\x00\x00\x00\x90wS\xde"
+            * 100
+        )
 
         binary_file_path = git_test_env.workspace_path / "assets" / "test-image.png"
         binary_file_path.parent.mkdir(exist_ok=True)
@@ -651,7 +673,9 @@ export const ViolatingComponent = () => {
 
         # Git operations with binary files
         git_test_env.repo.index.add(["assets/test-image.png"])
-        result = git_test_env.simulate_commit({}, "Add binary image file", expect_success=True)
+        result = git_test_env.simulate_commit(
+            {}, "Add binary image file", expect_success=True
+        )
 
         assert result["validation_passed"]
         assert result["success"] == True
@@ -675,7 +699,9 @@ export const UrgentFix = () => {
         files = {"frontend/src/components/UrgentFix.tsx": urgent_fix}
 
         # Normal commit should fail
-        result = git_test_env.simulate_commit(files, "Emergency production fix", expect_success=False)
+        result = git_test_env.simulate_commit(
+            files, "Emergency production fix", expect_success=False
+        )
         assert not result["success"]
 
         # Bypass mechanism (using --no-verify flag)
@@ -690,10 +716,16 @@ export const UrgentFix = () => {
 
             # Use git command directly with --no-verify
             bypass_result = subprocess.run(
-                ["git", "commit", "--no-verify", "-m", "Emergency production fix (bypass)"],
+                [
+                    "git",
+                    "commit",
+                    "--no-verify",
+                    "-m",
+                    "Emergency production fix (bypass)",
+                ],
                 cwd=git_test_env.workspace_path,
                 capture_output=True,
-                text=True
+                text=True,
             )
 
             assert bypass_result.returncode == 0
@@ -755,7 +787,9 @@ export const UrgentFix = () => {
         failing_hook.chmod(0o755)
 
         # Attempt commit (should fail)
-        result = git_test_env.simulate_commit(failing_files, "This should fail", expect_success=False)
+        result = git_test_env.simulate_commit(
+            failing_files, "This should fail", expect_success=False
+        )
         assert not result["success"]
 
         # Restore hooks
@@ -763,7 +797,9 @@ export const UrgentFix = () => {
         shutil.move(str(backup_hooks_dir), str(original_hooks_dir))
 
         # Retry commit (should succeed)
-        recovery_result = git_test_env.simulate_commit(failing_files, "Recovery after hook fix")
+        recovery_result = git_test_env.simulate_commit(
+            failing_files, "Recovery after hook fix"
+        )
         assert recovery_result["success"]
 
     @pytest.mark.asyncio
@@ -834,7 +870,12 @@ export const CoordinatedComponent = () => {
         assert result["hooks_executed"]
 
         # Verify coordination log exists
-        log_file = coordination_env.workspace_path / ".claude_workspace" / "reports" / "git-hook-log.txt"
+        log_file = (
+            coordination_env.workspace_path
+            / ".claude_workspace"
+            / "reports"
+            / "git-hook-log.txt"
+        )
         if log_file.exists():
             log_content = log_file.read_text()
             assert "Pre-commit hook started" in log_content
@@ -854,18 +895,15 @@ dependencies = ["fastapi>=0.100.0"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 """,
-            "frontend/package.json": json.dumps({
-                "name": "test-frontend-backup",
-                "version": "2.0.0",
-                "dependencies": {
-                    "react": "^18.3.1",
-                    "next": "^15.4.6"
+            "frontend/package.json": json.dumps(
+                {
+                    "name": "test-frontend-backup",
+                    "version": "2.0.0",
+                    "dependencies": {"react": "^18.3.1", "next": "^15.4.6"},
+                    "scripts": {"build": "next build", "test": "jest"},
                 },
-                "scripts": {
-                    "build": "next build",
-                    "test": "jest"
-                }
-            }, indent=2)
+                indent=2,
+            ),
         }
 
         # Commit changes (should trigger backup)
@@ -886,26 +924,26 @@ testpaths = ["tests"]
                 "name": "forbidden_ui_framework",
                 "file": "frontend/src/components/BadUI.tsx",
                 "content": 'import { Button } from "@mui/material"\nexport const BadUI = () => <Button>Bad</Button>',
-                "should_block": True
+                "should_block": True,
             },
             {
                 "name": "missing_test_ids",
                 "file": "frontend/src/components/NoTestId.tsx",
                 "content": 'import React from "react"\nexport const NoTestId = () => <button onClick={() => {}}>Click</button>',
-                "should_block": False  # Warning, not blocking
+                "should_block": False,  # Warning, not blocking
             },
             {
                 "name": "security_risk",
                 "file": "frontend/src/components/Unsafe.tsx",
-                "content": 'export const Unsafe = () => <div dangerouslySetInnerHTML={{__html: userInput}} />',
-                "should_block": True
+                "content": "export const Unsafe = () => <div dangerouslySetInnerHTML={{__html: userInput}} />",
+                "should_block": True,
             },
             {
                 "name": "compliant_code",
                 "file": "frontend/src/components/Good.tsx",
                 "content": 'import { Button } from "@/components/ui/button"\nexport const Good = () => <Button data-testid="good">Good</Button>',
-                "should_block": False
-            }
+                "should_block": False,
+            },
         ]
 
         for scenario in test_scenarios:
@@ -913,15 +951,17 @@ testpaths = ["tests"]
             expected_success = not scenario["should_block"]
 
             result = coordination_env.simulate_commit(
-                files,
-                f"Test {scenario['name']}",
-                expect_success=expected_success
+                files, f"Test {scenario['name']}", expect_success=expected_success
             )
 
-            assert result["validation_passed"], f"Scenario {scenario['name']} failed validation"
+            assert result["validation_passed"], (
+                f"Scenario {scenario['name']} failed validation"
+            )
 
             if scenario["should_block"]:
-                assert not result["success"], f"Expected {scenario['name']} to be blocked"
+                assert not result["success"], (
+                    f"Expected {scenario['name']} to be blocked"
+                )
             else:
                 assert result["success"], f"Expected {scenario['name']} to succeed"
 

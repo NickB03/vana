@@ -27,6 +27,7 @@ from .git_performance_benchmarks import GitPerformanceBenchmarker
 @dataclass
 class IntegrationTestResult:
     """Result from an integration test scenario"""
+
     scenario_name: str
     description: str
     success: bool
@@ -46,6 +47,7 @@ class IntegrationTestResult:
 @dataclass
 class SystemCoordinationReport:
     """Report on system coordination during Git workflows"""
+
     test_session_id: str
     total_scenarios: int
     successful_scenarios: int
@@ -97,46 +99,78 @@ class GitIntegrationTestRunner:
 
         # Create coordination log
         coordination_log = coordination_dir / "coordination.log"
-        coordination_log.write_text(f"Integration test session started: {self.session_id}\n")
+        coordination_log.write_text(
+            f"Integration test session started: {self.session_id}\n"
+        )
 
         # Create coordination state file
         coordination_state = coordination_dir / "state.json"
-        coordination_state.write_text(json.dumps({
-            "session_id": self.session_id,
-            "started_at": datetime.now().isoformat(),
-            "systems": {
-                "git_hooks": {"active": True, "last_execution": None},
-                "claude_flow": {"active": True, "last_coordination": None},
-                "prd_validation": {"active": True, "last_validation": None},
-                "backup_system": {"active": True, "last_backup": None}
-            }
-        }, indent=2))
+        coordination_state.write_text(
+            json.dumps(
+                {
+                    "session_id": self.session_id,
+                    "started_at": datetime.now().isoformat(),
+                    "systems": {
+                        "git_hooks": {"active": True, "last_execution": None},
+                        "claude_flow": {"active": True, "last_coordination": None},
+                        "prd_validation": {"active": True, "last_validation": None},
+                        "backup_system": {"active": True, "last_backup": None},
+                    },
+                },
+                indent=2,
+            )
+        )
 
     async def run_comprehensive_integration_tests(self) -> SystemCoordinationReport:
         """Run complete suite of integration tests"""
-        print(f"🔗 Starting comprehensive Git integration testing (Session: {self.session_id})")
+        print(
+            f"🔗 Starting comprehensive Git integration testing (Session: {self.session_id})"
+        )
 
         start_time = time.time()
 
         # Define test scenarios
         scenarios = [
-            ("frontend_component_workflow", "Complete frontend component development workflow"),
+            (
+                "frontend_component_workflow",
+                "Complete frontend component development workflow",
+            ),
             ("backend_api_workflow", "Complete backend API development workflow"),
-            ("configuration_update_workflow", "Configuration file update with backup workflow"),
+            (
+                "configuration_update_workflow",
+                "Configuration file update with backup workflow",
+            ),
             ("emergency_hotfix_workflow", "Emergency hotfix with bypass validation"),
-            ("merge_conflict_resolution", "Merge conflict resolution with hook validation"),
+            (
+                "merge_conflict_resolution",
+                "Merge conflict resolution with hook validation",
+            ),
             ("large_refactor_workflow", "Large codebase refactor with multiple files"),
-            ("security_violation_blocking", "Security violation detection and blocking"),
-            ("performance_optimization_workflow", "Performance optimization with monitoring"),
-            ("concurrent_developer_workflow", "Multiple developers working concurrently"),
-            ("rollback_and_recovery_workflow", "Error rollback and recovery procedures")
+            (
+                "security_violation_blocking",
+                "Security violation detection and blocking",
+            ),
+            (
+                "performance_optimization_workflow",
+                "Performance optimization with monitoring",
+            ),
+            (
+                "concurrent_developer_workflow",
+                "Multiple developers working concurrently",
+            ),
+            (
+                "rollback_and_recovery_workflow",
+                "Error rollback and recovery procedures",
+            ),
         ]
 
         # Execute each scenario
         for scenario_name, description in scenarios:
             try:
                 print(f"  🧪 Testing: {description}")
-                result = await self._execute_integration_scenario(scenario_name, description)
+                result = await self._execute_integration_scenario(
+                    scenario_name, description
+                )
                 self.test_results.append(result)
 
                 status = "✅ PASSED" if result.success else "❌ FAILED"
@@ -154,7 +188,7 @@ class GitIntegrationTestRunner:
                     hook_coordination={},
                     performance_metrics={},
                     error_details=str(e),
-                    timestamp=datetime.now().isoformat()
+                    timestamp=datetime.now().isoformat(),
                 )
                 self.test_results.append(error_result)
                 print(f"     ❌ ERROR: {e}")
@@ -169,7 +203,9 @@ class GitIntegrationTestRunner:
 
         return report
 
-    async def _execute_integration_scenario(self, scenario_name: str, description: str) -> IntegrationTestResult:
+    async def _execute_integration_scenario(
+        self, scenario_name: str, description: str
+    ) -> IntegrationTestResult:
         """Execute a specific integration test scenario"""
         start_time = time.time()
 
@@ -179,7 +215,7 @@ class GitIntegrationTestRunner:
             "total_steps": 0,
             "validation_results": {},
             "hook_coordination": {},
-            "performance_metrics": {}
+            "performance_metrics": {},
         }
 
         try:
@@ -226,7 +262,7 @@ class GitIntegrationTestRunner:
             hook_coordination=scenario_state["hook_coordination"],
             performance_metrics=scenario_state["performance_metrics"],
             error_details=scenario_state.get("error_details"),
-            timestamp=datetime.now().isoformat()
+            timestamp=datetime.now().isoformat(),
         )
 
     async def _test_frontend_component_workflow(self, state: dict[str, Any]):
@@ -286,7 +322,7 @@ export const FeatureComponent: React.FC<FeatureComponentProps> = ({ title, onSub
         state["validation_results"]["component_creation"] = {
             "success": result["success"],
             "prd_compliant": result["success"],  # Should pass PRD validation
-            "hooks_executed": result["hooks_executed"]
+            "hooks_executed": result["hooks_executed"],
         }
 
         if result["success"]:
@@ -347,13 +383,17 @@ describe('FeatureComponent', () => {
 })
 """
 
-        test_files = {"frontend/src/components/__tests__/FeatureComponent.test.tsx": test_content}
-        test_result = self.git_env.simulate_commit(test_files, "Add comprehensive tests for FeatureComponent")
+        test_files = {
+            "frontend/src/components/__tests__/FeatureComponent.test.tsx": test_content
+        }
+        test_result = self.git_env.simulate_commit(
+            test_files, "Add comprehensive tests for FeatureComponent"
+        )
 
         state["validation_results"]["test_creation"] = {
             "success": test_result["success"],
             "coverage_adequate": True,  # Comprehensive tests
-            "hooks_executed": test_result["hooks_executed"]
+            "hooks_executed": test_result["hooks_executed"],
         }
 
         if test_result["success"]:
@@ -386,12 +426,14 @@ export default function HomePage() {
 """
 
         app_files = {"frontend/src/app/page.tsx": app_update}
-        app_result = self.git_env.simulate_commit(app_files, "Integrate FeatureComponent into main app")
+        app_result = self.git_env.simulate_commit(
+            app_files, "Integrate FeatureComponent into main app"
+        )
 
         state["validation_results"]["app_integration"] = {
             "success": app_result["success"],
             "integration_clean": True,
-            "hooks_executed": app_result["hooks_executed"]
+            "hooks_executed": app_result["hooks_executed"],
         }
 
         if app_result["success"]:
@@ -399,33 +441,38 @@ export default function HomePage() {
 
         # Step 4: Update package.json with new dependencies (triggers backup)
         package_update = {
-            "frontend/package.json": json.dumps({
-                "name": "vana-frontend",
-                "version": "1.1.0",
-                "dependencies": {
-                    "react": "^18.3.1",
-                    "next": "^15.4.6",
-                    "@radix-ui/react-slot": "^1.0.2"
+            "frontend/package.json": json.dumps(
+                {
+                    "name": "vana-frontend",
+                    "version": "1.1.0",
+                    "dependencies": {
+                        "react": "^18.3.1",
+                        "next": "^15.4.6",
+                        "@radix-ui/react-slot": "^1.0.2",
+                    },
+                    "devDependencies": {
+                        "@testing-library/react": "^13.4.0",
+                        "@testing-library/jest-dom": "^5.16.5",
+                    },
+                    "scripts": {
+                        "dev": "next dev",
+                        "build": "next build",
+                        "test": "jest",
+                        "type-check": "tsc --noEmit",
+                    },
                 },
-                "devDependencies": {
-                    "@testing-library/react": "^13.4.0",
-                    "@testing-library/jest-dom": "^5.16.5"
-                },
-                "scripts": {
-                    "dev": "next dev",
-                    "build": "next build",
-                    "test": "jest",
-                    "type-check": "tsc --noEmit"
-                }
-            }, indent=2)
+                indent=2,
+            )
         }
 
-        package_result = self.git_env.simulate_commit(package_update, "Update dependencies for new feature")
+        package_result = self.git_env.simulate_commit(
+            package_update, "Update dependencies for new feature"
+        )
 
         state["validation_results"]["dependency_update"] = {
             "success": package_result["success"],
             "backup_triggered": True,  # Configuration file should trigger backup
-            "hooks_executed": package_result["hooks_executed"]
+            "hooks_executed": package_result["hooks_executed"],
         }
 
         if package_result["success"]:
@@ -437,7 +484,7 @@ export default function HomePage() {
         state["validation_results"]["push_validation"] = {
             "success": push_result.get("success", False),
             "safety_checks_passed": True,
-            "hooks_executed": True
+            "hooks_executed": True,
         }
 
         if push_result.get("success", False):
@@ -445,17 +492,23 @@ export default function HomePage() {
 
         # Track hook coordination
         state["hook_coordination"] = {
-            "pre_commit_executions": state["steps_completed"] - (1 if push_result.get("success", False) else 0),
-            "post_commit_executions": state["steps_completed"] - (1 if push_result.get("success", False) else 0),
+            "pre_commit_executions": state["steps_completed"]
+            - (1 if push_result.get("success", False) else 0),
+            "post_commit_executions": state["steps_completed"]
+            - (1 if push_result.get("success", False) else 0),
             "pre_push_executions": 1 if push_result.get("success", False) else 0,
-            "coordination_successful": all(v["hooks_executed"] for v in state["validation_results"].values() if "hooks_executed" in v)
+            "coordination_successful": all(
+                v["hooks_executed"]
+                for v in state["validation_results"].values()
+                if "hooks_executed" in v
+            ),
         }
 
         # Performance metrics
         state["performance_metrics"] = {
             "avg_commit_time_ms": 500,  # Estimated based on simple commits
             "total_workflow_time_ms": 2500,  # Estimated total time
-            "hook_overhead_ms": 200  # Estimated hook overhead
+            "hook_overhead_ms": 200,  # Estimated hook overhead
         }
 
     async def _test_backend_api_workflow(self, state: dict[str, Any]):
@@ -545,12 +598,14 @@ async def get_feature(
 """
 
         api_files = {"app/routes/features.py": api_content}
-        api_result = self.git_env.simulate_commit(api_files, "Add features API endpoint")
+        api_result = self.git_env.simulate_commit(
+            api_files, "Add features API endpoint"
+        )
 
         state["validation_results"]["api_creation"] = {
             "success": api_result["success"],
             "code_quality": True,  # Well-structured FastAPI code
-            "hooks_executed": api_result["hooks_executed"]
+            "hooks_executed": api_result["hooks_executed"],
         }
 
         if api_result["success"]:
@@ -614,12 +669,14 @@ class TestFeaturesAPI:
 """
 
         test_files = {"tests/unit/test_features_api.py": test_content}
-        test_result = self.git_env.simulate_commit(test_files, "Add comprehensive API tests")
+        test_result = self.git_env.simulate_commit(
+            test_files, "Add comprehensive API tests"
+        )
 
         state["validation_results"]["api_test_creation"] = {
             "success": test_result["success"],
             "test_coverage": True,  # Comprehensive API tests
-            "hooks_executed": test_result["hooks_executed"]
+            "hooks_executed": test_result["hooks_executed"],
         }
 
         if test_result["success"]:
@@ -644,12 +701,14 @@ async def health_check():
 """
 
         router_files = {"app/main.py": router_update}
-        router_result = self.git_env.simulate_commit(router_files, "Integrate features API into main app")
+        router_result = self.git_env.simulate_commit(
+            router_files, "Integrate features API into main app"
+        )
 
         state["validation_results"]["api_integration"] = {
             "success": router_result["success"],
             "routing_correct": True,
-            "hooks_executed": router_result["hooks_executed"]
+            "hooks_executed": router_result["hooks_executed"],
         }
 
         if router_result["success"]:
@@ -681,12 +740,14 @@ asyncio_mode = "auto"
 """
 
         deps_files = {"pyproject.toml": deps_update}
-        deps_result = self.git_env.simulate_commit(deps_files, "Update project dependencies for features API")
+        deps_result = self.git_env.simulate_commit(
+            deps_files, "Update project dependencies for features API"
+        )
 
         state["validation_results"]["dependency_update"] = {
             "success": deps_result["success"],
             "backup_triggered": True,  # pyproject.toml should trigger backup
-            "hooks_executed": deps_result["hooks_executed"]
+            "hooks_executed": deps_result["hooks_executed"],
         }
 
         if deps_result["success"]:
@@ -697,13 +758,13 @@ asyncio_mode = "auto"
             "pre_commit_executions": state["steps_completed"],
             "post_commit_executions": state["steps_completed"],
             "backup_coordinated": True,
-            "coordination_successful": True
+            "coordination_successful": True,
         }
 
         state["performance_metrics"] = {
             "avg_commit_time_ms": 600,  # API code is more complex
             "total_workflow_time_ms": 2400,
-            "hook_overhead_ms": 300
+            "hook_overhead_ms": 300,
         }
 
     async def _test_configuration_update_workflow(self, state: dict[str, Any]):
@@ -729,17 +790,15 @@ target-version = "py311"
 testpaths = ["tests"]
 addopts = "--cov=app --cov-report=html"
 """,
-            "frontend/package.json": json.dumps({
-                "name": "vana-frontend",
-                "version": "1.2.0",
-                "dependencies": {
-                    "react": "^18.3.1",
-                    "next": "^15.4.6"
+            "frontend/package.json": json.dumps(
+                {
+                    "name": "vana-frontend",
+                    "version": "1.2.0",
+                    "dependencies": {"react": "^18.3.1", "next": "^15.4.6"},
+                    "devDependencies": {"@types/react": "^18.2.0"},
                 },
-                "devDependencies": {
-                    "@types/react": "^18.2.0"
-                }
-            }, indent=2),
+                indent=2,
+            ),
             "Makefile": """
 # Updated Makefile with new commands
 test:
@@ -754,15 +813,17 @@ build:
 
 deploy:
 \tmake build && echo "Ready for deployment"
-"""
+""",
         }
 
-        config_result = self.git_env.simulate_commit(config_files, "Update project configuration")
+        config_result = self.git_env.simulate_commit(
+            config_files, "Update project configuration"
+        )
 
         state["validation_results"]["config_update"] = {
             "success": config_result["success"],
             "backup_triggered": True,  # All config files should trigger backup
-            "hooks_executed": config_result["hooks_executed"]
+            "hooks_executed": config_result["hooks_executed"],
         }
 
         if config_result["success"]:
@@ -775,7 +836,7 @@ deploy:
             "package_json_backed_up": True,
             "makefile_backed_up": True,
             "backup_timestamp": datetime.now().isoformat(),
-            "backup_namespace": "auto-backup"
+            "backup_namespace": "auto-backup",
         }
 
         state["validation_results"]["backup_verification"] = backup_verification
@@ -793,12 +854,14 @@ dependencies = [
 """
         }
 
-        rollback_result = self.git_env.simulate_commit(rollback_files, "Rollback configuration changes")
+        rollback_result = self.git_env.simulate_commit(
+            rollback_files, "Rollback configuration changes"
+        )
 
         state["validation_results"]["rollback_test"] = {
             "success": rollback_result["success"],
             "rollback_clean": True,
-            "hooks_executed": rollback_result["hooks_executed"]
+            "hooks_executed": rollback_result["hooks_executed"],
         }
 
         if rollback_result["success"]:
@@ -807,13 +870,13 @@ dependencies = [
         state["hook_coordination"] = {
             "backup_integration_successful": True,
             "configuration_tracking": True,
-            "rollback_capability": True
+            "rollback_capability": True,
         }
 
         state["performance_metrics"] = {
             "backup_overhead_ms": 100,
             "config_validation_time_ms": 200,
-            "rollback_time_ms": 150
+            "rollback_time_ms": 150,
         }
 
     async def _test_emergency_hotfix_workflow(self, state: dict[str, Any]):
@@ -842,15 +905,13 @@ export const EmergencyFix = () => {
 
         violation_files = {"frontend/src/components/EmergencyFix.tsx": emergency_fix}
         violation_result = self.git_env.simulate_commit(
-            violation_files,
-            "Emergency fix for production issue",
-            expect_success=False
+            violation_files, "Emergency fix for production issue", expect_success=False
         )
 
         state["validation_results"]["violation_blocked"] = {
             "blocked_as_expected": not violation_result["success"],
             "prd_validation_working": True,
-            "hooks_executed": violation_result["hooks_executed"]
+            "hooks_executed": violation_result["hooks_executed"],
         }
 
         if not violation_result["success"]:  # Blocking is the expected behavior
@@ -862,7 +923,7 @@ export const EmergencyFix = () => {
             "success": True,  # Simulated bypass
             "bypass_used": True,
             "emergency_justification": "Critical production issue #12345",
-            "hooks_bypassed": True
+            "hooks_bypassed": True,
         }
 
         state["validation_results"]["emergency_bypass"] = bypass_result
@@ -895,12 +956,14 @@ export const EmergencyFix = () => {
 """
 
         fix_files = {"frontend/src/components/EmergencyFix.tsx": fixed_component}
-        fix_result = self.git_env.simulate_commit(fix_files, "Refactor emergency fix to use shadcn/ui")
+        fix_result = self.git_env.simulate_commit(
+            fix_files, "Refactor emergency fix to use shadcn/ui"
+        )
 
         state["validation_results"]["follow_up_fix"] = {
             "success": fix_result["success"],
             "prd_compliant": True,
-            "hooks_executed": fix_result["hooks_executed"]
+            "hooks_executed": fix_result["hooks_executed"],
         }
 
         if fix_result["success"]:
@@ -909,13 +972,13 @@ export const EmergencyFix = () => {
         state["hook_coordination"] = {
             "bypass_mechanism_available": True,
             "post_bypass_validation": True,
-            "emergency_procedures_working": True
+            "emergency_procedures_working": True,
         }
 
         state["performance_metrics"] = {
             "bypass_time_ms": 50,  # Bypass should be fast
             "fix_validation_time_ms": 400,
-            "total_emergency_resolution_ms": 1200
+            "total_emergency_resolution_ms": 1200,
         }
 
     async def _test_security_violation_blocking(self, state: dict[str, Any]):
@@ -940,7 +1003,7 @@ export const UnsafeComponent = () => {
     </div>
   )
 }
-"""
+""",
             },
             {
                 "name": "eval_usage",
@@ -950,7 +1013,7 @@ def process_user_code(code_string: str):
     # DANGEROUS: Never eval user input
     result = eval(code_string)
     return result
-"""
+""",
             },
             {
                 "name": "document_write",
@@ -960,8 +1023,8 @@ function updatePage(content) {
     // Legacy unsafe method
     document.write(content);
 }
-"""
-            }
+""",
+            },
         ]
 
         blocked_violations = 0
@@ -971,7 +1034,7 @@ function updatePage(content) {
             result = self.git_env.simulate_commit(
                 files,
                 f"Add {violation['name']} (should be blocked)",
-                expect_success=False
+                expect_success=False,
             )
 
             if not result["success"]:  # Blocking is expected
@@ -980,7 +1043,7 @@ function updatePage(content) {
             state["validation_results"][f"security_{violation['name']}"] = {
                 "blocked": not result["success"],
                 "violation_detected": True,
-                "hooks_executed": result["hooks_executed"]
+                "hooks_executed": result["hooks_executed"],
             }
 
         state["steps_completed"] = blocked_violations
@@ -1023,12 +1086,14 @@ export const SecureComponent = () => {
 """
 
         secure_files = {"frontend/src/components/SecureComponent.tsx": secure_component}
-        secure_result = self.git_env.simulate_commit(secure_files, "Add secure component with proper sanitization")
+        secure_result = self.git_env.simulate_commit(
+            secure_files, "Add secure component with proper sanitization"
+        )
 
         state["validation_results"]["secure_implementation"] = {
             "success": secure_result["success"],
             "security_compliant": True,
-            "hooks_executed": secure_result["hooks_executed"]
+            "hooks_executed": secure_result["hooks_executed"],
         }
 
         if secure_result["success"]:
@@ -1037,12 +1102,12 @@ export const SecureComponent = () => {
         state["hook_coordination"] = {
             "security_detection_rate": blocked_violations / len(security_violations),
             "false_positive_rate": 0,  # Secure code should pass
-            "security_hooks_working": True
+            "security_hooks_working": True,
         }
 
         state["performance_metrics"] = {
             "security_scan_time_ms": 300,
-            "violation_detection_accuracy": 100.0
+            "violation_detection_accuracy": 100.0,
         }
 
     # Additional scenario implementations would go here...
@@ -1088,7 +1153,9 @@ export const SecureComponent = () => {
         state["hook_coordination"] = {"recovery_procedures": True}
         state["performance_metrics"] = {"recovery_time_ms": 1000}
 
-    def _generate_coordination_report(self, total_duration: float) -> SystemCoordinationReport:
+    def _generate_coordination_report(
+        self, total_duration: float
+    ) -> SystemCoordinationReport:
         """Generate comprehensive system coordination report"""
         successful_scenarios = sum(1 for result in self.test_results if result.success)
         total_scenarios = len(self.test_results)
@@ -1111,14 +1178,22 @@ export const SecureComponent = () => {
             if result.validation_results.get("backup_triggered", False):
                 backup_integration_successes += 1
 
-        hook_coord_rate = hook_coordination_successes / total_scenarios if total_scenarios > 0 else 0
-        prd_validation_rate = prd_validation_successes / total_scenarios if total_scenarios > 0 else 0
-        backup_integration_rate = backup_integration_successes / total_scenarios if total_scenarios > 0 else 0
+        hook_coord_rate = (
+            hook_coordination_successes / total_scenarios if total_scenarios > 0 else 0
+        )
+        prd_validation_rate = (
+            prd_validation_successes / total_scenarios if total_scenarios > 0 else 0
+        )
+        backup_integration_rate = (
+            backup_integration_successes / total_scenarios if total_scenarios > 0 else 0
+        )
 
         # Calculate average execution time
         avg_execution_time = 0
         if self.test_results:
-            avg_execution_time = sum(r.execution_time_ms for r in self.test_results) / len(self.test_results)
+            avg_execution_time = sum(
+                r.execution_time_ms for r in self.test_results
+            ) / len(self.test_results)
 
         # Determine performance grade
         if success_rate >= 0.95 and hook_coord_rate >= 0.9:
@@ -1146,7 +1221,9 @@ export const SecureComponent = () => {
             recommendations.append("Optimize integration workflow performance")
 
         if not recommendations:
-            recommendations.append("All integration tests passing - system coordination is excellent")
+            recommendations.append(
+                "All integration tests passing - system coordination is excellent"
+            )
 
         return SystemCoordinationReport(
             test_session_id=self.session_id,
@@ -1161,23 +1238,25 @@ export const SecureComponent = () => {
             performance_grade=performance_grade,
             recommendations=recommendations,
             detailed_results=self.test_results,
-            timestamp=datetime.now().isoformat()
+            timestamp=datetime.now().isoformat(),
         )
 
     async def _save_integration_report(self, report: SystemCoordinationReport):
         """Save comprehensive integration test report"""
-        reports_dir = self.workspace_path / ".claude_workspace" / "reports" / "git-integration"
+        reports_dir = (
+            self.workspace_path / ".claude_workspace" / "reports" / "git-integration"
+        )
         reports_dir.mkdir(parents=True, exist_ok=True)
 
         # Save JSON report
         json_report_path = reports_dir / f"integration_report_{self.session_id}.json"
-        with open(json_report_path, 'w') as f:
+        with open(json_report_path, "w") as f:
             json.dump(report.to_dict(), f, indent=2)
 
         # Save HTML report
         html_report_path = reports_dir / f"integration_report_{self.session_id}.html"
         html_content = self._generate_html_report(report)
-        with open(html_report_path, 'w') as f:
+        with open(html_report_path, "w") as f:
             f.write(html_content)
 
         print(f"📊 Integration test report saved to {json_report_path}")
@@ -1190,7 +1269,7 @@ export const SecureComponent = () => {
             "B": "#84cc16",
             "C": "#eab308",
             "D": "#f97316",
-            "F": "#ef4444"
+            "F": "#ef4444",
         }[report.performance_grade]
 
         scenarios_html = ""
@@ -1202,14 +1281,14 @@ export const SecureComponent = () => {
             <div class="scenario-card">
                 <div class="scenario-header">
                     <span class="status-icon" style="color: {status_color};">{status_icon}</span>
-                    <h3>{result.scenario_name.replace('_', ' ').title()}</h3>
+                    <h3>{result.scenario_name.replace("_", " ").title()}</h3>
                     <span class="execution-time">{result.execution_time_ms:.2f}ms</span>
                 </div>
                 <p class="scenario-description">{result.description}</p>
                 <div class="scenario-metrics">
                     <div>Steps: {result.steps_completed}/{result.total_steps}</div>
-                    <div>Hooks: {'✅' if result.hook_coordination else '❌'}</div>
-                    <div>Validation: {'✅' if result.validation_results else '❌'}</div>
+                    <div>Hooks: {"✅" if result.hook_coordination else "❌"}</div>
+                    <div>Validation: {"✅" if result.validation_results else "❌"}</div>
                 </div>
             </div>
             """
@@ -1288,7 +1367,7 @@ export const SecureComponent = () => {
         <div class="recommendations">
             <h3>💡 Recommendations</h3>
             <ul>
-                {''.join(f'<li>{rec}</li>' for rec in report.recommendations)}
+                {"".join(f"<li>{rec}</li>" for rec in report.recommendations)}
             </ul>
         </div>
         
@@ -1350,20 +1429,27 @@ class TestGitIntegrationRunner:
         # Run a subset for testing (to avoid long execution)
         original_scenarios = [
             ("frontend_component_workflow", "Test frontend workflow"),
-            ("security_violation_blocking", "Test security blocking")
+            ("security_violation_blocking", "Test security blocking"),
         ]
 
         # Temporarily override the scenarios
         with pytest.MonkeyPatch().context() as m:
+
             async def mock_comprehensive_tests():
                 results = []
                 for scenario_name, description in original_scenarios:
-                    result = await integration_runner._execute_integration_scenario(scenario_name, description)
+                    result = await integration_runner._execute_integration_scenario(
+                        scenario_name, description
+                    )
                     results.append(result)
                 integration_runner.test_results = results
                 return integration_runner._generate_coordination_report(2.0)
 
-            m.setattr(integration_runner, "run_comprehensive_integration_tests", mock_comprehensive_tests)
+            m.setattr(
+                integration_runner,
+                "run_comprehensive_integration_tests",
+                mock_comprehensive_tests,
+            )
 
             report = await integration_runner.run_comprehensive_integration_tests()
 
@@ -1389,16 +1475,21 @@ if __name__ == "__main__":
                 report = asyncio.run(runner.run_comprehensive_integration_tests())
                 print(f"📊 Integration test complete: {report.performance_grade} grade")
                 print(f"   Success Rate: {report.overall_success_rate * 100:.1f}%")
-                print(f"   Scenarios: {report.successful_scenarios}/{report.total_scenarios}")
+                print(
+                    f"   Scenarios: {report.successful_scenarios}/{report.total_scenarios}"
+                )
 
             elif test_mode == "quick":
                 print("⚡ Running quick integration validation...")
                 state = {}
                 asyncio.run(runner._test_frontend_component_workflow(state))
-                print(f"✅ Quick validation: {state['steps_completed']}/{state['total_steps']} steps completed")
+                print(
+                    f"✅ Quick validation: {state['steps_completed']}/{state['total_steps']} steps completed"
+                )
 
         finally:
             import shutil
+
             shutil.rmtree(workspace, ignore_errors=True)
     else:
         pytest.main(["-v", __file__])

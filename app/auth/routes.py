@@ -50,29 +50,31 @@ admin_router = APIRouter(prefix="/admin", tags=["Administration"])
 
 
 # Authentication endpoints
-@auth_router.post("/register", response_model=AuthResponse, status_code=status.HTTP_201_CREATED)
+@auth_router.post(
+    "/register", response_model=AuthResponse, status_code=status.HTTP_201_CREATED
+)
 async def register_user(
-    user: UserCreate,
-    request: Request,
-    db: Session = Depends(get_auth_db)
+    user: UserCreate, request: Request, db: Session = Depends(get_auth_db)
 ) -> AuthResponse:
     """Register a new user."""
     # Validate password strength
     if not validate_password_strength(user.password):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Password does not meet security requirements"
+            detail="Password does not meet security requirements",
         )
 
     # Check if user already exists
-    existing_user = db.query(User).filter(
-        (User.email == user.email) | (User.username == user.username)
-    ).first()
+    existing_user = (
+        db.query(User)
+        .filter((User.email == user.email) | (User.username == user.username))
+        .first()
+    )
 
     if existing_user:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="User with this email or username already exists"
+            detail="User with this email or username already exists",
         )
 
     try:
@@ -84,7 +86,7 @@ async def register_user(
             last_name=user.last_name,
             hashed_password=get_password_hash(user.password),
             is_active=user.is_active,
-            is_verified=user.is_verified
+            is_verified=user.is_verified,
         )
 
         db.add(db_user)
@@ -104,43 +106,41 @@ async def register_user(
         db.refresh(db_user)
 
         # Create tokens for immediate login after registration
-        access_token = create_access_token(data={"sub": str(db_user.id), "email": db_user.email})
+        access_token = create_access_token(
+            data={"sub": str(db_user.id), "email": db_user.email}
+        )
         refresh_token = create_refresh_token(
             user_id=db_user.id,
             db=db,
             device_info=request.headers.get("User-Agent"),
-            ip_address=request.client.host if request.client else None
+            ip_address=request.client.host if request.client else None,
         )
 
         tokens = Token(
             access_token=access_token,
             refresh_token=refresh_token,
             token_type="bearer",
-            expires_in=30 * 60  # 30 minutes
+            expires_in=30 * 60,  # 30 minutes
         )
 
-        return AuthResponse(
-            user=UserResponse.model_validate(db_user),
-            tokens=tokens
-        )
+        return AuthResponse(user=UserResponse.model_validate(db_user), tokens=tokens)
 
     except IntegrityError:
         db.rollback()
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="User with this email or username already exists"
+            detail="User with this email or username already exists",
         )
 
 
 @auth_router.post("/login", response_model=AuthResponse)
 async def login_user(
-    request: Request,
-    db: Session = Depends(get_auth_db)
+    request: Request, db: Session = Depends(get_auth_db)
 ) -> AuthResponse:
     """OAuth2-compliant login endpoint that accepts both form and JSON data.
-    
+
     Supports:
-    - application/x-www-form-urlencoded (OAuth2 standard)  
+    - application/x-www-form-urlencoded (OAuth2 standard)
     - application/json (backward compatibility)
     """
     content_type = request.headers.get("content-type", "").lower()
@@ -164,8 +164,8 @@ async def login_user(
                 detail="invalid_request",
                 headers={
                     "Content-Type": "application/json",
-                    "Cache-Control": "no-store"
-                }
+                    "Cache-Control": "no-store",
+                },
             )
 
         # Validate grant_type for OAuth2 compliance (optional but recommended)
@@ -175,22 +175,23 @@ async def login_user(
                 detail="unsupported_grant_type",
                 headers={
                     "Content-Type": "application/json",
-                    "Cache-Control": "no-store"
-                }
+                    "Cache-Control": "no-store",
+                },
             )
 
     elif content_type.startswith("application/json"):
         # JSON request (backward compatibility)
         try:
             import json
+
             body = await request.body()
             if not body:
                 raise ValueError("Empty body")
 
-            json_data = json.loads(body.decode('utf-8'))
+            json_data = json.loads(body.decode("utf-8"))
             # Accept both username and email for backward compatibility
-            username_field = json_data.get('username')
-            email_field = json_data.get('email')
+            username_field = json_data.get("username")
+            email_field = json_data.get("email")
 
             # Normalize values by trimming whitespace
             username_field = username_field.strip() if username_field else None
@@ -203,12 +204,12 @@ async def login_user(
                     detail="username and email fields must have the same value when both are provided",
                     headers={
                         "Content-Type": "application/json",
-                        "Cache-Control": "no-store"
-                    }
+                        "Cache-Control": "no-store",
+                    },
                 )
 
             username = username_field or email_field
-            password = json_data.get('password')
+            password = json_data.get("password")
 
             if not username or not password:
                 raise ValueError("Missing credentials")
@@ -222,8 +223,8 @@ async def login_user(
                 detail="invalid_request",
                 headers={
                     "Content-Type": "application/json",
-                    "Cache-Control": "no-store"
-                }
+                    "Cache-Control": "no-store",
+                },
             )
 
     else:
@@ -231,10 +232,7 @@ async def login_user(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="invalid_request",
-            headers={
-                "Content-Type": "application/json",
-                "Cache-Control": "no-store"
-            }
+            headers={"Content-Type": "application/json", "Cache-Control": "no-store"},
         )
 
     # Authenticate user
@@ -248,18 +246,15 @@ async def login_user(
             headers={
                 "Content-Type": "application/json",
                 "Cache-Control": "no-store",
-                "WWW-Authenticate": 'Bearer realm="vana"'
-            }
+                "WWW-Authenticate": 'Bearer realm="vana"',
+            },
         )
 
     if not user.is_active:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="invalid_grant",
-            headers={
-                "Content-Type": "application/json",
-                "Cache-Control": "no-store"
-            }
+            headers={"Content-Type": "application/json", "Cache-Control": "no-store"},
         )
 
     # Update last login
@@ -272,35 +267,31 @@ async def login_user(
         user_id=user.id,
         db=db,
         device_info=request.headers.get("User-Agent"),
-        ip_address=request.client.host if request.client else None
+        ip_address=request.client.host if request.client else None,
     )
 
     tokens = Token(
         access_token=access_token,
         refresh_token=refresh_token,
         token_type="bearer",
-        expires_in=30 * 60  # 30 minutes
+        expires_in=30 * 60,  # 30 minutes
     )
 
-    return AuthResponse(
-        user=UserResponse.model_validate(user),
-        tokens=tokens
-    )
+    return AuthResponse(user=UserResponse.model_validate(user), tokens=tokens)
 
 
 @auth_router.post("/refresh", response_model=Token)
 async def refresh_access_token(
     request: Request,
     refresh_data: RefreshTokenRequest,
-    db: Session = Depends(get_auth_db)
+    db: Session = Depends(get_auth_db),
 ) -> Token:
     """Refresh access token using refresh token."""
     user = verify_refresh_token(refresh_data.refresh_token, db)
 
     if not user or not user.is_active:
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid refresh token"
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token"
         )
 
     # Revoke the old refresh token
@@ -312,14 +303,14 @@ async def refresh_access_token(
         user_id=user.id,
         db=db,
         device_info=request.headers.get("User-Agent"),
-        ip_address=request.client.host if request.client else None
+        ip_address=request.client.host if request.client else None,
     )
 
     return Token(
         access_token=access_token,
         refresh_token=new_refresh_token,
         token_type="bearer",
-        expires_in=30 * 60  # 30 minutes
+        expires_in=30 * 60,  # 30 minutes
     )
 
 
@@ -327,15 +318,14 @@ async def refresh_access_token(
 async def logout_user(
     refresh_data: RefreshTokenRequest,
     current_user: User = Depends(get_current_active_user),
-    db: Session = Depends(get_auth_db)
+    db: Session = Depends(get_auth_db),
 ):
     """Logout user by revoking refresh token."""
     revoked = revoke_refresh_token(refresh_data.refresh_token, db)
 
     if not revoked:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid refresh token"
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid refresh token"
         )
 
     return {"message": "Successfully logged out"}
@@ -344,7 +334,7 @@ async def logout_user(
 @auth_router.post("/logout-all")
 async def logout_all_devices(
     current_user: User = Depends(get_current_active_user),
-    db: Session = Depends(get_auth_db)
+    db: Session = Depends(get_auth_db),
 ):
     """Logout user from all devices by revoking all refresh tokens."""
     count = revoke_all_user_tokens(current_user.id, db)
@@ -353,7 +343,7 @@ async def logout_all_devices(
 
 @auth_router.get("/me", response_model=UserResponse)
 async def get_current_user_info(
-    current_user: User = Depends(get_current_active_user)
+    current_user: User = Depends(get_current_active_user),
 ) -> UserResponse:
     """Get current user information."""
     return UserResponse.model_validate(current_user)
@@ -363,7 +353,7 @@ async def get_current_user_info(
 async def update_current_user(
     user_update: UserUpdate,
     current_user: User = Depends(get_current_active_user),
-    db: Session = Depends(get_auth_db)
+    db: Session = Depends(get_auth_db),
 ) -> UserResponse:
     """Update current user information."""
     update_data = user_update.model_dump(exclude_unset=True)
@@ -373,7 +363,7 @@ async def update_current_user(
         if not validate_password_strength(update_data["password"]):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Password does not meet security requirements"
+                detail="Password does not meet security requirements",
             )
         update_data["hashed_password"] = get_password_hash(update_data.pop("password"))
 
@@ -402,23 +392,24 @@ async def update_current_user(
 async def change_password(
     password_data: ChangePassword,
     current_user: User = Depends(get_current_active_user),
-    db: Session = Depends(get_auth_db)
+    db: Session = Depends(get_auth_db),
 ):
     """Change user password."""
     from .security import verify_password
 
     # Verify current password
-    if not verify_password(password_data.current_password, current_user.hashed_password):
+    if not verify_password(
+        password_data.current_password, current_user.hashed_password
+    ):
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Incorrect current password"
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Incorrect current password"
         )
 
     # Validate new password
     if not validate_password_strength(password_data.new_password):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="New password does not meet security requirements"
+            detail="New password does not meet security requirements",
         )
 
     # Update password
@@ -436,7 +427,7 @@ async def change_password(
 async def forgot_password(
     request_data: PasswordResetRequest,
     background_tasks: BackgroundTasks,
-    db: Session = Depends(get_auth_db)
+    db: Session = Depends(get_auth_db),
 ):
     """Request password reset."""
     user = db.query(User).filter(User.email == request_data.email).first()
@@ -455,31 +446,28 @@ async def forgot_password(
 
 
 @auth_router.post("/reset-password")
-async def reset_password(
-    reset_data: PasswordReset,
-    db: Session = Depends(get_auth_db)
-):
+async def reset_password(reset_data: PasswordReset, db: Session = Depends(get_auth_db)):
     """Reset password using reset token."""
     email = verify_password_reset_token(reset_data.token)
 
     if not email:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid or expired reset token"
+            detail="Invalid or expired reset token",
         )
 
     user = db.query(User).filter(User.email == email).first()
     if not user or not user.is_active:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid or expired reset token"
+            detail="Invalid or expired reset token",
         )
 
     # Validate new password
     if not validate_password_strength(reset_data.new_password):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Password does not meet security requirements"
+            detail="Password does not meet security requirements",
         )
 
     # Update password
@@ -497,7 +485,7 @@ async def reset_password(
 async def google_login(
     request: Request,
     google_data: GoogleCloudIdentity,
-    db: Session = Depends(get_auth_db)
+    db: Session = Depends(get_auth_db),
 ) -> AuthResponse:
     """Login or register user with Google Cloud Identity."""
     try:
@@ -505,10 +493,14 @@ async def google_login(
         google_user = verify_google_identity(google_data.id_token)
 
         # Find or create user
-        user = db.query(User).filter(
-            (User.email == google_user["email"]) |
-            (User.google_cloud_identity == google_user["sub"])
-        ).first()
+        user = (
+            db.query(User)
+            .filter(
+                (User.email == google_user["email"])
+                | (User.google_cloud_identity == google_user["sub"])
+            )
+            .first()
+        )
 
         if not user:
             # Create new user
@@ -520,7 +512,7 @@ async def google_login(
                 hashed_password="",  # No password for Google users
                 is_active=True,
                 is_verified=True,  # Google users are pre-verified
-                google_cloud_identity=google_user["sub"]
+                google_cloud_identity=google_user["sub"],
             )
 
             # Assign default user role
@@ -540,7 +532,7 @@ async def google_login(
         if not user.is_active:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="User account is deactivated"
+                detail="User account is deactivated",
             )
 
         # Update last login
@@ -548,30 +540,29 @@ async def google_login(
         db.commit()
 
         # Create tokens
-        access_token = create_access_token(data={"sub": str(user.id), "email": user.email})
+        access_token = create_access_token(
+            data={"sub": str(user.id), "email": user.email}
+        )
         refresh_token = create_refresh_token(
             user_id=user.id,
             db=db,
             device_info=request.headers.get("User-Agent"),
-            ip_address=request.client.host if request.client else None
+            ip_address=request.client.host if request.client else None,
         )
 
         tokens = Token(
             access_token=access_token,
             refresh_token=refresh_token,
             token_type="bearer",
-            expires_in=30 * 60  # 30 minutes
+            expires_in=30 * 60,  # 30 minutes
         )
 
-        return AuthResponse(
-            user=UserResponse.model_validate(user),
-            tokens=tokens
-        )
+        return AuthResponse(user=UserResponse.model_validate(user), tokens=tokens)
 
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=f"Google authentication failed: {e!s}"
+            detail=f"Google authentication failed: {e!s}",
         )
 
 
@@ -579,7 +570,7 @@ async def google_login(
 async def google_oauth_callback(
     request: Request,
     callback_data: GoogleOAuthCallbackRequest,
-    db: Session = Depends(get_auth_db)
+    db: Session = Depends(get_auth_db),
 ) -> AuthResponse:
     """Handle Google OAuth callback by exchanging code for tokens and logging in user."""
     try:
@@ -593,7 +584,7 @@ async def google_oauth_callback(
                 detail=(
                     "Google OAuth credentials not configured. Set GOOGLE_OAUTH_CLIENT_ID, "
                     "GOOGLE_OAUTH_CLIENT_SECRET, and GOOGLE_OAUTH_REDIRECT_URI from Google Cloud Console."
-                )
+                ),
             )
 
         token_response = httpx.post(
@@ -603,15 +594,15 @@ async def google_oauth_callback(
                 "client_id": client_id,
                 "client_secret": client_secret,
                 "redirect_uri": redirect_uri,
-                "grant_type": "authorization_code"
-            }
+                "grant_type": "authorization_code",
+            },
         )
         token_response.raise_for_status()
         token_data = token_response.json()
 
         google_identity = GoogleCloudIdentity(
             id_token=token_data.get("id_token"),
-            access_token=token_data.get("access_token")
+            access_token=token_data.get("access_token"),
         )
 
         return await google_login(request, google_identity, db)
@@ -621,7 +612,7 @@ async def google_oauth_callback(
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Google OAuth callback failed: {e!s}"
+            detail=f"Google OAuth callback failed: {e!s}",
         )
 
 
@@ -631,7 +622,7 @@ async def list_users(
     skip: int = 0,
     limit: int = 100,
     current_user: User = Depends(require_permissions(["users:read"])),
-    db: Session = Depends(get_auth_db)
+    db: Session = Depends(get_auth_db),
 ) -> list[UserResponse]:
     """List all users (requires users:read permission)."""
     users = db.query(User).offset(skip).limit(limit).all()
@@ -642,14 +633,13 @@ async def list_users(
 async def get_user(
     user_id: int,
     current_user: User = Depends(require_permissions(["users:read"])),
-    db: Session = Depends(get_auth_db)
+    db: Session = Depends(get_auth_db),
 ) -> UserResponse:
     """Get user by ID (requires users:read permission)."""
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="User not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
         )
     return UserResponse.model_validate(user)
 
@@ -659,14 +649,13 @@ async def update_user(
     user_id: int,
     user_update: UserUpdate,
     current_user: User = Depends(require_permissions(["users:update"])),
-    db: Session = Depends(get_auth_db)
+    db: Session = Depends(get_auth_db),
 ) -> UserResponse:
     """Update user (requires users:update permission)."""
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="User not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
         )
 
     update_data = user_update.model_dump(exclude_unset=True)
@@ -676,7 +665,7 @@ async def update_user(
         if not validate_password_strength(update_data["password"]):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Password does not meet security requirements"
+                detail="Password does not meet security requirements",
             )
         update_data["hashed_password"] = get_password_hash(update_data.pop("password"))
 
@@ -701,28 +690,25 @@ async def update_user(
 async def delete_user(
     user_id: int,
     current_user: User = Depends(require_permissions(["users:delete"])),
-    db: Session = Depends(get_auth_db)
+    db: Session = Depends(get_auth_db),
 ):
     """Delete user (requires users:delete permission)."""
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="User not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
         )
 
     # Prevent deleting superusers unless current user is also superuser
     if user.is_superuser and not current_user.is_superuser:
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Cannot delete superuser"
+            status_code=status.HTTP_403_FORBIDDEN, detail="Cannot delete superuser"
         )
 
     # Prevent self-deletion
     if user.id == current_user.id:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Cannot delete yourself"
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Cannot delete yourself"
         )
 
     db.delete(user)
@@ -735,29 +721,31 @@ async def delete_user(
 @admin_router.get("/roles", response_model=list[RoleSchema])
 async def list_roles(
     current_user: User = Depends(get_current_superuser),
-    db: Session = Depends(get_auth_db)
+    db: Session = Depends(get_auth_db),
 ) -> list[RoleSchema]:
     """List all roles (superuser only)."""
     roles = db.query(Role).all()
     return [RoleSchema.model_validate(role) for role in roles]
 
 
-@admin_router.post("/roles", response_model=RoleSchema, status_code=status.HTTP_201_CREATED)
+@admin_router.post(
+    "/roles", response_model=RoleSchema, status_code=status.HTTP_201_CREATED
+)
 async def create_role(
     role: RoleCreate,
     current_user: User = Depends(get_current_superuser),
-    db: Session = Depends(get_auth_db)
+    db: Session = Depends(get_auth_db),
 ) -> RoleSchema:
     """Create new role (superuser only)."""
     db_role = Role(
-        name=role.name,
-        description=role.description,
-        is_active=role.is_active
+        name=role.name, description=role.description, is_active=role.is_active
     )
 
     # Assign permissions if specified
     if role.permission_ids:
-        permissions = db.query(Permission).filter(Permission.id.in_(role.permission_ids)).all()
+        permissions = (
+            db.query(Permission).filter(Permission.id.in_(role.permission_ids)).all()
+        )
         db_role.permissions.extend(permissions)
 
     db.add(db_role)
@@ -770,7 +758,7 @@ async def create_role(
 @admin_router.get("/permissions", response_model=list[PermissionSchema])
 async def list_permissions(
     current_user: User = Depends(get_current_superuser),
-    db: Session = Depends(get_auth_db)
+    db: Session = Depends(get_auth_db),
 ) -> list[PermissionSchema]:
     """List all permissions (superuser only)."""
     permissions = db.query(Permission).all()

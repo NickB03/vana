@@ -35,6 +35,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class AgentMetrics:
     """Metrics for individual agent performance and behavior."""
+
     invocation_count: int = 0
     total_execution_time: float = 0.0
     last_invocation: datetime | None = None
@@ -74,10 +75,15 @@ class AgentMetrics:
 @dataclass
 class AgentRelationship:
     """Represents a relationship between two agents."""
+
     source_agent: str
     target_agent: str
-    relationship_type: str  # 'invokes', 'delegates_to', 'receives_from', 'parent_of', 'child_of'
-    data_flow: list[str] = field(default_factory=list)  # Keys of data passed between agents
+    relationship_type: (
+        str  # 'invokes', 'delegates_to', 'receives_from', 'parent_of', 'child_of'
+    )
+    data_flow: list[str] = field(
+        default_factory=list
+    )  # Keys of data passed between agents
     interaction_count: int = 0
     last_interaction: datetime | None = None
 
@@ -92,12 +98,19 @@ class AgentRelationship:
 @dataclass
 class AgentNetworkState:
     """Global state tracking for the agent network."""
+
     agents: dict[str, AgentMetrics] = field(default_factory=dict)
     relationships: list[AgentRelationship] = field(default_factory=list)
-    execution_stack: list[str] = field(default_factory=list)  # Current agent execution stack
-    agent_hierarchy: dict[str, list[str]] = field(default_factory=dict)  # parent -> children mapping
+    execution_stack: list[str] = field(
+        default_factory=list
+    )  # Current agent execution stack
+    agent_hierarchy: dict[str, list[str]] = field(
+        default_factory=dict
+    )  # parent -> children mapping
     active_agents: set[str] = field(default_factory=set)
-    data_dependencies: dict[str, set[str]] = field(default_factory=dict)  # agent -> required data keys
+    data_dependencies: dict[str, set[str]] = field(
+        default_factory=dict
+    )  # agent -> required data keys
 
     def get_or_create_agent_metrics(self, agent_name: str) -> AgentMetrics:
         """Get or create metrics for an agent."""
@@ -105,12 +118,18 @@ class AgentNetworkState:
             self.agents[agent_name] = AgentMetrics()
         return self.agents[agent_name]
 
-    def add_relationship(self, source: str, target: str, rel_type: str, data_keys: list[str] = None) -> None:
+    def add_relationship(
+        self, source: str, target: str, rel_type: str, data_keys: list[str] = None
+    ) -> None:
         """Add or update a relationship between agents."""
         # Find existing relationship or create new one
         existing = None
         for rel in self.relationships:
-            if rel.source_agent == source and rel.target_agent == target and rel.relationship_type == rel_type:
+            if (
+                rel.source_agent == source
+                and rel.target_agent == target
+                and rel.relationship_type == rel_type
+            ):
                 existing = rel
                 break
 
@@ -127,8 +146,8 @@ class AgentNetworkState:
 
         # Also create bidirectional relationships
         for child in children:
-            self.add_relationship(parent, child, 'parent_of')
-            self.add_relationship(child, parent, 'child_of')
+            self.add_relationship(parent, child, "parent_of")
+            self.add_relationship(child, parent, "child_of")
 
     def push_agent(self, agent_name: str) -> None:
         """Push agent onto execution stack."""
@@ -157,10 +176,10 @@ _network_state = AgentNetworkState()
 
 def before_agent_callback(callback_context: CallbackContext) -> None:
     """Callback executed before an agent starts processing.
-    
+
     Tracks agent invocation start, updates network state, and records
     the beginning of agent execution for timing and relationship tracking.
-    
+
     Args:
         callback_context: The ADK callback context containing invocation details
     """
@@ -182,7 +201,7 @@ def before_agent_callback(callback_context: CallbackContext) -> None:
         # Check for parent agent relationship
         if len(_network_state.execution_stack) > 1:
             parent_agent = _network_state.execution_stack[-2]
-            _network_state.add_relationship(parent_agent, agent_name, 'invokes')
+            _network_state.add_relationship(parent_agent, agent_name, "invokes")
 
         # Analyze data dependencies from session state
         if invocation_ctx.session and invocation_ctx.session.state:
@@ -196,19 +215,29 @@ def before_agent_callback(callback_context: CallbackContext) -> None:
             "data": {
                 "agentId": f"agent_{agent_name}_{datetime.now().timestamp()}",
                 "agentName": agent_name,
-                "agentType": invocation_ctx.agent.__class__.__name__ if invocation_ctx.agent else "unknown",
+                "agentType": invocation_ctx.agent.__class__.__name__
+                if invocation_ctx.agent
+                else "unknown",
                 "action": "Starting",
                 "status": "active",
                 "timestamp": datetime.now().isoformat(),
                 "executionStack": _network_state.execution_stack.copy(),
                 "activeAgents": list(_network_state.active_agents),
-                "parentAgent": _network_state.execution_stack[-2] if len(_network_state.execution_stack) > 1 else None,
-                "sessionId": getattr(invocation_ctx.session, 'id', None) if invocation_ctx.session else None
-            }
+                "parentAgent": _network_state.execution_stack[-2]
+                if len(_network_state.execution_stack) > 1
+                else None,
+                "sessionId": getattr(invocation_ctx.session, "id", None)
+                if invocation_ctx.session
+                else None,
+            },
         }
 
         # Broadcast the event immediately
-        session_id = getattr(invocation_ctx.session, 'id', None) if invocation_ctx.session else None
+        session_id = (
+            getattr(invocation_ctx.session, "id", None)
+            if invocation_ctx.session
+            else None
+        )
         if session_id:
             broadcast_agent_network_update(network_event, session_id)
 
@@ -223,10 +252,10 @@ def before_agent_callback(callback_context: CallbackContext) -> None:
 
 def after_agent_callback(callback_context: CallbackContext) -> None:
     """Callback executed after an agent completes processing.
-    
+
     Tracks agent completion, calculates execution metrics, updates relationships,
     and emits network state changes for real-time visualization.
-    
+
     Args:
         callback_context: The ADK callback context containing invocation details
     """
@@ -252,9 +281,11 @@ def after_agent_callback(callback_context: CallbackContext) -> None:
         metrics.update_timing(execution_time)
 
         # Check if agent completed successfully (no escalation)
-        has_error = any(event.actions and getattr(event.actions, 'escalate', False)
-                       for event in invocation_ctx.session.events
-                       if event.author == agent_name)
+        has_error = any(
+            event.actions and getattr(event.actions, "escalate", False)
+            for event in invocation_ctx.session.events
+            if event.author == agent_name
+        )
 
         if has_error:
             metrics.record_error()
@@ -265,7 +296,7 @@ def after_agent_callback(callback_context: CallbackContext) -> None:
         for event in invocation_ctx.session.events:
             if event.author == agent_name and event.content:
                 for part in event.content.parts:
-                    if hasattr(part, 'function_call') and part.function_call:
+                    if hasattr(part, "function_call") and part.function_call:
                         metrics.add_tool_usage(part.function_call.name)
 
         # Analyze state changes for data flow
@@ -279,16 +310,22 @@ def after_agent_callback(callback_context: CallbackContext) -> None:
         # Record data flow relationships with next agent in stack
         if state_changes and _network_state.execution_stack:
             next_agent = _network_state.execution_stack[-1]
-            _network_state.add_relationship(agent_name, next_agent, 'provides_data', state_changes)
+            _network_state.add_relationship(
+                agent_name, next_agent, "provides_data", state_changes
+            )
 
         # Calculate confidence score if available
-        recent_events = [e for e in invocation_ctx.session.events if e.author == agent_name]
+        recent_events = [
+            e for e in invocation_ctx.session.events if e.author == agent_name
+        ]
         if recent_events:
             # Use usage metadata as proxy for confidence
             last_event = recent_events[-1]
-            if hasattr(last_event, 'usage_metadata') and last_event.usage_metadata:
+            if hasattr(last_event, "usage_metadata") and last_event.usage_metadata:
                 # Simple confidence heuristic based on token usage
-                confidence = min(1.0, last_event.usage_metadata.total_token_count / 1000)
+                confidence = min(
+                    1.0, last_event.usage_metadata.total_token_count / 1000
+                )
                 metrics.add_confidence_score(confidence)
 
         # Emit completion event (using camelCase for frontend compatibility)
@@ -299,7 +336,9 @@ def after_agent_callback(callback_context: CallbackContext) -> None:
                 "status": "complete",
                 "executionTime": execution_time,
                 "timestamp": datetime.now().isoformat(),
-                "sessionId": getattr(invocation_ctx.session, 'id', None) if invocation_ctx.session else None,
+                "sessionId": getattr(invocation_ctx.session, "id", None)
+                if invocation_ctx.session
+                else None,
                 "hasOutput": bool(state_changes),
                 "success": not has_error,
                 "stateChanges": state_changes,
@@ -307,14 +346,21 @@ def after_agent_callback(callback_context: CallbackContext) -> None:
                 "metrics": {
                     "invocationCount": metrics.invocation_count,
                     "averageExecutionTime": metrics.average_execution_time,
-                    "successRate": metrics.success_count / (metrics.success_count + metrics.error_count) if (metrics.success_count + metrics.error_count) > 0 else 1.0,
-                    "toolsUsed": list(metrics.tools_used)
-                }
-            }
+                    "successRate": metrics.success_count
+                    / (metrics.success_count + metrics.error_count)
+                    if (metrics.success_count + metrics.error_count) > 0
+                    else 1.0,
+                    "toolsUsed": list(metrics.tools_used),
+                },
+            },
         }
 
         # Broadcast the event immediately
-        session_id = getattr(invocation_ctx.session, 'id', None) if invocation_ctx.session else None
+        session_id = (
+            getattr(invocation_ctx.session, "id", None)
+            if invocation_ctx.session
+            else None
+        )
         if session_id:
             broadcast_agent_network_update(network_event, session_id)
 
@@ -329,17 +375,17 @@ def after_agent_callback(callback_context: CallbackContext) -> None:
 
 def agent_network_tracking_callback(callback_context: CallbackContext) -> None:
     """Enhanced callback for comprehensive agent network tracking.
-    
+
     This callback provides detailed tracking of agent relationships, dependencies,
     data flow, and performance metrics. It's designed to be used in conjunction
     with before_agent_callback and after_agent_callback for complete coverage.
-    
+
     Key features:
     - Agent relationship mapping (parent-child, invocation, data flow)
     - Performance metrics collection (timing, success rates, tool usage)
     - Data dependency analysis
     - Real-time network state updates for visualization
-    
+
     Args:
         callback_context: The ADK callback context providing access to agent
             session events and persistent state
@@ -360,46 +406,59 @@ def agent_network_tracking_callback(callback_context: CallbackContext) -> None:
             # Track agent interactions
             if event_agent not in agent_interactions:
                 agent_interactions[event_agent] = {
-                    'events': [],
-                    'tools_used': set(),
-                    'state_keys_read': set(),
-                    'state_keys_written': set()
+                    "events": [],
+                    "tools_used": set(),
+                    "state_keys_read": set(),
+                    "state_keys_written": set(),
                 }
 
-            agent_interactions[event_agent]['events'].append(event)
+            agent_interactions[event_agent]["events"].append(event)
 
             # Track tool usage
             if event.content:
                 for part in event.content.parts:
-                    if hasattr(part, 'function_call') and part.function_call:
-                        agent_interactions[event_agent]['tools_used'].add(part.function_call.name)
+                    if hasattr(part, "function_call") and part.function_call:
+                        agent_interactions[event_agent]["tools_used"].add(
+                            part.function_call.name
+                        )
 
             # Track state modifications
-            if event.actions and hasattr(event.actions, 'state_delta') and event.actions.state_delta:
+            if (
+                event.actions
+                and hasattr(event.actions, "state_delta")
+                and event.actions.state_delta
+            ):
                 for key in event.actions.state_delta.keys():
                     state_modifications[key] = event_agent
-                    agent_interactions[event_agent]['state_keys_written'].add(key)
+                    agent_interactions[event_agent]["state_keys_written"].add(key)
 
         # Build data flow relationships
         for agent, info in agent_interactions.items():
             metrics = _network_state.get_or_create_agent_metrics(agent)
 
             # Update tool usage
-            for tool in info['tools_used']:
+            for tool in info["tools_used"]:
                 metrics.add_tool_usage(tool)
 
             # Determine data dependencies
-            for key in info['state_keys_read']:
+            for key in info["state_keys_read"]:
                 _network_state.add_data_dependency(agent, key)
 
                 # If another agent wrote this key, create data flow relationship
                 if key in state_modifications and state_modifications[key] != agent:
                     writer_agent = state_modifications[key]
-                    _network_state.add_relationship(writer_agent, agent, 'provides_data', [key])
+                    _network_state.add_relationship(
+                        writer_agent, agent, "provides_data", [key]
+                    )
 
         # Detect agent hierarchies from the session structure
-        if hasattr(invocation_ctx.agent, 'sub_agents') and invocation_ctx.agent.sub_agents:
-            sub_agent_names = [sub_agent.name for sub_agent in invocation_ctx.agent.sub_agents]
+        if (
+            hasattr(invocation_ctx.agent, "sub_agents")
+            and invocation_ctx.agent.sub_agents
+        ):
+            sub_agent_names = [
+                sub_agent.name for sub_agent in invocation_ctx.agent.sub_agents
+            ]
             _network_state.set_hierarchy(agent_name, sub_agent_names)
 
         # Create comprehensive network snapshot
@@ -411,10 +470,15 @@ def agent_network_tracking_callback(callback_context: CallbackContext) -> None:
                     name: {
                         "invocation_count": metrics.invocation_count,
                         "average_execution_time": metrics.average_execution_time,
-                        "success_rate": metrics.success_count / (metrics.success_count + metrics.error_count) if (metrics.success_count + metrics.error_count) > 0 else 1.0,
+                        "success_rate": metrics.success_count
+                        / (metrics.success_count + metrics.error_count)
+                        if (metrics.success_count + metrics.error_count) > 0
+                        else 1.0,
                         "tools_used": list(metrics.tools_used),
-                        "last_invocation": metrics.last_invocation.isoformat() if metrics.last_invocation else None,
-                        "is_active": name in _network_state.active_agents
+                        "last_invocation": metrics.last_invocation.isoformat()
+                        if metrics.last_invocation
+                        else None,
+                        "is_active": name in _network_state.active_agents,
                     }
                     for name, metrics in _network_state.agents.items()
                 },
@@ -425,7 +489,9 @@ def agent_network_tracking_callback(callback_context: CallbackContext) -> None:
                         "type": rel.relationship_type,
                         "interaction_count": rel.interaction_count,
                         "data_flow": rel.data_flow[-10:],  # Last 10 data keys
-                        "last_interaction": rel.last_interaction.isoformat() if rel.last_interaction else None
+                        "last_interaction": rel.last_interaction.isoformat()
+                        if rel.last_interaction
+                        else None,
                     }
                     for rel in _network_state.relationships
                 ],
@@ -433,19 +499,26 @@ def agent_network_tracking_callback(callback_context: CallbackContext) -> None:
                 "execution_stack": _network_state.execution_stack.copy(),
                 "active_agents": list(_network_state.active_agents),
                 "data_dependencies": {
-                    agent: list(deps) for agent, deps in _network_state.data_dependencies.items()
-                }
-            }
+                    agent: list(deps)
+                    for agent, deps in _network_state.data_dependencies.items()
+                },
+            },
         }
 
         # Broadcast the snapshot immediately
-        session_id = getattr(invocation_ctx.session, 'id', None) if invocation_ctx.session else None
+        session_id = (
+            getattr(invocation_ctx.session, "id", None)
+            if invocation_ctx.session
+            else None
+        )
         broadcast_agent_network_update(network_snapshot, session_id)
 
         # Also store for legacy compatibility
         callback_context.state["agent_network_snapshot"] = network_snapshot
 
-        logger.info(f"Generated network snapshot with {len(_network_state.agents)} agents and {len(_network_state.relationships)} relationships")
+        logger.info(
+            f"Generated network snapshot with {len(_network_state.agents)} agents and {len(_network_state.relationships)} relationships"
+        )
 
     except Exception as e:
         logger.error(f"Error in agent_network_tracking_callback: {e}")
@@ -453,7 +526,7 @@ def agent_network_tracking_callback(callback_context: CallbackContext) -> None:
 
 def get_current_network_state() -> dict[str, Any]:
     """Get the current agent network state for external access.
-    
+
     Returns:
         Dictionary containing the current network state including agents,
         relationships, hierarchy, and metrics.
@@ -465,10 +538,15 @@ def get_current_network_state() -> dict[str, Any]:
             name: {
                 "invocation_count": metrics.invocation_count,
                 "average_execution_time": metrics.average_execution_time,
-                "success_rate": metrics.success_count / (metrics.success_count + metrics.error_count) if (metrics.success_count + metrics.error_count) > 0 else 1.0,
+                "success_rate": metrics.success_count
+                / (metrics.success_count + metrics.error_count)
+                if (metrics.success_count + metrics.error_count) > 0
+                else 1.0,
                 "tools_used": list(metrics.tools_used),
-                "last_invocation": metrics.last_invocation.isoformat() if metrics.last_invocation else None,
-                "is_active": name in _network_state.active_agents
+                "last_invocation": metrics.last_invocation.isoformat()
+                if metrics.last_invocation
+                else None,
+                "is_active": name in _network_state.active_agents,
             }
             for name, metrics in _network_state.agents.items()
         },
@@ -479,7 +557,9 @@ def get_current_network_state() -> dict[str, Any]:
                 "type": rel.relationship_type,
                 "interaction_count": rel.interaction_count,
                 "data_flow": rel.data_flow,
-                "last_interaction": rel.last_interaction.isoformat() if rel.last_interaction else None
+                "last_interaction": rel.last_interaction.isoformat()
+                if rel.last_interaction
+                else None,
             }
             for rel in _network_state.relationships
         ],
@@ -487,8 +567,9 @@ def get_current_network_state() -> dict[str, Any]:
         "execution_stack": _network_state.execution_stack.copy(),
         "active_agents": list(_network_state.active_agents),
         "data_dependencies": {
-            agent: list(deps) for agent, deps in _network_state.data_dependencies.items()
-        }
+            agent: list(deps)
+            for agent, deps in _network_state.data_dependencies.items()
+        },
     }
 
 
@@ -499,12 +580,14 @@ def reset_network_state() -> None:
     logger.info("Agent network state reset")
 
 
-def composite_after_agent_callback_with_research_sources(callback_context: CallbackContext) -> None:
+def composite_after_agent_callback_with_research_sources(
+    callback_context: CallbackContext,
+) -> None:
     """Composite callback that combines research source collection with network tracking.
-    
+
     This callback is specifically designed for the section_researcher and enhanced_search_executor
     agents that need both research source collection and network tracking functionality.
-    
+
     Args:
         callback_context: The ADK callback context
     """
@@ -519,15 +602,19 @@ def composite_after_agent_callback_with_research_sources(callback_context: Callb
         after_agent_callback(callback_context)
 
     except Exception as e:
-        logger.error(f"Error in composite_after_agent_callback_with_research_sources: {e}")
+        logger.error(
+            f"Error in composite_after_agent_callback_with_research_sources: {e}"
+        )
 
 
-def composite_after_agent_callback_with_citations(callback_context: CallbackContext) -> None:
+def composite_after_agent_callback_with_citations(
+    callback_context: CallbackContext,
+) -> None:
     """Composite callback that combines citation replacement with network tracking.
-    
+
     This callback is specifically designed for the report_composer agent that needs both
     citation replacement and network tracking functionality.
-    
+
     Args:
         callback_context: The ADK callback context
     """

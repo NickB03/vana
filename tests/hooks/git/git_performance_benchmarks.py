@@ -34,6 +34,7 @@ from .git_hook_test_suite import GitTestEnvironment
 @dataclass
 class PerformanceMetric:
     """Individual performance measurement"""
+
     operation: str
     execution_time_ms: float
     memory_usage_mb: float
@@ -49,6 +50,7 @@ class PerformanceMetric:
 @dataclass
 class BenchmarkResult:
     """Results from a performance benchmark"""
+
     benchmark_name: str
     total_operations: int
     successful_operations: int
@@ -80,29 +82,29 @@ class GitPerformanceBenchmarker:
     # Performance thresholds for different operations
     PERFORMANCE_THRESHOLDS = {
         "pre_commit": {
-            "max_execution_time_ms": 2000,   # 2 seconds
-            "max_hook_overhead_ms": 500,     # 500ms overhead
-            "min_success_rate": 0.95,        # 95% success rate
-            "max_memory_usage_mb": 100       # 100MB memory
+            "max_execution_time_ms": 2000,  # 2 seconds
+            "max_hook_overhead_ms": 500,  # 500ms overhead
+            "min_success_rate": 0.95,  # 95% success rate
+            "max_memory_usage_mb": 100,  # 100MB memory
         },
         "pre_push": {
-            "max_execution_time_ms": 5000,   # 5 seconds
-            "max_hook_overhead_ms": 1000,    # 1 second overhead
-            "min_success_rate": 0.95,        # 95% success rate
-            "max_memory_usage_mb": 150       # 150MB memory
+            "max_execution_time_ms": 5000,  # 5 seconds
+            "max_hook_overhead_ms": 1000,  # 1 second overhead
+            "min_success_rate": 0.95,  # 95% success rate
+            "max_memory_usage_mb": 150,  # 150MB memory
         },
         "post_commit": {
-            "max_execution_time_ms": 1000,   # 1 second
-            "max_hook_overhead_ms": 200,     # 200ms overhead
-            "min_success_rate": 0.98,        # 98% success rate
-            "max_memory_usage_mb": 50        # 50MB memory
+            "max_execution_time_ms": 1000,  # 1 second
+            "max_hook_overhead_ms": 200,  # 200ms overhead
+            "min_success_rate": 0.98,  # 98% success rate
+            "max_memory_usage_mb": 50,  # 50MB memory
         },
         "full_workflow": {
-            "max_execution_time_ms": 8000,   # 8 seconds total
-            "max_hook_overhead_ms": 2000,    # 2 seconds total overhead
-            "min_success_rate": 0.90,        # 90% success rate
-            "max_memory_usage_mb": 200       # 200MB memory
-        }
+            "max_execution_time_ms": 8000,  # 8 seconds total
+            "max_hook_overhead_ms": 2000,  # 2 seconds total overhead
+            "min_success_rate": 0.90,  # 90% success rate
+            "max_memory_usage_mb": 200,  # 200MB memory
+        },
     }
 
     def __init__(self, workspace_path: Path):
@@ -123,9 +125,25 @@ class GitPerformanceBenchmarker:
         """Create realistic project structure for performance testing"""
         # Frontend components (simulate real project)
         components = [
-            "Button", "Card", "Dialog", "Form", "Input", "Select", "Table",
-            "Navigation", "Header", "Footer", "Sidebar", "Modal", "Toast",
-            "Dropdown", "Tooltip", "Progress", "Spinner", "Avatar", "Badge"
+            "Button",
+            "Card",
+            "Dialog",
+            "Form",
+            "Input",
+            "Select",
+            "Table",
+            "Navigation",
+            "Header",
+            "Footer",
+            "Sidebar",
+            "Modal",
+            "Toast",
+            "Dropdown",
+            "Tooltip",
+            "Progress",
+            "Spinner",
+            "Avatar",
+            "Badge",
         ]
 
         for component in components:
@@ -150,7 +168,13 @@ export const {component}: React.FC<{component}Props> = ({{ className, children, 
   )
 }}
 """
-            component_path = self.workspace_path / "frontend" / "src" / "components" / f"{component}.tsx"
+            component_path = (
+                self.workspace_path
+                / "frontend"
+                / "src"
+                / "components"
+                / f"{component}.tsx"
+            )
             component_path.parent.mkdir(parents=True, exist_ok=True)
             component_path.write_text(component_content)
 
@@ -171,7 +195,14 @@ describe('{component}', () => {{
   }})
 }})
 """
-            test_path = self.workspace_path / "frontend" / "src" / "components" / "__tests__" / f"{component}.test.tsx"
+            test_path = (
+                self.workspace_path
+                / "frontend"
+                / "src"
+                / "components"
+                / "__tests__"
+                / f"{component}.test.tsx"
+            )
             test_path.parent.mkdir(parents=True, exist_ok=True)
             test_path.write_text(test_content)
 
@@ -192,15 +223,17 @@ async def get_{endpoint}(current_user=Depends(get_current_user)):
     return await {endpoint.title()}Model.get_all()
 
 @router.post("/", response_model={endpoint.title()}Model)
-async def create_{endpoint.rstrip('s')}(data: {endpoint.title()}Model, current_user=Depends(get_current_user)):
-    \"\"\"Create new {endpoint.rstrip('s')}\"\"\"
+async def create_{endpoint.rstrip("s")}(data: {endpoint.title()}Model, current_user=Depends(get_current_user)):
+    \"\"\"Create new {endpoint.rstrip("s")}\"\"\"
     return await {endpoint.title()}Model.create(data)
 """
             api_path = self.workspace_path / "app" / "routes" / f"{endpoint}.py"
             api_path.parent.mkdir(parents=True, exist_ok=True)
             api_path.write_text(api_content)
 
-    def measure_baseline_performance(self, iterations: int = 10) -> list[PerformanceMetric]:
+    def measure_baseline_performance(
+        self, iterations: int = 10
+    ) -> list[PerformanceMetric]:
         """Measure baseline Git performance without hooks"""
         print(f"📊 Measuring baseline Git performance ({iterations} iterations)...")
 
@@ -216,7 +249,9 @@ async def create_{endpoint.rstrip('s')}(data: {endpoint.title()}Model, current_u
         try:
             for i in range(iterations):
                 # Create test file for each iteration
-                test_file = {f"baseline_test_{i}.txt": f"Baseline test content {i}\n" + "x" * 500}
+                test_file = {
+                    f"baseline_test_{i}.txt": f"Baseline test content {i}\n" + "x" * 500
+                }
 
                 # Measure commit without hooks
                 start_time = time.perf_counter()
@@ -236,7 +271,7 @@ async def create_{endpoint.rstrip('s')}(data: {endpoint.title()}Model, current_u
                     cpu_percent=(start_cpu + end_cpu) / 2,
                     success=result["success"],
                     hook_overhead_ms=0,  # No hooks
-                    timestamp=time.time()
+                    timestamp=time.time(),
                 )
 
                 baseline_metrics.append(metric)
@@ -262,21 +297,29 @@ async def create_{endpoint.rstrip('s')}(data: {endpoint.title()}Model, current_u
             if i % 3 == 0:
                 # React component
                 test_files = {
-                    f"frontend/src/components/Benchmark{i}.tsx": self._generate_react_component(f"Benchmark{i}")
+                    f"frontend/src/components/Benchmark{i}.tsx": self._generate_react_component(
+                        f"Benchmark{i}"
+                    )
                 }
             elif i % 3 == 1:
                 # Python API file
                 test_files = {
-                    f"app/services/benchmark_{i}.py": self._generate_python_service(f"benchmark_{i}")
+                    f"app/services/benchmark_{i}.py": self._generate_python_service(
+                        f"benchmark_{i}"
+                    )
                 }
             else:
                 # Configuration file
                 test_files = {
-                    f"config/benchmark_{i}.json": json.dumps({"benchmark": i, "timestamp": time.time()})
+                    f"config/benchmark_{i}.json": json.dumps(
+                        {"benchmark": i, "timestamp": time.time()}
+                    )
                 }
 
             # Measure pre-commit performance
-            metric = self._measure_commit_operation(test_files, f"Benchmark pre-commit {i}", "pre_commit")
+            metric = self._measure_commit_operation(
+                test_files, f"Benchmark pre-commit {i}", "pre_commit"
+            )
             metrics.append(metric)
 
         result = self._analyze_benchmark_results("pre_commit_performance", metrics)
@@ -295,7 +338,9 @@ async def create_{endpoint.rstrip('s')}(data: {endpoint.title()}Model, current_u
             }
 
             # Commit the files
-            commit_result = self.git_env.simulate_commit(test_files, f"Prepare for push benchmark {i}")
+            commit_result = self.git_env.simulate_commit(
+                test_files, f"Prepare for push benchmark {i}"
+            )
             if not commit_result["success"]:
                 continue
 
@@ -321,7 +366,7 @@ async def create_{endpoint.rstrip('s')}(data: {endpoint.title()}Model, current_u
                 cpu_percent=(start_cpu + end_cpu) / 2,
                 success=push_result["success"],
                 hook_overhead_ms=hook_overhead,
-                timestamp=time.time()
+                timestamp=time.time(),
             )
 
             metrics.append(metric)
@@ -329,7 +374,9 @@ async def create_{endpoint.rstrip('s')}(data: {endpoint.title()}Model, current_u
         result = self._analyze_benchmark_results("pre_push_performance", metrics)
         return result
 
-    def benchmark_post_commit_performance(self, iterations: int = 25) -> BenchmarkResult:
+    def benchmark_post_commit_performance(
+        self, iterations: int = 25
+    ) -> BenchmarkResult:
         """Benchmark post-commit hook performance"""
         print(f"📊 Benchmarking post-commit hooks ({iterations} iterations)...")
 
@@ -339,7 +386,9 @@ async def create_{endpoint.rstrip('s')}(data: {endpoint.title()}Model, current_u
             # Create files that trigger different post-commit behaviors
             if i % 4 == 0:
                 # Configuration files (triggers backup)
-                test_files = {"pyproject.toml": f'[project]\nname = "benchmark"\nversion = "1.0.{i}"'}
+                test_files = {
+                    "pyproject.toml": f'[project]\nname = "benchmark"\nversion = "1.0.{i}"'
+                }
             elif i % 4 == 1:
                 # Multiple small files
                 test_files = {f"small_file_{j}.txt": f"Small {j}" for j in range(5)}
@@ -350,16 +399,20 @@ async def create_{endpoint.rstrip('s')}(data: {endpoint.title()}Model, current_u
                 # Mixed content
                 test_files = {
                     f"mixed_{i}.tsx": self._generate_react_component(f"Mixed{i}"),
-                    f"mixed_{i}.py": self._generate_python_service(f"mixed_{i}")
+                    f"mixed_{i}.py": self._generate_python_service(f"mixed_{i}"),
                 }
 
-            metric = self._measure_commit_operation(test_files, f"Post-commit benchmark {i}", "post_commit")
+            metric = self._measure_commit_operation(
+                test_files, f"Post-commit benchmark {i}", "post_commit"
+            )
             metrics.append(metric)
 
         result = self._analyze_benchmark_results("post_commit_performance", metrics)
         return result
 
-    def benchmark_full_workflow_performance(self, iterations: int = 10) -> BenchmarkResult:
+    def benchmark_full_workflow_performance(
+        self, iterations: int = 10
+    ) -> BenchmarkResult:
         """Benchmark complete Git workflow performance"""
         print(f"🔄 Benchmarking full Git workflows ({iterations} iterations)...")
 
@@ -369,14 +422,20 @@ async def create_{endpoint.rstrip('s')}(data: {endpoint.title()}Model, current_u
             # Simulate realistic development workflow
             workflow_files = {
                 # Feature implementation
-                f"frontend/src/components/Feature{i}.tsx": self._generate_react_component(f"Feature{i}"),
-                f"frontend/src/components/__tests__/Feature{i}.test.tsx": self._generate_react_test(f"Feature{i}"),
+                f"frontend/src/components/Feature{i}.tsx": self._generate_react_component(
+                    f"Feature{i}"
+                ),
+                f"frontend/src/components/__tests__/Feature{i}.test.tsx": self._generate_react_test(
+                    f"Feature{i}"
+                ),
                 # Backend changes
-                f"app/services/feature_{i}.py": self._generate_python_service(f"feature_{i}"),
+                f"app/services/feature_{i}.py": self._generate_python_service(
+                    f"feature_{i}"
+                ),
                 # Documentation
                 f"docs/feature_{i}.md": f"# Feature {i}\n\nDocumentation for feature {i}.",
                 # Configuration updates
-                f"config/feature_{i}.json": json.dumps({"feature": i, "enabled": True})
+                f"config/feature_{i}.json": json.dumps({"feature": i, "enabled": True}),
             }
 
             start_time = time.perf_counter()
@@ -384,7 +443,9 @@ async def create_{endpoint.rstrip('s')}(data: {endpoint.title()}Model, current_u
             start_cpu = psutil.cpu_percent()
 
             # Complete workflow: commit + push
-            commit_result = self.git_env.simulate_commit(workflow_files, f"Implement feature {i}")
+            commit_result = self.git_env.simulate_commit(
+                workflow_files, f"Implement feature {i}"
+            )
 
             if commit_result["success"]:
                 push_result = self.git_env.simulate_push()
@@ -407,7 +468,7 @@ async def create_{endpoint.rstrip('s')}(data: {endpoint.title()}Model, current_u
                 cpu_percent=(start_cpu + end_cpu) / 2,
                 success=workflow_success,
                 hook_overhead_ms=hook_overhead,
-                timestamp=time.time()
+                timestamp=time.time(),
             )
 
             metrics.append(metric)
@@ -415,9 +476,13 @@ async def create_{endpoint.rstrip('s')}(data: {endpoint.title()}Model, current_u
         result = self._analyze_benchmark_results("full_workflow_performance", metrics)
         return result
 
-    def benchmark_concurrent_operations(self, max_workers: int = 4, operations_per_worker: int = 5) -> BenchmarkResult:
+    def benchmark_concurrent_operations(
+        self, max_workers: int = 4, operations_per_worker: int = 5
+    ) -> BenchmarkResult:
         """Benchmark Git operations under concurrent load"""
-        print(f"🏗️ Benchmarking concurrent Git operations ({max_workers} workers, {operations_per_worker} ops each)...")
+        print(
+            f"🏗️ Benchmarking concurrent Git operations ({max_workers} workers, {operations_per_worker} ops each)..."
+        )
 
         metrics = []
         start_time = time.perf_counter()
@@ -427,13 +492,14 @@ async def create_{endpoint.rstrip('s')}(data: {endpoint.title()}Model, current_u
 
             for i in range(operations_per_worker):
                 test_files = {
-                    f"concurrent/worker_{worker_id}/file_{i}.txt": f"Worker {worker_id} file {i}\n" + "x" * 500
+                    f"concurrent/worker_{worker_id}/file_{i}.txt": f"Worker {worker_id} file {i}\n"
+                    + "x" * 500
                 }
 
                 metric = self._measure_commit_operation(
                     test_files,
                     f"Concurrent commit worker-{worker_id}-{i}",
-                    "concurrent"
+                    "concurrent",
                 )
                 worker_metrics.append(metric)
 
@@ -444,7 +510,10 @@ async def create_{endpoint.rstrip('s')}(data: {endpoint.title()}Model, current_u
 
         # Execute concurrent operations
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
-            futures = [executor.submit(worker_task, worker_id) for worker_id in range(max_workers)]
+            futures = [
+                executor.submit(worker_task, worker_id)
+                for worker_id in range(max_workers)
+            ]
 
             for future in as_completed(futures):
                 try:
@@ -486,7 +555,7 @@ async def create_{endpoint.rstrip('s')}(data: {endpoint.title()}Model, current_u
                 success_rate=successful_ops / total_ops,
                 avg_hook_overhead_ms=statistics.mean(hook_overheads),
                 performance_grade="A",  # Will be calculated
-                meets_thresholds=True   # Will be calculated
+                meets_thresholds=True,  # Will be calculated
             )
 
             # Calculate performance grade and threshold compliance
@@ -513,12 +582,14 @@ async def create_{endpoint.rstrip('s')}(data: {endpoint.title()}Model, current_u
                 success_rate=0,
                 avg_hook_overhead_ms=0,
                 performance_grade="F",
-                meets_thresholds=False
+                meets_thresholds=False,
             )
 
         return result
 
-    def _measure_commit_operation(self, files: dict[str, str], commit_message: str, operation_type: str) -> PerformanceMetric:
+    def _measure_commit_operation(
+        self, files: dict[str, str], commit_message: str, operation_type: str
+    ) -> PerformanceMetric:
         """Measure performance of a single commit operation"""
         start_time = time.perf_counter()
         start_memory = psutil.Process().memory_info().rss / 1024 / 1024
@@ -533,7 +604,9 @@ async def create_{endpoint.rstrip('s')}(data: {endpoint.title()}Model, current_u
         execution_time_ms = (end_time - start_time) * 1000
 
         # Estimate hook overhead by comparing to baseline
-        baseline_time = self._estimate_baseline_time(len(files), sum(len(content) for content in files.values()))
+        baseline_time = self._estimate_baseline_time(
+            len(files), sum(len(content) for content in files.values())
+        )
         hook_overhead = max(0, execution_time_ms - baseline_time)
 
         return PerformanceMetric(
@@ -543,10 +616,12 @@ async def create_{endpoint.rstrip('s')}(data: {endpoint.title()}Model, current_u
             cpu_percent=(start_cpu + end_cpu) / 2,
             success=result["success"],
             hook_overhead_ms=hook_overhead,
-            timestamp=time.time()
+            timestamp=time.time(),
         )
 
-    def _estimate_baseline_time(self, file_count: int, total_content_size: int) -> float:
+    def _estimate_baseline_time(
+        self, file_count: int, total_content_size: int
+    ) -> float:
         """Estimate baseline Git operation time without hooks"""
         # Simple heuristic based on file count and content size
         base_time = 50  # Base Git operation time in ms
@@ -555,7 +630,9 @@ async def create_{endpoint.rstrip('s')}(data: {endpoint.title()}Model, current_u
 
         return base_time + file_overhead + content_overhead
 
-    def _analyze_benchmark_results(self, benchmark_name: str, metrics: list[PerformanceMetric]) -> BenchmarkResult:
+    def _analyze_benchmark_results(
+        self, benchmark_name: str, metrics: list[PerformanceMetric]
+    ) -> BenchmarkResult:
         """Analyze benchmark metrics and create result summary"""
         if not metrics:
             return BenchmarkResult(
@@ -578,7 +655,7 @@ async def create_{endpoint.rstrip('s')}(data: {endpoint.title()}Model, current_u
                 success_rate=0,
                 avg_hook_overhead_ms=0,
                 performance_grade="F",
-                meets_thresholds=False
+                meets_thresholds=False,
             )
 
         successful_metrics = [m for m in metrics if m.success]
@@ -623,7 +700,7 @@ async def create_{endpoint.rstrip('s')}(data: {endpoint.title()}Model, current_u
             success_rate=successful_ops / total_ops,
             avg_hook_overhead_ms=statistics.mean(hook_overheads),
             performance_grade="",  # Will be calculated
-            meets_thresholds=False  # Will be calculated
+            meets_thresholds=False,  # Will be calculated
         )
 
         # Calculate performance grade and threshold compliance
@@ -634,7 +711,9 @@ async def create_{endpoint.rstrip('s')}(data: {endpoint.title()}Model, current_u
 
     def _calculate_performance_grade(self, result: BenchmarkResult, operation_key: str):
         """Calculate performance grade and threshold compliance"""
-        thresholds = self.PERFORMANCE_THRESHOLDS.get(operation_key, self.PERFORMANCE_THRESHOLDS["full_workflow"])
+        thresholds = self.PERFORMANCE_THRESHOLDS.get(
+            operation_key, self.PERFORMANCE_THRESHOLDS["full_workflow"]
+        )
 
         # Check each threshold
         time_ok = result.p95_execution_time_ms <= thresholds["max_execution_time_ms"]
@@ -646,10 +725,14 @@ async def create_{endpoint.rstrip('s')}(data: {endpoint.title()}Model, current_u
 
         # Calculate grade based on performance
         score = 0
-        if time_ok: score += 25
-        if overhead_ok: score += 25
-        if success_ok: score += 25
-        if memory_ok: score += 25
+        if time_ok:
+            score += 25
+        if overhead_ok:
+            score += 25
+        if success_ok:
+            score += 25
+        if memory_ok:
+            score += 25
 
         if score >= 90:
             result.performance_grade = "A"
@@ -934,7 +1017,9 @@ class TestGitPerformanceBenchmarks:
         assert len(baseline_metrics) == 5
         assert all(m.hook_overhead_ms == 0 for m in baseline_metrics)
         assert all(m.execution_time_ms > 0 for m in baseline_metrics)
-        assert statistics.mean([m.execution_time_ms for m in baseline_metrics]) < 1000  # Under 1 second average
+        assert (
+            statistics.mean([m.execution_time_ms for m in baseline_metrics]) < 1000
+        )  # Under 1 second average
 
     @pytest.mark.asyncio
     async def test_pre_commit_performance_benchmark(self, benchmarker):
@@ -954,7 +1039,9 @@ class TestGitPerformanceBenchmarks:
         """Test pre-push hook performance benchmarking"""
         result = benchmarker.benchmark_pre_push_performance(iterations=5)
 
-        assert result.total_operations >= 0  # May have some failures due to push simulation
+        assert (
+            result.total_operations >= 0
+        )  # May have some failures due to push simulation
         if result.total_operations > 0:
             assert result.avg_execution_time_ms > 0
             assert result.performance_grade in ["A", "B", "C", "D", "F"]
@@ -985,7 +1072,9 @@ class TestGitPerformanceBenchmarks:
     @pytest.mark.asyncio
     async def test_concurrent_operations_benchmark(self, benchmarker):
         """Test concurrent Git operations performance"""
-        result = benchmarker.benchmark_concurrent_operations(max_workers=3, operations_per_worker=3)
+        result = benchmarker.benchmark_concurrent_operations(
+            max_workers=3, operations_per_worker=3
+        )
 
         assert result.total_operations == 9  # 3 workers * 3 operations
         assert result.throughput_ops_per_sec > 0
@@ -999,7 +1088,9 @@ class TestGitPerformanceBenchmarks:
         """Test performance threshold validation"""
         # Test with small operation that should meet thresholds
         small_files = {"small_test.txt": "Small content"}
-        metric = benchmarker._measure_commit_operation(small_files, "Small test", "pre_commit")
+        metric = benchmarker._measure_commit_operation(
+            small_files, "Small test", "pre_commit"
+        )
 
         assert metric.execution_time_ms > 0
         assert metric.success == True
@@ -1032,26 +1123,37 @@ if __name__ == "__main__":
                     "pre_push": benchmarker.benchmark_pre_push_performance(),
                     "post_commit": benchmarker.benchmark_post_commit_performance(),
                     "full_workflow": benchmarker.benchmark_full_workflow_performance(),
-                    "concurrent": benchmarker.benchmark_concurrent_operations()
+                    "concurrent": benchmarker.benchmark_concurrent_operations(),
                 }
 
                 # Save comprehensive report
                 report_path = workspace / "performance_benchmark_report.json"
-                with open(report_path, 'w') as f:
-                    json.dump({k: v.to_dict() if hasattr(v, 'to_dict') else [m.to_dict() for m in v]
-                              for k, v in results.items()}, f, indent=2)
+                with open(report_path, "w") as f:
+                    json.dump(
+                        {
+                            k: v.to_dict()
+                            if hasattr(v, "to_dict")
+                            else [m.to_dict() for m in v]
+                            for k, v in results.items()
+                        },
+                        f,
+                        indent=2,
+                    )
 
                 print(f"📊 Comprehensive benchmark report saved to {report_path}")
 
             elif benchmark_type == "quick":
                 # Quick benchmark
                 result = benchmarker.benchmark_pre_commit_performance(iterations=5)
-                print(f"📈 Quick benchmark result: {result.performance_grade} grade, "
-                      f"{result.avg_execution_time_ms:.2f}ms average")
+                print(
+                    f"📈 Quick benchmark result: {result.performance_grade} grade, "
+                    f"{result.avg_execution_time_ms:.2f}ms average"
+                )
 
         finally:
             # Cleanup
             import shutil
+
             shutil.rmtree(workspace, ignore_errors=True)
     else:
         pytest.main(["-v", __file__])

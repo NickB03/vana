@@ -36,13 +36,13 @@ class TestAsyncBraveSearch:
                     {
                         "title": "Test Result 1",
                         "url": "https://example.com/1",
-                        "description": "Test description 1"
+                        "description": "Test description 1",
                     },
                     {
                         "title": "Test Result 2",
                         "url": "https://example.com/2",
-                        "description": "Test description 2"
-                    }
+                        "description": "Test description 2",
+                    },
                 ]
             }
         }
@@ -50,7 +50,7 @@ class TestAsyncBraveSearch:
     @pytest.mark.asyncio
     async def test_brave_web_search_async_success(self, mock_brave_response):
         """Test successful async Brave search."""
-        with patch('aiohttp.ClientSession.get') as mock_get:
+        with patch("aiohttp.ClientSession.get") as mock_get:
             # Mock the async context manager
             mock_response = AsyncMock()
             mock_response.raise_for_status = Mock()
@@ -83,7 +83,7 @@ class TestAsyncBraveSearch:
     @pytest.mark.asyncio
     async def test_brave_web_search_async_http_error(self):
         """Test async search with HTTP error."""
-        with patch('aiohttp.ClientSession.get') as mock_get:
+        with patch("aiohttp.ClientSession.get") as mock_get:
             mock_response = AsyncMock()
             mock_response.raise_for_status.side_effect = Exception("HTTP Error")
 
@@ -98,11 +98,11 @@ class TestAsyncBraveSearch:
 
     def test_brave_web_search_sync_wrapper(self, mock_brave_response):
         """Test sync wrapper calls async function properly."""
-        with patch('app.tools.brave_search.brave_web_search_async') as mock_async:
+        with patch("app.tools.brave_search.brave_web_search_async") as mock_async:
             mock_async.return_value = {
                 "results": [{"title": "Test"}],
                 "query": "test",
-                "source": "brave_search"
+                "source": "brave_search",
             }
 
             with patch.dict(os.environ, {"BRAVE_API_KEY": "test-key"}):
@@ -137,7 +137,7 @@ class TestAsyncSessionBackup:
     @pytest.fixture
     def temp_db_file(self):
         """Create a temporary database file."""
-        with tempfile.NamedTemporaryFile(suffix='.db', delete=False) as f:
+        with tempfile.NamedTemporaryFile(suffix=".db", delete=False) as f:
             f.write(b"test database content")
             temp_path = f.name
 
@@ -150,7 +150,7 @@ class TestAsyncSessionBackup:
     @pytest.fixture
     def mock_storage_client(self):
         """Mock Google Cloud Storage client."""
-        with patch('google.cloud.storage.Client') as mock_client:
+        with patch("google.cloud.storage.Client") as mock_client:
             mock_bucket = Mock()
             mock_blob = Mock()
             mock_bucket.blob.return_value = mock_blob
@@ -158,7 +158,9 @@ class TestAsyncSessionBackup:
             yield mock_client, mock_bucket, mock_blob
 
     @pytest.mark.asyncio
-    async def test_backup_session_db_async_success(self, temp_db_file, mock_storage_client):
+    async def test_backup_session_db_async_success(
+        self, temp_db_file, mock_storage_client
+    ):
         """Test successful async backup."""
         mock_client, mock_bucket, mock_blob = mock_storage_client
 
@@ -225,11 +227,15 @@ class TestAsyncSessionBackup:
 
             assert result is True
             # Should use the latest backup (20240102)
-            mock_bucket.blob.assert_called_with("session_backups/vana_sessions_20240102_120000.db")
+            mock_bucket.blob.assert_called_with(
+                "session_backups/vana_sessions_20240102_120000.db"
+            )
 
     def test_sync_backup_wrapper(self, temp_db_file):
         """Test sync backup wrapper."""
-        with patch('app.utils.session_backup.backup_session_db_to_gcs_async') as mock_async:
+        with patch(
+            "app.utils.session_backup.backup_session_db_to_gcs_async"
+        ) as mock_async:
             mock_async.return_value = "gs://test-bucket/backup.db"
 
             result = backup_session_db_to_gcs(
@@ -241,7 +247,9 @@ class TestAsyncSessionBackup:
 
     def test_sync_restore_wrapper(self):
         """Test sync restore wrapper."""
-        with patch('app.utils.session_backup.restore_session_db_from_gcs_async') as mock_async:
+        with patch(
+            "app.utils.session_backup.restore_session_db_from_gcs_async"
+        ) as mock_async:
             mock_async.return_value = True
 
             result = restore_session_db_from_gcs(
@@ -260,12 +268,12 @@ class TestAsyncFilesOperations:
         """Test basic aiofiles operations."""
         test_data = {"test": "data", "number": 42}
 
-        with tempfile.NamedTemporaryFile(mode='w', delete=False) as temp_file:
+        with tempfile.NamedTemporaryFile(mode="w", delete=False) as temp_file:
             temp_path = temp_file.name
 
         try:
             # Test async write
-            async with aiofiles.open(temp_path, 'w') as f:
+            async with aiofiles.open(temp_path, "w") as f:
                 await f.write(json.dumps(test_data))
 
             # Test async read
@@ -318,7 +326,7 @@ async def test_concurrent_operations():
     tasks = [
         slow_operation(0.1, "result1"),
         slow_operation(0.1, "result2"),
-        slow_operation(0.1, "result3")
+        slow_operation(0.1, "result3"),
     ]
 
     results = await asyncio.gather(*tasks)

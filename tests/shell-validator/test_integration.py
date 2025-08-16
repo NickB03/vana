@@ -65,7 +65,9 @@ local result=$(date)
         # Test good script
         result_good = validator.validate_file(str(self.test_script_good))
         self.assertFalse(result_good.has_critical_issues)
-        self.assertLessEqual(result_good.execution_time_ms, 200)  # Performance requirement
+        self.assertLessEqual(
+            result_good.execution_time_ms, 200
+        )  # Performance requirement
 
         # Test bad script
         result_bad = validator.validate_file(str(self.test_script_bad))
@@ -112,11 +114,11 @@ local result=$(date)
         # Mock command line arguments
         class MockArgs:
             def __init__(self):
-                self.command = 'validate'
+                self.command = "validate"
                 self.files = [str(self.test_script_bad)]
                 self.directory = None
                 self.stdin = False
-                self.format = 'json'
+                self.format = "json"
                 self.output = None
                 self.auto_fix = False
                 self.verbose = False
@@ -139,7 +141,7 @@ local result=$(date)
 
         results = [
             validator.validate_file(str(self.test_script_good)),
-            validator.validate_file(str(self.test_script_bad))
+            validator.validate_file(str(self.test_script_bad)),
         ]
 
         # Test JSON report
@@ -174,14 +176,18 @@ local result=$(date)
 
         # Test performance
         import time
+
         start_time = time.time()
         result = validator.validate_file(str(large_script))
         execution_time = (time.time() - start_time) * 1000
 
         self.assertLess(execution_time, 200, "Validation should complete in <200ms")
         self.assertGreater(len(result.issues), 0, "Should detect issues in large file")
-        self.assertLess(result.lines_checked, result.total_lines,
-                       "Performance mode should skip lines")
+        self.assertLess(
+            result.lines_checked,
+            result.total_lines,
+            "Performance mode should skip lines",
+        )
 
     def test_git_hooks_integration(self):
         """Test Git hooks integration"""
@@ -228,17 +234,19 @@ local result=$(date)
 
             def check(self, line, line_number, context):
                 if "CUSTOM_PATTERN" in line:
-                    return [ValidationIssue(
-                        rule_id=self.rule_id,
-                        severity=self.severity,
-                        line_number=line_number,
-                        column=0,
-                        message="Custom pattern detected",
-                        original_code=line.strip(),
-                        suggested_fix="Fix custom pattern",
-                        fix_explanation="This is a test rule",
-                        rule_category=self.category
-                    )]
+                    return [
+                        ValidationIssue(
+                            rule_id=self.rule_id,
+                            severity=self.severity,
+                            line_number=line_number,
+                            column=0,
+                            message="Custom pattern detected",
+                            original_code=line.strip(),
+                            suggested_fix="Fix custom pattern",
+                            fix_explanation="This is a test rule",
+                            rule_category=self.category,
+                        )
+                    ]
                 return []
 
         validator.add_rule(CustomTestRule())
@@ -249,7 +257,9 @@ local result=$(date)
         test_script.write_text("#!/bin/bash\necho CUSTOM_PATTERN")
 
         result = validator.validate_file(str(test_script))
-        custom_issues = [issue for issue in result.issues if issue.rule_id == "CUSTOM001"]
+        custom_issues = [
+            issue for issue in result.issues if issue.rule_id == "CUSTOM001"
+        ]
         self.assertEqual(len(custom_issues), 1)
 
     def test_error_handling_integration(self):
@@ -263,7 +273,7 @@ local result=$(date)
 
         # Test invalid content
         invalid_script = self.project_root / "invalid.sh"
-        invalid_script.write_bytes(b'\xff\xfe\x00\x00')  # Invalid UTF-8
+        invalid_script.write_bytes(b"\xff\xfe\x00\x00")  # Invalid UTF-8
 
         result = validator.validate_file(str(invalid_script))
         self.assertEqual(len(result.issues), 1)
@@ -314,9 +324,14 @@ class TestCodeRabbitPatternCompatibility(unittest.TestCase):
         for test_case in test_cases:
             result = self.validator.validate_content(test_case)
             # Should detect unquoted variable issues
-            sc2086_issues = [issue for issue in result.issues
-                           if "SC2086" in issue.message or issue.rule_id in ["SV001", "SV008"]]
-            self.assertGreater(len(sc2086_issues), 0, f"Failed to detect SC2086 in: {test_case}")
+            sc2086_issues = [
+                issue
+                for issue in result.issues
+                if "SC2086" in issue.message or issue.rule_id in ["SV001", "SV008"]
+            ]
+            self.assertGreater(
+                len(sc2086_issues), 0, f"Failed to detect SC2086 in: {test_case}"
+            )
 
     def test_sc2129_compatibility(self):
         """Test SC2129 pattern detection compatibility"""
@@ -325,8 +340,11 @@ echo "line1" > output.txt
 echo "line2" > output.txt
 """
         result = self.validator.validate_content(script_content)
-        sc2129_issues = [issue for issue in result.issues
-                        if "SC2129" in issue.message or issue.rule_id == "SV009"]
+        sc2129_issues = [
+            issue
+            for issue in result.issues
+            if "SC2129" in issue.message or issue.rule_id == "SV009"
+        ]
         self.assertGreater(len(sc2129_issues), 0)
 
     def test_sc2155_compatibility(self):
@@ -339,9 +357,14 @@ echo "line2" > output.txt
 
         for test_case in test_cases:
             result = self.validator.validate_content(test_case)
-            sc2155_issues = [issue for issue in result.issues
-                           if "SC2155" in issue.message or issue.rule_id == "SV010"]
-            self.assertGreater(len(sc2155_issues), 0, f"Failed to detect SC2155 in: {test_case}")
+            sc2155_issues = [
+                issue
+                for issue in result.issues
+                if "SC2155" in issue.message or issue.rule_id == "SV010"
+            ]
+            self.assertGreater(
+                len(sc2155_issues), 0, f"Failed to detect SC2155 in: {test_case}"
+            )
 
     def test_curl_pipe_detection(self):
         """Test dangerous curl | sh pattern detection"""
@@ -354,7 +377,9 @@ echo "line2" > output.txt
         for pattern in dangerous_patterns:
             result = self.validator.validate_content(pattern)
             curl_issues = [issue for issue in result.issues if issue.rule_id == "SV007"]
-            self.assertGreater(len(curl_issues), 0, f"Failed to detect curl pipe in: {pattern}")
+            self.assertGreater(
+                len(curl_issues), 0, f"Failed to detect curl pipe in: {pattern}"
+            )
             self.assertEqual(curl_issues[0].severity.value, "critical")
 
 

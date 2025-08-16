@@ -37,9 +37,11 @@ import pytest
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+
 @dataclass
 class PerformanceMetrics:
     """Performance metrics container"""
+
     execution_time_ms: float
     memory_usage_mb: float
     cpu_usage_percent: float
@@ -47,6 +49,7 @@ class PerformanceMetrics:
     violations_count: int
     cache_hits: int = 0
     cache_misses: int = 0
+
 
 class PerformanceMonitor:
     """Monitor system performance during tests"""
@@ -75,17 +78,22 @@ class PerformanceMonitor:
 
         # Calculate CPU usage percentage
         cpu_usage = (
-            (end_cpu_time.user - self.start_cpu_time.user) +
-            (end_cpu_time.system - self.start_cpu_time.system)
-        ) / (end_time - self.start_time) * 100
+            (
+                (end_cpu_time.user - self.start_cpu_time.user)
+                + (end_cpu_time.system - self.start_cpu_time.system)
+            )
+            / (end_time - self.start_time)
+            * 100
+        )
 
         return PerformanceMetrics(
             execution_time_ms=execution_time,
             memory_usage_mb=memory_usage,
             cpu_usage_percent=cpu_usage,
             validation_score=0,  # To be filled by caller
-            violations_count=0   # To be filled by caller
+            violations_count=0,  # To be filled by caller
         )
+
 
 class TestHookPerformanceBenchmarks:
     """Comprehensive performance tests for hook system"""
@@ -97,9 +105,9 @@ class TestHookPerformanceBenchmarks:
             workspace = Path(temp_dir)
 
             # Create minimal required structure
-            (workspace / '.claude_workspace').mkdir()
-            (workspace / 'docs').mkdir()
-            (workspace / 'src' / 'components').mkdir(parents=True)
+            (workspace / ".claude_workspace").mkdir()
+            (workspace / "docs").mkdir()
+            (workspace / "src" / "components").mkdir(parents=True)
 
             # Create minimal PRD file
             prd_content = """
@@ -119,7 +127,7 @@ class TestHookPerformanceBenchmarks:
 - data-testid required
 - aria-label for buttons
             """
-            (workspace / 'docs' / 'vana-frontend-prd-final.md').write_text(prd_content)
+            (workspace / "docs" / "vana-frontend-prd-final.md").write_text(prd_content)
 
             # Create optimized hook config
             hook_config = {
@@ -129,10 +137,12 @@ class TestHookPerformanceBenchmarks:
                 "performance": {
                     "enableMetrics": True,
                     "enableCaching": True,
-                    "maxConcurrent": 20
-                }
+                    "maxConcurrent": 20,
+                },
             }
-            (workspace / '.claude_workspace' / 'hook-config.json').write_text(json.dumps(hook_config))
+            (workspace / ".claude_workspace" / "hook-config.json").write_text(
+                json.dumps(hook_config)
+            )
 
             yield workspace
 
@@ -140,7 +150,7 @@ class TestHookPerformanceBenchmarks:
     def sample_components(self):
         """Performance-optimized sample components"""
         return {
-            'small': """
+            "small": """
 import React from 'react';
 import { Button } from '@/components/ui/button';
 
@@ -150,7 +160,7 @@ const SmallComponent: React.FC = () => {
 
 export default SmallComponent;
             """,
-            'medium': """
+            "medium": """
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -195,7 +205,7 @@ const MediumComponent: React.FC<MediumComponentProps> = ({ data }) => {
 
 export default MediumComponent;
             """,
-            'large': None  # Will be generated dynamically
+            "large": None,  # Will be generated dynamically
         }
 
     def generate_large_component(self, size: int = 1000) -> str:
@@ -263,63 +273,84 @@ export default LargeComponent;
 
         return content
 
+
 class TestSingleValidatorPerformance:
     """Test individual validator performance"""
 
     @pytest.mark.asyncio
-    async def test_real_prd_validator_performance(self, performance_workspace, sample_components):
+    async def test_real_prd_validator_performance(
+        self, performance_workspace, sample_components
+    ):
         """Test Real PRD Validator meets <500ms requirement"""
         os.chdir(performance_workspace)
         monitor = PerformanceMonitor()
 
         # Test with different component sizes
         test_cases = [
-            ('small', sample_components['small']),
-            ('medium', sample_components['medium']),
+            ("small", sample_components["small"]),
+            ("medium", sample_components["medium"]),
         ]
 
         results = []
 
         for size_name, content in test_cases:
-            component_path = performance_workspace / f'src/components/{size_name.title()}Component.tsx'
+            component_path = (
+                performance_workspace
+                / f"src/components/{size_name.title()}Component.tsx"
+            )
             component_path.write_text(content)
 
-            content_file = performance_workspace / f'temp_{size_name}.tsx'
+            content_file = performance_workspace / f"temp_{size_name}.tsx"
             content_file.write_text(content)
 
             # Measure performance
             monitor.start_monitoring()
 
-            result = subprocess.run([
-                'node',
-                '/Users/nick/Development/vana/tests/hooks/validation/real-prd-validator.js',
-                'validate',
-                str(component_path),
-                str(content_file)
-            ], capture_output=True, text=True, cwd=performance_workspace)
+            result = subprocess.run(
+                [
+                    "node",
+                    "/Users/nick/Development/vana/tests/hooks/validation/real-prd-validator.js",
+                    "validate",
+                    str(component_path),
+                    str(content_file),
+                ],
+                capture_output=True,
+                text=True,
+                cwd=performance_workspace,
+            )
 
             metrics = monitor.get_metrics()
 
             if result.returncode == 0:
                 validation_result = json.loads(result.stdout)
-                metrics.validation_score = validation_result['compliance_score']
-                metrics.violations_count = len(validation_result.get('violations', []))
+                metrics.validation_score = validation_result["compliance_score"]
+                metrics.violations_count = len(validation_result.get("violations", []))
 
             results.append((size_name, metrics))
 
             # Performance assertions
-            assert metrics.execution_time_ms < 500, f"{size_name} component took {metrics.execution_time_ms:.2f}ms, should be <500ms"
-            assert metrics.memory_usage_mb < 50, f"{size_name} component used {metrics.memory_usage_mb:.2f}MB, should be <50MB"
+            assert metrics.execution_time_ms < 500, (
+                f"{size_name} component took {metrics.execution_time_ms:.2f}ms, should be <500ms"
+            )
+            assert metrics.memory_usage_mb < 50, (
+                f"{size_name} component used {metrics.memory_usage_mb:.2f}MB, should be <50MB"
+            )
 
-            logger.info(f"{size_name} component: {metrics.execution_time_ms:.2f}ms, {metrics.memory_usage_mb:.2f}MB")
+            logger.info(
+                f"{size_name} component: {metrics.execution_time_ms:.2f}ms, {metrics.memory_usage_mb:.2f}MB"
+            )
 
         # Verify performance scaling
-        small_metrics = next(m for name, m in results if name == 'small')
-        medium_metrics = next(m for name, m in results if name == 'medium')
+        small_metrics = next(m for name, m in results if name == "small")
+        medium_metrics = next(m for name, m in results if name == "medium")
 
         # Medium should not be more than 3x slower than small
-        scaling_factor = medium_metrics.execution_time_ms / small_metrics.execution_time_ms
-        assert scaling_factor < 3.0, f"Performance scaling factor {scaling_factor:.2f} should be <3.0"
+        scaling_factor = (
+            medium_metrics.execution_time_ms / small_metrics.execution_time_ms
+        )
+        assert scaling_factor < 3.0, (
+            f"Performance scaling factor {scaling_factor:.2f} should be <3.0"
+        )
 
     @pytest.mark.asyncio
     async def test_large_file_performance(self, performance_workspace):
@@ -330,50 +361,70 @@ class TestSingleValidatorPerformance:
         # Generate large component
         large_content = TestHookPerformanceBenchmarks().generate_large_component(500)
 
-        large_component_path = performance_workspace / 'src/components/LargeComponent.tsx'
+        large_component_path = (
+            performance_workspace / "src/components/LargeComponent.tsx"
+        )
         large_component_path.write_text(large_content)
 
-        content_file = performance_workspace / 'temp_large.tsx'
+        content_file = performance_workspace / "temp_large.tsx"
         content_file.write_text(large_content)
 
         # Measure performance
         monitor.start_monitoring()
 
-        result = subprocess.run([
-            'node',
-            '/Users/nick/Development/vana/tests/hooks/validation/real-prd-validator.js',
-            'validate',
-            str(large_component_path),
-            str(content_file)
-        ], capture_output=True, text=True, cwd=performance_workspace, timeout=5)
+        result = subprocess.run(
+            [
+                "node",
+                "/Users/nick/Development/vana/tests/hooks/validation/real-prd-validator.js",
+                "validate",
+                str(large_component_path),
+                str(content_file),
+            ],
+            capture_output=True,
+            text=True,
+            cwd=performance_workspace,
+            timeout=5,
+        )
 
         metrics = monitor.get_metrics()
 
         # Large files should still complete within reasonable time
-        assert metrics.execution_time_ms < 1000, f"Large file took {metrics.execution_time_ms:.2f}ms, should be <1000ms"
+        assert metrics.execution_time_ms < 1000, (
+            f"Large file took {metrics.execution_time_ms:.2f}ms, should be <1000ms"
+        )
 
         if result.returncode == 0:
             validation_result = json.loads(result.stdout)
 
             # Should detect large file size warning
-            warnings_text = ' '.join(validation_result.get('warnings', []))
-            assert 'Large component' in warnings_text or 'file size' in warnings_text.lower()
+            warnings_text = " ".join(validation_result.get("warnings", []))
+            assert (
+                "Large component" in warnings_text
+                or "file size" in warnings_text.lower()
+            )
 
-            logger.info(f"Large component ({len(large_content)} chars): {metrics.execution_time_ms:.2f}ms")
+            logger.info(
+                f"Large component ({len(large_content)} chars): {metrics.execution_time_ms:.2f}ms"
+            )
+
 
 class TestConcurrentValidationPerformance:
     """Test concurrent validation performance"""
 
     @pytest.mark.asyncio
-    async def test_10_concurrent_validations(self, performance_workspace, sample_components):
+    async def test_10_concurrent_validations(
+        self, performance_workspace, sample_components
+    ):
         """Test 10 concurrent validations complete in <2000ms"""
         os.chdir(performance_workspace)
 
         # Create 10 test files
         test_files = []
         for i in range(10):
-            content = sample_components['medium'].replace('MediumComponent', f'Component{i}')
-            file_path = performance_workspace / f'src/components/Component{i}.tsx'
+            content = sample_components["medium"].replace(
+                "MediumComponent", f"Component{i}"
+            )
+            file_path = performance_workspace / f"src/components/Component{i}.tsx"
             file_path.write_text(content)
             test_files.append((file_path, content))
 
@@ -382,18 +433,18 @@ class TestConcurrentValidationPerformance:
 
         # Run concurrent validations
         async def validate_file(file_path, content):
-            content_file = performance_workspace / f'temp_{file_path.stem}.tsx'
+            content_file = performance_workspace / f"temp_{file_path.stem}.tsx"
             content_file.write_text(content)
 
             proc = await asyncio.create_subprocess_exec(
-                'node',
-                '/Users/nick/Development/vana/tests/hooks/validation/real-prd-validator.js',
-                'validate',
+                "node",
+                "/Users/nick/Development/vana/tests/hooks/validation/real-prd-validator.js",
+                "validate",
                 str(file_path),
                 str(content_file),
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
-                cwd=performance_workspace
+                cwd=performance_workspace,
             )
 
             stdout, stderr = await proc.communicate()
@@ -406,7 +457,9 @@ class TestConcurrentValidationPerformance:
         metrics = monitor.get_metrics()
 
         # Performance assertions
-        assert metrics.execution_time_ms < 2000, f"10 concurrent validations took {metrics.execution_time_ms:.2f}ms, should be <2000ms"
+        assert metrics.execution_time_ms < 2000, (
+            f"10 concurrent validations took {metrics.execution_time_ms:.2f}ms, should be <2000ms"
+        )
 
         # Analyze results
         successful_validations = 0
@@ -424,16 +477,24 @@ class TestConcurrentValidationPerformance:
                 try:
                     validation_result = json.loads(stdout)
                     # Individual validation should still be fast
-                    validation_times.append(metrics.execution_time_ms / 10)  # Approximate
+                    validation_times.append(
+                        metrics.execution_time_ms / 10
+                    )  # Approximate
                 except json.JSONDecodeError:
                     pass
 
-        assert successful_validations >= 8, f"Only {successful_validations}/10 validations succeeded"
+        assert successful_validations >= 8, (
+            f"Only {successful_validations}/10 validations succeeded"
+        )
 
-        logger.info(f"10 concurrent validations: {metrics.execution_time_ms:.2f}ms total, {successful_validations} successful")
+        logger.info(
+            f"10 concurrent validations: {metrics.execution_time_ms:.2f}ms total, {successful_validations} successful"
+        )
 
     @pytest.mark.asyncio
-    async def test_50_concurrent_validations_stress(self, performance_workspace, sample_components):
+    async def test_50_concurrent_validations_stress(
+        self, performance_workspace, sample_components
+    ):
         """Stress test with 50 concurrent validations"""
         os.chdir(performance_workspace)
 
@@ -442,11 +503,15 @@ class TestConcurrentValidationPerformance:
         for i in range(50):
             # Vary component complexity
             if i % 3 == 0:
-                content = sample_components['small'].replace('SmallComponent', f'Component{i}')
+                content = sample_components["small"].replace(
+                    "SmallComponent", f"Component{i}"
+                )
             else:
-                content = sample_components['medium'].replace('MediumComponent', f'Component{i}')
+                content = sample_components["medium"].replace(
+                    "MediumComponent", f"Component{i}"
+                )
 
-            file_path = performance_workspace / f'src/components/Component{i}.tsx'
+            file_path = performance_workspace / f"src/components/Component{i}.tsx"
             file_path.write_text(content)
             test_files.append((file_path, content))
 
@@ -458,45 +523,61 @@ class TestConcurrentValidationPerformance:
 
         async def validate_with_semaphore(file_path, content):
             async with semaphore:
-                content_file = performance_workspace / f'temp_{file_path.stem}.tsx'
+                content_file = performance_workspace / f"temp_{file_path.stem}.tsx"
                 content_file.write_text(content)
 
                 proc = await asyncio.create_subprocess_exec(
-                    'node',
-                    '/Users/nick/Development/vana/tests/hooks/validation/real-prd-validator.js',
-                    'validate',
+                    "node",
+                    "/Users/nick/Development/vana/tests/hooks/validation/real-prd-validator.js",
+                    "validate",
                     str(file_path),
                     str(content_file),
                     stdout=asyncio.subprocess.PIPE,
                     stderr=asyncio.subprocess.PIPE,
-                    cwd=performance_workspace
+                    cwd=performance_workspace,
                 )
 
                 stdout, stderr = await proc.communicate()
                 return proc.returncode, stdout.decode(), stderr.decode()
 
         # Execute all validations
-        tasks = [validate_with_semaphore(file_path, content) for file_path, content in test_files]
+        tasks = [
+            validate_with_semaphore(file_path, content)
+            for file_path, content in test_files
+        ]
         results = await asyncio.gather(*tasks, return_exceptions=True)
 
         metrics = monitor.get_metrics()
 
         # Stress test performance assertions (more lenient)
-        assert metrics.execution_time_ms < 5000, f"50 concurrent validations took {metrics.execution_time_ms:.2f}ms, should be <5000ms"
-        assert metrics.memory_usage_mb < 200, f"Memory usage {metrics.memory_usage_mb:.2f}MB should be <200MB"
+        assert metrics.execution_time_ms < 5000, (
+            f"50 concurrent validations took {metrics.execution_time_ms:.2f}ms, should be <5000ms"
+        )
+        assert metrics.memory_usage_mb < 200, (
+            f"Memory usage {metrics.memory_usage_mb:.2f}MB should be <200MB"
+        )
 
         # Analyze results
-        successful_validations = sum(1 for r in results if not isinstance(r, Exception) and r[0] == 0)
+        successful_validations = sum(
+            1 for r in results if not isinstance(r, Exception) and r[0] == 0
+        )
 
-        assert successful_validations >= 40, f"Only {successful_validations}/50 validations succeeded"
+        assert successful_validations >= 40, (
+            f"Only {successful_validations}/50 validations succeeded"
+        )
 
-        logger.info(f"50 concurrent validations: {metrics.execution_time_ms:.2f}ms, {successful_validations} successful, {metrics.memory_usage_mb:.2f}MB")
+        logger.info(
+            f"50 concurrent validations: {metrics.execution_time_ms:.2f}ms, {successful_validations} successful, {metrics.memory_usage_mb:.2f}MB"
+        )
+
 
 class TestMemoryUsageOptimization:
     """Test memory usage and optimization"""
 
     @pytest.mark.asyncio
-    async def test_memory_growth_under_load(self, performance_workspace, sample_components):
+    async def test_memory_growth_under_load(
+        self, performance_workspace, sample_components
+    ):
         """Test memory usage doesn't grow excessively under load"""
         os.chdir(performance_workspace)
 
@@ -509,10 +590,13 @@ class TestMemoryUsageOptimization:
 
             # Create 20 files per batch
             for i in range(20):
-                content = sample_components['medium'].replace(
-                    'MediumComponent', f'Batch{batch}Component{i}'
+                content = sample_components["medium"].replace(
+                    "MediumComponent", f"Batch{batch}Component{i}"
                 )
-                file_path = performance_workspace / f'src/components/Batch{batch}Component{i}.tsx'
+                file_path = (
+                    performance_workspace
+                    / f"src/components/Batch{batch}Component{i}.tsx"
+                )
                 file_path.write_text(content)
                 batch_files.append((file_path, content))
 
@@ -520,16 +604,22 @@ class TestMemoryUsageOptimization:
             batch_start_memory = psutil.Process().memory_info().rss / 1024 / 1024
 
             for file_path, content in batch_files:
-                content_file = performance_workspace / f'temp_{file_path.stem}.tsx'
+                content_file = performance_workspace / f"temp_{file_path.stem}.tsx"
                 content_file.write_text(content)
 
-                subprocess.run([
-                    'node',
-                    '/Users/nick/Development/vana/tests/hooks/validation/real-prd-validator.js',
-                    'validate',
-                    str(file_path),
-                    str(content_file)
-                ], capture_output=True, text=True, cwd=performance_workspace, timeout=10)
+                subprocess.run(
+                    [
+                        "node",
+                        "/Users/nick/Development/vana/tests/hooks/validation/real-prd-validator.js",
+                        "validate",
+                        str(file_path),
+                        str(content_file),
+                    ],
+                    capture_output=True,
+                    text=True,
+                    cwd=performance_workspace,
+                    timeout=10,
+                )
 
             batch_end_memory = psutil.Process().memory_info().rss / 1024 / 1024
             memory_growth = batch_end_memory - batch_start_memory
@@ -544,10 +634,16 @@ class TestMemoryUsageOptimization:
         avg_memory_growth = statistics.mean(memory_measurements)
         max_memory_growth = max(memory_measurements)
 
-        assert avg_memory_growth < 50, f"Average memory growth {avg_memory_growth:.2f}MB should be <50MB per batch"
-        assert max_memory_growth < 100, f"Max memory growth {max_memory_growth:.2f}MB should be <100MB per batch"
+        assert avg_memory_growth < 50, (
+            f"Average memory growth {avg_memory_growth:.2f}MB should be <50MB per batch"
+        )
+        assert max_memory_growth < 100, (
+            f"Max memory growth {max_memory_growth:.2f}MB should be <100MB per batch"
+        )
 
-        logger.info(f"Memory growth - Avg: {avg_memory_growth:.2f}MB, Max: {max_memory_growth:.2f}MB")
+        logger.info(
+            f"Memory growth - Avg: {avg_memory_growth:.2f}MB, Max: {max_memory_growth:.2f}MB"
+        )
 
     @pytest.mark.asyncio
     async def test_memory_cleanup_after_validation(self, performance_workspace):
@@ -561,21 +657,27 @@ class TestMemoryUsageOptimization:
         # Generate and validate large component
         large_content = TestHookPerformanceBenchmarks().generate_large_component(1000)
 
-        large_file = performance_workspace / 'src/components/MemoryTestComponent.tsx'
+        large_file = performance_workspace / "src/components/MemoryTestComponent.tsx"
         large_file.write_text(large_content)
 
-        content_file = performance_workspace / 'temp_memory_test.tsx'
+        content_file = performance_workspace / "temp_memory_test.tsx"
         content_file.write_text(large_content)
 
         # Validate multiple times
         for i in range(10):
-            result = subprocess.run([
-                'node',
-                '/Users/nick/Development/vana/tests/hooks/validation/real-prd-validator.js',
-                'validate',
-                str(large_file),
-                str(content_file)
-            ], capture_output=True, text=True, cwd=performance_workspace, timeout=10)
+            result = subprocess.run(
+                [
+                    "node",
+                    "/Users/nick/Development/vana/tests/hooks/validation/real-prd-validator.js",
+                    "validate",
+                    str(large_file),
+                    str(content_file),
+                ],
+                capture_output=True,
+                text=True,
+                cwd=performance_workspace,
+                timeout=10,
+            )
 
             assert result.returncode == 0, f"Validation {i} failed"
 
@@ -587,24 +689,31 @@ class TestMemoryUsageOptimization:
         memory_growth = final_memory - baseline_memory
 
         # Memory growth should be minimal after cleanup
-        assert memory_growth < 30, f"Memory growth after cleanup {memory_growth:.2f}MB should be <30MB"
+        assert memory_growth < 30, (
+            f"Memory growth after cleanup {memory_growth:.2f}MB should be <30MB"
+        )
 
-        logger.info(f"Memory cleanup test - Baseline: {baseline_memory:.2f}MB, Final: {final_memory:.2f}MB, Growth: {memory_growth:.2f}MB")
+        logger.info(
+            f"Memory cleanup test - Baseline: {baseline_memory:.2f}MB, Final: {final_memory:.2f}MB, Growth: {memory_growth:.2f}MB"
+        )
+
 
 class TestCacheEffectiveness:
     """Test caching effectiveness and performance impact"""
 
     @pytest.mark.asyncio
-    async def test_validation_caching_performance(self, performance_workspace, sample_components):
+    async def test_validation_caching_performance(
+        self, performance_workspace, sample_components
+    ):
         """Test that caching improves performance for repeated validations"""
         os.chdir(performance_workspace)
 
         # Create test component
-        component_path = performance_workspace / 'src/components/CacheTestComponent.tsx'
-        component_path.write_text(sample_components['medium'])
+        component_path = performance_workspace / "src/components/CacheTestComponent.tsx"
+        component_path.write_text(sample_components["medium"])
 
-        content_file = performance_workspace / 'temp_cache_test.tsx'
-        content_file.write_text(sample_components['medium'])
+        content_file = performance_workspace / "temp_cache_test.tsx"
+        content_file.write_text(sample_components["medium"])
 
         validation_times = []
 
@@ -612,13 +721,18 @@ class TestCacheEffectiveness:
         for i in range(5):
             start_time = time.time()
 
-            result = subprocess.run([
-                'node',
-                '/Users/nick/Development/vana/tests/hooks/validation/real-prd-validator.js',
-                'validate',
-                str(component_path),
-                str(content_file)
-            ], capture_output=True, text=True, cwd=performance_workspace)
+            result = subprocess.run(
+                [
+                    "node",
+                    "/Users/nick/Development/vana/tests/hooks/validation/real-prd-validator.js",
+                    "validate",
+                    str(component_path),
+                    str(content_file),
+                ],
+                capture_output=True,
+                text=True,
+                cwd=performance_workspace,
+            )
 
             execution_time = (time.time() - start_time) * 1000
             validation_times.append(execution_time)
@@ -633,28 +747,37 @@ class TestCacheEffectiveness:
 
         # Note: Caching might not be implemented yet, so this is informational
         if avg_later_validations < first_validation * 0.8:
-            logger.info(f"Caching appears effective: first {first_validation:.2f}ms, avg later {avg_later_validations:.2f}ms")
+            logger.info(
+                f"Caching appears effective: first {first_validation:.2f}ms, avg later {avg_later_validations:.2f}ms"
+            )
         else:
-            logger.info(f"Caching not detected: first {first_validation:.2f}ms, avg later {avg_later_validations:.2f}ms")
+            logger.info(
+                f"Caching not detected: first {first_validation:.2f}ms, avg later {avg_later_validations:.2f}ms"
+            )
 
         # All validations should still be within performance requirements
         for i, time_ms in enumerate(validation_times):
-            assert time_ms < 500, f"Validation {i} took {time_ms:.2f}ms, should be <500ms"
+            assert time_ms < 500, (
+                f"Validation {i} took {time_ms:.2f}ms, should be <500ms"
+            )
+
 
 class TestPerformanceRegression:
     """Test for performance regressions"""
 
     @pytest.mark.asyncio
-    async def test_performance_baseline_compliance(self, performance_workspace, sample_components):
+    async def test_performance_baseline_compliance(
+        self, performance_workspace, sample_components
+    ):
         """Test that current performance meets established baselines"""
         os.chdir(performance_workspace)
 
         # Performance baselines (in milliseconds)
         baselines = {
-            'small_component': 200,
-            'medium_component': 400,
-            'concurrent_10': 1500,
-            'memory_mb': 30
+            "small_component": 200,
+            "medium_component": 400,
+            "concurrent_10": 1500,
+            "memory_mb": 30,
         }
 
         results = {}
@@ -663,67 +786,84 @@ class TestPerformanceRegression:
         # Test small component
         monitor.start_monitoring()
 
-        small_file = performance_workspace / 'src/components/SmallBaselineTest.tsx'
-        small_file.write_text(sample_components['small'])
+        small_file = performance_workspace / "src/components/SmallBaselineTest.tsx"
+        small_file.write_text(sample_components["small"])
 
-        content_file = performance_workspace / 'temp_small_baseline.tsx'
-        content_file.write_text(sample_components['small'])
+        content_file = performance_workspace / "temp_small_baseline.tsx"
+        content_file.write_text(sample_components["small"])
 
-        result = subprocess.run([
-            'node',
-            '/Users/nick/Development/vana/tests/hooks/validation/real-prd-validator.js',
-            'validate',
-            str(small_file),
-            str(content_file)
-        ], capture_output=True, text=True, cwd=performance_workspace)
+        result = subprocess.run(
+            [
+                "node",
+                "/Users/nick/Development/vana/tests/hooks/validation/real-prd-validator.js",
+                "validate",
+                str(small_file),
+                str(content_file),
+            ],
+            capture_output=True,
+            text=True,
+            cwd=performance_workspace,
+        )
 
         small_metrics = monitor.get_metrics()
-        results['small_component'] = small_metrics.execution_time_ms
+        results["small_component"] = small_metrics.execution_time_ms
 
         # Test medium component
         monitor.start_monitoring()
 
-        medium_file = performance_workspace / 'src/components/MediumBaselineTest.tsx'
-        medium_file.write_text(sample_components['medium'])
+        medium_file = performance_workspace / "src/components/MediumBaselineTest.tsx"
+        medium_file.write_text(sample_components["medium"])
 
-        content_file = performance_workspace / 'temp_medium_baseline.tsx'
-        content_file.write_text(sample_components['medium'])
+        content_file = performance_workspace / "temp_medium_baseline.tsx"
+        content_file.write_text(sample_components["medium"])
 
-        result = subprocess.run([
-            'node',
-            '/Users/nick/Development/vana/tests/hooks/validation/real-prd-validator.js',
-            'validate',
-            str(medium_file),
-            str(content_file)
-        ], capture_output=True, text=True, cwd=performance_workspace)
+        result = subprocess.run(
+            [
+                "node",
+                "/Users/nick/Development/vana/tests/hooks/validation/real-prd-validator.js",
+                "validate",
+                str(medium_file),
+                str(content_file),
+            ],
+            capture_output=True,
+            text=True,
+            cwd=performance_workspace,
+        )
 
         medium_metrics = monitor.get_metrics()
-        results['medium_component'] = medium_metrics.execution_time_ms
-        results['memory_mb'] = medium_metrics.memory_usage_mb
+        results["medium_component"] = medium_metrics.execution_time_ms
+        results["memory_mb"] = medium_metrics.memory_usage_mb
 
         # Test concurrent validations (simplified)
         monitor.start_monitoring()
 
         concurrent_files = []
         for i in range(10):
-            file_path = performance_workspace / f'src/components/Concurrent{i}.tsx'
-            file_path.write_text(sample_components['small'].replace('SmallComponent', f'Concurrent{i}'))
+            file_path = performance_workspace / f"src/components/Concurrent{i}.tsx"
+            file_path.write_text(
+                sample_components["small"].replace("SmallComponent", f"Concurrent{i}")
+            )
             concurrent_files.append(file_path)
 
         for file_path in concurrent_files:
-            content_file = performance_workspace / f'temp_{file_path.stem}.tsx'
+            content_file = performance_workspace / f"temp_{file_path.stem}.tsx"
             content_file.write_text(file_path.read_text())
 
-            subprocess.run([
-                'node',
-                '/Users/nick/Development/vana/tests/hooks/validation/real-prd-validator.js',
-                'validate',
-                str(file_path),
-                str(content_file)
-            ], capture_output=True, text=True, cwd=performance_workspace)
+            subprocess.run(
+                [
+                    "node",
+                    "/Users/nick/Development/vana/tests/hooks/validation/real-prd-validator.js",
+                    "validate",
+                    str(file_path),
+                    str(content_file),
+                ],
+                capture_output=True,
+                text=True,
+                cwd=performance_workspace,
+            )
 
         concurrent_metrics = monitor.get_metrics()
-        results['concurrent_10'] = concurrent_metrics.execution_time_ms
+        results["concurrent_10"] = concurrent_metrics.execution_time_ms
 
         # Compare against baselines
         performance_report = []
@@ -735,10 +875,14 @@ class TestPerformanceRegression:
             all_within_baseline = all_within_baseline and within_baseline
 
             status = "✅ PASS" if within_baseline else "❌ FAIL"
-            performance_report.append(f"{test_name}: {actual:.2f} <= {baseline} {status}")
+            performance_report.append(
+                f"{test_name}: {actual:.2f} <= {baseline} {status}"
+            )
 
             if not within_baseline:
-                logger.warning(f"Performance regression detected in {test_name}: {actual:.2f} > {baseline}")
+                logger.warning(
+                    f"Performance regression detected in {test_name}: {actual:.2f} > {baseline}"
+                )
 
         # Log performance report
         logger.info("Performance Baseline Report:")
@@ -748,5 +892,6 @@ class TestPerformanceRegression:
         # Performance regression assertion
         assert all_within_baseline, "Performance regressions detected in baseline tests"
 
-if __name__ == '__main__':
-    pytest.main([__file__, '-v', '--tb=short', '-s'])
+
+if __name__ == "__main__":
+    pytest.main([__file__, "-v", "--tb=short", "-s"])

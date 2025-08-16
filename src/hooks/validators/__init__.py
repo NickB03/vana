@@ -18,8 +18,4 @@ from .context_sanitizer import ContextSanitizer
 from .security_scanner import SecurityScanner
 from .shell_validator import ShellValidator
 
-__all__ = [
-    "ContextSanitizer",
-    "SecurityScanner",
-    "ShellValidator"
-]
+__all__ = ["ContextSanitizer", "SecurityScanner", "ShellValidator"]

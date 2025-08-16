@@ -13,7 +13,7 @@ import pytest
 import websockets
 from fastapi.testclient import TestClient
 
-sys.path.append('/Users/nick/Development/vana')
+sys.path.append("/Users/nick/Development/vana")
 # Note: SessionStore, ResearchAgent, Settings not available in current codebase
 # from app.server import SessionStore
 # from app.agent import ResearchAgent
@@ -34,7 +34,7 @@ class TestMessageFormatValidation:
         frontend_message = {
             "type": "user_message",
             "content": "Test message",
-            "session_id": "test-session-123"
+            "session_id": "test-session-123",
         }
 
         response = client.post("/api/messages", json=frontend_message)
@@ -48,11 +48,7 @@ class TestMessageFormatValidation:
     def test_message_format_to_frontend(self, client):
         """Test that backend sends correct format to frontend"""
         # Send message and check response format
-        message = {
-            "type": "user_message",
-            "content": "Test",
-            "session_id": "test-123"
-        }
+        message = {"type": "user_message", "content": "Test", "session_id": "test-123"}
 
         response = client.post("/api/messages", json=message)
         data = response.json()
@@ -66,10 +62,9 @@ class TestMessageFormatValidation:
         """Test WebSocket message format consistency"""
         async with websockets.connect("ws://localhost:8000/ws") as websocket:
             # Send frontend format
-            await websocket.send(json.dumps({
-                "type": "user_message",
-                "content": "Test WebSocket"
-            }))
+            await websocket.send(
+                json.dumps({"type": "user_message", "content": "Test WebSocket"})
+            )
 
             # Receive and validate response format
             response = await websocket.recv()
@@ -134,7 +129,7 @@ class TestADKIntegration:
         """Test that agent processes messages correctly"""
         message = {
             "message": "Research quantum computing",
-            "session_id": "test-session"
+            "session_id": "test-session",
         }
 
         # Process message
@@ -234,11 +229,14 @@ class TestErrorHandling:
 
     def test_error_propagation(self, client):
         """Test that errors propagate correctly to frontend"""
-        response = client.post("/api/messages", json={
-            "type": "user_message",
-            "content": None,  # Invalid content
-            "session_id": "test"
-        })
+        response = client.post(
+            "/api/messages",
+            json={
+                "type": "user_message",
+                "content": None,  # Invalid content
+                "session_id": "test",
+            },
+        )
 
         assert response.status_code == 400
         data = response.json()
@@ -308,11 +306,14 @@ class TestPerformance:
         tasks = []
 
         async def send_message(i):
-            response = client.post("/api/messages", json={
-                "type": "user_message",
-                "content": f"Test {i}",
-                "session_id": f"session-{i}"
-            })
+            response = client.post(
+                "/api/messages",
+                json={
+                    "type": "user_message",
+                    "content": f"Test {i}",
+                    "session_id": f"session-{i}",
+                },
+            )
             return response.status_code == 200
 
         # Send 50 concurrent requests
@@ -331,10 +332,9 @@ class TestPerformance:
 
         # Process multiple messages
         for i in range(10):
-            await agent.process_message({
-                "message": f"Test message {i}",
-                "session_id": "perf-test"
-            })
+            await agent.process_message(
+                {"message": f"Test message {i}", "session_id": "perf-test"}
+            )
 
         elapsed = time.time() - start
 

@@ -16,6 +16,7 @@ import psutil
 # Add parent directory to path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+
 class ProductionSmokeTest:
     """Real production validation - no mocks, no fakes"""
 
@@ -29,7 +30,7 @@ class ProductionSmokeTest:
             "auth_works": False,
             "memory_stable": False,
             "async_performance": False,
-            "sse_bounded": False
+            "sse_bounded": False,
         }
 
     async def start_server(self) -> bool:
@@ -44,7 +45,7 @@ class ProductionSmokeTest:
                 ["uv", "run", "uvicorn", "app.server:app", "--port", "8000"],
                 env=env,
                 stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE
+                stderr=subprocess.PIPE,
             )
 
             # Wait for server to start
@@ -92,13 +93,12 @@ class ProductionSmokeTest:
             register_data = {
                 "username": "test_user_smoke",
                 "email": "smoke@test.com",
-                "password": "SecurePassword123!"
+                "password": "SecurePassword123!",
             }
 
             try:
                 async with session.post(
-                    f"{self.base_url}/auth/register",
-                    json=register_data
+                    f"{self.base_url}/auth/register", json=register_data
                 ) as resp:
                     if resp.status in [200, 201]:
                         print("✅ User registration works")
@@ -114,7 +114,7 @@ class ProductionSmokeTest:
             login_data = {
                 "username": "test_user_smoke",
                 "password": "SecurePassword123!",
-                "grant_type": "password"
+                "grant_type": "password",
             }
 
             token = None
@@ -122,7 +122,7 @@ class ProductionSmokeTest:
                 async with session.post(
                     f"{self.base_url}/auth/login",
                     data=login_data,
-                    headers={"Content-Type": "application/x-www-form-urlencoded"}
+                    headers={"Content-Type": "application/x-www-form-urlencoded"},
                 ) as resp:
                     if resp.status == 200:
                         data = await resp.json()
@@ -142,8 +142,7 @@ class ProductionSmokeTest:
                 try:
                     headers = {"Authorization": f"Bearer {token}"}
                     async with session.get(
-                        f"{self.base_url}/users/me",
-                        headers=headers
+                        f"{self.base_url}/users/me", headers=headers
                     ) as resp:
                         if resp.status == 200:
                             user_data = await resp.json()
@@ -175,7 +174,7 @@ class ProductionSmokeTest:
                     # Create SSE connection
                     resp = await session.get(
                         f"{self.base_url}/agent-network/sse/test_session_{i}",
-                        timeout=aiohttp.ClientTimeout(total=1)
+                        timeout=aiohttp.ClientTimeout(total=1),
                     )
                     connections.append(resp)
                 except asyncio.TimeoutError:
@@ -193,8 +192,8 @@ class ProductionSmokeTest:
                         f"{self.base_url}/agent-network/broadcast",
                         json={
                             "event": f"test_event_{i}",
-                            "data": {"message": f"Test message {i}" * 100}
-                        }
+                            "data": {"message": f"Test message {i}" * 100},
+                        },
                     )
                 except:
                     pass  # Endpoint might not exist, that's OK
@@ -241,7 +240,9 @@ class ProductionSmokeTest:
             self.results["async_performance"] = True
             print("✅ Async performance is good")
         else:
-            print(f"⚠️ Performance not optimal: {elapsed:.2f}s for {successful} requests")
+            print(
+                f"⚠️ Performance not optimal: {elapsed:.2f}s for {successful} requests"
+            )
 
     async def cleanup(self):
         """Stop the server"""

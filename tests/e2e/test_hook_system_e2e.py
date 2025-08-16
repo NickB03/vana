@@ -34,7 +34,7 @@ class E2ETestEnvironment:
             "frontend/src/stores",
             "frontend/src/types",
             "frontend/__tests__",
-            "frontend/public"
+            "frontend/public",
         ]
 
         for dir_path in frontend_dirs:
@@ -48,7 +48,7 @@ class E2ETestEnvironment:
             "app/utils",
             "tests/unit",
             "tests/integration",
-            "tests/e2e"
+            "tests/e2e",
         ]
 
         for dir_path in backend_dirs:
@@ -67,13 +67,13 @@ class E2ETestEnvironment:
                 "dev": "next dev",
                 "build": "next build",
                 "test": "jest",
-                "lint": "eslint . --ext .ts,.tsx"
+                "lint": "eslint . --ext .ts,.tsx",
             },
             "dependencies": {
                 "react": "^18.3.1",
                 "next": "^15.4.6",
-                "@radix-ui/react-button": "^1.0.0"
-            }
+                "@radix-ui/react-button": "^1.0.0",
+            },
         }
 
         (self.workspace / "frontend" / "package.json").write_text(
@@ -98,13 +98,10 @@ class E2ETestEnvironment:
                 "jsx": "preserve",
                 "incremental": True,
                 "baseUrl": ".",
-                "paths": {
-                    "@/*": ["./src/*"],
-                    "@/components/*": ["./src/components/*"]
-                }
+                "paths": {"@/*": ["./src/*"], "@/components/*": ["./src/components/*"]},
             },
             "include": ["src", "**/*.ts", "**/*.tsx"],
-            "exclude": ["node_modules"]
+            "exclude": ["node_modules"],
         }
 
         (self.workspace / "frontend" / "tsconfig.json").write_text(
@@ -124,19 +121,23 @@ class E2ETestEnvironment:
 
         (self.workspace / ".prd-requirements.md").write_text(prd_requirements)
 
-    async def simulate_file_operation(self, operation: str, file_path: str, content: str = None) -> dict[str, Any]:
+    async def simulate_file_operation(
+        self, operation: str, file_path: str, content: str = None
+    ) -> dict[str, Any]:
         """Simulate file operation with hook integration"""
         start_time = time.perf_counter()
 
         # Pre-operation hook
         pre_hook_result = await self.run_pre_hook(operation, file_path, content)
-        self.hook_logs.append({
-            "type": "pre_hook",
-            "operation": operation,
-            "file_path": file_path,
-            "timestamp": time.time(),
-            "result": pre_hook_result
-        })
+        self.hook_logs.append(
+            {
+                "type": "pre_hook",
+                "operation": operation,
+                "file_path": file_path,
+                "timestamp": time.time(),
+                "result": pre_hook_result,
+            }
+        )
 
         # Perform operation if validated
         operation_result = {"success": False, "error": None}
@@ -157,14 +158,18 @@ class E2ETestEnvironment:
             operation_result["error"] = "Validation failed"
 
         # Post-operation hook
-        post_hook_result = await self.run_post_hook(operation, file_path, operation_result["success"])
-        self.hook_logs.append({
-            "type": "post_hook",
-            "operation": operation,
-            "file_path": file_path,
-            "timestamp": time.time(),
-            "result": post_hook_result
-        })
+        post_hook_result = await self.run_post_hook(
+            operation, file_path, operation_result["success"]
+        )
+        self.hook_logs.append(
+            {
+                "type": "post_hook",
+                "operation": operation,
+                "file_path": file_path,
+                "timestamp": time.time(),
+                "result": post_hook_result,
+            }
+        )
 
         end_time = time.perf_counter()
         execution_time = (end_time - start_time) * 1000  # Convert to ms
@@ -175,58 +180,82 @@ class E2ETestEnvironment:
             "pre_hook_result": pre_hook_result,
             "operation_result": operation_result,
             "post_hook_result": post_hook_result,
-            "execution_time_ms": execution_time
+            "execution_time_ms": execution_time,
         }
 
-    async def run_pre_hook(self, operation: str, file_path: str, content: str = None) -> dict[str, Any]:
+    async def run_pre_hook(
+        self, operation: str, file_path: str, content: str = None
+    ) -> dict[str, Any]:
         """Run pre-operation validation hooks"""
         validation_result = {
             "validated": True,
             "violations": [],
             "warnings": [],
             "suggestions": [],
-            "compliance_score": 100
+            "compliance_score": 100,
         }
 
-        if content and file_path.endswith('.tsx'):
+        if content and file_path.endswith(".tsx"):
             # Technology stack validation
-            if 'custom-ui-lib' in content or 'material-ui' in content or 'ant-design' in content:
-                validation_result.update({
-                    "validated": False,
-                    "violations": ["Non-approved UI framework detected"],
-                    "suggestions": ["Use shadcn/ui components: import { Button } from '@/components/ui/button'"],
-                    "compliance_score": 20
-                })
+            if (
+                "custom-ui-lib" in content
+                or "material-ui" in content
+                or "ant-design" in content
+            ):
+                validation_result.update(
+                    {
+                        "validated": False,
+                        "violations": ["Non-approved UI framework detected"],
+                        "suggestions": [
+                            "Use shadcn/ui components: import { Button } from '@/components/ui/button'"
+                        ],
+                        "compliance_score": 20,
+                    }
+                )
 
             # Accessibility validation
-            if 'onClick' in content and 'data-testid' not in content:
-                validation_result["warnings"].append("Interactive element missing data-testid")
-                validation_result["suggestions"].append("Add data-testid for testing: <button data-testid='my-button'>")
+            if "onClick" in content and "data-testid" not in content:
+                validation_result["warnings"].append(
+                    "Interactive element missing data-testid"
+                )
+                validation_result["suggestions"].append(
+                    "Add data-testid for testing: <button data-testid='my-button'>"
+                )
                 validation_result["compliance_score"] -= 15
 
             # Performance validation
-            if content.count('useState') > 5 or content.count('useEffect') > 3:
-                validation_result["warnings"].append("Potential performance impact - multiple state hooks")
-                validation_result["suggestions"].append("Consider using useReducer or Zustand store")
+            if content.count("useState") > 5 or content.count("useEffect") > 3:
+                validation_result["warnings"].append(
+                    "Potential performance impact - multiple state hooks"
+                )
+                validation_result["suggestions"].append(
+                    "Consider using useReducer or Zustand store"
+                )
                 validation_result["compliance_score"] -= 10
 
             # Security validation
-            if 'dangerouslySetInnerHTML' in content:
-                validation_result["warnings"].append("Security risk - dangerouslySetInnerHTML usage")
-                validation_result["suggestions"].append("Use DOMPurify or react-markdown instead")
+            if "dangerouslySetInnerHTML" in content:
+                validation_result["warnings"].append(
+                    "Security risk - dangerouslySetInnerHTML usage"
+                )
+                validation_result["suggestions"].append(
+                    "Use DOMPurify or react-markdown instead"
+                )
                 validation_result["compliance_score"] -= 20
 
         self.validation_results.append(validation_result)
         return validation_result
 
-    async def run_post_hook(self, operation: str, file_path: str, success: bool) -> dict[str, Any]:
+    async def run_post_hook(
+        self, operation: str, file_path: str, success: bool
+    ) -> dict[str, Any]:
         """Run post-operation hooks"""
         post_result = {
             "operation": operation,
             "file_path": file_path,
             "success": success,
             "timestamp": time.time(),
-            "performance_tracked": True
+            "performance_tracked": True,
         }
 
         # Track performance metrics
@@ -235,7 +264,7 @@ class E2ETestEnvironment:
                 "operation": operation,
                 "timestamp": time.time(),
                 "file_size": self._get_file_size(file_path),
-                "complexity_score": self._calculate_complexity(file_path)
+                "complexity_score": self._calculate_complexity(file_path),
             }
 
         return post_result
@@ -252,9 +281,13 @@ class E2ETestEnvironment:
         try:
             content = (self.workspace / file_path).read_text()
             # Simple complexity based on lines and certain patterns
-            lines = content.count('\n')
-            functions = content.count('function ') + content.count('const ') + content.count('export ')
-            imports = content.count('import ')
+            lines = content.count("\n")
+            functions = (
+                content.count("function ")
+                + content.count("const ")
+                + content.count("export ")
+            )
+            imports = content.count("import ")
             return lines + (functions * 2) + imports
         except:
             return 0
@@ -277,7 +310,7 @@ class TestCompleteWorkflows:
         env = e2e_environment
 
         # Phase 1: Create component following PRD requirements
-        component_content = '''
+        component_content = """
 import React from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -305,12 +338,10 @@ export const UserProfile: React.FC<UserProfileProps> = ({ userName, onEditProfil
     </Card>
   )
 }
-'''
+"""
 
         component_result = await env.simulate_file_operation(
-            "write",
-            "frontend/src/components/UserProfile.tsx",
-            component_content
+            "write", "frontend/src/components/UserProfile.tsx", component_content
         )
 
         # Verify component creation validation
@@ -320,7 +351,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({ userName, onEditProfil
         assert len(component_result["pre_hook_result"]["violations"]) == 0
 
         # Phase 2: Create comprehensive tests
-        test_content = '''
+        test_content = """
 import { render, screen, fireEvent } from '@testing-library/react'
 import { UserProfile } from '../UserProfile'
 
@@ -354,12 +385,12 @@ describe('UserProfile', () => {
     expect(button).toBeEnabled()
   })
 })
-'''
+"""
 
         test_result = await env.simulate_file_operation(
             "write",
             "frontend/src/components/__tests__/UserProfile.test.tsx",
-            test_content
+            test_content,
         )
 
         # Verify test creation validation
@@ -367,7 +398,7 @@ describe('UserProfile', () => {
         assert test_result["operation_result"]["success"] == True
 
         # Phase 3: Add to main application
-        app_update_content = '''
+        app_update_content = """
 import React from 'react'
 import { UserProfile } from '@/components/UserProfile'
 
@@ -386,12 +417,10 @@ export default function HomePage() {
     </main>
   )
 }
-'''
+"""
 
         app_result = await env.simulate_file_operation(
-            "write",
-            "frontend/src/app/page.tsx",
-            app_update_content
+            "write", "frontend/src/app/page.tsx", app_update_content
         )
 
         # Verify app integration validation
@@ -400,7 +429,9 @@ export default function HomePage() {
 
         # Phase 4: Verify overall workflow metrics
         total_operations = len(env.hook_logs)
-        successful_operations = sum(1 for log in env.hook_logs if log["result"].get("validated", True))
+        successful_operations = sum(
+            1 for log in env.hook_logs if log["result"].get("validated", True)
+        )
 
         assert total_operations >= 6  # 3 pre + 3 post hooks
         assert successful_operations >= 6  # All should be successful
@@ -418,7 +449,7 @@ export default function HomePage() {
         env = e2e_environment
 
         # Phase 1: Attempt PRD violation (custom UI framework)
-        violation_content = '''
+        violation_content = """
 import React from 'react'
 import { Button as MUIButton } from '@mui/material'
 import { TextField } from '@mui/material'
@@ -431,22 +462,23 @@ export const BadForm = () => {
     </form>
   )
 }
-'''
+"""
 
         violation_result = await env.simulate_file_operation(
-            "write",
-            "frontend/src/components/BadForm.tsx",
-            violation_content
+            "write", "frontend/src/components/BadForm.tsx", violation_content
         )
 
         # Verify violation is detected and blocked
         assert violation_result["pre_hook_result"]["validated"] == False
         assert violation_result["operation_result"]["success"] == False
-        assert "Non-approved UI framework detected" in violation_result["pre_hook_result"]["violations"]
+        assert (
+            "Non-approved UI framework detected"
+            in violation_result["pre_hook_result"]["violations"]
+        )
         assert len(violation_result["pre_hook_result"]["suggestions"]) > 0
 
         # Phase 2: Apply suggested fixes
-        corrected_content = '''
+        corrected_content = """
 import React from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -474,12 +506,10 @@ export const GoodForm = () => {
     </form>
   )
 }
-'''
+"""
 
         corrected_result = await env.simulate_file_operation(
-            "write",
-            "frontend/src/components/GoodForm.tsx",
-            corrected_content
+            "write", "frontend/src/components/GoodForm.tsx", corrected_content
         )
 
         # Verify correction is accepted
@@ -502,7 +532,7 @@ export const GoodForm = () => {
         env = e2e_environment
 
         # Phase 1: Create performance-heavy component
-        heavy_component = '''
+        heavy_component = """
 import React, { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 
@@ -542,22 +572,25 @@ export const HeavyComponent = () => {
     </div>
   )
 }
-'''
+"""
 
         heavy_result = await env.simulate_file_operation(
-            "write",
-            "frontend/src/components/HeavyComponent.tsx",
-            heavy_component
+            "write", "frontend/src/components/HeavyComponent.tsx", heavy_component
         )
 
         # Verify performance warnings are generated
-        assert heavy_result["pre_hook_result"]["validated"] == True  # Still allowed but with warnings
+        assert (
+            heavy_result["pre_hook_result"]["validated"] == True
+        )  # Still allowed but with warnings
         assert len(heavy_result["pre_hook_result"]["warnings"]) > 0
-        assert "performance impact" in str(heavy_result["pre_hook_result"]["warnings"]).lower()
+        assert (
+            "performance impact"
+            in str(heavy_result["pre_hook_result"]["warnings"]).lower()
+        )
         assert heavy_result["pre_hook_result"]["compliance_score"] < 90  # Reduced score
 
         # Phase 2: Create optimized version
-        optimized_component = '''
+        optimized_component = """
 import React, { useMemo } from 'react'
 import { Button } from '@/components/ui/button'
 import { VariableSizeList as List } from 'react-window'
@@ -589,12 +622,12 @@ export const OptimizedComponent = () => {
     </div>
   )
 }
-'''
+"""
 
         optimized_result = await env.simulate_file_operation(
             "write",
             "frontend/src/components/OptimizedComponent.tsx",
-            optimized_component
+            optimized_component,
         )
 
         # Verify optimization is recognized
@@ -603,12 +636,18 @@ export const OptimizedComponent = () => {
         assert len(optimized_result["pre_hook_result"]["warnings"]) == 0
 
         # Phase 3: Compare performance metrics
-        heavy_metrics = env.performance_metrics.get("frontend/src/components/HeavyComponent.tsx")
-        optimized_metrics = env.performance_metrics.get("frontend/src/components/OptimizedComponent.tsx")
+        heavy_metrics = env.performance_metrics.get(
+            "frontend/src/components/HeavyComponent.tsx"
+        )
+        optimized_metrics = env.performance_metrics.get(
+            "frontend/src/components/OptimizedComponent.tsx"
+        )
 
         assert heavy_metrics is not None
         assert optimized_metrics is not None
-        assert optimized_metrics["complexity_score"] <= heavy_metrics["complexity_score"]
+        assert (
+            optimized_metrics["complexity_score"] <= heavy_metrics["complexity_score"]
+        )
 
     @pytest.mark.asyncio
     async def test_security_validation_integration(self, e2e_environment):
@@ -616,7 +655,7 @@ export const OptimizedComponent = () => {
         env = e2e_environment
 
         # Phase 1: Attempt security violation
-        unsafe_component = '''
+        unsafe_component = """
 import React, { useState } from 'react'
 import { Button } from '@/components/ui/button'
 
@@ -638,21 +677,24 @@ export const UnsafeComponent = () => {
     </div>
   )
 }
-'''
+"""
 
         unsafe_result = await env.simulate_file_operation(
-            "write",
-            "frontend/src/components/UnsafeComponent.tsx",
-            unsafe_component
+            "write", "frontend/src/components/UnsafeComponent.tsx", unsafe_component
         )
 
         # Verify security warning is generated
-        assert unsafe_result["pre_hook_result"]["validated"] == True  # Allowed but warned
-        assert any("security risk" in warning.lower() for warning in unsafe_result["pre_hook_result"]["warnings"])
+        assert (
+            unsafe_result["pre_hook_result"]["validated"] == True
+        )  # Allowed but warned
+        assert any(
+            "security risk" in warning.lower()
+            for warning in unsafe_result["pre_hook_result"]["warnings"]
+        )
         assert unsafe_result["pre_hook_result"]["compliance_score"] < 85
 
         # Phase 2: Create secure version
-        secure_component = '''
+        secure_component = """
 import React, { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -686,12 +728,10 @@ export const SecureComponent = () => {
     </div>
   )
 }
-'''
+"""
 
         secure_result = await env.simulate_file_operation(
-            "write",
-            "frontend/src/components/SecureComponent.tsx",
-            secure_component
+            "write", "frontend/src/components/SecureComponent.tsx", secure_component
         )
 
         # Verify secure implementation is approved
@@ -710,7 +750,7 @@ export const SecureComponent = () => {
             ("Component2", "Complex component"),
             ("Component3", "Form component"),
             ("Component4", "List component"),
-            ("Component5", "Modal component")
+            ("Component5", "Modal component"),
         ]
 
         total_execution_time = 0
@@ -733,9 +773,7 @@ export const {name} = () => {{
 '''
 
             result = await env.simulate_file_operation(
-                "write",
-                f"frontend/src/components/{name}.tsx",
-                content
+                "write", f"frontend/src/components/{name}.tsx", content
             )
 
             total_execution_time += result["execution_time_ms"]
@@ -754,13 +792,17 @@ export const {name} = () => {{
         assert len(env.hook_logs) == operations_count * 2  # Pre + post hooks
 
         # Verify all validations passed
-        successful_validations = sum(1 for result in env.validation_results if result["validated"])
+        successful_validations = sum(
+            1 for result in env.validation_results if result["validated"]
+        )
         assert successful_validations == operations_count
 
         print("Hook system performance:")
         print(f"  - Average execution time: {average_execution_time:.2f}ms")
         print(f"  - Total operations: {operations_count}")
-        print(f"  - Success rate: {successful_validations/operations_count*100:.1f}%")
+        print(
+            f"  - Success rate: {successful_validations / operations_count * 100:.1f}%"
+        )
 
 
 class TestSystemIntegrationValidation:
@@ -775,7 +817,7 @@ class TestSystemIntegrationValidation:
             "lint",
             "typecheck",
             "dev-with-hooks",
-            "test-with-hooks"
+            "test-with-hooks",
         ]
 
         for command in makefile_commands:
@@ -795,7 +837,7 @@ class TestSystemIntegrationValidation:
             "exit_code": 0,
             "hooks_integrated": True,
             "execution_time_ms": 150,
-            "output": f"Successfully executed {command} with hooks"
+            "output": f"Successfully executed {command} with hooks",
         }
 
     @pytest.mark.asyncio
@@ -806,7 +848,7 @@ class TestSystemIntegrationValidation:
             "swarm_init",
             "agent_spawn",
             "task_orchestrate",
-            "memory_usage"
+            "memory_usage",
         ]
 
         coordination_results = []
@@ -831,7 +873,7 @@ class TestSystemIntegrationValidation:
             "hook_coordination": True,
             "success": True,
             "timestamp": time.time(),
-            "coordination_latency_ms": 25
+            "coordination_latency_ms": 25,
         }
 
 

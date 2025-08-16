@@ -17,7 +17,7 @@ def test_db():
     engine = create_engine(
         "sqlite:///:memory:",
         connect_args={"check_same_thread": False},
-        poolclass=StaticPool
+        poolclass=StaticPool,
     )
     Base.metadata.create_all(engine)
     SessionLocal = sessionmaker(bind=engine)
@@ -60,7 +60,7 @@ def test_user_data():
         "username": "oauth_user",
         "password": "OAuth2Test123!",
         "first_name": "OAuth2",
-        "last_name": "User"
+        "last_name": "User",
     }
 
 
@@ -74,16 +74,17 @@ class TestOAuth2RealWorldScenarios:
         assert register_response.status_code == 201
 
         # OAuth2 client makes form-encoded request
-        oauth_response = client.post("/auth/login",
+        oauth_response = client.post(
+            "/auth/login",
             data={
                 "username": test_user_data["username"],
                 "password": test_user_data["password"],
-                "grant_type": "password"
+                "grant_type": "password",
             },
             headers={
                 "Content-Type": "application/x-www-form-urlencoded",
-                "User-Agent": "OAuth2Client/1.0"
-            }
+                "User-Agent": "OAuth2Client/1.0",
+            },
         )
 
         assert oauth_response.status_code == 200
@@ -96,9 +97,10 @@ class TestOAuth2RealWorldScenarios:
         assert token_data["expires_in"] > 0
 
         # Use the token to access protected endpoint
-        protected_response = client.get("/auth/me", headers={
-            "Authorization": f"Bearer {token_data['access_token']}"
-        })
+        protected_response = client.get(
+            "/auth/me",
+            headers={"Authorization": f"Bearer {token_data['access_token']}"},
+        )
 
         assert protected_response.status_code == 200
         user_info = protected_response.json()
@@ -110,34 +112,38 @@ class TestOAuth2RealWorldScenarios:
         client.post("/auth/register", json=test_user_data)
 
         # Login with JSON (web app)
-        json_response = client.post("/auth/login", json={
-            "username": test_user_data["username"],
-            "password": test_user_data["password"]
-        })
+        json_response = client.post(
+            "/auth/login",
+            json={
+                "username": test_user_data["username"],
+                "password": test_user_data["password"],
+            },
+        )
         assert json_response.status_code == 200
         json_token = json_response.json()["access_token"]
 
         # Login with form data (OAuth2 client)
-        form_response = client.post("/auth/login",
+        form_response = client.post(
+            "/auth/login",
             data={
                 "username": test_user_data["username"],
                 "password": test_user_data["password"],
-                "grant_type": "password"
+                "grant_type": "password",
             },
-            headers={"Content-Type": "application/x-www-form-urlencoded"}
+            headers={"Content-Type": "application/x-www-form-urlencoded"},
         )
         assert form_response.status_code == 200
         form_token = form_response.json()["access_token"]
 
         # Both tokens should work for accessing protected resources
-        json_user_response = client.get("/auth/me", headers={
-            "Authorization": f"Bearer {json_token}"
-        })
+        json_user_response = client.get(
+            "/auth/me", headers={"Authorization": f"Bearer {json_token}"}
+        )
         assert json_user_response.status_code == 200
 
-        form_user_response = client.get("/auth/me", headers={
-            "Authorization": f"Bearer {form_token}"
-        })
+        form_user_response = client.get(
+            "/auth/me", headers={"Authorization": f"Bearer {form_token}"}
+        )
         assert form_user_response.status_code == 200
 
         # Both should return same user data
@@ -149,24 +155,29 @@ class TestOAuth2RealWorldScenarios:
         client.post("/auth/register", json=test_user_data)
 
         # Test invalid credentials with JSON
-        json_error = client.post("/auth/login", json={
-            "username": test_user_data["username"],
-            "password": "wrongpassword"
-        })
+        json_error = client.post(
+            "/auth/login",
+            json={"username": test_user_data["username"], "password": "wrongpassword"},
+        )
 
         # Test invalid credentials with form data
-        form_error = client.post("/auth/login",
+        form_error = client.post(
+            "/auth/login",
             data={
                 "username": test_user_data["username"],
                 "password": "wrongpassword",
-                "grant_type": "password"
+                "grant_type": "password",
             },
-            headers={"Content-Type": "application/x-www-form-urlencoded"}
+            headers={"Content-Type": "application/x-www-form-urlencoded"},
         )
 
         # Both should return same error structure
         assert json_error.status_code == form_error.status_code == 401
-        assert json_error.json()["detail"] == form_error.json()["detail"] == "invalid_grant"
+        assert (
+            json_error.json()["detail"]
+            == form_error.json()["detail"]
+            == "invalid_grant"
+        )
 
         # Both should have OAuth2-compliant headers
         for response in [json_error, form_error]:
@@ -180,22 +191,24 @@ class TestOAuth2RealWorldScenarios:
         client.post("/auth/register", json=test_user_data)
 
         # Login using email with form data
-        response = client.post("/auth/login",
+        response = client.post(
+            "/auth/login",
             data={
                 "username": test_user_data["email"],  # Use email as username
                 "password": test_user_data["password"],
-                "grant_type": "password"
+                "grant_type": "password",
             },
-            headers={"Content-Type": "application/x-www-form-urlencoded"}
+            headers={"Content-Type": "application/x-www-form-urlencoded"},
         )
 
         assert response.status_code == 200
         token_data = response.json()
 
         # Verify token works
-        user_response = client.get("/auth/me", headers={
-            "Authorization": f"Bearer {token_data['access_token']}"
-        })
+        user_response = client.get(
+            "/auth/me",
+            headers={"Authorization": f"Bearer {token_data['access_token']}"},
+        )
         assert user_response.status_code == 200
         assert user_response.json()["email"] == test_user_data["email"]
 
@@ -204,13 +217,14 @@ class TestOAuth2RealWorldScenarios:
         # Register and login user with form data
         client.post("/auth/register", json=test_user_data)
 
-        login_response = client.post("/auth/login",
+        login_response = client.post(
+            "/auth/login",
             data={
                 "username": test_user_data["username"],
                 "password": test_user_data["password"],
-                "grant_type": "password"
+                "grant_type": "password",
             },
-            headers={"Content-Type": "application/x-www-form-urlencoded"}
+            headers={"Content-Type": "application/x-www-form-urlencoded"},
         )
 
         assert login_response.status_code == 200
@@ -218,11 +232,12 @@ class TestOAuth2RealWorldScenarios:
 
         # Use refresh token to get new access token
         import time
+
         time.sleep(1)  # Ensure different timestamp for new token
 
-        refresh_response = client.post("/auth/refresh", json={
-            "refresh_token": tokens["refresh_token"]
-        })
+        refresh_response = client.post(
+            "/auth/refresh", json={"refresh_token": tokens["refresh_token"]}
+        )
 
         assert refresh_response.status_code == 200
         new_tokens = refresh_response.json()
@@ -231,9 +246,10 @@ class TestOAuth2RealWorldScenarios:
         assert new_tokens["refresh_token"] != tokens["refresh_token"]
 
         # New access token should work
-        user_response = client.get("/auth/me", headers={
-            "Authorization": f"Bearer {new_tokens['access_token']}"
-        })
+        user_response = client.get(
+            "/auth/me",
+            headers={"Authorization": f"Bearer {new_tokens['access_token']}"},
+        )
         assert user_response.status_code == 200
 
     def test_oauth2_sequential_authentication(self, client, test_db, test_user_data):
@@ -242,19 +258,23 @@ class TestOAuth2RealWorldScenarios:
         client.post("/auth/register", json=test_user_data)
 
         # First request with JSON
-        json_response = client.post("/auth/login", json={
-            "username": test_user_data["username"],
-            "password": test_user_data["password"]
-        })
+        json_response = client.post(
+            "/auth/login",
+            json={
+                "username": test_user_data["username"],
+                "password": test_user_data["password"],
+            },
+        )
 
         # Second request with form data
-        form_response = client.post("/auth/login",
+        form_response = client.post(
+            "/auth/login",
             data={
                 "username": test_user_data["username"],
                 "password": test_user_data["password"],
-                "grant_type": "password"
+                "grant_type": "password",
             },
-            headers={"Content-Type": "application/x-www-form-urlencoded"}
+            headers={"Content-Type": "application/x-www-form-urlencoded"},
         )
 
         # Both should succeed
@@ -269,12 +289,12 @@ class TestOAuth2RealWorldScenarios:
         assert len(form_token) > 0
 
         # Both tokens should work for authentication
-        json_user_response = client.get("/auth/me", headers={
-            "Authorization": f"Bearer {json_token}"
-        })
-        form_user_response = client.get("/auth/me", headers={
-            "Authorization": f"Bearer {form_token}"
-        })
+        json_user_response = client.get(
+            "/auth/me", headers={"Authorization": f"Bearer {json_token}"}
+        )
+        form_user_response = client.get(
+            "/auth/me", headers={"Authorization": f"Bearer {form_token}"}
+        )
 
         assert json_user_response.status_code == 200
         assert form_user_response.status_code == 200
@@ -285,39 +305,42 @@ class TestOAuth2RealWorldScenarios:
         client.post("/auth/register", json=test_user_data)
 
         # Test with extra parameters (should be ignored)
-        response = client.post("/auth/login",
+        response = client.post(
+            "/auth/login",
             data={
                 "username": test_user_data["username"],
                 "password": test_user_data["password"],
                 "grant_type": "password",
                 "scope": "read write",  # Extra parameter
                 "client_id": "test_client",  # Extra parameter
-                "state": "random_state"  # Extra parameter
+                "state": "random_state",  # Extra parameter
             },
-            headers={"Content-Type": "application/x-www-form-urlencoded"}
+            headers={"Content-Type": "application/x-www-form-urlencoded"},
         )
 
         assert response.status_code == 200
 
         # Test with case-insensitive content type
-        response = client.post("/auth/login",
+        response = client.post(
+            "/auth/login",
             data={
                 "username": test_user_data["username"],
-                "password": test_user_data["password"]
+                "password": test_user_data["password"],
             },
-            headers={"Content-Type": "APPLICATION/X-WWW-FORM-URLENCODED"}
+            headers={"Content-Type": "APPLICATION/X-WWW-FORM-URLENCODED"},
         )
 
         assert response.status_code == 200
 
         # Test empty grant_type (should default to allow)
-        response = client.post("/auth/login",
+        response = client.post(
+            "/auth/login",
             data={
                 "username": test_user_data["username"],
                 "password": test_user_data["password"],
-                "grant_type": ""  # Empty grant_type
+                "grant_type": "",  # Empty grant_type
             },
-            headers={"Content-Type": "application/x-www-form-urlencoded"}
+            headers={"Content-Type": "application/x-www-form-urlencoded"},
         )
 
         assert response.status_code == 200
@@ -332,10 +355,13 @@ class TestOAuth2BackwardCompatibility:
         client.post("/auth/register", json=test_user_data)
 
         # Legacy client using JSON (should still work)
-        response = client.post("/auth/login", json={
-            "username": test_user_data["username"],
-            "password": test_user_data["password"]
-        })
+        response = client.post(
+            "/auth/login",
+            json={
+                "username": test_user_data["username"],
+                "password": test_user_data["password"],
+            },
+        )
 
         assert response.status_code == 200
         token_data = response.json()
@@ -353,19 +379,23 @@ class TestOAuth2BackwardCompatibility:
         client.post("/auth/register", json=test_user_data)
 
         # Get token via JSON
-        json_response = client.post("/auth/login", json={
-            "username": test_user_data["username"],
-            "password": test_user_data["password"]
-        })
+        json_response = client.post(
+            "/auth/login",
+            json={
+                "username": test_user_data["username"],
+                "password": test_user_data["password"],
+            },
+        )
 
         # Get token via form data
-        form_response = client.post("/auth/login",
+        form_response = client.post(
+            "/auth/login",
             data={
                 "username": test_user_data["username"],
                 "password": test_user_data["password"],
-                "grant_type": "password"
+                "grant_type": "password",
             },
-            headers={"Content-Type": "application/x-www-form-urlencoded"}
+            headers={"Content-Type": "application/x-www-form-urlencoded"},
         )
 
         # Both responses should have identical structure

@@ -28,6 +28,7 @@ from typing import Any
 
 class Severity(Enum):
     """Issue severity levels"""
+
     CRITICAL = "critical"
     WARNING = "warning"
     INFO = "info"
@@ -36,6 +37,7 @@ class Severity(Enum):
 @dataclass
 class ValidationIssue:
     """Represents a shell script validation issue"""
+
     rule_id: str
     severity: Severity
     line_number: int
@@ -50,6 +52,7 @@ class ValidationIssue:
 @dataclass
 class ValidationResult:
     """Results of shell script validation"""
+
     file_path: str
     issues: list[ValidationIssue]
     execution_time_ms: float
@@ -80,7 +83,9 @@ class ShellValidationRule:
         self.severity = severity
         self.category = category
 
-    def check(self, line: str, line_number: int, context: dict[str, Any]) -> list[ValidationIssue]:
+    def check(
+        self, line: str, line_number: int, context: dict[str, Any]
+    ) -> list[ValidationIssue]:
         """Check a line for violations. Override in subclasses."""
         raise NotImplementedError
 
@@ -97,18 +102,20 @@ class UnquotedVariableRule(ShellValidationRule):
             # Variable in command substitution
             re.compile(r'\$\([^)]*\s+(\$\w+)(?:\s|[^"\'])*\)'),
             # Variable after operators that expect files/strings
-            re.compile(r'(?:==|!=|=~|\-[a-z]+)\s+(\$\w+)(?:\s|$)'),
+            re.compile(r"(?:==|!=|=~|\-[a-z]+)\s+(\$\w+)(?:\s|$)"),
             # Variables in echo without quotes
             re.compile(r'echo\s+([^"\']*\$\w+[^"\']*)'),
             # Variables in path operations
             re.compile(r'(?:cd|cp|mv|rm|mkdir)\s+([^"\']*\$\w+[^"\']*)'),
         ]
 
-    def check(self, line: str, line_number: int, context: dict[str, Any]) -> list[ValidationIssue]:
+    def check(
+        self, line: str, line_number: int, context: dict[str, Any]
+    ) -> list[ValidationIssue]:
         issues = []
 
         # Skip lines that are already properly quoted or in comments
-        if line.strip().startswith('#') or '"""' in line or "'''" in line:
+        if line.strip().startswith("#") or '"""' in line or "'''" in line:
             return issues
 
         for pattern in self.patterns:
@@ -119,22 +126,24 @@ class UnquotedVariableRule(ShellValidationRule):
                     continue
 
                 # Extract variable name
-                var_match = re.search(r'\$(\w+)', unquoted_var)
+                var_match = re.search(r"\$(\w+)", unquoted_var)
                 if var_match:
                     var_name = var_match.group(1)
                     suggested_fix = line.replace(unquoted_var, f'"{unquoted_var}"')
 
-                    issues.append(ValidationIssue(
-                        rule_id=self.rule_id,
-                        severity=self.severity,
-                        line_number=line_number,
-                        column=match.start(),
-                        message=f"Unquoted variable ${var_name} may cause word splitting",
-                        original_code=line.strip(),
-                        suggested_fix=suggested_fix.strip(),
-                        fix_explanation=f'Quote the variable to prevent word splitting: "${var_name}"',
-                        rule_category=self.category
-                    ))
+                    issues.append(
+                        ValidationIssue(
+                            rule_id=self.rule_id,
+                            severity=self.severity,
+                            line_number=line_number,
+                            column=match.start(),
+                            message=f"Unquoted variable ${var_name} may cause word splitting",
+                            original_code=line.strip(),
+                            suggested_fix=suggested_fix.strip(),
+                            fix_explanation=f'Quote the variable to prevent word splitting: "${var_name}"',
+                            rule_category=self.category,
+                        )
+                    )
 
         return issues
 
@@ -146,32 +155,36 @@ class UnsafeRedirectionRule(ShellValidationRule):
         super().__init__("SV002", Severity.CRITICAL, "redirection")
         self.patterns = [
             # Multiple redirections that may overwrite
-            re.compile(r'>\s*[^>\s]+.*>\s*[^>\s]+'),
+            re.compile(r">\s*[^>\s]+.*>\s*[^>\s]+"),
             # Redirection to devices without proper handling
-            re.compile(r'>\s*/dev/(sda|sdb|null|zero)(?:\s|$)'),
+            re.compile(r">\s*/dev/(sda|sdb|null|zero)(?:\s|$)"),
             # Dangerous eval with redirection
-            re.compile(r'eval.*>'),
+            re.compile(r"eval.*>"),
         ]
 
-    def check(self, line: str, line_number: int, context: dict[str, Any]) -> list[ValidationIssue]:
+    def check(
+        self, line: str, line_number: int, context: dict[str, Any]
+    ) -> list[ValidationIssue]:
         issues = []
 
-        if line.strip().startswith('#'):
+        if line.strip().startswith("#"):
             return issues
 
         for pattern in self.patterns:
             for match in pattern.finditer(line):
-                issues.append(ValidationIssue(
-                    rule_id=self.rule_id,
-                    severity=self.severity,
-                    line_number=line_number,
-                    column=match.start(),
-                    message="Unsafe redirection pattern detected",
-                    original_code=line.strip(),
-                    suggested_fix="Review redirection logic and add proper error handling",
-                    fix_explanation="Use separate commands or add error checks for multiple redirections",
-                    rule_category=self.category
-                ))
+                issues.append(
+                    ValidationIssue(
+                        rule_id=self.rule_id,
+                        severity=self.severity,
+                        line_number=line_number,
+                        column=match.start(),
+                        message="Unsafe redirection pattern detected",
+                        original_code=line.strip(),
+                        suggested_fix="Review redirection logic and add proper error handling",
+                        fix_explanation="Use separate commands or add error checks for multiple redirections",
+                        rule_category=self.category,
+                    )
+                )
 
         return issues
 
@@ -182,12 +195,14 @@ class MissingSetOptionsRule(ShellValidationRule):
     def __init__(self):
         super().__init__("SV003", Severity.WARNING, "safety")
         self.required_options = {
-            'set -e': 'Exit immediately if a command exits with a non-zero status',
-            'set -u': 'Treat unset variables as an error when substituting',
-            'set -o pipefail': 'Return exit status of the last command in the pipe that failed'
+            "set -e": "Exit immediately if a command exits with a non-zero status",
+            "set -u": "Treat unset variables as an error when substituting",
+            "set -o pipefail": "Return exit status of the last command in the pipe that failed",
         }
 
-    def check(self, line: str, line_number: int, context: dict[str, Any]) -> list[ValidationIssue]:
+    def check(
+        self, line: str, line_number: int, context: dict[str, Any]
+    ) -> list[ValidationIssue]:
         issues = []
 
         # Only check in the beginning of the script
@@ -195,7 +210,7 @@ class MissingSetOptionsRule(ShellValidationRule):
             return issues
 
         # Track which options are found
-        found_options = context.setdefault('found_set_options', set())
+        found_options = context.setdefault("found_set_options", set())
 
         for option in self.required_options:
             if option in line:
@@ -206,17 +221,19 @@ class MissingSetOptionsRule(ShellValidationRule):
             missing_options = set(self.required_options.keys()) - found_options
 
             for missing_option in missing_options:
-                issues.append(ValidationIssue(
-                    rule_id=self.rule_id,
-                    severity=self.severity,
-                    line_number=1,
-                    column=0,
-                    message=f"Missing recommended set option: {missing_option}",
-                    original_code="#!/bin/bash",
-                    suggested_fix=f"#!/bin/bash\n{missing_option}",
-                    fix_explanation=self.required_options[missing_option],
-                    rule_category=self.category
-                ))
+                issues.append(
+                    ValidationIssue(
+                        rule_id=self.rule_id,
+                        severity=self.severity,
+                        line_number=1,
+                        column=0,
+                        message=f"Missing recommended set option: {missing_option}",
+                        original_code="#!/bin/bash",
+                        suggested_fix=f"#!/bin/bash\n{missing_option}",
+                        fix_explanation=self.required_options[missing_option],
+                        rule_category=self.category,
+                    )
+                )
 
         return issues
 
@@ -227,29 +244,33 @@ class CommandSubstitutionRule(ShellValidationRule):
     def __init__(self):
         super().__init__("SV004", Severity.INFO, "modernization")
         # Prefer $() over backticks
-        self.backtick_pattern = re.compile(r'`([^`]+)`')
+        self.backtick_pattern = re.compile(r"`([^`]+)`")
 
-    def check(self, line: str, line_number: int, context: dict[str, Any]) -> list[ValidationIssue]:
+    def check(
+        self, line: str, line_number: int, context: dict[str, Any]
+    ) -> list[ValidationIssue]:
         issues = []
 
-        if line.strip().startswith('#'):
+        if line.strip().startswith("#"):
             return issues
 
         for match in self.backtick_pattern.finditer(line):
             command = match.group(1)
-            suggested_fix = line.replace(f'`{command}`', f'$({command})')
+            suggested_fix = line.replace(f"`{command}`", f"$({command})")
 
-            issues.append(ValidationIssue(
-                rule_id=self.rule_id,
-                severity=self.severity,
-                line_number=line_number,
-                column=match.start(),
-                message="Use $() instead of backticks for command substitution",
-                original_code=line.strip(),
-                suggested_fix=suggested_fix.strip(),
-                fix_explanation="$() is more readable and supports nesting better than backticks",
-                rule_category=self.category
-            ))
+            issues.append(
+                ValidationIssue(
+                    rule_id=self.rule_id,
+                    severity=self.severity,
+                    line_number=line_number,
+                    column=match.start(),
+                    message="Use $() instead of backticks for command substitution",
+                    original_code=line.strip(),
+                    suggested_fix=suggested_fix.strip(),
+                    fix_explanation="$() is more readable and supports nesting better than backticks",
+                    rule_category=self.category,
+                )
+            )
 
         return issues
 
@@ -261,34 +282,38 @@ class ArrayUsageRule(ShellValidationRule):
         super().__init__("SV005", Severity.WARNING, "arrays")
         self.patterns = [
             # Array indexing without quotes
-            re.compile(r'\$\{([^}]*\[[^]]*\][^}]*)\}'),
+            re.compile(r"\$\{([^}]*\[[^]]*\][^}]*)\}"),
             # Array expansion without proper quoting
-            re.compile(r'\$\{([^}]*\[@\][^}]*)\}'),
+            re.compile(r"\$\{([^}]*\[@\][^}]*)\}"),
         ]
 
-    def check(self, line: str, line_number: int, context: dict[str, Any]) -> list[ValidationIssue]:
+    def check(
+        self, line: str, line_number: int, context: dict[str, Any]
+    ) -> list[ValidationIssue]:
         issues = []
 
-        if line.strip().startswith('#'):
+        if line.strip().startswith("#"):
             return issues
 
         # Check for array operations
-        if '[' in line and ']' in line and '$' in line:
+        if "[" in line and "]" in line and "$" in line:
             for pattern in self.patterns:
                 for match in pattern.finditer(line):
                     array_ref = match.group(1)
 
-                    issues.append(ValidationIssue(
-                        rule_id=self.rule_id,
-                        severity=self.severity,
-                        line_number=line_number,
-                        column=match.start(),
-                        message="Review array usage for proper quoting",
-                        original_code=line.strip(),
-                        suggested_fix=f'Use "${{{array_ref}}}" for proper array expansion',
-                        fix_explanation="Proper quoting prevents word splitting in array elements",
-                        rule_category=self.category
-                    ))
+                    issues.append(
+                        ValidationIssue(
+                            rule_id=self.rule_id,
+                            severity=self.severity,
+                            line_number=line_number,
+                            column=match.start(),
+                            message="Review array usage for proper quoting",
+                            original_code=line.strip(),
+                            suggested_fix=f'Use "${{{array_ref}}}" for proper array expansion',
+                            fix_explanation="Proper quoting prevents word splitting in array elements",
+                            rule_category=self.category,
+                        )
+                    )
 
         return issues
 
@@ -299,12 +324,14 @@ class VariableNamingRule(ShellValidationRule):
     def __init__(self):
         super().__init__("SV006", Severity.INFO, "naming")
         # Pattern for variable assignments
-        self.var_assignment = re.compile(r'^([a-zA-Z_][a-zA-Z0-9_]*)=')
+        self.var_assignment = re.compile(r"^([a-zA-Z_][a-zA-Z0-9_]*)=")
 
-    def check(self, line: str, line_number: int, context: dict[str, Any]) -> list[ValidationIssue]:
+    def check(
+        self, line: str, line_number: int, context: dict[str, Any]
+    ) -> list[ValidationIssue]:
         issues = []
 
-        if line.strip().startswith('#'):
+        if line.strip().startswith("#"):
             return issues
 
         match = self.var_assignment.match(line.strip())
@@ -312,18 +339,24 @@ class VariableNamingRule(ShellValidationRule):
             var_name = match.group(1)
 
             # Check for lowercase variables (should be uppercase for globals)
-            if var_name.islower() and len(var_name) > 1 and not line.startswith('local '):
-                issues.append(ValidationIssue(
-                    rule_id=self.rule_id,
-                    severity=self.severity,
-                    line_number=line_number,
-                    column=0,
-                    message=f"Consider using uppercase for global variable: {var_name}",
-                    original_code=line.strip(),
-                    suggested_fix=line.replace(var_name, var_name.upper()).strip(),
-                    fix_explanation="Use uppercase for global variables and lowercase for local variables",
-                    rule_category=self.category
-                ))
+            if (
+                var_name.islower()
+                and len(var_name) > 1
+                and not line.startswith("local ")
+            ):
+                issues.append(
+                    ValidationIssue(
+                        rule_id=self.rule_id,
+                        severity=self.severity,
+                        line_number=line_number,
+                        column=0,
+                        message=f"Consider using uppercase for global variable: {var_name}",
+                        original_code=line.strip(),
+                        suggested_fix=line.replace(var_name, var_name.upper()).strip(),
+                        fix_explanation="Use uppercase for global variables and lowercase for local variables",
+                        rule_category=self.category,
+                    )
+                )
 
         return issues
 
@@ -336,19 +369,23 @@ class UnsafeCurlPipeRule(ShellValidationRule):
         # Patterns for dangerous curl piping
         self.patterns = [
             # curl URL | sh/bash
-            re.compile(r'curl\s+[^|]*\|\s*(?:sh|bash|zsh)'),
+            re.compile(r"curl\s+[^|]*\|\s*(?:sh|bash|zsh)"),
             # wget -O- URL | sh/bash
-            re.compile(r'wget\s+(?:-O-|--output-document=-)[^|]*\|\s*(?:sh|bash|zsh)'),
+            re.compile(r"wget\s+(?:-O-|--output-document=-)[^|]*\|\s*(?:sh|bash|zsh)"),
             # curl with -s/-L flags piped to shell
-            re.compile(r'curl\s+(?:-[sL]+|--silent|--location)[^|]*\|\s*(?:sh|bash|zsh)'),
+            re.compile(
+                r"curl\s+(?:-[sL]+|--silent|--location)[^|]*\|\s*(?:sh|bash|zsh)"
+            ),
             # Any HTTP(S) URL piped to shell
-            re.compile(r'(?:curl|wget)[^|]*https?://[^|]*\|\s*(?:sh|bash|zsh)'),
+            re.compile(r"(?:curl|wget)[^|]*https?://[^|]*\|\s*(?:sh|bash|zsh)"),
         ]
 
-    def check(self, line: str, line_number: int, context: dict[str, Any]) -> list[ValidationIssue]:
+    def check(
+        self, line: str, line_number: int, context: dict[str, Any]
+    ) -> list[ValidationIssue]:
         issues = []
 
-        if line.strip().startswith('#'):
+        if line.strip().startswith("#"):
             return issues
 
         # Check if any pattern matches (avoid duplicates)
@@ -356,17 +393,19 @@ class UnsafeCurlPipeRule(ShellValidationRule):
         for pattern in self.patterns:
             if pattern.search(line) and not found_issue:
                 found_issue = True
-                issues.append(ValidationIssue(
-                    rule_id=self.rule_id,
-                    severity=self.severity,
-                    line_number=line_number,
-                    column=0,
-                    message="Dangerous pattern: piping curl/wget directly to shell",
-                    original_code=line.strip(),
-                    suggested_fix="# Download and verify before executing:\n# curl URL > script.sh && chmod +x script.sh && ./script.sh",
-                    fix_explanation="Piping remote content directly to shell is dangerous. Download, inspect, and verify the script before execution.",
-                    rule_category=self.category
-                ))
+                issues.append(
+                    ValidationIssue(
+                        rule_id=self.rule_id,
+                        severity=self.severity,
+                        line_number=line_number,
+                        column=0,
+                        message="Dangerous pattern: piping curl/wget directly to shell",
+                        original_code=line.strip(),
+                        suggested_fix="# Download and verify before executing:\n# curl URL > script.sh && chmod +x script.sh && ./script.sh",
+                        fix_explanation="Piping remote content directly to shell is dangerous. Download, inspect, and verify the script before execution.",
+                        rule_category=self.category,
+                    )
+                )
                 break  # Only report once per line
 
         return issues
@@ -380,7 +419,7 @@ class EnhancedUnquotedVariableRule(ShellValidationRule):
         # Comprehensive patterns for SC2086 compatibility
         self.patterns = [
             # Variables in array contexts
-            re.compile(r'(?:array|declare)\s+[^=]*=\s*\([^)]*(\$\w+)[^)]*\)'),
+            re.compile(r"(?:array|declare)\s+[^=]*=\s*\([^)]*(\$\w+)[^)]*\)"),
             # Variables in command arguments without quotes
             re.compile(r'(?:cp|mv|rm|mkdir|touch|chmod|chown)\s+[^"\']*(\$\w+)'),
             # Variables in test conditions
@@ -388,17 +427,19 @@ class EnhancedUnquotedVariableRule(ShellValidationRule):
             # Variables in for loops
             re.compile(r'for\s+\w+\s+in\s+([^"\']*\$\w+[^"\']*);'),
             # Variables in case statements
-            re.compile(r'case\s+(\$\w+)\s+in'),
+            re.compile(r"case\s+(\$\w+)\s+in"),
             # Variables in arithmetic contexts (but unquoted)
-            re.compile(r'\$\(\(\s*([^)]*\$\w+[^)]*)\s*\)\)'),
+            re.compile(r"\$\(\(\s*([^)]*\$\w+[^)]*)\s*\)\)"),
             # Function arguments
-            re.compile(r'function\s+\w+\s*\(\s*\)\s*\{[^}]*(\$\w+)'),
+            re.compile(r"function\s+\w+\s*\(\s*\)\s*\{[^}]*(\$\w+)"),
         ]
 
-    def check(self, line: str, line_number: int, context: dict[str, Any]) -> list[ValidationIssue]:
+    def check(
+        self, line: str, line_number: int, context: dict[str, Any]
+    ) -> list[ValidationIssue]:
         issues = []
 
-        if line.strip().startswith('#') or '"""' in line or "'''" in line:
+        if line.strip().startswith("#") or '"""' in line or "'''" in line:
             return issues
 
         for pattern in self.patterns:
@@ -410,22 +451,26 @@ class EnhancedUnquotedVariableRule(ShellValidationRule):
                     continue
 
                 # Extract variable name for better messaging
-                var_match = re.search(r'\$(\w+)', unquoted_section)
+                var_match = re.search(r"\$(\w+)", unquoted_section)
                 if var_match:
                     var_name = var_match.group(1)
-                    suggested_fix = line.replace(unquoted_section, f'"{unquoted_section}"')
+                    suggested_fix = line.replace(
+                        unquoted_section, f'"{unquoted_section}"'
+                    )
 
-                    issues.append(ValidationIssue(
-                        rule_id=self.rule_id,
-                        severity=self.severity,
-                        line_number=line_number,
-                        column=match.start(),
-                        message=f"SC2086: Double quote to prevent globbing and word splitting on ${var_name}",
-                        original_code=line.strip(),
-                        suggested_fix=suggested_fix.strip(),
-                        fix_explanation=f'Quote variable expansion to prevent word splitting: "${var_name}"',
-                        rule_category=self.category
-                    ))
+                    issues.append(
+                        ValidationIssue(
+                            rule_id=self.rule_id,
+                            severity=self.severity,
+                            line_number=line_number,
+                            column=match.start(),
+                            message=f"SC2086: Double quote to prevent globbing and word splitting on ${var_name}",
+                            original_code=line.strip(),
+                            suggested_fix=suggested_fix.strip(),
+                            fix_explanation=f'Quote variable expansion to prevent word splitting: "${var_name}"',
+                            rule_category=self.category,
+                        )
+                    )
 
         return issues
 
@@ -436,16 +481,18 @@ class MultipleRedirectsRule(ShellValidationRule):
     def __init__(self):
         super().__init__("SV009", Severity.WARNING, "redirection")
         # Pattern for multiple echo/printf statements to the same file
-        self.redirect_pattern = re.compile(r'(?:echo|printf)[^>]*>\s*([^\s;]+)')
+        self.redirect_pattern = re.compile(r"(?:echo|printf)[^>]*>\s*([^\s;]+)")
 
-    def check(self, line: str, line_number: int, context: dict[str, Any]) -> list[ValidationIssue]:
+    def check(
+        self, line: str, line_number: int, context: dict[str, Any]
+    ) -> list[ValidationIssue]:
         issues = []
 
-        if line.strip().startswith('#'):
+        if line.strip().startswith("#"):
             return issues
 
         # Track redirections to files
-        redirections = context.setdefault('redirections', {})
+        redirections = context.setdefault("redirections", {})
 
         match = self.redirect_pattern.search(line)
         if match:
@@ -456,17 +503,19 @@ class MultipleRedirectsRule(ShellValidationRule):
                 # This is a subsequent redirect to the same file
                 previous_line = redirections[target_file]
 
-                issues.append(ValidationIssue(
-                    rule_id=self.rule_id,
-                    severity=self.severity,
-                    line_number=line_number,
-                    column=match.start(),
-                    message=f"SC2129: Consider using >> instead of > for subsequent writes to {target_file}",
-                    original_code=line.strip(),
-                    suggested_fix=line.replace('>', '>>').strip(),
-                    fix_explanation=f"Use >> to append instead of overwriting. First write to {target_file} was on line {previous_line}.",
-                    rule_category=self.category
-                ))
+                issues.append(
+                    ValidationIssue(
+                        rule_id=self.rule_id,
+                        severity=self.severity,
+                        line_number=line_number,
+                        column=match.start(),
+                        message=f"SC2129: Consider using >> instead of > for subsequent writes to {target_file}",
+                        original_code=line.strip(),
+                        suggested_fix=line.replace(">", ">>").strip(),
+                        fix_explanation=f"Use >> to append instead of overwriting. First write to {target_file} was on line {previous_line}.",
+                        rule_category=self.category,
+                    )
+                )
             else:
                 # First time seeing this file
                 redirections[target_file] = line_number
@@ -482,17 +531,19 @@ class CommandSubstitutionAssignmentRule(ShellValidationRule):
         # Pattern for declare/local with command substitution
         self.patterns = [
             # local var=$(command)
-            re.compile(r'(local\s+\w+)=\$\(([^)]+)\)'),
+            re.compile(r"(local\s+\w+)=\$\(([^)]+)\)"),
             # declare var=$(command)
-            re.compile(r'(declare\s+(?:-[a-zA-Z]+\s+)?\w+)=\$\(([^)]+)\)'),
+            re.compile(r"(declare\s+(?:-[a-zA-Z]+\s+)?\w+)=\$\(([^)]+)\)"),
             # readonly var=$(command)
-            re.compile(r'(readonly\s+\w+)=\$\(([^)]+)\)'),
+            re.compile(r"(readonly\s+\w+)=\$\(([^)]+)\)"),
         ]
 
-    def check(self, line: str, line_number: int, context: dict[str, Any]) -> list[ValidationIssue]:
+    def check(
+        self, line: str, line_number: int, context: dict[str, Any]
+    ) -> list[ValidationIssue]:
         issues = []
 
-        if line.strip().startswith('#'):
+        if line.strip().startswith("#"):
             return issues
 
         for pattern in self.patterns:
@@ -501,7 +552,7 @@ class CommandSubstitutionAssignmentRule(ShellValidationRule):
                 command = match.group(2)
 
                 # Extract variable name
-                var_match = re.search(r'(\w+)$', declaration)
+                var_match = re.search(r"(\w+)$", declaration)
                 if var_match:
                     var_name = var_match.group(1)
 
@@ -509,17 +560,19 @@ class CommandSubstitutionAssignmentRule(ShellValidationRule):
                     declaration_only = declaration.replace(var_name, var_name)
                     suggested_fix = f"{declaration_only}\n{var_name}=$({command})"
 
-                    issues.append(ValidationIssue(
-                        rule_id=self.rule_id,
-                        severity=self.severity,
-                        line_number=line_number,
-                        column=match.start(),
-                        message="SC2155: Declare and assign separately to avoid masking return values",
-                        original_code=line.strip(),
-                        suggested_fix=suggested_fix,
-                        fix_explanation=f"Split declaration and assignment of {var_name} to preserve command exit status",
-                        rule_category=self.category
-                    ))
+                    issues.append(
+                        ValidationIssue(
+                            rule_id=self.rule_id,
+                            severity=self.severity,
+                            line_number=line_number,
+                            column=match.start(),
+                            message="SC2155: Declare and assign separately to avoid masking return values",
+                            original_code=line.strip(),
+                            suggested_fix=suggested_fix,
+                            fix_explanation=f"Split declaration and assignment of {var_name} to preserve command exit status",
+                            rule_category=self.category,
+                        )
+                    )
 
         return issues
 
@@ -532,21 +585,23 @@ class UselessCatRule(ShellValidationRule):
         # Patterns for useless cat usage
         self.patterns = [
             # cat file | grep
-            re.compile(r'cat\s+([^\s|]+)\s*\|\s*grep'),
+            re.compile(r"cat\s+([^\s|]+)\s*\|\s*grep"),
             # cat file | head/tail
-            re.compile(r'cat\s+([^\s|]+)\s*\|\s*(?:head|tail)'),
+            re.compile(r"cat\s+([^\s|]+)\s*\|\s*(?:head|tail)"),
             # cat file | wc
-            re.compile(r'cat\s+([^\s|]+)\s*\|\s*wc'),
+            re.compile(r"cat\s+([^\s|]+)\s*\|\s*wc"),
             # cat file | awk
-            re.compile(r'cat\s+([^\s|]+)\s*\|\s*awk'),
+            re.compile(r"cat\s+([^\s|]+)\s*\|\s*awk"),
             # cat file | sed
-            re.compile(r'cat\s+([^\s|]+)\s*\|\s*sed'),
+            re.compile(r"cat\s+([^\s|]+)\s*\|\s*sed"),
         ]
 
-    def check(self, line: str, line_number: int, context: dict[str, Any]) -> list[ValidationIssue]:
+    def check(
+        self, line: str, line_number: int, context: dict[str, Any]
+    ) -> list[ValidationIssue]:
         issues = []
 
-        if line.strip().startswith('#'):
+        if line.strip().startswith("#"):
             return issues
 
         for pattern in self.patterns:
@@ -554,31 +609,39 @@ class UselessCatRule(ShellValidationRule):
                 filename = match.group(1)
 
                 # Find the pipe character position
-                pipe_pos = line.find('|')
+                pipe_pos = line.find("|")
                 if pipe_pos != -1:
-                    command_after_pipe_full = line[pipe_pos+1:].strip()
+                    command_after_pipe_full = line[pipe_pos + 1 :].strip()
                     command_parts = command_after_pipe_full.split()
                     if command_parts:
                         command_after_pipe = command_parts[0]
-                        command_args = ' '.join(command_parts[1:]) if len(command_parts) > 1 else ''
+                        command_args = (
+                            " ".join(command_parts[1:])
+                            if len(command_parts) > 1
+                            else ""
+                        )
 
                         # Create suggested fix by removing cat and pipe
                         if command_args:
-                            suggested_fix = f"{command_after_pipe} {filename} {command_args}"
+                            suggested_fix = (
+                                f"{command_after_pipe} {filename} {command_args}"
+                            )
                         else:
                             suggested_fix = f"{command_after_pipe} {filename}"
 
-                        issues.append(ValidationIssue(
-                            rule_id=self.rule_id,
-                            severity=self.severity,
-                            line_number=line_number,
-                            column=match.start(),
-                            message=f"Useless use of cat. {command_after_pipe} can read the file directly",
-                            original_code=line.strip(),
-                            suggested_fix=suggested_fix.strip(),
-                            fix_explanation="Most commands can read files directly without cat. This is more efficient.",
-                            rule_category=self.category
-                        ))
+                        issues.append(
+                            ValidationIssue(
+                                rule_id=self.rule_id,
+                                severity=self.severity,
+                                line_number=line_number,
+                                column=match.start(),
+                                message=f"Useless use of cat. {command_after_pipe} can read the file directly",
+                                original_code=line.strip(),
+                                suggested_fix=suggested_fix.strip(),
+                                fix_explanation="Most commands can read files directly without cat. This is more efficient.",
+                                rule_category=self.category,
+                            )
+                        )
 
         return issues
 
@@ -588,11 +651,11 @@ class AutoFixer:
 
     def __init__(self):
         self.safe_transformations = {
-            'SV001': self._fix_unquoted_variables,
-            'SV004': self._fix_command_substitution,
-            'SV008': self._fix_enhanced_unquoted_variables,
-            'SV009': self._fix_multiple_redirects,
-            'SV011': self._fix_useless_cat,
+            "SV001": self._fix_unquoted_variables,
+            "SV004": self._fix_command_substitution,
+            "SV008": self._fix_enhanced_unquoted_variables,
+            "SV009": self._fix_multiple_redirects,
+            "SV011": self._fix_useless_cat,
         }
 
     def can_auto_fix(self, issue: ValidationIssue) -> bool:
@@ -610,7 +673,7 @@ class AutoFixer:
             fix_func = self.safe_transformations[issue.rule_id]
             lines[issue.line_number - 1] = fix_func(lines[issue.line_number - 1], issue)
 
-        return '\n'.join(lines)
+        return "\n".join(lines)
 
     def _fix_unquoted_variables(self, line: str, issue: ValidationIssue) -> str:
         """Fix unquoted variables by adding quotes"""
@@ -623,7 +686,9 @@ class AutoFixer:
         """Fix backticks to $() syntax"""
         return issue.suggested_fix if issue.suggested_fix != line else line
 
-    def _fix_enhanced_unquoted_variables(self, line: str, issue: ValidationIssue) -> str:
+    def _fix_enhanced_unquoted_variables(
+        self, line: str, issue: ValidationIssue
+    ) -> str:
         """Fix enhanced unquoted variables"""
         return issue.suggested_fix if issue.suggested_fix != line else line
 
@@ -635,7 +700,9 @@ class AutoFixer:
         """Fix useless cat usage"""
         return issue.suggested_fix if issue.suggested_fix != line else line
 
-    def apply_all_fixes(self, content: str, issues: list[ValidationIssue]) -> tuple[str, int]:
+    def apply_all_fixes(
+        self, content: str, issues: list[ValidationIssue]
+    ) -> tuple[str, int]:
         """Apply all possible automatic fixes"""
         fixed_content = content
         fixes_applied = 0
@@ -644,7 +711,7 @@ class AutoFixer:
         sorted_issues = sorted(
             [issue for issue in issues if self.can_auto_fix(issue)],
             key=lambda x: x.line_number,
-            reverse=True
+            reverse=True,
         )
 
         for issue in sorted_issues:
@@ -667,10 +734,10 @@ class ShellValidator:
 
         # Performance tracking
         self.validation_stats = {
-            'total_files': 0,
-            'total_lines': 0,
-            'total_time_ms': 0,
-            'avg_time_per_file_ms': 0
+            "total_files": 0,
+            "total_lines": 0,
+            "total_time_ms": 0,
+            "avg_time_per_file_ms": 0,
         }
 
     def _setup_default_rules(self):
@@ -702,25 +769,27 @@ class ShellValidator:
         start_time = time.time()
 
         try:
-            with open(file_path, encoding='utf-8') as f:
+            with open(file_path, encoding="utf-8") as f:
                 lines = f.readlines()
         except Exception as e:
             return ValidationResult(
                 file_path=file_path,
-                issues=[ValidationIssue(
-                    rule_id="SV000",
-                    severity=Severity.CRITICAL,
-                    line_number=0,
-                    column=0,
-                    message=f"Failed to read file: {e!s}",
-                    original_code="",
-                    suggested_fix="Check file permissions and encoding",
-                    fix_explanation="Ensure the file is readable and uses UTF-8 encoding",
-                    rule_category="file_access"
-                )],
+                issues=[
+                    ValidationIssue(
+                        rule_id="SV000",
+                        severity=Severity.CRITICAL,
+                        line_number=0,
+                        column=0,
+                        message=f"Failed to read file: {e!s}",
+                        original_code="",
+                        suggested_fix="Check file permissions and encoding",
+                        fix_explanation="Ensure the file is readable and uses UTF-8 encoding",
+                        rule_category="file_access",
+                    )
+                ],
                 execution_time_ms=0,
                 total_lines=0,
-                lines_checked=0
+                lines_checked=0,
             )
 
         all_issues = []
@@ -729,7 +798,9 @@ class ShellValidator:
 
         for line_number, line in enumerate(lines, 1):
             # Skip empty lines and comments for performance
-            if self.enable_performance_mode and (not line.strip() or line.strip().startswith('#')):
+            if self.enable_performance_mode and (
+                not line.strip() or line.strip().startswith("#")
+            ):
                 continue
 
             lines_checked += 1
@@ -741,16 +812,19 @@ class ShellValidator:
                     all_issues.extend(issues)
                 except Exception as e:
                     # Log rule execution errors but continue
-                    logging.warning(f"Rule {rule.rule_id} failed on line {line_number}: {e!s}")
+                    logging.warning(
+                        f"Rule {rule.rule_id} failed on line {line_number}: {e!s}"
+                    )
 
         execution_time = (time.time() - start_time) * 1000
 
         # Update performance stats
-        self.validation_stats['total_files'] += 1
-        self.validation_stats['total_lines'] += len(lines)
-        self.validation_stats['total_time_ms'] += execution_time
-        self.validation_stats['avg_time_per_file_ms'] = (
-            self.validation_stats['total_time_ms'] / self.validation_stats['total_files']
+        self.validation_stats["total_files"] += 1
+        self.validation_stats["total_lines"] += len(lines)
+        self.validation_stats["total_time_ms"] += execution_time
+        self.validation_stats["avg_time_per_file_ms"] = (
+            self.validation_stats["total_time_ms"]
+            / self.validation_stats["total_files"]
         )
 
         return ValidationResult(
@@ -758,10 +832,12 @@ class ShellValidator:
             issues=all_issues,
             execution_time_ms=execution_time,
             total_lines=len(lines),
-            lines_checked=lines_checked
+            lines_checked=lines_checked,
         )
 
-    def validate_content(self, content: str, file_path: str = "stdin") -> ValidationResult:
+    def validate_content(
+        self, content: str, file_path: str = "stdin"
+    ) -> ValidationResult:
         """Validate shell script content directly"""
         start_time = time.time()
 
@@ -771,7 +847,9 @@ class ShellValidator:
         lines_checked = 0
 
         for line_number, line in enumerate(lines, 1):
-            if self.enable_performance_mode and (not line.strip() or line.strip().startswith('#')):
+            if self.enable_performance_mode and (
+                not line.strip() or line.strip().startswith("#")
+            ):
                 continue
 
             lines_checked += 1
@@ -781,7 +859,9 @@ class ShellValidator:
                     issues = rule.check(line, line_number, context)
                     all_issues.extend(issues)
                 except Exception as e:
-                    logging.warning(f"Rule {rule.rule_id} failed on line {line_number}: {e!s}")
+                    logging.warning(
+                        f"Rule {rule.rule_id} failed on line {line_number}: {e!s}"
+                    )
 
         execution_time = (time.time() - start_time) * 1000
 
@@ -790,13 +870,15 @@ class ShellValidator:
             issues=all_issues,
             execution_time_ms=execution_time,
             total_lines=len(lines),
-            lines_checked=lines_checked
+            lines_checked=lines_checked,
         )
 
-    def validate_directory(self, directory_path: str, patterns: list[str] = None) -> list[ValidationResult]:
+    def validate_directory(
+        self, directory_path: str, patterns: list[str] = None
+    ) -> list[ValidationResult]:
         """Validate all shell scripts in a directory"""
         if patterns is None:
-            patterns = ['*.sh', '*.bash']
+            patterns = ["*.sh", "*.bash"]
 
         results = []
         directory = Path(directory_path)
@@ -809,34 +891,42 @@ class ShellValidator:
 
         return results
 
-    def auto_fix_content(self, content: str, file_path: str = "stdin") -> tuple[str, int, ValidationResult]:
+    def auto_fix_content(
+        self, content: str, file_path: str = "stdin"
+    ) -> tuple[str, int, ValidationResult]:
         """Apply automatic fixes to content and return fixed content, fixes count, and validation result"""
         # First validate to get issues
         result = self.validate_content(content, file_path)
 
         # Apply auto-fixes
-        fixed_content, fixes_applied = self.auto_fixer.apply_all_fixes(content, result.issues)
+        fixed_content, fixes_applied = self.auto_fixer.apply_all_fixes(
+            content, result.issues
+        )
 
         return fixed_content, fixes_applied, result
 
-    def auto_fix_file(self, file_path: str, backup: bool = True) -> tuple[bool, int, ValidationResult]:
+    def auto_fix_file(
+        self, file_path: str, backup: bool = True
+    ) -> tuple[bool, int, ValidationResult]:
         """Auto-fix a file in place with optional backup"""
         try:
-            with open(file_path, encoding='utf-8') as f:
+            with open(file_path, encoding="utf-8") as f:
                 original_content = f.read()
         except Exception as e:
             logging.error(f"Failed to read file {file_path}: {e}")
             return False, 0, ValidationResult(file_path, [], 0, 0, 0)
 
         # Apply fixes
-        fixed_content, fixes_applied, validation_result = self.auto_fix_content(original_content, file_path)
+        fixed_content, fixes_applied, validation_result = self.auto_fix_content(
+            original_content, file_path
+        )
 
         if fixes_applied > 0:
             # Create backup if requested
             if backup:
                 backup_path = f"{file_path}.shell-validator.backup"
                 try:
-                    with open(backup_path, 'w', encoding='utf-8') as f:
+                    with open(backup_path, "w", encoding="utf-8") as f:
                         f.write(original_content)
                     logging.info(f"Created backup: {backup_path}")
                 except Exception as e:
@@ -844,7 +934,7 @@ class ShellValidator:
 
             # Write fixed content
             try:
-                with open(file_path, 'w', encoding='utf-8') as f:
+                with open(file_path, "w", encoding="utf-8") as f:
                     f.write(fixed_content)
                 logging.info(f"Applied {fixes_applied} fixes to {file_path}")
                 return True, fixes_applied, validation_result
@@ -854,7 +944,9 @@ class ShellValidator:
 
         return False, 0, validation_result
 
-    def generate_report(self, results: list[ValidationResult], output_format: str = "json") -> str:
+    def generate_report(
+        self, results: list[ValidationResult], output_format: str = "json"
+    ) -> str:
         """Generate a comprehensive validation report"""
         if output_format == "json":
             return self._generate_json_report(results)
@@ -872,13 +964,22 @@ class ShellValidator:
                 "validator_version": "1.0.0",
                 "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
                 "total_files": len(results),
-                "performance_stats": self.validation_stats
+                "performance_stats": self.validation_stats,
             },
             "summary": {
                 "total_issues": sum(len(result.issues) for result in results),
-                "critical_issues": sum(1 for result in results if result.has_critical_issues),
-                "files_with_warnings": sum(1 for result in results if result.has_warnings),
-                "avg_execution_time_ms": sum(result.execution_time_ms for result in results) / len(results) if results else 0
+                "critical_issues": sum(
+                    1 for result in results if result.has_critical_issues
+                ),
+                "files_with_warnings": sum(
+                    1 for result in results if result.has_warnings
+                ),
+                "avg_execution_time_ms": sum(
+                    result.execution_time_ms for result in results
+                )
+                / len(results)
+                if results
+                else 0,
             },
             "results": [
                 {
@@ -887,10 +988,10 @@ class ShellValidator:
                     "total_lines": result.total_lines,
                     "lines_checked": result.lines_checked,
                     "issue_count_by_severity": result.issue_count_by_severity,
-                    "issues": [asdict(issue) for issue in result.issues]
+                    "issues": [asdict(issue) for issue in result.issues],
                 }
                 for result in results
-            ]
+            ],
         }
 
         return json.dumps(report_data, indent=2, default=str)
@@ -948,7 +1049,7 @@ class ShellValidator:
             </div>
             <div class="metric">
                 <h3>Avg Time (ms)</h3>
-                <div class="value">{self.validation_stats['avg_time_per_file_ms']:.1f}</div>
+                <div class="value">{self.validation_stats["avg_time_per_file_ms"]:.1f}</div>
             </div>
         </div>
         
@@ -990,36 +1091,44 @@ class ShellValidator:
         total_issues = sum(len(result.issues) for result in results)
         critical_count = sum(1 for result in results if result.has_critical_issues)
 
-        report.extend([
-            "📊 Summary:",
-            f"  Total Files: {len(results)}",
-            f"  Total Issues: {total_issues}",
-            f"  Critical Issues: {critical_count}",
-            f"  Average Execution Time: {self.validation_stats['avg_time_per_file_ms']:.1f}ms",
-            ""
-        ])
+        report.extend(
+            [
+                "📊 Summary:",
+                f"  Total Files: {len(results)}",
+                f"  Total Issues: {total_issues}",
+                f"  Critical Issues: {critical_count}",
+                f"  Average Execution Time: {self.validation_stats['avg_time_per_file_ms']:.1f}ms",
+                "",
+            ]
+        )
 
         for result in results:
             if not result.issues:
                 continue
 
-            report.extend([
-                f"📄 {result.file_path}",
-                f"   Execution Time: {result.execution_time_ms:.1f}ms",
-                f"   Lines Checked: {result.lines_checked}/{result.total_lines}",
-                f"   Issues Found: {len(result.issues)}",
-                ""
-            ])
+            report.extend(
+                [
+                    f"📄 {result.file_path}",
+                    f"   Execution Time: {result.execution_time_ms:.1f}ms",
+                    f"   Lines Checked: {result.lines_checked}/{result.total_lines}",
+                    f"   Issues Found: {len(result.issues)}",
+                    "",
+                ]
+            )
 
             for issue in result.issues:
-                severity_icon = {"critical": "🚨", "warning": "⚠️", "info": "ℹ️"}[issue.severity.value]
-                report.extend([
-                    f"   {severity_icon} {issue.rule_id}: {issue.message}",
-                    f"      Line {issue.line_number}: {issue.original_code}",
-                    f"      Fix: {issue.suggested_fix}",
-                    f"      Explanation: {issue.fix_explanation}",
-                    ""
-                ])
+                severity_icon = {"critical": "🚨", "warning": "⚠️", "info": "ℹ️"}[
+                    issue.severity.value
+                ]
+                report.extend(
+                    [
+                        f"   {severity_icon} {issue.rule_id}: {issue.message}",
+                        f"      Line {issue.line_number}: {issue.original_code}",
+                        f"      Fix: {issue.suggested_fix}",
+                        f"      Explanation: {issue.fix_explanation}",
+                        "",
+                    ]
+                )
 
         return "\n".join(report)
 
@@ -1036,28 +1145,41 @@ Examples:
   %(prog)s --stdin < script.sh          # Validate from stdin
   %(prog)s script.sh --format html      # Generate HTML report
   %(prog)s --directory . --git-hook     # Use as git pre-commit hook
-        """
+        """,
     )
 
-    parser.add_argument('files', nargs='*', help='Shell script files to validate')
-    parser.add_argument('--directory', '-d', help='Directory to scan for shell scripts')
-    parser.add_argument('--stdin', action='store_true', help='Read script content from stdin')
-    parser.add_argument('--format', choices=['json', 'html', 'text'], default='text',
-                       help='Output format (default: text)')
-    parser.add_argument('--output', '-o', help='Output file (default: stdout)')
-    parser.add_argument('--git-hook', action='store_true',
-                       help='Enable git hook mode (exit with non-zero on critical issues)')
-    parser.add_argument('--performance', action='store_true', default=True,
-                       help='Enable performance mode (default: enabled)')
-    parser.add_argument('--exclude-rules', nargs='+', help='Rule IDs to exclude')
-    parser.add_argument('--only-rules', nargs='+', help='Only run specified rule IDs')
-    parser.add_argument('--verbose', '-v', action='store_true', help='Verbose output')
+    parser.add_argument("files", nargs="*", help="Shell script files to validate")
+    parser.add_argument("--directory", "-d", help="Directory to scan for shell scripts")
+    parser.add_argument(
+        "--stdin", action="store_true", help="Read script content from stdin"
+    )
+    parser.add_argument(
+        "--format",
+        choices=["json", "html", "text"],
+        default="text",
+        help="Output format (default: text)",
+    )
+    parser.add_argument("--output", "-o", help="Output file (default: stdout)")
+    parser.add_argument(
+        "--git-hook",
+        action="store_true",
+        help="Enable git hook mode (exit with non-zero on critical issues)",
+    )
+    parser.add_argument(
+        "--performance",
+        action="store_true",
+        default=True,
+        help="Enable performance mode (default: enabled)",
+    )
+    parser.add_argument("--exclude-rules", nargs="+", help="Rule IDs to exclude")
+    parser.add_argument("--only-rules", nargs="+", help="Only run specified rule IDs")
+    parser.add_argument("--verbose", "-v", action="store_true", help="Verbose output")
 
     args = parser.parse_args()
 
     # Setup logging
     log_level = logging.INFO if args.verbose else logging.WARNING
-    logging.basicConfig(level=log_level, format='%(levelname)s: %(message)s')
+    logging.basicConfig(level=log_level, format="%(levelname)s: %(message)s")
 
     # Initialize validator
     validator = ShellValidator(enable_performance_mode=args.performance)
@@ -1068,7 +1190,9 @@ Examples:
             validator.remove_rule(rule_id)
 
     if args.only_rules:
-        validator.rules = [rule for rule in validator.rules if rule.rule_id in args.only_rules]
+        validator.rules = [
+            rule for rule in validator.rules if rule.rule_id in args.only_rules
+        ]
 
     # Collect validation results
     results = []
@@ -1091,7 +1215,7 @@ Examples:
 
     # Output report
     if args.output:
-        with open(args.output, 'w') as f:
+        with open(args.output, "w") as f:
             f.write(report)
         print(f"Report written to {args.output}")
     else:
@@ -1112,4 +1236,5 @@ Examples:
 
 if __name__ == "__main__":
     import sys
+
     sys.exit(main())

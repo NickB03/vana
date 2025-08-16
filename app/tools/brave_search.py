@@ -27,14 +27,14 @@ async def get_http_session() -> aiohttp.ClientSession:
             ttl_dns_cache=300,  # DNS cache TTL in seconds
             use_dns_cache=True,
             keepalive_timeout=30,  # Keep connections alive for 30 seconds
-            enable_cleanup_closed=True
+            enable_cleanup_closed=True,
         )
 
         # Configure timeout settings
         timeout = aiohttp.ClientTimeout(
             total=30,  # Total timeout
             connect=10,  # Connection timeout
-            sock_read=20  # Socket read timeout
+            sock_read=20,  # Socket read timeout
         )
 
         _http_session = aiohttp.ClientSession(
@@ -43,8 +43,8 @@ async def get_http_session() -> aiohttp.ClientSession:
             headers={
                 "User-Agent": "Vana-ADK/1.0",
                 "Accept": "application/json",
-                "Accept-Encoding": "gzip, deflate"
-            }
+                "Accept-Encoding": "gzip, deflate",
+            },
         )
 
         logger.info("Created new HTTP session with connection pooling")
@@ -63,17 +63,15 @@ async def cleanup_http_session():
 
 
 async def brave_web_search_async(
-    query: str,
-    count: int = 5,
-    **kwargs
+    query: str, count: int = 5, **kwargs
 ) -> dict[str, Any]:
     """
     Async version of Brave Search API.
-    
+
     Args:
         query: Search query string
         count: Number of results to return (default: 5, max: 20)
-    
+
     Returns:
         Dictionary containing search results
     """
@@ -91,58 +89,48 @@ async def brave_web_search_async(
 
         # Perform async search
         base_url = "https://api.search.brave.com/res/v1"
-        headers = {
-            "X-Subscription-Token": api_key
-        }
+        headers = {"X-Subscription-Token": api_key}
 
         params = {
             "q": query,
             "count": count,
             "text_decorations": False,
-            "search_lang": "en"
+            "search_lang": "en",
         }
 
-        async with session.get(f"{base_url}/web/search", headers=headers, params=params) as response:
+        async with session.get(
+            f"{base_url}/web/search", headers=headers, params=params
+        ) as response:
             response.raise_for_status()
             data = await response.json()
 
         # Format results for ADK
         formatted_results = []
         for item in data.get("web", {}).get("results", []):
-            formatted_results.append({
-                "title": item.get("title", ""),
-                "link": item.get("url", ""),
-                "snippet": item.get("description", "")
-            })
+            formatted_results.append(
+                {
+                    "title": item.get("title", ""),
+                    "link": item.get("url", ""),
+                    "snippet": item.get("description", ""),
+                }
+            )
 
-        return {
-            "results": formatted_results,
-            "query": query,
-            "source": "brave_search"
-        }
+        return {"results": formatted_results, "query": query, "source": "brave_search"}
 
     except Exception as e:
         logger.error(f"Brave async search error: {e}")
-        return {
-            "error": str(e),
-            "query": query,
-            "results": []
-        }
+        return {"error": str(e), "query": query, "results": []}
 
 
 # Create the Brave search function - synchronous version for ADK compatibility
-def brave_web_search_function(
-    query: str,
-    count: int = 5,
-    **kwargs
-) -> dict[str, Any]:
+def brave_web_search_function(query: str, count: int = 5, **kwargs) -> dict[str, Any]:
     """
     Search the web using Brave Search API (sync wrapper for async implementation).
-    
+
     Args:
         query: Search query string
         count: Number of results to return (default: 5, max: 20)
-    
+
     Returns:
         Dictionary containing search results
     """
@@ -158,7 +146,9 @@ def brave_web_search_function(
                 new_loop = asyncio.new_event_loop()
                 asyncio.set_event_loop(new_loop)
                 try:
-                    return new_loop.run_until_complete(brave_web_search_async(query, count, **kwargs))
+                    return new_loop.run_until_complete(
+                        brave_web_search_async(query, count, **kwargs)
+                    )
                 finally:
                     new_loop.close()
 
@@ -172,11 +162,7 @@ def brave_web_search_function(
 
     except Exception as e:
         logger.error(f"Brave search wrapper error: {e}")
-        return {
-            "error": str(e),
-            "query": query,
-            "results": []
-        }
+        return {"error": str(e), "query": query, "results": []}
 
 
 # Create ADK tool directly from the synchronous function

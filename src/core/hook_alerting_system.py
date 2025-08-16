@@ -23,6 +23,7 @@ from typing import Any
 try:
     from email.mime.multipart import MimeMultipart
     from email.mime.text import MimeText
+
     EMAIL_AVAILABLE = True
 except ImportError:
     EMAIL_AVAILABLE = False
@@ -35,6 +36,7 @@ import requests
 
 class AlertSeverity(Enum):
     """Alert severity levels"""
+
     INFO = "info"
     WARNING = "warning"
     CRITICAL = "critical"
@@ -43,6 +45,7 @@ class AlertSeverity(Enum):
 
 class AlertStatus(Enum):
     """Alert status"""
+
     ACTIVE = "active"
     ACKNOWLEDGED = "acknowledged"
     RESOLVED = "resolved"
@@ -51,6 +54,7 @@ class AlertStatus(Enum):
 
 class NotificationChannel(Enum):
     """Available notification channels"""
+
     LOG = "log"
     FILE = "file"
     EMAIL = "email"
@@ -63,6 +67,7 @@ class NotificationChannel(Enum):
 @dataclass
 class Alert:
     """Alert data structure"""
+
     id: str
     name: str
     severity: AlertSeverity
@@ -86,6 +91,7 @@ class Alert:
 @dataclass
 class NotificationTarget:
     """Notification target configuration"""
+
     channel: NotificationChannel
     config: dict[str, Any]
     enabled: bool = True
@@ -99,6 +105,7 @@ class NotificationTarget:
 @dataclass
 class MetricThreshold:
     """Metric threshold configuration"""
+
     name: str
     metric_name: str
     operator: str  # >, <, >=, <=, ==, !=
@@ -204,18 +211,24 @@ class AlertManager:
             NotificationTarget(
                 channel=NotificationChannel.LOG,
                 config={},
-                severity_filter=[AlertSeverity.WARNING, AlertSeverity.CRITICAL, AlertSeverity.EMERGENCY]
+                severity_filter=[
+                    AlertSeverity.WARNING,
+                    AlertSeverity.CRITICAL,
+                    AlertSeverity.EMERGENCY,
+                ],
             ),
             NotificationTarget(
                 channel=NotificationChannel.FILE,
-                config={"file_path": str(Path.cwd() / ".claude_workspace" / "alerts.log")},
-                severity_filter=list(AlertSeverity)
+                config={
+                    "file_path": str(Path.cwd() / ".claude_workspace" / "alerts.log")
+                },
+                severity_filter=list(AlertSeverity),
             ),
             NotificationTarget(
                 channel=NotificationChannel.CONSOLE,
                 config={},
-                severity_filter=[AlertSeverity.CRITICAL, AlertSeverity.EMERGENCY]
-            )
+                severity_filter=[AlertSeverity.CRITICAL, AlertSeverity.EMERGENCY],
+            ),
         ]
 
         # Default metric thresholds
@@ -226,7 +239,7 @@ class AlertManager:
                 operator=">=",
                 threshold_value=0.2,
                 duration_minutes=5,
-                severity=AlertSeverity.WARNING
+                severity=AlertSeverity.WARNING,
             ),
             MetricThreshold(
                 name="critical_error_rate",
@@ -234,7 +247,7 @@ class AlertManager:
                 operator=">=",
                 threshold_value=0.5,
                 duration_minutes=2,
-                severity=AlertSeverity.CRITICAL
+                severity=AlertSeverity.CRITICAL,
             ),
             MetricThreshold(
                 name="slow_execution",
@@ -242,7 +255,7 @@ class AlertManager:
                 operator=">=",
                 threshold_value=5000.0,
                 duration_minutes=5,
-                severity=AlertSeverity.WARNING
+                severity=AlertSeverity.WARNING,
             ),
             MetricThreshold(
                 name="high_memory_usage",
@@ -250,7 +263,7 @@ class AlertManager:
                 operator=">=",
                 threshold_value=500.0,
                 duration_minutes=10,
-                severity=AlertSeverity.WARNING
+                severity=AlertSeverity.WARNING,
             ),
             MetricThreshold(
                 name="system_emergency",
@@ -258,8 +271,8 @@ class AlertManager:
                 operator=">=",
                 threshold_value=10.0,
                 duration_minutes=1,
-                severity=AlertSeverity.EMERGENCY
-            )
+                severity=AlertSeverity.EMERGENCY,
+            ),
         ]
 
     def add_notification_target(self, target: NotificationTarget):
@@ -267,10 +280,16 @@ class AlertManager:
         self.notification_targets.append(target)
         self.logger.info(f"Added notification target: {target.channel.value}")
 
-    def configure_email_notifications(self, smtp_host: str, smtp_port: int,
-                                    username: str, password: str,
-                                    from_email: str, to_emails: list[str],
-                                    severity_filter: list[AlertSeverity] = None):
+    def configure_email_notifications(
+        self,
+        smtp_host: str,
+        smtp_port: int,
+        username: str,
+        password: str,
+        from_email: str,
+        to_emails: list[str],
+        severity_filter: list[AlertSeverity] = None,
+    ):
         """Configure email notifications"""
         email_target = NotificationTarget(
             channel=NotificationChannel.EMAIL,
@@ -281,31 +300,35 @@ class AlertManager:
                 "password": password,
                 "from_email": from_email,
                 "to_emails": to_emails,
-                "use_tls": True
+                "use_tls": True,
             },
-            severity_filter=severity_filter or [AlertSeverity.CRITICAL, AlertSeverity.EMERGENCY]
+            severity_filter=severity_filter
+            or [AlertSeverity.CRITICAL, AlertSeverity.EMERGENCY],
         )
         self.add_notification_target(email_target)
 
-    def configure_webhook_notifications(self, webhook_url: str,
-                                      headers: dict[str, str] = None,
-                                      severity_filter: list[AlertSeverity] = None):
+    def configure_webhook_notifications(
+        self,
+        webhook_url: str,
+        headers: dict[str, str] = None,
+        severity_filter: list[AlertSeverity] = None,
+    ):
         """Configure webhook notifications"""
         webhook_target = NotificationTarget(
             channel=NotificationChannel.WEBHOOK,
-            config={
-                "url": webhook_url,
-                "headers": headers or {},
-                "timeout": 30
-            },
-            severity_filter=severity_filter or [AlertSeverity.WARNING, AlertSeverity.CRITICAL, AlertSeverity.EMERGENCY]
+            config={"url": webhook_url, "headers": headers or {}, "timeout": 30},
+            severity_filter=severity_filter
+            or [AlertSeverity.WARNING, AlertSeverity.CRITICAL, AlertSeverity.EMERGENCY],
         )
         self.add_notification_target(webhook_target)
 
-    def configure_slack_notifications(self, webhook_url: str,
-                                    channel: str = "#alerts",
-                                    username: str = "Hook Safety Bot",
-                                    severity_filter: list[AlertSeverity] = None):
+    def configure_slack_notifications(
+        self,
+        webhook_url: str,
+        channel: str = "#alerts",
+        username: str = "Hook Safety Bot",
+        severity_filter: list[AlertSeverity] = None,
+    ):
         """Configure Slack notifications"""
         slack_target = NotificationTarget(
             channel=NotificationChannel.SLACK,
@@ -313,15 +336,21 @@ class AlertManager:
                 "webhook_url": webhook_url,
                 "channel": channel,
                 "username": username,
-                "icon_emoji": ":warning:"
+                "icon_emoji": ":warning:",
             },
-            severity_filter=severity_filter or [AlertSeverity.CRITICAL, AlertSeverity.EMERGENCY]
+            severity_filter=severity_filter
+            or [AlertSeverity.CRITICAL, AlertSeverity.EMERGENCY],
         )
         self.add_notification_target(slack_target)
 
-    async def trigger_alert(self, name: str, severity: AlertSeverity,
-                          message: str, details: dict[str, Any] = None,
-                          tags: list[str] = None) -> str:
+    async def trigger_alert(
+        self,
+        name: str,
+        severity: AlertSeverity,
+        message: str,
+        details: dict[str, Any] = None,
+        tags: list[str] = None,
+    ) -> str:
         """Trigger a new alert"""
 
         # Generate alert ID
@@ -351,7 +380,7 @@ class AlertManager:
                 details=details or {},
                 triggered_at=datetime.now(),
                 last_updated=datetime.now(),
-                tags=tags or []
+                tags=tags or [],
             )
 
             self.active_alerts[alert_id] = alert
@@ -371,9 +400,11 @@ class AlertManager:
     def _find_similar_alert(self, name: str, severity: AlertSeverity) -> Alert | None:
         """Find similar active alert"""
         for alert in self.active_alerts.values():
-            if (alert.name == name and
-                alert.severity == severity and
-                alert.status == AlertStatus.ACTIVE):
+            if (
+                alert.name == name
+                and alert.severity == severity
+                and alert.status == AlertStatus.ACTIVE
+            ):
                 return alert
         return None
 
@@ -383,8 +414,10 @@ class AlertManager:
         window_start = now - self.rate_limit_window
 
         # Clean old entries
-        while (self.rate_limiter[alert_name] and
-               self.rate_limiter[alert_name][0] < window_start):
+        while (
+            self.rate_limiter[alert_name]
+            and self.rate_limiter[alert_name][0] < window_start
+        ):
             self.rate_limiter[alert_name].popleft()
 
         # Check rate limit
@@ -401,22 +434,35 @@ class AlertManager:
             conn = sqlite3.connect(self.db_path)
             cursor = conn.cursor()
 
-            cursor.execute("""
+            cursor.execute(
+                """
                 INSERT OR REPLACE INTO alerts 
                 (id, name, severity, status, message, details, triggered_at, 
                  last_updated, count, acknowledged_by, acknowledged_at, 
                  resolved_at, suppressed_until, tags)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """, (
-                alert.id, alert.name, alert.severity.value, alert.status.value,
-                alert.message, json.dumps(alert.details),
-                alert.triggered_at.isoformat(), alert.last_updated.isoformat(),
-                alert.count, alert.acknowledged_by,
-                alert.acknowledged_at.isoformat() if alert.acknowledged_at else None,
-                alert.resolved_at.isoformat() if alert.resolved_at else None,
-                alert.suppressed_until.isoformat() if alert.suppressed_until else None,
-                json.dumps(alert.tags)
-            ))
+            """,
+                (
+                    alert.id,
+                    alert.name,
+                    alert.severity.value,
+                    alert.status.value,
+                    alert.message,
+                    json.dumps(alert.details),
+                    alert.triggered_at.isoformat(),
+                    alert.last_updated.isoformat(),
+                    alert.count,
+                    alert.acknowledged_by,
+                    alert.acknowledged_at.isoformat()
+                    if alert.acknowledged_at
+                    else None,
+                    alert.resolved_at.isoformat() if alert.resolved_at else None,
+                    alert.suppressed_until.isoformat()
+                    if alert.suppressed_until
+                    else None,
+                    json.dumps(alert.tags),
+                ),
+            )
 
             conn.commit()
             conn.close()
@@ -427,13 +473,13 @@ class AlertManager:
     async def _send_notifications(self, alert: Alert):
         """Send notifications for alert"""
         for target in self.notification_targets:
-            if (target.enabled and
-                alert.severity in target.severity_filter):
-
+            if target.enabled and alert.severity in target.severity_filter:
                 try:
                     await self._send_notification(alert, target)
                 except Exception as e:
-                    self.logger.error(f"Notification failed for {target.channel.value}: {e}")
+                    self.logger.error(
+                        f"Notification failed for {target.channel.value}: {e}"
+                    )
 
     async def _send_notification(self, alert: Alert, target: NotificationTarget):
         """Send notification to specific target"""
@@ -444,19 +490,23 @@ class AlertManager:
         elif target.channel == NotificationChannel.FILE:
             file_path = target.config.get("file_path")
             if file_path:
-                with open(file_path, 'a') as f:
-                    f.write(f"[{alert.triggered_at.isoformat()}] {alert.severity.value.upper()}: {alert.message}\n")
+                with open(file_path, "a") as f:
+                    f.write(
+                        f"[{alert.triggered_at.isoformat()}] {alert.severity.value.upper()}: {alert.message}\n"
+                    )
 
         elif target.channel == NotificationChannel.CONSOLE:
             severity_colors = {
-                AlertSeverity.INFO: "\033[36m",      # Cyan
-                AlertSeverity.WARNING: "\033[33m",   # Yellow
+                AlertSeverity.INFO: "\033[36m",  # Cyan
+                AlertSeverity.WARNING: "\033[33m",  # Yellow
                 AlertSeverity.CRITICAL: "\033[31m",  # Red
-                AlertSeverity.EMERGENCY: "\033[35m"  # Magenta
+                AlertSeverity.EMERGENCY: "\033[35m",  # Magenta
             }
             color = severity_colors.get(alert.severity, "")
             reset = "\033[0m"
-            print(f"{color}🚨 ALERT [{alert.severity.value.upper()}]: {alert.message}{reset}")
+            print(
+                f"{color}🚨 ALERT [{alert.severity.value.upper()}]: {alert.message}{reset}"
+            )
 
         elif target.channel == NotificationChannel.EMAIL:
             await self._send_email_notification(alert, target)
@@ -480,9 +530,11 @@ class AlertManager:
 
         # Create message
         msg = MimeMultipart()
-        msg['From'] = config['from_email']
-        msg['To'] = ', '.join(config['to_emails'])
-        msg['Subject'] = f"Hook Safety Alert: {alert.name} ({alert.severity.value.upper()})"
+        msg["From"] = config["from_email"]
+        msg["To"] = ", ".join(config["to_emails"])
+        msg["Subject"] = (
+            f"Hook Safety Alert: {alert.name} ({alert.severity.value.upper()})"
+        )
 
         # Email body
         body = f"""
@@ -499,22 +551,24 @@ Message: {alert.message}
 Details:
 {json.dumps(alert.details, indent=2)}
 
-Tags: {', '.join(alert.tags)}
+Tags: {", ".join(alert.tags)}
 
 This is an automated message from the Hook Safety System.
         """
 
-        msg.attach(MimeText(body, 'plain'))
+        msg.attach(MimeText(body, "plain"))
 
         # Send email
-        server = smtplib.SMTP(config['smtp_host'], config['smtp_port'])
-        if config.get('use_tls', True):
+        server = smtplib.SMTP(config["smtp_host"], config["smtp_port"])
+        if config.get("use_tls", True):
             server.starttls()
-        server.login(config['username'], config['password'])
+        server.login(config["username"], config["password"])
         server.send_message(msg)
         server.quit()
 
-    async def _send_webhook_notification(self, alert: Alert, target: NotificationTarget):
+    async def _send_webhook_notification(
+        self, alert: Alert, target: NotificationTarget
+    ):
         """Send webhook notification"""
         config = target.config
 
@@ -527,17 +581,17 @@ This is an automated message from the Hook Safety System.
             "details": alert.details,
             "triggered_at": alert.triggered_at.isoformat(),
             "count": alert.count,
-            "tags": alert.tags
+            "tags": alert.tags,
         }
 
-        headers = config.get('headers', {})
-        headers.setdefault('Content-Type', 'application/json')
+        headers = config.get("headers", {})
+        headers.setdefault("Content-Type", "application/json")
 
         response = requests.post(
-            config['url'],
+            config["url"],
             json=payload,
             headers=headers,
-            timeout=config.get('timeout', 30)
+            timeout=config.get("timeout", 30),
         )
         response.raise_for_status()
 
@@ -550,42 +604,66 @@ This is an automated message from the Hook Safety System.
             AlertSeverity.INFO: "good",
             AlertSeverity.WARNING: "warning",
             AlertSeverity.CRITICAL: "danger",
-            AlertSeverity.EMERGENCY: "#8B0000"  # Dark red
+            AlertSeverity.EMERGENCY: "#8B0000",  # Dark red
         }
 
         payload = {
-            "channel": config.get('channel', '#alerts'),
-            "username": config.get('username', 'Hook Safety Bot'),
-            "icon_emoji": config.get('icon_emoji', ':warning:'),
-            "attachments": [{
-                "color": color_map.get(alert.severity, "warning"),
-                "title": f"Hook Safety Alert: {alert.name}",
-                "text": alert.message,
-                "fields": [
-                    {"title": "Severity", "value": alert.severity.value.upper(), "short": True},
-                    {"title": "Status", "value": alert.status.value, "short": True},
-                    {"title": "Count", "value": str(alert.count), "short": True},
-                    {"title": "Time", "value": alert.triggered_at.strftime("%Y-%m-%d %H:%M:%S"), "short": True}
-                ],
-                "footer": "Hook Safety System",
-                "ts": int(alert.triggered_at.timestamp())
-            }]
+            "channel": config.get("channel", "#alerts"),
+            "username": config.get("username", "Hook Safety Bot"),
+            "icon_emoji": config.get("icon_emoji", ":warning:"),
+            "attachments": [
+                {
+                    "color": color_map.get(alert.severity, "warning"),
+                    "title": f"Hook Safety Alert: {alert.name}",
+                    "text": alert.message,
+                    "fields": [
+                        {
+                            "title": "Severity",
+                            "value": alert.severity.value.upper(),
+                            "short": True,
+                        },
+                        {"title": "Status", "value": alert.status.value, "short": True},
+                        {"title": "Count", "value": str(alert.count), "short": True},
+                        {
+                            "title": "Time",
+                            "value": alert.triggered_at.strftime("%Y-%m-%d %H:%M:%S"),
+                            "short": True,
+                        },
+                    ],
+                    "footer": "Hook Safety System",
+                    "ts": int(alert.triggered_at.timestamp()),
+                }
+            ],
         }
 
-        response = requests.post(config['webhook_url'], json=payload, timeout=30)
+        response = requests.post(config["webhook_url"], json=payload, timeout=30)
         response.raise_for_status()
 
-    async def _record_notification(self, alert_id: str, channel: NotificationChannel,
-                                 status: str, error_message: str = None):
+    async def _record_notification(
+        self,
+        alert_id: str,
+        channel: NotificationChannel,
+        status: str,
+        error_message: str = None,
+    ):
         """Record notification attempt"""
         try:
             conn = sqlite3.connect(self.db_path)
             cursor = conn.cursor()
 
-            cursor.execute("""
+            cursor.execute(
+                """
                 INSERT INTO notifications (alert_id, channel, status, sent_at, error_message)
                 VALUES (?, ?, ?, ?, ?)
-            """, (alert_id, channel.value, status, datetime.now().isoformat(), error_message))
+            """,
+                (
+                    alert_id,
+                    channel.value,
+                    status,
+                    datetime.now().isoformat(),
+                    error_message,
+                ),
+            )
 
             conn.commit()
             conn.close()
@@ -629,21 +707,27 @@ This is an automated message from the Hook Safety System.
         if alert_id in self.active_alerts:
             alert = self.active_alerts[alert_id]
             alert.status = AlertStatus.SUPPRESSED
-            alert.suppressed_until = datetime.now() + timedelta(minutes=duration_minutes)
+            alert.suppressed_until = datetime.now() + timedelta(
+                minutes=duration_minutes
+            )
             alert.last_updated = datetime.now()
 
             await self._store_alert_in_db(alert)
-            self.logger.info(f"Alert suppressed: {alert_id} for {duration_minutes} minutes")
+            self.logger.info(
+                f"Alert suppressed: {alert_id} for {duration_minutes} minutes"
+            )
             return True
         return False
 
-    async def record_metric(self, metric_name: str, value: float, tags: dict[str, str] = None):
+    async def record_metric(
+        self, metric_name: str, value: float, tags: dict[str, str] = None
+    ):
         """Record a metric value"""
         metric_data = {
             "timestamp": datetime.now(),
             "metric_name": metric_name,
             "value": value,
-            "tags": tags or {}
+            "tags": tags or {},
         }
 
         self.metrics_buffer.append(metric_data)
@@ -660,15 +744,18 @@ This is an automated message from the Hook Safety System.
             conn = sqlite3.connect(self.db_path)
             cursor = conn.cursor()
 
-            cursor.execute("""
+            cursor.execute(
+                """
                 INSERT INTO metrics (timestamp, metric_name, metric_value, tags)
                 VALUES (?, ?, ?, ?)
-            """, (
-                metric_data["timestamp"].isoformat(),
-                metric_data["metric_name"],
-                metric_data["value"],
-                json.dumps(metric_data["tags"])
-            ))
+            """,
+                (
+                    metric_data["timestamp"].isoformat(),
+                    metric_data["metric_name"],
+                    metric_data["value"],
+                    json.dumps(metric_data["tags"]),
+                ),
+            )
 
             conn.commit()
             conn.close()
@@ -679,15 +766,17 @@ This is an automated message from the Hook Safety System.
     async def _check_metric_thresholds(self, metric_name: str, current_value: float):
         """Check if metric thresholds are exceeded"""
         for threshold in self.metric_thresholds:
-            if (threshold.enabled and
-                threshold.metric_name == metric_name):
-
+            if threshold.enabled and threshold.metric_name == metric_name:
                 # Get recent values for duration check
-                cutoff_time = datetime.now() - timedelta(minutes=threshold.duration_minutes)
+                cutoff_time = datetime.now() - timedelta(
+                    minutes=threshold.duration_minutes
+                )
                 recent_values = [
-                    m["value"] for m in self.metrics_buffer
-                    if (m["metric_name"] == metric_name and
-                        m["timestamp"] > cutoff_time)
+                    m["value"]
+                    for m in self.metrics_buffer
+                    if (
+                        m["metric_name"] == metric_name and m["timestamp"] > cutoff_time
+                    )
                 ]
 
                 if len(recent_values) == 0:
@@ -711,12 +800,14 @@ This is an automated message from the Hook Safety System.
                             "threshold_value": threshold.threshold_value,
                             "operator": threshold.operator,
                             "duration_minutes": threshold.duration_minutes,
-                            "sample_count": len(recent_values)
+                            "sample_count": len(recent_values),
                         },
-                        tags=["metric_threshold", metric_name]
+                        tags=["metric_threshold", metric_name],
                     )
 
-    def _evaluate_threshold(self, value: float, operator: str, threshold: float) -> bool:
+    def _evaluate_threshold(
+        self, value: float, operator: str, threshold: float
+    ) -> bool:
         """Evaluate threshold condition"""
         if operator == ">":
             return value > threshold
@@ -747,7 +838,9 @@ This is an automated message from the Hook Safety System.
 
         # Recent alert rate
         recent_cutoff = datetime.now() - timedelta(hours=1)
-        recent_alerts = sum(1 for alert in self.alert_history if alert.triggered_at > recent_cutoff)
+        recent_alerts = sum(
+            1 for alert in self.alert_history if alert.triggered_at > recent_cutoff
+        )
 
         return {
             "total_active_alerts": len(self.active_alerts),
@@ -755,16 +848,19 @@ This is an automated message from the Hook Safety System.
             "total_historical_alerts": total_alerts,
             "recent_alert_rate_per_hour": recent_alerts,
             "notification_targets": len(self.notification_targets),
-            "metric_thresholds": len(self.metric_thresholds)
+            "metric_thresholds": len(self.metric_thresholds),
         }
 
-    def get_metric_statistics(self, metric_name: str, hours: int = 24) -> dict[str, Any]:
+    def get_metric_statistics(
+        self, metric_name: str, hours: int = 24
+    ) -> dict[str, Any]:
         """Get statistics for a specific metric"""
         cutoff_time = datetime.now() - timedelta(hours=hours)
 
         # Get values from buffer (recent) and database (historical)
         recent_values = [
-            m["value"] for m in self.metrics_buffer
+            m["value"]
+            for m in self.metrics_buffer
             if (m["metric_name"] == metric_name and m["timestamp"] > cutoff_time)
         ]
 
@@ -779,13 +875,15 @@ This is an automated message from the Hook Safety System.
             "avg_value": statistics.mean(recent_values),
             "median_value": statistics.median(recent_values),
             "std_dev": statistics.stdev(recent_values) if len(recent_values) > 1 else 0,
-            "time_range_hours": hours
+            "time_range_hours": hours,
         }
 
     def _start_background_processing(self):
         """Start background processing thread"""
         self.processing_active = True
-        self.processing_thread = threading.Thread(target=self._background_processing_loop, daemon=True)
+        self.processing_thread = threading.Thread(
+            target=self._background_processing_loop, daemon=True
+        )
         self.processing_thread.start()
         self.logger.info("Background processing started")
 
@@ -818,7 +916,7 @@ This is an automated message from the Hook Safety System.
         # Keep only recent alerts in history
         self.alert_history = deque(
             (alert for alert in self.alert_history if alert.triggered_at > cutoff_time),
-            maxlen=1000
+            maxlen=1000,
         )
 
     def _check_suppressed_alerts(self):
@@ -826,10 +924,11 @@ This is an automated message from the Hook Safety System.
         now = datetime.now()
 
         for alert in list(self.active_alerts.values()):
-            if (alert.status == AlertStatus.SUPPRESSED and
-                alert.suppressed_until and
-                now > alert.suppressed_until):
-
+            if (
+                alert.status == AlertStatus.SUPPRESSED
+                and alert.suppressed_until
+                and now > alert.suppressed_until
+            ):
                 alert.status = AlertStatus.ACTIVE
                 alert.suppressed_until = None
                 alert.last_updated = now
@@ -854,7 +953,7 @@ This is an automated message from the Hook Safety System.
                         "avg": statistics.mean(values),
                         "min": min(values),
                         "max": max(values),
-                        "last_updated": datetime.now().isoformat()
+                        "last_updated": datetime.now().isoformat(),
                     }
 
     def _save_active_alerts(self):
@@ -862,7 +961,7 @@ This is an automated message from the Hook Safety System.
         try:
             alerts_data = [asdict(alert) for alert in self.active_alerts.values()]
 
-            with open(self.alerts_file, 'w') as f:
+            with open(self.alerts_file, "w") as f:
                 json.dump(alerts_data, f, indent=2, default=str)
 
         except Exception as e:
@@ -952,7 +1051,7 @@ if __name__ == "__main__":
                 severity=AlertSeverity.WARNING,
                 message="This is a test alert from the CLI",
                 details={"source": "cli", "test": True},
-                tags=["test", "cli"]
+                tags=["test", "cli"],
             )
             print(f"Test alert triggered: {alert_id}")
 
