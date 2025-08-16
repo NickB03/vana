@@ -46,7 +46,7 @@ log_error() {
 
 log_header() {
     echo -e "\n${BLUE}$1${NC}"
-    echo -e "${BLUE}$(echo "$1" | sed 's/./=/g')${NC}"
+    echo -e "${BLUE}${1//./=}${NC}"
 }
 
 # Error handling
@@ -65,14 +65,14 @@ cleanup() {
     # Clean up temporary files
     find "$REPORT_OUTPUT" -name "*.tmp" -delete 2>/dev/null || true
     
-    if [ $exit_code -ne 0 ]; then
+    if [ "$exit_code" -ne 0 ]; then
         log_error "Hook testing failed with exit code $exit_code"
         
         # Generate failure report
-        generate_failure_report $exit_code
+        generate_failure_report "$exit_code"
     fi
     
-    exit $exit_code
+    exit "$exit_code"
 }
 
 trap cleanup EXIT
@@ -91,7 +91,8 @@ validate_environment() {
     done
     
     # Check Node.js version
-    local node_version=$(node --version | sed 's/v//')
+    local node_version
+    node_version=$(node --version | sed 's/v//')
     local required_version="18.0.0"
     if ! version_greater_equal "$node_version" "$required_version"; then
         log_error "Node.js version $node_version is too old. Required: $required_version+"
@@ -122,7 +123,8 @@ version_greater_equal() {
 }
 
 create_default_config() {
-    local config_dir="$(dirname "$HOOK_TEST_CONFIG")"
+    local config_dir
+    config_dir="$(dirname "$HOOK_TEST_CONFIG")"
     mkdir -p "$config_dir"
     
     cat > "$HOOK_TEST_CONFIG" << 'EOF'
@@ -246,7 +248,8 @@ run_test_phase() {
     
     log_header "$description"
     
-    local phase_start_time=$(date +%s)
+    local phase_start_time
+    phase_start_time=$(date +%s)
     local phase_output="$REPORT_OUTPUT/$phase"
     mkdir -p "$phase_output"
     
@@ -275,7 +278,8 @@ run_test_phase() {
     esac
     
     local phase_result=$?
-    local phase_end_time=$(date +%s)
+    local phase_end_time
+    phase_end_time=$(date +%s)
     local phase_duration=$((phase_end_time - phase_start_time))
     
     # Record phase metrics
@@ -315,14 +319,15 @@ run_functional_tests() {
     timeout "$TIMEOUT" node tests/hooks/automation/hook-test-runner.js \
         --output "$output_dir" \
         --timeout $((TIMEOUT - 60)) \
-        $runner_args \
+        "$runner_args" \
         functional
     
     local result=$?
     
     # Validate functional test results
     if [ $result -eq 0 ] && [ -f "$output_dir/hook-test-report.json" ]; then
-        local success_rate=$(cat "$output_dir/hook-test-report.json" | jq -r '.summary.successRate // 0')
+        local success_rate
+        success_rate=$(jq -r '.summary.successRate // 0' "$output_dir/hook-test-report.json")
         if (( $(echo "$success_rate < 0.95" | bc -l) )); then
             log_warning "Functional tests passed but success rate is below 95%: $success_rate"
             result=1
@@ -396,8 +401,10 @@ run_integration_tests() {
     if [ -f "$output_dir/playwright/results.json" ]; then
         log_info "Processing Playwright test results..."
         
-        local passed_tests=$(cat "$output_dir/playwright/results.json" | jq '.suites[].specs[] | select(.ok == true) | length' | wc -l)
-        local total_tests=$(cat "$output_dir/playwright/results.json" | jq '.suites[].specs | length' | wc -l)
+        local passed_tests
+        passed_tests=$(jq '.suites[].specs[] | select(.ok == true) | length' "$output_dir/playwright/results.json" | wc -l)
+        local total_tests
+        total_tests=$(jq '.suites[].specs | length' "$output_dir/playwright/results.json" | wc -l)
         
         cat > "$output_dir/integration-summary.json" << EOF
 {
@@ -429,7 +436,8 @@ run_stress_tests() {
     
     # Validate stress test results
     if [ $result -eq 0 ] && [ -f "$output_dir/stress-results.json" ]; then
-        local stability_score=$(cat "$output_dir/stress-results.json" | jq -r '.summary.stabilityScore // 0')
+        local stability_score
+        stability_score=$(jq -r '.summary.stabilityScore // 0' "$output_dir/stress-results.json")
         if (( $(echo "$stability_score < 0.90" | bc -l) )); then
             log_warning "Stress tests passed but stability score is below 90%: $stability_score"
             result=1
@@ -443,7 +451,8 @@ run_stress_tests() {
 generate_comprehensive_report() {
     log_header "Generating Comprehensive Report"
     
-    local report_start_time=$(date +%s)
+    local report_start_time
+    report_start_time=$(date +%s)
     
     # Collect all phase results
     local phases_dir="$REPORT_OUTPUT"
@@ -482,7 +491,8 @@ EOF
         if [ -d "$phase_dir" ]; then
             local phase_metrics="$phase_dir/metrics.json"
             if [ -f "$phase_metrics" ]; then
-                local phase_success=$(cat "$phase_metrics" | jq -r '.success')
+                local phase_success
+                phase_success=$(jq -r '.success' "$phase_metrics")
                 jq --arg phase "$phase" \
                    --argjson metrics "$(cat "$phase_metrics")" \
                    '.phases[$phase] = $metrics' \
@@ -502,7 +512,8 @@ EOF
             continue
         fi
         
-        local phase_success=$(jq -r ".phases.$phase.success // false" "$report_data")
+        local phase_success
+        phase_success=$(jq -r ".phases.$phase.success // false" "$report_data")
         if [ "$phase_success" != "true" ]; then
             overall_success=false
         fi
@@ -596,26 +607,30 @@ generate_recommendations() {
     local recommendations=()
     
     # Check functional test results
-    local functional_success=$(jq -r '.phases.functional.success // false' "$report_data")
+    local functional_success
+    functional_success=$(jq -r '.phases.functional.success // false' "$report_data")
     if [ "$functional_success" != "true" ]; then
         recommendations+=("Review hook functional requirements - some validation checks failed")
     fi
     
     # Check performance test results
-    local performance_success=$(jq -r '.phases.performance.success // false' "$report_data")
+    local performance_success
+    performance_success=$(jq -r '.phases.performance.success // false' "$report_data")
     if [ "$performance_success" != "true" ]; then
         recommendations+=("Optimize hook execution performance - some hooks exceeded time thresholds")
     fi
     
     # Check integration test results
-    local integration_success=$(jq -r '.phases.integration.success // false' "$report_data")
+    local integration_success
+    integration_success=$(jq -r '.phases.integration.success // false' "$report_data")
     if [ "$integration_success" != "true" ]; then
         recommendations+=("Investigate integration issues - hooks may not be properly coordinating")
     fi
     
     # Check stress test results
     if [ "$SKIP_STRESS" != "true" ]; then
-        local stress_success=$(jq -r '.phases.stress.success // false' "$report_data")
+        local stress_success
+        stress_success=$(jq -r '.phases.stress.success // false' "$report_data")
         if [ "$stress_success" != "true" ]; then
             recommendations+=("Improve hook resilience under load - stress tests revealed stability issues")
         fi
@@ -627,7 +642,8 @@ generate_recommendations() {
     fi
     
     # Update report with recommendations
-    local recommendations_json=$(printf '%s\n' "${recommendations[@]}" | jq -R . | jq -s .)
+    local recommendations_json
+    recommendations_json=$(printf '%s\n' "${recommendations[@]}" | jq -R . | jq -s .)
     jq --argjson recs "$recommendations_json" '.recommendations = $recs' \
        "$report_data" > "$report_data.tmp" && mv "$report_data.tmp" "$report_data"
 }
@@ -664,7 +680,8 @@ main() {
     echo "Verbose Mode: $VERBOSE"
     echo ""
     
-    local start_time=$(date +%s)
+    local start_time
+    start_time=$(date +%s)
     
     # Phase 1: Environment validation
     if ! validate_environment; then
@@ -711,7 +728,7 @@ main() {
         
         # Wait for all phases to complete
         for pid in "${pids[@]}"; do
-            if wait $pid; then
+            if wait "$pid"; then
                 phase_results+=(0)
             else
                 phase_results+=(1)
@@ -746,12 +763,13 @@ main() {
     # Phase 5: Analyze results and determine exit status
     local total_failures=0
     for result in "${phase_results[@]}"; do
-        if [ $result -ne 0 ]; then
+        if [ "$result" -ne 0 ]; then
             ((total_failures++))
         fi
     done
     
-    local end_time=$(date +%s)
+    local end_time
+    end_time=$(date +%s)
     local total_duration=$((end_time - start_time))
     
     log_header "Hook Testing Results"
@@ -762,15 +780,16 @@ main() {
     echo ""
     
     # Save final status
-    local final_success=$([ $total_failures -eq 0 ] && echo "PASSED" || echo "FAILED")
+    local final_success
+    final_success=$([ "$total_failures" -eq 0 ] && echo "PASSED" || echo "FAILED")
     echo "$final_success" > "$REPORT_OUTPUT/test-status.txt"
     
-    if [ $total_failures -eq 0 ]; then
+    if [ "$total_failures" -eq 0 ]; then
         log_success "All hook tests passed! Hooks are ready for production use."
         log_info "📄 Comprehensive report: $REPORT_OUTPUT/hook-test-report.html"
         exit 0
     else
-        log_error "Some hook tests failed ($total_failures/${{#test_phases[@]}})."
+        log_error "Some hook tests failed ($total_failures/${#test_phases[@]})."
         log_info "📄 Failure analysis: $REPORT_OUTPUT/hook-test-report.html"
         exit 1
     fi
