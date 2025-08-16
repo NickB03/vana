@@ -14,10 +14,8 @@
 
 import os
 from dataclasses import dataclass, field
-from typing import Union
 
 import google.auth
-from google.adk.models.lite_llm import LiteLlm
 
 from app.models import CRITIC_MODEL, WORKER_MODEL, ModelType
 
@@ -62,7 +60,9 @@ class ResearchConfiguration:
     worker_model: ModelType = field(default_factory=lambda: WORKER_MODEL)
     max_search_iterations: int = 5
     session_storage_enabled: bool = field(default=True)
-    session_storage_bucket: str = field(default_factory=lambda: f"{os.environ.get('GOOGLE_CLOUD_PROJECT', 'analystai-454200')}-vana-session-storage")
+    session_storage_bucket: str = field(
+        default_factory=lambda: f"{os.environ.get('GOOGLE_CLOUD_PROJECT', 'analystai-454200')}-vana-session-storage"
+    )
     session_backup_interval_hours: int = field(default=6)
 
 

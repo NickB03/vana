@@ -119,18 +119,30 @@ class GitHookManager {
       if (fs.existsSync(securityValidatorPath)) {
         console.log('  🔒 Running security validation...')
         
-        try {
-          execSync(`node "${securityValidatorPath}" --files ${stagedFiles.join(' ')}`, {
-            cwd: this.projectRoot,
-            stdio: 'inherit',
-            timeout: 15000
-          })
-          console.log('  ✅ Security validation passed')
-        } catch (error) {
-          if (error.status !== 0) {
-            console.log('  ❌ Security validation failed')
-            return error.status || 1
+        let securityValidationPassed = true
+        
+        // Validate each staged file individually
+        for (const file of stagedFiles) {
+          try {
+            console.log(`    Security check: ${file}`)
+            execSync(`node "${securityValidatorPath}" "${file}"`, {
+              cwd: this.projectRoot,
+              stdio: 'pipe', // Capture output to avoid noise
+              timeout: 5000
+            })
+          } catch (error) {
+            if (error.status !== 0) {
+              console.log(`    ❌ Security validation failed for: ${file}`)
+              securityValidationPassed = false
+            }
           }
+        }
+        
+        if (securityValidationPassed) {
+          console.log('  ✅ Security validation passed')
+        } else {
+          console.log('  ❌ Security validation failed for some files')
+          return 1
         }
       }
 

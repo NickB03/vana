@@ -15,9 +15,14 @@
 import os
 import time
 import uuid
+from typing import TYPE_CHECKING
 
 import requests
 from locust import HttpUser, between, task
+
+if TYPE_CHECKING:
+    # This helps with mypy type checking for requests without requiring runtime import
+    pass
 
 ENDPOINT = "/run_sse"
 

@@ -23,18 +23,19 @@ from google.adk.agents.callback_context import CallbackContext
 from google.adk.agents.invocation_context import InvocationContext
 from google.adk.events import Event, EventActions
 from google.adk.planners import BuiltInPlanner
-from app.tools import brave_search  # Compatible with all LLM providers
 from google.adk.tools.agent_tool import AgentTool
 from google.genai import types as genai_types
 from pydantic import BaseModel, Field
 
+from app.tools import brave_search  # Compatible with all LLM providers
+
 from .config import config
 from .enhanced_callbacks import (
-    before_agent_callback,
     after_agent_callback,
-    composite_after_agent_callback_with_research_sources,
+    agent_network_tracking_callback,
+    before_agent_callback,
     composite_after_agent_callback_with_citations,
-    agent_network_tracking_callback
+    composite_after_agent_callback_with_research_sources,
 )
 
 
@@ -123,12 +124,15 @@ def collect_research_sources_callback(callback_context: CallbackContext) -> None
                         )
     callback_context.state["url_to_short_id"] = url_to_short_id
     callback_context.state["sources"] = sources
-    
+
     # Broadcast research sources to SSE
     if sources:
         try:
             from app.utils.sse_broadcaster import broadcast_agent_network_update
-            session_id = getattr(callback_context._invocation_context.session, 'id', None)
+
+            session_id = getattr(
+                callback_context._invocation_context.session, "id", None
+            )
             if session_id:
                 # Convert sources to list and use camelCase
                 sources_list = [
@@ -138,20 +142,23 @@ def collect_research_sources_callback(callback_context: CallbackContext) -> None
                         "url": v["url"],
                         "domain": v["domain"],
                         "supportedClaims": [
-                            {"textSegment": claim["text_segment"], "confidence": claim["confidence"]}
+                            {
+                                "textSegment": claim["text_segment"],
+                                "confidence": claim["confidence"],
+                            }
                             for claim in v.get("supported_claims", [])
-                        ]
+                        ],
                     }
                     for v in sources.values()
                 ]
-                
+
                 event = {
                     "type": "research_sources",
                     "data": {
                         "sources": sources_list,
                         "totalSources": len(sources_list),
-                        "timestamp": datetime.now().isoformat()
-                    }
+                        "timestamp": datetime.now().isoformat(),
+                    },
                 }
                 broadcast_agent_network_update(event, session_id)
         except Exception as e:

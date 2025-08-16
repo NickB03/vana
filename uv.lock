@@ -5478,6 +5478,7 @@ dev = [
     { name = "psutil" },
     { name = "pytest" },
     { name = "pytest-asyncio" },
+    { name = "types-requests" },
 ]
 lint = [
     { name = "codespell" },
@@ -5526,6 +5527,7 @@ dev = [
     { name = "psutil", specifier = ">=7.0.0" },
     { name = "pytest", specifier = ">=8.3.4" },
     { name = "pytest-asyncio", specifier = ">=0.23.8" },
+    { name = "types-requests", specifier = ">=2.32.0.20250602" },
 ]
 lint = [{ name = "codespell", specifier = ">=2.2.6" }]
 
