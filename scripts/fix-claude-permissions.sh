@@ -4,7 +4,7 @@
 echo "🔧 Fixing Claude Code user-level permissions format..."
 
 # Backup current settings
-cp ~/.claude/settings.json ~/.claude/settings.json.backup.$(date +%s)
+cp ~/.claude/settings.json "$HOME/.claude/settings.json.backup.$(date +%s)"
 
 # Create corrected settings with proper format
 cat > ~/.claude/settings.json << 'EOF'

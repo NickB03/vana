@@ -37,7 +37,8 @@ START_TIME=$(date +%s)
 run_test() {
     local test_name="$1"
     local test_command="$2"
-    local test_start=$(date +%s)
+    local test_start
+    test_start=$(date +%s)
     
     echo ""
     echo "🧪 Running: $test_name"
@@ -45,13 +46,15 @@ run_test() {
     echo "----------------------------------------"
     
     if eval "$test_command"; then
-        local test_end=$(date +%s)
+        local test_end
+        test_end=$(date +%s)
         local test_duration=$((test_end - test_start))
         TOTAL_EXECUTION_TIME=$((TOTAL_EXECUTION_TIME + test_duration))
         TESTS_PASSED=$((TESTS_PASSED + 1))
         echo "✅ PASSED: $test_name (${test_duration}s)"
     else
-        local test_end=$(date +%s)
+        local test_end
+        test_end=$(date +%s)
         local test_duration=$((test_end - test_start))
         TOTAL_EXECUTION_TIME=$((TOTAL_EXECUTION_TIME + test_duration))
         TESTS_FAILED=$((TESTS_FAILED + 1))
@@ -314,4 +317,4 @@ echo ""
 echo "🎉 Integration testing pipeline completed successfully!"
 
 # Exit with appropriate code
-exit $([ $TESTS_FAILED -eq 0 ] && echo 0 || echo 1)
+exit "$([ "$TESTS_FAILED" -eq 0 ] && echo 0 || echo 1)"
