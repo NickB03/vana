@@ -1,0 +1,32 @@
+#!/bin/bash
+
+# This script contains various shell script issues for testing
+
+# Missing set options (should trigger SV003)
+echo "Starting script..."
+
+# Unquoted variables (should trigger SV001, SV008)
+USER_HOME=$HOME
+echo "Welcome $USER_HOME"
+cp "$USER_HOME"/.bashrc "$USER_HOME"/.bashrc.backup
+
+# Dangerous curl pipe (should trigger SV007)
+curl -sL https://get.docker.com | sh
+
+# Multiple redirects (should trigger SV009)
+echo "line 1" > output.txt
+echo "line 2" >> output.txt
+
+# Command substitution in assignment (should trigger SV010)
+local current_date=$(date)
+
+# Useless cat (should trigger SV011)
+cat input.txt | grep "pattern"
+
+# Backtick usage (should trigger SV004)
+VERSION=$(git rev-parse HEAD)
+
+# Variable naming (should trigger SV006)
+config_file=/etc/myapp.conf
+
+echo "Script completed"

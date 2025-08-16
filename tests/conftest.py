@@ -3,15 +3,15 @@ Pytest configuration for hook validation system integration tests.
 Provides fixtures, test utilities, and configuration for comprehensive testing.
 """
 
-import pytest
 import asyncio
-import tempfile
 import json
+import tempfile
 import time
 from pathlib import Path
-from typing import Dict, List, Any, Optional
-from unittest.mock import Mock, patch, AsyncMock
+from typing import Any
+from unittest.mock import AsyncMock, Mock
 
+import pytest
 
 # Test configuration
 pytest_plugins = [
@@ -50,31 +50,31 @@ def event_loop():
 def mock_claude_code_tools():
     """Mock Claude Code tools for testing hook integration"""
     tools = Mock()
-    
+
     # Mock Read tool
     tools.read = AsyncMock()
     tools.read.return_value = {"content": "mock file content", "success": True}
-    
+
     # Mock Write tool
     tools.write = AsyncMock()
     tools.write.return_value = {"success": True, "file_path": "test.txt"}
-    
+
     # Mock Edit tool
     tools.edit = AsyncMock()
     tools.edit.return_value = {"success": True, "changes_applied": 1}
-    
+
     # Mock Bash tool
     tools.bash = AsyncMock()
     tools.bash.return_value = {"exit_code": 0, "output": "command executed"}
-    
+
     # Mock Glob tool
     tools.glob = AsyncMock()
     tools.glob.return_value = {"files": ["file1.txt", "file2.txt"]}
-    
+
     # Mock Grep tool
     tools.grep = AsyncMock()
     tools.grep.return_value = {"matches": 5, "files": ["file1.txt"]}
-    
+
     return tools
 
 
@@ -82,21 +82,21 @@ def mock_claude_code_tools():
 def mock_claude_flow_hooks():
     """Mock Claude Flow hook system for testing"""
     hooks = Mock()
-    
+
     # Mock hook methods
     hooks.pre_task = AsyncMock()
     hooks.post_task = AsyncMock()
     hooks.pre_edit = AsyncMock()
     hooks.post_edit = AsyncMock()
     hooks.session_end = AsyncMock()
-    
+
     # Mock hook responses
     hooks.pre_task.return_value = {"task_id": "test-123", "agents_spawned": 2}
     hooks.post_task.return_value = {"performance_metrics": {"execution_time": 150}}
     hooks.pre_edit.return_value = {"validation_passed": True}
     hooks.post_edit.return_value = {"memory_updated": True}
     hooks.session_end.return_value = {"session_exported": True}
-    
+
     return hooks
 
 
@@ -140,11 +140,11 @@ def test_workspace():
     """Create temporary workspace for testing"""
     with tempfile.TemporaryDirectory() as temp_dir:
         workspace = Path(temp_dir)
-        
+
         # Create project structure
         project_dirs = [
             "frontend/src/components",
-            "frontend/src/components/ui", 
+            "frontend/src/components/ui",
             "frontend/src/lib",
             "frontend/src/hooks",
             "frontend/src/stores",
@@ -155,10 +155,10 @@ def test_workspace():
             "tests/e2e",
             ".claude_workspace/reports"
         ]
-        
+
         for dir_path in project_dirs:
             (workspace / dir_path).mkdir(parents=True, exist_ok=True)
-        
+
         # Create essential files
         (workspace / "frontend" / "package.json").write_text(json.dumps({
             "name": "vana-frontend",
@@ -168,28 +168,28 @@ def test_workspace():
                 "next": "^15.4.6"
             }
         }))
-        
+
         (workspace / "frontend" / "tsconfig.json").write_text(json.dumps({
             "compilerOptions": {
                 "strict": True,
                 "jsx": "preserve"
             }
         }))
-        
+
         yield workspace
 
 
 class MockHookValidationSystem:
     """Mock hook validation system for comprehensive testing"""
-    
-    def __init__(self, prd_rules: Dict[str, Any]):
+
+    def __init__(self, prd_rules: dict[str, Any]):
         self.prd_rules = prd_rules
         self.validation_logs = []
         self.performance_metrics = {}
         self.blocked_operations = []
         self.suggestions_given = []
-    
-    async def validate_file_operation(self, operation: str, file_path: str, content: str = None) -> Dict[str, Any]:
+
+    async def validate_file_operation(self, operation: str, file_path: str, content: str = None) -> dict[str, Any]:
         """Mock file operation validation"""
         validation_result = {
             "validated": True,
@@ -201,7 +201,7 @@ class MockHookValidationSystem:
             "file_path": file_path,
             "timestamp": time.time()
         }
-        
+
         if content and file_path.endswith('.tsx'):
             # Technology stack validation
             forbidden_ui = self.prd_rules["technology_stack"]["forbidden_ui_frameworks"]
@@ -219,30 +219,30 @@ class MockHookValidationSystem:
                         "reason": f"Forbidden UI framework: {forbidden}"
                     })
                     break
-            
+
             # Accessibility validation
             if "onClick" in content and "data-testid" not in content:
                 validation_result["warnings"].append("Interactive element missing data-testid")
                 validation_result["suggestions"].append("Add data-testid for testing")
                 validation_result["compliance_score"] -= 15
                 self.suggestions_given.append("Add data-testid attributes")
-            
+
             # Performance validation
             usestate_count = content.count("useState")
             useeffect_count = content.count("useEffect")
-            
+
             if usestate_count > self.prd_rules["performance"]["max_useState_hooks"]:
                 validation_result["warnings"].append("Too many useState hooks detected")
                 validation_result["suggestions"].append("Consider using useReducer or Zustand")
                 validation_result["compliance_score"] -= 10
                 self.suggestions_given.append("Optimize state management")
-            
+
             if useeffect_count > self.prd_rules["performance"]["max_useEffect_hooks"]:
                 validation_result["warnings"].append("Too many useEffect hooks detected")
                 validation_result["suggestions"].append("Combine related effects")
                 validation_result["compliance_score"] -= 10
                 self.suggestions_given.append("Optimize effects")
-            
+
             # Security validation
             forbidden_patterns = self.prd_rules["security"]["forbidden_patterns"]
             for pattern in forbidden_patterns:
@@ -251,10 +251,10 @@ class MockHookValidationSystem:
                     validation_result["suggestions"].append("Use safe alternatives")
                     validation_result["compliance_score"] -= 20
                     self.suggestions_given.append("Fix security issues")
-        
+
         self.validation_logs.append(validation_result)
         return validation_result
-    
+
     async def track_performance(self, operation: str, file_path: str, execution_time_ms: float):
         """Mock performance tracking"""
         self.performance_metrics[file_path] = {
@@ -262,12 +262,12 @@ class MockHookValidationSystem:
             "execution_time_ms": execution_time_ms,
             "timestamp": time.time()
         }
-    
-    def get_validation_summary(self) -> Dict[str, Any]:
+
+    def get_validation_summary(self) -> dict[str, Any]:
         """Get summary of all validations performed"""
         total_validations = len(self.validation_logs)
         passed_validations = sum(1 for v in self.validation_logs if v["validated"])
-        
+
         return {
             "total_validations": total_validations,
             "passed_validations": passed_validations,
@@ -287,7 +287,7 @@ def mock_hook_validation_system(prd_validation_rules):
 
 class TestFileGenerator:
     """Generate test files for validation testing"""
-    
+
     @staticmethod
     def create_valid_component() -> str:
         """Create valid React component following PRD"""
@@ -320,7 +320,7 @@ export const TestComponent: React.FC<TestComponentProps> = ({ title, onAction })
   )
 }
 '''
-    
+
     @staticmethod
     def create_invalid_component_ui_framework() -> str:
         """Create component using forbidden UI framework"""
@@ -338,7 +338,7 @@ export const InvalidComponent = () => {
   )
 }
 '''
-    
+
     @staticmethod
     def create_performance_heavy_component() -> str:
         """Create component with performance issues"""
@@ -382,7 +382,7 @@ export const HeavyComponent = () => {
   )
 }
 '''
-    
+
     @staticmethod
     def create_security_risk_component() -> str:
         """Create component with security risks"""
@@ -407,7 +407,7 @@ export const UnsafeComponent = () => {
   )
 }
 '''
-    
+
     @staticmethod
     def create_accessibility_missing_component() -> str:
         """Create component missing accessibility attributes"""
@@ -430,7 +430,7 @@ export const AccessibilityMissingComponent = () => {
   )
 }
 '''
-    
+
     @staticmethod
     def create_comprehensive_test() -> str:
         """Create comprehensive test file"""
@@ -483,43 +483,43 @@ def performance_tracker():
     class PerformanceTracker:
         def __init__(self):
             self.measurements = []
-        
+
         def measure_execution_time(self, func, *args, **kwargs):
             start_time = time.perf_counter()
             result = func(*args, **kwargs)
             end_time = time.perf_counter()
-            
+
             execution_time = (end_time - start_time) * 1000  # Convert to ms
             self.measurements.append({
                 "function": func.__name__,
                 "execution_time_ms": execution_time,
                 "timestamp": time.time()
             })
-            
+
             return result, execution_time
-        
+
         async def measure_async_execution_time(self, coro):
             start_time = time.perf_counter()
             result = await coro
             end_time = time.perf_counter()
-            
+
             execution_time = (end_time - start_time) * 1000  # Convert to ms
             self.measurements.append({
                 "function": "async_operation",
                 "execution_time_ms": execution_time,
                 "timestamp": time.time()
             })
-            
+
             return result, execution_time
-        
+
         def get_average_execution_time(self):
             if not self.measurements:
                 return 0
             return sum(m["execution_time_ms"] for m in self.measurements) / len(self.measurements)
-        
+
         def get_total_execution_time(self):
             return sum(m["execution_time_ms"] for m in self.measurements)
-    
+
     return PerformanceTracker()
 
 
@@ -575,12 +575,12 @@ def async_test_utilities():
                     return True
                 await asyncio.sleep(interval)
             return False
-        
+
         @staticmethod
         async def simulate_async_file_operation(operation, file_path, content=None, delay_ms=50):
             """Simulate async file operation with realistic delay"""
             await asyncio.sleep(delay_ms / 1000)  # Convert ms to seconds
-            
+
             return {
                 "operation": operation,
                 "file_path": file_path,
@@ -588,5 +588,5 @@ def async_test_utilities():
                 "success": True,
                 "timestamp": time.time()
             }
-    
+
     return AsyncTestUtilities

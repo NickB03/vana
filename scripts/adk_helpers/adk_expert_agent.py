@@ -6,16 +6,15 @@ best practices, and implementation details by referencing the indexed ADK docume
 stored in ChromaDB collections.
 """
 
-import json
 import logging
-from typing import Dict, Any, List, Optional, AsyncGenerator
+from collections.abc import AsyncGenerator
 from dataclasses import dataclass
 from enum import Enum
+from typing import Any
 
 from google.adk.agents import BaseAgent, LlmAgent
 from google.adk.agents.invocation_context import InvocationContext
 from google.adk.events import Event, EventActions
-from google.adk.agents.callback_context import CallbackContext
 from google.genai import types as genai_types
 from pydantic import BaseModel, Field
 
@@ -42,7 +41,7 @@ class ADKQueryRequest(BaseModel):
         default=ADKQueryType.PATTERN,
         description="Type of query for focused search"
     )
-    context: Optional[str] = Field(
+    context: str | None = Field(
         default=None,
         description="Additional context about the implementation or use case"
     )
@@ -60,19 +59,19 @@ class ADKGuidance(BaseModel):
     guidance: str = Field(
         description="Detailed guidance based on ADK documentation"
     )
-    examples: Optional[List[str]] = Field(
+    examples: list[str] | None = Field(
         default=None,
         description="Code examples from ADK documentation"
     )
-    best_practices: Optional[List[str]] = Field(
+    best_practices: list[str] | None = Field(
         default=None,
         description="Relevant best practices from ADK guidelines"
     )
-    references: Optional[List[str]] = Field(
+    references: list[str] | None = Field(
         default=None,
         description="References to specific ADK documentation sections"
     )
-    warnings: Optional[List[str]] = Field(
+    warnings: list[str] | None = Field(
         default=None,
         description="Common pitfalls or anti-patterns to avoid"
     )
@@ -81,10 +80,10 @@ class ADKGuidance(BaseModel):
 @dataclass
 class ChromaDBConfig:
     """Configuration for ChromaDB connection."""
-    collection_names: List[str] = None
+    collection_names: list[str] = None
     host: str = "localhost"
     port: int = 8000
-    
+
     def __post_init__(self):
         if self.collection_names is None:
             self.collection_names = [
@@ -103,18 +102,18 @@ class ADKExpertAgent(BaseAgent):
     3. Provides authoritative guidance on ADK patterns
     4. Validates implementations against ADK best practices
     """
-    
+
     def __init__(
         self,
         name: str = "adk_expert_agent",
-        chroma_config: Optional[ChromaDBConfig] = None,
+        chroma_config: ChromaDBConfig | None = None,
         model: str = "gemini-2.5-flash"
     ):
         super().__init__(name=name)
         self.chroma_config = chroma_config or ChromaDBConfig()
         self.model = model
         self._init_chroma_client()
-    
+
     def _init_chroma_client(self):
         """Initialize ChromaDB client connection."""
         try:
@@ -125,13 +124,13 @@ class ADKExpertAgent(BaseAgent):
         except Exception as e:
             logger.error(f"Failed to initialize ChromaDB client: {e}")
             self.chroma_initialized = False
-    
+
     async def query_adk_knowledge(
         self,
         query: str,
         query_type: ADKQueryType = ADKQueryType.PATTERN,
         max_results: int = 10
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Query ChromaDB collections for ADK documentation.
         
@@ -149,10 +148,10 @@ class ADKExpertAgent(BaseAgent):
             "documents": [],
             "metadata": []
         }
-        
+
         # Build semantic query based on query type
         semantic_queries = self._build_semantic_queries(query, query_type)
-        
+
         # Query each collection
         for collection_name in self.chroma_config.collection_names:
             for semantic_query in semantic_queries:
@@ -166,13 +165,13 @@ class ADKExpertAgent(BaseAgent):
                 if collection_results:
                     results["documents"].extend(collection_results.get("documents", []))
                     results["metadata"].extend(collection_results.get("metadata", []))
-        
+
         return results
-    
-    def _build_semantic_queries(self, query: str, query_type: ADKQueryType) -> List[str]:
+
+    def _build_semantic_queries(self, query: str, query_type: ADKQueryType) -> list[str]:
         """Build semantic queries based on query type."""
         base_queries = [query]
-        
+
         if query_type == ADKQueryType.PATTERN:
             base_queries.extend([
                 f"ADK pattern for {query}",
@@ -209,15 +208,15 @@ class ADKExpertAgent(BaseAgent):
                 f"ADK compliance check {query}",
                 f"Correct ADK pattern for {query}"
             ])
-        
+
         return base_queries
-    
+
     async def _query_collection(
         self,
         collection_name: str,
         query: str,
         max_results: int
-    ) -> Optional[Dict[str, Any]]:
+    ) -> dict[str, Any] | None:
         """
         Query a specific ChromaDB collection.
         
@@ -228,26 +227,26 @@ class ADKExpertAgent(BaseAgent):
         # In production, this would use:
         # - Direct ChromaDB client: collection.query(query_texts=[query], n_results=max_results)
         # - Or MCP tool: mcp__chroma-vana__chroma_query_documents
-        
+
         logger.info(f"Querying collection '{collection_name}' with: {query}")
-        
+
         # Structure for MCP tool integration
         query_params = {
             "collection_name": collection_name,
             "query_text": query,
             "n_results": max_results
         }
-        
+
         # This would be replaced with actual ChromaDB query
         return {
             "documents": [],
             "metadata": [],
             "query_params": query_params
         }
-    
+
     async def synthesize_guidance(
         self,
-        query_results: Dict[str, Any],
+        query_results: dict[str, Any],
         original_query: str,
         include_examples: bool = True
     ) -> ADKGuidance:
@@ -263,14 +262,14 @@ class ADKExpertAgent(BaseAgent):
             Structured ADK guidance
         """
         documents = query_results.get("documents", [])
-        
+
         # Extract key information from documents
         guidance_text = self._extract_guidance(documents)
         examples = self._extract_examples(documents) if include_examples else None
         best_practices = self._extract_best_practices(documents)
         references = self._extract_references(documents)
         warnings = self._extract_warnings(documents)
-        
+
         return ADKGuidance(
             topic=original_query,
             guidance=guidance_text or "No specific ADK guidance found for this query.",
@@ -279,21 +278,21 @@ class ADKExpertAgent(BaseAgent):
             references=references,
             warnings=warnings
         )
-    
-    def _extract_guidance(self, documents: List[str]) -> str:
+
+    def _extract_guidance(self, documents: list[str]) -> str:
         """Extract main guidance from documents."""
         if not documents:
             return ""
-        
+
         # Combine and deduplicate guidance
         guidance_parts = []
         for doc in documents[:5]:  # Top 5 most relevant
             if doc and len(doc) > 50:  # Filter out short snippets
                 guidance_parts.append(doc)
-        
+
         return "\n\n".join(guidance_parts)
-    
-    def _extract_examples(self, documents: List[str]) -> Optional[List[str]]:
+
+    def _extract_examples(self, documents: list[str]) -> list[str] | None:
         """Extract code examples from documents."""
         examples = []
         for doc in documents:
@@ -303,14 +302,14 @@ class ADKExpertAgent(BaseAgent):
                 import re
                 code_blocks = re.findall(r'```(?:python)?\n(.*?)\n```', doc, re.DOTALL)
                 examples.extend(code_blocks)
-        
+
         return examples[:3] if examples else None  # Return top 3 examples
-    
-    def _extract_best_practices(self, documents: List[str]) -> Optional[List[str]]:
+
+    def _extract_best_practices(self, documents: list[str]) -> list[str] | None:
         """Extract best practices from documents."""
         practices = []
         keywords = ["best practice", "recommended", "should", "must", "always", "never"]
-        
+
         for doc in documents:
             doc_lower = doc.lower()
             if any(keyword in doc_lower for keyword in keywords):
@@ -319,27 +318,27 @@ class ADKExpertAgent(BaseAgent):
                 for sentence in sentences:
                     if any(keyword in sentence.lower() for keyword in keywords):
                         practices.append(sentence.strip())
-        
+
         return practices[:5] if practices else None  # Return top 5 practices
-    
-    def _extract_references(self, documents: List[str]) -> Optional[List[str]]:
+
+    def _extract_references(self, documents: list[str]) -> list[str] | None:
         """Extract documentation references."""
         references = []
-        
+
         # Look for section headers or documentation references
         for i, doc in enumerate(documents[:5]):
             if doc:
                 # Create a reference based on document position and content
                 ref = f"ADK Documentation Section {i+1}: {doc[:100]}..."
                 references.append(ref)
-        
+
         return references if references else None
-    
-    def _extract_warnings(self, documents: List[str]) -> Optional[List[str]]:
+
+    def _extract_warnings(self, documents: list[str]) -> list[str] | None:
         """Extract warnings and anti-patterns from documents."""
         warnings = []
         warning_keywords = ["warning", "caution", "avoid", "don't", "anti-pattern", "pitfall", "incorrect"]
-        
+
         for doc in documents:
             doc_lower = doc.lower()
             if any(keyword in doc_lower for keyword in warning_keywords):
@@ -348,14 +347,14 @@ class ADKExpertAgent(BaseAgent):
                 for sentence in sentences:
                     if any(keyword in sentence.lower() for keyword in warning_keywords):
                         warnings.append(sentence.strip())
-        
+
         return warnings[:3] if warnings else None  # Return top 3 warnings
-    
+
     async def validate_implementation(
         self,
         code: str,
         pattern_name: str
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Validate code implementation against ADK patterns.
         
@@ -371,7 +370,7 @@ class ADKExpertAgent(BaseAgent):
             pattern_name,
             ADKQueryType.VALIDATION
         )
-        
+
         # Analyze the code against the pattern
         validation_results = {
             "pattern": pattern_name,
@@ -380,12 +379,12 @@ class ADKExpertAgent(BaseAgent):
             "issues": [],
             "suggestions": []
         }
-        
+
         # This would perform actual code analysis
         # For now, we structure the validation framework
-        
+
         return validation_results
-    
+
     async def _run_async_impl(
         self,
         ctx: InvocationContext
@@ -400,7 +399,7 @@ class ADKExpertAgent(BaseAgent):
         """
         # Get query from context
         query_request = ctx.session.state.get("adk_query")
-        
+
         if not query_request:
             # If no specific query, provide general ADK guidance
             yield Event(
@@ -412,7 +411,7 @@ class ADKExpertAgent(BaseAgent):
                 )
             )
             return
-        
+
         # Parse query request
         if isinstance(query_request, dict):
             query = query_request.get("query", "")
@@ -422,25 +421,25 @@ class ADKExpertAgent(BaseAgent):
             query = str(query_request)
             query_type = ADKQueryType.PATTERN
             include_examples = True
-        
+
         logger.info(f"Processing ADK query: {query} (type: {query_type})")
-        
+
         # Query ChromaDB
         query_results = await self.query_adk_knowledge(query, query_type)
-        
+
         # Synthesize guidance
         guidance = await self.synthesize_guidance(
             query_results,
             query,
             include_examples
         )
-        
+
         # Format response
         response_text = self._format_guidance_response(guidance)
-        
+
         # Store guidance in state for other agents
         ctx.session.state["adk_guidance"] = guidance.dict()
-        
+
         # Yield response event
         yield Event(
             author=self.name,
@@ -451,35 +450,35 @@ class ADKExpertAgent(BaseAgent):
                 state_delta={"adk_guidance": guidance.dict()}
             )
         )
-    
+
     def _format_guidance_response(self, guidance: ADKGuidance) -> str:
         """Format ADK guidance into readable response."""
         response_parts = [
             f"## ADK Guidance: {guidance.topic}\n",
             guidance.guidance
         ]
-        
+
         if guidance.best_practices:
             response_parts.append("\n### Best Practices:")
             for practice in guidance.best_practices:
                 response_parts.append(f"- {practice}")
-        
+
         if guidance.examples:
             response_parts.append("\n### Code Examples:")
             for i, example in enumerate(guidance.examples, 1):
                 response_parts.append(f"\n**Example {i}:**")
                 response_parts.append(f"```python\n{example}\n```")
-        
+
         if guidance.warnings:
             response_parts.append("\n### ⚠️ Warnings:")
             for warning in guidance.warnings:
                 response_parts.append(f"- {warning}")
-        
+
         if guidance.references:
             response_parts.append("\n### References:")
             for ref in guidance.references:
                 response_parts.append(f"- {ref}")
-        
+
         return "\n".join(response_parts)
 
 
@@ -508,30 +507,30 @@ async def query_adk_expert(
     try:
         # Create expert agent instance
         expert = ADKExpertAgent()
-        
+
         # Query the knowledge base
         query_results = await expert.query_adk_knowledge(
             query,
             ADKQueryType(query_type),
             max_results=10
         )
-        
+
         # Synthesize guidance
         guidance = await expert.synthesize_guidance(
             query_results,
             query,
             include_examples
         )
-        
+
         # Store in context if available
         if tool_context and hasattr(tool_context, 'state'):
             tool_context.state["last_adk_guidance"] = guidance.dict()
-        
+
         return {
             "status": "success",
             "guidance": guidance.dict()
         }
-    
+
     except Exception as e:
         logger.error(f"Error querying ADK expert: {e}")
         return {
@@ -549,7 +548,7 @@ def create_adk_expert_llm_agent(model: str = "gemini-2.5-flash") -> LlmAgent:
     ADK guidance based on ChromaDB documentation.
     """
     from google.adk.agents import LlmAgent
-    
+
     return LlmAgent(
         name="adk_expert_llm_agent",
         model=model,
@@ -584,9 +583,9 @@ def create_adk_expert_llm_agent(model: str = "gemini-2.5-flash") -> LlmAgent:
 # Export the agent for use in Claude Flow
 __all__ = [
     "ADKExpertAgent",
-    "create_adk_expert_llm_agent",
-    "query_adk_expert",
-    "ADKQueryRequest",
     "ADKGuidance",
-    "ADKQueryType"
+    "ADKQueryRequest",
+    "ADKQueryType",
+    "create_adk_expert_llm_agent",
+    "query_adk_expert"
 ]

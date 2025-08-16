@@ -1,0 +1,512 @@
+name: Pre-Commit Hook Validation
+
+on:
+  push:
+    paths:
+      - '**/*.js'
+      - '**/*.jsx'
+      - '**/*.ts'
+      - '**/*.tsx'
+      - '**/*.py'
+      - '**/*.sh'
+      - '**/*.md'
+      - 'tests/hooks/**'
+  pull_request:
+    paths:
+      - '**/*.js'
+      - '**/*.jsx'
+      - '**/*.ts'
+      - '**/*.tsx'
+      - '**/*.py'
+      - '**/*.sh'
+      - '**/*.md'
+      - 'tests/hooks/**'
+
+env:
+  VALIDATION_TIMEOUT: 300
+
+permissions:
+  contents: read
+  pull-requests: write
+  checks: write
+
+jobs:
+  # =====================================
+  # Pre-Commit Style Validation
+  # =====================================
+  pre-commit-validation:
+    name: Pre-Commit Validation
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install Pre-Commit Tools
+        run: |
+          # Install pre-commit framework
+          pip install pre-commit
+          
+          # Install formatting tools
+          npm install -g prettier eslint @typescript-eslint/eslint-plugin
+          pip install black isort flake8 mypy
+
+      - name: Setup Pre-Commit Hooks Configuration
+        run: |
+          # Create pre-commit configuration
+          cat > .pre-commit-config.yaml << 'EOF'
+          repos:
+            # General hooks
+            - repo: https://github.com/pre-commit/pre-commit-hooks
+              rev: v4.4.0
+              hooks:
+                - id: trailing-whitespace
+                - id: end-of-file-fixer
+                - id: check-yaml
+                - id: check-json
+                - id: check-merge-conflict
+                - id: check-added-large-files
+                  args: ['--maxkb=500']
+                - id: detect-private-key
+                - id: detect-aws-credentials
+          
+            # JavaScript/TypeScript
+            - repo: https://github.com/pre-commit/mirrors-prettier
+              rev: v3.0.0
+              hooks:
+                - id: prettier
+                  files: \.(js|jsx|ts|tsx|json|css|md)$
+          
+            - repo: https://github.com/pre-commit/mirrors-eslint
+              rev: v8.44.0
+              hooks:
+                - id: eslint
+                  files: \.(js|jsx|ts|tsx)$
+                  additional_dependencies:
+                    - eslint@8.44.0
+                    - '@typescript-eslint/eslint-plugin@5.60.0'
+                    - eslint-plugin-security@1.7.1
+          
+            # Python
+            - repo: https://github.com/psf/black
+              rev: 23.3.0
+              hooks:
+                - id: black
+                  language_version: python3
+          
+            - repo: https://github.com/pycqa/isort
+              rev: 5.12.0
+              hooks:
+                - id: isort
+                  args: ["--profile", "black"]
+          
+            - repo: https://github.com/pycqa/flake8
+              rev: 6.0.0
+              hooks:
+                - id: flake8
+                  args: ['--max-line-length=88', '--extend-ignore=E203,W503']
+          
+            # Shell scripts
+            - repo: https://github.com/shellcheck-py/shellcheck-py
+              rev: v0.9.0.5
+              hooks:
+                - id: shellcheck
+                  args: [-e, SC1091]
+          
+            # Security checks
+            - repo: https://github.com/Yelp/detect-secrets
+              rev: v1.4.0
+              hooks:
+                - id: detect-secrets
+                  args: ['--baseline', '.secrets.baseline']
+          EOF
+
+      - name: Initialize Secrets Baseline
+        run: |
+          # Create secrets baseline if it doesn't exist
+          if [ ! -f ".secrets.baseline" ]; then
+            detect-secrets scan --baseline .secrets.baseline || true
+          fi
+
+      - name: Get Changed Files
+        id: changed-files
+        run: |
+          # Get list of changed files
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            # For PRs, compare against target branch
+            git fetch origin ${{ github.base_ref }}
+            changed_files=$(git diff --name-only origin/${{ github.base_ref }}...HEAD)
+          else
+            # For pushes, compare against previous commit
+            if [ "${{ github.event.before }}" != "0000000000000000000000000000000000000000" ]; then
+              changed_files=$(git diff --name-only ${{ github.event.before }} HEAD)
+            else
+              # First commit, check all files
+              changed_files=$(git ls-files)
+            fi
+          fi
+          
+          echo "Changed files:"
+          echo "$changed_files"
+          
+          # Save to file for processing
+          echo "$changed_files" > changed_files.txt
+          
+          # Count files by type
+          js_files=$(echo "$changed_files" | grep -E '\.(js|jsx|ts|tsx)$' | wc -l || echo 0)
+          py_files=$(echo "$changed_files" | grep -E '\.py$' | wc -l || echo 0)
+          sh_files=$(echo "$changed_files" | grep -E '\.(sh|bash)$' | wc -l || echo 0)
+          md_files=$(echo "$changed_files" | grep -E '\.md$' | wc -l || echo 0)
+          
+          echo "js_files=$js_files" >> $GITHUB_OUTPUT
+          echo "py_files=$py_files" >> $GITHUB_OUTPUT
+          echo "sh_files=$sh_files" >> $GITHUB_OUTPUT
+          echo "md_files=$md_files" >> $GITHUB_OUTPUT
+
+      - name: Run Pre-Commit on Changed Files
+        run: |
+          set -e
+          
+          echo "🔍 Running pre-commit validation on changed files..."
+          
+          # Create validation reports directory
+          mkdir -p .pre-commit-reports
+          
+          # Install pre-commit hooks
+          pre-commit install-hooks
+          
+          # Run pre-commit on changed files
+          if [ -f "changed_files.txt" ] && [ -s "changed_files.txt" ]; then
+            echo "Running pre-commit on changed files..."
+            
+            # Run pre-commit with detailed output
+            if pre-commit run --files $(cat changed_files.txt | tr '\n' ' ') --verbose > .pre-commit-reports/pre-commit-output.txt 2>&1; then
+              pre_commit_status="PASSED"
+              echo "✅ Pre-commit validation passed"
+            else
+              pre_commit_status="FAILED"
+              echo "❌ Pre-commit validation failed"
+              
+              # Show failures
+              echo "Pre-commit failures:"
+              cat .pre-commit-reports/pre-commit-output.txt
+            fi
+          else
+            pre_commit_status="SKIPPED"
+            echo "No changed files to validate"
+          fi
+          
+          # Generate summary report
+          cat > .pre-commit-reports/summary.json << EOF
+          {
+            "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+            "status": "$pre_commit_status",
+            "changed_files": {
+              "js_files": ${{ steps.changed-files.outputs.js_files }},
+              "py_files": ${{ steps.changed-files.outputs.py_files }},
+              "sh_files": ${{ steps.changed-files.outputs.sh_files }},
+              "md_files": ${{ steps.changed-files.outputs.md_files }}
+            }
+          }
+          EOF
+          
+          # Fail if pre-commit failed
+          if [ "$pre_commit_status" = "FAILED" ]; then
+            exit 1
+          fi
+
+      - name: Run Custom Hook Validators
+        run: |
+          set -e
+          
+          echo "🔗 Running custom hook validation..."
+          
+          # Create custom validation reports directory
+          mkdir -p .pre-commit-reports/custom
+          
+          # Initialize validation results
+          total_files=0
+          passed_files=0
+          failed_files=0
+          
+          # Validate JavaScript/TypeScript files with security validator
+          if [ ${{ steps.changed-files.outputs.js_files }} -gt 0 ]; then
+            echo "Validating JavaScript/TypeScript files..."
+            
+            while IFS= read -r file; do
+              if [[ "$file" =~ \.(js|jsx|ts|tsx)$ ]] && [ -f "$file" ]; then
+                ((total_files++))
+                
+                echo "Validating: $file"
+                if node tests/hooks/validation/advanced-security-validator.js "$file" > ".pre-commit-reports/custom/$(basename "$file").json" 2>&1; then
+                  ((passed_files++))
+                  echo "✅ $file - Passed"
+                else
+                  ((failed_files++))
+                  echo "❌ $file - Failed validation"
+                  
+                  # Show validation errors
+                  if [ -f ".pre-commit-reports/custom/$(basename "$file").json" ]; then
+                    echo "Validation issues:"
+                    jq -r '.violations[]? | "  - \(.type): \(.message)"' ".pre-commit-reports/custom/$(basename "$file").json" 2>/dev/null || true
+                  fi
+                fi
+              fi
+            done < changed_files.txt
+          fi
+          
+          # Validate Python files with additional checks
+          if [ ${{ steps.changed-files.outputs.py_files }} -gt 0 ]; then
+            echo "Validating Python files..."
+            
+            while IFS= read -r file; do
+              if [[ "$file" =~ \.py$ ]] && [ -f "$file" ]; then
+                ((total_files++))
+                
+                echo "Validating: $file"
+                
+                # Run mypy type checking
+                if mypy "$file" --ignore-missing-imports > ".pre-commit-reports/custom/$(basename "$file").mypy.txt" 2>&1; then
+                  mypy_passed=true
+                else
+                  mypy_passed=false
+                  echo "⚠️  MyPy issues in $file"
+                fi
+                
+                # Run additional security checks
+                if bandit -r "$file" -f json -o ".pre-commit-reports/custom/$(basename "$file").bandit.json" 2>/dev/null; then
+                  bandit_passed=true
+                else
+                  bandit_passed=false
+                  echo "⚠️  Bandit security issues in $file"
+                fi
+                
+                if [ "$mypy_passed" = true ] && [ "$bandit_passed" = true ]; then
+                  ((passed_files++))
+                  echo "✅ $file - Passed"
+                else
+                  ((failed_files++))
+                  echo "❌ $file - Failed validation"
+                fi
+              fi
+            done < changed_files.txt
+          fi
+          
+          # Generate custom validation summary
+          cat > .pre-commit-reports/custom/summary.json << EOF
+          {
+            "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+            "total_files": $total_files,
+            "passed_files": $passed_files,
+            "failed_files": $failed_files,
+            "success_rate": $(echo "scale=2; $passed_files * 100 / ($total_files > 0 ? $total_files : 1)" | bc -l),
+            "status": "$([ $failed_files -eq 0 ] && echo 'PASSED' || echo 'FAILED')"
+          }
+          EOF
+          
+          echo "Custom validation summary:"
+          echo "  Total files: $total_files"
+          echo "  Passed: $passed_files"
+          echo "  Failed: $failed_files"
+          echo "  Success rate: $(echo "scale=1; $passed_files * 100 / ($total_files > 0 ? $total_files : 1)" | bc -l)%"
+          
+          # Fail if any files failed custom validation
+          if [ $failed_files -gt 0 ]; then
+            echo "❌ Custom validation failed for $failed_files files"
+            exit 1
+          fi
+
+      - name: Check Performance Impact
+        run: |
+          set -e
+          
+          echo "📈 Checking performance impact of changes..."
+          
+          # Create performance reports directory
+          mkdir -p .pre-commit-reports/performance
+          
+          # Initialize metrics
+          large_files=0
+          complex_files=0
+          performance_warnings=0
+          
+          # Check for large files
+          while IFS= read -r file; do
+            if [ -f "$file" ]; then
+              file_size=$(stat -f%z "$file" 2>/dev/null || stat -c%s "$file" 2>/dev/null || echo 0)
+              
+              # Check if file is larger than 100KB
+              if [ $file_size -gt 102400 ]; then
+                ((large_files++))
+                echo "⚠️  Large file detected: $file ($file_size bytes)"
+              fi
+              
+              # Check JavaScript/TypeScript complexity
+              if [[ "$file" =~ \.(js|jsx|ts|tsx)$ ]]; then
+                lines=$(wc -l < "$file")
+                if [ $lines -gt 500 ]; then
+                  ((complex_files++))
+                  echo "⚠️  Complex file detected: $file ($lines lines)"
+                fi
+                
+                # Check for performance anti-patterns
+                if grep -q "useEffect.*\[\]" "$file" 2>/dev/null; then
+                  if grep -c "useEffect" "$file" | awk '{if($1 > 5) exit 1}'; then
+                    ((performance_warnings++))
+                    echo "⚠️  Multiple useEffect hooks in $file may impact performance"
+                  fi
+                fi
+              fi
+              
+              # Check Python complexity
+              if [[ "$file" =~ \.py$ ]]; then
+                lines=$(wc -l < "$file")
+                if [ $lines -gt 1000 ]; then
+                  ((complex_files++))
+                  echo "⚠️  Complex Python file detected: $file ($lines lines)"
+                fi
+              fi
+            fi
+          done < changed_files.txt
+          
+          # Generate performance summary
+          cat > .pre-commit-reports/performance/summary.json << EOF
+          {
+            "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+            "large_files": $large_files,
+            "complex_files": $complex_files,
+            "performance_warnings": $performance_warnings,
+            "total_issues": $((large_files + complex_files + performance_warnings)),
+            "status": "$([ $((large_files + complex_files + performance_warnings)) -eq 0 ] && echo 'GOOD' || echo 'WARNINGS')"
+          }
+          EOF
+          
+          echo "Performance impact summary:"
+          echo "  Large files: $large_files"
+          echo "  Complex files: $complex_files"
+          echo "  Performance warnings: $performance_warnings"
+          
+          # Don't fail for performance warnings, just report them
+          if [ $((large_files + complex_files + performance_warnings)) -gt 0 ]; then
+            echo "⚠️  Performance impact detected but not blocking"
+          else
+            echo "✅ No significant performance impact detected"
+          fi
+
+      - name: Upload Pre-Commit Reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pre-commit-reports-${{ github.sha }}
+          path: .pre-commit-reports/
+          retention-days: 14
+
+      - name: Comment Results on PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            
+            // Read pre-commit summary
+            let preCommitSummary = {};
+            if (fs.existsSync('.pre-commit-reports/summary.json')) {
+              preCommitSummary = JSON.parse(fs.readFileSync('.pre-commit-reports/summary.json', 'utf8'));
+            }
+            
+            // Read custom validation summary
+            let customSummary = {};
+            if (fs.existsSync('.pre-commit-reports/custom/summary.json')) {
+              customSummary = JSON.parse(fs.readFileSync('.pre-commit-reports/custom/summary.json', 'utf8'));
+            }
+            
+            // Read performance summary
+            let performanceSummary = {};
+            if (fs.existsSync('.pre-commit-reports/performance/summary.json')) {
+              performanceSummary = JSON.parse(fs.readFileSync('.pre-commit-reports/performance/summary.json', 'utf8'));
+            }
+            
+            const preCommitStatus = preCommitSummary.status || 'UNKNOWN';
+            const customStatus = customSummary.status || 'UNKNOWN';
+            const performanceStatus = performanceSummary.status || 'UNKNOWN';
+            
+            const overallStatus = (preCommitStatus === 'PASSED' && customStatus === 'PASSED') ? 'PASSED' : 'FAILED';
+            const statusIcon = overallStatus === 'PASSED' ? '✅' : '❌';
+            
+            let comment = `## ${statusIcon} Pre-Commit Validation Results
+            
+            **Overall Status:** ${overallStatus}
+            
+            ### Validation Components:
+            - **Pre-Commit Hooks:** ${preCommitStatus}
+            - **Custom Validation:** ${customStatus}
+            - **Performance Check:** ${performanceStatus}
+            
+            ### Files Processed:
+            - **JavaScript/TypeScript:** ${preCommitSummary.changed_files?.js_files || 0} files
+            - **Python:** ${preCommitSummary.changed_files?.py_files || 0} files
+            - **Shell Scripts:** ${preCommitSummary.changed_files?.sh_files || 0} files
+            - **Markdown:** ${preCommitSummary.changed_files?.md_files || 0} files
+            `;
+            
+            if (customSummary.total_files > 0) {
+              comment += `
+            ### Custom Validation Details:
+            - **Total Files Validated:** ${customSummary.total_files}
+            - **Passed:** ${customSummary.passed_files}
+            - **Failed:** ${customSummary.failed_files}
+            - **Success Rate:** ${customSummary.success_rate}%
+              `;
+            }
+            
+            if (performanceSummary.total_issues > 0) {
+              comment += `
+            ### Performance Impact:
+            - **Large Files:** ${performanceSummary.large_files}
+            - **Complex Files:** ${performanceSummary.complex_files}
+            - **Performance Warnings:** ${performanceSummary.performance_warnings}
+              `;
+            }
+            
+            comment += `
+            
+            Generated at: ${preCommitSummary.timestamp || new Date().toISOString()}`;
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
+
+      - name: Set Final Status
+        run: |
+          # Check overall validation status
+          pre_commit_status=$(jq -r '.status' .pre-commit-reports/summary.json 2>/dev/null || echo "UNKNOWN")
+          custom_status=$(jq -r '.status' .pre-commit-reports/custom/summary.json 2>/dev/null || echo "UNKNOWN")
+          
+          echo "Pre-commit validation results:"
+          echo "  Pre-commit hooks: $pre_commit_status"
+          echo "  Custom validation: $custom_status"
+          
+          if [ "$pre_commit_status" = "FAILED" ] || [ "$custom_status" = "FAILED" ]; then
+            echo "❌ Pre-commit validation failed"
+            exit 1
+          else
+            echo "✅ Pre-commit validation passed"
+          fi

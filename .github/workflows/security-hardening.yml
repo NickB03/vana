@@ -1,0 +1,735 @@
+name: Security Hardening & Branch Protection
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+  schedule:
+    # Run security scans weekly on Sundays at 3 AM UTC
+    - cron: '0 3 * * 0'
+  workflow_dispatch:
+
+env:
+  SECURITY_SCAN_TIMEOUT: 900
+  DEPENDENCY_CHECK_TIMEOUT: 600
+
+permissions:
+  contents: read
+  security-events: write
+  actions: read
+  pull-requests: write
+  checks: write
+
+jobs:
+  # =====================================
+  # Dependency Security Scanning
+  # =====================================
+  dependency-security:
+    name: Dependency Security Scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: '**/package-lock.json'
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Cache Security Databases
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/pip
+            ~/.npm
+            .security-db
+          key: security-db-v1-${{ hashFiles('**/package-lock.json', '**/requirements.txt', '**/pyproject.toml') }}
+          restore-keys: |
+            security-db-v1-
+
+      - name: Install Security Tools
+        run: |
+          # Install Node.js security tools
+          npm install -g npm-audit-resolver audit-ci
+          
+          # Install Python security tools
+          pip install safety bandit semgrep
+
+      - name: Run Node.js Security Audit
+        run: |
+          set -e
+          
+          echo "🔍 Running Node.js dependency security audit..."
+          
+          # Create security reports directory
+          mkdir -p .security-reports/nodejs
+          
+          cd frontend
+          
+          # Run npm audit with JSON output
+          npm audit --audit-level=moderate --json > ../.security-reports/nodejs/npm-audit.json || true
+          
+          # Check for high/critical vulnerabilities
+          high_vulns=$(jq '.metadata.vulnerabilities.high // 0' ../.security-reports/nodejs/npm-audit.json)
+          critical_vulns=$(jq '.metadata.vulnerabilities.critical // 0' ../.security-reports/nodejs/npm-audit.json)
+          
+          echo "High vulnerabilities: $high_vulns"
+          echo "Critical vulnerabilities: $critical_vulns"
+          
+          # Generate summary
+          cat > ../.security-reports/nodejs/summary.json << EOF
+          {
+            "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+            "tool": "npm-audit",
+            "vulnerabilities": {
+              "critical": $critical_vulns,
+              "high": $high_vulns,
+              "total": $((critical_vulns + high_vulns))
+            },
+            "status": "$([ $critical_vulns -eq 0 ] && echo 'PASSED' || echo 'FAILED')"
+          }
+          EOF
+          
+          # Fail if critical vulnerabilities found
+          if [ $critical_vulns -gt 0 ]; then
+            echo "❌ Critical Node.js vulnerabilities found: $critical_vulns"
+            exit 1
+          fi
+          
+          if [ $high_vulns -gt 5 ]; then
+            echo "⚠️  Too many high-severity vulnerabilities: $high_vulns"
+            exit 1
+          fi
+
+      - name: Run Python Security Audit
+        run: |
+          set -e
+          
+          echo "🔍 Running Python dependency security audit..."
+          
+          # Create Python security reports directory
+          mkdir -p .security-reports/python
+          
+          cd app
+          
+          # Run Safety check
+          safety check --json --output ../.security-reports/python/safety-report.json || true
+          
+          # Run Bandit static analysis
+          bandit -r . -f json -o ../.security-reports/python/bandit-report.json || true
+          
+          # Count vulnerabilities from Safety
+          if [ -f "../.security-reports/python/safety-report.json" ]; then
+            safety_vulns=$(jq 'length' ../.security-reports/python/safety-report.json 2>/dev/null || echo "0")
+          else
+            safety_vulns=0
+          fi
+          
+          # Count high/medium issues from Bandit
+          if [ -f "../.security-reports/python/bandit-report.json" ]; then
+            bandit_high=$(jq '.metrics._totals.SEVERITY.HIGH // 0' ../.security-reports/python/bandit-report.json 2>/dev/null || echo "0")
+            bandit_medium=$(jq '.metrics._totals.SEVERITY.MEDIUM // 0' ../.security-reports/python/bandit-report.json 2>/dev/null || echo "0")
+          else
+            bandit_high=0
+            bandit_medium=0
+          fi
+          
+          echo "Safety vulnerabilities: $safety_vulns"
+          echo "Bandit high issues: $bandit_high"
+          echo "Bandit medium issues: $bandit_medium"
+          
+          # Generate summary
+          cat > ../.security-reports/python/summary.json << EOF
+          {
+            "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+            "tools": ["safety", "bandit"],
+            "vulnerabilities": {
+              "safety_vulns": $safety_vulns,
+              "bandit_high": $bandit_high,
+              "bandit_medium": $bandit_medium,
+              "total": $((safety_vulns + bandit_high))
+            },
+            "status": "$([ $((safety_vulns + bandit_high)) -eq 0 ] && echo 'PASSED' || echo 'FAILED')"
+          }
+          EOF
+          
+          # Fail if critical vulnerabilities found
+          if [ $safety_vulns -gt 0 ]; then
+            echo "❌ Python package vulnerabilities found: $safety_vulns"
+            exit 1
+          fi
+          
+          if [ $bandit_high -gt 0 ]; then
+            echo "❌ High-severity Bandit issues found: $bandit_high"
+            exit 1
+          fi
+
+      - name: Run Semgrep Security Analysis
+        run: |
+          set -e
+          
+          echo "🔍 Running Semgrep security analysis..."
+          
+          # Create Semgrep reports directory
+          mkdir -p .security-reports/semgrep
+          
+          # Run Semgrep with security rulesets
+          semgrep --config=auto --json --output=.security-reports/semgrep/results.json . || true
+          
+          # Count critical and high findings
+          if [ -f ".security-reports/semgrep/results.json" ]; then
+            total_findings=$(jq '.results | length' .security-reports/semgrep/results.json)
+            critical_findings=$(jq '.results | map(select(.extra.severity == "ERROR")) | length' .security-reports/semgrep/results.json)
+            warning_findings=$(jq '.results | map(select(.extra.severity == "WARNING")) | length' .security-reports/semgrep/results.json)
+          else
+            total_findings=0
+            critical_findings=0
+            warning_findings=0
+          fi
+          
+          echo "Total Semgrep findings: $total_findings"
+          echo "Critical findings: $critical_findings"
+          echo "Warning findings: $warning_findings"
+          
+          # Generate summary
+          cat > .security-reports/semgrep/summary.json << EOF
+          {
+            "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+            "tool": "semgrep",
+            "findings": {
+              "total": $total_findings,
+              "critical": $critical_findings,
+              "warnings": $warning_findings
+            },
+            "status": "$([ $critical_findings -eq 0 ] && echo 'PASSED' || echo 'FAILED')"
+          }
+          EOF
+          
+          # Fail if critical findings
+          if [ $critical_findings -gt 0 ]; then
+            echo "❌ Critical Semgrep security findings: $critical_findings"
+            exit 1
+          fi
+
+      - name: Upload Security Reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: dependency-security-reports-${{ github.sha }}
+          path: .security-reports/
+          retention-days: 30
+
+  # =====================================
+  # Code Quality & Security Metrics
+  # =====================================
+  code-quality-security:
+    name: Code Quality Security
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install Quality Tools
+        run: |
+          npm install -g eslint-plugin-security @typescript-eslint/eslint-plugin
+
+      - name: Run Security-Focused Linting
+        run: |
+          set -e
+          
+          echo "🔍 Running security-focused code quality checks..."
+          
+          # Create quality reports directory
+          mkdir -p .quality-reports
+          
+          # Frontend security linting
+          if [ -d "frontend" ]; then
+            cd frontend
+            npm ci
+            
+            # Create ESLint config with security rules
+            cat > .eslintrc.security.js << 'EOF'
+            module.exports = {
+              extends: [
+                'eslint:recommended',
+                '@typescript-eslint/recommended'
+              ],
+              plugins: ['security'],
+              rules: {
+                'security/detect-object-injection': 'error',
+                'security/detect-non-literal-regexp': 'error',
+                'security/detect-unsafe-regex': 'error',
+                'security/detect-buffer-noassert': 'error',
+                'security/detect-child-process': 'error',
+                'security/detect-disable-mustache-escape': 'error',
+                'security/detect-eval-with-expression': 'error',
+                'security/detect-no-csrf-before-method-override': 'error',
+                'security/detect-non-literal-fs-filename': 'error',
+                'security/detect-non-literal-require': 'error',
+                'security/detect-possible-timing-attacks': 'error',
+                'security/detect-pseudoRandomBytes': 'error'
+              }
+            };
+            EOF
+            
+            # Run security-focused ESLint
+            npx eslint --config .eslintrc.security.js --format json --output-file ../.quality-reports/frontend-security-lint.json src/ || true
+            
+            cd ..
+          fi
+          
+          # Count security issues
+          if [ -f ".quality-reports/frontend-security-lint.json" ]; then
+            error_count=$(jq '[.[] | .messages[] | select(.severity == 2)] | length' .quality-reports/frontend-security-lint.json)
+            warning_count=$(jq '[.[] | .messages[] | select(.severity == 1)] | length' .quality-reports/frontend-security-lint.json)
+          else
+            error_count=0
+            warning_count=0
+          fi
+          
+          echo "Security lint errors: $error_count"
+          echo "Security lint warnings: $warning_count"
+          
+          # Generate summary
+          cat > .quality-reports/summary.json << EOF
+          {
+            "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+            "tool": "eslint-security",
+            "issues": {
+              "errors": $error_count,
+              "warnings": $warning_count,
+              "total": $((error_count + warning_count))
+            },
+            "status": "$([ $error_count -eq 0 ] && echo 'PASSED' || echo 'FAILED')"
+          }
+          EOF
+          
+          # Fail if security errors found
+          if [ $error_count -gt 0 ]; then
+            echo "❌ Security linting errors found: $error_count"
+            exit 1
+          fi
+
+      - name: Upload Quality Reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: code-quality-security-reports-${{ github.sha }}
+          path: .quality-reports/
+          retention-days: 14
+
+  # =====================================
+  # Secrets Detection
+  # =====================================
+  secrets-detection:
+    name: Secrets Detection
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install TruffleHog
+        run: |
+          curl -sSfL https://raw.githubusercontent.com/trufflesecurity/trufflehog/main/scripts/install.sh | sh -s -- -b /usr/local/bin
+
+      - name: Run Secrets Detection
+        run: |
+          set -e
+          
+          echo "🔍 Scanning for exposed secrets..."
+          
+          # Create secrets reports directory
+          mkdir -p .secrets-reports
+          
+          # Run TruffleHog
+          trufflehog git file://. --json --no-update > .secrets-reports/trufflehog-results.json || true
+          
+          # Count findings
+          if [ -f ".secrets-reports/trufflehog-results.json" ]; then
+            verified_secrets=$(jq 'select(.Verified == true) | length' .secrets-reports/trufflehog-results.json | wc -l)
+            total_findings=$(wc -l < .secrets-reports/trufflehog-results.json)
+          else
+            verified_secrets=0
+            total_findings=0
+          fi
+          
+          echo "Verified secrets found: $verified_secrets"
+          echo "Total findings: $total_findings"
+          
+          # Additional pattern-based secret detection
+          echo "Running additional pattern-based detection..."
+          
+          # Common secret patterns
+          secret_patterns=(
+            "AKIA[0-9A-Z]{16}"  # AWS Access Key ID
+            "sk_live_[0-9a-zA-Z]{24}"  # Stripe Secret Key
+            "sk_test_[0-9a-zA-Z]{24}"  # Stripe Test Key
+            "ghp_[0-9a-zA-Z]{36}"  # GitHub Personal Access Token
+            "glpat-[0-9a-zA-Z_\\-]{20}"  # GitLab Personal Access Token
+            "xox[baprs]-[0-9a-zA-Z]{10,48}"  # Slack Token
+          )
+          
+          pattern_matches=0
+          for pattern in "${secret_patterns[@]}"; do
+            matches=$(grep -rE "$pattern" . --exclude-dir=.git --exclude-dir=node_modules --exclude-dir=.venv || true)
+            if [ -n "$matches" ]; then
+              echo "Pattern match found: $pattern"
+              echo "$matches" >> .secrets-reports/pattern-matches.txt
+              ((pattern_matches++))
+            fi
+          done
+          
+          # Generate summary
+          cat > .secrets-reports/summary.json << EOF
+          {
+            "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+            "tools": ["trufflehog", "pattern-matching"],
+            "findings": {
+              "verified_secrets": $verified_secrets,
+              "total_trufflehog": $total_findings,
+              "pattern_matches": $pattern_matches,
+              "total": $((verified_secrets + pattern_matches))
+            },
+            "status": "$([ $((verified_secrets + pattern_matches)) -eq 0 ] && echo 'PASSED' || echo 'FAILED')"
+          }
+          EOF
+          
+          # Fail if any secrets found
+          if [ $verified_secrets -gt 0 ] || [ $pattern_matches -gt 0 ]; then
+            echo "❌ Secrets detected in repository"
+            exit 1
+          fi
+          
+          echo "✅ No secrets detected"
+
+      - name: Upload Secrets Reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: secrets-detection-reports-${{ github.sha }}
+          path: .secrets-reports/
+          retention-days: 90
+
+  # =====================================
+  # License Compliance
+  # =====================================
+  license-compliance:
+    name: License Compliance
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install License Checker
+        run: |
+          npm install -g license-checker
+
+      - name: Check License Compliance
+        run: |
+          set -e
+          
+          echo "📋 Checking license compliance..."
+          
+          # Create license reports directory
+          mkdir -p .license-reports
+          
+          # Frontend license check
+          if [ -d "frontend" ]; then
+            cd frontend
+            npm ci
+            
+            # Check licenses
+            license-checker --json --out ../.license-reports/frontend-licenses.json || true
+            
+            # Define prohibited licenses
+            prohibited_licenses=("GPL-2.0" "GPL-3.0" "AGPL-1.0" "AGPL-3.0" "CPAL-1.0" "OSL-3.0")
+            
+            violations=0
+            if [ -f "../.license-reports/frontend-licenses.json" ]; then
+              for license in "${prohibited_licenses[@]}"; do
+                count=$(jq -r "to_entries[] | select(.value.licenses | contains([\"$license\"])) | .key" ../.license-reports/frontend-licenses.json | wc -l)
+                if [ $count -gt 0 ]; then
+                  echo "❌ Prohibited license found: $license"
+                  ((violations++))
+                fi
+              done
+            fi
+            
+            cd ..
+          else
+            violations=0
+          fi
+          
+          # Generate summary
+          cat > .license-reports/summary.json << EOF
+          {
+            "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+            "violations": $violations,
+            "status": "$([ $violations -eq 0 ] && echo 'PASSED' || echo 'FAILED')",
+            "prohibited_licenses": $(printf '%s\n' "${prohibited_licenses[@]}" | jq -R . | jq -s .)
+          }
+          EOF
+          
+          if [ $violations -gt 0 ]; then
+            echo "❌ License compliance violations found: $violations"
+            exit 1
+          fi
+          
+          echo "✅ All licenses are compliant"
+
+      - name: Upload License Reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: license-compliance-reports-${{ github.sha }}
+          path: .license-reports/
+          retention-days: 30
+
+  # =====================================
+  # Security Hardening Summary
+  # =====================================
+  security-summary:
+    name: Security Hardening Summary
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    if: always()
+    needs: [dependency-security, code-quality-security, secrets-detection, license-compliance]
+    
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Download All Security Reports
+        uses: actions/download-artifact@v4
+        with:
+          path: .security-artifacts/
+
+      - name: Generate Security Hardening Summary
+        run: |
+          set -e
+          
+          echo "🔐 Generating security hardening summary..."
+          
+          # Create summary directory
+          mkdir -p .security-summary
+          
+          # Initialize summary data
+          python3 -c "
+          import json
+          import os
+          import glob
+          from datetime import datetime
+          
+          summary = {
+              'timestamp': datetime.utcnow().isoformat() + 'Z',
+              'commit_sha': '${{ github.sha }}',
+              'branch': '${{ github.ref_name }}',
+              'components': {},
+              'overall_status': 'UNKNOWN',
+              'security_score': 0,
+              'total_vulnerabilities': 0,
+              'critical_issues': 0
+          }
+          
+          # Process dependency security results
+          dep_security_path = '.security-artifacts/dependency-security-reports-${{ github.sha }}'
+          if os.path.exists(dep_security_path):
+              nodejs_summary = os.path.join(dep_security_path, 'nodejs', 'summary.json')
+              python_summary = os.path.join(dep_security_path, 'python', 'summary.json')
+              semgrep_summary = os.path.join(dep_security_path, 'semgrep', 'summary.json')
+              
+              component_status = []
+              total_vulns = 0
+              
+              if os.path.exists(nodejs_summary):
+                  with open(nodejs_summary) as f:
+                      data = json.load(f)
+                      component_status.append(data['status'])
+                      total_vulns += data['vulnerabilities']['total']
+              
+              if os.path.exists(python_summary):
+                  with open(python_summary) as f:
+                      data = json.load(f)
+                      component_status.append(data['status'])
+                      total_vulns += data['vulnerabilities']['total']
+              
+              if os.path.exists(semgrep_summary):
+                  with open(semgrep_summary) as f:
+                      data = json.load(f)
+                      component_status.append(data['status'])
+                      total_vulns += data['findings']['critical']
+              
+              summary['components']['dependency_security'] = {
+                  'status': 'PASSED' if all(s == 'PASSED' for s in component_status) else 'FAILED',
+                  'vulnerabilities': total_vulns
+              }
+          
+          # Process code quality security results
+          quality_path = '.security-artifacts/code-quality-security-reports-${{ github.sha }}'
+          if os.path.exists(quality_path):
+              quality_summary = os.path.join(quality_path, 'summary.json')
+              if os.path.exists(quality_summary):
+                  with open(quality_summary) as f:
+                      data = json.load(f)
+                      summary['components']['code_quality'] = {
+                          'status': data['status'],
+                          'issues': data['issues']['total']
+                      }
+          
+          # Process secrets detection results
+          secrets_path = '.security-artifacts/secrets-detection-reports-${{ github.sha }}'
+          if os.path.exists(secrets_path):
+              secrets_summary = os.path.join(secrets_path, 'summary.json')
+              if os.path.exists(secrets_summary):
+                  with open(secrets_summary) as f:
+                      data = json.load(f)
+                      summary['components']['secrets_detection'] = {
+                          'status': data['status'],
+                          'findings': data['findings']['total']
+                      }
+                      if data['findings']['total'] > 0:
+                          summary['critical_issues'] += data['findings']['total']
+          
+          # Process license compliance results
+          license_path = '.security-artifacts/license-compliance-reports-${{ github.sha }}'
+          if os.path.exists(license_path):
+              license_summary = os.path.join(license_path, 'summary.json')
+              if os.path.exists(license_summary):
+                  with open(license_summary) as f:
+                      data = json.load(f)
+                      summary['components']['license_compliance'] = {
+                          'status': data['status'],
+                          'violations': data['violations']
+                      }
+          
+          # Calculate overall status and score
+          all_statuses = [comp.get('status', 'FAILED') for comp in summary['components'].values()]
+          summary['overall_status'] = 'PASSED' if all(s == 'PASSED' for s in all_statuses) else 'FAILED'
+          
+          # Calculate security score (100 - penalties)
+          score = 100
+          score -= summary['critical_issues'] * 20  # -20 per critical issue
+          score -= summary.get('total_vulnerabilities', 0) * 5  # -5 per vulnerability
+          
+          for comp in summary['components'].values():
+              if comp.get('status') == 'FAILED':
+                  score -= 15  # -15 per failed component
+          
+          summary['security_score'] = max(0, score)
+          
+          # Save summary
+          with open('.security-summary/security-hardening-summary.json', 'w') as f:
+              json.dump(summary, f, indent=2)
+          
+          print(f'Security Hardening Summary Generated')
+          print(f'Overall Status: {summary[\"overall_status\"]}')
+          print(f'Security Score: {summary[\"security_score\"]}/100')
+          print(f'Critical Issues: {summary[\"critical_issues\"]}')
+          
+          # Exit with error if critical issues found
+          if summary['critical_issues'] > 0 or summary['overall_status'] == 'FAILED':
+              exit(1)
+          "
+
+      - name: Comment Security Summary on PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const summaryPath = '.security-summary/security-hardening-summary.json';
+            
+            if (fs.existsSync(summaryPath)) {
+              const summary = JSON.parse(fs.readFileSync(summaryPath, 'utf8'));
+              
+              const statusIcon = summary.overall_status === 'PASSED' ? '🔐' : '🚨';
+              
+              let comment = `## ${statusIcon} Security Hardening Summary
+              
+              **Overall Status:** ${summary.overall_status}
+              **Security Score:** ${summary.security_score}/100
+              **Critical Issues:** ${summary.critical_issues}
+              
+              ### Component Results:
+              `;
+              
+              for (const [component, data] of Object.entries(summary.components)) {
+                const icon = data.status === 'PASSED' ? '✅' : '❌';
+                comment += `- ${icon} **${component.replace('_', ' ').toUpperCase()}:** ${data.status}\n`;
+              }
+              
+              if (summary.critical_issues > 0) {
+                comment += `\n⚠️ **IMMEDIATE ACTION REQUIRED:** ${summary.critical_issues} critical security issues found!\n`;
+              }
+              
+              comment += `\n**Generated:** ${summary.timestamp}`;
+              
+              github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: comment
+              });
+            }
+
+      - name: Upload Security Summary
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-hardening-summary-${{ github.sha }}
+          path: .security-summary/
+          retention-days: 90
+
+      - name: Set Security Status
+        run: |
+          if [ -f ".security-summary/security-hardening-summary.json" ]; then
+            status=$(jq -r '.overall_status' .security-summary/security-hardening-summary.json)
+            score=$(jq -r '.security_score' .security-summary/security-hardening-summary.json)
+            critical=$(jq -r '.critical_issues' .security-summary/security-hardening-summary.json)
+            
+            echo "🔐 Security Hardening Results:"
+            echo "  Status: $status"
+            echo "  Score: $score/100"
+            echo "  Critical Issues: $critical"
+            
+            if [ "$status" = "FAILED" ] || [ $critical -gt 0 ]; then
+              echo "❌ Security hardening failed"
+              exit 1
+            else
+              echo "✅ Security hardening passed"
+            fi
+          fi

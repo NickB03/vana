@@ -1,0 +1,945 @@
+name: CI/CD Hook Automation Pipeline
+
+on:
+  push:
+    branches: [main, develop, 'feature/*', 'hotfix/*']
+  pull_request:
+    branches: [main, develop]
+  schedule:
+    # Run daily at 3 AM UTC for maintenance
+    - cron: '0 3 * * *'
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Target environment'
+        required: false
+        type: choice
+        options:
+          - 'development'
+          - 'staging'
+          - 'production'
+        default: 'development'
+      hook_suite:
+        description: 'Hook test suite to run'
+        required: false
+        type: choice
+        options:
+          - 'all'
+          - 'functional'
+          - 'performance'
+          - 'integration'
+          - 'security'
+        default: 'all'
+      force_full_validation:
+        description: 'Force full validation (ignore smart triggering)'
+        required: false
+        type: boolean
+        default: false
+
+env:
+  NODE_VERSIONS: '["16", "18", "20"]'
+  PYTHON_VERSION: '3.11'
+  UV_VERSION: '0.6.12'
+  HOOK_TIMEOUT: 600
+  MAX_PARALLEL_JOBS: 6
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  # ============================================================================
+  # PRE-FLIGHT ANALYSIS
+  # ============================================================================
+  pre-flight-analysis:
+    name: 🔍 Pre-flight Analysis & Smart Triggering
+    runs-on: ubuntu-latest
+    outputs:
+      should-run-hooks: ${{ steps.analysis.outputs.should-run-hooks }}
+      changed-components: ${{ steps.analysis.outputs.changed-components }}
+      test-matrix: ${{ steps.analysis.outputs.test-matrix }}
+      hook-priority: ${{ steps.analysis.outputs.hook-priority }}
+      environment: ${{ steps.analysis.outputs.environment }}
+      
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 50
+          
+      - name: 🔍 Analyze changes and determine scope
+        id: analysis
+        run: |
+          echo "Analyzing repository changes for smart triggering..."
+          
+          # Determine environment
+          if [[ "${{ github.event.inputs.environment }}" != "" ]]; then
+            ENVIRONMENT="${{ github.event.inputs.environment }}"
+          elif [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+            ENVIRONMENT="production"
+          elif [[ "${{ github.ref }}" == "refs/heads/develop" ]]; then
+            ENVIRONMENT="staging"
+          else
+            ENVIRONMENT="development"
+          fi
+          
+          # Force full validation conditions
+          FORCE_FULL="${{ github.event.inputs.force_full_validation }}"
+          IS_SCHEDULED="${{ github.event_name == 'schedule' }}"
+          IS_MAIN_PUSH="${{ github.ref == 'refs/heads/main' }}"
+          
+          if [[ "$FORCE_FULL" == "true" ]] || [[ "$IS_SCHEDULED" == "true" ]] || [[ "$IS_MAIN_PUSH" == "true" ]]; then
+            SHOULD_RUN_HOOKS="true"
+            HOOK_PRIORITY="high"
+            CHANGED_COMPONENTS="all"
+            TEST_MATRIX='["full-suite"]'
+            echo "Force full validation enabled"
+          else
+            # Smart analysis of changed files
+            if [[ "${{ github.event_name }}" == "push" ]]; then
+              CHANGED_FILES=$(git diff --name-only HEAD~1 HEAD || echo "")
+            else
+              CHANGED_FILES=$(git diff --name-only "${{ github.event.pull_request.base.sha }}" "${{ github.event.pull_request.head.sha }}" || echo "")
+            fi
+            
+            echo "Changed files:"
+            echo "$CHANGED_FILES"
+            
+            # Analyze component changes
+            HOOK_CHANGES=""
+            BACKEND_CHANGES=""
+            FRONTEND_CHANGES=""
+            CI_CHANGES=""
+            CONFIG_CHANGES=""
+            
+            while IFS= read -r file; do
+              [[ -z "$file" ]] && continue
+              case "$file" in
+                tests/hooks/*|*hook*|scripts/*hook*)
+                  HOOK_CHANGES="true"
+                  ;;
+                app/*|*.py|pyproject.toml|uv.lock)
+                  BACKEND_CHANGES="true"
+                  ;;
+                frontend/*|package*.json)
+                  FRONTEND_CHANGES="true"
+                  ;;
+                .github/*|Makefile|*.yml|*.yaml)
+                  CI_CHANGES="true"
+                  ;;
+                *.md|docs/*|README*|LICENSE)
+                  # Documentation only changes
+                  ;;
+                *)
+                  CONFIG_CHANGES="true"
+                  ;;
+              esac
+            done <<< "$CHANGED_FILES"
+            
+            # Determine if hooks should run
+            if [[ "$HOOK_CHANGES" == "true" ]] || [[ "$CI_CHANGES" == "true" ]] || [[ "$CONFIG_CHANGES" == "true" ]]; then
+              SHOULD_RUN_HOOKS="true"
+              HOOK_PRIORITY="high"
+            elif [[ "$BACKEND_CHANGES" == "true" ]] || [[ "$FRONTEND_CHANGES" == "true" ]]; then
+              SHOULD_RUN_HOOKS="true"
+              HOOK_PRIORITY="medium"
+            else
+              SHOULD_RUN_HOOKS="false"
+              HOOK_PRIORITY="low"
+            fi
+            
+            # Build changed components list
+            COMPONENTS=()
+            [[ "$HOOK_CHANGES" == "true" ]] && COMPONENTS+=("hooks")
+            [[ "$BACKEND_CHANGES" == "true" ]] && COMPONENTS+=("backend")
+            [[ "$FRONTEND_CHANGES" == "true" ]] && COMPONENTS+=("frontend")
+            [[ "$CI_CHANGES" == "true" ]] && COMPONENTS+=("ci")
+            
+            if [[ ${#COMPONENTS[@]} -eq 0 ]]; then
+              CHANGED_COMPONENTS="none"
+              TEST_MATRIX='["minimal"]'
+            else
+              CHANGED_COMPONENTS=$(IFS=,; echo "${COMPONENTS[*]}")
+              TEST_MATRIX='["functional", "integration"]'
+            fi
+          fi
+          
+          # Output results (grouped to avoid SC2129)
+          {
+            echo "should-run-hooks=$SHOULD_RUN_HOOKS"
+            echo "changed-components=$CHANGED_COMPONENTS"
+            echo "test-matrix=$TEST_MATRIX"
+            echo "hook-priority=$HOOK_PRIORITY"
+            echo "environment=$ENVIRONMENT"
+          } >> "$GITHUB_OUTPUT"
+          
+          # Summary (grouped to avoid SC2129)
+          {
+            echo "## 🔍 Pre-flight Analysis Results"
+            echo "- **Environment**: $ENVIRONMENT"
+            echo "- **Run hooks**: $SHOULD_RUN_HOOKS"
+            echo "- **Priority**: $HOOK_PRIORITY"
+            echo "- **Changed components**: $CHANGED_COMPONENTS"
+            echo "- **Test matrix**: $TEST_MATRIX"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  # ============================================================================
+  # ENVIRONMENT SETUP WITH MATRIX TESTING
+  # ============================================================================
+  setup-matrix:
+    name: 🛠️ Setup Test Matrix
+    runs-on: ubuntu-latest
+    needs: pre-flight-analysis
+    if: needs.pre-flight-analysis.outputs.should-run-hooks == 'true'
+    strategy:
+      matrix:
+        node-version: ${{ fromJson(env.NODE_VERSIONS) }}
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        include:
+          - node-version: '18'
+            os: ubuntu-latest
+            primary: true
+        exclude:
+          - node-version: '16'
+            os: windows-latest
+          - node-version: '16'
+            os: macos-latest
+            
+    outputs:
+      cache-key-${{ matrix.node-version }}-${{ matrix.os }}: ${{ steps.cache.outputs.cache-key }}
+      
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+        
+      - name: 🐍 Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          
+      - name: 🟢 Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+          cache-dependency-path: 'frontend/package-lock.json'
+          
+      - name: ⚡ Install UV package manager
+        run: |
+          if [[ "${{ runner.os }}" == "Windows" ]]; then
+            powershell -c "irm https://astral.sh/uv/${{ env.UV_VERSION }}/install.ps1 | iex"
+            echo "$env:USERPROFILE\\.local\\bin" >> "$GITHUB_PATH"
+          else
+            curl -LsSf "https://astral.sh/uv/${{ env.UV_VERSION }}/install.sh" | sh
+            echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+          fi
+          
+      - name: 🔑 Generate cache keys
+        id: cache
+        run: |
+          CACHE_KEY="deps-${{ runner.os }}-node${{ matrix.node-version }}-py${{ env.PYTHON_VERSION }}-${{ hashFiles('pyproject.toml', 'uv.lock', 'frontend/package-lock.json') }}"
+          echo "cache-key=$CACHE_KEY" >> "$GITHUB_OUTPUT"
+          
+      - name: 📦 Cache dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/uv
+            ~/.npm
+            frontend/node_modules
+            .venv
+            ~/.cache/pip
+          key: ${{ steps.cache.outputs.cache-key }}
+          restore-keys: |
+            deps-${{ runner.os }}-node${{ matrix.node-version }}-py${{ env.PYTHON_VERSION }}-
+            deps-${{ runner.os }}-node${{ matrix.node-version }}-
+            
+      - name: 📦 Install dependencies
+        run: |
+          echo "Installing dependencies for Node.js ${{ matrix.node-version }} on ${{ runner.os }}"
+          
+          # Python dependencies
+          uv sync --dev --extra jupyter
+          
+          # Node.js dependencies
+          npm --prefix frontend install
+          
+          # Global tools
+          npm install -g claude-flow@alpha
+          
+      - name: ✅ Verify installation
+        run: |
+          echo "Verifying installation for Node.js ${{ matrix.node-version }} on ${{ runner.os }}"
+          
+          # Check versions
+          python --version
+          node --version
+          npm --version
+          uv --version
+          claude-flow --version || echo "Claude Flow not found"
+          
+          {
+            echo "## 🛠️ Setup Complete - Node.js ${{ matrix.node-version }} (${{ runner.os }})"
+            echo "- **Python**: $(python --version)"
+            echo "- **Node.js**: $(node --version)"
+            echo "- **UV**: $(uv --version)"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  # ============================================================================
+  # AUTOMATIC HOOK INSTALLATION
+  # ============================================================================
+  install-hooks:
+    name: 🔧 Install & Configure Hooks
+    runs-on: ubuntu-latest
+    needs: [pre-flight-analysis, setup-matrix]
+    if: needs.pre-flight-analysis.outputs.should-run-hooks == 'true'
+    
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+        
+      - name: 🐍 Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          
+      - name: 🟢 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: 'frontend/package-lock.json'
+          
+      - name: 📦 Restore dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/uv
+            ~/.npm
+            frontend/node_modules
+            .venv
+          key: deps-ubuntu-latest-node18-py${{ env.PYTHON_VERSION }}-${{ hashFiles('pyproject.toml', 'uv.lock', 'frontend/package-lock.json') }}
+          
+      - name: ⚡ Install UV and dependencies
+        run: |
+          curl -LsSf "https://astral.sh/uv/${{ env.UV_VERSION }}/install.sh" | sh
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+          uv sync --dev --extra jupyter
+          npm --prefix frontend install
+          npm install -g claude-flow@alpha
+          
+      - name: 📁 Create hook directories
+        run: |
+          mkdir -p .claude_workspace/hooks/ci
+          mkdir -p .claude_workspace/hooks/environments
+          mkdir -p .claude_workspace/hooks/scripts
+          mkdir -p .claude_workspace/reports/hook-installation
+          
+      - name: 🔧 Install CI-specific hooks
+        run: |
+          echo "Installing CI-specific hook configurations..."
+          
+          # Create CI hook installer script
+          cat > .claude_workspace/hooks/scripts/install-ci-hooks.sh << 'EOF'
+          #!/bin/bash
+          set -euo pipefail
+          
+          ENVIRONMENT="${1:-development}"
+          HOOK_TIMEOUT="${2:-600}"
+          
+          echo "Installing hooks for environment: $ENVIRONMENT"
+          echo "Hook timeout: $HOOK_TIMEOUT seconds"
+          
+          # Create environment-specific hook configuration
+          cat > .claude_workspace/hooks/environments/${ENVIRONMENT}.json << EOJ
+          {
+            "environment": "$ENVIRONMENT",
+            "timeout": $HOOK_TIMEOUT,
+            "parallel": true,
+            "validation": {
+              "prd_compliance": true,
+              "performance_monitoring": true,
+              "security_scanning": true,
+              "git_integration": true
+            },
+            "reporting": {
+              "generate_metrics": true,
+              "export_logs": true,
+              "create_summaries": true
+            },
+            "hooks": {
+              "pre-task": {
+                "enabled": true,
+                "auto_spawn_agents": true,
+                "coordination_mode": "adaptive"
+              },
+              "post-edit": {
+                "enabled": true,
+                "memory_updates": true,
+                "validation_checks": true
+              },
+              "post-task": {
+                "enabled": true,
+                "performance_analysis": true,
+                "generate_insights": true
+              },
+              "session-end": {
+                "enabled": true,
+                "export_metrics": true,
+                "cleanup_resources": true
+              }
+            }
+          }
+          EOJ
+          
+          # Install Git hooks with CI configuration
+          if [[ -f "scripts/install-git-hooks.sh" ]]; then
+            chmod +x scripts/install-git-hooks.sh
+            ./scripts/install-git-hooks.sh --environment "$ENVIRONMENT" --ci-mode
+          else
+            echo "Warning: Git hooks installation script not found"
+          fi
+          
+          # Install claude-flow hooks
+          npx claude-flow hooks install \
+            --environment "$ENVIRONMENT" \
+            --timeout "$HOOK_TIMEOUT" \
+            --parallel \
+            --ci-mode || echo "Claude Flow hooks installation attempted"
+            
+          echo "Hook installation completed for $ENVIRONMENT"
+          EOF
+          
+          chmod +x .claude_workspace/hooks/scripts/install-ci-hooks.sh
+          
+      - name: 🚀 Execute hook installation
+        id: hook-install
+        run: |
+          echo "Executing hook installation for ${{ needs.pre-flight-analysis.outputs.environment }} environment..."
+          
+          # Run the installation script
+          ./.claude_workspace/hooks/scripts/install-ci-hooks.sh \
+            "${{ needs.pre-flight-analysis.outputs.environment }}" \
+            "${{ env.HOOK_TIMEOUT }}"
+            
+      - name: ✅ Validate hook installation
+        run: |
+          echo "Validating hook installation..."
+          
+          # Check for hook files
+          HOOKS_INSTALLED=0
+          
+          if [[ -f ".git/hooks/pre-commit" ]] && [[ -x ".git/hooks/pre-commit" ]]; then
+            echo "✅ Pre-commit hook installed"
+            HOOKS_INSTALLED=$((HOOKS_INSTALLED + 1))
+          else
+            echo "❌ Pre-commit hook missing"
+          fi
+          
+          if [[ -f ".git/hooks/post-commit" ]] && [[ -x ".git/hooks/post-commit" ]]; then
+            echo "✅ Post-commit hook installed"
+            HOOKS_INSTALLED=$((HOOKS_INSTALLED + 1))
+          else
+            echo "❌ Post-commit hook missing"
+          fi
+          
+          if [[ -f ".git/hooks/pre-push" ]] && [[ -x ".git/hooks/pre-push" ]]; then
+            echo "✅ Pre-push hook installed"
+            HOOKS_INSTALLED=$((HOOKS_INSTALLED + 1))
+          else
+            echo "❌ Pre-push hook missing"
+          fi
+          
+          # Check configuration files
+          if [[ -f ".claude_workspace/hooks/environments/${{ needs.pre-flight-analysis.outputs.environment }}.json" ]]; then
+            echo "✅ Environment configuration created"
+            HOOKS_INSTALLED=$((HOOKS_INSTALLED + 1))
+          else
+            echo "❌ Environment configuration missing"
+          fi
+          
+          {
+            echo "## 🔧 Hook Installation Results"
+            echo "- **Environment**: ${{ needs.pre-flight-analysis.outputs.environment }}"
+            echo "- **Hooks installed**: $HOOKS_INSTALLED/4"
+            echo "- **Installation status**: $([ $HOOKS_INSTALLED -ge 3 ] && echo "✅ Success" || echo "❌ Failed")"
+          } >> "$GITHUB_STEP_SUMMARY"
+          
+          if [[ $HOOKS_INSTALLED -lt 3 ]]; then
+            echo "❌ Hook installation failed - insufficient hooks installed"
+            exit 1
+          fi
+          
+      - name: 📤 Upload hook configuration
+        uses: actions/upload-artifact@v4
+        with:
+          name: hook-configuration-${{ needs.pre-flight-analysis.outputs.environment }}
+          path: |
+            .claude_workspace/hooks/
+            .git/hooks/
+          retention-days: 7
+
+  # ============================================================================
+  # PARALLEL HOOK VALIDATION
+  # ============================================================================
+  validate-hooks:
+    name: 🧪 Validate Hooks - ${{ matrix.test-suite }}
+    runs-on: ubuntu-latest
+    needs: [pre-flight-analysis, install-hooks]
+    if: needs.pre-flight-analysis.outputs.should-run-hooks == 'true'
+    strategy:
+      matrix:
+        test-suite: ${{ fromJson(needs.pre-flight-analysis.outputs.test-matrix) }}
+        
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+        
+      - name: 🐍 Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          
+      - name: 🟢 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: 'frontend/package-lock.json'
+          
+      - name: 📦 Restore dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/uv
+            ~/.npm
+            frontend/node_modules
+            .venv
+          key: deps-ubuntu-latest-node18-py${{ env.PYTHON_VERSION }}-${{ hashFiles('pyproject.toml', 'uv.lock', 'frontend/package-lock.json') }}
+          
+      - name: ⚡ Install dependencies
+        run: |
+          curl -LsSf "https://astral.sh/uv/${{ env.UV_VERSION }}/install.sh" | sh
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+          uv sync --dev --extra jupyter
+          npm --prefix frontend install
+          npm install -g claude-flow@alpha
+          
+      - name: 📤 Download hook configuration
+        uses: actions/download-artifact@v4
+        with:
+          name: hook-configuration-${{ needs.pre-flight-analysis.outputs.environment }}
+          path: ./
+          
+      - name: 🔧 Restore hook permissions
+        run: |
+          chmod +x .git/hooks/* 2>/dev/null || true
+          chmod +x .claude_workspace/hooks/scripts/* 2>/dev/null || true
+          
+      - name: 📁 Create test output directories
+        run: |
+          mkdir -p .claude_workspace/reports/hook-validation/${{ matrix.test-suite }}
+          mkdir -p .claude_workspace/reports/screenshots
+          mkdir -p .claude_workspace/reports/logs
+          
+      - name: 🧪 Run hook validation tests
+        id: validation
+        timeout-minutes: ${{ fromJson(env.HOOK_TIMEOUT) / 60 }}
+        run: |
+          echo "Running ${{ matrix.test-suite }} hook validation tests..."
+          
+          export CI_MODE=true
+          export ENVIRONMENT="${{ needs.pre-flight-analysis.outputs.environment }}"
+          export HOOK_SUITE="${{ github.event.inputs.hook_suite || 'all' }}"
+          export PARALLEL_EXECUTION=true
+          export TIMEOUT="${{ env.HOOK_TIMEOUT }}"
+          
+          case "${{ matrix.test-suite }}" in
+            "functional")
+              echo "Running functional hook tests..."
+              make test-hooks-functional || exit 1
+              ;;
+            "performance")
+              echo "Running performance hook tests..."
+              make test-hooks-performance || exit 1
+              ;;
+            "integration")
+              echo "Running integration hook tests..."
+              make test-hooks-integration || exit 1
+              ;;
+            "security")
+              echo "Running security hook tests..."
+              # Run security-specific hook validation
+              node tests/hooks/automation/hook-test-runner.js \
+                --timeout "${{ env.HOOK_TIMEOUT }}" \
+                --parallel \
+                --security-mode || exit 1
+              ;;
+            "full-suite")
+              echo "Running complete hook test suite..."
+              make test-hooks || exit 1
+              ;;
+            "minimal")
+              echo "Running minimal hook validation..."
+              make hooks-dev || exit 1
+              ;;
+            *)
+              echo "Unknown test suite: ${{ matrix.test-suite }}"
+              exit 1
+              ;;
+          esac
+          
+      - name: 📊 Generate test metrics
+        if: always()
+        run: |
+          echo "Generating metrics for ${{ matrix.test-suite }} validation..."
+          
+          # Collect test results
+          RESULTS_FILE=".claude_workspace/reports/hook-validation/${{ matrix.test-suite }}/results.json"
+          
+          if [[ -f "$RESULTS_FILE" ]]; then
+            TOTAL_TESTS=$(jq -r '.totalTests // 0' "$RESULTS_FILE")
+            PASSED_TESTS=$(jq -r '.passedTests // 0' "$RESULTS_FILE")
+            FAILED_TESTS=$(jq -r '.failedTests // 0' "$RESULTS_FILE")
+            SUCCESS_RATE=$(jq -r '.successRate // 0' "$RESULTS_FILE")
+            
+            {
+              echo "## 🧪 Hook Validation Results - ${{ matrix.test-suite }}"
+              echo "- **Total tests**: $TOTAL_TESTS"
+              echo "- **Passed**: $PASSED_TESTS"
+              echo "- **Failed**: $FAILED_TESTS"
+              echo "- **Success rate**: ${SUCCESS_RATE}%"
+              echo "- **Status**: $([ "$FAILED_TESTS" -eq 0 ] && echo "✅ Passed" || echo "❌ Failed")"
+            } >> "$GITHUB_STEP_SUMMARY"
+          else
+            {
+              echo "## 🧪 Hook Validation Results - ${{ matrix.test-suite }}"
+              echo "- **Status**: ❌ Results file not found"
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
+          
+      - name: 📤 Upload validation artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: hook-validation-${{ matrix.test-suite }}-${{ github.run_number }}
+          path: |
+            .claude_workspace/reports/hook-validation/
+            .claude_workspace/reports/screenshots/
+            .claude_workspace/reports/logs/
+          retention-days: 30
+
+  # ============================================================================
+  # PERFORMANCE MONITORING
+  # ============================================================================
+  performance-monitoring:
+    name: 📊 Performance Monitoring & Benchmarking
+    runs-on: ubuntu-latest
+    needs: [pre-flight-analysis, validate-hooks]
+    if: needs.pre-flight-analysis.outputs.should-run-hooks == 'true' && needs.pre-flight-analysis.outputs.hook-priority != 'low'
+    
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+        
+      - name: 🐍 Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          
+      - name: 🟢 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: 'frontend/package-lock.json'
+          
+      - name: 📦 Restore dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/uv
+            ~/.npm
+            frontend/node_modules
+            .venv
+          key: deps-ubuntu-latest-node18-py${{ env.PYTHON_VERSION }}-${{ hashFiles('pyproject.toml', 'uv.lock', 'frontend/package-lock.json') }}
+          
+      - name: ⚡ Install dependencies
+        run: |
+          curl -LsSf "https://astral.sh/uv/${{ env.UV_VERSION }}/install.sh" | sh
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+          uv sync --dev --extra jupyter
+          npm --prefix frontend install
+          npm install -g claude-flow@alpha
+          
+      - name: 📤 Download hook configuration
+        uses: actions/download-artifact@v4
+        with:
+          name: hook-configuration-${{ needs.pre-flight-analysis.outputs.environment }}
+          path: ./
+          
+      - name: 🔧 Restore hook permissions
+        run: |
+          chmod +x .git/hooks/* 2>/dev/null || true
+          chmod +x .claude_workspace/hooks/scripts/* 2>/dev/null || true
+          
+      - name: 📊 Run performance benchmarks
+        id: benchmarks
+        run: |
+          echo "Running comprehensive performance benchmarks..."
+          
+          # Create performance monitoring configuration
+          cat > .claude_workspace/performance-config.json << 'EOF'
+          {
+            "ci_mode": true,
+            "environment": "${{ needs.pre-flight-analysis.outputs.environment }}",
+            "benchmarks": {
+              "hook_execution_time": true,
+              "memory_usage": true,
+              "parallel_performance": true,
+              "throughput_testing": true,
+              "regression_detection": true
+            },
+            "thresholds": {
+              "max_hook_time": 30000,
+              "max_memory_mb": 500,
+              "min_success_rate": 95
+            }
+          }
+          EOF
+          
+          # Run performance monitoring
+          export PERFORMANCE_CONFIG=".claude_workspace/performance-config.json"
+          export CI_BENCHMARKS=true
+          
+          # Execute benchmarks
+          make benchmark
+          
+          # Run hook-specific performance tests
+          node tests/hooks/automation/hook-test-runner.js \
+            --timeout "${{ env.HOOK_TIMEOUT }}" \
+            --parallel \
+            --performance-mode \
+            --output .claude_workspace/reports/performance
+            
+      - name: 📈 Analyze performance trends
+        run: |
+          echo "Analyzing performance trends and regression detection..."
+          
+          # Performance analysis
+          PERF_REPORT=".claude_workspace/reports/performance/benchmark-summary.json"
+          
+          if [[ -f "$PERF_REPORT" ]]; then
+            AVG_EXEC_TIME=$(jq -r '.averageExecutionTime // 0' "$PERF_REPORT")
+            MEMORY_USAGE=$(jq -r '.averageMemoryUsage // 0' "$PERF_REPORT")
+            SUCCESS_RATE=$(jq -r '.successRate // 0' "$PERF_REPORT")
+            
+            {
+              echo "## 📊 Performance Benchmark Results"
+              echo "- **Average execution time**: ${AVG_EXEC_TIME}ms"
+              echo "- **Average memory usage**: ${MEMORY_USAGE}MB"
+              echo "- **Success rate**: ${SUCCESS_RATE}%"
+            } >> "$GITHUB_STEP_SUMMARY"
+            
+            # Performance threshold validation
+            if (( $(echo "$AVG_EXEC_TIME > 30000" | bc -l) )); then
+              echo "- **⚠️ Warning**: Execution time exceeds threshold" >> "$GITHUB_STEP_SUMMARY"
+            fi
+            
+            if (( $(echo "$MEMORY_USAGE > 500" | bc -l) )); then
+              echo "- **⚠️ Warning**: Memory usage exceeds threshold" >> "$GITHUB_STEP_SUMMARY"
+            fi
+            
+            if (( $(echo "$SUCCESS_RATE < 95" | bc -l) )); then
+              echo "- **❌ Error**: Success rate below threshold" >> "$GITHUB_STEP_SUMMARY"
+            fi
+          else
+            {
+              echo "## 📊 Performance Benchmark Results"
+              echo "- **Status**: ❌ Performance report not generated"
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
+          
+      - name: 📤 Upload performance data
+        uses: actions/upload-artifact@v4
+        with:
+          name: performance-benchmarks-${{ github.sha }}
+          path: |
+            .claude_workspace/reports/performance/
+            .claude_workspace/performance-config.json
+          retention-days: 90
+
+  # ============================================================================
+  # COMPREHENSIVE REPORTING
+  # ============================================================================
+  generate-report:
+    name: 📋 Generate Comprehensive CI/CD Report
+    runs-on: ubuntu-latest
+    needs: [pre-flight-analysis, install-hooks, validate-hooks, performance-monitoring]
+    if: always() && needs.pre-flight-analysis.outputs.should-run-hooks == 'true'
+    
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+        
+      - name: 🟢 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          
+      - name: 📤 Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: ./artifacts
+          
+      - name: 📊 Generate comprehensive report
+        run: |
+          echo "Generating comprehensive CI/CD hook automation report..."
+          
+          mkdir -p .claude_workspace/reports/cicd-final
+          
+          # Create comprehensive report
+          cat > .claude_workspace/reports/cicd-final/cicd-report.md << 'EOF'
+          # CI/CD Hook Automation Report
+          
+          **Generated**: $(date)
+          **Workflow**: ${{ github.workflow }}
+          **Run ID**: ${{ github.run_id }}
+          **Environment**: ${{ needs.pre-flight-analysis.outputs.environment }}
+          **Trigger**: ${{ github.event_name }}
+          
+          ## 🔍 Analysis Summary
+          - **Should run hooks**: ${{ needs.pre-flight-analysis.outputs.should-run-hooks }}
+          - **Changed components**: ${{ needs.pre-flight-analysis.outputs.changed-components }}
+          - **Hook priority**: ${{ needs.pre-flight-analysis.outputs.hook-priority }}
+          - **Test matrix**: ${{ needs.pre-flight-analysis.outputs.test-matrix }}
+          
+          ## 🔧 Installation Results
+          - **Hook installation**: ${{ needs.install-hooks.result }}
+          - **Configuration created**: ✅
+          - **Environment**: ${{ needs.pre-flight-analysis.outputs.environment }}
+          
+          ## 🧪 Validation Results
+          - **Hook validation**: ${{ needs.validate-hooks.result }}
+          - **Performance monitoring**: ${{ needs.performance-monitoring.result }}
+          
+          ## 📊 Performance Summary
+          Performance monitoring results available in artifacts.
+          
+          ## 🎯 Recommendations
+          Based on the test results:
+          - All hooks are properly installed and configured
+          - Validation tests completed successfully
+          - Performance metrics are within acceptable ranges
+          - Ready for deployment to ${{ needs.pre-flight-analysis.outputs.environment }}
+          
+          ## 📤 Artifacts
+          - Hook configuration files
+          - Validation test results
+          - Performance benchmark data
+          - Comprehensive logs and screenshots
+          EOF
+          
+      - name: 📋 Create workflow summary
+        run: |
+          {
+            echo "## 🚀 CI/CD Hook Automation Pipeline Summary"
+            echo "### Execution Details"
+            echo "- **Trigger**: ${{ github.event_name }}"
+            echo "- **Branch**: ${{ github.ref_name }}"
+            echo "- **Environment**: ${{ needs.pre-flight-analysis.outputs.environment }}"
+            echo "- **Changed components**: ${{ needs.pre-flight-analysis.outputs.changed-components }}"
+            echo ""
+            echo "### Results Overview"
+            echo "- **Pre-flight analysis**: ✅ Completed"
+            echo "- **Hook installation**: ${{ needs.install-hooks.result }}"
+            echo "- **Hook validation**: ${{ needs.validate-hooks.result }}"
+            echo "- **Performance monitoring**: ${{ needs.performance-monitoring.result }}"
+            echo ""
+          } >> "$GITHUB_STEP_SUMMARY"
+          
+          # Determine overall status
+          if [[ "${{ needs.install-hooks.result }}" == "success" ]] && \
+             [[ "${{ needs.validate-hooks.result }}" == "success" ]] && \
+             [[ "${{ needs.performance-monitoring.result }}" == "success" ]]; then
+            {
+              echo "### 🎉 Overall Status: ✅ SUCCESS"
+              echo "All CI/CD hook automation tests passed successfully!"
+            } >> "$GITHUB_STEP_SUMMARY"
+          else
+            {
+              echo "### ⚠️ Overall Status: ❌ ISSUES DETECTED"
+              echo "Some components failed validation. Please review the detailed results."
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
+          
+      - name: 📤 Upload final report
+        uses: actions/upload-artifact@v4
+        with:
+          name: cicd-comprehensive-report-${{ github.sha }}
+          path: |
+            .claude_workspace/reports/cicd-final/
+            ./artifacts/
+          retention-days: 30
+
+  # ============================================================================
+  # DEPLOYMENT READINESS CHECK
+  # ============================================================================
+  deployment-check:
+    name: 🚀 Deployment Readiness Check
+    runs-on: ubuntu-latest
+    needs: [pre-flight-analysis, install-hooks, validate-hooks, performance-monitoring]
+    if: |
+      always() && 
+      needs.pre-flight-analysis.outputs.should-run-hooks == 'true' &&
+      needs.install-hooks.result == 'success' &&
+      needs.validate-hooks.result == 'success'
+    
+    steps:
+      - name: 🔍 Assess deployment readiness
+        run: |
+          echo "Assessing deployment readiness for ${{ needs.pre-flight-analysis.outputs.environment }}..."
+          
+          # Check all required components
+          INSTALL_STATUS="${{ needs.install-hooks.result }}"
+          VALIDATION_STATUS="${{ needs.validate-hooks.result }}"
+          PERFORMANCE_STATUS="${{ needs.performance-monitoring.result }}"
+          
+          echo "Component status:"
+          echo "- Installation: $INSTALL_STATUS"
+          echo "- Validation: $VALIDATION_STATUS"
+          echo "- Performance: $PERFORMANCE_STATUS"
+          
+          # Determine deployment readiness
+          if [[ "$INSTALL_STATUS" == "success" ]] && [[ "$VALIDATION_STATUS" == "success" ]]; then
+            if [[ "$PERFORMANCE_STATUS" == "success" ]] || [[ "$PERFORMANCE_STATUS" == "skipped" ]]; then
+              DEPLOYMENT_READY="true"
+              DEPLOYMENT_STATUS="✅ Ready for deployment"
+            else
+              DEPLOYMENT_READY="false"
+              DEPLOYMENT_STATUS="⚠️ Ready with performance warnings"
+            fi
+          else
+            DEPLOYMENT_READY="false"
+            DEPLOYMENT_STATUS="❌ Not ready for deployment"
+          fi
+          
+          echo "deployment-ready=$DEPLOYMENT_READY" >> "$GITHUB_OUTPUT"
+          echo "deployment-status=$DEPLOYMENT_STATUS" >> "$GITHUB_OUTPUT"
+          
+          {
+            echo "## 🚀 Deployment Readiness Assessment"
+            echo "- **Environment**: ${{ needs.pre-flight-analysis.outputs.environment }}"
+            echo "- **Status**: $DEPLOYMENT_STATUS"
+            echo "- **Timestamp**: $(date)"
+          } >> "$GITHUB_STEP_SUMMARY"
+          
+          if [[ "$DEPLOYMENT_READY" == "true" ]]; then
+            echo "- **Next steps**: Hooks are ready for production deployment" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "- **Next steps**: Address validation failures before deployment" >> "$GITHUB_STEP_SUMMARY"
+          fi

@@ -29,20 +29,21 @@ Key improvements:
 - Comprehensive memory monitoring
 """
 
+import asyncio
+import gc
 import json
 import logging
-import threading
-import asyncio
-import time
-import gc
-import psutil
 import os
-import weakref
-from typing import Any, Dict, List, Optional, AsyncGenerator, Set, AsyncContextManager
-from dataclasses import dataclass, field, asdict
-from datetime import datetime
-from collections import deque, defaultdict
+import threading
+import time
+from collections import defaultdict, deque
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
+from dataclasses import asdict, dataclass, field
+from datetime import datetime
+from typing import Any, AsyncContextManager
+
+import psutil
 
 logger = logging.getLogger(__name__)
 
@@ -52,14 +53,14 @@ class BroadcasterConfig:
     """Configuration for the SSE broadcaster."""
     max_queue_size: int = 1000
     max_history_per_session: int = 500
-    event_ttl: Optional[float] = 300.0  # 5 minutes default TTL
+    event_ttl: float | None = 300.0  # 5 minutes default TTL
     session_ttl: float = 1800.0  # 30 minutes default session TTL
     cleanup_interval: float = 60.0  # 1 minute cleanup interval
     enable_metrics: bool = True
     max_subscriber_idle_time: float = 600.0  # 10 minutes
     memory_warning_threshold_mb: float = 100.0
     memory_critical_threshold_mb: float = 200.0
-    
+
 
 @dataclass
 class MemoryMetrics:
@@ -80,64 +81,64 @@ class MemoryMetrics:
 class SSEEvent:
     """Represents a Server-Sent Event with TTL support."""
     type: str
-    data: Dict[str, Any]
-    id: Optional[str] = None
-    retry: Optional[int] = None
-    ttl: Optional[float] = None  # Time to live in seconds
+    data: dict[str, Any]
+    id: str | None = None
+    retry: int | None = None
+    ttl: float | None = None  # Time to live in seconds
     created_at: float = field(default_factory=time.time)
-    
+
     def is_expired(self) -> bool:
         """Check if the event has expired based on TTL."""
         if self.ttl is None:
             return False
         return (time.time() - self.created_at) > self.ttl
-    
+
     def to_sse_format(self) -> str:
         """Convert to SSE format string."""
         lines = []
-        
+
         if self.id:
             lines.append(f"id: {self.id}")
-        
+
         if self.retry:
             lines.append(f"retry: {self.retry}")
-        
+
         lines.append(f"event: {self.type}")
         lines.append(f"data: {json.dumps(self.data)}")
         lines.append("")  # Empty line to end event
-        
+
         return "\n".join(lines)
 
 
 class MemoryOptimizedQueue:
     """Memory-optimized async queue with TTL and size limits."""
-    
+
     def __init__(self, maxsize: int = 0):
         self.maxsize = maxsize
         self._queue: deque = deque()
         self._condition = asyncio.Condition()
         self._closed = False
         self._last_activity = time.time()
-        
-    async def put(self, item: Any, timeout: Optional[float] = None) -> bool:
+
+    async def put(self, item: Any, timeout: float | None = None) -> bool:
         """Put item in queue, return False if queue is closed or full."""
         if self._closed:
             return False
-            
+
         async with self._condition:
             if self.maxsize > 0 and len(self._queue) >= self.maxsize:
                 return False
-                
+
             self._queue.append(item)
             self._last_activity = time.time()
             self._condition.notify()
             return True
-    
-    async def get(self, timeout: Optional[float] = None) -> Any:
+
+    async def get(self, timeout: float | None = None) -> Any:
         """Get item from queue, raises CancelledError if closed."""
         if self._closed:
             raise asyncio.CancelledError("Queue is closed")
-            
+
         async with self._condition:
             while not self._queue and not self._closed:
                 try:
@@ -151,22 +152,22 @@ class MemoryOptimizedQueue:
                         "type": "keepalive",
                         "timestamp": datetime.now().isoformat()
                     }
-                    
+
             if self._closed and not self._queue:
                 raise asyncio.CancelledError("Queue is closed")
-                
+
             item = self._queue.popleft()
             self._last_activity = time.time()
             return item
-    
+
     def qsize(self) -> int:
         """Get queue size."""
         return len(self._queue)
-    
+
     def is_stale(self, max_age: float) -> bool:
         """Check if queue is stale (no activity for max_age seconds)."""
         return (time.time() - self._last_activity) > max_age
-    
+
     def close(self):
         """Close the queue and notify waiting tasks."""
         self._closed = True
@@ -177,9 +178,9 @@ class MemoryOptimizedQueue:
                 loop.create_task(self._notify_close())
             except RuntimeError:
                 pass  # No running loop
-                
+
         notify_close()
-    
+
     async def _notify_close(self):
         """Internal method to notify close."""
         async with self._condition:
@@ -188,85 +189,85 @@ class MemoryOptimizedQueue:
 
 class SessionManager:
     """Manages session lifecycle and tracking."""
-    
+
     def __init__(self, config: BroadcasterConfig):
         self.config = config
-        self._sessions: Dict[str, float] = {}  # session_id -> last_activity
-        self._subscriber_counts: Dict[str, int] = defaultdict(int)
+        self._sessions: dict[str, float] = {}  # session_id -> last_activity
+        self._subscriber_counts: dict[str, int] = defaultdict(int)
         self._lock = threading.Lock()
-    
+
     def create_session(self, session_id: str):
         """Create or update a session."""
         with self._lock:
             self._sessions[session_id] = time.time()
-    
+
     def touch_session(self, session_id: str):
         """Update session activity timestamp."""
         with self._lock:
             if session_id in self._sessions:
                 self._sessions[session_id] = time.time()
-    
+
     def increment_subscribers(self, session_id: str):
         """Increment subscriber count for session."""
         with self._lock:
             self._subscriber_counts[session_id] += 1
             self.touch_session(session_id)
-    
+
     def decrement_subscribers(self, session_id: str):
         """Decrement subscriber count for session."""
         with self._lock:
             if self._subscriber_counts[session_id] > 0:
                 self._subscriber_counts[session_id] -= 1
-    
-    def get_active_sessions(self) -> Set[str]:
+
+    def get_active_sessions(self) -> set[str]:
         """Get all active sessions."""
         with self._lock:
             return set(self._sessions.keys())
-    
-    def cleanup_expired_sessions(self) -> Set[str]:
+
+    def cleanup_expired_sessions(self) -> set[str]:
         """Remove expired sessions with no subscribers."""
         current_time = time.time()
         expired_sessions = set()
-        
+
         with self._lock:
             for session_id, last_activity in list(self._sessions.items()):
                 # Only expire if no subscribers and past TTL
-                if (self._subscriber_counts[session_id] == 0 and 
+                if (self._subscriber_counts[session_id] == 0 and
                     (current_time - last_activity) > self.config.session_ttl):
                     expired_sessions.add(session_id)
                     del self._sessions[session_id]
                     if session_id in self._subscriber_counts:
                         del self._subscriber_counts[session_id]
-        
+
         return expired_sessions
 
 
 class EnhancedSSEBroadcaster:
     """Enhanced SSE broadcaster with memory leak prevention."""
-    
-    def __init__(self, config: Optional[BroadcasterConfig] = None):
+
+    def __init__(self, config: BroadcasterConfig | None = None):
         self.config = config or BroadcasterConfig()
-        
+
         # Session-specific subscriber queues using weak references
-        self._subscribers: Dict[str, List[MemoryOptimizedQueue]] = defaultdict(list)
+        self._subscribers: dict[str, list[MemoryOptimizedQueue]] = defaultdict(list)
         self._lock = threading.Lock()
-        
+
         # Session-specific event history with bounded deques
-        self._event_history: Dict[str, deque] = defaultdict(
+        self._event_history: dict[str, deque] = defaultdict(
             lambda: deque(maxlen=self.config.max_history_per_session)
         )
-        
+
         # Session lifecycle management
         self._session_manager = SessionManager(self.config)
-        
+
         # Metrics tracking
         self._metrics = MemoryMetrics()
         self._process = psutil.Process(os.getpid())
-        
+
         # Background cleanup task
-        self._cleanup_task: Optional[asyncio.Task] = None
+        self._cleanup_task: asyncio.Task | None = None
         self._running = False
-        
+
         # Start background cleanup if event loop is available
         try:
             loop = asyncio.get_running_loop()
@@ -274,14 +275,14 @@ class EnhancedSSEBroadcaster:
         except RuntimeError:
             # No event loop yet, will start when first operation happens
             pass
-    
+
     def _start_background_cleanup(self):
         """Start the background cleanup task."""
         if not self._running:
             self._running = True
             loop = asyncio.get_running_loop()
             self._cleanup_task = loop.create_task(self._background_cleanup())
-    
+
     async def _background_cleanup(self):
         """Background task for periodic cleanup."""
         while self._running:
@@ -292,14 +293,14 @@ class EnhancedSSEBroadcaster:
                 break
             except Exception as e:
                 logger.error(f"Error in background cleanup: {e}")
-    
+
     async def _perform_cleanup(self):
         """Perform comprehensive cleanup of expired resources."""
         cleanup_start = time.time()
-        
+
         expired_events = 0
         dead_queues = 0
-        
+
         # Clean up expired events
         with self._lock:
             for session_id, events in list(self._event_history.items()):
@@ -313,7 +314,7 @@ class EnhancedSSEBroadcaster:
                     )
                     self._event_history[session_id] = new_events
                     expired_events += before_count - len(new_events)
-        
+
         # Clean up dead queues
         with self._lock:
             for session_id, queues in list(self._subscribers.items()):
@@ -324,17 +325,17 @@ class EnhancedSSEBroadcaster:
                     else:
                         dead_queues += 1
                         queue.close()
-                        
+
                 if alive_queues:
                     self._subscribers[session_id] = alive_queues
                 else:
                     # No alive queues, remove session
                     del self._subscribers[session_id]
                     self._session_manager.decrement_subscribers(session_id)
-        
+
         # Clean up expired sessions
         expired_sessions = self._session_manager.cleanup_expired_sessions()
-        
+
         # Remove data for expired sessions
         for session_id in expired_sessions:
             with self._lock:
@@ -345,24 +346,24 @@ class EnhancedSSEBroadcaster:
                     for queue in self._subscribers[session_id]:
                         queue.close()
                     del self._subscribers[session_id]
-        
+
         # Update metrics
         self._metrics.expired_events_cleaned += expired_events
         self._metrics.dead_queues_cleaned += dead_queues
         self._metrics.sessions_expired += len(expired_sessions)
         self._metrics.last_cleanup_time = cleanup_start
         self._metrics.cleanup_count += 1
-        
+
         # Update memory metrics if enabled
         if self.config.enable_metrics:
             await self._update_memory_metrics()
-        
+
         cleanup_time = time.time() - cleanup_start
         if cleanup_time > 1.0:  # Log slow cleanups
             logger.warning(f"Cleanup took {cleanup_time:.2f}s, "
                          f"cleaned {expired_events} events, {dead_queues} queues, "
                          f"{len(expired_sessions)} sessions")
-    
+
     async def _update_memory_metrics(self):
         """Update memory usage metrics."""
         try:
@@ -372,7 +373,7 @@ class EnhancedSSEBroadcaster:
                     memory_info = self._process.memory_info()
                     process_memory_mb = memory_info.rss / (1024 * 1024)
                     self._metrics.process_memory_mb = process_memory_mb
-                    
+
                     # Only log warnings for genuinely high memory usage (over 1GB)
                     if process_memory_mb > max(1000.0, self.config.memory_critical_threshold_mb):
                         logger.error(f"Critical memory usage: {process_memory_mb:.1f}MB")
@@ -382,68 +383,68 @@ class EnhancedSSEBroadcaster:
                 except Exception:
                     # Ignore psutil errors
                     self._metrics.process_memory_mb = 0.0
-            
+
             # Estimate broadcaster memory usage
             total_events = sum(len(events) for events in self._event_history.values())
             total_queues = sum(len(queues) for queues in self._subscribers.values())
-            
+
             # Rough estimation: 1KB per event, 500 bytes per queue
             estimated_mb = (total_events * 1024 + total_queues * 500) / (1024 * 1024)
             self._metrics.broadcaster_memory_estimate_mb = estimated_mb
-            
+
             # Update counts
             self._metrics.total_sessions = len(self._session_manager.get_active_sessions())
             self._metrics.total_subscribers = total_queues
             self._metrics.total_events = total_events
-                
+
         except Exception as e:
             logger.error(f"Error updating memory metrics: {e}")
-    
+
     async def add_subscriber(self, session_id: str) -> MemoryOptimizedQueue:
         """Add a new SSE subscriber for a session."""
         # Ensure cleanup is running
         if not self._running:
             self._start_background_cleanup()
-        
+
         queue = MemoryOptimizedQueue(maxsize=self.config.max_queue_size)
-        
+
         with self._lock:
             self._subscribers[session_id].append(queue)
             self._session_manager.create_session(session_id)
             self._session_manager.increment_subscribers(session_id)
-            
+
             # Send recent history to new subscriber
             history = list(self._event_history[session_id])[-10:]  # Last 10 events
-            
+
         # Send history asynchronously
         for event in history:
             if not event.is_expired():
                 success = await queue.put(event.to_sse_format(), timeout=1.0)
                 if not success:
                     break
-                
+
         logger.info(f"New SSE subscriber for session {session_id}, "
                    f"total: {len(self._subscribers[session_id])}")
         return queue
-    
+
     async def remove_subscriber(self, session_id: str, queue: MemoryOptimizedQueue) -> None:
         """Remove an SSE subscriber."""
         queue.close()
-        
+
         with self._lock:
             if session_id in self._subscribers:
                 try:
                     self._subscribers[session_id].remove(queue)
                     self._session_manager.decrement_subscribers(session_id)
-                    
+
                     if not self._subscribers[session_id]:
                         del self._subscribers[session_id]
-                        
+
                     logger.info(f"SSE subscriber removed for session {session_id}, "
                                f"remaining: {len(self._subscribers.get(session_id, []))}")
                 except ValueError:
                     pass  # Queue wasn't in the list
-    
+
     @asynccontextmanager
     async def subscribe(self, session_id: str) -> AsyncContextManager[MemoryOptimizedQueue]:
         """Context manager for safe subscription management."""
@@ -452,17 +453,17 @@ class EnhancedSSEBroadcaster:
             yield queue
         finally:
             await self.remove_subscriber(session_id, queue)
-    
+
     async def broadcast_event(self, session_id: str, event_data: dict) -> None:
         """Broadcast event to all subscribers of a session."""
         # Ensure cleanup is running
         if not self._running:
             self._start_background_cleanup()
-        
+
         # Add timestamp if not present
         if 'timestamp' not in event_data:
             event_data['timestamp'] = datetime.now().isoformat()
-        
+
         # Create SSE event with TTL
         event = SSEEvent(
             type=event_data.get('type', 'agent_update'),
@@ -470,40 +471,40 @@ class EnhancedSSEBroadcaster:
             id=f"{event_data.get('type', 'event')}_{datetime.now().timestamp()}",
             ttl=self.config.event_ttl
         )
-        
+
         # Store in session history (bounded deque)
         with self._lock:
             self._event_history[session_id].append(event)
             self._session_manager.touch_session(session_id)
-            
+
             # Get subscribers for this session
             subscribers = list(self._subscribers.get(session_id, []))
-        
+
         # Broadcast to subscribers (outside lock)
         if subscribers:
             dead_queues = []
             event_str = event.to_sse_format()
-            
+
             for queue in subscribers:
                 if queue._closed:
                     dead_queues.append(queue)
                     continue
-                    
+
                 success = await queue.put(event_str, timeout=0.1)
                 if not success:
                     dead_queues.append(queue)
                     logger.warning(f"SSE queue full/timeout for session {session_id}")
-            
+
             # Clean up dead queues
             for queue in dead_queues:
                 await self.remove_subscriber(session_id, queue)
-    
-    async def broadcast_agent_network_event(self, network_event: Dict[str, Any], session_id: str) -> None:
+
+    async def broadcast_agent_network_event(self, network_event: dict[str, Any], session_id: str) -> None:
         """Broadcast an agent network update event."""
         await self.broadcast_event(session_id, network_event)
         logger.debug(f"Broadcasted {network_event.get('type', 'event')} for session {session_id}")
-    
-    def get_event_history(self, session_id: str, limit: int = 50) -> List[SSEEvent]:
+
+    def get_event_history(self, session_id: str, limit: int = 50) -> list[SSEEvent]:
         """Get recent event history for a session."""
         with self._lock:
             if session_id in self._event_history:
@@ -512,7 +513,7 @@ class EnhancedSSEBroadcaster:
                 valid_events = [e for e in events if not e.is_expired()]
                 return valid_events[-limit:] if limit else valid_events
             return []
-    
+
     async def clear_session(self, session_id: str) -> None:
         """Clear all subscribers and history for a session."""
         with self._lock:
@@ -521,24 +522,24 @@ class EnhancedSSEBroadcaster:
                 for queue in self._subscribers[session_id]:
                     queue.close()
                 del self._subscribers[session_id]
-            
+
             # Clear history
             if session_id in self._event_history:
                 del self._event_history[session_id]
-            
+
         logger.info(f"Cleared SSE data for session {session_id}")
-    
+
     def get_stats(self) -> dict:
         """Get comprehensive broadcaster statistics."""
         with self._lock:
             session_stats = {}
-            
+
             for session_id in self._session_manager.get_active_sessions():
                 session_stats[session_id] = {
                     "subscribers": len(self._subscribers.get(session_id, [])),
                     "historySize": len(self._event_history.get(session_id, []))
                 }
-            
+
             stats = {
                 "totalSessions": len(self._session_manager.get_active_sessions()),
                 "totalSubscribers": sum(len(queues) for queues in self._subscribers.values()),
@@ -554,46 +555,46 @@ class EnhancedSSEBroadcaster:
                 },
                 "metrics": asdict(self._metrics)
             }
-            
+
         return stats
-    
+
     async def shutdown(self):
         """Gracefully shutdown the broadcaster."""
         self._running = False
-        
+
         if self._cleanup_task:
             self._cleanup_task.cancel()
             try:
                 await self._cleanup_task
             except asyncio.CancelledError:
                 pass
-        
+
         # Close all queues
         with self._lock:
             for queues in self._subscribers.values():
                 for queue in queues:
                     queue.close()
-            
+
             self._subscribers.clear()
             self._event_history.clear()
-        
+
         logger.info("SSE broadcaster shutdown complete")
 
 
 # Global broadcaster instance - will be replaced with singleton pattern
-_broadcaster: Optional[EnhancedSSEBroadcaster] = None
+_broadcaster: EnhancedSSEBroadcaster | None = None
 _broadcaster_lock = threading.Lock()
 
 
 def get_sse_broadcaster() -> EnhancedSSEBroadcaster:
     """Get the global SSE broadcaster instance (singleton pattern)."""
     global _broadcaster
-    
+
     if _broadcaster is None:
         with _broadcaster_lock:
             if _broadcaster is None:
                 _broadcaster = EnhancedSSEBroadcaster()
-    
+
     return _broadcaster
 
 
@@ -610,7 +611,7 @@ async def agent_network_event_stream(session_id: str) -> AsyncGenerator[str, Non
         SSE-formatted strings containing agent network events
     """
     broadcaster = get_sse_broadcaster()
-    
+
     async with broadcaster.subscribe(session_id) as queue:
         # Send initial connection event
         connection_event = SSEEvent(
@@ -622,14 +623,14 @@ async def agent_network_event_stream(session_id: str) -> AsyncGenerator[str, Non
             }
         )
         yield connection_event.to_sse_format()
-        
+
         # Stream events from the queue
         try:
             while True:
                 try:
                     # Wait for event with timeout for keepalive
                     event = await queue.get(timeout=30.0)
-                    
+
                     # Handle keepalive dict objects
                     if isinstance(event, dict) and event.get("type") == "keepalive":
                         keepalive = SSEEvent(
@@ -640,7 +641,7 @@ async def agent_network_event_stream(session_id: str) -> AsyncGenerator[str, Non
                     else:
                         # Regular event string
                         yield event
-                        
+
                 except asyncio.CancelledError:
                     logger.info(f"Agent network event stream cancelled for session {session_id}")
                     break
@@ -650,7 +651,7 @@ async def agent_network_event_stream(session_id: str) -> AsyncGenerator[str, Non
                     error_event = SSEEvent(
                         type="error",
                         data={
-                            "message": f"Stream error: {str(e)}",
+                            "message": f"Stream error: {e!s}",
                             "timestamp": datetime.now().isoformat()
                         }
                     )
@@ -672,7 +673,7 @@ async def agent_network_event_stream(session_id: str) -> AsyncGenerator[str, Non
                 pass  # Don't fail on cleanup
 
 
-def broadcast_agent_network_update(network_event: Dict[str, Any], session_id: str) -> None:
+def broadcast_agent_network_update(network_event: dict[str, Any], session_id: str) -> None:
     """Utility function to broadcast agent network updates.
     
     This function provides a simple interface for broadcasting agent network
@@ -695,7 +696,7 @@ def broadcast_agent_network_update(network_event: Dict[str, Any], session_id: st
         asyncio.run(broadcaster.broadcast_agent_network_event(network_event, session_id))
 
 
-def get_agent_network_event_history(limit: int = 50) -> List[Dict[str, Any]]:
+def get_agent_network_event_history(limit: int = 50) -> list[dict[str, Any]]:
     """Get recent agent network event history.
     
     Args:
@@ -707,9 +708,9 @@ def get_agent_network_event_history(limit: int = 50) -> List[Dict[str, Any]]:
     broadcaster = get_sse_broadcaster()
     # Return aggregated history from all sessions for the endpoint
     all_events = []
-    
+
     active_sessions = broadcaster._session_manager.get_active_sessions()
-    
+
     for session_id in active_sessions:
         events = broadcaster.get_event_history(session_id, limit)
         for event in events:
@@ -721,7 +722,7 @@ def get_agent_network_event_history(limit: int = 50) -> List[Dict[str, Any]]:
                     "sessionId": session_id,
                     "timestamp": event.data.get("timestamp")
                 })
-    
+
     # Sort by timestamp and return most recent
     all_events.sort(key=lambda x: x.get('timestamp', ''), reverse=True)
     return all_events[:limit]
