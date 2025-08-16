@@ -36,6 +36,22 @@ from app.enhanced_callbacks import (
 )
 
 
+@pytest.fixture(autouse=True)
+def reset_global_state():
+    """Reset global network state before and after each test."""
+    # Import here to ensure we get the global state
+    from app.enhanced_callbacks import _network_state, AgentNetworkState
+    import app.enhanced_callbacks
+    
+    # Force reset by creating new instance
+    app.enhanced_callbacks._network_state = AgentNetworkState()
+    
+    yield
+    
+    # Clean up after test
+    app.enhanced_callbacks._network_state = AgentNetworkState()
+
+
 class TestAgentMetrics:
     """Test cases for AgentMetrics class."""
     
@@ -215,11 +231,14 @@ class TestCallbackFunctions:
     
     def setup_method(self):
         """Set up test environment."""
-        reset_network_state()
+        # Import and reset the global state
+        import app.enhanced_callbacks
+        app.enhanced_callbacks._network_state = app.enhanced_callbacks.AgentNetworkState()
         
         # Create mock objects
         self.mock_agent = Mock()
         self.mock_agent.name = "test_agent"
+        self.mock_agent.sub_agents = []  # Empty list, not Mock
         
         self.mock_session = Mock()
         self.mock_session.id = "test_session_123"
@@ -235,32 +254,33 @@ class TestCallbackFunctions:
         self.mock_callback_context.state = {}
     
     @patch('app.enhanced_callbacks.broadcast_agent_network_update')
-    @patch('app.enhanced_callbacks.logger')
-    def test_before_agent_callback(self, mock_logger, mock_broadcast):
+    def test_before_agent_callback(self, mock_broadcast):
         """Test before_agent_callback functionality."""
         # Reset network state before test
         reset_network_state()
         
-        # Add debug prints
-        print(f"Agent name: {self.mock_invocation_context.agent.name}")
-        print(f"Session state: {self.mock_invocation_context.session.state}")
+        # Verify initial state
+        initial_state = get_current_network_state()
+        assert len(initial_state["agents"]) == 0
+        assert len(initial_state["execution_stack"]) == 0
         
-        try:
-            before_agent_callback(self.mock_callback_context)
-        except Exception as e:
-            print(f"Exception in callback: {e}")
-            raise
+        # Call the callback
+        before_agent_callback(self.mock_callback_context)
         
-        print(f"Network state after callback: {_network_state.execution_stack}")
+        # Verify the network state was updated
+        updated_state = get_current_network_state()
+        assert len(updated_state["execution_stack"]) == 1
+        assert updated_state["execution_stack"][0] == "test_agent"
+        assert "test_agent" in updated_state["agents"]
         
-        # Check if an error was logged
-        if mock_logger.error.called:
-            print(f"Error logged: {mock_logger.error.call_args}")
+        # Verify start time was recorded
+        assert "test_agent_start_time" in self.mock_callback_context.state
         
-        # Check that network state was updated
-        assert "test_agent" in _network_state.execution_stack
-        assert "test_agent" in _network_state.active_agents
-        assert "test_agent" in _network_state.agents
+        # Verify broadcast was called
+        mock_broadcast.assert_called_once()
+        import app.enhanced_callbacks
+        assert "test_agent" in app.enhanced_callbacks._network_state.active_agents
+        assert "test_agent" in app.enhanced_callbacks._network_state.agents
         
         # Check that broadcast was called
         mock_broadcast.assert_called_once()
@@ -268,9 +288,8 @@ class TestCallbackFunctions:
         network_event = call_args[0][0]
         session_id = call_args[0][1]
         
-        assert network_event["type"] == "agent_network_update"
-        assert network_event["data"]["event_type"] == "agent_start"
-        assert network_event["data"]["agent_name"] == "test_agent"
+        assert network_event["type"] == "agent_start"
+        assert network_event["data"]["agentName"] == "test_agent"
         assert session_id == "test_session_123"
         
         # Check that state was stored
@@ -281,13 +300,14 @@ class TestCallbackFunctions:
         """Test after_agent_callback functionality."""
         # Set up the before state
         self.mock_callback_context.state["test_agent_start_time"] = time.time() - 1.5
-        _network_state.push_agent("test_agent")
+        import app.enhanced_callbacks
+        app.enhanced_callbacks._network_state.push_agent("test_agent")
         
         after_agent_callback(self.mock_callback_context)
         
         # Check that network state was updated
-        assert "test_agent" not in _network_state.active_agents
-        metrics = _network_state.agents["test_agent"]
+        assert "test_agent" not in app.enhanced_callbacks._network_state.active_agents
+        metrics = app.enhanced_callbacks._network_state.agents["test_agent"]
         assert metrics.invocation_count == 1
         assert metrics.average_execution_time > 0
         assert metrics.success_count == 1
@@ -297,10 +317,9 @@ class TestCallbackFunctions:
         call_args = mock_broadcast.call_args
         network_event = call_args[0][0]
         
-        assert network_event["type"] == "agent_network_update"
-        assert network_event["data"]["event_type"] == "agent_complete"
-        assert network_event["data"]["agent_name"] == "test_agent"
-        assert "execution_time" in network_event["data"]
+        assert network_event["type"] == "agent_complete"
+        assert network_event["data"]["agentName"] == "test_agent"
+        assert "executionTime" in network_event["data"]
         assert "metrics" in network_event["data"]
     
     @patch('app.enhanced_callbacks.broadcast_agent_network_update')
@@ -317,9 +336,14 @@ class TestCallbackFunctions:
         mock_event2.author = "other_agent"
         mock_event2.content = Mock()
         mock_event2.content.parts = []
+        # Set actions to None to avoid Mock iteration issues
         mock_event2.actions = None
         
-        self.mock_session.events = [mock_event1, mock_event2]
+        # Make sure to set events as a real list, not a Mock
+        self.mock_invocation_context.session.events = [mock_event1, mock_event2]
+        
+        # Make sure state is a real dict, not a Mock
+        self.mock_callback_context.state = {}
         
         agent_network_tracking_callback(self.mock_callback_context)
         
@@ -337,10 +361,11 @@ class TestCallbackFunctions:
     def test_get_current_network_state(self):
         """Test network state retrieval."""
         # Set up some network state
-        _network_state.get_or_create_agent_metrics("agent1")
-        _network_state.get_or_create_agent_metrics("agent2")
-        _network_state.add_relationship("agent1", "agent2", "invokes")
-        _network_state.set_hierarchy("parent", ["child1", "child2"])
+        import app.enhanced_callbacks
+        app.enhanced_callbacks._network_state.get_or_create_agent_metrics("agent1")
+        app.enhanced_callbacks._network_state.get_or_create_agent_metrics("agent2")
+        app.enhanced_callbacks._network_state.add_relationship("agent1", "agent2", "invokes")
+        app.enhanced_callbacks._network_state.set_hierarchy("parent", ["child1", "child2"])
         
         state = get_current_network_state()
         
@@ -358,20 +383,21 @@ class TestCallbackFunctions:
     def test_reset_network_state(self):
         """Test network state reset functionality."""
         # Set up some network state
-        _network_state.get_or_create_agent_metrics("agent1")
-        _network_state.push_agent("agent1")
-        _network_state.add_relationship("agent1", "agent2", "invokes")
+        import app.enhanced_callbacks
+        app.enhanced_callbacks._network_state.get_or_create_agent_metrics("agent1")
+        app.enhanced_callbacks._network_state.push_agent("agent1")
+        app.enhanced_callbacks._network_state.add_relationship("agent1", "agent2", "invokes")
         
-        assert len(_network_state.agents) > 0
-        assert len(_network_state.active_agents) > 0
-        assert len(_network_state.relationships) > 0
+        assert len(app.enhanced_callbacks._network_state.agents) > 0
+        assert len(app.enhanced_callbacks._network_state.active_agents) > 0
+        assert len(app.enhanced_callbacks._network_state.relationships) > 0
         
         reset_network_state()
         
-        assert len(_network_state.agents) == 0
-        assert len(_network_state.active_agents) == 0
-        assert len(_network_state.relationships) == 0
-        assert len(_network_state.execution_stack) == 0
+        assert len(app.enhanced_callbacks._network_state.agents) == 0
+        assert len(app.enhanced_callbacks._network_state.active_agents) == 0
+        assert len(app.enhanced_callbacks._network_state.relationships) == 0
+        assert len(app.enhanced_callbacks._network_state.execution_stack) == 0
 
 
 class TestErrorHandling:
@@ -379,7 +405,9 @@ class TestErrorHandling:
     
     def setup_method(self):
         """Set up test environment."""
-        reset_network_state()
+        # Import and reset the global state
+        import app.enhanced_callbacks
+        app.enhanced_callbacks._network_state = app.enhanced_callbacks.AgentNetworkState()
     
     def test_before_agent_callback_with_none_agent(self):
         """Test before_agent_callback handles None agent gracefully."""
@@ -389,14 +417,15 @@ class TestErrorHandling:
         mock_invocation_context.session.state = {}
         
         mock_callback_context = Mock()
-        mock_callback_context.invocation_context = mock_invocation_context
+        mock_callback_context._invocation_context = mock_invocation_context
         mock_callback_context.state = {}
         
         # Should not raise an exception
         before_agent_callback(mock_callback_context)
         
         # Agent should be recorded as "unknown"
-        assert "unknown" in _network_state.execution_stack
+        import app.enhanced_callbacks
+        assert "unknown" in app.enhanced_callbacks._network_state.execution_stack
     
     def test_after_agent_callback_without_start_time(self):
         """Test after_agent_callback handles missing start time gracefully."""
@@ -407,16 +436,17 @@ class TestErrorHandling:
         mock_invocation_context.session.events = []
         
         mock_callback_context = Mock()
-        mock_callback_context.invocation_context = mock_invocation_context
+        mock_callback_context._invocation_context = mock_invocation_context
         mock_callback_context.state = {}  # No start time
         
-        _network_state.push_agent("test_agent")
+        import app.enhanced_callbacks
+        app.enhanced_callbacks._network_state.push_agent("test_agent")
         
         # Should not raise an exception
         after_agent_callback(mock_callback_context)
         
         # Should still record metrics
-        assert "test_agent" in _network_state.agents
+        assert "test_agent" in app.enhanced_callbacks._network_state.agents
     
     @patch('app.enhanced_callbacks.logger')
     def test_callback_exception_handling(self, mock_logger):
