@@ -96,20 +96,25 @@ class TestAsyncBraveSearch:
             assert result["results"] == []
 
     def test_brave_web_search_sync_wrapper(self, mock_brave_response):
-        """Test sync wrapper calls async function properly."""
-        with patch('app.tools.brave_search.brave_web_search_async') as mock_async:
-            mock_async.return_value = {
-                "results": [{"title": "Test"}],
-                "query": "test",
-                "source": "brave_search"
-            }
-            
-            with patch.dict(os.environ, {"BRAVE_API_KEY": "test-key"}):
+        """Test sync wrapper returns expected results."""
+        # Test that the sync wrapper returns expected format when given proper environment
+        with patch.dict(os.environ, {"BRAVE_API_KEY": "test-key"}):
+            # Mock aiohttp to return expected response
+            with patch('aiohttp.ClientSession.get') as mock_get:
+                mock_response = AsyncMock()
+                mock_response.raise_for_status = Mock()
+                mock_response.json = AsyncMock(return_value=mock_brave_response)
+                
+                mock_get.return_value.__aenter__.return_value = mock_response
+                mock_get.return_value.__aexit__.return_value = None
+                
                 result = brave_web_search_function("test query")
 
-            # Verify async function was called
-            mock_async.assert_called_once_with("test query", 5)
-            assert result["query"] == "test"
+                # Verify result format
+                assert result["query"] == "test query"
+                assert result["source"] == "brave_search"
+                assert len(result["results"]) == 2
+                assert result["results"][0]["title"] == "Test Result 1"
 
     @pytest.mark.asyncio
     async def test_http_session_pooling(self):

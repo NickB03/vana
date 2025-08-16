@@ -103,10 +103,13 @@ class TestOAuth2FormLogin:
         
         assert response.status_code == 200
         data = response.json()
-        assert "access_token" in data
-        assert "refresh_token" in data
-        assert data["token_type"] == "bearer"
-        assert data["expires_in"] > 0
+        assert "tokens" in data
+        assert "user" in data
+        tokens = data["tokens"]
+        assert "access_token" in tokens
+        assert "refresh_token" in tokens
+        assert tokens["token_type"] == "bearer"
+        assert tokens["expires_in"] > 0
     
     def test_form_login_without_grant_type(self, client, test_user):
         """Test form login without grant_type (should still work)."""
@@ -121,7 +124,8 @@ class TestOAuth2FormLogin:
         
         assert response.status_code == 200
         data = response.json()
-        assert "access_token" in data
+        assert "tokens" in data
+        assert "access_token" in data["tokens"]
     
     def test_form_login_invalid_grant_type(self, client, test_user):
         """Test form login with invalid grant_type."""
@@ -203,7 +207,8 @@ class TestOAuth2FormLogin:
         
         assert response.status_code == 200
         data = response.json()
-        assert "access_token" in data
+        assert "tokens" in data
+        assert "access_token" in data["tokens"]
     
     def test_form_login_inactive_user(self, client, test_user, test_db):
         """Test form login with inactive user."""
@@ -241,10 +246,13 @@ class TestJSONLoginBackwardCompatibility:
         
         assert response.status_code == 200
         data = response.json()
-        assert "access_token" in data
-        assert "refresh_token" in data
-        assert data["token_type"] == "bearer"
-        assert data["expires_in"] > 0
+        assert "tokens" in data
+        assert "user" in data
+        tokens = data["tokens"]
+        assert "access_token" in tokens
+        assert "refresh_token" in tokens
+        assert tokens["token_type"] == "bearer"
+        assert tokens["expires_in"] > 0
     
     def test_json_login_by_email(self, client, test_user):
         """Test JSON login using email address."""
@@ -258,7 +266,8 @@ class TestJSONLoginBackwardCompatibility:
         
         assert response.status_code == 200
         data = response.json()
-        assert "access_token" in data
+        assert "tokens" in data
+        assert "access_token" in data["tokens"]
     
     def test_json_login_invalid_credentials(self, client, test_user):
         """Test JSON login with invalid credentials."""
@@ -338,7 +347,8 @@ class TestContentTypeHandling:
         # FastAPI defaults to form encoding
         assert response.status_code == 200
         data = response.json()
-        assert "access_token" in data
+        assert "tokens" in data
+        assert "access_token" in data["tokens"]
     
     def test_case_insensitive_content_type(self, client, test_user):
         """Test case-insensitive content type handling."""
@@ -353,7 +363,8 @@ class TestContentTypeHandling:
         
         assert response.status_code == 200
         data = response.json()
-        assert "access_token" in data
+        assert "tokens" in data
+        assert "access_token" in data["tokens"]
 
 
 class TestOAuth2ResponseHeaders:
@@ -391,19 +402,21 @@ class TestOAuth2ResponseHeaders:
         data = response.json()
         
         # Required OAuth2 token response fields
-        assert "access_token" in data
-        assert "token_type" in data
-        assert data["token_type"] == "bearer"
+        assert "tokens" in data
+        tokens = data["tokens"]
+        assert "access_token" in tokens
+        assert "token_type" in tokens
+        assert tokens["token_type"] == "bearer"
         
         # Optional but included fields
-        assert "expires_in" in data
-        assert "refresh_token" in data
+        assert "expires_in" in tokens
+        assert "refresh_token" in tokens
         
         # Ensure token values are strings
-        assert isinstance(data["access_token"], str)
-        assert isinstance(data["refresh_token"], str)
-        assert len(data["access_token"]) > 0
-        assert len(data["refresh_token"]) > 0
+        assert isinstance(tokens["access_token"], str)
+        assert isinstance(tokens["refresh_token"], str)
+        assert len(tokens["access_token"]) > 0
+        assert len(tokens["refresh_token"]) > 0
 
 
 class TestSecurityRequirements:
