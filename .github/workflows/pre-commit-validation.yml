@@ -1,0 +1,433 @@
+name: Pre-Commit Validation
+
+on:
+  push:
+    branches: [ main, develop, 'phase*/**', 'feature/**', 'hotfix/**' ]
+  pull_request:
+    branches: [ main, develop ]
+  workflow_dispatch:
+
+# Cancel previous runs on the same branch/PR
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  PYTHON_VERSION: '3.10'
+  NODE_VERSION: '18'
+  UV_VERSION: '0.6.12'
+
+jobs:
+  # Security and dependency analysis
+  security-audit:
+    name: Security & Dependency Audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install UV package manager
+        run: |
+          curl -LsSf https://astral.sh/uv/${{ env.UV_VERSION }}/install.sh | sh
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+      - name: Cache Python dependencies
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cache/uv
+            .venv
+          key: python-${{ env.PYTHON_VERSION }}-${{ hashFiles('pyproject.toml', 'uv.lock') }}
+          restore-keys: |
+            python-${{ env.PYTHON_VERSION }}-
+
+      - name: Install Python dependencies
+        run: uv sync --dev
+
+      - name: Run Bandit security scan
+        run: |
+          uv add bandit[toml]
+          uv run bandit -r app/ -f json -o bandit-report.json || true
+          uv run bandit -r app/ -ll
+
+      - name: Check for known security vulnerabilities
+        run: |
+          uv add safety
+          uv run safety check --json --output safety-report.json || true
+          uv run safety check
+
+      - name: Upload security reports
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: security-reports
+          path: |
+            bandit-report.json
+            safety-report.json
+
+  # Python code quality and testing
+  python-validation:
+    name: Python Code Quality
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      matrix:
+        check: [lint, typecheck, test]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install UV package manager
+        run: |
+          curl -LsSf https://astral.sh/uv/${{ env.UV_VERSION }}/install.sh | sh
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+      - name: Cache Python dependencies
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cache/uv
+            .venv
+          key: python-${{ env.PYTHON_VERSION }}-${{ hashFiles('pyproject.toml', 'uv.lock') }}
+          restore-keys: |
+            python-${{ env.PYTHON_VERSION }}-
+
+      - name: Install dependencies
+        run: uv sync --dev
+
+      - name: Run linting checks
+        if: matrix.check == 'lint'
+        run: |
+          echo "::group::Codespell check"
+          uv run codespell app/ tests/ *.md *.py --skip="venv/,.venv/,__pycache__/" --ignore-words-list="rouge,DAA,deques"
+          echo "::endgroup::"
+          
+          echo "::group::Ruff linting"
+          uv run ruff check . --output-format=github
+          echo "::endgroup::"
+          
+          echo "::group::Ruff formatting"
+          uv run ruff format . --check --diff
+          echo "::endgroup::"
+
+      - name: Run type checking
+        if: matrix.check == 'typecheck'
+        run: |
+          echo "::group::MyPy type checking"
+          uv run mypy . --strict --show-error-codes --show-column-numbers
+          echo "::endgroup::"
+
+      - name: Run Python tests
+        if: matrix.check == 'test'
+        run: |
+          echo "::group::Unit tests"
+          uv run pytest tests/unit -v --tb=short --cov=app --cov-report=xml --cov-report=term-missing
+          echo "::endgroup::"
+          
+          echo "::group::Integration tests"
+          uv run pytest tests/integration -v --tb=short
+          echo "::endgroup::"
+
+      - name: Upload coverage reports
+        if: matrix.check == 'test'
+        uses: codecov/codecov-action@v3
+        with:
+          file: ./coverage.xml
+          flags: python
+          name: python-coverage
+
+  # Frontend validation
+  frontend-validation:
+    name: Frontend Code Quality
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: ./frontend
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      - name: Run ESLint
+        run: |
+          echo "::group::ESLint checks"
+          npm run lint
+          echo "::endgroup::"
+
+      - name: Run TypeScript checks
+        run: |
+          echo "::group::TypeScript compilation"
+          npx tsc --noEmit --pretty
+          echo "::endgroup::"
+
+      - name: Build frontend
+        run: |
+          echo "::group::Production build"
+          npm run build
+          echo "::endgroup::"
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: frontend-build
+          path: frontend/.next
+          retention-days: 1
+
+  # Shell script validation
+  shell-validation:
+    name: Shell Script Validation
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install ShellCheck
+        run: sudo apt-get update && sudo apt-get install -y shellcheck
+
+      - name: Find shell scripts
+        id: find-scripts
+        run: |
+          scripts=$(find . -name "*.sh" -not -path "./node_modules/*" -not -path "./.venv/*" -not -path "./venv/*")
+          echo "Found shell scripts:"
+          echo "$scripts"
+          echo "scripts<<EOF" >> $GITHUB_OUTPUT
+          echo "$scripts" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Run ShellCheck
+        if: steps.find-scripts.outputs.scripts != ''
+        run: |
+          echo "::group::ShellCheck validation"
+          echo "${{ steps.find-scripts.outputs.scripts }}" | xargs shellcheck -f gcc
+          echo "::endgroup::"
+
+  # Markdown validation
+  markdown-validation:
+    name: Markdown Validation
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js for markdownlint
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Install markdownlint-cli
+        run: npm install -g markdownlint-cli
+
+      - name: Create markdownlint config
+        run: |
+          cat > .markdownlint.json << 'EOF'
+          {
+            "default": true,
+            "MD013": {
+              "line_length": 120,
+              "code_blocks": false,
+              "tables": false
+            },
+            "MD033": false,
+            "MD041": false
+          }
+          EOF
+
+      - name: Run markdownlint
+        run: |
+          echo "::group::Markdown validation"
+          markdownlint '**/*.md' --ignore node_modules --ignore .venv --ignore venv
+          echo "::endgroup::"
+
+  # Performance impact analysis
+  performance-analysis:
+    name: Performance Impact Analysis
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: [python-validation, frontend-validation]
+    if: github.event_name == 'pull_request'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install UV package manager
+        run: |
+          curl -LsSf https://astral.sh/uv/${{ env.UV_VERSION }}/install.sh | sh
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+      - name: Install dependencies
+        run: uv sync --dev
+
+      - name: Checkout base branch
+        run: git checkout ${{ github.base_ref }}
+
+      - name: Run baseline performance tests
+        run: |
+          uv run pytest tests/performance/ -v --benchmark-json=baseline-benchmark.json || true
+
+      - name: Checkout PR branch
+        run: git checkout ${{ github.head_ref }}
+
+      - name: Install PR dependencies
+        run: uv sync --dev
+
+      - name: Run PR performance tests
+        run: |
+          uv run pytest tests/performance/ -v --benchmark-json=pr-benchmark.json || true
+
+      - name: Compare performance
+        run: |
+          echo "::group::Performance comparison"
+          if [ -f baseline-benchmark.json ] && [ -f pr-benchmark.json ]; then
+            echo "Performance comparison results will be available in the artifact."
+            python -c "
+          import json
+          import sys
+          
+          try:
+              with open('baseline-benchmark.json') as f:
+                  baseline = json.load(f)
+              with open('pr-benchmark.json') as f:
+                  pr_data = json.load(f)
+              
+              print('Performance Impact Analysis:')
+              print('=" * 40)
+              print('This is a placeholder for detailed performance comparison.')
+              print('Baseline and PR benchmark data collected successfully.')
+          except Exception as e:
+              print(f'Performance analysis skipped: {e}')
+          "
+          else
+            echo "Performance benchmarks not available - skipping comparison"
+          fi
+          echo "::endgroup::"
+
+      - name: Upload performance reports
+        uses: actions/upload-artifact@v3
+        with:
+          name: performance-reports
+          path: |
+            baseline-benchmark.json
+            pr-benchmark.json
+
+  # ADK compliance validation
+  adk-compliance:
+    name: ADK Compliance Check
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install UV package manager
+        run: |
+          curl -LsSf https://astral.sh/uv/${{ env.UV_VERSION }}/install.sh | sh
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+      - name: Install dependencies
+        run: uv sync --dev
+
+      - name: Validate ADK configuration
+        run: |
+          echo "::group::ADK configuration validation"
+          if [ -f "pyproject.toml" ]; then
+            echo "✓ pyproject.toml found"
+            if grep -q "google-adk" pyproject.toml; then
+              echo "✓ Google ADK dependency found"
+            else
+              echo "⚠️ Google ADK dependency not found in pyproject.toml"
+              exit 1
+            fi
+          else
+            echo "❌ pyproject.toml not found"
+            exit 1
+          fi
+          echo "::endgroup::"
+
+      - name: Check ADK-specific patterns
+        run: |
+          echo "::group::ADK pattern validation"
+          # Check for proper error handling patterns
+          if find app/ -name "*.py" -exec grep -l "try.*except" {} \; | head -5; then
+            echo "✓ Error handling patterns found"
+          else
+            echo "⚠️ No error handling patterns detected"
+          fi
+          
+          # Check for proper logging patterns
+          if find app/ -name "*.py" -exec grep -l "logging\|logger" {} \; | head -5; then
+            echo "✓ Logging patterns found"
+          else
+            echo "⚠️ Limited logging patterns detected"
+          fi
+          echo "::endgroup::"
+
+  # Final validation summary
+  validation-summary:
+    name: Validation Summary
+    runs-on: ubuntu-latest
+    needs: [security-audit, python-validation, frontend-validation, shell-validation, markdown-validation, adk-compliance]
+    if: always()
+    steps:
+      - name: Check all validations
+        run: |
+          echo "::group::Validation Summary"
+          echo "Security Audit: ${{ needs.security-audit.result }}"
+          echo "Python Validation: ${{ needs.python-validation.result }}"
+          echo "Frontend Validation: ${{ needs.frontend-validation.result }}"
+          echo "Shell Validation: ${{ needs.shell-validation.result }}"
+          echo "Markdown Validation: ${{ needs.markdown-validation.result }}"
+          echo "ADK Compliance: ${{ needs.adk-compliance.result }}"
+          echo "::endgroup::"
+          
+          # Fail if any critical validation failed
+          if [[ "${{ needs.security-audit.result }}" == "failure" ]] || \
+             [[ "${{ needs.python-validation.result }}" == "failure" ]] || \
+             [[ "${{ needs.frontend-validation.result }}" == "failure" ]] || \
+             [[ "${{ needs.adk-compliance.result }}" == "failure" ]]; then
+            echo "❌ Critical validations failed"
+            exit 1
+          else
+            echo "✅ All critical validations passed"
+          fi
+
+      - name: Performance check
+        if: needs.performance-analysis.result != 'skipped'
+        run: |
+          echo "Performance Analysis: ${{ needs.performance-analysis.result }}"

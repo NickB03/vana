@@ -1,0 +1,115 @@
+# Pre-commit configuration for Vana project
+# See https://pre-commit.com for more information
+
+repos:
+  # Python code quality
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.4.6
+    hooks:
+      - id: ruff
+        args: [--fix, --exit-non-zero-on-fix]
+      - id: ruff-format
+
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.15.0
+    hooks:
+      - id: mypy
+        additional_dependencies: [types-requests, types-pyyaml]
+        args: [--strict, --ignore-missing-imports]
+
+  # Security checks
+  - repo: https://github.com/PyCQA/bandit
+    rev: 1.7.5
+    hooks:
+      - id: bandit
+        args: [-r, app/, -ll]
+        exclude: tests/
+
+  # General formatting and checks
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.4.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-json
+      - id: check-toml
+      - id: check-merge-conflict
+      - id: check-added-large-files
+        args: ['--maxkb=500']
+      - id: detect-private-key
+
+  # Spell checking
+  - repo: https://github.com/codespell-project/codespell
+    rev: v2.2.6
+    hooks:
+      - id: codespell
+        args: [--ignore-words-list=rouge,DAA,deques]
+        exclude: |
+          (?x)^(
+              .*\.lock|
+              .*node_modules/.*|
+              .*\.venv/.*|
+              .*venv/.*|
+              .*\.ipynb
+          )$
+
+  # Shell scripts
+  - repo: https://github.com/shellcheck-py/shellcheck-py
+    rev: v0.9.0.6
+    hooks:
+      - id: shellcheck
+        args: [-e, SC1091]  # Ignore sourcing of non-existent files
+
+  # Markdown
+  - repo: https://github.com/igorshubovych/markdownlint-cli
+    rev: v0.37.0
+    hooks:
+      - id: markdownlint
+        args: [--config, .markdownlint.json]
+
+  # Frontend (JavaScript/TypeScript)
+  - repo: local
+    hooks:
+      - id: eslint
+        name: ESLint (Frontend)
+        entry: bash -c 'cd frontend && npm run lint'
+        language: system
+        files: ^frontend/.*\.(js|jsx|ts|tsx)$
+        pass_filenames: false
+
+      - id: typescript-check
+        name: TypeScript Check (Frontend)
+        entry: bash -c 'cd frontend && npx tsc --noEmit'
+        language: system
+        files: ^frontend/.*\.(ts|tsx)$
+        pass_filenames: false
+
+  # Custom ADK compliance checks
+  - repo: local
+    hooks:
+      - id: adk-compliance
+        name: ADK Compliance Check
+        entry: python scripts/adk_helpers/adk_compliance_check.py
+        language: system
+        files: ^app/.*\.py$
+        pass_filenames: false
+
+# Configuration
+default_stages: [commit, push]
+fail_fast: false
+
+# Exclude patterns
+exclude: |
+  (?x)^(
+      .*node_modules/.*|
+      .*\.venv/.*|
+      .*venv/.*|
+      .*\.git/.*|
+      .*__pycache__/.*|
+      .*\.mypy_cache/.*|
+      .*\.pytest_cache/.*|
+      .*\.ruff_cache/.*|
+      frontend/\.next/.*|
+      frontend/out/.*
+  )$
