@@ -399,7 +399,7 @@ class ContextSanitizer:
         # Track replacements to avoid overlapping matches
         replacements = []
 
-        for name, pattern, compiled_pattern in enabled_patterns:
+        for _name, pattern, compiled_pattern in enabled_patterns:
             for match in compiled_pattern.finditer(context):
                 # Check for overlaps with existing replacements
                 if not self._has_overlap(match.span(), replacements):
@@ -500,7 +500,7 @@ def sanitize_context(context: str, config: SanitizationConfig | None = None) -> 
 
 
 def create_custom_sanitizer(
-    additional_patterns: list[SensitivePattern] = None,
+    additional_patterns: list[SensitivePattern] | None = None,
     config: SanitizationConfig | None = None,
 ) -> ContextSanitizer:
     """Create a custom sanitizer with additional patterns"""

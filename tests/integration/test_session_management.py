@@ -128,7 +128,7 @@ class TestSessionPersistence:
         # Mock GCS client and bucket
         with (
             patch("google.cloud.storage.Client") as mock_storage_client,
-            patch("app.utils.session_backup.logger") as mock_logger,
+            patch("app.utils.session_backup.logger"),
         ):
             mock_client = Mock()
             mock_bucket = Mock()
@@ -152,11 +152,10 @@ class TestSessionPersistence:
     def test_session_database_restore(self):
         """Test session database restore from GCS."""
         # Create mock backup file
-        backup_data = {"sessions": [{"id": "test_session", "user_id": "test_user"}]}
 
         with (
             patch("google.cloud.storage.Client") as mock_storage_client,
-            patch("app.utils.session_backup.logger") as mock_logger,
+            patch("app.utils.session_backup.logger"),
         ):
             mock_client = Mock()
             mock_bucket = Mock()
@@ -210,7 +209,7 @@ class TestSessionPersistence:
 
         with (
             patch("threading.Thread") as mock_thread,
-            patch("app.utils.session_backup.backup_session_db_to_gcs") as mock_backup,
+            patch("app.utils.session_backup.backup_session_db_to_gcs"),
         ):
             # Create periodic backup job
             create_periodic_backup_job(

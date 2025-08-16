@@ -25,18 +25,18 @@ from .sanitizer_integration import SanitizerIntegration, setup_vana_project_sani
 __all__ = [
     # Context Sanitizer
     "ContextSanitizer",
-    "SensitivePattern",
-    "PatternRegistry",
-    "SanitizationConfig",
-    "PlaceholderStyle",
-    "sanitize_context",
-    "create_custom_sanitizer",
-    # Pipeline Hooks
-    "register_hook",
-    "execute_hooks",
     "HookPriority",
-    "get_hook_registry",
+    "PatternRegistry",
+    "PlaceholderStyle",
+    "SanitizationConfig",
     # Integration
     "SanitizerIntegration",
+    "SensitivePattern",
+    "create_custom_sanitizer",
+    "execute_hooks",
+    "get_hook_registry",
+    # Pipeline Hooks
+    "register_hook",
+    "sanitize_context",
     "setup_vana_project_sanitization",
 ]

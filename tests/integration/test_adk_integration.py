@@ -322,7 +322,7 @@ class TestADKMessageTransformation:
 
             except Exception as e:
                 # If exceptions are raised, they should be reasonable
-                assert isinstance(e, (ValueError, TypeError, KeyError))
+                assert isinstance(e, ValueError | TypeError | KeyError)
 
 
 class TestADKRealTimeIntegration:
@@ -504,7 +504,7 @@ class TestADKRealTimeIntegration:
 
             except Exception as e:
                 # If exceptions occur, they should be manageable
-                assert isinstance(e, (TimeoutError, ValueError, ConnectionError))
+                assert isinstance(e, TimeoutError | ValueError | ConnectionError)
 
 
 if __name__ == "__main__":

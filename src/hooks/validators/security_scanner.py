@@ -631,7 +631,7 @@ class SecurityScanner:
         """Generate security recommendations based on scan results."""
         recommendations = []
 
-        vuln_types = set(v.get("type") for v in scan_results["vulnerabilities"])
+        vuln_types = {v.get("type") for v in scan_results["vulnerabilities"]}
 
         if "XSS" in vuln_types:
             recommendations.append(

@@ -271,7 +271,7 @@ class EnhancedSSEBroadcaster:
 
         # Start background cleanup if event loop is available
         try:
-            loop = asyncio.get_running_loop()
+            asyncio.get_running_loop()
             self._start_background_cleanup()
         except RuntimeError:
             # No event loop yet, will start when first operation happens

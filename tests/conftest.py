@@ -189,7 +189,7 @@ class MockHookValidationSystem:
         self.suggestions_given = []
 
     async def validate_file_operation(
-        self, operation: str, file_path: str, content: str = None
+        self, operation: str, file_path: str, content: str | None = None
     ) -> dict[str, Any]:
         """Mock file operation validation"""
         validation_result = {
@@ -332,7 +332,7 @@ export const TestComponent: React.FC<TestComponentProps> = ({ title, onAction })
         <CardTitle data-testid="component-title">{title}</CardTitle>
       </CardHeader>
       <CardContent>
-        <Button 
+        <Button
           data-testid="action-button"
           onClick={onAction}
           variant="default"
@@ -377,23 +377,23 @@ export const HeavyComponent = () => {
   const [data4, setData4] = useState([])
   const [data5, setData5] = useState([])
   const [data6, setData6] = useState([])
-  
+
   useEffect(() => {
     setData1(Array.from({ length: 1000 }, (_, i) => i))
   }, [])
-  
+
   useEffect(() => {
     setData2(Array.from({ length: 1000 }, (_, i) => i * 2))
   }, [])
-  
+
   useEffect(() => {
     setData3(Array.from({ length: 1000 }, (_, i) => i * 3))
   }, [])
-  
+
   useEffect(() => {
     setData4(Array.from({ length: 1000 }, (_, i) => i * 4))
   }, [])
-  
+
   return (
     <div>
       <h2>Heavy Component</h2>
@@ -416,14 +416,14 @@ import { Button } from '@/components/ui/button'
 
 export const UnsafeComponent = () => {
   const [userInput, setUserInput] = useState('')
-  
+
   return (
     <div>
-      <input 
+      <input
         value={userInput}
         onChange={(e) => setUserInput(e.target.value)}
       />
-      <div 
+      <div
         dangerouslySetInnerHTML={{ __html: userInput }}
       />
       <Button>Submit</Button>
@@ -443,7 +443,7 @@ export const AccessibilityMissingComponent = () => {
   const handleClick = () => {
     console.log('clicked')
   }
-  
+
   return (
     <div>
       <h2>Test Component</h2>
@@ -464,28 +464,28 @@ import { TestComponent } from '../TestComponent'
 
 describe('TestComponent', () => {
   const mockAction = jest.fn()
-  
+
   beforeEach(() => {
     mockAction.mockClear()
   })
-  
+
   test('renders component with title', () => {
     render(<TestComponent title="Test Title" onAction={mockAction} />)
-    
+
     expect(screen.getByTestId('test-component')).toBeInTheDocument()
     expect(screen.getByTestId('component-title')).toHaveTextContent('Test Title')
   })
-  
+
   test('calls onAction when button is clicked', () => {
     render(<TestComponent title="Test Title" onAction={mockAction} />)
-    
+
     fireEvent.click(screen.getByTestId('action-button'))
     expect(mockAction).toHaveBeenCalledTimes(1)
   })
-  
+
   test('has proper accessibility attributes', () => {
     render(<TestComponent title="Test Title" onAction={mockAction} />)
-    
+
     expect(screen.getByTestId('test-component')).toBeInTheDocument()
     expect(screen.getByTestId('component-title')).toBeInTheDocument()
     expect(screen.getByTestId('action-button')).toBeInTheDocument()

@@ -241,15 +241,15 @@ interface UserData {
   bio?: string;
 }
 
-const UserProfile: React.FC<UserProfileProps> = React.memo(({ 
-  userId, 
-  onUpdate, 
-  readOnly = false 
+const UserProfile: React.FC<UserProfileProps> = React.memo(({
+  userId,
+  onUpdate,
+  readOnly = false
 }) => {
   const [user, setUser] = useState<UserData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  
+
   useEffect(() => {
     const fetchUser = async () => {
       try {
@@ -262,8 +262,8 @@ const UserProfile: React.FC<UserProfileProps> = React.memo(({
         setUser(userData);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Unknown error');
-        toast({ 
-          title: 'Error', 
+        toast({
+          title: 'Error',
           description: 'Failed to load user profile',
           variant: 'destructive'
         });
@@ -271,45 +271,45 @@ const UserProfile: React.FC<UserProfileProps> = React.memo(({
         setLoading(false);
       }
     };
-    
+
     fetchUser();
   }, [userId]);
-  
+
   const handleUpdate = useCallback(async (formData: FormData) => {
     if (readOnly) return;
-    
+
     try {
       setLoading(true);
-      
+
       // Sanitize inputs
       const sanitizedData = {
         name: DOMPurify.sanitize(formData.get('name') as string),
         email: DOMPurify.sanitize(formData.get('email') as string),
         bio: DOMPurify.sanitize(formData.get('bio') as string)
       };
-      
+
       const response = await fetch(`/api/users/${userId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(sanitizedData)
       });
-      
+
       if (!response.ok) {
         throw new Error('Failed to update user');
       }
-      
+
       const updatedUser = await response.json();
       setUser(updatedUser);
       onUpdate?.(updatedUser);
-      
-      toast({ 
-        title: 'Success', 
-        description: 'Profile updated successfully' 
+
+      toast({
+        title: 'Success',
+        description: 'Profile updated successfully'
       });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Update failed');
-      toast({ 
-        title: 'Error', 
+      toast({
+        title: 'Error',
         description: 'Failed to update profile',
         variant: 'destructive'
       });
@@ -317,7 +317,7 @@ const UserProfile: React.FC<UserProfileProps> = React.memo(({
       setLoading(false);
     }
   }, [userId, readOnly, onUpdate]);
-  
+
   if (loading && !user) {
     return (
       <Card data-testid="user-profile-loading">
@@ -330,7 +330,7 @@ const UserProfile: React.FC<UserProfileProps> = React.memo(({
       </Card>
     );
   }
-  
+
   if (error) {
     return (
       <Card data-testid="user-profile-error">
@@ -338,7 +338,7 @@ const UserProfile: React.FC<UserProfileProps> = React.memo(({
           <div className="text-red-600" role="alert">
             Error: {error}
           </div>
-          <Button 
+          <Button
             onClick={() => window.location.reload()}
             className="mt-4"
             data-testid="retry-button"
@@ -350,7 +350,7 @@ const UserProfile: React.FC<UserProfileProps> = React.memo(({
       </Card>
     );
   }
-  
+
   return (
     <Card data-testid="user-profile">
       <CardHeader>
@@ -372,7 +372,7 @@ const UserProfile: React.FC<UserProfileProps> = React.memo(({
                 aria-describedby="name-help"
               />
             </div>
-            
+
             <div>
               <label htmlFor="email" className="block text-sm font-medium mb-1">
                 Email
@@ -387,9 +387,9 @@ const UserProfile: React.FC<UserProfileProps> = React.memo(({
                 aria-describedby="email-help"
               />
             </div>
-            
+
             {!readOnly && (
-              <Button 
+              <Button
                 type="submit"
                 disabled={loading}
                 data-testid="update-button"
@@ -427,59 +427,59 @@ describe('UserProfile', () => {
   beforeEach(() => {
     vi.resetAllMocks();
   });
-  
+
   it('renders loading state initially', () => {
     render(<UserProfile userId="123" />);
     expect(screen.getByTestId('user-profile-loading')).toBeInTheDocument();
   });
-  
+
   it('fetches and displays user data', async () => {
     const mockUser = {
       id: '123',
       name: 'John Doe',
       email: 'john@example.com'
     };
-    
+
     (fetch as vi.Mock).mockResolvedValueOnce({
       ok: true,
       json: () => Promise.resolve(mockUser)
     });
-    
+
     render(<UserProfile userId="123" />);
-    
+
     await waitFor(() => {
       expect(screen.getByTestId('user-profile')).toBeInTheDocument();
     });
-    
+
     expect(screen.getByDisplayValue('John Doe')).toBeInTheDocument();
     expect(screen.getByDisplayValue('john@example.com')).toBeInTheDocument();
   });
-  
+
   it('handles fetch errors gracefully', async () => {
     (fetch as vi.Mock).mockRejectedValueOnce(new Error('Network error'));
-    
+
     render(<UserProfile userId="123" />);
-    
+
     await waitFor(() => {
       expect(screen.getByTestId('user-profile-error')).toBeInTheDocument();
     });
-    
+
     expect(screen.getByText(/Error: Network error/)).toBeInTheDocument();
     expect(screen.getByTestId('retry-button')).toBeInTheDocument();
   });
-  
+
   it('handles update submission', async () => {
     const mockUser = {
       id: '123',
       name: 'John Doe',
       email: 'john@example.com'
     };
-    
+
     const updatedUser = {
       ...mockUser,
       name: 'Jane Doe'
     };
-    
+
     (fetch as vi.Mock)
       .mockResolvedValueOnce({
         ok: true,
@@ -489,65 +489,65 @@ describe('UserProfile', () => {
         ok: true,
         json: () => Promise.resolve(updatedUser)
       });
-    
+
     const onUpdate = vi.fn();
     render(<UserProfile userId="123" onUpdate={onUpdate} />);
-    
+
     await waitFor(() => {
       expect(screen.getByTestId('user-profile')).toBeInTheDocument();
     });
-    
+
     const nameInput = screen.getByTestId('name-input');
     fireEvent.change(nameInput, { target: { value: 'Jane Doe' } });
-    
+
     const updateButton = screen.getByTestId('update-button');
     fireEvent.click(updateButton);
-    
+
     await waitFor(() => {
       expect(onUpdate).toHaveBeenCalledWith(updatedUser);
     });
   });
-  
+
   it('disables form in read-only mode', () => {
     const mockUser = {
       id: '123',
       name: 'John Doe',
       email: 'john@example.com'
     };
-    
+
     (fetch as vi.Mock).mockResolvedValueOnce({
       ok: true,
       json: () => Promise.resolve(mockUser)
     });
-    
+
     render(<UserProfile userId="123" readOnly />);
-    
+
     waitFor(() => {
       expect(screen.queryByTestId('update-button')).not.toBeInTheDocument();
     });
   });
-  
+
   it('has proper accessibility attributes', async () => {
     const mockUser = {
       id: '123',
       name: 'John Doe',
       email: 'john@example.com'
     };
-    
+
     (fetch as vi.Mock).mockResolvedValueOnce({
       ok: true,
       json: () => Promise.resolve(mockUser)
     });
-    
+
     render(<UserProfile userId="123" />);
-    
+
     await waitFor(() => {
       expect(screen.getByTestId('user-profile')).toBeInTheDocument();
     });
-    
+
     // Check aria-labels
     expect(screen.getByLabelText('Update user profile')).toBeInTheDocument();
-    
+
     // Check form labels
     expect(screen.getByLabelText('Name')).toBeInTheDocument();
     expect(screen.getByLabelText('Email')).toBeInTheDocument();
@@ -570,63 +570,63 @@ const BadComponent = (props) => {
   const [state4, setState4] = useState(null);
   const [state5, setState5] = useState(null);
   const [state6, setState6] = useState(null); // 6 > 5 limit
-  
+
   // Too many useEffect hooks
   useEffect(() => {
     // Effect 1
   }, []);
-  
+
   useEffect(() => {
     // Effect 2
   }, []);
-  
+
   useEffect(() => {
     // Effect 3
   }, []);
-  
+
   useEffect(() => {
     // Effect 4 - exceeds limit of 3
   }, []);
-  
+
   // Security vulnerabilities
   const handleInput = (userInput) => {
     // No input sanitization
     setState1(userInput);
-    
+
     // Dangerous eval usage
     eval(userInput);
-    
+
     // SQL injection vulnerability
     const query = `SELECT * FROM users WHERE id = ${userInput}`;
     database.query(query);
   };
-  
+
   const unsafeHTML = {
     __html: props.content // dangerouslySetInnerHTML without sanitization
   };
-  
+
   return (
-    <div 
+    <div
       style={{color: 'red', fontSize: '16px'}} // Inline styles forbidden
       onClick={handleInput} // div with onClick - accessibility issue
     >
       {/* No data-testid attributes */}
       <div dangerouslySetInnerHTML={unsafeHTML} /> {/* XSS vulnerability */}
-      
+
       <MaterialButton> {/* Forbidden UI framework */}
         Click me {/* No aria-label */}
       </MaterialButton>
-      
+
       <AntButton> {/* Another forbidden framework */}
         Another button
       </AntButton>
-      
-      <input 
-        type="text" 
+
+      <input
+        type="text"
         onChange={(e) => handleInput(e.target.value)}
         // Missing aria attributes, no data-testid
       />
-      
+
       {/* Missing error handling */}
       <button onClick={() => {
         fetch('/api/data').then(res => res.json()).then(setState1);
@@ -634,7 +634,7 @@ const BadComponent = (props) => {
       }}>
         Fetch Data
       </button>
-      
+
       {/* Performance issues */}
       {props.items.map(item => {
         // useState inside map - performance anti-pattern
@@ -658,7 +658,7 @@ def get_user(user_id):
     # SQL injection vulnerability
     query = f"SELECT * FROM users WHERE id = {user_id}"
     result = database.execute(query)
-    
+
     # No proper HTTP status codes
     if result:
         return {"status": "ok", "data": result}
@@ -668,26 +668,26 @@ def get_user(user_id):
 def create_user(request):
     # No input validation
     data = request.json
-    
+
     # Hardcoded secrets
     api_key = "sk-1234567890abcdef"
     database_url = "postgresql://user:password@localhost:5432/db"
-    
+
     # No error handling
     result = database.insert(data)
-    
+
     # Inconsistent response format
     return {"message": "created", "id": result.id}
 
 def update_user(user_id, request):
     # No authentication check
     # No authorization check
-    
+
     data = request.json
-    
+
     # Direct database access without ORM
     query = f"UPDATE users SET name='{data['name']}', email='{data['email']}' WHERE id={user_id}"
-    
+
     try:
         database.execute(query)
         return {"ok": True}
@@ -733,23 +733,23 @@ async def get_user(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Invalid user ID format"
             )
-        
+
         # Check authorization
         if current_user.id != user_id and not current_user.is_admin:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Not authorized to access this user"
             )
-        
+
         # Query database safely
         user = db.query(User).filter(User.id == user_id).first()
-        
+
         if not user:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="User not found"
             )
-        
+
         return JSONResponse(
             status_code=status.HTTP_200_OK,
             content={
@@ -757,7 +757,7 @@ async def get_user(
                 "data": user.to_dict()
             }
         )
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -778,26 +778,26 @@ async def create_user(
         # Validate and sanitize input
         validated_data = validate_user_data(user_data.dict())
         sanitized_data = sanitize_input(validated_data)
-        
+
         # Check if user exists
         existing_user = db.query(User).filter(
             User.email == sanitized_data['email']
         ).first()
-        
+
         if existing_user:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
                 detail="User with this email already exists"
             )
-        
+
         # Create user
         new_user = User(**sanitized_data)
         db.add(new_user)
         db.commit()
         db.refresh(new_user)
-        
+
         logger.info(f"User created successfully: {new_user.id}")
-        
+
         return JSONResponse(
             status_code=status.HTTP_201_CREATED,
             content={
@@ -806,7 +806,7 @@ async def create_user(
                 "message": "User created successfully"
             }
         )
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -874,7 +874,7 @@ class TestHookExecutionPipeline:
         # Verify good file passes validation
         assert validation_result["compliance_score"] >= 80
         assert len(validation_result["violations"]) <= 3  # Minor violations acceptable
-        assert validation_result.get("realValidation") == True
+        assert validation_result.get("realValidation")
         assert "enhanced_validation" in validation_result
 
         logger.info(
@@ -914,7 +914,7 @@ class TestHookExecutionPipeline:
         validation_result = json.loads(result.stdout)
 
         # Verify bad file fails validation
-        assert validation_result["validated"] == False
+        assert not validation_result["validated"]
         assert (
             len(validation_result["violations"]) >= 5
         )  # Should detect multiple issues
@@ -1215,7 +1215,7 @@ class TestHookSafetyMechanisms:
         validation_result = json.loads(result.stdout)
 
         # Should be bypassed
-        assert validation_result.get("bypassed") == True
+        assert validation_result.get("bypassed")
         assert validation_result.get("bypassReason") == "Testing disable mechanism"
         assert "Hook validation bypassed" in " ".join(
             validation_result.get("suggestions", [])
@@ -1265,7 +1265,7 @@ class TestHookSafetyMechanisms:
         validation_result = json.loads(result.stdout)
 
         # Should be bypassed temporarily
-        assert validation_result.get("bypassed") == True
+        assert validation_result.get("bypassed")
         assert validation_result.get("bypassReason") == "Emergency maintenance"
 
         logger.info("Temporary bypass mechanism working correctly")
@@ -1312,8 +1312,8 @@ class TestHookSafetyMechanisms:
         validation_result = json.loads(result.stdout)
 
         # Should NOT be bypassed (expired)
-        assert validation_result.get("bypassed") != True
-        assert validation_result.get("validated") == False  # Bad component should fail
+        assert not validation_result.get("bypassed")
+        assert not validation_result.get("validated")  # Bad component should fail
         assert len(validation_result.get("violations", [])) > 0
 
         logger.info("Expired bypass correctly ignored")
@@ -1410,7 +1410,7 @@ class TestHookErrorRecovery:
             logger.info("Missing PRD file handled with proper error message")
         else:
             # If it succeeds, should use fallback validation
-            validation_result = json.loads(result.stdout)
+            json.loads(result.stdout)
             logger.info("Missing PRD file handled with fallback validation")
 
     @pytest.mark.asyncio

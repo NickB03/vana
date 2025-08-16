@@ -95,7 +95,7 @@ class AlertRule:
 class HookSafetySystem:
     """Comprehensive safety and rollback system for hooks"""
 
-    def __init__(self, config_path: str = None):
+    def __init__(self, config_path: str | None = None):
         if config_path:
             self.config_path = Path(config_path)
         else:
@@ -324,7 +324,7 @@ class HookSafetySystem:
             self.logger.error(f"Failed to save bypass codes: {e}")
 
     async def validate_operation(
-        self, operation: str, file_path: str, content: str = None
+        self, operation: str, file_path: str, content: str | None = None
     ) -> dict[str, Any]:
         """
         Main validation entry point with safety checks

@@ -533,7 +533,6 @@ class TestPerformanceMetrics:
 
     def test_stats_performance_under_load(self):
         """Test that stats collection doesn't significantly impact performance."""
-        session_id = "test_session"
 
         async def measure_performance():
             # Measure stats collection time

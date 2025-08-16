@@ -119,7 +119,7 @@ class MetricThreshold:
 class AlertManager:
     """Comprehensive alert management system"""
 
-    def __init__(self, db_path: str = None):
+    def __init__(self, db_path: str | None = None):
         self.db_path = db_path or str(Path.cwd() / ".claude_workspace" / "alerts.db")
         self.alerts_file = Path.cwd() / ".claude_workspace" / "active_alerts.json"
 
@@ -288,7 +288,7 @@ class AlertManager:
         password: str,
         from_email: str,
         to_emails: list[str],
-        severity_filter: list[AlertSeverity] = None,
+        severity_filter: list[AlertSeverity] | None = None,
     ):
         """Configure email notifications"""
         email_target = NotificationTarget(
@@ -310,8 +310,8 @@ class AlertManager:
     def configure_webhook_notifications(
         self,
         webhook_url: str,
-        headers: dict[str, str] = None,
-        severity_filter: list[AlertSeverity] = None,
+        headers: dict[str, str] | None = None,
+        severity_filter: list[AlertSeverity] | None = None,
     ):
         """Configure webhook notifications"""
         webhook_target = NotificationTarget(
@@ -327,7 +327,7 @@ class AlertManager:
         webhook_url: str,
         channel: str = "#alerts",
         username: str = "Hook Safety Bot",
-        severity_filter: list[AlertSeverity] = None,
+        severity_filter: list[AlertSeverity] | None = None,
     ):
         """Configure Slack notifications"""
         slack_target = NotificationTarget(
@@ -348,8 +348,8 @@ class AlertManager:
         name: str,
         severity: AlertSeverity,
         message: str,
-        details: dict[str, Any] = None,
-        tags: list[str] = None,
+        details: dict[str, Any] | None = None,
+        tags: list[str] | None = None,
     ) -> str:
         """Trigger a new alert"""
 
@@ -436,9 +436,9 @@ class AlertManager:
 
             cursor.execute(
                 """
-                INSERT OR REPLACE INTO alerts 
-                (id, name, severity, status, message, details, triggered_at, 
-                 last_updated, count, acknowledged_by, acknowledged_at, 
+                INSERT OR REPLACE INTO alerts
+                (id, name, severity, status, message, details, triggered_at,
+                 last_updated, count, acknowledged_by, acknowledged_at,
                  resolved_at, suppressed_until, tags)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
@@ -644,7 +644,7 @@ This is an automated message from the Hook Safety System.
         alert_id: str,
         channel: NotificationChannel,
         status: str,
-        error_message: str = None,
+        error_message: str | None = None,
     ):
         """Record notification attempt"""
         try:
@@ -720,7 +720,7 @@ This is an automated message from the Hook Safety System.
         return False
 
     async def record_metric(
-        self, metric_name: str, value: float, tags: dict[str, str] = None
+        self, metric_name: str, value: float, tags: dict[str, str] | None = None
     ):
         """Record a metric value"""
         metric_data = {

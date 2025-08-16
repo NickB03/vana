@@ -135,7 +135,7 @@ class TestSSEBackendIntegration:
                     if response.status_code == 200:
                         # Read a few chunks
                         chunk_count = 0
-                        async for chunk in response.aiter_text():
+                        async for _chunk in response.aiter_text():
                             chunk_count += 1
                             if chunk_count >= 3:
                                 break

@@ -158,7 +158,7 @@ interface {component}Props {{
 
 export const {component}: React.FC<{component}Props> = ({{ className, children, ...props }}) => {{
   return (
-    <div 
+    <div
       className={{cn('component-{component.lower()}', className)}}
       data-testid="{component.lower()}-component"
       {{...props}}
@@ -188,7 +188,7 @@ describe('{component}', () => {{
     render(<{component} data-testid="test-{component.lower()}">Test content</{component}>)
     expect(screen.getByTestId('test-{component.lower()}')).toBeInTheDocument()
   }})
-  
+
   test('applies custom className', () => {{
     render(<{component} className="custom-class">Content</{component}>)
     expect(screen.getByTestId('{component.lower()}-component')).toHaveClass('custom-class')
@@ -766,10 +766,10 @@ interface {name}Props {{
   onAction?: () => void
 }}
 
-export const {name}: React.FC<{name}Props> = ({{ 
+export const {name}: React.FC<{name}Props> = ({{
   title = "Default Title",
   data = [],
-  onAction 
+  onAction
 }}) => {{
   const [isLoading, setIsLoading] = useState(false)
   const [items, setItems] = useState(data)
@@ -801,7 +801,7 @@ export const {name}: React.FC<{name}Props> = ({{
               {{JSON.stringify(item)}}
             </div>
           ))}}
-          <Button 
+          <Button
             data-testid="{name.lower()}-action"
             onClick={{handleAction}}
             disabled={{isLoading}}
@@ -831,30 +831,30 @@ describe('{name}', () => {{
 
   test('renders component with default props', () => {{
     render(<{name} />)
-    
+
     expect(screen.getByTestId('{name.lower()}-component')).toBeInTheDocument()
     expect(screen.getByTestId('{name.lower()}-title')).toHaveTextContent('Default Title')
   }})
 
   test('renders custom title', () => {{
     render(<{name} title="Custom Title" />)
-    
+
     expect(screen.getByTestId('{name.lower()}-title')).toHaveTextContent('Custom Title')
   }})
 
   test('renders data items', () => {{
     const testData = [{{ id: 1, name: 'Item 1' }}, {{ id: 2, name: 'Item 2' }}]
     render(<{name} data={{testData}} />)
-    
+
     expect(screen.getByTestId('{name.lower()}-item-0')).toBeInTheDocument()
     expect(screen.getByTestId('{name.lower()}-item-1')).toBeInTheDocument()
   }})
 
   test('calls onAction when button is clicked', async () => {{
     render(<{name} onAction={{mockAction}} />)
-    
+
     fireEvent.click(screen.getByTestId('{name.lower()}-action'))
-    
+
     await waitFor(() => {{
       expect(mockAction).toHaveBeenCalledTimes(1)
     }})
@@ -863,9 +863,9 @@ describe('{name}', () => {{
   test('shows loading state during action', async () => {{
     const slowAction = () => new Promise(resolve => setTimeout(resolve, 100))
     render(<{name} onAction={{slowAction}} />)
-    
+
     fireEvent.click(screen.getByTestId('{name.lower()}-action'))
-    
+
     expect(screen.getByText('Loading...')).toBeInTheDocument()
   }})
 }})
@@ -886,10 +886,10 @@ logger = logging.getLogger(__name__)
 
 class {name.title()}Service:
     \"\"\"Service for handling {name} operations\"\"\"
-    
+
     def __init__(self, db: Session = Depends(get_db)):
         self.db = db
-    
+
     async def get_all(self, skip: int = 0, limit: int = 100) -> List[Dict[str, Any]]:
         \"\"\"Get all {name} records with pagination\"\"\"
         try:
@@ -902,21 +902,21 @@ class {name.title()}Service:
                     "status": "active" if i % 2 == 0 else "inactive",
                     "created_at": "2025-01-01T00:00:00Z"
                 }})
-            
+
             logger.info(f"Retrieved {{len(records)}} {name} records")
             return records
-            
+
         except Exception as e:
             logger.error(f"Error retrieving {name} records: {{e}}")
             raise HTTPException(status_code=500, detail=f"Error retrieving {name} records")
-    
+
     async def get_by_id(self, {name}_id: int) -> Optional[Dict[str, Any]]:
         \"\"\"Get {name} by ID\"\"\"
         try:
             # Simulate database lookup
             if {name}_id < 0 or {name}_id > 1000:
                 return None
-            
+
             record = {{
                 "id": {name}_id,
                 "name": f"{name}_{{{{name}}_id}}",
@@ -927,21 +927,21 @@ class {name.title()}Service:
                     "source": "benchmark"
                 }}
             }}
-            
+
             logger.info(f"Retrieved {name} record with ID {{{{name}}_id}}")
             return record
-            
+
         except Exception as e:
             logger.error(f"Error retrieving {name} {{{{name}}_id}}: {{e}}")
             raise HTTPException(status_code=500, detail=f"Error retrieving {name}")
-    
+
     async def create(self, data: Dict[str, Any]) -> Dict[str, Any]:
         \"\"\"Create new {name} record\"\"\"
         try:
             # Validate required fields
             if not data.get("name"):
                 raise HTTPException(status_code=400, detail="Name is required")
-            
+
             # Simulate database insert
             new_record = {{
                 "id": hash(data.get("name", "")) % 1000,
@@ -950,45 +950,45 @@ class {name.title()}Service:
                 "created_at": "2025-01-01T00:00:00Z",
                 **data
             }}
-            
+
             logger.info(f"Created new {name} record: {{new_record['id']}}")
             return new_record
-            
+
         except HTTPException:
             raise
         except Exception as e:
             logger.error(f"Error creating {name}: {{e}}")
             raise HTTPException(status_code=500, detail=f"Error creating {name}")
-    
+
     async def update(self, {name}_id: int, data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         \"\"\"Update existing {name} record\"\"\"
         try:
             existing = await self.get_by_id({name}_id)
             if not existing:
                 return None
-            
+
             # Simulate database update
             updated_record = {{**existing, **data}}
             updated_record["updated_at"] = "2025-01-01T00:00:00Z"
-            
+
             logger.info(f"Updated {name} record: {{{{name}}_id}}")
             return updated_record
-            
+
         except Exception as e:
             logger.error(f"Error updating {name} {{{{name}}_id}}: {{e}}")
             raise HTTPException(status_code=500, detail=f"Error updating {name}")
-    
+
     async def delete(self, {name}_id: int) -> bool:
         \"\"\"Delete {name} record\"\"\"
         try:
             existing = await self.get_by_id({name}_id)
             if not existing:
                 return False
-            
+
             # Simulate database delete
             logger.info(f"Deleted {name} record: {{{{name}}_id}}")
             return True
-            
+
         except Exception as e:
             logger.error(f"Error deleting {name} {{{{name}}_id}}: {{e}}")
             raise HTTPException(status_code=500, detail=f"Error deleting {name}")
@@ -1093,7 +1093,7 @@ class TestGitPerformanceBenchmarks:
         )
 
         assert metric.execution_time_ms > 0
-        assert metric.success == True
+        assert metric.success
 
         # Test threshold checking
         thresholds = benchmarker.PERFORMANCE_THRESHOLDS["pre_commit"]

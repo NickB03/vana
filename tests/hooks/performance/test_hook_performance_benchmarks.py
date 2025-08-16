@@ -172,7 +172,7 @@ interface MediumComponentProps {
 const MediumComponent: React.FC<MediumComponentProps> = ({ data }) => {
   const [state, setState] = useState(null);
   const [loading, setLoading] = useState(false);
-  
+
   useEffect(() => {
     setLoading(true);
     // Simulate data processing
@@ -181,7 +181,7 @@ const MediumComponent: React.FC<MediumComponentProps> = ({ data }) => {
       setLoading(false);
     }, 100);
   }, [data]);
-  
+
   return (
     <Card data-testid="medium-card">
       {loading ? (
@@ -189,8 +189,8 @@ const MediumComponent: React.FC<MediumComponentProps> = ({ data }) => {
       ) : (
         <div>
           {state?.map((item, index) => (
-            <Button 
-              key={index} 
+            <Button
+              key={index}
               data-testid={`item-${index}`}
               aria-label={`Item ${index}`}
             >
@@ -222,14 +222,14 @@ interface LargeComponentProps {
 const LargeComponent: React.FC<LargeComponentProps> = ({ items }) => {
   const [states, setStates] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
-  
+
   useEffect(() => {
     setLoading(true);
     // Process items
     setStates(items);
     setLoading(false);
   }, [items]);
-  
+
         """
 
         # Add many similar sections
@@ -251,8 +251,8 @@ const LargeComponent: React.FC<LargeComponentProps> = ({ items }) => {
 
         for i in range(min(size, 100)):  # Limit rendered elements
             content += f"""
-          <Button 
-            key="{i}" 
+          <Button
+            key="{i}"
             onClick={{handler{i}}}
             data-testid="button-{i}"
             aria-label="Button {i}"
@@ -475,7 +475,7 @@ class TestConcurrentValidationPerformance:
             if returncode == 0:
                 successful_validations += 1
                 try:
-                    validation_result = json.loads(stdout)
+                    json.loads(stdout)
                     # Individual validation should still be fast
                     validation_times.append(
                         metrics.execution_time_ms / 10
@@ -581,7 +581,7 @@ class TestMemoryUsageOptimization:
         """Test memory usage doesn't grow excessively under load"""
         os.chdir(performance_workspace)
 
-        initial_memory = psutil.Process().memory_info().rss / 1024 / 1024
+        psutil.Process().memory_info().rss / 1024 / 1024
         memory_measurements = []
 
         # Run multiple batches of validations
@@ -792,7 +792,7 @@ class TestPerformanceRegression:
         content_file = performance_workspace / "temp_small_baseline.tsx"
         content_file.write_text(sample_components["small"])
 
-        result = subprocess.run(
+        subprocess.run(
             [
                 "node",
                 "/Users/nick/Development/vana/tests/hooks/validation/real-prd-validator.js",
@@ -817,7 +817,7 @@ class TestPerformanceRegression:
         content_file = performance_workspace / "temp_medium_baseline.tsx"
         content_file.write_text(sample_components["medium"])
 
-        result = subprocess.run(
+        subprocess.run(
             [
                 "node",
                 "/Users/nick/Development/vana/tests/hooks/validation/real-prd-validator.js",

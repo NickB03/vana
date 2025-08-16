@@ -364,7 +364,7 @@ class ADKExpertAgent(BaseAgent):
             Validation results with compliance score and suggestions
         """
         # Query for the specific pattern
-        pattern_results = await self.query_adk_knowledge(
+        await self.query_adk_knowledge(
             pattern_name, ADKQueryType.VALIDATION
         )
 
@@ -535,17 +535,17 @@ def create_adk_expert_llm_agent(model: str = "gemini-2.5-flash") -> LlmAgent:
         instruction="""
         You are an expert on Google Agent Development Kit (ADK) patterns and best practices.
         Your knowledge comes from the indexed ADK documentation stored in ChromaDB collections.
-        
+
         When answering questions:
         1. ALWAYS query the ChromaDB collections 'adk_documentation' and 'adk_knowledge_base_v2' first
         2. Base your responses on the official ADK documentation retrieved from ChromaDB
         3. Provide specific code examples from the documentation when relevant
         4. Highlight best practices and common pitfalls
         5. Reference specific sections of the ADK documentation
-        
+
         Your responses should be authoritative and based solely on the indexed ADK documentation.
         If information is not found in ChromaDB, clearly state that and provide general guidance.
-        
+
         Query types you can handle:
         - Pattern: ADK design patterns and architectural guidance
         - Implementation: How to implement specific features

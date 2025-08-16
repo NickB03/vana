@@ -119,15 +119,15 @@ import React, { useState } from 'react';
 
 const XSSVulnerable: React.FC = () => {
   const [userInput, setUserInput] = useState('');
-  
+
   // CRITICAL: XSS vulnerability - unsanitized HTML injection
   const dangerousContent = {
     __html: userInput // No DOMPurify sanitization
   };
-  
+
   return (
     <div>
-      <input 
+      <input
         value={userInput}
         onChange={(e) => setUserInput(e.target.value)}
       />
@@ -159,17 +159,17 @@ const EvalVulnerable: React.FC = () => {
   const handleUserCode = (code: string) => {
     // CRITICAL: eval() usage - code injection risk
     eval(code);
-    
+
     // Also dangerous
     const func = new Function(code);
     func();
-    
+
     // Dynamic import with user input
     import(code).then(module => {
       module.execute();
     });
   };
-  
+
   return <div>Eval Vulnerable Component</div>;
 };
 
@@ -201,13 +201,13 @@ const ExcessiveHooks: React.FC = () => {
   const [state5, setState5] = useState(null);
   const [state6, setState6] = useState(null);
   const [state7, setState7] = useState(null); // Exceeds limit
-  
+
   // VIOLATION: Too many useEffect hooks (>3 limit)
   useEffect(() => { /* Effect 1 */ }, []);
   useEffect(() => { /* Effect 2 */ }, []);
   useEffect(() => { /* Effect 3 */ }, []);
   useEffect(() => { /* Effect 4 */ }, []); // Exceeds limit
-  
+
   return <div>Too many hooks</div>;
 };
 
@@ -222,16 +222,16 @@ const PerformanceIssues: React.FC = ({ items }) => {
       {items.map(item => {
         // VIOLATION: useState inside map - performance killer
         const [selected, setSelected] = useState(false);
-        
+
         // VIOLATION: New object creation in render
         const style = {
           color: selected ? 'blue' : 'black',
           fontSize: '16px'
         };
-        
+
         // VIOLATION: Anonymous function in onClick
         return (
-          <div 
+          <div
             key={item.id}
             style={style}
             onClick={() => setSelected(!selected)}
@@ -258,12 +258,12 @@ const ExpensiveComponent: React.FC = ({ data, calculations }) => {
       computed: calculations.reduce((acc, calc) => acc + calc(item), 0)
     };
   });
-  
+
   // VIOLATION: New function on every render
   const handleClick = (item) => {
     console.log('Clicked:', item);
   };
-  
+
   return (
     <div>
       {processedData.map(item => (
@@ -287,21 +287,21 @@ const AccessibilityViolations: React.FC = () => {
     <div>
       {/* VIOLATION: Button without aria-label or text */}
       <button onClick={() => console.log('clicked')}>×</button>
-      
+
       {/* VIOLATION: Input without label */}
       <input type="text" placeholder="Enter text" />
-      
+
       {/* VIOLATION: Image without alt text */}
       <img src="/image.jpg" />
-      
+
       {/* VIOLATION: Interactive div without role */}
       <div onClick={() => console.log('clicked')}>Click me</div>
-      
+
       {/* VIOLATION: Low contrast colors */}
       <div style={{color: '#ccc', backgroundColor: '#ddd'}}>
         Low contrast text
       </div>
-      
+
       {/* VIOLATION: Missing data-testid */}
       <button>Submit Form</button>
     </div>
@@ -319,10 +319,10 @@ const KeyboardIssues: React.FC = () => {
       {/* VIOLATION: Non-focusable interactive elements */}
       <div onClick={() => console.log('clicked')}>Click me</div>
       <span onClick={() => console.log('clicked')}>Also clickable</span>
-      
+
       {/* VIOLATION: No keyboard event handlers */}
       <div onClick={() => console.log('mouse only')}>Mouse only</div>
-      
+
       {/* VIOLATION: Custom tabindex without proper management */}
       <div tabIndex={-1} onClick={() => console.log('clicked')}>
         Not keyboard accessible
@@ -381,11 +381,11 @@ const InlineStylesViolation: React.FC = () => {
       <div style={{color: 'red', fontSize: '16px', padding: '10px'}}>
         Inline styles violation
       </div>
-      
+
       <button style={{backgroundColor: 'blue', color: 'white'}}>
         Styled button
       </button>
-      
+
       {/* VIOLATION: Dynamic inline styles */}
       <div style={{display: 'flex', justifyContent: 'center'}}>
         More inline styles
@@ -407,7 +407,7 @@ const NoInterfaceComponent = (props) => {
   const handleData = (data) => {
     return data.map(item => item.value);
   };
-  
+
   // VIOLATION: No return type annotation
   const processUser = (user) => {
     return {
@@ -415,7 +415,7 @@ const NoInterfaceComponent = (props) => {
       age: user.age + 1
     };
   };
-  
+
   return (
     <div>
       {props.items.map(item => (
@@ -442,7 +442,7 @@ const AnyTypeViolation: React.FC<ComponentProps> = ({ data, callback, config }) 
   const processedData: any = data.map((item: any) => {
     return callback(item);
   });
-  
+
   return <div>{processedData}</div>;
 };
 
@@ -520,14 +520,14 @@ interface UserDashboardProps {
 const UserDashboard: React.FC<UserDashboardProps> = ({ userId }) => {
   const [data, setData] = useState(null);
   const [error, setError] = useState(null);
-  
+
   useEffect(() => {
     // Complex logic that needs testing
     fetchUserData(userId)
       .then(setData)
       .catch(setError);
   }, [userId]);
-  
+
   const handleRefresh = async () => {
     // Another critical path that needs testing
     try {
@@ -538,11 +538,11 @@ const UserDashboard: React.FC<UserDashboardProps> = ({ userId }) => {
       setError(err.message);
     }
   };
-  
+
   if (error) {
     return <div>Error: {error}</div>;
   }
-  
+
   return (
     <div>
       <Button onClick={handleRefresh}>Refresh</Button>
@@ -566,7 +566,7 @@ describe('ComplexComponent', () => {
     render(<ComplexComponent data={[]} />);
     expect(screen.getByText('Complex Component')).toBeInTheDocument();
   });
-  
+
   // MISSING: Error state tests
   // MISSING: Loading state tests
   // MISSING: Edge case tests (empty data, invalid data)
@@ -629,7 +629,7 @@ class TestSecurityVulnerabilityDetection:
         validation_result = json.loads(result.stdout)
 
         # Should detect XSS vulnerability
-        assert validation_result["validated"] == False
+        assert not validation_result["validated"]
         assert (
             validation_result["compliance_score"] < 30
         )  # Very low score for security issue
@@ -676,7 +676,7 @@ class TestSecurityVulnerabilityDetection:
         )
 
         if result.returncode == 0:
-            validation_result = json.loads(result.stdout)
+            json.loads(result.stdout)
 
             # Python files might not be fully validated by React validator
             # But should still detect some patterns
@@ -755,7 +755,7 @@ class TestSecurityVulnerabilityDetection:
             error_patterns["security_vulnerabilities"]["hardcoded_secrets"]
         )
 
-        result = subprocess.run(
+        subprocess.run(
             [
                 "node",
                 "/Users/nick/Development/vana/tests/hooks/validation/real-prd-validator.js",
@@ -943,7 +943,7 @@ class TestPerformanceAntiPatternDetection:
         validation_result = json.loads(result.stdout)
 
         # Should detect potential memoization issues
-        suggestions_text = " ".join(validation_result.get("suggestions", []))
+        " ".join(validation_result.get("suggestions", []))
 
         # May suggest React.memo or performance improvements
         # This is an advanced pattern that might be detected by enhanced validators
@@ -1012,7 +1012,7 @@ class TestAccessibilityViolationDetection:
         assert "data-testid" in warnings_text or "testid" in warnings_text
 
         # Should detect accessibility issues
-        accessibility_detected = any(
+        any(
             [
                 "aria-label" in warnings_text,
                 "accessibility" in warnings_text.lower(),
@@ -1136,7 +1136,7 @@ class TestForbiddenUIFrameworkDetection:
         validation_result = json.loads(result.stdout)
 
         # Should detect forbidden UI framework
-        assert validation_result["validated"] == False
+        assert not validation_result["validated"]
 
         violations_text = " ".join(validation_result.get("violations", []))
 
@@ -1186,7 +1186,7 @@ class TestForbiddenUIFrameworkDetection:
         validation_result = json.loads(result.stdout)
 
         # Should detect forbidden UI framework
-        assert validation_result["validated"] == False
+        assert not validation_result["validated"]
 
         violations_text = " ".join(validation_result.get("violations", []))
 
@@ -1353,7 +1353,7 @@ class TestTypeSafetyIssueDetection:
 
         assert result.returncode == 0
 
-        validation_result = json.loads(result.stdout)
+        json.loads(result.stdout)
 
         # 'any' type detection is an advanced TypeScript analysis feature
         # Current validator may not detect this, but test documents expected behavior

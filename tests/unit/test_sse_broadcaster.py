@@ -408,7 +408,7 @@ class TestIntegration:
         assert "agent_network_connection" in received_events[0]
 
         # Subsequent events should be the test events
-        event_contents = [event for event in received_events[1:]]
+        event_contents = list(received_events[1:])
         agent_update_found = any(
             "agent_network_update" in event for event in event_contents
         )

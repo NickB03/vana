@@ -87,7 +87,7 @@ class AgentRelationship:
     interaction_count: int = 0
     last_interaction: datetime | None = None
 
-    def record_interaction(self, data_keys: list[str] = None) -> None:
+    def record_interaction(self, data_keys: list[str] | None = None) -> None:
         """Record an interaction between agents."""
         self.interaction_count += 1
         self.last_interaction = datetime.now()
@@ -119,7 +119,7 @@ class AgentNetworkState:
         return self.agents[agent_name]
 
     def add_relationship(
-        self, source: str, target: str, rel_type: str, data_keys: list[str] = None
+        self, source: str, target: str, rel_type: str, data_keys: list[str] | None = None
     ) -> None:
         """Add or update a relationship between agents."""
         # Find existing relationship or create new one
@@ -196,7 +196,7 @@ def before_agent_callback(callback_context: CallbackContext) -> None:
         _network_state.push_agent(agent_name)
 
         # Get agent metrics
-        metrics = _network_state.get_or_create_agent_metrics(agent_name)
+        _network_state.get_or_create_agent_metrics(agent_name)
 
         # Check for parent agent relationship
         if len(_network_state.execution_stack) > 1:
@@ -274,7 +274,7 @@ def after_agent_callback(callback_context: CallbackContext) -> None:
 
         # Update network state
         global _network_state
-        completed_agent = _network_state.pop_agent()
+        _network_state.pop_agent()
 
         # Update agent metrics
         metrics = _network_state.get_or_create_agent_metrics(agent_name)
@@ -304,7 +304,7 @@ def after_agent_callback(callback_context: CallbackContext) -> None:
         if invocation_ctx.session and invocation_ctx.session.state:
             # Look for new or modified state keys
             for key, value in invocation_ctx.session.state.items():
-                if isinstance(value, (str, dict, list)) and value:
+                if isinstance(value, str | dict | list) and value:
                     state_changes.append(key)
 
         # Record data flow relationships with next agent in stack

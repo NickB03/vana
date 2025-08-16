@@ -223,7 +223,7 @@ class ProductionSmokeTest:
 
         async with aiohttp.ClientSession() as session:
             tasks = []
-            for i in range(10):
+            for _i in range(10):
                 task = session.get(f"{self.base_url}/health")
                 tasks.append(task)
 

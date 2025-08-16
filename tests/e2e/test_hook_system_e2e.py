@@ -122,7 +122,7 @@ class E2ETestEnvironment:
         (self.workspace / ".prd-requirements.md").write_text(prd_requirements)
 
     async def simulate_file_operation(
-        self, operation: str, file_path: str, content: str = None
+        self, operation: str, file_path: str, content: str | None = None
     ) -> dict[str, Any]:
         """Simulate file operation with hook integration"""
         start_time = time.perf_counter()
@@ -184,7 +184,7 @@ class E2ETestEnvironment:
         }
 
     async def run_pre_hook(
-        self, operation: str, file_path: str, content: str = None
+        self, operation: str, file_path: str, content: str | None = None
     ) -> dict[str, Any]:
         """Run pre-operation validation hooks"""
         validation_result = {
@@ -327,7 +327,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({ userName, onEditProfil
         <CardTitle data-testid="user-name">{userName}</CardTitle>
       </CardHeader>
       <CardContent>
-        <Button 
+        <Button
           data-testid="edit-profile-button"
           onClick={onEditProfile}
           variant="outline"
@@ -345,8 +345,8 @@ export const UserProfile: React.FC<UserProfileProps> = ({ userName, onEditProfil
         )
 
         # Verify component creation validation
-        assert component_result["pre_hook_result"]["validated"] == True
-        assert component_result["operation_result"]["success"] == True
+        assert component_result["pre_hook_result"]["validated"]
+        assert component_result["operation_result"]["success"]
         assert component_result["pre_hook_result"]["compliance_score"] >= 90
         assert len(component_result["pre_hook_result"]["violations"]) == 0
 
@@ -357,29 +357,29 @@ import { UserProfile } from '../UserProfile'
 
 describe('UserProfile', () => {
   const mockEditProfile = jest.fn()
-  
+
   beforeEach(() => {
     mockEditProfile.mockClear()
   })
-  
+
   test('renders user profile card', () => {
     render(<UserProfile userName="John Doe" onEditProfile={mockEditProfile} />)
-    
+
     expect(screen.getByTestId('user-profile-card')).toBeInTheDocument()
     expect(screen.getByTestId('user-name')).toHaveTextContent('John Doe')
     expect(screen.getByTestId('edit-profile-button')).toBeInTheDocument()
   })
-  
+
   test('calls onEditProfile when edit button is clicked', () => {
     render(<UserProfile userName="John Doe" onEditProfile={mockEditProfile} />)
-    
+
     fireEvent.click(screen.getByTestId('edit-profile-button'))
     expect(mockEditProfile).toHaveBeenCalledTimes(1)
   })
-  
+
   test('has proper accessibility attributes', () => {
     render(<UserProfile userName="John Doe" onEditProfile={mockEditProfile} />)
-    
+
     const button = screen.getByTestId('edit-profile-button')
     expect(button).toHaveAttribute('data-testid')
     expect(button).toBeEnabled()
@@ -394,8 +394,8 @@ describe('UserProfile', () => {
         )
 
         # Verify test creation validation
-        assert test_result["pre_hook_result"]["validated"] == True
-        assert test_result["operation_result"]["success"] == True
+        assert test_result["pre_hook_result"]["validated"]
+        assert test_result["operation_result"]["success"]
 
         # Phase 3: Add to main application
         app_update_content = """
@@ -406,12 +406,12 @@ export default function HomePage() {
   const handleEditProfile = () => {
     console.log('Edit profile clicked')
   }
-  
+
   return (
     <main data-testid="homepage">
       <h1 data-testid="homepage-title">Welcome to Vana</h1>
-      <UserProfile 
-        userName="Current User" 
+      <UserProfile
+        userName="Current User"
         onEditProfile={handleEditProfile}
       />
     </main>
@@ -424,8 +424,8 @@ export default function HomePage() {
         )
 
         # Verify app integration validation
-        assert app_result["pre_hook_result"]["validated"] == True
-        assert app_result["operation_result"]["success"] == True
+        assert app_result["pre_hook_result"]["validated"]
+        assert app_result["operation_result"]["success"]
 
         # Phase 4: Verify overall workflow metrics
         total_operations = len(env.hook_logs)
@@ -439,7 +439,7 @@ export default function HomePage() {
 
         # Verify performance tracking
         assert len(env.performance_metrics) == 3
-        for file_path, metrics in env.performance_metrics.items():
+        for _file_path, metrics in env.performance_metrics.items():
             assert metrics["file_size"] > 0
             assert metrics["complexity_score"] > 0
 
@@ -469,8 +469,8 @@ export const BadForm = () => {
         )
 
         # Verify violation is detected and blocked
-        assert violation_result["pre_hook_result"]["validated"] == False
-        assert violation_result["operation_result"]["success"] == False
+        assert not violation_result["pre_hook_result"]["validated"]
+        assert not violation_result["operation_result"]["success"]
         assert (
             "Non-approved UI framework detected"
             in violation_result["pre_hook_result"]["violations"]
@@ -490,14 +490,14 @@ export const GoodForm = () => {
       <div className="space-y-4">
         <div>
           <Label htmlFor="name">Name</Label>
-          <Input 
-            id="name" 
+          <Input
+            id="name"
             data-testid="name-input"
-            placeholder="Enter your name" 
+            placeholder="Enter your name"
           />
         </div>
-        <Button 
-          type="submit" 
+        <Button
+          type="submit"
           data-testid="submit-button"
         >
           Submit
@@ -513,8 +513,8 @@ export const GoodForm = () => {
         )
 
         # Verify correction is accepted
-        assert corrected_result["pre_hook_result"]["validated"] == True
-        assert corrected_result["operation_result"]["success"] == True
+        assert corrected_result["pre_hook_result"]["validated"]
+        assert corrected_result["operation_result"]["success"]
         assert corrected_result["pre_hook_result"]["compliance_score"] >= 90
 
         # Phase 3: Verify learning and prevention worked
@@ -543,24 +543,24 @@ export const HeavyComponent = () => {
   const [data4, setData4] = useState([])
   const [data5, setData5] = useState([])
   const [data6, setData6] = useState([])
-  
+
   useEffect(() => {
     // Multiple heavy computations
     setData1(Array.from({ length: 1000 }, (_, i) => i))
   }, [])
-  
+
   useEffect(() => {
     setData2(Array.from({ length: 1000 }, (_, i) => i * 2))
   }, [])
-  
+
   useEffect(() => {
     setData3(Array.from({ length: 1000 }, (_, i) => i * 3))
   }, [])
-  
+
   useEffect(() => {
     setData4(Array.from({ length: 1000 }, (_, i) => i * 4))
   }, [])
-  
+
   return (
     <div data-testid="heavy-component">
       <h2>Heavy Component</h2>
@@ -580,7 +580,7 @@ export const HeavyComponent = () => {
 
         # Verify performance warnings are generated
         assert (
-            heavy_result["pre_hook_result"]["validated"] == True
+            heavy_result["pre_hook_result"]["validated"]
         )  # Still allowed but with warnings
         assert len(heavy_result["pre_hook_result"]["warnings"]) > 0
         assert (
@@ -596,17 +596,17 @@ import { Button } from '@/components/ui/button'
 import { VariableSizeList as List } from 'react-window'
 
 export const OptimizedComponent = () => {
-  const data = useMemo(() => 
-    Array.from({ length: 4000 }, (_, i) => ({ id: i, value: i * 2 })), 
+  const data = useMemo(() =>
+    Array.from({ length: 4000 }, (_, i) => ({ id: i, value: i * 2 })),
     []
   )
-  
+
   const Row = ({ index, style }) => (
     <div style={style} data-testid={`row-${index}`}>
       {data[index].value}
     </div>
   )
-  
+
   return (
     <div data-testid="optimized-component">
       <h2>Optimized Component</h2>
@@ -631,7 +631,7 @@ export const OptimizedComponent = () => {
         )
 
         # Verify optimization is recognized
-        assert optimized_result["pre_hook_result"]["validated"] == True
+        assert optimized_result["pre_hook_result"]["validated"]
         assert optimized_result["pre_hook_result"]["compliance_score"] >= 85
         assert len(optimized_result["pre_hook_result"]["warnings"]) == 0
 
@@ -661,15 +661,15 @@ import { Button } from '@/components/ui/button'
 
 export const UnsafeComponent = () => {
   const [userInput, setUserInput] = useState('')
-  
+
   return (
     <div data-testid="unsafe-component">
-      <input 
+      <input
         value={userInput}
         onChange={(e) => setUserInput(e.target.value)}
         data-testid="user-input"
       />
-      <div 
+      <div
         dangerouslySetInnerHTML={{ __html: userInput }}
         data-testid="unsafe-output"
       />
@@ -685,7 +685,7 @@ export const UnsafeComponent = () => {
 
         # Verify security warning is generated
         assert (
-            unsafe_result["pre_hook_result"]["validated"] == True
+            unsafe_result["pre_hook_result"]["validated"]
         )  # Allowed but warned
         assert any(
             "security risk" in warning.lower()
@@ -702,24 +702,24 @@ import DOMPurify from 'isomorphic-dompurify'
 
 export const SecureComponent = () => {
   const [userInput, setUserInput] = useState('')
-  
+
   const sanitizedContent = DOMPurify.sanitize(userInput)
-  
+
   return (
     <div data-testid="secure-component">
-      <Input 
+      <Input
         value={userInput}
         onChange={(e) => setUserInput(e.target.value)}
         data-testid="user-input"
         placeholder="Enter safe content"
       />
-      <div 
+      <div
         data-testid="safe-output"
         className="mt-4 p-4 border rounded"
       >
         {sanitizedContent}
       </div>
-      <Button 
+      <Button
         data-testid="submit-button"
         onClick={() => console.log('Secure submission:', sanitizedContent)}
       >
@@ -735,7 +735,7 @@ export const SecureComponent = () => {
         )
 
         # Verify secure implementation is approved
-        assert secure_result["pre_hook_result"]["validated"] == True
+        assert secure_result["pre_hook_result"]["validated"]
         assert secure_result["pre_hook_result"]["compliance_score"] >= 90
         assert len(secure_result["pre_hook_result"]["warnings"]) == 0
 
@@ -780,8 +780,8 @@ export const {name} = () => {{
             operations_count += 1
 
             # Verify each operation succeeds
-            assert result["pre_hook_result"]["validated"] == True
-            assert result["operation_result"]["success"] == True
+            assert result["pre_hook_result"]["validated"]
+            assert result["operation_result"]["success"]
 
         # Calculate performance metrics
         average_execution_time = total_execution_time / operations_count
@@ -826,7 +826,7 @@ class TestSystemIntegrationValidation:
 
             # Verify hook integration doesn't break commands
             assert result["exit_code"] == 0
-            assert result["hooks_integrated"] == True
+            assert result["hooks_integrated"]
             assert result["command"] == command
 
     async def _simulate_makefile_command(self, command: str) -> dict[str, Any]:
@@ -858,9 +858,9 @@ class TestSystemIntegrationValidation:
             coordination_results.append(result)
 
             # Verify hook system coordinates with MCP
-            assert result["hook_coordination"] == True
+            assert result["hook_coordination"]
             assert result["mcp_operation"] == operation
-            assert result["success"] == True
+            assert result["success"]
 
         # Verify overall coordination
         assert len(coordination_results) == len(mcp_operations)

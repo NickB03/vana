@@ -10,7 +10,7 @@ import requests
 
 
 def test_sse_endpoint(
-    session_id: str = "test-session", auth_token: str = None
+    session_id: str = "test-session", auth_token: str | None = None
 ) -> dict[str, Any]:
     """Test the SSE endpoint with optional authentication."""
 
@@ -68,7 +68,7 @@ def test_sse_endpoint(
         return {"success": False, "error": str(e)}
 
 
-def test_history_endpoint(auth_token: str = None) -> dict[str, Any]:
+def test_history_endpoint(auth_token: str | None = None) -> dict[str, Any]:
     """Test the history endpoint with optional authentication."""
 
     url = "http://localhost:8000/agent_network_history"
@@ -181,11 +181,9 @@ def main():
             expected_result = (
                 "❌ 401 (auth required)" if status_code == 401 else f"✅ {status_code}"
             )
-            expected = status_code == 401
         else:
             # In optional auth mode, should succeed
             expected_result = f"✅ {status_code}" if success else f"❌ {status_code}"
-            expected = success
 
         status = (
             "✅ PASS"

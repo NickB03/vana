@@ -201,7 +201,7 @@ class TestPlaceholderGeneration:
             "file path": "/Users/USER",
         }
 
-        for context_type, expected_placeholder in contexts.items():
+        for _context_type, _expected_placeholder in contexts.items():
             # This would test the actual context analysis logic
             # Implementation would determine appropriate placeholder based on context
             pass
@@ -234,7 +234,7 @@ class TestPerformanceRequirements:
         large_context = self._generate_large_context(100 * 1024)
 
         start_time = time.time()
-        result = self.sanitizer.sanitize(large_context)
+        self.sanitizer.sanitize(large_context)
         end_time = time.time()
 
         processing_time = (end_time - start_time) * 1000
@@ -251,7 +251,7 @@ class TestPerformanceRequirements:
 
         # Measure memory before sanitization
         snapshot1 = tracemalloc.take_snapshot()
-        result = self.sanitizer.sanitize(large_context)
+        self.sanitizer.sanitize(large_context)
         snapshot2 = tracemalloc.take_snapshot()
 
         # Calculate memory difference

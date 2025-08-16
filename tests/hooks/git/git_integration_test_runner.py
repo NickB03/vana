@@ -303,7 +303,7 @@ export const FeatureComponent: React.FC<FeatureComponentProps> = ({ title, onSub
           onChange={(e) => setInputValue(e.target.value)}
           placeholder="Enter data..."
         />
-        <Button 
+        <Button
           data-testid="feature-submit"
           onClick={handleSubmit}
           className="w-full"
@@ -342,39 +342,39 @@ describe('FeatureComponent', () => {
 
   test('renders component with title', () => {
     render(<FeatureComponent title="Test Feature" onSubmit={mockSubmit} />)
-    
+
     expect(screen.getByTestId('feature-component')).toBeInTheDocument()
     expect(screen.getByTestId('feature-title')).toHaveTextContent('Test Feature')
   })
 
   test('handles input and submission', async () => {
     render(<FeatureComponent title="Test Feature" onSubmit={mockSubmit} />)
-    
+
     const input = screen.getByTestId('feature-input')
     const submitButton = screen.getByTestId('feature-submit')
-    
+
     fireEvent.change(input, { target: { value: 'test data' } })
     fireEvent.click(submitButton)
-    
+
     await waitFor(() => {
       expect(mockSubmit).toHaveBeenCalledWith('test data')
     })
-    
+
     expect(input).toHaveValue('')
   })
 
   test('does not submit empty values', () => {
     render(<FeatureComponent title="Test Feature" onSubmit={mockSubmit} />)
-    
+
     const submitButton = screen.getByTestId('feature-submit')
     fireEvent.click(submitButton)
-    
+
     expect(mockSubmit).not.toHaveBeenCalled()
   })
 
   test('has proper accessibility attributes', () => {
     render(<FeatureComponent title="Test Feature" onSubmit={mockSubmit} />)
-    
+
     expect(screen.getByTestId('feature-component')).toBeInTheDocument()
     expect(screen.getByTestId('feature-title')).toBeInTheDocument()
     expect(screen.getByTestId('feature-input')).toBeInTheDocument()
@@ -413,9 +413,9 @@ export default function HomePage() {
   return (
     <div className="container mx-auto p-4">
       <h1 className="text-2xl font-bold mb-6">Application Dashboard</h1>
-      
+
       <div className="grid gap-6">
-        <FeatureComponent 
+        <FeatureComponent
           title="New Feature"
           onSubmit={handleFeatureSubmit}
         />
@@ -586,7 +586,7 @@ async def get_feature(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Feature not found"
         )
-    
+
     return FeatureResponse(
         id=feature_id,
         name=f"Feature {feature_id}",
@@ -630,12 +630,12 @@ app.dependency_overrides[get_current_user] = mock_current_user
 
 
 class TestFeaturesAPI:
-    
+
     def test_get_features_empty(self):
         response = client.get("/api/features/")
         assert response.status_code == 200
         assert response.json() == []
-    
+
     def test_create_feature(self):
         feature_data = {
             "name": "Test Feature",
@@ -649,19 +649,19 @@ class TestFeaturesAPI:
         assert data["description"] == "A test feature"
         assert data["enabled"] is True
         assert data["created_by"] == 1
-    
+
     def test_get_feature_by_id(self):
         response = client.get("/api/features/1")
         assert response.status_code == 200
         data = response.json()
         assert data["id"] == 1
         assert data["name"] == "Feature 1"
-    
+
     def test_get_feature_not_found(self):
         response = client.get("/api/features/0")
         assert response.status_code == 404
         assert "Feature not found" in response.json()["detail"]
-    
+
     def test_create_feature_validation(self):
         # Test missing required field
         response = client.post("/api/features/", json={})
@@ -943,7 +943,7 @@ export const EmergencyFix = () => {
           Emergency fix has been properly implemented
         </AlertDescription>
       </Alert>
-      <Button 
+      <Button
         data-testid="emergency-action"
         variant="destructive"
       >
@@ -995,7 +995,7 @@ import React, { useState } from 'react'
 
 export const UnsafeComponent = () => {
   const [userInput, setUserInput] = useState('')
-  
+
   return (
     <div>
       <input value={userInput} onChange={(e) => setUserInput(e.target.value)} />
@@ -1058,17 +1058,17 @@ import { Input } from '@/components/ui/input'
 export const SecureComponent = () => {
   const [userInput, setUserInput] = useState('')
   const [sanitizedContent, setSanitizedContent] = useState('')
-  
+
   const handleInput = (value: string) => {
     setUserInput(value)
     // Proper sanitization
     const cleaned = DOMPurify.sanitize(value)
     setSanitizedContent(cleaned)
   }
-  
+
   return (
     <div data-testid="secure-component">
-      <Input 
+      <Input
         data-testid="secure-input"
         value={userInput}
         onChange={(e) => handleInput(e.target.value)}
@@ -1331,7 +1331,7 @@ export const SecureComponent = () => {
             <p>Session: {report.test_session_id}</p>
             <p>Generated: {report.timestamp}</p>
         </div>
-        
+
         <div class="metrics-grid">
             <div class="metric-card">
                 <div class="metric-value">{report.total_scenarios}</div>
@@ -1358,19 +1358,19 @@ export const SecureComponent = () => {
                 <div class="metric-label">Backup Integration</div>
             </div>
         </div>
-        
+
         <div class="scenarios-section">
             <h2>📋 Test Scenarios</h2>
             {scenarios_html}
         </div>
-        
+
         <div class="recommendations">
             <h3>💡 Recommendations</h3>
             <ul>
                 {"".join(f"<li>{rec}</li>" for rec in report.recommendations)}
             </ul>
         </div>
-        
+
         <div class="footer">
             <p>Git Hook Integration Testing Framework v1.0</p>
             <p>Comprehensive system coordination validation complete</p>
@@ -1395,7 +1395,7 @@ class TestGitIntegrationRunner:
     async def test_integration_environment_setup(self, integration_runner):
         """Test integration environment setup"""
         assert integration_runner.git_env.repo is not None
-        assert integration_runner.git_env.hooks_installed == True
+        assert integration_runner.git_env.hooks_installed
 
         # Check workspace structure
         workspace_path = integration_runner.workspace_path

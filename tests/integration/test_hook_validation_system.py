@@ -22,7 +22,7 @@ class MockHookSystem:
         self.performance_metrics = {}
 
     async def pre_file_operation(
-        self, operation: str, file_path: str, content: str = None
+        self, operation: str, file_path: str, content: str | None = None
     ) -> dict[str, Any]:
         """Mock pre-file operation hook"""
         self.hooks_called.append(f"pre_{operation}")
@@ -160,10 +160,10 @@ export const TestComponent = () => {
         # Assertions
         assert "pre_write" in mock_hook_system.hooks_called
         assert "post_write" in mock_hook_system.hooks_called
-        assert pre_result["validated"] == True
+        assert pre_result["validated"]
         assert pre_result["compliance_score"] >= 90
         assert len(pre_result["violations"]) == 0
-        assert post_result["success"] == True
+        assert post_result["success"]
         assert file_path.exists()
 
     @pytest.mark.asyncio
@@ -198,16 +198,16 @@ export const BadComponent = () => {
                 write_success = False
 
             # Post-write hook (with failure)
-            post_result = await mock_hook_system.post_file_operation(
+            await mock_hook_system.post_file_operation(
                 "write", str(file_path), write_success
             )
 
         # Assertions
-        assert pre_result["validated"] == False
+        assert not pre_result["validated"]
         assert "Custom UI framework detected" in pre_result["violations"]
         assert "Use shadcn/ui components instead" in pre_result["suggestions"]
         assert pre_result["compliance_score"] < 50
-        assert write_success == False
+        assert not write_success
         assert not file_path.exists()  # File should not be created
 
     @pytest.mark.asyncio
@@ -235,7 +235,7 @@ import { Button } from '@/components/ui/button'
 
 export const ExistingComponent = () => {
   const [data, setData] = useState([])
-  
+
   useEffect(() => {
     // Heavy computation that could impact performance
     const heavyData = Array.from({ length: 10000 }, (_, i) => ({
@@ -245,7 +245,7 @@ export const ExistingComponent = () => {
     }))
     setData(heavyData)
   }, [])
-  
+
   return (
     <div data-testid="existing-component">
       <Button>Updated with {data.length} items</Button>
@@ -272,18 +272,18 @@ export const ExistingComponent = () => {
                 edit_success = False
 
             # Post-edit hook
-            post_result = await mock_hook_system.post_file_operation(
+            await mock_hook_system.post_file_operation(
                 "edit", str(file_path), edit_success
             )
 
         # Assertions
-        assert pre_result["validated"] == True  # Allowed but with warnings
+        assert pre_result["validated"]  # Allowed but with warnings
         assert "Potential performance impact detected" in pre_result["warnings"]
         assert "Consider component optimization" in pre_result["suggestions"]
         assert (
             pre_result["compliance_score"] < 95
         )  # Score reduced due to performance concern
-        assert edit_success == True
+        assert edit_success
 
     @pytest.mark.asyncio
     async def test_bash_command_security_validation(self, mock_hook_system):
@@ -365,18 +365,18 @@ class TestWorkflowIntegration:
         """Test PRD violation detection and recovery workflow"""
         # Step 1: Attempt PRD violation
         violation_result = await workflow_simulator.attempt_prd_violation()
-        assert violation_result["blocked"] == True
+        assert violation_result["blocked"]
         assert len(violation_result["violations"]) > 0
 
         # Step 2: Apply suggested fixes
         fix_result = await workflow_simulator.apply_suggested_fixes(
             violation_result["suggestions"]
         )
-        assert fix_result["compliance_improved"] == True
+        assert fix_result["compliance_improved"]
 
         # Step 3: Retry with fixes
         retry_result = await workflow_simulator.retry_with_fixes()
-        assert retry_result["validated"] == True
+        assert retry_result["validated"]
         assert retry_result["compliance_score"] >= 90
 
 
@@ -456,7 +456,7 @@ describe('NewFeature', () => {
     render(<NewFeature />)
     expect(screen.getByTestId('new-feature')).toBeInTheDocument()
   })
-  
+
   test('displays button correctly', () => {
     render(<NewFeature />)
     expect(screen.getByText('New Feature')).toBeInTheDocument()

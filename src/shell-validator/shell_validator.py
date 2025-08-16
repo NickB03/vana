@@ -874,7 +874,7 @@ class ShellValidator:
         )
 
     def validate_directory(
-        self, directory_path: str, patterns: list[str] = None
+        self, directory_path: str, patterns: list[str] | None = None
     ) -> list[ValidationResult]:
         """Validate all shell scripts in a directory"""
         if patterns is None:
@@ -1033,7 +1033,7 @@ class ShellValidator:
             <h1>🔍 Shell Script Validation Report</h1>
             <p>Generated on {time.strftime("%Y-%m-%d %H:%M:%S")}</p>
         </div>
-        
+
         <div class="summary">
             <div class="metric">
                 <h3>Total Files</h3>
@@ -1052,7 +1052,7 @@ class ShellValidator:
                 <div class="value">{self.validation_stats["avg_time_per_file_ms"]:.1f}</div>
             </div>
         </div>
-        
+
         <h2>📋 File Results</h2>
 """
 
@@ -1060,8 +1060,8 @@ class ShellValidator:
             html += f"""
         <div class="file-result">
             <h3>📄 {result.file_path}</h3>
-            <p><strong>Execution Time:</strong> {result.execution_time_ms:.1f}ms | 
-               <strong>Lines Checked:</strong> {result.lines_checked}/{result.total_lines} | 
+            <p><strong>Execution Time:</strong> {result.execution_time_ms:.1f}ms |
+               <strong>Lines Checked:</strong> {result.lines_checked}/{result.total_lines} |
                <strong>Issues:</strong> {len(result.issues)}</p>
 """
 

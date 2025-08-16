@@ -52,9 +52,9 @@ class AgentProgressTracker:
         self,
         current_step: int,
         total_steps: int,
-        message: str = None,
-        step_name: str = None,
-        metadata: dict = None,
+        message: str | None = None,
+        step_name: str | None = None,
+        metadata: dict | None = None,
     ):
         """Send progress update via SSE.
 
@@ -100,7 +100,7 @@ class AgentProgressTracker:
         await broadcaster.broadcast_event(self.session_id, event)
 
     async def add_substep(
-        self, name: str, status: str = "pending", details: str = None
+        self, name: str, status: str = "pending", details: str | None = None
     ):
         """Add a substep to the current step.
 
@@ -132,7 +132,7 @@ class AgentProgressTracker:
         broadcaster = get_sse_broadcaster()
         await broadcaster.broadcast_event(self.session_id, event)
 
-    async def complete(self, success: bool = True, message: str = None):
+    async def complete(self, success: bool = True, message: str | None = None):
         """Mark the entire process as complete.
 
         Args:

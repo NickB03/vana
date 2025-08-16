@@ -367,7 +367,7 @@ class GitHookInstaller:
 
     def _generate_pre_commit_script(self, config: GitHookConfig) -> str:
         """Generate pre-commit hook script"""
-        validator_path = Path(__file__).parent / "shell_validator.py"
+        Path(__file__).parent / "shell_validator.py"
         git_hooks_path = Path(__file__)
 
         return f"""#!/bin/bash

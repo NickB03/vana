@@ -81,7 +81,7 @@ def create_refresh_token(
     # Clean up old refresh tokens (keep only the latest 4)
     old_tokens = (
         db.query(RefreshToken)
-        .filter(RefreshToken.user_id == user_id, RefreshToken.is_revoked == False)
+        .filter(RefreshToken.user_id == user_id, not RefreshToken.is_revoked)
         .order_by(RefreshToken.created_at.desc())
         .offset(4)
         .all()
@@ -108,7 +108,7 @@ def verify_refresh_token(token: str, db: Session) -> User | None:
     """Verify and return user from refresh token."""
     refresh_token = (
         db.query(RefreshToken)
-        .filter(RefreshToken.token == token, RefreshToken.is_revoked == False)
+        .filter(RefreshToken.token == token, not RefreshToken.is_revoked)
         .first()
     )
 
@@ -132,7 +132,7 @@ def revoke_all_user_tokens(user_id: int, db: Session) -> int:
     """Revoke all refresh tokens for a user."""
     count = (
         db.query(RefreshToken)
-        .filter(RefreshToken.user_id == user_id, RefreshToken.is_revoked == False)
+        .filter(RefreshToken.user_id == user_id, not RefreshToken.is_revoked)
         .update({"is_revoked": True})
     )
     db.commit()

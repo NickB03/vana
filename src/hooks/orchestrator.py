@@ -341,7 +341,7 @@ class HookOrchestrator:
         total_score = 0.0
         total_weight = 0.0
 
-        for validator_name, result in validator_results.items():
+        for _validator_name, result in validator_results.items():
             weight = result.get("weight", 1.0)
             score = result.get(
                 "security_score", 1.0 if result.get("passed", True) else 0.0

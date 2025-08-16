@@ -167,7 +167,7 @@ def backup_session_db_to_gcs(
     try:
         # Check if we're already in an async context
         try:
-            loop = asyncio.get_running_loop()
+            asyncio.get_running_loop()
             # We're in an async context, need to run in thread pool
             import concurrent.futures
 
@@ -223,7 +223,7 @@ def restore_session_db_from_gcs(
     try:
         # Check if we're already in an async context
         try:
-            loop = asyncio.get_running_loop()
+            asyncio.get_running_loop()
             # We're in an async context, need to run in thread pool
             import concurrent.futures
 
@@ -355,7 +355,7 @@ def create_periodic_backup_job(
                 local_db_path, bucket_name, project_id, interval_hours
             )
 
-        task = loop.create_task(start_async())
+        loop.create_task(start_async())
         logging.info(
             f"Started async periodic session backup every {interval_hours} hours"
         )

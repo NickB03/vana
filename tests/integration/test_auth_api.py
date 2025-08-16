@@ -786,7 +786,7 @@ class TestSecurityMiddleware:
         """Test rate limiting middleware."""
         # Make many requests quickly
         responses = []
-        for i in range(110):  # More than the limit of 100
+        for _i in range(110):  # More than the limit of 100
             response = client.post(
                 "/auth/login", json={"username": "test", "password": "test"}
             )

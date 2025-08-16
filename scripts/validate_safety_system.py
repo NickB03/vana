@@ -140,7 +140,7 @@ async def test_config_manager():
         print("✅ Config manager initialization test passed")
 
         # Test mode changes
-        original_mode = config_manager.get_current_enforcement_mode()
+        config_manager.get_current_enforcement_mode()
         config_manager.set_enforcement_mode(EnforcementMode.WARN)
         assert config_manager.get_current_enforcement_mode() == EnforcementMode.WARN
         print("✅ Enforcement mode change test passed")

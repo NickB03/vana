@@ -107,11 +107,11 @@ interface UserProfileProps {
 const UserProfile: React.FC<UserProfileProps> = ({ userId, onUpdate }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(false);
-  
+
   useEffect(() => {
     fetchUser(userId).then(setUser);
   }, [userId]);
-  
+
   const handleSubmit = async (data: any) => {
     setLoading(true);
     try {
@@ -123,10 +123,10 @@ const UserProfile: React.FC<UserProfileProps> = ({ userId, onUpdate }) => {
       setLoading(false);
     }
   };
-  
+
   return (
     <Card data-testid="user-profile">
-      <Button 
+      <Button
         onClick={handleSubmit}
         aria-label="Update user profile"
         disabled={loading}
@@ -154,27 +154,27 @@ const BadComponent = (props) => {
   const [data4, setData4] = useState(null);
   const [data5, setData5] = useState(null);
   const [data6, setData6] = useState(null); // Too many useState
-  
+
   useEffect(() => {
     // Effect 1
   }, []);
-  
+
   useEffect(() => {
     // Effect 2
   }, []);
-  
+
   useEffect(() => {
     // Effect 3
   }, []);
-  
+
   useEffect(() => {
     // Effect 4 - Too many useEffect
   }, []);
-  
+
   const unsafeHTML = {
     __html: props.content // dangerouslySetInnerHTML violation
   };
-  
+
   return (
     <div style={{color: 'red', fontSize: '16px'}} onClick={handleClick}> {/* Inline styles + div onClick */}
       <div dangerouslySetInnerHTML={unsafeHTML} /> {/* Security violation */}
@@ -225,7 +225,7 @@ def get_user(user_id):
         return {"status": "ok", "data": user}  # No proper status code
     else:
         return {"error": "not found"}  # No proper error handling
-        
+
     def create_user(data):
         # No validation
         result = database.insert(data)
@@ -362,7 +362,7 @@ class TestRealPRDValidator:
         validation_result = json.loads(result.stdout)
 
         # Bad component should have violations
-        assert validation_result["validated"] == False
+        assert not validation_result["validated"]
         assert len(validation_result["violations"]) >= 3
 
         # Should detect specific violations
@@ -416,7 +416,7 @@ class TestRealPRDValidator:
 
         # Should be bypassed
         assert "bypassed" in validation_result
-        assert validation_result["bypassed"] == True
+        assert validation_result["bypassed"]
         assert "bypassReason" in validation_result
         assert validation_result["bypassReason"] == "Testing bypass mechanism"
 
@@ -621,7 +621,7 @@ class TestSecurityValidator:
 
         sanitized_input = """
         import DOMPurify from 'isomorphic-dompurify';
-        
+
         const handleInput = (userInput) => {
             const sanitized = DOMPurify.sanitize(userInput);
             setContent(sanitized);
@@ -686,7 +686,7 @@ class TestTestCoverageValidator:
         bad_test = """
         import { render } from '@testing-library/react';
         import UserProfile from '../UserProfile';
-        
+
         test('renders', () => {
             render(<UserProfile />);
         });
@@ -696,23 +696,23 @@ class TestTestCoverageValidator:
         good_test = """
         import { render, screen, fireEvent, waitFor } from '@testing-library/react';
         import UserProfile from '../UserProfile';
-        
+
         describe('UserProfile', () => {
             test('renders user information correctly', () => {
                 render(<UserProfile userId="123" />);
                 expect(screen.getByTestId('user-profile')).toBeInTheDocument();
             });
-            
+
             test('handles update submission', async () => {
                 const mockUpdate = jest.fn();
                 render(<UserProfile userId="123" onUpdate={mockUpdate} />);
-                
+
                 fireEvent.click(screen.getByRole('button', { name: /update/i }));
                 await waitFor(() => {
                     expect(mockUpdate).toHaveBeenCalled();
                 });
             });
-            
+
             test('handles error states', async () => {
                 // Test error handling
             });
@@ -1085,11 +1085,11 @@ interface LargeComponentProps {
 
 const LargeComponent: React.FC<LargeComponentProps> = ({ data }) => {
   const [state, setState] = useState(null);
-  
+
   useEffect(() => {
     // Process data
   }, [data]);
-  
+
         """
 
         # Add many similar sections to make it large
@@ -1098,7 +1098,7 @@ const LargeComponent: React.FC<LargeComponentProps> = ({ data }) => {
   const handler{i} = () => {{
     console.log('Handler {i}');
   }};
-  
+
   const component{i} = (
     <div key="{i}" data-testid="item-{i}">
       <Button onClick={{handler{i}}}>Button {i}</Button>

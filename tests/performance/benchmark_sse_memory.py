@@ -508,7 +508,7 @@ class SSEMemoryBenchmark:
                 fixed_memory = results["fixed"][test_name].memory_usage_mb
 
                 # Make arrays same length for plotting
-                max_len = max(len(orig_memory), len(fixed_memory))
+                max(len(orig_memory), len(fixed_memory))
                 orig_x = list(range(len(orig_memory)))
                 fixed_x = list(range(len(fixed_memory)))
 

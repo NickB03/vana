@@ -137,7 +137,7 @@ def brave_web_search_function(query: str, count: int = 5, **kwargs) -> dict[str,
     try:
         # Check if we're already in an async context
         try:
-            loop = asyncio.get_running_loop()
+            asyncio.get_running_loop()
             # We're in an async context, need to run in thread pool
             import concurrent.futures
 

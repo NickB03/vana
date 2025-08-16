@@ -76,7 +76,7 @@ class CIPipelineReport:
 class GitTestAutomation:
     """Automated Git hook testing for CI/CD pipelines"""
 
-    def __init__(self, workspace_path: Path, config: dict[str, Any] = None):
+    def __init__(self, workspace_path: Path, config: dict[str, Any] | None = None):
         self.workspace_path = workspace_path
         self.config = config or self._load_default_config()
         self.pipeline_id = f"git-ci-{int(time.time())}"
@@ -109,7 +109,7 @@ class GitTestAutomation:
         }
 
     def run_automated_ci_pipeline(
-        self, branch: str = None, commit_hash: str = None
+        self, branch: str | None = None, commit_hash: str | None = None
     ) -> CIPipelineReport:
         """Run complete automated CI/CD pipeline for Git hooks"""
         start_time = time.time()
@@ -210,7 +210,7 @@ class GitTestAutomation:
 
     def _execute_test_suite(self, suite_name: str) -> CITestResult:
         """Execute a specific test suite"""
-        start_time = time.time()
+        time.time()
         artifacts_path = self.artifacts_dir / suite_name
         artifacts_path.mkdir(exist_ok=True)
 
@@ -948,7 +948,7 @@ test('renders new feature', () => {
             <h1>🔧 Git Hook CI Pipeline Report</h1>
             <div class="status">{status_icon} Pipeline {("SUCCESS" if report.pipeline_success else "FAILED")}</div>
         </div>
-        
+
         <div class="pipeline-info">
             <div><strong>Pipeline ID:</strong> {report.pipeline_id}</div>
             <div><strong>Branch:</strong> {report.branch}</div>
@@ -956,27 +956,27 @@ test('renders new feature', () => {
             <div><strong>Execution Time:</strong> {report.total_execution_time_ms:.0f}ms</div>
             <div><strong>Timestamp:</strong> {report.timestamp}</div>
         </div>
-        
+
         <div class="suites-grid">
             {suites_html}
         </div>
-        
+
         {('<div class="critical-failures"><h3>🚨 Critical Failures</h3><ul>' + "".join(f"<li>{failure}</li>" for failure in report.critical_failures) + "</ul></div>") if report.critical_failures else ""}
-        
+
         <div class="recommendations">
             <h3>💡 Recommendations</h3>
             <ul>
                 {"".join(f"<li>{rec}</li>" for rec in report.recommendations)}
             </ul>
         </div>
-        
+
         <div class="next-actions">
             <h3>🎯 Next Actions</h3>
             <ul>
                 {"".join(f"<li>{action}</li>" for action in report.next_actions)}
             </ul>
         </div>
-        
+
         <div style="text-align: center; margin-top: 40px; color: #64748b;">
             <p>Git Hook Test Automation v1.0 - CI/CD Pipeline Complete</p>
         </div>

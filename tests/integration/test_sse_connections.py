@@ -205,7 +205,6 @@ class TestSSEBroadcaster:
         """Test concurrent event broadcasting doesn't cause issues."""
         num_threads = 5
         events_per_thread = 10
-        all_events = []
 
         def broadcast_events(thread_id):
             """Broadcast events from a thread."""
@@ -302,7 +301,7 @@ class TestSSEConnectionHandling:
                 # Set a short timeout
                 timeout = 2.0
 
-                async for event_data in agent_network_event_stream(self.session_id):
+                async for _event_data in agent_network_event_stream(self.session_id):
                     events_received += 1
                     elapsed = time.time() - start_time
 
@@ -336,7 +335,7 @@ class TestSSEConnectionHandling:
                 broadcaster.broadcast_event(self.session_id, malformed_event)
             except Exception as e:
                 # If it raises an exception, it should be a reasonable one
-                assert isinstance(e, (ValueError, TypeError, KeyError))
+                assert isinstance(e, ValueError | TypeError | KeyError)
 
     def test_event_stream_memory_management(self):
         """Test that event streaming doesn't cause memory leaks."""
@@ -394,7 +393,7 @@ class TestRealTimeEventProcessing:
 
             # Start collecting events
             async def collect_events():
-                async for event_data in agent_network_event_stream(self.session_id):
+                async for _event_data in agent_network_event_stream(self.session_id):
                     received_timestamps.append(time.time())
                     if len(received_timestamps) >= 5:
                         break

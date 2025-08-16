@@ -159,12 +159,12 @@ fi
 VALIDATION_FAILED=false
 for file in $STAGED_FILES; do
     echo "Validating: $file"
-    
+
     # Claude Flow post-edit hook for validation
     if command -v npx &> /dev/null; then
         npx claude-flow hooks post-edit --file "$file" --memory-key "git-validation/$file" 2>/dev/null || true
     fi
-    
+
     # PRD validation for React/TypeScript files
     if [[ "$file" =~ \\.tsx?$ ]]; then
         # Check for forbidden UI frameworks
@@ -173,13 +173,13 @@ for file in $STAGED_FILES; do
             echo "   Use shadcn/ui components instead"
             VALIDATION_FAILED=true
         fi
-        
+
         # Check for missing test IDs
         if grep -q "onClick\\|onSubmit\\|button" "$file" 2>/dev/null && ! grep -q "data-testid" "$file" 2>/dev/null; then
             echo "⚠️  Warning: Interactive element missing data-testid in $file"
         fi
     fi
-    
+
     # Security validation
     if grep -q "dangerouslySetInnerHTML\\|eval(\\|document\\.write" "$file" 2>/dev/null; then
         echo "❌ Security Risk: Unsafe patterns detected in $file"
@@ -308,7 +308,7 @@ echo "Commit: $COMMIT_HASH on branch $BRANCH"
 if command -v npx &> /dev/null; then
     # Store commit information in memory
     npx claude-flow memory store "git/commits/$COMMIT_HASH" "$(git show --stat HEAD)" --namespace "git-history" 2>/dev/null || true
-    
+
     # Update coordination memory
     npx claude-flow hooks post-edit --file "git-commit" --memory-key "git/latest-commit" 2>/dev/null || true
 fi
@@ -438,7 +438,7 @@ echo "✅ Post-commit automation completed"
                 "validation_passed": False,
             }
 
-    def simulate_push(self, branch: str = None, force: bool = False) -> dict[str, Any]:
+    def simulate_push(self, branch: str | None = None, force: bool = False) -> dict[str, Any]:
         """Simulate a Git push operation"""
         start_time = time.time()
 
@@ -528,7 +528,7 @@ export const CompliantComponent: React.FC<CompliantComponentProps> = ({ title, o
         <CardTitle data-testid="component-title">{title}</CardTitle>
       </CardHeader>
       <CardContent>
-        <Button 
+        <Button
           data-testid="action-button"
           onClick={onAction}
           variant="default"
@@ -547,7 +547,7 @@ export const CompliantComponent: React.FC<CompliantComponentProps> = ({ title, o
         )
 
         assert result["validation_passed"]
-        assert result["success"] == True
+        assert result["success"]
         assert result["execution_time_ms"] < 5000  # Should complete within 5 seconds
         assert "CompliantComponent.tsx" in result["files_changed"]
 
@@ -561,7 +561,7 @@ import { TextField } from '@mui/material'
 
 export const ViolatingComponent = () => {
   const userInput = '<script>alert("xss")</script>'
-  
+
   return (
     <div>
       <TextField label="Name" />
@@ -578,7 +578,7 @@ export const ViolatingComponent = () => {
         )
 
         assert result["validation_passed"]  # Expectation was failure
-        assert result["success"] == False  # Commit should be blocked
+        assert not result["success"]  # Commit should be blocked
         assert "error" in result  # Should have error message
 
     @pytest.mark.asyncio
@@ -652,7 +652,7 @@ export const ViolatingComponent = () => {
         )
 
         assert result["validation_passed"]
-        assert result["success"] == True
+        assert result["success"]
         assert (
             result["execution_time_ms"] < 10000
         )  # Should handle large commits efficiently
@@ -678,7 +678,7 @@ export const ViolatingComponent = () => {
         )
 
         assert result["validation_passed"]
-        assert result["success"] == True
+        assert result["success"]
         # Binary files should not cause hook failures
 
     @pytest.mark.asyncio

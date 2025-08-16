@@ -229,7 +229,7 @@ class MockGCSBucket:
             self.blobs[blob_name] = MockGCSBlob(blob_name)
         return self.blobs[blob_name]
 
-    def list_blobs(self, prefix: str = None):
+    def list_blobs(self, prefix: str | None = None):
         blobs = list(self.blobs.values())
         if prefix:
             blobs = [blob for blob in blobs if blob.name.startswith(prefix)]
@@ -353,7 +353,7 @@ def create_test_database():
             os.unlink(db_path)
 
 
-def setup_test_session_db(db_path: str, sessions: list[TestSession] = None):
+def setup_test_session_db(db_path: str, sessions: list[TestSession] | None = None):
     """Set up a test session database with optional test data."""
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
@@ -573,7 +573,7 @@ class TestEnvironment:
         self.mock_patches = []
         self.background_tasks = []
 
-    def create_temp_file(self, suffix: str = None) -> str:
+    def create_temp_file(self, suffix: str | None = None) -> str:
         """Create a temporary file and track it for cleanup."""
         fd, path = tempfile.mkstemp(suffix=suffix)
         os.close(fd)
@@ -713,7 +713,7 @@ def temporary_server(app_instance=None, port: int = 8001):
 class IntegrationTestClient:
     """Enhanced test client for integration testing."""
 
-    def __init__(self, base_url: str = None):
+    def __init__(self, base_url: str | None = None):
         self.base_url = base_url or "http://127.0.0.1:8000"
         self.session = requests.Session()
 
@@ -762,40 +762,40 @@ class IntegrationTestClient:
 # ================================
 
 __all__ = [
-    # Data classes
-    "TestUser",
-    "TestSession",
-    "TestADKEvent",
-    # Data generators
-    "create_test_user",
-    "create_test_session",
-    "create_test_feedback",
-    "create_test_adk_event",
-    "generate_test_messages",
-    "generate_large_dataset",
+    "IntegrationTestClient",
+    "LoadTestRunner",
+    "MockEventSource",
+    "MockGCSBlob",
+    "MockGCSBucket",
     # Mock utilities
     "MockGCSClient",
-    "MockGCSBucket",
-    "MockGCSBlob",
-    "MockEventSource",
-    # Database utilities
-    "create_test_database",
-    "setup_test_session_db",
-    # Performance utilities
-    "PerformanceTimer",
-    "measure_time",
-    "measure_memory_usage",
-    "LoadTestRunner",
     # Error simulation
     "NetworkErrorSimulator",
+    # Performance utilities
+    "PerformanceTimer",
+    "TestADKEvent",
     # Environment setup
     "TestEnvironment",
-    "test_environment",
+    "TestSession",
+    # Data classes
+    "TestUser",
+    "assert_eventually_true",
+    "assert_memory_usage_reasonable",
     # Assertion helpers
     "assert_response_time_under",
-    "assert_memory_usage_reasonable",
-    "assert_eventually_true",
+    "create_test_adk_event",
+    # Database utilities
+    "create_test_database",
+    "create_test_feedback",
+    "create_test_session",
+    # Data generators
+    "create_test_user",
+    "generate_large_dataset",
+    "generate_test_messages",
+    "measure_memory_usage",
+    "measure_time",
+    "setup_test_session_db",
     # Integration testing
     "temporary_server",
-    "IntegrationTestClient",
+    "test_environment",
 ]

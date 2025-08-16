@@ -216,7 +216,7 @@ class TestAuthConfiguration:
         with patch.dict(os.environ, {"AUTH_REQUIRE_SSE_AUTH": "maybe"}):
             # Invalid boolean values should raise a validation error
             with pytest.raises(Exception):  # ValidationError from pydantic
-                settings = AuthSettings()
+                AuthSettings()
 
     @pytest.mark.parametrize(
         "env_value,expected",

@@ -99,7 +99,7 @@ class GoogleCloudIAM:
 
             # Test IAM permissions
             resource = f"projects/{self.project_id}"
-            request = iam_admin_v1.TestIamPermissionsRequest(
+            iam_admin_v1.TestIamPermissionsRequest(
                 resource=resource, permissions=[permission]
             )
 

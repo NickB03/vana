@@ -143,9 +143,9 @@ def demo_sanitization_examples():
         # Example 3: API integration code
         """
         import openai
-        
+
         openai.api_key = "sk-abcd1234567890efgh1234567890ijkl1234567890"
-        
+
         def query_api():
             response = openai.ChatCompletion.create(
                 model="gpt-4",
@@ -158,7 +158,7 @@ def demo_sanitization_examples():
         PROJECT_ID = "analystai-454200"
         REGION = "us-central1"
         BUCKET_NAME = "vana-logs-data"
-        
+
         def setup_cloud_client():
             from google.cloud import storage
             client = storage.Client(project=PROJECT_ID)
@@ -170,7 +170,7 @@ def demo_sanitization_examples():
         # Dockerfile
         ENV GOOGLE_CLOUD_PROJECT=analystai-454200
         ENV API_KEY=sk-1234567890abcdef1234567890abcdef12345678
-        
+
         # Deploy script
         gcloud run deploy vana \\
           --project=analystai-454200 \\
@@ -210,7 +210,7 @@ def benchmark_performance():
 
         # Measure performance
         start_time = time.time()
-        result = sanitizer.sanitize(context)
+        sanitizer.sanitize(context)
         end_time = time.time()
 
         processing_time = (end_time - start_time) * 1000  # ms

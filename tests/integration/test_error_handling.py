@@ -178,7 +178,7 @@ class TestSSEErrorScenarios:
             except Exception as e:
                 errors_caught += 1
                 # Should be reasonable exceptions
-                assert isinstance(e, (ValueError, TypeError, KeyError, AttributeError))
+                assert isinstance(e, ValueError | TypeError | KeyError | AttributeError)
 
         # Some malformed events should cause errors
         # (exact behavior depends on implementation)
@@ -239,7 +239,7 @@ class TestSSEErrorScenarios:
             """Test a single concurrent SSE connection."""
             try:
                 events_received = 0
-                async for event_data in agent_network_event_stream(session_id):
+                async for _event_data in agent_network_event_stream(session_id):
                     events_received += 1
                     if events_received >= 2:  # Limit events per connection
                         break
@@ -593,7 +593,7 @@ class TestEdgeCaseScenarios:
 
             except Exception as e:
                 # If exceptions occur, they should be reasonable
-                assert isinstance(e, (ValueError, TypeError))
+                assert isinstance(e, ValueError | TypeError)
 
 
 class TestSystemLimitsAndBoundaries:
@@ -676,7 +676,7 @@ class TestSystemLimitsAndBoundaries:
 
             for operation in operations:
                 try:
-                    result = operation()
+                    operation()
                     load_operations.append(
                         {"operation": operation.__name__, "success": True}
                     )

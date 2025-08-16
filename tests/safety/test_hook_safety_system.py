@@ -623,7 +623,7 @@ class TestProductionScenarios:
     async def test_emergency_recovery_scenario(self, integrated_system):
         """Test emergency and recovery scenario"""
         safety_system = integrated_system["safety_system"]
-        config_manager = integrated_system["config_manager"]
+        integrated_system["config_manager"]
 
         # Trigger emergency
         await safety_system._trigger_emergency_mode("Simulated emergency")
