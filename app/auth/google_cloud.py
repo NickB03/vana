@@ -15,20 +15,28 @@ import google.auth.exceptions
 def verify_google_identity(id_token_str: str) -> Dict[str, Any]:
     """Verify Google ID token and return user information."""
     try:
-        # Verify the token
+        # Google OAuth client ID is required to validate the token audience
+        client_id = os.getenv("GOOGLE_OAUTH_CLIENT_ID")
+        if not client_id:
+            raise ValueError(
+                "GOOGLE_OAUTH_CLIENT_ID is not configured. "
+                "Obtain OAuth credentials from Google Cloud Console and set the environment variable."
+            )
+
+        # Verify the token against the configured client ID
         request = requests.Request()
         id_info = id_token.verify_oauth2_token(
-            id_token_str, 
+            id_token_str,
             request,
-            audience=None  # Use None to allow any audience for development
+            audience=client_id,
         )
-        
+
         # Verify the issuer
         if id_info["iss"] not in ["accounts.google.com", "https://accounts.google.com"]:
             raise ValueError("Wrong issuer")
-        
+
         return id_info
-    
+
     except ValueError as e:
         raise ValueError(f"Invalid Google ID token: {e}")
 
