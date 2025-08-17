@@ -69,6 +69,8 @@ export function CollaborativeEditor({
 
     const simulationInterval = setInterval(() => {
       const randomAgent = agents[Math.floor(Math.random() * agents.length)];
+      if (!randomAgent) return;
+      
       const lineCount = value.split('\n').length;
       const randomLine = Math.floor(Math.random() * lineCount) + 1;
       const randomColumn = Math.floor(Math.random() * 20) + 1;
@@ -90,6 +92,7 @@ export function CollaborativeEditor({
       if (shouldCreateSuggestion) {
         const suggestionTypes: AgentSuggestion['type'][] = ['edit', 'comment', 'review', 'optimization', 'bug-fix'];
         const randomType = suggestionTypes[Math.floor(Math.random() * suggestionTypes.length)];
+        if (!randomType) return;
         
         const newSuggestion: AgentSuggestion = {
           id: crypto.randomUUID(),
@@ -203,7 +206,6 @@ export function CollaborativeEditor({
       {/* Main Editor */}
       <div className="flex-1 flex flex-col min-w-0">
         <MonacoEditor
-          ref={editorRef}
           value={value}
           onChange={onChange}
           language={language}
@@ -390,7 +392,7 @@ export function CollaborativeEditor({
                                 </div>
                                 <div className="text-muted-foreground capitalize">
                                   {activity.type.replace('-', ' ')}
-                                  {activity.data.line && ` at line ${activity.data.line}`}
+                                  {activity.data && typeof activity.data === 'object' && 'line' in activity.data && ` at line ${(activity.data as Record<string, unknown>)['line']}`}
                                 </div>
                               </div>
                             );
