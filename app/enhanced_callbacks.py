@@ -31,6 +31,14 @@ from app.utils.sse_broadcaster import broadcast_agent_network_update
 
 logger = logging.getLogger(__name__)
 
+# Performance monitoring integration
+try:
+    from app.monitoring.metrics_collector import get_metrics_collector
+    METRICS_AVAILABLE = True
+except ImportError:
+    METRICS_AVAILABLE = False
+    logger.warning("Performance metrics collector not available")
+
 
 @dataclass
 class AgentMetrics:
@@ -248,6 +256,16 @@ def before_agent_callback(callback_context: CallbackContext) -> None:
         # Also store for legacy compatibility
         callback_context.state["agent_network_event"] = network_event
 
+        # Record performance metrics if available
+        if METRICS_AVAILABLE:
+            try:
+                metrics_collector = get_metrics_collector()
+                request_id = f"agent_{agent_name}_{start_time}"
+                metrics_collector.record_request_start(request_id, f"agent:{agent_name}")
+                callback_context.state[f"{agent_name}_metrics_request_id"] = request_id
+            except Exception as e:
+                logger.error(f"Failed to record performance metrics: {e}")
+
         logger.info(f"Agent {agent_name} started execution")
 
     except Exception as e:
@@ -370,6 +388,23 @@ def after_agent_callback(callback_context: CallbackContext) -> None:
 
         # Also store for legacy compatibility
         callback_context.state["agent_network_event"] = network_event
+
+        # Record performance metrics completion if available
+        if METRICS_AVAILABLE:
+            try:
+                metrics_request_id = callback_context.state.get(f"{agent_name}_metrics_request_id")
+                if metrics_request_id:
+                    metrics_collector = get_metrics_collector()
+                    metrics_collector.record_request_end(
+                        metrics_request_id, 
+                        f"agent:{agent_name}", 
+                        success=not has_error
+                    )
+                    metrics_collector.record_agent_metrics(agent_name, execution_time * 1000, not has_error)
+                    # Clean up
+                    del callback_context.state[f"{agent_name}_metrics_request_id"]
+            except Exception as e:
+                logger.error(f"Failed to record performance metrics completion: {e}")
 
         logger.info(f"Agent {agent_name} completed execution in {execution_time:.2f}s")
 
