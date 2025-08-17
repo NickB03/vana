@@ -230,8 +230,8 @@ jobs:
             
       - name: Install dependencies (optimized)
         run: |
-          uv sync --dev --no-install-project
-          uv sync --dev
+          uv sync --group dev --group lint --no-install-project
+          uv sync --group dev --group lint
           
       - name: Run ${{ matrix.test-group }} tests
         run: ${{ matrix.commands }}
