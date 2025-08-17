@@ -49,7 +49,11 @@ const STATUS_MESSAGES: Record<AgentStatus, string> = {
   thinking: 'is analyzing the problem...',
   offline: 'is currently offline',
   error: 'encountered an issue',
-  completed: 'has completed the task'
+  completed: 'has completed the task',
+  processing: 'is processing data...',
+  responding: 'is preparing a response...',
+  collaborating: 'is collaborating with team...',
+  waiting: 'is waiting for input...'
 };
 
 export function AgentActivity({ 
@@ -179,7 +183,11 @@ export function AgentActivity({
       thinking: 'yellow',
       offline: 'gray',
       error: 'red',
-      completed: 'purple'
+      completed: 'purple',
+      processing: 'blue',
+      responding: 'green',
+      collaborating: 'purple',
+      waiting: 'orange'
     };
     
     return status ? statusColors[status] : 'gray';
@@ -264,22 +272,12 @@ export function AgentActivity({
                       )}
                     </div>
 
-                    {/* Progress Bar for Processing Activities - Temporarily disabled due to TS strict mode */}
-                    {/* {activity.progress && (
-                      <div className="space-y-1">
-                        <Progress value={Number(activity.progress)} className="h-2" />
-                        <div className="text-xs text-muted-foreground">
-                          {activity.progress}% complete
-                        </div>
-                      </div>
-                    )} */}
 
-                    {/* Collaboration Context */}
-                    {activity.type === 'collaboration' && activity.metadata?.context && (
+                    {activity.type === 'collaboration' && activity.metadata?.['context'] ? (
                       <div className="text-xs text-purple-600 bg-purple-50 px-2 py-1 rounded mt-1">
-                        Context: {String(activity.metadata.context)}
+                        Context: {String(activity.metadata['context'])}
                       </div>
-                    )}
+                    ) : null}
                   </div>
                 </div>
               );

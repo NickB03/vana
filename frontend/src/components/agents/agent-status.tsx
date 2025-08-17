@@ -75,7 +75,7 @@ export function AgentStatus({
             timestamp: Date.now(),
             activity: data.activity,
             status: data.status,
-            progress: data.progress
+            progress: data.progress ?? 0
           };
           
           setActivityLog(prev => [newActivity, ...prev].slice(0, 10)); // Keep last 10
@@ -117,7 +117,10 @@ export function AgentStatus({
       collaborating: 'purple',
       waiting: 'orange',
       error: 'red',
-      offline: 'gray'
+      offline: 'gray',
+      active: 'purple',
+      busy: 'blue',
+      completed: 'green'
     };
     return colors[status];
   };
@@ -131,7 +134,10 @@ export function AgentStatus({
       collaborating: '🤝',
       waiting: '⏳',
       error: '⚠️',
-      offline: '🔌'
+      offline: '🔌',
+      active: '🟢',
+      busy: '🔵',
+      completed: '✅'
     };
     return icons[status];
   };
@@ -227,7 +233,7 @@ export function AgentStatus({
             <div>
               <div className="font-medium text-muted-foreground mb-1">Last Active</div>
               <div className="text-sm">
-                {getRelativeTime(currentAgent.last_active)}
+                {getRelativeTime(currentAgent.lastActivity || Date.now())}
               </div>
             </div>
           </div>
