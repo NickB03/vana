@@ -8,6 +8,7 @@ import { Avatar } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import DOMPurify from 'dompurify';
 import { Copy, User, Bot, AlertCircle, CheckCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 // import { format } from 'date-fns'; // Commented out until date-fns is installed
@@ -58,10 +59,14 @@ function MessageComponent({ message, isStreaming = false, agent: _ }: MessageCom
     }
     
     // Basic markdown-style formatting
-    const content = message.content
+    const raw = message.content
       .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
       .replace(/\*(.*?)\*/g, '<em>$1</em>')
       .replace(/`(.*?)`/g, '<code class="bg-muted px-1 py-0.5 rounded text-sm">$1</code>');
+    const content = DOMPurify.sanitize(raw, {
+      ALLOWED_TAGS: ['strong', 'em', 'code', 'br', 'p', 'ul', 'li', 'ol', 'pre'],
+      ALLOWED_ATTR: ['class']
+    });
     
     return (
       <div 

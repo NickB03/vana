@@ -218,7 +218,7 @@ class TestEnvironmentManager:
             await self._install_test_hooks(repo_path)
 
         # Make initial commit
-        repo.index.add_items(["."])
+        repo.index.add(".")
         repo.index.commit("Initial test repository setup")
 
         return repo
@@ -1018,7 +1018,7 @@ def cli():
     default=4,
     help="Maximum number of parallel test workers",
 )
-async def discover(workspace, test_dir, test_types, max_workers):
+def discover(workspace, test_dir, test_types, max_workers):
     """Discover tests automatically"""
     workspace_path = Path(workspace)
     test_directory = Path(test_dir)
@@ -1026,27 +1026,30 @@ async def discover(workspace, test_dir, test_types, max_workers):
     # Convert test types
     types = [TestType(t) for t in test_types] if test_types else None
 
-    orchestrator = TestOrchestrator(workspace_path, max_workers)
-    await orchestrator.initialize()
+    async def _discover():
+        orchestrator = TestOrchestrator(workspace_path, max_workers)
+        await orchestrator.initialize()
 
-    try:
-        tests = await orchestrator.discover_tests(test_directory, types)
+        try:
+            tests = await orchestrator.discover_tests(test_directory, types)
 
-        click.echo(f"📋 Discovered {len(tests)} tests:")
-        for test in tests:
-            click.echo(
-                f"  • {test.test_id} ({test.test_type.value}, {test.priority.name})"
-            )
+            click.echo(f"📋 Discovered {len(tests)} tests:")
+            for test in tests:
+                click.echo(
+                    f"  • {test.test_id} ({test.test_type.value}, {test.priority.name})"
+                )
 
-        # Save discovered tests
-        discovery_file = workspace_path / "config" / "discovered_tests.json"
-        with open(discovery_file, "w") as f:
-            json.dump([asdict(test) for test in tests], f, indent=2, default=str)
+            # Save discovered tests
+            discovery_file = workspace_path / "config" / "discovered_tests.json"
+            with open(discovery_file, "w") as f:
+                json.dump([asdict(test) for test in tests], f, indent=2, default=str)
 
-        click.echo(f"✅ Test discovery saved to: {discovery_file}")
+            click.echo(f"✅ Test discovery saved to: {discovery_file}")
 
-    finally:
-        await orchestrator.cleanup()
+        finally:
+            await orchestrator.cleanup()
+    
+    asyncio.run(_discover())
 
 
 @cli.command()
@@ -1077,43 +1080,46 @@ async def discover(workspace, test_dir, test_types, max_workers):
     default=4,
     help="Maximum number of parallel test workers",
 )
-async def execute(workspace, suite_config, environment, max_workers):
+def execute(workspace, suite_config, environment, max_workers):
     """Execute test suite"""
     workspace_path = Path(workspace)
 
-    orchestrator = TestOrchestrator(workspace_path, max_workers)
-    await orchestrator.initialize()
+    async def _execute():
+        orchestrator = TestOrchestrator(workspace_path, max_workers)
+        await orchestrator.initialize()
 
-    try:
-        # Load suite configuration
-        with open(suite_config) as f:
-            suite_data = json.load(f)
+        try:
+            # Load suite configuration
+            with open(suite_config) as f:
+                suite_data = json.load(f)
 
-        # Create test suite
-        suite = TestSuite(**suite_data)
-        await orchestrator.register_test_suite(suite)
+            # Create test suite
+            suite = TestSuite(**suite_data)
+            await orchestrator.register_test_suite(suite)
 
-        # Load environment configuration
-        env_config = {}
-        if environment:
-            with open(environment) as f:
-                env_config = json.load(f)
+            # Load environment configuration
+            env_config = {}
+            if environment:
+                with open(environment) as f:
+                    env_config = json.load(f)
 
-        # Execute suite
-        click.echo(f"🚀 Executing test suite: {suite.name}")
-        results = await orchestrator.execute_test_suite(suite.suite_id, env_config)
+            # Execute suite
+            click.echo(f"🚀 Executing test suite: {suite.name}")
+            results = await orchestrator.execute_test_suite(suite.suite_id, env_config)
 
-        # Generate report
-        report_path = await orchestrator.generate_test_report("html")
-        click.echo(f"📊 Test report generated: {report_path}")
+            # Generate report
+            report_path = await orchestrator.generate_test_report("html")
+            click.echo(f"📊 Test report generated: {report_path}")
 
-        # Print summary
-        passed = sum(1 for r in results.values() if r.status == TestStatus.PASSED)
-        total = len(results)
-        click.echo(f"✅ Test execution completed: {passed}/{total} tests passed")
+            # Print summary
+            passed = sum(1 for r in results.values() if r.status == TestStatus.PASSED)
+            total = len(results)
+            click.echo(f"✅ Test execution completed: {passed}/{total} tests passed")
 
-    finally:
-        await orchestrator.cleanup()
+        finally:
+            await orchestrator.cleanup()
+    
+    asyncio.run(_execute())
 
 
 if __name__ == "__main__":

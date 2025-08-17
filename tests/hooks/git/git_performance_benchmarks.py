@@ -327,7 +327,7 @@ class GitHookBenchmarker:
         await self._install_benchmark_hooks(repo_path)
 
         # Make initial commit
-        repo.index.add_items(["."])
+        repo.index.add(".")
         repo.index.commit("Initial benchmark repository setup")
 
         self.test_repos[repo_name] = repo

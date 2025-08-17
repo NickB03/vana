@@ -10,7 +10,7 @@ import {
   X, 
   Image as ImageIcon, 
   FileText, 
-  File,
+  File as FileIcon,
   Mic,
   MicOff
 } from 'lucide-react';
@@ -39,7 +39,7 @@ export function MessageInput({
   className,
   maxFiles = 5,
   maxFileSize = 10 * 1024 * 1024, // 10MB default
-  allowedFileTypes = ['image/*', 'text/*', 'application/pdf', '.json', '.csv', '.md', '.txt']
+  allowedFileTypes = ['image/*', 'text/*', 'application/pdf', '.json', '.csv', '.md', '.txt', 'audio/*']
 }: MessageInputProps) {
   const [input, setInput] = useState('');
   const [attachedFiles, setAttachedFiles] = useState<AttachedFile[]>([]);
@@ -243,7 +243,7 @@ export function MessageInput({
   const getFileIcon = (file: File) => {
     if (file.type.startsWith('image/')) return ImageIcon;
     if (file.type.startsWith('text/') || file.type === 'application/pdf') return FileText;
-    return File;
+    return FileIcon;
   };
   
   const formatFileSize = (bytes: number) => {
