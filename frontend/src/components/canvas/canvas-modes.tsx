@@ -191,8 +191,7 @@ export function CanvasModes({
               language="typescript" // Default, could be made configurable
               options={{
                 wordWrap: false,
-                minimap: true,
-                scrollBeyondLastLine: false
+                minimap: true
               }}
             />
           </div>

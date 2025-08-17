@@ -113,8 +113,7 @@ export function AgentCursors({ session, editorRef, className }: AgentCursorsProp
           className: `agent-cursor-${agent.id}`,
           stickiness: 1, // monaco.editor.TrackedRangeStickiness.NeverGrowsWhenTypingAtEdges
           beforeContentClassName: 'agent-cursor-line',
-          afterContentClassName: 'agent-cursor-marker',
-          description: `${agent.name}'s cursor`
+          afterContentClassName: 'agent-cursor-marker'
         }
       });
 
@@ -129,8 +128,7 @@ export function AgentCursors({ session, editorRef, className }: AgentCursorsProp
           ),
           options: {
             className: `agent-selection-${agent.id}`,
-            stickiness: 1,
-            description: `${agent.name}'s selection`
+            stickiness: 1
           }
         });
       }
@@ -148,12 +146,12 @@ export function AgentCursors({ session, editorRef, className }: AgentCursorsProp
 
         const decoration: CursorDecoration = {
           agentId: cursor.agentId,
-          decorationId: newDecorationIds[decorationIndex],
-          cursorDecorationId: newDecorationIds[decorationIndex + 1] || newDecorationIds[decorationIndex]
+          decorationId: newDecorationIds[decorationIndex] || '',
+          cursorDecorationId: newDecorationIds[decorationIndex + 1] || newDecorationIds[decorationIndex] || ''
         };
 
         if (cursor.selection) {
-          decoration.selectionDecorationId = newDecorationIds[decorationIndex + 2];
+          decoration.selectionDecorationId = newDecorationIds[decorationIndex + 2] || '';
           decorationIndex += 3;
         } else {
           decorationIndex += 2;

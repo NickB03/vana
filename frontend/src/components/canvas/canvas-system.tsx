@@ -62,7 +62,7 @@ export function CanvasSystem({
     },
     isEditing: true,
     isDirty: false,
-    collaborativeSession: enableCollaboration ? (initialSession || createDefaultSession()) : undefined
+    collaborativeSession: enableCollaboration ? (initialSession || createDefaultSession()) : createDefaultSession()
   });
 
   // Create default collaborative session with demo agents
