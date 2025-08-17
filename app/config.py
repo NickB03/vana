@@ -67,3 +67,8 @@ class ResearchConfiguration:
 
 
 config = ResearchConfiguration()
+
+
+def get_config() -> ResearchConfiguration:
+    """Get the global configuration object."""
+    return config
