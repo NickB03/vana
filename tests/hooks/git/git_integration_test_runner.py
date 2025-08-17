@@ -42,6 +42,7 @@ from git import Repo
 
 class TestStatus(Enum):
     """Test execution status"""
+
     PENDING = "pending"
     RUNNING = "running"
     PASSED = "passed"
@@ -52,6 +53,7 @@ class TestStatus(Enum):
 
 class TestSeverity(Enum):
     """Test failure severity levels"""
+
     LOW = "low"
     MEDIUM = "medium"
     HIGH = "high"
@@ -61,6 +63,7 @@ class TestSeverity(Enum):
 @dataclass
 class TestResult:
     """Comprehensive test result structure"""
+
     test_id: str
     test_name: str
     status: TestStatus
@@ -90,6 +93,7 @@ class TestResult:
 @dataclass
 class IntegrationTestSuite:
     """Test suite configuration and metadata"""
+
     suite_id: str
     name: str
     description: str
@@ -170,16 +174,16 @@ class GitIntegrationTestEnvironment:
     async def _setup_workspace_structure(self):
         """Setup comprehensive workspace structure"""
         workspace_dirs = [
-            "repos",           # Test repositories
-            "reports",         # Test execution reports
-            "artifacts",       # Test artifacts and logs
-            "backups",         # Repository backups
-            "performance",     # Performance data
-            "memory",          # Memory snapshots
-            "coordination",    # Cross-system coordination
-            "config",          # Test configurations
-            "templates",       # Repository templates
-            "scripts",         # Test automation scripts
+            "repos",  # Test repositories
+            "reports",  # Test execution reports
+            "artifacts",  # Test artifacts and logs
+            "backups",  # Repository backups
+            "performance",  # Performance data
+            "memory",  # Memory snapshots
+            "coordination",  # Cross-system coordination
+            "config",  # Test configurations
+            "templates",  # Repository templates
+            "scripts",  # Test automation scripts
         ]
 
         for dir_name in workspace_dirs:
@@ -201,31 +205,31 @@ class GitIntegrationTestEnvironment:
                     "prd_compliance",
                     "security_scan",
                     "lint_check",
-                    "test_coverage"
+                    "test_coverage",
                 ],
                 "timeout_seconds": 60,
-                "failure_action": "block"
+                "failure_action": "block",
             },
             "pre_push": {
                 "enabled": True,
                 "validation_rules": [
                     "build_verification",
                     "test_execution",
-                    "security_audit"
+                    "security_audit",
                 ],
                 "timeout_seconds": 300,
-                "failure_action": "block"
+                "failure_action": "block",
             },
             "post_commit": {
                 "enabled": True,
                 "automation_tasks": [
                     "metrics_collection",
                     "backup_creation",
-                    "notification_dispatch"
+                    "notification_dispatch",
                 ],
                 "timeout_seconds": 30,
-                "failure_action": "warn"
-            }
+                "failure_action": "warn",
+            },
         }
 
         async with aiofiles.open(config_dir / "git_hooks.json", "w") as f:
@@ -236,18 +240,18 @@ class GitIntegrationTestEnvironment:
             "swarm": {
                 "topology": "hierarchical",
                 "max_agents": 8,
-                "coordination_strategy": "adaptive"
+                "coordination_strategy": "adaptive",
             },
             "memory": {
                 "persistence_mode": "disk",
                 "cleanup_interval_hours": 24,
-                "max_size_mb": 500
+                "max_size_mb": 500,
             },
             "performance": {
                 "monitoring_enabled": True,
                 "metrics_collection_interval_seconds": 10,
-                "performance_thresholds": self.performance_baselines
-            }
+                "performance_thresholds": self.performance_baselines,
+            },
         }
 
         async with aiofiles.open(config_dir / "claude_flow.json", "w") as f:
@@ -259,26 +263,26 @@ class GitIntegrationTestEnvironment:
                 "parallel_workers": 4,
                 "timeout_seconds": 600,
                 "retry_attempts": 3,
-                "cleanup_on_failure": True
+                "cleanup_on_failure": True,
             },
             "reporting": {
                 "detailed_logs": True,
                 "performance_analysis": True,
                 "artifact_collection": True,
-                "real_time_updates": True
+                "real_time_updates": True,
             },
             "environment": {
                 "resource_limits": {
                     "memory_mb": 1000,
                     "cpu_percent": 75,
-                    "disk_mb": 2000
+                    "disk_mb": 2000,
                 },
                 "network_simulation": {
                     "enabled": False,
                     "latency_ms": 50,
-                    "bandwidth_mbps": 100
-                }
-            }
+                    "bandwidth_mbps": 100,
+                },
+            },
         }
 
         async with aiofiles.open(config_dir / "test_execution.json", "w") as f:
@@ -292,9 +296,11 @@ class GitIntegrationTestEnvironment:
         try:
             # Check if Claude Flow is available
             result = await asyncio.create_subprocess_exec(
-                "npx", "claude-flow", "--version",
+                "npx",
+                "claude-flow",
+                "--version",
                 stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.PIPE
+                stderr=asyncio.subprocess.PIPE,
             )
             await result.wait()
 
@@ -320,12 +326,18 @@ class GitIntegrationTestEnvironment:
         try:
             # Initialize swarm with hierarchical topology
             process = await asyncio.create_subprocess_exec(
-                "npx", "claude-flow", "swarm", "init",
-                "--topology", "hierarchical",
-                "--max-agents", "8",
-                "--strategy", "adaptive",
+                "npx",
+                "claude-flow",
+                "swarm",
+                "init",
+                "--topology",
+                "hierarchical",
+                "--max-agents",
+                "8",
+                "--strategy",
+                "adaptive",
                 stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.PIPE
+                stderr=asyncio.subprocess.PIPE,
             )
 
             stdout, stderr = await process.communicate()
@@ -343,31 +355,45 @@ class GitIntegrationTestEnvironment:
         try:
             # Create test namespace
             process = await asyncio.create_subprocess_exec(
-                "npx", "claude-flow", "memory", "namespace",
-                "--action", "create",
-                "--namespace", "integration-tests",
+                "npx",
+                "claude-flow",
+                "memory",
+                "namespace",
+                "--action",
+                "create",
+                "--namespace",
+                "integration-tests",
                 stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.PIPE
+                stderr=asyncio.subprocess.PIPE,
             )
 
             await process.wait()
 
             # Store test configuration
-            config_data = json.dumps({
-                "test_session_id": f"integration-{int(time.time())}",
-                "environment": "test",
-                "workspace": str(self.workspace_root),
-                "start_time": datetime.now().isoformat()
-            })
+            config_data = json.dumps(
+                {
+                    "test_session_id": f"integration-{int(time.time())}",
+                    "environment": "test",
+                    "workspace": str(self.workspace_root),
+                    "start_time": datetime.now().isoformat(),
+                }
+            )
 
             process = await asyncio.create_subprocess_exec(
-                "npx", "claude-flow", "memory", "store",
-                "--action", "store",
-                "--namespace", "integration-tests",
-                "--key", "session-config",
-                "--value", config_data,
+                "npx",
+                "claude-flow",
+                "memory",
+                "store",
+                "--action",
+                "store",
+                "--namespace",
+                "integration-tests",
+                "--key",
+                "session-config",
+                "--value",
+                config_data,
                 stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.PIPE
+                stderr=asyncio.subprocess.PIPE,
             )
 
             await process.wait()
@@ -381,7 +407,7 @@ class GitIntegrationTestEnvironment:
         self.performance_monitor = PerformanceMonitor(
             workspace=self.workspace_root / "performance",
             collection_interval=1.0,
-            retention_hours=24
+            retention_hours=24,
         )
 
         await self.performance_monitor.start()
@@ -391,7 +417,7 @@ class GitIntegrationTestEnvironment:
         """Initialize memory coordination system"""
         self.memory_coordinator = MemoryCoordinator(
             workspace=self.workspace_root / "memory",
-            enable_claude_flow=self.enable_claude_flow
+            enable_claude_flow=self.enable_claude_flow,
         )
 
         await self.memory_coordinator.initialize()
@@ -403,7 +429,9 @@ class GitIntegrationTestEnvironment:
         # For now, we'll use basic Python monitoring
         pass
 
-    async def create_test_repository(self, repo_name: str, template: str = "default") -> Repo:
+    async def create_test_repository(
+        self, repo_name: str, template: str = "default"
+    ) -> Repo:
         """Create a comprehensive test repository"""
         repo_path = self.workspace_root / "repos" / repo_name
 
@@ -432,11 +460,15 @@ class GitIntegrationTestEnvironment:
         repo.index.commit("Initial commit from integration test template")
 
         self.test_repos[repo_name] = repo
-        self.logger.info(f"Test repository '{repo_name}' created with template '{template}'")
+        self.logger.info(
+            f"Test repository '{repo_name}' created with template '{template}'"
+        )
 
         return repo
 
-    async def _apply_repository_template(self, repo: Repo, repo_path: Path, template: str):
+    async def _apply_repository_template(
+        self, repo: Repo, repo_path: Path, template: str
+    ):
         """Apply comprehensive repository template"""
         if template == "default":
             await self._create_default_template(repo_path)
@@ -509,25 +541,25 @@ dev:
                 "build": "next build",
                 "test": "jest",
                 "type-check": "tsc --noEmit",
-                "lint": "eslint src/"
+                "lint": "eslint src/",
             },
             "dependencies": {
                 "react": "^18.3.1",
                 "next": "^15.4.6",
-                "@/components/ui/button": "*"
+                "@/components/ui/button": "*",
             },
             "devDependencies": {
                 "typescript": "^5.3.0",
                 "jest": "^29.7.0",
-                "eslint": "^8.57.0"
-            }
+                "eslint": "^8.57.0",
+            },
         }
 
         async with aiofiles.open(repo_path / "package.json", "w") as f:
             await f.write(json.dumps(package_json, indent=2))
 
         # Sample React component
-        sample_component = '''import React from 'react'
+        sample_component = """import React from 'react'
 import { Button } from '@/components/ui/button'
 
 interface SampleComponentProps {
@@ -545,9 +577,11 @@ export const SampleComponent: React.FC<SampleComponentProps> = ({ title, onClick
     </div>
   )
 }
-'''
+"""
 
-        async with aiofiles.open(repo_path / "src/components/SampleComponent.tsx", "w") as f:
+        async with aiofiles.open(
+            repo_path / "src/components/SampleComponent.tsx", "w"
+        ) as f:
             await f.write(sample_component)
 
     async def _create_backend_template(self, repo_path: Path):
@@ -568,7 +602,7 @@ export const SampleComponent: React.FC<SampleComponentProps> = ({ title, onClick
             (repo_path / dir_path).mkdir(parents=True, exist_ok=True)
 
         # FastAPI server
-        server_code = '''from fastapi import FastAPI
+        server_code = """from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI(title="Integration Test API", version="1.0.0")
@@ -588,7 +622,7 @@ async def health_check():
 @app.get("/api/test")
 async def test_endpoint():
     return {"message": "Integration test endpoint working"}
-'''
+"""
 
         async with aiofiles.open(repo_path / "app/server.py", "w") as f:
             await f.write(server_code)
@@ -599,7 +633,7 @@ async def test_endpoint():
         await self._create_backend_template(repo_path)
 
         # Add additional fullstack configuration
-        docker_compose = '''version: '3.8'
+        docker_compose = """version: '3.8'
 services:
   frontend:
     build: 
@@ -618,7 +652,7 @@ services:
       - "8000:8000"
     environment:
       - DATABASE_URL=sqlite:///./test.db
-'''
+"""
 
         async with aiofiles.open(repo_path / "docker-compose.yml", "w") as f:
             await f.write(docker_compose)
@@ -628,7 +662,7 @@ services:
         hooks_dir = repo_path / ".git" / "hooks"
 
         # Pre-commit hook with Claude Flow integration
-        pre_commit_hook = '''#!/bin/bash
+        pre_commit_hook = """#!/bin/bash
 set -e
 
 echo "🔍 Integration Test: Pre-commit validation"
@@ -672,7 +706,7 @@ fi
 
 echo "✅ Integration test pre-commit validation passed"
 exit 0
-'''
+"""
 
         async with aiofiles.open(hooks_dir / "pre-commit", "w") as f:
             await f.write(pre_commit_hook)
@@ -680,7 +714,7 @@ exit 0
         (hooks_dir / "pre-commit").chmod(0o755)
 
         # Post-commit hook
-        post_commit_hook = '''#!/bin/bash
+        post_commit_hook = """#!/bin/bash
 echo "📊 Integration Test: Post-commit automation"
 
 # Collect metrics
@@ -695,14 +729,16 @@ if command -v npx &> /dev/null; then
 fi
 
 echo "✅ Integration test post-commit completed"
-'''
+"""
 
         async with aiofiles.open(hooks_dir / "post-commit", "w") as f:
             await f.write(post_commit_hook)
 
         (hooks_dir / "post-commit").chmod(0o755)
 
-    async def execute_test_suite(self, suite: IntegrationTestSuite) -> dict[str, TestResult]:
+    async def execute_test_suite(
+        self, suite: IntegrationTestSuite
+    ) -> dict[str, TestResult]:
         """Execute comprehensive integration test suite"""
         self.logger.info(f"Executing test suite: {suite.name}")
 
@@ -744,9 +780,10 @@ echo "✅ Integration test post-commit completed"
             if dependency == "git":
                 # Verify Git is available
                 result = await asyncio.create_subprocess_exec(
-                    "git", "--version",
+                    "git",
+                    "--version",
                     stdout=asyncio.subprocess.PIPE,
-                    stderr=asyncio.subprocess.PIPE
+                    stderr=asyncio.subprocess.PIPE,
                 )
                 await result.wait()
                 if result.returncode != 0:
@@ -758,9 +795,10 @@ echo "✅ Integration test post-commit completed"
 
             elif dependency == "node":
                 result = await asyncio.create_subprocess_exec(
-                    "node", "--version",
+                    "node",
+                    "--version",
                     stdout=asyncio.subprocess.PIPE,
-                    stderr=asyncio.subprocess.PIPE
+                    stderr=asyncio.subprocess.PIPE,
                 )
                 await result.wait()
                 if result.returncode != 0:
@@ -775,7 +813,9 @@ echo "✅ Integration test post-commit completed"
         # Setup environment variables
         os.environ.update(suite.environment_requirements)
 
-    async def _execute_tests_parallel(self, suite: IntegrationTestSuite) -> dict[str, TestResult]:
+    async def _execute_tests_parallel(
+        self, suite: IntegrationTestSuite
+    ) -> dict[str, TestResult]:
         """Execute tests in parallel"""
         semaphore = asyncio.Semaphore(4)  # Limit concurrent tests
 
@@ -797,14 +837,16 @@ echo "✅ Integration test post-commit completed"
                     severity=TestSeverity.HIGH,
                     execution_time_ms=0,
                     start_time=datetime.now(),
-                    error_message=str(result)
+                    error_message=str(result),
                 )
             else:
                 results[test_id] = result
 
         return results
 
-    async def _execute_tests_sequential(self, suite: IntegrationTestSuite) -> dict[str, TestResult]:
+    async def _execute_tests_sequential(
+        self, suite: IntegrationTestSuite
+    ) -> dict[str, TestResult]:
         """Execute tests sequentially"""
         results = {}
 
@@ -813,13 +855,20 @@ echo "✅ Integration test post-commit completed"
             results[test_id] = result
 
             # Stop on critical failures if configured
-            if result.status == TestStatus.FAILED and result.severity == TestSeverity.CRITICAL:
-                self.logger.error(f"Critical test failure: {test_id}, stopping suite execution")
+            if (
+                result.status == TestStatus.FAILED
+                and result.severity == TestSeverity.CRITICAL
+            ):
+                self.logger.error(
+                    f"Critical test failure: {test_id}, stopping suite execution"
+                )
                 break
 
         return results
 
-    async def _execute_single_test(self, test_id: str, suite: IntegrationTestSuite) -> TestResult:
+    async def _execute_single_test(
+        self, test_id: str, suite: IntegrationTestSuite
+    ) -> TestResult:
         """Execute a single integration test"""
         start_time = datetime.now()
 
@@ -833,8 +882,7 @@ echo "✅ Integration test post-commit completed"
 
             # Execute test with timeout
             result = await asyncio.wait_for(
-                test_method(),
-                timeout=suite.timeout_seconds
+                test_method(), timeout=suite.timeout_seconds
             )
 
             end_time = datetime.now()
@@ -847,7 +895,7 @@ echo "✅ Integration test post-commit completed"
                 severity=TestSeverity.MEDIUM,
                 execution_time_ms=execution_time,
                 start_time=start_time,
-                end_time=end_time
+                end_time=end_time,
             )
 
         except asyncio.TimeoutError:
@@ -858,7 +906,7 @@ echo "✅ Integration test post-commit completed"
                 severity=TestSeverity.HIGH,
                 execution_time_ms=suite.timeout_seconds * 1000,
                 start_time=start_time,
-                error_message=f"Test timed out after {suite.timeout_seconds} seconds"
+                error_message=f"Test timed out after {suite.timeout_seconds} seconds",
             )
 
         except Exception as e:
@@ -873,10 +921,12 @@ echo "✅ Integration test post-commit completed"
                 execution_time_ms=execution_time,
                 start_time=start_time,
                 end_time=end_time,
-                error_message=str(e)
+                error_message=str(e),
             )
 
-    async def _collect_test_artifacts(self, suite: IntegrationTestSuite, results: dict[str, TestResult]):
+    async def _collect_test_artifacts(
+        self, suite: IntegrationTestSuite, results: dict[str, TestResult]
+    ):
         """Collect test artifacts and logs"""
         artifacts_dir = self.workspace_root / "artifacts" / suite.suite_id
         artifacts_dir.mkdir(parents=True, exist_ok=True)
@@ -902,7 +952,7 @@ echo "✅ Integration test post-commit completed"
         """Cleanup test suite environment"""
         # Cleanup test repositories
         for repo_name, repo in self.test_repos.items():
-            if hasattr(repo, 'close'):
+            if hasattr(repo, "close"):
                 repo.close()
 
         # Stop any running processes
@@ -921,12 +971,12 @@ echo "✅ Integration test post-commit completed"
         repo = await self.create_test_repository("coordination_test", "frontend")
 
         # Create a test component
-        test_component = '''import React from 'react'
+        test_component = """import React from 'react'
 import { Button } from '@/components/ui/button'
 
 export const TestComponent = () => {
   return <Button data-testid="test-button">Test</Button>
-}'''
+}"""
 
         # Write file and commit
         component_path = Path(repo.working_dir) / "src/components/TestComponent.tsx"
@@ -945,14 +995,16 @@ export const TestComponent = () => {
         repo = await self.create_test_repository("prd_test", "frontend")
 
         # Test compliant code
-        compliant_component = '''import React from 'react'
+        compliant_component = """import React from 'react'
 import { Button } from '@/components/ui/button'
 
 export const CompliantComponent = () => {
   return <Button data-testid="compliant-button">Compliant</Button>
-}'''
+}"""
 
-        component_path = Path(repo.working_dir) / "src/components/CompliantComponent.tsx"
+        component_path = (
+            Path(repo.working_dir) / "src/components/CompliantComponent.tsx"
+        )
         async with aiofiles.open(component_path, "w") as f:
             await f.write(compliant_component)
 
@@ -988,25 +1040,38 @@ export const CompliantComponent = () => {
         test_data = {"test_key": "integration_test_value", "timestamp": time.time()}
 
         process = await asyncio.create_subprocess_exec(
-            "npx", "claude-flow", "memory", "store",
-            "--action", "store",
-            "--namespace", "integration-tests",
-            "--key", "coordination-test",
-            "--value", json.dumps(test_data),
+            "npx",
+            "claude-flow",
+            "memory",
+            "store",
+            "--action",
+            "store",
+            "--namespace",
+            "integration-tests",
+            "--key",
+            "coordination-test",
+            "--value",
+            json.dumps(test_data),
             stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.PIPE
+            stderr=asyncio.subprocess.PIPE,
         )
 
         await process.wait()
 
         # Retrieve and verify
         process = await asyncio.create_subprocess_exec(
-            "npx", "claude-flow", "memory", "retrieve",
-            "--action", "retrieve",
-            "--namespace", "integration-tests",
-            "--key", "coordination-test",
+            "npx",
+            "claude-flow",
+            "memory",
+            "retrieve",
+            "--action",
+            "retrieve",
+            "--namespace",
+            "integration-tests",
+            "--key",
+            "coordination-test",
             stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.PIPE
+            stderr=asyncio.subprocess.PIPE,
         )
 
         stdout, _ = await process.communicate()
@@ -1056,18 +1121,22 @@ export const CompliantComponent = () => {
             await self.memory_coordinator.cleanup()
 
         # Cleanup any remaining processes
-        await self._cleanup_suite_environment(IntegrationTestSuite(
-            suite_id="cleanup",
-            name="Cleanup",
-            description="Cleanup",
-            tests=[]
-        ))
+        await self._cleanup_suite_environment(
+            IntegrationTestSuite(
+                suite_id="cleanup", name="Cleanup", description="Cleanup", tests=[]
+            )
+        )
 
 
 class PerformanceMonitor:
     """Performance monitoring for integration tests"""
 
-    def __init__(self, workspace: Path, collection_interval: float = 1.0, retention_hours: int = 24):
+    def __init__(
+        self,
+        workspace: Path,
+        collection_interval: float = 1.0,
+        retention_hours: int = 24,
+    ):
         self.workspace = workspace
         self.collection_interval = collection_interval
         self.retention_hours = retention_hours
@@ -1099,7 +1168,8 @@ class PerformanceMonitor:
                 # Cleanup old data
                 cutoff_time = datetime.now() - timedelta(hours=self.retention_hours)
                 self.data = [
-                    d for d in self.data
+                    d
+                    for d in self.data
                     if datetime.fromisoformat(d["timestamp"]) > cutoff_time
                 ]
 
@@ -1112,6 +1182,7 @@ class PerformanceMonitor:
         """Get current memory usage in MB"""
         try:
             import psutil
+
             process = psutil.Process()
             return process.memory_info().rss / 1024 / 1024
         except ImportError:
@@ -1121,6 +1192,7 @@ class PerformanceMonitor:
         """Get current CPU usage percentage"""
         try:
             import psutil
+
             return psutil.cpu_percent(interval=None)
         except ImportError:
             return 0.0
@@ -1129,6 +1201,7 @@ class PerformanceMonitor:
         """Get current disk usage in MB"""
         try:
             import psutil
+
             usage = psutil.disk_usage(str(self.workspace))
             return usage.used / 1024 / 1024
         except ImportError:
@@ -1138,8 +1211,7 @@ class PerformanceMonitor:
         """Get recent performance data"""
         cutoff_time = datetime.now() - timedelta(minutes=minutes)
         return [
-            d for d in self.data
-            if datetime.fromisoformat(d["timestamp"]) > cutoff_time
+            d for d in self.data if datetime.fromisoformat(d["timestamp"]) > cutoff_time
         ]
 
 
@@ -1159,7 +1231,7 @@ class MemoryCoordinator:
         """Store data in coordinated memory"""
         self.local_memory[f"{namespace}:{key}"] = {
             "value": value,
-            "timestamp": datetime.now().isoformat()
+            "timestamp": datetime.now().isoformat(),
         }
 
         if self.enable_claude_flow:
@@ -1180,13 +1252,20 @@ class MemoryCoordinator:
         """Store data in Claude Flow memory"""
         try:
             process = await asyncio.create_subprocess_exec(
-                "npx", "claude-flow", "memory", "store",
-                "--action", "store",
-                "--namespace", namespace,
-                "--key", key,
-                "--value", json.dumps(value),
+                "npx",
+                "claude-flow",
+                "memory",
+                "store",
+                "--action",
+                "store",
+                "--namespace",
+                namespace,
+                "--key",
+                key,
+                "--value",
+                json.dumps(value),
                 stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.PIPE
+                stderr=asyncio.subprocess.PIPE,
             )
             await process.wait()
         except Exception:
@@ -1196,12 +1275,18 @@ class MemoryCoordinator:
         """Retrieve data from Claude Flow memory"""
         try:
             process = await asyncio.create_subprocess_exec(
-                "npx", "claude-flow", "memory", "retrieve",
-                "--action", "retrieve",
-                "--namespace", namespace,
-                "--key", key,
+                "npx",
+                "claude-flow",
+                "memory",
+                "retrieve",
+                "--action",
+                "retrieve",
+                "--namespace",
+                namespace,
+                "--key",
+                key,
                 stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.PIPE
+                stderr=asyncio.subprocess.PIPE,
             )
             stdout, _ = await process.communicate()
 
@@ -1217,7 +1302,7 @@ class MemoryCoordinator:
         return {
             "timestamp": datetime.now().isoformat(),
             "local_memory": dict(self.local_memory),
-            "memory_size": len(self.local_memory)
+            "memory_size": len(self.local_memory),
         }
 
     async def cleanup(self):
@@ -1247,26 +1332,28 @@ async def main():
                 "prd_validation_integration",
                 "performance_under_load",
                 "memory_persistence_coordination",
-                "error_recovery_mechanisms"
+                "error_recovery_mechanisms",
             ],
             dependencies=["git", "node"],
             timeout_seconds=300,
             parallel_execution=True,
             retry_count=2,
-            cleanup_after=True
+            cleanup_after=True,
         )
 
         # Execute test suite
         results = await test_env.execute_test_suite(integration_suite)
 
         # Print results
-        print("\n" + "="*60)
+        print("\n" + "=" * 60)
         print("GIT INTEGRATION TEST RESULTS")
-        print("="*60)
+        print("=" * 60)
 
         for test_id, result in results.items():
             status_icon = "✅" if result.status == TestStatus.PASSED else "❌"
-            print(f"{status_icon} {result.test_name}: {result.status.value} ({result.execution_time_ms:.2f}ms)")
+            print(
+                f"{status_icon} {result.test_name}: {result.status.value} ({result.execution_time_ms:.2f}ms)"
+            )
 
             if result.error_message:
                 print(f"   Error: {result.error_message}")

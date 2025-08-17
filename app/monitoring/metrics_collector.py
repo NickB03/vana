@@ -23,7 +23,7 @@ class PerformanceMetrics:
     request_count: int = 0
     total_response_time: float = 0.0
     avg_response_time: float = 0.0
-    min_response_time: float = float('inf')
+    min_response_time: float = float("inf")
     max_response_time: float = 0.0
     p95_response_time: float = 0.0
     p99_response_time: float = 0.0
@@ -90,16 +90,18 @@ class MetricsCollector:
         # Real-time tracking
         self.current_metrics = PerformanceMetrics()
         self.active_requests: dict[str, float] = {}
-        self.endpoint_metrics: dict[str, PerformanceMetrics] = defaultdict(PerformanceMetrics)
+        self.endpoint_metrics: dict[str, PerformanceMetrics] = defaultdict(
+            PerformanceMetrics
+        )
 
         # Callbacks and hooks
         self.metric_callbacks: list[Callable[[PerformanceMetrics], None]] = []
         self.alert_thresholds: dict[str, float] = {
-            'response_time_p95': 1000.0,  # ms
-            'error_rate': 0.05,  # 5%
-            'cpu_usage': 80.0,  # %
-            'memory_usage': 85.0,  # %
-            'cache_hit_rate': 0.8,  # 80%
+            "response_time_p95": 1000.0,  # ms
+            "error_rate": 0.05,  # 5%
+            "cpu_usage": 80.0,  # %
+            "memory_usage": 85.0,  # %
+            "cache_hit_rate": 0.8,  # 80%
         }
 
         # Background collection
@@ -146,7 +148,7 @@ class MetricsCollector:
             memory = psutil.virtual_memory()
 
             # Disk metrics
-            disk = psutil.disk_usage('/')
+            disk = psutil.disk_usage("/")
 
             # Network metrics
             network = psutil.net_io_counters()
@@ -163,7 +165,9 @@ class MetricsCollector:
             self.current_metrics.calculate_derived_metrics()
 
             # Store in history
-            self.metrics_history.append(PerformanceMetrics(**self.current_metrics.__dict__))
+            self.metrics_history.append(
+                PerformanceMetrics(**self.current_metrics.__dict__)
+            )
 
             # Check thresholds
             await self._check_alert_thresholds()
@@ -183,8 +187,13 @@ class MetricsCollector:
         self.active_requests[request_id] = time.time()
         self.current_metrics.concurrent_requests = len(self.active_requests)
 
-    def record_request_end(self, request_id: str, endpoint: str = "unknown",
-                          success: bool = True, error: str | None = None) -> None:
+    def record_request_end(
+        self,
+        request_id: str,
+        endpoint: str = "unknown",
+        success: bool = True,
+        error: str | None = None,
+    ) -> None:
         """Record the end of a request."""
         if request_id not in self.active_requests:
             return
@@ -195,8 +204,12 @@ class MetricsCollector:
         # Update global metrics
         self.current_metrics.request_count += 1
         self.current_metrics.total_response_time += response_time
-        self.current_metrics.min_response_time = min(self.current_metrics.min_response_time, response_time)
-        self.current_metrics.max_response_time = max(self.current_metrics.max_response_time, response_time)
+        self.current_metrics.min_response_time = min(
+            self.current_metrics.min_response_time, response_time
+        )
+        self.current_metrics.max_response_time = max(
+            self.current_metrics.max_response_time, response_time
+        )
         self.current_metrics.concurrent_requests = len(self.active_requests)
 
         if success:
@@ -224,20 +237,27 @@ class MetricsCollector:
         """Record a cache miss."""
         self.current_metrics.cache_misses += 1
 
-    def record_agent_metrics(self, agent_name: str, response_time: float,
-                           success: bool = True) -> None:
+    def record_agent_metrics(
+        self, agent_name: str, response_time: float, success: bool = True
+    ) -> None:
         """Record agent-specific performance metrics."""
         if agent_name not in self.current_metrics.agent_response_times:
             self.current_metrics.agent_response_times[agent_name] = response_time
-            self.current_metrics.agent_success_rates[agent_name] = 1.0 if success else 0.0
+            self.current_metrics.agent_success_rates[agent_name] = (
+                1.0 if success else 0.0
+            )
         else:
             # Rolling average
             current_time = self.current_metrics.agent_response_times[agent_name]
-            self.current_metrics.agent_response_times[agent_name] = (current_time + response_time) / 2
+            self.current_metrics.agent_response_times[agent_name] = (
+                current_time + response_time
+            ) / 2
 
             current_rate = self.current_metrics.agent_success_rates[agent_name]
             new_rate = 1.0 if success else 0.0
-            self.current_metrics.agent_success_rates[agent_name] = (current_rate + new_rate) / 2
+            self.current_metrics.agent_success_rates[agent_name] = (
+                current_rate + new_rate
+            ) / 2
 
     def _update_percentiles(self) -> None:
         """Update response time percentiles."""
@@ -251,8 +271,12 @@ class MetricsCollector:
             p95_index = int(0.95 * length)
             p99_index = int(0.99 * length)
 
-            self.current_metrics.p95_response_time = sorted_times[min(p95_index, length - 1)]
-            self.current_metrics.p99_response_time = sorted_times[min(p99_index, length - 1)]
+            self.current_metrics.p95_response_time = sorted_times[
+                min(p95_index, length - 1)
+            ]
+            self.current_metrics.p99_response_time = sorted_times[
+                min(p99_index, length - 1)
+            ]
 
     async def _check_alert_thresholds(self) -> None:
         """Check if any metrics exceed alert thresholds."""
@@ -262,35 +286,38 @@ class MetricsCollector:
         alert_manager = AlertManager()
 
         # Check response time
-        if self.current_metrics.p95_response_time > self.alert_thresholds['response_time_p95']:
+        if (
+            self.current_metrics.p95_response_time
+            > self.alert_thresholds["response_time_p95"]
+        ):
             alert = Alert(
                 level=AlertLevel.WARNING,
                 message=f"High P95 response time: {self.current_metrics.p95_response_time:.2f}ms",
                 metric_name="response_time_p95",
                 metric_value=self.current_metrics.p95_response_time,
-                threshold=self.alert_thresholds['response_time_p95']
+                threshold=self.alert_thresholds["response_time_p95"],
             )
             await alert_manager.send_alert(alert)
 
         # Check error rate
-        if self.current_metrics.error_rate > self.alert_thresholds['error_rate']:
+        if self.current_metrics.error_rate > self.alert_thresholds["error_rate"]:
             alert = Alert(
                 level=AlertLevel.CRITICAL,
                 message=f"High error rate: {self.current_metrics.error_rate:.2%}",
                 metric_name="error_rate",
                 metric_value=self.current_metrics.error_rate,
-                threshold=self.alert_thresholds['error_rate']
+                threshold=self.alert_thresholds["error_rate"],
             )
             await alert_manager.send_alert(alert)
 
         # Check CPU usage
-        if self.current_metrics.cpu_usage > self.alert_thresholds['cpu_usage']:
+        if self.current_metrics.cpu_usage > self.alert_thresholds["cpu_usage"]:
             alert = Alert(
                 level=AlertLevel.WARNING,
                 message=f"High CPU usage: {self.current_metrics.cpu_usage:.1f}%",
                 metric_name="cpu_usage",
                 metric_value=self.current_metrics.cpu_usage,
-                threshold=self.alert_thresholds['cpu_usage']
+                threshold=self.alert_thresholds["cpu_usage"],
             )
             await alert_manager.send_alert(alert)
 
@@ -299,12 +326,15 @@ class MetricsCollector:
         self.current_metrics.calculate_derived_metrics()
         return PerformanceMetrics(**self.current_metrics.__dict__)
 
-    def get_metrics_history(self, duration_seconds: int = 300) -> list[PerformanceMetrics]:
+    def get_metrics_history(
+        self, duration_seconds: int = 300
+    ) -> list[PerformanceMetrics]:
         """Get metrics history for the specified duration."""
         cutoff_time = datetime.now(timezone.utc).timestamp() - duration_seconds
 
         return [
-            metric for metric in self.metrics_history
+            metric
+            for metric in self.metrics_history
             if metric.timestamp.timestamp() >= cutoff_time
         ]
 

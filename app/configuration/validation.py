@@ -15,6 +15,7 @@ logger = logging.getLogger(__name__)
 
 class ValidationSeverity(Enum):
     """Validation issue severity levels."""
+
     INFO = "info"
     WARNING = "warning"
     ERROR = "error"
@@ -23,6 +24,7 @@ class ValidationSeverity(Enum):
 
 class ValidationType(Enum):
     """Types of validation rules."""
+
     REQUIRED = "required"
     TYPE_CHECK = "type_check"
     RANGE = "range"
@@ -36,6 +38,7 @@ class ValidationType(Enum):
 @dataclass
 class ValidationResult:
     """Result of a validation check."""
+
     rule_name: str
     field_name: str
     severity: ValidationSeverity
@@ -57,22 +60,29 @@ class ValidationResult:
             "expected_value": self.expected_value,
             "suggestion": self.suggestion,
             "category": self.category,
-            "timestamp": self.timestamp.isoformat()
+            "timestamp": self.timestamp.isoformat(),
         }
 
 
 class ValidationRule(ABC):
     """Abstract base class for validation rules."""
 
-    def __init__(self, name: str, severity: ValidationSeverity = ValidationSeverity.ERROR,
-                 category: str = "general", description: str = ""):
+    def __init__(
+        self,
+        name: str,
+        severity: ValidationSeverity = ValidationSeverity.ERROR,
+        category: str = "general",
+        description: str = "",
+    ):
         self.name = name
         self.severity = severity
         self.category = category
         self.description = description
 
     @abstractmethod
-    def validate(self, field_name: str, value: Any, context: dict[str, Any]) -> ValidationResult | None:
+    def validate(
+        self, field_name: str, value: Any, context: dict[str, Any]
+    ) -> ValidationResult | None:
         """Validate a field value and return result if validation fails."""
         pass
 
@@ -83,7 +93,9 @@ class RequiredFieldRule(ValidationRule):
     def __init__(self, name: str = "required_field", **kwargs):
         super().__init__(name, **kwargs)
 
-    def validate(self, field_name: str, value: Any, context: dict[str, Any]) -> ValidationResult | None:
+    def validate(
+        self, field_name: str, value: Any, context: dict[str, Any]
+    ) -> ValidationResult | None:
         if value is None or (isinstance(value, str) and not value.strip()):
             return ValidationResult(
                 rule_name=self.name,
@@ -92,7 +104,7 @@ class RequiredFieldRule(ValidationRule):
                 message=f"Required field '{field_name}' is missing or empty",
                 current_value=value,
                 suggestion=f"Provide a valid value for {field_name}",
-                category=self.category
+                category=self.category,
             )
         return None
 
@@ -100,12 +112,20 @@ class RequiredFieldRule(ValidationRule):
 class TypeCheckRule(ValidationRule):
     """Rule to check if field value matches expected type."""
 
-    def __init__(self, expected_type: type | list[type], name: str = "type_check", **kwargs):
+    def __init__(
+        self, expected_type: type | list[type], name: str = "type_check", **kwargs
+    ):
         super().__init__(name, **kwargs)
-        self.expected_type = expected_type if isinstance(expected_type, list) else [expected_type]
+        self.expected_type = (
+            expected_type if isinstance(expected_type, list) else [expected_type]
+        )
 
-    def validate(self, field_name: str, value: Any, context: dict[str, Any]) -> ValidationResult | None:
-        if value is not None and not any(isinstance(value, t) for t in self.expected_type):
+    def validate(
+        self, field_name: str, value: Any, context: dict[str, Any]
+    ) -> ValidationResult | None:
+        if value is not None and not any(
+            isinstance(value, t) for t in self.expected_type
+        ):
             type_names = [t.__name__ for t in self.expected_type]
             return ValidationResult(
                 rule_name=self.name,
@@ -115,7 +135,7 @@ class TypeCheckRule(ValidationRule):
                 current_value=value,
                 expected_value=f"Type: {'/'.join(type_names)}",
                 suggestion=f"Convert {field_name} to appropriate type",
-                category=self.category
+                category=self.category,
             )
         return None
 
@@ -123,14 +143,20 @@ class TypeCheckRule(ValidationRule):
 class RangeRule(ValidationRule):
     """Rule to check if numeric value is within specified range."""
 
-    def __init__(self, min_value: int | float | None = None,
-                 max_value: int | float | None = None,
-                 name: str = "range_check", **kwargs):
+    def __init__(
+        self,
+        min_value: int | float | None = None,
+        max_value: int | float | None = None,
+        name: str = "range_check",
+        **kwargs,
+    ):
         super().__init__(name, **kwargs)
         self.min_value = min_value
         self.max_value = max_value
 
-    def validate(self, field_name: str, value: Any, context: dict[str, Any]) -> ValidationResult | None:
+    def validate(
+        self, field_name: str, value: Any, context: dict[str, Any]
+    ) -> ValidationResult | None:
         if value is None or not isinstance(value, (int, float)):
             return None
 
@@ -143,7 +169,7 @@ class RangeRule(ValidationRule):
                 current_value=value,
                 expected_value=f">= {self.min_value}",
                 suggestion=f"Set {field_name} to at least {self.min_value}",
-                category=self.category
+                category=self.category,
             )
 
         if self.max_value is not None and value > self.max_value:
@@ -155,7 +181,7 @@ class RangeRule(ValidationRule):
                 current_value=value,
                 expected_value=f"<= {self.max_value}",
                 suggestion=f"Set {field_name} to at most {self.max_value}",
-                category=self.category
+                category=self.category,
             )
 
         return None
@@ -173,7 +199,9 @@ class PatternRule(ValidationRule):
             logger.error(f"Invalid regex pattern {pattern}: {e}")
             self.compiled_pattern = None
 
-    def validate(self, field_name: str, value: Any, context: dict[str, Any]) -> ValidationResult | None:
+    def validate(
+        self, field_name: str, value: Any, context: dict[str, Any]
+    ) -> ValidationResult | None:
         if value is None or not isinstance(value, str) or not self.compiled_pattern:
             return None
 
@@ -186,7 +214,7 @@ class PatternRule(ValidationRule):
                 current_value=value,
                 expected_value=f"Pattern: {self.pattern}",
                 suggestion=f"Ensure {field_name} follows the required format",
-                category=self.category
+                category=self.category,
             )
 
         return None
@@ -195,12 +223,18 @@ class PatternRule(ValidationRule):
 class CustomRule(ValidationRule):
     """Rule with custom validation function."""
 
-    def __init__(self, validator: Callable[[str, Any, dict[str, Any]], ValidationResult | None],
-                 name: str = "custom_rule", **kwargs):
+    def __init__(
+        self,
+        validator: Callable[[str, Any, dict[str, Any]], ValidationResult | None],
+        name: str = "custom_rule",
+        **kwargs,
+    ):
         super().__init__(name, **kwargs)
         self.validator = validator
 
-    def validate(self, field_name: str, value: Any, context: dict[str, Any]) -> ValidationResult | None:
+    def validate(
+        self, field_name: str, value: Any, context: dict[str, Any]
+    ) -> ValidationResult | None:
         try:
             return self.validator(field_name, value, context)
         except Exception as e:
@@ -211,18 +245,22 @@ class CustomRule(ValidationRule):
                 severity=ValidationSeverity.ERROR,
                 message=f"Validation error in custom rule: {e}",
                 current_value=value,
-                category=self.category
+                category=self.category,
             )
 
 
 class DependencyRule(ValidationRule):
     """Rule to check dependencies between fields."""
 
-    def __init__(self, dependencies: dict[str, Any], name: str = "dependency_check", **kwargs):
+    def __init__(
+        self, dependencies: dict[str, Any], name: str = "dependency_check", **kwargs
+    ):
         super().__init__(name, **kwargs)
         self.dependencies = dependencies
 
-    def validate(self, field_name: str, value: Any, context: dict[str, Any]) -> ValidationResult | None:
+    def validate(
+        self, field_name: str, value: Any, context: dict[str, Any]
+    ) -> ValidationResult | None:
         for dep_field, required_value in self.dependencies.items():
             if dep_field not in context:
                 continue
@@ -244,7 +282,7 @@ class DependencyRule(ValidationRule):
                     current_value=value,
                     expected_value=f"{dep_field}: {required_value}",
                     suggestion=f"Set {dep_field} to {required_value} or adjust {field_name}",
-                    category=self.category
+                    category=self.category,
                 )
 
         return None
@@ -253,11 +291,15 @@ class DependencyRule(ValidationRule):
 class SecurityRule(ValidationRule):
     """Rule for security-related validations."""
 
-    def __init__(self, check_type: str = "general", name: str = "security_check", **kwargs):
+    def __init__(
+        self, check_type: str = "general", name: str = "security_check", **kwargs
+    ):
         super().__init__(name, category="security", **kwargs)
         self.check_type = check_type
 
-    def validate(self, field_name: str, value: Any, context: dict[str, Any]) -> ValidationResult | None:
+    def validate(
+        self, field_name: str, value: Any, context: dict[str, Any]
+    ) -> ValidationResult | None:
         if value is None:
             return None
 
@@ -272,7 +314,9 @@ class SecurityRule(ValidationRule):
 
         return None
 
-    def _check_password_strength(self, field_name: str, value: str) -> ValidationResult | None:
+    def _check_password_strength(
+        self, field_name: str, value: str
+    ) -> ValidationResult | None:
         """Check password strength."""
         if not isinstance(value, str):
             return None
@@ -280,11 +324,11 @@ class SecurityRule(ValidationRule):
         issues = []
         if len(value) < 8:
             issues.append("at least 8 characters")
-        if not re.search(r'[A-Z]', value):
+        if not re.search(r"[A-Z]", value):
             issues.append("uppercase letter")
-        if not re.search(r'[a-z]', value):
+        if not re.search(r"[a-z]", value):
             issues.append("lowercase letter")
-        if not re.search(r'\d', value):
+        if not re.search(r"\d", value):
             issues.append("number")
         if not re.search(r'[!@#$%^&*(),.?":{}|<>]', value):
             issues.append("special character")
@@ -296,7 +340,7 @@ class SecurityRule(ValidationRule):
                 severity=self.severity,
                 message=f"Weak password: missing {', '.join(issues)}",
                 suggestion="Use a strong password with mixed case, numbers, and special characters",
-                category=self.category
+                category=self.category,
             )
 
         return None
@@ -313,11 +357,11 @@ class SecurityRule(ValidationRule):
                 severity=ValidationSeverity.CRITICAL,
                 message=f"Secret key too short: {len(value)} characters (minimum 32)",
                 suggestion="Generate a longer, more secure secret key",
-                category=self.category
+                category=self.category,
             )
 
         # Check for common weak patterns
-        weak_patterns = ['default', 'secret', 'password', '123456', 'abcdef']
+        weak_patterns = ["default", "secret", "password", "123456", "abcdef"]
         if any(pattern in value.lower() for pattern in weak_patterns):
             return ValidationResult(
                 rule_name=self.name,
@@ -325,36 +369,40 @@ class SecurityRule(ValidationRule):
                 severity=ValidationSeverity.CRITICAL,
                 message="Secret key contains weak/common patterns",
                 suggestion="Generate a cryptographically secure random key",
-                category=self.category
+                category=self.category,
             )
 
         return None
 
-    def _check_url_security(self, field_name: str, value: str) -> ValidationResult | None:
+    def _check_url_security(
+        self, field_name: str, value: str
+    ) -> ValidationResult | None:
         """Check URL security."""
         if not isinstance(value, str):
             return None
 
         # Check for HTTP in production URLs
-        if value.startswith('http://') and 'production' in str(field_name).lower():
+        if value.startswith("http://") and "production" in str(field_name).lower():
             return ValidationResult(
                 rule_name=self.name,
                 field_name=field_name,
                 severity=ValidationSeverity.WARNING,
                 message="Using HTTP instead of HTTPS in production",
                 suggestion="Use HTTPS URLs for security",
-                category=self.category
+                category=self.category,
             )
 
         return None
 
-    def _check_file_path_security(self, field_name: str, value: str) -> ValidationResult | None:
+    def _check_file_path_security(
+        self, field_name: str, value: str
+    ) -> ValidationResult | None:
         """Check file path security."""
         if not isinstance(value, str):
             return None
 
         # Check for path traversal attempts
-        dangerous_patterns = ['../', '..\\', '/etc/', '/root/', 'C:\\Windows\\']
+        dangerous_patterns = ["../", "..\\", "/etc/", "/root/", "C:\\Windows\\"]
         if any(pattern in value for pattern in dangerous_patterns):
             return ValidationResult(
                 rule_name=self.name,
@@ -362,7 +410,7 @@ class SecurityRule(ValidationRule):
                 severity=ValidationSeverity.CRITICAL,
                 message="Potentially dangerous file path detected",
                 suggestion="Use relative paths within application directory",
-                category=self.category
+                category=self.category,
             )
 
         return None
@@ -392,8 +440,7 @@ class ConfigValidator:
         """Remove a validation rule."""
         if field_name in self.rules:
             self.rules[field_name] = [
-                rule for rule in self.rules[field_name]
-                if rule.name != rule_name
+                rule for rule in self.rules[field_name] if rule.name != rule_name
             ]
             return True
         return False
@@ -420,7 +467,9 @@ class ConfigValidator:
 
         return results
 
-    def validate_field(self, field_name: str, value: Any, context: dict[str, Any]) -> list[ValidationResult]:
+    def validate_field(
+        self, field_name: str, value: Any, context: dict[str, Any]
+    ) -> list[ValidationResult]:
         """Validate a single field."""
         results = []
 
@@ -447,17 +496,21 @@ class ConfigValidator:
             "by_category": {},
             "by_field": {},
             "critical_issues": [],
-            "recommendations": []
+            "recommendations": [],
         }
 
         for result in results:
             # Count by severity
             severity = result.severity.value
-            summary["by_severity"][severity] = summary["by_severity"].get(severity, 0) + 1
+            summary["by_severity"][severity] = (
+                summary["by_severity"].get(severity, 0) + 1
+            )
 
             # Count by category
             category = result.category
-            summary["by_category"][category] = summary["by_category"].get(category, 0) + 1
+            summary["by_category"][category] = (
+                summary["by_category"].get(category, 0) + 1
+            )
 
             # Count by field
             field = result.field_name
@@ -469,10 +522,9 @@ class ConfigValidator:
 
             # Collect recommendations
             if result.suggestion:
-                summary["recommendations"].append({
-                    "field": result.field_name,
-                    "suggestion": result.suggestion
-                })
+                summary["recommendations"].append(
+                    {"field": result.field_name, "suggestion": result.suggestion}
+                )
 
         return summary
 
@@ -487,7 +539,9 @@ class ConfigValidator:
         elif preset_name == "performance":
             self._add_performance_rules()
 
-    def export_results(self, results: list[ValidationResult], format: str = "json") -> str:
+    def export_results(
+        self, results: list[ValidationResult], format: str = "json"
+    ) -> str:
         """Export validation results in specified format."""
         data = [result.to_dict() for result in results]
 
@@ -495,10 +549,12 @@ class ConfigValidator:
             return json.dumps(data, indent=2)
         elif format == "yaml":
             import yaml
+
             return yaml.dump(data, default_flow_style=False)
         elif format == "csv":
             import csv
             import io
+
             output = io.StringIO()
             if data:
                 writer = csv.DictWriter(output, fieldnames=data[0].keys())
@@ -529,16 +585,21 @@ class ConfigValidator:
     def _add_production_rules(self) -> None:
         """Add production-specific validation rules."""
         # Debug should be false in production
-        self.add_rule("debug", CustomRule(
-            lambda field, value, ctx: ValidationResult(
-                rule_name="production_debug",
-                field_name=field,
-                severity=ValidationSeverity.CRITICAL,
-                message="Debug mode should be disabled in production",
-                suggestion="Set debug=False for production deployment",
-                category="production"
-            ) if value is True and ctx.get("environment") == "production" else None
-        ))
+        self.add_rule(
+            "debug",
+            CustomRule(
+                lambda field, value, ctx: ValidationResult(
+                    rule_name="production_debug",
+                    field_name=field,
+                    severity=ValidationSeverity.CRITICAL,
+                    message="Debug mode should be disabled in production",
+                    suggestion="Set debug=False for production deployment",
+                    category="production",
+                )
+                if value is True and ctx.get("environment") == "production"
+                else None
+            ),
+        )
 
         # HTTPS requirement
         self.add_rule("database_url", SecurityRule(check_type="url_security"))
@@ -559,16 +620,23 @@ class ConfigValidator:
     def _add_performance_rules(self) -> None:
         """Add performance-related validation rules."""
         # Connection pool sizing
-        self.add_rule("database_pool_size", CustomRule(
-            lambda field, value, ctx: ValidationResult(
-                rule_name="performance_pool_size",
-                field_name=field,
-                severity=ValidationSeverity.WARNING,
-                message="Database pool size may be too small for high load",
-                suggestion="Consider increasing pool size for production workloads",
-                category="performance"
-            ) if isinstance(value, int) and value < 10 and ctx.get("environment") == "production" else None
-        ))
+        self.add_rule(
+            "database_pool_size",
+            CustomRule(
+                lambda field, value, ctx: ValidationResult(
+                    rule_name="performance_pool_size",
+                    field_name=field,
+                    severity=ValidationSeverity.WARNING,
+                    message="Database pool size may be too small for high load",
+                    suggestion="Consider increasing pool size for production workloads",
+                    category="performance",
+                )
+                if isinstance(value, int)
+                and value < 10
+                and ctx.get("environment") == "production"
+                else None
+            ),
+        )
 
 
 # Global validator instance

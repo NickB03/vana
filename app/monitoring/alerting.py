@@ -21,6 +21,7 @@ logger = logging.getLogger(__name__)
 
 class AlertLevel(Enum):
     """Alert severity levels."""
+
     INFO = "info"
     WARNING = "warning"
     CRITICAL = "critical"
@@ -29,6 +30,7 @@ class AlertLevel(Enum):
 
 class AlertChannel(Enum):
     """Alert notification channels."""
+
     EMAIL = "email"
     SLACK = "slack"
     WEBHOOK = "webhook"
@@ -39,13 +41,16 @@ class AlertChannel(Enum):
 @dataclass
 class Alert:
     """Alert representation."""
+
     level: AlertLevel
     message: str
     metric_name: str
     metric_value: float
     threshold: float
     timestamp: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
-    alert_id: str = field(default_factory=lambda: f"alert_{int(datetime.now().timestamp())}")
+    alert_id: str = field(
+        default_factory=lambda: f"alert_{int(datetime.now().timestamp())}"
+    )
     source: str = "vana_monitor"
     tags: dict[str, str] = field(default_factory=dict)
     context: dict[str, Any] = field(default_factory=dict)
@@ -62,13 +67,14 @@ class Alert:
             "timestamp": self.timestamp.isoformat(),
             "source": self.source,
             "tags": self.tags,
-            "context": self.context
+            "context": self.context,
         }
 
 
 @dataclass
 class AlertRule:
     """Alert rule configuration."""
+
     name: str
     metric_name: str
     threshold: float
@@ -105,6 +111,7 @@ class AlertRule:
 @dataclass
 class NotificationConfig:
     """Notification channel configuration."""
+
     channel: AlertChannel
     config: dict[str, Any]
     enabled: bool = True
@@ -204,7 +211,12 @@ class AlertManager:
                             metric_value=metric_value,
                             threshold=rule.threshold,
                             tags=rule.tags,
-                            context={"rule_name": rule.name, "consecutive_violations": len(self.rule_violations[rule_name])}
+                            context={
+                                "rule_name": rule.name,
+                                "consecutive_violations": len(
+                                    self.rule_violations[rule_name]
+                                ),
+                            },
                         )
 
                         alerts.append(alert)
@@ -258,7 +270,9 @@ class AlertManager:
             if alert.alert_id == alert_id:
                 alert.context["acknowledged"] = True
                 alert.context["acknowledged_by"] = user
-                alert.context["acknowledged_at"] = datetime.now(timezone.utc).isoformat()
+                alert.context["acknowledged_at"] = datetime.now(
+                    timezone.utc
+                ).isoformat()
                 alert.context["acknowledgment_notes"] = notes
                 logger.info(f"Alert {alert_id} acknowledged by {user}")
                 return True
@@ -269,7 +283,8 @@ class AlertManager:
         cutoff = datetime.now(timezone.utc) - timedelta(hours=24)
 
         active_alerts = [
-            alert for alert in self.alert_history
+            alert
+            for alert in self.alert_history
             if alert.timestamp > cutoff and not alert.context.get("acknowledged", False)
         ]
 
@@ -281,7 +296,9 @@ class AlertManager:
     def get_alert_statistics(self, hours: int = 24) -> dict[str, Any]:
         """Get alert statistics for the specified time period."""
         cutoff = datetime.now(timezone.utc) - timedelta(hours=hours)
-        recent_alerts = [alert for alert in self.alert_history if alert.timestamp > cutoff]
+        recent_alerts = [
+            alert for alert in self.alert_history if alert.timestamp > cutoff
+        ]
 
         stats = {
             "total_alerts": len(recent_alerts),
@@ -289,12 +306,14 @@ class AlertManager:
             "by_metric": {},
             "by_hour": {},
             "acknowledged_count": 0,
-            "suppressed_count": len(self.suppressed_alerts)
+            "suppressed_count": len(self.suppressed_alerts),
         }
 
         # Count by level
         for level in AlertLevel:
-            stats["by_level"][level.value] = len([a for a in recent_alerts if a.level == level])
+            stats["by_level"][level.value] = len(
+                [a for a in recent_alerts if a.level == level]
+            )
 
         # Count by metric
         for alert in recent_alerts:
@@ -329,7 +348,7 @@ class AlertManager:
                     cooldown_minutes=rule_config.get("cooldown_minutes", 15),
                     consecutive_violations=rule_config.get("consecutive_violations", 1),
                     enabled=rule_config.get("enabled", True),
-                    tags=rule_config.get("tags", {})
+                    tags=rule_config.get("tags", {}),
                 )
                 self.add_rule(rule)
 
@@ -339,7 +358,7 @@ class AlertManager:
                     channel=AlertChannel(channel_config["channel"]),
                     config=channel_config["config"],
                     enabled=channel_config.get("enabled", True),
-                    rate_limit=channel_config.get("rate_limit")
+                    rate_limit=channel_config.get("rate_limit"),
                 )
                 self.configure_notification(notification_config)
 
@@ -359,7 +378,8 @@ class AlertManager:
         # Check recent alerts for this rule
         cutoff = now - cooldown_period
         recent_alerts = [
-            alert for alert in self.alert_history
+            alert
+            for alert in self.alert_history
             if alert.timestamp > cutoff and alert.context.get("rule_name") == rule_name
         ]
 
@@ -415,8 +435,9 @@ class AlertManager:
         else:
             return [AlertChannel.LOG]
 
-    async def _send_to_channel(self, alert: Alert, channel: AlertChannel,
-                              config: NotificationConfig) -> None:
+    async def _send_to_channel(
+        self, alert: Alert, channel: AlertChannel, config: NotificationConfig
+    ) -> None:
         """Send alert to specific notification channel."""
         if channel == AlertChannel.EMAIL:
             await self._send_email(alert, config)
@@ -434,50 +455,64 @@ class AlertManager:
         smtp_config = config.config
 
         msg = MIMEMultipart()
-        msg['From'] = smtp_config['from']
-        msg['To'] = ', '.join(smtp_config['to'])
-        msg['Subject'] = f"[{alert.level.value.upper()}] {alert.message}"
+        msg["From"] = smtp_config["from"]
+        msg["To"] = ", ".join(smtp_config["to"])
+        msg["Subject"] = f"[{alert.level.value.upper()}] {alert.message}"
 
         # Render email template
-        template = self.templates.get('email', Template("Alert: {{ alert.message }}"))
+        template = self.templates.get("email", Template("Alert: {{ alert.message }}"))
         body = template.render(alert=alert)
 
-        msg.attach(MIMEText(body, 'html'))
+        msg.attach(MIMEText(body, "html"))
 
         # Send email
-        with smtplib.SMTP(smtp_config['host'], smtp_config['port']) as server:
-            if smtp_config.get('tls'):
+        with smtplib.SMTP(smtp_config["host"], smtp_config["port"]) as server:
+            if smtp_config.get("tls"):
                 server.starttls()
-            if smtp_config.get('username'):
-                server.login(smtp_config['username'], smtp_config['password'])
+            if smtp_config.get("username"):
+                server.login(smtp_config["username"], smtp_config["password"])
             server.send_message(msg)
 
     async def _send_slack(self, alert: Alert, config: NotificationConfig) -> None:
         """Send alert to Slack."""
-        webhook_url = config.config['webhook_url']
+        webhook_url = config.config["webhook_url"]
 
         # Choose color based on alert level
         color_map = {
             AlertLevel.INFO: "#36a64f",
             AlertLevel.WARNING: "#ff9500",
             AlertLevel.CRITICAL: "#ff0000",
-            AlertLevel.EMERGENCY: "#8b0000"
+            AlertLevel.EMERGENCY: "#8b0000",
         }
 
         payload = {
-            "attachments": [{
-                "color": color_map.get(alert.level, "#808080"),
-                "title": f"{alert.level.value.upper()} Alert",
-                "text": alert.message,
-                "fields": [
-                    {"title": "Metric", "value": alert.metric_name, "short": True},
-                    {"title": "Value", "value": str(alert.metric_value), "short": True},
-                    {"title": "Threshold", "value": str(alert.threshold), "short": True},
-                    {"title": "Time", "value": alert.timestamp.strftime("%Y-%m-%d %H:%M:%S UTC"), "short": True}
-                ],
-                "footer": "Vana Monitoring",
-                "ts": int(alert.timestamp.timestamp())
-            }]
+            "attachments": [
+                {
+                    "color": color_map.get(alert.level, "#808080"),
+                    "title": f"{alert.level.value.upper()} Alert",
+                    "text": alert.message,
+                    "fields": [
+                        {"title": "Metric", "value": alert.metric_name, "short": True},
+                        {
+                            "title": "Value",
+                            "value": str(alert.metric_value),
+                            "short": True,
+                        },
+                        {
+                            "title": "Threshold",
+                            "value": str(alert.threshold),
+                            "short": True,
+                        },
+                        {
+                            "title": "Time",
+                            "value": alert.timestamp.strftime("%Y-%m-%d %H:%M:%S UTC"),
+                            "short": True,
+                        },
+                    ],
+                    "footer": "Vana Monitoring",
+                    "ts": int(alert.timestamp.timestamp()),
+                }
+            ]
         }
 
         async with aiohttp.ClientSession() as session:
@@ -487,13 +522,15 @@ class AlertManager:
 
     async def _send_webhook(self, alert: Alert, config: NotificationConfig) -> None:
         """Send alert to webhook."""
-        webhook_url = config.config['url']
-        headers = config.config.get('headers', {})
+        webhook_url = config.config["url"]
+        headers = config.config.get("headers", {})
 
         payload = alert.to_dict()
 
         async with aiohttp.ClientSession() as session:
-            async with session.post(webhook_url, json=payload, headers=headers) as response:
+            async with session.post(
+                webhook_url, json=payload, headers=headers
+            ) as response:
                 if response.status not in (200, 201, 202):
                     raise Exception(f"Webhook returned {response.status}")
 
@@ -503,7 +540,7 @@ class AlertManager:
             AlertLevel.INFO: logging.INFO,
             AlertLevel.WARNING: logging.WARNING,
             AlertLevel.CRITICAL: logging.ERROR,
-            AlertLevel.EMERGENCY: logging.CRITICAL
+            AlertLevel.EMERGENCY: logging.CRITICAL,
         }
 
         log_level = level_map.get(alert.level, logging.INFO)
@@ -542,9 +579,7 @@ class AlertManager:
         </html>
         """)
 
-        return {
-            'email': email_template
-        }
+        return {"email": email_template}
 
     async def _cleanup_loop(self) -> None:
         """Background cleanup of old alerts and data."""
@@ -553,15 +588,15 @@ class AlertManager:
                 # Clean old alerts (older than 7 days)
                 cutoff = datetime.now(timezone.utc) - timedelta(days=7)
                 self.alert_history = [
-                    alert for alert in self.alert_history
-                    if alert.timestamp > cutoff
+                    alert for alert in self.alert_history if alert.timestamp > cutoff
                 ]
 
                 # Clean old notification counts
                 notification_cutoff = datetime.now(timezone.utc) - timedelta(hours=2)
                 for channel in self.notification_counts:
                     self.notification_counts[channel] = [
-                        t for t in self.notification_counts[channel]
+                        t
+                        for t in self.notification_counts[channel]
                         if t > notification_cutoff
                     ]
 

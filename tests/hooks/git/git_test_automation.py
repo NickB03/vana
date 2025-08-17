@@ -47,6 +47,7 @@ from git import Repo
 # Pydantic for configuration validation
 try:
     from pydantic import BaseModel, Field, validator
+
     HAS_PYDANTIC = True
 except ImportError:
     HAS_PYDANTIC = False
@@ -54,6 +55,7 @@ except ImportError:
 
 class TestType(Enum):
     """Types of tests in the automation framework"""
+
     UNIT = "unit"
     INTEGRATION = "integration"
     PERFORMANCE = "performance"
@@ -65,6 +67,7 @@ class TestType(Enum):
 
 class TestStatus(Enum):
     """Test execution status"""
+
     PENDING = "pending"
     RUNNING = "running"
     PASSED = "passed"
@@ -76,6 +79,7 @@ class TestStatus(Enum):
 
 class Priority(Enum):
     """Test execution priority"""
+
     LOW = 1
     MEDIUM = 2
     HIGH = 3
@@ -85,6 +89,7 @@ class Priority(Enum):
 @dataclass
 class TestConfiguration:
     """Test configuration and metadata"""
+
     test_id: str
     name: str
     description: str
@@ -112,6 +117,7 @@ class TestConfiguration:
 @dataclass
 class TestResult:
     """Comprehensive test execution result"""
+
     test_id: str
     status: TestStatus
     start_time: datetime
@@ -137,6 +143,7 @@ class TestResult:
 @dataclass
 class TestSuite:
     """Test suite configuration"""
+
     suite_id: str
     name: str
     description: str
@@ -157,7 +164,9 @@ class TestEnvironmentManager:
         self.resource_locks = set()
         self.logger = logging.getLogger(__name__)
 
-    async def create_environment(self, env_id: str, config: dict[str, Any]) -> dict[str, Any]:
+    async def create_environment(
+        self, env_id: str, config: dict[str, Any]
+    ) -> dict[str, Any]:
         """Create isolated test environment"""
         env_path = self.workspace / "environments" / env_id
         env_path.mkdir(parents=True, exist_ok=True)
@@ -191,7 +200,9 @@ class TestEnvironmentManager:
 
         return environment
 
-    async def _create_test_repository(self, env_path: Path, repo_config: dict[str, Any]) -> Repo:
+    async def _create_test_repository(
+        self, env_path: Path, repo_config: dict[str, Any]
+    ) -> Repo:
         """Create test repository in environment"""
         repo_path = env_path / "repos" / repo_config["name"]
         repo_path.mkdir(parents=True, exist_ok=True)
@@ -218,7 +229,9 @@ class TestEnvironmentManager:
 
         return repo
 
-    async def _apply_repository_template(self, repo: Repo, repo_path: Path, template: str):
+    async def _apply_repository_template(
+        self, repo: Repo, repo_path: Path, template: str
+    ):
         """Apply repository template"""
         if template == "minimal":
             (repo_path / "README.md").write_text("# Test Repository")
@@ -234,26 +247,19 @@ class TestEnvironmentManager:
             package_json = {
                 "name": "test-frontend",
                 "version": "1.0.0",
-                "scripts": {
-                    "dev": "next dev",
-                    "build": "next build",
-                    "test": "jest"
-                },
-                "dependencies": {
-                    "react": "^18.3.1",
-                    "next": "^15.4.6"
-                }
+                "scripts": {"dev": "next dev", "build": "next build", "test": "jest"},
+                "dependencies": {"react": "^18.3.1", "next": "^15.4.6"},
             }
             (repo_path / "package.json").write_text(json.dumps(package_json, indent=2))
 
             # Sample component
-            component = '''import React from 'react'
+            component = """import React from 'react'
 import { Button } from '@/components/ui/button'
 
 export const TestComponent = () => {
   return <Button data-testid="test-button">Test</Button>
 }
-'''
+"""
             (repo_path / "src/components/TestComponent.tsx").write_text(component)
 
         elif template == "backend":
@@ -263,14 +269,14 @@ export const TestComponent = () => {
                 (repo_path / dir_name).mkdir(parents=True, exist_ok=True)
 
             # FastAPI app
-            server_code = '''from fastapi import FastAPI
+            server_code = """from fastapi import FastAPI
 
 app = FastAPI()
 
 @app.get("/health")
 async def health():
     return {"status": "healthy"}
-'''
+"""
             (repo_path / "app/server.py").write_text(server_code)
 
             # Requirements
@@ -281,18 +287,18 @@ async def health():
         hooks_dir = repo_path / ".git" / "hooks"
 
         # Test pre-commit hook
-        pre_commit = '''#!/bin/bash
+        pre_commit = """#!/bin/bash
 echo "Test pre-commit hook executing"
 exit 0
-'''
+"""
         (hooks_dir / "pre-commit").write_text(pre_commit)
         (hooks_dir / "pre-commit").chmod(0o755)
 
         # Test post-commit hook
-        post_commit = '''#!/bin/bash
+        post_commit = """#!/bin/bash
 echo "Test post-commit hook executing"
 exit 0
-'''
+"""
         (hooks_dir / "post-commit").write_text(post_commit)
         (hooks_dir / "post-commit").chmod(0o755)
 
@@ -326,7 +332,7 @@ exit 0
 
         # Close repositories
         for repo in environment.get("repositories", {}).values():
-            if hasattr(repo, 'close'):
+            if hasattr(repo, "close"):
                 repo.close()
 
         # Cleanup temporary files
@@ -382,7 +388,9 @@ class TestOrchestrator:
 
         self.logger.info("Test orchestrator initialized")
 
-    async def discover_tests(self, test_directory: Path, test_types: list[TestType] = None) -> list[TestConfiguration]:
+    async def discover_tests(
+        self, test_directory: Path, test_types: list[TestType] = None
+    ) -> list[TestConfiguration]:
         """Automatically discover tests based on patterns"""
         if test_types is None:
             test_types = list(TestType)
@@ -395,13 +403,17 @@ class TestOrchestrator:
             for pattern in patterns:
                 for test_file in test_directory.rglob(pattern):
                     if test_file.is_file():
-                        tests = await self._extract_tests_from_file(test_file, test_type)
+                        tests = await self._extract_tests_from_file(
+                            test_file, test_type
+                        )
                         discovered_tests.extend(tests)
 
         self.logger.info(f"Discovered {len(discovered_tests)} tests")
         return discovered_tests
 
-    async def _extract_tests_from_file(self, test_file: Path, test_type: TestType) -> list[TestConfiguration]:
+    async def _extract_tests_from_file(
+        self, test_file: Path, test_type: TestType
+    ) -> list[TestConfiguration]:
         """Extract test functions from file"""
         tests = []
 
@@ -411,7 +423,8 @@ class TestOrchestrator:
 
             # Find test functions (simplified approach)
             import re
-            test_functions = re.findall(r'def (test_\w+)', content)
+
+            test_functions = re.findall(r"def (test_\w+)", content)
 
             for func_name in test_functions:
                 test_id = f"{test_file.stem}::{func_name}"
@@ -443,7 +456,7 @@ class TestOrchestrator:
                     module_path=str(test_file),
                     test_function=func_name,
                     timeout_seconds=timeout_map.get(test_type, 60),
-                    parallel_safe=test_type in [TestType.UNIT, TestType.PERFORMANCE]
+                    parallel_safe=test_type in [TestType.UNIT, TestType.PERFORMANCE],
                 )
 
                 tests.append(test_config)
@@ -458,7 +471,9 @@ class TestOrchestrator:
         self.test_registry[suite.suite_id] = suite
         self.logger.info(f"Registered test suite: {suite.name}")
 
-    async def execute_test_suite(self, suite_id: str, environment_config: dict[str, Any] = None) -> dict[str, TestResult]:
+    async def execute_test_suite(
+        self, suite_id: str, environment_config: dict[str, Any] = None
+    ) -> dict[str, TestResult]:
         """Execute test suite with full automation"""
         if suite_id not in self.test_registry:
             raise ValueError(f"Test suite not found: {suite_id}")
@@ -481,11 +496,17 @@ class TestOrchestrator:
 
             # Execute tests according to plan
             if suite.execution_order == "parallel":
-                results = await self._execute_tests_parallel(execution_plan, environment)
+                results = await self._execute_tests_parallel(
+                    execution_plan, environment
+                )
             elif suite.execution_order == "dependency":
-                results = await self._execute_tests_by_dependency(execution_plan, environment)
+                results = await self._execute_tests_by_dependency(
+                    execution_plan, environment
+                )
             else:  # priority
-                results = await self._execute_tests_by_priority(execution_plan, environment)
+                results = await self._execute_tests_by_priority(
+                    execution_plan, environment
+                )
 
             # Generate execution summary
             await self._generate_execution_summary(suite, results, start_time)
@@ -500,7 +521,9 @@ class TestOrchestrator:
 
         return results
 
-    async def _create_execution_plan(self, suite: TestSuite) -> list[list[TestConfiguration]]:
+    async def _create_execution_plan(
+        self, suite: TestSuite
+    ) -> list[list[TestConfiguration]]:
         """Create execution plan based on suite configuration"""
         if suite.execution_order == "priority":
             # Group by priority
@@ -523,7 +546,9 @@ class TestOrchestrator:
             # Single batch with all tests
             return [suite.tests]
 
-    async def _topological_sort_tests(self, tests: list[TestConfiguration]) -> list[list[TestConfiguration]]:
+    async def _topological_sort_tests(
+        self, tests: list[TestConfiguration]
+    ) -> list[list[TestConfiguration]]:
         """Sort tests based on dependencies using topological sort"""
         # Build dependency graph
         test_map = {test.test_id: test for test in tests}
@@ -557,7 +582,9 @@ class TestOrchestrator:
 
         return sorted_batches
 
-    async def _execute_tests_parallel(self, execution_plan: list[list[TestConfiguration]], environment: dict[str, Any]) -> dict[str, TestResult]:
+    async def _execute_tests_parallel(
+        self, execution_plan: list[list[TestConfiguration]], environment: dict[str, Any]
+    ) -> dict[str, TestResult]:
         """Execute tests in parallel batches"""
         results = {}
 
@@ -567,23 +594,32 @@ class TestOrchestrator:
 
         return results
 
-    async def _execute_tests_by_priority(self, execution_plan: list[list[TestConfiguration]], environment: dict[str, Any]) -> dict[str, TestResult]:
+    async def _execute_tests_by_priority(
+        self, execution_plan: list[list[TestConfiguration]], environment: dict[str, Any]
+    ) -> dict[str, TestResult]:
         """Execute tests by priority (highest first)"""
         results = {}
 
         for priority_batch in execution_plan:
             # Execute high-priority tests sequentially, others in parallel
-            if priority_batch and priority_batch[0].priority in [Priority.CRITICAL, Priority.HIGH]:
+            if priority_batch and priority_batch[0].priority in [
+                Priority.CRITICAL,
+                Priority.HIGH,
+            ]:
                 for test in priority_batch:
                     test_result = await self._execute_single_test(test, environment)
                     results[test.test_id] = test_result
             else:
-                batch_results = await self._execute_batch_parallel(priority_batch, environment)
+                batch_results = await self._execute_batch_parallel(
+                    priority_batch, environment
+                )
                 results.update(batch_results)
 
         return results
 
-    async def _execute_tests_by_dependency(self, execution_plan: list[list[TestConfiguration]], environment: dict[str, Any]) -> dict[str, TestResult]:
+    async def _execute_tests_by_dependency(
+        self, execution_plan: list[list[TestConfiguration]], environment: dict[str, Any]
+    ) -> dict[str, TestResult]:
         """Execute tests respecting dependencies"""
         results = {}
 
@@ -600,7 +636,9 @@ class TestOrchestrator:
 
         return results
 
-    async def _execute_batch_parallel(self, batch: list[TestConfiguration], environment: dict[str, Any]) -> dict[str, TestResult]:
+    async def _execute_batch_parallel(
+        self, batch: list[TestConfiguration], environment: dict[str, Any]
+    ) -> dict[str, TestResult]:
         """Execute a batch of tests in parallel"""
         if not batch:
             return {}
@@ -626,22 +664,22 @@ class TestOrchestrator:
                     test_id=test.test_id,
                     status=TestStatus.ERROR,
                     start_time=datetime.now(),
-                    exception_info=str(result)
+                    exception_info=str(result),
                 )
             else:
                 results[test.test_id] = result
 
         return results
 
-    async def _execute_single_test(self, test: TestConfiguration, environment: dict[str, Any]) -> TestResult:
+    async def _execute_single_test(
+        self, test: TestConfiguration, environment: dict[str, Any]
+    ) -> TestResult:
         """Execute a single test with full monitoring"""
         self.logger.info(f"Executing test: {test.test_id}")
 
         start_time = datetime.now()
         result = TestResult(
-            test_id=test.test_id,
-            status=TestStatus.RUNNING,
-            start_time=start_time
+            test_id=test.test_id, status=TestStatus.RUNNING, start_time=start_time
         )
 
         try:
@@ -656,9 +694,13 @@ class TestOrchestrator:
 
             # Execute test using pytest
             cmd = [
-                sys.executable, "-m", "pytest",
+                sys.executable,
+                "-m",
+                "pytest",
                 test.module_path + "::" + test.test_function,
-                "-v", "--tb=short", "--no-header"
+                "-v",
+                "--tb=short",
+                "--no-header",
             ]
 
             process = await asyncio.create_subprocess_exec(
@@ -666,19 +708,18 @@ class TestOrchestrator:
                 cwd=working_dir,
                 env=test_env,
                 stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.PIPE
+                stderr=asyncio.subprocess.PIPE,
             )
 
             # Wait for completion with timeout
             try:
                 stdout, stderr = await asyncio.wait_for(
-                    process.communicate(),
-                    timeout=test.timeout_seconds
+                    process.communicate(), timeout=test.timeout_seconds
                 )
 
                 result.exit_code = process.returncode
-                result.stdout = stdout.decode('utf-8', errors='ignore')
-                result.stderr = stderr.decode('utf-8', errors='ignore')
+                result.stdout = stdout.decode("utf-8", errors="ignore")
+                result.stderr = stderr.decode("utf-8", errors="ignore")
 
                 # Determine status from exit code
                 if result.exit_code == 0:
@@ -698,12 +739,16 @@ class TestOrchestrator:
 
         finally:
             result.end_time = datetime.now()
-            result.execution_time_seconds = (result.end_time - start_time).total_seconds()
+            result.execution_time_seconds = (
+                result.end_time - start_time
+            ).total_seconds()
 
         self.logger.info(f"Test completed: {test.test_id} - {result.status.value}")
         return result
 
-    async def _generate_execution_summary(self, suite: TestSuite, results: dict[str, TestResult], start_time: datetime):
+    async def _generate_execution_summary(
+        self, suite: TestSuite, results: dict[str, TestResult], start_time: datetime
+    ):
         """Generate execution summary and save to file"""
         end_time = datetime.now()
         total_duration = (end_time - start_time).total_seconds()
@@ -719,7 +764,7 @@ class TestOrchestrator:
             "execution_time": {
                 "start": start_time.isoformat(),
                 "end": end_time.isoformat(),
-                "duration_seconds": total_duration
+                "duration_seconds": total_duration,
             },
             "statistics": {
                 "total_tests": len(results),
@@ -728,14 +773,20 @@ class TestOrchestrator:
                 "error": status_counts[TestStatus.ERROR.value],
                 "timeout": status_counts[TestStatus.TIMEOUT.value],
                 "skipped": status_counts[TestStatus.SKIPPED.value],
-                "success_rate": status_counts[TestStatus.PASSED.value] / len(results) if results else 0
+                "success_rate": status_counts[TestStatus.PASSED.value] / len(results)
+                if results
+                else 0,
             },
-            "results": [asdict(result) for result in results.values()]
+            "results": [asdict(result) for result in results.values()],
         }
 
         # Save summary
-        summary_file = self.workspace / "results" / f"execution_summary_{suite.suite_id}_{int(time.time())}.json"
-        with open(summary_file, 'w') as f:
+        summary_file = (
+            self.workspace
+            / "results"
+            / f"execution_summary_{suite.suite_id}_{int(time.time())}.json"
+        )
+        with open(summary_file, "w") as f:
             json.dump(summary, f, indent=2, default=str)
 
         self.execution_history.append(summary)
@@ -763,13 +814,15 @@ class TestOrchestrator:
         else:
             raise ValueError(f"Unsupported output format: {output_format}")
 
-    async def _generate_html_test_report(self, reports_dir: Path, timestamp: str) -> str:
+    async def _generate_html_test_report(
+        self, reports_dir: Path, timestamp: str
+    ) -> str:
         """Generate HTML test report"""
         report_file = reports_dir / f"test_automation_report_{timestamp}.html"
 
         latest_execution = self.execution_history[-1]
 
-        html_content = f'''<!DOCTYPE html>
+        html_content = f"""<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -798,32 +851,32 @@ class TestOrchestrator:
     <div class="header">
         <h1>🔬 Test Automation Report</h1>
         <p>Generated on {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}</p>
-        <h2>{latest_execution['suite_name']}</h2>
+        <h2>{latest_execution["suite_name"]}</h2>
     </div>
     
     <div class="summary-grid">
         <div class="summary-card">
-            <div class="metric-value">{latest_execution['statistics']['total_tests']}</div>
+            <div class="metric-value">{latest_execution["statistics"]["total_tests"]}</div>
             <div class="metric-label">Total Tests</div>
         </div>
         <div class="summary-card passed">
-            <div class="metric-value">{latest_execution['statistics']['passed']}</div>
+            <div class="metric-value">{latest_execution["statistics"]["passed"]}</div>
             <div class="metric-label">Passed</div>
         </div>
         <div class="summary-card failed">
-            <div class="metric-value">{latest_execution['statistics']['failed']}</div>
+            <div class="metric-value">{latest_execution["statistics"]["failed"]}</div>
             <div class="metric-label">Failed</div>
         </div>
         <div class="summary-card error">
-            <div class="metric-value">{latest_execution['statistics']['error']}</div>
+            <div class="metric-value">{latest_execution["statistics"]["error"]}</div>
             <div class="metric-label">Errors</div>
         </div>
         <div class="summary-card">
-            <div class="metric-value">{latest_execution['statistics']['success_rate']:.1%}</div>
+            <div class="metric-value">{latest_execution["statistics"]["success_rate"]:.1%}</div>
             <div class="metric-label">Success Rate</div>
         </div>
         <div class="summary-card">
-            <div class="metric-value">{latest_execution['execution_time']['duration_seconds']:.1f}s</div>
+            <div class="metric-value">{latest_execution["execution_time"]["duration_seconds"]:.1f}s</div>
             <div class="metric-label">Duration</div>
         </div>
     </div>
@@ -835,32 +888,32 @@ class TestOrchestrator:
             <th>Status</th>
             <th>Duration</th>
             <th>Details</th>
-        </tr>'''
+        </tr>"""
 
-        for result in latest_execution['results']:
+        for result in latest_execution["results"]:
             status_class = f"status-{result['status']}"
             status_icon = {
                 "passed": "✅",
                 "failed": "❌",
                 "error": "💥",
-                "timeout": "⏰"
-            }.get(result['status'], "❓")
+                "timeout": "⏰",
+            }.get(result["status"], "❓")
 
             html_content += f'''
         <tr>
-            <td>{result['test_id']}</td>
-            <td class="{status_class}">{status_icon} {result['status'].upper()}</td>
-            <td>{result['execution_time_seconds']:.2f}s</td>
+            <td>{result["test_id"]}</td>
+            <td class="{status_class}">{status_icon} {result["status"].upper()}</td>
+            <td>{result["execution_time_seconds"]:.2f}s</td>
             <td>'''
 
-            if result['status'] in ['failed', 'error'] and result.get('stderr'):
+            if result["status"] in ["failed", "error"] and result.get("stderr"):
                 html_content += f"<details><summary>Error Details</summary><pre>{result['stderr'][:500]}...</pre></details>"
             else:
                 html_content += "No issues"
 
             html_content += "</td></tr>"
 
-        html_content += '''
+        html_content += """
     </table>
     
     <h3>📈 Execution History</h3>
@@ -871,33 +924,35 @@ class TestOrchestrator:
             <th>Tests</th>
             <th>Success Rate</th>
             <th>Duration</th>
-        </tr>'''
+        </tr>"""
 
         for execution in self.execution_history[-10:]:  # Last 10 executions
-            html_content += f'''
+            html_content += f"""
         <tr>
-            <td>{execution['execution_time']['start'][:19]}</td>
-            <td>{execution['suite_name']}</td>
-            <td>{execution['statistics']['total_tests']}</td>
-            <td>{execution['statistics']['success_rate']:.1%}</td>
-            <td>{execution['execution_time']['duration_seconds']:.1f}s</td>
-        </tr>'''
+            <td>{execution["execution_time"]["start"][:19]}</td>
+            <td>{execution["suite_name"]}</td>
+            <td>{execution["statistics"]["total_tests"]}</td>
+            <td>{execution["statistics"]["success_rate"]:.1%}</td>
+            <td>{execution["execution_time"]["duration_seconds"]:.1f}s</td>
+        </tr>"""
 
-        html_content += '''
+        html_content += """
     </table>
     
     <footer style="margin-top: 40px; text-align: center; color: #666;">
         <p>Generated by Git Hook Test Automation Framework v2.0.0</p>
     </footer>
 </body>
-</html>'''
+</html>"""
 
-        with open(report_file, 'w') as f:
+        with open(report_file, "w") as f:
             f.write(html_content)
 
         return str(report_file)
 
-    async def _generate_json_test_report(self, reports_dir: Path, timestamp: str) -> str:
+    async def _generate_json_test_report(
+        self, reports_dir: Path, timestamp: str
+    ) -> str:
         """Generate JSON test report"""
         report_file = reports_dir / f"test_automation_report_{timestamp}.json"
 
@@ -905,21 +960,23 @@ class TestOrchestrator:
             "report_metadata": {
                 "generated_at": datetime.now().isoformat(),
                 "framework_version": "2.0.0",
-                "total_executions": len(self.execution_history)
+                "total_executions": len(self.execution_history),
             },
-            "latest_execution": self.execution_history[-1] if self.execution_history else None,
+            "latest_execution": self.execution_history[-1]
+            if self.execution_history
+            else None,
             "execution_history": self.execution_history,
             "registered_suites": [
                 {
                     "suite_id": suite_id,
                     "name": suite.name,
-                    "test_count": len(suite.tests)
+                    "test_count": len(suite.tests),
                 }
                 for suite_id, suite in self.test_registry.items()
-            ]
+            ],
         }
 
-        with open(report_file, 'w') as f:
+        with open(report_file, "w") as f:
             json.dump(report_data, f, indent=2, default=str)
 
         return str(report_file)
@@ -939,15 +996,34 @@ def cli():
 
 
 @cli.command()
-@click.option('--workspace', '-w', type=click.Path(), default='./test_automation_workspace',
-              help='Test automation workspace directory')
-@click.option('--test-dir', '-t', type=click.Path(exists=True), required=True,
-              help='Directory containing tests to discover')
-@click.option('--test-types', '-T', multiple=True,
-              type=click.Choice([t.value for t in TestType]),
-              help='Types of tests to discover')
-@click.option('--max-workers', '-j', type=int, default=4,
-              help='Maximum number of parallel test workers')
+@click.option(
+    "--workspace",
+    "-w",
+    type=click.Path(),
+    default="./test_automation_workspace",
+    help="Test automation workspace directory",
+)
+@click.option(
+    "--test-dir",
+    "-t",
+    type=click.Path(exists=True),
+    required=True,
+    help="Directory containing tests to discover",
+)
+@click.option(
+    "--test-types",
+    "-T",
+    multiple=True,
+    type=click.Choice([t.value for t in TestType]),
+    help="Types of tests to discover",
+)
+@click.option(
+    "--max-workers",
+    "-j",
+    type=int,
+    default=4,
+    help="Maximum number of parallel test workers",
+)
 async def discover(workspace, test_dir, test_types, max_workers):
     """Discover tests automatically"""
     workspace_path = Path(workspace)
@@ -964,11 +1040,13 @@ async def discover(workspace, test_dir, test_types, max_workers):
 
         click.echo(f"📋 Discovered {len(tests)} tests:")
         for test in tests:
-            click.echo(f"  • {test.test_id} ({test.test_type.value}, {test.priority.name})")
+            click.echo(
+                f"  • {test.test_id} ({test.test_type.value}, {test.priority.name})"
+            )
 
         # Save discovered tests
         discovery_file = workspace_path / "config" / "discovered_tests.json"
-        with open(discovery_file, 'w') as f:
+        with open(discovery_file, "w") as f:
             json.dump([asdict(test) for test in tests], f, indent=2, default=str)
 
         click.echo(f"✅ Test discovery saved to: {discovery_file}")
@@ -978,14 +1056,33 @@ async def discover(workspace, test_dir, test_types, max_workers):
 
 
 @cli.command()
-@click.option('--workspace', '-w', type=click.Path(), default='./test_automation_workspace',
-              help='Test automation workspace directory')
-@click.option('--suite-config', '-c', type=click.Path(exists=True), required=True,
-              help='Test suite configuration file')
-@click.option('--environment', '-e', type=click.Path(exists=True),
-              help='Environment configuration file')
-@click.option('--max-workers', '-j', type=int, default=4,
-              help='Maximum number of parallel test workers')
+@click.option(
+    "--workspace",
+    "-w",
+    type=click.Path(),
+    default="./test_automation_workspace",
+    help="Test automation workspace directory",
+)
+@click.option(
+    "--suite-config",
+    "-c",
+    type=click.Path(exists=True),
+    required=True,
+    help="Test suite configuration file",
+)
+@click.option(
+    "--environment",
+    "-e",
+    type=click.Path(exists=True),
+    help="Environment configuration file",
+)
+@click.option(
+    "--max-workers",
+    "-j",
+    type=int,
+    default=4,
+    help="Maximum number of parallel test workers",
+)
 async def execute(workspace, suite_config, environment, max_workers):
     """Execute test suite"""
     workspace_path = Path(workspace)
@@ -1029,7 +1126,7 @@ if __name__ == "__main__":
     # Setup logging
     logging.basicConfig(
         level=logging.INFO,
-        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     )
 
     # Run CLI

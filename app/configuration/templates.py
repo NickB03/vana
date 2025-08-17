@@ -18,6 +18,7 @@ logger = logging.getLogger(__name__)
 
 class TemplateFormat(Enum):
     """Template file formats."""
+
     JSON = "json"
     YAML = "yaml"
     TOML = "toml"
@@ -28,6 +29,7 @@ class TemplateFormat(Enum):
 @dataclass
 class ConfigTemplate:
     """Configuration template definition."""
+
     name: str
     description: str
     template_path: str
@@ -70,30 +72,32 @@ class TemplateEngine:
             existing_dirs.append("templates")
 
         env = Environment(
-            loader=FileSystemLoader(existing_dirs),
-            trim_blocks=True,
-            lstrip_blocks=True
+            loader=FileSystemLoader(existing_dirs), trim_blocks=True, lstrip_blocks=True
         )
 
         # Add custom filters
-        env.filters.update({
-            'to_json': self._to_json_filter,
-            'to_yaml': self._to_yaml_filter,
-            'env_var': self._env_var_filter,
-            'default_if_none': self._default_if_none_filter,
-            'quote_if_spaces': self._quote_if_spaces_filter,
-            'snake_case': self._snake_case_filter,
-            'camel_case': self._camel_case_filter,
-            'kebab_case': self._kebab_case_filter
-        })
+        env.filters.update(
+            {
+                "to_json": self._to_json_filter,
+                "to_yaml": self._to_yaml_filter,
+                "env_var": self._env_var_filter,
+                "default_if_none": self._default_if_none_filter,
+                "quote_if_spaces": self._quote_if_spaces_filter,
+                "snake_case": self._snake_case_filter,
+                "camel_case": self._camel_case_filter,
+                "kebab_case": self._kebab_case_filter,
+            }
+        )
 
         # Add custom global functions
-        env.globals.update({
-            'now': lambda: datetime.now(timezone.utc),
-            'env': os.environ.get,
-            'file_exists': os.path.exists,
-            'read_file': self._read_file_function
-        })
+        env.globals.update(
+            {
+                "now": lambda: datetime.now(timezone.utc),
+                "env": os.environ.get,
+                "file_exists": os.path.exists,
+                "read_file": self._read_file_function,
+            }
+        )
 
         return env
 
@@ -139,7 +143,10 @@ class TemplateEngine:
             template = self.environment.get_template(template_path)
             # Parse template to find undefined variables
             from jinja2.meta import find_undeclared_variables
-            source = self.environment.loader.get_source(self.environment, template_path)[0]
+
+            source = self.environment.loader.get_source(
+                self.environment, template_path
+            )[0]
             parsed = self.environment.parse(source)
             variables = find_undeclared_variables(parsed)
             return list(variables)
@@ -166,20 +173,20 @@ class TemplateEngine:
 
     def _quote_if_spaces_filter(self, value: str) -> str:
         """Quote string if it contains spaces."""
-        return f'"{value}"' if ' ' in str(value) else str(value)
+        return f'"{value}"' if " " in str(value) else str(value)
 
     def _snake_case_filter(self, value: str) -> str:
         """Convert string to snake_case."""
-        return re.sub(r'[^a-zA-Z0-9]', '_', str(value)).lower()
+        return re.sub(r"[^a-zA-Z0-9]", "_", str(value)).lower()
 
     def _camel_case_filter(self, value: str) -> str:
         """Convert string to camelCase."""
-        words = re.findall(r'\w+', str(value))
-        return words[0].lower() + ''.join(word.capitalize() for word in words[1:])
+        words = re.findall(r"\w+", str(value))
+        return words[0].lower() + "".join(word.capitalize() for word in words[1:])
 
     def _kebab_case_filter(self, value: str) -> str:
         """Convert string to kebab-case."""
-        return re.sub(r'[^a-zA-Z0-9]', '-', str(value)).lower()
+        return re.sub(r"[^a-zA-Z0-9]", "-", str(value)).lower()
 
     # Custom global functions
     def _read_file_function(self, file_path: str) -> str:
@@ -212,7 +219,7 @@ class ConfigTemplateManager:
         template_file = self.templates_dir / f"{template.name}.j2"
 
         # Write template content
-        with open(template_file, 'w') as f:
+        with open(template_file, "w") as f:
             f.write(content)
 
         # Update template path
@@ -233,15 +240,16 @@ class ConfigTemplateManager:
         templates = list(self.templates.values())
 
         if tags:
-            templates = [
-                t for t in templates
-                if any(tag in t.tags for tag in tags)
-            ]
+            templates = [t for t in templates if any(tag in t.tags for tag in tags)]
 
         return sorted(templates, key=lambda t: t.name)
 
-    def render_template(self, template_name: str, variables: dict[str, Any],
-                       output_file: str | None = None) -> str:
+    def render_template(
+        self,
+        template_name: str,
+        variables: dict[str, Any],
+        output_file: str | None = None,
+    ) -> str:
         """Render a template with variables."""
         template = self.get_template(template_name)
         if not template:
@@ -256,14 +264,16 @@ class ConfigTemplateManager:
         merged_vars = {**template.optional_variables, **variables}
 
         # Render template
-        content = self.template_engine.render_template(template.template_path, merged_vars)
+        content = self.template_engine.render_template(
+            template.template_path, merged_vars
+        )
 
         # Format output based on template format
         formatted_content = self._format_output(content, template.output_format)
 
         # Write to file if specified
         if output_file:
-            with open(output_file, 'w') as f:
+            with open(output_file, "w") as f:
                 f.write(formatted_content)
             logger.info(f"Generated config file: {output_file}")
 
@@ -324,12 +334,14 @@ class ConfigTemplateManager:
         template_file = self.templates_dir / template.template_path
         if template_file.exists():
             import shutil
+
             shutil.copy2(template_file, export_path / template.template_path)
 
         # Copy metadata
         metadata_file = self.templates_dir / f"{template_name}.meta.json"
         if metadata_file.exists():
             import shutil
+
             shutil.copy2(metadata_file, export_path / f"{template_name}.meta.json")
 
         logger.info(f"Exported template {template_name} to {export_dir}")
@@ -359,13 +371,14 @@ class ConfigTemplateManager:
                 validation_schema=metadata.get("validation_schema"),
                 tags=metadata.get("tags", []),
                 version=metadata.get("version", "1.0.0"),
-                author=metadata.get("author", "imported")
+                author=metadata.get("author", "imported"),
             )
 
             # Copy template file
             template_file = import_path / template.template_path
             if template_file.exists():
                 import shutil
+
                 shutil.copy2(template_file, self.templates_dir / template.template_path)
 
             # Store template
@@ -396,7 +409,7 @@ class ConfigTemplateManager:
                     validation_schema=metadata.get("validation_schema"),
                     tags=metadata.get("tags", []),
                     version=metadata.get("version", "1.0.0"),
-                    author=metadata.get("author", "system")
+                    author=metadata.get("author", "system"),
                 )
 
                 self.templates[template.name] = template
@@ -419,10 +432,10 @@ class ConfigTemplateManager:
             "tags": template.tags,
             "version": template.version,
             "author": template.author,
-            "created_at": template.created_at.isoformat()
+            "created_at": template.created_at.isoformat(),
         }
 
-        with open(metadata_file, 'w') as f:
+        with open(metadata_file, "w") as f:
             json.dump(metadata, f, indent=2)
 
     def _format_output(self, content: str, format: TemplateFormat) -> str:
@@ -458,9 +471,9 @@ class ConfigTemplateManager:
                 optional_variables={
                     "redis_enabled": True,
                     "postgres_enabled": True,
-                    "environment": "development"
+                    "environment": "development",
                 },
-                tags=["docker", "deployment", "infrastructure"]
+                tags=["docker", "deployment", "infrastructure"],
             )
 
             docker_compose_content = """version: '3.8'
@@ -527,9 +540,9 @@ volumes:
                     "node_version": "18",
                     "run_tests": True,
                     "run_lint": True,
-                    "deploy_enabled": False
+                    "deploy_enabled": False,
                 },
-                tags=["github", "ci", "automation"]
+                tags=["github", "ci", "automation"],
             )
 
             github_ci_content = """name: CI/CD Pipeline

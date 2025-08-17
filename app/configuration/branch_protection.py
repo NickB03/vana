@@ -12,6 +12,7 @@ logger = logging.getLogger(__name__)
 
 class ProtectionLevel(Enum):
     """Branch protection levels."""
+
     NONE = "none"
     BASIC = "basic"
     STANDARD = "standard"
@@ -21,6 +22,7 @@ class ProtectionLevel(Enum):
 
 class ReviewRequirement(Enum):
     """Code review requirements."""
+
     NONE = "none"
     OPTIONAL = "optional"
     REQUIRED = "required"
@@ -30,6 +32,7 @@ class ReviewRequirement(Enum):
 @dataclass
 class StatusCheck:
     """Required status check configuration."""
+
     context: str
     description: str
     required: bool = True
@@ -39,6 +42,7 @@ class StatusCheck:
 @dataclass
 class BranchProtectionRule:
     """Branch protection rule configuration."""
+
     name: str
     pattern: str  # Branch name pattern (glob or regex)
     protection_level: ProtectionLevel
@@ -82,18 +86,24 @@ class BranchProtectionRule:
         config = {
             "required_status_checks": {
                 "strict": self.require_branches_up_to_date,
-                "contexts": [check.context for check in self.required_status_checks if check.required]
-            } if self.required_status_checks else None,
-
+                "contexts": [
+                    check.context
+                    for check in self.required_status_checks
+                    if check.required
+                ],
+            }
+            if self.required_status_checks
+            else None,
             "enforce_admins": self.enforce_admins,
             "allow_force_pushes": self.allow_force_pushes,
             "allow_deletions": self.allow_deletions,
             "required_linear_history": self.required_linear_history,
-
             "restrictions": {
                 "users": self.allowed_push_users,
-                "teams": self.allowed_push_teams
-            } if self.restrict_pushes else None
+                "teams": self.allowed_push_teams,
+            }
+            if self.restrict_pushes
+            else None,
         }
 
         if self.require_pull_request:
@@ -101,7 +111,7 @@ class BranchProtectionRule:
                 "required_approving_review_count": self.required_reviewers,
                 "dismiss_stale_reviews": self.dismiss_stale_reviews,
                 "require_code_owner_reviews": self.require_code_owner_reviews,
-                "require_last_push_approval": self.require_last_push_approval
+                "require_last_push_approval": self.require_last_push_approval,
             }
 
         return config
@@ -149,17 +159,20 @@ class BranchProtectionManager:
             if fnmatch.fnmatch(branch_name, rule.pattern):
                 matching_rules.append(rule)
             # Check regex pattern
-            elif rule.pattern.startswith('^') or rule.pattern.endswith('$'):
+            elif rule.pattern.startswith("^") or rule.pattern.endswith("$"):
                 try:
                     if re.match(rule.pattern, branch_name):
                         matching_rules.append(rule)
                 except re.error:
-                    logger.warning(f"Invalid regex pattern in rule {rule.name}: {rule.pattern}")
+                    logger.warning(
+                        f"Invalid regex pattern in rule {rule.name}: {rule.pattern}"
+                    )
 
         return matching_rules
 
-    def create_from_template(self, template_name: str, rule_name: str,
-                           pattern: str, **overrides) -> BranchProtectionRule | None:
+    def create_from_template(
+        self, template_name: str, rule_name: str, pattern: str, **overrides
+    ) -> BranchProtectionRule | None:
         """Create a rule from a template."""
         if template_name not in self.templates:
             logger.error(f"Template not found: {template_name}")
@@ -189,7 +202,7 @@ class BranchProtectionManager:
             "delete_branch_on_merge": template.delete_branch_on_merge,
             "required_linear_history": template.required_linear_history,
             "required_conversation_resolution": template.required_conversation_resolution,
-            "custom_hooks": template.custom_hooks.copy()
+            "custom_hooks": template.custom_hooks.copy(),
         }
 
         # Apply overrides
@@ -204,8 +217,13 @@ class BranchProtectionManager:
         issues = []
 
         # Check for conflicting settings
-        if rule.allow_force_pushes and rule.protection_level in [ProtectionLevel.STRICT, ProtectionLevel.ENTERPRISE]:
-            issues.append("Force pushes should not be allowed for strict protection levels")
+        if rule.allow_force_pushes and rule.protection_level in [
+            ProtectionLevel.STRICT,
+            ProtectionLevel.ENTERPRISE,
+        ]:
+            issues.append(
+                "Force pushes should not be allowed for strict protection levels"
+            )
 
         if rule.required_reviewers == 0 and rule.require_pull_request:
             issues.append("Pull requests required but no reviewers specified")
@@ -221,9 +239,10 @@ class BranchProtectionManager:
         # Check pattern validity
         if not rule.pattern:
             issues.append("Branch pattern is required")
-        elif rule.pattern.startswith('^') or rule.pattern.endswith('$'):
+        elif rule.pattern.startswith("^") or rule.pattern.endswith("$"):
             try:
                 import re
+
                 re.compile(rule.pattern)
             except re.error as e:
                 issues.append(f"Invalid regex pattern: {e}")
@@ -268,10 +287,13 @@ class BranchProtectionManager:
         try:
             config = {
                 "rules": [self._rule_to_config(rule) for rule in self.rules.values()],
-                "templates": [self._rule_to_config(template) for template in self.templates.values()]
+                "templates": [
+                    self._rule_to_config(template)
+                    for template in self.templates.values()
+                ],
             }
 
-            with open(config_file, 'w') as f:
+            with open(config_file, "w") as f:
                 json.dump(config, f, indent=2, default=str)
 
             logger.info(f"Saved branch protection config to {config_file}")
@@ -285,17 +307,21 @@ class BranchProtectionManager:
             "total_rules": len(self.rules),
             "protection_levels": {},
             "common_patterns": {},
-            "validation_issues": 0
+            "validation_issues": 0,
         }
 
         for rule in self.rules.values():
             # Count by protection level
             level = rule.protection_level.value
-            summary["protection_levels"][level] = summary["protection_levels"].get(level, 0) + 1
+            summary["protection_levels"][level] = (
+                summary["protection_levels"].get(level, 0) + 1
+            )
 
             # Count common patterns
             pattern = rule.pattern
-            summary["common_patterns"][pattern] = summary["common_patterns"].get(pattern, 0) + 1
+            summary["common_patterns"][pattern] = (
+                summary["common_patterns"].get(pattern, 0) + 1
+            )
 
             # Count validation issues
             issues = self.validate_rule(rule)
@@ -318,7 +344,7 @@ class BranchProtectionManager:
             required_status_checks=[
                 StatusCheck("ci/tests", "All tests must pass"),
                 StatusCheck("ci/lint", "Code must pass linting"),
-                StatusCheck("ci/security", "Security scan must pass")
+                StatusCheck("ci/security", "Security scan must pass"),
             ],
             require_branches_up_to_date=True,
             restrict_pushes=True,
@@ -326,7 +352,7 @@ class BranchProtectionManager:
             allow_force_pushes=False,
             allow_deletions=False,
             required_linear_history=True,
-            required_conversation_resolution=True
+            required_conversation_resolution=True,
         )
 
         # Release branch template
@@ -341,13 +367,13 @@ class BranchProtectionManager:
             require_last_push_approval=True,
             required_status_checks=[
                 StatusCheck("ci/tests", "Tests must pass"),
-                StatusCheck("ci/build", "Build must succeed")
+                StatusCheck("ci/build", "Build must succeed"),
             ],
             require_branches_up_to_date=True,
             restrict_pushes=True,
             enforce_admins=False,
             allow_force_pushes=False,
-            allow_deletions=False
+            allow_deletions=False,
         )
 
         # Feature branch template
@@ -360,15 +386,13 @@ class BranchProtectionManager:
             dismiss_stale_reviews=False,
             require_code_owner_reviews=False,
             require_last_push_approval=False,
-            required_status_checks=[
-                StatusCheck("ci/tests", "Tests should pass")
-            ],
+            required_status_checks=[StatusCheck("ci/tests", "Tests should pass")],
             require_branches_up_to_date=False,
             restrict_pushes=False,
             enforce_admins=False,
             allow_force_pushes=True,
             allow_deletions=True,
-            delete_branch_on_merge=True
+            delete_branch_on_merge=True,
         )
 
         # Development branch template
@@ -383,21 +407,23 @@ class BranchProtectionManager:
             require_last_push_approval=False,
             required_status_checks=[
                 StatusCheck("ci/tests", "Tests must pass"),
-                StatusCheck("ci/lint", "Linting must pass")
+                StatusCheck("ci/lint", "Linting must pass"),
             ],
             require_branches_up_to_date=True,
             restrict_pushes=True,
             enforce_admins=False,
             allow_force_pushes=False,
-            allow_deletions=False
+            allow_deletions=False,
         )
 
-        self.templates.update({
-            "main_branch": main_template,
-            "release_branch": release_template,
-            "feature_branch": feature_template,
-            "develop_branch": develop_template
-        })
+        self.templates.update(
+            {
+                "main_branch": main_template,
+                "release_branch": release_template,
+                "feature_branch": feature_template,
+                "develop_branch": develop_template,
+            }
+        )
 
     def _rule_from_config(self, config: dict[str, Any]) -> BranchProtectionRule:
         """Create rule from configuration dictionary."""
@@ -408,7 +434,7 @@ class BranchProtectionManager:
                 context=check_config["context"],
                 description=check_config.get("description", ""),
                 required=check_config.get("required", True),
-                strict=check_config.get("strict", True)
+                strict=check_config.get("strict", True),
             )
             status_checks.append(status_check)
 
@@ -432,8 +458,10 @@ class BranchProtectionManager:
             allow_auto_merge=config.get("allow_auto_merge", False),
             delete_branch_on_merge=config.get("delete_branch_on_merge", True),
             required_linear_history=config.get("required_linear_history", False),
-            required_conversation_resolution=config.get("required_conversation_resolution", True),
-            custom_hooks=config.get("custom_hooks", [])
+            required_conversation_resolution=config.get(
+                "required_conversation_resolution", True
+            ),
+            custom_hooks=config.get("custom_hooks", []),
         )
 
     def _rule_to_config(self, rule: BranchProtectionRule) -> dict[str, Any]:
@@ -452,7 +480,7 @@ class BranchProtectionManager:
                     "context": check.context,
                     "description": check.description,
                     "required": check.required,
-                    "strict": check.strict
+                    "strict": check.strict,
                 }
                 for check in rule.required_status_checks
             ],
@@ -468,7 +496,7 @@ class BranchProtectionManager:
             "required_linear_history": rule.required_linear_history,
             "required_conversation_resolution": rule.required_conversation_resolution,
             "custom_hooks": rule.custom_hooks,
-            "created_at": rule.created_at.isoformat()
+            "created_at": rule.created_at.isoformat(),
         }
 
 

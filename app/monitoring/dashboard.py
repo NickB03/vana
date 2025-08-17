@@ -26,17 +26,21 @@ logger = logging.getLogger(__name__)
 @dataclass
 class DashboardWidget:
     """Dashboard widget configuration."""
+
     widget_id: str
     title: str
     widget_type: str  # chart, gauge, table, alert_list, etc.
     data_source: str  # metrics, cache, alerts
     config: dict[str, Any] = field(default_factory=dict)
-    position: dict[str, int] = field(default_factory=lambda: {"x": 0, "y": 0, "w": 4, "h": 3})
+    position: dict[str, int] = field(
+        default_factory=lambda: {"x": 0, "y": 0, "w": 4, "h": 3}
+    )
 
 
 @dataclass
 class DashboardLayout:
     """Dashboard layout configuration."""
+
     dashboard_id: str
     name: str
     description: str
@@ -48,9 +52,12 @@ class DashboardLayout:
 class PerformanceDashboard:
     """Performance monitoring dashboard with real-time updates."""
 
-    def __init__(self, metrics_collector: MetricsCollector | None = None,
-                 cache_optimizer: CacheOptimizer | None = None,
-                 alert_manager: AlertManager | None = None):
+    def __init__(
+        self,
+        metrics_collector: MetricsCollector | None = None,
+        cache_optimizer: CacheOptimizer | None = None,
+        alert_manager: AlertManager | None = None,
+    ):
         self.metrics_collector = metrics_collector or get_metrics_collector()
         self.cache_optimizer = cache_optimizer or get_cache_optimizer()
         self.alert_manager = alert_manager or get_alert_manager()
@@ -106,7 +113,9 @@ class PerformanceDashboard:
             if websocket in self.active_connections:
                 self.active_connections.remove(websocket)
 
-    async def get_dashboard_data(self, dashboard_id: str = "overview") -> dict[str, Any]:
+    async def get_dashboard_data(
+        self, dashboard_id: str = "overview"
+    ) -> dict[str, Any]:
         """Get dashboard data for specified layout."""
         if dashboard_id not in self.layouts:
             dashboard_id = "overview"
@@ -117,10 +126,10 @@ class PerformanceDashboard:
                 "id": layout.dashboard_id,
                 "name": layout.name,
                 "description": layout.description,
-                "refresh_interval": layout.refresh_interval
+                "refresh_interval": layout.refresh_interval,
             },
             "widgets": {},
-            "timestamp": datetime.now(timezone.utc).isoformat()
+            "timestamp": datetime.now(timezone.utc).isoformat(),
         }
 
         # Collect data for each widget
@@ -130,7 +139,7 @@ class PerformanceDashboard:
                 "title": widget.title,
                 "type": widget.widget_type,
                 "position": widget.position,
-                "data": widget_data
+                "data": widget_data,
             }
 
         return data
@@ -147,24 +156,28 @@ class PerformanceDashboard:
                 "avg_response_time": metrics.avg_response_time,
                 "p95_response_time": metrics.p95_response_time,
                 "error_rate": metrics.error_rate,
-                "concurrent_requests": metrics.concurrent_requests
+                "concurrent_requests": metrics.concurrent_requests,
             },
             "system": {
                 "cpu_usage": metrics.cpu_usage,
                 "memory_usage": metrics.memory_usage,
                 "disk_usage": metrics.disk_usage,
-                "active_agents": metrics.active_agents
+                "active_agents": metrics.active_agents,
             },
             "cache": {
                 "hit_rate": cache_metrics.hit_rate,
                 "entry_count": cache_metrics.entry_count,
-                "memory_usage": cache_metrics.memory_usage
+                "memory_usage": cache_metrics.memory_usage,
             },
             "alerts": {
                 "total_active": len(active_alerts),
-                "critical": len([a for a in active_alerts if a.level == AlertLevel.CRITICAL]),
-                "warning": len([a for a in active_alerts if a.level == AlertLevel.WARNING])
-            }
+                "critical": len(
+                    [a for a in active_alerts if a.level == AlertLevel.CRITICAL]
+                ),
+                "warning": len(
+                    [a for a in active_alerts if a.level == AlertLevel.WARNING]
+                ),
+            },
         }
 
     def create_custom_dashboard(self, layout: DashboardLayout) -> None:
@@ -178,7 +191,7 @@ class PerformanceDashboard:
             {
                 "id": layout.dashboard_id,
                 "name": layout.name,
-                "description": layout.description
+                "description": layout.description,
             }
             for layout in self.layouts.values()
         ]
@@ -201,10 +214,10 @@ class PerformanceDashboard:
                     "widget_type": w.widget_type,
                     "data_source": w.data_source,
                     "config": w.config,
-                    "position": w.position
+                    "position": w.position,
                 }
                 for w in layout.widgets
-            ]
+            ],
         }
 
     def import_dashboard_config(self, config: dict[str, Any]) -> bool:
@@ -218,7 +231,9 @@ class PerformanceDashboard:
                     widget_type=widget_config["widget_type"],
                     data_source=widget_config["data_source"],
                     config=widget_config.get("config", {}),
-                    position=widget_config.get("position", {"x": 0, "y": 0, "w": 4, "h": 3})
+                    position=widget_config.get(
+                        "position", {"x": 0, "y": 0, "w": 4, "h": 3}
+                    ),
                 )
                 widgets.append(widget)
 
@@ -227,7 +242,7 @@ class PerformanceDashboard:
                 name=config["name"],
                 description=config["description"],
                 widgets=widgets,
-                refresh_interval=config.get("refresh_interval", 5)
+                refresh_interval=config.get("refresh_interval", 5),
             )
 
             self.layouts[layout.dashboard_id] = layout
@@ -261,7 +276,7 @@ class PerformanceDashboard:
                 "min": widget.config.get("min", 0),
                 "max": widget.config.get("max", 100),
                 "unit": widget.config.get("unit", "%"),
-                "thresholds": widget.config.get("thresholds", [])
+                "thresholds": widget.config.get("thresholds", []),
             }
 
         elif widget.widget_type == "chart":
@@ -273,15 +288,14 @@ class PerformanceDashboard:
             data_points = []
             for metric in history[-50:]:  # Last 50 points
                 value = getattr(metric, metric_name, 0)
-                data_points.append({
-                    "timestamp": metric.timestamp.isoformat(),
-                    "value": value
-                })
+                data_points.append(
+                    {"timestamp": metric.timestamp.isoformat(), "value": value}
+                )
 
             return {
                 "data_points": data_points,
                 "metric_name": metric_name,
-                "unit": widget.config.get("unit", "ms")
+                "unit": widget.config.get("unit", "ms"),
             }
 
         elif widget.widget_type == "table":
@@ -293,8 +307,8 @@ class PerformanceDashboard:
                     ["P95 Response Time", f"{metrics.p95_response_time:.2f}", "ms"],
                     ["Error Rate", f"{metrics.error_rate:.2%}", "%"],
                     ["CPU Usage", f"{metrics.cpu_usage:.1f}", "%"],
-                    ["Memory Usage", f"{metrics.memory_usage:.1f}", "%"]
-                ]
+                    ["Memory Usage", f"{metrics.memory_usage:.1f}", "%"],
+                ],
             }
 
         return {"error": f"Unknown widget type: {widget.widget_type}"}
@@ -312,8 +326,8 @@ class PerformanceDashboard:
                 "thresholds": [
                     {"value": 50, "color": "red"},
                     {"value": 80, "color": "yellow"},
-                    {"value": 95, "color": "green"}
-                ]
+                    {"value": 95, "color": "green"},
+                ],
             }
 
         elif widget.widget_type == "table":
@@ -324,8 +338,11 @@ class PerformanceDashboard:
                     ["Hits", str(cache_metrics.hits)],
                     ["Misses", str(cache_metrics.misses)],
                     ["Entries", str(cache_metrics.entry_count)],
-                    ["Memory Usage", f"{cache_metrics.memory_usage / 1024 / 1024:.1f} MB"]
-                ]
+                    [
+                        "Memory Usage",
+                        f"{cache_metrics.memory_usage / 1024 / 1024:.1f} MB",
+                    ],
+                ],
             }
 
         return {"error": f"Unknown widget type: {widget.widget_type}"}
@@ -343,15 +360,17 @@ class PerformanceDashboard:
 
             alert_list = []
             for alert in alerts[:20]:  # Limit to 20 most recent
-                alert_list.append({
-                    "id": alert.alert_id,
-                    "level": alert.level.value,
-                    "message": alert.message,
-                    "timestamp": alert.timestamp.strftime("%H:%M:%S"),
-                    "metric": alert.metric_name,
-                    "value": alert.metric_value,
-                    "acknowledged": alert.context.get("acknowledged", False)
-                })
+                alert_list.append(
+                    {
+                        "id": alert.alert_id,
+                        "level": alert.level.value,
+                        "message": alert.message,
+                        "timestamp": alert.timestamp.strftime("%H:%M:%S"),
+                        "metric": alert.metric_name,
+                        "value": alert.metric_value,
+                        "acknowledged": alert.context.get("acknowledged", False),
+                    }
+                )
 
             return {"alerts": alert_list}
 
@@ -361,7 +380,7 @@ class PerformanceDashboard:
                 "total": stats["total_alerts"],
                 "by_level": stats["by_level"],
                 "acknowledged": stats["acknowledged_count"],
-                "suppressed": stats["suppressed_count"]
+                "suppressed": stats["suppressed_count"],
             }
 
         return {"error": f"Unknown widget type: {widget.widget_type}"}
@@ -376,7 +395,7 @@ class PerformanceDashboard:
                 widget_type="gauge",
                 data_source="metrics",
                 config={"metric": "cpu_usage", "unit": "%", "max": 100},
-                position={"x": 0, "y": 0, "w": 3, "h": 3}
+                position={"x": 0, "y": 0, "w": 3, "h": 3},
             ),
             DashboardWidget(
                 widget_id="memory_gauge",
@@ -384,14 +403,14 @@ class PerformanceDashboard:
                 widget_type="gauge",
                 data_source="metrics",
                 config={"metric": "memory_usage", "unit": "%", "max": 100},
-                position={"x": 3, "y": 0, "w": 3, "h": 3}
+                position={"x": 3, "y": 0, "w": 3, "h": 3},
             ),
             DashboardWidget(
                 widget_id="cache_hit_rate",
                 title="Cache Hit Rate",
                 widget_type="gauge",
                 data_source="cache",
-                position={"x": 6, "y": 0, "w": 3, "h": 3}
+                position={"x": 6, "y": 0, "w": 3, "h": 3},
             ),
             DashboardWidget(
                 widget_id="response_time_chart",
@@ -399,7 +418,7 @@ class PerformanceDashboard:
                 widget_type="chart",
                 data_source="metrics",
                 config={"metric": "avg_response_time", "duration": 600, "unit": "ms"},
-                position={"x": 0, "y": 3, "w": 6, "h": 4}
+                position={"x": 0, "y": 3, "w": 6, "h": 4},
             ),
             DashboardWidget(
                 widget_id="active_alerts",
@@ -407,22 +426,22 @@ class PerformanceDashboard:
                 widget_type="alert_list",
                 data_source="alerts",
                 config={"hours": 24},
-                position={"x": 6, "y": 3, "w": 6, "h": 4}
+                position={"x": 6, "y": 3, "w": 6, "h": 4},
             ),
             DashboardWidget(
                 widget_id="metrics_table",
                 title="Key Metrics",
                 widget_type="table",
                 data_source="metrics",
-                position={"x": 0, "y": 7, "w": 12, "h": 3}
-            )
+                position={"x": 0, "y": 7, "w": 12, "h": 3},
+            ),
         ]
 
         overview_layout = DashboardLayout(
             dashboard_id="overview",
             name="System Overview",
             description="High-level system performance overview",
-            widgets=overview_widgets
+            widgets=overview_widgets,
         )
 
         self.layouts["overview"] = overview_layout
@@ -434,8 +453,12 @@ class PerformanceDashboard:
                 title="Requests per Second",
                 widget_type="chart",
                 data_source="metrics",
-                config={"metric": "requests_per_second", "duration": 600, "unit": "req/s"},
-                position={"x": 0, "y": 0, "w": 6, "h": 4}
+                config={
+                    "metric": "requests_per_second",
+                    "duration": 600,
+                    "unit": "req/s",
+                },
+                position={"x": 0, "y": 0, "w": 6, "h": 4},
             ),
             DashboardWidget(
                 widget_id="response_time_p95",
@@ -443,7 +466,7 @@ class PerformanceDashboard:
                 widget_type="chart",
                 data_source="metrics",
                 config={"metric": "p95_response_time", "duration": 600, "unit": "ms"},
-                position={"x": 6, "y": 0, "w": 6, "h": 4}
+                position={"x": 6, "y": 0, "w": 6, "h": 4},
             ),
             DashboardWidget(
                 widget_id="error_rate_chart",
@@ -451,7 +474,7 @@ class PerformanceDashboard:
                 widget_type="chart",
                 data_source="metrics",
                 config={"metric": "error_rate", "duration": 600, "unit": "%"},
-                position={"x": 0, "y": 4, "w": 6, "h": 4}
+                position={"x": 0, "y": 4, "w": 6, "h": 4},
             ),
             DashboardWidget(
                 widget_id="concurrent_requests",
@@ -459,27 +482,28 @@ class PerformanceDashboard:
                 widget_type="gauge",
                 data_source="metrics",
                 config={"metric": "concurrent_requests", "unit": "reqs", "max": 1000},
-                position={"x": 6, "y": 4, "w": 3, "h": 3}
-            )
+                position={"x": 6, "y": 4, "w": 3, "h": 3},
+            ),
         ]
 
         performance_layout = DashboardLayout(
             dashboard_id="performance",
             name="Performance Metrics",
             description="Detailed performance monitoring",
-            widgets=performance_widgets
+            widgets=performance_widgets,
         )
 
         self.layouts["performance"] = performance_layout
 
-    async def _send_dashboard_data(self, websocket: WebSocket, dashboard_id: str) -> None:
+    async def _send_dashboard_data(
+        self, websocket: WebSocket, dashboard_id: str
+    ) -> None:
         """Send dashboard data to WebSocket client."""
         try:
             data = await self.get_dashboard_data(dashboard_id)
-            await websocket.send_text(json.dumps({
-                "type": "dashboard_data",
-                "data": data
-            }))
+            await websocket.send_text(
+                json.dumps({"type": "dashboard_data", "data": data})
+            )
         except Exception as e:
             logger.error(f"Error sending dashboard data: {e}")
 
@@ -491,13 +515,14 @@ class PerformanceDashboard:
                     # Get data for all dashboards
                     dashboard_data = {}
                     for dashboard_id in self.layouts.keys():
-                        dashboard_data[dashboard_id] = await self.get_dashboard_data(dashboard_id)
+                        dashboard_data[dashboard_id] = await self.get_dashboard_data(
+                            dashboard_id
+                        )
 
                     # Broadcast to all connections
-                    message = json.dumps({
-                        "type": "dashboard_update",
-                        "data": dashboard_data
-                    })
+                    message = json.dumps(
+                        {"type": "dashboard_update", "data": dashboard_data}
+                    )
 
                     # Send to all connected clients
                     disconnected = []
