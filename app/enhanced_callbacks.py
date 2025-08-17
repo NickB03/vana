@@ -326,7 +326,7 @@ def after_agent_callback(callback_context: CallbackContext) -> None:
         if invocation_ctx.session and invocation_ctx.session.state:
             # Look for new or modified state keys
             for key, value in invocation_ctx.session.state.items():
-                if isinstance(value, str | dict | list) and value:
+                if isinstance(value, (str, dict, list)) and value:
                     state_changes.append(key)
 
         # Record data flow relationships with next agent in stack

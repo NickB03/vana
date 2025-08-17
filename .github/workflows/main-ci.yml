@@ -153,8 +153,9 @@ jobs:
           # Test basic imports with better error handling for CI
           uv run python -c "
           try:
-              from app.config import config
-              print('✅ Config import working')
+              from app.config import get_config
+              _cfg = get_config()
+              print('✅ Config load working')
               try:
                   from app import server
                   print('✅ Server import working')
