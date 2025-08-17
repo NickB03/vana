@@ -4,19 +4,15 @@ import asyncio
 import json
 import logging
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta, timezone
-from typing import Any, Dict, List, Optional, Union
+from datetime import datetime, timezone
+from typing import Any
 
-from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
-from fastapi.responses import HTMLResponse, JSONResponse
-from fastapi.staticfiles import StaticFiles
-from fastapi.templating import Jinja2Templates
+from fastapi import WebSocket, WebSocketDisconnect
 
-from .alerting import Alert, AlertLevel, AlertManager, get_alert_manager
+from .alerting import AlertLevel, AlertManager, get_alert_manager
 from .cache_optimizer import CacheOptimizer, get_cache_optimizer
 from .metrics_collector import (
     MetricsCollector,
-    PerformanceMetrics,
     get_metrics_collector,
 )
 
@@ -350,7 +346,7 @@ class PerformanceDashboard:
     async def _get_alerts_widget_data(self, widget: DashboardWidget) -> dict[str, Any]:
         """Get alerts data for widget."""
         if widget.widget_type == "alert_list":
-            hours = widget.config.get("hours", 24)
+            widget.config.get("hours", 24)
             level = widget.config.get("level")
 
             if level:

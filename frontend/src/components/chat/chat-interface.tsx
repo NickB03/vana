@@ -131,7 +131,8 @@ export function ChatInterface({ className, initialMessage }: ChatInterfaceProps)
       });
       
       eventSource.addEventListener('error', (event) => {
-        const data = JSON.parse(event.data);
+        const messageEvent = event as MessageEvent;
+        const data = JSON.parse(messageEvent.data);
         handleErrorEvent(data);
       });
       
@@ -146,11 +147,11 @@ export function ChatInterface({ className, initialMessage }: ChatInterfaceProps)
     console.log('SSE Event:', event.type, event.data);
   };
   
-  const handleResponseStart = (data: { message: ChatMessage }) => {
+  const handleResponseStart = (data: { message: ChatMessage; messageId?: string; model?: string }) => {
     setIsStreaming(true);
     
     const streamingMessage: ChatMessage = {
-      id: data.message_id || `temp_${Date.now()}`,
+      id: data.messageId || `temp_${Date.now()}`,
       role: 'assistant',
       content: '',
       timestamp: Date.now(),
@@ -172,7 +173,7 @@ export function ChatInterface({ className, initialMessage }: ChatInterfaceProps)
     }
   };
   
-  const handleResponseComplete = (data: { messageId: string }) => {
+  const handleResponseComplete = (data: { messageId: string; content?: string; model?: string; tool_calls?: unknown[] }) => {
     if (currentStreamingMessage) {
       const finalMessage: ChatMessage = {
         ...currentStreamingMessage,

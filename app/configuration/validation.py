@@ -8,7 +8,7 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import Enum
-from typing import Any, Dict, List, Optional, Union
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -157,7 +157,7 @@ class RangeRule(ValidationRule):
     def validate(
         self, field_name: str, value: Any, context: dict[str, Any]
     ) -> ValidationResult | None:
-        if value is None or not isinstance(value, (int, float)):
+        if value is None or not isinstance(value, int | float):
             return None
 
         if self.min_value is not None and value < self.min_value:
@@ -268,7 +268,7 @@ class DependencyRule(ValidationRule):
             dep_value = context[dep_field]
 
             # Check if dependency is satisfied
-            if isinstance(required_value, (list, tuple)):
+            if isinstance(required_value, list | tuple):
                 satisfied = dep_value in required_value
             else:
                 satisfied = dep_value == required_value

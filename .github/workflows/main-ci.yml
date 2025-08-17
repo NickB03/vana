@@ -147,27 +147,59 @@ jobs:
           wait # Wait for all background jobs
           
       - name: Quick import verification
+        env:
+          GOOGLE_CLOUD_PROJECT: "analystai-454200"
+          GOOGLE_APPLICATION_CREDENTIALS: ""
+          CI: "true"
         run: |
           uv sync --no-dev --quiet
           # Test basic imports with better error handling for CI
           uv run python -c "
+          import os
+          import sys
+          
+          # Set CI environment flag to disable cloud features
+          os.environ['CI'] = 'true'
+          os.environ['GOOGLE_CLOUD_PROJECT'] = 'analystai-454200'
+          
           try:
+              print('Testing config import...')
               from app.config import get_config
               _cfg = get_config()
               print('✅ Config load working')
+              
+              print('Testing basic server modules...')
+              # Test individual components that don't require cloud auth
               try:
-                  from app import server
-                  print('✅ Server import working')
+                  from app.models import ModelType
+                  print('✅ Models import working')
               except Exception as e:
-                  print('⚠️ Server import issue (expected in CI without auth):', str(e)[:100])
-                  # This is expected in CI without Google Cloud credentials
-                  if 'DefaultCredentialsError' in str(e) or 'Authentication' in str(e) or 'log_struct' in str(e):
-                      print('✅ Auth/logging error is expected in CI environment')
+                  print(f'❌ Models import failed: {e}')
+                  sys.exit(1)
+              
+              try:
+                  # Import server but handle cloud-specific errors gracefully
+                  import app.server as server_module
+                  print('✅ Server module import working')
+              except ImportError as e:
+                  if 'google.cloud' in str(e) or 'google.auth' in str(e):
+                      print('⚠️ Google Cloud imports unavailable in CI (expected)')
                   else:
-                      raise
+                      print(f'❌ Unexpected import error: {e}')
+                      sys.exit(1)
+              except Exception as e:
+                  # Handle authentication and logging errors
+                  error_str = str(e)
+                  if any(term in error_str for term in ['DefaultCredentialsError', 'Authentication', 'log_struct', 'google.auth']):
+                      print('⚠️ Google Cloud auth/logging unavailable in CI (expected)')
+                  else:
+                      print(f'❌ Unexpected server error: {e}')
+                      sys.exit(1)
+                      
           except Exception as e:
-              print('❌ Basic import failed:', e)
-              exit(1)
+              print(f'❌ Critical import failed: {e}')
+              sys.exit(1)
+              
           print('✅ Core imports validation passed')
           "
 
@@ -234,6 +266,9 @@ jobs:
           uv sync --dev
           
       - name: Run ${{ matrix.test-group }} tests
+        env:
+          GOOGLE_CLOUD_PROJECT: "analystai-454200"
+          CI: "true"
         run: ${{ matrix.commands }}
         
       - name: Upload test results
@@ -252,7 +287,8 @@ jobs:
   frontend-tests:
     name: Frontend Tests
     runs-on: ubuntu-latest
-    needs: smoke-tests
+    needs: [smoke-tests, detect-changes]
+    if: needs.detect-changes.outputs.frontend == 'true' || needs.detect-changes.outputs.deps == 'true'
     timeout-minutes: 8
     
     steps:
@@ -292,7 +328,12 @@ jobs:
   integration-tests:
     name: Integration Tests
     runs-on: ubuntu-latest
-    needs: [backend-tests, frontend-tests]
+    needs: [detect-changes, backend-tests, frontend-tests]
+    if: |
+      always() && 
+      (needs.backend-tests.result == 'success' || needs.backend-tests.result == 'skipped') &&
+      (needs.frontend-tests.result == 'success' || needs.frontend-tests.result == 'skipped') &&
+      (needs.detect-changes.outputs.backend == 'true' || needs.detect-changes.outputs.frontend == 'true' || needs.detect-changes.outputs.tests == 'true')
     timeout-minutes: 12
     
     steps:
@@ -332,12 +373,33 @@ jobs:
           cd frontend && npm ci --prefer-offline --no-audit
           
       - name: Start backend for testing
+        env:
+          GOOGLE_CLOUD_PROJECT: "analystai-454200"
+          CI: "true"
         run: |
+          echo "Starting backend server in CI mode..."
           uv run uvicorn app.server:app --host 0.0.0.0 --port 8000 &
-          sleep 5
-          curl -f http://localhost:8000/health || exit 1
+          BACKEND_PID=$!
+          
+          # Wait for server to start with retries
+          for i in {1..30}; do
+            if curl -s -f http://localhost:8000/health >/dev/null 2>&1; then
+              echo "✅ Backend server is ready"
+              break
+            elif [ $i -eq 30 ]; then
+              echo "❌ Backend server failed to start after 30 attempts"
+              kill $BACKEND_PID 2>/dev/null || true
+              exit 1
+            else
+              echo "⏳ Waiting for backend server... (attempt $i/30)"
+              sleep 2
+            fi
+          done
           
       - name: Run integration tests
+        env:
+          GOOGLE_CLOUD_PROJECT: "analystai-454200"
+          CI: "true"
         run: |
           uv run pytest tests/integration/ -v --tb=short
 
@@ -347,7 +409,8 @@ jobs:
   security-scan:
     name: Security Scan
     runs-on: ubuntu-latest
-    needs: smoke-tests
+    needs: [smoke-tests, detect-changes]
+    if: needs.detect-changes.outputs.backend == 'true' || needs.detect-changes.outputs.deps == 'true'
     timeout-minutes: 5
     
     steps:
@@ -369,6 +432,9 @@ jobs:
           uv sync --dev
           
       - name: Run security checks
+        env:
+          GOOGLE_CLOUD_PROJECT: "analystai-454200"
+          CI: "true"
         run: |
           uv run bandit -r app/ -f json -o bandit-report.json || true
           uv run safety check --json --output safety-report.json || true
@@ -389,26 +455,70 @@ jobs:
   ci-status:
     name: CI Status
     runs-on: ubuntu-latest
-    needs: [smoke-tests, backend-tests, frontend-tests, integration-tests, security-scan]
+    needs: [detect-changes, smoke-tests, backend-tests, frontend-tests, integration-tests, security-scan]
     if: always()
     
     steps:
       - name: Check CI status
         run: |
           echo "## CI Pipeline Results" >> $GITHUB_STEP_SUMMARY
+          echo "- **Change detection**: ${{ needs.detect-changes.result }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Smoke tests**: ${{ needs.smoke-tests.result }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Backend tests**: ${{ needs.backend-tests.result }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Frontend tests**: ${{ needs.frontend-tests.result }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Integration tests**: ${{ needs.integration-tests.result }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Security scan**: ${{ needs.security-scan.result }}" >> $GITHUB_STEP_SUMMARY
           
-          if [[ "${{ needs.smoke-tests.result }}" == "success" ]] && \
-             [[ "${{ needs.backend-tests.result }}" == "success" ]] && \
-             [[ "${{ needs.frontend-tests.result }}" == "success" ]] && \
-             [[ "${{ needs.integration-tests.result }}" == "success" ]]; then
+          # Check if change detection failed
+          if [[ "${{ needs.detect-changes.result }}" != "success" ]]; then
+            echo "❌ **Overall Status: FAILED** (Change detection failed)" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
+          
+          # Count successful and relevant jobs
+          declare -A job_results=(
+            ["smoke-tests"]="${{ needs.smoke-tests.result }}"
+            ["backend-tests"]="${{ needs.backend-tests.result }}"
+            ["frontend-tests"]="${{ needs.frontend-tests.result }}"
+            ["integration-tests"]="${{ needs.integration-tests.result }}"
+            ["security-scan"]="${{ needs.security-scan.result }}"
+          )
+          
+          failed_jobs=()
+          skipped_jobs=()
+          
+          for job in "${!job_results[@]}"; do
+            result="${job_results[$job]}"
+            case "$result" in
+              "success")
+                echo "✅ $job: SUCCESS"
+                ;;
+              "failure")
+                echo "❌ $job: FAILED"
+                failed_jobs+=("$job")
+                ;;
+              "cancelled")
+                echo "⏸️ $job: CANCELLED"
+                failed_jobs+=("$job")
+                ;;
+              "skipped")
+                echo "⏭️ $job: SKIPPED (no changes detected)"
+                skipped_jobs+=("$job")
+                ;;
+              *)
+                echo "❓ $job: UNKNOWN ($result)"
+                failed_jobs+=("$job")
+                ;;
+            esac
+          done
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [[ ${#failed_jobs[@]} -eq 0 ]]; then
             echo "✅ **Overall Status: PASSED**" >> $GITHUB_STEP_SUMMARY
+            echo "All relevant jobs completed successfully or were skipped due to no changes."
             exit 0
           else
             echo "❌ **Overall Status: FAILED**" >> $GITHUB_STEP_SUMMARY
+            echo "Failed jobs: ${failed_jobs[*]}" >> $GITHUB_STEP_SUMMARY
             exit 1
           fi

@@ -113,10 +113,11 @@ AGENT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 session_storage_bucket = f"{project_id}-vana-session-storage"
 
 # Determine session storage approach based on environment
-if os.getenv("CLOUD_RUN_SESSION_DB_PATH"):
+cloud_run_session_db_path = os.getenv("CLOUD_RUN_SESSION_DB_PATH")
+if cloud_run_session_db_path:
     # Production: Use Cloud Run persistent volume with backup/restore
     session_service_uri = setup_session_persistence_for_cloud_run(
-        project_id=project_id, session_db_path=os.getenv("CLOUD_RUN_SESSION_DB_PATH")
+        project_id=project_id, session_db_path=cloud_run_session_db_path
     )
     if hasattr(logger, "log_struct"):
         logger.log_struct(
@@ -130,9 +131,9 @@ if os.getenv("CLOUD_RUN_SESSION_DB_PATH"):
         logger.info(
             f"Using Cloud Run persistent session storage with backup/restore: {session_service_uri}"
         )
-elif os.getenv("SESSION_DB_URI"):
+elif custom_session_db_uri := os.getenv("SESSION_DB_URI"):
     # Custom database URI (e.g., Cloud SQL)
-    session_service_uri = os.getenv("SESSION_DB_URI")
+    session_service_uri = custom_session_db_uri
     if hasattr(logger, "log_struct"):
         logger.log_struct(
             {"message": "Using custom session database", "uri": session_service_uri},
@@ -142,7 +143,12 @@ elif os.getenv("SESSION_DB_URI"):
         logger.info(f"Using custom session database: {session_service_uri}")
 else:
     # Development: Use local SQLite with backup to GCS
-    local_session_db = "/tmp/vana_sessions.db"
+    # Security fix: Use more secure temp directory
+    import os
+    import tempfile
+
+    temp_dir = tempfile.gettempdir()
+    local_session_db = os.path.join(temp_dir, "vana_sessions.db")
     session_service_uri = f"sqlite:///{local_session_db}"
 
     # Ensure GCS bucket exists and try to restore from backup
@@ -459,6 +465,12 @@ async def get_agent_network_history(
 
 # Main execution
 if __name__ == "__main__":
+    # Security fix: Use more secure host binding for development
+    # In production, this should be configured through environment variables
+    import os
+
     import uvicorn
 
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    host = os.getenv("VANA_HOST", "127.0.0.1")  # Default to localhost for security
+    port = int(os.getenv("VANA_PORT", "8000"))
+    uvicorn.run(app, host=host, port=port)
