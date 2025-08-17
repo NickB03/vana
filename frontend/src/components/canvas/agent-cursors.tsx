@@ -31,6 +31,18 @@ interface CursorDecoration {
   selectionDecorationId?: string;
 }
 
+// Type-safe Monaco globals interface
+interface MonacoGlobal {
+  monaco: {
+    Range: new (
+      startLineNumber: number,
+      startColumn: number,
+      endLineNumber: number,
+      endColumn: number
+    ) => import('monaco-editor').Range;
+  };
+}
+
 export function AgentCursors({ session, editorRef, className }: AgentCursorsProps) {
   const [decorations, setDecorations] = useState<CursorDecoration[]>([]);
   const [hoveredAgent, setHoveredAgent] = useState<string | null>(null);
@@ -64,6 +76,10 @@ export function AgentCursors({ session, editorRef, className }: AgentCursorsProp
     const editor = editorRef.current;
     if (!editor) return;
 
+    // Type-safe access to Monaco global
+    const monacoGlobal = window as unknown as MonacoGlobal;
+    if (!monacoGlobal.monaco?.Range) return;
+
     // Remove existing decorations
     const existingDecorationIds = decorations.flatMap(d => [
       d.decorationId, 
@@ -87,7 +103,7 @@ export function AgentCursors({ session, editorRef, className }: AgentCursorsProp
       
       // Cursor decoration
       decorationOptions.push({
-        range: new (window as any).monaco.Range(
+        range: new monacoGlobal.monaco.Range(
           position.lineNumber, 
           position.column, 
           position.lineNumber, 
@@ -105,7 +121,7 @@ export function AgentCursors({ session, editorRef, className }: AgentCursorsProp
       // Selection decoration (if exists)
       if (selection) {
         decorationOptions.push({
-          range: new (window as any).monaco.Range(
+          range: new monacoGlobal.monaco.Range(
             selection.startLineNumber,
             selection.startColumn,
             selection.endLineNumber,

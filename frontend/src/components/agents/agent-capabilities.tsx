@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { cn } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -37,7 +37,7 @@ const CATEGORY_ICONS = {
   'problem-solving': Lightbulb,
   creativity: Brain,
   technical: Code
-};
+} as const;
 
 const CATEGORY_COLORS = {
   analysis: 'blue',
@@ -45,7 +45,7 @@ const CATEGORY_COLORS = {
   'problem-solving': 'yellow',
   creativity: 'purple',
   technical: 'red'
-};
+} as const;
 
 const SKILL_LEVEL_LABELS = {
   1: 'Novice',
@@ -53,7 +53,7 @@ const SKILL_LEVEL_LABELS = {
   3: 'Intermediate',
   4: 'Advanced',
   5: 'Expert'
-};
+} as const;
 
 const SKILL_LEVEL_COLORS = {
   1: 'gray',
@@ -61,51 +61,77 @@ const SKILL_LEVEL_COLORS = {
   3: 'green',
   4: 'orange',
   5: 'red'
-};
+} as const;
 
-export function AgentCapabilities({ 
+const AgentCapabilitiesComponent = React.memo<AgentCapabilitiesProps>(({ 
   agent,
   capabilities,
   showcase,
   showDemo = true,
   showProgress = true,
   className 
-}: AgentCapabilitiesProps) {
+}) => {
   const [selectedCapability, setSelectedCapability] = useState<AgentCapability | null>(null);
   const [activeCategory, setActiveCategory] = useState<string>('all');
 
-  // Group capabilities by category
-  const capabilitiesByCategory = capabilities.reduce((acc, capability) => {
-    if (!acc[capability.category]) {
-      acc[capability.category] = [];
-    }
-    acc[capability.category]!.push(capability);
-    return acc;
-  }, {} as Record<string, AgentCapability[]>);
+  // Memoize expensive calculations
+  const capabilitiesByCategory = useMemo(() => {
+    return capabilities.reduce((acc, capability) => {
+      if (!acc[capability.category]) {
+        acc[capability.category] = [];
+      }
+      acc[capability.category]!.push(capability);
+      return acc;
+    }, {} as Record<string, AgentCapability[]>);
+  }, [capabilities]);
 
-  // Sort capabilities within each category by level (highest first)
-  Object.values(capabilitiesByCategory).forEach(cats => {
-    cats.sort((a, b) => b.level - a.level);
-  });
+  // Memoize sorted capabilities
+  const sortedCapabilitiesByCategory = useMemo(() => {
+    const sorted = { ...capabilitiesByCategory };
+    Object.values(sorted).forEach(cats => {
+      cats.sort((a, b) => b.level - a.level);
+    });
+    return sorted;
+  }, [capabilitiesByCategory]);
 
-  const categories = Object.keys(capabilitiesByCategory);
-  const allCapabilities = capabilities.sort((a, b) => b.level - a.level);
+  const categories = useMemo(() => Object.keys(sortedCapabilitiesByCategory), [sortedCapabilitiesByCategory]);
+  const allCapabilities = useMemo(() => capabilities.sort((a, b) => b.level - a.level), [capabilities]);
 
-  // Calculate category averages
-  const categoryAverages = categories.reduce((acc, category) => {
-    const cats = capabilitiesByCategory[category];
-    if (!cats || cats.length === 0) return acc;
-    const average = cats.reduce((sum, cap) => sum + cap.level, 0) / cats.length;
-    acc[category] = average;
-    return acc;
-  }, {} as Record<string, number>);
+  // Memoize category averages calculation
+  const categoryAverages = useMemo(() => {
+    return categories.reduce((acc, category) => {
+      const cats = sortedCapabilitiesByCategory[category];
+      if (!cats || cats.length === 0) return acc;
+      const average = cats.reduce((sum, cap) => sum + cap.level, 0) / cats.length;
+      acc[category] = average;
+      return acc;
+    }, {} as Record<string, number>);
+  }, [categories, sortedCapabilitiesByCategory]);
 
-  // Overall capability score
-  const overallScore = capabilities.reduce((sum, cap) => sum + cap.level, 0) / capabilities.length;
+  // Memoize overall score calculation
+  const overallScore = useMemo(() => {
+    if (capabilities.length === 0) return 0;
+    return capabilities.reduce((sum, cap) => sum + cap.level, 0) / capabilities.length;
+  }, [capabilities]);
 
-  const filteredCapabilities = activeCategory === 'all' 
-    ? allCapabilities 
-    : capabilitiesByCategory[activeCategory] || [];
+  // Memoize filtered capabilities
+  const filteredCapabilities = useMemo(() => {
+    return activeCategory === 'all' 
+      ? allCapabilities 
+      : sortedCapabilitiesByCategory[activeCategory] || [];
+  }, [activeCategory, allCapabilities, sortedCapabilitiesByCategory]);
+
+  // Memoize expert skills count
+  const expertSkillsCount = useMemo(() => {
+    return capabilities.filter(c => c.level >= 4).length;
+  }, [capabilities]);
+
+  // Memoize growth opportunities
+  const growthOpportunities = useMemo(() => {
+    return capabilities
+      .filter(c => c.level <= 3)
+      .slice(0, 3);
+  }, [capabilities]);
 
   const handleCapabilityClick = (capability: AgentCapability) => {
     setSelectedCapability(selectedCapability?.id === capability.id ? null : capability);
@@ -159,6 +185,7 @@ export function AgentCapabilities({
               const Icon = CATEGORY_ICONS[category as keyof typeof CATEGORY_ICONS];
               const average = categoryAverages[category];
               const color = CATEGORY_COLORS[category as keyof typeof CATEGORY_COLORS];
+              const categoryCapabilities = sortedCapabilitiesByCategory[category];
               
               return (
                 <div key={category} className="flex items-center justify-between p-2 rounded bg-muted/20">
@@ -172,7 +199,7 @@ export function AgentCapabilities({
                         `border-${color}-200 text-${color}-700`
                       )}
                     >
-                      {capabilitiesByCategory[category]?.length || 0}
+                      {categoryCapabilities?.length || 0}
                     </Badge>
                   </div>
                   <div className="flex items-center gap-2">
@@ -315,7 +342,7 @@ export function AgentCapabilities({
           <div className="grid grid-cols-3 gap-3 text-center">
             <div className="p-3 bg-green-50 rounded-lg">
               <div className="text-lg font-bold text-green-700">
-                {capabilities.filter(c => c.level >= 4).length}
+                {expertSkillsCount}
               </div>
               <div className="text-xs text-green-600">Expert Skills</div>
             </div>
@@ -344,20 +371,32 @@ export function AgentCapabilities({
           </div>
           
           <div className="space-y-1">
-            {capabilities
-              .filter(c => c.level <= 3)
-              .slice(0, 3)
-              .map((capability) => (
-                <div key={capability.id} className="flex items-center justify-between text-sm p-2 bg-orange-50 rounded">
-                  <span>{capability.name}</span>
-                  <Badge variant="outline" className="text-xs">
-                    Level {capability.level} → {capability.level + 1}
-                  </Badge>
-                </div>
-              ))}
+            {growthOpportunities.map((capability) => (
+              <div key={capability.id} className="flex items-center justify-between text-sm p-2 bg-orange-50 rounded">
+                <span>{capability.name}</span>
+                <Badge variant="outline" className="text-xs">
+                  Level {capability.level} → {capability.level + 1}
+                </Badge>
+              </div>
+            ))}
           </div>
         </div>
       </CardContent>
     </Card>
   );
-}
+}, (prevProps, nextProps) => {
+  // Custom comparison for optimal re-rendering
+  return (
+    prevProps.agent.id === nextProps.agent.id &&
+    prevProps.agent.stats.success_rate === nextProps.agent.stats.success_rate &&
+    prevProps.agent.stats.tasks_completed === nextProps.agent.stats.tasks_completed &&
+    prevProps.agent.stats.collaborations === nextProps.agent.stats.collaborations &&
+    prevProps.capabilities.length === nextProps.capabilities.length &&
+    prevProps.showDemo === nextProps.showDemo &&
+    prevProps.showProgress === nextProps.showProgress
+  );
+});
+
+AgentCapabilitiesComponent.displayName = 'AgentCapabilities';
+
+export { AgentCapabilitiesComponent as AgentCapabilities };
