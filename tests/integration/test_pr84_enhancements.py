@@ -92,7 +92,7 @@ class TestPR84EnhancedFeatures(unittest.TestCase):
         sys.path.append('.')
         
         try:
-            from app.config.branch_protection import (
+            from app.configuration.branch_protection import (
                 BranchProtectionRule, ProtectionLevel, StatusCheck
             )
             
