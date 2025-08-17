@@ -18,10 +18,8 @@ Provides utilities for tracking and broadcasting agent progress updates
 through the SSE system for real-time visualization in the frontend.
 """
 
-from typing import Dict, Optional, List
-from datetime import datetime
-import asyncio
 import logging
+from datetime import datetime
 
 from app.utils.sse_broadcaster import get_sse_broadcaster
 
@@ -30,14 +28,14 @@ logger = logging.getLogger(__name__)
 
 class AgentProgressTracker:
     """Track and broadcast agent progress updates.
-    
+
     This class provides a simple interface for agents to report their progress
     during long-running operations, enabling real-time updates in the UI.
     """
-    
+
     def __init__(self, session_id: str, agent_name: str):
         """Initialize progress tracker.
-        
+
         Args:
             session_id: The session ID for SSE broadcasting
             agent_name: The name of the agent being tracked
@@ -48,16 +46,16 @@ class AgentProgressTracker:
         self.steps_completed = 0
         self.total_steps = 0
         self.current_step_name = ""
-        self.substeps: List[Dict[str, any]] = []
-        
-    async def update_progress(self, 
-                              current_step: int, 
-                              total_steps: int, 
-                              message: str = None,
-                              step_name: str = None,
-                              metadata: Dict = None):
+        self.substeps: list[dict[str, any]] = []
+
+    async def update_progress(self,
+                              current_step: int,
+                              total_steps: int,
+                              message: str | None = None,
+                              step_name: str | None = None,
+                              metadata: dict | None = None):
         """Send progress update via SSE.
-        
+
         Args:
             current_step: Current step number
             total_steps: Total number of steps
@@ -69,14 +67,14 @@ class AgentProgressTracker:
         self.total_steps = total_steps
         if step_name:
             self.current_step_name = step_name
-        
+
         progress_percent = (current_step / total_steps * 100) if total_steps > 0 else 0
         elapsed = (datetime.now() - self.start_time).total_seconds()
-        
+
         # Estimate remaining time based on progress
         estimated_total = (elapsed / progress_percent * 100) if progress_percent > 0 else 0
         estimated_remaining = max(0, estimated_total - elapsed)
-        
+
         event = {
             "type": "agent_progress",
             "data": {
@@ -92,14 +90,14 @@ class AgentProgressTracker:
                 "metadata": metadata or {}
             }
         }
-        
+
         # Broadcast the progress event
         broadcaster = get_sse_broadcaster()
         await broadcaster.broadcast_event(self.session_id, event)
-        
-    async def add_substep(self, name: str, status: str = "pending", details: str = None):
+
+    async def add_substep(self, name: str, status: str = "pending", details: str | None = None):
         """Add a substep to the current step.
-        
+
         Args:
             name: Name of the substep
             status: Status of the substep (pending, active, complete, error)
@@ -112,7 +110,7 @@ class AgentProgressTracker:
             "timestamp": datetime.now().isoformat()
         }
         self.substeps.append(substep)
-        
+
         # Broadcast substep update
         event = {
             "type": "agent_substep",
@@ -124,19 +122,19 @@ class AgentProgressTracker:
                 "timestamp": datetime.now().isoformat()
             }
         }
-        
+
         broadcaster = get_sse_broadcaster()
         await broadcaster.broadcast_event(self.session_id, event)
-        
-    async def complete(self, success: bool = True, message: str = None):
+
+    async def complete(self, success: bool = True, message: str | None = None):
         """Mark the entire process as complete.
-        
+
         Args:
             success: Whether the process completed successfully
             message: Optional completion message
         """
         elapsed = (datetime.now() - self.start_time).total_seconds()
-        
+
         event = {
             "type": "agent_progress_complete",
             "data": {
@@ -149,33 +147,33 @@ class AgentProgressTracker:
                 "timestamp": datetime.now().isoformat()
             }
         }
-        
+
         broadcaster = get_sse_broadcaster()
         await broadcaster.broadcast_event(self.session_id, event)
 
 
 def create_progress_tracker(session_id: str, agent_name: str) -> AgentProgressTracker:
     """Factory function to create a progress tracker.
-    
+
     Args:
         session_id: The session ID for SSE broadcasting
         agent_name: The name of the agent being tracked
-        
+
     Returns:
         AgentProgressTracker instance
     """
     return AgentProgressTracker(session_id, agent_name)
 
 
-async def broadcast_agent_thinking(session_id: str, 
+async def broadcast_agent_thinking(session_id: str,
                                    agent_name: str,
                                    thinking_step: str,
                                    status: str = "active"):
     """Broadcast a thinking/reasoning step for an agent.
-    
+
     This is a simplified function for quick thinking updates without
     full progress tracking.
-    
+
     Args:
         session_id: The session ID for SSE broadcasting
         agent_name: The name of the agent
@@ -192,6 +190,6 @@ async def broadcast_agent_thinking(session_id: str,
             "timestamp": datetime.now().isoformat()
         }
     }
-    
+
     broadcaster = get_sse_broadcaster()
     await broadcaster.broadcast_event(session_id, event)
