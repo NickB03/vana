@@ -73,44 +73,43 @@ run_test_suite() {
 # Function to generate comprehensive report
 generate_report() {
     local overall_result=$1
-    local report_file="$REPORTS_DIR/e2e-test-report-$(date +%Y%m%d-%H%M%S).md"
+    local report_file
+    report_file="$REPORTS_DIR/e2e-test-report-$(date +%Y%m%d-%H%M%S).md"
     
-    echo "# Vana E2E Test Report" > "$report_file"
-    echo "Generated: $(date)" >> "$report_file"
-    echo "" >> "$report_file"
-    
-    echo "## Test Summary" >> "$report_file"
-    if [ $overall_result -eq 0 ]; then
-        echo "✅ **Overall Result: PASSED**" >> "$report_file"
-    else
-        echo "❌ **Overall Result: FAILED**" >> "$report_file"
-    fi
-    echo "" >> "$report_file"
-    
-    echo "## Test Suites" >> "$report_file"
-    echo "- Authentication Flow Tests" >> "$report_file"
-    echo "- SSE Streaming Tests" >> "$report_file"
-    echo "- Responsive Design Tests" >> "$report_file"
-    echo "- Theme Switching Tests" >> "$report_file"
-    echo "- Canvas Functionality Tests" >> "$report_file"
-    echo "- API Integration Tests" >> "$report_file"
-    echo "- Error Handling & Edge Cases" >> "$report_file"
-    echo "" >> "$report_file"
-    
-    echo "## Screenshots" >> "$report_file"
-    if [ -d "$SCREENSHOTS_DIR" ]; then
-        find "$SCREENSHOTS_DIR" -name "*.png" -type f | head -20 | while read -r screenshot; do
-            echo "- $(basename "$screenshot")" >> "$report_file"
-        done
-    fi
-    echo "" >> "$report_file"
-    
-    echo "## Environment" >> "$report_file"
-    echo "- Frontend URL: $FRONTEND_URL" >> "$report_file"
-    echo "- Backend URL: $BACKEND_URL" >> "$report_file"
-    echo "- Node Version: $(node --version)" >> "$report_file"
-    echo "- Playwright Version: $(npx playwright --version)" >> "$report_file"
-    echo "" >> "$report_file"
+    {
+        echo "# Vana E2E Test Report"
+        echo "Generated: $(date)"
+        echo ""
+        echo "## Test Summary"
+        if [ "$overall_result" -eq 0 ]; then
+            echo "✅ **Overall Result: PASSED**"
+        else
+            echo "❌ **Overall Result: FAILED**"
+        fi
+        echo ""
+        echo "## Test Suites"
+        echo "- Authentication Flow Tests"
+        echo "- SSE Streaming Tests"
+        echo "- Responsive Design Tests"
+        echo "- Theme Switching Tests"
+        echo "- Canvas Functionality Tests"
+        echo "- API Integration Tests"
+        echo "- Error Handling & Edge Cases"
+        echo ""
+        echo "## Screenshots"
+        if [ -d "$SCREENSHOTS_DIR" ]; then
+            find "$SCREENSHOTS_DIR" -name "*.png" -type f | head -20 | while read -r screenshot; do
+                echo "- $(basename "$screenshot")"
+            done
+        fi
+        echo ""
+        echo "## Environment"
+        echo "- Frontend URL: $FRONTEND_URL"
+        echo "- Backend URL: $BACKEND_URL"
+        echo "- Node Version: $(node --version)"
+        echo "- Playwright Version: $(npx playwright --version)"
+        echo ""
+    } > "$report_file"
     
     echo -e "${BLUE}📄 Test report generated: $report_file${NC}"
 }
