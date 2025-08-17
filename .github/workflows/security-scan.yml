@@ -1,0 +1,103 @@
+name: Security Scan
+
+on:
+  schedule:
+    - cron: '0 2 * * 1'  # Weekly on Mondays at 2 AM
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+    paths:
+      - 'app/**'
+      - 'pyproject.toml'
+      - 'uv.lock'
+
+jobs:
+  security-scan:
+    name: Advanced Security Scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      security-events: write
+      contents: read
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install UV package manager
+        run: |
+          curl -LsSf https://astral.sh/uv/0.6.12/install.sh | sh
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+      - name: Install dependencies
+        run: |
+          uv sync --dev
+          uv add bandit[toml] safety
+
+      - name: Run comprehensive security checks
+        run: |
+          echo "::group::Bandit Security Scan"
+          uv run bandit -r app/ -f json -o bandit-report.json || true
+          uv run bandit -r app/ -ll || true
+          echo "::endgroup::"
+          
+          echo "::group::Safety Vulnerability Check"
+          uv run safety check --json --output safety-report.json || true
+          uv run safety check || true
+          echo "::endgroup::"
+          
+          echo "::group::Semgrep Security Analysis"
+          python -m pip install semgrep
+          semgrep --config=auto app/ --json --output=semgrep-report.json || true
+          echo "::endgroup::"
+
+      - name: Upload security artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: security-scan-results
+          path: |
+            bandit-report.json
+            safety-report.json
+            semgrep-report.json
+          retention-days: 30
+
+      - name: Create security summary
+        if: always()
+        run: |
+          echo "# Security Scan Summary" > security-summary.md
+          echo "Generated on: $(date)" >> security-summary.md
+          echo "" >> security-summary.md
+          
+          if [ -f bandit-report.json ]; then
+            echo "## Bandit Results" >> security-summary.md
+            echo "\`\`\`" >> security-summary.md
+            jq -r '.results[] | "File: \(.filename) | Test: \(.test_name) | Severity: \(.issue_severity)"' bandit-report.json | head -20 >> security-summary.md || echo "No security issues found" >> security-summary.md
+            echo "\`\`\`" >> security-summary.md
+          fi
+          
+          echo "## Files Scanned" >> security-summary.md
+          find app/ -name "*.py" | wc -l | xargs echo "Python files:" >> security-summary.md
+
+      - name: Comment PR with security results
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            if (fs.existsSync('security-summary.md')) {
+              const summary = fs.readFileSync('security-summary.md', 'utf8');
+              github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: `## 🔒 Security Scan Results\n\n${summary}`
+              });
+            }
