@@ -48,12 +48,14 @@ class AgentProgressTracker:
         self.current_step_name = ""
         self.substeps: list[dict[str, any]] = []
 
-    async def update_progress(self,
-                              current_step: int,
-                              total_steps: int,
-                              message: str | None = None,
-                              step_name: str | None = None,
-                              metadata: dict | None = None):
+    async def update_progress(
+        self,
+        current_step: int,
+        total_steps: int,
+        message: str | None = None,
+        step_name: str | None = None,
+        metadata: dict | None = None,
+    ):
         """Send progress update via SSE.
 
         Args:
@@ -72,7 +74,9 @@ class AgentProgressTracker:
         elapsed = (datetime.now() - self.start_time).total_seconds()
 
         # Estimate remaining time based on progress
-        estimated_total = (elapsed / progress_percent * 100) if progress_percent > 0 else 0
+        estimated_total = (
+            (elapsed / progress_percent * 100) if progress_percent > 0 else 0
+        )
         estimated_remaining = max(0, estimated_total - elapsed)
 
         event = {
@@ -87,15 +91,17 @@ class AgentProgressTracker:
                 "elapsedTime": round(elapsed, 1),
                 "estimatedRemaining": round(estimated_remaining, 1),
                 "timestamp": datetime.now().isoformat(),
-                "metadata": metadata or {}
-            }
+                "metadata": metadata or {},
+            },
         }
 
         # Broadcast the progress event
         broadcaster = get_sse_broadcaster()
         await broadcaster.broadcast_event(self.session_id, event)
 
-    async def add_substep(self, name: str, status: str = "pending", details: str | None = None):
+    async def add_substep(
+        self, name: str, status: str = "pending", details: str | None = None
+    ):
         """Add a substep to the current step.
 
         Args:
@@ -107,7 +113,7 @@ class AgentProgressTracker:
             "name": name,
             "status": status,
             "details": details,
-            "timestamp": datetime.now().isoformat()
+            "timestamp": datetime.now().isoformat(),
         }
         self.substeps.append(substep)
 
@@ -119,8 +125,8 @@ class AgentProgressTracker:
                 "currentStep": self.current_step_name,
                 "substep": substep,
                 "allSubsteps": self.substeps[-10:],  # Last 10 substeps
-                "timestamp": datetime.now().isoformat()
-            }
+                "timestamp": datetime.now().isoformat(),
+            },
         }
 
         broadcaster = get_sse_broadcaster()
@@ -144,8 +150,8 @@ class AgentProgressTracker:
                 "totalSteps": self.total_steps,
                 "stepsCompleted": self.steps_completed,
                 "totalTime": round(elapsed, 1),
-                "timestamp": datetime.now().isoformat()
-            }
+                "timestamp": datetime.now().isoformat(),
+            },
         }
 
         broadcaster = get_sse_broadcaster()
@@ -165,10 +171,9 @@ def create_progress_tracker(session_id: str, agent_name: str) -> AgentProgressTr
     return AgentProgressTracker(session_id, agent_name)
 
 
-async def broadcast_agent_thinking(session_id: str,
-                                   agent_name: str,
-                                   thinking_step: str,
-                                   status: str = "active"):
+async def broadcast_agent_thinking(
+    session_id: str, agent_name: str, thinking_step: str, status: str = "active"
+):
     """Broadcast a thinking/reasoning step for an agent.
 
     This is a simplified function for quick thinking updates without
@@ -187,8 +192,8 @@ async def broadcast_agent_thinking(session_id: str,
             "agent": agent_name,
             "action": thinking_step,
             "status": status,
-            "timestamp": datetime.now().isoformat()
-        }
+            "timestamp": datetime.now().isoformat(),
+        },
     }
 
     broadcaster = get_sse_broadcaster()

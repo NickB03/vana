@@ -39,10 +39,12 @@ class TestSSEBackendIntegration:
     async def test_sse_stream_format(self, http_client: httpx.AsyncClient):
         """Test SSE stream returns proper format"""
         try:
-            async with http_client.stream('GET', f"{BACKEND_URL}/sse/{TEST_SESSION_ID}") as response:
+            async with http_client.stream(
+                "GET", f"{BACKEND_URL}/sse/{TEST_SESSION_ID}"
+            ) as response:
                 # Should have proper SSE headers
-                assert 'text/event-stream' in response.headers.get('content-type', '')
-                assert response.headers.get('cache-control') == 'no-cache'
+                assert "text/event-stream" in response.headers.get("content-type", "")
+                assert response.headers.get("cache-control") == "no-cache"
 
                 # Try to read some data
                 chunk_count = 0
@@ -51,11 +53,11 @@ class TestSSEBackendIntegration:
                         chunk_count += 1
 
                         # SSE format should include data: prefix
-                        if chunk.startswith('data:'):
+                        if chunk.startswith("data:"):
                             try:
                                 # Try to parse JSON data
                                 data_part = chunk[5:].strip()  # Remove 'data:' prefix
-                                if data_part and data_part != '[DONE]':
+                                if data_part and data_part != "[DONE]":
                                     json.loads(data_part)
                             except json.JSONDecodeError:
                                 # Non-JSON data is also valid for SSE
@@ -77,22 +79,23 @@ class TestSSEBackendIntegration:
         # First create a session
         session_data = {
             "name": f"Test Session {int(time.time())}",
-            "description": "E2E test session"
+            "description": "E2E test session",
         }
 
         try:
             session_response = await http_client.post(
-                f"{BACKEND_URL}/sessions",
-                json=session_data
+                f"{BACKEND_URL}/sessions", json=session_data
             )
 
             if session_response.status_code in [200, 201]:
                 session = session_response.json()
-                session_id = session.get('id') or session.get('session_id')
+                session_id = session.get("id") or session.get("session_id")
 
                 if session_id:
                     # Test SSE with real session
-                    sse_response = await http_client.get(f"{BACKEND_URL}/sse/{session_id}")
+                    sse_response = await http_client.get(
+                        f"{BACKEND_URL}/sse/{session_id}"
+                    )
                     assert sse_response.status_code in [200, 401, 403]
 
         except httpx.ConnectError:
@@ -107,7 +110,7 @@ class TestSSEBackendIntegration:
             "../../etc/passwd",
             "<script>alert('xss')</script>",
             "session with spaces",
-            "session/with/slashes"
+            "session/with/slashes",
         ]
 
         for session_id in invalid_sessions:
@@ -123,9 +126,12 @@ class TestSSEBackendIntegration:
     @pytest.mark.asyncio
     async def test_sse_concurrent_connections(self, http_client: httpx.AsyncClient):
         """Test SSE handles multiple concurrent connections"""
+
         async def connect_sse(session_id: str):
             try:
-                async with http_client.stream('GET', f"{BACKEND_URL}/sse/{session_id}") as response:
+                async with http_client.stream(
+                    "GET", f"{BACKEND_URL}/sse/{session_id}"
+                ) as response:
                     if response.status_code == 200:
                         # Read a few chunks
                         chunk_count = 0
@@ -138,10 +144,7 @@ class TestSSEBackendIntegration:
                 return 500
 
         # Create multiple concurrent connections
-        tasks = [
-            connect_sse(f"{TEST_SESSION_ID}-{i}")
-            for i in range(5)
-        ]
+        tasks = [connect_sse(f"{TEST_SESSION_ID}-{i}") for i in range(5)]
 
         try:
             results = await asyncio.gather(*tasks, return_exceptions=True)
@@ -165,8 +168,7 @@ class TestSSEBackendIntegration:
             # Test with mock authentication header
             headers = {"Authorization": "Bearer mock-token"}
             auth_response = await http_client.get(
-                f"{BACKEND_URL}/sse/{TEST_SESSION_ID}",
-                headers=headers
+                f"{BACKEND_URL}/sse/{TEST_SESSION_ID}", headers=headers
             )
 
             # Should handle authentication attempt
@@ -182,8 +184,8 @@ class TestSSEBackendIntegration:
             health_data = health_response.json()
 
             # Health check should include service status
-            assert health_data.get('status') == 'healthy'
-            assert health_data.get('service') == 'vana'
+            assert health_data.get("status") == "healthy"
+            assert health_data.get("service") == "vana"
 
         except httpx.ConnectError:
             pytest.skip("Backend not running")
@@ -195,7 +197,7 @@ class TestSSEBackendIntegration:
             # Test auth endpoints
             auth_response = await http_client.post(
                 f"{BACKEND_URL}/auth/login",
-                json={"email": "test@example.com", "password": "testpass"}
+                json={"email": "test@example.com", "password": "testpass"},
             )
 
             # Should return proper response (may be 401 for invalid creds)

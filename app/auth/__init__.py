@@ -19,5 +19,5 @@ __all__ = [
     "create_tables",
     "get_auth_db",
     "get_current_active_user",
-    "get_current_user"
+    "get_current_user",
 ]
