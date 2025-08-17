@@ -18,6 +18,7 @@ logger = logging.getLogger(__name__)
 
 class Environment(Enum):
     """Environment types."""
+
     DEVELOPMENT = "development"
     TESTING = "testing"
     STAGING = "staging"
@@ -26,6 +27,7 @@ class Environment(Enum):
 
 class ConfigScope(Enum):
     """Configuration scope levels."""
+
     GLOBAL = "global"
     ENVIRONMENT = "environment"
     SERVICE = "service"
@@ -35,6 +37,7 @@ class ConfigScope(Enum):
 @dataclass
 class ConfigValue:
     """Configuration value with metadata."""
+
     key: str
     value: Any
     scope: ConfigScope
@@ -54,10 +57,13 @@ class ConfigValue:
 
         if self.validation_pattern and self.value:
             import re
+
             try:
                 return bool(re.match(self.validation_pattern, str(self.value)))
             except re.error:
-                logger.warning(f"Invalid regex pattern for {self.key}: {self.validation_pattern}")
+                logger.warning(
+                    f"Invalid regex pattern for {self.key}: {self.validation_pattern}"
+                )
                 return True
 
         return True
@@ -118,7 +124,7 @@ class EnvironmentConfig(BaseSettings):
         env_file_encoding = "utf-8"
         case_sensitive = False
 
-    @validator('environment', pre=True)
+    @validator("environment", pre=True)
     def validate_environment(cls, v):
         """Validate environment value."""
         if isinstance(v, str):
@@ -128,17 +134,17 @@ class EnvironmentConfig(BaseSettings):
                 return Environment.DEVELOPMENT
         return v
 
-    @validator('log_level')
+    @validator("log_level")
     def validate_log_level(cls, v):
         """Validate log level."""
-        valid_levels = ['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL']
-        return v.upper() if v.upper() in valid_levels else 'INFO'
+        valid_levels = ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
+        return v.upper() if v.upper() in valid_levels else "INFO"
 
-    @validator('app_port', 'metrics_port')
+    @validator("app_port", "metrics_port")
     def validate_port(cls, v):
         """Validate port numbers."""
         if not (1 <= v <= 65535):
-            raise ValueError('Port must be between 1 and 65535')
+            raise ValueError("Port must be between 1 and 65535")
         return v
 
     def is_production(self) -> bool:
@@ -157,7 +163,9 @@ class EnvironmentConfig(BaseSettings):
 class EnvironmentManager:
     """Advanced environment configuration manager."""
 
-    def __init__(self, config_dir: str = "config", environments_file: str = "environments.yaml"):
+    def __init__(
+        self, config_dir: str = "config", environments_file: str = "environments.yaml"
+    ):
         self.config_dir = Path(config_dir)
         self.config_dir.mkdir(parents=True, exist_ok=True)
 
@@ -180,17 +188,19 @@ class EnvironmentManager:
 
         return self.configurations[env]
 
-    def set_config_value(self, key: str, value: Any, scope: ConfigScope = ConfigScope.ENVIRONMENT,
-                        environment: Environment | None = None, **kwargs) -> None:
+    def set_config_value(
+        self,
+        key: str,
+        value: Any,
+        scope: ConfigScope = ConfigScope.ENVIRONMENT,
+        environment: Environment | None = None,
+        **kwargs,
+    ) -> None:
         """Set a configuration value."""
         env = environment or self.current_environment
 
         config_value = ConfigValue(
-            key=key,
-            value=value,
-            scope=scope,
-            environment=env,
-            **kwargs
+            key=key, value=value, scope=scope, environment=env, **kwargs
         )
 
         # Validate the value
@@ -205,8 +215,9 @@ class EnvironmentManager:
             if hasattr(config, key):
                 setattr(config, key, value)
 
-    def get_config_value(self, key: str, environment: Environment | None = None,
-                        default: Any = None) -> Any:
+    def get_config_value(
+        self, key: str, environment: Environment | None = None, default: Any = None
+    ) -> Any:
         """Get a configuration value."""
         env = environment or self.current_environment
 
@@ -227,8 +238,9 @@ class EnvironmentManager:
 
         return default
 
-    def load_from_file(self, file_path: str, environment: Environment,
-                      format: str = "auto") -> None:
+    def load_from_file(
+        self, file_path: str, environment: Environment, format: str = "auto"
+    ) -> None:
         """Load configuration from file."""
         file_path = Path(file_path)
 
@@ -238,13 +250,13 @@ class EnvironmentManager:
 
         # Detect format if auto
         if format == "auto":
-            format = file_path.suffix.lower().lstrip('.')
+            format = file_path.suffix.lower().lstrip(".")
 
         try:
             with open(file_path) as f:
-                if format in ['yaml', 'yml']:
+                if format in ["yaml", "yml"]:
                     data = yaml.safe_load(f)
-                elif format == 'json':
+                elif format == "json":
                     data = json.load(f)
                 else:
                     logger.error(f"Unsupported format: {format}")
@@ -256,7 +268,7 @@ class EnvironmentManager:
                     key=key,
                     value=value,
                     environment=environment,
-                    source=f"file:{file_path}"
+                    source=f"file:{file_path}",
                 )
 
             logger.info(f"Loaded configuration from {file_path}")
@@ -264,14 +276,20 @@ class EnvironmentManager:
         except Exception as e:
             logger.error(f"Failed to load configuration from {file_path}: {e}")
 
-    def save_to_file(self, file_path: str, environment: Environment,
-                    format: str = "yaml", include_sensitive: bool = False) -> None:
+    def save_to_file(
+        self,
+        file_path: str,
+        environment: Environment,
+        format: str = "yaml",
+        include_sensitive: bool = False,
+    ) -> None:
         """Save configuration to file."""
         config = self.get_config(environment)
 
         # Get all config values for this environment
         env_values = {
-            cv.key: cv.value for cv in self.config_values.values()
+            cv.key: cv.value
+            for cv in self.config_values.values()
             if cv.environment == environment and (include_sensitive or not cv.sensitive)
         }
 
@@ -280,10 +298,10 @@ class EnvironmentManager:
         config_dict.update(env_values)
 
         try:
-            with open(file_path, 'w') as f:
-                if format in ['yaml', 'yml']:
+            with open(file_path, "w") as f:
+                if format in ["yaml", "yml"]:
                     yaml.dump(config_dict, f, default_flow_style=False)
-                elif format == 'json':
+                elif format == "json":
                     json.dump(config_dict, f, indent=2, default=str)
 
             logger.info(f"Saved configuration to {file_path}")
@@ -295,7 +313,7 @@ class EnvironmentManager:
         """Load configuration from environment variables."""
         for key, value in os.environ.items():
             if key.startswith(prefix):
-                config_key = key[len(prefix):].lower()
+                config_key = key[len(prefix) :].lower()
 
                 # Try to parse value as JSON for complex types
                 parsed_value = value
@@ -309,10 +327,12 @@ class EnvironmentManager:
                     key=config_key,
                     value=parsed_value,
                     scope=ConfigScope.ENVIRONMENT,
-                    source=f"env_var:{key}"
+                    source=f"env_var:{key}",
                 )
 
-    def validate_configuration(self, environment: Environment | None = None) -> list[str]:
+    def validate_configuration(
+        self, environment: Environment | None = None
+    ) -> list[str]:
         """Validate configuration and return issues."""
         env = environment or self.current_environment
         issues = []
@@ -322,9 +342,7 @@ class EnvironmentManager:
         # Validate required values
         required_fields = []
         if config.is_production():
-            required_fields.extend([
-                'secret_key', 'database_url'
-            ])
+            required_fields.extend(["secret_key", "database_url"])
 
         for field in required_fields:
             value = getattr(config, field, None)
@@ -340,13 +358,14 @@ class EnvironmentManager:
         if config.is_production():
             if config.debug:
                 issues.append("Debug mode should be disabled in production")
-            if 'default' in config.secret_key or len(config.secret_key) < 32:
+            if "default" in config.secret_key or len(config.secret_key) < 32:
                 issues.append("Weak secret key in production")
 
         return issues
 
-    def create_environment_template(self, environment: Environment,
-                                  template_file: str) -> None:
+    def create_environment_template(
+        self, environment: Environment, template_file: str
+    ) -> None:
         """Create environment configuration template."""
         config = self.get_config(environment)
         template_data = {}
@@ -354,18 +373,21 @@ class EnvironmentManager:
         # Add all config fields with descriptions
         for field_name, field in config.__fields__.items():
             template_data[field_name] = {
-                'value': getattr(config, field_name),
-                'description': field.field_info.description or f"Configuration for {field_name}",
-                'required': field.required,
-                'type': str(field.type_)
+                "value": getattr(config, field_name),
+                "description": field.field_info.description
+                or f"Configuration for {field_name}",
+                "required": field.required,
+                "type": str(field.type_),
             }
 
-        with open(template_file, 'w') as f:
+        with open(template_file, "w") as f:
             yaml.dump(template_data, f, default_flow_style=False)
 
         logger.info(f"Created environment template: {template_file}")
 
-    def compare_environments(self, env1: Environment, env2: Environment) -> dict[str, Any]:
+    def compare_environments(
+        self, env1: Environment, env2: Environment
+    ) -> dict[str, Any]:
         """Compare configurations between two environments."""
         config1 = self.get_config(env1)
         config2 = self.get_config(env2)
@@ -378,10 +400,7 @@ class EnvironmentManager:
             val2 = getattr(config2, field, None)
 
             if val1 != val2:
-                differences[field] = {
-                    env1.value: val1,
-                    env2.value: val2
-                }
+                differences[field] = {env1.value: val1, env2.value: val2}
 
         return differences
 
@@ -391,18 +410,21 @@ class EnvironmentManager:
             "current_environment": self.current_environment.value,
             "environments": {
                 env.value: {
-                    "config_values": len([
-                        cv for cv in self.config_values.values()
-                        if cv.environment == env
-                    ]),
-                    "is_valid": len(self.validate_configuration(env)) == 0
+                    "config_values": len(
+                        [
+                            cv
+                            for cv in self.config_values.values()
+                            if cv.environment == env
+                        ]
+                    ),
+                    "is_valid": len(self.validate_configuration(env)) == 0,
                 }
                 for env in Environment
             },
             "total_config_values": len(self.config_values),
-            "sensitive_values": len([
-                cv for cv in self.config_values.values() if cv.sensitive
-            ])
+            "sensitive_values": len(
+                [cv for cv in self.config_values.values() if cv.sensitive]
+            ),
         }
 
     def _load_environment_configs(self) -> None:
@@ -427,7 +449,7 @@ class EnvironmentManager:
 
     def _detect_current_environment(self) -> None:
         """Detect current environment from environment variables."""
-        env_name = os.environ.get('ENVIRONMENT', os.environ.get('ENV', 'development'))
+        env_name = os.environ.get("ENVIRONMENT", os.environ.get("ENV", "development"))
 
         try:
             self.current_environment = Environment(env_name.lower())
@@ -442,7 +464,7 @@ class EnvironmentManager:
             data[env.value] = config.dict()
 
         try:
-            with open(self.environments_file, 'w') as f:
+            with open(self.environments_file, "w") as f:
                 yaml.dump(data, f, default_flow_style=False)
         except Exception as e:
             logger.error(f"Failed to save environments file: {e}")

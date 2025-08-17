@@ -19,6 +19,7 @@ from app.config import get_config
 @dataclass
 class User:
     """Test user class."""
+
     id: str
     email: str
     display_name: str
@@ -27,6 +28,7 @@ class User:
 @dataclass
 class Session:
     """Test session class."""
+
     id: str
     user_id: str
     created_at: float

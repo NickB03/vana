@@ -19,6 +19,7 @@ logger = logging.getLogger(__name__)
 
 class CacheStrategy(Enum):
     """Cache strategies for different use cases."""
+
     LRU = "lru"  # Least Recently Used
     TTL = "ttl"  # Time To Live
     ADAPTIVE = "adaptive"  # Adaptive based on access patterns
@@ -29,6 +30,7 @@ class CacheStrategy(Enum):
 @dataclass
 class CacheMetrics:
     """Cache performance metrics."""
+
     hits: int = 0
     misses: int = 0
     evictions: int = 0
@@ -52,6 +54,7 @@ class CacheMetrics:
 @dataclass
 class CacheEntry:
     """Cache entry with metadata."""
+
     key: str
     value: Any
     created_at: datetime
@@ -83,7 +86,7 @@ class CacheOptimizer:
         strategy: CacheStrategy = CacheStrategy.ADAPTIVE,
         redis_url: str | None = None,
         enable_compression: bool = False,
-        compression_threshold: int = 1024
+        compression_threshold: int = 1024,
     ):
         self.max_size = max_size
         self.default_ttl = default_ttl
@@ -183,8 +186,13 @@ class CacheOptimizer:
             self.metrics.misses += 1
             return default
 
-    async def set(self, key: str, value: Any, ttl: float | None = None,
-                 tags: set[str] | None = None) -> None:
+    async def set(
+        self,
+        key: str,
+        value: Any,
+        ttl: float | None = None,
+        tags: set[str] | None = None,
+    ) -> None:
         """Set a value in cache with optimization."""
         try:
             ttl = ttl or self.default_ttl
@@ -201,7 +209,7 @@ class CacheOptimizer:
                 last_accessed=datetime.now(timezone.utc),
                 size_bytes=size_bytes,
                 ttl=ttl,
-                tags=tags
+                tags=tags,
             )
 
             # Check if we need to evict entries
@@ -214,11 +222,7 @@ class CacheOptimizer:
 
             # Store in Redis if available
             if self.redis:
-                await self.redis.setex(
-                    key,
-                    int(ttl),
-                    serialized_value
-                )
+                await self.redis.setex(key, int(ttl), serialized_value)
 
             # Update optimization data
             self._update_key_priority(key)
@@ -246,7 +250,9 @@ class CacheOptimizer:
             logger.error(f"Error deleting cache key {key}: {e}")
             return False
 
-    async def clear(self, pattern: str | None = None, tags: builtins.set[str] | None = None) -> int:
+    async def clear(
+        self, pattern: str | None = None, tags: builtins.set[str] | None = None
+    ) -> int:
         """Clear cache entries matching pattern or tags."""
         try:
             deleted_count = 0
@@ -254,10 +260,14 @@ class CacheOptimizer:
 
             if pattern:
                 import fnmatch
-                keys_to_delete = [k for k in self.cache.keys() if fnmatch.fnmatch(k, pattern)]
+
+                keys_to_delete = [
+                    k for k in self.cache.keys() if fnmatch.fnmatch(k, pattern)
+                ]
             elif tags:
                 keys_to_delete = [
-                    k for k, entry in self.cache.items()
+                    k
+                    for k, entry in self.cache.items()
                     if entry.tags.intersection(tags)
                 ]
             else:
@@ -276,7 +286,9 @@ class CacheOptimizer:
     async def get_metrics(self) -> CacheMetrics:
         """Get current cache metrics."""
         self.metrics.calculate_hit_rate()
-        self.metrics.memory_usage = sum(entry.size_bytes for entry in self.cache.values())
+        self.metrics.memory_usage = sum(
+            entry.size_bytes for entry in self.cache.values()
+        )
         self.metrics.entry_count = len(self.cache)
 
         # Identify hot and cold keys
@@ -310,7 +322,7 @@ class CacheOptimizer:
             "ttl_optimization": ttl_optimization,
             "preload_results": preload_results,
             "eviction_results": eviction_results,
-            "metrics": await self.get_metrics()
+            "metrics": await self.get_metrics(),
         }
 
         self.optimization_history.append(results)
@@ -341,6 +353,7 @@ class CacheOptimizer:
 
             if self.enable_compression and len(serialized) > self.compression_threshold:
                 import gzip
+
                 serialized = gzip.compress(serialized)
 
             return serialized, len(serialized)
@@ -356,6 +369,7 @@ class CacheOptimizer:
             if self.enable_compression:
                 try:
                     import gzip
+
                     data = gzip.decompress(data)
                 except:
                     pass  # Not compressed
@@ -387,10 +401,7 @@ class CacheOptimizer:
 
     async def _evict_expired(self) -> None:
         """Evict expired entries."""
-        expired_keys = [
-            key for key, entry in self.cache.items()
-            if entry.is_expired()
-        ]
+        expired_keys = [key for key, entry in self.cache.items() if entry.is_expired()]
 
         for key in expired_keys:
             await self._evict_key(key)
@@ -444,9 +455,7 @@ class CacheOptimizer:
 
         # Keep only recent accesses (last hour)
         cutoff = timestamp - 3600
-        self.access_patterns[key] = [
-            t for t in self.access_patterns[key] if t > cutoff
-        ]
+        self.access_patterns[key] = [t for t in self.access_patterns[key] if t > cutoff]
 
     def _update_avg_access_time(self, access_time: float) -> None:
         """Update average access time."""
@@ -485,9 +494,7 @@ class CacheOptimizer:
             return
 
         sorted_keys = sorted(
-            self.key_priorities.items(),
-            key=lambda x: x[1],
-            reverse=True
+            self.key_priorities.items(), key=lambda x: x[1], reverse=True
         )
 
         hot_threshold = 0.7
@@ -507,7 +514,7 @@ class CacheOptimizer:
             "total_keys": len(self.access_patterns),
             "hot_keys_count": len(self.metrics.hot_keys),
             "cold_keys_count": len(self.metrics.cold_keys),
-            "access_distribution": {}
+            "access_distribution": {},
         }
 
         # Analyze access frequency distribution
@@ -523,7 +530,7 @@ class CacheOptimizer:
                 "max": max(frequencies),
                 "avg": sum(frequencies) / len(frequencies),
                 "p50": sorted(frequencies)[len(frequencies) // 2],
-                "p95": sorted(frequencies)[int(len(frequencies) * 0.95)]
+                "p95": sorted(frequencies)[int(len(frequencies) * 0.95)],
             }
 
         return patterns
@@ -548,7 +555,7 @@ class CacheOptimizer:
             "current_size": current_size,
             "current_memory": memory_usage,
             "optimal_size": optimal_size,
-            "size_adjustment": optimal_size - self.max_size
+            "size_adjustment": optimal_size - self.max_size,
         }
 
     def _optimize_ttl_values(self) -> dict[str, Any]:
@@ -560,7 +567,7 @@ class CacheOptimizer:
                 continue
 
             # Calculate access interval
-            intervals = [accesses[i] - accesses[i-1] for i in range(1, len(accesses))]
+            intervals = [accesses[i] - accesses[i - 1] for i in range(1, len(accesses))]
             avg_interval = sum(intervals) / len(intervals)
 
             # Recommend TTL as 2x average access interval
@@ -573,8 +580,9 @@ class CacheOptimizer:
 
         return {
             "total_keys_analyzed": len(ttl_recommendations),
-            "avg_recommended_ttl": sum(ttl_recommendations.values()) / max(1, len(ttl_recommendations)),
-            "recommendations": ttl_recommendations
+            "avg_recommended_ttl": sum(ttl_recommendations.values())
+            / max(1, len(ttl_recommendations)),
+            "recommendations": ttl_recommendations,
         }
 
     async def _preload_hot_data(self) -> dict[str, Any]:
@@ -591,7 +599,7 @@ class CacheOptimizer:
 
         return {
             "preloaded_count": preloaded,
-            "hot_keys_count": len(self.metrics.hot_keys)
+            "hot_keys_count": len(self.metrics.hot_keys),
         }
 
     async def _evict_cold_data(self) -> dict[str, Any]:
@@ -605,7 +613,7 @@ class CacheOptimizer:
 
         return {
             "evicted_count": evicted,
-            "cold_keys_count": len(self.metrics.cold_keys)
+            "cold_keys_count": len(self.metrics.cold_keys),
         }
 
     async def _cleanup_loop(self) -> None:
