@@ -14,10 +14,8 @@
 
 import os
 from dataclasses import dataclass, field
-from typing import Union
 
 import google.auth
-from google.adk.models.lite_llm import LiteLlm
 
 from app.models import CRITIC_MODEL, WORKER_MODEL, ModelType
 

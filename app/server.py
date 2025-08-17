@@ -12,16 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import asyncio
+import json
 import os
 from datetime import datetime
-import json
-import asyncio
-from typing import Optional
 
 import google.auth
-from fastapi import FastAPI, Depends
+from fastapi import Depends, FastAPI
 from fastapi.responses import StreamingResponse
 from google.adk.cli.fast_api import get_fast_api_app
+
 # Only import cloud logging if we have a real project
 try:
     from google.cloud import logging as google_cloud_logging
@@ -32,15 +32,17 @@ from opentelemetry import trace
 from opentelemetry.sdk.trace import TracerProvider, export
 
 from app.utils.gcs import create_bucket_if_not_exists
-from app.utils.tracing import CloudTraceLoggingSpanExporter
-from app.utils.typing import Feedback
-from app.utils.sse_broadcaster import agent_network_event_stream, get_agent_network_event_history, get_sse_broadcaster
 from app.utils.session_backup import (
-    backup_session_db_to_gcs, 
+    create_periodic_backup_job,
     restore_session_db_from_gcs,
     setup_session_persistence_for_cloud_run,
-    create_periodic_backup_job
 )
+from app.utils.sse_broadcaster import (
+    get_agent_network_event_history,
+    get_sse_broadcaster,
+)
+from app.utils.tracing import CloudTraceLoggingSpanExporter
+from app.utils.typing import Feedback
 
 # Get the project ID from Google Cloud authentication
 try:
@@ -132,15 +134,15 @@ else:
     # Development: Use local SQLite with backup to GCS
     local_session_db = "/tmp/vana_sessions.db"
     session_service_uri = f"sqlite:///{local_session_db}"
-    
+
     # Ensure GCS bucket exists and try to restore from backup
     try:
         create_bucket_if_not_exists(
-            bucket_name=session_storage_bucket, 
-            project=project_id, 
+            bucket_name=session_storage_bucket,
+            project=project_id,
             location="us-central1"
         )
-        
+
         # Try to restore from latest backup if database doesn't exist
         if not os.path.exists(local_session_db):
             restore_session_db_from_gcs(
@@ -148,7 +150,7 @@ else:
                 bucket_name=session_storage_bucket,
                 project_id=project_id
             )
-        
+
         # Start periodic backup (every 6 hours)
         create_periodic_backup_job(
             local_db_path=local_session_db,
@@ -156,7 +158,7 @@ else:
             project_id=project_id,
             interval_hours=6
         )
-        
+
         if hasattr(logger, 'log_struct'):
             logger.log_struct({
                 "message": "Session storage configured with local SQLite, GCS backup, and periodic backups",
@@ -177,17 +179,17 @@ else:
             logger.warning(f"Failed to configure session backup, using local-only sessions: {e}")
 
 # Initialize authentication database
-from app.auth.database import init_auth_db
-from app.auth.routes import auth_router, users_router, admin_router
-from app.auth.middleware import (
-    SecurityHeadersMiddleware, 
-    RateLimitMiddleware,
-    AuditLogMiddleware,
-    CORSMiddleware
-)
-from app.auth.security import get_current_active_user, get_current_user_for_sse
-from app.auth.models import User
 from app.auth.config import get_auth_settings
+from app.auth.database import init_auth_db
+from app.auth.middleware import (
+    AuditLogMiddleware,
+    CORSMiddleware,
+    RateLimitMiddleware,
+    SecurityHeadersMiddleware,
+)
+from app.auth.models import User
+from app.auth.routes import admin_router, auth_router, users_router
+from app.auth.security import get_current_active_user, get_current_user_for_sse
 
 # Initialize auth database
 try:
@@ -221,7 +223,7 @@ app.add_middleware(AuditLogMiddleware)
 @app.get("/health")
 async def health_check():
     """Health check endpoint for service validation.
-    
+
     Returns:
         Health status with timestamp and service information
     """
@@ -238,7 +240,7 @@ async def health_check():
 
 @app.post("/feedback")
 def collect_feedback(
-    feedback: Feedback, 
+    feedback: Feedback,
     current_user: User = Depends(get_current_active_user)
 ) -> dict[str, str]:
     """Collect and log feedback.
@@ -253,7 +255,7 @@ def collect_feedback(
     feedback_data = feedback.model_dump()
     feedback_data["user_id"] = current_user.id
     feedback_data["user_email"] = current_user.email
-    
+
     if hasattr(logger, 'log_struct'):
         logger.log_struct(feedback_data, severity="INFO")
     else:
@@ -263,26 +265,26 @@ def collect_feedback(
 
 @app.get("/agent_network_sse/{session_id}")
 async def agent_network_sse(
-    session_id: str, 
-    current_user: Optional[User] = Depends(get_current_user_for_sse)
+    session_id: str,
+    current_user: User | None = Depends(get_current_user_for_sse)
 ) -> StreamingResponse:
     """Enhanced SSE endpoint for agent network events with optional authentication.
-    
+
     This endpoint streams real-time agent network events including:
-    - Agent start/completion events  
+    - Agent start/completion events
     - Network topology changes
     - Performance metrics updates
     - Relationship and data flow tracking
     - Heartbeat/keepalive messages
-    
+
     Authentication behavior depends on REQUIRE_SSE_AUTH environment variable:
     - True (production): Requires valid JWT token
     - False (demo): Optional authentication, logs access regardless
-    
+
     Args:
         session_id: The session ID to stream events for
         current_user: Optional authenticated user (required in production mode)
-        
+
     Returns:
         StreamingResponse with text/event-stream media type
     """
@@ -290,7 +292,7 @@ async def agent_network_sse(
         """Generate SSE events for the session."""
         broadcaster = get_sse_broadcaster()
         queue = await broadcaster.add_subscriber(session_id)
-        
+
         try:
             # Log SSE access for audit trail
             auth_settings = get_auth_settings()
@@ -303,7 +305,7 @@ async def agent_network_sse(
                 "timestamp": datetime.now().isoformat(),
                 "access_type": "sse_connection"
             }
-            
+
             if hasattr(logger, 'log_struct'):
                 logger.log_struct({
                     "message": "SSE connection established",
@@ -311,18 +313,18 @@ async def agent_network_sse(
                 }, severity="INFO")
             else:
                 logger.info(f"SSE connection established: {user_info}")
-            
+
             # Send initial connection event with user context
             connection_data = {
-                'type': 'connection', 
-                'status': 'connected', 
-                'sessionId': session_id, 
+                'type': 'connection',
+                'status': 'connected',
+                'sessionId': session_id,
                 'timestamp': datetime.now().isoformat(),
                 'authenticated': current_user is not None,
                 'userId': current_user.id if current_user else None
             }
             yield f"data: {json.dumps(connection_data)}\n\n"
-            
+
             while True:
                 try:
                     # Wait for events with timeout to send heartbeat
@@ -331,11 +333,11 @@ async def agent_network_sse(
                         yield event
                     else:
                         yield event.to_sse_format() if hasattr(event, 'to_sse_format') else str(event)
-                        
+
                 except asyncio.TimeoutError:
                     # Send heartbeat to keep connection alive
                     yield f"data: {json.dumps({'type': 'heartbeat', 'timestamp': datetime.now().isoformat()})}\n\n"
-                    
+
         except asyncio.CancelledError:
             logger.info(f"SSE connection cancelled for session {session_id}, user: {current_user.id if current_user else 'anonymous'}")
         except Exception as e:
@@ -346,16 +348,16 @@ async def agent_network_sse(
                 "error": str(e),
                 "timestamp": datetime.now().isoformat()
             }
-            
+
             if hasattr(logger, 'log_struct'):
                 logger.log_struct(error_info, severity="ERROR")
             else:
                 logger.error(f"Error in SSE stream: {error_info}")
-            
+
             yield f"data: {json.dumps({'type': 'error', 'message': str(e), 'timestamp': datetime.now().isoformat()})}\n\n"
         finally:
             await broadcaster.remove_subscriber(session_id, queue)
-            
+
             # Log disconnection
             disconnect_info = {
                 "message": "SSE connection closed",
@@ -363,14 +365,14 @@ async def agent_network_sse(
                 "user_id": current_user.id if current_user else None,
                 "timestamp": datetime.now().isoformat()
             }
-            
+
             if hasattr(logger, 'log_struct'):
                 logger.log_struct(disconnect_info, severity="INFO")
             else:
                 logger.info(f"SSE connection closed: {disconnect_info}")
-            
+
             yield f"data: {json.dumps({'type': 'connection', 'status': 'disconnected', 'sessionId': session_id, 'timestamp': datetime.now().isoformat()})}\n\n"
-    
+
     return StreamingResponse(
         event_generator(),
         media_type="text/event-stream",
@@ -386,23 +388,23 @@ async def agent_network_sse(
 
 @app.get("/agent_network_history")
 async def get_agent_network_history(
-    limit: int = 50, 
-    current_user: Optional[User] = Depends(get_current_user_for_sse)
+    limit: int = 50,
+    current_user: User | None = Depends(get_current_user_for_sse)
 ):
     """Get recent agent network event history with optional authentication.
-    
+
     Authentication behavior depends on REQUIRE_SSE_AUTH environment variable:
     - True (production): Requires valid JWT token
     - False (demo): Optional authentication, logs access regardless
-    
+
     Args:
         limit: Maximum number of events to return (default: 50)
         current_user: Optional authenticated user (required in production mode)
-        
+
     Returns:
         JSON array of recent agent network events
     """
-    
+
     # Log history access for audit trail
     auth_settings = get_auth_settings()
     access_info = {
@@ -415,13 +417,13 @@ async def get_agent_network_history(
         "timestamp": datetime.now().isoformat(),
         "access_type": "history_request"
     }
-    
+
     if hasattr(logger, 'log_struct'):
         logger.log_struct(access_info, severity="INFO")
     else:
         logger.info(f"Agent network history accessed: {access_info}")
     history = get_agent_network_event_history(limit)
-    
+
     # Add user context to response if available
     return {
         "events": history,
