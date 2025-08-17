@@ -1,0 +1,637 @@
+name: Automated Code Fixes
+
+on:
+  workflow_run:
+    workflows: ["Hook System Validation CI/CD", "Security Hardening & Branch Protection"]
+    types:
+      - completed
+  issue_comment:
+    types: [created]
+  workflow_dispatch:
+    inputs:
+      fix_type:
+        description: 'Type of fixes to apply'
+        required: true
+        default: 'all'
+        type: choice
+        options:
+          - 'all'
+          - 'formatting'
+          - 'security'
+          - 'lint'
+          - 'performance'
+      auto_commit:
+        description: 'Automatically commit fixes'
+        required: false
+        default: false
+        type: boolean
+
+env:
+  NODE_VERSION: '18'
+  PYTHON_VERSION: '3.11'
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+  checks: read
+
+jobs:
+  # =====================================
+  # Check if Automated Fixes Requested
+  # =====================================
+  check-fix-request:
+    name: Check Fix Request
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      should-run: ${{ steps.check.outputs.should_run }}
+      fix-type: ${{ steps.check.outputs.fix_type }}
+      pr-number: ${{ steps.check.outputs.pr_number }}
+    
+    steps:
+      - name: Check Fix Request
+        id: check
+        run: |
+          should_run="false"
+          fix_type="all"
+          pr_number=""
+          
+          # Check if triggered by workflow_dispatch
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            should_run="true"
+            fix_type="${{ github.event.inputs.fix_type }}"
+            echo "Triggered by manual workflow dispatch"
+          fi
+          
+          # Check if triggered by issue comment with fix command
+          if [ "${{ github.event_name }}" = "issue_comment" ]; then
+            comment_body="${{ github.event.comment.body }}"
+            if [[ "$comment_body" =~ /fix|/autofix ]]; then
+              should_run="true"
+              pr_number="${{ github.event.issue.number }}"
+              
+              # Parse fix type from comment
+              if [[ "$comment_body" =~ formatting ]]; then
+                fix_type="formatting"
+              elif [[ "$comment_body" =~ security ]]; then
+                fix_type="security"
+              elif [[ "$comment_body" =~ lint ]]; then
+                fix_type="lint"
+              elif [[ "$comment_body" =~ performance ]]; then
+                fix_type="performance"
+              fi
+              
+              echo "Triggered by issue comment: $comment_body"
+            fi
+          fi
+          
+          # Check if triggered by failed workflow
+          if [ "${{ github.event_name }}" = "workflow_run" ]; then
+            if [ "${{ github.event.workflow_run.conclusion }}" = "failure" ]; then
+              should_run="true"
+              echo "Triggered by failed workflow run"
+            fi
+          fi
+          
+          echo "should_run=$should_run" >> $GITHUB_OUTPUT
+          echo "fix_type=$fix_type" >> $GITHUB_OUTPUT
+          echo "pr_number=$pr_number" >> $GITHUB_OUTPUT
+          
+          echo "Should run: $should_run"
+          echo "Fix type: $fix_type"
+          echo "PR number: $pr_number"
+
+  # =====================================
+  # Apply Automated Fixes
+  # =====================================
+  apply-automated-fixes:
+    name: Apply Automated Fixes
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: [check-fix-request]
+    if: needs.check-fix-request.outputs.should-run == 'true'
+    
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+
+      - name: Install Fix Tools
+        run: |
+          # Install Node.js formatting tools
+          npm install -g prettier eslint @typescript-eslint/eslint-plugin eslint-plugin-security
+          
+          # Install Python formatting tools
+          pip install black isort autoflake autopep8
+          
+          # Install additional tools
+          pip install bandit safety
+
+      - name: Download Previous Workflow Artifacts
+        if: github.event_name == 'workflow_run'
+        uses: actions/download-artifact@v4
+        with:
+          path: .workflow-artifacts/
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Apply Formatting Fixes
+        if: contains(needs.check-fix-request.outputs.fix-type, 'all') || contains(needs.check-fix-request.outputs.fix-type, 'formatting')
+        run: |
+          set -e
+          
+          echo "🎨 Applying formatting fixes..."
+          
+          # Create fixes directory
+          mkdir -p .automated-fixes/formatting
+          
+          # Track changes
+          changes_made=false
+          
+          # Fix JavaScript/TypeScript formatting
+          if find . -name "*.js" -o -name "*.jsx" -o -name "*.ts" -o -name "*.tsx" | grep -v node_modules | grep -v .git; then
+            echo "Formatting JavaScript/TypeScript files..."
+            
+            # Run Prettier
+            find . \( -name "*.js" -o -name "*.jsx" -o -name "*.ts" -o -name "*.tsx" \) \
+              -not -path "./node_modules/*" \
+              -not -path "./.git/*" \
+              -exec prettier --write {} \; || true
+            
+            # Check if files were changed
+            if ! git diff --quiet; then
+              changes_made=true
+              echo "✅ JavaScript/TypeScript formatting applied"
+            fi
+          fi
+          
+          # Fix Python formatting
+          if find . -name "*.py" | grep -v .git; then
+            echo "Formatting Python files..."
+            
+            # Run Black
+            find . -name "*.py" -not -path "./.git/*" -exec black {} \; || true
+            
+            # Run isort
+            find . -name "*.py" -not -path "./.git/*" -exec isort {} \; || true
+            
+            # Run autoflake to remove unused imports
+            find . -name "*.py" -not -path "./.git/*" -exec autoflake --in-place --remove-all-unused-imports {} \; || true
+            
+            # Check if files were changed
+            if ! git diff --quiet; then
+              changes_made=true
+              echo "✅ Python formatting applied"
+            fi
+          fi
+          
+          # Fix Markdown formatting
+          if find . -name "*.md" | grep -v node_modules | grep -v .git; then
+            echo "Formatting Markdown files..."
+            
+            find . -name "*.md" \
+              -not -path "./node_modules/*" \
+              -not -path "./.git/*" \
+              -exec prettier --write {} \; || true
+            
+            if ! git diff --quiet; then
+              changes_made=true
+              echo "✅ Markdown formatting applied"
+            fi
+          fi
+          
+          # Record formatting changes
+          echo "changes_made=$changes_made" >> .automated-fixes/formatting/summary.txt
+          
+          if [ "$changes_made" = true ]; then
+            echo "📝 Formatting changes applied"
+            git add .
+          else
+            echo "ℹ️  No formatting changes needed"
+          fi
+
+      - name: Apply Linting Fixes
+        if: contains(needs.check-fix-request.outputs.fix-type, 'all') || contains(needs.check-fix-request.outputs.fix-type, 'lint')
+        run: |
+          set -e
+          
+          echo "🔧 Applying linting fixes..."
+          
+          # Create fixes directory
+          mkdir -p .automated-fixes/linting
+          
+          changes_made=false
+          
+          # Fix ESLint issues
+          if [ -d "frontend" ]; then
+            cd frontend
+            npm ci || true
+            
+            # Apply ESLint auto-fixes
+            npx eslint --fix src/ --ext .js,.jsx,.ts,.tsx || true
+            
+            cd ..
+            
+            if ! git diff --quiet; then
+              changes_made=true
+              echo "✅ ESLint auto-fixes applied"
+            fi
+          fi
+          
+          # Fix Python linting issues
+          if find . -name "*.py" | grep -v .git; then
+            echo "Applying Python linting fixes..."
+            
+            # Fix with autopep8
+            find . -name "*.py" -not -path "./.git/*" -exec autopep8 --in-place --aggressive --aggressive {} \; || true
+            
+            if ! git diff --quiet; then
+              changes_made=true
+              echo "✅ Python linting fixes applied"
+            fi
+          fi
+          
+          # Record linting changes
+          echo "changes_made=$changes_made" >> .automated-fixes/linting/summary.txt
+          
+          if [ "$changes_made" = true ]; then
+            echo "📝 Linting changes applied"
+            git add .
+          else
+            echo "ℹ️  No linting changes needed"
+          fi
+
+      - name: Apply Security Fixes
+        if: contains(needs.check-fix-request.outputs.fix-type, 'all') || contains(needs.check-fix-request.outputs.fix-type, 'security')
+        run: |
+          set -e
+          
+          echo "🔒 Applying security fixes..."
+          
+          # Create fixes directory
+          mkdir -p .automated-fixes/security
+          
+          changes_made=false
+          security_fixes=()
+          
+          # Fix common security issues in JavaScript/TypeScript
+          if find . -name "*.js" -o -name "*.jsx" -o -name "*.ts" -o -name "*.tsx" | grep -v node_modules | grep -v .git; then
+            echo "Applying JavaScript/TypeScript security fixes..."
+            
+            # Find and fix common security patterns
+            while IFS= read -r file; do
+              if [ -f "$file" ]; then
+                original_content=$(cat "$file")
+                
+                # Fix console.log with sensitive data patterns
+                sed -i.bak 's/console\.log(\(.*password.*\|.*token.*\|.*secret.*\|.*key.*\))/\/\/ SECURITY: Removed sensitive console.log/g' "$file" || true
+                
+                # Fix localStorage with tokens
+                sed -i.bak 's/localStorage\.setItem(\s*['"'"'"][^'"'"'"]*\(token\|jwt\|auth\|secret\)[^'"'"'"]*['"'"'"],/\/\/ SECURITY: Use secure storage for sensitive data \/\/ localStorage.setItem(/g' "$file" || true
+                
+                # Check if file was modified
+                if [ "$(cat "$file")" != "$original_content" ]; then
+                  security_fixes+=("$file")
+                  changes_made=true
+                  echo "🔒 Applied security fixes to $file"
+                fi
+                
+                # Remove backup file
+                rm -f "$file.bak"
+              fi
+            done < <(find . \( -name "*.js" -o -name "*.jsx" -o -name "*.ts" -o -name "*.tsx" \) -not -path "./node_modules/*" -not -path "./.git/*")
+          fi
+          
+          # Fix common security issues in Python
+          if find . -name "*.py" | grep -v .git; then
+            echo "Applying Python security fixes..."
+            
+            while IFS= read -r file; do
+              if [ -f "$file" ]; then
+                original_content=$(cat "$file")
+                
+                # Fix hardcoded passwords/secrets
+                sed -i.bak 's/password\s*=\s*['"'"'"][^'"'"'"]*['"'"'"]/password = "PLACEHOLDER_PASSWORD"  # SECURITY: Use environment variables/g' "$file" || true
+                
+                # Fix SQL injection patterns (basic)
+                sed -i.bak 's/cursor\.execute(\s*['"'"'"].*%.*['"'"'"].*%/# SECURITY: Use parameterized queries\n&/g' "$file" || true
+                
+                # Check if file was modified
+                if [ "$(cat "$file")" != "$original_content" ]; then
+                  security_fixes+=("$file")
+                  changes_made=true
+                  echo "🔒 Applied security fixes to $file"
+                fi
+                
+                # Remove backup file
+                rm -f "$file.bak"
+              fi
+            done < <(find . -name "*.py" -not -path "./.git/*")
+          fi
+          
+          # Record security changes
+          printf '%s\n' "${security_fixes[@]}" > .automated-fixes/security/fixed_files.txt
+          echo "changes_made=$changes_made" >> .automated-fixes/security/summary.txt
+          echo "fixes_count=${#security_fixes[@]}" >> .automated-fixes/security/summary.txt
+          
+          if [ "$changes_made" = true ]; then
+            echo "📝 Security changes applied to ${#security_fixes[@]} files"
+            git add .
+          else
+            echo "ℹ️  No automatic security fixes needed"
+          fi
+
+      - name: Apply Performance Fixes
+        if: contains(needs.check-fix-request.outputs.fix-type, 'all') || contains(needs.check-fix-request.outputs.fix-type, 'performance')
+        run: |
+          set -e
+          
+          echo "⚡ Applying performance fixes..."
+          
+          # Create fixes directory
+          mkdir -p .automated-fixes/performance
+          
+          changes_made=false
+          performance_fixes=()
+          
+          # Fix React performance issues
+          if find . -name "*.jsx" -o -name "*.tsx" | grep -v node_modules | grep -v .git; then
+            echo "Applying React performance fixes..."
+            
+            while IFS= read -r file; do
+              if [ -f "$file" ]; then
+                original_content=$(cat "$file")
+                
+                # Add React.memo for components with props
+                if grep -q "const.*=.*props.*=>" "$file" && ! grep -q "React.memo\|memo" "$file"; then
+                  # Simple pattern to wrap functional components with React.memo
+                  sed -i.bak 's/export const \([A-Z][a-zA-Z0-9]*\) = (/export const \1 = React.memo((/g' "$file" || true
+                  
+                  # Add closing parenthesis for React.memo
+                  if grep -q "React.memo(" "$file"; then
+                    echo ")" >> "$file"
+                    
+                    # Add React import if not present
+                    if ! grep -q "import.*React" "$file"; then
+                      sed -i.bak '1s/^/import React from '\''react'\'';\n/' "$file" || true
+                    fi
+                  fi
+                fi
+                
+                # Check if file was modified
+                if [ "$(cat "$file")" != "$original_content" ]; then
+                  performance_fixes+=("$file")
+                  changes_made=true
+                  echo "⚡ Applied performance fixes to $file"
+                fi
+                
+                # Remove backup file
+                rm -f "$file.bak"
+              fi
+            done < <(find . \( -name "*.jsx" -o -name "*.tsx" \) -not -path "./node_modules/*" -not -path "./.git/*")
+          fi
+          
+          # Record performance changes
+          printf '%s\n' "${performance_fixes[@]}" > .automated-fixes/performance/fixed_files.txt
+          echo "changes_made=$changes_made" >> .automated-fixes/performance/summary.txt
+          echo "fixes_count=${#performance_fixes[@]}" >> .automated-fixes/performance/summary.txt
+          
+          if [ "$changes_made" = true ]; then
+            echo "📝 Performance changes applied to ${#performance_fixes[@]} files"
+            git add .
+          else
+            echo "ℹ️  No automatic performance fixes needed"
+          fi
+
+      - name: Generate Fix Summary
+        run: |
+          set -e
+          
+          echo "📊 Generating fix summary..."
+          
+          # Create comprehensive fix summary
+          mkdir -p .automated-fixes/summary
+          
+          # Collect all fix summaries
+          total_changes=false
+          total_files_fixed=0
+          
+          # Check formatting changes
+          formatting_changes=false
+          if [ -f ".automated-fixes/formatting/summary.txt" ]; then
+            formatting_changes=$(grep "changes_made=" .automated-fixes/formatting/summary.txt | cut -d= -f2)
+          fi
+          
+          # Check linting changes
+          linting_changes=false
+          if [ -f ".automated-fixes/linting/summary.txt" ]; then
+            linting_changes=$(grep "changes_made=" .automated-fixes/linting/summary.txt | cut -d= -f2)
+          fi
+          
+          # Check security changes
+          security_changes=false
+          security_fixes_count=0
+          if [ -f ".automated-fixes/security/summary.txt" ]; then
+            security_changes=$(grep "changes_made=" .automated-fixes/security/summary.txt | cut -d= -f2)
+            security_fixes_count=$(grep "fixes_count=" .automated-fixes/security/summary.txt | cut -d= -f2)
+          fi
+          
+          # Check performance changes
+          performance_changes=false
+          performance_fixes_count=0
+          if [ -f ".automated-fixes/performance/summary.txt" ]; then
+            performance_changes=$(grep "changes_made=" .automated-fixes/performance/summary.txt | cut -d= -f2)
+            performance_fixes_count=$(grep "fixes_count=" .automated-fixes/performance/summary.txt | cut -d= -f2)
+          fi
+          
+          # Determine if any changes were made
+          if [ "$formatting_changes" = true ] || [ "$linting_changes" = true ] || [ "$security_changes" = true ] || [ "$performance_changes" = true ]; then
+            total_changes=true
+            total_files_fixed=$((security_fixes_count + performance_fixes_count))
+          fi
+          
+          # Generate JSON summary
+          cat > .automated-fixes/summary/fix-summary.json << EOF
+          {
+            "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+            "trigger": "${{ github.event_name }}",
+            "fix_type": "${{ needs.check-fix-request.outputs.fix-type }}",
+            "changes_applied": {
+              "formatting": $formatting_changes,
+              "linting": $linting_changes,
+              "security": $security_changes,
+              "performance": $performance_changes
+            },
+            "fixes_count": {
+              "security": $security_fixes_count,
+              "performance": $performance_fixes_count,
+              "total": $total_files_fixed
+            },
+            "total_changes_made": $total_changes,
+            "commit_needed": $total_changes
+          }
+          EOF
+          
+          echo "Fix summary:"
+          echo "  Formatting fixes: $formatting_changes"
+          echo "  Linting fixes: $linting_changes"
+          echo "  Security fixes: $security_changes ($security_fixes_count files)"
+          echo "  Performance fixes: $performance_changes ($performance_fixes_count files)"
+          echo "  Total changes: $total_changes"
+          
+          # Set output for next step
+          echo "changes_made=$total_changes" >> $GITHUB_ENV
+          echo "fixes_count=$total_files_fixed" >> $GITHUB_ENV
+
+      - name: Commit Automated Fixes
+        if: env.changes_made == 'true' && (github.event.inputs.auto_commit == 'true' || github.event_name != 'workflow_dispatch')
+        run: |
+          set -e
+          
+          echo "💾 Committing automated fixes..."
+          
+          # Configure git
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action - Automated Fixes"
+          
+          # Create commit message
+          commit_message="🤖 Apply automated fixes
+
+          Applied ${{ needs.check-fix-request.outputs.fix-type }} fixes:
+          - Security fixes: $(grep 'security.*true' .automated-fixes/summary/fix-summary.json > /dev/null && echo 'Yes' || echo 'No')
+          - Performance fixes: $(grep 'performance.*true' .automated-fixes/summary/fix-summary.json > /dev/null && echo 'Yes' || echo 'No')
+          - Formatting fixes: $(grep 'formatting.*true' .automated-fixes/summary/fix-summary.json > /dev/null && echo 'Yes' || echo 'No')
+          - Linting fixes: $(grep 'linting.*true' .automated-fixes/summary/fix-summary.json > /dev/null && echo 'Yes' || echo 'No')
+          
+          Total files affected: ${{ env.fixes_count }}
+          
+          🤖 Generated with [Claude Code](https://claude.ai/code)
+          
+          Co-Authored-By: Claude <noreply@anthropic.com>"
+          
+          # Commit changes
+          git commit -m "$commit_message"
+          
+          # Push changes
+          git push origin HEAD
+          
+          echo "✅ Automated fixes committed and pushed"
+
+      - name: Upload Fix Reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: automated-fixes-${{ github.sha }}
+          path: .automated-fixes/
+          retention-days: 30
+
+      - name: Comment on PR with Fix Results
+        if: needs.check-fix-request.outputs.pr-number != ''
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const summaryPath = '.automated-fixes/summary/fix-summary.json';
+            
+            if (fs.existsSync(summaryPath)) {
+              const summary = JSON.parse(fs.readFileSync(summaryPath, 'utf8'));
+              
+              const changesIcon = summary.total_changes_made ? '🔧' : '✅';
+              
+              let comment = `## ${changesIcon} Automated Fix Results
+              
+              **Fix Type:** ${summary.fix_type}
+              **Changes Applied:** ${summary.total_changes_made ? 'Yes' : 'No'}
+              `;
+              
+              if (summary.total_changes_made) {
+                comment += `
+            ### Fixes Applied:
+            ${summary.changes_applied.formatting ? '- ✅ **Formatting fixes** applied' : ''}
+            ${summary.changes_applied.linting ? '- ✅ **Linting fixes** applied' : ''}
+            ${summary.changes_applied.security ? `- 🔒 **Security fixes** applied (${summary.fixes_count.security} files)` : ''}
+            ${summary.changes_applied.performance ? `- ⚡ **Performance fixes** applied (${summary.fixes_count.performance} files)` : ''}
+            
+            **Total Files Fixed:** ${summary.fixes_count.total}
+                `;
+                
+                if (summary.commit_needed) {
+                  comment += `\n✅ Changes have been automatically committed to this branch.`;
+                }
+              } else {
+                comment += `\nℹ️ No automatic fixes were needed or applicable.`;
+              }
+              
+              comment += `\n\n**Generated:** ${summary.timestamp}`;
+              
+              const prNumber = '${{ needs.check-fix-request.outputs.pr-number }}';
+              if (prNumber) {
+                github.rest.issues.createComment({
+                  issue_number: parseInt(prNumber),
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  body: comment
+                });
+              }
+            }
+
+      - name: Create Issue for Manual Fixes
+        if: env.changes_made == 'false' && github.event_name != 'issue_comment'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            // Only create issue if no automated fixes were possible
+            // and there were actual failures in the original workflow
+            
+            if ('${{ github.event_name }}' === 'workflow_run' && 
+                '${{ github.event.workflow_run.conclusion }}' === 'failure') {
+              
+              const issueBody = `## 🔧 Manual Fixes Required
+              
+              The automated fix system was unable to resolve all issues found in the failed workflow run.
+              
+              **Failed Workflow:** ${{ github.event.workflow_run.name }}
+              **Run ID:** ${{ github.event.workflow_run.id }}
+              **Commit:** ${{ github.sha }}
+              
+              ### Actions Needed:
+              1. Review the failed workflow logs
+              2. Apply manual fixes for issues that couldn't be automatically resolved
+              3. Test the fixes locally
+              4. Commit and push the changes
+              
+              ### Commands to Apply Fixes:
+              \`\`\`bash
+              # Download and review workflow artifacts for specific issues
+              gh run download ${{ github.event.workflow_run.id }}
+              
+              # Apply automatic fixes if desired
+              gh workflow run "Automated Code Fixes" --field fix_type=all --field auto_commit=true
+              \`\`\`
+              
+              This issue will be automatically closed when the workflow passes.
+              `;
+              
+              github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: `🔧 Manual fixes required for workflow failures`,
+                body: issueBody,
+                labels: ['bug', 'automated-fixes', 'workflow-failure']
+              });
+            }
