@@ -20,10 +20,10 @@ Performance targets:
 import logging
 import re
 import time
+from collections.abc import Callable
 from dataclasses import dataclass
 from enum import Enum
 from re import Pattern
-from typing import Callable
 
 
 class SanitizationError(Exception):

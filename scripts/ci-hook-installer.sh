@@ -459,7 +459,8 @@ install_claude_flow_hooks() {
 validate_installation() {
     log "Validating hook installation..."
     
-    local validation_report="$REPORTS_DIR/hook-installation/validation-$(date +%Y%m%d-%H%M%S).json"
+    local validation_report
+    validation_report="$REPORTS_DIR/hook-installation/validation-$(date +%Y%m%d-%H%M%S).json"
     mkdir -p "$(dirname "$validation_report")"
     
     local hooks_valid=0
@@ -576,7 +577,8 @@ run_hook_tests() {
 generate_summary() {
     log "Generating installation summary..."
     
-    local summary_file="$REPORTS_DIR/hook-installation/summary-$(date +%Y%m%d-%H%M%S).md"
+    local summary_file
+    summary_file="$REPORTS_DIR/hook-installation/summary-$(date +%Y%m%d-%H%M%S).md"
     
     cat > "$summary_file" << EOF
 # Hook Installation Summary

@@ -7,7 +7,7 @@ set -euo pipefail
 # Script configuration
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-HOOKS_DIR="$PROJECT_ROOT/.claude_workspace/hooks"
+# Note: HOOKS_DIR was unused, using direct paths where needed
 REPORTS_DIR="$PROJECT_ROOT/.claude_workspace/reports"
 MONITORING_DIR="$REPORTS_DIR/monitoring"
 
@@ -254,18 +254,26 @@ EOF
 
 # Collect system metrics
 collect_system_metrics() {
-    local timestamp=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-    local metrics_file="$MONITORING_DIR/metrics/system-$(date +%Y%m%d-%H%M%S).json"
+    local timestamp
+    local metrics_file
+    timestamp=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+    metrics_file="$MONITORING_DIR/metrics/system-$(date +%Y%m%d-%H%M%S).json"
     
     # Get system information
-    local cpu_usage=$(top -bn1 | grep "Cpu(s)" | awk '{print $2}' | awk -F'%' '{print $1}' || echo "0")
-    local memory_total=$(free -m | awk 'NR==2{print $2}' || echo "0")
-    local memory_used=$(free -m | awk 'NR==2{print $3}' || echo "0")
-    local disk_usage=$(df -h . | awk 'NR==2 {print $5}' | sed 's/%//' || echo "0")
+    local cpu_usage
+    local memory_total
+    local memory_used
+    local disk_usage
+    cpu_usage=$(top -bn1 | grep "Cpu(s)" | awk '{print $2}' | awk -F'%' '{print $1}' || echo "0")
+    memory_total=$(free -m | awk 'NR==2{print $2}' || echo "0")
+    memory_used=$(free -m | awk 'NR==2{print $3}' || echo "0")
+    disk_usage=$(df -h . | awk 'NR==2 {print $5}' | sed 's/%//' || echo "0")
     
     # Get process information
-    local python_processes=$(pgrep -c python || echo "0")
-    local node_processes=$(pgrep -c node || echo "0")
+    local python_processes
+    local node_processes
+    python_processes=$(pgrep -c python || echo "0")
+    node_processes=$(pgrep -c node || echo "0")
     
     cat > "$metrics_file" << EOF
 {
@@ -298,8 +306,10 @@ EOF
 
 # Collect hook execution metrics
 collect_hook_metrics() {
-    local timestamp=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-    local metrics_file="$MONITORING_DIR/metrics/hooks-$(date +%Y%m%d-%H%M%S).json"
+    local timestamp
+    local metrics_file
+    timestamp=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+    metrics_file="$MONITORING_DIR/metrics/hooks-$(date +%Y%m%d-%H%M%S).json"
     
     # Check for recent hook test results
     local hook_results_dir="$REPORTS_DIR/hook-tests"
@@ -336,7 +346,8 @@ EOF
 # Check alert thresholds
 check_alerts() {
     local metrics_file="$1"
-    local alerts_file="$MONITORING_DIR/alerts/alerts-$(date +%Y%m%d-%H%M%S).json"
+    local alerts_file
+    alerts_file="$MONITORING_DIR/alerts/alerts-$(date +%Y%m%d-%H%M%S).json"
     
     if [[ ! -f "$metrics_file" ]]; then
         warn "Metrics file not found: $metrics_file"
@@ -348,11 +359,14 @@ check_alerts() {
     
     # Check system metrics
     if command -v jq >/dev/null 2>&1 && [[ -f "$config_file" ]]; then
-        local memory_usage=$(jq -r '.system.memory.usage_percent // 0' "$metrics_file" 2>/dev/null || echo "0")
-        local cpu_usage=$(jq -r '.system.cpu_usage_percent // 0' "$metrics_file" 2>/dev/null || echo "0")
-        
-        local memory_warning=$(jq -r '.metrics.memory_usage.thresholds.warning // 50' "$config_file" 2>/dev/null || echo "50")
-        local memory_critical=$(jq -r '.metrics.memory_usage.thresholds.critical // 80' "$config_file" 2>/dev/null || echo "80")
+        local memory_usage
+        local cpu_usage
+        local memory_warning
+        local memory_critical
+        memory_usage=$(jq -r '.system.memory.usage_percent // 0' "$metrics_file" 2>/dev/null || echo "0")
+        cpu_usage=$(jq -r '.system.cpu_usage_percent // 0' "$metrics_file" 2>/dev/null || echo "0")
+        memory_warning=$(jq -r '.metrics.memory_usage.thresholds.warning // 50' "$config_file" 2>/dev/null || echo "50")
+        memory_critical=$(jq -r '.metrics.memory_usage.thresholds.critical // 80' "$config_file" 2>/dev/null || echo "80")
         
         # Memory alerts
         if (( $(echo "$memory_usage > $memory_critical" | bc -l 2>/dev/null || echo "0") )); then
@@ -389,8 +403,10 @@ EOF
     if [[ $alert_count -gt 0 ]]; then
         warn "Found $alert_count alert(s):"
         for alert in "${alerts[@]}"; do
-            local alert_type=$(echo "$alert" | jq -r '.type' 2>/dev/null || echo "unknown")
-            local alert_message=$(echo "$alert" | jq -r '.message' 2>/dev/null || echo "Unknown alert")
+            local alert_type
+            local alert_message
+            alert_type=$(echo "$alert" | jq -r '.type' 2>/dev/null || echo "unknown")
+            alert_message=$(echo "$alert" | jq -r '.message' 2>/dev/null || echo "Unknown alert")
             
             case "$alert_type" in
                 critical)
@@ -413,8 +429,9 @@ EOF
 
 # Generate comprehensive report
 generate_report() {
-    local report_timestamp=$(date +%Y%m%d-%H%M%S)
+    local report_timestamp
     local report_file=""
+    report_timestamp=$(date +%Y%m%d-%H%M%S)
     
     case "$REPORT_FORMAT" in
         json)
@@ -446,12 +463,16 @@ generate_report() {
 # Generate JSON report
 generate_json_report() {
     local output_file="$1"
-    local timestamp=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+    local timestamp
+    timestamp=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
     
     # Collect latest metrics
-    local system_metrics=$(find "$MONITORING_DIR/metrics" -name "system-*.json" -type f | sort | tail -1)
-    local hook_metrics=$(find "$MONITORING_DIR/metrics" -name "hooks-*.json" -type f | sort | tail -1)
-    local alerts=$(find "$MONITORING_DIR/alerts" -name "alerts-*.json" -type f | sort | tail -1)
+    local system_metrics
+    local hook_metrics
+    local latest_alerts
+    system_metrics=$(find "$MONITORING_DIR/metrics" -name "system-*.json" -type f | sort | tail -1)
+    hook_metrics=$(find "$MONITORING_DIR/metrics" -name "hooks-*.json" -type f | sort | tail -1)
+    latest_alerts=$(find "$MONITORING_DIR/alerts" -name "alerts-*.json" -type f | sort | tail -1)
     
     cat > "$output_file" << EOF
 {
@@ -463,7 +484,7 @@ generate_json_report() {
   },
   "system_metrics": $(cat "$system_metrics" 2>/dev/null || echo "{}"),
   "hook_metrics": $(cat "$hook_metrics" 2>/dev/null || echo "{}"),
-  "alerts": $(cat "$alerts" 2>/dev/null || echo "{}"),
+  "alerts": $(cat "$latest_alerts" 2>/dev/null || echo "{}"),
   "summary": {
     "monitoring_active": true,
     "data_collection_interval": $COLLECTION_INTERVAL,
@@ -477,7 +498,8 @@ EOF
 # Generate HTML report
 generate_html_report() {
     local output_file="$1"
-    local timestamp=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+    local timestamp
+    timestamp=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
     
     cat > "$output_file" << 'EOF'
 <!DOCTYPE html>
@@ -615,7 +637,8 @@ EOF
 # Generate markdown report
 generate_markdown_report() {
     local output_file="$1"
-    local timestamp=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+    local timestamp
+    timestamp=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
     
     cat > "$output_file" << EOF
 # CI/CD Hook Monitoring Report
@@ -712,8 +735,9 @@ start_monitoring() {
         info "Monitoring iteration $iteration"
         
         # Collect metrics
-        local system_metrics_file=$(collect_system_metrics)
-        local hook_metrics_file=$(collect_hook_metrics)
+        local system_metrics_file
+        system_metrics_file=$(collect_system_metrics)
+        # Note: collect_hook_metrics called for monitoring but result not stored as unused
         
         # Check alerts if enabled
         if [[ "$ALERT_THRESHOLDS" == "true" ]]; then
@@ -730,13 +754,13 @@ cleanup_old_data() {
     log "Cleaning monitoring data older than $RETENTION_DAYS days..."
     
     # Clean old metrics
-    find "$MONITORING_DIR/metrics" -name "*.json" -type f -mtime +$RETENTION_DAYS -delete 2>/dev/null || true
+    find "$MONITORING_DIR/metrics" -name "*.json" -type f -mtime +"$RETENTION_DAYS" -delete 2>/dev/null || true
     
     # Clean old alerts
-    find "$MONITORING_DIR/alerts" -name "*.json" -type f -mtime +$RETENTION_DAYS -delete 2>/dev/null || true
+    find "$MONITORING_DIR/alerts" -name "*.json" -type f -mtime +"$RETENTION_DAYS" -delete 2>/dev/null || true
     
     # Clean old reports
-    find "$MONITORING_DIR/reports" -name "*" -type f -mtime +$RETENTION_DAYS -delete 2>/dev/null || true
+    find "$MONITORING_DIR/reports" -name "*" -type f -mtime +"$RETENTION_DAYS" -delete 2>/dev/null || true
     
     log "Cleanup completed"
 }
@@ -746,8 +770,9 @@ show_metrics() {
     log "Collecting current metrics for $ENVIRONMENT environment..."
     
     # Collect fresh metrics
-    local system_metrics_file=$(collect_system_metrics)
-    local hook_metrics_file=$(collect_hook_metrics)
+    local system_metrics_file
+    system_metrics_file=$(collect_system_metrics)
+    # Note: hook_metrics_file was unused, removed
     
     echo ""
     echo "📊 Current System Metrics:"
@@ -795,7 +820,8 @@ main() {
             generate_report
             ;;
         alert)
-            local system_metrics_file=$(collect_system_metrics)
+            local system_metrics_file
+            system_metrics_file=$(collect_system_metrics)
             check_alerts "$system_metrics_file"
             ;;
         cleanup)
