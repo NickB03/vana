@@ -113,6 +113,34 @@ build-backend = "hatchling.build"
 [tool.pytest.ini_options]
 pythonpath = "."
 asyncio_default_fixture_loop_scope = "function"
+asyncio_mode = "auto"
+addopts = [
+    "--cov=app",
+    "--cov-report=term-missing:skip-covered",
+    "--cov-report=xml",
+    "--cov-fail-under=5",
+    "--junit-xml=pytest-report.xml",
+    "-v",
+    "--tb=short",
+    "--strict-markers",
+    "--disable-warnings"
+]
+testpaths = ["tests"]
+python_files = ["test_*.py", "*_test.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+filterwarnings = [
+    "ignore::DeprecationWarning",
+    "ignore::PendingDeprecationWarning",
+    "ignore::UserWarning"
+]
+markers = [
+    "integration: mark test as integration test",
+    "e2e: mark test as end-to-end test", 
+    "performance: mark test as performance test",
+    "slow: mark test as slow running",
+    "hook_validation: mark test as hook validation test"
+]
 
 [tool.hatch.build.targets.wheel]
 packages = ["app","frontend"]
