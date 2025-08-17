@@ -7,6 +7,8 @@ export interface ChatMessage {
     model?: string;
     tool_calls?: unknown[];
     error?: string;
+    streaming?: boolean;
+    attachments?: string[];
   };
 }
 

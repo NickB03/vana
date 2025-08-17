@@ -8,10 +8,10 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import Enum
 from pathlib import Path
-from typing import Any, Optional, Union
+from typing import Any
 
 import yaml
-from jinja2 import Environment, FileSystemLoader, Template, TemplateError
+from jinja2 import Environment, FileSystemLoader, TemplateError
 
 logger = logging.getLogger(__name__)
 
@@ -72,7 +72,10 @@ class TemplateEngine:
             existing_dirs.append("templates")
 
         env = Environment(
-            loader=FileSystemLoader(existing_dirs), trim_blocks=True, lstrip_blocks=True
+            loader=FileSystemLoader(existing_dirs),
+            trim_blocks=True,
+            lstrip_blocks=True,
+            autoescape=True,  # Security fix: Enable autoescape to prevent XSS
         )
 
         # Add custom filters
@@ -140,7 +143,7 @@ class TemplateEngine:
     def get_template_variables(self, template_path: str) -> list[str]:
         """Extract variables used in a template."""
         try:
-            template = self.environment.get_template(template_path)
+            self.environment.get_template(template_path)
             # Parse template to find undefined variables
             from jinja2.meta import find_undeclared_variables
 
@@ -556,54 +559,54 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
-    
+
     steps:
     - uses: actions/checkout@v4
-    
+
     - name: Set up Python {{ python_version }}
       uses: actions/setup-python@v4
       with:
         python-version: {{ python_version }}
-        
+
     {% if node_version %}
     - name: Set up Node.js {{ node_version }}
       uses: actions/setup-node@v4
       with:
         node-version: {{ node_version }}
     {% endif %}
-    
+
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
         pip install -r requirements.txt
-        
+
     {% if run_lint %}
     - name: Lint with flake8
       run: |
         flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
         flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
     {% endif %}
-    
+
     {% if run_tests %}
     - name: Test with pytest
       run: |
         pytest --cov=./ --cov-report=xml
-        
+
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v3
       with:
         file: ./coverage.xml
     {% endif %}
-    
+
   {% if deploy_enabled %}
   deploy:
     needs: test
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
-    
+
     steps:
     - uses: actions/checkout@v4
-    
+
     - name: Deploy to production
       run: |
         echo "Deploy to production"

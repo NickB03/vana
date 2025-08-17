@@ -8,7 +8,7 @@
  */
 
 import React, { useState } from 'react';
-import { useSSEContext, useSSEEventListener, useRecentSSEEvents, useSSEStatus } from './sse-provider';
+import { useSSEContext, useSSEEventListener, useSSEStatus } from './sse-provider';
 import { SSEEvent } from '@/lib/sse-client';
 import { AgentNetworkUpdate, ConnectionEvent } from '@/types/session';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -33,23 +33,24 @@ export function SSEDebugPanel(): JSX.Element {
   } = useSSEContext();
 
   const { status, message, canRetry } = useSSEStatus();
-  const recentNetworkEvents = useRecentSSEEvents('agent_network_update', 5);
-  const recentConnectionEvents = useRecentSSEEvents('agent_network_connection', 3);
+  // TODO: Re-enable when sse-debug functionality is implemented
+  // const recentNetworkEvents = useRecentSSEEvents('agent_network_update', 5);
+  // const recentConnectionEvents = useRecentSSEEvents('agent_network_connection', 3);
   
   const [eventLog, setEventLog] = useState<string[]>([]);
 
   // Listen for various event types and log them
-  useSSEEventListener('agent_network_update', (data: AgentNetworkUpdate, event: SSEEvent) => {
+  useSSEEventListener('agent_network_update', (data: AgentNetworkUpdate, _event: SSEEvent) => {
     const logEntry = `[${new Date().toLocaleTimeString()}] Agent Network Update: ${data.active_count} agents active`;
     setEventLog(prev => [logEntry, ...prev.slice(0, 19)]); // Keep last 20 entries
   });
 
-  useSSEEventListener('agent_network_connection', (data: ConnectionEvent, event: SSEEvent) => {
+  useSSEEventListener('agent_network_connection', (data: ConnectionEvent, _event: SSEEvent) => {
     const logEntry = `[${new Date().toLocaleTimeString()}] Connection: ${data.status}`;
     setEventLog(prev => [logEntry, ...prev.slice(0, 19)]);
   });
 
-  useSSEEventListener('error', (data: unknown, event: SSEEvent) => {
+  useSSEEventListener('error', (data: unknown, _event: SSEEvent) => {
     const errorData = data as { message?: string };
     const logEntry = `[${new Date().toLocaleTimeString()}] Error: ${errorData.message || 'Unknown error'}`;
     setEventLog(prev => [logEntry, ...prev.slice(0, 19)]);

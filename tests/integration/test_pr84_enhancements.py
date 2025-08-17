@@ -1,11 +1,9 @@
 """Integration tests for PR #84 enhanced features."""
 
-import json
 import os
 import tempfile
 import unittest
 from datetime import datetime, timezone
-from unittest.mock import Mock, patch
 
 
 class TestPR84EnhancedFeatures(unittest.TestCase):

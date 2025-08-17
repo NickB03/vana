@@ -42,9 +42,14 @@ export function MonacoEditor({
   const [isLoaded, setIsLoaded] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
 
+  // Handle properties that might have incompatible types in options
+  const { minimap: _, wordWrap: optionsWordWrap, ...otherOptions } = options;
+  const minimapConfig = readOnly ? { enabled: false } : { enabled: true };
+  const wordWrapConfig = optionsWordWrap === false ? 'off' : 'on';
+  
   const defaultOptions = {
-    wordWrap: 'on' as const,
-    minimap: { enabled: true },
+    wordWrap: wordWrapConfig as 'off' | 'on',
+    minimap: minimapConfig,
     scrollBeyondLastLine: false,
     fontSize: 14,
     lineNumbers: 'on' as const,
@@ -58,7 +63,7 @@ export function MonacoEditor({
     showFoldingControls: 'mouseover' as const,
     bracketPairColorization: { enabled: true },
     guides: {
-      bracketPairs: 'active',
+      bracketPairs: 'active' as const,
       indentation: true
     },
     suggestOnTriggerCharacters: true,
@@ -68,7 +73,7 @@ export function MonacoEditor({
     hover: { enabled: true },
     contextmenu: true,
     mouseWheelZoom: true,
-    ...options
+    ...otherOptions
   };
 
   const handleEditorMount: OnMount = useCallback((editor, monaco) => {

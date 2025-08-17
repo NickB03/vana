@@ -35,8 +35,8 @@ if USE_OPENROUTER:
     print(f"[Models] Brave API Key configured: {bool(os.environ.get('BRAVE_API_KEY'))}")
 else:
     # FALLBACK: Google Gemini models when OpenRouter is not available
-    CRITIC_MODEL = "gemini-2.5-pro"
-    WORKER_MODEL = "gemini-2.5-flash"
+    CRITIC_MODEL: str = "gemini-2.5-pro"
+    WORKER_MODEL: str = "gemini-2.5-flash"
 
     if OPENROUTER_API_KEY and USE_OPENROUTER_OVERRIDE:
         print(

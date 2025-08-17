@@ -4,14 +4,12 @@ import asyncio
 import json
 import logging
 import smtplib
-from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from enum import Enum
-from typing import Any, Dict, List, Optional, Set
-from urllib.parse import urljoin
+from typing import Any
 
 import aiohttp
 from jinja2 import Template
@@ -564,7 +562,7 @@ class AlertManager:
             <p><strong>Current Value:</strong> {{ alert.metric_value }}</p>
             <p><strong>Threshold:</strong> {{ alert.threshold }}</p>
             <p><strong>Time:</strong> {{ alert.timestamp.strftime('%Y-%m-%d %H:%M:%S UTC') }}</p>
-            
+
             {% if alert.context %}
             <h3>Additional Context:</h3>
             <ul>
@@ -573,7 +571,7 @@ class AlertManager:
             {% endfor %}
             </ul>
             {% endif %}
-            
+
             <p><em>Alert ID: {{ alert.alert_id }}</em></p>
         </body>
         </html>
