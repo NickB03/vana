@@ -151,24 +151,24 @@ jobs:
           uv sync --no-dev --quiet
           # Test basic imports with better error handling for CI
           uv run python -c "
-try:
-    from app.config import config
-    print('✅ Config import working')
-    try:
-        from app import server
-        print('✅ Server import working')
-    except Exception as e:
-        print('⚠️ Server import issue (expected in CI without auth):', str(e)[:100])
-        # This is expected in CI without Google Cloud credentials
-        if 'DefaultCredentialsError' in str(e) or 'Authentication' in str(e):
-            print('✅ Auth error is expected in CI environment')
-        else:
-            raise
-except Exception as e:
-    print('❌ Basic import failed:', e)
-    exit(1)
-print('✅ Core imports validation passed')
-"
+          try:
+              from app.config import config
+              print('✅ Config import working')
+              try:
+                  from app import server
+                  print('✅ Server import working')
+              except Exception as e:
+                  print('⚠️ Server import issue (expected in CI without auth):', str(e)[:100])
+                  # This is expected in CI without Google Cloud credentials
+                  if 'DefaultCredentialsError' in str(e) or 'Authentication' in str(e):
+                      print('✅ Auth error is expected in CI environment')
+                  else:
+                      raise
+          except Exception as e:
+              print('❌ Basic import failed:', e)
+              exit(1)
+          print('✅ Core imports validation passed')
+          "
 
   # ============================================================================
   # MATRIX BACKEND TESTS (PARALLEL)
