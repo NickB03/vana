@@ -20,22 +20,22 @@ from app.server import app
 # Test stub classes for missing components
 class SessionStore:
     """Mock session store for testing."""
-    
+
     def __init__(self):
         self.sessions = {}
-    
+
     def create_session(self, user_id):
         session_id = f"session-{len(self.sessions)}"
         self.sessions[session_id] = {"user_id": user_id}
         return session_id
-    
+
     def get_session(self, session_id):
         return self.sessions.get(session_id)
-    
+
     def update_session(self, session_id, data):
         if session_id in self.sessions:
             self.sessions[session_id].update(data)
-    
+
     def close_session(self, session_id):
         if session_id in self.sessions:
             del self.sessions[session_id]
@@ -43,7 +43,7 @@ class SessionStore:
 
 class ResearchAgent:
     """Mock research agent for testing."""
-    
+
     async def process_message(self, message):
         if not isinstance(message, dict) or "message" not in message:
             raise ValueError("Invalid message format")
