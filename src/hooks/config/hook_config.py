@@ -214,13 +214,13 @@ class HookConfig:
     def load(cls, config_path: str | None = None) -> "HookConfig":
         """Load configuration from file or create default."""
         if config_path is None:
-            config_path = Path.cwd() / "hook-config.json"
+            config_file = Path.cwd() / "hook-config.json"
         else:
-            config_path = Path(config_path)
+            config_file = Path(config_path)
 
-        if config_path.exists():
+        if config_file.exists():
             try:
-                with open(config_path) as f:
+                with open(config_file) as f:
                     config_data = json.load(f)
 
                 # Convert validation_level string to enum
@@ -257,25 +257,25 @@ class HookConfig:
             logger.info("Config file not found at %s. Using defaults.", config_path)
             return cls()
 
-    def save(self, config_path: str | None = None):
+    def save(self, config_path: str | None = None) -> None:
         """Save configuration to file."""
         if config_path is None:
-            config_path = Path.cwd() / "hook-config.json"
+            config_file = Path.cwd() / "hook-config.json"
         else:
-            config_path = Path(config_path)
+            config_file = Path(config_path)
 
         # Create directory if it doesn't exist
-        config_path.parent.mkdir(parents=True, exist_ok=True)
+        config_file.parent.mkdir(parents=True, exist_ok=True)
 
         # Convert to dict and handle enum serialization
         config_dict = asdict(self)
         config_dict["validation_level"] = self.validation_level.value
 
         try:
-            with open(config_path, "w") as f:
+            with open(config_file, "w") as f:
                 json.dump(config_dict, f, indent=2, default=str)
 
-            logger.info("Saved hook configuration to: %s", config_path)
+            logger.info("Saved hook configuration to: %s", config_file)
 
         except Exception as e:
             logger.error("Failed to save config to %s: %s", config_path, str(e))

@@ -31,28 +31,28 @@ from .context_sanitizer import (
     sanitize_context,
 )
 from .pipeline_hooks import (
-    HookRegistry,
     Hook,
     HookPriority,
-    register_hook,
+    HookRegistry,
     execute_hooks,
     get_hook_registry,
+    register_hook,
 )
 
 __all__ = [
     "ContextSanitizer",
+    "Hook",
+    "HookPriority",
+    "HookRegistry",
     "PatternRegistry",
-    "PlaceholderGenerator", 
+    "PlaceholderGenerator",
     "PlaceholderStyle",
     "SanitizationConfig",
     "SanitizationError",
     "SensitivePattern",
     "create_custom_sanitizer",
-    "sanitize_context",
-    "HookRegistry",
-    "Hook",
-    "HookPriority",
-    "register_hook",
     "execute_hooks",
     "get_hook_registry",
+    "register_hook",
+    "sanitize_context",
 ]

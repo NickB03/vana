@@ -19,6 +19,7 @@ import argparse
 import json
 import logging
 import re
+import sys
 import time
 from dataclasses import asdict, dataclass
 from enum import Enum
@@ -78,7 +79,7 @@ class ValidationResult:
 class ShellValidationRule:
     """Base class for shell validation rules"""
 
-    def __init__(self, rule_id: str, severity: Severity, category: str):
+    def __init__(self, rule_id: str, severity: Severity, category: str) -> None:
         self.rule_id = rule_id
         self.severity = severity
         self.category = category
@@ -93,7 +94,7 @@ class ShellValidationRule:
 class UnquotedVariableRule(ShellValidationRule):
     """Detects unquoted variables that may cause word splitting"""
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__("SV001", Severity.WARNING, "quoting")
         # Pattern for unquoted variables in dangerous contexts
         self.patterns = [
@@ -112,7 +113,7 @@ class UnquotedVariableRule(ShellValidationRule):
     def check(
         self, line: str, line_number: int, context: dict[str, Any]
     ) -> list[ValidationIssue]:
-        issues = []
+        issues: list[ValidationIssue] = []
 
         # Skip lines that are already properly quoted or in comments
         if line.strip().startswith("#") or '"""' in line or "'''" in line:
@@ -151,7 +152,7 @@ class UnquotedVariableRule(ShellValidationRule):
 class UnsafeRedirectionRule(ShellValidationRule):
     """Detects unsafe redirection patterns"""
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__("SV002", Severity.CRITICAL, "redirection")
         self.patterns = [
             # Multiple redirections that may overwrite
@@ -165,7 +166,7 @@ class UnsafeRedirectionRule(ShellValidationRule):
     def check(
         self, line: str, line_number: int, context: dict[str, Any]
     ) -> list[ValidationIssue]:
-        issues = []
+        issues: list[ValidationIssue] = []
 
         if line.strip().startswith("#"):
             return issues
@@ -192,7 +193,7 @@ class UnsafeRedirectionRule(ShellValidationRule):
 class MissingSetOptionsRule(ShellValidationRule):
     """Detects missing essential set options"""
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__("SV003", Severity.WARNING, "safety")
         self.required_options = {
             "set -e": "Exit immediately if a command exits with a non-zero status",
@@ -203,7 +204,7 @@ class MissingSetOptionsRule(ShellValidationRule):
     def check(
         self, line: str, line_number: int, context: dict[str, Any]
     ) -> list[ValidationIssue]:
-        issues = []
+        issues: list[ValidationIssue] = []
 
         # Only check in the beginning of the script
         if line_number > 20:
@@ -241,7 +242,7 @@ class MissingSetOptionsRule(ShellValidationRule):
 class CommandSubstitutionRule(ShellValidationRule):
     """Detects problematic command substitution patterns"""
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__("SV004", Severity.INFO, "modernization")
         # Prefer $() over backticks
         self.backtick_pattern = re.compile(r"`([^`]+)`")
@@ -249,7 +250,7 @@ class CommandSubstitutionRule(ShellValidationRule):
     def check(
         self, line: str, line_number: int, context: dict[str, Any]
     ) -> list[ValidationIssue]:
-        issues = []
+        issues: list[ValidationIssue] = []
 
         if line.strip().startswith("#"):
             return issues
@@ -278,7 +279,7 @@ class CommandSubstitutionRule(ShellValidationRule):
 class ArrayUsageRule(ShellValidationRule):
     """Detects issues with array usage in bash"""
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__("SV005", Severity.WARNING, "arrays")
         self.patterns = [
             # Array indexing without quotes
@@ -290,7 +291,7 @@ class ArrayUsageRule(ShellValidationRule):
     def check(
         self, line: str, line_number: int, context: dict[str, Any]
     ) -> list[ValidationIssue]:
-        issues = []
+        issues: list[ValidationIssue] = []
 
         if line.strip().startswith("#"):
             return issues
@@ -321,7 +322,7 @@ class ArrayUsageRule(ShellValidationRule):
 class VariableNamingRule(ShellValidationRule):
     """Validates variable naming conventions"""
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__("SV006", Severity.INFO, "naming")
         # Pattern for variable assignments
         self.var_assignment = re.compile(r"^([a-zA-Z_][a-zA-Z0-9_]*)=")
@@ -329,7 +330,7 @@ class VariableNamingRule(ShellValidationRule):
     def check(
         self, line: str, line_number: int, context: dict[str, Any]
     ) -> list[ValidationIssue]:
-        issues = []
+        issues: list[ValidationIssue] = []
 
         if line.strip().startswith("#"):
             return issues
@@ -364,7 +365,7 @@ class VariableNamingRule(ShellValidationRule):
 class UnsafeCurlPipeRule(ShellValidationRule):
     """Detects dangerous curl | sh patterns (CodeRabbit pattern)"""
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__("SV007", Severity.CRITICAL, "security")
         # Patterns for dangerous curl piping
         self.patterns = [
@@ -383,7 +384,7 @@ class UnsafeCurlPipeRule(ShellValidationRule):
     def check(
         self, line: str, line_number: int, context: dict[str, Any]
     ) -> list[ValidationIssue]:
-        issues = []
+        issues: list[ValidationIssue] = []
 
         if line.strip().startswith("#"):
             return issues
@@ -414,7 +415,7 @@ class UnsafeCurlPipeRule(ShellValidationRule):
 class EnhancedUnquotedVariableRule(ShellValidationRule):
     """Enhanced unquoted variable detection (SC2086 compatibility)"""
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__("SV008", Severity.WARNING, "quoting")
         # Comprehensive patterns for SC2086 compatibility
         self.patterns = [
@@ -437,7 +438,7 @@ class EnhancedUnquotedVariableRule(ShellValidationRule):
     def check(
         self, line: str, line_number: int, context: dict[str, Any]
     ) -> list[ValidationIssue]:
-        issues = []
+        issues: list[ValidationIssue] = []
 
         if line.strip().startswith("#") or '"""' in line or "'''" in line:
             return issues
@@ -478,7 +479,7 @@ class EnhancedUnquotedVariableRule(ShellValidationRule):
 class MultipleRedirectsRule(ShellValidationRule):
     """Detects multiple redirects that should use >> instead (SC2129)"""
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__("SV009", Severity.WARNING, "redirection")
         # Pattern for multiple echo/printf statements to the same file
         self.redirect_pattern = re.compile(r"(?:echo|printf)[^>]*>\s*([^\s;]+)")
@@ -486,7 +487,7 @@ class MultipleRedirectsRule(ShellValidationRule):
     def check(
         self, line: str, line_number: int, context: dict[str, Any]
     ) -> list[ValidationIssue]:
-        issues = []
+        issues: list[ValidationIssue] = []
 
         if line.strip().startswith("#"):
             return issues
@@ -526,7 +527,7 @@ class MultipleRedirectsRule(ShellValidationRule):
 class CommandSubstitutionAssignmentRule(ShellValidationRule):
     """Detects command substitution in variable assignments (SC2155)"""
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__("SV010", Severity.WARNING, "assignment")
         # Pattern for declare/local with command substitution
         self.patterns = [
@@ -541,7 +542,7 @@ class CommandSubstitutionAssignmentRule(ShellValidationRule):
     def check(
         self, line: str, line_number: int, context: dict[str, Any]
     ) -> list[ValidationIssue]:
-        issues = []
+        issues: list[ValidationIssue] = []
 
         if line.strip().startswith("#"):
             return issues
@@ -580,7 +581,7 @@ class CommandSubstitutionAssignmentRule(ShellValidationRule):
 class UselessCatRule(ShellValidationRule):
     """Detects useless use of cat (optimization pattern)"""
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__("SV011", Severity.INFO, "optimization")
         # Patterns for useless cat usage
         self.patterns = [
@@ -599,7 +600,7 @@ class UselessCatRule(ShellValidationRule):
     def check(
         self, line: str, line_number: int, context: dict[str, Any]
     ) -> list[ValidationIssue]:
-        issues = []
+        issues: list[ValidationIssue] = []
 
         if line.strip().startswith("#"):
             return issues
@@ -649,7 +650,7 @@ class UselessCatRule(ShellValidationRule):
 class AutoFixer:
     """Automatic code fix functionality"""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.safe_transformations = {
             "SV001": self._fix_unquoted_variables,
             "SV004": self._fix_command_substitution,
@@ -726,7 +727,7 @@ class AutoFixer:
 class ShellValidator:
     """Main shell script validator class"""
 
-    def __init__(self, enable_performance_mode: bool = True):
+    def __init__(self, enable_performance_mode: bool = True) -> None:
         self.rules: list[ShellValidationRule] = []
         self.enable_performance_mode = enable_performance_mode
         self.auto_fixer = AutoFixer()
@@ -736,11 +737,11 @@ class ShellValidator:
         self.validation_stats = {
             "total_files": 0,
             "total_lines": 0,
-            "total_time_ms": 0,
-            "avg_time_per_file_ms": 0,
+            "total_time_ms": 0.0,
+            "avg_time_per_file_ms": 0.0,
         }
 
-    def _setup_default_rules(self):
+    def _setup_default_rules(self) -> None:
         """Initialize default validation rules"""
         self.rules = [
             UnquotedVariableRule(),
@@ -756,11 +757,11 @@ class ShellValidator:
             UselessCatRule(),
         ]
 
-    def add_rule(self, rule: ShellValidationRule):
+    def add_rule(self, rule: ShellValidationRule) -> None:
         """Add a custom validation rule"""
         self.rules.append(rule)
 
-    def remove_rule(self, rule_id: str):
+    def remove_rule(self, rule_id: str) -> None:
         """Remove a validation rule by ID"""
         self.rules = [rule for rule in self.rules if rule.rule_id != rule_id]
 
@@ -793,7 +794,7 @@ class ShellValidator:
             )
 
         all_issues = []
-        context = {}
+        context: dict[str, Any] = {}
         lines_checked = 0
 
         for line_number, line in enumerate(lines, 1):
@@ -843,7 +844,7 @@ class ShellValidator:
 
         lines = content.splitlines()
         all_issues = []
-        context = {}
+        context: dict[str, Any] = {}
         lines_checked = 0
 
         for line_number, line in enumerate(lines, 1):
@@ -1117,7 +1118,7 @@ class ShellValidator:
             )
 
             for issue in result.issues:
-                severity_icon = {"critical": "🚨", "warning": "⚠️", "info": "ℹ️"}[
+                severity_icon = {"critical": "🚨", "warning": "⚠️", "info": "i"}[
                     issue.severity.value
                 ]
                 report.extend(
@@ -1133,7 +1134,7 @@ class ShellValidator:
         return "\n".join(report)
 
 
-def main():
+def main() -> int:
     """Command-line interface for the shell validator"""
     parser = argparse.ArgumentParser(
         description="Comprehensive Shell Script Validator",
@@ -1235,6 +1236,4 @@ Examples:
 
 
 if __name__ == "__main__":
-    import sys
-
     sys.exit(main())

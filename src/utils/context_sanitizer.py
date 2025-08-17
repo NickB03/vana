@@ -23,6 +23,7 @@ import time
 from dataclasses import dataclass
 from enum import Enum
 from re import Pattern
+from typing import Callable
 
 
 class SanitizationError(Exception):
@@ -45,18 +46,20 @@ class SensitivePattern:
 
     name: str
     pattern: str  # Regex pattern
-    placeholder: str | callable  # Static placeholder or generator function
+    placeholder: str | Callable[..., str]  # Static placeholder or generator function
     confidence: float = 0.8
     category: str = "general"
     preserve_structure: bool = True
     description: str = ""
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         """Validate pattern on creation"""
         try:
             re.compile(self.pattern)
         except re.error as e:
-            raise SanitizationError(f"Invalid regex pattern '{self.pattern}': {e}")
+            raise SanitizationError(
+                f"Invalid regex pattern '{self.pattern}': {e}"
+            ) from e
 
 
 @dataclass
@@ -153,7 +156,7 @@ class PlaceholderGenerator:
 class PatternRegistry:
     """Registry for managing sensitive data patterns"""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.patterns: dict[str, SensitivePattern] = {}
         self.categories: dict[str, list[str]] = {}
         self.compiled_patterns: dict[str, Pattern] = {}
@@ -295,7 +298,9 @@ class PatternRegistry:
             self.categories[pattern.category].append(pattern.name)
 
         except re.error as e:
-            raise SanitizationError(f"Failed to compile pattern '{pattern.name}': {e}")
+            raise SanitizationError(
+                f"Failed to compile pattern '{pattern.name}': {e}"
+            ) from e
 
     def add_pattern_to_category(self, category: str, pattern: SensitivePattern):
         """Add a pattern to a specific category"""
@@ -350,7 +355,7 @@ class ContextSanitizer:
         self,
         pattern_registry: PatternRegistry | None = None,
         config: SanitizationConfig | None = None,
-    ):
+    ) -> None:
         self.pattern_registry = pattern_registry or PatternRegistry()
         self.config = config or SanitizationConfig()
         self.logger = logging.getLogger(__name__)
@@ -390,7 +395,7 @@ class ContextSanitizer:
 
         except Exception as e:
             self.logger.error(f"Sanitization failed: {e}")
-            raise SanitizationError(f"Failed to sanitize context: {e}")
+            raise SanitizationError(f"Failed to sanitize context: {e}") from e
 
     def _perform_sanitization(self, context: str) -> str:
         """Perform the actual sanitization logic"""

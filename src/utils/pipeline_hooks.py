@@ -35,7 +35,7 @@ class Hook:
 class HookRegistry:
     """Registry for managing pipeline hooks"""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.hooks: dict[str, list[Hook]] = {
             "pre_generation": [],
             "post_generation": [],
@@ -73,7 +73,7 @@ class HookRegistry:
             f"Registered hook '{hook_name}' for stage '{stage}' with priority {priority}"
         )
 
-    def execute_hooks(self, stage: str, data: Any, **kwargs) -> Any:
+    def execute_hooks(self, stage: str, data: Any, **kwargs: Any) -> Any:
         """Execute all hooks for a given stage"""
         if stage not in self.hooks:
             return data
@@ -104,7 +104,7 @@ def register_hook(
     _hook_registry.register_hook(stage, function, priority)
 
 
-def execute_hooks(stage: str, data: Any, **kwargs) -> Any:
+def execute_hooks(stage: str, data: Any, **kwargs: Any) -> Any:
     """Execute hooks for a stage"""
     return _hook_registry.execute_hooks(stage, data, **kwargs)
 

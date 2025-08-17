@@ -19,22 +19,22 @@ This package provides the essential components for the hook safety system,
 including the main safety system, configuration management, alerting, and CLI.
 """
 
-from .hook_safety_system import HookSafetySystem
+from .hook_alerting_system import HookAlertingSystem
 from .hook_safety_config import (
     HookSafetyConfig,
     ValidationLevel,
     create_development_config,
     create_production_config,
 )
-from .hook_alerting_system import HookAlertingSystem
+from .hook_safety_system import HookSafetySystem
 from .safety_system_cli import SafetySystemCLI
 
 __all__ = [
+    "HookAlertingSystem",
+    "HookSafetyConfig",
     "HookSafetySystem",
-    "HookSafetyConfig", 
+    "SafetySystemCLI",
     "ValidationLevel",
     "create_development_config",
     "create_production_config",
-    "HookAlertingSystem",
-    "SafetySystemCLI",
 ]

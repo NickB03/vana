@@ -20,15 +20,15 @@ results with SSE integration and event buffering.
 """
 
 from .realtime_feedback import (
-    RealtimeFeedback,
     FeedbackEvent,
+    RealtimeFeedback,
     get_feedback_system,
     reset_feedback_system,
 )
 
 __all__ = [
+    "FeedbackEvent",
     "RealtimeFeedback",
-    "FeedbackEvent", 
     "get_feedback_system",
     "reset_feedback_system",
 ]

@@ -129,7 +129,10 @@ def collect_research_sources_callback(callback_context: CallbackContext) -> None
     if sources:
         try:
             from app.utils.sse_broadcaster import broadcast_agent_network_update
-            session_id = getattr(callback_context._invocation_context.session, 'id', None)
+
+            session_id = getattr(
+                callback_context._invocation_context.session, "id", None
+            )
             if session_id:
                 # Convert sources to list and use camelCase
                 sources_list = [
@@ -139,9 +142,12 @@ def collect_research_sources_callback(callback_context: CallbackContext) -> None
                         "url": v["url"],
                         "domain": v["domain"],
                         "supportedClaims": [
-                            {"textSegment": claim["text_segment"], "confidence": claim["confidence"]}
+                            {
+                                "textSegment": claim["text_segment"],
+                                "confidence": claim["confidence"],
+                            }
                             for claim in v.get("supported_claims", [])
-                        ]
+                        ],
                     }
                     for v in sources.values()
                 ]
@@ -151,8 +157,8 @@ def collect_research_sources_callback(callback_context: CallbackContext) -> None
                     "data": {
                         "sources": sources_list,
                         "totalSources": len(sources_list),
-                        "timestamp": datetime.now().isoformat()
-                    }
+                        "timestamp": datetime.now().isoformat(),
+                    },
                 }
                 broadcast_agent_network_update(event, session_id)
         except Exception as e:

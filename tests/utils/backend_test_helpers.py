@@ -31,9 +31,11 @@ from app.utils.typing import Feedback
 # Data Classes for Test Objects
 # ================================
 
+
 @dataclass
 class TestUser:
     """Test user data class."""
+
     id: str
     email: str
     display_name: str
@@ -50,13 +52,14 @@ class TestUser:
             "email": self.email,
             "display_name": self.display_name,
             "is_guest": self.is_guest,
-            "created_at": self.created_at
+            "created_at": self.created_at,
         }
 
 
 @dataclass
 class TestSession:
     """Test session data class."""
+
     id: str
     user_id: str
     created_at: float
@@ -79,13 +82,14 @@ class TestSession:
             "created_at": self.created_at,
             "updated_at": self.updated_at,
             "state": self.state,
-            "metadata": self.metadata
+            "metadata": self.metadata,
         }
 
 
 @dataclass
 class TestADKEvent:
     """Test ADK event data class."""
+
     author: str
     content: dict[str, Any]
     actions: list[dict[str, Any]] = None
@@ -102,7 +106,7 @@ class TestADKEvent:
             "author": self.author,
             "content": self.content,
             "actions": self.actions,
-            "metadata": self.metadata
+            "metadata": self.metadata,
         }
 
 
@@ -110,10 +114,9 @@ class TestADKEvent:
 # Test Data Generators
 # ================================
 
+
 def create_test_user(
-    id: str | None = None,
-    email: str | None = None,
-    **kwargs
+    id: str | None = None, email: str | None = None, **kwargs
 ) -> TestUser:
     """Create a test user with default or provided values."""
     if id is None:
@@ -121,19 +124,10 @@ def create_test_user(
     if email is None:
         email = f"test_{uuid.uuid4().hex[:8]}@example.com"
 
-    return TestUser(
-        id=id,
-        email=email,
-        display_name=f"Test User {id[-6:]}",
-        **kwargs
-    )
+    return TestUser(id=id, email=email, display_name=f"Test User {id[-6:]}", **kwargs)
 
 
-def create_test_session(
-    user_id: str,
-    id: str | None = None,
-    **kwargs
-) -> TestSession:
+def create_test_session(user_id: str, id: str | None = None, **kwargs) -> TestSession:
     """Create a test session with default or provided values."""
     if id is None:
         id = f"session_{int(time.time())}_{uuid.uuid4().hex[:6]}"
@@ -144,7 +138,7 @@ def create_test_session(
         created_at=time.time(),
         state={"step": "initialized", "progress": 0},
         metadata={"source": "test", "version": "1.0"},
-        **kwargs
+        **kwargs,
     )
 
 
@@ -153,24 +147,18 @@ def create_test_feedback(**kwargs) -> Feedback:
     return Feedback(
         score=kwargs.get("score", 4),
         invocation_id=kwargs.get("invocation_id", str(uuid.uuid4())),
-        text=kwargs.get("text", "Test feedback message")
+        text=kwargs.get("text", "Test feedback message"),
     )
 
 
 def create_test_adk_event(
-    author: str = "system",
-    content: dict[str, Any] | None = None,
-    **kwargs
+    author: str = "system", content: dict[str, Any] | None = None, **kwargs
 ) -> TestADKEvent:
     """Create a test ADK event."""
     if content is None:
         content = {"parts": [{"text": "Test ADK event message"}]}
 
-    return TestADKEvent(
-        author=author,
-        content=content,
-        **kwargs
-    )
+    return TestADKEvent(author=author, content=content, **kwargs)
 
 
 def generate_test_messages(count: int = 10) -> list[dict[str, Any]]:
@@ -179,13 +167,15 @@ def generate_test_messages(count: int = 10) -> list[dict[str, Any]]:
     authors = ["user", "assistant", "system"]
 
     for i in range(count):
-        messages.append({
-            "id": f"msg_{i}",
-            "author": authors[i % len(authors)],
-            "content": f"Test message {i + 1}",
-            "timestamp": time.time() + i * 1000,
-            "parts": [{"text": f"Test message {i + 1}"}]
-        })
+        messages.append(
+            {
+                "id": f"msg_{i}",
+                "author": authors[i % len(authors)],
+                "content": f"Test message {i + 1}",
+                "timestamp": time.time() + i * 1000,
+                "parts": [{"text": f"Test message {i + 1}"}],
+            }
+        )
 
     return messages
 
@@ -198,12 +188,14 @@ def generate_large_dataset(size_mb: float = 1.0) -> list[dict[str, Any]]:
 
     dataset = []
     for i in range(item_count):
-        dataset.append({
-            "id": f"item_{i}",
-            "data": "x" * (item_size - 100),  # Fill to approximate size
-            "index": i,
-            "timestamp": time.time() + i
-        })
+        dataset.append(
+            {
+                "id": f"item_{i}",
+                "data": "x" * (item_size - 100),  # Fill to approximate size
+                "index": i,
+                "timestamp": time.time() + i,
+            }
+        )
 
     return dataset
 
@@ -211,6 +203,7 @@ def generate_large_dataset(size_mb: float = 1.0) -> list[dict[str, Any]]:
 # ================================
 # Mock Utilities
 # ================================
+
 
 class MockGCSClient:
     """Mock Google Cloud Storage client."""
@@ -254,7 +247,7 @@ class MockGCSBlob:
 
     def upload_from_filename(self, filename: str):
         try:
-            with open(filename, 'rb') as f:
+            with open(filename, "rb") as f:
                 self.data = f.read()
                 self.size = len(self.data)
         except FileNotFoundError:
@@ -264,7 +257,7 @@ class MockGCSBlob:
 
     def download_to_filename(self, filename: str):
         os.makedirs(os.path.dirname(filename), exist_ok=True)
-        with open(filename, 'wb') as f:
+        with open(filename, "wb") as f:
             f.write(self.data)
 
 
@@ -343,10 +336,11 @@ class MockMessageEvent:
 # Database Test Utilities
 # ================================
 
+
 @contextmanager
 def create_test_database():
     """Create a temporary test database."""
-    fd, db_path = tempfile.mkstemp(suffix='.db')
+    fd, db_path = tempfile.mkstemp(suffix=".db")
     os.close(fd)
 
     try:
@@ -365,7 +359,7 @@ def setup_test_session_db(db_path: str, sessions: list[TestSession] | None = Non
     cursor = conn.cursor()
 
     # Create sessions table
-    cursor.execute('''
+    cursor.execute("""
         CREATE TABLE IF NOT EXISTS sessions (
             id TEXT PRIMARY KEY,
             user_id TEXT NOT NULL,
@@ -374,22 +368,25 @@ def setup_test_session_db(db_path: str, sessions: list[TestSession] | None = Non
             state TEXT,
             metadata TEXT
         )
-    ''')
+    """)
 
     # Insert test sessions if provided
     if sessions:
         for session in sessions:
-            cursor.execute('''
+            cursor.execute(
+                """
                 INSERT INTO sessions (id, user_id, created_at, updated_at, state, metadata)
                 VALUES (?, ?, ?, ?, ?, ?)
-            ''', (
-                session.id,
-                session.user_id,
-                session.created_at,
-                session.updated_at,
-                json.dumps(session.state),
-                json.dumps(session.metadata)
-            ))
+            """,
+                (
+                    session.id,
+                    session.user_id,
+                    session.created_at,
+                    session.updated_at,
+                    json.dumps(session.state),
+                    json.dumps(session.metadata),
+                ),
+            )
 
     conn.commit()
     conn.close()
@@ -398,6 +395,7 @@ def setup_test_session_db(db_path: str, sessions: list[TestSession] | None = Non
 # ================================
 # Performance Testing Utilities
 # ================================
+
 
 class PerformanceTimer:
     """Utility for measuring performance."""
@@ -445,6 +443,7 @@ def measure_memory_usage():
     """Measure current memory usage."""
     try:
         import psutil
+
         process = psutil.Process()
         return process.memory_info().rss
     except ImportError:
@@ -463,7 +462,7 @@ class LoadTestRunner:
         self,
         request_fn: Callable[[], Any],
         num_requests: int = 10,
-        timeout: float = 30.0
+        timeout: float = 30.0,
     ):
         """Run concurrent requests and collect results."""
         results = []
@@ -475,19 +474,23 @@ class LoadTestRunner:
                 result = request_fn()
                 end_time = time.time()
 
-                results.append({
-                    "request_id": request_id,
-                    "success": True,
-                    "result": result,
-                    "response_time": end_time - start_time
-                })
+                results.append(
+                    {
+                        "request_id": request_id,
+                        "success": True,
+                        "result": result,
+                        "response_time": end_time - start_time,
+                    }
+                )
             except Exception as e:
-                results.append({
-                    "request_id": request_id,
-                    "success": False,
-                    "error": str(e),
-                    "response_time": None
-                })
+                results.append(
+                    {
+                        "request_id": request_id,
+                        "success": False,
+                        "error": str(e),
+                        "response_time": None,
+                    }
+                )
 
         # Start threads
         for i in range(num_requests):
@@ -513,7 +516,8 @@ class LoadTestRunner:
     def get_average_response_time(self) -> float:
         """Get average response time of successful requests."""
         successful_times = [
-            r["response_time"] for r in self.results
+            r["response_time"]
+            for r in self.results
             if r.get("success", False) and r.get("response_time") is not None
         ]
 
@@ -526,6 +530,7 @@ class LoadTestRunner:
 # ================================
 # Error Simulation Utilities
 # ================================
+
 
 class NetworkErrorSimulator:
     """Utility for simulating various network error conditions."""
@@ -544,6 +549,7 @@ class NetworkErrorSimulator:
     def simulate_intermittent_failure(failure_rate: float = 0.3):
         """Simulate intermittent failures."""
         import random
+
         if random.random() < failure_rate:
             raise ConnectionError("Simulated intermittent failure")
 
@@ -557,6 +563,7 @@ class NetworkErrorSimulator:
 # ================================
 # Test Environment Setup
 # ================================
+
 
 class TestEnvironment:
     """Complete test environment setup and teardown."""
@@ -631,7 +638,10 @@ def test_environment():
 # Test Assertion Helpers
 # ================================
 
-def assert_response_time_under(response_time: float, max_time: float, operation: str = "Operation"):
+
+def assert_response_time_under(
+    response_time: float, max_time: float, operation: str = "Operation"
+):
     """Assert that response time is under the specified maximum."""
     if response_time > max_time:
         raise AssertionError(
@@ -639,14 +649,16 @@ def assert_response_time_under(response_time: float, max_time: float, operation:
         )
 
 
-def assert_memory_usage_reasonable(initial_memory: int, final_memory: int, max_increase_mb: float = 100):
+def assert_memory_usage_reasonable(
+    initial_memory: int, final_memory: int, max_increase_mb: float = 100
+):
     """Assert that memory usage increase is reasonable."""
     increase = final_memory - initial_memory
     max_increase_bytes = max_increase_mb * 1024 * 1024
 
     if increase > max_increase_bytes:
         raise AssertionError(
-            f"Memory usage increased by {increase / (1024*1024):.1f}MB, "
+            f"Memory usage increased by {increase / (1024 * 1024):.1f}MB, "
             f"expected under {max_increase_mb}MB"
         )
 
@@ -654,7 +666,7 @@ def assert_memory_usage_reasonable(initial_memory: int, final_memory: int, max_i
 def assert_eventually_true(
     condition_fn: Callable[[], bool],
     timeout: float = 5.0,
-    message: str = "Condition was not met within timeout"
+    message: str = "Condition was not met within timeout",
 ):
     """Assert that a condition eventually becomes true."""
     start_time = time.time()
@@ -670,6 +682,7 @@ def assert_eventually_true(
 # ================================
 # Integration Test Helpers
 # ================================
+
 
 @contextmanager
 def temporary_server(app_instance=None, port: int = 8001):
@@ -724,13 +737,13 @@ class IntegrationTestClient:
                 url,
                 stream=True,
                 timeout=timeout,
-                headers={"Accept": "text/event-stream"}
+                headers={"Accept": "text/event-stream"},
             )
 
             for line in response.iter_lines():
                 if line:
-                    line_str = line.decode('utf-8')
-                    if line_str.startswith('data: '):
+                    line_str = line.decode("utf-8")
+                    if line_str.startswith("data: "):
                         event_data = line_str[6:]  # Remove 'data: ' prefix
                         try:
                             event = json.loads(event_data)
@@ -749,40 +762,40 @@ class IntegrationTestClient:
 # ================================
 
 __all__ = [
-    'IntegrationTestClient',
-    'LoadTestRunner',
-    'MockEventSource',
-    'MockGCSBlob',
-    'MockGCSBucket',
+    "IntegrationTestClient",
+    "LoadTestRunner",
+    "MockEventSource",
+    "MockGCSBlob",
+    "MockGCSBucket",
     # Mock utilities
-    'MockGCSClient',
+    "MockGCSClient",
     # Error simulation
-    'NetworkErrorSimulator',
+    "NetworkErrorSimulator",
     # Performance utilities
-    'PerformanceTimer',
-    'TestADKEvent',
+    "PerformanceTimer",
+    "TestADKEvent",
     # Environment setup
-    'TestEnvironment',
-    'TestSession',
+    "TestEnvironment",
+    "TestSession",
     # Data classes
-    'TestUser',
-    'assert_eventually_true',
-    'assert_memory_usage_reasonable',
+    "TestUser",
+    "assert_eventually_true",
+    "assert_memory_usage_reasonable",
     # Assertion helpers
-    'assert_response_time_under',
-    'create_test_adk_event',
+    "assert_response_time_under",
+    "create_test_adk_event",
     # Database utilities
-    'create_test_database',
-    'create_test_feedback',
-    'create_test_session',
+    "create_test_database",
+    "create_test_feedback",
+    "create_test_session",
     # Data generators
-    'create_test_user',
-    'generate_large_dataset',
-    'generate_test_messages',
-    'measure_memory_usage',
-    'measure_time',
-    'setup_test_session_db',
+    "create_test_user",
+    "generate_large_dataset",
+    "generate_test_messages",
+    "measure_memory_usage",
+    "measure_time",
+    "setup_test_session_db",
     # Integration testing
-    'temporary_server',
-    'test_environment'
+    "temporary_server",
+    "test_environment",
 ]

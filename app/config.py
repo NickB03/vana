@@ -60,7 +60,9 @@ class ResearchConfiguration:
     worker_model: ModelType = field(default_factory=lambda: WORKER_MODEL)
     max_search_iterations: int = 5
     session_storage_enabled: bool = field(default=True)
-    session_storage_bucket: str = field(default_factory=lambda: f"{os.environ.get('GOOGLE_CLOUD_PROJECT', 'analystai-454200')}-vana-session-storage")
+    session_storage_bucket: str = field(
+        default_factory=lambda: f"{os.environ.get('GOOGLE_CLOUD_PROJECT', 'analystai-454200')}-vana-session-storage"
+    )
     session_backup_interval_hours: int = field(default=6)
 
 

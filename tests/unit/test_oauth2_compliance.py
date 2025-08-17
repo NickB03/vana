@@ -19,7 +19,7 @@ def test_db():
     engine = create_engine(
         "sqlite:///:memory:",
         connect_args={"check_same_thread": False},
-        poolclass=StaticPool
+        poolclass=StaticPool,
     )
     Base.metadata.create_all(engine)
     SessionLocal = sessionmaker(bind=engine)
@@ -77,7 +77,7 @@ def test_user(test_db):
         last_name="User",
         hashed_password=get_password_hash("TestPassword123!"),
         is_active=True,
-        is_verified=True
+        is_verified=True,
     )
     user.roles = [user_role]
     test_db.add(user)
@@ -96,9 +96,9 @@ class TestOAuth2FormLogin:
             data={
                 "username": "testuser",
                 "password": "TestPassword123!",
-                "grant_type": "password"
+                "grant_type": "password",
             },
-            headers={"Content-Type": "application/x-www-form-urlencoded"}
+            headers={"Content-Type": "application/x-www-form-urlencoded"},
         )
 
         assert response.status_code == 200
@@ -115,11 +115,8 @@ class TestOAuth2FormLogin:
         """Test form login without grant_type (should still work)."""
         response = client.post(
             "/auth/login",
-            data={
-                "username": "testuser",
-                "password": "TestPassword123!"
-            },
-            headers={"Content-Type": "application/x-www-form-urlencoded"}
+            data={"username": "testuser", "password": "TestPassword123!"},
+            headers={"Content-Type": "application/x-www-form-urlencoded"},
         )
 
         assert response.status_code == 200
@@ -134,9 +131,9 @@ class TestOAuth2FormLogin:
             data={
                 "username": "testuser",
                 "password": "TestPassword123!",
-                "grant_type": "authorization_code"  # Invalid for password flow
+                "grant_type": "authorization_code",  # Invalid for password flow
             },
-            headers={"Content-Type": "application/x-www-form-urlencoded"}
+            headers={"Content-Type": "application/x-www-form-urlencoded"},
         )
 
         assert response.status_code == 400
@@ -148,11 +145,8 @@ class TestOAuth2FormLogin:
         """Test form login with missing username."""
         response = client.post(
             "/auth/login",
-            data={
-                "password": "TestPassword123!",
-                "grant_type": "password"
-            },
-            headers={"Content-Type": "application/x-www-form-urlencoded"}
+            data={"password": "TestPassword123!", "grant_type": "password"},
+            headers={"Content-Type": "application/x-www-form-urlencoded"},
         )
 
         assert response.status_code == 400
@@ -164,11 +158,8 @@ class TestOAuth2FormLogin:
         """Test form login with missing password."""
         response = client.post(
             "/auth/login",
-            data={
-                "username": "testuser",
-                "grant_type": "password"
-            },
-            headers={"Content-Type": "application/x-www-form-urlencoded"}
+            data={"username": "testuser", "grant_type": "password"},
+            headers={"Content-Type": "application/x-www-form-urlencoded"},
         )
 
         assert response.status_code == 400
@@ -181,9 +172,9 @@ class TestOAuth2FormLogin:
             data={
                 "username": "testuser",
                 "password": "wrongpassword",
-                "grant_type": "password"
+                "grant_type": "password",
             },
-            headers={"Content-Type": "application/x-www-form-urlencoded"}
+            headers={"Content-Type": "application/x-www-form-urlencoded"},
         )
 
         assert response.status_code == 401
@@ -200,9 +191,9 @@ class TestOAuth2FormLogin:
             data={
                 "username": "test@example.com",
                 "password": "TestPassword123!",
-                "grant_type": "password"
+                "grant_type": "password",
             },
-            headers={"Content-Type": "application/x-www-form-urlencoded"}
+            headers={"Content-Type": "application/x-www-form-urlencoded"},
         )
 
         assert response.status_code == 200
@@ -220,9 +211,9 @@ class TestOAuth2FormLogin:
             data={
                 "username": "testuser",
                 "password": "TestPassword123!",
-                "grant_type": "password"
+                "grant_type": "password",
             },
-            headers={"Content-Type": "application/x-www-form-urlencoded"}
+            headers={"Content-Type": "application/x-www-form-urlencoded"},
         )
 
         assert response.status_code == 401
@@ -237,11 +228,7 @@ class TestJSONLoginBackwardCompatibility:
     def test_json_login_success(self, client, test_user):
         """Test successful login with JSON data."""
         response = client.post(
-            "/auth/login",
-            json={
-                "username": "testuser",
-                "password": "TestPassword123!"
-            }
+            "/auth/login", json={"username": "testuser", "password": "TestPassword123!"}
         )
 
         assert response.status_code == 200
@@ -258,10 +245,7 @@ class TestJSONLoginBackwardCompatibility:
         """Test JSON login using email address."""
         response = client.post(
             "/auth/login",
-            json={
-                "username": "test@example.com",
-                "password": "TestPassword123!"
-            }
+            json={"username": "test@example.com", "password": "TestPassword123!"},
         )
 
         assert response.status_code == 200
@@ -272,11 +256,7 @@ class TestJSONLoginBackwardCompatibility:
     def test_json_login_invalid_credentials(self, client, test_user):
         """Test JSON login with invalid credentials."""
         response = client.post(
-            "/auth/login",
-            json={
-                "username": "testuser",
-                "password": "wrongpassword"
-            }
+            "/auth/login", json={"username": "testuser", "password": "wrongpassword"}
         )
 
         assert response.status_code == 401
@@ -290,7 +270,7 @@ class TestJSONLoginBackwardCompatibility:
         """Test JSON login with missing credentials."""
         response = client.post(
             "/auth/login",
-            json={"username": "testuser"}  # Missing password
+            json={"username": "testuser"},  # Missing password
         )
 
         assert response.status_code == 400
@@ -298,10 +278,7 @@ class TestJSONLoginBackwardCompatibility:
 
     def test_json_login_empty_body(self, client):
         """Test JSON login with empty body."""
-        response = client.post(
-            "/auth/login",
-            json={}
-        )
+        response = client.post("/auth/login", json={})
 
         assert response.status_code == 400
         assert response.json()["detail"] == "invalid_request"
@@ -311,7 +288,7 @@ class TestJSONLoginBackwardCompatibility:
         response = client.post(
             "/auth/login",
             data='{"invalid": json}',  # Malformed JSON
-            headers={"Content-Type": "application/json"}
+            headers={"Content-Type": "application/json"},
         )
 
         assert response.status_code == 400
@@ -326,7 +303,7 @@ class TestContentTypeHandling:
         response = client.post(
             "/auth/login",
             data="username=testuser&password=TestPassword123!",
-            headers={"Content-Type": "text/plain"}
+            headers={"Content-Type": "text/plain"},
         )
 
         assert response.status_code == 400
@@ -337,11 +314,7 @@ class TestContentTypeHandling:
     def test_no_content_type(self, client, test_user):
         """Test request without content-type header (defaults to form)."""
         response = client.post(
-            "/auth/login",
-            data={
-                "username": "testuser",
-                "password": "TestPassword123!"
-            }
+            "/auth/login", data={"username": "testuser", "password": "TestPassword123!"}
         )
 
         # FastAPI defaults to form encoding
@@ -354,11 +327,8 @@ class TestContentTypeHandling:
         """Test case-insensitive content type handling."""
         response = client.post(
             "/auth/login",
-            json={
-                "username": "testuser",
-                "password": "TestPassword123!"
-            },
-            headers={"Content-Type": "APPLICATION/JSON"}  # Uppercase
+            json={"username": "testuser", "password": "TestPassword123!"},
+            headers={"Content-Type": "APPLICATION/JSON"},  # Uppercase
         )
 
         assert response.status_code == 200
@@ -374,11 +344,8 @@ class TestOAuth2ResponseHeaders:
         """Test that error responses include proper OAuth2 headers."""
         response = client.post(
             "/auth/login",
-            data={
-                "username": "nonexistent",
-                "password": "wrongpassword"
-            },
-            headers={"Content-Type": "application/x-www-form-urlencoded"}
+            data={"username": "nonexistent", "password": "wrongpassword"},
+            headers={"Content-Type": "application/x-www-form-urlencoded"},
         )
 
         assert response.status_code == 401
@@ -393,9 +360,9 @@ class TestOAuth2ResponseHeaders:
             data={
                 "username": "testuser",
                 "password": "TestPassword123!",
-                "grant_type": "password"
+                "grant_type": "password",
             },
-            headers={"Content-Type": "application/x-www-form-urlencoded"}
+            headers={"Content-Type": "application/x-www-form-urlencoded"},
         )
 
         assert response.status_code == 200
@@ -429,21 +396,15 @@ class TestSecurityRequirements:
         # Login with existing user, wrong password
         response1 = client.post(
             "/auth/login",
-            data={
-                "username": "testuser",
-                "password": "wrongpassword"
-            },
-            headers={"Content-Type": "application/x-www-form-urlencoded"}
+            data={"username": "testuser", "password": "wrongpassword"},
+            headers={"Content-Type": "application/x-www-form-urlencoded"},
         )
 
         # Login with non-existing user
         response2 = client.post(
             "/auth/login",
-            data={
-                "username": "nonexistentuser",
-                "password": "wrongpassword"
-            },
-            headers={"Content-Type": "application/x-www-form-urlencoded"}
+            data={"username": "nonexistentuser", "password": "wrongpassword"},
+            headers={"Content-Type": "application/x-www-form-urlencoded"},
         )
 
         # Both should return same error type
@@ -458,11 +419,8 @@ class TestSecurityRequirements:
 
         response = client.post(
             "/auth/login",
-            data={
-                "username": malicious_username,
-                "password": "TestPassword123!"
-            },
-            headers={"Content-Type": "application/x-www-form-urlencoded"}
+            data={"username": malicious_username, "password": "TestPassword123!"},
+            headers={"Content-Type": "application/x-www-form-urlencoded"},
         )
 
         # Should handle safely without errors
@@ -475,12 +433,13 @@ class TestSecurityRequirements:
 
         response = client.post(
             "/auth/login",
-            data={
-                "username": large_string,
-                "password": "TestPassword123!"
-            },
-            headers={"Content-Type": "application/x-www-form-urlencoded"}
+            data={"username": large_string, "password": "TestPassword123!"},
+            headers={"Content-Type": "application/x-www-form-urlencoded"},
         )
 
         # Should handle gracefully
-        assert response.status_code in [400, 401, 413]  # Bad request, unauthorized, or payload too large
+        assert response.status_code in [
+            400,
+            401,
+            413,
+        ]  # Bad request, unauthorized, or payload too large

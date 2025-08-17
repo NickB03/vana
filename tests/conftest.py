@@ -21,18 +21,10 @@ pytest_plugins = [
 
 def pytest_configure(config):
     """Configure pytest for hook validation testing"""
-    config.addinivalue_line(
-        "markers", "integration: mark test as integration test"
-    )
-    config.addinivalue_line(
-        "markers", "e2e: mark test as end-to-end test"
-    )
-    config.addinivalue_line(
-        "markers", "performance: mark test as performance test"
-    )
-    config.addinivalue_line(
-        "markers", "slow: mark test as slow running"
-    )
+    config.addinivalue_line("markers", "integration: mark test as integration test")
+    config.addinivalue_line("markers", "e2e: mark test as end-to-end test")
+    config.addinivalue_line("markers", "performance: mark test as performance test")
+    config.addinivalue_line("markers", "slow: mark test as slow running")
     config.addinivalue_line(
         "markers", "hook_validation: mark test as hook validation test"
     )
@@ -106,32 +98,41 @@ def prd_validation_rules():
     return {
         "technology_stack": {
             "approved_ui_frameworks": ["shadcn/ui", "@radix-ui"],
-            "forbidden_ui_frameworks": ["material-ui", "@mui", "ant-design", "custom-ui-lib"],
+            "forbidden_ui_frameworks": [
+                "material-ui",
+                "@mui",
+                "ant-design",
+                "custom-ui-lib",
+            ],
             "required_react_version": "^18.3.1",
-            "required_next_version": "^15.4.6"
+            "required_next_version": "^15.4.6",
         },
         "accessibility": {
             "required_attributes": ["data-testid"],
             "wcag_compliance": "AA",
-            "contrast_ratio": 4.5
+            "contrast_ratio": 4.5,
         },
         "performance": {
             "max_bundle_size_kb": 250,
             "max_fcp_ms": 1500,
             "max_lcp_ms": 2500,
             "max_useState_hooks": 5,
-            "max_useEffect_hooks": 3
+            "max_useEffect_hooks": 3,
         },
         "security": {
-            "forbidden_patterns": ["dangerouslySetInnerHTML", "eval(", "document.write"],
+            "forbidden_patterns": [
+                "dangerouslySetInnerHTML",
+                "eval(",
+                "document.write",
+            ],
             "required_sanitization": ["DOMPurify"],
-            "csp_compliance": True
+            "csp_compliance": True,
         },
         "testing": {
             "min_coverage_percent": 80,
             "required_test_patterns": ["describe", "test", "expect"],
-            "accessibility_testing": True
-        }
+            "accessibility_testing": True,
+        },
     }
 
 
@@ -153,28 +154,26 @@ def test_workspace():
             "tests/unit",
             "tests/integration",
             "tests/e2e",
-            ".claude_workspace/reports"
+            ".claude_workspace/reports",
         ]
 
         for dir_path in project_dirs:
             (workspace / dir_path).mkdir(parents=True, exist_ok=True)
 
         # Create essential files
-        (workspace / "frontend" / "package.json").write_text(json.dumps({
-            "name": "vana-frontend",
-            "version": "1.0.0",
-            "dependencies": {
-                "react": "^18.3.1",
-                "next": "^15.4.6"
-            }
-        }))
+        (workspace / "frontend" / "package.json").write_text(
+            json.dumps(
+                {
+                    "name": "vana-frontend",
+                    "version": "1.0.0",
+                    "dependencies": {"react": "^18.3.1", "next": "^15.4.6"},
+                }
+            )
+        )
 
-        (workspace / "frontend" / "tsconfig.json").write_text(json.dumps({
-            "compilerOptions": {
-                "strict": True,
-                "jsx": "preserve"
-            }
-        }))
+        (workspace / "frontend" / "tsconfig.json").write_text(
+            json.dumps({"compilerOptions": {"strict": True, "jsx": "preserve"}})
+        )
 
         yield workspace
 
@@ -189,7 +188,9 @@ class MockHookValidationSystem:
         self.blocked_operations = []
         self.suggestions_given = []
 
-    async def validate_file_operation(self, operation: str, file_path: str, content: str | None = None) -> dict[str, Any]:
+    async def validate_file_operation(
+        self, operation: str, file_path: str, content: str | None = None
+    ) -> dict[str, Any]:
         """Mock file operation validation"""
         validation_result = {
             "validated": True,
@@ -199,30 +200,38 @@ class MockHookValidationSystem:
             "compliance_score": 100,
             "operation": operation,
             "file_path": file_path,
-            "timestamp": time.time()
+            "timestamp": time.time(),
         }
 
-        if content and file_path.endswith('.tsx'):
+        if content and file_path.endswith(".tsx"):
             # Technology stack validation
             forbidden_ui = self.prd_rules["technology_stack"]["forbidden_ui_frameworks"]
             for forbidden in forbidden_ui:
                 if forbidden in content:
-                    validation_result.update({
-                        "validated": False,
-                        "violations": [f"Forbidden UI framework detected: {forbidden}"],
-                        "suggestions": ["Use shadcn/ui components instead"],
-                        "compliance_score": 20
-                    })
-                    self.blocked_operations.append({
-                        "operation": operation,
-                        "file_path": file_path,
-                        "reason": f"Forbidden UI framework: {forbidden}"
-                    })
+                    validation_result.update(
+                        {
+                            "validated": False,
+                            "violations": [
+                                f"Forbidden UI framework detected: {forbidden}"
+                            ],
+                            "suggestions": ["Use shadcn/ui components instead"],
+                            "compliance_score": 20,
+                        }
+                    )
+                    self.blocked_operations.append(
+                        {
+                            "operation": operation,
+                            "file_path": file_path,
+                            "reason": f"Forbidden UI framework: {forbidden}",
+                        }
+                    )
                     break
 
             # Accessibility validation
             if "onClick" in content and "data-testid" not in content:
-                validation_result["warnings"].append("Interactive element missing data-testid")
+                validation_result["warnings"].append(
+                    "Interactive element missing data-testid"
+                )
                 validation_result["suggestions"].append("Add data-testid for testing")
                 validation_result["compliance_score"] -= 15
                 self.suggestions_given.append("Add data-testid attributes")
@@ -233,12 +242,16 @@ class MockHookValidationSystem:
 
             if usestate_count > self.prd_rules["performance"]["max_useState_hooks"]:
                 validation_result["warnings"].append("Too many useState hooks detected")
-                validation_result["suggestions"].append("Consider using useReducer or Zustand")
+                validation_result["suggestions"].append(
+                    "Consider using useReducer or Zustand"
+                )
                 validation_result["compliance_score"] -= 10
                 self.suggestions_given.append("Optimize state management")
 
             if useeffect_count > self.prd_rules["performance"]["max_useEffect_hooks"]:
-                validation_result["warnings"].append("Too many useEffect hooks detected")
+                validation_result["warnings"].append(
+                    "Too many useEffect hooks detected"
+                )
                 validation_result["suggestions"].append("Combine related effects")
                 validation_result["compliance_score"] -= 10
                 self.suggestions_given.append("Optimize effects")
@@ -247,7 +260,9 @@ class MockHookValidationSystem:
             forbidden_patterns = self.prd_rules["security"]["forbidden_patterns"]
             for pattern in forbidden_patterns:
                 if pattern in content:
-                    validation_result["warnings"].append(f"Security risk detected: {pattern}")
+                    validation_result["warnings"].append(
+                        f"Security risk detected: {pattern}"
+                    )
                     validation_result["suggestions"].append("Use safe alternatives")
                     validation_result["compliance_score"] -= 20
                     self.suggestions_given.append("Fix security issues")
@@ -255,12 +270,14 @@ class MockHookValidationSystem:
         self.validation_logs.append(validation_result)
         return validation_result
 
-    async def track_performance(self, operation: str, file_path: str, execution_time_ms: float):
+    async def track_performance(
+        self, operation: str, file_path: str, execution_time_ms: float
+    ):
         """Mock performance tracking"""
         self.performance_metrics[file_path] = {
             "operation": operation,
             "execution_time_ms": execution_time_ms,
-            "timestamp": time.time()
+            "timestamp": time.time(),
         }
 
     def get_validation_summary(self) -> dict[str, Any]:
@@ -272,10 +289,17 @@ class MockHookValidationSystem:
             "total_validations": total_validations,
             "passed_validations": passed_validations,
             "failed_validations": total_validations - passed_validations,
-            "success_rate": (passed_validations / total_validations * 100) if total_validations > 0 else 0,
+            "success_rate": (passed_validations / total_validations * 100)
+            if total_validations > 0
+            else 0,
             "blocked_operations": len(self.blocked_operations),
             "suggestions_given": len(set(self.suggestions_given)),
-            "average_compliance_score": sum(v["compliance_score"] for v in self.validation_logs) / total_validations if total_validations > 0 else 0
+            "average_compliance_score": sum(
+                v["compliance_score"] for v in self.validation_logs
+            )
+            / total_validations
+            if total_validations > 0
+            else 0,
         }
 
 
@@ -291,7 +315,7 @@ class TestFileGenerator:
     @staticmethod
     def create_valid_component() -> str:
         """Create valid React component following PRD"""
-        return '''
+        return """
 import React from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -319,12 +343,12 @@ export const TestComponent: React.FC<TestComponentProps> = ({ title, onAction })
     </Card>
   )
 }
-'''
+"""
 
     @staticmethod
     def create_invalid_component_ui_framework() -> str:
         """Create component using forbidden UI framework"""
-        return '''
+        return """
 import React from 'react'
 import { Button } from '@mui/material'
 import { TextField } from '@mui/material'
@@ -337,12 +361,12 @@ export const InvalidComponent = () => {
     </div>
   )
 }
-'''
+"""
 
     @staticmethod
     def create_performance_heavy_component() -> str:
         """Create component with performance issues"""
-        return '''
+        return """
 import React, { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 
@@ -381,12 +405,12 @@ export const HeavyComponent = () => {
     </div>
   )
 }
-'''
+"""
 
     @staticmethod
     def create_security_risk_component() -> str:
         """Create component with security risks"""
-        return '''
+        return """
 import React, { useState } from 'react'
 import { Button } from '@/components/ui/button'
 
@@ -406,12 +430,12 @@ export const UnsafeComponent = () => {
     </div>
   )
 }
-'''
+"""
 
     @staticmethod
     def create_accessibility_missing_component() -> str:
         """Create component missing accessibility attributes"""
-        return '''
+        return """
 import React from 'react'
 import { Button } from '@/components/ui/button'
 
@@ -429,12 +453,12 @@ export const AccessibilityMissingComponent = () => {
     </div>
   )
 }
-'''
+"""
 
     @staticmethod
     def create_comprehensive_test() -> str:
         """Create comprehensive test file"""
-        return '''
+        return """
 import { render, screen, fireEvent } from '@testing-library/react'
 import { TestComponent } from '../TestComponent'
 
@@ -467,7 +491,7 @@ describe('TestComponent', () => {
     expect(screen.getByTestId('action-button')).toBeInTheDocument()
   })
 })
-'''
+"""
 
 
 @pytest.fixture
@@ -480,6 +504,7 @@ def test_file_generator():
 @pytest.fixture
 def performance_tracker():
     """Performance tracking utilities"""
+
     class PerformanceTracker:
         def __init__(self):
             self.measurements = []
@@ -490,11 +515,13 @@ def performance_tracker():
             end_time = time.perf_counter()
 
             execution_time = (end_time - start_time) * 1000  # Convert to ms
-            self.measurements.append({
-                "function": func.__name__,
-                "execution_time_ms": execution_time,
-                "timestamp": time.time()
-            })
+            self.measurements.append(
+                {
+                    "function": func.__name__,
+                    "execution_time_ms": execution_time,
+                    "timestamp": time.time(),
+                }
+            )
 
             return result, execution_time
 
@@ -504,18 +531,22 @@ def performance_tracker():
             end_time = time.perf_counter()
 
             execution_time = (end_time - start_time) * 1000  # Convert to ms
-            self.measurements.append({
-                "function": "async_operation",
-                "execution_time_ms": execution_time,
-                "timestamp": time.time()
-            })
+            self.measurements.append(
+                {
+                    "function": "async_operation",
+                    "execution_time_ms": execution_time,
+                    "timestamp": time.time(),
+                }
+            )
 
             return result, execution_time
 
         def get_average_execution_time(self):
             if not self.measurements:
                 return 0
-            return sum(m["execution_time_ms"] for m in self.measurements) / len(self.measurements)
+            return sum(m["execution_time_ms"] for m in self.measurements) / len(
+                self.measurements
+            )
 
         def get_total_execution_time(self):
             return sum(m["execution_time_ms"] for m in self.measurements)
@@ -530,34 +561,61 @@ def sample_test_data():
     return {
         "valid_files": [
             ("components/Button.tsx", TestFileGenerator.create_valid_component()),
-            ("components/__tests__/Button.test.tsx", TestFileGenerator.create_comprehensive_test())
+            (
+                "components/__tests__/Button.test.tsx",
+                TestFileGenerator.create_comprehensive_test(),
+            ),
         ],
         "invalid_files": [
-            ("components/InvalidUI.tsx", TestFileGenerator.create_invalid_component_ui_framework()),
-            ("components/Heavy.tsx", TestFileGenerator.create_performance_heavy_component()),
-            ("components/Unsafe.tsx", TestFileGenerator.create_security_risk_component()),
-            ("components/NoA11y.tsx", TestFileGenerator.create_accessibility_missing_component())
+            (
+                "components/InvalidUI.tsx",
+                TestFileGenerator.create_invalid_component_ui_framework(),
+            ),
+            (
+                "components/Heavy.tsx",
+                TestFileGenerator.create_performance_heavy_component(),
+            ),
+            (
+                "components/Unsafe.tsx",
+                TestFileGenerator.create_security_risk_component(),
+            ),
+            (
+                "components/NoA11y.tsx",
+                TestFileGenerator.create_accessibility_missing_component(),
+            ),
         ],
         "test_scenarios": [
             {
                 "name": "valid_component_creation",
-                "files": [("components/Valid.tsx", TestFileGenerator.create_valid_component())],
+                "files": [
+                    ("components/Valid.tsx", TestFileGenerator.create_valid_component())
+                ],
                 "expected_validation": True,
-                "expected_violations": 0
+                "expected_violations": 0,
             },
             {
                 "name": "ui_framework_violation",
-                "files": [("components/Invalid.tsx", TestFileGenerator.create_invalid_component_ui_framework())],
+                "files": [
+                    (
+                        "components/Invalid.tsx",
+                        TestFileGenerator.create_invalid_component_ui_framework(),
+                    )
+                ],
                 "expected_validation": False,
-                "expected_violations": 1
+                "expected_violations": 1,
             },
             {
                 "name": "performance_warning",
-                "files": [("components/Heavy.tsx", TestFileGenerator.create_performance_heavy_component())],
+                "files": [
+                    (
+                        "components/Heavy.tsx",
+                        TestFileGenerator.create_performance_heavy_component(),
+                    )
+                ],
                 "expected_validation": True,
-                "expected_warnings": 2
-            }
-        ]
+                "expected_warnings": 2,
+            },
+        ],
     }
 
 
@@ -565,6 +623,7 @@ def sample_test_data():
 @pytest.fixture
 def async_test_utilities():
     """Utilities for async testing"""
+
     class AsyncTestUtilities:
         @staticmethod
         async def wait_for_condition(condition_func, timeout=5.0, interval=0.1):
@@ -577,7 +636,9 @@ def async_test_utilities():
             return False
 
         @staticmethod
-        async def simulate_async_file_operation(operation, file_path, content=None, delay_ms=50):
+        async def simulate_async_file_operation(
+            operation, file_path, content=None, delay_ms=50
+        ):
             """Simulate async file operation with realistic delay"""
             await asyncio.sleep(delay_ms / 1000)  # Convert ms to seconds
 
@@ -586,7 +647,7 @@ def async_test_utilities():
                 "file_path": file_path,
                 "content_length": len(content) if content else 0,
                 "success": True,
-                "timestamp": time.time()
+                "timestamp": time.time(),
             }
 
     return AsyncTestUtilities

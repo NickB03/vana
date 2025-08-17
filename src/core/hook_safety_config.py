@@ -193,7 +193,7 @@ class HookSafetyConfigManager:
 
         except Exception as e:
             self.logger.error(f"Failed to load configurations: {e}")
-            raise ConfigurationError(f"Configuration loading failed: {e}")
+            raise ConfigurationError(f"Configuration loading failed: {e}") from e
 
     def load_enforcement_config(self) -> GraduatedEnforcementConfig:
         """Load graduated enforcement configuration"""
@@ -536,7 +536,7 @@ class HookSafetyConfigManager:
 
         except Exception as e:
             self.logger.error(f"Failed to import configuration: {e}")
-            raise ConfigurationError(f"Configuration import failed: {e}")
+            raise ConfigurationError(f"Configuration import failed: {e}") from e
 
     def validate_configuration(self) -> dict[str, list[str]]:
         """Validate all configurations"""
