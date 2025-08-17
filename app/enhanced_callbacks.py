@@ -326,7 +326,7 @@ def after_agent_callback(callback_context: CallbackContext) -> None:
         if invocation_ctx.session and invocation_ctx.session.state:
             # Look for new or modified state keys
             for key, value in invocation_ctx.session.state.items():
-                if isinstance(value, str | dict | list) and value:
+                if isinstance(value, (str, dict, list)) and value:
                     state_changes.append(key)
 
         # Record data flow relationships with next agent in stack
@@ -396,8 +396,8 @@ def after_agent_callback(callback_context: CallbackContext) -> None:
                 if metrics_request_id:
                     metrics_collector = get_metrics_collector()
                     metrics_collector.record_request_end(
-                        metrics_request_id, 
-                        f"agent:{agent_name}", 
+                        metrics_request_id,
+                        f"agent:{agent_name}",
                         success=not has_error
                     )
                     metrics_collector.record_agent_metrics(agent_name, execution_time * 1000, not has_error)

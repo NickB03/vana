@@ -4,12 +4,13 @@ import asyncio
 import json
 import logging
 import smtplib
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from datetime import datetime, timezone, timedelta
-from email.mime.text import MIMEText
+from datetime import datetime, timedelta, timezone
 from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 from enum import Enum
-from typing import Any, Callable, Dict, List, Optional, Set
+from typing import Any, Dict, List, Optional, Set
 from urllib.parse import urljoin
 
 import aiohttp
@@ -46,10 +47,10 @@ class Alert:
     timestamp: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
     alert_id: str = field(default_factory=lambda: f"alert_{int(datetime.now().timestamp())}")
     source: str = "vana_monitor"
-    tags: Dict[str, str] = field(default_factory=dict)
-    context: Dict[str, Any] = field(default_factory=dict)
-    
-    def to_dict(self) -> Dict[str, Any]:
+    tags: dict[str, str] = field(default_factory=dict)
+    context: dict[str, Any] = field(default_factory=dict)
+
+    def to_dict(self) -> dict[str, Any]:
         """Convert alert to dictionary."""
         return {
             "alert_id": self.alert_id,
@@ -73,17 +74,17 @@ class AlertRule:
     threshold: float
     operator: str  # >, <, >=, <=, ==, !=
     level: AlertLevel
-    channels: List[AlertChannel]
+    channels: list[AlertChannel]
     cooldown_minutes: int = 15
     consecutive_violations: int = 1
     enabled: bool = True
-    tags: Dict[str, str] = field(default_factory=dict)
-    
+    tags: dict[str, str] = field(default_factory=dict)
+
     def evaluate(self, metric_value: float) -> bool:
         """Evaluate if the rule is violated."""
         if not self.enabled:
             return False
-            
+
         if self.operator == ">":
             return metric_value > self.threshold
         elif self.operator == "<":
@@ -105,56 +106,56 @@ class AlertRule:
 class NotificationConfig:
     """Notification channel configuration."""
     channel: AlertChannel
-    config: Dict[str, Any]
+    config: dict[str, Any]
     enabled: bool = True
-    rate_limit: Optional[int] = None  # Max notifications per hour
-    
-    
+    rate_limit: int | None = None  # Max notifications per hour
+
+
 class AlertManager:
     """Advanced alert management and notification system."""
-    
-    def __init__(self, config_file: Optional[str] = None):
-        self.rules: Dict[str, AlertRule] = {}
-        self.notification_configs: Dict[AlertChannel, NotificationConfig] = {}
-        self.alert_history: List[Alert] = []
-        self.suppressed_alerts: Set[str] = set()
-        self.rule_violations: Dict[str, List[datetime]] = {}
-        
+
+    def __init__(self, config_file: str | None = None):
+        self.rules: dict[str, AlertRule] = {}
+        self.notification_configs: dict[AlertChannel, NotificationConfig] = {}
+        self.alert_history: list[Alert] = []
+        self.suppressed_alerts: set[str] = set()
+        self.rule_violations: dict[str, list[datetime]] = {}
+
         # Rate limiting
-        self.notification_counts: Dict[AlertChannel, List[datetime]] = {}
-        
+        self.notification_counts: dict[AlertChannel, list[datetime]] = {}
+
         # Template system
         self.templates = self._load_templates()
-        
+
         # Background tasks
-        self._cleanup_task: Optional[asyncio.Task] = None
+        self._cleanup_task: asyncio.Task | None = None
         self._running = False
-        
+
         # Load configuration if provided
         if config_file:
             self.load_config(config_file)
-            
+
     async def start(self) -> None:
         """Start the alert manager."""
         if self._running:
             return
-            
+
         self._running = True
         self._cleanup_task = asyncio.create_task(self._cleanup_loop())
         logger.info("Alert manager started")
-        
+
     async def stop(self) -> None:
         """Stop the alert manager."""
         self._running = False
         if self._cleanup_task:
             self._cleanup_task.cancel()
         logger.info("Alert manager stopped")
-        
+
     def add_rule(self, rule: AlertRule) -> None:
         """Add an alert rule."""
         self.rules[rule.name] = rule
         logger.info(f"Added alert rule: {rule.name}")
-        
+
     def remove_rule(self, rule_name: str) -> bool:
         """Remove an alert rule."""
         if rule_name in self.rules:
@@ -162,36 +163,36 @@ class AlertManager:
             logger.info(f"Removed alert rule: {rule_name}")
             return True
         return False
-        
+
     def configure_notification(self, config: NotificationConfig) -> None:
         """Configure a notification channel."""
         self.notification_configs[config.channel] = config
         logger.info(f"Configured notification channel: {config.channel.value}")
-        
-    async def evaluate_metrics(self, metrics: Dict[str, float]) -> List[Alert]:
+
+    async def evaluate_metrics(self, metrics: dict[str, float]) -> list[Alert]:
         """Evaluate metrics against all rules and generate alerts."""
         alerts = []
-        
+
         for rule_name, rule in self.rules.items():
             if rule.metric_name not in metrics:
                 continue
-                
+
             metric_value = metrics[rule.metric_name]
-            
+
             if rule.evaluate(metric_value):
                 # Check consecutive violations
                 now = datetime.now(timezone.utc)
                 if rule_name not in self.rule_violations:
                     self.rule_violations[rule_name] = []
-                    
+
                 self.rule_violations[rule_name].append(now)
-                
+
                 # Clean old violations (older than 5 minutes)
                 cutoff = now - timedelta(minutes=5)
                 self.rule_violations[rule_name] = [
                     t for t in self.rule_violations[rule_name] if t > cutoff
                 ]
-                
+
                 # Check if we have enough consecutive violations
                 if len(self.rule_violations[rule_name]) >= rule.consecutive_violations:
                     # Check cooldown
@@ -205,30 +206,30 @@ class AlertManager:
                             tags=rule.tags,
                             context={"rule_name": rule.name, "consecutive_violations": len(self.rule_violations[rule_name])}
                         )
-                        
+
                         alerts.append(alert)
                         await self.send_alert(alert)
-                        
+
             else:
                 # Reset violations if metric is normal
                 if rule_name in self.rule_violations:
                     del self.rule_violations[rule_name]
-                    
+
         return alerts
-        
+
     async def send_alert(self, alert: Alert) -> None:
         """Send alert through configured channels."""
         # Add to history
         self.alert_history.append(alert)
-        
+
         # Check if alert is suppressed
         if self._is_suppressed(alert):
             logger.info(f"Alert suppressed: {alert.alert_id}")
             return
-            
+
         # Find applicable notification channels
         channels = self._get_alert_channels(alert)
-        
+
         # Send through each channel
         for channel in channels:
             if channel in self.notification_configs:
@@ -239,18 +240,18 @@ class AlertManager:
                         self._record_notification(channel)
                     except Exception as e:
                         logger.error(f"Failed to send alert to {channel.value}: {e}")
-                        
+
     def suppress_alert(self, alert_id: str, duration_minutes: int = 60) -> None:
         """Suppress an alert for a specified duration."""
         self.suppressed_alerts.add(alert_id)
-        
+
         # Auto-remove suppression after duration
         async def remove_suppression():
             await asyncio.sleep(duration_minutes * 60)
             self.suppressed_alerts.discard(alert_id)
-            
+
         asyncio.create_task(remove_suppression())
-        
+
     def acknowledge_alert(self, alert_id: str, user: str, notes: str = "") -> bool:
         """Acknowledge an alert."""
         for alert in self.alert_history:
@@ -262,26 +263,26 @@ class AlertManager:
                 logger.info(f"Alert {alert_id} acknowledged by {user}")
                 return True
         return False
-        
-    def get_active_alerts(self, level: Optional[AlertLevel] = None) -> List[Alert]:
+
+    def get_active_alerts(self, level: AlertLevel | None = None) -> list[Alert]:
         """Get active (unacknowledged) alerts."""
         cutoff = datetime.now(timezone.utc) - timedelta(hours=24)
-        
+
         active_alerts = [
             alert for alert in self.alert_history
             if alert.timestamp > cutoff and not alert.context.get("acknowledged", False)
         ]
-        
+
         if level:
             active_alerts = [alert for alert in active_alerts if alert.level == level]
-            
+
         return sorted(active_alerts, key=lambda a: a.timestamp, reverse=True)
-        
-    def get_alert_statistics(self, hours: int = 24) -> Dict[str, Any]:
+
+    def get_alert_statistics(self, hours: int = 24) -> dict[str, Any]:
         """Get alert statistics for the specified time period."""
         cutoff = datetime.now(timezone.utc) - timedelta(hours=hours)
         recent_alerts = [alert for alert in self.alert_history if alert.timestamp > cutoff]
-        
+
         stats = {
             "total_alerts": len(recent_alerts),
             "by_level": {},
@@ -290,32 +291,32 @@ class AlertManager:
             "acknowledged_count": 0,
             "suppressed_count": len(self.suppressed_alerts)
         }
-        
+
         # Count by level
         for level in AlertLevel:
             stats["by_level"][level.value] = len([a for a in recent_alerts if a.level == level])
-            
+
         # Count by metric
         for alert in recent_alerts:
             metric = alert.metric_name
             stats["by_metric"][metric] = stats["by_metric"].get(metric, 0) + 1
-            
+
             if alert.context.get("acknowledged", False):
                 stats["acknowledged_count"] += 1
-                
+
         # Count by hour
         for alert in recent_alerts:
             hour = alert.timestamp.strftime("%H:00")
             stats["by_hour"][hour] = stats["by_hour"].get(hour, 0) + 1
-            
+
         return stats
-        
+
     def load_config(self, config_file: str) -> None:
         """Load configuration from file."""
         try:
-            with open(config_file, 'r') as f:
+            with open(config_file) as f:
                 config = json.load(f)
-                
+
             # Load rules
             for rule_config in config.get("rules", []):
                 rule = AlertRule(
@@ -331,7 +332,7 @@ class AlertManager:
                     tags=rule_config.get("tags", {})
                 )
                 self.add_rule(rule)
-                
+
             # Load notification configs
             for channel_config in config.get("notifications", []):
                 notification_config = NotificationConfig(
@@ -341,69 +342,69 @@ class AlertManager:
                     rate_limit=channel_config.get("rate_limit")
                 )
                 self.configure_notification(notification_config)
-                
+
             logger.info(f"Loaded configuration from {config_file}")
-            
+
         except Exception as e:
             logger.error(f"Failed to load configuration: {e}")
-            
+
     def _is_in_cooldown(self, rule_name: str, now: datetime) -> bool:
         """Check if a rule is in cooldown period."""
         if rule_name not in self.rules:
             return False
-            
+
         rule = self.rules[rule_name]
         cooldown_period = timedelta(minutes=rule.cooldown_minutes)
-        
+
         # Check recent alerts for this rule
         cutoff = now - cooldown_period
         recent_alerts = [
             alert for alert in self.alert_history
             if alert.timestamp > cutoff and alert.context.get("rule_name") == rule_name
         ]
-        
+
         return len(recent_alerts) > 0
-        
+
     def _is_suppressed(self, alert: Alert) -> bool:
         """Check if an alert is suppressed."""
         return alert.alert_id in self.suppressed_alerts
-        
+
     def _is_rate_limited(self, channel: AlertChannel) -> bool:
         """Check if a notification channel is rate limited."""
         if channel not in self.notification_configs:
             return False
-            
+
         config = self.notification_configs[channel]
         if not config.rate_limit:
             return False
-            
+
         now = datetime.now(timezone.utc)
         cutoff = now - timedelta(hours=1)
-        
+
         if channel not in self.notification_counts:
             self.notification_counts[channel] = []
-            
+
         # Clean old notifications
         self.notification_counts[channel] = [
             t for t in self.notification_counts[channel] if t > cutoff
         ]
-        
+
         return len(self.notification_counts[channel]) >= config.rate_limit
-        
+
     def _record_notification(self, channel: AlertChannel) -> None:
         """Record a notification for rate limiting."""
         if channel not in self.notification_counts:
             self.notification_counts[channel] = []
-            
+
         self.notification_counts[channel].append(datetime.now(timezone.utc))
-        
-    def _get_alert_channels(self, alert: Alert) -> List[AlertChannel]:
+
+    def _get_alert_channels(self, alert: Alert) -> list[AlertChannel]:
         """Get notification channels for an alert."""
         # Find the rule that generated this alert
         rule_name = alert.context.get("rule_name")
         if rule_name and rule_name in self.rules:
             return self.rules[rule_name].channels
-            
+
         # Default channels based on alert level
         if alert.level == AlertLevel.EMERGENCY:
             return [AlertChannel.EMAIL, AlertChannel.SLACK, AlertChannel.SMS]
@@ -413,8 +414,8 @@ class AlertManager:
             return [AlertChannel.SLACK, AlertChannel.LOG]
         else:
             return [AlertChannel.LOG]
-            
-    async def _send_to_channel(self, alert: Alert, channel: AlertChannel, 
+
+    async def _send_to_channel(self, alert: Alert, channel: AlertChannel,
                               config: NotificationConfig) -> None:
         """Send alert to specific notification channel."""
         if channel == AlertChannel.EMAIL:
@@ -427,22 +428,22 @@ class AlertManager:
             await self._send_log(alert, config)
         elif channel == AlertChannel.SMS:
             await self._send_sms(alert, config)
-            
+
     async def _send_email(self, alert: Alert, config: NotificationConfig) -> None:
         """Send alert via email."""
         smtp_config = config.config
-        
+
         msg = MIMEMultipart()
         msg['From'] = smtp_config['from']
         msg['To'] = ', '.join(smtp_config['to'])
         msg['Subject'] = f"[{alert.level.value.upper()}] {alert.message}"
-        
+
         # Render email template
         template = self.templates.get('email', Template("Alert: {{ alert.message }}"))
         body = template.render(alert=alert)
-        
+
         msg.attach(MIMEText(body, 'html'))
-        
+
         # Send email
         with smtplib.SMTP(smtp_config['host'], smtp_config['port']) as server:
             if smtp_config.get('tls'):
@@ -450,19 +451,19 @@ class AlertManager:
             if smtp_config.get('username'):
                 server.login(smtp_config['username'], smtp_config['password'])
             server.send_message(msg)
-            
+
     async def _send_slack(self, alert: Alert, config: NotificationConfig) -> None:
         """Send alert to Slack."""
         webhook_url = config.config['webhook_url']
-        
+
         # Choose color based on alert level
         color_map = {
             AlertLevel.INFO: "#36a64f",
-            AlertLevel.WARNING: "#ff9500", 
+            AlertLevel.WARNING: "#ff9500",
             AlertLevel.CRITICAL: "#ff0000",
             AlertLevel.EMERGENCY: "#8b0000"
         }
-        
+
         payload = {
             "attachments": [{
                 "color": color_map.get(alert.level, "#808080"),
@@ -478,24 +479,24 @@ class AlertManager:
                 "ts": int(alert.timestamp.timestamp())
             }]
         }
-        
+
         async with aiohttp.ClientSession() as session:
             async with session.post(webhook_url, json=payload) as response:
                 if response.status != 200:
                     raise Exception(f"Slack webhook returned {response.status}")
-                    
+
     async def _send_webhook(self, alert: Alert, config: NotificationConfig) -> None:
         """Send alert to webhook."""
         webhook_url = config.config['url']
         headers = config.config.get('headers', {})
-        
+
         payload = alert.to_dict()
-        
+
         async with aiohttp.ClientSession() as session:
             async with session.post(webhook_url, json=payload, headers=headers) as response:
                 if response.status not in (200, 201, 202):
                     raise Exception(f"Webhook returned {response.status}")
-                    
+
     async def _send_log(self, alert: Alert, config: NotificationConfig) -> None:
         """Send alert to log."""
         level_map = {
@@ -504,16 +505,16 @@ class AlertManager:
             AlertLevel.CRITICAL: logging.ERROR,
             AlertLevel.EMERGENCY: logging.CRITICAL
         }
-        
+
         log_level = level_map.get(alert.level, logging.INFO)
         logger.log(log_level, f"ALERT: {alert.message} (ID: {alert.alert_id})")
-        
+
     async def _send_sms(self, alert: Alert, config: NotificationConfig) -> None:
         """Send alert via SMS (placeholder implementation)."""
         # This would integrate with SMS providers like Twilio, AWS SNS, etc.
         logger.info(f"SMS alert would be sent: {alert.message}")
-        
-    def _load_templates(self) -> Dict[str, Template]:
+
+    def _load_templates(self) -> dict[str, Template]:
         """Load notification templates."""
         email_template = Template("""
         <html>
@@ -540,11 +541,11 @@ class AlertManager:
         </body>
         </html>
         """)
-        
+
         return {
             'email': email_template
         }
-        
+
     async def _cleanup_loop(self) -> None:
         """Background cleanup of old alerts and data."""
         while self._running:
@@ -555,7 +556,7 @@ class AlertManager:
                     alert for alert in self.alert_history
                     if alert.timestamp > cutoff
                 ]
-                
+
                 # Clean old notification counts
                 notification_cutoff = datetime.now(timezone.utc) - timedelta(hours=2)
                 for channel in self.notification_counts:
@@ -563,16 +564,16 @@ class AlertManager:
                         t for t in self.notification_counts[channel]
                         if t > notification_cutoff
                     ]
-                    
+
                 await asyncio.sleep(3600)  # Run every hour
-                
+
             except Exception as e:
                 logger.error(f"Error in alert cleanup: {e}")
                 await asyncio.sleep(3600)
 
 
 # Global alert manager instance
-_alert_manager: Optional[AlertManager] = None
+_alert_manager: AlertManager | None = None
 
 
 def get_alert_manager() -> AlertManager:

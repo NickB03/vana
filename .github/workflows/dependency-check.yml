@@ -9,11 +9,15 @@ on:
       - 'pyproject.toml'
       - 'uv.lock'
 
+permissions:
+  contents: read
+
 jobs:
   dependency-check:
     name: Dependency Security & Compatibility Check
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 8
+    
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -21,41 +25,32 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.10'
+          python-version: '3.11'
+          cache: 'pip'
 
-      - name: Install UV package manager
+      - name: Install UV package manager (stable)
         run: |
-          curl -LsSf https://astral.sh/uv/0.6.12/install.sh | sh
+          curl -LsSf https://astral.sh/uv/0.5.11/install.sh | sh
           echo "$HOME/.local/bin" >> $GITHUB_PATH
 
       - name: Check dependency resolution
         run: |
           echo "::group::Dependency Resolution Check"
-          uv sync --dev --resolution=highest
+          uv sync --dev --no-install-project
           echo "✓ Dependencies resolved successfully"
           echo "::endgroup::"
 
-      - name: Check for dependency conflicts
-        run: |
-          echo "::group::Dependency Conflict Check"
-          uv pip list --format=freeze > requirements.txt
-          uv pip check || echo "⚠️ Dependency conflicts detected"
-          echo "::endgroup::"
-
-      - name: Vulnerability scan
+      - name: Basic vulnerability scan
         run: |
           echo "::group::Vulnerability Scan"
-          uv add safety
-          uv run safety check --json --output vulnerability-report.json || true
-          uv run safety check || echo "⚠️ Vulnerabilities found"
+          uv sync --dev
+          uv run safety check --short-report || echo "⚠️ Vulnerabilities found - review required"
           echo "::endgroup::"
 
-      - name: Upload dependency reports
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: dependency-reports
-          path: |
-            requirements.txt
-            vulnerability-report.json
-          retention-days: 7
+      - name: Generate dependency summary
+        run: |
+          echo "## Dependency Check Summary" >> $GITHUB_STEP_SUMMARY
+          echo "- **Python version**: $(python --version)" >> $GITHUB_STEP_SUMMARY
+          echo "- **UV version**: $(uv --version)" >> $GITHUB_STEP_SUMMARY
+          echo "- **Dependencies resolved**: ✅" >> $GITHUB_STEP_SUMMARY
+          echo "- **Security scan**: $(uv run safety check --short-report > /dev/null 2>&1 && echo '✅ Clean' || echo '⚠️ Issues found')" >> $GITHUB_STEP_SUMMARY

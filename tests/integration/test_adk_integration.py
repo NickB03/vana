@@ -12,7 +12,6 @@ from unittest.mock import patch
 import pytest
 
 # Import ADK-related modules
-
 from app.config import get_config
 
 
@@ -25,7 +24,7 @@ class User:
     display_name: str
 
 
-@dataclass  
+@dataclass
 class Session:
     """Test session class."""
     id: str
@@ -36,26 +35,26 @@ class Session:
 
 class EnhancedCallbackHandler:
     """Test callback handler."""
-    
+
     def on_agent_action(self, *args, **kwargs):
         pass
-        
+
     def on_agent_finish(self, *args, **kwargs):
         pass
-        
+
     def on_chain_start(self, *args, **kwargs):
         pass
-        
+
     def on_chain_end(self, *args, **kwargs):
         pass
 
 
 class MockAgent:
     """Mock agent for testing."""
-    
+
     def process_message(self, message):
         return {"content": "Mock response", "type": "response"}
-    
+
     def __call__(self, message):
         return self.process_message(message)
 
