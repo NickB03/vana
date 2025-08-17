@@ -43,6 +43,7 @@ permissions:
   contents: read
   checks: write
   actions: read
+  pull-requests: read
 
 jobs:
   # ============================================================================
