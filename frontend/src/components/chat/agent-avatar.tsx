@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Agent, ThinkingState } from '@/types/agents';
+import { Agent, AgentStatus, ThinkingState } from '@/types/agents';
 import { Avatar } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -107,7 +107,7 @@ function StatusIndicator({
     );
   }
   
-  const statusConfig = {
+  const statusConfig: Record<AgentStatus, { icon: React.ComponentType<{className?: string}>; color: string; pulse: boolean }> = {
     active: { 
       icon: CheckCircle, 
       color: '#22c55e', 
@@ -141,6 +141,26 @@ function StatusIndicator({
     completed: { 
       icon: CheckCircle, 
       color: '#8b5cf6', 
+      pulse: false 
+    },
+    processing: { 
+      icon: Zap, 
+      color: '#f97316', 
+      pulse: true 
+    },
+    responding: { 
+      icon: Brain, 
+      color: '#06b6d4', 
+      pulse: true 
+    },
+    collaborating: { 
+      icon: CheckCircle, 
+      color: '#ec4899', 
+      pulse: true 
+    },
+    waiting: { 
+      icon: Clock, 
+      color: '#6366f1', 
       pulse: false 
     }
   };

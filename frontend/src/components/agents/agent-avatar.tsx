@@ -7,10 +7,10 @@ import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { 
   Agent, 
-  AgentStatus, 
-  AnimationState, 
-  AgentAnimationConfig 
+  AgentStatus,
+  AgentAnimationConfig
 } from '@/types/agents';
+
 
 interface AgentAvatarProps {
   agent: Agent;
@@ -30,27 +30,33 @@ const SIZE_CLASSES = {
   xl: 'w-16 h-16'
 };
 
-const STATUS_COLORS = {
+const STATUS_COLORS: Record<AgentStatus, string> = {
+  active: 'bg-purple-500 animate-ping',
   idle: 'bg-gray-500',
+  busy: 'bg-blue-500 animate-spin',
   thinking: 'bg-yellow-500 animate-pulse',
-  processing: 'bg-blue-500 animate-spin',
-  responding: 'bg-green-500 animate-bounce',
-  collaborating: 'bg-purple-500 animate-ping',
-  waiting: 'bg-orange-500 animate-pulse',
+  offline: 'bg-gray-300',
   error: 'bg-red-500 animate-shake',
-  offline: 'bg-gray-300'
+  completed: 'bg-green-500 animate-bounce',
+  processing: 'bg-orange-500 animate-spin',
+  responding: 'bg-cyan-500 animate-pulse',
+  collaborating: 'bg-pink-500 animate-ping',
+  waiting: 'bg-indigo-500 animate-bounce'
 };
 
 const getAnimationConfig = (status: AgentStatus): AgentAnimationConfig => {
   const configs: Record<AgentStatus, AgentAnimationConfig> = {
+    active: { state: 'glow', duration: 1200, intensity: 'high', color_shift: true },
     idle: { state: 'fade', duration: 2000, intensity: 'low' },
+    busy: { state: 'rotate', duration: 2000, intensity: 'high' },
     thinking: { state: 'pulse', duration: 1500, intensity: 'medium', color_shift: true },
-    processing: { state: 'rotate', duration: 2000, intensity: 'high' },
-    responding: { state: 'bounce', duration: 800, intensity: 'medium' },
-    collaborating: { state: 'glow', duration: 1200, intensity: 'high', color_shift: true },
-    waiting: { state: 'pulse', duration: 2500, intensity: 'low' },
+    offline: { state: 'none', duration: 0, intensity: 'low' },
     error: { state: 'shake', duration: 500, intensity: 'high' },
-    offline: { state: 'none', duration: 0, intensity: 'low' }
+    completed: { state: 'bounce', duration: 800, intensity: 'medium' },
+    processing: { state: 'rotate', duration: 1800, intensity: 'medium' },
+    responding: { state: 'pulse', duration: 1000, intensity: 'low' },
+    collaborating: { state: 'glow', duration: 1400, intensity: 'medium', color_shift: true },
+    waiting: { state: 'fade', duration: 3000, intensity: 'low' }
   };
   
   return configs[status];
@@ -68,7 +74,7 @@ export function AgentAvatar({
 }: AgentAvatarProps) {
   
   const animationConfig = useMemo(() => 
-    animated ? getAnimationConfig(agent.status) : { state: 'none' as AnimationState, duration: 0, intensity: 'low' as const },
+    animated ? getAnimationConfig(agent.status) : { state: 'none' as const, duration: 0, intensity: 'low' as const },
     [agent.status, animated]
   );
 
@@ -80,7 +86,7 @@ export function AgentAvatar({
       'animate-pulse': animationConfig.state === 'pulse',
       'animate-bounce': animationConfig.state === 'bounce', 
       'animate-spin': animationConfig.state === 'rotate',
-      'animate-ping': agent.status === 'collaborating',
+      'animate-ping': agent.status === 'active',
       'animate-shake': animationConfig.state === 'shake',
       'opacity-60': animationConfig.state === 'fade'
     },
@@ -97,20 +103,22 @@ export function AgentAvatar({
     >
       {/* Main Avatar */}
       <Avatar className={cn(SIZE_CLASSES[size], "border-2", {
-        [`border-${agent.personality.color}-400`]: true,
-        'ring-2 ring-blue-400 ring-opacity-50': agent.status === 'processing',
-        'ring-2 ring-green-400 ring-opacity-50': agent.status === 'responding',
-        'ring-2 ring-purple-400 ring-opacity-50': agent.status === 'collaborating',
+        'border-blue-400': true,
+        'ring-2 ring-blue-400 ring-opacity-50': agent.status === 'busy',
+        'ring-2 ring-green-400 ring-opacity-50': agent.status === 'completed',
+        'ring-2 ring-purple-400 ring-opacity-50': agent.status === 'active',
+        'ring-2 ring-yellow-400 ring-opacity-50': agent.status === 'thinking',
         'ring-2 ring-red-400 ring-opacity-50': agent.status === 'error'
       })}>
         <div 
           className={cn(
             "w-full h-full rounded-full flex items-center justify-center text-white font-semibold",
-            `bg-${agent.personality.color}-500`,
+            'bg-blue-500',
             {
-              'bg-gradient-to-br from-blue-400 to-blue-600': agent.status === 'processing',
-              'bg-gradient-to-br from-green-400 to-green-600': agent.status === 'responding',
-              'bg-gradient-to-br from-purple-400 to-purple-600': agent.status === 'collaborating'
+              'bg-gradient-to-br from-blue-400 to-blue-600': agent.status === 'busy',
+              'bg-gradient-to-br from-green-400 to-green-600': agent.status === 'completed',
+              'bg-gradient-to-br from-purple-400 to-purple-600': agent.status === 'active',
+              'bg-gradient-to-br from-yellow-400 to-yellow-600': agent.status === 'thinking'
             }
           )}
         >
@@ -139,7 +147,7 @@ export function AgentAvatar({
       )}
 
       {/* Activity Badge */}
-      {showBadge && agent.status !== 'idle' && agent.status !== 'offline' && (
+      {showBadge && !['idle', 'offline'].includes(agent.status) && (
         <div className="absolute -top-2 -right-2">
           <Badge 
             variant="secondary" 
@@ -147,19 +155,27 @@ export function AgentAvatar({
               "text-xs px-1 py-0 animate-pulse",
               {
                 'bg-yellow-100 text-yellow-800': agent.status === 'thinking',
-                'bg-blue-100 text-blue-800': agent.status === 'processing',
-                'bg-green-100 text-green-800': agent.status === 'responding',
-                'bg-purple-100 text-purple-800': agent.status === 'collaborating',
-                'bg-orange-100 text-orange-800': agent.status === 'waiting',
-                'bg-red-100 text-red-800': agent.status === 'error'
+                'bg-blue-100 text-blue-800': agent.status === 'busy',
+                'bg-green-100 text-green-800': agent.status === 'completed',
+                'bg-purple-100 text-purple-800': agent.status === 'active',
+                'bg-orange-100 text-orange-800': agent.status === 'offline' || agent.status === 'processing',
+                'bg-cyan-100 text-cyan-800': agent.status === 'responding',
+                'bg-pink-100 text-pink-800': agent.status === 'collaborating',
+                'bg-indigo-100 text-indigo-800': agent.status === 'waiting',
+                'bg-red-100 text-red-800': agent.status === 'error',
+                'bg-gray-100 text-gray-800': agent.status === 'idle'
               }
             )}
           >
             {agent.status === 'thinking' && '💭'}
+            {agent.status === 'busy' && '⚙️'}
             {agent.status === 'processing' && '⚙️'}
             {agent.status === 'responding' && '💬'}
             {agent.status === 'collaborating' && '🤝'}
             {agent.status === 'waiting' && '⏳'}
+            {agent.status === 'active' && '💬'}
+            {agent.status === 'completed' && '✅'}
+            {agent.status === 'offline' && '📴'}
             {agent.status === 'error' && '⚠️'}
           </Badge>
         </div>

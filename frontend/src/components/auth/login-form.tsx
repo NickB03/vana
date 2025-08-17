@@ -12,7 +12,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { LoginCredentials } from '@/types/auth';
 
 const loginSchema = z.object({
-  email: z.string().email('Please enter a valid email address'),
+  username: z.string().min(1, 'Please enter a username'),
   password: z.string().min(6, 'Password must be at least 6 characters'),
 });
 
@@ -28,7 +28,7 @@ export function LoginForm({ onSuccess, onSwitchToRegister }: LoginFormProps) {
   const form = useForm<LoginCredentials>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
-      email: '',
+      username: '',
       password: '',
     },
   });
@@ -73,17 +73,17 @@ export function LoginForm({ onSuccess, onSwitchToRegister }: LoginFormProps) {
         
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
+            <Label htmlFor="username">Username</Label>
             <Input
-              id="email"
-              type="email"
-              placeholder="name@example.com"
-              {...form.register('email')}
+              id="username"
+              type="text"
+              placeholder="Enter your username"
+              {...form.register('username')}
               disabled={isLoading}
             />
-            {form.formState.errors.email && (
+            {form.formState.errors.username && (
               <p className="text-sm text-red-600 dark:text-red-400">
-                {form.formState.errors.email.message}
+                {form.formState.errors.username.message}
               </p>
             )}
           </div>

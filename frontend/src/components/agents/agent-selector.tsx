@@ -36,7 +36,10 @@ const AGENT_TYPE_COLORS: Record<AgentType, string> = {
   researcher: 'indigo',
   coder: 'emerald',
   tester: 'red',
-  reviewer: 'gray'
+  reviewer: 'gray',
+  architect: 'teal',
+  creative: 'orange',
+  'problem-solver': 'amber'
 };
 
 const STATUS_FILTERS = [
