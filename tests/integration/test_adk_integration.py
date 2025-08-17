@@ -237,8 +237,10 @@ class TestADKConfigurationHandling:
         config = get_config()
         assert config is not None
 
-        # Configuration should load without errors
-        assert hasattr(config, "project_id") or "project" in str(config).lower()
+        # Configuration should load without errors and expose expected fields
+        assert hasattr(config, "worker_model")
+        assert hasattr(config, "critic_model")
+        assert hasattr(config, "session_storage_bucket")
 
     def test_config_defaults(self):
         """Test configuration defaults when environment variables are missing."""

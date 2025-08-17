@@ -74,11 +74,11 @@ class TestPR84EnhancedFeatures(unittest.TestCase):
         
         # Test file existence
         config_files = [
-            'app/config/__init__.py',
-            'app/config/branch_protection.py',
-            'app/config/templates.py',
-            'app/config/environment.py',
-            'app/config/validation.py'
+            'app/configuration/__init__.py',
+            'app/configuration/branch_protection.py',
+            'app/configuration/templates.py',
+            'app/configuration/environment.py',
+            'app/configuration/validation.py'
         ]
         
         for file_path in config_files:
@@ -210,7 +210,7 @@ class TestPR84EnhancedFeatures(unittest.TestCase):
         sys.path.append('.')
         
         try:
-            with open('app/config/templates.py', 'r') as f:
+            with open('app/configuration/templates.py', 'r') as f:
                 content = f.read()
                 
             # Check for key classes and functions
@@ -236,7 +236,7 @@ class TestPR84EnhancedFeatures(unittest.TestCase):
         sys.path.append('.')
         
         try:
-            with open('app/config/validation.py', 'r') as f:
+            with open('app/configuration/validation.py', 'r') as f:
                 content = f.read()
                 
             # Check for key classes and functions
@@ -317,7 +317,7 @@ class TestPR84EnhancedFeatures(unittest.TestCase):
         # Check directory structure
         expected_dirs = [
             'app/monitoring',
-            'app/config'
+            'app/configuration'
         ]
         
         for directory in expected_dirs:
@@ -338,10 +338,10 @@ class TestPR84EnhancedFeatures(unittest.TestCase):
             'cache_optimization': 'app/monitoring/cache_optimizer.py', 
             'alerting_system': 'app/monitoring/alerting.py',
             'dashboard_system': 'app/monitoring/dashboard.py',
-            'branch_protection': 'app/config/branch_protection.py',
-            'config_templates': 'app/config/templates.py',
-            'environment_config': 'app/config/environment.py',
-            'validation_system': 'app/config/validation.py'
+            'branch_protection': 'app/configuration/branch_protection.py',
+            'config_templates': 'app/configuration/templates.py',
+            'environment_config': 'app/configuration/environment.py',
+            'validation_system': 'app/configuration/validation.py'
         }
         
         for feature_name, file_path in features_checklist.items():

@@ -188,12 +188,9 @@ class TestWebSocketLifecycle:
             # Connection should be established
             assert ws.open
 
-            # Send ping
-            await ws.ping()
-
-            # Should receive pong
-            pong = await ws.wait_closed_or_pong()
-            assert pong is not None
+            # Send ping and wait for the corresponding pong
+            ping_waiter = await ws.ping()
+            await asyncio.wait_for(ping_waiter, timeout=1.0)
 
     @pytest.mark.asyncio
     async def test_websocket_reconnection(self):
