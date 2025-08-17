@@ -25,6 +25,7 @@ from google.adk.cli.fast_api import get_fast_api_app
 # Only import cloud logging if we have a real project
 try:
     from google.cloud import logging as google_cloud_logging
+
     USE_CLOUD_LOGGING = True
 except ImportError:
     USE_CLOUD_LOGGING = False
@@ -66,11 +67,13 @@ if USE_CLOUD_LOGGING:
         print(f"Could not initialize cloud logging: {e}")
         # Fall back to standard logging
         import logging
+
         logging.basicConfig(level=logging.INFO)
         logger = logging.getLogger(__name__)
 else:
     # Use standard Python logging if cloud logging not available
     import logging
+
     logging.basicConfig(level=logging.INFO)
     logger = logging.getLogger(__name__)
 allow_origins = (
@@ -85,10 +88,13 @@ if bucket_name:
             bucket_name=bucket_name, project=project_id, location="us-central1"
         )
     except Exception as e:
-        logger.log_struct({
-            "message": "Could not create bucket, continuing without it",
-            "error": str(e)
-        }, severity="WARNING")
+        logger.log_struct(
+            {
+                "message": "Could not create bucket, continuing without it",
+                "error": str(e),
+            },
+            severity="WARNING",
+        )
 
 # Set up tracing for the project
 try:
@@ -110,24 +116,28 @@ session_storage_bucket = f"{project_id}-vana-session-storage"
 if os.getenv("CLOUD_RUN_SESSION_DB_PATH"):
     # Production: Use Cloud Run persistent volume with backup/restore
     session_service_uri = setup_session_persistence_for_cloud_run(
-        project_id=project_id,
-        session_db_path=os.getenv("CLOUD_RUN_SESSION_DB_PATH")
+        project_id=project_id, session_db_path=os.getenv("CLOUD_RUN_SESSION_DB_PATH")
     )
-    if hasattr(logger, 'log_struct'):
-        logger.log_struct({
-            "message": "Using Cloud Run persistent session storage with backup/restore",
-            "uri": session_service_uri
-        }, severity="INFO")
+    if hasattr(logger, "log_struct"):
+        logger.log_struct(
+            {
+                "message": "Using Cloud Run persistent session storage with backup/restore",
+                "uri": session_service_uri,
+            },
+            severity="INFO",
+        )
     else:
-        logger.info(f"Using Cloud Run persistent session storage with backup/restore: {session_service_uri}")
+        logger.info(
+            f"Using Cloud Run persistent session storage with backup/restore: {session_service_uri}"
+        )
 elif os.getenv("SESSION_DB_URI"):
     # Custom database URI (e.g., Cloud SQL)
     session_service_uri = os.getenv("SESSION_DB_URI")
-    if hasattr(logger, 'log_struct'):
-        logger.log_struct({
-            "message": "Using custom session database",
-            "uri": session_service_uri
-        }, severity="INFO")
+    if hasattr(logger, "log_struct"):
+        logger.log_struct(
+            {"message": "Using custom session database", "uri": session_service_uri},
+            severity="INFO",
+        )
     else:
         logger.info(f"Using custom session database: {session_service_uri}")
 else:
@@ -140,7 +150,7 @@ else:
         create_bucket_if_not_exists(
             bucket_name=session_storage_bucket,
             project=project_id,
-            location="us-central1"
+            location="us-central1",
         )
 
         # Try to restore from latest backup if database doesn't exist
@@ -148,7 +158,7 @@ else:
             restore_session_db_from_gcs(
                 local_db_path=local_session_db,
                 bucket_name=session_storage_bucket,
-                project_id=project_id
+                project_id=project_id,
             )
 
         # Start periodic backup (every 6 hours)
@@ -156,27 +166,37 @@ else:
             local_db_path=local_session_db,
             bucket_name=session_storage_bucket,
             project_id=project_id,
-            interval_hours=6
+            interval_hours=6,
         )
 
-        if hasattr(logger, 'log_struct'):
-            logger.log_struct({
-                "message": "Session storage configured with local SQLite, GCS backup, and periodic backups",
-                "local_db": local_session_db,
-                "backup_bucket": session_storage_bucket,
-                "uri": session_service_uri
-            }, severity="INFO")
+        if hasattr(logger, "log_struct"):
+            logger.log_struct(
+                {
+                    "message": "Session storage configured with local SQLite, GCS backup, and periodic backups",
+                    "local_db": local_session_db,
+                    "backup_bucket": session_storage_bucket,
+                    "uri": session_service_uri,
+                },
+                severity="INFO",
+            )
         else:
-            logger.info(f"Session storage configured with local SQLite: {local_session_db}")
+            logger.info(
+                f"Session storage configured with local SQLite: {local_session_db}"
+            )
     except Exception as e:
-        if hasattr(logger, 'log_struct'):
-            logger.log_struct({
-                "message": "Failed to configure session backup, using local-only sessions",
-                "local_db": local_session_db,
-                "error": str(e)
-            }, severity="WARNING")
+        if hasattr(logger, "log_struct"):
+            logger.log_struct(
+                {
+                    "message": "Failed to configure session backup, using local-only sessions",
+                    "local_db": local_session_db,
+                    "error": str(e),
+                },
+                severity="WARNING",
+            )
         else:
-            logger.warning(f"Failed to configure session backup, using local-only sessions: {e}")
+            logger.warning(
+                f"Failed to configure session backup, using local-only sessions: {e}"
+            )
 
 # Initialize authentication database
 from app.auth.config import get_auth_settings
@@ -234,14 +254,13 @@ async def health_check():
         "version": "1.0.0",
         "session_storage_enabled": session_service_uri is not None,
         "session_storage_uri": session_service_uri,
-        "session_storage_bucket": session_storage_bucket
+        "session_storage_bucket": session_storage_bucket,
     }
 
 
 @app.post("/feedback")
 def collect_feedback(
-    feedback: Feedback,
-    current_user: User = Depends(get_current_active_user)
+    feedback: Feedback, current_user: User = Depends(get_current_active_user)
 ) -> dict[str, str]:
     """Collect and log feedback.
 
@@ -256,7 +275,7 @@ def collect_feedback(
     feedback_data["user_id"] = current_user.id
     feedback_data["user_email"] = current_user.email
 
-    if hasattr(logger, 'log_struct'):
+    if hasattr(logger, "log_struct"):
         logger.log_struct(feedback_data, severity="INFO")
     else:
         logger.info(f"Feedback received from user {current_user.id}: {feedback_data}")
@@ -265,8 +284,7 @@ def collect_feedback(
 
 @app.get("/agent_network_sse/{session_id}")
 async def agent_network_sse(
-    session_id: str,
-    current_user: User | None = Depends(get_current_user_for_sse)
+    session_id: str, current_user: User | None = Depends(get_current_user_for_sse)
 ) -> StreamingResponse:
     """Enhanced SSE endpoint for agent network events with optional authentication.
 
@@ -288,6 +306,7 @@ async def agent_network_sse(
     Returns:
         StreamingResponse with text/event-stream media type
     """
+
     async def event_generator():
         """Generate SSE events for the session."""
         broadcaster = get_sse_broadcaster()
@@ -303,25 +322,25 @@ async def agent_network_sse(
                 "auth_required": auth_settings.require_sse_auth,
                 "session_id": session_id,
                 "timestamp": datetime.now().isoformat(),
-                "access_type": "sse_connection"
+                "access_type": "sse_connection",
             }
 
-            if hasattr(logger, 'log_struct'):
-                logger.log_struct({
-                    "message": "SSE connection established",
-                    **user_info
-                }, severity="INFO")
+            if hasattr(logger, "log_struct"):
+                logger.log_struct(
+                    {"message": "SSE connection established", **user_info},
+                    severity="INFO",
+                )
             else:
                 logger.info(f"SSE connection established: {user_info}")
 
             # Send initial connection event with user context
             connection_data = {
-                'type': 'connection',
-                'status': 'connected',
-                'sessionId': session_id,
-                'timestamp': datetime.now().isoformat(),
-                'authenticated': current_user is not None,
-                'userId': current_user.id if current_user else None
+                "type": "connection",
+                "status": "connected",
+                "sessionId": session_id,
+                "timestamp": datetime.now().isoformat(),
+                "authenticated": current_user is not None,
+                "userId": current_user.id if current_user else None,
             }
             yield f"data: {json.dumps(connection_data)}\n\n"
 
@@ -332,24 +351,30 @@ async def agent_network_sse(
                     if isinstance(event, str):
                         yield event
                     else:
-                        yield event.to_sse_format() if hasattr(event, 'to_sse_format') else str(event)
+                        yield (
+                            event.to_sse_format()
+                            if hasattr(event, "to_sse_format")
+                            else str(event)
+                        )
 
                 except asyncio.TimeoutError:
                     # Send heartbeat to keep connection alive
                     yield f"data: {json.dumps({'type': 'heartbeat', 'timestamp': datetime.now().isoformat()})}\n\n"
 
         except asyncio.CancelledError:
-            logger.info(f"SSE connection cancelled for session {session_id}, user: {current_user.id if current_user else 'anonymous'}")
+            logger.info(
+                f"SSE connection cancelled for session {session_id}, user: {current_user.id if current_user else 'anonymous'}"
+            )
         except Exception as e:
             error_info = {
                 "message": "SSE stream error",
                 "session_id": session_id,
                 "user_id": current_user.id if current_user else None,
                 "error": str(e),
-                "timestamp": datetime.now().isoformat()
+                "timestamp": datetime.now().isoformat(),
             }
 
-            if hasattr(logger, 'log_struct'):
+            if hasattr(logger, "log_struct"):
                 logger.log_struct(error_info, severity="ERROR")
             else:
                 logger.error(f"Error in SSE stream: {error_info}")
@@ -363,10 +388,10 @@ async def agent_network_sse(
                 "message": "SSE connection closed",
                 "session_id": session_id,
                 "user_id": current_user.id if current_user else None,
-                "timestamp": datetime.now().isoformat()
+                "timestamp": datetime.now().isoformat(),
             }
 
-            if hasattr(logger, 'log_struct'):
+            if hasattr(logger, "log_struct"):
                 logger.log_struct(disconnect_info, severity="INFO")
             else:
                 logger.info(f"SSE connection closed: {disconnect_info}")
@@ -381,15 +406,14 @@ async def agent_network_sse(
             "Connection": "keep-alive",
             "X-Accel-Buffering": "no",  # Disable nginx buffering
             "Access-Control-Allow-Origin": "*",
-            "Access-Control-Allow-Headers": "Cache-Control"
-        }
+            "Access-Control-Allow-Headers": "Cache-Control",
+        },
     )
 
 
 @app.get("/agent_network_history")
 async def get_agent_network_history(
-    limit: int = 50,
-    current_user: User | None = Depends(get_current_user_for_sse)
+    limit: int = 50, current_user: User | None = Depends(get_current_user_for_sse)
 ):
     """Get recent agent network event history with optional authentication.
 
@@ -415,10 +439,10 @@ async def get_agent_network_history(
         "auth_required": auth_settings.require_sse_auth,
         "limit": limit,
         "timestamp": datetime.now().isoformat(),
-        "access_type": "history_request"
+        "access_type": "history_request",
     }
 
-    if hasattr(logger, 'log_struct'):
+    if hasattr(logger, "log_struct"):
         logger.log_struct(access_info, severity="INFO")
     else:
         logger.info(f"Agent network history accessed: {access_info}")
@@ -429,7 +453,7 @@ async def get_agent_network_history(
         "events": history,
         "authenticated": current_user is not None,
         "user_id": current_user.id if current_user else None,
-        "timestamp": datetime.now().isoformat()
+        "timestamp": datetime.now().isoformat(),
     }
 
 

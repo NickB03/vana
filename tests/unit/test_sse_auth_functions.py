@@ -30,7 +30,7 @@ class TestOptionalAuthentication:
             email="test@example.com",
             is_active=True,
             is_verified=True,
-            is_superuser=False
+            is_superuser=False,
         )
         session.query.return_value.filter.return_value.first.return_value = user
         return session
@@ -44,9 +44,13 @@ class TestOptionalAuthentication:
     @pytest.fixture
     def invalid_credentials(self):
         """Invalid JWT credentials."""
-        return HTTPAuthorizationCredentials(scheme="Bearer", credentials="invalid.token")
+        return HTTPAuthorizationCredentials(
+            scheme="Bearer", credentials="invalid.token"
+        )
 
-    def test_get_current_user_optional_with_valid_credentials(self, mock_db_session, valid_credentials):
+    def test_get_current_user_optional_with_valid_credentials(
+        self, mock_db_session, valid_credentials
+    ):
         """Test get_current_user_optional with valid credentials returns user."""
         user = get_current_user_optional(valid_credentials, mock_db_session)
 
@@ -61,13 +65,17 @@ class TestOptionalAuthentication:
 
         assert user is None
 
-    def test_get_current_user_optional_with_invalid_credentials(self, mock_db_session, invalid_credentials):
+    def test_get_current_user_optional_with_invalid_credentials(
+        self, mock_db_session, invalid_credentials
+    ):
         """Test get_current_user_optional with invalid credentials returns None."""
         user = get_current_user_optional(invalid_credentials, mock_db_session)
 
         assert user is None
 
-    def test_get_current_user_optional_with_inactive_user(self, mock_db_session, valid_credentials):
+    def test_get_current_user_optional_with_inactive_user(
+        self, mock_db_session, valid_credentials
+    ):
         """Test get_current_user_optional with inactive user returns None."""
         # Make the user inactive
         mock_db_session.query.return_value.filter.return_value.first.return_value.is_active = False
@@ -90,7 +98,7 @@ class TestSSEAuthentication:
             email="test@example.com",
             is_active=True,
             is_verified=True,
-            is_superuser=False
+            is_superuser=False,
         )
         session.query.return_value.filter.return_value.first.return_value = user
         return session
@@ -104,9 +112,13 @@ class TestSSEAuthentication:
     @pytest.fixture
     def invalid_credentials(self):
         """Invalid JWT credentials."""
-        return HTTPAuthorizationCredentials(scheme="Bearer", credentials="invalid.token")
+        return HTTPAuthorizationCredentials(
+            scheme="Bearer", credentials="invalid.token"
+        )
 
-    def test_sse_auth_required_with_valid_credentials(self, mock_db_session, valid_credentials):
+    def test_sse_auth_required_with_valid_credentials(
+        self, mock_db_session, valid_credentials
+    ):
         """Test SSE auth when required with valid credentials."""
         with patch("app.auth.security.get_auth_settings") as mock_settings:
             mock_settings.return_value.require_sse_auth = True
@@ -117,7 +129,9 @@ class TestSSEAuthentication:
             assert user.id == 1
             assert user.is_active is True
 
-    def test_sse_auth_required_with_no_credentials_raises_exception(self, mock_db_session):
+    def test_sse_auth_required_with_no_credentials_raises_exception(
+        self, mock_db_session
+    ):
         """Test SSE auth when required with no credentials raises HTTPException."""
         with patch("app.auth.security.get_auth_settings") as mock_settings:
             mock_settings.return_value.require_sse_auth = True
@@ -126,9 +140,13 @@ class TestSSEAuthentication:
                 get_current_user_for_sse(None, mock_db_session)
 
             assert exc_info.value.status_code == 401
-            assert "Authentication required for SSE endpoints" in str(exc_info.value.detail)
+            assert "Authentication required for SSE endpoints" in str(
+                exc_info.value.detail
+            )
 
-    def test_sse_auth_required_with_invalid_credentials_raises_exception(self, mock_db_session, invalid_credentials):
+    def test_sse_auth_required_with_invalid_credentials_raises_exception(
+        self, mock_db_session, invalid_credentials
+    ):
         """Test SSE auth when required with invalid credentials raises HTTPException."""
         with patch("app.auth.security.get_auth_settings") as mock_settings:
             mock_settings.return_value.require_sse_auth = True
@@ -139,7 +157,9 @@ class TestSSEAuthentication:
             assert exc_info.value.status_code == 401
             assert "Could not validate credentials" in str(exc_info.value.detail)
 
-    def test_sse_auth_optional_with_valid_credentials(self, mock_db_session, valid_credentials):
+    def test_sse_auth_optional_with_valid_credentials(
+        self, mock_db_session, valid_credentials
+    ):
         """Test SSE auth when optional with valid credentials returns user."""
         with patch("app.auth.security.get_auth_settings") as mock_settings:
             mock_settings.return_value.require_sse_auth = False
@@ -159,7 +179,9 @@ class TestSSEAuthentication:
 
             assert user is None
 
-    def test_sse_auth_optional_with_invalid_credentials(self, mock_db_session, invalid_credentials):
+    def test_sse_auth_optional_with_invalid_credentials(
+        self, mock_db_session, invalid_credentials
+    ):
         """Test SSE auth when optional with invalid credentials returns None."""
         with patch("app.auth.security.get_auth_settings") as mock_settings:
             mock_settings.return_value.require_sse_auth = False
@@ -196,16 +218,19 @@ class TestAuthConfiguration:
             with pytest.raises(Exception):  # ValidationError from pydantic
                 AuthSettings()
 
-    @pytest.mark.parametrize("env_value,expected", [
-        ("1", True),
-        ("0", False),
-        ("yes", True),
-        ("no", False),
-        ("on", True),
-        ("off", False),
-        ("TRUE", True),
-        ("FALSE", False),
-    ])
+    @pytest.mark.parametrize(
+        "env_value,expected",
+        [
+            ("1", True),
+            ("0", False),
+            ("yes", True),
+            ("no", False),
+            ("on", True),
+            ("off", False),
+            ("TRUE", True),
+            ("FALSE", False),
+        ],
+    )
     def test_auth_settings_boolean_conversions(self, env_value, expected):
         """Test various boolean conversion values."""
         with patch.dict(os.environ, {"AUTH_REQUIRE_SSE_AUTH": env_value}):
@@ -227,7 +252,7 @@ class TestSecurityIntegration:
             email="active@example.com",
             is_active=True,
             is_verified=True,
-            is_superuser=False
+            is_superuser=False,
         )
 
         inactive_user = User(
@@ -236,7 +261,7 @@ class TestSecurityIntegration:
             email="inactive@example.com",
             is_active=False,
             is_verified=True,
-            is_superuser=False
+            is_superuser=False,
         )
 
         def mock_query_filter(user_id):
@@ -247,7 +272,9 @@ class TestSecurityIntegration:
             else:
                 return MagicMock(first=MagicMock(return_value=None))
 
-        session.query.return_value.filter.side_effect = lambda filter_expr: mock_query_filter(1)
+        session.query.return_value.filter.side_effect = (
+            lambda filter_expr: mock_query_filter(1)
+        )
         return session
 
     def test_active_user_authentication_flow(self, mock_db_with_multiple_users):

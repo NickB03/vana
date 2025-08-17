@@ -40,7 +40,7 @@ def test_user(test_db):
         last_name="User",
         hashed_password=get_password_hash("testpassword123!"),
         is_active=True,
-        is_verified=True
+        is_verified=True,
     )
     test_db.add(user)
     test_db.commit()
@@ -51,10 +51,7 @@ def test_user(test_db):
 @pytest.fixture
 def test_role(test_db):
     """Create test role."""
-    role = Role(
-        name="test_role",
-        description="Test role"
-    )
+    role = Role(name="test_role", description="Test role")
     test_db.add(role)
     test_db.commit()
     test_db.refresh(role)
@@ -68,7 +65,7 @@ def test_permission(test_db):
         name="test:read",
         description="Test read permission",
         resource="test",
-        action="read"
+        action="read",
     )
     test_db.add(permission)
     test_db.commit()
@@ -128,16 +125,16 @@ class TestJWTTokens:
             user_id=test_user.id,
             db=test_db,
             device_info="test device",
-            ip_address="127.0.0.1"
+            ip_address="127.0.0.1",
         )
 
         assert isinstance(token, str)
         assert len(token) > 0
 
         # Verify token is stored in database
-        db_token = test_db.query(RefreshToken).filter(
-            RefreshToken.token == token
-        ).first()
+        db_token = (
+            test_db.query(RefreshToken).filter(RefreshToken.token == token).first()
+        )
         assert db_token is not None
         assert db_token.user_id == test_user.id
         assert db_token.device_info == "test device"
@@ -163,7 +160,7 @@ class TestJWTTokens:
             token="expired_token",
             user_id=test_user.id,
             expires_at=datetime.now(timezone.utc) - timedelta(days=1),
-            is_revoked=False
+            is_revoked=False,
         )
         test_db.add(expired_token)
         test_db.commit()
@@ -254,7 +251,7 @@ class TestRefreshTokenModel:
             token="valid_token",
             user_id=test_user.id,
             expires_at=datetime.now(timezone.utc) + timedelta(days=1),
-            is_revoked=False
+            is_revoked=False,
         )
         assert valid_token.is_valid
         assert not valid_token.is_expired
@@ -264,7 +261,7 @@ class TestRefreshTokenModel:
             token="expired_token",
             user_id=test_user.id,
             expires_at=datetime.now(timezone.utc) - timedelta(days=1),
-            is_revoked=False
+            is_revoked=False,
         )
         assert not expired_token.is_valid
         assert expired_token.is_expired
@@ -274,7 +271,7 @@ class TestRefreshTokenModel:
             token="revoked_token",
             user_id=test_user.id,
             expires_at=datetime.now(timezone.utc) + timedelta(days=1),
-            is_revoked=True
+            is_revoked=True,
         )
         assert not revoked_token.is_valid
         assert not revoked_token.is_expired
@@ -308,7 +305,7 @@ class TestSchemas:
             "username": "testuser",
             "password": "TestPassword123!",
             "first_name": "Test",
-            "last_name": "User"
+            "last_name": "User",
         }
         user = UserCreate(**user_data)
         assert user.email == "test@example.com"

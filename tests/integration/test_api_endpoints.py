@@ -41,14 +41,12 @@ class TestAPIEndpoints:
         feedback_data = {
             "score": 5,
             "invocation_id": str(uuid.uuid4()),
-            "text": "Excellent AI response!"
+            "text": "Excellent AI response!",
         }
 
-        with patch('app.server.logger') as mock_logger:
+        with patch("app.server.logger") as mock_logger:
             response = self.client.post(
-                "/feedback",
-                json=feedback_data,
-                headers=self.base_headers
+                "/feedback", json=feedback_data, headers=self.base_headers
             )
 
             assert response.status_code == status.HTTP_200_OK
@@ -62,9 +60,7 @@ class TestAPIEndpoints:
         invalid_feedback = {"score": "invalid_score"}  # Invalid score type
 
         response = self.client.post(
-            "/feedback",
-            json=invalid_feedback,
-            headers=self.base_headers
+            "/feedback", json=invalid_feedback, headers=self.base_headers
         )
 
         assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
@@ -77,10 +73,13 @@ class TestAPIEndpoints:
             with client.stream(
                 "GET",
                 f"/agent_network_sse/{session_id}",
-                headers={"Accept": "text/event-stream"}
+                headers={"Accept": "text/event-stream"},
             ) as response:
                 assert response.status_code == status.HTTP_200_OK
-                assert response.headers["content-type"] == "text/event-stream; charset=utf-8"
+                assert (
+                    response.headers["content-type"]
+                    == "text/event-stream; charset=utf-8"
+                )
                 assert response.headers["cache-control"] == "no-cache"
                 assert response.headers["connection"] == "keep-alive"
 
@@ -100,7 +99,7 @@ class TestAPIEndpoints:
         data = response.json()
         assert isinstance(data, list)
 
-    @patch('app.server.get_fast_api_app')
+    @patch("app.server.get_fast_api_app")
     def test_adk_integration_endpoints(self, mock_get_app):
         """Test ADK-specific endpoints are properly integrated."""
         # Mock the ADK app to verify integration
@@ -117,20 +116,18 @@ class TestAPIEndpoints:
         response = self.client.options("/health")
 
         # Should not error on OPTIONS request
-        assert response.status_code in [status.HTTP_200_OK, status.HTTP_405_METHOD_NOT_ALLOWED]
+        assert response.status_code in [
+            status.HTTP_200_OK,
+            status.HTTP_405_METHOD_NOT_ALLOWED,
+        ]
 
     def test_session_creation_endpoint(self):
         """Test session creation through ADK endpoints."""
-        session_data = {
-            "state": {
-                "preferred_language": "English",
-                "visit_count": 1
-            }
-        }
+        session_data = {"state": {"preferred_language": "English", "visit_count": 1}}
 
         session_url = f"/apps/app/users/{self.test_user_id}/sessions"
 
-        with patch('requests.post') as mock_post:
+        with patch("requests.post") as mock_post:
             # Mock successful session creation
             mock_response = Mock()
             mock_response.status_code = 200
@@ -139,10 +136,7 @@ class TestAPIEndpoints:
 
             # This tests the integration pattern used in the E2E tests
             response = mock_post(
-                session_url,
-                headers=self.base_headers,
-                json=session_data,
-                timeout=60
+                session_url, headers=self.base_headers, json=session_data, timeout=60
             )
 
             assert response.status_code == 200
@@ -166,7 +160,7 @@ class TestStreamingEndpoints:
             with client.stream(
                 "GET",
                 f"/agent_network_sse/{session_id}",
-                timeout=5.0  # Short timeout for testing
+                timeout=5.0,  # Short timeout for testing
             ) as response:
                 assert response.status_code == status.HTTP_200_OK
 
@@ -174,7 +168,7 @@ class TestStreamingEndpoints:
                 expected_headers = {
                     "cache-control": "no-cache",
                     "connection": "keep-alive",
-                    "access-control-allow-origin": "*"
+                    "access-control-allow-origin": "*",
                 }
 
                 for header, value in expected_headers.items():
@@ -188,9 +182,7 @@ class TestStreamingEndpoints:
 
         with self.client as client:
             with client.stream(
-                "GET",
-                f"/agent_network_sse/{session_id}",
-                timeout=2.0
+                "GET", f"/agent_network_sse/{session_id}", timeout=2.0
             ) as response:
                 # Connection should establish quickly
                 connection_time = time.time() - start_time
@@ -223,7 +215,7 @@ class TestErrorHandling:
             assert response.status_code in [
                 status.HTTP_200_OK,  # Might accept and handle gracefully
                 status.HTTP_400_BAD_REQUEST,  # Might reject invalid format
-                status.HTTP_422_UNPROCESSABLE_ENTITY  # Validation error
+                status.HTTP_422_UNPROCESSABLE_ENTITY,  # Validation error
             ]
 
     def test_malformed_feedback_data(self):
@@ -248,7 +240,7 @@ class TestErrorHandling:
         large_feedback = {
             "score": 3,
             "invocation_id": str(uuid.uuid4()),
-            "text": large_text
+            "text": large_text,
         }
 
         response = self.client.post("/feedback", json=large_feedback)
@@ -257,7 +249,7 @@ class TestErrorHandling:
         assert response.status_code in [
             status.HTTP_200_OK,
             status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
-            status.HTTP_422_UNPROCESSABLE_ENTITY
+            status.HTTP_422_UNPROCESSABLE_ENTITY,
         ]
 
     def test_concurrent_requests(self):
@@ -310,7 +302,7 @@ class TestPerformanceAndLimits:
         feedback_data = {
             "score": 4,
             "invocation_id": str(uuid.uuid4()),
-            "text": "Performance test feedback"
+            "text": "Performance test feedback",
         }
 
         start_time = time.time()
@@ -329,9 +321,7 @@ class TestPerformanceAndLimits:
             # Open multiple SSE connections
             for session_id in session_ids:
                 stream = self.client.stream(
-                    "GET",
-                    f"/agent_network_sse/{session_id}",
-                    timeout=2.0
+                    "GET", f"/agent_network_sse/{session_id}", timeout=2.0
                 )
                 connection = stream.__enter__()
                 connections.append((stream, connection))

@@ -52,7 +52,9 @@ def validate_password_strength(password: str) -> bool:
     return all([has_upper, has_lower, has_digit, has_special])
 
 
-def create_access_token(data: dict[str, Any], expires_delta: timedelta | None = None) -> str:
+def create_access_token(
+    data: dict[str, Any], expires_delta: timedelta | None = None
+) -> str:
     """Create a JWT access token."""
     to_encode = data.copy()
 
@@ -66,17 +68,24 @@ def create_access_token(data: dict[str, Any], expires_delta: timedelta | None = 
     return encoded_jwt
 
 
-def create_refresh_token(user_id: int, db: Session, device_info: str | None = None,
-                        ip_address: str | None = None) -> str:
+def create_refresh_token(
+    user_id: int,
+    db: Session,
+    device_info: str | None = None,
+    ip_address: str | None = None,
+) -> str:
     """Create a refresh token and store it in database."""
     token = secrets.token_urlsafe(32)
     expires_at = datetime.now(timezone.utc) + REFRESH_TOKEN_EXPIRE_DELTA
 
     # Clean up old refresh tokens (keep only the latest 4)
-    old_tokens = db.query(RefreshToken).filter(
-        RefreshToken.user_id == user_id,
-        not RefreshToken.is_revoked
-    ).order_by(RefreshToken.created_at.desc()).offset(4).all()
+    old_tokens = (
+        db.query(RefreshToken)
+        .filter(RefreshToken.user_id == user_id, not RefreshToken.is_revoked)
+        .order_by(RefreshToken.created_at.desc())
+        .offset(4)
+        .all()
+    )
 
     for old_token in old_tokens:
         old_token.is_revoked = True
@@ -87,7 +96,7 @@ def create_refresh_token(user_id: int, db: Session, device_info: str | None = No
         user_id=user_id,
         expires_at=expires_at,
         device_info=device_info,
-        ip_address=ip_address
+        ip_address=ip_address,
     )
     db.add(refresh_token)
     db.commit()
@@ -97,10 +106,11 @@ def create_refresh_token(user_id: int, db: Session, device_info: str | None = No
 
 def verify_refresh_token(token: str, db: Session) -> User | None:
     """Verify and return user from refresh token."""
-    refresh_token = db.query(RefreshToken).filter(
-        RefreshToken.token == token,
-        not RefreshToken.is_revoked
-    ).first()
+    refresh_token = (
+        db.query(RefreshToken)
+        .filter(RefreshToken.token == token, not RefreshToken.is_revoked)
+        .first()
+    )
 
     if not refresh_token or not refresh_token.is_valid:
         return None
@@ -120,17 +130,18 @@ def revoke_refresh_token(token: str, db: Session) -> bool:
 
 def revoke_all_user_tokens(user_id: int, db: Session) -> int:
     """Revoke all refresh tokens for a user."""
-    count = db.query(RefreshToken).filter(
-        RefreshToken.user_id == user_id,
-        not RefreshToken.is_revoked
-    ).update({"is_revoked": True})
+    count = (
+        db.query(RefreshToken)
+        .filter(RefreshToken.user_id == user_id, not RefreshToken.is_revoked)
+        .update({"is_revoked": True})
+    )
     db.commit()
     return count
 
 
 def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(security),
-    db: Session = Depends(get_auth_db)
+    db: Session = Depends(get_auth_db),
 ) -> User:
     """Get current authenticated user from JWT token."""
     credentials_exception = HTTPException(
@@ -140,7 +151,9 @@ def get_current_user(
     )
 
     try:
-        payload = jwt.decode(credentials.credentials, JWT_SECRET_KEY, algorithms=[JWT_ALGORITHM])
+        payload = jwt.decode(
+            credentials.credentials, JWT_SECRET_KEY, algorithms=[JWT_ALGORITHM]
+        )
         user_id: int | None = payload.get("sub")
         token_type: str | None = payload.get("type")
 
@@ -162,35 +175,39 @@ def get_current_active_user(current_user: User = Depends(get_current_user)) -> U
     """Get current active user."""
     if not current_user.is_active:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Inactive user"
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Inactive user"
         )
     return current_user
 
 
-def get_current_verified_user(current_user: User = Depends(get_current_active_user)) -> User:
+def get_current_verified_user(
+    current_user: User = Depends(get_current_active_user),
+) -> User:
     """Get current verified user."""
     if not current_user.is_verified:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="User not verified"
+            status_code=status.HTTP_400_BAD_REQUEST, detail="User not verified"
         )
     return current_user
 
 
-def get_current_superuser(current_user: User = Depends(get_current_active_user)) -> User:
+def get_current_superuser(
+    current_user: User = Depends(get_current_active_user),
+) -> User:
     """Get current superuser."""
     if not current_user.is_superuser:
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Not enough permissions"
+            status_code=status.HTTP_403_FORBIDDEN, detail="Not enough permissions"
         )
     return current_user
 
 
 def require_permissions(required_permissions: list[str]):
     """Dependency factory for requiring specific permissions."""
-    def permission_checker(current_user: User = Depends(get_current_active_user)) -> User:
+
+    def permission_checker(
+        current_user: User = Depends(get_current_active_user),
+    ) -> User:
         if current_user.is_superuser:
             return current_user
 
@@ -203,7 +220,7 @@ def require_permissions(required_permissions: list[str]):
         if missing_permissions:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail=f"Missing required permissions: {', '.join(missing_permissions)}"
+                detail=f"Missing required permissions: {', '.join(missing_permissions)}",
             )
 
         return current_user
@@ -213,6 +230,7 @@ def require_permissions(required_permissions: list[str]):
 
 def require_roles(required_roles: list[str]):
     """Dependency factory for requiring specific roles."""
+
     def role_checker(current_user: User = Depends(get_current_active_user)) -> User:
         if current_user.is_superuser:
             return current_user
@@ -222,7 +240,7 @@ def require_roles(required_roles: list[str]):
         if not any(role in user_roles for role in required_roles):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail=f"Required one of roles: {', '.join(required_roles)}"
+                detail=f"Required one of roles: {', '.join(required_roles)}",
             )
 
         return current_user
@@ -233,9 +251,11 @@ def require_roles(required_roles: list[str]):
 def authenticate_user(username: str, password: str, db: Session) -> User | None:
     """Authenticate a user with username/email and password."""
     # Try to find user by username or email
-    user = db.query(User).filter(
-        (User.username == username) | (User.email == username)
-    ).first()
+    user = (
+        db.query(User)
+        .filter((User.username == username) | (User.email == username))
+        .first()
+    )
 
     if not user or not verify_password(password, user.hashed_password):
         return None
@@ -276,14 +296,16 @@ def verify_password_reset_token(token: str) -> str | None:
 
 def get_current_user_optional(
     credentials: HTTPAuthorizationCredentials | None = Depends(optional_security),
-    db: Session = Depends(get_auth_db)
+    db: Session = Depends(get_auth_db),
 ) -> User | None:
     """Get current user from JWT token if provided, otherwise return None."""
     if not credentials:
         return None
 
     try:
-        payload = jwt.decode(credentials.credentials, JWT_SECRET_KEY, algorithms=[JWT_ALGORITHM])
+        payload = jwt.decode(
+            credentials.credentials, JWT_SECRET_KEY, algorithms=[JWT_ALGORITHM]
+        )
         user_id: int | None = payload.get("sub")
         token_type: str | None = payload.get("type")
 
@@ -303,7 +325,7 @@ def get_current_user_optional(
 
 def get_current_user_for_sse(
     credentials: HTTPAuthorizationCredentials | None = Depends(optional_security),
-    db: Session = Depends(get_auth_db)
+    db: Session = Depends(get_auth_db),
 ) -> User | None:
     """
     Get current user for SSE endpoints based on REQUIRE_SSE_AUTH setting.

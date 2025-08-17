@@ -1,0 +1,170 @@
+{
+  "rules": {
+    "enabled": ["SV001", "SV002", "SV003", "SV004", "SV005", "SV006", "SV007", "SV008", "SV009", "SV010", "SV011"],
+    "disabled": [],
+    "custom_rules_path": null
+  },
+  "severity_levels": {
+    "fail_on_critical": true,
+    "fail_on_warnings": false,
+    "show_info": true,
+    "treat_warnings_as_errors": false
+  },
+  "performance": {
+    "enable_performance_mode": true,
+    "max_execution_time_ms": 200,
+    "parallel_processing": false,
+    "cache_enabled": true
+  },
+  "output": {
+    "default_format": "text",
+    "show_suggestions": true,
+    "show_explanations": true,
+    "group_by_severity": true,
+    "show_performance_stats": false,
+    "max_issues_per_file": 50
+  },
+  "git_integration": {
+    "auto_install_hooks": false,
+    "hook_types": ["pre-commit"],
+    "fail_on_critical": true,
+    "fail_on_warnings": false,
+    "exclude_patterns": [
+      "node_modules/**",
+      ".git/**",
+      "vendor/**",
+      "build/**",
+      "dist/**",
+      "coverage/**",
+      ".venv/**",
+      "*.min.js",
+      "*.bundle.js"
+    ]
+  },
+  "validation_patterns": {
+    "file_extensions": [".sh", ".bash", ".zsh"],
+    "shebang_patterns": ["#!/bin/bash", "#!/bin/sh", "#!/usr/bin/env bash"],
+    "exclude_shebangs": ["#!/usr/bin/env python", "#!/usr/bin/env node"]
+  },
+  "rule_configuration": {
+    "SV001": {
+      "name": "UnquotedVariableRule",
+      "enabled": true,
+      "severity": "warning",
+      "options": {
+        "exclude_contexts": ["comments", "heredocs"],
+        "strict_mode": false
+      }
+    },
+    "SV002": {
+      "name": "UnsafeRedirectionRule",
+      "enabled": true,
+      "severity": "critical",
+      "options": {
+        "allow_dev_null": true,
+        "check_multiple_redirects": true
+      }
+    },
+    "SV003": {
+      "name": "MissingSetOptionsRule",
+      "enabled": true,
+      "severity": "warning",
+      "options": {
+        "required_options": ["set -e", "set -u", "set -o pipefail"],
+        "check_within_lines": 20
+      }
+    },
+    "SV004": {
+      "name": "CommandSubstitutionRule",
+      "enabled": true,
+      "severity": "info",
+      "options": {
+        "prefer_dollar_syntax": true,
+        "allow_backticks_in_comments": true
+      }
+    },
+    "SV005": {
+      "name": "ArrayUsageRule",
+      "enabled": true,
+      "severity": "warning",
+      "options": {
+        "check_array_expansions": true,
+        "require_quotes": true
+      }
+    },
+    "SV006": {
+      "name": "VariableNamingRule",
+      "enabled": true,
+      "severity": "info",
+      "options": {
+        "enforce_uppercase_globals": true,
+        "allow_lowercase_locals": true,
+        "check_naming_conventions": true
+      }
+    },
+    "SV007": {
+      "name": "UnsafeCurlPipeRule",
+      "enabled": true,
+      "severity": "critical",
+      "options": {
+        "check_curl_pipe": true,
+        "check_wget_pipe": true,
+        "allow_with_verification": false
+      }
+    },
+    "SV008": {
+      "name": "EnhancedUnquotedVariableRule",
+      "enabled": true,
+      "severity": "warning",
+      "options": {
+        "sc2086_compatibility": true,
+        "strict_quoting": true,
+        "check_array_contexts": true
+      }
+    },
+    "SV009": {
+      "name": "MultipleRedirectsRule",
+      "enabled": true,
+      "severity": "warning",
+      "options": {
+        "track_redirections": true,
+        "suggest_append": true
+      }
+    },
+    "SV010": {
+      "name": "CommandSubstitutionAssignmentRule",
+      "enabled": true,
+      "severity": "warning",
+      "options": {
+        "sc2155_compatibility": true,
+        "check_declare": true,
+        "check_local": true,
+        "check_readonly": true
+      }
+    },
+    "SV011": {
+      "name": "UselessCatRule",
+      "enabled": true,
+      "severity": "info",
+      "options": {
+        "optimization_suggestions": true,
+        "check_pipes": true
+      }
+    }
+  },
+  "reporting": {
+    "html_template": null,
+    "include_metrics": true,
+    "include_suggestions": true,
+    "include_file_stats": true,
+    "group_by_category": false,
+    "sort_by_severity": true
+  },
+  "ci_cd_integration": {
+    "jenkins_format": false,
+    "github_actions_format": false,
+    "gitlab_ci_format": false,
+    "fail_fast": false,
+    "parallel_jobs": 1
+  }
+}

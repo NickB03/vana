@@ -51,10 +51,7 @@ class TestEnhancedSSEBroadcaster:
         # Broadcast event
         event_data = {
             "type": "test_event",
-            "data": {
-                "message": "Test message",
-                "value": 42
-            }
+            "data": {"message": "Test message", "value": 42},
         }
         await broadcaster.broadcast_event("test-session", event_data)
 
@@ -113,7 +110,9 @@ class TestAgentCallbackIntegration:
         mock_context._invocation_context.session.state = {}
         mock_context.state = {}
 
-        with patch('app.enhanced_callbacks.broadcast_agent_network_update') as mock_broadcast:
+        with patch(
+            "app.enhanced_callbacks.broadcast_agent_network_update"
+        ) as mock_broadcast:
             before_agent_callback(mock_context)
 
             # Verify broadcast was called
@@ -145,8 +144,10 @@ class TestAgentCallbackIntegration:
         _network_state.execution_stack = ["test_agent"]
         _network_state.active_agents = {"test_agent"}
 
-        with patch('app.enhanced_callbacks.broadcast_agent_network_update') as mock_broadcast:
-            with patch('time.time', return_value=105.0):  # 5 second execution
+        with patch(
+            "app.enhanced_callbacks.broadcast_agent_network_update"
+        ) as mock_broadcast:
+            with patch("time.time", return_value=105.0):  # 5 second execution
                 after_agent_callback(mock_context)
 
                 # Verify broadcast was called
@@ -170,7 +171,7 @@ class TestAgentProgressTracker:
         """Test sending progress updates."""
         tracker = AgentProgressTracker("test-session", "test_agent")
 
-        with patch('app.utils.agent_progress.get_sse_broadcaster') as mock_get:
+        with patch("app.utils.agent_progress.get_sse_broadcaster") as mock_get:
             mock_broadcaster = AsyncMock()
             mock_get.return_value = mock_broadcaster
 
@@ -178,7 +179,7 @@ class TestAgentProgressTracker:
                 current_step=5,
                 total_steps=10,
                 message="Processing data",
-                step_name="Data Analysis"
+                step_name="Data Analysis",
             )
 
             # Verify broadcast was called
@@ -200,14 +201,12 @@ class TestAgentProgressTracker:
         """Test adding and broadcasting substeps."""
         tracker = AgentProgressTracker("test-session", "test_agent")
 
-        with patch('app.utils.agent_progress.get_sse_broadcaster') as mock_get:
+        with patch("app.utils.agent_progress.get_sse_broadcaster") as mock_get:
             mock_broadcaster = AsyncMock()
             mock_get.return_value = mock_broadcaster
 
             await tracker.add_substep(
-                name="Load data",
-                status="active",
-                details="Loading from database"
+                name="Load data", status="active", details="Loading from database"
             )
 
             # Verify broadcast was called
@@ -227,7 +226,7 @@ class TestAgentProgressTracker:
         tracker.total_steps = 10
         tracker.steps_completed = 10
 
-        with patch('app.utils.agent_progress.get_sse_broadcaster') as mock_get:
+        with patch("app.utils.agent_progress.get_sse_broadcaster") as mock_get:
             mock_broadcaster = AsyncMock()
             mock_get.return_value = mock_broadcaster
 
@@ -250,31 +249,25 @@ class TestBroadcastUtility:
 
     def test_broadcast_with_running_loop(self):
         """Test broadcasting when event loop is running."""
-        event_data = {
-            "type": "test",
-            "data": {"message": "test"}
-        }
+        event_data = {"type": "test", "data": {"message": "test"}}
 
-        with patch('asyncio.get_event_loop') as mock_get_loop:
+        with patch("asyncio.get_event_loop") as mock_get_loop:
             mock_loop = Mock()
             mock_loop.is_running.return_value = True
             mock_get_loop.return_value = mock_loop
 
-            with patch('asyncio.create_task') as mock_create_task:
+            with patch("asyncio.create_task") as mock_create_task:
                 broadcast_agent_network_update(event_data, "test-session")
                 mock_create_task.assert_called_once()
 
     def test_broadcast_without_loop(self):
         """Test broadcasting when no event loop is running."""
-        event_data = {
-            "type": "test",
-            "data": {"message": "test"}
-        }
+        event_data = {"type": "test", "data": {"message": "test"}}
 
-        with patch('asyncio.get_event_loop') as mock_get_loop:
+        with patch("asyncio.get_event_loop") as mock_get_loop:
             mock_get_loop.side_effect = RuntimeError("No event loop")
 
-            with patch('asyncio.run') as mock_run:
+            with patch("asyncio.run") as mock_run:
                 broadcast_agent_network_update(event_data, "test-session")
                 mock_run.assert_called_once()
 

@@ -45,7 +45,7 @@ def get_google_user_info(access_token: str) -> dict[str, Any]:
     try:
         response = httpx.get(
             "https://www.googleapis.com/oauth2/v2/userinfo",
-            headers={"Authorization": f"Bearer {access_token}"}
+            headers={"Authorization": f"Bearer {access_token}"},
         )
         response.raise_for_status()
         return response.json()
@@ -100,8 +100,7 @@ class GoogleCloudIAM:
             # Test IAM permissions
             resource = f"projects/{self.project_id}"
             iam_admin_v1.TestIamPermissionsRequest(
-                resource=resource,
-                permissions=[permission]
+                resource=resource, permissions=[permission]
             )
 
             # This would require impersonation or service account setup
@@ -109,30 +108,29 @@ class GoogleCloudIAM:
             return False
 
         except Exception as e:
-            print(f"Error testing Google Cloud permission {permission} for {user_email}: {e}")
+            print(
+                f"Error testing Google Cloud permission {permission} for {user_email}: {e}"
+            )
             return False
 
     def get_service_account_info(self) -> dict[str, Any]:
         """Get information about the current service account."""
         try:
-            if hasattr(self.credentials, 'service_account_email'):
+            if hasattr(self.credentials, "service_account_email"):
                 return {
                     "email": self.credentials.service_account_email,
                     "project_id": self.project_id,
-                    "has_credentials": True
+                    "has_credentials": True,
                 }
             else:
                 return {
                     "email": None,
                     "project_id": self.project_id,
-                    "has_credentials": False
+                    "has_credentials": False,
                 }
 
         except Exception as e:
-            return {
-                "error": str(e),
-                "has_credentials": False
-            }
+            return {"error": str(e), "has_credentials": False}
 
 
 def map_google_roles_to_local(google_roles: list[str]) -> list[str]:
@@ -211,17 +209,12 @@ def create_google_cloud_user_binding(user_email: str, role: str) -> bool:
         if not binding_found:
             # Create new binding
             from google.iam.v1 import policy_pb2
-            new_binding = policy_pb2.Binding(
-                role=role,
-                members=[member]
-            )
+
+            new_binding = policy_pb2.Binding(role=role, members=[member])
             policy.bindings.append(new_binding)
 
         # Set updated policy
-        set_request = iam_admin_v1.SetIamPolicyRequest(
-            resource=resource,
-            policy=policy
-        )
+        set_request = iam_admin_v1.SetIamPolicyRequest(resource=resource, policy=policy)
         iam.iam_client.set_iam_policy(request=set_request)
 
         return True

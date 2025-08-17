@@ -82,7 +82,7 @@ async def test_claude_flow_integration():
             "What is the hierarchical planner-executor pattern?",
             "How do I use AgentTool for delegation?",
             "Fix circular import in callbacks",
-            "Show me an example of custom BaseAgent"
+            "Show me an example of custom BaseAgent",
         ]
 
         for query in test_cases:
@@ -94,7 +94,7 @@ async def test_claude_flow_integration():
             print(f"  - Status: {result['status']}")
 
             # Check if results were generated
-            if result.get('results'):
+            if result.get("results"):
                 print(f"  - Generated {len(result['results'])} search queries")
 
         print("\n✓ Claude Flow integration tested successfully")
@@ -113,9 +113,7 @@ async def test_mcp_tool_integration():
     try:
         # Test ChromaDB query structure
         query_result = await query_adk_chromadb(
-            "LlmAgent configuration",
-            collection_name="adk_documentation",
-            n_results=5
+            "LlmAgent configuration", collection_name="adk_documentation", n_results=5
         )
 
         print("✓ ChromaDB query structured successfully")
@@ -127,7 +125,7 @@ async def test_mcp_tool_integration():
         actions = [
             ("query", {"query": "SequentialAgent pattern"}),
             ("list_patterns", {}),
-            ("validate", {"code": "agent = LlmAgent(name='test')"})
+            ("validate", {"code": "agent = LlmAgent(name='test')"}),
         ]
 
         for action, params in actions:
@@ -138,7 +136,9 @@ async def test_mcp_tool_integration():
             if result.get("status") == "success":
                 print(f"  ✓ Action '{action}' executed successfully")
             else:
-                print(f"  ✗ Action '{action}' failed: {result.get('message', 'Unknown error')}")
+                print(
+                    f"  ✗ Action '{action}' failed: {result.get('message', 'Unknown error')}"
+                )
 
         print("\n✓ MCP tool integration tested successfully")
 
@@ -166,14 +166,14 @@ async def test_llm_agent_wrapper():
         tool_result = await query_adk_expert(
             query="How to use callbacks in ADK",
             query_type="implementation",
-            include_examples=True
+            include_examples=True,
         )
 
         print("\n✓ Tool function executed")
         print(f"  - Status: {tool_result['status']}")
 
-        if tool_result['status'] == 'success':
-            guidance = tool_result.get('guidance', {})
+        if tool_result["status"] == "success":
+            guidance = tool_result.get("guidance", {})
             print(f"  - Guidance topic: {guidance.get('topic', 'N/A')}")
 
         print("\n✓ LLM Agent wrapper tested successfully")
@@ -202,7 +202,7 @@ async def test_validation_functionality():
                     instruction="Process tasks"
                 )
                 """,
-                "LlmAgent configuration"
+                "LlmAgent configuration",
             ),
             (
                 """
@@ -211,8 +211,8 @@ async def test_validation_functionality():
                     sub_agents=[agent1, agent2]
                 )
                 """,
-                "SequentialAgent pattern"
-            )
+                "SequentialAgent pattern",
+            ),
         ]
 
         for code, pattern in test_cases:
@@ -224,9 +224,9 @@ async def test_validation_functionality():
             print(f"  - Compliant: {validation['compliant']}")
             print(f"  - Score: {validation['score']}")
 
-            if validation['issues']:
+            if validation["issues"]:
                 print(f"  - Issues found: {len(validation['issues'])}")
-            if validation['suggestions']:
+            if validation["suggestions"]:
                 print(f"  - Suggestions: {len(validation['suggestions'])}")
 
         print("\n✓ Validation functionality tested successfully")
@@ -253,7 +253,7 @@ async def main():
         ("Claude Flow Integration", test_claude_flow_integration),
         ("MCP Tool Integration", test_mcp_tool_integration),
         ("LLM Agent Wrapper", test_llm_agent_wrapper),
-        ("Validation Functionality", test_validation_functionality)
+        ("Validation Functionality", test_validation_functionality),
     ]
 
     for test_name, test_func in tests:
