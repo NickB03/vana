@@ -4,7 +4,7 @@ import asyncio
 import json
 import logging
 from dataclasses import dataclass, field
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional, Union
 
 from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
@@ -12,9 +12,13 @@ from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
-from .metrics_collector import MetricsCollector, PerformanceMetrics, get_metrics_collector
+from .alerting import Alert, AlertLevel, AlertManager, get_alert_manager
 from .cache_optimizer import CacheOptimizer, get_cache_optimizer
-from .alerting import AlertManager, Alert, AlertLevel, get_alert_manager
+from .metrics_collector import (
+    MetricsCollector,
+    PerformanceMetrics,
+    get_metrics_collector,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -26,87 +30,87 @@ class DashboardWidget:
     title: str
     widget_type: str  # chart, gauge, table, alert_list, etc.
     data_source: str  # metrics, cache, alerts
-    config: Dict[str, Any] = field(default_factory=dict)
-    position: Dict[str, int] = field(default_factory=lambda: {"x": 0, "y": 0, "w": 4, "h": 3})
-    
-    
+    config: dict[str, Any] = field(default_factory=dict)
+    position: dict[str, int] = field(default_factory=lambda: {"x": 0, "y": 0, "w": 4, "h": 3})
+
+
 @dataclass
 class DashboardLayout:
     """Dashboard layout configuration."""
     dashboard_id: str
     name: str
     description: str
-    widgets: List[DashboardWidget] = field(default_factory=list)
+    widgets: list[DashboardWidget] = field(default_factory=list)
     refresh_interval: int = 5  # seconds
     created_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
-    
-    
+
+
 class PerformanceDashboard:
     """Performance monitoring dashboard with real-time updates."""
-    
-    def __init__(self, metrics_collector: Optional[MetricsCollector] = None,
-                 cache_optimizer: Optional[CacheOptimizer] = None,
-                 alert_manager: Optional[AlertManager] = None):
+
+    def __init__(self, metrics_collector: MetricsCollector | None = None,
+                 cache_optimizer: CacheOptimizer | None = None,
+                 alert_manager: AlertManager | None = None):
         self.metrics_collector = metrics_collector or get_metrics_collector()
         self.cache_optimizer = cache_optimizer or get_cache_optimizer()
         self.alert_manager = alert_manager or get_alert_manager()
-        
+
         # Dashboard state
-        self.layouts: Dict[str, DashboardLayout] = {}
-        self.active_connections: List[WebSocket] = []
-        
+        self.layouts: dict[str, DashboardLayout] = {}
+        self.active_connections: list[WebSocket] = []
+
         # Default layouts
         self._create_default_layouts()
-        
+
         # Background tasks
-        self._broadcast_task: Optional[asyncio.Task] = None
+        self._broadcast_task: asyncio.Task | None = None
         self._running = False
-        
+
     def start(self) -> None:
         """Start the dashboard."""
         if self._running:
             return
-            
+
         self._running = True
         self._broadcast_task = asyncio.create_task(self._broadcast_loop())
         logger.info("Performance dashboard started")
-        
+
     def stop(self) -> None:
         """Stop the dashboard."""
         self._running = False
         if self._broadcast_task:
             self._broadcast_task.cancel()
         logger.info("Performance dashboard stopped")
-        
+
     async def websocket_endpoint(self, websocket: WebSocket) -> None:
         """WebSocket endpoint for real-time updates."""
         await websocket.accept()
         self.active_connections.append(websocket)
-        
+
         try:
             while True:
                 # Keep connection alive and handle client messages
                 data = await websocket.receive_text()
                 message = json.loads(data)
-                
+
                 if message.get("type") == "subscribe":
                     dashboard_id = message.get("dashboard_id", "overview")
                     await self._send_dashboard_data(websocket, dashboard_id)
                 elif message.get("type") == "refresh":
                     dashboard_id = message.get("dashboard_id", "overview")
                     await self._send_dashboard_data(websocket, dashboard_id)
-                    
+
         except WebSocketDisconnect:
             pass
         finally:
             if websocket in self.active_connections:
                 self.active_connections.remove(websocket)
-                
-    async def get_dashboard_data(self, dashboard_id: str = "overview") -> Dict[str, Any]:
+
+    async def get_dashboard_data(self, dashboard_id: str = "overview") -> dict[str, Any]:
         """Get dashboard data for specified layout."""
         if dashboard_id not in self.layouts:
             dashboard_id = "overview"
-            
+
         layout = self.layouts[dashboard_id]
         data = {
             "dashboard": {
@@ -118,7 +122,7 @@ class PerformanceDashboard:
             "widgets": {},
             "timestamp": datetime.now(timezone.utc).isoformat()
         }
-        
+
         # Collect data for each widget
         for widget in layout.widgets:
             widget_data = await self._get_widget_data(widget)
@@ -128,15 +132,15 @@ class PerformanceDashboard:
                 "position": widget.position,
                 "data": widget_data
             }
-            
+
         return data
-        
-    async def get_metrics_summary(self) -> Dict[str, Any]:
+
+    async def get_metrics_summary(self) -> dict[str, Any]:
         """Get metrics summary for API endpoint."""
         metrics = self.metrics_collector.get_current_metrics()
         cache_metrics = await self.cache_optimizer.get_metrics()
         active_alerts = self.alert_manager.get_active_alerts()
-        
+
         return {
             "performance": {
                 "requests_per_second": metrics.requests_per_second,
@@ -162,13 +166,13 @@ class PerformanceDashboard:
                 "warning": len([a for a in active_alerts if a.level == AlertLevel.WARNING])
             }
         }
-        
+
     def create_custom_dashboard(self, layout: DashboardLayout) -> None:
         """Create a custom dashboard layout."""
         self.layouts[layout.dashboard_id] = layout
         logger.info(f"Created custom dashboard: {layout.name}")
-        
-    def get_available_dashboards(self) -> List[Dict[str, str]]:
+
+    def get_available_dashboards(self) -> list[dict[str, str]]:
         """Get list of available dashboards."""
         return [
             {
@@ -178,12 +182,12 @@ class PerformanceDashboard:
             }
             for layout in self.layouts.values()
         ]
-        
-    async def export_dashboard_config(self, dashboard_id: str) -> Optional[Dict[str, Any]]:
+
+    async def export_dashboard_config(self, dashboard_id: str) -> dict[str, Any] | None:
         """Export dashboard configuration."""
         if dashboard_id not in self.layouts:
             return None
-            
+
         layout = self.layouts[dashboard_id]
         return {
             "dashboard_id": layout.dashboard_id,
@@ -202,8 +206,8 @@ class PerformanceDashboard:
                 for w in layout.widgets
             ]
         }
-        
-    def import_dashboard_config(self, config: Dict[str, Any]) -> bool:
+
+    def import_dashboard_config(self, config: dict[str, Any]) -> bool:
         """Import dashboard configuration."""
         try:
             widgets = []
@@ -217,7 +221,7 @@ class PerformanceDashboard:
                     position=widget_config.get("position", {"x": 0, "y": 0, "w": 4, "h": 3})
                 )
                 widgets.append(widget)
-                
+
             layout = DashboardLayout(
                 dashboard_id=config["dashboard_id"],
                 name=config["name"],
@@ -225,16 +229,16 @@ class PerformanceDashboard:
                 widgets=widgets,
                 refresh_interval=config.get("refresh_interval", 5)
             )
-            
+
             self.layouts[layout.dashboard_id] = layout
             logger.info(f"Imported dashboard: {layout.name}")
             return True
-            
+
         except Exception as e:
             logger.error(f"Failed to import dashboard config: {e}")
             return False
-            
-    async def _get_widget_data(self, widget: DashboardWidget) -> Dict[str, Any]:
+
+    async def _get_widget_data(self, widget: DashboardWidget) -> dict[str, Any]:
         """Get data for a specific widget."""
         if widget.data_source == "metrics":
             return await self._get_metrics_widget_data(widget)
@@ -244,11 +248,11 @@ class PerformanceDashboard:
             return await self._get_alerts_widget_data(widget)
         else:
             return {"error": f"Unknown data source: {widget.data_source}"}
-            
-    async def _get_metrics_widget_data(self, widget: DashboardWidget) -> Dict[str, Any]:
+
+    async def _get_metrics_widget_data(self, widget: DashboardWidget) -> dict[str, Any]:
         """Get metrics data for widget."""
         metrics = self.metrics_collector.get_current_metrics()
-        
+
         if widget.widget_type == "gauge":
             metric_name = widget.config.get("metric", "cpu_usage")
             value = getattr(metrics, metric_name, 0)
@@ -259,13 +263,13 @@ class PerformanceDashboard:
                 "unit": widget.config.get("unit", "%"),
                 "thresholds": widget.config.get("thresholds", [])
             }
-            
+
         elif widget.widget_type == "chart":
             metric_name = widget.config.get("metric", "response_time")
             duration = widget.config.get("duration", 300)  # 5 minutes
-            
+
             history = self.metrics_collector.get_metrics_history(duration)
-            
+
             data_points = []
             for metric in history[-50:]:  # Last 50 points
                 value = getattr(metric, metric_name, 0)
@@ -273,13 +277,13 @@ class PerformanceDashboard:
                     "timestamp": metric.timestamp.isoformat(),
                     "value": value
                 })
-                
+
             return {
                 "data_points": data_points,
                 "metric_name": metric_name,
                 "unit": widget.config.get("unit", "ms")
             }
-            
+
         elif widget.widget_type == "table":
             return {
                 "columns": ["Metric", "Value", "Unit"],
@@ -292,13 +296,13 @@ class PerformanceDashboard:
                     ["Memory Usage", f"{metrics.memory_usage:.1f}", "%"]
                 ]
             }
-            
+
         return {"error": f"Unknown widget type: {widget.widget_type}"}
-        
-    async def _get_cache_widget_data(self, widget: DashboardWidget) -> Dict[str, Any]:
+
+    async def _get_cache_widget_data(self, widget: DashboardWidget) -> dict[str, Any]:
         """Get cache data for widget."""
         cache_metrics = await self.cache_optimizer.get_metrics()
-        
+
         if widget.widget_type == "gauge":
             return {
                 "value": cache_metrics.hit_rate * 100,
@@ -311,7 +315,7 @@ class PerformanceDashboard:
                     {"value": 95, "color": "green"}
                 ]
             }
-            
+
         elif widget.widget_type == "table":
             return {
                 "columns": ["Metric", "Value"],
@@ -323,20 +327,20 @@ class PerformanceDashboard:
                     ["Memory Usage", f"{cache_metrics.memory_usage / 1024 / 1024:.1f} MB"]
                 ]
             }
-            
+
         return {"error": f"Unknown widget type: {widget.widget_type}"}
-        
-    async def _get_alerts_widget_data(self, widget: DashboardWidget) -> Dict[str, Any]:
+
+    async def _get_alerts_widget_data(self, widget: DashboardWidget) -> dict[str, Any]:
         """Get alerts data for widget."""
         if widget.widget_type == "alert_list":
             hours = widget.config.get("hours", 24)
             level = widget.config.get("level")
-            
+
             if level:
                 level = AlertLevel(level)
-                
+
             alerts = self.alert_manager.get_active_alerts(level)
-            
+
             alert_list = []
             for alert in alerts[:20]:  # Limit to 20 most recent
                 alert_list.append({
@@ -348,9 +352,9 @@ class PerformanceDashboard:
                     "value": alert.metric_value,
                     "acknowledged": alert.context.get("acknowledged", False)
                 })
-                
+
             return {"alerts": alert_list}
-            
+
         elif widget.widget_type == "alert_summary":
             stats = self.alert_manager.get_alert_statistics(24)
             return {
@@ -359,9 +363,9 @@ class PerformanceDashboard:
                 "acknowledged": stats["acknowledged_count"],
                 "suppressed": stats["suppressed_count"]
             }
-            
+
         return {"error": f"Unknown widget type: {widget.widget_type}"}
-        
+
     def _create_default_layouts(self) -> None:
         """Create default dashboard layouts."""
         # Overview Dashboard
@@ -377,7 +381,7 @@ class PerformanceDashboard:
             DashboardWidget(
                 widget_id="memory_gauge",
                 title="Memory Usage",
-                widget_type="gauge", 
+                widget_type="gauge",
                 data_source="metrics",
                 config={"metric": "memory_usage", "unit": "%", "max": 100},
                 position={"x": 3, "y": 0, "w": 3, "h": 3}
@@ -413,16 +417,16 @@ class PerformanceDashboard:
                 position={"x": 0, "y": 7, "w": 12, "h": 3}
             )
         ]
-        
+
         overview_layout = DashboardLayout(
             dashboard_id="overview",
             name="System Overview",
             description="High-level system performance overview",
             widgets=overview_widgets
         )
-        
+
         self.layouts["overview"] = overview_layout
-        
+
         # Performance Dashboard
         performance_widgets = [
             DashboardWidget(
@@ -458,16 +462,16 @@ class PerformanceDashboard:
                 position={"x": 6, "y": 4, "w": 3, "h": 3}
             )
         ]
-        
+
         performance_layout = DashboardLayout(
             dashboard_id="performance",
             name="Performance Metrics",
             description="Detailed performance monitoring",
             widgets=performance_widgets
         )
-        
+
         self.layouts["performance"] = performance_layout
-        
+
     async def _send_dashboard_data(self, websocket: WebSocket, dashboard_id: str) -> None:
         """Send dashboard data to WebSocket client."""
         try:
@@ -478,7 +482,7 @@ class PerformanceDashboard:
             }))
         except Exception as e:
             logger.error(f"Error sending dashboard data: {e}")
-            
+
     async def _broadcast_loop(self) -> None:
         """Background loop to broadcast updates to all connected clients."""
         while self._running:
@@ -488,13 +492,13 @@ class PerformanceDashboard:
                     dashboard_data = {}
                     for dashboard_id in self.layouts.keys():
                         dashboard_data[dashboard_id] = await self.get_dashboard_data(dashboard_id)
-                        
+
                     # Broadcast to all connections
                     message = json.dumps({
                         "type": "dashboard_update",
                         "data": dashboard_data
                     })
-                    
+
                     # Send to all connected clients
                     disconnected = []
                     for websocket in self.active_connections:
@@ -502,13 +506,13 @@ class PerformanceDashboard:
                             await websocket.send_text(message)
                         except:
                             disconnected.append(websocket)
-                            
+
                     # Remove disconnected clients
                     for websocket in disconnected:
                         self.active_connections.remove(websocket)
-                        
+
                 await asyncio.sleep(5)  # Update every 5 seconds
-                
+
             except Exception as e:
                 logger.error(f"Error in dashboard broadcast: {e}")
                 await asyncio.sleep(5)
@@ -516,24 +520,24 @@ class PerformanceDashboard:
 
 class DashboardManager:
     """Manager for multiple dashboard instances."""
-    
+
     def __init__(self):
-        self.dashboards: Dict[str, PerformanceDashboard] = {}
-        
+        self.dashboards: dict[str, PerformanceDashboard] = {}
+
     def create_dashboard(self, name: str, **kwargs) -> PerformanceDashboard:
         """Create a new dashboard instance."""
         dashboard = PerformanceDashboard(**kwargs)
         self.dashboards[name] = dashboard
         return dashboard
-        
-    def get_dashboard(self, name: str) -> Optional[PerformanceDashboard]:
+
+    def get_dashboard(self, name: str) -> PerformanceDashboard | None:
         """Get dashboard by name."""
         return self.dashboards.get(name)
-        
-    def list_dashboards(self) -> List[str]:
+
+    def list_dashboards(self) -> list[str]:
         """List all dashboard names."""
         return list(self.dashboards.keys())
-        
+
     def remove_dashboard(self, name: str) -> bool:
         """Remove a dashboard."""
         if name in self.dashboards:
@@ -545,7 +549,7 @@ class DashboardManager:
 
 
 # Global dashboard manager
-_dashboard_manager: Optional[DashboardManager] = None
+_dashboard_manager: DashboardManager | None = None
 
 
 def get_dashboard_manager() -> DashboardManager:

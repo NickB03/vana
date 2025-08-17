@@ -1,0 +1,281 @@
+name: Main CI/CD Pipeline
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  NODE_VERSION: '18'
+  PYTHON_VERSION: '3.11'
+  UV_VERSION: '0.5.11'  # Stable version instead of bleeding edge
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  checks: write
+
+jobs:
+  # ============================================================================
+  # QUICK SMOKE TESTS
+  # ============================================================================
+  smoke-tests:
+    name: Quick Smoke Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: 'frontend/package-lock.json'
+          
+      - name: Install UV (stable version)
+        run: |
+          curl -LsSf "https://astral.sh/uv/${{ env.UV_VERSION }}/install.sh" | sh
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+          
+      - name: Basic syntax check
+        run: |
+          # Quick Python syntax check
+          python -m py_compile app/server.py
+          
+          # Quick Node.js check
+          cd frontend && npm ci --prefer-offline --no-audit
+          
+      - name: Verify basic imports
+        run: |
+          uv sync --no-dev
+          uv run python -c "from app import server; print('✅ Basic imports working')"
+
+  # ============================================================================
+  # PYTHON BACKEND TESTS
+  # ============================================================================
+  backend-tests:
+    name: Backend Tests
+    runs-on: ubuntu-latest
+    needs: smoke-tests
+    timeout-minutes: 10
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+          
+      - name: Install UV (stable)
+        run: |
+          curl -LsSf "https://astral.sh/uv/${{ env.UV_VERSION }}/install.sh" | sh
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+          
+      - name: Cache Python dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/uv
+            .venv
+          key: python-${{ runner.os }}-${{ env.PYTHON_VERSION }}-${{ hashFiles('pyproject.toml') }}
+          restore-keys: |
+            python-${{ runner.os }}-${{ env.PYTHON_VERSION }}-
+            
+      - name: Install dependencies
+        run: |
+          uv sync --dev
+          
+      - name: Run linting
+        run: |
+          uv run ruff check . --output-format=github
+          uv run mypy . --no-error-summary
+          
+      - name: Run tests
+        run: |
+          uv run pytest tests/unit/ -v --tb=short
+          uv run pytest tests/integration/ -v --tb=short -x
+
+  # ============================================================================
+  # FRONTEND TESTS
+  # ============================================================================
+  frontend-tests:
+    name: Frontend Tests
+    runs-on: ubuntu-latest
+    needs: smoke-tests
+    timeout-minutes: 8
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: 'frontend/package-lock.json'
+          
+      - name: Install dependencies
+        run: |
+          cd frontend
+          npm ci --prefer-offline --no-audit
+          
+      - name: Run linting
+        run: |
+          cd frontend
+          npm run lint
+          
+      - name: Type check
+        run: |
+          cd frontend
+          npx tsc --noEmit
+          
+      - name: Build check
+        run: |
+          cd frontend
+          npm run build
+
+  # ============================================================================
+  # INTEGRATION TESTS
+  # ============================================================================
+  integration-tests:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    needs: [backend-tests, frontend-tests]
+    timeout-minutes: 12
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: 'frontend/package-lock.json'
+          
+      - name: Install UV (stable)
+        run: |
+          curl -LsSf "https://astral.sh/uv/${{ env.UV_VERSION }}/install.sh" | sh
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+          
+      - name: Restore caches
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/uv
+            .venv
+            ~/.npm
+            frontend/node_modules
+          key: integration-${{ runner.os }}-${{ env.NODE_VERSION }}-${{ env.PYTHON_VERSION }}-${{ hashFiles('pyproject.toml', 'frontend/package-lock.json') }}
+          
+      - name: Install all dependencies
+        run: |
+          uv sync --dev
+          cd frontend && npm ci --prefer-offline --no-audit
+          
+      - name: Start backend for testing
+        run: |
+          uv run uvicorn app.server:app --host 0.0.0.0 --port 8000 &
+          sleep 5
+          curl -f http://localhost:8000/health || exit 1
+          
+      - name: Run integration tests
+        run: |
+          uv run pytest tests/integration/ -v --tb=short
+
+  # ============================================================================
+  # SECURITY SCAN (SIMPLIFIED)
+  # ============================================================================
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    needs: smoke-tests
+    timeout-minutes: 5
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          
+      - name: Install UV (stable)
+        run: |
+          curl -LsSf "https://astral.sh/uv/${{ env.UV_VERSION }}/install.sh" | sh
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+          
+      - name: Install security tools
+        run: |
+          uv sync --dev
+          
+      - name: Run security checks
+        run: |
+          uv run bandit -r app/ -f json -o bandit-report.json || true
+          uv run safety check --json --output safety-report.json || true
+          
+      - name: Upload security reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: security-reports-${{ github.sha }}
+          path: |
+            bandit-report.json
+            safety-report.json
+          retention-days: 7
+
+  # ============================================================================
+  # FINAL STATUS
+  # ============================================================================
+  ci-status:
+    name: CI Status
+    runs-on: ubuntu-latest
+    needs: [smoke-tests, backend-tests, frontend-tests, integration-tests, security-scan]
+    if: always()
+    
+    steps:
+      - name: Check CI status
+        run: |
+          echo "## CI Pipeline Results" >> $GITHUB_STEP_SUMMARY
+          echo "- **Smoke tests**: ${{ needs.smoke-tests.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Backend tests**: ${{ needs.backend-tests.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Frontend tests**: ${{ needs.frontend-tests.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Integration tests**: ${{ needs.integration-tests.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Security scan**: ${{ needs.security-scan.result }}" >> $GITHUB_STEP_SUMMARY
+          
+          if [[ "${{ needs.smoke-tests.result }}" == "success" ]] && \
+             [[ "${{ needs.backend-tests.result }}" == "success" ]] && \
+             [[ "${{ needs.frontend-tests.result }}" == "success" ]] && \
+             [[ "${{ needs.integration-tests.result }}" == "success" ]]; then
+            echo "✅ **Overall Status: PASSED**" >> $GITHUB_STEP_SUMMARY
+            exit 0
+          else
+            echo "❌ **Overall Status: FAILED**" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
