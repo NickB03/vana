@@ -2,6 +2,7 @@ export interface Agent {
   id: string;
   name: string;
   role: AgentRole;
+  type: AgentRole; // Alias for role for backward compatibility
   avatar: string;
   personality: AgentPersonality;
   status: AgentStatus;
@@ -11,6 +12,7 @@ export interface Agent {
   messageCount: number;
   isTyping: boolean;
   thinkingState?: ThinkingState;
+  stats: AgentStats;
 }
 
 export type AgentRole = 
@@ -35,7 +37,11 @@ export type AgentStatus =
   | 'thinking'
   | 'offline'
   | 'error'
-  | 'completed';
+  | 'completed'
+  | 'processing'
+  | 'responding'
+  | 'collaborating'
+  | 'waiting';
 
 export interface AgentPersonality {
   style: PersonalityStyle;
@@ -71,7 +77,9 @@ export type PersonalityFormality =
   | 'formal'
   | 'semi-formal'
   | 'casual'
-  | 'relaxed';
+  | 'relaxed'
+  | 'academic'
+  | 'professional';
 
 export type PersonalityExpertise = 
   | 'beginner-friendly'
@@ -139,6 +147,7 @@ export const AGENT_PRESETS: Record<AgentRole, Omit<Agent, 'id' | 'status' | 'las
   coordinator: {
     name: "Alex Coordinator",
     role: "coordinator",
+    type: "coordinator",
     avatar: "👥",
     personality: {
       style: "collaborative",
@@ -163,11 +172,19 @@ export const AGENT_PRESETS: Record<AgentRole, Omit<Agent, 'id' | 'status' | 'las
       emoji: "👥"
     },
     capabilities: ["task-management", "team-coordination", "planning", "delegation"],
-    description: "Orchestrates multi-agent workflows and coordinates team efforts"
+    description: "Orchestrates multi-agent workflows and coordinates team efforts",
+    stats: {
+      success_rate: 0.85,
+      average_response_time: 1200,
+      tasks_completed: 45,
+      messages_sent: 180,
+      collaborations: 12
+    }
   },
   analyst: {
     name: "Sam Analyst",
     role: "analyst",
+    type: "analyst",
     avatar: "📊",
     personality: {
       style: "analytical",
@@ -192,11 +209,19 @@ export const AGENT_PRESETS: Record<AgentRole, Omit<Agent, 'id' | 'status' | 'las
       emoji: "📊"
     },
     capabilities: ["data-analysis", "pattern-recognition", "insights", "visualization"],
-    description: "Analyzes data patterns and provides strategic insights"
+    description: "Analyzes data patterns and provides strategic insights",
+    stats: {
+      success_rate: 0.92,
+      average_response_time: 1800,
+      tasks_completed: 38,
+      messages_sent: 152,
+      collaborations: 8
+    }
   },
   researcher: {
     name: "Riley Research",
     role: "researcher",
+    type: "researcher",
     avatar: "🔍",
     personality: {
       style: "methodical",
@@ -221,11 +246,19 @@ export const AGENT_PRESETS: Record<AgentRole, Omit<Agent, 'id' | 'status' | 'las
       emoji: "🔍"
     },
     capabilities: ["information-gathering", "fact-checking", "literature-review", "source-validation"],
-    description: "Conducts thorough research and gathers comprehensive information"
+    description: "Conducts thorough research and gathers comprehensive information",
+    stats: {
+      success_rate: 0.89,
+      average_response_time: 2400,
+      tasks_completed: 32,
+      messages_sent: 128,
+      collaborations: 15
+    }
   },
   coder: {
     name: "Code Master",
     role: "coder",
+    type: "coder",
     avatar: "💻",
     personality: {
       style: "technical",
@@ -250,11 +283,19 @@ export const AGENT_PRESETS: Record<AgentRole, Omit<Agent, 'id' | 'status' | 'las
       emoji: "💻"
     },
     capabilities: ["programming", "debugging", "code-review", "architecture", "optimization"],
-    description: "Writes, reviews, and optimizes code across multiple languages"
+    description: "Writes, reviews, and optimizes code across multiple languages",
+    stats: {
+      success_rate: 0.94,
+      average_response_time: 1600,
+      tasks_completed: 67,
+      messages_sent: 201,
+      collaborations: 22
+    }
   },
   reviewer: {
     name: "Quinn Reviewer",
     role: "reviewer",
+    type: "reviewer",
     avatar: "✅",
     personality: {
       style: "methodical",
@@ -279,11 +320,19 @@ export const AGENT_PRESETS: Record<AgentRole, Omit<Agent, 'id' | 'status' | 'las
       emoji: "✅"
     },
     capabilities: ["quality-assurance", "code-review", "testing", "compliance", "documentation-review"],
-    description: "Ensures quality, compliance, and best practices"
+    description: "Ensures quality, compliance, and best practices",
+    stats: {
+      success_rate: 0.91,
+      average_response_time: 1400,
+      tasks_completed: 55,
+      messages_sent: 165,
+      collaborations: 18
+    }
   },
   optimizer: {
     name: "Max Optimizer",
     role: "optimizer",
+    type: "optimizer",
     avatar: "⚡",
     personality: {
       style: "innovative",
@@ -308,11 +357,19 @@ export const AGENT_PRESETS: Record<AgentRole, Omit<Agent, 'id' | 'status' | 'las
       emoji: "⚡"
     },
     capabilities: ["performance-optimization", "efficiency", "resource-management", "scaling"],
-    description: "Optimizes performance, efficiency, and resource utilization"
+    description: "Optimizes performance, efficiency, and resource utilization",
+    stats: {
+      success_rate: 0.88,
+      average_response_time: 1100,
+      tasks_completed: 42,
+      messages_sent: 134,
+      collaborations: 10
+    }
   },
   tester: {
     name: "Test Expert",
     role: "tester",
+    type: "tester",
     avatar: "🧪",
     personality: {
       style: "methodical",
@@ -337,11 +394,19 @@ export const AGENT_PRESETS: Record<AgentRole, Omit<Agent, 'id' | 'status' | 'las
       emoji: "🧪"
     },
     capabilities: ["testing", "automation", "quality-assurance", "test-planning", "debugging"],
-    description: "Creates comprehensive test strategies and automated testing solutions"
+    description: "Creates comprehensive test strategies and automated testing solutions",
+    stats: {
+      success_rate: 0.95,
+      average_response_time: 1300,
+      tasks_completed: 62,
+      messages_sent: 186,
+      collaborations: 14
+    }
   },
   documenter: {
     name: "Doc Writer",
     role: "documenter",
+    type: "documenter",
     avatar: "📝",
     personality: {
       style: "supportive",
@@ -366,11 +431,19 @@ export const AGENT_PRESETS: Record<AgentRole, Omit<Agent, 'id' | 'status' | 'las
       emoji: "📝"
     },
     capabilities: ["documentation", "technical-writing", "tutorials", "guides", "api-docs"],
-    description: "Creates clear, comprehensive documentation and user guides"
+    description: "Creates clear, comprehensive documentation and user guides",
+    stats: {
+      success_rate: 0.87,
+      average_response_time: 1700,
+      tasks_completed: 29,
+      messages_sent: 98,
+      collaborations: 6
+    }
   },
   monitor: {
     name: "Monitor Bot",
     role: "monitor",
+    type: "monitor",
     avatar: "📡",
     personality: {
       style: "direct",
@@ -395,11 +468,19 @@ export const AGENT_PRESETS: Record<AgentRole, Omit<Agent, 'id' | 'status' | 'las
       emoji: "📡"
     },
     capabilities: ["monitoring", "alerts", "metrics", "health-checks", "logging"],
-    description: "Monitors system health, performance, and provides alerts"
+    description: "Monitors system health, performance, and provides alerts",
+    stats: {
+      success_rate: 0.96,
+      average_response_time: 800,
+      tasks_completed: 78,
+      messages_sent: 245,
+      collaborations: 4
+    }
   },
   specialist: {
     name: "Expert Pro",
     role: "specialist",
+    type: "specialist",
     avatar: "🎯",
     personality: {
       style: "technical",
@@ -424,11 +505,19 @@ export const AGENT_PRESETS: Record<AgentRole, Omit<Agent, 'id' | 'status' | 'las
       emoji: "🎯"
     },
     capabilities: ["domain-expertise", "specialized-knowledge", "consultation", "advisory"],
-    description: "Provides specialized expertise in specific domains"
+    description: "Provides specialized expertise in specific domains",
+    stats: {
+      success_rate: 0.93,
+      average_response_time: 1500,
+      tasks_completed: 35,
+      messages_sent: 140,
+      collaborations: 20
+    }
   },
   architect: {
     name: "System Architect",
     role: "architect",
+    type: "architect",
     avatar: "🏗️",
     personality: {
       style: "methodical",
@@ -453,11 +542,19 @@ export const AGENT_PRESETS: Record<AgentRole, Omit<Agent, 'id' | 'status' | 'las
       emoji: "🏗️"
     },
     capabilities: ["system-design", "architecture", "scalability", "integration", "planning"],
-    description: "Designs robust system architectures and technical solutions"
+    description: "Designs robust system architectures and technical solutions",
+    stats: {
+      success_rate: 0.90,
+      average_response_time: 2200,
+      tasks_completed: 28,
+      messages_sent: 112,
+      collaborations: 16
+    }
   },
   creative: {
     name: "Creative Spark",
     role: "creative",
+    type: "creative",
     avatar: "🎨",
     personality: {
       style: "creative",
@@ -482,11 +579,19 @@ export const AGENT_PRESETS: Record<AgentRole, Omit<Agent, 'id' | 'status' | 'las
       emoji: "🎨"
     },
     capabilities: ["creative-thinking", "brainstorming", "ideation", "design", "innovation"],
-    description: "Generates creative solutions and innovative approaches"
+    description: "Generates creative solutions and innovative approaches",
+    stats: {
+      success_rate: 0.84,
+      average_response_time: 1900,
+      tasks_completed: 41,
+      messages_sent: 157,
+      collaborations: 25
+    }
   },
   "problem-solver": {
     name: "Solution Finder",
     role: "problem-solver",
+    type: "problem-solver",
     avatar: "🧩",
     personality: {
       style: "innovative",
@@ -511,7 +616,14 @@ export const AGENT_PRESETS: Record<AgentRole, Omit<Agent, 'id' | 'status' | 'las
       emoji: "🧩"
     },
     capabilities: ["problem-solving", "troubleshooting", "root-cause-analysis", "solutions"],
-    description: "Identifies problems and develops practical solutions"
+    description: "Identifies problems and develops practical solutions",
+    stats: {
+      success_rate: 0.86,
+      average_response_time: 1600,
+      tasks_completed: 39,
+      messages_sent: 144,
+      collaborations: 13
+    }
   }
 };
 
@@ -583,9 +695,40 @@ export interface CapabilityShowcase {
 }
 
 export interface AgentStats {
-  success_rate: number;
-  average_response_time: number;
+  success_rate: number; // 0-1 range
+  average_response_time: number; // milliseconds
   tasks_completed: number;
   messages_sent: number;
   collaborations: number;
+}
+
+// Animation and UI-related types
+export type AnimationState = 'fade' | 'pulse' | 'rotate' | 'bounce' | 'glow' | 'shake' | 'none';
+
+export interface AgentAnimationConfig {
+  state: AnimationState;
+  duration: number; // milliseconds
+  intensity: 'low' | 'medium' | 'high';
+  color_shift?: boolean;
+}
+
+// Network and system-level types
+export interface AgentNetwork {
+  id: string;
+  name: string;
+  agents: Agent[];
+  connections: AgentConnection[];
+  topology: 'mesh' | 'hierarchical' | 'ring' | 'star';
+  status: 'active' | 'inactive' | 'error';
+  created_at: number;
+  updated_at: number;
+}
+
+export interface AgentConnection {
+  id: string;
+  source_agent_id: string;
+  target_agent_id: string;
+  connection_type: 'collaboration' | 'dependency' | 'communication';
+  strength: number; // 0-1 range
+  last_interaction: number;
 }

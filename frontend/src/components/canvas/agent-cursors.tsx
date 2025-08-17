@@ -87,7 +87,7 @@ export function AgentCursors({ session, editorRef, className }: AgentCursorsProp
       
       // Cursor decoration
       decorationOptions.push({
-        range: new (window as typeof import('monaco-editor')).monaco.Range(
+        range: new (window as any).monaco.Range(
           position.lineNumber, 
           position.column, 
           position.lineNumber, 
@@ -105,7 +105,7 @@ export function AgentCursors({ session, editorRef, className }: AgentCursorsProp
       // Selection decoration (if exists)
       if (selection) {
         decorationOptions.push({
-          range: new (window as typeof import('monaco-editor')).monaco.Range(
+          range: new (window as any).monaco.Range(
             selection.startLineNumber,
             selection.startColumn,
             selection.endLineNumber,

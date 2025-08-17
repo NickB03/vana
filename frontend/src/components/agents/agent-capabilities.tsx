@@ -79,7 +79,7 @@ export function AgentCapabilities({
     if (!acc[capability.category]) {
       acc[capability.category] = [];
     }
-    acc[capability.category].push(capability);
+    acc[capability.category]!.push(capability);
     return acc;
   }, {} as Record<string, AgentCapability[]>);
 
@@ -94,6 +94,7 @@ export function AgentCapabilities({
   // Calculate category averages
   const categoryAverages = categories.reduce((acc, category) => {
     const cats = capabilitiesByCategory[category];
+    if (!cats || cats.length === 0) return acc;
     const average = cats.reduce((sum, cap) => sum + cap.level, 0) / cats.length;
     acc[category] = average;
     return acc;
@@ -171,13 +172,13 @@ export function AgentCapabilities({
                         `border-${color}-200 text-${color}-700`
                       )}
                     >
-                      {capabilitiesByCategory[category].length}
+                      {capabilitiesByCategory[category]?.length || 0}
                     </Badge>
                   </div>
                   <div className="flex items-center gap-2">
-                    <div className="text-sm font-medium">{average.toFixed(1)}/5</div>
+                    <div className="text-sm font-medium">{average?.toFixed(1) || '0.0'}/5</div>
                     <div className="w-16">
-                      <Progress value={(average / 5) * 100} className="h-1" />
+                      <Progress value={((average || 0) / 5) * 100} className="h-1" />
                     </div>
                   </div>
                 </div>
@@ -253,7 +254,7 @@ export function AgentCapabilities({
                               `bg-${levelColor}-100 text-${levelColor}-800`
                             )}
                           >
-                            L{capability.level} {SKILL_LEVEL_LABELS[capability.level]}
+                            L{capability.level} {SKILL_LEVEL_LABELS[capability.level as keyof typeof SKILL_LEVEL_LABELS]}
                           </Badge>
                         </div>
                       </div>
@@ -262,7 +263,7 @@ export function AgentCapabilities({
                       {isSelected && (
                         <div className="mt-3 pt-3 border-t space-y-2">
                           <div className="text-sm">
-                            <strong>Skill Level:</strong> {SKILL_LEVEL_LABELS[capability.level]} (Level {capability.level}/5)
+                            <strong>Skill Level:</strong> {SKILL_LEVEL_LABELS[capability.level as keyof typeof SKILL_LEVEL_LABELS]} (Level {capability.level}/5)
                           </div>
                           
                           <div className="space-y-1">
