@@ -20,23 +20,19 @@ Dependencies: pytest, GitPython, asyncio, aiofiles
 """
 
 import asyncio
-import concurrent.futures
 import json
 import logging
 import os
 import shutil
 import subprocess
-import tempfile
 import time
 from dataclasses import asdict, dataclass
 from datetime import datetime, timedelta
 from enum import Enum
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any
 
 import aiofiles
-import git
-import pytest
 from git import Repo
 
 
@@ -636,14 +632,14 @@ async def test_endpoint():
         docker_compose = """version: '3.8'
 services:
   frontend:
-    build: 
+    build:
       context: .
       dockerfile: Dockerfile.frontend
     ports:
       - "3000:3000"
     depends_on:
       - backend
-      
+
   backend:
     build:
       context: .
@@ -678,7 +674,7 @@ VALIDATION_FAILED=false
 
 for file in $STAGED_FILES; do
     echo "Validating: $file"
-    
+
     # PRD compliance check
     if [[ "$file" =~ \\.tsx?$ ]]; then
         if grep -q "@mui\\|material-ui" "$file" 2>/dev/null; then
@@ -686,7 +682,7 @@ for file in $STAGED_FILES; do
             VALIDATION_FAILED=true
         fi
     fi
-    
+
     # Security check
     if grep -q "dangerouslySetInnerHTML\\|eval(" "$file" 2>/dev/null; then
         echo "❌ Security Risk: Unsafe patterns in $file"
@@ -951,7 +947,7 @@ echo "✅ Integration test post-commit completed"
     async def _cleanup_suite_environment(self, suite: IntegrationTestSuite):
         """Cleanup test suite environment"""
         # Cleanup test repositories
-        for repo_name, repo in self.test_repos.items():
+        for _repo_name, repo in self.test_repos.items():
             if hasattr(repo, "close"):
                 repo.close()
 
@@ -1349,7 +1345,7 @@ async def main():
         print("GIT INTEGRATION TEST RESULTS")
         print("=" * 60)
 
-        for test_id, result in results.items():
+        for _test_id, result in results.items():
             status_icon = "✅" if result.status == TestStatus.PASSED else "❌"
             print(
                 f"{status_icon} {result.test_name}: {result.status.value} ({result.execution_time_ms:.2f}ms)"

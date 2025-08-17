@@ -157,7 +157,7 @@ def collect_research_sources_callback(callback_context: CallbackContext) -> None
                     "data": {
                         "sources": sources_list,
                         "totalSources": len(sources_list),
-                        "timestamp": datetime.now().isoformat(),
+                        "timestamp": datetime.datetime.now().isoformat(),
                     },
                 }
                 broadcast_agent_network_update(event, session_id)

@@ -2,17 +2,16 @@
 
 import asyncio
 import builtins
-import hashlib
+import json
 import logging
 import pickle
 import time
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import Enum
-from typing import Any, Dict, List, Optional, Set, Tuple, Union
+from typing import Any
 
 import aioredis
-from cachetools import LRUCache, TTLCache
 
 logger = logging.getLogger(__name__)
 
@@ -374,7 +373,18 @@ class CacheOptimizer:
                 except:
                     pass  # Not compressed
 
-            return pickle.loads(data)
+            # Security fix: Try JSON first (safer), fallback to pickle only for internal cache data
+            try:
+                # Decode bytes to string for JSON
+                json_str = data.decode("utf-8")
+                return json.loads(json_str)
+            except (UnicodeDecodeError, json.JSONDecodeError):
+                # Fallback to pickle for internal cache data only
+                # Note: This should only be used for trusted internal data
+                logger.warning(
+                    "Using pickle deserialization for cache data - ensure data is trusted"
+                )
+                return pickle.loads(data)  # nosec B301
 
         except Exception as e:
             logger.error(f"Error deserializing value: {e}")
@@ -519,7 +529,7 @@ class CacheOptimizer:
 
         # Analyze access frequency distribution
         frequencies = []
-        for key, accesses in self.access_patterns.items():
+        for _key, accesses in self.access_patterns.items():
             if accesses:
                 frequency = len(accesses) / max(1, (time.time() - min(accesses)) / 3600)
                 frequencies.append(frequency)

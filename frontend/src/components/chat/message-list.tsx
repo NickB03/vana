@@ -26,7 +26,7 @@ interface MessageComponentProps {
   agent?: Agent | null;
 }
 
-function MessageComponent({ message, isStreaming = false, agent }: MessageComponentProps) {
+function MessageComponent({ message, isStreaming = false, agent: _ }: MessageComponentProps) {
   const isUser = message.role === 'user';
   const isSystem = message.role === 'system';
   const isError = message.metadata?.error;
