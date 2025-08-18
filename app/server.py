@@ -239,6 +239,10 @@ app.include_router(auth_router)
 app.include_router(users_router)
 app.include_router(admin_router)
 
+# Create dependency instances to avoid B008 violations (function calls in argument defaults)
+current_active_user_dependency = Depends(get_current_active_user)
+current_user_for_sse_dependency = Depends(get_current_user_for_sse)
+
 # Add security middleware
 app.add_middleware(CORSMiddleware, allowed_origins=allow_origins)
 app.add_middleware(SecurityHeadersMiddleware)
@@ -266,7 +270,7 @@ async def health_check():
 
 @app.post("/feedback")
 def collect_feedback(
-    feedback: Feedback, current_user: User = Depends(get_current_active_user)
+    feedback: Feedback, current_user: User = current_active_user_dependency
 ) -> dict[str, str]:
     """Collect and log feedback.
 
@@ -290,7 +294,7 @@ def collect_feedback(
 
 @app.get("/agent_network_sse/{session_id}")
 async def agent_network_sse(
-    session_id: str, current_user: User | None = Depends(get_current_user_for_sse)
+    session_id: str, current_user: User | None = current_user_for_sse_dependency
 ) -> StreamingResponse:
     """Enhanced SSE endpoint for agent network events with optional authentication.
 
@@ -419,7 +423,7 @@ async def agent_network_sse(
 
 @app.get("/agent_network_history")
 async def get_agent_network_history(
-    limit: int = 50, current_user: User | None = Depends(get_current_user_for_sse)
+    limit: int = 50, current_user: User | None = current_user_for_sse_dependency
 ):
     """Get recent agent network event history with optional authentication.
 
