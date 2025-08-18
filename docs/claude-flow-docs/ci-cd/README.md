@@ -48,7 +48,7 @@ Our CI/CD pipeline is optimized for backend API development with the following k
 
 ## 📚 Documentation Structure
 
-```
+```text
 ci-cd/
 ├── README.md                     # This file - pipeline overview
 ├── backend-optimization-guide.md # Detailed technical guide

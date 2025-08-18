@@ -8,7 +8,7 @@ This document provides technical architecture details for the Server-Sent Events
 
 ### 1. Frontend SSE Client Architecture
 
-```
+```text
 ┌─────────────────────────────────────────────┐
 │                React App                    │
 ├─────────────────────────────────────────────┤
@@ -32,7 +32,7 @@ This document provides technical architecture details for the Server-Sent Events
 
 ### 2. Backend SSE Broadcasting Architecture
 
-```
+```text
 ┌─────────────────────────────────────────────┐
 │              FastAPI Backend               │
 ├─────────────────────────────────────────────┤
@@ -198,16 +198,18 @@ class BroadcasterConfig:
 // OLD: Lost unsubscribe references
 const eventHandlersRef = useRef<Map<string, Set<Function>>>(new Map());
 
-// NEW: Tracks unsubscribe functions
-const eventHandlersRef = useRef<Map<string, Map<Function, Function>>>(new Map());
+// NEW: Tracks unsubscribe functions with precise types
+type EventHandler = (event: SSEEvent) => void;
+type Unsubscribe = () => void;
+const eventHandlersRef = useRef<Map<string, Map<EventHandler, Unsubscribe>>>(new Map());
 
-const addEventListener = useCallback((eventType: string, handler: Function) => {
+const addEventListener = useCallback((eventType: string, handler: EventHandler) => {
   if (!eventHandlersRef.current.has(eventType)) {
     eventHandlersRef.current.set(eventType, new Map());
   }
-  
+
   const unsubscribe = clientRef.current?.on(eventType, handler);
-  eventHandlersRef.current.get(eventType)!.set(handler, unsubscribe);
+  eventHandlersRef.current.get(eventType)!.set(handler, unsubscribe as Unsubscribe);
 
   return () => {
     const handlers = eventHandlersRef.current.get(eventType);
@@ -276,6 +278,21 @@ class MemoryOptimizedQueue:
             self._last_activity = time.time()
             self._condition.notify()
             return True
+
+    async def get(self, timeout: float | None = None) -> Any:
+        async with self._condition:
+            if timeout is not None:
+                end = time.time() + timeout
+                while not self._queue:
+                    remaining = end - time.time()
+                    if remaining <= 0:
+                        raise asyncio.TimeoutError()
+                    await asyncio.wait_for(self._condition.wait(), remaining)
+            else:
+                while not self._queue:
+                    await self._condition.wait()
+            self._last_activity = time.time()
+            return self._queue.popleft()
 
     def is_stale(self, max_age: float) -> bool:
         return (time.time() - self._last_activity) > max_age
@@ -378,7 +395,12 @@ async def subscribe(self, session_id: str) -> AsyncContextManager[MemoryOptimize
 ### 3. Memory Pressure Handling
 
 ```python
+import os, psutil
+
 async def _update_memory_metrics(self):
+    # Calculate current process memory usage
+    process_memory_mb = psutil.Process(os.getpid()).memory_info().rss / (1024 * 1024)
+
     if process_memory_mb > self.config.memory_critical_threshold_mb:
         logger.error(f"Critical memory usage: {process_memory_mb:.1f}MB")
         gc.collect()  # Force garbage collection
@@ -456,6 +478,8 @@ cleanup_count = stats['metrics']['cleanupCount']
 ### 2. Health Checks
 
 ```python
+import time
+
 def sse_health_check():
     """Health check for SSE system."""
     broadcaster = get_sse_broadcaster()

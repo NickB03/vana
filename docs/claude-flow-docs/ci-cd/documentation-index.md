@@ -7,7 +7,7 @@ This document provides a comprehensive index of all CI/CD pipeline documentation
 ## 📚 Documentation Structure
 
 ### Core Documentation
-```
+```text
 docs/claude-flow-docs/ci-cd/
 ├── README.md                     # Main pipeline overview and getting started
 ├── backend-optimization-guide.md # Detailed technical implementation guide

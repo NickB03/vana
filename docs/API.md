@@ -38,8 +38,6 @@ Register a new user account.
   "password": "SecurePass123!",
   "first_name": "John",
   "last_name": "Doe",
-  "is_active": true,
-  "is_verified": false,
   "role_ids": [1]
 }
 ```
@@ -468,7 +466,6 @@ Authorization: Bearer <access_token>
 {
   "first_name": "Updated",
   "last_name": "Name",
-  "is_active": false,
   "role_ids": [1, 2]
 }
 ```
