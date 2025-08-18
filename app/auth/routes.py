@@ -476,7 +476,13 @@ async def forgot_password(
 
         # For development only: log token at DEBUG level if explicitly enabled
         if os.getenv("DEBUG", "false").lower() in {"1", "true", "yes"}:
-            logger.debug("Password reset token for %s: %s", user.email, reset_token)
+            # Mask token in logs to reduce exposure risk
+            masked = (
+                f"{reset_token[:4]}...{reset_token[-4:]}"
+                if isinstance(reset_token, str) and len(reset_token) > 8
+                else "***"
+            )
+            logger.debug("Password reset token (masked) for %s: %s", user.email, masked)
 
     return {"message": "If the email exists, a password reset link has been sent."}
 

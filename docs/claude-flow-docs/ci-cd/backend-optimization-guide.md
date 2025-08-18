@@ -135,11 +135,13 @@ async def test_sse_stream_endpoint():
     async with AsyncClient(app=app, base_url="http://test") as client:
         headers, _ = await create_test_user_and_authenticate(client)
         
-        # Mock SSE stream response
-        with patch('app.utils.sse_broadcaster.SSEBroadcaster.send_update') as mock_send:
+        # Mock SSE stream response (patch a real symbol in your codebase)
+        with patch('app.utils.sse_broadcaster.EnhancedSSEBroadcaster.broadcast_event') as mock_send:
             response = await client.get("/sse/stream", headers=headers)
             assert response.status_code == 200
-            assert "text/plain" in response.headers.get("content-type", "")
+            # SSE must be "text/event-stream"; allow charset suffix and case differences
+            ctype = (response.headers.get("content-type") or "").lower()
+            assert "text/event-stream" in ctype
 ```
 
 #### Removed Security Test Cases
@@ -389,9 +391,11 @@ response = await client.get("/protected-endpoint", headers=headers)
 **Problem**: SSE tests hang or timeout
 ```python
 # Solution: Mock SSE responses in tests
-with patch('app.utils.sse_broadcaster.SSEBroadcaster.send_update'):
+with patch('app.utils.sse_broadcaster.EnhancedSSEBroadcaster.broadcast_event'):
     response = await client.get("/sse/stream", headers=auth_headers)
     # Test response headers, not streaming content
+    ctype = (response.headers.get("content-type") or "").lower()
+    assert "text/event-stream" in ctype
 ```
 
 #### Google Cloud Service Errors in CI
@@ -451,7 +455,7 @@ uv cache clean
 ```bash
 # Reproduce CI environment locally
 export CI=true
-export GOOGLE_CLOUD_PROJECT=analystai-454200
+export GOOGLE_CLOUD_PROJECT=your-gcp-project-id
 
 # Run the same commands as CI
 uv sync --group dev --group lint
