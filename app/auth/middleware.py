@@ -129,7 +129,7 @@ class AuthenticationMiddleware(BaseHTTPMiddleware):
             # The actual user validation is done in the dependency injection
             request.state.authenticated = True
             return await call_next(request)
-        except Exception as e:
+        except Exception:
             return JSONResponse(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 content={"detail": "Invalid authentication credentials"},
