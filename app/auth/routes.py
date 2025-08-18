@@ -334,6 +334,14 @@ async def logout_user(
     db: Session = auth_db_dependency,
 ):
     """Logout user by revoking refresh token."""
+    # Verify token ownership before revocation to prevent token hijacking
+    token_owner = verify_refresh_token(refresh_data.refresh_token, db)
+    if not token_owner or token_owner.id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Cannot revoke a token that does not belong to the current user",
+        )
+
     revoked = revoke_refresh_token(refresh_data.refresh_token, db)
 
     if not revoked:
