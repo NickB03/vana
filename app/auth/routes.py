@@ -2,6 +2,7 @@
 
 import logging
 import os
+import secrets
 from datetime import datetime, timezone
 from typing import Annotated
 
@@ -551,7 +552,8 @@ async def google_login(
                 username=google_user["email"].split("@")[0],
                 first_name=google_user.get("given_name", ""),
                 last_name=google_user.get("family_name", ""),
-                hashed_password="",  # No password for Google users
+                # Store a valid hash of a random secret so verify() is safe and always fails
+                hashed_password=get_password_hash(secrets.token_urlsafe(32)),
                 is_active=True,
                 is_verified=True,  # Google users are pre-verified
                 google_cloud_identity=google_user["sub"],
@@ -714,9 +716,9 @@ async def update_user(
             )
         update_data["hashed_password"] = get_password_hash(update_data.pop("password"))
 
-    # Update user fields
+    # Update user fields (exclude security-sensitive fields to prevent privilege escalation)
     for field, value in update_data.items():
-        if field != "role_ids":
+        if field not in ("role_ids", "is_active", "is_verified"):
             setattr(user, field, value)
 
     # Handle role updates
