@@ -43,7 +43,7 @@ env:
 ```
 
 #### Job Dependencies
-```
+```text
 detect-changes → smoke-tests → [backend-tests, frontend-tests] → integration-tests
                              ↘ security-scan ↗
                                               ↓
@@ -214,7 +214,7 @@ OPENROUTER_API_KEY=<if-using-openrouter>
 ALLOW_ORIGINS=http://localhost:5173,http://localhost:5174,http://localhost:3000
 
 # Google Cloud
-GOOGLE_CLOUD_PROJECT=analystai-454200
+GOOGLE_CLOUD_PROJECT=<your-gcp-project-id>
 
 # Optional Settings
 DEBUG=true
@@ -225,7 +225,7 @@ LOG_LEVEL=debug
 ```bash
 # Required for CI
 CI=true
-GOOGLE_CLOUD_PROJECT=analystai-454200
+GOOGLE_CLOUD_PROJECT=<your-gcp-project-id>
 GOOGLE_APPLICATION_CREDENTIALS=""
 
 # Pipeline Configuration

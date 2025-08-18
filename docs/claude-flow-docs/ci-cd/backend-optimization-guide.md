@@ -96,6 +96,8 @@ token = response_data["tokens"]["access_token"]  # New structure
 New helper methods improve test reliability and reduce code duplication:
 
 ```python
+import uuid
+
 async def create_test_user_and_authenticate(client):
     """Create a test user and return authentication headers."""
     # Create test user
@@ -215,6 +217,7 @@ addopts = [
     "--disable-warnings",
     "--durations=10"
 ]
+asyncio_mode = "auto"
 ```
 
 ## Development Workflow Integration
@@ -363,8 +366,8 @@ PYTEST_VERBOSE=1 uv run pytest tests/integration/ -k "auth" -s
 **Problem**: UV not found or installation fails
 ```bash
 # Solution: Install UV with specific version
-curl -LsSf "https://astral.sh/uv/0.5.11/install.sh" | sh
-echo "$HOME/.local/bin" >> $GITHUB_PATH
+curl -LsSf "https://astral.sh/uv/install.sh" | sh
+echo "$HOME/.local/bin" >> "$GITHUB_PATH"
 ```
 
 #### Dependency Group Errors
@@ -403,7 +406,7 @@ with patch('app.utils.sse_broadcaster.EnhancedSSEBroadcaster.broadcast_event'):
 ```python
 # Solution: Check for CI environment and skip cloud services
 import os
-if os.getenv('CI') == 'true':
+if os.getenv('CI'):
     # Use mock services or skip cloud-dependent tests
     pytest.skip("Cloud services unavailable in CI")
 ```

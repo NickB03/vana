@@ -167,9 +167,8 @@ async def login_user(
         username = form_data.get("username")
         password = form_data.get("password")
 
-        # Normalize values by trimming whitespace
+        # Normalize username by trimming whitespace; do not trim password
         username = username.strip() if username else None
-        password = password.strip() if password else None
         grant_type = form_data.get("grant_type")
 
         if not username or not password:
@@ -393,6 +392,11 @@ async def update_current_user(
     if "role_ids" in update_data and not current_user.is_superuser:
         update_data.pop("role_ids")
 
+    # Normalize selected string fields (non-sensitive)
+    for key in ("email", "username", "first_name", "last_name"):
+        if key in update_data and isinstance(update_data[key], str):
+            update_data[key] = update_data[key].strip()
+
     # Update user fields
     for field, value in update_data.items():
         if field != "role_ids":
@@ -476,7 +480,7 @@ async def forgot_password(
         # background_tasks.add_task(send_password_reset_email, user.email, reset_token)
 
         # For development only: log token at DEBUG level if explicitly enabled
-        if os.getenv("DEBUG", "false").lower() in {"1", "true", "yes"}:
+        if os.getenv("VANA_DEV_LOG_RESET_TOKEN", "false").lower() in {"1", "true", "yes"}:
             # Mask token in logs to reduce exposure risk
             masked = (
                 f"{reset_token[:4]}...{reset_token[-4:]}"
