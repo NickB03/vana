@@ -571,7 +571,7 @@ async def google_login(
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail=f"Google authentication failed: {e!s}",
-        )
+        ) from e
 
 
 @auth_router.post("/google/callback", response_model=AuthResponse)
@@ -621,7 +621,7 @@ async def google_oauth_callback(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Google OAuth callback failed: {e!s}",
-        )
+        ) from e
 
 
 # User management endpoints
