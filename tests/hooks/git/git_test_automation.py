@@ -1048,7 +1048,7 @@ def discover(workspace, test_dir, test_types, max_workers):
 
         finally:
             await orchestrator.cleanup()
-    
+
     asyncio.run(_discover())
 
 
@@ -1118,7 +1118,7 @@ def execute(workspace, suite_config, environment, max_workers):
 
         finally:
             await orchestrator.cleanup()
-    
+
     asyncio.run(_execute())
 
 
