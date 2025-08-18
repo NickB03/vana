@@ -223,7 +223,7 @@ jobs:
               uv run mypy . --no-error-summary
           - test-group: unit
             commands: |
-              uv run pytest tests/unit/ -v --tb=short --maxfail=5
+              uv run pytest tests/unit/ --maxfail=5
           - test-group: integration
             commands: |
               uv run pytest tests/integration/ -v --tb=short -x
@@ -279,6 +279,8 @@ jobs:
           path: |
             .coverage
             pytest-report.xml
+            coverage.xml
+          if-no-files-found: warn
           retention-days: 3
 
   # ============================================================================

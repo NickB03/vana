@@ -13,29 +13,18 @@ from unittest.mock import AsyncMock, Mock
 
 import pytest
 
-# Test configuration
-pytest_plugins = [
-    "pytest_asyncio",
-]
+# Test configuration - pytest_asyncio is auto-discovered when installed
 
 
 def pytest_configure(config):
     """Configure pytest for hook validation testing"""
-    config.addinivalue_line("markers", "integration: mark test as integration test")
-    config.addinivalue_line("markers", "e2e: mark test as end-to-end test")
-    config.addinivalue_line("markers", "performance: mark test as performance test")
-    config.addinivalue_line("markers", "slow: mark test as slow running")
-    config.addinivalue_line(
-        "markers", "hook_validation: mark test as hook validation test"
-    )
+    # Marker definitions are centralized in pyproject.toml.
+    # Keep this hook for any future dynamic config, but avoid duplicating marker registration.
+    pass
 
 
-@pytest.fixture(scope="session")
-def event_loop():
-    """Create an instance of the default event loop for the test session"""
-    loop = asyncio.get_event_loop_policy().new_event_loop()
-    yield loop
-    loop.close()
+# Remove custom event_loop fixture to avoid conflicts with pytest-asyncio
+# The default pytest-asyncio event loop handling is sufficient
 
 
 @pytest.fixture
