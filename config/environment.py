@@ -50,8 +50,12 @@ class EnvironmentConfig:
         vector_distance_threshold = float(os.environ.get("MEMORY_VECTOR_DISTANCE_THRESHOLD", "0.7"))
         session_service_type = os.environ.get("SESSION_SERVICE_TYPE", "vertex_ai")
 
-        logger.info(f"Using ADK Memory with RAG Corpus: {rag_corpus_resource_name}")
-        logger.info(f"Memory similarity settings: top_k={similarity_top_k}, threshold={vector_distance_threshold}")
+        logger.info("Using ADK Memory with RAG Corpus: %s", rag_corpus_resource_name)
+        logger.info(
+            "Memory similarity settings: top_k=%d, threshold=%s",
+            similarity_top_k,
+            vector_distance_threshold,
+        )
 
         return {
             "rag_corpus_resource_name": rag_corpus_resource_name,
@@ -70,21 +74,22 @@ class EnvironmentConfig:
             "deployed_index_id": os.environ.get("DEPLOYED_INDEX_ID", "vanasharedindex")
         }
 
-        logger.info(f"Using Vector Search endpoint: {config['endpoint_id']}")
+        logger.info("Using Vector Search endpoint: %s", config["endpoint_id"])
 
         # Attempt to load GCP credentials if GOOGLE_APPLICATION_CREDENTIALS is set
         gcp_creds_path = os.environ.get("GOOGLE_APPLICATION_CREDENTIALS")
         if gcp_creds_path:
             config["credentials_path"] = gcp_creds_path
-            logger.info(f"Using GCP credentials from: {gcp_creds_path}")
-            # Basic validation: check if file exists
+            logger.info("Using GCP credentials from: %s", gcp_creds_path)
             if not os.path.exists(gcp_creds_path):
-                logger.error(f"GCP credentials file not found at: {gcp_creds_path}")
+                logger.error("GCP credentials file not found at: %s", gcp_creds_path)
             else:
                 # Further validation could be added here (e.g., JSON parsing, permission checks)
                 pass # Placeholder for more robust validation
         else:
-            logger.warning("GOOGLE_APPLICATION_CREDENTIALS environment variable not set. Vector Search may require it.")
+            logger.warning(
+                "GOOGLE_APPLICATION_CREDENTIALS environment variable not set. Vector Search may require it."
+            )
 
         return config
 
@@ -268,12 +273,13 @@ class EnvironmentConfig:
             if found_deprecated:
                 validation_results["warnings"].append(f"Deprecated MCP variables found: {found_deprecated}. These should be removed.")
 
-            logger.info(f"ADK Memory configuration validation: {'PASSED' if validation_results['valid'] else 'FAILED'}")
+            status = "PASSED" if validation_results["valid"] else "FAILED"
+            logger.info("ADK Memory configuration validation: %s", status)
 
-        except Exception as e:
+        except (ValueError, OSError) as e:
             validation_results["valid"] = False
-            validation_results["errors"].append(f"Configuration validation error: {str(e)}")
-            logger.error(f"ADK Memory configuration validation failed: {e}")
+            validation_results["errors"].append(f"Configuration validation error: {e}")
+            logger.error("ADK Memory configuration validation failed: %s", e)
 
         return validation_results
 

@@ -34,6 +34,7 @@ Based on Context7 research from:
 
 import os
 import logging
+import asyncio
 from typing import List, Dict, Any, Optional
 
 # Configure logging
@@ -42,13 +43,10 @@ logger = logging.getLogger(__name__)
 # Try to import vector search dependencies
 try:
     from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
-    import numpy as np
     TENACITY_AVAILABLE = True
-    NUMPY_AVAILABLE = True
 except ImportError as e:
     logger.warning(f"Vector search dependencies not available: {e}")
     TENACITY_AVAILABLE = False
-    NUMPY_AVAILABLE = False
 
 # Google Cloud imports
 try:
@@ -73,6 +71,7 @@ class VectorSearchService:
                  region: str,
                  index_id: Optional[str] = None,
                  endpoint_id: Optional[str] = None,
+                 deployed_index_id: Optional[str] = None,
                  embedding_model: str = "text-embedding-004",
                  embedding_dimensions: int = 768):
         """
@@ -90,6 +89,7 @@ class VectorSearchService:
         self.region = region
         self.index_id = index_id
         self.endpoint_id = endpoint_id
+        self.deployed_index_id = deployed_index_id
         self.embedding_model = embedding_model
         self.embedding_dimensions = embedding_dimensions
         
@@ -138,7 +138,7 @@ class VectorSearchService:
         Returns:
             List of float values representing the embedding, or None if failed
         """
-        if not VERTEX_AI_AVAILABLE or not NUMPY_AVAILABLE:
+        if not VERTEX_AI_AVAILABLE:
             logger.warning("Vector search dependencies not available - skipping embedding generation")
             return None
             
@@ -149,14 +149,11 @@ class VectorSearchService:
             return self._embedding_cache[cache_key]
         
         try:
-            # Use Vertex AI to generate embedding
-            # Note: This is a simplified implementation - in production you'd use the actual Vertex AI embedding API
-            logger.info(f"Generating embedding for text: {text[:100]}...")
-            
-            # For now, return a mock embedding vector of the correct dimensions
-            # TODO: Replace with actual Vertex AI embedding generation
-            import numpy as np
-            embedding = np.random.normal(0, 1, self.embedding_dimensions).tolist()
+            from vertexai.language_models import TextEmbeddingModel
+            logger.info("Generating embedding for text: %s...", text[:100])
+            model = TextEmbeddingModel.from_pretrained(self.embedding_model)
+            embeddings = await asyncio.get_event_loop().run_in_executor(None, model.get_embeddings, [text])
+            embedding = embeddings[0].values
             
             # Cache the result
             if len(self._embedding_cache) < self._cache_max_size:
@@ -185,23 +182,8 @@ class VectorSearchService:
             List of search results with content, score, and metadata
         """
         if not VERTEX_AI_AVAILABLE or not self.endpoint:
-            logger.warning("Vector search not available - returning mock results")
-            # Return mock results for testing
-            results = []
-            for i in range(min(top_k, 3)):
-                result = {
-                    "content": f"Mock vector search result {i+1} for: {query}",
-                    "score": 0.9 - (i * 0.1),
-                    "source": "vector_search_mock",
-                    "metadata": {
-                        "id": f"mock_vector_result_{i+1}",
-                        "distance": 0.1 + (i * 0.1),
-                        "search_type": "semantic_similarity_mock",
-                        "embedding_model": self.embedding_model
-                    }
-                }
-                results.append(result)
-            return results
+            logger.warning("Vector search not available - endpoint not configured")
+            return []
         
         try:
             # Generate query embedding
@@ -210,26 +192,34 @@ class VectorSearchService:
                 logger.error("Failed to generate query embedding")
                 return []
             
-            logger.info(f"Performing semantic search for: {query[:100]}...")
-            
-            # For now, return mock results since we don't have a real index deployed
-            # TODO: Replace with actual vector similarity search
+            logger.info("Performing semantic search for: %s...", query[:100])
+
+            def _match():
+                return self.endpoint.match(
+                    deployed_index_id=self.deployed_index_id,
+                    queries=[query_embedding],
+                    num_neighbors=top_k,
+                    filter=filter_str or None,
+                )
+
+            response = await asyncio.get_event_loop().run_in_executor(None, _match)
+
+            neighbors = response[0].neighbors
             results = []
-            for i in range(min(top_k, 3)):
-                result = {
-                    "content": f"Vector search result {i+1} for: {query}",
-                    "score": 0.9 - (i * 0.1),
+            for neighbor in neighbors:
+                results.append({
+                    "content": neighbor.id,
+                    "score": 1 - neighbor.distance,
                     "source": "vector_search",
                     "metadata": {
-                        "id": f"vector_result_{i+1}",
-                        "distance": 0.1 + (i * 0.1),
+                        "id": neighbor.id,
+                        "distance": neighbor.distance,
                         "search_type": "semantic_similarity",
-                        "embedding_model": self.embedding_model
-                    }
-                }
-                results.append(result)
-            
-            logger.info(f"Vector search returned {len(results)} results")
+                        "embedding_model": self.embedding_model,
+                    },
+                })
+
+            logger.info("Vector search returned %d results", len(results))
             return results
             
         except Exception as e:
@@ -313,7 +303,6 @@ class VectorSearchService:
             "cache_size": len(self._embedding_cache),
             "dependencies": {
                 "tenacity": TENACITY_AVAILABLE,
-                "numpy": NUMPY_AVAILABLE,
                 "vertex_ai": VERTEX_AI_AVAILABLE
             }
         }
@@ -335,6 +324,7 @@ def get_vector_search_service() -> VectorSearchService:
         region = os.getenv("VERTEX_REGION") or os.getenv("GOOGLE_CLOUD_LOCATION", "us-central1")
         index_id = os.getenv("VECTOR_SEARCH_INDEX_ID")
         endpoint_id = os.getenv("VECTOR_SEARCH_ENDPOINT_ID")
+        deployed_index_id = os.getenv("DEPLOYED_INDEX_ID")
         embedding_model = os.getenv("EMBEDDING_MODEL_NAME", "text-embedding-004")
         embedding_dimensions = int(os.getenv("EMBEDDING_DIMENSIONS", "768"))
         
@@ -344,6 +334,7 @@ def get_vector_search_service() -> VectorSearchService:
             region=region,
             index_id=index_id,
             endpoint_id=endpoint_id,
+            deployed_index_id=deployed_index_id,
             embedding_model=embedding_model,
             embedding_dimensions=embedding_dimensions
         )

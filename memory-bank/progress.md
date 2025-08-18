@@ -2175,7 +2175,6 @@ Repository contains massive file sprawl requiring immediate cleanup:
 
 ## Known Blockers/Issues:
 * None. The MVP has been successfully implemented.
->>>>>>> origin/main
 
 ---
 

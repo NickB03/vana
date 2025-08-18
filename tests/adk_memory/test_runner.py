@@ -152,7 +152,7 @@ class ADKMemoryTestRunner:
         print(f"✅ Passed: {passed_categories}/3 categories")
         
         if self.results["summary"]["overall_status"] == "passed":
-            print("🎉 All tests passed\! ADK memory integration is ready.")
+            print("🎉 All tests passed! ADK memory integration is ready.")
         else:
             print("⚠️ Some tests failed. Review results before deployment.")
         
