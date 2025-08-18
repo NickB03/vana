@@ -403,7 +403,14 @@ async def update_current_user(
         current_user.roles = roles
 
     current_user.updated_at = datetime.now(timezone.utc)
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Email or username already in use",
+        ) from e
     db.refresh(current_user)
 
     return UserResponse.model_validate(current_user)
@@ -589,9 +596,10 @@ async def google_login(
         return AuthResponse(user=UserResponse.model_validate(user), tokens=tokens)
 
     except Exception as e:
+        logger.exception("Google authentication failed")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=f"Google authentication failed: {e!s}",
+            detail="Google authentication failed",
         ) from e
 
 
@@ -640,9 +648,10 @@ async def google_oauth_callback(
     except HTTPException:
         raise
     except Exception as e:
+        logger.exception("Google OAuth callback failed")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Google OAuth callback failed: {e!s}",
+            detail="Google OAuth callback failed",
         ) from e
 
 
@@ -710,7 +719,14 @@ async def update_user(
         user.roles = roles
 
     user.updated_at = datetime.now(timezone.utc)
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Email or username already in use",
+        ) from e
     db.refresh(user)
 
     return UserResponse.model_validate(user)
