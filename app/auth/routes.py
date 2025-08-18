@@ -3,9 +3,10 @@
 import logging
 import os
 from datetime import datetime, timezone
+from typing import Annotated
 
 import httpx
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, Request, status
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -90,15 +91,15 @@ async def register_user(
         )
 
     try:
-        # Create new user
+        # Create new user with server-controlled security flags
         db_user = User(
             email=user.email,
             username=user.username,
             first_name=user.first_name,
             last_name=user.last_name,
             hashed_password=get_password_hash(user.password),
-            is_active=user.is_active,
-            is_verified=user.is_verified,
+            is_active=True,  # Server-controlled: new users are active by default
+            is_verified=False,  # Server-controlled: require email verification
         )
 
         db.add(db_user)
@@ -417,6 +418,13 @@ async def change_password(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Incorrect current password"
         )
 
+    # Disallow reusing the same password
+    if verify_password(password_data.new_password, current_user.hashed_password):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="New password must be different from the current password",
+        )
+
     # Validate new password
     if not validate_password_strength(password_data.new_password):
         raise HTTPException(
@@ -633,8 +641,8 @@ async def google_oauth_callback(
 # User management endpoints
 @users_router.get("/", response_model=list[UserResponse])
 async def list_users(
-    skip: int = 0,
-    limit: int = 100,
+    skip: int = Query(0, ge=0),
+    limit: int = Query(100, ge=1, le=500),
     current_user: User = users_read_permission_dependency,
     db: Session = auth_db_dependency,
 ) -> list[UserResponse]:
