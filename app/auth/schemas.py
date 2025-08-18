@@ -83,6 +83,9 @@ class UserCreate(UserBase):
 class UserUpdate(BaseModel):
     """User update schema."""
 
+    # Reject unknown fields to avoid silently ignoring privilege-related fields
+    model_config = ConfigDict(extra="forbid")
+
     email: EmailStr | None = Field(None, description="User email address")
     username: str | None = Field(
         None, min_length=3, max_length=50, description="Username"
