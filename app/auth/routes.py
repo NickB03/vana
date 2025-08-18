@@ -48,13 +48,21 @@ auth_router = APIRouter(prefix="/auth", tags=["Authentication"])
 users_router = APIRouter(prefix="/users", tags=["User Management"])
 admin_router = APIRouter(prefix="/admin", tags=["Administration"])
 
+# Create dependency instances to avoid B008 violations (function calls in argument defaults)
+auth_db_dependency = Depends(get_auth_db)
+current_active_user_dependency = Depends(get_current_active_user)
+current_superuser_dependency = Depends(get_current_superuser)
+users_read_permission_dependency = Depends(require_permissions(["users:read"]))
+users_update_permission_dependency = Depends(require_permissions(["users:update"]))
+users_delete_permission_dependency = Depends(require_permissions(["users:delete"]))
+
 
 # Authentication endpoints
 @auth_router.post(
     "/register", response_model=AuthResponse, status_code=status.HTTP_201_CREATED
 )
 async def register_user(
-    user: UserCreate, request: Request, db: Session = Depends(get_auth_db)
+    user: UserCreate, request: Request, db: Session = auth_db_dependency
 ) -> AuthResponse:
     """Register a new user."""
     # Validate password strength
@@ -135,7 +143,7 @@ async def register_user(
 
 @auth_router.post("/login", response_model=AuthResponse)
 async def login_user(
-    request: Request, db: Session = Depends(get_auth_db)
+    request: Request, db: Session = auth_db_dependency
 ) -> AuthResponse:
     """OAuth2-compliant login endpoint that accepts both form and JSON data.
 
@@ -217,7 +225,7 @@ async def login_user(
         except HTTPException:
             # Re-raise HTTPException to preserve specific error responses
             raise
-        except Exception:
+        except Exception as e:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="invalid_request",
@@ -225,7 +233,7 @@ async def login_user(
                     "Content-Type": "application/json",
                     "Cache-Control": "no-store",
                 },
-            )
+            ) from e
 
     else:
         # Unsupported content type
@@ -284,7 +292,7 @@ async def login_user(
 async def refresh_access_token(
     request: Request,
     refresh_data: RefreshTokenRequest,
-    db: Session = Depends(get_auth_db),
+    db: Session = auth_db_dependency,
 ) -> Token:
     """Refresh access token using refresh token."""
     user = verify_refresh_token(refresh_data.refresh_token, db)
@@ -317,8 +325,8 @@ async def refresh_access_token(
 @auth_router.post("/logout")
 async def logout_user(
     refresh_data: RefreshTokenRequest,
-    current_user: User = Depends(get_current_active_user),
-    db: Session = Depends(get_auth_db),
+    current_user: User = current_active_user_dependency,
+    db: Session = auth_db_dependency,
 ):
     """Logout user by revoking refresh token."""
     revoked = revoke_refresh_token(refresh_data.refresh_token, db)
@@ -333,8 +341,8 @@ async def logout_user(
 
 @auth_router.post("/logout-all")
 async def logout_all_devices(
-    current_user: User = Depends(get_current_active_user),
-    db: Session = Depends(get_auth_db),
+    current_user: User = current_active_user_dependency,
+    db: Session = auth_db_dependency,
 ):
     """Logout user from all devices by revoking all refresh tokens."""
     count = revoke_all_user_tokens(current_user.id, db)
@@ -343,7 +351,7 @@ async def logout_all_devices(
 
 @auth_router.get("/me", response_model=UserResponse)
 async def get_current_user_info(
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = current_active_user_dependency,
 ) -> UserResponse:
     """Get current user information."""
     return UserResponse.model_validate(current_user)
@@ -352,8 +360,8 @@ async def get_current_user_info(
 @auth_router.put("/me", response_model=UserResponse)
 async def update_current_user(
     user_update: UserUpdate,
-    current_user: User = Depends(get_current_active_user),
-    db: Session = Depends(get_auth_db),
+    current_user: User = current_active_user_dependency,
+    db: Session = auth_db_dependency,
 ) -> UserResponse:
     """Update current user information."""
     update_data = user_update.model_dump(exclude_unset=True)
@@ -391,8 +399,8 @@ async def update_current_user(
 @auth_router.post("/change-password")
 async def change_password(
     password_data: ChangePassword,
-    current_user: User = Depends(get_current_active_user),
-    db: Session = Depends(get_auth_db),
+    current_user: User = current_active_user_dependency,
+    db: Session = auth_db_dependency,
 ):
     """Change user password."""
     from .security import verify_password
@@ -427,7 +435,7 @@ async def change_password(
 async def forgot_password(
     request_data: PasswordResetRequest,
     background_tasks: BackgroundTasks,
-    db: Session = Depends(get_auth_db),
+    db: Session = auth_db_dependency,
 ):
     """Request password reset."""
     user = db.query(User).filter(User.email == request_data.email).first()
@@ -446,7 +454,7 @@ async def forgot_password(
 
 
 @auth_router.post("/reset-password")
-async def reset_password(reset_data: PasswordReset, db: Session = Depends(get_auth_db)):
+async def reset_password(reset_data: PasswordReset, db: Session = auth_db_dependency):
     """Reset password using reset token."""
     email = verify_password_reset_token(reset_data.token)
 
@@ -485,7 +493,7 @@ async def reset_password(reset_data: PasswordReset, db: Session = Depends(get_au
 async def google_login(
     request: Request,
     google_data: GoogleCloudIdentity,
-    db: Session = Depends(get_auth_db),
+    db: Session = auth_db_dependency,
 ) -> AuthResponse:
     """Login or register user with Google Cloud Identity."""
     try:
@@ -570,7 +578,7 @@ async def google_login(
 async def google_oauth_callback(
     request: Request,
     callback_data: GoogleOAuthCallbackRequest,
-    db: Session = Depends(get_auth_db),
+    db: Session = auth_db_dependency,
 ) -> AuthResponse:
     """Handle Google OAuth callback by exchanging code for tokens and logging in user."""
     try:
@@ -621,8 +629,8 @@ async def google_oauth_callback(
 async def list_users(
     skip: int = 0,
     limit: int = 100,
-    current_user: User = Depends(require_permissions(["users:read"])),
-    db: Session = Depends(get_auth_db),
+    current_user: User = users_read_permission_dependency,
+    db: Session = auth_db_dependency,
 ) -> list[UserResponse]:
     """List all users (requires users:read permission)."""
     users = db.query(User).offset(skip).limit(limit).all()
@@ -632,8 +640,8 @@ async def list_users(
 @users_router.get("/{user_id}", response_model=UserResponse)
 async def get_user(
     user_id: int,
-    current_user: User = Depends(require_permissions(["users:read"])),
-    db: Session = Depends(get_auth_db),
+    current_user: User = users_read_permission_dependency,
+    db: Session = auth_db_dependency,
 ) -> UserResponse:
     """Get user by ID (requires users:read permission)."""
     user = db.query(User).filter(User.id == user_id).first()
@@ -648,8 +656,8 @@ async def get_user(
 async def update_user(
     user_id: int,
     user_update: UserUpdate,
-    current_user: User = Depends(require_permissions(["users:update"])),
-    db: Session = Depends(get_auth_db),
+    current_user: User = users_update_permission_dependency,
+    db: Session = auth_db_dependency,
 ) -> UserResponse:
     """Update user (requires users:update permission)."""
     user = db.query(User).filter(User.id == user_id).first()
@@ -689,8 +697,8 @@ async def update_user(
 @users_router.delete("/{user_id}")
 async def delete_user(
     user_id: int,
-    current_user: User = Depends(require_permissions(["users:delete"])),
-    db: Session = Depends(get_auth_db),
+    current_user: User = users_delete_permission_dependency,
+    db: Session = auth_db_dependency,
 ):
     """Delete user (requires users:delete permission)."""
     user = db.query(User).filter(User.id == user_id).first()
@@ -720,8 +728,8 @@ async def delete_user(
 # Admin endpoints
 @admin_router.get("/roles", response_model=list[RoleSchema])
 async def list_roles(
-    current_user: User = Depends(get_current_superuser),
-    db: Session = Depends(get_auth_db),
+    current_user: User = current_superuser_dependency,
+    db: Session = auth_db_dependency,
 ) -> list[RoleSchema]:
     """List all roles (superuser only)."""
     roles = db.query(Role).all()
@@ -733,8 +741,8 @@ async def list_roles(
 )
 async def create_role(
     role: RoleCreate,
-    current_user: User = Depends(get_current_superuser),
-    db: Session = Depends(get_auth_db),
+    current_user: User = current_superuser_dependency,
+    db: Session = auth_db_dependency,
 ) -> RoleSchema:
     """Create new role (superuser only)."""
     db_role = Role(
@@ -757,8 +765,8 @@ async def create_role(
 
 @admin_router.get("/permissions", response_model=list[PermissionSchema])
 async def list_permissions(
-    current_user: User = Depends(get_current_superuser),
-    db: Session = Depends(get_auth_db),
+    current_user: User = current_superuser_dependency,
+    db: Session = auth_db_dependency,
 ) -> list[PermissionSchema]:
     """List all permissions (superuser only)."""
     permissions = db.query(Permission).all()
