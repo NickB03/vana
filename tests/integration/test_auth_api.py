@@ -109,7 +109,7 @@ def admin_token(client, test_admin_user):
         "/auth/login", json={"username": "admin", "password": "AdminPassword123!"}
     )
     assert response.status_code == 200
-    return response.json()["access_token"]
+    return response.json()["tokens"]["access_token"]
 
 
 @pytest.fixture
@@ -186,10 +186,13 @@ class TestUserLogin:
 
         assert response.status_code == 200
         data = response.json()
-        assert "access_token" in data
-        assert "refresh_token" in data
-        assert data["token_type"] == "bearer"
-        assert data["expires_in"] > 0
+        assert "tokens" in data
+        assert "user" in data
+        tokens = data["tokens"]
+        assert "access_token" in tokens
+        assert "refresh_token" in tokens
+        assert tokens["token_type"] == "bearer"
+        assert tokens["expires_in"] > 0
 
     def test_login_success_form_data(self, client, test_db, test_user_data):
         """Test successful login with form-encoded data (OAuth2 standard)."""
@@ -209,10 +212,13 @@ class TestUserLogin:
 
         assert response.status_code == 200
         data = response.json()
-        assert "access_token" in data
-        assert "refresh_token" in data
-        assert data["token_type"] == "bearer"
-        assert data["expires_in"] > 0
+        assert "tokens" in data
+        assert "user" in data
+        tokens = data["tokens"]
+        assert "access_token" in tokens
+        assert "refresh_token" in tokens
+        assert tokens["token_type"] == "bearer"
+        assert tokens["expires_in"] > 0
 
     def test_login_form_data_no_grant_type(self, client, test_db, test_user_data):
         """Test login with form data but no grant_type (should still work)."""
@@ -231,7 +237,9 @@ class TestUserLogin:
 
         assert response.status_code == 200
         data = response.json()
-        assert "access_token" in data
+        assert "tokens" in data
+        tokens = data["tokens"]
+        assert "access_token" in tokens
 
     def test_login_form_data_invalid_grant_type(self, client, test_db, test_user_data):
         """Test login with invalid grant_type."""
@@ -299,7 +307,9 @@ class TestUserLogin:
         )
 
         assert response.status_code == 200
-        assert "access_token" in response.json()
+        data = response.json()
+        assert "tokens" in data
+        assert "access_token" in data["tokens"]
 
     def test_login_by_email_form_data(self, client, test_db, test_user_data):
         """Test login by email with form data."""
@@ -318,7 +328,9 @@ class TestUserLogin:
         )
 
         assert response.status_code == 200
-        assert "access_token" in response.json()
+        data = response.json()
+        assert "tokens" in data
+        assert "access_token" in data["tokens"]
 
     def test_login_invalid_credentials_json(self, client, test_db, test_user_data):
         """Test login with invalid credentials using JSON."""
@@ -544,7 +556,7 @@ class TestTokenRefresh:
                 "password": test_user_data["password"],
             },
         )
-        refresh_token = login_response.json()["refresh_token"]
+        refresh_token = login_response.json()["tokens"]["refresh_token"]
 
         # Refresh token
         response = client.post("/auth/refresh", json={"refresh_token": refresh_token})
@@ -577,7 +589,7 @@ class TestUserInfo:
                 "password": test_user_data["password"],
             },
         )
-        token = login_response.json()["access_token"]
+        token = login_response.json()["tokens"]["access_token"]
 
         # Get user info
         response = client.get("/auth/me", headers={"Authorization": f"Bearer {token}"})
@@ -604,7 +616,7 @@ class TestUserInfo:
                 "password": test_user_data["password"],
             },
         )
-        token = login_response.json()["access_token"]
+        token = login_response.json()["tokens"]["access_token"]
 
         # Update user
         update_data = {"first_name": "Updated", "last_name": "Name"}
@@ -632,7 +644,7 @@ class TestPasswordManagement:
                 "password": test_user_data["password"],
             },
         )
-        token = login_response.json()["access_token"]
+        token = login_response.json()["tokens"]["access_token"]
 
         # Change password
         response = client.post(
@@ -668,7 +680,7 @@ class TestPasswordManagement:
                 "password": test_user_data["password"],
             },
         )
-        token = login_response.json()["access_token"]
+        token = login_response.json()["tokens"]["access_token"]
 
         # Try to change password with wrong current password
         response = client.post(
@@ -817,7 +829,7 @@ class TestProtectedEndpoints:
                 "password": test_user_data["password"],
             },
         )
-        token = login_response.json()["access_token"]
+        token = login_response.json()["tokens"]["access_token"]
 
         # Submit feedback
         response = client.post(
