@@ -1,5 +1,6 @@
 """Authentication and user management routes."""
 
+import logging
 import os
 from datetime import datetime, timezone
 
@@ -42,6 +43,9 @@ from .security import (
     verify_password_reset_token,
     verify_refresh_token,
 )
+
+# Initialize logger
+logger = logging.getLogger(__name__)
 
 # Create router
 auth_router = APIRouter(prefix="/auth", tags=["Authentication"])
@@ -447,8 +451,9 @@ async def forgot_password(
         # In production, send email with reset token
         # background_tasks.add_task(send_password_reset_email, user.email, reset_token)
 
-        # For development, log the token
-        print(f"Password reset token for {user.email}: {reset_token}")
+        # For development only: log token at DEBUG level if explicitly enabled
+        if os.getenv("DEBUG", "false").lower() in {"1", "true", "yes"}:
+            logger.debug("Password reset token for %s: %s", user.email, reset_token)
 
     return {"message": "If the email exists, a password reset link has been sent."}
 
@@ -595,18 +600,19 @@ async def google_oauth_callback(
                 ),
             )
 
-        token_response = httpx.post(
-            "https://oauth2.googleapis.com/token",
-            data={
-                "code": callback_data.code,
-                "client_id": client_id,
-                "client_secret": client_secret,
-                "redirect_uri": redirect_uri,
-                "grant_type": "authorization_code",
-            },
-        )
-        token_response.raise_for_status()
-        token_data = token_response.json()
+        async with httpx.AsyncClient(timeout=10) as client:
+            token_response = await client.post(
+                "https://oauth2.googleapis.com/token",
+                data={
+                    "code": callback_data.code,
+                    "client_id": client_id,
+                    "client_secret": client_secret,
+                    "redirect_uri": redirect_uri,
+                    "grant_type": "authorization_code",
+                },
+            )
+            token_response.raise_for_status()
+            token_data = token_response.json()
 
         google_identity = GoogleCloudIdentity(
             id_token=token_data.get("id_token"),
