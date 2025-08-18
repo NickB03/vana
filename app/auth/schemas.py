@@ -89,8 +89,7 @@ class UserUpdate(BaseModel):
     )
     first_name: str | None = Field(None, max_length=50, description="First name")
     last_name: str | None = Field(None, max_length=50, description="Last name")
-    is_active: bool | None = Field(None, description="Whether the user is active")
-    is_verified: bool | None = Field(None, description="Whether the user is verified")
+    # Security: is_active and is_verified removed to prevent privilege escalation
     password: str | None = Field(None, min_length=8, description="User password")
     role_ids: list[int] | None = Field(None, description="List of role IDs")
 
