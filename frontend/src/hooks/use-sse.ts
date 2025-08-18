@@ -275,7 +275,7 @@ export function useSSEEvent<T = unknown>(
 
   useEffect(() => {
     const unsubscribe = sse.addEventListener(eventType, (event) => {
-      handler(event.data, event);
+      handler(event.data as T, event);
     });
 
     return unsubscribe;
