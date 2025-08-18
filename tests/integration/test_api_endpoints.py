@@ -34,11 +34,11 @@ class TestAPIEndpoints:
             "first_name": "Test",
             "last_name": "User",
         }
-        
+
         # Register user
         register_response = self.client.post("/auth/register", json=user_data)
         assert register_response.status_code == 201
-        
+
         # Login to get token
         login_response = self.client.post(
             "/auth/login",
@@ -73,7 +73,7 @@ class TestAPIEndpoints:
         # Get authenticated user token
         token = self._create_test_user_and_get_token()
         auth_headers = self._get_auth_headers(token)
-        
+
         feedback_data = {
             "score": 5,
             "invocation_id": str(uuid.uuid4()),
@@ -96,7 +96,7 @@ class TestAPIEndpoints:
         # Get authenticated user token
         token = self._create_test_user_and_get_token()
         auth_headers = self._get_auth_headers(token)
-        
+
         invalid_feedback = {"score": "invalid_score"}  # Invalid score type
 
         response = self.client.post(
@@ -119,9 +119,10 @@ class TestAPIEndpoints:
 
         # Test 2: With auth disabled, should allow access
         from app.auth.config import AuthSettings
+
         mock_settings = AuthSettings()
         mock_settings.require_sse_auth = False
-        
+
         with patch("app.auth.security.get_auth_settings", return_value=mock_settings):
             # This should now pass the authentication check
             # We'll use a HEAD request to avoid streaming issues
@@ -131,15 +132,19 @@ class TestAPIEndpoints:
                 headers={"Accept": "text/event-stream"},
             )
             # Should either succeed or return method not allowed (both acceptable)
-            assert response.status_code in [status.HTTP_200_OK, status.HTTP_405_METHOD_NOT_ALLOWED]
+            assert response.status_code in [
+                status.HTTP_200_OK,
+                status.HTTP_405_METHOD_NOT_ALLOWED,
+            ]
 
     def test_agent_network_history_endpoint(self):
         """Test agent network history endpoint."""
         # Mock auth settings to disable SSE authentication for this test
         from app.auth.config import AuthSettings
+
         mock_settings = AuthSettings()
         mock_settings.require_sse_auth = False
-        
+
         with patch("app.auth.security.get_auth_settings", return_value=mock_settings):
             # Test with default limit
             response = self.client.get("/agent_network_history")
@@ -169,7 +174,7 @@ class TestAPIEndpoints:
         # Test that the health endpoint works (basic integration test)
         response = self.client.get("/health")
         assert response.status_code == status.HTTP_200_OK
-        
+
         # Verify that the mock was set up correctly (we don't need to assert it was called
         # during test setup since the app may be imported before our mock is applied)
         assert mock_get_app.return_value == mock_adk_app
@@ -221,9 +226,10 @@ class TestStreamingEndpoints:
 
         # Mock auth settings to disable SSE authentication for this test
         from app.auth.config import AuthSettings
+
         mock_settings = AuthSettings()
         mock_settings.require_sse_auth = False
-        
+
         with patch("app.auth.security.get_auth_settings", return_value=mock_settings):
             # Test authentication behavior without streaming
             # Use HEAD to avoid consuming the stream
@@ -233,7 +239,10 @@ class TestStreamingEndpoints:
                 headers={"Accept": "text/event-stream"},
             )
             # Should either succeed or return method not allowed
-            assert response.status_code in [status.HTTP_200_OK, status.HTTP_405_METHOD_NOT_ALLOWED]
+            assert response.status_code in [
+                status.HTTP_200_OK,
+                status.HTTP_405_METHOD_NOT_ALLOWED,
+            ]
 
     def test_sse_connection_lifecycle(self):
         """Test SSE connection establishment and cleanup."""
@@ -241,9 +250,10 @@ class TestStreamingEndpoints:
 
         # Mock auth settings to disable SSE authentication for this test
         from app.auth.config import AuthSettings
+
         mock_settings = AuthSettings()
         mock_settings.require_sse_auth = False
-        
+
         with patch("app.auth.security.get_auth_settings", return_value=mock_settings):
             # Test authentication behavior
             response = self.client.request(
@@ -252,7 +262,10 @@ class TestStreamingEndpoints:
                 headers={"Accept": "text/event-stream"},
             )
             # Should either succeed or return method not allowed
-            assert response.status_code in [status.HTTP_200_OK, status.HTTP_405_METHOD_NOT_ALLOWED]
+            assert response.status_code in [
+                status.HTTP_200_OK,
+                status.HTTP_405_METHOD_NOT_ALLOWED,
+            ]
 
 
 class TestErrorHandling:
@@ -271,9 +284,10 @@ class TestErrorHandling:
 
         # Mock auth settings to disable SSE authentication for this test
         from app.auth.config import AuthSettings
+
         mock_settings = AuthSettings()
         mock_settings.require_sse_auth = False
-        
+
         with patch("app.auth.security.get_auth_settings", return_value=mock_settings):
             for invalid_id in invalid_session_ids:
                 response = self.client.request(
@@ -392,18 +406,25 @@ class TestPerformanceAndLimits:
         response_time = time.time() - start_time
 
         # Will get auth error but should still be fast
-        assert response.status_code in [status.HTTP_200_OK, status.HTTP_401_UNAUTHORIZED, status.HTTP_403_FORBIDDEN]
+        assert response.status_code in [
+            status.HTTP_200_OK,
+            status.HTTP_401_UNAUTHORIZED,
+            status.HTTP_403_FORBIDDEN,
+        ]
         assert response_time < 1.0  # Should process within 1 second
 
     def test_multiple_sse_connections(self):
         """Test multiple SSE connections don't overwhelm server."""
-        session_ids = [str(uuid.uuid4()) for _ in range(3)]  # Reduce to 3 for faster testing
+        session_ids = [
+            str(uuid.uuid4()) for _ in range(3)
+        ]  # Reduce to 3 for faster testing
 
         # Mock auth settings to disable SSE authentication for this test
         from app.auth.config import AuthSettings
+
         mock_settings = AuthSettings()
         mock_settings.require_sse_auth = False
-        
+
         with patch("app.auth.security.get_auth_settings", return_value=mock_settings):
             # Test authentication behavior for multiple session IDs
             for session_id in session_ids:
@@ -413,7 +434,10 @@ class TestPerformanceAndLimits:
                     headers={"Accept": "text/event-stream"},
                 )
                 # Each connection should either succeed or return method not allowed
-                assert response.status_code in [status.HTTP_200_OK, status.HTTP_405_METHOD_NOT_ALLOWED]
+                assert response.status_code in [
+                    status.HTTP_200_OK,
+                    status.HTTP_405_METHOD_NOT_ALLOWED,
+                ]
 
 
 if __name__ == "__main__":
