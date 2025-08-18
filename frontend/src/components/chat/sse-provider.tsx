@@ -21,12 +21,10 @@ import React, {
   ReactNode 
 } from 'react';
 import { 
-  useSSE, 
   useAgentNetworkEvents,
-  useSSEConnectionEvents,
-  useSSEErrorEvents,
   UseSSEOptions 
 } from '@/hooks/use-sse';
+import { AgentNetworkUpdate } from '@/types/session';
 import { SSEEvent, SSEConnectionState } from '@/lib/sse-client';
 import { useSessionStore } from '@/store/session-store';
 
@@ -50,7 +48,7 @@ export interface SSEContextValue {
   clearRecentEvents: () => void;
   
   // Agent network state
-  agentNetworkState: unknown;
+  agentNetworkState: AgentNetworkUpdate | null;
   lastAgentUpdate: SSEEvent | null;
   
   // Statistics
@@ -90,7 +88,7 @@ export function SSEProvider({
   const [recentEvents, setRecentEvents] = useState<SSEEvent[]>([]);
   
   // Agent network state tracking
-  const [agentNetworkState, setAgentNetworkState] = useState<unknown>(null);
+  const [agentNetworkState, setAgentNetworkState] = useState<AgentNetworkUpdate | null>(null);
   const [lastAgentUpdate, setLastAgentUpdate] = useState<SSEEvent | null>(null);
   
   // Statistics
@@ -158,13 +156,13 @@ export function SSEProvider({
   /**
    * Handle agent network updates
    */
-  const handleAgentNetworkUpdate = useCallback((data: unknown, event: SSEEvent) => {
+  const handleAgentNetworkUpdate = useCallback((event: SSEEvent) => {
     if (enableAgentNetworkTracking) {
       setAgentNetworkState(prevState => ({
-        ...(prevState as Record<string, unknown>),
-        ...(data as Record<string, unknown>),
+        ...(prevState as Partial<AgentNetworkUpdate>),
+        ...(event.data as Partial<AgentNetworkUpdate>),
         lastUpdateTime: event.timestamp,
-      }));
+      } as AgentNetworkUpdate));
       setLastAgentUpdate(event);
     }
     addRecentEvent(event);
@@ -173,16 +171,16 @@ export function SSEProvider({
   /**
    * Handle connection events
    */
-  const handleConnectionEvent = useCallback((data: unknown, event: SSEEvent) => {
-    console.log('SSE Connection Event:', data);
+  const handleConnectionEvent = useCallback((event: SSEEvent) => {
+    console.log('SSE Connection Event:', event.data);
     addRecentEvent(event);
   }, [addRecentEvent]);
 
   /**
    * Handle error events
    */
-  const handleErrorEvent = useCallback((data: unknown, event: SSEEvent) => {
-    console.error('SSE Error Event:', data);
+  const handleErrorEvent = useCallback((event: SSEEvent) => {
+    console.error('SSE Error Event:', event.data);
     addRecentEvent(event);
   }, [addRecentEvent]);
 
@@ -205,6 +203,7 @@ export function SSEProvider({
     } else {
       setConnectionStartTime(null);
       setConnectionUptime(0);
+      return undefined;
     }
   }, [sse.isConnected, connectionStartTime]);
 
@@ -307,7 +306,7 @@ export function useSSEEventListener<T = unknown>(
 
   useEffect(() => {
     const unsubscribe = addEventListener(eventType, (event) => {
-      handler(event.data, event);
+      handler(event.data as T, event);
     });
 
     return unsubscribe;
