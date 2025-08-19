@@ -7,6 +7,7 @@ It handles environment-specific settings and provides a consistent interface for
 
 import os
 import logging
+import json
 from dotenv import load_dotenv
 
 # Load environment variables
@@ -46,8 +47,14 @@ class EnvironmentConfig:
             "projects/analystai-454200/locations/us-central1/ragCorpora/vana-corpus"
         )
 
-        similarity_top_k = int(os.environ.get("MEMORY_SIMILARITY_TOP_K", "5"))
-        vector_distance_threshold = float(os.environ.get("MEMORY_VECTOR_DISTANCE_THRESHOLD", "0.7"))
+        similarity_top_k = int(
+            os.environ.get("MEMORY_SIMILARITY_TOP_K")
+            or os.environ.get("SIMILARITY_TOP_K", "5")
+        )
+        vector_distance_threshold = float(
+            os.environ.get("MEMORY_VECTOR_DISTANCE_THRESHOLD")
+            or os.environ.get("VECTOR_DISTANCE_THRESHOLD", "0.7")
+        )
         session_service_type = os.environ.get("SESSION_SERVICE_TYPE", "vertex_ai")
 
         logger.info("Using ADK Memory with RAG Corpus: %s", rag_corpus_resource_name)
@@ -69,12 +76,17 @@ class EnvironmentConfig:
         """Get Vector Search configuration based on environment"""
         config = {
             "project_id": os.environ.get("GOOGLE_CLOUD_PROJECT", ""),
-            "location": os.environ.get("GOOGLE_CLOUD_LOCATION", ""),
+            "location": os.environ.get("GOOGLE_CLOUD_LOCATION") or os.environ.get("VERTEX_REGION", ""),
             "endpoint_id": os.environ.get("VECTOR_SEARCH_ENDPOINT_ID", ""),
             "deployed_index_id": os.environ.get("DEPLOYED_INDEX_ID", "vanasharedindex")
         }
 
-        logger.info("Using Vector Search endpoint: %s", config["endpoint_id"])
+        if config["endpoint_id"]:
+            logger.info("Using Vector Search endpoint: %s", config["endpoint_id"])
+        else:
+            logger.warning(
+                "VECTOR_SEARCH_ENDPOINT_ID is not set; vector search may fail or be skipped."
+            )
 
         # Attempt to load GCP credentials if GOOGLE_APPLICATION_CREDENTIALS is set
         gcp_creds_path = os.environ.get("GOOGLE_APPLICATION_CREDENTIALS")
@@ -136,8 +148,14 @@ class EnvironmentConfig:
                 os.environ.get("RAG_CORPUS_RESOURCE_NAME") or
                 "projects/analystai-454200/locations/us-central1/ragCorpora/vana-corpus"
             ),
-            "similarity_top_k": int(os.environ.get("MEMORY_SIMILARITY_TOP_K", "5")),
-            "vector_distance_threshold": float(os.environ.get("MEMORY_VECTOR_DISTANCE_THRESHOLD", "0.7")),
+            "similarity_top_k": int(
+                os.environ.get("MEMORY_SIMILARITY_TOP_K")
+                or os.environ.get("SIMILARITY_TOP_K", "5")
+            ),
+            "vector_distance_threshold": float(
+                os.environ.get("MEMORY_VECTOR_DISTANCE_THRESHOLD")
+                or os.environ.get("VECTOR_DISTANCE_THRESHOLD", "0.7")
+            ),
             "session_service_type": os.environ.get("SESSION_SERVICE_TYPE", "vertex_ai"),
 
             # Local caching settings (for performance optimization)
@@ -185,7 +203,6 @@ class EnvironmentConfig:
                 logger.warning(f"Could not check permissions on GCP credentials file: {e}")
 
         try:
-            import json
             with open(credentials_path, 'r') as f:
                 credentials = json.load(f)
 
