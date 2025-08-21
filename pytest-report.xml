@@ -1,3 +1,25 @@
-<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="6" time="6.293" timestamp="2025-08-21T07:01:08.223129-05:00" hostname="Nicks-MacBook-Air-3.local"><testcase classname="tests.unit.test_auth.TestPasswordSecurity" name="test_password_hashing" time="0.608" /><testcase classname="tests.unit.test_auth.TestPasswordSecurity" name="test_password_strength_validation" time="0.000" /><testcase classname="tests.unit.test_auth.TestJWTTokens" name="test_access_token_creation" time="0.003" /><testcase classname="tests.unit.test_auth.TestJWTTokens" name="test_access_token_with_expiry" time="0.000" /><testcase classname="tests.unit.test_auth.TestJWTTokens" name="test_refresh_token_creation" time="0.247" /><testcase classname="tests.unit.test_auth.TestJWTTokens" name="test_refresh_token_verification" time="0.219"><failure message="assert None is not None">#x1B[1m#x1B[31mtests/unit/test_auth.py#x1B[0m:149: in test_refresh_token_verification
-    #x1B[0m#x1B[94massert#x1B[39;49;00m user #x1B[95mis#x1B[39;49;00m #x1B[95mnot#x1B[39;49;00m #x1B[94mNone#x1B[39;49;00m#x1B[90m#x1B[39;49;00m
-#x1B[1m#x1B[31mE   assert None is not None#x1B[0m</failure></testcase></testsuite></testsuites>
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="1" failures="0" skipped="0" tests="1" time="7.912" timestamp="2025-08-21T07:35:52.247121-05:00" hostname="Nicks-MacBook-Air-3.local"><testcase classname="" name="tests.unit.test_oauth2_compliance" time="0.000"><error message="collection failure">#x1B[1m#x1B[31mtests/unit/test_oauth2_compliance.py#x1B[0m:12: in &lt;module&gt;
+    #x1B[0m#x1B[94mfrom#x1B[39;49;00m#x1B[90m #x1B[39;49;00m#x1B[04m#x1B[96mapp#x1B[39;49;00m#x1B[04m#x1B[96m.#x1B[39;49;00m#x1B[04m#x1B[96mserver#x1B[39;49;00m#x1B[90m #x1B[39;49;00m#x1B[94mimport#x1B[39;49;00m app#x1B[90m#x1B[39;49;00m
+#x1B[1m#x1B[31mapp/server.py#x1B[0m:217: in &lt;module&gt;
+    #x1B[0m#x1B[94mfrom#x1B[39;49;00m#x1B[90m #x1B[39;49;00m#x1B[04m#x1B[96mapp#x1B[39;49;00m#x1B[04m#x1B[96m.#x1B[39;49;00m#x1B[04m#x1B[96mauth#x1B[39;49;00m#x1B[04m#x1B[96m.#x1B[39;49;00m#x1B[04m#x1B[96mroutes#x1B[39;49;00m#x1B[90m #x1B[39;49;00m#x1B[94mimport#x1B[39;49;00m admin_router, auth_router, users_router  #x1B[90m# noqa: E402#x1B[39;49;00m#x1B[90m#x1B[39;49;00m
+#x1B[1m#x1B[31mapp/auth/routes.py#x1B[0m:338: in &lt;module&gt;
+    #x1B[0m#x1B[94masync#x1B[39;49;00m #x1B[94mdef#x1B[39;49;00m#x1B[90m #x1B[39;49;00m#x1B[92mlogout_user#x1B[39;49;00m(#x1B[90m#x1B[39;49;00m
+#x1B[1m#x1B[31m.venv/lib/python3.10/site-packages/fastapi/routing.py#x1B[0m:994: in decorator
+    #x1B[0m#x1B[96mself#x1B[39;49;00m.add_api_route(#x1B[90m#x1B[39;49;00m
+#x1B[1m#x1B[31m.venv/lib/python3.10/site-packages/fastapi/routing.py#x1B[0m:933: in add_api_route
+    #x1B[0mroute = route_class(#x1B[90m#x1B[39;49;00m
+#x1B[1m#x1B[31m.venv/lib/python3.10/site-packages/fastapi/routing.py#x1B[0m:554: in __init__
+    #x1B[0m#x1B[96mself#x1B[39;49;00m.dependant = get_dependant(path=#x1B[96mself#x1B[39;49;00m.path_format, call=#x1B[96mself#x1B[39;49;00m.endpoint)#x1B[90m#x1B[39;49;00m
+#x1B[1m#x1B[31m.venv/lib/python3.10/site-packages/fastapi/dependencies/utils.py#x1B[0m:292: in get_dependant
+    #x1B[0msub_dependant = get_param_sub_dependant(#x1B[90m#x1B[39;49;00m
+#x1B[1m#x1B[31m.venv/lib/python3.10/site-packages/fastapi/dependencies/utils.py#x1B[0m:126: in get_param_sub_dependant
+    #x1B[0m#x1B[94mreturn#x1B[39;49;00m get_sub_dependant(#x1B[90m#x1B[39;49;00m
+#x1B[1m#x1B[31m.venv/lib/python3.10/site-packages/fastapi/dependencies/utils.py#x1B[0m:162: in get_sub_dependant
+    #x1B[0msub_dependant = get_dependant(#x1B[90m#x1B[39;49;00m
+#x1B[1m#x1B[31m.venv/lib/python3.10/site-packages/fastapi/dependencies/utils.py#x1B[0m:285: in get_dependant
+    #x1B[0mparam_details = analyze_param(#x1B[90m#x1B[39;49;00m
+#x1B[1m#x1B[31m.venv/lib/python3.10/site-packages/fastapi/dependencies/utils.py#x1B[0m:488: in analyze_param
+    #x1B[0mfield = create_model_field(#x1B[90m#x1B[39;49;00m
+#x1B[1m#x1B[31m.venv/lib/python3.10/site-packages/fastapi/utils.py#x1B[0m:98: in create_model_field
+    #x1B[0m#x1B[94mraise#x1B[39;49;00m fastapi.exceptions.FastAPIError(#x1B[90m#x1B[39;49;00m
+#x1B[1m#x1B[31mE   fastapi.exceptions.FastAPIError: Invalid args for response field! Hint: check that &lt;class 'app.auth.models.User'&gt; is a valid Pydantic field type. If you are using a return type annotation that is not a valid Pydantic field (e.g. Union[Response, dict, None]) you can disable generating the response model from the type annotation with the path operation decorator parameter response_model=None. Read more: https://fastapi.tiangolo.com/tutorial/response-model/#x1B[0m</error></testcase></testsuite></testsuites>

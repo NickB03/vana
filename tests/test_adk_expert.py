@@ -33,6 +33,9 @@ class ADKQueryType(Enum):
     PATTERN = "pattern"
     IMPLEMENTATION = "implementation"
     CONFIGURATION = "configuration"
+    BEST_PRACTICE = "best_practice"
+    TROUBLESHOOTING = "troubleshooting"
+    EXAMPLE = "example"
 
 
 class ADKExpertAgent:
@@ -41,6 +44,36 @@ class ADKExpertAgent:
     def __init__(self):
         self.name = "ADK Expert Agent"
 
+    async def query_adk_knowledge(self, query: str, query_type, max_results: int = 5):
+        """Mock query_adk_knowledge method."""
+        return {
+            "type": query_type.value,
+            "query": query,
+            "results": [f"Mock result for {query}"],
+        }
+
+    async def synthesize_guidance(self, results, query: str):
+        """Mock synthesize_guidance method."""
+
+        class MockGuidance:
+            def __init__(self):
+                self.topic = f"Guidance for: {query}"
+                self.examples = ["Example 1", "Example 2"]
+                self.best_practices = ["Practice 1"]
+                self.warnings = []
+
+        return MockGuidance()
+
+    async def validate_implementation(self, code: str, pattern: str):
+        """Mock validate_implementation method."""
+        return {
+            "pattern": pattern,
+            "compliant": True,
+            "score": 0.95,
+            "issues": [],
+            "suggestions": ["Consider using type hints"],
+        }
+
 
 class ADKExpertClaudeFlow:
     """Mock ADK Expert Claude Flow for testing."""
@@ -48,25 +81,56 @@ class ADKExpertClaudeFlow:
     def __init__(self):
         self.name = "ADK Expert Claude Flow"
 
+    async def process_adk_query(self, query: str):
+        """Mock process_adk_query method."""
+        return {
+            "intent": "implementation" if "implement" in query.lower() else "pattern",
+            "status": "success",
+            "results": [f"Result for {query}"],
+        }
 
-async def query_adk_chromadb(query: str):
+
+async def query_adk_chromadb(
+    query: str, collection_name: str = "adk_documentation", n_results: int = 5
+):
     """Mock ChromaDB query function."""
-    return {"results": [f"Mock result for: {query}"]}
+    return {
+        "collection": collection_name,
+        "status": "success",
+        "mcp_query": {
+            "tool": "mcp__chroma-vana__chroma_query_documents",
+        },
+        "results": [f"Mock result for: {query}"],
+    }
 
 
-async def adk_expert_mcp_tool(request):
+async def adk_expert_mcp_tool(action: str, params: dict = None):
     """Mock MCP tool function."""
-    return {"response": f"Mock MCP response for: {request}"}
+    return {
+        "status": "success",
+        "response": f"Mock MCP response for action: {action}",
+    }
 
 
 async def create_adk_expert_llm_agent():
     """Mock function to create ADK Expert LLM agent."""
-    return ADKExpertAgent()
+    agent = ADKExpertAgent()
+    agent.model = "gemini-2.5-flash"
+    agent.tools = ["query_adk_expert"]
+    return agent
 
 
-async def query_adk_expert(query: str):
+async def query_adk_expert(
+    query: str, query_type: str = None, include_examples: bool = False
+):
     """Mock function to query ADK expert."""
-    return {"answer": f"Mock expert answer for: {query}"}
+    return {
+        "status": "success",
+        "guidance": {
+            "topic": query,
+        },
+        "answer": f"Mock expert answer for: {query}",
+    }
 
 
 async def test_basic_agent():

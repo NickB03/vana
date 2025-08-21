@@ -1,11 +1,12 @@
 """Comprehensive metrics collection and performance monitoring system."""
 
 import asyncio
+import json
 import logging
 import time
 from collections import defaultdict, deque
 from collections.abc import Callable
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
 
 import psutil
@@ -361,7 +362,8 @@ class MetricsCollector:
         if format == "prometheus":
             return self._export_prometheus()
         elif format == "json":
-            return self.current_metrics.model_dump_json()
+            # Dataclass serialization
+            return json.dumps(asdict(self.current_metrics), default=str)
         else:
             raise ValueError(f"Unsupported export format: {format}")
 

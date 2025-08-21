@@ -334,7 +334,7 @@ async def refresh_access_token(
     )
 
 
-@auth_router.post("/logout")
+@auth_router.post("/logout", response_model=None)
 async def logout_user(
     refresh_data: RefreshTokenRequest,
     current_user: User = current_active_user_dependency,
