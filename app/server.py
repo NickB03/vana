@@ -18,7 +18,7 @@ import os
 from datetime import datetime
 
 import google.auth
-from fastapi import Depends, FastAPI
+from fastapi import FastAPI
 from fastapi.responses import StreamingResponse
 from google.adk.cli.fast_api import get_fast_api_app
 
@@ -205,17 +205,20 @@ else:
             )
 
 # Initialize authentication database
-from app.auth.config import get_auth_settings
-from app.auth.database import init_auth_db
-from app.auth.middleware import (
+from app.auth.config import get_auth_settings  # noqa: E402
+from app.auth.database import init_auth_db  # noqa: E402
+from app.auth.middleware import (  # noqa: E402
     AuditLogMiddleware,
     CORSMiddleware,
     RateLimitMiddleware,
     SecurityHeadersMiddleware,
 )
-from app.auth.models import User
-from app.auth.routes import admin_router, auth_router, users_router
-from app.auth.security import get_current_active_user, get_current_user_for_sse
+from app.auth.models import User  # noqa: E402
+from app.auth.routes import admin_router, auth_router, users_router  # noqa: E402
+from app.auth.security import (  # noqa: E402
+    current_active_user_dep,
+    current_user_for_sse_dep,
+)
 
 # Initialize auth database
 try:
@@ -239,9 +242,6 @@ app.include_router(auth_router)
 app.include_router(users_router)
 app.include_router(admin_router)
 
-# Create dependency instances to avoid B008 violations (function calls in argument defaults)
-current_active_user_dependency = Depends(get_current_active_user)
-current_user_for_sse_dependency = Depends(get_current_user_for_sse)
 
 # Add security middleware
 app.add_middleware(CORSMiddleware, allowed_origins=allow_origins)
@@ -270,7 +270,7 @@ async def health_check():
 
 @app.post("/feedback")
 def collect_feedback(
-    feedback: Feedback, current_user: User = current_active_user_dependency
+    feedback: Feedback, current_user: User = current_active_user_dep
 ) -> dict[str, str]:
     """Collect and log feedback.
 
@@ -294,7 +294,7 @@ def collect_feedback(
 
 @app.get("/agent_network_sse/{session_id}")
 async def agent_network_sse(
-    session_id: str, current_user: User | None = current_user_for_sse_dependency
+    session_id: str, current_user: User | None = current_user_for_sse_dep
 ) -> StreamingResponse:
     """Enhanced SSE endpoint for agent network events with optional authentication.
 
@@ -423,7 +423,7 @@ async def agent_network_sse(
 
 @app.get("/agent_network_history")
 async def get_agent_network_history(
-    limit: int = 50, current_user: User | None = current_user_for_sse_dependency
+    limit: int = 50, current_user: User | None = current_user_for_sse_dep
 ):
     """Get recent agent network event history with optional authentication.
 

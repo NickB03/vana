@@ -56,8 +56,7 @@ except ImportError:
     HAS_NUMPY = False
 
 try:
-    import matplotlib.dates as mdates
-    import matplotlib.pyplot as plt
+    import matplotlib.pyplot  # noqa: F401
 
     HAS_MATPLOTLIB = True
 except ImportError:
@@ -492,8 +491,8 @@ VALIDATION_TIME=0
 if [ -n "$STAGED_FILES" ]; then
     VALIDATION_START=$(date +%s%N)
 
-    # Parallel processing for multiple files
-    echo "$STAGED_FILES" | while IFS= read -r file; do
+    # Parallel processing for multiple files - using here-string to avoid subshell
+    while IFS= read -r file; do
         if [[ "$file" =~ \\.tsx?$ ]]; then
             # Fast regex-based checks
             if grep -q "@mui\\|material-ui" "$file" 2>/dev/null; then
@@ -501,7 +500,7 @@ if [ -n "$STAGED_FILES" ]; then
                 VALIDATION_FAILED=true
             fi
         fi
-    done
+    done <<< "$STAGED_FILES"
 
     VALIDATION_END=$(date +%s%N)
     VALIDATION_TIME=$((($VALIDATION_END - $VALIDATION_START) / 1000000))
@@ -895,7 +894,7 @@ Performance testing documentation for Git hook benchmarks.
                 ["git", "--version"], text=True
             ).strip()
             info["git_version"] = git_version
-        except subprocess.CalledProcessError:
+        except (subprocess.CalledProcessError, FileNotFoundError):
             info["git_version"] = "unknown"
 
         # Node.js version (for Claude Flow)
@@ -904,7 +903,7 @@ Performance testing documentation for Git hook benchmarks.
                 ["node", "--version"], text=True
             ).strip()
             info["node_version"] = node_version
-        except subprocess.CalledProcessError:
+        except (subprocess.CalledProcessError, FileNotFoundError):
             info["node_version"] = "not available"
 
         return info

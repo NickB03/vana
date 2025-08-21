@@ -8,12 +8,15 @@ import json
 
 # Import the actual application components
 import sys
+from pathlib import Path
 
 import pytest
 import websockets
 from fastapi.testclient import TestClient
 
-sys.path.append("/Users/nick/Development/vana")
+# Add the project root to the path dynamically
+project_root = Path(__file__).parent.parent.parent
+sys.path.insert(0, str(project_root))
 from app.server import app
 
 

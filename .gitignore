@@ -223,6 +223,7 @@ vana_vscode/
 
 # Test files
 test-connectivity.html
+pytest-report.xml
 
 # VS Code workspace files
 *.code-workspace

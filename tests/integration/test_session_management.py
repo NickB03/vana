@@ -24,6 +24,26 @@ from app.utils.session_backup import (
 # from app.models import User, Session
 
 
+# Mock classes for testing
+@dataclass
+class User:
+    """Mock User class for testing."""
+
+    id: str
+    email: str
+    display_name: str
+
+
+@dataclass
+class Session:
+    """Mock Session class for testing."""
+
+    id: str
+    user_id: str
+    created_at: datetime = None
+    last_activity: datetime = None
+
+
 @dataclass
 class MockGCSBlob:
     """Mock GCS blob for testing."""

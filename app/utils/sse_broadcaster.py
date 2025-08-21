@@ -36,10 +36,10 @@ import threading
 import time
 from collections import defaultdict, deque
 from collections.abc import AsyncGenerator
-from contextlib import asynccontextmanager
+from contextlib import AbstractAsyncContextManager, asynccontextmanager
 from dataclasses import asdict, dataclass, field
 from datetime import datetime
-from typing import Any, AsyncContextManager
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -175,7 +175,7 @@ class MemoryOptimizedQueue:
         def notify_close():
             try:
                 loop = asyncio.get_running_loop()
-                loop.create_task(self._notify_close())
+                loop.create_task(self._notify_close())  # noqa: RUF006
             except RuntimeError:
                 pass  # No running loop
 
@@ -319,7 +319,7 @@ class EnhancedSSEBroadcaster:
         # Clean up dead queues
         with self._lock:
             for session_id, queues in list(self._subscribers.items()):
-                alive_queues = []
+                alive_queues: list[MemoryOptimizedQueue] = []
                 for queue in queues:
                     if not queue._closed and not queue.is_stale(
                         self.config.max_subscriber_idle_time
@@ -329,12 +329,17 @@ class EnhancedSSEBroadcaster:
                         dead_queues += 1
                         queue.close()
 
+                removed_count = len(queues) - len(alive_queues)
                 if alive_queues:
                     self._subscribers[session_id] = alive_queues
+                    # Adjust subscriber count to match alive queues
+                    for _ in range(removed_count):
+                        self._session_manager.decrement_subscribers(session_id)
                 else:
-                    # No alive queues, remove session
+                    # No alive queues, remove session and zero out subscriber count
                     del self._subscribers[session_id]
-                    self._session_manager.decrement_subscribers(session_id)
+                    for _ in range(len(queues)):
+                        self._session_manager.decrement_subscribers(session_id)
 
         # Clean up expired sessions
         expired_sessions = self._session_manager.cleanup_expired_sessions()
@@ -475,7 +480,7 @@ class EnhancedSSEBroadcaster:
     @asynccontextmanager
     async def subscribe(
         self, session_id: str
-    ) -> AsyncContextManager[MemoryOptimizedQueue]:
+    ) -> AbstractAsyncContextManager[MemoryOptimizedQueue]:
         """Context manager for safe subscription management."""
         queue = await self.add_subscriber(session_id)
         try:
@@ -720,7 +725,8 @@ def broadcast_agent_network_update(
     try:
         loop = asyncio.get_event_loop()
         if loop.is_running():
-            loop.create_task(
+            # Fire-and-forget task for broadcasting
+            loop.create_task(  # noqa: RUF006
                 broadcaster.broadcast_agent_network_event(network_event, session_id)
             )
         else:

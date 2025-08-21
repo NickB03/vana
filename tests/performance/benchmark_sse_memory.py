@@ -16,6 +16,7 @@ import os
 import statistics
 import time
 from dataclasses import dataclass
+from pathlib import Path
 
 import matplotlib.pyplot as plt
 import psutil
@@ -145,8 +146,9 @@ class SSEMemoryBenchmark:
             execution_time = end_time - start_time
 
             # Check if cleanup was successful (memory returned close to initial)
-            memory_returned_ratio = (peak_memory - final_memory) / (
-                peak_memory - initial_memory
+            denominator = peak_memory - initial_memory
+            memory_returned_ratio = (
+                (peak_memory - final_memory) / denominator if denominator > 0 else 1.0
             )
             cleanup_success = memory_returned_ratio > 0.7  # 70% of memory returned
 
@@ -303,7 +305,7 @@ class SSEMemoryBenchmark:
 
             # Send events to all sessions
             total_events = 0
-            for session_id, queue in sessions_and_queues:
+            for session_id, _ in sessions_and_queues:
                 for event_idx in range(events_per_session):
                     await broadcaster.broadcast_event(
                         session_id,
@@ -647,15 +649,15 @@ async def run_comprehensive_benchmark():
         )
 
         # Save report
-        with open(
-            "/Users/nick/Development/vana/.claude_workspace/reports/sse_memory_benchmark_report.md",
-            "w",
-        ) as f:
+        output_dir = Path(
+            os.getenv("SSE_BENCHMARK_REPORT_DIR", ".claude_workspace/reports")
+        ).resolve()
+        output_dir.mkdir(parents=True, exist_ok=True)
+        report_path = output_dir / "sse_memory_benchmark_report.md"
+        with open(report_path, "w") as f:
             f.write(report)
 
-        print(
-            "✅ Report saved to .claude_workspace/reports/sse_memory_benchmark_report.md"
-        )
+        print(f"✅ Report saved to {report_path}")
 
         # JSON results for further analysis
         json_results = {}
@@ -672,16 +674,14 @@ async def run_comprehensive_benchmark():
                     "final_cleanup_success": result.final_cleanup_success,
                 }
 
-        with open(
-            "/Users/nick/Development/vana/.claude_workspace/reports/sse_benchmark_data.json",
-            "w",
-        ) as f:
+        json_path = output_dir / "sse_benchmark_data.json"
+        with open(json_path, "w") as f:
             json.dump(json_results, f, indent=2)
 
         # Generate plots
         benchmark.plot_memory_usage(
             results,
-            "/Users/nick/Development/vana/.claude_workspace/reports/memory_usage_comparison.png",
+            str(output_dir / "memory_usage_comparison.png"),
         )
 
         # Print summary
