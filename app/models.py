@@ -21,6 +21,9 @@ USE_OPENROUTER_OVERRIDE = (
 # Automatically use OpenRouter when API key is present (unless explicitly disabled)
 USE_OPENROUTER = bool(OPENROUTER_API_KEY) and not USE_OPENROUTER_OVERRIDE
 
+# Type alias for model configuration
+ModelType = str | LiteLlm
+
 # Set OpenRouter API key for LiteLLM if configured
 if USE_OPENROUTER and OPENROUTER_API_KEY:
     os.environ["OPENROUTER_API_KEY"] = OPENROUTER_API_KEY
@@ -54,5 +57,3 @@ else:
             "[Models] 💡 Tip: Set OPENROUTER_API_KEY for faster, free Qwen 3 Coder model"
         )
 
-# Type alias for model configuration
-ModelType = Union[str, LiteLlm]
