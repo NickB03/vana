@@ -8,7 +8,6 @@ OpenRouter is automatically selected when the API key is present.
 """
 
 import os
-from typing import Union
 
 from google.adk.models.lite_llm import LiteLlm
 
@@ -51,4 +50,4 @@ else:
         )
 
 # Type alias for model configuration
-ModelType = Union[str, LiteLlm]
+ModelType = str | LiteLlm

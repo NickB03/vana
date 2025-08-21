@@ -95,7 +95,7 @@ class TestAgentMetrics:
             assert abs(score - expected[i]) < 1e-10
 
         # Test that only last 100 scores are kept
-        for i in range(100):
+        for _ in range(100):
             metrics.add_confidence_score(0.8)
 
         assert len(metrics.confidence_scores) == 100
@@ -476,7 +476,11 @@ class TestErrorHandling:
     def test_callback_exception_handling(self, mock_logger):
         """Test that callback exceptions are logged and don't crash."""
         mock_callback_context = Mock()
+        # Prepare invocation context (both public and private) for consistent error-path testing
         mock_callback_context.invocation_context = Mock()
+        mock_callback_context._invocation_context = (
+            mock_callback_context.invocation_context
+        )
         mock_callback_context.invocation_context.agent = Mock()
         mock_callback_context.invocation_context.agent.name = "test_agent"
         # Cause an exception by setting session to None

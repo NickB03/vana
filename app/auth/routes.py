@@ -4,10 +4,17 @@ import logging
 import os
 import secrets
 from datetime import datetime, timezone
-from typing import Annotated
 
 import httpx
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, Request, status
+from fastapi import (
+    APIRouter,
+    BackgroundTasks,
+    Depends,
+    HTTPException,
+    Query,
+    Request,
+    status,
+)
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -35,12 +42,14 @@ from .security import (
     create_access_token,
     create_password_reset_token,
     create_refresh_token,
-    get_current_active_user,
-    get_current_superuser,
+    current_active_user_dep,
+    current_superuser_dep,
     get_password_hash,
-    require_permissions,
     revoke_all_user_tokens,
     revoke_refresh_token,
+    users_delete_permission_dep,
+    users_read_permission_dep,
+    users_update_permission_dep,
     validate_password_strength,
     verify_password_reset_token,
     verify_refresh_token,
@@ -56,11 +65,6 @@ admin_router = APIRouter(prefix="/admin", tags=["Administration"])
 
 # Create dependency instances to avoid B008 violations (function calls in argument defaults)
 auth_db_dependency = Depends(get_auth_db)
-current_active_user_dependency = Depends(get_current_active_user)
-current_superuser_dependency = Depends(get_current_superuser)
-users_read_permission_dependency = Depends(require_permissions(["users:read"]))
-users_update_permission_dependency = Depends(require_permissions(["users:update"]))
-users_delete_permission_dependency = Depends(require_permissions(["users:delete"]))
 
 
 # Authentication endpoints
@@ -327,10 +331,10 @@ async def refresh_access_token(
     )
 
 
-@auth_router.post("/logout")
+@auth_router.post("/logout", response_model=None)
 async def logout_user(
     refresh_data: RefreshTokenRequest,
-    current_user: User = current_active_user_dependency,
+    current_user: User = current_active_user_dep,
     db: Session = auth_db_dependency,
 ):
     """Logout user by revoking refresh token."""
@@ -354,7 +358,7 @@ async def logout_user(
 
 @auth_router.post("/logout-all")
 async def logout_all_devices(
-    current_user: User = current_active_user_dependency,
+    current_user: User = current_active_user_dep,
     db: Session = auth_db_dependency,
 ):
     """Logout user from all devices by revoking all refresh tokens."""
@@ -364,7 +368,7 @@ async def logout_all_devices(
 
 @auth_router.get("/me", response_model=UserResponse)
 async def get_current_user_info(
-    current_user: User = current_active_user_dependency,
+    current_user: User = current_active_user_dep,
 ) -> UserResponse:
     """Get current user information."""
     return UserResponse.model_validate(current_user)
@@ -373,7 +377,7 @@ async def get_current_user_info(
 @auth_router.put("/me", response_model=UserResponse)
 async def update_current_user(
     user_update: UserUpdate,
-    current_user: User = current_active_user_dependency,
+    current_user: User = current_active_user_dep,
     db: Session = auth_db_dependency,
 ) -> UserResponse:
     """Update current user information."""
@@ -424,7 +428,7 @@ async def update_current_user(
 @auth_router.post("/change-password")
 async def change_password(
     password_data: ChangePassword,
-    current_user: User = current_active_user_dependency,
+    current_user: User = current_active_user_dep,
     db: Session = auth_db_dependency,
 ):
     """Change user password."""
@@ -480,7 +484,11 @@ async def forgot_password(
         # background_tasks.add_task(send_password_reset_email, user.email, reset_token)
 
         # For development only: log token at DEBUG level if explicitly enabled
-        if os.getenv("VANA_DEV_LOG_RESET_TOKEN", "false").lower() in {"1", "true", "yes"}:
+        if os.getenv("VANA_DEV_LOG_RESET_TOKEN", "false").lower() in {
+            "1",
+            "true",
+            "yes",
+        }:
             # Mask token in logs to reduce exposure risk
             masked = (
                 f"{reset_token[:4]}...{reset_token[-4:]}"
@@ -672,7 +680,7 @@ async def google_oauth_callback(
 async def list_users(
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=500),
-    current_user: User = users_read_permission_dependency,
+    current_user: User = users_read_permission_dep,
     db: Session = auth_db_dependency,
 ) -> list[UserResponse]:
     """List all users (requires users:read permission)."""
@@ -683,7 +691,7 @@ async def list_users(
 @users_router.get("/{user_id}", response_model=UserResponse)
 async def get_user(
     user_id: int,
-    current_user: User = users_read_permission_dependency,
+    current_user: User = users_read_permission_dep,
     db: Session = auth_db_dependency,
 ) -> UserResponse:
     """Get user by ID (requires users:read permission)."""
@@ -699,7 +707,7 @@ async def get_user(
 async def update_user(
     user_id: int,
     user_update: UserUpdate,
-    current_user: User = users_update_permission_dependency,
+    current_user: User = users_update_permission_dep,
     db: Session = auth_db_dependency,
 ) -> UserResponse:
     """Update user (requires users:update permission)."""
@@ -747,7 +755,7 @@ async def update_user(
 @users_router.delete("/{user_id}")
 async def delete_user(
     user_id: int,
-    current_user: User = users_delete_permission_dependency,
+    current_user: User = users_delete_permission_dep,
     db: Session = auth_db_dependency,
 ):
     """Delete user (requires users:delete permission)."""
@@ -778,7 +786,7 @@ async def delete_user(
 # Admin endpoints
 @admin_router.get("/roles", response_model=list[RoleSchema])
 async def list_roles(
-    current_user: User = current_superuser_dependency,
+    current_user: User = current_superuser_dep,
     db: Session = auth_db_dependency,
 ) -> list[RoleSchema]:
     """List all roles (superuser only)."""
@@ -791,7 +799,7 @@ async def list_roles(
 )
 async def create_role(
     role: RoleCreate,
-    current_user: User = current_superuser_dependency,
+    current_user: User = current_superuser_dep,
     db: Session = auth_db_dependency,
 ) -> RoleSchema:
     """Create new role (superuser only)."""
@@ -815,7 +823,7 @@ async def create_role(
 
 @admin_router.get("/permissions", response_model=list[PermissionSchema])
 async def list_permissions(
-    current_user: User = current_superuser_dependency,
+    current_user: User = current_superuser_dep,
     db: Session = auth_db_dependency,
 ) -> list[PermissionSchema]:
     """List all permissions (superuser only)."""

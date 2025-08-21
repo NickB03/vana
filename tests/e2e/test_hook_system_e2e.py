@@ -273,7 +273,7 @@ class E2ETestEnvironment:
         """Get file size in bytes"""
         try:
             return (self.workspace / file_path).stat().st_size
-        except:
+        except (OSError, AttributeError):
             return 0
 
     def _calculate_complexity(self, file_path: str) -> int:
@@ -289,7 +289,7 @@ class E2ETestEnvironment:
             )
             imports = content.count("import ")
             return lines + (functions * 2) + imports
-        except:
+        except (OSError, AttributeError):
             return 0
 
 

@@ -59,7 +59,7 @@ class ProductionSmokeTest:
                             self.results["server_starts"] = True
                             print("✅ Server started successfully")
                             return True
-                except:
+                except Exception:
                     pass
 
             print("❌ Server failed to start")
@@ -195,7 +195,7 @@ class ProductionSmokeTest:
                             "data": {"message": f"Test message {i}" * 100},
                         },
                     )
-                except:
+                except Exception:
                     pass  # Endpoint might not exist, that's OK
 
         # Wait and check memory
