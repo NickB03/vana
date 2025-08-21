@@ -1142,7 +1142,8 @@ class PerformanceMonitor:
     async def start(self):
         """Start performance monitoring"""
         self.running = True
-        asyncio.create_task(self._collect_metrics())
+        # Store task reference to prevent garbage collection
+        self._metrics_task = asyncio.create_task(self._collect_metrics())
 
     async def stop(self):
         """Stop performance monitoring"""

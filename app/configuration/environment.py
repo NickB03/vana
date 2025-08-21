@@ -344,10 +344,10 @@ class EnvironmentManager:
         if config.is_production():
             required_fields.extend(["secret_key", "database_url"])
 
-        for field in required_fields:
-            value = getattr(config, field, None)
+        for field_name in required_fields:
+            value = getattr(config, field_name, None)
             if not value:
-                issues.append(f"Required field missing: {field}")
+                issues.append(f"Required field missing: {field_name}")
 
         # Validate config values
         for config_value in self.config_values.values():
@@ -371,13 +371,13 @@ class EnvironmentManager:
         template_data = {}
 
         # Add all config fields with descriptions
-        for field_name, field in config.__fields__.items():
+        for field_name, field_info in config.__fields__.items():
             template_data[field_name] = {
                 "value": getattr(config, field_name),
-                "description": field.field_info.description
+                "description": field_info.field_info.description
                 or f"Configuration for {field_name}",
-                "required": field.required,
-                "type": str(field.type_),
+                "required": field_info.required,
+                "type": str(field_info.type_),
             }
 
         with open(template_file, "w") as f:
@@ -395,12 +395,12 @@ class EnvironmentManager:
         differences = {}
         all_fields = set(config1.__fields__.keys()) | set(config2.__fields__.keys())
 
-        for field in all_fields:
-            val1 = getattr(config1, field, None)
-            val2 = getattr(config2, field, None)
+        for field_name in all_fields:
+            val1 = getattr(config1, field_name, None)
+            val2 = getattr(config2, field_name, None)
 
             if val1 != val2:
-                differences[field] = {env1.value: val1, env2.value: val2}
+                differences[field_name] = {env1.value: val1, env2.value: val2}
 
         return differences
 

@@ -95,7 +95,7 @@ class TestSSEBroadcaster:
 
         try:
             loop = asyncio.get_running_loop()
-            loop.create_task(self.broadcaster.shutdown())
+            loop.create_task(self.broadcaster.shutdown())  # noqa: RUF006
         except RuntimeError:
             pass
 

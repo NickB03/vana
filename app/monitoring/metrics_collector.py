@@ -409,5 +409,5 @@ def get_metrics_collector() -> MetricsCollector:
 def initialize_metrics_collection() -> MetricsCollector:
     """Initialize and start metrics collection."""
     collector = get_metrics_collector()
-    asyncio.create_task(collector.start_collection())
+    asyncio.create_task(collector.start_collection())  # noqa: RUF006
     return collector

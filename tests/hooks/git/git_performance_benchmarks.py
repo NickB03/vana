@@ -56,8 +56,7 @@ except ImportError:
     HAS_NUMPY = False
 
 try:
-    import matplotlib.dates as mdates
-    import matplotlib.pyplot as plt
+    import matplotlib.pyplot  # noqa: F401
 
     HAS_MATPLOTLIB = True
 except ImportError:

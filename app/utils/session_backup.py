@@ -355,7 +355,7 @@ def create_periodic_backup_job(
                 local_db_path, bucket_name, project_id, interval_hours
             )
 
-        loop.create_task(start_async())
+        loop.create_task(start_async())  # noqa: RUF006
         logging.info(
             f"Started async periodic session backup every {interval_hours} hours"
         )

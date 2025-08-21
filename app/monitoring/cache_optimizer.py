@@ -370,7 +370,7 @@ class CacheOptimizer:
                     import gzip
 
                     data = gzip.decompress(data)
-                except:
+                except gzip.BadGzipFile:
                     pass  # Not compressed
 
             # Security fix: Try JSON first (safer), fallback to pickle only for internal cache data

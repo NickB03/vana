@@ -303,7 +303,7 @@ class SSEMemoryBenchmark:
 
             # Send events to all sessions
             total_events = 0
-            for session_id, queue in sessions_and_queues:
+            for session_id, _ in sessions_and_queues:
                 for event_idx in range(events_per_session):
                     await broadcaster.broadcast_event(
                         session_id,

@@ -4,7 +4,7 @@ import secrets
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
-from fastapi import Depends, HTTPException, status
+from fastapi import HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jose import JWTError, jwt
 from passlib.context import CryptContext
@@ -17,7 +17,6 @@ from .config import (
     REFRESH_TOKEN_EXPIRE_DELTA,
     get_auth_settings,
 )
-from .database import get_auth_db
 from .models import RefreshToken, User
 from .schemas import TokenData
 
@@ -140,8 +139,8 @@ def revoke_all_user_tokens(user_id: int, db: Session) -> int:
 
 
 def get_current_user(
-    credentials: HTTPAuthorizationCredentials = Depends(security),
-    db: Session = Depends(get_auth_db),
+    credentials: HTTPAuthorizationCredentials,
+    db: Session,
 ) -> User:
     """Get current authenticated user from JWT token."""
     credentials_exception = HTTPException(
@@ -161,8 +160,8 @@ def get_current_user(
             raise credentials_exception
 
         token_data = TokenData(user_id=user_id)
-    except JWTError:
-        raise credentials_exception
+    except JWTError as e:
+        raise credentials_exception from e
 
     user = db.query(User).filter(User.id == token_data.user_id).first()
     if user is None:
@@ -171,7 +170,7 @@ def get_current_user(
     return user
 
 
-def get_current_active_user(current_user: User = Depends(get_current_user)) -> User:
+def get_current_active_user(current_user: User) -> User:
     """Get current active user."""
     if not current_user.is_active:
         raise HTTPException(
@@ -180,9 +179,7 @@ def get_current_active_user(current_user: User = Depends(get_current_user)) -> U
     return current_user
 
 
-def get_current_verified_user(
-    current_user: User = Depends(get_current_active_user),
-) -> User:
+def get_current_verified_user(current_user: User) -> User:
     """Get current verified user."""
     if not current_user.is_verified:
         raise HTTPException(
@@ -191,9 +188,7 @@ def get_current_verified_user(
     return current_user
 
 
-def get_current_superuser(
-    current_user: User = Depends(get_current_active_user),
-) -> User:
+def get_current_superuser(current_user: User) -> User:
     """Get current superuser."""
     if not current_user.is_superuser:
         raise HTTPException(
@@ -205,9 +200,7 @@ def get_current_superuser(
 def require_permissions(required_permissions: list[str]):
     """Dependency factory for requiring specific permissions."""
 
-    def permission_checker(
-        current_user: User = Depends(get_current_active_user),
-    ) -> User:
+    def permission_checker(current_user: User) -> User:
         if current_user.is_superuser:
             return current_user
 
@@ -231,7 +224,7 @@ def require_permissions(required_permissions: list[str]):
 def require_roles(required_roles: list[str]):
     """Dependency factory for requiring specific roles."""
 
-    def role_checker(current_user: User = Depends(get_current_active_user)) -> User:
+    def role_checker(current_user: User) -> User:
         if current_user.is_superuser:
             return current_user
 
@@ -295,8 +288,8 @@ def verify_password_reset_token(token: str) -> str | None:
 
 
 def get_current_user_optional(
-    credentials: HTTPAuthorizationCredentials | None = Depends(optional_security),
-    db: Session = Depends(get_auth_db),
+    credentials: HTTPAuthorizationCredentials | None,
+    db: Session,
 ) -> User | None:
     """Get current user from JWT token if provided, otherwise return None."""
     if not credentials:
@@ -324,8 +317,8 @@ def get_current_user_optional(
 
 
 def get_current_user_for_sse(
-    credentials: HTTPAuthorizationCredentials | None = Depends(optional_security),
-    db: Session = Depends(get_auth_db),
+    credentials: HTTPAuthorizationCredentials | None,
+    db: Session,
 ) -> User | None:
     """
     Get current user for SSE endpoints based on REQUIRE_SSE_AUTH setting.

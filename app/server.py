@@ -205,17 +205,20 @@ else:
             )
 
 # Initialize authentication database
-from app.auth.config import get_auth_settings
-from app.auth.database import init_auth_db
-from app.auth.middleware import (
+from app.auth.config import get_auth_settings  # noqa: E402
+from app.auth.database import init_auth_db  # noqa: E402
+from app.auth.middleware import (  # noqa: E402
     AuditLogMiddleware,
     CORSMiddleware,
     RateLimitMiddleware,
     SecurityHeadersMiddleware,
 )
-from app.auth.models import User
-from app.auth.routes import admin_router, auth_router, users_router
-from app.auth.security import get_current_active_user, get_current_user_for_sse
+from app.auth.models import User  # noqa: E402
+from app.auth.routes import admin_router, auth_router, users_router  # noqa: E402
+from app.auth.security import (  # noqa: E402
+    get_current_active_user,
+    get_current_user_for_sse,
+)
 
 # Initialize auth database
 try:

@@ -36,10 +36,10 @@ import threading
 import time
 from collections import defaultdict, deque
 from collections.abc import AsyncGenerator
-from contextlib import asynccontextmanager
+from contextlib import AbstractAsyncContextManager, asynccontextmanager
 from dataclasses import asdict, dataclass, field
 from datetime import datetime
-from typing import Any, AsyncContextManager
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -175,7 +175,7 @@ class MemoryOptimizedQueue:
         def notify_close():
             try:
                 loop = asyncio.get_running_loop()
-                loop.create_task(self._notify_close())
+                loop.create_task(self._notify_close())  # noqa: RUF006
             except RuntimeError:
                 pass  # No running loop
 
@@ -475,7 +475,7 @@ class EnhancedSSEBroadcaster:
     @asynccontextmanager
     async def subscribe(
         self, session_id: str
-    ) -> AsyncContextManager[MemoryOptimizedQueue]:
+    ) -> AbstractAsyncContextManager[MemoryOptimizedQueue]:
         """Context manager for safe subscription management."""
         queue = await self.add_subscriber(session_id)
         try:
@@ -720,7 +720,8 @@ def broadcast_agent_network_update(
     try:
         loop = asyncio.get_event_loop()
         if loop.is_running():
-            loop.create_task(
+            # Fire-and-forget task for broadcasting
+            loop.create_task(  # noqa: RUF006
                 broadcaster.broadcast_agent_network_event(network_event, session_id)
             )
         else:

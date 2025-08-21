@@ -179,7 +179,7 @@ class MemoryOptimizedQueue:
         def notify_close():
             try:
                 loop = asyncio.get_running_loop()
-                loop.create_task(self._notify_close())
+                loop.create_task(self._notify_close())  # noqa: RUF006
             except RuntimeError:
                 pass  # No running loop
 
@@ -725,7 +725,8 @@ def broadcast_agent_network_update(
     try:
         loop = asyncio.get_event_loop()
         if loop.is_running():
-            loop.create_task(
+            # Fire-and-forget task for broadcasting
+            loop.create_task(  # noqa: RUF006
                 broadcaster.broadcast_agent_network_event(network_event, session_id)
             )
         else:

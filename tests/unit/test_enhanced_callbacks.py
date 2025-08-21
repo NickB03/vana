@@ -95,7 +95,7 @@ class TestAgentMetrics:
             assert abs(score - expected[i]) < 1e-10
 
         # Test that only last 100 scores are kept
-        for i in range(100):
+        for _ in range(100):
             metrics.add_confidence_score(0.8)
 
         assert len(metrics.confidence_scores) == 100

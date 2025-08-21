@@ -525,7 +525,7 @@ class PerformanceDashboard:
                     for websocket in self.active_connections:
                         try:
                             await websocket.send_text(message)
-                        except:
+                        except Exception:
                             disconnected.append(websocket)
 
                     # Remove disconnected clients
