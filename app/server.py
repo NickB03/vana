@@ -18,9 +18,11 @@ import os
 from datetime import datetime
 
 import google.auth
-from fastapi import Depends, FastAPI
+from fastapi import Depends, FastAPI, Security
 from fastapi.responses import StreamingResponse
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from google.adk.cli.fast_api import get_fast_api_app
+from sqlalchemy.orm import Session
 
 # Only import cloud logging if we have a real project
 try:
@@ -217,6 +219,7 @@ from app.auth.models import User  # noqa: E402
 from app.auth.routes import admin_router, auth_router, users_router  # noqa: E402
 from app.auth.security import (  # noqa: E402
     get_current_active_user,
+    get_current_user,
     get_current_user_for_sse,
 )
 
@@ -242,9 +245,44 @@ app.include_router(auth_router)
 app.include_router(users_router)
 app.include_router(admin_router)
 
-# Create dependency instances to avoid B008 violations (function calls in argument defaults)
-current_active_user_dependency = Depends(get_current_active_user)
-current_user_for_sse_dependency = Depends(get_current_user_for_sse)
+# Authentication dependencies - simplified approach to avoid import issues
+# These are basic dependencies that work with the updated security functions
+def current_active_user_dependency():
+    """Placeholder for current active user dependency."""
+    from app.auth.database import get_auth_db
+    from app.auth.security import get_current_user, get_current_active_user
+    from fastapi.security import HTTPBearer
+    
+    auth_scheme = HTTPBearer()
+    
+    def dependency(
+        credentials: HTTPAuthorizationCredentials = Security(auth_scheme),
+        db: Session = Depends(get_auth_db),
+    ):
+        user = get_current_user(credentials, db)
+        return get_current_active_user(user)
+    
+    return dependency
+
+def current_user_for_sse_dependency():
+    """Placeholder for SSE user dependency."""
+    from app.auth.database import get_auth_db
+    from app.auth.security import get_current_user_for_sse
+    from fastapi.security import HTTPBearer
+    
+    auth_scheme = HTTPBearer(auto_error=False)
+    
+    def dependency(
+        credentials: HTTPAuthorizationCredentials | None = Security(auth_scheme),
+        db: Session = Depends(get_auth_db),
+    ):
+        return get_current_user_for_sse(credentials, db)
+    
+    return dependency
+
+# Create the actual dependencies
+current_active_user_dep = Depends(current_active_user_dependency())
+current_user_for_sse_dep = Depends(current_user_for_sse_dependency())
 
 # Add security middleware
 app.add_middleware(CORSMiddleware, allowed_origins=allow_origins)
@@ -273,7 +311,7 @@ async def health_check():
 
 @app.post("/feedback")
 def collect_feedback(
-    feedback: Feedback, current_user: User = current_active_user_dependency
+    feedback: Feedback, current_user: User = current_active_user_dep
 ) -> dict[str, str]:
     """Collect and log feedback.
 
@@ -297,7 +335,7 @@ def collect_feedback(
 
 @app.get("/agent_network_sse/{session_id}")
 async def agent_network_sse(
-    session_id: str, current_user: User | None = current_user_for_sse_dependency
+    session_id: str, current_user: User | None = current_user_for_sse_dep
 ) -> StreamingResponse:
     """Enhanced SSE endpoint for agent network events with optional authentication.
 
@@ -426,7 +464,7 @@ async def agent_network_sse(
 
 @app.get("/agent_network_history")
 async def get_agent_network_history(
-    limit: int = 50, current_user: User | None = current_user_for_sse_dependency
+    limit: int = 50, current_user: User | None = current_user_for_sse_dep
 ):
     """Get recent agent network event history with optional authentication.
 

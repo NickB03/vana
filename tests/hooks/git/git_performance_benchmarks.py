@@ -894,7 +894,7 @@ Performance testing documentation for Git hook benchmarks.
                 ["git", "--version"], text=True
             ).strip()
             info["git_version"] = git_version
-        except subprocess.CalledProcessError:
+        except (subprocess.CalledProcessError, FileNotFoundError):
             info["git_version"] = "unknown"
 
         # Node.js version (for Claude Flow)
@@ -903,7 +903,7 @@ Performance testing documentation for Git hook benchmarks.
                 ["node", "--version"], text=True
             ).strip()
             info["node_version"] = node_version
-        except subprocess.CalledProcessError:
+        except (subprocess.CalledProcessError, FileNotFoundError):
             info["node_version"] = "not available"
 
         return info

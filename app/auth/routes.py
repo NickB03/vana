@@ -44,6 +44,7 @@ from .security import (
     create_refresh_token,
     get_current_active_user,
     get_current_superuser,
+    get_current_user,
     get_password_hash,
     require_permissions,
     revoke_all_user_tokens,
@@ -63,11 +64,65 @@ admin_router = APIRouter(prefix="/admin", tags=["Administration"])
 
 # Create dependency instances to avoid B008 violations (function calls in argument defaults)
 auth_db_dependency = Depends(get_auth_db)
-current_active_user_dependency = Depends(get_current_active_user)
-current_superuser_dependency = Depends(get_current_superuser)
-users_read_permission_dependency = Depends(require_permissions(["users:read"]))
-users_update_permission_dependency = Depends(require_permissions(["users:update"]))
-users_delete_permission_dependency = Depends(require_permissions(["users:delete"]))
+
+# Create proper dependency chain for authentication
+def _create_current_active_user_dependency():
+    """Create proper dependency chain for active user authentication."""
+    from fastapi import Security
+    from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+    
+    auth_scheme = HTTPBearer()
+    
+    def dependency(
+        credentials: HTTPAuthorizationCredentials = Security(auth_scheme),
+        db: Session = Depends(get_auth_db),
+    ):
+        user = get_current_user(credentials, db)
+        return get_current_active_user(user)
+    
+    return dependency
+
+def _create_current_superuser_dependency():
+    """Create proper dependency chain for superuser authentication."""
+    from fastapi import Security
+    from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+    
+    auth_scheme = HTTPBearer()
+    
+    def dependency(
+        credentials: HTTPAuthorizationCredentials = Security(auth_scheme),
+        db: Session = Depends(get_auth_db),
+    ):
+        user = get_current_user(credentials, db)
+        active_user = get_current_active_user(user)
+        return get_current_superuser(active_user)
+    
+    return dependency
+
+# Create permission-based dependency chains
+def _create_permission_dependency(required_permissions: list[str]):
+    """Create proper dependency chain for permission-based authentication."""
+    from fastapi import Security
+    from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+    
+    auth_scheme = HTTPBearer()
+    permission_checker = require_permissions(required_permissions)
+    
+    def dependency(
+        credentials: HTTPAuthorizationCredentials = Security(auth_scheme),
+        db: Session = Depends(get_auth_db),
+    ):
+        user = get_current_user(credentials, db)
+        active_user = get_current_active_user(user)
+        return permission_checker(active_user)
+    
+    return dependency
+
+current_active_user_dependency = Depends(_create_current_active_user_dependency())
+current_superuser_dependency = Depends(_create_current_superuser_dependency())
+users_read_permission_dependency = Depends(_create_permission_dependency(["users:read"]))
+users_update_permission_dependency = Depends(_create_permission_dependency(["users:update"]))
+users_delete_permission_dependency = Depends(_create_permission_dependency(["users:delete"]))
 
 
 # Authentication endpoints
