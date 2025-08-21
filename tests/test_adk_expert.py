@@ -269,7 +269,9 @@ async def test_llm_agent_wrapper():
         print("✓ ADK Expert LLM Agent created")
         print(f"  - Name: {adk_llm_agent.name}")
         print(f"  - Model: {adk_llm_agent.model}")
-        print(f"  - Tools: {len(adk_llm_agent.tools) if hasattr(adk_llm_agent, 'tools') else 0} tool(s) available")
+        print(
+            f"  - Tools: {len(adk_llm_agent.tools) if hasattr(adk_llm_agent, 'tools') else 0} tool(s) available"
+        )
 
         # Test tool function directly
         tool_result = await query_adk_expert(

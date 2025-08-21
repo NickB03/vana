@@ -243,7 +243,6 @@ app.include_router(users_router)
 app.include_router(admin_router)
 
 
-
 # Add security middleware
 app.add_middleware(CORSMiddleware, allowed_origins=allow_origins)
 app.add_middleware(SecurityHeadersMiddleware)

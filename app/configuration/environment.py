@@ -376,16 +376,16 @@ class EnvironmentManager:
         fields = getattr(config, "model_fields", getattr(config, "__fields__", {}))
         for field_name, field_info in fields.items():
             # Handle both Pydantic v1 and v2 field info structures
-            if hasattr(field_info, 'field_info'):
+            if hasattr(field_info, "field_info"):
                 # Pydantic v1
                 description = field_info.field_info.description
                 required = field_info.required
                 field_type = str(field_info.type_)
             else:
                 # Pydantic v2
-                description = getattr(field_info, 'description', None)
-                required = getattr(field_info, 'is_required', lambda: False)()
-                field_type = str(getattr(field_info, 'annotation', 'Any'))
+                description = getattr(field_info, "description", None)
+                required = getattr(field_info, "is_required", lambda: False)()
+                field_type = str(getattr(field_info, "annotation", "Any"))
 
             template_data[field_name] = {
                 "value": getattr(config, field_name),

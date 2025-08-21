@@ -351,6 +351,7 @@ optional_security_dep = Security(optional_security)
 def _create_current_active_user_dependency():
     """Create dependency chain for active user authentication."""
     from app.auth.database import get_auth_db
+
     auth_db_dep = Depends(get_auth_db)
 
     def dependency(
@@ -366,6 +367,7 @@ def _create_current_active_user_dependency():
 def _create_current_user_for_sse_dependency():
     """Create dependency chain for SSE user authentication."""
     from app.auth.database import get_auth_db
+
     auth_db_dep = Depends(get_auth_db)
 
     def dependency(
@@ -380,6 +382,7 @@ def _create_current_user_for_sse_dependency():
 def _create_current_superuser_dependency():
     """Create dependency chain for superuser authentication."""
     from app.auth.database import get_auth_db
+
     auth_db_dep = Depends(get_auth_db)
 
     def dependency(
@@ -396,6 +399,7 @@ def _create_current_superuser_dependency():
 def _create_permission_dependency(required_permissions: list[str]):
     """Create dependency chain for permission-based authentication."""
     from app.auth.database import get_auth_db
+
     auth_db_dep = Depends(get_auth_db)
     permission_checker = require_permissions(required_permissions)
 

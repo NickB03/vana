@@ -67,7 +67,6 @@ admin_router = APIRouter(prefix="/admin", tags=["Administration"])
 auth_db_dependency = Depends(get_auth_db)
 
 
-
 # Authentication endpoints
 @auth_router.post(
     "/register", response_model=AuthResponse, status_code=status.HTTP_201_CREATED
