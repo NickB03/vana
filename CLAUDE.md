@@ -47,6 +47,7 @@
 - Testing, debugging & implementation
 
 ### MCP Tools ONLY:
+- **github**: Primary GitHub integration - PRs, issues, code review, CodeRabbit workflows
 - **claude-flow**: Swarm orchestration, SPARC modes, neural training
 - **ruv-swarm**: Advanced swarm coordination, Decentralized Autonomous Agents
 - **firecrawl**: Web scraping, search, and research
@@ -165,6 +166,61 @@ GOOGLE_CLOUD_PROJECT=analystai-454200
 - `make dev-frontend` - Start frontend (port 5173)
 - `make dev-backend` - Start backend (port 8000)
 
+## 🐙 GitHub & CodeRabbit Integration
+
+### Core Principle
+**CodeRabbit operates as a GitHub App** - no separate API needed. All interaction happens through GitHub MCP.
+
+### GitHub MCP Tools
+- `mcp__github__create_pull_request` - Create PRs for CodeRabbit review
+- `mcp__github__get_pull_request_comments` - Get CodeRabbit comments
+- `mcp__github__add_issue_comment` - Reply to CodeRabbit with @coderabbitai
+- `mcp__github__create_pull_request_review` - Manual reviews alongside CodeRabbit
+- `mcp__github__merge_pull_request` - Merge after CodeRabbit approval
+
+### CodeRabbit Workflow Patterns
+
+#### 1. Create PR for Review
+```javascript
+mcp__github__create_pull_request({
+  owner: "vana-org", repo: "project",
+  title: "feat: new feature", head: "feature-branch", base: "main",
+  body: "## Changes\n- Added feature X\n\n@coderabbitai review"
+})
+```
+
+#### 2. Get CodeRabbit Comments
+```javascript
+mcp__github__get_pull_request_comments({
+  owner: "vana-org", repo: "project", pull_number: 123
+})
+```
+
+#### 3. Respond to CodeRabbit
+```javascript
+mcp__github__add_issue_comment({
+  owner: "vana-org", repo: "project", issue_number: 123,
+  body: "@coderabbitai Please explain the security implications of this change"
+})
+```
+
+#### 4. Request Specific Analysis
+```javascript
+// In PR comment or review
+"@coderabbitai analyze performance impact"
+"@coderabbitai check for potential memory leaks"
+"@coderabbitai review error handling patterns"
+"@coderabbitai suggest optimizations"
+```
+
+### CodeRabbit Commands Reference
+- `@coderabbitai review` - Full code review
+- `@coderabbitai analyze <aspect>` - Specific analysis
+- `@coderabbitai explain <code>` - Code explanation
+- `@coderabbitai suggest improvements` - Optimization suggestions
+- `@coderabbitai check security` - Security analysis
+- `@coderabbitai test coverage` - Test coverage review
+
 ## 🤖 Agent Reference (54 Total)
 
 ### Core Development
@@ -200,11 +256,11 @@ GOOGLE_CLOUD_PROJECT=analystai-454200
 ### GitHub Integration
 | Agent | Purpose |
 |-------|---------|
-| github-modes | Comprehensive integration |
-| pr-manager | Pull requests |
-| code-review-swarm | Multi-agent review |
-| issue-tracker | Issue management |
-| release-manager | Release coordination |
+| github-modes | Comprehensive integration + CodeRabbit workflows |
+| pr-manager | Pull requests + CodeRabbit review coordination |
+| code-review-swarm | Multi-agent review + CodeRabbit integration |
+| issue-tracker | Issue management + CodeRabbit feedback |
+| release-manager | Release coordination + CodeRabbit approval |
 
 ### Performance & Consensus
 | Agent | Purpose |
@@ -359,18 +415,32 @@ npx playwright test tests/ui
 .claude_workspace/reports/screenshots/
 ```
 
-### 4. Output Proof in Work Report
+### 4. GitHub/CodeRabbit Integration Check
+For tasks involving GitHub integration:
+```javascript
+// Verify GitHub MCP connectivity and CodeRabbit workflows
+mcp__github__get_file_contents({
+  owner: "test-org", repo: "test-repo", path: "README.md"
+})
+```
+- Must confirm GitHub MCP tools are functional
+- Test CodeRabbit workflow patterns if PR-related changes
+- Verify @coderabbitai commands work in test environments
+
+### 5. Output Proof in Work Report
 For **every** completed task, output a `.claude_workspace/reports/<task>.work.txt` containing:
 - Exact terminal output from **all** test steps above.
 - File paths to Playwright screenshots.
 - SSE/E2E logs if applicable.
+- GitHub MCP test results (if applicable).
 
 ### Completion Criteria
 A task is **only complete** if:
 1. All commands exit with code `0`.
 2. Frontend responds on port `5173` and backend responds on port `8000` (or SSE passes).
 3. Playwright MCP run confirms correct UI/state.
-4. Required logs and screenshots are saved and referenced in the work report.
+4. GitHub MCP integration verified (if applicable).
+5. Required logs and screenshots are saved and referenced in the work report.
 
 ## 📊 Progress Format
 
@@ -419,13 +489,13 @@ A task is **only complete** if:
 - Export workflows
 
 ## 💡 Integration Tips
-1. Start with basic swarm init
-2. Scale agents gradually
-3. Use memory for context
-4. Monitor progress regularly
-5. Train patterns from success
-6. Enable hooks automation
-7. Use GitHub tools first
+1. **GitHub First** - Use GitHub MCP for all code collaboration
+2. **CodeRabbit Integration** - Leverage @coderabbitai in PR workflows
+3. Scale agents gradually with GitHub coordination
+4. Use memory for cross-PR context
+5. Monitor progress via GitHub status checks
+6. Train patterns from CodeRabbit feedback
+7. Enable hooks for automated GitHub workflows
 
 ## ⚡ Quick Examples
 
@@ -447,6 +517,20 @@ TodoWrite { todos: [
   { id: "3", content: "Write tests", status: "pending", priority: "medium" },
   { id: "4", content: "Documentation", status: "pending", priority: "low" }
 ]}
+```
+
+### GitHub + CodeRabbit Workflow
+```javascript
+// Single message with GitHub workflow
+mcp__github__create_pull_request({
+  owner: "vana-org", repo: "project", 
+  title: "feat: new feature", head: "feature-branch", base: "main",
+  body: "@coderabbitai review this implementation"
+})
+mcp__github__get_pull_request_comments({ pull_number: 123 })
+mcp__github__add_issue_comment({ 
+  body: "@coderabbitai explain the performance implications"
+})
 ```
 
 ## 🔗 Resources
