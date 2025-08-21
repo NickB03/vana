@@ -18,11 +18,9 @@ import os
 from datetime import datetime
 
 import google.auth
-from fastapi import Depends, FastAPI, Security
+from fastapi import FastAPI
 from fastapi.responses import StreamingResponse
-from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from google.adk.cli.fast_api import get_fast_api_app
-from sqlalchemy.orm import Session
 
 # Only import cloud logging if we have a real project
 try:
@@ -218,9 +216,8 @@ from app.auth.middleware import (  # noqa: E402
 from app.auth.models import User  # noqa: E402
 from app.auth.routes import admin_router, auth_router, users_router  # noqa: E402
 from app.auth.security import (  # noqa: E402
-    get_current_active_user,
-    get_current_user,
-    get_current_user_for_sse,
+    current_active_user_dep,
+    current_user_for_sse_dep,
 )
 
 # Initialize auth database
@@ -246,46 +243,6 @@ app.include_router(users_router)
 app.include_router(admin_router)
 
 
-# Authentication dependencies - simplified approach to avoid import issues
-# These are basic dependencies that work with the updated security functions
-def _create_current_active_user_dependency():
-    """Create current active user dependency avoiding B008."""
-    from app.auth.database import get_auth_db
-
-    auth_scheme = HTTPBearer()
-    auth_db_dep = Depends(get_auth_db)
-    security_dep = Security(auth_scheme)
-
-    def dependency(
-        credentials: HTTPAuthorizationCredentials = security_dep,
-        db: Session = auth_db_dep,
-    ):
-        user = get_current_user(credentials, db)
-        return get_current_active_user(user)
-
-    return dependency
-
-
-def _create_current_user_for_sse_dependency():
-    """Create SSE user dependency avoiding B008."""
-    from app.auth.database import get_auth_db
-
-    auth_scheme = HTTPBearer(auto_error=False)
-    auth_db_dep = Depends(get_auth_db)
-    security_dep = Security(auth_scheme)
-
-    def dependency(
-        credentials: HTTPAuthorizationCredentials | None = security_dep,
-        db: Session = auth_db_dep,
-    ):
-        return get_current_user_for_sse(credentials, db)
-
-    return dependency
-
-
-# Create the actual dependencies
-current_active_user_dep = Depends(_create_current_active_user_dependency())
-current_user_for_sse_dep = Depends(_create_current_user_for_sse_dependency())
 
 # Add security middleware
 app.add_middleware(CORSMiddleware, allowed_origins=allow_origins)

@@ -75,7 +75,7 @@ class GitHookValidator:
 
             return shell_files
 
-        except subprocess.CalledProcessError as e:
+        except (subprocess.CalledProcessError, FileNotFoundError) as e:
             print(f"❌ Failed to get staged files: {e}")
             return []
 
@@ -295,7 +295,7 @@ class GitHookValidator:
                 print("\n✅ Repository shell script validation passed!")
                 return 0
 
-        except subprocess.CalledProcessError as e:
+        except (subprocess.CalledProcessError, FileNotFoundError) as e:
             print(f"❌ Failed to get repository files: {e}")
             return 1
 

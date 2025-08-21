@@ -4,7 +4,7 @@ import secrets
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
-from fastapi import HTTPException, status
+from fastapi import Depends, HTTPException, Security, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jose import JWTError, jwt
 from passlib.context import CryptContext
@@ -107,7 +107,7 @@ def verify_refresh_token(token: str, db: Session) -> User | None:
     """Verify and return user from refresh token."""
     refresh_token = (
         db.query(RefreshToken)
-        .filter(RefreshToken.token == token, RefreshToken.is_revoked == False)
+        .filter(RefreshToken.token == token, RefreshToken.is_revoked.is_(False))
         .first()
     )
 
@@ -340,3 +340,82 @@ def get_current_user_for_sse(
     else:
         # Demo mode: optional authentication
         return get_current_user_optional(credentials, db)
+
+
+# FastAPI Dependency factories to avoid B008 linting violations
+# Create module-level dependency singletons
+security_dep = Security(security)
+optional_security_dep = Security(optional_security)
+
+
+def _create_current_active_user_dependency():
+    """Create dependency chain for active user authentication."""
+    from app.auth.database import get_auth_db
+    auth_db_dep = Depends(get_auth_db)
+
+    def dependency(
+        credentials: HTTPAuthorizationCredentials = security_dep,
+        db: Session = auth_db_dep,
+    ) -> User:
+        user = get_current_user(credentials, db)
+        return get_current_active_user(user)
+
+    return dependency
+
+
+def _create_current_user_for_sse_dependency():
+    """Create dependency chain for SSE user authentication."""
+    from app.auth.database import get_auth_db
+    auth_db_dep = Depends(get_auth_db)
+
+    def dependency(
+        credentials: HTTPAuthorizationCredentials | None = optional_security_dep,
+        db: Session = auth_db_dep,
+    ) -> User | None:
+        return get_current_user_for_sse(credentials, db)
+
+    return dependency
+
+
+def _create_current_superuser_dependency():
+    """Create dependency chain for superuser authentication."""
+    from app.auth.database import get_auth_db
+    auth_db_dep = Depends(get_auth_db)
+
+    def dependency(
+        credentials: HTTPAuthorizationCredentials = security_dep,
+        db: Session = auth_db_dep,
+    ) -> User:
+        user = get_current_user(credentials, db)
+        active_user = get_current_active_user(user)
+        return get_current_superuser(active_user)
+
+    return dependency
+
+
+def _create_permission_dependency(required_permissions: list[str]):
+    """Create dependency chain for permission-based authentication."""
+    from app.auth.database import get_auth_db
+    auth_db_dep = Depends(get_auth_db)
+    permission_checker = require_permissions(required_permissions)
+
+    def dependency(
+        credentials: HTTPAuthorizationCredentials = security_dep,
+        db: Session = auth_db_dep,
+    ) -> User:
+        user = get_current_user(credentials, db)
+        active_user = get_current_active_user(user)
+        return permission_checker(active_user)
+
+    return dependency
+
+
+# Create the actual dependency instances
+current_active_user_dep = Depends(_create_current_active_user_dependency())
+current_user_for_sse_dep = Depends(_create_current_user_for_sse_dependency())
+current_superuser_dep = Depends(_create_current_superuser_dependency())
+
+# Permission-based dependencies
+users_read_permission_dep = Depends(_create_permission_dependency(["users:read"]))
+users_update_permission_dep = Depends(_create_permission_dependency(["users:update"]))
+users_delete_permission_dep = Depends(_create_permission_dependency(["users:delete"]))

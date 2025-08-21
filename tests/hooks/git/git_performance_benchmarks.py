@@ -491,8 +491,8 @@ VALIDATION_TIME=0
 if [ -n "$STAGED_FILES" ]; then
     VALIDATION_START=$(date +%s%N)
 
-    # Parallel processing for multiple files
-    echo "$STAGED_FILES" | while IFS= read -r file; do
+    # Parallel processing for multiple files - using here-string to avoid subshell
+    while IFS= read -r file; do
         if [[ "$file" =~ \\.tsx?$ ]]; then
             # Fast regex-based checks
             if grep -q "@mui\\|material-ui" "$file" 2>/dev/null; then
@@ -500,7 +500,7 @@ if [ -n "$STAGED_FILES" ]; then
                 VALIDATION_FAILED=true
             fi
         fi
-    done
+    done <<< "$STAGED_FILES"
 
     VALIDATION_END=$(date +%s%N)
     VALIDATION_TIME=$((($VALIDATION_END - $VALIDATION_START) / 1000000))
