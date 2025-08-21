@@ -146,7 +146,7 @@ class SSEMemoryBenchmark:
             execution_time = end_time - start_time
 
             # Check if cleanup was successful (memory returned close to initial)
-            denominator = (peak_memory - initial_memory)
+            denominator = peak_memory - initial_memory
             memory_returned_ratio = (
                 (peak_memory - final_memory) / denominator if denominator > 0 else 1.0
             )
@@ -649,7 +649,9 @@ async def run_comprehensive_benchmark():
         )
 
         # Save report
-        output_dir = Path(os.getenv("SSE_BENCHMARK_REPORT_DIR", ".claude_workspace/reports")).resolve()
+        output_dir = Path(
+            os.getenv("SSE_BENCHMARK_REPORT_DIR", ".claude_workspace/reports")
+        ).resolve()
         output_dir.mkdir(parents=True, exist_ok=True)
         report_path = output_dir / "sse_memory_benchmark_report.md"
         with open(report_path, "w") as f:
