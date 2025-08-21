@@ -107,7 +107,7 @@ def verify_refresh_token(token: str, db: Session) -> User | None:
     """Verify and return user from refresh token."""
     refresh_token = (
         db.query(RefreshToken)
-        .filter(RefreshToken.token == token, not RefreshToken.is_revoked)
+        .filter(RefreshToken.token == token, RefreshToken.is_revoked == False)
         .first()
     )
 
