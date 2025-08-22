@@ -11,17 +11,16 @@ response coordination.
 import asyncio
 import json
 import logging
+import sqlite3
+import statistics
 import threading
 import time
+from collections import defaultdict, deque
 from dataclasses import asdict, dataclass
 from datetime import datetime, timedelta
 from enum import Enum
 from pathlib import Path
 from typing import Any
-
-import sqlite3
-import statistics
-from collections import defaultdict, deque
 
 
 class AlertSeverity(Enum):
@@ -415,10 +414,9 @@ class AlertManager:
         self.rate_limiter[alert_name].append(now)
         return False
 
-    async def _store_alert_in_db(self, alert: Alert) -> None:
-        """Store alert in database"""
-        try:
-            conn = sqlite3.connect(self.db_path)
+    def _store_alert_in_db_sync(self, alert: Alert) -> None:
+        """Store alert in database (synchronous)"""
+        with sqlite3.connect(self.db_path) as conn:
             cursor = conn.cursor()
 
             cursor.execute(
@@ -452,8 +450,11 @@ class AlertManager:
             )
 
             conn.commit()
-            conn.close()
 
+    async def _store_alert_in_db(self, alert: Alert) -> None:
+        """Store alert in database (async wrapper)"""
+        try:
+            await asyncio.to_thread(self._store_alert_in_db_sync, alert)
         except Exception as e:
             self.logger.error(f"Failed to store alert in database: {e}")
 
@@ -503,19 +504,18 @@ class AlertManager:
 
     # Removed dead notification methods:
     # - _send_email_notification (no email config)
-    # - _send_webhook_notification (no webhook URLs) 
+    # - _send_webhook_notification (no webhook URLs)
     # - _send_slack_notification (no Slack integration)
 
-    async def _record_notification(
+    def _record_notification_sync(
         self,
         alert_id: str,
         channel: NotificationChannel,
         status: str,
         error_message: str | None = None,
     ) -> None:
-        """Record notification attempt"""
-        try:
-            conn = sqlite3.connect(self.db_path)
+        """Record notification attempt (synchronous)"""
+        with sqlite3.connect(self.db_path) as conn:
             cursor = conn.cursor()
 
             cursor.execute(
@@ -533,8 +533,17 @@ class AlertManager:
             )
 
             conn.commit()
-            conn.close()
 
+    async def _record_notification(
+        self,
+        alert_id: str,
+        channel: NotificationChannel,
+        status: str,
+        error_message: str | None = None,
+    ) -> None:
+        """Record notification attempt (async wrapper)"""
+        try:
+            await asyncio.to_thread(self._record_notification_sync, alert_id, channel, status, error_message)
         except Exception as e:
             self.logger.error(f"Failed to record notification: {e}")
 
@@ -605,10 +614,9 @@ class AlertManager:
         # Check thresholds
         await self._check_metric_thresholds(metric_name, value)
 
-    async def _store_metric_in_db(self, metric_data: dict[str, Any]) -> None:
-        """Store metric in database"""
-        try:
-            conn = sqlite3.connect(self.db_path)
+    def _store_metric_in_db_sync(self, metric_data: dict[str, Any]) -> None:
+        """Store metric in database (synchronous)"""
+        with sqlite3.connect(self.db_path) as conn:
             cursor = conn.cursor()
 
             cursor.execute(
@@ -625,8 +633,11 @@ class AlertManager:
             )
 
             conn.commit()
-            conn.close()
 
+    async def _store_metric_in_db(self, metric_data: dict[str, Any]) -> None:
+        """Store metric in database (async wrapper)"""
+        try:
+            await asyncio.to_thread(self._store_metric_in_db_sync, metric_data)
         except Exception as e:
             self.logger.error(f"Failed to store metric: {e}")
 

@@ -219,7 +219,8 @@ class RealtimeFeedback:
 
     async def _handle_websocket_client(self, websocket: WebSocketServerProtocol) -> None:
         """Handle a new WebSocket client connection."""
-        client_id = f"{websocket.remote_address[0]}:{websocket.remote_address[1]}"
+        peer = websocket.remote_address or ("unknown", 0)
+        client_id = f"{peer[0]}:{peer[1]}"
         logger.info("WebSocket client connected: %s", client_id)
 
         with self._lock:

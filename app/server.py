@@ -83,20 +83,23 @@ allow_origins = (
 )
 
 # Create bucket name for the project
-bucket_name = f"gs://{project_id}-vana-logs-data"
+bucket_name = f"{project_id}-vana-logs-data"
 if bucket_name:
     try:
         create_bucket_if_not_exists(
             bucket_name=bucket_name, project=project_id, location="us-central1"
         )
     except Exception as e:
-        logger.log_struct(
-            {
-                "message": "Could not create bucket, continuing without it",
-                "error": str(e),
-            },
-            severity="WARNING",
-        )
+        if hasattr(logger, "log_struct"):
+            logger.log_struct(
+                {
+                    "message": "Could not create bucket, continuing without it",
+                    "error": str(e),
+                },
+                severity="WARNING",
+            )
+        else:
+            logger.warning(f"Could not create bucket, continuing without it: {e}")
 
 # Set up tracing for the project
 try:
@@ -232,7 +235,7 @@ except Exception as e:
 app: FastAPI = get_fast_api_app(
     agents_dir=AGENT_DIR,
     web=True,
-    artifact_service_uri=bucket_name if bucket_name else None,
+    artifact_service_uri=f"gs://{bucket_name}" if bucket_name else None,
     allow_origins=allow_origins,
     session_service_uri=session_service_uri,
 )

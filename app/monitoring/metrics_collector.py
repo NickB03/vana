@@ -164,6 +164,9 @@ class MetricsCollector:
             # Calculate derived metrics
             self.current_metrics.calculate_derived_metrics()
 
+            # Update timestamp for this collection cycle
+            self.current_metrics.timestamp = datetime.now(timezone.utc)
+
             # Store in history
             self.metrics_history.append(
                 PerformanceMetrics(**self.current_metrics.__dict__)
