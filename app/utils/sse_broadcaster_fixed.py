@@ -567,7 +567,7 @@ class EnhancedSSEBroadcaster:
 
     def reset_subscribers(self, session_id: str | None = None) -> None:
         """Reset subscribers for proper session expiry.
-        
+
         Args:
             session_id: If provided, reset only this session. If None, reset all.
         """
@@ -578,27 +578,27 @@ class EnhancedSSEBroadcaster:
                     for queue in self._subscribers[session_id]:
                         queue.close()
                     del self._subscribers[session_id]
-                    
+
                 if session_id in self._event_history:
                     self._event_history[session_id].clear()
-                    
+
                 # Reset session manager state
                 self._session_manager._subscriber_counts[session_id] = 0
                 if session_id in self._session_manager._sessions:
                     del self._session_manager._sessions[session_id]
-                    
+
                 logger.info(f"Reset subscribers for session {session_id}")
             else:
                 # Reset all sessions
                 for queues in self._subscribers.values():
                     for queue in queues:
                         queue.close()
-                        
+
                 self._subscribers.clear()
                 self._event_history.clear()
                 self._session_manager._sessions.clear()
                 self._session_manager._subscriber_counts.clear()
-                
+
                 logger.info("Reset all subscribers")
 
     def get_stats(self) -> dict:

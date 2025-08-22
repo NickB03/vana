@@ -8,6 +8,7 @@ from collections import defaultdict, deque
 from collections.abc import Callable
 from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
+from typing import Any
 
 import psutil
 
