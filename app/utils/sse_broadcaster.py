@@ -348,10 +348,10 @@ class EnhancedSSEBroadcaster:
                     for _ in range(removed_count):
                         self._session_manager.decrement_subscribers(session_id)
                 else:
-                    # No alive queues, remove session and zero out subscriber count
+                    # No alive queues, remove session and reset subscriber count
                     del self._subscribers[session_id]
-                    for _ in range(len(queues)):
-                        self._session_manager.decrement_subscribers(session_id)
+                    # Use reset_subscribers to properly zero out the count
+                    self.reset_subscribers(session_id)
 
         # Clean up expired sessions
         expired_sessions = self._session_manager.cleanup_expired_sessions()
