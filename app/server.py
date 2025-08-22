@@ -15,6 +15,7 @@
 import asyncio
 import json
 import os
+from collections.abc import AsyncGenerator
 from datetime import datetime
 
 import google.auth
@@ -251,7 +252,7 @@ app.add_middleware(AuditLogMiddleware)
 
 
 @app.get("/health")
-async def health_check():
+async def health_check() -> dict[str, str | bool | None]:
     """Health check endpoint for service validation.
 
     Returns:
@@ -317,7 +318,7 @@ async def agent_network_sse(
         StreamingResponse with text/event-stream media type
     """
 
-    async def event_generator():
+    async def event_generator() -> AsyncGenerator[str, None]:
         """Generate SSE events for the session."""
         broadcaster = get_sse_broadcaster()
         queue = await broadcaster.add_subscriber(session_id)
@@ -424,7 +425,7 @@ async def agent_network_sse(
 @app.get("/agent_network_history")
 async def get_agent_network_history(
     limit: int = 50, current_user: User | None = current_user_for_sse_dep
-):
+) -> dict[str, str | bool | int | list[dict[str, Any]] | None]:
     """Get recent agent network event history with optional authentication.
 
     Authentication behavior depends on REQUIRE_SSE_AUTH environment variable:

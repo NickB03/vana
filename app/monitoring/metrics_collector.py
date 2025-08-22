@@ -357,13 +357,31 @@ class MetricsCollector:
         self.response_times.clear()
         logger.info("Metrics reset")
 
+    def _sanitize_json_data(self, data: Any) -> Any:
+        """Recursively sanitize data for JSON serialization."""
+        import math
+
+        if isinstance(data, dict):
+            return {k: self._sanitize_json_data(v) for k, v in data.items()}
+        elif isinstance(data, list):
+            return [self._sanitize_json_data(item) for item in data]
+        elif isinstance(data, float):
+            # Handle Infinity and NaN values
+            if math.isnan(data) or math.isinf(data):
+                return None
+            return data
+        else:
+            return data
+
     def export_metrics(self, format: str = "prometheus") -> str:
         """Export metrics in the specified format."""
         if format == "prometheus":
             return self._export_prometheus()
         elif format == "json":
-            # Dataclass serialization
-            return json.dumps(asdict(self.current_metrics), default=str)
+            # Dataclass serialization with recursive sanitization
+            data = asdict(self.current_metrics)
+            sanitized_data = self._sanitize_json_data(data)
+            return json.dumps(sanitized_data, default=str, allow_nan=False)
         else:
             raise ValueError(f"Unsupported export format: {format}")
 
