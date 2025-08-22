@@ -20,6 +20,7 @@ through the SSE system for real-time visualization in the frontend.
 
 import logging
 from datetime import datetime
+from typing import Any
 
 from app.utils.sse_broadcaster import get_sse_broadcaster
 
@@ -46,7 +47,7 @@ class AgentProgressTracker:
         self.steps_completed = 0
         self.total_steps = 0
         self.current_step_name = ""
-        self.substeps: list[dict[str, any]] = []
+        self.substeps: list[dict[str, Any]] = []
 
     async def update_progress(
         self,
@@ -55,7 +56,7 @@ class AgentProgressTracker:
         message: str | None = None,
         step_name: str | None = None,
         metadata: dict | None = None,
-    ):
+    ) -> None:
         """Send progress update via SSE.
 
         Args:
@@ -101,7 +102,7 @@ class AgentProgressTracker:
 
     async def add_substep(
         self, name: str, status: str = "pending", details: str | None = None
-    ):
+    ) -> None:
         """Add a substep to the current step.
 
         Args:
@@ -132,7 +133,7 @@ class AgentProgressTracker:
         broadcaster = get_sse_broadcaster()
         await broadcaster.broadcast_event(self.session_id, event)
 
-    async def complete(self, success: bool = True, message: str | None = None):
+    async def complete(self, success: bool = True, message: str | None = None) -> None:
         """Mark the entire process as complete.
 
         Args:
@@ -173,7 +174,7 @@ def create_progress_tracker(session_id: str, agent_name: str) -> AgentProgressTr
 
 async def broadcast_agent_thinking(
     session_id: str, agent_name: str, thinking_step: str, status: str = "active"
-):
+) -> None:
     """Broadcast a thinking/reasoning step for an agent.
 
     This is a simplified function for quick thinking updates without

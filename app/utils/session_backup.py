@@ -45,7 +45,7 @@ async def backup_session_db_to_gcs_async(
 
     try:
         # Run GCS operations in thread pool since they're not async
-        def _upload_to_gcs():
+        def _upload_to_gcs() -> str:
             storage_client = storage.Client(project=project_id)
             bucket = storage_client.bucket(bucket_name)
 
@@ -91,7 +91,7 @@ async def restore_session_db_from_gcs_async(
     """
     try:
 
-        def _download_from_gcs():
+        def _download_from_gcs() -> bool:
             storage_client = storage.Client(project=project_id)
             bucket = storage_client.bucket(bucket_name)
 
@@ -171,7 +171,7 @@ def backup_session_db_to_gcs(
             # We're in an async context, need to run in thread pool
             import concurrent.futures
 
-            def run_async():
+            def run_async() -> str | None:
                 # Create new event loop for this thread
                 new_loop = asyncio.new_event_loop()
                 asyncio.set_event_loop(new_loop)
@@ -227,7 +227,7 @@ def restore_session_db_from_gcs(
             # We're in an async context, need to run in thread pool
             import concurrent.futures
 
-            def run_async():
+            def run_async() -> bool:
                 # Create new event loop for this thread
                 new_loop = asyncio.new_event_loop()
                 asyncio.set_event_loop(new_loop)
@@ -311,7 +311,7 @@ async def create_periodic_backup_job_async(
         The backup task that can be cancelled if needed
     """
 
-    async def backup_loop():
+    async def backup_loop() -> None:
         while True:
             await asyncio.sleep(interval_hours * 3600)  # Convert hours to seconds
             try:
@@ -333,7 +333,7 @@ async def create_periodic_backup_job_async(
 
 def create_periodic_backup_job(
     local_db_path: str, bucket_name: str, project_id: str, interval_hours: int = 6
-):
+) -> None:
     """Create a periodic backup job for session database (sync wrapper).
 
     Note: This is a simple implementation. For production, consider using
@@ -350,7 +350,7 @@ def create_periodic_backup_job(
         loop = asyncio.get_running_loop()
 
         # Schedule the async task
-        async def start_async():
+        async def start_async() -> None:
             await create_periodic_backup_job_async(
                 local_db_path, bucket_name, project_id, interval_hours
             )
@@ -364,7 +364,7 @@ def create_periodic_backup_job(
         import threading
         import time
 
-        def backup_loop():
+        def backup_loop() -> None:
             while True:
                 time.sleep(interval_hours * 3600)  # Convert hours to seconds
                 backup_session_db_to_gcs(local_db_path, bucket_name, project_id)

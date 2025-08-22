@@ -24,14 +24,14 @@ import json
 import logging
 import threading
 from collections import deque
-from collections.abc import Callable
+from collections.abc import AsyncIterator, Callable
 from contextlib import asynccontextmanager
 from dataclasses import asdict, dataclass
 from datetime import datetime
 from typing import Any
 
 import websockets
-import websockets.server
+from websockets.legacy.server import WebSocketServer, WebSocketServerProtocol, serve
 
 from ..config.hook_config import FeedbackConfig
 
@@ -68,21 +68,21 @@ class RealtimeFeedback:
     - Metrics collection and reporting
     """
 
-    def __init__(self, config: FeedbackConfig | None = None):
+    def __init__(self, config: FeedbackConfig | None = None) -> None:
         """Initialize the real-time feedback system."""
         self.config = config or FeedbackConfig()
         self.is_enabled = self.config.enabled
 
         # WebSocket server components
-        self.websocket_server = None
-        self.connected_clients: set[websockets.server.WebSocketServerProtocol] = set()
+        self.websocket_server: WebSocketServer | None = None
+        self.connected_clients: set[WebSocketServerProtocol] = set()
 
         # Event management
-        self.event_buffer = deque(maxlen=self.config.buffer_size)
-        self.event_subscribers: list[Callable] = []
+        self.event_buffer: deque[FeedbackEvent] = deque(maxlen=self.config.buffer_size)
+        self.event_subscribers: list[Callable[[FeedbackEvent], Any]] = []
 
         # Metrics
-        self.metrics = {
+        self.metrics: dict[str, Any] = {
             "events_sent": 0,
             "clients_connected": 0,
             "errors": 0,
@@ -91,22 +91,22 @@ class RealtimeFeedback:
 
         # Threading
         self._lock = threading.RLock()
-        self._websocket_task = None
+        self._websocket_task: asyncio.Task[Any] | None = None
 
         # SSE integration (if available)
+        self.sse_broadcaster: Callable[[dict[str, Any], str], None] | None = None
         try:
             from app.utils.sse_broadcaster import broadcast_agent_network_update
 
             self.sse_broadcaster = broadcast_agent_network_update
         except ImportError:
-            self.sse_broadcaster = None
             logger.info("SSE broadcaster not available - WebSocket only mode")
 
         logger.info(
             "Real-time feedback system initialized (enabled: %s)", self.is_enabled
         )
 
-    async def start(self):
+    async def start(self) -> None:
         """Start the feedback system."""
         if not self.is_enabled:
             logger.info("Feedback system disabled")
@@ -123,14 +123,14 @@ class RealtimeFeedback:
             logger.error("Failed to start feedback system: %s", str(e))
             raise
 
-    async def stop(self):
+    async def stop(self) -> None:
         """Stop the feedback system."""
         if self.websocket_server:
             self.websocket_server.close()
             await self.websocket_server.wait_closed()
-            logger.info("Feedback system stopped")
+        logger.info("Feedback system stopped")
 
-    async def send_validation_update(self, validation_report) -> None:
+    async def send_validation_update(self, validation_report: Any) -> None:
         """Send validation update to all connected clients."""
         if not self.is_enabled:
             return
@@ -155,7 +155,9 @@ class RealtimeFeedback:
             # Add to buffer
             with self._lock:
                 self.event_buffer.append(event)
-                self.metrics["events_sent"] += 1
+                events_sent = self.metrics.get("events_sent", 0)
+                if isinstance(events_sent, int):
+                    self.metrics["events_sent"] = events_sent + 1
 
             # Send to WebSocket clients
             await self._broadcast_to_websockets(event)
@@ -169,7 +171,9 @@ class RealtimeFeedback:
         except Exception as e:
             logger.error("Error sending validation update: %s", str(e))
             with self._lock:
-                self.metrics["errors"] += 1
+                errors = self.metrics.get("errors", 0)
+                if isinstance(errors, int):
+                    self.metrics["errors"] = errors + 1
 
     async def send_system_update(self, update_type: str, data: dict[str, Any]) -> None:
         """Send system-level update."""
@@ -198,10 +202,10 @@ class RealtimeFeedback:
         except Exception as e:
             logger.error("Error sending system update: %s", str(e))
 
-    async def _start_websocket_server(self):
+    async def _start_websocket_server(self) -> None:
         """Start the WebSocket server."""
         try:
-            self.websocket_server = await websockets.serve(
+            self.websocket_server = await serve(
                 self._handle_websocket_client,
                 "localhost",
                 self.config.websocket_port,
@@ -213,9 +217,10 @@ class RealtimeFeedback:
             logger.error("Failed to start WebSocket server: %s", str(e))
             raise
 
-    async def _handle_websocket_client(self, websocket, path):
+    async def _handle_websocket_client(self, websocket: WebSocketServerProtocol) -> None:
         """Handle a new WebSocket client connection."""
-        client_id = f"{websocket.remote_address[0]}:{websocket.remote_address[1]}"
+        peer = websocket.remote_address or ("unknown", 0)
+        client_id = f"{peer[0]}:{peer[1]}"
         logger.info("WebSocket client connected: %s", client_id)
 
         with self._lock:
@@ -261,7 +266,7 @@ class RealtimeFeedback:
                 self.connected_clients.discard(websocket)
                 self.metrics["clients_connected"] = len(self.connected_clients)
 
-    async def _handle_client_message(self, websocket, data: dict[str, Any]):
+    async def _handle_client_message(self, websocket: WebSocketServerProtocol, data: dict[str, Any]) -> None:
         """Handle incoming message from WebSocket client."""
         message_type = data.get("type")
 
@@ -287,7 +292,7 @@ class RealtimeFeedback:
         else:
             logger.warning("Unknown message type from client: %s", message_type)
 
-    async def _send_buffered_events(self, websocket):
+    async def _send_buffered_events(self, websocket: WebSocketServerProtocol) -> None:
         """Send buffered events to a newly connected client."""
         try:
             with self._lock:
@@ -295,23 +300,27 @@ class RealtimeFeedback:
 
             if events:
                 for event in events:
-                    event_data = {"type": "buffered_event", "event": asdict(event)}
+                    event_data: dict[str, Any] = {"type": "buffered_event", "event": asdict(event)}
                     # Convert datetime to ISO string
-                    event_data["event"]["timestamp"] = event.timestamp.isoformat()
+                    event_dict = event_data["event"]
+                    if isinstance(event_dict, dict):
+                        event_dict["timestamp"] = event.timestamp.isoformat()
 
                     await websocket.send(json.dumps(event_data))
 
         except Exception as e:
             logger.error("Error sending buffered events: %s", str(e))
 
-    async def _broadcast_to_websockets(self, event: FeedbackEvent):
+    async def _broadcast_to_websockets(self, event: FeedbackEvent) -> None:
         """Broadcast event to all WebSocket clients."""
         if not self.connected_clients:
             return
 
-        event_data = {"type": "validation_event", "event": asdict(event)}
+        event_data: dict[str, Any] = {"type": "validation_event", "event": asdict(event)}
         # Convert datetime to ISO string
-        event_data["event"]["timestamp"] = event.timestamp.isoformat()
+        event_dict = event_data["event"]
+        if isinstance(event_dict, dict):
+            event_dict["timestamp"] = event.timestamp.isoformat()
 
         message = json.dumps(event_data)
 
@@ -333,9 +342,9 @@ class RealtimeFeedback:
                 self.connected_clients -= disconnected_clients
                 self.metrics["clients_connected"] = len(self.connected_clients)
 
-    async def _broadcast_to_sse(self, event: FeedbackEvent):
+    async def _broadcast_to_sse(self, event: FeedbackEvent) -> None:
         """Broadcast event to SSE clients."""
-        if not self.sse_broadcaster:
+        if self.sse_broadcaster is None:
             return
 
         try:
@@ -357,12 +366,16 @@ class RealtimeFeedback:
             }
 
             # Send via SSE broadcaster
-            await self.sse_broadcaster(sse_data)
+            session_id = event.session_id or "default"
+            if asyncio.iscoroutinefunction(self.sse_broadcaster):
+                await self.sse_broadcaster(sse_data, session_id)
+            else:
+                self.sse_broadcaster(sse_data, session_id)
 
         except Exception as e:
             logger.error("Error broadcasting to SSE: %s", str(e))
 
-    async def _notify_subscribers(self, event: FeedbackEvent):
+    async def _notify_subscribers(self, event: FeedbackEvent) -> None:
         """Notify event subscribers."""
         for subscriber in self.event_subscribers:
             try:
@@ -373,12 +386,12 @@ class RealtimeFeedback:
             except Exception as e:
                 logger.error("Error notifying subscriber: %s", str(e))
 
-    def subscribe_to_events(self, callback: Callable):
+    def subscribe_to_events(self, callback: Callable[[FeedbackEvent], Any]) -> None:
         """Subscribe to validation events."""
         self.event_subscribers.append(callback)
         logger.info("Event subscriber added: %s", callback.__name__)
 
-    def unsubscribe_from_events(self, callback: Callable):
+    def unsubscribe_from_events(self, callback: Callable[[FeedbackEvent], Any]) -> None:
         """Unsubscribe from validation events."""
         if callback in self.event_subscribers:
             self.event_subscribers.remove(callback)
@@ -387,7 +400,11 @@ class RealtimeFeedback:
     async def get_status(self) -> dict[str, Any]:
         """Get current feedback system status."""
         with self._lock:
-            uptime = (datetime.now() - self.metrics["uptime_start"]).total_seconds()
+            uptime_start = self.metrics.get("uptime_start")
+            if isinstance(uptime_start, datetime):
+                uptime = (datetime.now() - uptime_start).total_seconds()
+            else:
+                uptime = 0.0
 
             return {
                 "enabled": self.is_enabled,
@@ -411,14 +428,14 @@ class RealtimeFeedback:
             for event in recent_events
         ]
 
-    async def clear_buffer(self):
+    async def clear_buffer(self) -> None:
         """Clear the event buffer."""
         with self._lock:
             self.event_buffer.clear()
         logger.info("Event buffer cleared")
 
     @asynccontextmanager
-    async def temporary_disable(self):
+    async def temporary_disable(self) -> AsyncIterator[None]:
         """Temporarily disable the feedback system."""
         original_enabled = self.is_enabled
         self.is_enabled = False
@@ -427,7 +444,7 @@ class RealtimeFeedback:
         finally:
             self.is_enabled = original_enabled
 
-    async def send_metrics_update(self):
+    async def send_metrics_update(self) -> None:
         """Send periodic metrics update."""
         if not self.is_enabled:
             return
@@ -439,12 +456,12 @@ class RealtimeFeedback:
         except Exception as e:
             logger.error("Error sending metrics update: %s", str(e))
 
-    def enable(self):
+    def enable(self) -> None:
         """Enable the feedback system."""
         self.is_enabled = True
         logger.info("Feedback system enabled")
 
-    def disable(self):
+    def disable(self) -> None:
         """Disable the feedback system."""
         self.is_enabled = False
         logger.info("Feedback system disabled")
@@ -464,7 +481,7 @@ def get_feedback_system(config: FeedbackConfig | None = None) -> RealtimeFeedbac
     return _global_feedback
 
 
-def reset_feedback_system():
+def reset_feedback_system() -> None:
     """Reset the global feedback system instance (for testing)."""
     global _global_feedback
     _global_feedback = None
