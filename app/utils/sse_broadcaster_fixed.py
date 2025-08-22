@@ -43,7 +43,10 @@ from dataclasses import asdict, dataclass, field
 from datetime import datetime
 from typing import Any, Dict
 
-import psutil
+try:
+    import psutil  # type: ignore
+except Exception:  # psutil may not be installed
+    psutil = None  # type: ignore[assignment]
 
 logger = logging.getLogger(__name__)
 
@@ -268,7 +271,7 @@ class EnhancedSSEBroadcaster:
 
         # Metrics tracking
         self._metrics = MemoryMetrics()
-        self._process = psutil.Process(os.getpid())
+        self._process = psutil.Process(os.getpid()) if psutil else None
 
         # Background cleanup task
         self._cleanup_task: asyncio.Task[None] | None = None
@@ -378,7 +381,7 @@ class EnhancedSSEBroadcaster:
         """Update memory usage metrics."""
         try:
             # Only check process memory if we have psutil available and configured
-            if hasattr(self, "_process") and self.config.enable_metrics:
+            if self._process and self.config.enable_metrics:
                 try:
                     memory_info = self._process.memory_info()
                     process_memory_mb = memory_info.rss / (1024 * 1024)

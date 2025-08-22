@@ -122,18 +122,19 @@ class PlaceholderGenerator:
     def generate_api_key_placeholder(match_obj: re.Match, context: str) -> str:
         """Generate API key placeholder preserving format"""
         original = match_obj.group(0)
-
-        # Preserve prefix for OpenAI keys
-        if original.startswith("sk-"):
+        low = original.lower()
+        
+        if low.startswith("sk-"):
             return "sk-***API_KEY***"
-        elif original.startswith("BSA-"):
+        elif original.upper().startswith("BSA-"):
             return "BSA-***API_KEY***"
-        elif original.startswith("ghp_"):
+        elif low.startswith("ghp_"):
             return "ghp_***TOKEN***"
-        elif original.startswith("AIzaSy"):
+        elif low.startswith("aizasy"):
             return "AIzaSy***GOOGLE_API_KEY***"
-
-        return "***API_KEY***"
+        else:
+            # Generic placeholder for unrecognized formats
+            return "***API_KEY***"
 
     @staticmethod
     def generate_email_placeholder(match_obj: re.Match, context: str) -> str:

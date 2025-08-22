@@ -116,8 +116,13 @@ async def register_user(
         # Always assign the default "user" role on public registration.
         # Role assignment must be performed via privileged admin endpoints.
         default_role = db.query(Role).filter(Role.name == "user").first()
-        if default_role:
-            db_user.roles.append(default_role)
+        if not default_role:
+            logger.error('Default role "user" is missing; ensure RBAC seed/migrations ran.')
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Server misconfiguration: default role not found",
+            )
+        db_user.roles.append(default_role)
 
         db.commit()
         db.refresh(db_user)
@@ -572,8 +577,13 @@ async def google_login(
 
             # Assign default user role
             default_role = db.query(Role).filter(Role.name == "user").first()
-            if default_role:
-                user.roles.append(default_role)
+            if not default_role:
+                logger.error('Default role "user" is missing; ensure RBAC seed/migrations ran.')
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail="Server misconfiguration: default role not found",
+                )
+            user.roles.append(default_role)
 
             db.add(user)
             db.commit()
