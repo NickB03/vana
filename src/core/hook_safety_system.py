@@ -352,7 +352,8 @@ class HookSafetySystem:
                 return await self._handle_unhealthy_system(operation, file_path)
 
             # Perform validation based on enforcement level
-            result = await self._perform_validation(operation, file_path, content)
+            content_str = content if content is not None else ""
+            result = await self._perform_validation(operation, file_path, content_str)
 
             # Record metrics
             execution_time = (time.time() - start_time) * 1000
@@ -408,8 +409,10 @@ class HookSafetySystem:
         elif self.enforcement_level == EnforcementLevel.WARN:
             # Warn but allow
             validation_result["validated"] = True
-            violations: list[Any] = list(validation_result.get("violations", []))
-            warnings: list[Any] = list(validation_result.get("warnings", []))
+            violations_obj = validation_result.get("violations", [])
+            warnings_obj = validation_result.get("warnings", [])
+            violations: list[Any] = violations_obj if isinstance(violations_obj, list) else []
+            warnings: list[Any] = warnings_obj if isinstance(warnings_obj, list) else []
             if violations:
                 warnings.extend(violations)
                 validation_result["warnings"] = warnings
@@ -418,7 +421,8 @@ class HookSafetySystem:
 
         elif self.enforcement_level == EnforcementLevel.SOFT:
             # Allow with override option
-            violations_list: list[Any] = list(validation_result.get("violations", []))
+            violations_obj = validation_result.get("violations", [])
+            violations_list: list[Any] = violations_obj if isinstance(violations_obj, list) else []
             if violations_list:
                 safety_metadata["override_available"] = True
                 safety_metadata["override_codes"] = list(
@@ -608,10 +612,10 @@ class HookSafetySystem:
 
         self.logger.info(f"New bypass code generated: {code_type} by {created_by}")
 
-        expiry_str: Optional[str] = None
+        expiry_str: str | None = None
         if bypass_code.expiry is not None:
             expiry_str = bypass_code.expiry.isoformat()
-        
+
         return {
             "code_type": code_type,
             "code": code,

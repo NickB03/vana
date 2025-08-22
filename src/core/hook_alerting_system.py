@@ -473,7 +473,7 @@ class AlertManager:
     async def _send_notifications(self, alert: Alert) -> None:
         """Send notifications for alert"""
         for target in self.notification_targets:
-            if target.enabled and alert.severity in target.severity_filter:
+            if target.enabled and target.severity_filter and alert.severity in target.severity_filter:
                 try:
                     await self._send_notification(alert, target)
                 except Exception as e:
@@ -551,7 +551,7 @@ Message: {alert.message}
 Details:
 {json.dumps(alert.details, indent=2)}
 
-Tags: {", ".join(alert.tags)}
+Tags: {", ".join(alert.tags or [])}
 
 This is an automated message from the Hook Safety System.
         """
@@ -935,7 +935,7 @@ This is an automated message from the Hook Safety System.
 
                 self.logger.info(f"Alert reactivated from suppression: {alert.id}")
 
-    def _update_performance_stats(self):
+    def _update_performance_stats(self) -> None:
         """Update performance statistics"""
         if len(self.metrics_buffer) > 0:
             recent_metrics = list(self.metrics_buffer)[-100:]  # Last 100 metrics
@@ -956,7 +956,7 @@ This is an automated message from the Hook Safety System.
                         "last_updated": datetime.now().isoformat(),
                     }
 
-    def _save_active_alerts(self):
+    def _save_active_alerts(self) -> None:
         """Save active alerts to file"""
         try:
             alerts_data = [asdict(alert) for alert in self.active_alerts.values()]
@@ -967,7 +967,7 @@ This is an automated message from the Hook Safety System.
         except Exception as e:
             self.logger.error(f"Failed to save active alerts: {e}")
 
-    def stop_processing(self):
+    def stop_processing(self) -> None:
         """Stop background processing"""
         self.processing_active = False
         if self.processing_thread:
@@ -992,7 +992,7 @@ if __name__ == "__main__":
     import asyncio
     import sys
 
-    async def main():
+    async def main() -> None:
         if len(sys.argv) < 2:
             print("Usage: python hook_alerting_system.py <command> [args...]")
             print("Commands:")
@@ -1046,14 +1046,14 @@ if __name__ == "__main__":
             print(json.dumps(stats, indent=2))
 
         elif command == "test-alert":
-            alert_id = await alert_manager.trigger_alert(
+            test_alert_id: str | None = await alert_manager.trigger_alert(
                 name="test_alert",
                 severity=AlertSeverity.WARNING,
                 message="This is a test alert from the CLI",
                 details={"source": "cli", "test": True},
                 tags=["test", "cli"],
             )
-            print(f"Test alert triggered: {alert_id}")
+            print(f"Test alert triggered: {test_alert_id or 'None'}")
 
         else:
             print(f"Unknown command: {command}")
