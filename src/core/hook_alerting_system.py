@@ -11,7 +11,6 @@ response coordination.
 import asyncio
 import json
 import logging
-import smtplib
 import threading
 import time
 from dataclasses import asdict, dataclass
@@ -20,18 +19,9 @@ from enum import Enum
 from pathlib import Path
 from typing import Any
 
-try:
-    from email.mime.multipart import MIMEMultipart
-    from email.mime.text import MIMEText
-
-    EMAIL_AVAILABLE = True
-except ImportError:
-    EMAIL_AVAILABLE = False
 import sqlite3
 import statistics
 from collections import defaultdict, deque
-
-import requests
 
 
 class AlertSeverity(Enum):
@@ -57,11 +47,8 @@ class NotificationChannel(Enum):
 
     LOG = "log"
     FILE = "file"
-    EMAIL = "email"
-    WEBHOOK = "webhook"
-    SLACK = "slack"
-    DISCORD = "discord"
     CONSOLE = "console"
+    # Removed unused channels: EMAIL, WEBHOOK, SLACK, DISCORD (dead code)
 
 
 @dataclass
@@ -508,136 +495,16 @@ class AlertManager:
                 f"{color}🚨 ALERT [{alert.severity.value.upper()}]: {alert.message}{reset}"
             )
 
-        elif target.channel == NotificationChannel.EMAIL:
-            await self._send_email_notification(alert, target)
-
-        elif target.channel == NotificationChannel.WEBHOOK:
-            await self._send_webhook_notification(alert, target)
-
-        elif target.channel == NotificationChannel.SLACK:
-            await self._send_slack_notification(alert, target)
+        # Dead notification channels removed: EMAIL, WEBHOOK, SLACK
+        # Only LOG, FILE, and CONSOLE are actually used in production
 
         # Record notification
         await self._record_notification(alert.id, target.channel, "sent", None)
 
-    async def _send_email_notification(self, alert: Alert, target: NotificationTarget) -> None:
-        """Send email notification"""
-        if not EMAIL_AVAILABLE:
-            self.logger.error("Email functionality not available")
-            return
-
-        config = target.config
-
-        # Create message
-        msg = MIMEMultipart()
-        msg["From"] = config["from_email"]
-        msg["To"] = ", ".join(config["to_emails"])
-        msg["Subject"] = (
-            f"Hook Safety Alert: {alert.name} ({alert.severity.value.upper()})"
-        )
-
-        # Email body
-        body = f"""
-Hook Safety System Alert
-
-Alert: {alert.name}
-Severity: {alert.severity.value.upper()}
-Status: {alert.status.value}
-Time: {alert.triggered_at.isoformat()}
-Count: {alert.count}
-
-Message: {alert.message}
-
-Details:
-{json.dumps(alert.details, indent=2)}
-
-Tags: {", ".join(alert.tags or [])}
-
-This is an automated message from the Hook Safety System.
-        """
-
-        msg.attach(MIMEText(body, "plain"))
-
-        # Send email
-        server = smtplib.SMTP(config["smtp_host"], config["smtp_port"])
-        if config.get("use_tls", True):
-            server.starttls()
-        server.login(config["username"], config["password"])
-        server.send_message(msg)
-        server.quit()
-
-    async def _send_webhook_notification(
-        self, alert: Alert, target: NotificationTarget
-    ) -> None:
-        """Send webhook notification"""
-        config = target.config
-
-        payload = {
-            "alert_id": alert.id,
-            "name": alert.name,
-            "severity": alert.severity.value,
-            "status": alert.status.value,
-            "message": alert.message,
-            "details": alert.details,
-            "triggered_at": alert.triggered_at.isoformat(),
-            "count": alert.count,
-            "tags": alert.tags,
-        }
-
-        headers = config.get("headers", {})
-        headers.setdefault("Content-Type", "application/json")
-
-        response = requests.post(
-            config["url"],
-            json=payload,
-            headers=headers,
-            timeout=config.get("timeout", 30),
-        )
-        response.raise_for_status()
-
-    async def _send_slack_notification(self, alert: Alert, target: NotificationTarget) -> None:
-        """Send Slack notification"""
-        config = target.config
-
-        # Slack color mapping
-        color_map = {
-            AlertSeverity.INFO: "good",
-            AlertSeverity.WARNING: "warning",
-            AlertSeverity.CRITICAL: "danger",
-            AlertSeverity.EMERGENCY: "#8B0000",  # Dark red
-        }
-
-        payload = {
-            "channel": config.get("channel", "#alerts"),
-            "username": config.get("username", "Hook Safety Bot"),
-            "icon_emoji": config.get("icon_emoji", ":warning:"),
-            "attachments": [
-                {
-                    "color": color_map.get(alert.severity, "warning"),
-                    "title": f"Hook Safety Alert: {alert.name}",
-                    "text": alert.message,
-                    "fields": [
-                        {
-                            "title": "Severity",
-                            "value": alert.severity.value.upper(),
-                            "short": True,
-                        },
-                        {"title": "Status", "value": alert.status.value, "short": True},
-                        {"title": "Count", "value": str(alert.count), "short": True},
-                        {
-                            "title": "Time",
-                            "value": alert.triggered_at.strftime("%Y-%m-%d %H:%M:%S"),
-                            "short": True,
-                        },
-                    ],
-                    "footer": "Hook Safety System",
-                    "ts": int(alert.triggered_at.timestamp()),
-                }
-            ],
-        }
-
-        response = requests.post(config["webhook_url"], json=payload, timeout=30)
-        response.raise_for_status()
+    # Removed dead notification methods:
+    # - _send_email_notification (no email config)
+    # - _send_webhook_notification (no webhook URLs) 
+    # - _send_slack_notification (no Slack integration)
 
     async def _record_notification(
         self,
