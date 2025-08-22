@@ -35,11 +35,11 @@ import logging
 import threading
 import time
 from collections import defaultdict, deque
-from collections.abc import AsyncGenerator
+from collections.abc import AsyncGenerator, AsyncIterator
 from contextlib import asynccontextmanager
 from dataclasses import asdict, dataclass, field
 from datetime import datetime
-from typing import Any, AsyncContextManager
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -475,7 +475,7 @@ class EnhancedSSEBroadcaster:
     @asynccontextmanager
     async def subscribe(
         self, session_id: str
-    ) -> AsyncContextManager[MemoryOptimizedQueue]:
+    ) -> AsyncIterator[MemoryOptimizedQueue]:
         """Context manager for safe subscription management."""
         queue = await self.add_subscriber(session_id)
         try:

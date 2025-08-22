@@ -482,7 +482,11 @@ async def forgot_password(
         # background_tasks.add_task(send_password_reset_email, user.email, reset_token)
 
         # For development only: log token at DEBUG level if explicitly enabled
-        if os.getenv("VANA_DEV_LOG_RESET_TOKEN", "false").lower() in {"1", "true", "yes"}:
+        if os.getenv("VANA_DEV_LOG_RESET_TOKEN", "false").lower() in {
+            "1",
+            "true",
+            "yes",
+        }:
             # Mask token in logs to reduce exposure risk
             masked = (
                 f"{reset_token[:4]}...{reset_token[-4:]}"

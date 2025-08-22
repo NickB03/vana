@@ -158,10 +158,15 @@ def get_current_user(
         token_type: str | None = payload.get("type")
         if token_type != "access":
             raise credentials_exception
+
+        # Safely parse 'sub' claim with explicit int conversion
+        if user_id_claim is None:
+            raise credentials_exception
         try:
             user_id = int(user_id_claim)
-        except (TypeError, ValueError):
-            raise credentials_exception
+        except (TypeError, ValueError) as e:
+            raise credentials_exception from e
+
         token_data = TokenData(user_id=user_id)
     except JWTError:
         raise credentials_exception
@@ -312,10 +317,15 @@ def get_current_user_optional(
         token_type: str | None = payload.get("type")
         if token_type != "access":
             return None
+
+        # Safely parse 'sub' claim with explicit int conversion
+        if user_id_claim is None:
+            return None
         try:
             user_id = int(user_id_claim)
         except (TypeError, ValueError):
             return None
+
         token_data = TokenData(user_id=user_id)
     except JWTError:
         return None
