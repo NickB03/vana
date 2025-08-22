@@ -159,18 +159,18 @@ class HookSafetyConfigManager:
         self.security_config_file = self.config_dir / "security-config.yaml"
         self.performance_config_file = self.config_dir / "performance-config.yaml"
 
-        # Configuration objects
-        self.graduated_enforcement = None
-        self.rollback = None
-        self.monitoring = None
-        self.alerting = None
-        self.security = None
-        self.performance = None
+        # Configuration objects (initialized in load_all_configurations)
+        self.graduated_enforcement: GraduatedEnforcementConfig
+        self.rollback: RollbackConfig
+        self.monitoring: MonitoringConfig
+        self.alerting: AlertingConfig
+        self.security: SecurityConfig
+        self.performance: PerformanceConfig
 
         # Hot reload
-        self.hot_reload_enabled = True
-        self.last_reload = datetime.now()
-        self.config_watchers = {}
+        self.hot_reload_enabled: bool = True
+        self.last_reload: datetime = datetime.now()
+        self.config_watchers: dict[str, Any] = {}
 
         # Logger
         self.logger = logging.getLogger("hook_safety_config")
@@ -178,7 +178,7 @@ class HookSafetyConfigManager:
         # Load initial configuration
         self.load_all_configurations()
 
-    def load_all_configurations(self):
+    def load_all_configurations(self) -> None:
         """Load all configuration components"""
         try:
             self.graduated_enforcement = self.load_enforcement_config()
@@ -274,7 +274,7 @@ class HookSafetyConfigManager:
             self.logger.error(f"Failed to load config from {file_path}: {e}")
             return default_config
 
-    def _save_config_file(self, file_path: Path, config: dict[str, Any]):
+    def _save_config_file(self, file_path: Path, config: dict[str, Any]) -> None:
         """Save configuration to file"""
         try:
             with open(file_path, "w") as f:
@@ -289,7 +289,7 @@ class HookSafetyConfigManager:
         except Exception as e:
             self.logger.error(f"Failed to save config to {file_path}: {e}")
 
-    def save_all_configurations(self):
+    def save_all_configurations(self) -> None:
         """Save all configurations to files"""
         configs = [
             (self.enforcement_config_file, asdict(self.graduated_enforcement)),
@@ -305,7 +305,7 @@ class HookSafetyConfigManager:
 
         self.logger.info("All configurations saved successfully")
 
-    def update_enforcement_config(self, updates: dict[str, Any]):
+    def update_enforcement_config(self, updates: dict[str, Any]) -> None:
         """Update enforcement configuration"""
         current_config = asdict(self.graduated_enforcement)
         current_config.update(updates)
@@ -331,7 +331,7 @@ class HookSafetyConfigManager:
 
         self.logger.info(f"Enforcement configuration updated: {updates}")
 
-    def update_rollback_config(self, updates: dict[str, Any]):
+    def update_rollback_config(self, updates: dict[str, Any]) -> None:
         """Update rollback configuration"""
         current_config = asdict(self.rollback)
         current_config.update(updates)
@@ -341,7 +341,7 @@ class HookSafetyConfigManager:
 
         self.logger.info(f"Rollback configuration updated: {updates}")
 
-    def update_monitoring_config(self, updates: dict[str, Any]):
+    def update_monitoring_config(self, updates: dict[str, Any]) -> None:
         """Update monitoring configuration"""
         current_config = asdict(self.monitoring)
         current_config.update(updates)
@@ -351,7 +351,7 @@ class HookSafetyConfigManager:
 
         self.logger.info(f"Monitoring configuration updated: {updates}")
 
-    def update_alerting_config(self, updates: dict[str, Any]):
+    def update_alerting_config(self, updates: dict[str, Any]) -> None:
         """Update alerting configuration"""
         current_config = asdict(self.alerting)
         current_config.update(updates)
@@ -365,7 +365,7 @@ class HookSafetyConfigManager:
         """Get the current enforcement mode"""
         return self.graduated_enforcement.initial_mode
 
-    def set_enforcement_mode(self, mode: EnforcementMode | str):
+    def set_enforcement_mode(self, mode: EnforcementMode | str) -> None:
         """Set the enforcement mode"""
         if isinstance(mode, str):
             mode = EnforcementMode(mode)
@@ -489,7 +489,7 @@ class HookSafetyConfigManager:
         else:
             raise ValueError(f"Unsupported export format: {format}")
 
-    def import_configuration(self, config_data: str, format: str = "yaml"):
+    def import_configuration(self, config_data: str, format: str = "yaml") -> None:
         """Import configuration from data"""
         try:
             if format.lower() == "yaml":
@@ -695,7 +695,7 @@ def get_config_manager() -> HookSafetyConfigManager:
 if __name__ == "__main__":
     import sys
 
-    def main():
+    def main() -> None:
         if len(sys.argv) < 2:
             print("Usage: python hook_safety_config.py <command> [args...]")
             print("Commands:")
