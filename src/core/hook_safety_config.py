@@ -540,7 +540,7 @@ class HookSafetyConfigManager:
 
     def validate_configuration(self) -> dict[str, list[str]]:
         """Validate all configurations"""
-        issues = {"errors": [], "warnings": [], "suggestions": []}
+        issues: dict[str, list[str]] = {"errors": [], "warnings": [], "suggestions": []}
 
         # Validate enforcement configuration
         if self.graduated_enforcement.escalation_delay_minutes < 1:
