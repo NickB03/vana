@@ -20,9 +20,16 @@ USE_OPENROUTER_OVERRIDE = (
 # Automatically use OpenRouter when API key is present (unless explicitly disabled)
 USE_OPENROUTER = bool(OPENROUTER_API_KEY) and not USE_OPENROUTER_OVERRIDE
 
+# Type alias for model configuration
+ModelType = str | LiteLlm
+
 # Set OpenRouter API key for LiteLLM if configured
-if USE_OPENROUTER:
+if USE_OPENROUTER and OPENROUTER_API_KEY:
     os.environ["OPENROUTER_API_KEY"] = OPENROUTER_API_KEY
+
+# Initialize model variables with type hints
+CRITIC_MODEL: ModelType
+WORKER_MODEL: ModelType
 
 if USE_OPENROUTER:
     # PRIMARY: LiteLLM with OpenRouter using Qwen 3 Coder (FREE tier)
@@ -34,8 +41,8 @@ if USE_OPENROUTER:
     print(f"[Models] Brave API Key configured: {bool(os.environ.get('BRAVE_API_KEY'))}")
 else:
     # FALLBACK: Google Gemini models when OpenRouter is not available
-    CRITIC_MODEL: str = "gemini-2.5-pro"
-    WORKER_MODEL: str = "gemini-2.5-flash"
+    CRITIC_MODEL = "gemini-2.5-pro"
+    WORKER_MODEL = "gemini-2.5-flash"
 
     if OPENROUTER_API_KEY and USE_OPENROUTER_OVERRIDE:
         print(
@@ -48,6 +55,3 @@ else:
         print(
             "[Models] 💡 Tip: Set OPENROUTER_API_KEY for faster, free Qwen 3 Coder model"
         )
-
-# Type alias for model configuration
-ModelType = str | LiteLlm

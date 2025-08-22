@@ -115,10 +115,27 @@ async def register_user(
             roles = db.query(Role).filter(Role.id.in_(user.role_ids)).all()
             db_user.roles.extend(roles)
         else:
-            # Assign default "user" role
+            # Assign default "user" role (create if doesn't exist)
             default_role = db.query(Role).filter(Role.name == "user").first()
-            if default_role:
-                db_user.roles.append(default_role)
+            if not default_role:
+                # Create default user role with basic permissions
+                default_role = Role(
+                    name="user",
+                    description="Default user role",
+                )
+                # Add basic read permissions
+                read_permission = (
+                    db.query(Permission).filter(Permission.name == "users:read").first()
+                )
+                if not read_permission:
+                    read_permission = Permission(
+                        name="users:read", description="Read user information"
+                    )
+                    db.add(read_permission)
+                default_role.permissions.append(read_permission)
+                db.add(default_role)
+                db.flush()
+            db_user.roles.append(default_role)
 
         db.commit()
         db.refresh(db_user)
