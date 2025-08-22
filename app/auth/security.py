@@ -154,12 +154,14 @@ def get_current_user(
         payload = jwt.decode(
             credentials.credentials, JWT_SECRET_KEY, algorithms=[JWT_ALGORITHM]
         )
-        user_id: int | None = payload.get("sub")
+        user_id_claim = payload.get("sub")
         token_type: str | None = payload.get("type")
-
-        if user_id is None or token_type != "access":
+        if token_type != "access":
             raise credentials_exception
-
+        try:
+            user_id = int(user_id_claim)
+        except (TypeError, ValueError):
+            raise credentials_exception
         token_data = TokenData(user_id=user_id)
     except JWTError:
         raise credentials_exception
@@ -306,12 +308,14 @@ def get_current_user_optional(
         payload = jwt.decode(
             credentials.credentials, JWT_SECRET_KEY, algorithms=[JWT_ALGORITHM]
         )
-        user_id: int | None = payload.get("sub")
+        user_id_claim = payload.get("sub")
         token_type: str | None = payload.get("type")
-
-        if user_id is None or token_type != "access":
+        if token_type != "access":
             return None
-
+        try:
+            user_id = int(user_id_claim)
+        except (TypeError, ValueError):
+            return None
         token_data = TokenData(user_id=user_id)
     except JWTError:
         return None

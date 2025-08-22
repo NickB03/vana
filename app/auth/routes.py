@@ -4,10 +4,16 @@ import logging
 import os
 import secrets
 from datetime import datetime, timezone
-from typing import Annotated
-
 import httpx
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, Request, status
+from fastapi import (
+    APIRouter,
+    BackgroundTasks,
+    Depends,
+    HTTPException,
+    Query,
+    Request,
+    status,
+)
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -106,15 +112,11 @@ async def register_user(
         db.add(db_user)
         db.flush()  # Get the ID
 
-        # Assign roles if specified
-        if user.role_ids:
-            roles = db.query(Role).filter(Role.id.in_(user.role_ids)).all()
-            db_user.roles.extend(roles)
-        else:
-            # Assign default "user" role
-            default_role = db.query(Role).filter(Role.name == "user").first()
-            if default_role:
-                db_user.roles.append(default_role)
+        # Always assign the default "user" role on public registration.
+        # Role assignment must be performed via privileged admin endpoints.
+        default_role = db.query(Role).filter(Role.name == "user").first()
+        if default_role:
+            db_user.roles.append(default_role)
 
         db.commit()
         db.refresh(db_user)

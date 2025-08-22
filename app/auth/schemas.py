@@ -75,9 +75,6 @@ class UserCreate(UserBase):
     """User creation schema."""
 
     password: str = Field(..., min_length=8, description="User password")
-    role_ids: list[int] | None = Field(
-        default_factory=list, description="List of role IDs"
-    )
 
 
 class UserUpdate(BaseModel):
