@@ -15,11 +15,12 @@
 import asyncio
 import json
 import os
+from collections.abc import AsyncGenerator
 from datetime import datetime
 from typing import Any
 
 import google.auth
-from fastapi import Depends, FastAPI
+from fastapi import FastAPI
 from fastapi.responses import StreamingResponse
 from google.adk.cli.fast_api import get_fast_api_app
 
@@ -82,20 +83,23 @@ allow_origins = (
 )
 
 # Create bucket name for the project
-bucket_name = f"gs://{project_id}-vana-logs-data"
+bucket_name = f"{project_id}-vana-logs-data"
 if bucket_name:
     try:
         create_bucket_if_not_exists(
             bucket_name=bucket_name, project=project_id, location="us-central1"
         )
     except Exception as e:
-        logger.log_struct(
-            {
-                "message": "Could not create bucket, continuing without it",
-                "error": str(e),
-            },
-            severity="WARNING",
-        )
+        if hasattr(logger, "log_struct"):
+            logger.log_struct(
+                {
+                    "message": "Could not create bucket, continuing without it",
+                    "error": str(e),
+                },
+                severity="WARNING",
+            )
+        else:
+            logger.warning(f"Could not create bucket, continuing without it: {e}")
 
 # Set up tracing for the project
 try:
@@ -206,17 +210,20 @@ else:
             )
 
 # Initialize authentication database
-from app.auth.config import get_auth_settings
-from app.auth.database import init_auth_db
-from app.auth.middleware import (
+from app.auth.config import get_auth_settings  # noqa: E402
+from app.auth.database import init_auth_db  # noqa: E402
+from app.auth.middleware import (  # noqa: E402
     AuditLogMiddleware,
     CORSMiddleware,
     RateLimitMiddleware,
     SecurityHeadersMiddleware,
 )
-from app.auth.models import User
-from app.auth.routes import admin_router, auth_router, users_router
-from app.auth.security import get_current_active_user, get_current_user_for_sse
+from app.auth.models import User  # noqa: E402
+from app.auth.routes import admin_router, auth_router, users_router  # noqa: E402
+from app.auth.security import (  # noqa: E402
+    current_active_user_dep,
+    current_user_for_sse_dep,
+)
 
 # Initialize auth database
 try:
@@ -228,7 +235,7 @@ except Exception as e:
 app: FastAPI = get_fast_api_app(
     agents_dir=AGENT_DIR,
     web=True,
-    artifact_service_uri=bucket_name if bucket_name else None,
+    artifact_service_uri=f"gs://{bucket_name}" if bucket_name else None,
     allow_origins=allow_origins,
     session_service_uri=session_service_uri,
 )
@@ -240,9 +247,6 @@ app.include_router(auth_router)
 app.include_router(users_router)
 app.include_router(admin_router)
 
-# Create dependency instances to avoid B008 violations (function calls in argument defaults)
-current_active_user_dependency = Depends(get_current_active_user)
-current_user_for_sse_dependency = Depends(get_current_user_for_sse)
 
 # Add security middleware
 app.add_middleware(CORSMiddleware, allowed_origins=allow_origins)
@@ -252,7 +256,7 @@ app.add_middleware(AuditLogMiddleware)
 
 
 @app.get("/health")
-async def health_check():
+async def health_check() -> dict[str, str | bool | None]:
     """Health check endpoint for service validation.
 
     Returns:
@@ -271,7 +275,7 @@ async def health_check():
 
 @app.post("/feedback")
 def collect_feedback(
-    feedback: Feedback, current_user: User = current_active_user_dependency
+    feedback: Feedback, current_user: User = current_active_user_dep
 ) -> dict[str, str]:
     """Collect and log feedback.
 
@@ -295,7 +299,7 @@ def collect_feedback(
 
 @app.get("/agent_network_sse/{session_id}")
 async def agent_network_sse(
-    session_id: str, current_user: User | None = current_user_for_sse_dependency
+    session_id: str, current_user: User | None = current_user_for_sse_dep
 ) -> StreamingResponse:
     """Enhanced SSE endpoint for agent network events with optional authentication.
 
@@ -318,7 +322,7 @@ async def agent_network_sse(
         StreamingResponse with text/event-stream media type
     """
 
-    async def event_generator():
+    async def event_generator() -> AsyncGenerator[str, None]:
         """Generate SSE events for the session."""
         broadcaster = get_sse_broadcaster()
         queue = await broadcaster.add_subscriber(session_id)

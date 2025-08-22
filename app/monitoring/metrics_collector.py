@@ -1,12 +1,14 @@
 """Comprehensive metrics collection and performance monitoring system."""
 
 import asyncio
+import json
 import logging
 import time
 from collections import defaultdict, deque
 from collections.abc import Callable
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
+from typing import Any
 
 import psutil
 
@@ -161,6 +163,9 @@ class MetricsCollector:
 
             # Calculate derived metrics
             self.current_metrics.calculate_derived_metrics()
+
+            # Update timestamp for this collection cycle
+            self.current_metrics.timestamp = datetime.now(timezone.utc)
 
             # Store in history
             self.metrics_history.append(
@@ -356,6 +361,22 @@ class MetricsCollector:
         self.response_times.clear()
         logger.info("Metrics reset")
 
+    def _sanitize_json_data(self, data: Any) -> Any:
+        """Recursively sanitize data for JSON serialization."""
+        import math
+
+        if isinstance(data, dict):
+            return {k: self._sanitize_json_data(v) for k, v in data.items()}
+        elif isinstance(data, list):
+            return [self._sanitize_json_data(item) for item in data]
+        elif isinstance(data, float):
+            # Handle Infinity and NaN values
+            if math.isnan(data) or math.isinf(data):
+                return None
+            return data
+        else:
+            return data
+
     def export_metrics(self, format: str = "prometheus") -> str:
         """Export metrics in the specified format."""
         if format == "prometheus":
@@ -418,5 +439,5 @@ def get_metrics_collector() -> MetricsCollector:
 def initialize_metrics_collection() -> MetricsCollector:
     """Initialize and start metrics collection."""
     collector = get_metrics_collector()
-    asyncio.create_task(collector.start_collection())
+    asyncio.create_task(collector.start_collection())  # noqa: RUF006
     return collector

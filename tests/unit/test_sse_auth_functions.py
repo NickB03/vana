@@ -6,6 +6,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 from fastapi import HTTPException
 from fastapi.security import HTTPAuthorizationCredentials
+from pydantic import ValidationError
 from sqlalchemy.orm import Session
 
 from app.auth.config import AuthSettings
@@ -215,7 +216,7 @@ class TestAuthConfiguration:
         """Test that invalid environment value defaults to field default."""
         with patch.dict(os.environ, {"AUTH_REQUIRE_SSE_AUTH": "maybe"}):
             # Invalid boolean values should raise a validation error
-            with pytest.raises(Exception):  # ValidationError from pydantic
+            with pytest.raises(ValidationError):
                 AuthSettings()
 
     @pytest.mark.parametrize(

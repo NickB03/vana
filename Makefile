@@ -58,6 +58,7 @@ setup-dev-env:
 # Run unit and integration tests
 test:
 	uv run pytest tests/unit && uv run pytest tests/integration
+	@$(MAKE) coverage-clean
 
 # Run code quality checks (codespell, ruff, mypy)
 lint:
@@ -69,6 +70,30 @@ lint:
 # Run type checking
 typecheck:
 	uv run mypy .
+
+# Coverage management commands
+.PHONY: coverage-clean coverage-report coverage-history coverage-auto
+
+# Clean up coverage files (keeps 7 days by default)
+coverage-clean:
+	@echo "🧹 Cleaning coverage files..."
+	@python scripts/manage_coverage.py clean --keep-days 7
+
+# Generate coverage report
+coverage-report:
+	@echo "📊 Generating coverage report..."
+	@python scripts/manage_coverage.py combine
+	@python scripts/manage_coverage.py report --format html
+	@echo "📄 HTML report available at .coverage_archive/reports/"
+
+# Show coverage history
+coverage-history:
+	@python scripts/manage_coverage.py history --limit 20
+
+# Automatic coverage management (combine, report, clean)
+coverage-auto:
+	@echo "🔄 Running automatic coverage management..."
+	@python scripts/manage_coverage.py auto
 
 # Claude Flow Hooks Integration
 TASK_ID ?= $(shell date +%s)

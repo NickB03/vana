@@ -56,6 +56,13 @@ coverage.xml
 .hypothesis/
 .pytest_cache/
 
+# Coverage management system
+.coverage_archive/
+.coverage.*.local.*
+.coverage_reports/
+coverage_*.json
+coverage_*.xml
+
 # Translations
 *.mo
 *.pot
@@ -223,6 +230,7 @@ vana_vscode/
 
 # Test files
 test-connectivity.html
+pytest-report.xml
 
 # VS Code workspace files
 *.code-workspace

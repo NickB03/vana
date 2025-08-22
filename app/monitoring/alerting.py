@@ -260,7 +260,7 @@ class AlertManager:
             await asyncio.sleep(duration_minutes * 60)
             self.suppressed_alerts.discard(alert_id)
 
-        asyncio.create_task(remove_suppression())
+        asyncio.create_task(remove_suppression())  # noqa: RUF006
 
     def acknowledge_alert(self, alert_id: str, user: str, notes: str = "") -> bool:
         """Acknowledge an alert."""

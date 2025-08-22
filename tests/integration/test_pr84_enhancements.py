@@ -24,9 +24,6 @@ class TestPR84EnhancedFeatures(unittest.TestCase):
             from app.enhanced_callbacks import (
                 AgentMetrics,
                 AgentNetworkState,
-                AgentRelationship,
-                after_agent_callback,
-                before_agent_callback,
             )
 
             # Test AgentMetrics creation
@@ -100,7 +97,6 @@ class TestPR84EnhancedFeatures(unittest.TestCase):
             from app.configuration.branch_protection import (
                 BranchProtectionRule,
                 ProtectionLevel,
-                StatusCheck,
             )
 
             # Test rule creation

@@ -4,7 +4,7 @@ import secrets
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, Security, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jose import JWTError, jwt
 from passlib.context import CryptContext
@@ -17,7 +17,6 @@ from .config import (
     REFRESH_TOKEN_EXPIRE_DELTA,
     get_auth_settings,
 )
-from .database import get_auth_db
 from .models import RefreshToken, User
 from .schemas import TokenData
 
@@ -140,8 +139,8 @@ def revoke_all_user_tokens(user_id: int, db: Session) -> int:
 
 
 def get_current_user(
-    credentials: HTTPAuthorizationCredentials = Depends(security),
-    db: Session = Depends(get_auth_db),
+    credentials: HTTPAuthorizationCredentials,
+    db: Session,
 ) -> User:
     """Get current authenticated user from JWT token."""
     credentials_exception = HTTPException(
@@ -154,22 +153,24 @@ def get_current_user(
         payload = jwt.decode(
             credentials.credentials, JWT_SECRET_KEY, algorithms=[JWT_ALGORITHM]
         )
-        user_id_claim = payload.get("sub")
+        # Enforce type conversion for JWT 'sub' claim
+        sub_claim = payload.get("sub")
+        if sub_claim is None:
+            raise credentials_exception
+
+        # Convert to int, handling both string and int inputs
+        try:
+            user_id = int(sub_claim)
+        except (ValueError, TypeError) as e:
+            raise credentials_exception from e
+
         token_type: str | None = payload.get("type")
         if token_type != "access":
             raise credentials_exception
 
-        # Safely parse 'sub' claim with explicit int conversion
-        if user_id_claim is None:
-            raise credentials_exception
-        try:
-            user_id = int(user_id_claim)
-        except (TypeError, ValueError) as e:
-            raise credentials_exception from e
-
         token_data = TokenData(user_id=user_id)
-    except JWTError:
-        raise credentials_exception
+    except JWTError as e:
+        raise credentials_exception from e
 
     user = db.query(User).filter(User.id == token_data.user_id).first()
     if user is None:
@@ -178,7 +179,7 @@ def get_current_user(
     return user
 
 
-def get_current_active_user(current_user: User = Depends(get_current_user)) -> User:
+def get_current_active_user(current_user: User) -> User:
     """Get current active user."""
     if not current_user.is_active:
         raise HTTPException(
@@ -187,9 +188,7 @@ def get_current_active_user(current_user: User = Depends(get_current_user)) -> U
     return current_user
 
 
-def get_current_verified_user(
-    current_user: User = Depends(get_current_active_user),
-) -> User:
+def get_current_verified_user(current_user: User) -> User:
     """Get current verified user."""
     if not current_user.is_verified:
         raise HTTPException(
@@ -198,9 +197,7 @@ def get_current_verified_user(
     return current_user
 
 
-def get_current_superuser(
-    current_user: User = Depends(get_current_active_user),
-) -> User:
+def get_current_superuser(current_user: User) -> User:
     """Get current superuser."""
     if not current_user.is_superuser:
         raise HTTPException(
@@ -212,9 +209,7 @@ def get_current_superuser(
 def require_permissions(required_permissions: list[str]):
     """Dependency factory for requiring specific permissions."""
 
-    def permission_checker(
-        current_user: User = Depends(get_current_active_user),
-    ) -> User:
+    def permission_checker(current_user: User) -> User:
         if current_user.is_superuser:
             return current_user
 
@@ -238,7 +233,7 @@ def require_permissions(required_permissions: list[str]):
 def require_roles(required_roles: list[str]):
     """Dependency factory for requiring specific roles."""
 
-    def role_checker(current_user: User = Depends(get_current_active_user)) -> User:
+    def role_checker(current_user: User) -> User:
         if current_user.is_superuser:
             return current_user
 
@@ -302,8 +297,8 @@ def verify_password_reset_token(token: str) -> str | None:
 
 
 def get_current_user_optional(
-    credentials: HTTPAuthorizationCredentials | None = Depends(optional_security),
-    db: Session = Depends(get_auth_db),
+    credentials: HTTPAuthorizationCredentials | None,
+    db: Session,
 ) -> User | None:
     """Get current user from JWT token if provided, otherwise return None."""
     if not credentials:
@@ -313,17 +308,19 @@ def get_current_user_optional(
         payload = jwt.decode(
             credentials.credentials, JWT_SECRET_KEY, algorithms=[JWT_ALGORITHM]
         )
-        user_id_claim = payload.get("sub")
-        token_type: str | None = payload.get("type")
-        if token_type != "access":
+        # Enforce type conversion for JWT 'sub' claim
+        sub_claim = payload.get("sub")
+        if sub_claim is None:
             return None
 
-        # Safely parse 'sub' claim with explicit int conversion
-        if user_id_claim is None:
-            return None
+        # Convert to int, handling both string and int inputs
         try:
-            user_id = int(user_id_claim)
-        except (TypeError, ValueError):
+            user_id = int(sub_claim)
+        except (ValueError, TypeError):
+            return None
+
+        token_type: str | None = payload.get("type")
+        if token_type != "access":
             return None
 
         token_data = TokenData(user_id=user_id)
@@ -338,8 +335,8 @@ def get_current_user_optional(
 
 
 def get_current_user_for_sse(
-    credentials: HTTPAuthorizationCredentials | None = Depends(optional_security),
-    db: Session = Depends(get_auth_db),
+    credentials: HTTPAuthorizationCredentials | None,
+    db: Session,
 ) -> User | None:
     """
     Get current user for SSE endpoints based on REQUIRE_SSE_AUTH setting.
@@ -361,3 +358,86 @@ def get_current_user_for_sse(
     else:
         # Demo mode: optional authentication
         return get_current_user_optional(credentials, db)
+
+
+# FastAPI Dependency factories to avoid B008 linting violations
+# Create module-level dependency singletons
+security_dep = Security(security)
+optional_security_dep = Security(optional_security)
+
+
+def _create_current_active_user_dependency():
+    """Create dependency chain for active user authentication."""
+    from app.auth.database import get_auth_db
+
+    auth_db_dep = Depends(get_auth_db)
+
+    def dependency(
+        credentials: HTTPAuthorizationCredentials = security_dep,
+        db: Session = auth_db_dep,
+    ) -> User:
+        user = get_current_user(credentials, db)
+        return get_current_active_user(user)
+
+    return dependency
+
+
+def _create_current_user_for_sse_dependency():
+    """Create dependency chain for SSE user authentication."""
+    from app.auth.database import get_auth_db
+
+    auth_db_dep = Depends(get_auth_db)
+
+    def dependency(
+        credentials: HTTPAuthorizationCredentials | None = optional_security_dep,
+        db: Session = auth_db_dep,
+    ) -> User | None:
+        return get_current_user_for_sse(credentials, db)
+
+    return dependency
+
+
+def _create_current_superuser_dependency():
+    """Create dependency chain for superuser authentication."""
+    from app.auth.database import get_auth_db
+
+    auth_db_dep = Depends(get_auth_db)
+
+    def dependency(
+        credentials: HTTPAuthorizationCredentials = security_dep,
+        db: Session = auth_db_dep,
+    ) -> User:
+        user = get_current_user(credentials, db)
+        active_user = get_current_active_user(user)
+        return get_current_superuser(active_user)
+
+    return dependency
+
+
+def _create_permission_dependency(required_permissions: list[str]):
+    """Create dependency chain for permission-based authentication."""
+    from app.auth.database import get_auth_db
+
+    auth_db_dep = Depends(get_auth_db)
+    permission_checker = require_permissions(required_permissions)
+
+    def dependency(
+        credentials: HTTPAuthorizationCredentials = security_dep,
+        db: Session = auth_db_dep,
+    ) -> User:
+        user = get_current_user(credentials, db)
+        active_user = get_current_active_user(user)
+        return permission_checker(active_user)
+
+    return dependency
+
+
+# Create the actual dependency instances
+current_active_user_dep = Depends(_create_current_active_user_dependency())
+current_user_for_sse_dep = Depends(_create_current_user_for_sse_dependency())
+current_superuser_dep = Depends(_create_current_superuser_dependency())
+
+# Permission-based dependencies
+users_read_permission_dep = Depends(_create_permission_dependency(["users:read"]))
+users_update_permission_dep = Depends(_create_permission_dependency(["users:update"]))
+users_delete_permission_dep = Depends(_create_permission_dependency(["users:delete"]))
