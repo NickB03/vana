@@ -57,7 +57,7 @@ def test_sse_endpoint(
                 error_data = response.json()
                 result["error"] = error_data
                 print(f"Error: {json.dumps(error_data, indent=2)}")
-            except:
+            except Exception:
                 result["error"] = response.text
                 print(f"Error text: {response.text}")
 
@@ -103,7 +103,7 @@ def test_history_endpoint(auth_token: str | None = None) -> dict[str, Any]:
                 error_data = response.json()
                 result["error"] = error_data
                 print(f"Error: {json.dumps(error_data, indent=2)}")
-            except:
+            except Exception:
                 result["error"] = response.text
 
         return result

@@ -37,11 +37,11 @@ import os
 import threading
 import time
 from collections import defaultdict, deque
-from collections.abc import AsyncGenerator
+from collections.abc import AsyncGenerator, AsyncIterator
 from contextlib import asynccontextmanager
 from dataclasses import asdict, dataclass, field
 from datetime import datetime
-from typing import Any, Dict
+from typing import Any
 
 try:
     import psutil  # type: ignore
@@ -159,7 +159,8 @@ class MemoryOptimizedQueue:
                         "timestamp": datetime.now().isoformat(),
                     }
 
-            if self._closed:
+            # After exiting the while loop, either we have items or queue is closed
+            if not self._queue:  # Must be closed if no items
                 raise asyncio.CancelledError("Queue is closed")
 
             item = self._queue.popleft()
@@ -182,7 +183,7 @@ class MemoryOptimizedQueue:
         def notify_close() -> None:
             try:
                 loop = asyncio.get_running_loop()
-                loop.create_task(self._notify_close())
+                loop.create_task(self._notify_close())  # noqa: RUF006
             except RuntimeError:
                 pass  # No running loop
 
@@ -340,9 +341,10 @@ class EnhancedSSEBroadcaster:
                 if alive_queues:
                     self._subscribers[session_id] = alive_queues
                 else:
-                    # No alive queues, remove session
+                    # No alive queues, remove session and reset subscriber count
                     del self._subscribers[session_id]
-                    self._session_manager.decrement_subscribers(session_id)
+                    # Use reset_subscribers to properly zero out the count
+                    self.reset_subscribers(session_id)
 
         # Clean up expired sessions
         expired_sessions = self._session_manager.cleanup_expired_sessions()
@@ -475,7 +477,7 @@ class EnhancedSSEBroadcaster:
     @asynccontextmanager
     async def subscribe(
         self, session_id: str
-    ) -> AsyncGenerator[MemoryOptimizedQueue, None]:
+    ) -> AsyncIterator[MemoryOptimizedQueue]:
         """Context manager for safe subscription management."""
         queue = await self.add_subscriber(session_id)
         try:
@@ -483,7 +485,7 @@ class EnhancedSSEBroadcaster:
         finally:
             await self.remove_subscriber(session_id, queue)
 
-    async def broadcast_event(self, session_id: str, event_data: Dict[str, Any]) -> None:
+    async def broadcast_event(self, session_id: str, event_data: dict[str, Any]) -> None:
         """Broadcast event to all subscribers of a session."""
         # Ensure cleanup is running
         if not self._running:
@@ -493,10 +495,15 @@ class EnhancedSSEBroadcaster:
         if "timestamp" not in event_data:
             event_data["timestamp"] = datetime.now().isoformat()
 
+        # Ensure timestamp exists in event data payload
+        event_payload = event_data.get("data", event_data)
+        if isinstance(event_payload, dict) and "timestamp" not in event_payload:
+            event_payload["timestamp"] = event_data["timestamp"]
+
         # Create SSE event with TTL
         event = SSEEvent(
             type=event_data.get("type", "agent_update"),
-            data=event_data.get("data", event_data),
+            data=event_payload,
             id=f"{event_data.get('type', 'event')}_{datetime.now().timestamp()}",
             ttl=self.config.event_ttl,
         )
@@ -562,7 +569,43 @@ class EnhancedSSEBroadcaster:
 
         logger.info(f"Cleared SSE data for session {session_id}")
 
-    def get_stats(self) -> Dict[str, Any]:
+    def reset_subscribers(self, session_id: str | None = None) -> None:
+        """Reset subscribers for proper session expiry.
+
+        Args:
+            session_id: If provided, reset only this session. If None, reset all.
+        """
+        with self._lock:
+            if session_id:
+                # Reset specific session
+                if session_id in self._subscribers:
+                    for queue in self._subscribers[session_id]:
+                        queue.close()
+                    del self._subscribers[session_id]
+
+                if session_id in self._event_history:
+                    self._event_history[session_id].clear()
+
+                # Reset session manager state
+                self._session_manager._subscriber_counts[session_id] = 0
+                if session_id in self._session_manager._sessions:
+                    del self._session_manager._sessions[session_id]
+
+                logger.info(f"Reset subscribers for session {session_id}")
+            else:
+                # Reset all sessions
+                for queues in self._subscribers.values():
+                    for queue in queues:
+                        queue.close()
+
+                self._subscribers.clear()
+                self._event_history.clear()
+                self._session_manager._sessions.clear()
+                self._session_manager._subscriber_counts.clear()
+
+                logger.info("Reset all subscribers")
+
+    def get_stats(self) -> dict[str, Any]:
         """Get comprehensive broadcaster statistics."""
         with self._lock:
             session_stats = {}
@@ -728,7 +771,8 @@ def broadcast_agent_network_update(
     try:
         loop = asyncio.get_event_loop()
         if loop.is_running():
-            loop.create_task(
+            # Fire-and-forget task for broadcasting
+            loop.create_task(  # noqa: RUF006
                 broadcaster.broadcast_agent_network_event(network_event, session_id)
             )
         else:
@@ -777,5 +821,5 @@ def get_agent_network_event_history(limit: int = 50) -> list[dict[str, Any]]:
                 )
 
     # Sort by timestamp and return most recent
-    all_events.sort(key=lambda x: str(x.get("timestamp") or ""), reverse=True)
+    all_events.sort(key=lambda x: str(x.get("timestamp", "")), reverse=True)
     return all_events[:limit]

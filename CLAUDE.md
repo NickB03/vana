@@ -455,6 +455,47 @@ A task is **only complete** if:
 - **32.3% token reduction**
 - **2.8-4.4x speed improvement**
 - **27+ neural models**
+- **94.5% accuracy** with ensemble models
+- **70% model compression** with 96% accuracy retained
+
+## 🧠 Neural Performance Optimization (CRITICAL FOR PEAK PERFORMANCE)
+
+### Enable WASM SIMD (2x speedup - MUST BE ENABLED)
+```bash
+# Enable on first run and after updates
+npx claude-flow wasm optimize --enable-simd
+npx claude-flow features detect --component neural
+```
+
+### Neural Configuration
+```json
+{
+  "neural": {
+    "enabled": true,
+    "wasm": { "simd": true, "threads": 4, "memory": 256 },
+    "optimization": {
+      "parallel_training": true,
+      "batch_size": 64,
+      "cache_models": true,
+      "auto_compress": true
+    }
+  }
+}
+```
+
+### Performance Optimizations
+1. **Model Compression**: Use `mcp__claude-flow__neural_compress` (70% size reduction)
+2. **Ensemble Models**: Use `mcp__claude-flow__ensemble_create` (11% accuracy boost)
+3. **Batch Size**: Use 64+ for faster training
+4. **Parallel Processing**: Always enable for multi-model operations
+5. **Adaptive Learning**: Enable `mcp__claude-flow__learning_adapt` for continuous improvement
+
+### Quick Performance Check
+```bash
+# Run this periodically to ensure peak performance
+npx claude-flow neural optimize --auto --all
+npx claude-flow neural monitor --real-time
+```
 
 ## 🎯 Performance Tips
 
@@ -463,6 +504,9 @@ A task is **only complete** if:
 3. **Memory is Key** - Cross-agent coordination
 4. **Monitor Progress** - Real-time tracking
 5. **Enable Hooks** - Automated coordination
+6. **WASM SIMD** - Always enabled for neural operations
+7. **Compress Models** - 70% smaller, 96% accurate
+8. **Use Ensembles** - For critical high-accuracy tasks
 
 ## 🔄 Hooks Integration
 

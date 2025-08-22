@@ -40,7 +40,7 @@ from git import Repo
 
 # Pydantic for configuration validation
 try:
-    from pydantic import BaseModel, Field, validator
+    import pydantic  # noqa: F401
 
     HAS_PYDANTIC = True
 except ImportError:

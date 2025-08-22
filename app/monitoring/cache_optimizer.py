@@ -368,10 +368,12 @@ class CacheOptimizer:
             if self.enable_compression:
                 try:
                     import gzip
+                    import zlib
 
                     data = gzip.decompress(data)
-                except:
-                    pass  # Not compressed
+                except (gzip.BadGzipFile, OSError, zlib.error, EOFError):
+                    # Not compressed or invalid gzip; continue to JSON/pickle path
+                    pass
 
             # Security fix: Try JSON first (safer), fallback to pickle only for internal cache data
             try:

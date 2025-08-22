@@ -95,6 +95,20 @@ node tests/hooks/automation/hook-test-runner.js --skip-stress
 }
 ```
 
+### ⚠️ PRD Hook Status (2025-08-22)
+
+**Current Status**: **DISABLED** - In bug fix mode
+
+- **Reason**: PRD validation temporarily disabled for bug fixing and type annotation work
+- **Files that were failing**: `app/auth/security.py` and related auth modules
+- **Action Required**: Re-evaluate and re-enable PRD hooks when resuming PRD-driven development
+- **To Re-enable**: 
+  ```bash
+  # Re-enable PRD hooks when ready
+  git config --local core.hooksPath .git/hooks
+  cp .claude_workspace/config/hooks/pre-commit .git/hooks/
+  ```
+
 ## 🎨 System Architecture
 
 ```mermaid

@@ -452,7 +452,7 @@ class GitIntegrationTestEnvironment:
         await self._install_test_git_hooks(repo_path)
 
         # Make initial commit
-        repo.index.add_items(["."])
+        repo.index.add(["."])
         repo.index.commit("Initial commit from integration test template")
 
         self.test_repos[repo_name] = repo
@@ -1138,15 +1138,26 @@ class PerformanceMonitor:
         self.retention_hours = retention_hours
         self.running = False
         self.data = []
+        self._metrics_task: asyncio.Task | None = None
 
     async def start(self):
         """Start performance monitoring"""
         self.running = True
-        asyncio.create_task(self._collect_metrics())
+        # Store task reference to prevent garbage collection
+        self._metrics_task = asyncio.create_task(self._collect_metrics())
 
     async def stop(self):
         """Stop performance monitoring"""
         self.running = False
+        # Gracefully stop background task
+        task = getattr(self, "_metrics_task", None)
+        if task is not None:
+            task.cancel()
+            try:
+                await task
+            except asyncio.CancelledError:
+                pass
+            self._metrics_task = None
 
     async def _collect_metrics(self):
         """Collect performance metrics"""

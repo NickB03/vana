@@ -95,7 +95,7 @@ class AlertRule:
 class HookSafetySystem:
     """Comprehensive safety and rollback system for hooks"""
 
-    def __init__(self, config_path: str | None = None):
+    def __init__(self, config_path: str | None = None) -> None:
         if config_path:
             self.config_path = Path(config_path)
         else:
@@ -113,26 +113,26 @@ class HookSafetySystem:
         # Core state
         self.config = self._load_config()
         self.bypass_codes = self._load_bypass_codes()
-        self.metrics_history = []
-        self.active_alerts = []
+        self.metrics_history: list[SafetyMetrics] = []
+        self.active_alerts: list[dict[str, Any]] = []
         self.enforcement_level = EnforcementLevel(
             self.config.get("enforcement_level", "enforce")
         )
         self.health_status = HealthStatus.HEALTHY
 
         # Monitoring
-        self.monitoring_thread = None
+        self.monitoring_thread: threading.Thread | None = None
         self.monitoring_active = False
         self.last_health_check = datetime.now()
 
         # Rollback state
-        self.rollback_stack = []
+        self.rollback_stack: list[dict[str, Any]] = []
         self.emergency_mode = False
 
         # Initialize monitoring
         self.start_monitoring()
 
-    def _setup_logging(self):
+    def _setup_logging(self) -> None:
         """Setup comprehensive logging"""
         try:
             log_dir = Path.cwd() / ".claude_workspace" / "logs"
@@ -231,7 +231,7 @@ class HookSafetySystem:
             self.logger.error(f"Failed to load config: {e}")
             return default_config
 
-    def _save_config(self, config: dict[str, Any]):
+    def _save_config(self, config: dict[str, Any]) -> None:
         """Save configuration to file"""
         try:
             self.config_path.parent.mkdir(parents=True, exist_ok=True)
@@ -309,7 +309,7 @@ class HookSafetySystem:
         self._save_bypass_codes(codes)
         return codes
 
-    def _save_bypass_codes(self, codes: dict[str, BypassCode]):
+    def _save_bypass_codes(self, codes: dict[str, BypassCode]) -> None:
         """Save bypass codes to file"""
         codes_path = self.config_path.parent / "bypass-codes.json"
 
@@ -352,7 +352,8 @@ class HookSafetySystem:
                 return await self._handle_unhealthy_system(operation, file_path)
 
             # Perform validation based on enforcement level
-            result = await self._perform_validation(operation, file_path, content)
+            content_str = content if content is not None else ""
+            result = await self._perform_validation(operation, file_path, content_str)
 
             # Record metrics
             execution_time = (time.time() - start_time) * 1000
@@ -399,31 +400,39 @@ class HookSafetySystem:
         }
 
         # Apply enforcement level logic
+        safety_metadata: dict[str, Any] = validation_result["safety_metadata"]  # type: ignore
         if self.enforcement_level == EnforcementLevel.MONITOR:
             # Log only, always allow
             validation_result["validated"] = True
-            validation_result["safety_metadata"]["enforcement_action"] = "monitor_only"
+            safety_metadata["enforcement_action"] = "monitor_only"
 
         elif self.enforcement_level == EnforcementLevel.WARN:
             # Warn but allow
             validation_result["validated"] = True
-            if validation_result["violations"]:
-                validation_result["warnings"].extend(validation_result["violations"])
+            violations_obj = validation_result.get("violations", [])
+            warnings_obj = validation_result.get("warnings", [])
+            violations: list[Any] = violations_obj if isinstance(violations_obj, list) else []
+            warnings: list[Any] = warnings_obj if isinstance(warnings_obj, list) else []
+            if violations:
+                warnings.extend(violations)
+                validation_result["warnings"] = warnings
                 validation_result["violations"] = []
-            validation_result["safety_metadata"]["enforcement_action"] = "warn_only"
+            safety_metadata["enforcement_action"] = "warn_only"
 
         elif self.enforcement_level == EnforcementLevel.SOFT:
             # Allow with override option
-            if validation_result["violations"]:
-                validation_result["safety_metadata"]["override_available"] = True
-                validation_result["safety_metadata"]["override_codes"] = list(
+            violations_obj = validation_result.get("violations", [])
+            violations_list: list[Any] = violations_obj if isinstance(violations_obj, list) else []
+            if violations_list:
+                safety_metadata["override_available"] = True
+                safety_metadata["override_codes"] = list(
                     self.bypass_codes.keys()
                 )
-            validation_result["safety_metadata"]["enforcement_action"] = "soft_enforce"
+            safety_metadata["enforcement_action"] = "soft_enforce"
 
         elif self.enforcement_level == EnforcementLevel.ENFORCE:
             # Full enforcement
-            validation_result["safety_metadata"]["enforcement_action"] = "full_enforce"
+            safety_metadata["enforcement_action"] = "full_enforce"
 
         return validation_result
 
@@ -485,14 +494,16 @@ class HookSafetySystem:
         elif self.health_status == HealthStatus.FAILING:
             # Degraded enforcement
             self._degrade_enforcement_level()
-            return await self._perform_validation(operation, file_path, None)
+            return await self._perform_validation(operation, file_path, "")
 
         else:
             # Continue with validation but add health warnings
-            result = await self._perform_validation(operation, file_path, None)
-            result["warnings"].append(
+            result = await self._perform_validation(operation, file_path, "")
+            warnings_list = list(result.get("warnings", []))
+            warnings_list.append(
                 f"⚠️ System health degraded: {self.health_status.value}"
             )
+            result["warnings"] = warnings_list
             return result
 
     def use_bypass_code(self, code: str, reason: str) -> dict[str, Any]:
@@ -601,17 +612,21 @@ class HookSafetySystem:
 
         self.logger.info(f"New bypass code generated: {code_type} by {created_by}")
 
+        expiry_str: str | None = None
+        if bypass_code.expiry is not None:
+            expiry_str = bypass_code.expiry.isoformat()
+
         return {
             "code_type": code_type,
             "code": code,
             "purpose": purpose,
-            "expiry": bypass_code.expiry.isoformat(),
+            "expiry": expiry_str,
             "max_uses": max_uses,
             "created_by": created_by,
             "timestamp": datetime.now().isoformat(),
         }
 
-    async def _record_metrics(self, execution_time_ms: float, result: dict[str, Any]):
+    async def _record_metrics(self, execution_time_ms: float, result: dict[str, Any]) -> None:
         """Record performance and result metrics"""
 
         # Get system metrics
@@ -656,7 +671,7 @@ class HookSafetySystem:
         # Check alert conditions
         await self._check_alert_conditions()
 
-    async def _save_metrics(self):
+    async def _save_metrics(self) -> None:
         """Save metrics to file"""
         try:
             metrics_data = [
@@ -667,7 +682,7 @@ class HookSafetySystem:
         except Exception as e:
             self.logger.error(f"Failed to save metrics: {e}")
 
-    async def _check_alert_conditions(self):
+    async def _check_alert_conditions(self) -> None:
         """Check if any alert conditions are met"""
         if len(self.metrics_history) < 5:  # Need minimum data
             return
@@ -717,7 +732,7 @@ class HookSafetySystem:
 
         return False
 
-    async def _trigger_alert(self, rule: AlertRule):
+    async def _trigger_alert(self, rule: AlertRule) -> None:
         """Trigger an alert"""
 
         # Check cooldown
@@ -770,7 +785,7 @@ class HookSafetySystem:
         # Save alerts
         await self._save_alerts()
 
-    async def _handle_critical_alert(self, rule: AlertRule, alert: dict[str, Any]):
+    async def _handle_critical_alert(self, rule: AlertRule, alert: dict[str, Any]) -> None:
         """Handle critical alerts with automatic actions"""
 
         if rule.name == "critical_error_rate":
@@ -783,7 +798,7 @@ class HookSafetySystem:
             # System failure - immediate rollback
             await self.emergency_rollback("System failure detected")
 
-    async def _save_alerts(self):
+    async def _save_alerts(self) -> None:
         """Save active alerts to file"""
         try:
             with open(self.alerts_path, "w") as f:
@@ -795,7 +810,7 @@ class HookSafetySystem:
         """Check if the system is healthy"""
         return self.health_status in [HealthStatus.HEALTHY, HealthStatus.DEGRADED]
 
-    def start_monitoring(self):
+    def start_monitoring(self) -> None:
         """Start the monitoring thread"""
         if self.monitoring_active:
             return
@@ -807,14 +822,14 @@ class HookSafetySystem:
         self.monitoring_thread.start()
         self.logger.info("Safety monitoring started")
 
-    def stop_monitoring(self):
+    def stop_monitoring(self) -> None:
         """Stop the monitoring thread"""
         self.monitoring_active = False
         if self.monitoring_thread:
             self.monitoring_thread.join(timeout=5)
         self.logger.info("Safety monitoring stopped")
 
-    def _monitoring_loop(self):
+    def _monitoring_loop(self) -> None:
         """Main monitoring loop"""
         while self.monitoring_active:
             try:
@@ -824,7 +839,7 @@ class HookSafetySystem:
                 self.logger.error(f"Monitoring error: {e}")
                 time.sleep(60)  # Wait longer after error
 
-    def _perform_health_check(self):
+    def _perform_health_check(self) -> None:
         """Perform system health check"""
 
         # Check recent metrics for health indicators
@@ -854,7 +869,7 @@ class HookSafetySystem:
 
         self.last_health_check = datetime.now()
 
-    def _degrade_enforcement_level(self):
+    def _degrade_enforcement_level(self) -> None:
         """Automatically degrade enforcement level due to health issues"""
         if self.enforcement_level == EnforcementLevel.ENFORCE:
             self.enforcement_level = EnforcementLevel.SOFT
@@ -867,7 +882,7 @@ class HookSafetySystem:
                 "Enforcement level degraded to WARN due to health issues"
             )
 
-    def _restore_enforcement_level(self):
+    def _restore_enforcement_level(self) -> None:
         """Restore normal enforcement level"""
         self.enforcement_level = EnforcementLevel(
             self.config.get("enforcement_level", "enforce")
@@ -876,7 +891,7 @@ class HookSafetySystem:
             f"Enforcement level restored to {self.enforcement_level.value}"
         )
 
-    async def _trigger_emergency_mode(self, reason: str):
+    async def _trigger_emergency_mode(self, reason: str) -> None:
         """Trigger emergency mode"""
         self.emergency_mode = True
         self.enforcement_level = EnforcementLevel.EMERGENCY
@@ -888,7 +903,7 @@ class HookSafetySystem:
         recovery_delay = self.config.get("emergency_recovery_minutes", 30)
         threading.Timer(recovery_delay * 60, self._recover_from_emergency).start()
 
-    def _recover_from_emergency(self):
+    def _recover_from_emergency(self) -> None:
         """Recover from emergency mode"""
         self.emergency_mode = False
         self._restore_enforcement_level()
@@ -898,7 +913,7 @@ class HookSafetySystem:
 
         self.logger.info("Recovered from emergency mode")
 
-    async def _check_rollback_conditions(self):
+    async def _check_rollback_conditions(self) -> None:
         """Check if rollback conditions are met"""
         if not self.config.get("auto_rollback_enabled", True):
             return
@@ -918,7 +933,7 @@ class HookSafetySystem:
             if error_rate >= emergency_threshold:
                 await self.emergency_rollback(f"High error rate: {error_rate:.2%}")
 
-    async def emergency_rollback(self, reason: str):
+    async def emergency_rollback(self, reason: str) -> None:
         """Perform emergency rollback"""
         self.logger.critical(f"Emergency rollback triggered: {reason}")
 
@@ -1006,7 +1021,7 @@ if __name__ == "__main__":
     import asyncio
     import sys
 
-    async def main():
+    async def main() -> None:
         if len(sys.argv) < 2:
             print("Usage: python hook_safety_system.py <command> [args...]")
             print("Commands:")
