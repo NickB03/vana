@@ -55,7 +55,7 @@ class AgentProgressTracker:
         total_steps: int,
         message: str | None = None,
         step_name: str | None = None,
-        metadata: dict | None = None,
+        metadata: dict[str, Any] | None = None,
     ) -> None:
         """Send progress update via SSE.
 
@@ -190,7 +190,7 @@ async def broadcast_agent_thinking(
         "type": "thinking_update",
         "data": {
             "stepId": f"thinking_{agent_name}_{datetime.now().timestamp()}",
-            "agent": agent_name,
+            "agentName": agent_name,
             "action": thinking_step,
             "status": status,
             "timestamp": datetime.now().isoformat(),
