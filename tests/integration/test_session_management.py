@@ -7,8 +7,9 @@ import sqlite3
 import tempfile
 import time
 import uuid
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
+from typing import Any
 from unittest.mock import Mock, patch
 
 import pytest
@@ -42,6 +43,26 @@ class Session:
     user_id: str
     created_at: datetime = None
     last_activity: datetime = None
+
+
+@dataclass
+class User:
+    """Mock User class for testing."""
+    id: str
+    email: str
+    display_name: str
+
+
+@dataclass
+class Session:
+    """Mock Session model to match test usage."""
+
+    id: str
+    user_id: str
+    created_at: float  # Tests use UNIX timestamps
+    last_activity: float | None = None
+    updated_at: float | None = None
+    state: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass

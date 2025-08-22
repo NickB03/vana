@@ -161,11 +161,10 @@ def get_current_user(
         # Convert to int, handling both string and int inputs
         try:
             user_id = int(sub_claim)
-        except (ValueError, TypeError):
-            raise credentials_exception
+        except (ValueError, TypeError) as e:
+            raise credentials_exception from e
 
         token_type: str | None = payload.get("type")
-
         if token_type != "access":
             raise credentials_exception
 
@@ -321,7 +320,6 @@ def get_current_user_optional(
             return None
 
         token_type: str | None = payload.get("type")
-
         if token_type != "access":
             return None
 

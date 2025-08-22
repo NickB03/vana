@@ -43,7 +43,10 @@ from dataclasses import asdict, dataclass, field
 from datetime import datetime
 from typing import Any
 
-import psutil
+try:
+    import psutil  # type: ignore
+except Exception:  # psutil may not be installed
+    psutil = None  # type: ignore[assignment]
 
 logger = logging.getLogger(__name__)
 
@@ -118,7 +121,7 @@ class MemoryOptimizedQueue:
 
     def __init__(self, maxsize: int = 0):
         self.maxsize = maxsize
-        self._queue: deque = deque()
+        self._queue: deque[Any] = deque()
         self._condition = asyncio.Condition()
         self._closed = False
         self._last_activity = time.time()
@@ -260,7 +263,7 @@ class EnhancedSSEBroadcaster:
         self._lock = threading.Lock()
 
         # Session-specific event history with bounded deques
-        self._event_history: dict[str, deque] = defaultdict(
+        self._event_history: dict[str, deque[SSEEvent]] = defaultdict(
             lambda: deque(maxlen=self.config.max_history_per_session)
         )
 
@@ -269,10 +272,10 @@ class EnhancedSSEBroadcaster:
 
         # Metrics tracking
         self._metrics = MemoryMetrics()
-        self._process = psutil.Process(os.getpid())
+        self._process = psutil.Process(os.getpid()) if psutil else None
 
         # Background cleanup task
-        self._cleanup_task: asyncio.Task | None = None
+        self._cleanup_task: asyncio.Task[None] | None = None
         self._running = False
 
         # Start background cleanup if event loop is available
@@ -380,7 +383,7 @@ class EnhancedSSEBroadcaster:
         """Update memory usage metrics."""
         try:
             # Only check process memory if we have psutil available and configured
-            if hasattr(self, "_process") and self.config.enable_metrics:
+            if self._process and self.config.enable_metrics:
                 try:
                     memory_info = self._process.memory_info()
                     process_memory_mb = memory_info.rss / (1024 * 1024)
@@ -482,7 +485,7 @@ class EnhancedSSEBroadcaster:
         finally:
             await self.remove_subscriber(session_id, queue)
 
-    async def broadcast_event(self, session_id: str, event_data: dict) -> None:
+    async def broadcast_event(self, session_id: str, event_data: dict[str, Any]) -> None:
         """Broadcast event to all subscribers of a session."""
         # Ensure cleanup is running
         if not self._running:
@@ -602,7 +605,7 @@ class EnhancedSSEBroadcaster:
 
                 logger.info("Reset all subscribers")
 
-    def get_stats(self) -> dict:
+    def get_stats(self) -> dict[str, Any]:
         """Get comprehensive broadcaster statistics."""
         with self._lock:
             session_stats = {}
