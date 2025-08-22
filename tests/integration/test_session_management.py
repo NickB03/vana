@@ -25,7 +25,7 @@ from app.utils.session_backup import (
 # from app.models import User, Session
 
 
-@dataclass  
+@dataclass
 class User:
     """Mock User class for testing."""
     id: str

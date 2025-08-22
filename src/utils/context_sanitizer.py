@@ -162,7 +162,7 @@ class PatternRegistry:
         self.compiled_patterns: dict[str, Pattern] = {}
         self._load_default_patterns()
 
-    def _load_default_patterns(self):
+    def _load_default_patterns(self) -> None:
         """Load default sensitive data patterns"""
         default_patterns = [
             # Google Cloud Project IDs
@@ -285,7 +285,7 @@ class PatternRegistry:
         for pattern in default_patterns:
             self.add_pattern(pattern)
 
-    def add_pattern(self, pattern: SensitivePattern):
+    def add_pattern(self, pattern: SensitivePattern) -> None:
         """Add a pattern to the registry"""
         try:
             compiled = re.compile(pattern.pattern, re.IGNORECASE)
@@ -302,7 +302,7 @@ class PatternRegistry:
                 f"Failed to compile pattern '{pattern.name}': {e}"
             ) from e
 
-    def add_pattern_to_category(self, category: str, pattern: SensitivePattern):
+    def add_pattern_to_category(self, category: str, pattern: SensitivePattern) -> None:
         """Add a pattern to a specific category"""
         pattern.category = category
         self.add_pattern(pattern)
@@ -402,7 +402,7 @@ class ContextSanitizer:
         enabled_patterns = self.pattern_registry.get_enabled_patterns(self.config)
 
         # Track replacements to avoid overlapping matches
-        replacements = []
+        replacements: list[tuple[tuple[int, int], str]] = []
 
         for _name, pattern, compiled_pattern in enabled_patterns:
             for match in compiled_pattern.finditer(context):
@@ -471,7 +471,7 @@ class ContextSanitizer:
 
         return result
 
-    def register_as_hook(self):
+    def register_as_hook(self) -> None:
         """Register sanitizer as a pre-generation pipeline hook"""
         try:
             from src.utils.pipeline_hooks import register_hook
