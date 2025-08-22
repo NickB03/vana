@@ -11,27 +11,16 @@ response coordination.
 import asyncio
 import json
 import logging
-import smtplib
+import sqlite3
+import statistics
 import threading
 import time
+from collections import defaultdict, deque
 from dataclasses import asdict, dataclass
 from datetime import datetime, timedelta
 from enum import Enum
 from pathlib import Path
 from typing import Any
-
-try:
-    from email.mime.multipart import MimeMultipart
-    from email.mime.text import MimeText
-
-    EMAIL_AVAILABLE = True
-except ImportError:
-    EMAIL_AVAILABLE = False
-import sqlite3
-import statistics
-from collections import defaultdict, deque
-
-import requests
 
 
 class AlertSeverity(Enum):
@@ -57,11 +46,8 @@ class NotificationChannel(Enum):
 
     LOG = "log"
     FILE = "file"
-    EMAIL = "email"
-    WEBHOOK = "webhook"
-    SLACK = "slack"
-    DISCORD = "discord"
     CONSOLE = "console"
+    # Removed unused channels: EMAIL, WEBHOOK, SLACK, DISCORD (dead code)
 
 
 @dataclass
@@ -81,9 +67,9 @@ class Alert:
     acknowledged_at: datetime | None = None
     resolved_at: datetime | None = None
     suppressed_until: datetime | None = None
-    tags: list[str] = None
+    tags: list[str] | None = None
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if self.tags is None:
             self.tags = []
 
@@ -95,9 +81,9 @@ class NotificationTarget:
     channel: NotificationChannel
     config: dict[str, Any]
     enabled: bool = True
-    severity_filter: list[AlertSeverity] = None
+    severity_filter: list[AlertSeverity] | None = None
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if self.severity_filter is None:
             self.severity_filter = list(AlertSeverity)
 
@@ -125,21 +111,21 @@ class AlertManager:
 
         # Alert storage
         self.active_alerts: dict[str, Alert] = {}
-        self.alert_history = deque(maxlen=1000)
+        self.alert_history: deque[Alert] = deque(maxlen=1000)
         self.notification_targets: list[NotificationTarget] = []
         self.metric_thresholds: list[MetricThreshold] = []
 
         # Rate limiting
-        self.rate_limiter = defaultdict(deque)
+        self.rate_limiter: dict[str, deque[float]] = defaultdict(deque)
         self.rate_limit_window = 300  # 5 minutes
         self.max_alerts_per_window = 20
 
         # Performance tracking
-        self.metrics_buffer = deque(maxlen=1000)
-        self.performance_stats = {}
+        self.metrics_buffer: deque[dict[str, Any]] = deque(maxlen=1000)
+        self.performance_stats: dict[str, dict[str, Any]] = {}
 
         # Background processing
-        self.processing_thread = None
+        self.processing_thread: threading.Thread | None = None
         self.processing_active = False
 
         # Logger
@@ -150,7 +136,7 @@ class AlertManager:
         self._load_configuration()
         self._start_background_processing()
 
-    def _setup_database(self):
+    def _setup_database(self) -> None:
         """Setup SQLite database for alert persistence"""
         try:
             conn = sqlite3.connect(self.db_path)
@@ -204,7 +190,7 @@ class AlertManager:
         except Exception as e:
             self.logger.error(f"Database setup failed: {e}")
 
-    def _load_configuration(self):
+    def _load_configuration(self) -> None:
         """Load alerting configuration"""
         # Default notification targets
         self.notification_targets = [
@@ -275,7 +261,7 @@ class AlertManager:
             ),
         ]
 
-    def add_notification_target(self, target: NotificationTarget):
+    def add_notification_target(self, target: NotificationTarget) -> None:
         """Add a notification target"""
         self.notification_targets.append(target)
         self.logger.info(f"Added notification target: {target.channel.value}")
@@ -289,7 +275,7 @@ class AlertManager:
         from_email: str,
         to_emails: list[str],
         severity_filter: list[AlertSeverity] | None = None,
-    ):
+    ) -> None:
         """Configure email notifications"""
         email_target = NotificationTarget(
             channel=NotificationChannel.EMAIL,
@@ -312,7 +298,7 @@ class AlertManager:
         webhook_url: str,
         headers: dict[str, str] | None = None,
         severity_filter: list[AlertSeverity] | None = None,
-    ):
+    ) -> None:
         """Configure webhook notifications"""
         webhook_target = NotificationTarget(
             channel=NotificationChannel.WEBHOOK,
@@ -328,7 +314,7 @@ class AlertManager:
         channel: str = "#alerts",
         username: str = "Hook Safety Bot",
         severity_filter: list[AlertSeverity] | None = None,
-    ):
+    ) -> None:
         """Configure Slack notifications"""
         slack_target = NotificationTarget(
             channel=NotificationChannel.SLACK,
@@ -350,7 +336,7 @@ class AlertManager:
         message: str,
         details: dict[str, Any] | None = None,
         tags: list[str] | None = None,
-    ) -> str:
+    ) -> str | None:
         """Trigger a new alert"""
 
         # Generate alert ID
@@ -428,10 +414,9 @@ class AlertManager:
         self.rate_limiter[alert_name].append(now)
         return False
 
-    async def _store_alert_in_db(self, alert: Alert):
-        """Store alert in database"""
-        try:
-            conn = sqlite3.connect(self.db_path)
+    def _store_alert_in_db_sync(self, alert: Alert) -> None:
+        """Store alert in database (synchronous)"""
+        with sqlite3.connect(self.db_path) as conn:
             cursor = conn.cursor()
 
             cursor.execute(
@@ -465,15 +450,18 @@ class AlertManager:
             )
 
             conn.commit()
-            conn.close()
 
+    async def _store_alert_in_db(self, alert: Alert) -> None:
+        """Store alert in database (async wrapper)"""
+        try:
+            await asyncio.to_thread(self._store_alert_in_db_sync, alert)
         except Exception as e:
             self.logger.error(f"Failed to store alert in database: {e}")
 
-    async def _send_notifications(self, alert: Alert):
+    async def _send_notifications(self, alert: Alert) -> None:
         """Send notifications for alert"""
         for target in self.notification_targets:
-            if target.enabled and alert.severity in target.severity_filter:
+            if target.enabled and target.severity_filter and alert.severity in target.severity_filter:
                 try:
                     await self._send_notification(alert, target)
                 except Exception as e:
@@ -481,7 +469,7 @@ class AlertManager:
                         f"Notification failed for {target.channel.value}: {e}"
                     )
 
-    async def _send_notification(self, alert: Alert, target: NotificationTarget):
+    async def _send_notification(self, alert: Alert, target: NotificationTarget) -> None:
         """Send notification to specific target"""
 
         if target.channel == NotificationChannel.LOG:
@@ -508,147 +496,26 @@ class AlertManager:
                 f"{color}🚨 ALERT [{alert.severity.value.upper()}]: {alert.message}{reset}"
             )
 
-        elif target.channel == NotificationChannel.EMAIL:
-            await self._send_email_notification(alert, target)
-
-        elif target.channel == NotificationChannel.WEBHOOK:
-            await self._send_webhook_notification(alert, target)
-
-        elif target.channel == NotificationChannel.SLACK:
-            await self._send_slack_notification(alert, target)
+        # Dead notification channels removed: EMAIL, WEBHOOK, SLACK
+        # Only LOG, FILE, and CONSOLE are actually used in production
 
         # Record notification
         await self._record_notification(alert.id, target.channel, "sent", None)
 
-    async def _send_email_notification(self, alert: Alert, target: NotificationTarget):
-        """Send email notification"""
-        if not EMAIL_AVAILABLE:
-            self.logger.error("Email functionality not available")
-            return
+    # Removed dead notification methods:
+    # - _send_email_notification (no email config)
+    # - _send_webhook_notification (no webhook URLs)
+    # - _send_slack_notification (no Slack integration)
 
-        config = target.config
-
-        # Create message
-        msg = MimeMultipart()
-        msg["From"] = config["from_email"]
-        msg["To"] = ", ".join(config["to_emails"])
-        msg["Subject"] = (
-            f"Hook Safety Alert: {alert.name} ({alert.severity.value.upper()})"
-        )
-
-        # Email body
-        body = f"""
-Hook Safety System Alert
-
-Alert: {alert.name}
-Severity: {alert.severity.value.upper()}
-Status: {alert.status.value}
-Time: {alert.triggered_at.isoformat()}
-Count: {alert.count}
-
-Message: {alert.message}
-
-Details:
-{json.dumps(alert.details, indent=2)}
-
-Tags: {", ".join(alert.tags)}
-
-This is an automated message from the Hook Safety System.
-        """
-
-        msg.attach(MimeText(body, "plain"))
-
-        # Send email
-        server = smtplib.SMTP(config["smtp_host"], config["smtp_port"])
-        if config.get("use_tls", True):
-            server.starttls()
-        server.login(config["username"], config["password"])
-        server.send_message(msg)
-        server.quit()
-
-    async def _send_webhook_notification(
-        self, alert: Alert, target: NotificationTarget
-    ):
-        """Send webhook notification"""
-        config = target.config
-
-        payload = {
-            "alert_id": alert.id,
-            "name": alert.name,
-            "severity": alert.severity.value,
-            "status": alert.status.value,
-            "message": alert.message,
-            "details": alert.details,
-            "triggered_at": alert.triggered_at.isoformat(),
-            "count": alert.count,
-            "tags": alert.tags,
-        }
-
-        headers = config.get("headers", {})
-        headers.setdefault("Content-Type", "application/json")
-
-        response = requests.post(
-            config["url"],
-            json=payload,
-            headers=headers,
-            timeout=config.get("timeout", 30),
-        )
-        response.raise_for_status()
-
-    async def _send_slack_notification(self, alert: Alert, target: NotificationTarget):
-        """Send Slack notification"""
-        config = target.config
-
-        # Slack color mapping
-        color_map = {
-            AlertSeverity.INFO: "good",
-            AlertSeverity.WARNING: "warning",
-            AlertSeverity.CRITICAL: "danger",
-            AlertSeverity.EMERGENCY: "#8B0000",  # Dark red
-        }
-
-        payload = {
-            "channel": config.get("channel", "#alerts"),
-            "username": config.get("username", "Hook Safety Bot"),
-            "icon_emoji": config.get("icon_emoji", ":warning:"),
-            "attachments": [
-                {
-                    "color": color_map.get(alert.severity, "warning"),
-                    "title": f"Hook Safety Alert: {alert.name}",
-                    "text": alert.message,
-                    "fields": [
-                        {
-                            "title": "Severity",
-                            "value": alert.severity.value.upper(),
-                            "short": True,
-                        },
-                        {"title": "Status", "value": alert.status.value, "short": True},
-                        {"title": "Count", "value": str(alert.count), "short": True},
-                        {
-                            "title": "Time",
-                            "value": alert.triggered_at.strftime("%Y-%m-%d %H:%M:%S"),
-                            "short": True,
-                        },
-                    ],
-                    "footer": "Hook Safety System",
-                    "ts": int(alert.triggered_at.timestamp()),
-                }
-            ],
-        }
-
-        response = requests.post(config["webhook_url"], json=payload, timeout=30)
-        response.raise_for_status()
-
-    async def _record_notification(
+    def _record_notification_sync(
         self,
         alert_id: str,
         channel: NotificationChannel,
         status: str,
         error_message: str | None = None,
-    ):
-        """Record notification attempt"""
-        try:
-            conn = sqlite3.connect(self.db_path)
+    ) -> None:
+        """Record notification attempt (synchronous)"""
+        with sqlite3.connect(self.db_path) as conn:
             cursor = conn.cursor()
 
             cursor.execute(
@@ -666,8 +533,17 @@ This is an automated message from the Hook Safety System.
             )
 
             conn.commit()
-            conn.close()
 
+    async def _record_notification(
+        self,
+        alert_id: str,
+        channel: NotificationChannel,
+        status: str,
+        error_message: str | None = None,
+    ) -> None:
+        """Record notification attempt (async wrapper)"""
+        try:
+            await asyncio.to_thread(self._record_notification_sync, alert_id, channel, status, error_message)
         except Exception as e:
             self.logger.error(f"Failed to record notification: {e}")
 
@@ -721,7 +597,7 @@ This is an automated message from the Hook Safety System.
 
     async def record_metric(
         self, metric_name: str, value: float, tags: dict[str, str] | None = None
-    ):
+    ) -> None:
         """Record a metric value"""
         metric_data = {
             "timestamp": datetime.now(),
@@ -738,10 +614,9 @@ This is an automated message from the Hook Safety System.
         # Check thresholds
         await self._check_metric_thresholds(metric_name, value)
 
-    async def _store_metric_in_db(self, metric_data: dict[str, Any]):
-        """Store metric in database"""
-        try:
-            conn = sqlite3.connect(self.db_path)
+    def _store_metric_in_db_sync(self, metric_data: dict[str, Any]) -> None:
+        """Store metric in database (synchronous)"""
+        with sqlite3.connect(self.db_path) as conn:
             cursor = conn.cursor()
 
             cursor.execute(
@@ -758,12 +633,15 @@ This is an automated message from the Hook Safety System.
             )
 
             conn.commit()
-            conn.close()
 
+    async def _store_metric_in_db(self, metric_data: dict[str, Any]) -> None:
+        """Store metric in database (async wrapper)"""
+        try:
+            await asyncio.to_thread(self._store_metric_in_db_sync, metric_data)
         except Exception as e:
             self.logger.error(f"Failed to store metric: {e}")
 
-    async def _check_metric_thresholds(self, metric_name: str, current_value: float):
+    async def _check_metric_thresholds(self, metric_name: str, current_value: float) -> None:
         """Check if metric thresholds are exceeded"""
         for threshold in self.metric_thresholds:
             if threshold.enabled and threshold.metric_name == metric_name:
@@ -830,7 +708,7 @@ This is an automated message from the Hook Safety System.
 
     def get_alert_summary(self) -> dict[str, Any]:
         """Get alert summary statistics"""
-        active_by_severity = defaultdict(int)
+        active_by_severity: dict[str, int] = defaultdict(int)
         total_alerts = len(self.alert_history)
 
         for alert in self.active_alerts.values():
@@ -878,7 +756,7 @@ This is an automated message from the Hook Safety System.
             "time_range_hours": hours,
         }
 
-    def _start_background_processing(self):
+    def _start_background_processing(self) -> None:
         """Start background processing thread"""
         self.processing_active = True
         self.processing_thread = threading.Thread(
@@ -887,7 +765,7 @@ This is an automated message from the Hook Safety System.
         self.processing_thread.start()
         self.logger.info("Background processing started")
 
-    def _background_processing_loop(self):
+    def _background_processing_loop(self) -> None:
         """Background processing loop"""
         while self.processing_active:
             try:
@@ -909,7 +787,7 @@ This is an automated message from the Hook Safety System.
                 self.logger.error(f"Background processing error: {e}")
                 time.sleep(60)
 
-    def _cleanup_old_alerts(self):
+    def _cleanup_old_alerts(self) -> None:
         """Remove old resolved alerts from history"""
         cutoff_time = datetime.now() - timedelta(days=7)
 
@@ -919,7 +797,7 @@ This is an automated message from the Hook Safety System.
             maxlen=1000,
         )
 
-    def _check_suppressed_alerts(self):
+    def _check_suppressed_alerts(self) -> None:
         """Check for suppressed alerts that should be reactivated"""
         now = datetime.now()
 
@@ -935,7 +813,7 @@ This is an automated message from the Hook Safety System.
 
                 self.logger.info(f"Alert reactivated from suppression: {alert.id}")
 
-    def _update_performance_stats(self):
+    def _update_performance_stats(self) -> None:
         """Update performance statistics"""
         if len(self.metrics_buffer) > 0:
             recent_metrics = list(self.metrics_buffer)[-100:]  # Last 100 metrics
@@ -956,7 +834,7 @@ This is an automated message from the Hook Safety System.
                         "last_updated": datetime.now().isoformat(),
                     }
 
-    def _save_active_alerts(self):
+    def _save_active_alerts(self) -> None:
         """Save active alerts to file"""
         try:
             alerts_data = [asdict(alert) for alert in self.active_alerts.values()]
@@ -967,7 +845,7 @@ This is an automated message from the Hook Safety System.
         except Exception as e:
             self.logger.error(f"Failed to save active alerts: {e}")
 
-    def stop_processing(self):
+    def stop_processing(self) -> None:
         """Stop background processing"""
         self.processing_active = False
         if self.processing_thread:
@@ -992,7 +870,7 @@ if __name__ == "__main__":
     import asyncio
     import sys
 
-    async def main():
+    async def main() -> None:
         if len(sys.argv) < 2:
             print("Usage: python hook_alerting_system.py <command> [args...]")
             print("Commands:")
@@ -1046,14 +924,14 @@ if __name__ == "__main__":
             print(json.dumps(stats, indent=2))
 
         elif command == "test-alert":
-            alert_id = await alert_manager.trigger_alert(
+            test_alert_id: str | None = await alert_manager.trigger_alert(
                 name="test_alert",
                 severity=AlertSeverity.WARNING,
                 message="This is a test alert from the CLI",
                 details={"source": "cli", "test": True},
                 tags=["test", "cli"],
             )
-            print(f"Test alert triggered: {alert_id}")
+            print(f"Test alert triggered: {test_alert_id or 'None'}")
 
         else:
             print(f"Unknown command: {command}")
