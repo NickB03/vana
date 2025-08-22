@@ -37,11 +37,11 @@ import os
 import threading
 import time
 from collections import defaultdict, deque
-from collections.abc import AsyncGenerator
+from collections.abc import AsyncGenerator, AsyncIterator
 from contextlib import asynccontextmanager
 from dataclasses import asdict, dataclass, field
 from datetime import datetime
-from typing import Any, AsyncContextManager
+from typing import Any
 
 # Optional import for memory monitoring
 try:
@@ -330,7 +330,7 @@ class EnhancedSSEBroadcaster:
         # Clean up dead queues
         with self._lock:
             for session_id, queues in list(self._subscribers.items()):
-                alive_queues = []
+                alive_queues: list[MemoryOptimizedQueue] = []
                 for queue in queues:
                     if not queue._closed and not queue.is_stale(
                         self.config.max_subscriber_idle_time
@@ -340,12 +340,17 @@ class EnhancedSSEBroadcaster:
                         dead_queues += 1
                         queue.close()
 
+                removed_count = len(queues) - len(alive_queues)
                 if alive_queues:
                     self._subscribers[session_id] = alive_queues
+                    # Adjust subscriber count to match alive queues
+                    for _ in range(removed_count):
+                        self._session_manager.decrement_subscribers(session_id)
                 else:
-                    # No alive queues, remove session
+                    # No alive queues, remove session and zero out subscriber count
                     del self._subscribers[session_id]
-                    self._session_manager.decrement_subscribers(session_id)
+                    for _ in range(len(queues)):
+                        self._session_manager.decrement_subscribers(session_id)
 
         # Clean up expired sessions
         expired_sessions = self._session_manager.cleanup_expired_sessions()
@@ -481,7 +486,7 @@ class EnhancedSSEBroadcaster:
     @asynccontextmanager
     async def subscribe(
         self, session_id: str
-    ) -> AsyncContextManager[MemoryOptimizedQueue]:
+    ) -> AsyncIterator[MemoryOptimizedQueue]:
         """Context manager for safe subscription management."""
         queue = await self.add_subscriber(session_id)
         try:

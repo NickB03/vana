@@ -425,7 +425,7 @@ async def agent_network_sse(
 @app.get("/agent_network_history")
 async def get_agent_network_history(
     limit: int = 50, current_user: User | None = current_user_for_sse_dep
-) -> dict[str, str | bool | int | list[dict[str, str]] | None]:
+) -> dict[str, str | bool | int | list[dict[str, Any]] | None]:
     """Get recent agent network event history with optional authentication.
 
     Authentication behavior depends on REQUIRE_SSE_AUTH environment variable:

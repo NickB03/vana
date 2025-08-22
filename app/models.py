@@ -8,7 +8,6 @@ OpenRouter is automatically selected when the API key is present.
 """
 
 import os
-from typing import Union
 
 from google.adk.models.lite_llm import LiteLlm
 
@@ -56,4 +55,3 @@ else:
         print(
             "[Models] 💡 Tip: Set OPENROUTER_API_KEY for faster, free Qwen 3 Coder model"
         )
-
