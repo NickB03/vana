@@ -361,7 +361,16 @@ class MetricsCollector:
         if format == "prometheus":
             return self._export_prometheus()
         elif format == "json":
-            return self.current_metrics.model_dump_json()
+            # Dataclass serialization with strict JSON (no Infinity/NaN)
+            import json
+            import math
+            from dataclasses import asdict
+
+            data = asdict(self.current_metrics)
+            # Minimal sanitize: ensure min_response_time is JSON-safe
+            if isinstance(data.get("min_response_time"), float) and not math.isfinite(data["min_response_time"]):
+                data["min_response_time"] = None
+            return json.dumps(data, default=str, allow_nan=False)
         else:
             raise ValueError(f"Unsupported export format: {format}")
 
