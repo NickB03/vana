@@ -212,7 +212,7 @@ export function SSEProvider({
    */
   useEffect(() => {
     const unsubscribeUpdate = sse.addEventListener('agent_network_update', handleAgentNetworkUpdate);
-    const unsubscribeConnection = sse.addEventListener('agent_network_connection', handleConnectionEvent);
+    const unsubscribeConnection = sse.addEventListener('connection', handleConnectionEvent);
     const unsubscribeError = sse.addEventListener('error', handleErrorEvent);
 
     // Also listen for general message events

@@ -301,7 +301,7 @@ export function useSSEConnectionEvents(
   onConnectionChange?: (data: unknown, event: SSEEvent) => void,
   options: UseSSEOptions = {}
 ): UseSSEReturn {
-  return useSSEEvent('agent_network_connection', onConnectionChange || (() => {}), options);
+  return useSSEEvent('connection', onConnectionChange || (() => {}), options);
 }
 
 /**
