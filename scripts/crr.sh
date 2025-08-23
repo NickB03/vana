@@ -153,8 +153,78 @@ main() {
         echo -e "${GREEN}✅ Review requested${NC}"
         exit 0
     elif [ "$PR_NUMBER" = "status" ]; then
-        echo -e "${BLUE}Checking PR status...${NC}"
-        gh pr view --json number,title,state,reviews
+        echo -e "${BLUE}Checking CodeRabbit review status...${NC}"
+        echo "================================================"
+        
+        # Get PR number for current branch if not specified
+        CURRENT_PR=$(find_pr_number)
+        if [ -z "$CURRENT_PR" ]; then
+            echo -e "${RED}❌ Could not detect PR number${NC}"
+            exit 1
+        fi
+        
+        echo -e "📌 PR #${CURRENT_PR}"
+        
+        # Check for CodeRabbit comments
+        echo -e "\n${YELLOW}🐰 CodeRabbit Review Status:${NC}"
+        
+        # Get all comments and check for CodeRabbit
+        CODERABBIT_COMMENTS=$(gh pr view "$CURRENT_PR" --json comments --jq '.comments[] | select(.author.login == "coderabbitai" or .author.login == "coderabbitai[bot]") | .createdAt' | wc -l | tr -d ' ')
+        
+        if [ "$CODERABBIT_COMMENTS" -eq 0 ]; then
+            echo -e "  ${RED}⏳ No CodeRabbit review yet${NC}"
+            echo -e "  💡 Tip: Request a review with: ${GREEN}/crr review${NC}"
+        else
+            # Check for review completion indicators
+            REVIEW_COMPLETE=$(gh pr view "$CURRENT_PR" --json comments --jq '.comments[] | select(.author.login == "coderabbitai" or .author.login == "coderabbitai[bot]") | .body' | grep -E "(## Walkthrough|## Summary|Review Status: Complete)" | head -1)
+            
+            if [ -n "$REVIEW_COMPLETE" ]; then
+                echo -e "  ${GREEN}✅ Review Complete${NC}"
+                
+                # Count issues found
+                CRITICAL=$(gh pr view "$CURRENT_PR" --json comments --jq '.comments[] | select(.author.login == "coderabbitai" or .author.login == "coderabbitai[bot]") | .body' | grep -c "🔴" || true)
+                HIGH=$(gh pr view "$CURRENT_PR" --json comments --jq '.comments[] | select(.author.login == "coderabbitai" or .author.login == "coderabbitai[bot]") | .body' | grep -c "🟠" || true)
+                WARNINGS=$(gh pr view "$CURRENT_PR" --json comments --jq '.comments[] | select(.author.login == "coderabbitai" or .author.login == "coderabbitai[bot]") | .body' | grep -c "⚠️" || true)
+                SUGGESTIONS=$(gh pr view "$CURRENT_PR" --json comments --jq '.comments[] | select(.author.login == "coderabbitai" or .author.login == "coderabbitai[bot]") | .body' | grep -c "💡" || true)
+                
+                echo ""
+                echo -e "  ${BLUE}📊 Review Summary:${NC}"
+                [ "$CRITICAL" -gt 0 ] && echo -e "    🔴 Critical Issues: ${RED}$CRITICAL${NC}"
+                [ "$HIGH" -gt 0 ] && echo -e "    🟠 High Priority: ${YELLOW}$HIGH${NC}"
+                [ "$WARNINGS" -gt 0 ] && echo -e "    ⚠️  Warnings: ${YELLOW}$WARNINGS${NC}"
+                [ "$SUGGESTIONS" -gt 0 ] && echo -e "    💡 Suggestions: ${GREEN}$SUGGESTIONS${NC}"
+                
+                # Show last comment time
+                LAST_COMMENT=$(gh pr view "$CURRENT_PR" --json comments --jq '.comments[] | select(.author.login == "coderabbitai" or .author.login == "coderabbitai[bot]") | .createdAt' | tail -1)
+                echo ""
+                echo -e "  ⏰ Last review: ${BLUE}$LAST_COMMENT${NC}"
+                
+                # Check if there are actionable items
+                if [ "$CRITICAL" -gt 0 ] || [ "$HIGH" -gt 0 ]; then
+                    echo ""
+                    echo -e "  ${YELLOW}⚡ Action Required:${NC}"
+                    echo -e "    1. Apply suggestions: ${GREEN}/crr${NC}"
+                    echo -e "    2. Review changes: ${GREEN}git diff${NC}"
+                    echo -e "    3. Push updates: ${GREEN}git push${NC}"
+                    echo -e "    4. Request re-review: ${GREEN}/crr review${NC}"
+                fi
+            else
+                echo -e "  ${YELLOW}🔄 Review in progress...${NC}"
+                echo -e "  💡 CodeRabbit is analyzing your code"
+                echo -e "  ⏱️  This usually takes 1-3 minutes"
+            fi
+        fi
+        
+        # Show PR labels related to CodeRabbit
+        echo ""
+        echo -e "${BLUE}🏷️  PR Labels:${NC}"
+        gh pr view "$CURRENT_PR" --json labels --jq '.labels[] | "  - \(.name)"' | grep -E "(coderabbit|critical|blocks-merge|needs-attention|type-errors)" || echo "  None related to CodeRabbit"
+        
+        # Show basic PR info
+        echo ""
+        echo -e "${BLUE}📋 PR Info:${NC}"
+        gh pr view "$CURRENT_PR" --json number,title,state,url --jq '"  Title: \(.title)\n  State: \(.state)\n  URL: \(.url)"'
+        
         exit 0
     fi
     
