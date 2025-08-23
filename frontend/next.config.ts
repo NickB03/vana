@@ -18,6 +18,49 @@ const nextConfig: NextConfig = {
       },
     ];
   },
+  // Security headers configuration
+  async headers() {
+    return [
+      {
+        source: '/:path*',
+        headers: [
+          {
+            key: 'Content-Security-Policy',
+            value: `
+              default-src 'self';
+              script-src 'self' 'unsafe-eval' 'unsafe-inline';
+              worker-src 'self' blob:;
+              style-src 'self' 'unsafe-inline';
+              img-src 'self' data: https:;
+              connect-src 'self' http://localhost:8000 ws://localhost:8000;
+              font-src 'self';
+              object-src 'none';
+              base-uri 'self';
+              form-action 'self';
+              frame-ancestors 'none';
+              wasm-src 'self' 'unsafe-eval';
+            `.replace(/\s{2,}/g, ' ').trim()
+          },
+          {
+            key: 'X-Frame-Options',
+            value: 'DENY'
+          },
+          {
+            key: 'X-Content-Type-Options',
+            value: 'nosniff'
+          },
+          {
+            key: 'Referrer-Policy',
+            value: 'strict-origin-when-cross-origin'
+          },
+          {
+            key: 'Permissions-Policy',
+            value: 'camera=(), microphone=(), geolocation=()'
+          }
+        ]
+      }
+    ];
+  },
   // Enable experimental features for better development experience
   experimental: {
     turbo: {

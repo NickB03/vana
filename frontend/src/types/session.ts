@@ -31,7 +31,7 @@ export interface SessionState {
 
 // SSE Event Types for ADK Backend Integration
 export interface SSEAgentEvent {
-  type: 'agent_network_update' | 'agent_network_connection' | 'agent_start' | 'agent_complete' | 'error' | 'keepalive';
+  type: 'agent_network_update' | 'agent_network_snapshot' | 'connection' | 'agent_start' | 'agent_complete' | 'error' | 'heartbeat';
   data: unknown;
   id?: string;
   timestamp: string;

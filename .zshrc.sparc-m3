@@ -1,0 +1,64 @@
+# SPARC M3 MacBook Air Auto-Configuration
+# Add this to your ~/.zshrc or ~/.bashrc to enable automatic optimizations
+
+# Auto-detect and load M3 optimizations
+if [[ $(uname -m) == "arm64" ]] && [[ $(sysctl -n hw.memsize) -le 17179869184 ]]; then
+    export SPARC_M3_MODE=true
+    
+    # Load M3 environment variables
+    if [ -f "$HOME/Development/vana/.env.m3-auto" ]; then
+        set -a
+        source "$HOME/Development/vana/.env.m3-auto"
+        set +a
+    fi
+    
+    # Add wrapper scripts to PATH
+    export PATH="$HOME/Development/vana/.claude_workspace/bin:$PATH"
+    
+    # Alias npx to use auto-wrapper for claude-flow commands
+    npx() {
+        if [[ "$@" == *"claude-flow"* ]] || [[ "$@" == *"sparc"* ]]; then
+            # Auto-apply M3 optimizations
+            node "$HOME/Development/vana/.claude_workspace/bin/sparc-auto-wrapper.js" "npx $@"
+        else
+            command npx "$@"
+        fi
+    }
+    
+    # Create optimized aliases
+    alias sparc='node $HOME/Development/vana/.claude_workspace/bin/sparc-auto-wrapper.js "npx claude-flow sparc"'
+    alias sparc-safe='npx claude-flow sparc run $1 "$2" --max-agents 2 --memory-limit 800MB --checkpoint'
+    alias sparc-balanced='npx claude-flow sparc run $1 "$2" --max-agents 3 --wave-deploy --checkpoint'
+    alias sparc-monitor='node $HOME/Development/vana/.claude_workspace/scripts/sparc-resource-monitor.js'
+    alias sparc-recover='bash $HOME/Development/vana/.claude_workspace/scripts/emergency-recovery.sh'
+    
+    # Auto-start monitor if not running
+    sparc_auto_monitor() {
+        if ! pgrep -f "sparc-resource-monitor" > /dev/null; then
+            nohup node "$HOME/Development/vana/.claude_workspace/scripts/sparc-resource-monitor.js" > /dev/null 2>&1 &
+            echo "📊 SPARC resource monitor started in background"
+        fi
+    }
+    
+    # Function to check before running SPARC
+    sparc_check() {
+        local MEM_FREE=$(vm_stat | grep "Pages free" | awk '{print $3}' | sed 's/\.//' | awk '{print $1*4096/1024/1024/1024}')
+        
+        if (( $(echo "$MEM_FREE < 3" | bc -l) )); then
+            echo "⚠️  Low memory warning: ${MEM_FREE}GB free"
+            echo "Applying ultra-safe mode..."
+            export CLAUDE_FLOW_MAX_AGENTS=2
+            export CLAUDE_FLOW_MEMORY_LIMIT=800
+        fi
+    }
+    
+    # Hook into cd to check project context
+    cd() {
+        builtin cd "$@"
+        if [[ "$PWD" == *"/vana"* ]]; then
+            sparc_check
+        fi
+    }
+    
+    echo "✅ M3 MacBook Air SPARC optimizations loaded"
+fi
