@@ -1,5 +1,36 @@
 # Claude Code Configuration - SPARC Development Environment
 
+## 🤖 AUTOMATIC M3 MACBOOK AIR OPTIMIZATIONS
+
+**AUTO-APPLIED**: When Claude Code detects M3 MacBook Air with 16GB RAM, the following optimizations are **automatically enforced** without user intervention:
+
+### 🎯 Automatic Agent Limits
+- **Max Agents**: 4 (hard limit)
+- **Default Agents**: 3 (auto-applied)
+- **Memory per Agent**: 400MB max
+- **Total Memory Budget**: 1200MB for all agents
+
+### ⚡ Automatic Safety Features
+- **Wave Deployment**: Always enabled (2 agents at a time, 2s delay)
+- **Resource Pooling**: Shared memory between agents
+- **Auto-scaling**: Scales down at 85% memory usage
+- **Checkpointing**: Every 30 seconds
+- **Emergency Shutdown**: At 95% memory usage
+
+### 📊 Automatic Monitoring
+- Resource monitor starts automatically
+- Real-time memory/CPU tracking
+- Auto-recovery on crash
+- Graceful degradation when resources low
+
+### 🔧 How It Works
+1. Claude Code auto-detects M3 MacBook Air on startup
+2. Loads `.claude-flow.config.json` with M3 profile
+3. Applies limits to ALL SPARC/agent commands
+4. Monitors and adjusts in real-time
+
+**NO USER ACTION REQUIRED** - These rules apply automatically!
+
 ## 🚨 CRITICAL: Concurrent Execution Rules
 
 **ABSOLUTE RULE**: ALL operations MUST be concurrent/parallel in ONE message:

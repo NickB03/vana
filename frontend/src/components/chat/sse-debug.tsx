@@ -45,7 +45,7 @@ export function SSEDebugPanel(): JSX.Element {
     setEventLog(prev => [logEntry, ...prev.slice(0, 19)]); // Keep last 20 entries
   });
 
-  useSSEEventListener('agent_network_connection', (data: ConnectionEvent, _event: SSEEvent) => {
+  useSSEEventListener('connection', (data: ConnectionEvent, _event: SSEEvent) => {
     const logEntry = `[${new Date().toLocaleTimeString()}] Connection: ${data.status}`;
     setEventLog(prev => [logEntry, ...prev.slice(0, 19)]);
   });
