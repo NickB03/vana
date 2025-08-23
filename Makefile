@@ -236,3 +236,16 @@ test-claude-flow:
 
 benchmark:
 	@./.claude_workspace/scripts/benchmark-claude-flow.sh
+# CodeRabbit Integration (Simplified)
+.PHONY: crr coderabbit-apply
+
+# Quick CodeRabbit command - auto-detects PR and applies suggestions
+crr:
+	@./scripts/crr.sh $(ARGS)
+
+# Apply CodeRabbit suggestions from specific PR
+coderabbit-apply:
+	@echo "🤖 Applying CodeRabbit suggestions from PR #$(PR)..."
+	@OWNER=$$(git remote get-url origin | sed 's/.*github.com[:/]\([^/]*\).*/\1/') && \
+	REPO=$$(git remote get-url origin | sed 's/.*github.com[:/][^/]*\/\([^.]*\).*/\1/') && \
+	GITHUB_TOKEN=$$(gh auth token) node scripts/coderabbit-simple-apply.js $$OWNER $$REPO $(PR)
