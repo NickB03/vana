@@ -1,37 +1,30 @@
-'use client';
-
-import { useRouter } from 'next/navigation';
-import { AuthGuard } from '@/components/auth/auth-guard';
-import { MainLayout } from '@/components/layout/main-layout';
-import { HeroSection } from '@/components/home/hero-section';
-import { useSessionStore } from '@/store/session-store';
-import { ChatSession } from '@/types/session';
-
 export default function Home() {
-  const router = useRouter();
-  const { createSession } = useSessionStore();
-
-  const handleStartChat = (prompt?: string) => {
-    createSession();
-    
-    if (prompt) {
-      // If there's a prompt suggestion, we would add it as the first message
-      // For now, we'll navigate to the chat page where it can be handled
-      router.push(`/chat?prompt=${encodeURIComponent(prompt)}`);
-    } else {
-      router.push('/chat');
-    }
-  };
-
-  const handleSelectSession = (session: ChatSession) => {
-    router.push(`/chat/${session.id}`);
-  };
-
   return (
-    <AuthGuard requireAuth={true}>
-      <MainLayout onSelectSession={handleSelectSession}>
-        <HeroSection onStartChat={handleStartChat} />
-      </MainLayout>
-    </AuthGuard>
+    <div className="min-h-screen">
+      <div className="container mx-auto px-4 py-16">
+        <div className="max-w-4xl mx-auto text-center">
+          <h1 className="text-6xl font-bold mb-6 text-blue-400">
+            Vana
+          </h1>
+          <p className="text-xl text-gray-300 mb-8">
+            Virtual Autonomous Network Agent - Your AI-powered assistant for coding, analysis, and automation.
+          </p>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-12">
+            <div className="bg-gray-800/50 rounded-lg p-6">
+              <h3 className="text-lg font-semibold mb-3">Next.js 15</h3>
+              <p className="text-gray-400">Built with the latest Next.js App Router</p>
+            </div>
+            <div className="bg-gray-800/50 rounded-lg p-6">
+              <h3 className="text-lg font-semibold mb-3">TypeScript</h3>
+              <p className="text-gray-400">Type-safe development with strict mode</p>
+            </div>
+            <div className="bg-gray-800/50 rounded-lg p-6">
+              <h3 className="text-lg font-semibold mb-3">Foundation</h3>
+              <p className="text-gray-400">Sprint 1 - Project Bootstrap Complete</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
