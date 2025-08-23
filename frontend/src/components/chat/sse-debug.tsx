@@ -95,12 +95,22 @@ export function SSEDebugPanel(): JSX.Element {
         <CardContent className="space-y-4">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
             <div>
-              <div className="font-medium">Type</div>
-              <Badge variant="outline">{connectionState.connectionType}</Badge>
+              <div className="font-medium">State</div>
+              <Badge variant="outline">
+                {typeof connectionState === 'string' 
+                  ? connectionState 
+                  : connectionState.connected 
+                    ? 'connected' 
+                    : connectionState.connecting 
+                      ? 'connecting' 
+                      : connectionState.error 
+                        ? 'error' 
+                        : 'disconnected'}
+              </Badge>
             </div>
             <div>
-              <div className="font-medium">Retry Count</div>
-              <div>{connectionState.retryCount}</div>
+              <div className="font-medium">Can Retry</div>
+              <div>{canRetry ? 'Yes' : 'No'}</div>
             </div>
             <div>
               <div className="font-medium">Events</div>
@@ -160,7 +170,7 @@ export function SSEDebugPanel(): JSX.Element {
           <CardHeader>
             <CardTitle>Agent Network State</CardTitle>
             <CardDescription>
-              Last updated: {lastAgentUpdate?.timestamp ? new Date(lastAgentUpdate.timestamp).toLocaleString() : 'Never'}
+              Last updated: {lastAgentUpdate ? new Date().toLocaleString() : 'Never'}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -241,7 +251,7 @@ export function SSEDebugPanel(): JSX.Element {
                 <div className="flex justify-between items-center mb-1">
                   <Badge variant="outline">{event.type}</Badge>
                   <span className="text-gray-500 text-xs">
-                    {new Date(event.timestamp).toLocaleTimeString()}
+                    {new Date().toLocaleTimeString()}
                   </span>
                 </div>
                 <pre className="text-xs overflow-x-auto text-gray-600">
