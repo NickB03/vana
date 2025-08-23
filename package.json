@@ -1,0 +1,12 @@
+{
+  "name": "vana-coderabbit",
+  "version": "2.0.0",
+  "private": true,
+  "scripts": {
+    "crr": "./scripts/crr.sh",
+    "coderabbit-apply": "./scripts/crr.sh"
+  },
+  "devDependencies": {
+    "@octokit/rest": "^22.0.0"
+  }
+}
