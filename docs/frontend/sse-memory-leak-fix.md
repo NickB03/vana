@@ -42,10 +42,10 @@ const eventHandlersRef = useRef<Map<string, Set<(event: SSEEvent) => void>>>(new
 const addEventListener = useCallback((eventType: string, handler: Function) => {
   // Register with local map
   eventHandlersRef.current.get(eventType)!.add(handler);
-  
+
   // Register with client - but unsubscribe function was lost
   clientRef.current?.on(eventType, handler);
-  
+
   // Return cleanup that only cleaned local map, not client
   return () => {
     eventHandlersRef.current.get(eventType)?.delete(handler);
@@ -64,14 +64,14 @@ The event handler registry was restructured from `Map<string, Set<handler>>` to 
 const eventHandlersRef = useRef<Map<string, Map<Function, Function>>>(new Map());
 
 const addEventListener = useCallback((
-  eventType: string, 
+  eventType: string,
   handler: (event: SSEEvent) => void
 ): (() => void) => {
   // Register in local map with unsubscribe tracking
   if (!eventHandlersRef.current.has(eventType)) {
     eventHandlersRef.current.set(eventType, new Map());
   }
-  
+
   // Register with client and store unsubscribe function
   const unsubscribe = clientRef.current?.on(eventType, handler);
   eventHandlersRef.current.get(eventType)!.set(handler, unsubscribe);
@@ -83,7 +83,7 @@ const addEventListener = useCallback((
       const unsubscribeFunc = handlers.get(handler);
       unsubscribeFunc?.(); // Clean up client subscription
       handlers.delete(handler); // Clean up local registry
-      
+
       if (handlers.size === 0) {
         eventHandlersRef.current.delete(eventType);
       }
@@ -245,7 +245,7 @@ class EnhancedSSEBroadcaster:
     async def _perform_cleanup(self):
         """Perform comprehensive cleanup of expired resources."""
         # Clean up expired events
-        # Clean up dead queues  
+        # Clean up dead queues
         # Clean up expired sessions
         # Update memory metrics
 ```
@@ -298,7 +298,7 @@ async def subscribe(self, session_id: str) -> AsyncContextManager[MemoryOptimize
 // ✅ CORRECT: Using useSSEEvent with proper cleanup
 function AgentNetworkComponent() {
   const [networkData, setNetworkData] = useState(null);
-  
+
   // This hook automatically manages subscriptions and cleanup
   const sse = useSSEEvent(
     'agent_network_update',
@@ -307,7 +307,7 @@ function AgentNetworkComponent() {
     }, []),
     { sessionId: 'my-session' }
   );
-  
+
   return (
     <div>
       <div>Connection: {sse.isConnected ? 'Connected' : 'Disconnected'}</div>
@@ -323,24 +323,24 @@ function AgentNetworkComponent() {
 // ✅ CORRECT: Manual subscription with proper cleanup
 function AdvancedSSEComponent() {
   const sse = useSSE({ sessionId: 'my-session' });
-  
+
   useEffect(() => {
     // Each addEventListener returns an unsubscribe function
     const unsubscribe1 = sse.addEventListener('event1', (event) => {
       console.log('Event 1:', event);
     });
-    
+
     const unsubscribe2 = sse.addEventListener('event2', (event) => {
       console.log('Event 2:', event);
     });
-    
+
     // Return cleanup function that calls all unsubscribe functions
     return () => {
       unsubscribe1();
       unsubscribe2();
     };
   }, [sse.addEventListener]);
-  
+
   return <div>Advanced SSE Component</div>;
 }
 ```
@@ -352,7 +352,7 @@ function AdvancedSSEComponent() {
 async def agent_network_sse_endpoint(session_id: str):
     """SSE endpoint with automatic resource cleanup."""
     broadcaster = get_sse_broadcaster()
-    
+
     async def event_generator():
         async with broadcaster.subscribe(session_id) as queue:
             try:
@@ -365,7 +365,7 @@ async def agent_network_sse_endpoint(session_id: str):
             finally:
                 # Cleanup is automatic via context manager
                 pass
-    
+
     return StreamingResponse(
         event_generator(),
         media_type="text/event-stream",
@@ -423,21 +423,21 @@ print(f"Total events: {stats['totalEvents']}")
 // Implement proper error boundaries
 function SSEErrorBoundary({ children }) {
   const [hasError, setHasError] = useState(false);
-  
+
   useEffect(() => {
     const handleError = (error) => {
       console.error('SSE Error:', error);
       setHasError(true);
     };
-    
+
     window.addEventListener('unhandledrejection', handleError);
     return () => window.removeEventListener('unhandledrejection', handleError);
   }, []);
-  
+
   if (hasError) {
     return <div>Error: SSE connection failed. Please refresh the page.</div>;
   }
-  
+
   return children;
 }
 ```
@@ -505,12 +505,12 @@ def test_stats_performance_under_load():
 describe('SSE Memory Management', () => {
   it('should clean up event listeners on unmount', () => {
     const { unmount } = render(<SSEComponent />);
-    
+
     // Verify event listeners are registered
     expect(mockAddEventListener).toHaveBeenCalled();
-    
+
     unmount();
-    
+
     // Verify cleanup functions were called
     expect(mockUnsubscribe).toHaveBeenCalled();
   });

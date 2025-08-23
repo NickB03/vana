@@ -50,7 +50,7 @@ class ClaudeCodeFileHooks {
       logLevel: 'info',
       ...options
     }
-    
+
     this.prdValidator = new RealPRDValidator()
     this.errorHandler = new RealErrorHandler()
     this.hookHistory = new Map()
@@ -130,9 +130,9 @@ const PRD_RULES = {
 
 ```javascript
 async handleBlockingWithGuidance(validationResult, context) {
-  const shouldBlock = !validationResult.validated || 
+  const shouldBlock = !validationResult.validated ||
                      validationResult.compliance_score < 50
-  
+
   if (shouldBlock) {
     return {
       shouldBlock: true,
@@ -141,7 +141,7 @@ async handleBlockingWithGuidance(validationResult, context) {
       fullGuidanceMessage: this.formatComprehensiveGuidance(validationResult)
     }
   }
-  
+
   return { shouldBlock: false }
 }
 ```
@@ -163,19 +163,19 @@ async handleBlockingWithGuidance(validationResult, context) {
 class HookTestRunner {
   async run() {
     await this.initializeOutputDirectory()
-    
+
     const phases = [
       { name: 'functional', runner: this.runFunctionalTests },
       { name: 'performance', runner: this.runPerformanceTests },
       { name: 'integration', runner: this.runIntegrationTests },
       { name: 'stress', runner: this.runStressTests }
     ]
-    
+
     for (const phase of phases) {
       const result = await phase.runner()
       this.results[phase.name] = result
     }
-    
+
     await this.generateFinalReport()
   }
 }
@@ -192,12 +192,12 @@ sequenceDiagram
     participant Hooks
     participant PRDValidator
     participant ClaudeFlow
-    
+
     User->>ClaudeCode: File Operation Request
     ClaudeCode->>Hooks: executePreHook()
     Hooks->>PRDValidator: validateFileOperation()
     PRDValidator-->>Hooks: ValidationResult
-    
+
     alt Validation Failed
         Hooks-->>ClaudeCode: {allowed: false, guidance}
         ClaudeCode-->>User: Operation Blocked + Guidance
@@ -217,7 +217,7 @@ sequenceDiagram
     participant Hooks
     participant ClaudeFlow
     participant SwarmMemory
-    
+
     ClaudeCode->>Hooks: executePostHook()
     Hooks->>ClaudeFlow: hooks post-edit command
     ClaudeFlow->>SwarmMemory: Update Memory
@@ -461,12 +461,12 @@ function validateHookInput(input) {
   if (!safePath.startsWith(PROJECT_ROOT)) {
     throw new Error('Path traversal attempt detected')
   }
-  
+
   // Validate content size
   if (input.content && input.content.length > MAX_CONTENT_SIZE) {
     throw new Error('Content size exceeds limits')
   }
-  
+
   return sanitizeInput(input)
 }
 ```
@@ -496,7 +496,7 @@ class NeuralPatternRecognition {
       userBehavior: this.analyzeUserBehavior(context),
       codeComplexity: this.calculateComplexity(context.content)
     }
-    
+
     await this.trainNeuralNetwork(pattern)
     return this.getPredictions(pattern)
   }
@@ -521,7 +521,7 @@ class CustomValidationHook extends BaseHook {
   async execute(context) {
     // Custom validation logic
     const result = await this.customValidation(context)
-    
+
     // Standard hook response format
     return {
       success: result.passed,

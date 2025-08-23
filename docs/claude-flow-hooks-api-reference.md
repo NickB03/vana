@@ -19,11 +19,11 @@ The Claude Flow Hooks API provides a comprehensive set of CLI commands for agent
 
 ### Lifecycle Hooks
 - `pre-task` - Initialize agent tasks
-- `post-task` - Complete and analyze tasks  
+- `post-task` - Complete and analyze tasks
 - `session-restore` - Restore session context
 - `session-end` - Finalize session state
 
-### Operation Hooks  
+### Operation Hooks
 - `post-edit` - Process file modifications
 - `notify` - Agent communication and alerts
 
@@ -58,7 +58,7 @@ npx claude-flow@alpha hooks pre-task [options]
 {
   "success": true,
   "taskId": "task_abc123",
-  "agentId": "agent_xyz456", 
+  "agentId": "agent_xyz456",
   "sessionId": "session_def789",
   "memoryKeys": ["task/abc123/context", "task/abc123/state"],
   "estimatedDuration": 180,
@@ -369,7 +369,7 @@ npx claude-flow@alpha hooks pre-task \
   --description "Full-stack feature implementation" \
   --priority "high"
 
-# 2. Restore Session Context  
+# 2. Restore Session Context
 npx claude-flow@alpha hooks session-restore \
   --session-id "swarm-feature-dev"
 
@@ -409,7 +409,7 @@ npx claude-flow@alpha hooks session-restore \
   --session-id "swarm-coordination" \
   --agent-id "backend-dev"
 
-# Frontend agent joins  
+# Frontend agent joins
 npx claude-flow@alpha hooks session-restore \
   --session-id "swarm-coordination" \
   --agent-id "frontend-dev"
@@ -575,7 +575,7 @@ Use descriptive session IDs:
 --session-id "swarm-auth-feature-2025-08-18"
 --session-id "swarm-frontend-refactor"
 
-# Avoid  
+# Avoid
 --session-id "session1"
 --session-id "temp"
 ```
@@ -602,7 +602,7 @@ Regular performance checks:
         "matcher": "Write|Edit|MultiEdit",
         "hooks": [
           {
-            "type": "command", 
+            "type": "command",
             "command": "npx claude-flow@alpha hooks pre-edit --file '$file_path' --operation '$tool_name'"
           }
         ]
@@ -657,7 +657,7 @@ npx claude-flow@alpha hooks post-edit \
    ```bash
    # List available sessions
    npx claude-flow@alpha hooks list-sessions
-   
+
    # Force session creation
    npx claude-flow@alpha hooks create-session --id "new-session"
    ```
@@ -703,7 +703,7 @@ npx claude-flow@2.0.0 hooks pre-task --description "Task"
 For issues with the Claude Flow Hooks API:
 
 1. **Documentation**: Check existing guides and examples
-2. **Debug Mode**: Enable verbose logging for troubleshooting  
+2. **Debug Mode**: Enable verbose logging for troubleshooting
 3. **Performance Testing**: Use built-in performance monitoring
 4. **Community**: Reference GitHub issues and discussions
 

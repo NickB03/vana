@@ -9,7 +9,7 @@ import { useSSEEvent } from '@/hooks/use-sse';
 
 function MyComponent() {
   const [data, setData] = useState(null);
-  
+
   const sse = useSSEEvent(
     'agent_network_update',
     useCallback((eventData) => {
@@ -17,7 +17,7 @@ function MyComponent() {
     }, []),
     { sessionId: 'my-session' }
   );
-  
+
   return (
     <div>
       <div>Status: {sse.isConnected ? 'Connected' : 'Disconnected'}</div>
@@ -32,17 +32,17 @@ function MyComponent() {
 ```typescript
 function AdvancedComponent() {
   const sse = useSSE({ sessionId: 'my-session' });
-  
+
   useEffect(() => {
     const cleanup1 = sse.addEventListener('event1', handleEvent1);
     const cleanup2 = sse.addEventListener('event2', handleEvent2);
-    
+
     return () => {
       cleanup1();
       cleanup2();
     };
   }, [sse.addEventListener]);
-  
+
   return <div>Multi-event component</div>;
 }
 ```
@@ -68,7 +68,7 @@ async def sse_endpoint(session_id: str):
             while True:
                 event = await queue.get(timeout=30.0)
                 yield event
-    
+
     return StreamingResponse(event_generator(), media_type="text/event-stream")
 ```
 
@@ -228,20 +228,20 @@ from app.utils.sse_broadcaster import EnhancedSSEBroadcaster, BroadcasterConfig
 async def test_sse_broadcasting():
     config = BroadcasterConfig(event_ttl=1.0)  # Short TTL for testing
     broadcaster = EnhancedSSEBroadcaster(config)
-    
+
     try:
         # Test broadcasting
         session_id = "test_session"
         queue = await broadcaster.add_subscriber(session_id)
-        
+
         await broadcaster.broadcast_event(session_id, {
             'type': 'test_event',
             'data': {'test': 'data'}
         })
-        
+
         event = await queue.get(timeout=1.0)
         assert 'test_event' in event
-        
+
     finally:
         await broadcaster.shutdown()
 ```
@@ -340,7 +340,7 @@ SSE_CLEANUP_INTERVAL=60
 // Validate event data
 const safeHandler = useCallback((data) => {
   if (typeof data !== 'object' || !data) return;
-  
+
   // Sanitize and validate data before using
   const sanitizedData = DOMPurify.sanitize(JSON.stringify(data));
   setData(JSON.parse(sanitizedData));
@@ -355,7 +355,7 @@ const safeHandler = useCallback((data) => {
 async def sse_endpoint(session_id: str, user: User = Depends(get_current_user)):
     if not user.can_access_session(session_id):
         raise HTTPException(403, "Access denied")
-    
+
     # Proceed with SSE connection
 ```
 

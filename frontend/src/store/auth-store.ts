@@ -92,9 +92,12 @@ export const useAuthStore = create<AuthStore>()(
           
           const authUrl = await AuthAPI.loginWithGoogle();
           
-          // Redirect to Google OAuth
-          if (typeof window !== 'undefined') {
-            window.location.href = authUrl;
+          // Redirect to Google OAuth using SSR-safe approach
+          const { safeWindow } = require('@/lib/ssr-utils');
+          const win = safeWindow();
+          
+          if (win) {
+            win.location.href = authUrl;
           }
         } catch (error) {
           const message = error instanceof Error ? error.message : 'Google login failed';

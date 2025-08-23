@@ -1,7 +1,7 @@
 # 📋 Vana Frontend Planning Overview
 
-**Date:** 2025-08-23  
-**Sprint:** 1 of 6  
+**Date:** 2025-08-23
+**Sprint:** 1 of 6
 **Status:** Ready for Implementation
 
 ---
@@ -26,15 +26,15 @@ This directory contains the complete planning documentation for the Vana fronten
    - PR strategy with CodeRabbit integration
    - Acceptance criteria for each sprint
 
-3. **[02-SprintPlan.md](./02-SprintPlan.md)**
-   - Original sprint planning document
-   - Agile methodology details
-   - Risk mitigation strategies
+3. **[vana-frontend-prd-final.md](./vana-frontend-prd-final.md)**
+   - Alternative PRD document
+   - Frontend-specific requirements
+   - UI/UX implementation details
 
-4. **[04-PhaseRequirements.md](./04-PhaseRequirements.md)**
-   - Phase-by-phase requirements
-   - Dependency mapping
-   - Integration points
+4. **[Git Hooks Documentation](./git-hooks/README.md)**
+   - Git hooks system integration
+   - Developer workflow automation
+   - Configuration and setup guides
 
 ---
 
@@ -166,9 +166,9 @@ This directory contains the complete planning documentation for the Vana fronten
 ## 🔗 Resources
 
 ### Internal:
-- [Agent Handoff](../.claude_workspace/active-sprint-planning/AGENT-HANDOFF.md)
-- [Sprint Reports](../.claude_workspace/reports/)
-- [CLAUDE.md](../CLAUDE.md) - Claude-specific instructions
+- [Claude Instructions](../CLAUDE.md) - Claude-specific instructions
+- [Sprint Planning Documents](./) - Current directory with all planning docs
+- [Git Hooks Integration Guide](./git-hooks-integration-guide.md)
 
 ### External:
 - [GitHub PR #104](https://github.com/NickB03/vana/pull/104)

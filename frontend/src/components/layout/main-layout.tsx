@@ -42,8 +42,17 @@ export function MainLayout({
 
   const handleMouseDown = () => {
     setIsResizing(true);
-    document.addEventListener('mousemove', handleMouseMove);
-    document.addEventListener('mouseup', handleMouseUp);
+    
+    // Use SSR-safe event listeners
+    const { safeAddDocumentEventListener } = require('@/lib/ssr-utils');
+    const cleanupMouseMove = safeAddDocumentEventListener('mousemove', handleMouseMove);
+    const cleanupMouseUp = safeAddDocumentEventListener('mouseup', handleMouseUp);
+    
+    // Store cleanup functions for handleMouseUp
+    (handleMouseUp as any).cleanup = () => {
+      cleanupMouseMove();
+      cleanupMouseUp();
+    };
   };
 
   const handleMouseMove = (e: MouseEvent) => {
@@ -54,8 +63,10 @@ export function MainLayout({
 
   const handleMouseUp = () => {
     setIsResizing(false);
-    document.removeEventListener('mousemove', handleMouseMove);
-    document.removeEventListener('mouseup', handleMouseUp);
+    // Call the stored cleanup functions
+    if ((handleMouseUp as any).cleanup) {
+      (handleMouseUp as any).cleanup();
+    }
   };
 
   const getUserInitials = (name: string | undefined) => {

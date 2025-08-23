@@ -16,6 +16,7 @@ import {
   Clock
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { getClientNonce } from '@/lib/csp';
 import type { AgentInfo, CollaborativeSession } from '@/types/canvas';
 
 interface AgentCursorsProps {
@@ -76,9 +77,11 @@ export function AgentCursors({ session, editorRef, className }: AgentCursorsProp
     const editor = editorRef.current;
     if (!editor) return;
 
-    // Type-safe access to Monaco global
-    const monacoGlobal = window as unknown as MonacoGlobal;
-    if (!monacoGlobal.monaco?.Range) return;
+    // Type-safe access to Monaco global using SSR-safe approach
+    const { safeWindow } = require('@/lib/ssr-utils');
+    const win = safeWindow();
+    const monacoGlobal = win as unknown as MonacoGlobal;
+    if (!monacoGlobal?.monaco?.Range) return;
 
     // Remove existing decorations
     const existingDecorationIds = decorations.flatMap(d => [
@@ -164,47 +167,62 @@ export function AgentCursors({ session, editorRef, className }: AgentCursorsProp
     setDecorations(newDecorations);
   }, [session.cursors, session.agents, decorations, editorRef]);
 
-  // Inject CSS for cursor styles
+  // Inject CSS for cursor styles (CSP-compliant with SSR safety)
   useEffect(() => {
-    const style = document.createElement('style');
-    style.innerHTML = `
-      ${session.agents.map(agent => `
-        .agent-cursor-${agent.id} .agent-cursor-line::before {
-          content: '';
-          position: absolute;
-          top: 0;
-          bottom: 0;
-          left: 0;
-          width: 2px;
-          background-color: ${agent.color};
-          z-index: 10;
-        }
-        
-        .agent-cursor-${agent.id} .agent-cursor-marker::after {
-          content: '${agent.name.substring(0, 2).toUpperCase()}';
-          position: absolute;
-          top: -20px;
-          left: 0;
-          background-color: ${agent.color};
-          color: white;
-          font-size: 10px;
-          padding: 2px 4px;
-          border-radius: 3px;
-          white-space: nowrap;
-          z-index: 20;
-          pointer-events: none;
-        }
-        
-        .agent-selection-${agent.id} {
-          background-color: ${agent.color}20;
-          border: 1px solid ${agent.color}40;
-        }
-      `).join('\n')}
-    `;
-    document.head.appendChild(style);
+    const { safeDocument } = require('@/lib/ssr-utils');
+    const doc = safeDocument();
+    
+    if (!doc) return;
+    
+    const style = doc.createElement('style');
+    const nonce = getClientNonce();
+    
+    // Apply CSP nonce if available
+    if (nonce) {
+      style.setAttribute('nonce', nonce);
+    }
+    
+    // CSP-compliant CSS generation
+    const css = session.agents.map(agent => `
+      .agent-cursor-${agent.id} .agent-cursor-line::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        left: 0;
+        width: 2px;
+        background-color: ${agent.color};
+        z-index: 10;
+      }
+      
+      .agent-cursor-${agent.id} .agent-cursor-marker::after {
+        content: '${agent.name.substring(0, 2).toUpperCase()}';
+        position: absolute;
+        top: -20px;
+        left: 0;
+        background-color: ${agent.color};
+        color: white;
+        font-size: 10px;
+        padding: 2px 4px;
+        border-radius: 3px;
+        white-space: nowrap;
+        z-index: 20;
+        pointer-events: none;
+      }
+      
+      .agent-selection-${agent.id} {
+        background-color: ${agent.color}20;
+        border: 1px solid ${agent.color}40;
+      }
+    `).join('\n');
+    
+    style.textContent = css;
+    doc.head.appendChild(style);
 
     return () => {
-      document.head.removeChild(style);
+      if (doc.head.contains(style)) {
+        doc.head.removeChild(style);
+      }
     };
   }, [session.agents]);
 

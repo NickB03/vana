@@ -300,48 +300,67 @@ export function ChatInterface({ className, initialMessage }: ChatInterfaceProps)
   
   if (!user) {
     return (
-      <div className="flex items-center justify-center h-full">
-        <Card className="p-6 text-center">
-          <AlertCircle className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
-          <h3 className="text-lg font-semibold mb-2">Authentication Required</h3>
+      <main className="flex items-center justify-center h-full" role="main">
+        <Card className="p-6 text-center" role="alert">
+          <AlertCircle className="w-12 h-12 mx-auto mb-4 text-muted-foreground" aria-hidden="true" />
+          <h2 className="text-lg font-semibold mb-2">Authentication Required</h2>
           <p className="text-muted-foreground mb-4">
             Please log in to start chatting with the AI assistant.
           </p>
-          <Button onClick={() => window.location.href = '/auth/login'}>
+          <Button 
+            onClick={() => window.location.href = '/auth/login'}
+            aria-label="Navigate to login page"
+          >
             Go to Login
           </Button>
         </Card>
-      </div>
+      </main>
     );
   }
   
   if (!currentSession) {
     return (
-      <div className="flex items-center justify-center h-full">
-        <div className="space-y-4 w-full max-w-md">
-          <Skeleton className="h-4 w-full" />
-          <Skeleton className="h-4 w-3/4" />
-          <Skeleton className="h-4 w-1/2" />
+      <main className="flex items-center justify-center h-full" role="main">
+        <div className="space-y-4 w-full max-w-md" aria-label="Loading chat interface">
+          <Skeleton className="h-4 w-full" aria-hidden="true" />
+          <Skeleton className="h-4 w-3/4" aria-hidden="true" />
+          <Skeleton className="h-4 w-1/2" aria-hidden="true" />
+          <span className="sr-only">Loading chat interface, please wait...</span>
         </div>
-      </div>
+      </main>
     );
   }
   
   return (
-    <div className={`flex flex-col h-full ${className}`}>
+    <section 
+      className={`flex flex-col h-full ${className}`}
+      role="application"
+      aria-label="AI Chat Interface"
+    >
       {/* Connection Status Bar */}
-      <div className="flex items-center justify-between px-4 py-2 border-b">
+      <header 
+        className="flex items-center justify-between px-4 py-2 border-b"
+        role="status"
+        aria-live="polite"
+      >
         <div className="flex items-center gap-2">
           {isConnected ? (
-            <Wifi className="w-4 h-4 text-green-500" />
+            <Wifi className="w-4 h-4 text-green-500" aria-hidden="true" />
           ) : (
-            <WifiOff className="w-4 h-4 text-red-500" />
+            <WifiOff className="w-4 h-4 text-red-500" aria-hidden="true" />
           )}
-          <Badge variant={isConnected ? 'default' : 'destructive'}>
+          <Badge 
+            variant={isConnected ? 'default' : 'destructive'}
+            aria-label={`Connection status: ${isConnected ? 'Connected' : 'Disconnected'}`}
+          >
             {isConnected ? 'Connected' : 'Disconnected'}
           </Badge>
           {isStreaming && (
-            <Badge variant="secondary" className="animate-pulse">
+            <Badge 
+              variant="secondary" 
+              className="animate-pulse"
+              aria-label="AI is currently typing a response"
+            >
               AI is typing...
             </Badge>
           )}
@@ -352,40 +371,51 @@ export function ChatInterface({ className, initialMessage }: ChatInterfaceProps)
             variant="outline"
             size="sm"
             onClick={handleRetryConnection}
+            aria-label="Retry connection to AI service"
           >
             Retry Connection
           </Button>
         )}
-      </div>
+      </header>
       
       {/* Error Banner */}
       {connectionError && (
-        <div className="px-4 py-2 bg-destructive/10 border-b border-destructive/20">
+        <div 
+          className="px-4 py-2 bg-destructive/10 border-b border-destructive/20"
+          role="alert"
+          aria-live="assertive"
+        >
           <div className="flex items-center gap-2 text-sm text-destructive">
-            <AlertCircle className="w-4 h-4" />
+            <AlertCircle className="w-4 h-4" aria-hidden="true" />
             <span>{connectionError}</span>
           </div>
         </div>
       )}
       
       {/* Messages Area */}
-      <div className="flex-1 overflow-hidden">
+      <section 
+        className="flex-1 overflow-hidden"
+        aria-label="Chat messages"
+        role="log"
+        aria-live="polite"
+        aria-relevant="additions"
+      >
         <MessageList
           messages={currentSession.messages}
           streamingMessage={currentStreamingMessage}
           isLoading={isStreaming}
         />
-        <div ref={messagesEndRef} />
-      </div>
+        <div ref={messagesEndRef} aria-hidden="true" />
+      </section>
       
       {/* Input Area */}
-      <div className="border-t">
+      <footer className="border-t">
         <MessageInput
           onSendMessage={handleSendMessage}
           disabled={!isConnected || isStreaming}
           placeholder={!isConnected ? 'Connecting...' : 'Type your message...'}
         />
-      </div>
-    </div>
+      </footer>
+    </section>
   );
 }

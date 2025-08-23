@@ -84,20 +84,21 @@ export const useUIStore = create<UIStore>()(
       setTheme: (theme: UIState['theme']) => {
         set({ theme });
         
-        if (typeof window !== 'undefined') {
-          const root = document.documentElement;
-          if (theme === 'dark') {
-            root.classList.add('dark');
-          } else if (theme === 'light') {
-            root.classList.remove('dark');
+        // Use SSR-safe utilities for DOM manipulation
+        const { safeDOMClassList, safePrefersDark } = require('@/lib/ssr-utils');
+        const rootClasses = safeDOMClassList('html');
+        
+        if (theme === 'dark') {
+          rootClasses.add('dark');
+        } else if (theme === 'light') {
+          rootClasses.remove('dark');
+        } else {
+          // System theme - use SSR-safe dark mode detection
+          const prefersDark = safePrefersDark();
+          if (prefersDark) {
+            rootClasses.add('dark');
           } else {
-            // System theme
-            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-            if (prefersDark) {
-              root.classList.add('dark');
-            } else {
-              root.classList.remove('dark');
-            }
+            rootClasses.remove('dark');
           }
         }
       },
@@ -179,8 +180,17 @@ export const useUIStore = create<UIStore>()(
   )
 );
 
-// Initialize theme on client side
-if (typeof window !== 'undefined') {
-  const store = useUIStore.getState();
-  store.setTheme(store.theme);
-}
+// Initialize theme on client side using SSR-safe approach
+import { getSSREnvironment } from '@/lib/ssr-utils';
+
+const initializeTheme = () => {
+  const { isBrowser } = getSSREnvironment();
+  
+  if (isBrowser) {
+    const store = useUIStore.getState();
+    store.setTheme(store.theme);
+  }
+};
+
+// Call initialization
+initializeTheme();

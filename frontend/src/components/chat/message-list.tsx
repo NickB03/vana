@@ -31,10 +31,20 @@ function MessageComponent({ message, isStreaming = false, agent: _ }: MessageCom
   const isUser = message.role === 'user';
   const isSystem = message.role === 'system';
   const isError = message.metadata?.error;
+  const messageRole = isUser ? 'user' : 'assistant';
   
   const handleCopyMessage = async () => {
     try {
-      await navigator.clipboard.writeText(message.content);
+      // Use SSR-safe clipboard access
+      const { safeClipboard } = require('@/lib/ssr-utils');
+      const clipboard = safeClipboard();
+      
+      if (clipboard) {
+        await clipboard.writeText(message.content);
+      } else {
+        // Fallback for unsupported environments
+        console.warn('Clipboard API not available');
+      }
     } catch (error) {
       console.error('Failed to copy message:', error);
     }
@@ -78,7 +88,7 @@ function MessageComponent({ message, isStreaming = false, agent: _ }: MessageCom
   
   if (isSystem) {
     return (
-      <div className="flex justify-center my-4">
+      <div className="flex justify-center my-4" role="status" aria-live="polite">
         <Badge variant="secondary" className="text-xs">
           {message.content}
         </Badge>
@@ -129,8 +139,10 @@ function MessageComponent({ message, isStreaming = false, agent: _ }: MessageCom
               isUser ? "text-primary-foreground/70 hover:text-primary-foreground" : "text-muted-foreground hover:text-foreground"
             )}
             onClick={handleCopyMessage}
+            aria-label={`Copy ${messageRole} message to clipboard`}
+            title="Copy message"
           >
-            <Copy className="w-3 h-3" />
+            <Copy className="w-3 h-3" aria-hidden="true" />
           </Button>
         </Card>
         

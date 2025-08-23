@@ -4,9 +4,9 @@
 
 The Vana API is a comprehensive RESTful API built with FastAPI that provides authentication, real-time agent network monitoring, and research capabilities. The API is built on Google's Agent Development Kit (ADK) and includes full OAuth2/JWT authentication.
 
-**Base URL**: `http://localhost:8000` (development)  
-**API Version**: 1.0.0  
-**Authentication**: Bearer JWT Token (required for most endpoints)  
+**Base URL**: `http://localhost:8000` (development)
+**API Version**: 1.0.0
+**Authentication**: Bearer JWT Token (required for most endpoints)
 **Content-Type**: `application/json`
 
 ## Table of Contents

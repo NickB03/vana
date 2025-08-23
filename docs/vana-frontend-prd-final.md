@@ -1,8 +1,8 @@
 # Vana Frontend PRD – Complete Build Specification (FINAL)
 
-**Version:** 3.0 AI-EXECUTION-READY  
-**Date:** 2025-08-14  
-**Status:** AI Agent Execution Ready (Score: 85+/100)  
+**Version:** 3.0 AI-EXECUTION-READY
+**Date:** 2025-08-14
+**Status:** AI Agent Execution Ready (Score: 85+/100)
 **Purpose:** Complete, precision-specified product requirements document for Vana AI frontend rebuild, validated by specialist swarm and equipped with Hybrid Reality Validation System for autonomous AI agent execution
 
 ---
@@ -231,15 +231,15 @@ Seamless transition from landing to interactive AI conversation with Canvas outp
    const handleSubmit = async (prompt: string, files?: File[]) => {
      // Create session
      const session = sessionStore.createSession('homepage', prompt)
-     
+
      // Navigate to chat
      router.push(`/chat?session=${session.id}`)
-     
+
      // Initialize SSE
      const eventSource = new EventSource(
        `/agent_network_sse/${session.id}`
      )
-     
+
      // Begin streaming
      eventSource.addEventListener('message_token', handleToken)
    }
@@ -249,7 +249,7 @@ Seamless transition from landing to interactive AI conversation with Canvas outp
    ```typescript
    const handleAgentResponse = (event: MessageEvent) => {
      const data = JSON.parse(event.data)
-     
+
      switch(data.type) {
        case 'canvas_open':
          canvasStore.open(data.canvasType, data.content)
@@ -269,10 +269,10 @@ Seamless transition from landing to interactive AI conversation with Canvas outp
 ```typescript
 const handleToolSelect = (tool: ToolOption) => {
   const session = sessionStore.createSession('tool')
-  
+
   // Open Canvas immediately
   canvasStore.open(tool.canvasType)
-  
+
   // Navigate with Canvas open
   router.push(`/chat?session=${session.id}&canvas=${tool.canvasType}`)
 }
@@ -293,19 +293,19 @@ const handleToolSelect = (tool: ToolOption) => {
 export const googleLogin = async (googleUser: any) => {
   // Get ID token from Google Sign-In
   const idToken = googleUser.getAuthResponse().id_token
-  
+
   // Send to backend for verification and JWT creation
   const response = await fetch('/auth/google', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ id_token: idToken })
   })
-  
+
   const { access_token, refresh_token } = await response.json()
-  
+
   // Store tokens securely
   authStore.setTokens(access_token, refresh_token)
-  
+
   // Start refresh timer
   startTokenRefresh()
 }
@@ -338,8 +338,8 @@ const startTokenRefresh = () => {
         <TabsTrigger value="register">Register</TabsTrigger>
       </TabsList>
       <TabsContent value="login">
-        <Button 
-          variant="outline" 
+        <Button
+          variant="outline"
           className="w-full"
           onClick={handleGoogleSignIn}
         >
@@ -395,7 +395,7 @@ const suggestions = [
 
 <div className="flex gap-4 overflow-x-auto pb-2">
   {suggestions.map(suggestion => (
-    <Card 
+    <Card
       key={suggestion.id}
       className="min-w-[200px] cursor-pointer hover:border-primary transition-colors"
       onClick={() => handleSuggestionClick(suggestion)}
@@ -421,65 +421,65 @@ export class SSEConnection {
   private eventSource: EventSource | null = null
   private sessionId: string
   private reconnectAttempts = 0
-  
+
   connect(sessionId: string) {
     this.sessionId = sessionId
-    
+
     // Use actual backend endpoint
     this.eventSource = new EventSource(
       `${API_URL}/agent_network_sse/${sessionId}`
     )
-    
+
     this.setupEventHandlers()
     this.setupErrorHandling()
   }
-  
+
   private setupEventHandlers() {
     // Connection event
     this.eventSource?.addEventListener('connection', (e) => {
       const data = JSON.parse(e.data)
       console.log('SSE connected:', data.sessionId)
     })
-    
+
     // Heartbeat (every 30s from backend)
     this.eventSource?.addEventListener('heartbeat', (e) => {
       // Reset reconnect attempts on successful heartbeat
       this.reconnectAttempts = 0
     })
-    
+
     // Agent events
     this.eventSource?.addEventListener('agent_start', (e) => {
       const data = JSON.parse(e.data)
       agentDeckStore.addAgent(data)
     })
-    
+
     this.eventSource?.addEventListener('agent_complete', (e) => {
       const data = JSON.parse(e.data)
       agentDeckStore.updateAgent(data.agentId, { status: 'complete' })
     })
-    
+
     // Research sources (from Brave Search)
     this.eventSource?.addEventListener('research_sources', (e) => {
       const data = JSON.parse(e.data)
       chatStore.addResearchSources(data.sources)
     })
   }
-  
+
   private setupErrorHandling() {
     this.eventSource?.addEventListener('error', () => {
       this.handleReconnection()
     })
   }
-  
+
   private handleReconnection() {
     if (this.reconnectAttempts >= 5) {
       chatStore.setStreamError(true)
       return
     }
-    
+
     // Exponential backoff
     const delay = Math.min(1000 * Math.pow(2, this.reconnectAttempts), 30000)
-    
+
     setTimeout(() => {
       this.reconnectAttempts++
       this.connect(this.sessionId)
@@ -524,7 +524,7 @@ export const AgentMessage = ({ message }: { message: Message }) => {
         >
           {message.content}
         </ReactMarkdown>
-        
+
         {message.sources && (
           <ResearchSources sources={message.sources} />
         )}
@@ -568,7 +568,7 @@ interface CanvasStore {
   currentVersionId: string | null
   exportState: ExportState
   executionState: ExecutionState
-  
+
   // Actions
   open: (type: CanvasType, content?: string) => void
   close: () => void
@@ -591,7 +591,7 @@ export const useCanvasStore = create<CanvasStore>()(
       versions: [],
       isDirty: false,
       currentVersionId: null,
-      
+
       open: (type, content = '') => {
         set(state => {
           state.isOpen = true
@@ -600,46 +600,46 @@ export const useCanvasStore = create<CanvasStore>()(
           state.isDirty = false
         })
       },
-      
+
       setContent: (content) => {
         set(state => {
           state.content = content
           state.isDirty = true
         })
       },
-      
+
       switchType: (newType) => {
         const currentContent = get().content
         const currentType = get().activeType
         const converted = get().convertContent(currentType, newType, currentContent)
-        
+
         set(state => {
           state.activeType = newType
           state.content = converted
         })
       },
-      
+
       convertContent: (fromType, toType, content) => {
         // Markdown to Code: Extract code blocks
         if (fromType === 'markdown' && toType === 'code') {
           const codeMatch = content.match(/```[\w]*\n([\s\S]*?)```/)
           return codeMatch ? codeMatch[1] : content
         }
-        
+
         // Code to Markdown: Wrap in code block
         if (fromType === 'code' && toType === 'markdown') {
           return `\`\`\`javascript\n${content}\n\`\`\``
         }
-        
+
         // Markdown to Web: Convert to HTML
         if (fromType === 'markdown' && toType === 'web') {
           // Use react-markdown's renderer
           return markdownToHtml(content)
         }
-        
+
         return content
       },
-      
+
       createVersion: (description) => {
         const version: CanvasVersion = {
           id: generateId(),
@@ -649,23 +649,23 @@ export const useCanvasStore = create<CanvasStore>()(
           author: 'user',
           description: description || 'Manual save'
         }
-        
+
         set(state => {
           state.versions.push(version)
           state.currentVersionId = version.id
           state.isDirty = false
         })
-        
+
         // Persist to localStorage until backend ready
         localStorage.setItem(
           `canvas_versions_${sessionStore.getState().currentSessionId}`,
           JSON.stringify(get().versions)
         )
       },
-      
+
       exportArtifact: async (format) => {
         const { content, activeType } = get()
-        
+
         switch (format) {
           case 'markdown':
             downloadFile(`artifact.md`, content, 'text/markdown')
@@ -683,19 +683,19 @@ export const useCanvasStore = create<CanvasStore>()(
             break
         }
       },
-      
+
       executeCode: async () => {
         const { content, activeType } = get()
-        
+
         if (activeType !== 'code' && activeType !== 'sandbox') {
           throw new Error('Code execution only available in Code or Sandbox mode')
         }
-        
+
         // Use E2B SDK for secure execution when available
         if (window.e2bSdk) {
           return await window.e2bSdk.execute(content)
         }
-        
+
         // Fallback to local evaluation for safe code
         return await evaluateCode(content)
       }
@@ -744,13 +744,13 @@ interface ExecutionResult {
 // components/canvas/CanvasSystem.tsx
 export const CanvasSystem = () => {
   const { isOpen } = useCanvasStore()
-  
+
   if (!isOpen) return null
-  
+
   return (
-    <ResizablePanel 
-      defaultSize={40} 
-      minSize={30} 
+    <ResizablePanel
+      defaultSize={40}
+      minSize={30}
       maxSize={70}
       className="border-l bg-background"
     >
@@ -770,7 +770,7 @@ export const CanvasSystem = () => {
 // components/canvas/CanvasExportBar.tsx
 export const CanvasExportBar = () => {
   const { exportArtifact, executeCode, activeType, content } = useCanvasStore()
-  
+
   const exportOptions = [
     { label: "Copy", format: "copy" as const, icon: Copy },
     { label: "Download as Markdown", format: "markdown" as const, icon: Download },
@@ -778,7 +778,7 @@ export const CanvasExportBar = () => {
     { label: "Export HTML", format: "html" as const, icon: Code },
     { label: "Share", format: "share" as const, icon: Share }
   ]
-  
+
   return (
     <div className="border-t bg-muted/20 p-2 flex items-center justify-between">
       <div className="flex items-center gap-2">
@@ -794,7 +794,7 @@ export const CanvasExportBar = () => {
           </Button>
         )}
       </div>
-      
+
       <div className="flex items-center gap-1">
         {exportOptions.map(option => (
           <Button
@@ -819,7 +819,7 @@ export const CanvasExportBar = () => {
 // components/canvas/CanvasToolbar.tsx
 export const CanvasToolbar = () => {
   const { activeType, switchType, versions, isDirty, save, close } = useCanvasStore()
-  
+
   return (
     <div className="flex items-center justify-between p-2 border-b">
       <div className="flex items-center gap-2">
@@ -843,7 +843,7 @@ export const CanvasToolbar = () => {
             </TabsTrigger>
           </TabsList>
         </Tabs>
-        
+
         {versions.length > 0 && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -854,8 +854,8 @@ export const CanvasToolbar = () => {
             </DropdownMenuTrigger>
             <DropdownMenuContent>
               {versions.slice(-5).reverse().map(v => (
-                <DropdownMenuItem 
-                  key={v.id} 
+                <DropdownMenuItem
+                  key={v.id}
                   onClick={() => loadVersion(v.id)}
                 >
                   {formatRelativeTime(v.timestamp)} - {v.description}
@@ -865,7 +865,7 @@ export const CanvasToolbar = () => {
           </DropdownMenu>
         )}
       </div>
-      
+
       <div className="flex items-center gap-2">
         {isDirty && (
           <div className="flex items-center gap-1 text-xs text-muted-foreground">
@@ -873,16 +873,16 @@ export const CanvasToolbar = () => {
             Unsaved
           </div>
         )}
-        
-        <Button 
-          variant="ghost" 
-          size="sm" 
+
+        <Button
+          variant="ghost"
+          size="sm"
           onClick={save}
           disabled={!isDirty}
         >
           <Save className="h-4 w-4" />
         </Button>
-        
+
         <Button variant="ghost" size="icon" onClick={close}>
           <X className="h-4 w-4" />
         </Button>
@@ -902,7 +902,7 @@ import { useCanvasStore } from '@/stores/canvasStore'
 export const MonacoCodeEditor = () => {
   const { content, setContent } = useCanvasStore()
   const [language, setLanguage] = useState('javascript')
-  
+
   // Monaco Editor configuration based on research findings
   return (
     <div className="h-full">
@@ -921,7 +921,7 @@ export const MonacoCodeEditor = () => {
           </SelectContent>
         </Select>
       </div>
-      
+
       <Editor
         height="100%"
         language={language}
@@ -963,7 +963,7 @@ export const MonacoCodeEditor = () => {
 // components/canvas/editors/MarkdownEditor.tsx (Enhanced)
 export const MarkdownEditor = () => {
   const { content, setContent } = useCanvasStore()
-  
+
   return (
     <div className="grid grid-cols-2 h-full">
       <div className="border-r">
@@ -987,7 +987,7 @@ export const MarkdownEditor = () => {
         />
       </div>
       <ScrollArea className="p-4">
-        <ReactMarkdown 
+        <ReactMarkdown
           remarkPlugins={[remarkGfm]}
           className="prose prose-invert max-w-none"
         >
@@ -1002,7 +1002,7 @@ export const MarkdownEditor = () => {
 export const WebPreview = () => {
   const { content, activeType } = useCanvasStore()
   const [previewContent, setPreviewContent] = useState('')
-  
+
   useEffect(() => {
     if (activeType === 'web') {
       // Convert markdown to HTML or display HTML directly
@@ -1010,7 +1010,7 @@ export const WebPreview = () => {
       setPreviewContent(html)
     }
   }, [content, activeType])
-  
+
   return (
     <div className="h-full bg-white">
       <iframe
@@ -1026,18 +1026,18 @@ export const WebPreview = () => {
 // components/canvas/editors/SandboxEditor.tsx (E2B Integration Ready)
 export const SandboxEditor = () => {
   const { content, setContent, executeCode, executionState } = useCanvasStore()
-  
+
   return (
     <div className="h-full flex flex-col">
       <div className="flex-1 border-b">
         <MonacoCodeEditor />
       </div>
-      
+
       <div className="h-1/3 bg-black text-green-400 font-mono text-sm">
         <div className="p-2 border-b bg-gray-900 flex items-center justify-between">
           <span>Console Output</span>
-          <Button 
-            size="sm" 
+          <Button
+            size="sm"
             variant="outline"
             onClick={executeCode}
             disabled={executionState.isExecuting}
@@ -1050,7 +1050,7 @@ export const SandboxEditor = () => {
             Run
           </Button>
         </div>
-        
+
         <ScrollArea className="h-full p-2">
           {executionState.result ? (
             <pre className="whitespace-pre-wrap">
@@ -1081,10 +1081,10 @@ export const FileUploader = () => {
   const [files, setFiles] = useState<File[]>([])
   const { open: openCanvas } = useCanvasStore()
   const fileInputRef = useRef<HTMLInputElement>(null)
-  
+
   const handleFileSelect = async (e: ChangeEvent<HTMLInputElement>) => {
     const selectedFiles = Array.from(e.target.files || [])
-    
+
     // Validate files
     const validFiles = selectedFiles.filter(file => {
       if (file.size > 10 * 1024 * 1024) {
@@ -1093,7 +1093,7 @@ export const FileUploader = () => {
       }
       return true
     })
-    
+
     // Check for .md files
     const mdFile = validFiles.find(f => f.name.endsWith('.md'))
     if (mdFile) {
@@ -1101,18 +1101,18 @@ export const FileUploader = () => {
       openCanvas('markdown', content)
       toast.success('Markdown file opened in Canvas')
     }
-    
+
     setFiles(prev => [...prev, ...validFiles].slice(0, 3))
   }
-  
+
   const handleDrop = (e: DragEvent) => {
     e.preventDefault()
     const droppedFiles = Array.from(e.dataTransfer.files)
     handleFileSelect({ target: { files: droppedFiles } } as any)
   }
-  
+
   return (
-    <div 
+    <div
       onDrop={handleDrop}
       onDragOver={(e) => e.preventDefault()}
       className="relative"
@@ -1125,7 +1125,7 @@ export const FileUploader = () => {
         onChange={handleFileSelect}
         className="hidden"
       />
-      
+
       <Button
         variant="ghost"
         size="icon"
@@ -1133,7 +1133,7 @@ export const FileUploader = () => {
       >
         <Paperclip className="h-4 w-4" />
       </Button>
-      
+
       {files.length > 0 && (
         <FilePreview files={files} onRemove={removeFile} />
       )}
@@ -1152,9 +1152,9 @@ export const FileUploader = () => {
 // components/agent/AgentTaskDeck.tsx
 export const AgentTaskDeck = () => {
   const { tasks, isVisible } = useAgentDeckStore()
-  
+
   if (!isVisible) return null
-  
+
   return (
     <div className="fixed top-20 right-4 z-50">
       <AnimatePresence>
@@ -1162,13 +1162,13 @@ export const AgentTaskDeck = () => {
           <motion.div
             key={task.id}
             initial={{ x: 100, opacity: 0 }}
-            animate={{ 
-              x: 0, 
+            animate={{
+              x: 0,
               opacity: 1,
               y: task.status === 'complete' ? 100 : index * 8
             }}
             exit={{ x: 100, opacity: 0 }}
-            transition={{ 
+            transition={{
               type: "spring",
               stiffness: 300,
               damping: 25
@@ -1188,7 +1188,7 @@ export const AgentTaskDeck = () => {
                 </div>
                 <TaskStatusIndicator status={task.status} />
               </div>
-              
+
               {task.status === 'running' && (
                 <Progress value={task.progress} className="mt-2 h-1" />
               )}
@@ -1207,22 +1207,22 @@ export const AgentTaskDeck = () => {
 // components/agent/InlineTaskList.tsx
 export const InlineTaskList = ({ tasks }: { tasks: AgentTask[] }) => {
   const [isExpanded, setIsExpanded] = useState(true)
-  
+
   return (
     <div className="bg-muted/50 rounded-lg p-3 mb-4">
       <button
         onClick={() => setIsExpanded(!isExpanded)}
         className="flex items-center gap-2 text-sm font-medium w-full"
       >
-        <ChevronDown 
+        <ChevronDown
           className={cn(
             "h-4 w-4 transition-transform",
             !isExpanded && "-rotate-90"
-          )} 
+          )}
         />
         Agent Tasks ({tasks.filter(t => t.status === 'complete').length}/{tasks.length})
       </button>
-      
+
       <AnimatePresence>
         {isExpanded && (
           <motion.div
@@ -1262,7 +1262,7 @@ export const InlineTaskList = ({ tasks }: { tasks: AgentTask[] }) => {
 interface SessionStore {
   currentSessionId: string | null
   sessions: Session[]
-  
+
   createSession: (origin: 'homepage' | 'tool', initialPrompt?: string) => Session
   loadSession: (sessionId: string) => void
   updateSessionTitle: (sessionId: string, title: string) => void
@@ -1275,7 +1275,7 @@ export const useSessionStore = create<SessionStore>()(
     (set, get) => ({
       currentSessionId: null,
       sessions: [],
-      
+
       createSession: (origin, initialPrompt) => {
         const session: Session = {
           id: generateSessionId(),
@@ -1286,15 +1286,15 @@ export const useSessionStore = create<SessionStore>()(
           canvasState: null,
           origin
         }
-        
+
         set(state => ({
           sessions: [...state.sessions, session],
           currentSessionId: session.id
         }))
-        
+
         return session
       },
-      
+
       getHomepageSessions: () => {
         return get().sessions.filter(s => s.origin === 'homepage')
       }
@@ -1316,18 +1316,18 @@ export const useSessionStore = create<SessionStore>()(
 export const SessionSidebar = () => {
   const { sessions, currentSessionId, loadSession } = useSessionStore()
   const homepageSessions = sessions.filter(s => s.origin === 'homepage')
-  
+
   return (
     <ScrollArea className="h-full w-64 border-r bg-background">
       <div className="p-4">
-        <Button 
-          className="w-full mb-4" 
+        <Button
+          className="w-full mb-4"
           onClick={createNewSession}
         >
           <Plus className="h-4 w-4 mr-2" />
           New Chat
         </Button>
-        
+
         <div className="space-y-2">
           {homepageSessions.map(session => (
             <Card
@@ -1369,22 +1369,22 @@ export const SessionSidebar = () => {
 export interface VanaStore {
   // Auth slice
   auth: AuthState & AuthActions
-  
-  // Session slice  
+
+  // Session slice
   session: SessionState & SessionActions
-  
+
   // Chat slice
   chat: ChatState & ChatActions
-  
+
   // Canvas slice
   canvas: CanvasState & CanvasActions
-  
+
   // Agent deck slice
   agentDeck: AgentDeckState & AgentDeckActions
-  
+
   // Upload slice
   upload: UploadState & UploadActions
-  
+
   // UI slice
   ui: UIState & UIActions
 }
@@ -1426,7 +1426,7 @@ export const setupStoreSubscriptions = () => {
       }
     }
   )
-  
+
   // SSE connection on session change
   useVanaStore.subscribe(
     (state) => state.session.currentSessionId,
@@ -1452,11 +1452,11 @@ export const setupStoreSubscriptions = () => {
 export class VanaAPIClient {
   private baseURL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
   private token: string | null = null
-  
+
   setToken(token: string) {
     this.token = token
   }
-  
+
   private async request(path: string, options: RequestInit = {}) {
     const response = await fetch(`${this.baseURL}${path}`, {
       ...options,
@@ -1466,14 +1466,14 @@ export class VanaAPIClient {
         'Content-Type': 'application/json'
       }
     })
-    
+
     if (!response.ok) {
       throw new ApiError(response.status, await response.text())
     }
-    
+
     return response.json()
   }
-  
+
   // Authentication
   async googleLogin(idToken: string) {
     return this.request('/auth/google', {
@@ -1481,27 +1481,27 @@ export class VanaAPIClient {
       body: JSON.stringify({ id_token: idToken })
     })
   }
-  
+
   async refreshToken(refreshToken: string) {
     return this.request('/auth/refresh', {
       method: 'POST',
       body: JSON.stringify({ refresh_token: refreshToken })
     })
   }
-  
+
   // Sessions
   async createSession(prompt: string, files?: File[]) {
     const formData = new FormData()
     formData.append('prompt', prompt)
     files?.forEach(file => formData.append('files', file))
-    
+
     return this.request('/sessions', {
       method: 'POST',
       body: formData,
       headers: {} // Let browser set Content-Type for FormData
     })
   }
-  
+
   // Health check
   async health() {
     return this.request('/health')
@@ -1523,12 +1523,12 @@ export interface SSEEvents {
     authenticated: boolean
     userId?: string
   }
-  
+
   // Keep-alive
   heartbeat: {
     timestamp: string
   }
-  
+
   // Agent events
   agent_start: {
     agentId: string
@@ -1537,14 +1537,14 @@ export interface SSEEvents {
     status: 'active'
     parentAgent?: string
   }
-  
+
   agent_complete: {
     agentId: string
     status: 'completed'
     executionTime: number
     metrics?: AgentMetrics
   }
-  
+
   // Research sources (Brave Search)
   research_sources: {
     sources: Array<{
@@ -1558,7 +1558,7 @@ export interface SSEEvents {
       }>
     }>
   }
-  
+
   // Future Canvas events (when backend support added)
   canvas_open?: {
     canvasType: 'markdown' | 'code' | 'web' | 'sandbox'
@@ -1596,13 +1596,13 @@ interface CodeBlockProps {
 
 export const CodeBlock = ({ language, value, onOpenInCanvas }: CodeBlockProps) => {
   const [copied, setCopied] = useState(false)
-  
+
   const handleCopy = () => {
     navigator.clipboard.writeText(value)
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
   }
-  
+
   return (
     <div className="relative group">
       <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -1616,7 +1616,7 @@ export const CodeBlock = ({ language, value, onOpenInCanvas }: CodeBlockProps) =
             <ExternalLink className="h-4 w-4" />
           </Button>
         )}
-        
+
         <Button
           variant="ghost"
           size="icon"
@@ -1630,7 +1630,7 @@ export const CodeBlock = ({ language, value, onOpenInCanvas }: CodeBlockProps) =
           )}
         </Button>
       </div>
-      
+
       <SyntaxHighlighter
         language={language}
         style={vscDarkPlus}
@@ -1664,47 +1664,47 @@ export default {
         // Dark theme primary (Gemini/Claude inspired)
         background: '#131314',
         foreground: '#E3E3E3',
-        
+
         card: {
           DEFAULT: '#1E1F20',
           foreground: '#E3E3E3'
         },
-        
+
         primary: {
           DEFAULT: '#3B82F6',
           foreground: '#FFFFFF'
         },
-        
+
         muted: {
           DEFAULT: '#2A2B2C',
           foreground: '#9CA3AF'
         },
-        
+
         accent: {
           DEFAULT: '#8B5CF6',
           foreground: '#FFFFFF'
         },
-        
+
         // Status colors
         success: '#10B981',
         warning: '#F59E0B',
         error: '#EF4444',
         info: '#3B82F6'
       },
-      
+
       backgroundImage: {
         'gradient-radial': 'radial-gradient(ellipse at top, rgba(59, 130, 246, 0.1) 0%, transparent 50%)',
         'gradient-accent': 'linear-gradient(to right, #3B82F6, #8B5CF6)',
         'gradient-shimmer': 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.1) 50%, transparent 100%)'
       },
-      
+
       animation: {
         'slide-in': 'slideIn 0.3s ease-out',
         'fade-in': 'fadeIn 0.2s ease-out',
         'card-shuffle': 'shuffle 0.5s ease-in-out',
         'shimmer': 'shimmer 2s infinite'
       },
-      
+
       keyframes: {
         slideIn: {
           '0%': { transform: 'translateX(100%)' },
@@ -1739,7 +1739,7 @@ export const typography = {
     sans: ['Inter', 'system-ui', 'sans-serif'],
     mono: ['JetBrains Mono', 'monospace']
   },
-  
+
   // Font sizes
   fontSize: {
     'xs': ['0.75rem', { lineHeight: '1rem' }],
@@ -1786,41 +1786,41 @@ export interface ErrorState {
 // lib/errors/recovery.ts
 export class ErrorRecovery {
   private retryAttempts = new Map<string, number>()
-  
+
   async handleError(error: ErrorState): Promise<void> {
     switch (error.type) {
       case ErrorType.NETWORK:
         await this.handleNetworkError(error)
         break
-        
+
       case ErrorType.AUTH:
         await this.handleAuthError(error)
         break
-        
+
       case ErrorType.RATE_LIMIT:
         await this.handleRateLimitError(error)
         break
-        
+
       case ErrorType.SSE_CONNECTION:
         await this.handleSSEError(error)
         break
-        
+
       default:
         this.showErrorUI(error)
     }
   }
-  
+
   private async handleNetworkError(error: ErrorState) {
     const key = `network_${Date.now()}`
     const attempts = this.retryAttempts.get(key) || 0
-    
+
     if (attempts < 3 && error.retryable) {
       this.retryAttempts.set(key, attempts + 1)
-      
+
       // Exponential backoff
       const delay = Math.min(1000 * Math.pow(2, attempts), 10000)
       await new Promise(resolve => setTimeout(resolve, delay))
-      
+
       if (error.action) {
         await error.action()
       }
@@ -1828,7 +1828,7 @@ export class ErrorRecovery {
       this.showErrorUI(error)
     }
   }
-  
+
   private async handleAuthError(error: ErrorState) {
     // Try token refresh
     try {
@@ -1841,7 +1841,7 @@ export class ErrorRecovery {
       router.push('/auth')
     }
   }
-  
+
   private showErrorUI(error: ErrorState) {
     toast.error(error.message, {
       action: error.retryable ? {
@@ -1883,17 +1883,17 @@ export class ErrorRecovery {
 </Button>
 
 // Live region for streaming
-<div 
-  role="log" 
-  aria-live="polite" 
+<div
+  role="log"
+  aria-live="polite"
   aria-label="AI response"
 >
   {streamingMessage}
 </div>
 
 // Skip navigation
-<a 
-  href="#main-content" 
+<a
+  href="#main-content"
   className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4"
 >
   Skip to main content
@@ -1971,9 +1971,9 @@ import DOMPurify from 'isomorphic-dompurify'
 export const sanitizeMarkdown = (content: string): string => {
   return DOMPurify.sanitize(content, {
     ALLOWED_TAGS: [
-      'p', 'br', 'strong', 'em', 'u', 
+      'p', 'br', 'strong', 'em', 'u',
       'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
-      'blockquote', 'code', 'pre', 
+      'blockquote', 'code', 'pre',
       'ul', 'ol', 'li', 'a'
     ],
     ALLOWED_ATTR: ['href', 'target', 'rel'],
@@ -1989,11 +1989,11 @@ export const sanitizeMarkdown = (content: string): string => {
 const tokenStorage = {
   // Access token in memory only
   accessToken: null as string | null,
-  
+
   // Refresh token in httpOnly cookie
   setTokens(access: string, refresh: string) {
     this.accessToken = access
-    
+
     // Set httpOnly cookie via API
     fetch('/api/auth/set-cookie', {
       method: 'POST',
@@ -2043,7 +2043,7 @@ make dev-frontend &
 sleep 10
 curl -f http://localhost:5173 || exit 1
 
-# Backend Reality Check  
+# Backend Reality Check
 make dev-backend &
 sleep 10
 curl -f http://localhost:8000/health || exit 1
@@ -2056,7 +2056,7 @@ pytest tests/e2e/test_sse.py --maxfail=1
 ```bash
 # Core UI Validation
 npx playwright test tests/ui/homepage.spec.ts
-npx playwright test tests/ui/chat-interface.spec.ts  
+npx playwright test tests/ui/chat-interface.spec.ts
 npx playwright test tests/ui/canvas-system.spec.ts
 npx playwright test tests/ui/file-upload.spec.ts
 ```
@@ -2072,7 +2072,7 @@ npx playwright test tests/ui/file-upload.spec.ts
 
 #### Failure Conditions (Immediate Task Failure)
 - ❌ Custom UI frameworks detected
-- ❌ Backend modifications attempted  
+- ❌ Backend modifications attempted
 - ❌ Missing accessibility attributes
 - ❌ SSE connection failures
 - ❌ Canvas without frontend-first approach
@@ -2084,21 +2084,21 @@ npx playwright test tests/ui/file-upload.spec.ts
 describe('CanvasStore', () => {
   it('should convert markdown to code correctly', () => {
     const { result } = renderHook(() => useCanvasStore())
-    
+
     const markdown = '```javascript\nconsole.log("test")\n```'
     const converted = result.current.convertContent('markdown', 'code', markdown)
-    
+
     expect(converted).toBe('console.log("test")')
   })
-  
+
   it('should create version with proper metadata', () => {
     const { result } = renderHook(() => useCanvasStore())
-    
+
     act(() => {
       result.current.setContent('Test content')
       result.current.createVersion('Test version')
     })
-    
+
     const version = result.current.versions[0]
     expect(version.content).toBe('Test content')
     expect(version.description).toBe('Test version')
@@ -2113,15 +2113,15 @@ describe('CanvasStore', () => {
 // tests/e2e/canvas-flow.spec.ts
 test('should open markdown file in Canvas', async ({ page }) => {
   await page.goto('/')
-  
+
   // Upload markdown file
   const fileInput = await page.locator('input[type="file"]')
   await fileInput.setInputFiles('fixtures/test.md')
-  
+
   // Verify Canvas opens
   await expect(page.locator('[data-testid="canvas-panel"]')).toBeVisible()
   await expect(page.locator('[role="tab"][aria-selected="true"]')).toHaveText('Markdown')
-  
+
   // Verify content loaded
   const content = await page.locator('textarea').inputValue()
   expect(content).toContain('# Test Document')
@@ -2129,14 +2129,14 @@ test('should open markdown file in Canvas', async ({ page }) => {
 
 test('should handle SSE streaming', async ({ page }) => {
   await page.goto('/chat')
-  
+
   // Send message
   await page.fill('[placeholder*="What can I help"]', 'Hello')
   await page.press('[placeholder*="What can I help"]', 'Enter')
-  
+
   // Wait for streaming to start
   await expect(page.locator('[data-testid="streaming-indicator"]')).toBeVisible()
-  
+
   // Verify message appears
   await expect(page.locator('[data-testid="agent-message"]')).toBeVisible()
 })
@@ -2151,7 +2151,7 @@ test('should meet Core Web Vitals', async () => {
     port: 9222,
     preset: 'desktop'
   })
-  
+
   expect(result.categories.performance.score).toBeGreaterThan(0.9)
   expect(result.audits['first-contentful-paint'].numericValue).toBeLessThan(1500)
   expect(result.audits['largest-contentful-paint'].numericValue).toBeLessThan(2500)
@@ -2331,10 +2331,10 @@ const ModelIndicator = () => {
 
 ## Document Control
 
-**Version:** 2.0 FINAL  
-**Last Updated:** 2025-08-11  
-**Status:** Production-Ready  
-**Validation:** Multi-specialist review completed  
+**Version:** 2.0 FINAL
+**Last Updated:** 2025-08-11
+**Status:** Production-Ready
+**Validation:** Multi-specialist review completed
 **Sign-off:** Backend, Frontend, Security, Testing, UI/UX specialists
 
 ---

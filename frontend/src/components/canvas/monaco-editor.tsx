@@ -160,11 +160,16 @@ export function MonacoEditor({
       }
     });
 
-    // Set up keyboard shortcuts
+    // Set up keyboard shortcuts using SSR-safe approach
     editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => {
-      // Trigger save event
-      const event = new CustomEvent('monaco-save', { detail: { content: editor.getValue() } });
-      window.dispatchEvent(event);
+      // Trigger save event using SSR-safe window access
+      const { safeWindow } = require('@/lib/ssr-utils');
+      const win = safeWindow();
+      
+      if (win) {
+        const event = new CustomEvent('monaco-save', { detail: { content: editor.getValue() } });
+        win.dispatchEvent(event);
+      }
     });
 
     // Configure content change handling
@@ -196,10 +201,21 @@ export function MonacoEditor({
     });
   }, [onChange, onCursorChange, onSelectionChange]);
 
-  const copyToClipboard = useCallback(() => {
+  const copyToClipboard = useCallback(async () => {
     if (editorRef.current) {
       const content = editorRef.current.getValue();
-      navigator.clipboard.writeText(content);
+      
+      // Use SSR-safe clipboard access
+      const { safeClipboard } = require('@/lib/ssr-utils');
+      const clipboard = safeClipboard();
+      
+      if (clipboard) {
+        try {
+          await clipboard.writeText(content);
+        } catch (error) {
+          console.warn('Failed to copy to clipboard:', error);
+        }
+      }
     }
   }, []);
 
@@ -207,14 +223,21 @@ export function MonacoEditor({
     if (editorRef.current) {
       const content = editorRef.current.getValue();
       const blob = new Blob([content], { type: 'text/plain' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `code.${getFileExtension(language)}`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      
+      // Use SSR-safe URL and document access
+      const { safeCreateObjectURL, safeRevokeObjectURL, safeDocument } = require('@/lib/ssr-utils');
+      const url = safeCreateObjectURL(blob);
+      const doc = safeDocument();
+      
+      if (url && doc) {
+        const a = doc.createElement('a');
+        a.href = url;
+        a.download = `code.${getFileExtension(language)}`;
+        doc.body.appendChild(a);
+        a.click();
+        doc.body.removeChild(a);
+        safeRevokeObjectURL(url);
+      }
     }
   }, [language]);
 

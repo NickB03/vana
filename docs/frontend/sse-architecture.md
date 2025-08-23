@@ -91,7 +91,7 @@ graph TD
     C --> D[Register with SSE client]
     D --> E[Client stores unsubscribe function]
     E --> F[Return cleanup function]
-    
+
     F --> G[Component unmounts]
     G --> H[Cleanup function called]
     H --> I[Remove from local map]
@@ -108,14 +108,14 @@ graph LR
         B --> C[Remove from Registry]
         C --> D[Unsubscribe from Client]
     end
-    
+
     subgraph "Backend"
         E[Event TTL Expiry] --> F[Background Cleanup]
         F --> G[Remove Expired Events]
         G --> H[Clean Dead Queues]
         H --> I[Expire Sessions]
     end
-    
+
     D -.->|Connection cleanup| E
 ```
 
@@ -146,16 +146,16 @@ export interface UseSSEReturn {
   isConnected: boolean;
   isConnecting: boolean;
   connectionError: string | null;
-  
+
   // Connection control
   connect: () => Promise<void>;
   disconnect: () => void;
   reconnect: () => Promise<void>;
-  
+
   // Event handling
   addEventListener: (eventType: string, handler: (event: SSEEvent) => void) => () => void;
   removeEventListener: (eventType: string, handler: (event: SSEEvent) => void) => void;
-  
+
   // Session management
   updateSession: (sessionId: string) => void;
 }
@@ -484,16 +484,16 @@ def sse_health_check():
     """Health check for SSE system."""
     broadcaster = get_sse_broadcaster()
     stats = broadcaster.get_stats()
-    
+
     # Check memory usage
     if stats['memoryUsageMB'] > 1000:  # 1GB threshold
         return {'status': 'unhealthy', 'reason': 'high_memory_usage'}
-    
+
     # Check cleanup performance
     last_cleanup = stats['metrics']['lastCleanupTime']
     if time.time() - last_cleanup > 300:  # 5 minutes
         return {'status': 'unhealthy', 'reason': 'cleanup_stalled'}
-    
+
     return {'status': 'healthy'}
 ```
 
@@ -513,7 +513,7 @@ def sse_health_check():
 useEffect(() => {
   const eventSource = new EventSource(`/sse/${sessionId}`);
   eventSource.onmessage = handleMessage;
-  
+
   return () => {
     eventSource.close(); // Potential memory leak
   };
@@ -538,7 +538,7 @@ async def old_sse_endpoint(session_id: str):
         while True:
             event = await get_event()  # Memory leak potential
             yield f"data: {json.dumps(event)}\n\n"
-    
+
     return StreamingResponse(event_stream(), media_type="text/event-stream")
 
 # NEW: Using enhanced broadcaster
@@ -548,7 +548,7 @@ async def new_sse_endpoint(session_id: str):
             while True:
                 event = await queue.get(timeout=30.0)
                 yield event  # Automatic cleanup
-    
+
     return StreamingResponse(event_stream(), media_type="text/event-stream")
 ```
 
