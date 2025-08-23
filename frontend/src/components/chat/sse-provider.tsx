@@ -29,8 +29,8 @@ import { SSEEvent, SSEConnectionState } from '@/lib/sse-client';
 import { useSessionStore } from '@/store/session-store';
 
 export interface SSEContextValue {
-  // Connection state
-  connectionState: SSEConnectionState;
+  // Connection state - allow both string and object types for backward compatibility
+  connectionState: SSEConnectionState | string;
   isConnected: boolean;
   isConnecting: boolean;
   connectionError: string | null;
@@ -161,7 +161,7 @@ export function SSEProvider({
       setAgentNetworkState(prevState => ({
         ...(prevState as Partial<AgentNetworkUpdate>),
         ...(event.data as Partial<AgentNetworkUpdate>),
-        lastUpdateTime: event.timestamp,
+        lastUpdateTime: event.timestamp || Date.now(),
       } as AgentNetworkUpdate));
       setLastAgentUpdate(event);
     }
@@ -344,9 +344,24 @@ export function useSSEStatus(): {
   const { connectionState } = useSSEContext();
 
   return React.useMemo(() => {
+    // Handle case where connectionState is a string (for backward compatibility)
+    if (typeof connectionState === 'string') {
+      switch (connectionState) {
+        case 'connected':
+          return { status: 'connected' as const, message: 'Connected', canRetry: false };
+        case 'connecting':
+          return { status: 'connecting' as const, message: 'Connecting...', canRetry: false };
+        case 'error':
+          return { status: 'error' as const, message: 'Connection error', canRetry: true };
+        default:
+          return { status: 'disconnected' as const, message: 'Disconnected', canRetry: true };
+      }
+    }
+
+    // Handle object connectionState
     if (connectionState.error) {
       return {
-        status: 'error',
+        status: 'error' as const,
         message: `Connection error: ${connectionState.error}`,
         canRetry: true,
       };
@@ -354,7 +369,7 @@ export function useSSEStatus(): {
 
     if (connectionState.connecting) {
       return {
-        status: 'connecting',
+        status: 'connecting' as const,
         message: connectionState.retryCount > 0 
           ? `Reconnecting... (attempt ${connectionState.retryCount})`
           : 'Connecting...',
@@ -367,14 +382,14 @@ export function useSSEStatus(): {
         ? ' (using polling)' 
         : '';
       return {
-        status: 'connected',
+        status: 'connected' as const,
         message: `Connected${typeMsg}`,
         canRetry: false,
       };
     }
 
     return {
-      status: 'disconnected',
+      status: 'disconnected' as const,
       message: 'Disconnected',
       canRetry: true,
     };
