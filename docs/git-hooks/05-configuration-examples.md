@@ -198,7 +198,7 @@ For multiple environments:
       }]
     }],
     "PostToolUse": [{
-      "matcher": "Write|Edit|MultiEdit", 
+      "matcher": "Write|Edit|MultiEdit",
       "hooks": [{
         "type": "command",
         "command": "npx claude-flow hooks post-edit --file '$file_path' --memory-key 'team/$(date +%s)/$USER/$file_path' --notify-team"
@@ -265,7 +265,7 @@ For multiple environments:
     "PostToolUse": [{
       "matcher": "Write|Edit|MultiEdit",
       "hooks": [{
-        "type": "command", 
+        "type": "command",
         "command": "npx claude-flow hooks post-edit --file '$file_path' --memory-key 'swarm/$(date +%s)/$file_path' --coordinate-agents"
       }]
     }],
@@ -688,7 +688,7 @@ Create different configs for different environments:
 # Development
 .claude_workspace/config/hooks.dev.json
 
-# Staging  
+# Staging
 .claude_workspace/config/hooks.staging.json
 
 # Production

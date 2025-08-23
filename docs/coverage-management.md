@@ -167,7 +167,7 @@ Add to your CI/CD pipeline:
   run: |
     make test
     make coverage-auto
-    
+
 - name: Upload Coverage Report
   uses: actions/upload-artifact@v2
   with:

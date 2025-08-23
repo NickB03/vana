@@ -107,21 +107,31 @@ export function ExportSystem({ content, mode, className }: ExportSystemProps) {
     const fileName = `${content.title || 'canvas'}.${fileExtension}`;
 
     const blob = new Blob([content.content], { type: mimeType });
-    const url = URL.createObjectURL(blob);
     
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = fileName;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    // Use SSR-safe URL and document access
+    const { safeCreateObjectURL, safeRevokeObjectURL, safeDocument } = require('@/lib/ssr-utils');
+    const url = safeCreateObjectURL(blob);
+    const doc = safeDocument();
     
-    URL.revokeObjectURL(url);
+    if (url && doc) {
+      const link = doc.createElement('a');
+      link.href = url;
+      link.download = fileName;
+      doc.body.appendChild(link);
+      link.click();
+      doc.body.removeChild(link);
+      safeRevokeObjectURL(url);
+    }
   }, [content, mode]);
 
   const exportToPDF = useCallback(async () => {
-    // Create a print-friendly version
-    const printWindow = window.open('', '_blank');
+    // Create a print-friendly version using SSR-safe window access
+    const { safeWindow } = require('@/lib/ssr-utils');
+    const win = safeWindow();
+    
+    if (!win) return;
+    
+    const printWindow = win.open('', '_blank');
     if (!printWindow) throw new Error('Could not open print window');
 
     const printContent = generatePrintContent();
@@ -184,22 +194,32 @@ export function ExportSystem({ content, mode, className }: ExportSystemProps) {
   }, [content, generatePrintContent]);
 
   const shareContent = useCallback(async () => {
-    if (navigator.share) {
+    // Use SSR-safe navigator and window access
+    const { safeNavigator, safeWindow, safeClipboard } = require('@/lib/ssr-utils');
+    const nav = safeNavigator();
+    const win = safeWindow();
+    const clipboard = safeClipboard();
+    
+    if (nav?.share) {
       try {
-        await navigator.share({
+        await nav.share({
           title: content.title,
           text: content.content.substring(0, 200) + (content.content.length > 200 ? '...' : ''),
-          url: window.location.href
+          url: win?.location?.href || ''
         });
       } catch {
         // Fallback to clipboard
         const shareText = `${content.title}\n\n${content.content}`;
-        await navigator.clipboard.writeText(shareText);
+        if (clipboard) {
+          await clipboard.writeText(shareText);
+        }
       }
     } else {
       // Fallback: copy to clipboard
       const shareText = `${content.title}\n\n${content.content}`;
-      await navigator.clipboard.writeText(shareText);
+      if (clipboard) {
+        await clipboard.writeText(shareText);
+      }
     }
   }, [content]);
 
@@ -210,8 +230,16 @@ export function ExportSystem({ content, mode, className }: ExportSystemProps) {
     try {
       switch (format) {
         case 'copy':
-          await navigator.clipboard.writeText(content.content);
-          setExportSuccess('Copied to clipboard!');
+          // Use SSR-safe clipboard access
+          const { safeClipboard } = require('@/lib/ssr-utils');
+          const clipboard = safeClipboard();
+          
+          if (clipboard) {
+            await clipboard.writeText(content.content);
+            setExportSuccess('Copied to clipboard!');
+          } else {
+            setExportSuccess('Clipboard not available');
+          }
           break;
 
         case 'download':

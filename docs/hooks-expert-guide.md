@@ -78,7 +78,7 @@ graph TD
 **For Development/Testing:**
 
 - Mock PRD validators
-- Simulated Claude Flow responses  
+- Simulated Claude Flow responses
 - Test harnesses without real validation
 - Debug configurations
 
@@ -127,11 +127,11 @@ try {
 function validatePath(filePath) {
   const resolvedPath = path.resolve(filePath)
   const projectRoot = path.resolve(process.cwd())
-  
+
   if (!resolvedPath.startsWith(projectRoot)) {
     throw new Error('Path traversal attempt detected')
   }
-  
+
   return resolvedPath
 }
 ```
@@ -142,11 +142,11 @@ function validatePath(filePath) {
 function sanitizeCommand(command, args) {
   // Whitelist allowed commands
   const allowedCommands = ['npx claude-flow']
-  
+
   if (!allowedCommands.some(cmd => command.startsWith(cmd))) {
     throw new Error('Unauthorized command execution attempt')
   }
-  
+
   // Sanitize arguments
   return {
     command,

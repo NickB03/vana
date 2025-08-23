@@ -7,7 +7,7 @@ This document provides a comprehensive reference for the ADK (Agent Development 
 ## Base Configuration
 
 - **Base URL**: `http://localhost:8000` (development)
-- **Production URLs**: 
+- **Production URLs**:
   - Development: `https://vana-dev-960076421399.us-central1.run.app`
   - Production: `https://vana-prod-960076421399.us-central1.run.app`
 
@@ -51,11 +51,11 @@ const createSession = async () => {
       'Content-Type': 'application/json'
     }
   });
-  
+
   if (!response.ok) {
     throw new Error(`Failed to create session: ${response.status}`);
   }
-  
+
   return await response.json();
 };
 ```
@@ -157,14 +157,14 @@ interface SSEEvent {
     parts: Array<{
       // Text content
       text?: string;
-      
+
       // Function call
       functionCall?: {
         name: string;
         args: Record<string, any>;
         id: string;
       };
-      
+
       // Function response
       functionResponse?: {
         name: string;
@@ -174,10 +174,10 @@ interface SSEEvent {
     }>;
     role?: string;
   };
-  
+
   // Agent identifier
   author: string;
-  
+
   // State changes and metadata
   actions?: {
     stateDelta?: {
@@ -196,7 +196,7 @@ interface SSEEvent {
       }>;
     };
   };
-  
+
   // Token usage metrics
   usageMetadata?: {
     candidatesTokenCount: number;
@@ -214,16 +214,16 @@ enum AgentNames {
   ROOT_AGENT = "root_agent",
   INTERACTIVE_PLANNER = "interactive_planner_agent",
   PLAN_GENERATOR = "plan_generator",
-  
+
   // Research execution
   SECTION_PLANNER = "section_planner",
   SECTION_RESEARCHER = "section_researcher",
   RESEARCH_EVALUATOR = "research_evaluator",
   ENHANCED_SEARCH_EXECUTOR = "enhanced_search_executor",
-  
+
   // Report generation
   REPORT_COMPOSER = "report_composer_with_citations",
-  
+
   // Supporting agents
   ESCALATION_CHECKER = "EscalationChecker",
   RESEARCH_PIPELINE = "research_pipeline",
@@ -302,7 +302,7 @@ Generates the final report with citations.
 ```typescript
 const handleSSEEvents = (url: string, onEvent: (event: SSEEvent) => void) => {
   const eventSource = new EventSource(url);
-  
+
   eventSource.onmessage = (event) => {
     try {
       const data = JSON.parse(event.data);
@@ -311,12 +311,12 @@ const handleSSEEvents = (url: string, onEvent: (event: SSEEvent) => void) => {
       console.error('Failed to parse SSE event:', error);
     }
   };
-  
+
   eventSource.onerror = (error) => {
     console.error('SSE connection error:', error);
     eventSource.close();
   };
-  
+
   return eventSource;
 };
 ```
@@ -331,12 +331,12 @@ const retryWithBackoff = async (
 ): Promise<any> => {
   const startTime = Date.now();
   let lastError: Error;
-  
+
   for (let attempt = 0; attempt < maxRetries; attempt++) {
     if (Date.now() - startTime > maxDuration) {
       throw new Error(`Retry timeout after ${maxDuration}ms`);
     }
-    
+
     try {
       return await fn();
     } catch (error) {
@@ -345,7 +345,7 @@ const retryWithBackoff = async (
       await new Promise(resolve => setTimeout(resolve, delay));
     }
   }
-  
+
   throw lastError!;
 };
 ```
@@ -357,7 +357,7 @@ class ADKSessionManager {
   private sessionId?: string;
   private userId?: string;
   private appName?: string;
-  
+
   async ensureSession(): Promise<void> {
     if (!this.sessionId) {
       const session = await createSession();
@@ -366,7 +366,7 @@ class ADKSessionManager {
       this.appName = session.appName;
     }
   }
-  
+
   getSessionData() {
     return {
       sessionId: this.sessionId,
@@ -410,17 +410,17 @@ const handleADKError = async (error: ADKError) => {
       // Retry session creation
       await retryWithBackoff(createSession);
       break;
-      
+
     case ADKErrorTypes.BACKEND_UNAVAILABLE:
       // Show backend unavailable UI
       showBackendUnavailable();
       break;
-      
+
     case ADKErrorTypes.SSE_PARSE_ERROR:
       // Log and continue processing
       console.error('SSE parse error:', error.details);
       break;
-      
+
     case ADKErrorTypes.API_REQUEST_FAILED:
       // Show error message to user
       showErrorMessage(error.message);
@@ -437,16 +437,16 @@ const handleADKError = async (error: ADKError) => {
 class ADKApiClient {
   private baseUrl: string;
   private sessionManager: ADKSessionManager;
-  
+
   constructor(baseUrl: string = '/api') {
     this.baseUrl = baseUrl;
     this.sessionManager = new ADKSessionManager();
   }
-  
+
   async sendMessage(message: string): Promise<EventSource> {
     await this.sessionManager.ensureSession();
     const { sessionId, userId, appName } = this.sessionManager.getSessionData();
-    
+
     const response = await fetch(`${this.baseUrl}/run_sse`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -461,7 +461,7 @@ class ADKApiClient {
         streaming: false
       })
     });
-    
+
     if (!response.ok) {
       throw new ADKError(
         ADKErrorTypes.API_REQUEST_FAILED,
@@ -469,7 +469,7 @@ class ADKApiClient {
         { status: response.status, statusText: response.statusText }
       );
     }
-    
+
     return new EventSource(response.url);
   }
 }
@@ -531,7 +531,7 @@ const testSSEHandler = () => {
     content: { parts: [{ text: 'Test message' }] },
     author: 'test_agent'
   });
-  
+
   handleSSEEvents('test-url', handler);
   // Trigger event
   expect(handler).toHaveBeenCalledWith(expect.objectContaining({
@@ -550,19 +550,19 @@ describe('ADK API Integration', () => {
     expect(session).toHaveProperty('userId');
     expect(session).toHaveProperty('appName');
   });
-  
+
   it('should handle SSE events', async () => {
     const client = new ADKApiClient();
     const eventSource = await client.sendMessage('Test query');
-    
+
     const events: SSEEvent[] = [];
     eventSource.onmessage = (e) => {
       events.push(JSON.parse(e.data));
     };
-    
+
     // Wait for events
     await new Promise(resolve => setTimeout(resolve, 5000));
-    
+
     expect(events.length).toBeGreaterThan(0);
     expect(events.some(e => e.author === 'interactive_planner_agent')).toBe(true);
   });

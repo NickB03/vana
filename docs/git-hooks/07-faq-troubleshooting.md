@@ -238,7 +238,7 @@ node tests/hooks/validation/real-prd-validator.js --debug --file your-file.tsx
 **A**: Swarm agents are specialized AI assistants that coordinate with your development:
 
 - **Coder**: Code implementation and optimization
-- **Reviewer**: Code quality and compliance checking  
+- **Reviewer**: Code quality and compliance checking
 - **Tester**: Test generation and validation
 - **Architect**: System design and structure guidance
 

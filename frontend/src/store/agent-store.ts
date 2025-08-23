@@ -291,7 +291,10 @@ export const useAgentStore = create<AgentState>()(
     }),
     {
       name: 'agent-store',
-      storage: createJSONStorage(() => localStorage),
+      storage: createJSONStorage(() => {
+        const { safeLocalStorage } = require('@/lib/ssr-utils');
+        return safeLocalStorage();
+      }),
       // Only persist essential data, not UI state
       partialize: (state) => ({
         availableAgents: state.availableAgents,

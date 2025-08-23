@@ -379,13 +379,13 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '18'
-      
+
       - name: Install dependencies
         run: npm install
-      
+
       - name: Install Git hooks
         run: ./scripts/install-git-hooks.sh
-      
+
       - name: Run hook validation
         run: node tests/hooks/integration/git-hook-manager.js validate-all
 ```

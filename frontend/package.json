@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbopack --port 5173",
+    "dev": "next dev --port 5173",
     "build": "next build",
     "start": "next start --port 5173",
     "lint": "next lint",
@@ -40,7 +40,7 @@
   },
   "devDependencies": {
     "@eslint/eslintrc": "3.1.0",
-    "@tailwindcss/postcss": "4.0.0",
+    "@tailwindcss/postcss": "^4.1.12",
     "@testing-library/jest-dom": "6.1.6",
     "@testing-library/react": "14.1.2",
     "@testing-library/user-event": "14.5.2",

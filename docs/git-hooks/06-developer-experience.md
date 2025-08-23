@@ -70,7 +70,7 @@ Enable validation with warnings only - no blocking.
     "PreToolUse": [{
       "matcher": "Write|Edit",
       "hooks": [{
-        "type": "command", 
+        "type": "command",
         "command": "npx claude-flow hooks pre-edit --file '$file_path' --warn-only --learn-mode"
       }]
     }],
@@ -182,7 +182,7 @@ graph TD
     E --> F[Commit]
     F --> G[CI/CD Failures]
     G --> H[Fix in Production]
-    
+
     style G fill:#ffcdd2
     style H fill:#ffcdd2
 ```
@@ -205,7 +205,7 @@ graph TD
     E --> F[Swarm Review]
     F --> G[Auto-testing]
     G --> H[Quality Commit]
-    
+
     style B fill:#c8e6c9
     style E fill:#c8e6c9
     style H fill:#c8e6c9
@@ -436,12 +436,12 @@ would you like me to:
 ```bash
 🔄 Cross-Project Pattern Detection
 =================================
-Pattern "React hook optimization" from Project A shows 
+Pattern "React hook optimization" from Project A shows
 87% improvement in performance metrics.
 
 Apply to current project?
 ✅ Transfer pattern
-✅ Update PRD rules  
+✅ Update PRD rules
 ✅ Train team on pattern
 ✅ Monitor adoption
 
@@ -517,7 +517,7 @@ Estimated impact: 15-20% performance improvement
 ===============================
 Week 1 (No Hooks):
 - Features completed: 12
-- Bugs introduced: 8  
+- Bugs introduced: 8
 - Review time: 4.2 hours/feature
 - Rework cycles: 2.1/feature
 
@@ -584,7 +584,7 @@ Predictions:
 
 Auto-actions available:
 [1] Prepare test file updates
-[2] Check component dependencies  
+[2] Check component dependencies
 [3] Generate changelog entry
 [4] Schedule related file reviews
 

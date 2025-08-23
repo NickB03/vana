@@ -185,7 +185,16 @@ export function MessageInput({
   const startRecording = async () => {
     try {
       setAudioError(null);
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      
+      // Use SSR-safe navigator access
+      const { safeNavigator } = require('@/lib/ssr-utils');
+      const nav = safeNavigator();
+      
+      if (!nav?.mediaDevices?.getUserMedia) {
+        throw new Error('Media recording not supported in this environment');
+      }
+      
+      const stream = await nav.mediaDevices.getUserMedia({ audio: true });
       
       const mediaRecorder = new MediaRecorder(stream);
       mediaRecorderRef.current = mediaRecorder;
@@ -204,7 +213,7 @@ export function MessageInput({
         console.log('Audio recording completed', audioBlob);
         
         // Clean up stream
-        stream.getTracks().forEach(track => track.stop());
+        stream.getTracks().forEach((track: MediaStreamTrack) => track.stop());
       };
       
       mediaRecorder.start();
@@ -255,22 +264,22 @@ export function MessageInput({
   };
   
   return (
-    <div className={cn("p-4", className)}>
+    <div className={cn("p-4", className)} role="region" aria-label="Message input area">
       {/* File attachments preview */}
       {attachedFiles.length > 0 && (
-        <div className="mb-3 flex flex-wrap gap-2">
+        <div className="mb-3 flex flex-wrap gap-2" role="group" aria-label="Attached files">
           {attachedFiles.map((attachedFile) => {
             const Icon = getFileIcon(attachedFile.file);
             return (
-              <Card key={attachedFile.id} className="p-2 flex items-center gap-2 max-w-xs">
+              <Card key={attachedFile.id} className="p-2 flex items-center gap-2 max-w-xs" role="group" aria-label={`Attached file: ${attachedFile.file.name}`}>
                 {attachedFile.preview ? (
                   <img 
                     src={attachedFile.preview} 
-                    alt={attachedFile.file.name}
+                    alt={`Preview of ${attachedFile.file.name}`}
                     className="w-8 h-8 rounded object-cover flex-shrink-0"
                   />
                 ) : (
-                  <Icon className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                  <Icon className="w-4 h-4 text-muted-foreground flex-shrink-0" aria-hidden="true" />
                 )}
                 
                 <div className="flex-1 min-w-0">
@@ -287,8 +296,10 @@ export function MessageInput({
                   size="sm"
                   className="w-6 h-6 p-0 flex-shrink-0"
                   onClick={() => removeFile(attachedFile.id)}
+                  aria-label={`Remove ${attachedFile.file.name} from attachments`}
+                  title={`Remove ${attachedFile.file.name}`}
                 >
-                  <X className="w-3 h-3" />
+                  <X className="w-3 h-3" aria-hidden="true" />
                 </Button>
               </Card>
             );
@@ -298,7 +309,11 @@ export function MessageInput({
       
       {/* Audio error */}
       {audioError && (
-        <div className="mb-3 p-2 bg-destructive/10 border border-destructive/20 rounded text-sm text-destructive">
+        <div 
+          className="mb-3 p-2 bg-destructive/10 border border-destructive/20 rounded text-sm text-destructive"
+          role="alert"
+          aria-live="polite"
+        >
           {audioError}
         </div>
       )}
@@ -314,6 +329,8 @@ export function MessageInput({
         onDragLeave={handleDragLeave}
         onDragOver={handleDragOver}
         onDrop={handleDrop}
+        role="group"
+        aria-label="Message composition area"
       >
         {/* File attachment button */}
         <Button
@@ -322,9 +339,10 @@ export function MessageInput({
           className="w-8 h-8 p-0 flex-shrink-0"
           onClick={() => fileInputRef.current?.click()}
           disabled={disabled || attachedFiles.length >= maxFiles}
+          aria-label={`Attach files (${attachedFiles.length}/${maxFiles} attached)`}
           title="Attach files"
         >
-          <Paperclip className="w-4 h-4" />
+          <Paperclip className="w-4 h-4" aria-hidden="true" />
         </Button>
         
         {/* Hidden file input */}
@@ -335,6 +353,7 @@ export function MessageInput({
           accept={allowedFileTypes.join(',')}
           onChange={handleFileSelect}
           className="hidden"
+          aria-label="File attachment input"
         />
         
         {/* Voice recording button */}
@@ -347,13 +366,19 @@ export function MessageInput({
           )}
           onClick={isRecording ? stopRecording : startRecording}
           disabled={disabled}
+          aria-label={isRecording ? "Stop voice recording" : "Start voice recording"}
           title={isRecording ? "Stop recording" : "Start voice recording"}
+          aria-pressed={isRecording}
         >
-          {isRecording ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+          {isRecording ? <MicOff className="w-4 h-4" aria-hidden="true" /> : <Mic className="w-4 h-4" aria-hidden="true" />}
         </Button>
         
         {/* Text input */}
+        <label htmlFor="message-input" className="sr-only">
+          Type your message
+        </label>
         <textarea
+          id="message-input"
           ref={textareaRef}
           value={input}
           onChange={handleInputChange}
@@ -362,14 +387,21 @@ export function MessageInput({
           disabled={disabled}
           className={
             "flex-1 resize-none bg-transparent border-0 outline-none min-h-[24px] max-h-[150px] "
-            + "placeholder:text-muted-foreground focus:outline-none"
+            + "placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 rounded"
           }
           rows={1}
+          aria-label="Type your message"
+          aria-describedby="message-input-help"
         />
         
         {/* Recording indicator */}
         {isRecording && (
-          <Badge variant="destructive" className="text-xs animate-pulse">
+          <Badge 
+            variant="destructive" 
+            className="text-xs animate-pulse"
+            aria-live="polite"
+            aria-label="Voice recording in progress"
+          >
             Recording...
           </Badge>
         )}
@@ -380,15 +412,22 @@ export function MessageInput({
           disabled={disabled || (!input.trim() && attachedFiles.length === 0)}
           size="sm"
           className="w-8 h-8 p-0 flex-shrink-0"
+          aria-label="Send message"
+          title="Send message (Enter)"
+          type="submit"
         >
-          <Send className="w-4 h-4" />
+          <Send className="w-4 h-4" aria-hidden="true" />
         </Button>
         
         {/* Drag overlay */}
         {isDragging && (
-          <div className="absolute inset-0 bg-primary/5 border-2 border-dashed border-primary rounded-lg flex items-center justify-center">
+          <div 
+            className="absolute inset-0 bg-primary/5 border-2 border-dashed border-primary rounded-lg flex items-center justify-center"
+            role="status"
+            aria-live="polite"
+          >
             <div className="text-center text-primary">
-              <Paperclip className="w-8 h-8 mx-auto mb-2" />
+              <Paperclip className="w-8 h-8 mx-auto mb-2" aria-hidden="true" />
               <p className="text-sm font-medium">Drop files here</p>
               <p className="text-xs">Maximum {maxFiles} files</p>
             </div>
@@ -397,12 +436,12 @@ export function MessageInput({
       </div>
       
       {/* File info */}
-      <div className="mt-2 text-xs text-muted-foreground">
-        <p>
-          {attachedFiles.length}/{maxFiles} files • Max {Math.round(maxFileSize / (1024 * 1024))}MB each
+      <div className="mt-2 text-xs text-muted-foreground" id="message-input-help">
+        <p aria-live="polite">
+          {attachedFiles.length}/{maxFiles} files attached • Max {Math.round(maxFileSize / (1024 * 1024))}MB each
         </p>
         {isDragging && (
-          <p className="text-primary">Release to attach files</p>
+          <p className="text-primary" aria-live="polite">Release to attach files</p>
         )}
       </div>
     </div>
