@@ -8,7 +8,7 @@ import { safeLocalStorage } from '@/lib/ssr-utils';
 // Import existing types
 import type { AuthState, LoginCredentials, RegisterCredentials } from '@/types/auth';
 import type { SessionState, ChatSession, ChatMessage, SSEAgentEvent } from '@/types/session';
-import type { Agent, AgentRole, AgentMessage, AgentThread, AgentConversation } from '@/types/agents';
+import type { Agent, AgentRole, AgentThread, AgentConversation } from '@/types/agents';
 import type { CanvasState, CanvasContent, CanvasMode, CollaborativeSession, AgentSuggestion } from '@/types/canvas';
 
 // New store slice types for the unified architecture
