@@ -159,6 +159,8 @@ export function AuthErrorAlert({
             size="sm"
             onClick={onDismiss}
             className="ml-2 h-auto p-1"
+            aria-label="Dismiss error"
+            title="Dismiss error"
           >
             <Icons.x className="h-3 w-3" />
           </Button>

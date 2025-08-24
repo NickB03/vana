@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
@@ -45,7 +45,7 @@ interface MonacoGlobal {
 }
 
 export function AgentCursors({ session, editorRef, className }: AgentCursorsProps) {
-  const [decorations, setDecorations] = useState<CursorDecoration[]>([]);
+  const decorationIdsRef = useRef<string[]>([]);
   const [hoveredAgent, setHoveredAgent] = useState<string | null>(null);
 
   // Agent type icons
@@ -83,19 +83,7 @@ export function AgentCursors({ session, editorRef, className }: AgentCursorsProp
     const monacoGlobal = win as unknown as MonacoGlobal;
     if (!monacoGlobal?.monaco?.Range) return;
 
-    // Remove existing decorations
-    const existingDecorationIds = decorations.flatMap(d => [
-      d.decorationId, 
-      d.cursorDecorationId,
-      ...(d.selectionDecorationId ? [d.selectionDecorationId] : [])
-    ]);
-    
-    if (existingDecorationIds.length > 0) {
-      editor.deltaDecorations(existingDecorationIds, []);
-    }
-
     // Create new decorations for each agent cursor
-    const newDecorations: CursorDecoration[] = [];
     const decorationOptions: import('monaco-editor').editor.IModelDeltaDecoration[] = [];
 
     Object.values(session.cursors).forEach(cursor => {
@@ -137,35 +125,10 @@ export function AgentCursors({ session, editorRef, className }: AgentCursorsProp
       }
     });
 
-    // Apply decorations
-    if (decorationOptions.length > 0) {
-      const newDecorationIds = editor.deltaDecorations([], decorationOptions);
-      
-      // Track decoration IDs for cleanup
-      let decorationIndex = 0;
-      Object.values(session.cursors).forEach(cursor => {
-        const agent = session.agents.find(a => a.id === cursor.agentId);
-        if (!agent || agent.status === 'offline') return;
-
-        const decoration: CursorDecoration = {
-          agentId: cursor.agentId,
-          decorationId: newDecorationIds[decorationIndex] || '',
-          cursorDecorationId: newDecorationIds[decorationIndex + 1] || newDecorationIds[decorationIndex] || ''
-        };
-
-        if (cursor.selection) {
-          decoration.selectionDecorationId = newDecorationIds[decorationIndex + 2] || '';
-          decorationIndex += 3;
-        } else {
-          decorationIndex += 2;
-        }
-
-        newDecorations.push(decoration);
-      });
-    }
-
-    setDecorations(newDecorations);
-  }, [session.cursors, session.agents, decorations, editorRef]);
+    // Apply/replace decorations
+    const newDecorationIds = editor.deltaDecorations(decorationIdsRef.current, decorationOptions);
+    decorationIdsRef.current = newDecorationIds;
+  }, [session.cursors, session.agents, editorRef]);
 
   // Inject CSS for cursor styles (CSP-compliant with SSR safety)
   useEffect(() => {
@@ -182,8 +145,13 @@ export function AgentCursors({ session, editorRef, className }: AgentCursorsProp
     }
     
     // CSP-compliant CSS generation
-    const css = session.agents.map(agent => `
-      .agent-cursor-${agent.id} .agent-cursor-line::before {
+    const css = session.agents.map(agent => {
+      const initials = (agent.name || '')
+        .substring(0, 2)
+        .toUpperCase()
+        .replace(/["'\\]/g, '');
+      return `
+      .agent-cursor-${agent.id}.agent-cursor-line::before {
         content: '';
         position: absolute;
         top: 0;
@@ -194,8 +162,8 @@ export function AgentCursors({ session, editorRef, className }: AgentCursorsProp
         z-index: 10;
       }
       
-      .agent-cursor-${agent.id} .agent-cursor-marker::after {
-        content: '${agent.name.substring(0, 2).toUpperCase()}';
+      .agent-cursor-${agent.id}.agent-cursor-marker::after {
+        content: "${initials}";
         position: absolute;
         top: -20px;
         left: 0;
@@ -213,7 +181,7 @@ export function AgentCursors({ session, editorRef, className }: AgentCursorsProp
         background-color: ${agent.color}20;
         border: 1px solid ${agent.color}40;
       }
-    `).join('\n');
+    `}).join('\n');
     
     style.textContent = css;
     doc.head.appendChild(style);
