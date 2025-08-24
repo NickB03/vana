@@ -107,8 +107,8 @@ export const memoryOptimizationMiddleware = <T>(
   config: StateCreator<T, [], [], T>
 ): StateCreator<T, [], [], T> => (set, get, api) => {
   // Track memory usage in development
-  if (process.env.NODE_ENV === 'development') {
-    let memoryCheckInterval: NodeJS.Timeout;
+  if (process.env.NODE_ENV === 'development' && typeof window !== 'undefined') {
+    let memoryCheckInterval: ReturnType<typeof setInterval> | null = null;
     
     const checkMemory = () => {
       if ('performance' in window && 'memory' in (window.performance as any)) {
@@ -131,13 +131,27 @@ export const memoryOptimizationMiddleware = <T>(
     // Check memory every 30 seconds
     memoryCheckInterval = setInterval(checkMemory, 30000);
     
+    // Store interval reference for cleanup
+    (window as any).__VANA_MEMORY_CHECK_INTERVAL = memoryCheckInterval;
+    
     // Cleanup on unmount (though this is tricky with Zustand)
     const originalDestroy = api.destroy;
     if (originalDestroy) {
       api.destroy = () => {
-        clearInterval(memoryCheckInterval);
+        if (memoryCheckInterval) {
+          clearInterval(memoryCheckInterval);
+        }
         originalDestroy();
       };
+    }
+    
+    // Also add cleanup on window unload
+    if (typeof window !== 'undefined') {
+      window.addEventListener('beforeunload', () => {
+        if (memoryCheckInterval) {
+          clearInterval(memoryCheckInterval);
+        }
+      });
     }
   }
   

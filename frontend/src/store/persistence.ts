@@ -246,10 +246,14 @@ class EnhancedStorage {
     
     try {
       const keys = [];
-      for (let i = 0; i < this.storage.length; i++) {
-        const key = (this.storage as any).key?.(i);
-        if (key?.startsWith(this.config.name)) {
-          keys.push(key);
+      // Use standard storage API methods
+      const storage = this.storage as Storage;
+      if (storage && typeof storage.length === 'number') {
+        for (let i = 0; i < storage.length; i++) {
+          const key = storage.key(i);
+          if (key && key.startsWith(this.config.name)) {
+            keys.push(key);
+          }
         }
       }
       
@@ -454,14 +458,21 @@ export const getPersistenceStats = () => {
   
   // Calculate localStorage usage
   try {
-    const localStorage = safeLocalStorage();
+    const localStorage = safeLocalStorage() as Storage;
     let localStorageSize = 0;
     let localStorageItems = 0;
     
-    for (let key in localStorage) {
-      if (localStorage.hasOwnProperty(key)) {
-        localStorageSize += (localStorage.getItem(key) || '').length + key.length;
-        localStorageItems++;
+    // Use standard storage API to iterate over keys
+    if (localStorage && typeof localStorage.length === 'number') {
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key) {
+          const value = localStorage.getItem(key);
+          if (value) {
+            localStorageSize += value.length + key.length;
+            localStorageItems++;
+          }
+        }
       }
     }
     
@@ -484,14 +495,21 @@ export const getPersistenceStats = () => {
   
   // Calculate sessionStorage usage
   try {
-    const sessionStorage = safeSessionStorage();
+    const sessionStorage = safeSessionStorage() as Storage;
     let sessionStorageSize = 0;
     let sessionStorageItems = 0;
     
-    for (let key in sessionStorage) {
-      if (sessionStorage.hasOwnProperty(key)) {
-        sessionStorageSize += (sessionStorage.getItem(key) || '').length + key.length;
-        sessionStorageItems++;
+    // Use standard storage API to iterate over keys
+    if (sessionStorage && typeof sessionStorage.length === 'number') {
+      for (let i = 0; i < sessionStorage.length; i++) {
+        const key = sessionStorage.key(i);
+        if (key) {
+          const value = sessionStorage.getItem(key);
+          if (value) {
+            sessionStorageSize += value.length + key.length;
+            sessionStorageItems++;
+          }
+        }
       }
     }
     
