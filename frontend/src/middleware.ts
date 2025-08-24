@@ -33,14 +33,13 @@ const PUBLIC_ROUTES = [
 //   '/profile'
 // ];
 
-// Admin-only routes
-// TODO: Re-enable when auth middleware is fully implemented
-// const ADMIN_ROUTES = [
-//   '/admin',
-//   '/admin/users',
-//   '/admin/settings',
-//   '/admin/analytics'
-// ];
+// Admin-only routes - Using prefix-based protection for defense-in-depth
+const ADMIN_ROUTES = [
+  '/admin',
+  '/admin/users',
+  '/admin/settings',
+  '/admin/analytics'
+];
 
 interface JWTPayload {
   exp?: number;
@@ -99,16 +98,16 @@ export function middleware(request: NextRequest) {
       return response;
     }
 
-    // TODO: Re-enable admin route protection when ADMIN_ROUTES is fully implemented
-    // Check admin routes
-    // if (ADMIN_ROUTES.some(route => pathname.startsWith(route))) {
-    //   if (payload.role !== 'admin') {
-    //     // Redirect to 403 Forbidden
-    //     const url = request.nextUrl.clone();
-    //     url.pathname = '/403';
-    //     return NextResponse.redirect(url);
-    //   }
-    // }
+    // Check admin routes with prefix-based protection for defense-in-depth
+    // This blocks ALL paths starting with /admin for non-admin users
+    if (pathname.startsWith('/admin')) {
+      if (!payload.role || payload.role !== 'admin') {
+        // Redirect to 403 Forbidden
+        const url = request.nextUrl.clone();
+        url.pathname = '/403';
+        return NextResponse.redirect(url);
+      }
+    }
 
     // Add user info to headers for downstream use
     const requestHeaders = new Headers(request.headers);

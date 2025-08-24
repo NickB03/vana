@@ -4,6 +4,7 @@ import { create } from 'zustand';
 import { subscribeWithSelector, devtools, persist, createJSONStorage } from 'zustand/middleware';
 import { immer } from 'zustand/middleware/immer';
 import { safeLocalStorage } from '@/lib/ssr-utils';
+import { getDefaultPersonality } from '@/lib/agent-defaults';
 
 // Import existing types
 import type { AuthState, LoginCredentials, RegisterCredentials } from '@/types/auth';
@@ -620,35 +621,12 @@ export const useUnifiedStore = create<UnifiedStore>()(
               set((state) => {
                 const conversation = state.chat.conversations[conversationId];
                 if (conversation && conversation.threads[0]) {
-                  const defaultPersonality = {
-                    style: 'collaborative' as const,
-                    tone: 'professional' as const,
-                    formality: 'semi-formal' as const,
-                    expertise: 'intermediate' as const,
-                    responsePattern: {
-                      structure: 'conversational' as const,
-                      length: 'moderate' as const,
-                      examples: true,
-                      questions: true,
-                      suggestions: false
-                    },
-                    colors: {
-                      primary: '#3b82f6',
-                      secondary: '#1e40af',
-                      accent: '#60a5fa',
-                      background: '#eff6ff',
-                      text: '#1e40af',
-                      border: '#3b82f6'
-                    },
-                    emoji: message.role === 'user' ? '👤' : '🤖'
-                  };
-                  
                   // Create an AgentMessage from the ChatMessage
                   const agentMessage = {
                     ...message,
                     agentId: message.role === 'user' ? 'user' : 'assistant',
                     agentRole: (message.role === 'user' ? 'coordinator' : 'assistant') as AgentRole,
-                    personality: defaultPersonality
+                    personality: getDefaultPersonality(message.role)
                   };
                   
                   conversation.threads[0].messages.push(agentMessage);
@@ -1244,23 +1222,26 @@ export const useStorePerformance = () => {
   });
 
   React.useEffect(() => {
-    const unsubscribe = useUnifiedStore.subscribe(() => {
-      const startTime = performance.now();
-      
-      // Measure update time
-      const updateDuration = performance.now() - startTime;
-      
-      setMetrics(prev => ({
-        lastUpdateTime: Date.now(),
-        updateDuration,
-        updateCount: prev.updateCount + 1
-      }));
-      
-      // Warn if update takes longer than 50ms
-      if (updateDuration > 50) {
-        console.warn(`Store update took ${updateDuration.toFixed(2)}ms - exceeds 50ms target`);
+    const unsubscribe = useUnifiedStore.subscribe(
+      (state) => state, // Watch entire state for any changes
+      (state, prevState) => {
+        const startTime = performance.now();
+        
+        // Measure update time
+        const updateDuration = performance.now() - startTime;
+        
+        setMetrics(prev => ({
+          lastUpdateTime: Date.now(),
+          updateDuration,
+          updateCount: prev.updateCount + 1
+        }));
+        
+        // Warn if update takes longer than 50ms
+        if (updateDuration > 50) {
+          console.warn(`Store update took ${updateDuration.toFixed(2)}ms - exceeds 50ms target`);
+        }
       }
-    });
+    );
     
     return unsubscribe;
   }, []);

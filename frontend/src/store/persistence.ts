@@ -416,8 +416,7 @@ export const getAuthPersistOptions = () => {
     PERSISTENCE_CONFIGS.auth,
     (state: UnifiedStore) => ({
       auth: {
-        user: state.auth.user, // Only persist user, not tokens
-        tokens: state.auth.tokens,
+        user: state.auth.user, // Only persist user, not tokens - tokens stored in httpOnly cookies
         isLoading: state.auth.isLoading,
         error: state.auth.error,
       }
