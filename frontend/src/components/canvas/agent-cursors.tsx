@@ -25,13 +25,6 @@ interface AgentCursorsProps {
   className?: string;
 }
 
-interface CursorDecoration {
-  agentId: string;
-  decorationId: string;
-  cursorDecorationId: string;
-  selectionDecorationId?: string;
-}
-
 // Type-safe Monaco globals interface
 interface MonacoGlobal {
   monaco: {

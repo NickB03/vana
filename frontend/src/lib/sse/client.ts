@@ -216,7 +216,7 @@ export class SSEClient {
     }
   }
 
-  private handleError(event: Event): void {
+  private handleError(_event: Event): void {
     const error: SSEError = {
       type: SSEErrorType.CONNECTION,
       message: 'Connection error occurred',

@@ -288,7 +288,8 @@ export class GoogleOAuthClient {
         access_token: tokens.access_token,
         token_type: 'Bearer',
         expires_in: tokens.expires_in,
-        refresh_token: tokens.refresh_token || null
+        refresh_token: tokens.refresh_token || null,
+        issued_at: Date.now()
       },
       isLoading: false,
       error: null
