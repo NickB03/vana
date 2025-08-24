@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
       body: new URLSearchParams({
         refresh_token: refreshToken,
         client_id,
-        client_secret: process.env.GOOGLE_CLIENT_SECRET || '',
+        client_secret: process.env['GOOGLE_CLIENT_SECRET'] || '',
         grant_type: 'refresh_token'
       })
     });

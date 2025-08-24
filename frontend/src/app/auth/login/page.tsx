@@ -7,7 +7,7 @@
 
 import { useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/hooks/use-auth';
 import { GoogleLoginButton } from '@/components/auth/GoogleLoginButton';
 import { AuthLoadingState } from '@/components/auth/AuthLoadingState';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
