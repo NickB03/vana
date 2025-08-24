@@ -6,12 +6,17 @@
   "ampDevFiles": [],
   "lowPriorityFiles": [
 <<<<<<< HEAD
+<<<<<<< HEAD
     "static/HoM2AfjD9LSR_eA_2Bgt3/_buildManifest.js",
     "static/HoM2AfjD9LSR_eA_2Bgt3/_ssgManifest.js"
 =======
     "static/XoQeX7zWWmXg4uR9xHxW4/_buildManifest.js",
     "static/XoQeX7zWWmXg4uR9xHxW4/_ssgManifest.js"
 >>>>>>> origin/main
+=======
+    "static/ve5NSiuWoiCD4zWfe8EXa/_buildManifest.js",
+    "static/ve5NSiuWoiCD4zWfe8EXa/_ssgManifest.js"
+>>>>>>> f5babf1065f6665ba30b719fbee383313865e194
   ],
   "rootMainFiles": [
     "static/chunks/webpack-ce7f36b80d6a5d38.js",
