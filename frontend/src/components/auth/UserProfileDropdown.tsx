@@ -5,7 +5,7 @@
 
 'use client';
 
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/hooks/use-auth';
 import {
   DropdownMenu,
   DropdownMenuContent,

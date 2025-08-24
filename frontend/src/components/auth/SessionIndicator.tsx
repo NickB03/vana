@@ -6,7 +6,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/hooks/use-auth';
 import { useTokenRefresh } from '@/hooks/useTokenRefresh';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
