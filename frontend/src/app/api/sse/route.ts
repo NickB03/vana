@@ -67,7 +67,7 @@ export async function GET(request: NextRequest) {
       }, 30000);
 
       // Connect to backend SSE stream if available
-      const backendUrl = process.env.BACKEND_URL || 'http://localhost:8000';
+      const backendUrl = process.env['BACKEND_URL'] || 'http://localhost:8000';
       const backendSSEUrl = `${backendUrl}/api/v1/sse/stream/${sessionId}`;
       
       try {
