@@ -1,9 +1,12 @@
 {
   "/_not-found/page": "app/_not-found/page.js",
+<<<<<<< HEAD
   "/api/auth/cookie/route": "app/api/auth/cookie/route.js",
   "/api/auth/logout/route": "app/api/auth/logout/route.js",
   "/api/auth/refresh/route": "app/api/auth/refresh/route.js",
   "/api/auth/token/route": "app/api/auth/token/route.js",
+=======
+>>>>>>> origin/main
   "/api/csp-report/route": "app/api/csp-report/route.js",
   "/favicon.ico/route": "app/favicon.ico/route.js",
   "/auth/callback/page": "app/auth/callback/page.js",
