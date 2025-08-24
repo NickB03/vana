@@ -22,6 +22,7 @@ function getCSPHeader(nonce: string, isDevelopment: boolean): string {
       "'strict-dynamic'",
       // Monaco Editor and worker requirements
       "'unsafe-eval'", // Required for Monaco Editor
+      "'wasm-unsafe-eval'", // Required for WebAssembly
       // Development mode requirements
       ...(isDevelopment ? [
         "'unsafe-inline'", // For development hot reload
@@ -133,12 +134,6 @@ function getCSPHeader(nonce: string, isDevelopment: boolean): string {
       "data:",
       "blob:"
     ],
-    // WebAssembly support for Monaco Editor and other components
-    'wasm-src': [
-      "'self'",
-      "'unsafe-eval'", // Required for WebAssembly
-      "blob:"
-    ],
     // Prefetch directives for performance
     'prefetch-src': [
       "'self'",
@@ -179,7 +174,7 @@ function getSecurityHeaders() {
       'accelerometer=()'
     ].join(', '),
     // HSTS for HTTPS enforcement (only in production)
-    ...(process.env['NODE_ENV'] === 'production' && {
+    ...(process.env.NODE_ENV === 'production' && {
       'Strict-Transport-Security': 'max-age=31536000; includeSubDomains; preload'
     }),
     // Cross-Origin policies
@@ -197,7 +192,7 @@ export function middleware(_request: NextRequest) {
   
   const response = NextResponse.next();
   const nonce = generateNonce();
-  const isDevelopment = process.env['NODE_ENV'] === 'development';
+  const isDevelopment = process.env.NODE_ENV === 'development';
 
   // Generate CSP header
   const cspHeader = getCSPHeader(nonce, isDevelopment);

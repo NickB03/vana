@@ -620,8 +620,7 @@ export const useUnifiedStore = create<UnifiedStore>()(
               set((state) => {
                 const conversation = state.chat.conversations[conversationId];
                 if (conversation && conversation.threads[0]) {
-                  conversation.threads[0].messages.push({
-                    ...message,
+                  const userDefaults = {
                     agentId: 'user',
                     agentRole: 'coordinator' as AgentRole,
                     personality: {
@@ -646,7 +645,14 @@ export const useUnifiedStore = create<UnifiedStore>()(
                       },
                       emoji: '👤'
                     }
-                  });
+                  };
+                  
+                  // Only apply user defaults to user messages, not assistant/agent messages
+                  const finalMessage = message.role === 'user'
+                    ? { ...userDefaults, ...message }  // Let provided fields override defaults for user messages
+                    : { ...message };  // For non-user messages, don't force user defaults
+                  
+                  conversation.threads[0].messages.push(finalMessage);
                   conversation.lastActivity = Date.now();
                   conversation.threads[0].updatedAt = Date.now();
                 }
