@@ -20,7 +20,7 @@ interface Props {
 interface State {
   hasError: boolean;
   error: Error | null;
-  errorInfo: any;
+  errorInfo: React.ErrorInfo | null;
 }
 
 export class AuthErrorBoundary extends Component<Props, State> {
@@ -41,7 +41,7 @@ export class AuthErrorBoundary extends Component<Props, State> {
     };
   }
 
-  override componentDidCatch(error: Error, errorInfo: any) {
+  override componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     console.error('Auth Error Boundary caught:', error, errorInfo);
     this.setState({
       error,

@@ -78,8 +78,8 @@ export function AgentCursors({ session, editorRef, className }: AgentCursorsProp
     if (!editor) return;
 
     // Type-safe access to Monaco global using SSR-safe approach
-    const { safeWindow } = require('@/lib/ssr-utils');
-    const win = safeWindow();
+    const win = typeof window !== 'undefined' ? window : undefined;
+    if (!win) return;
     const monacoGlobal = win as unknown as MonacoGlobal;
     if (!monacoGlobal?.monaco?.Range) return;
 
@@ -169,8 +169,7 @@ export function AgentCursors({ session, editorRef, className }: AgentCursorsProp
 
   // Inject CSS for cursor styles (CSP-compliant with SSR safety)
   useEffect(() => {
-    const { safeDocument } = require('@/lib/ssr-utils');
-    const doc = safeDocument();
+    const doc = typeof document !== 'undefined' ? document : undefined;
     
     if (!doc) return;
     

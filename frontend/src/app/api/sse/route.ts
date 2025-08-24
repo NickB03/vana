@@ -94,7 +94,7 @@ export async function GET(request: NextRequest) {
                 try {
                   const data = JSON.parse(line.slice(6));
                   await sendEvent(data);
-                } catch (e) {
+                } catch {
                   // Not JSON, send as-is
                   await writer.write(encoder.encode(line + '\n'));
                 }

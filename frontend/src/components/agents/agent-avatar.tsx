@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useMemo } from 'react';
+import Image from 'next/image';
 import { cn } from '@/lib/utils';
 import { Avatar } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -123,9 +124,11 @@ export function AgentAvatar({
           )}
         >
           {agent.avatar ? (
-            <img 
+            <Image 
               src={agent.avatar} 
               alt={agent.name}
+              width={size === 'sm' ? 32 : size === 'md' ? 40 : 56}
+              height={size === 'sm' ? 32 : size === 'md' ? 40 : 56}
               className="w-full h-full rounded-full object-cover"
             />
           ) : (
