@@ -1,10 +1,10 @@
 {
-  "/api/csp-report/route": "app/api/csp-report/route.js",
   "/_not-found/page": "app/_not-found/page.js",
+  "/api/csp-report/route": "app/api/csp-report/route.js",
   "/favicon.ico/route": "app/favicon.ico/route.js",
-  "/auth/login/page": "app/auth/login/page.js",
-  "/page": "app/page.js",
   "/auth/callback/page": "app/auth/callback/page.js",
+  "/auth/login/page": "app/auth/login/page.js",
   "/canvas/page": "app/canvas/page.js",
-  "/chat/page": "app/chat/page.js"
+  "/chat/page": "app/chat/page.js",
+  "/page": "app/page.js"
 }
