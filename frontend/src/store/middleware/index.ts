@@ -1,36 +1,21 @@
 'use client';
 
-import { StateCreator, StoreMutatorIdentifier } from 'zustand';
+import { StateCreator } from 'zustand';
 import { immer as immerMiddleware } from 'zustand/middleware/immer';
 import { devtools as devtoolsMiddleware, persist as persistMiddleware, PersistOptions, createJSONStorage, subscribeWithSelector } from 'zustand/middleware';
 import { safeLocalStorage } from '@/lib/ssr-utils';
 
-// Custom middleware types
-type Immer<T> = (
-  config: StateCreator<T, [], [], T>,
-  impl: StateCreator<T, [], [], T>
-) => StateCreator<T, [], [], T>;
-
-type DevTools<T> = (
-  config: StateCreator<T, [], [], T>,
-  impl: StateCreator<T, [], [], T>
-) => StateCreator<T, [], [], T>;
-
-type Persist<T> = (
-  config: StateCreator<T, [], [], T>,
-  options: PersistOptions<T>
-) => StateCreator<T, [], [], T>;
-
 // Performance monitoring middleware
-export const performanceMiddleware = <T>(
+export function performanceMiddleware<T>(
   config: StateCreator<T, [], [], T>
-): StateCreator<T, [], [], T> => (set, get, api) => {
+): StateCreator<T, [], [], T> {
+  return (set, get, api) => {
   const originalSet = set;
   
-  const wrappedSet: typeof set = (...args) => {
+  const wrappedSet: typeof set = (partial: any, replace?: any) => {
     const startTime = performance.now();
     
-    const result = originalSet(...args);
+    const result = originalSet(partial, replace);
     
     const duration = performance.now() - startTime;
     
@@ -46,7 +31,7 @@ export const performanceMiddleware = <T>(
         lastUpdate: {
           timestamp: Date.now(),
           duration,
-          args: args[0] // First argument contains the update
+          args: partial // First argument contains the update
         },
         totalUpdates: ((window as any).__VANA_STORE_METRICS?.totalUpdates || 0) + 1,
         averageDuration: (
@@ -61,7 +46,8 @@ export const performanceMiddleware = <T>(
   };
   
   return config(wrappedSet, get, api);
-};
+  };
+}
 
 // Validation middleware
 export const validationMiddleware = <T>(
@@ -70,21 +56,21 @@ export const validationMiddleware = <T>(
 ): StateCreator<T, [], [], T> => (set, get, api) => {
   const originalSet = set;
   
-  const wrappedSet: typeof set = (...args) => {
+  const wrappedSet: typeof set = (partial: any, replace?: any) => {
     // Only validate in development
     if (process.env.NODE_ENV === 'development' && validators) {
       const currentState = get();
       
       // Extract the partial state from the update
       let partialUpdate: Partial<T> = {};
-      if (typeof args[0] === 'function') {
+      if (typeof partial === 'function') {
         // If it's a function, we need to simulate the update to validate
         const tempState = { ...currentState };
-        const updater = args[0] as (state: T) => void;
+        const updater = partial as (state: T) => void;
         updater(tempState);
         partialUpdate = tempState;
-      } else if (typeof args[0] === 'object') {
-        partialUpdate = args[0] as Partial<T>;
+      } else if (typeof partial === 'object') {
+        partialUpdate = partial as Partial<T>;
       }
       
       // Run validators
@@ -96,7 +82,7 @@ export const validationMiddleware = <T>(
       });
     }
     
-    return originalSet(...args);
+    return originalSet(partial, replace);
   };
   
   return config(wrappedSet, get, api);
@@ -134,16 +120,12 @@ export const memoryOptimizationMiddleware = <T>(
     // Store interval reference for cleanup
     (window as any).__VANA_MEMORY_CHECK_INTERVAL = memoryCheckInterval;
     
-    // Cleanup on unmount (though this is tricky with Zustand)
-    const originalDestroy = api.destroy;
-    if (originalDestroy) {
-      api.destroy = () => {
-        if (memoryCheckInterval) {
-          clearInterval(memoryCheckInterval);
-        }
-        originalDestroy();
-      };
-    }
+    // Store cleanup function for manual cleanup if needed
+    (api as any).__cleanup = () => {
+      if (memoryCheckInterval) {
+        clearInterval(memoryCheckInterval);
+      }
+    };
     
     // Also add cleanup on window unload
     if (typeof window !== 'undefined') {

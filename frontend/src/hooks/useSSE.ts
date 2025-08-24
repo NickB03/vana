@@ -159,20 +159,21 @@ export function useSSEEvent<T = any>(
 
 // Hook for message events
 export function useSSEMessages(onMessage: (message: MessagePayload) => void) {
-  const { addMessage } = useChat();
+  const { addMessage, activeConversation } = useChat();
   
   useSSEEvent<MessagePayload>(
     SSEEventType.MESSAGE,
     (data) => {
-      // Add to store
-      addMessage({
-        id: data.id,
-        content: data.content,
-        role: data.role,
-        timestamp: Date.now(),
-        sessionId: data.sessionId,
-        metadata: data.metadata
-      });
+      // Add to store if there's an active conversation
+      if (activeConversation) {
+        addMessage(activeConversation, {
+          id: data.id,
+          content: data.content,
+          role: data.role,
+          timestamp: Date.now(),
+          metadata: data.metadata
+        });
+      }
       
       // Call handler
       onMessage(data);
