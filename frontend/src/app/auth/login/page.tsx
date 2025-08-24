@@ -7,7 +7,7 @@
 
 import { useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/hooks/use-auth';
 import { GoogleLoginButton } from '@/components/auth/GoogleLoginButton';
 import { AuthLoadingState } from '@/components/auth/AuthLoadingState';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -18,7 +18,7 @@ import Link from 'next/link';
 export default function LoginPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { isAuthenticated, loading, error, clearError } = useAuth();
+  const { isAuthenticated, isLoading, error, clearError } = useAuth();
   
   const redirect = searchParams.get('redirect') || '/chat';
   const errorParam = searchParams.get('error');
@@ -40,7 +40,7 @@ export default function LoginPage() {
     console.error('Login error:', errorMessage);
   };
   
-  if (loading) {
+  if (isLoading) {
     return <AuthLoadingState className="min-h-screen" size="lg" />;
   }
   

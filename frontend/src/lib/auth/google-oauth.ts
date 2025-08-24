@@ -514,4 +514,8 @@ export const googleOAuthClient = typeof window !== 'undefined'
   : null;
 
 // Export utilities for testing
+<<<<<<< HEAD
 export { PKCEUtil, CSRFProtection };
+=======
+export { PKCEUtil, CSRFProtection, GoogleOAuthClient };
+>>>>>>> origin/main
