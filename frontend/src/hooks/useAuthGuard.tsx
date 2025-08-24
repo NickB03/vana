@@ -5,7 +5,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
-import { useAuth } from './useAuth';
+import { useAuth } from './use-auth';
 
 /**
  * Auth guard configuration
@@ -42,7 +42,7 @@ export function useAuthGuard(config: AuthGuardConfig = {}): AuthGuardState {
   
   const router = useRouter();
   const pathname = usePathname();
-  const { isAuthenticated, user, loading, checkAuth } = useAuth();
+  const { isAuthenticated, user, isLoading, checkAuth } = useAuth();
   
   const [state, setState] = useState<AuthGuardState>({
     isAuthorized: false,
@@ -58,33 +58,31 @@ export function useAuthGuard(config: AuthGuardConfig = {}): AuthGuardState {
         // If auth is required but user is not authenticated
         if (requireAuth && !isAuthenticated) {
           // Try to check auth status first
-          const authenticated = await checkAuth();
+          await checkAuth();
           
-          if (!authenticated) {
-            // Store intended destination
-            if (typeof window !== 'undefined') {
-              sessionStorage.setItem('auth_redirect', pathname);
-            }
-            
-            // Call unauthorized handler if provided
-            if (onUnauthorized) {
-              onUnauthorized();
-            }
-            
-            // Redirect to login
-            router.push(`${redirectTo}?redirect=${encodeURIComponent(pathname)}`);
-            
-            setState({
-              isAuthorized: false,
-              isChecking: false,
-              error: 'Authentication required'
-            });
-            return;
+          // Store intended destination
+          if (typeof window !== 'undefined') {
+            sessionStorage.setItem('auth_redirect', pathname);
           }
+          
+          // Call unauthorized handler if provided
+          if (onUnauthorized) {
+            onUnauthorized();
+          }
+          
+          // Redirect to login
+          router.push(`${redirectTo}?redirect=${encodeURIComponent(pathname)}`);
+          
+          setState({
+            isAuthorized: false,
+            isChecking: false,
+            error: 'Authentication required'
+          });
+          return;
         }
         
         // If email verification is required
-        if (requireVerifiedEmail && user && !user.emailVerified) {
+        if (requireVerifiedEmail && user && !user.is_verified) {
           setState({
             isAuthorized: false,
             isChecking: false,
@@ -134,13 +132,13 @@ export function useAuthGuard(config: AuthGuardConfig = {}): AuthGuardState {
       }
     };
     
-    if (!loading) {
+    if (!isLoading) {
       verifyAuthorization();
     }
   }, [
     isAuthenticated,
     user,
-    loading,
+    isLoading,
     requireAuth,
     requireVerifiedEmail,
     allowedRoles,

@@ -3,6 +3,8 @@
 import { useEffect } from 'react';
 import { useAuthStore } from '@/store/auth-store';
 
+export type UseAuthReturn = ReturnType<typeof useAuth>;
+
 export function useAuth() {
   const {
     user,

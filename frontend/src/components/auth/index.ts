@@ -10,8 +10,4 @@ export { SessionIndicator } from './SessionIndicator';
 export { AuthErrorBoundary, AuthErrorAlert } from './AuthErrorBoundary';
 
 // Re-export types if needed
-export type { GoogleLoginButtonProps } from './GoogleLoginButton';
-export type { UserProfileDropdownProps } from './UserProfileDropdown';
-export type { AuthLoadingStateProps } from './AuthLoadingState';
-export type { SessionIndicatorProps } from './SessionIndicator';
-export type { AuthErrorAlertProps } from './AuthErrorBoundary';
+// Note: Component props interfaces are defined inline within component files

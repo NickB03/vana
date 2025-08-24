@@ -38,7 +38,7 @@ export function UserProfileDropdown({
   onProfileClick,
   onSettingsClick
 }: UserProfileDropdownProps) {
-  const { user, logout, loading } = useAuth();
+  const { user, logout, isLoading } = useAuth();
 
   if (!user) {
     return null;
@@ -64,12 +64,12 @@ export function UserProfileDropdown({
         <Button
           variant="ghost"
           className={cn('relative h-10 w-10 rounded-full', className)}
-          disabled={loading}
+          disabled={isLoading}
         >
           <Avatar className="h-10 w-10">
-            <AvatarImage src={user.picture} alt={user.name || user.email} />
+            <AvatarImage src={user.picture} alt={user.full_name || user.email} />
             <AvatarFallback>
-              {user.name ? getInitials(user.name) : user.email[0].toUpperCase()}
+              {user.full_name ? getInitials(user.full_name) : user.email?.[0]?.toUpperCase() || 'U'}
             </AvatarFallback>
           </Avatar>
         </Button>
@@ -77,8 +77,8 @@ export function UserProfileDropdown({
       <DropdownMenuContent className="w-56" align={align}>
         <DropdownMenuLabel className="font-normal">
           <div className="flex flex-col space-y-1">
-            {showName && user.name && (
-              <p className="text-sm font-medium leading-none">{user.name}</p>
+            {showName && user.full_name && (
+              <p className="text-sm font-medium leading-none">{user.full_name}</p>
             )}
             {showEmail && (
               <p className="text-xs leading-none text-muted-foreground">
@@ -101,8 +101,8 @@ export function UserProfileDropdown({
           </DropdownMenuItem>
         )}
         <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={handleLogout} disabled={loading}>
-          {loading ? (
+        <DropdownMenuItem onClick={handleLogout} disabled={isLoading}>
+          {isLoading ? (
             <>
               <Icons.spinner className="mr-2 h-4 w-4 animate-spin" />
               <span>Signing out...</span>

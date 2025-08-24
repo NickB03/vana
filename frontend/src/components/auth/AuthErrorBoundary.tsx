@@ -41,7 +41,7 @@ export class AuthErrorBoundary extends Component<Props, State> {
     };
   }
 
-  componentDidCatch(error: Error, errorInfo: any) {
+  override componentDidCatch(error: Error, errorInfo: any) {
     console.error('Auth Error Boundary caught:', error, errorInfo);
     this.setState({
       error,
@@ -58,7 +58,7 @@ export class AuthErrorBoundary extends Component<Props, State> {
     this.props.onReset?.();
   };
 
-  render() {
+  override render() {
     if (this.state.hasError) {
       if (this.props.fallback) {
         return <>{this.props.fallback}</>;

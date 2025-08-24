@@ -30,13 +30,14 @@ export function GoogleLoginButton({
   onSuccess,
   onError
 }: GoogleLoginButtonProps) {
-  const { login, loading: authLoading, error: authError } = useAuth();
+  const { login, isLoading: authLoading } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
 
   const handleLogin = async () => {
     try {
       setIsLoading(true);
-      await login();
+      // This should be replaced with proper Google OAuth flow
+      await login({ username: '', password: '' });
       onSuccess?.();
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Login failed';

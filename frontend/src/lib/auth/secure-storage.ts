@@ -447,7 +447,7 @@ class SecureStorage {
     const allCookies = Cookies.get();
     Object.entries(allCookies).forEach(([key, value]) => {
       if (key.startsWith(this.cookiePrefix)) {
-        data.cookies[key] = value;
+        data['cookies'][key] = value;
       }
     });
     
@@ -456,14 +456,14 @@ class SecureStorage {
       for (let i = 0; i < sessionStorage.length; i++) {
         const key = sessionStorage.key(i);
         if (key && key.startsWith(this.sessionPrefix)) {
-          data.session[key] = sessionStorage.getItem(key);
+          data['session'][key] = sessionStorage.getItem(key);
         }
       }
     }
     
     // Export memory cache
     this.memoryCache.forEach((value, key) => {
-      data.memory[key] = value;
+      data['memory'][key] = value;
     });
     
     return data;

@@ -9,7 +9,6 @@ import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Icons } from '@/components/ui/icons';
-import Link from 'next/link';
 
 export default function UnauthorizedPage() {
   const router = useRouter();
@@ -28,7 +27,7 @@ export default function UnauthorizedPage() {
         </CardHeader>
         <CardContent className="text-center">
           <p className="text-sm text-muted-foreground mb-4">
-            Please sign in with your account to continue. If you don't have an account,
+            Please sign in with your account to continue. If you don&apos;t have an account,
             contact your administrator for access.
           </p>
           <div className="p-4 bg-muted rounded-lg">

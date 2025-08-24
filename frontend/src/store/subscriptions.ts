@@ -32,12 +32,12 @@ export class StoreSubscriptionManager {
   // Auth <-> Session coordination
   private setupAuthSessionSubscription() {
     const unsubscribe = useUnifiedStore.subscribe(
-      (state) => ({
+      (state: any) => ({
         user: state.auth.user,
         isLoading: state.auth.isLoading,
         currentSession: state.session.currentSession,
       }),
-      (current, previous) => {
+      (current: any, previous: any) => {
         // When user logs out, clear sessions
         if (previous.user && !current.user) {
           console.log('🔐 User logged out, clearing sessions');
@@ -60,12 +60,12 @@ export class StoreSubscriptionManager {
   // Session <-> Chat coordination
   private setupSessionChatSubscription() {
     const unsubscribe = useUnifiedStore.subscribe(
-      (state) => ({
+      (state: any) => ({
         currentSession: state.session.currentSession,
         activeConversation: state.chat.activeConversation,
         sessions: state.session.sessions.length,
       }),
-      (current, previous) => {
+      (current: any, previous: any) => {
         // When session changes, sync chat conversation
         if (current.currentSession?.id !== previous.currentSession?.id) {
           console.log('💬 Session changed, syncing chat conversation');
@@ -106,13 +106,13 @@ export class StoreSubscriptionManager {
   // AgentDeck <-> Chat coordination
   private setupAgentDeckChatSubscription() {
     const unsubscribe = useUnifiedStore.subscribe(
-      (state) => ({
+      (state: any) => ({
         selectedAgents: state.agentDeck.selectedAgents,
         agentStatus: state.agentDeck.agentStatus,
         activeConversation: state.chat.activeConversation,
         isProcessing: state.chat.isProcessing,
       }),
-      (current, previous) => {
+      (current: any, previous: any) => {
         // When selected agents change, update active conversation
         if (JSON.stringify(current.selectedAgents) !== JSON.stringify(previous.selectedAgents)) {
           console.log('🤖 Selected agents changed, updating conversation');
@@ -158,12 +158,12 @@ export class StoreSubscriptionManager {
   // Canvas <-> Agent coordination
   private setupCanvasAgentSubscription() {
     const unsubscribe = useUnifiedStore.subscribe(
-      (state) => ({
+      (state: any) => ({
         selectedAgents: state.agentDeck.selectedAgents,
         collaborativeSession: state.canvas.collaborativeSession,
         agentSuggestions: state.canvas.agentSuggestions.length,
       }),
-      (current, previous) => {
+      (current: any, previous: any) => {
         // When agents are selected and canvas is active, start collaboration
         if (current.selectedAgents.length > 0 && !current.collaborativeSession) {
           const agents = useUnifiedStore.getState().agentDeck.getSelectedAgents();
@@ -199,12 +199,12 @@ export class StoreSubscriptionManager {
   // Upload <-> Session coordination
   private setupUploadSessionSubscription() {
     const unsubscribe = useUnifiedStore.subscribe(
-      (state) => ({
+      (state: any) => ({
         uploads: Object.keys(state.upload.uploads).length,
         completedUploads: Object.values(state.upload.uploads).filter(u => u.status === 'completed').length,
         currentSession: state.session.currentSession,
       }),
-      (current, previous) => {
+      (current: any, previous: any) => {
         // When uploads complete, add them to current session
         if (current.completedUploads > previous.completedUploads && current.currentSession) {
           console.log('📁 File upload completed, adding to session');
@@ -480,7 +480,7 @@ export const syncStores = () => {
 
 // Development helpers
 export const debugSubscriptions = () => {
-  if (process.env.NODE_ENV !== 'development') return;
+  if (process.env['NODE_ENV'] !== 'development') return;
   
   console.group('🔗 Store Subscriptions Debug');
   console.log('Status:', subscriptionManager.getSubscriptionStatus());
@@ -489,7 +489,7 @@ export const debugSubscriptions = () => {
 };
 
 // Export for global access in development
-if (process.env.NODE_ENV === 'development' && typeof window !== 'undefined') {
+if (process.env['NODE_ENV'] === 'development' && typeof window !== 'undefined') {
   (window as any).__VANA_STORE_SUBSCRIPTIONS = {
     manager: subscriptionManager,
     syncStores,

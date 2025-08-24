@@ -693,10 +693,10 @@ export const useUnifiedStore = create<UnifiedStore>()(
           
           // Canvas slice
           canvas: {
-            currentMode: 'markdown',
+            currentMode: 'markdown' as CanvasMode,
             content: {
               id: generateId(),
-              mode: 'markdown',
+              mode: 'markdown' as CanvasMode,
               title: 'Untitled',
               content: '',
               lastModified: new Date()

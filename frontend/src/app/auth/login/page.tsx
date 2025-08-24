@@ -18,7 +18,7 @@ import Link from 'next/link';
 export default function LoginPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { isAuthenticated, loading, error, clearError } = useAuth();
+  const { isAuthenticated, error, isLoading } = useAuth();
   
   const redirect = searchParams.get('redirect') || '/chat';
   const errorParam = searchParams.get('error');
@@ -40,7 +40,7 @@ export default function LoginPage() {
     console.error('Login error:', errorMessage);
   };
   
-  if (loading) {
+  if (isLoading) {
     return <AuthLoadingState className="min-h-screen" size="lg" />;
   }
   

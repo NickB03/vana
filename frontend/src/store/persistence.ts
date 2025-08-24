@@ -122,7 +122,7 @@ class EnhancedStorage {
   setItem(key: string, value: string): void {
     try {
       let data = value;
-      let metadata = {
+      const metadata = {
         version: this.config.version,
         timestamp: Date.now(),
         ttl: this.config.ttl ? Date.now() + this.config.ttl : null,
@@ -297,7 +297,7 @@ export const createPersistOptions = <T extends Partial<UnifiedStore>>(
     onRehydrateStorage: onRehydrateStorage ? () => onRehydrateStorage : undefined,
     
     // Migration function for version changes
-    migrate: (persistedState: any, version: number) => {
+    migrate: (persistedState: unknown, version: number) => {
       console.log(`Migrating ${config.name} from version ${version} to ${config.version}`);
       
       // Add migration logic here based on version differences
@@ -535,7 +535,7 @@ export const debugPersistence = () => {
 
 // Export for global access in development
 if (process.env.NODE_ENV === 'development' && typeof window !== 'undefined') {
-  (window as any).__VANA_PERSISTENCE = {
+  (window as Record<string, unknown>).__VANA_PERSISTENCE = {
     configs: PERSISTENCE_CONFIGS,
     clearAll: clearAllPersistence,
     clearExpired: clearExpiredData,
