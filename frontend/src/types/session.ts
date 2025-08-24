@@ -1,15 +1,22 @@
+// SSE Event Data interface for type safety
+export interface SSEEventData {
+  model?: string;
+  tool_calls?: unknown[];
+  error?: string;
+  streaming?: boolean;
+  attachments?: string[];
+  agentId?: string;
+  uploadResult?: any;
+  taskResult?: any;
+  [key: string]: unknown;
+}
+
 export interface ChatMessage {
   id: string;
   role: 'user' | 'assistant' | 'system';
   content: string;
   timestamp: number;
-  metadata?: {
-    model?: string;
-    tool_calls?: unknown[];
-    error?: string;
-    streaming?: boolean;
-    attachments?: string[];
-  };
+  metadata?: SSEEventData;
 }
 
 export interface ChatSession {
@@ -32,7 +39,7 @@ export interface SessionState {
 // SSE Event Types for ADK Backend Integration
 export interface SSEAgentEvent {
   type: 'agent_network_update' | 'agent_network_snapshot' | 'connection' | 'agent_start' | 'agent_complete' | 'error' | 'heartbeat';
-  data: unknown;
+  data: SSEEventData;
   id?: string;
   timestamp: string;
   sessionId?: string;

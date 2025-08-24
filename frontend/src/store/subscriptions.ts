@@ -1,9 +1,7 @@
 'use client';
 
 import { useUnifiedStore } from './index';
-import type { UnifiedStore } from './index';
 import type { SSEAgentEvent, AgentNetworkUpdate, ConnectionEvent, AgentTaskEvent } from '@/types/session';
-import type { Agent } from '@/types/agents';
 
 // Subscription manager for cross-store coordination
 export class StoreSubscriptionManager {
@@ -178,7 +176,7 @@ export class StoreSubscriptionManager {
         // When collaboration ends, update agent status
         if (previous.collaborativeSession && !current.collaborativeSession) {
           console.log('🎨 Canvas collaboration ended');
-          current.selectedAgents.forEach(agentId => {
+          current.selectedAgents.forEach((agentId: string) => {
             useUnifiedStore.getState().agentDeck.updateAgentStatus(agentId, 'idle');
           });
         }
@@ -201,7 +199,7 @@ export class StoreSubscriptionManager {
     const unsubscribe = useUnifiedStore.subscribe(
       (state: any) => ({
         uploads: Object.keys(state.upload.uploads).length,
-        completedUploads: Object.values(state.upload.uploads).filter(u => u.status === 'completed').length,
+        completedUploads: Object.values(state.upload.uploads).filter((u: any) => u.status === 'completed').length,
         currentSession: state.session.currentSession,
       }),
       (current: any, previous: any) => {
@@ -210,17 +208,17 @@ export class StoreSubscriptionManager {
           console.log('📁 File upload completed, adding to session');
           
           const completedUploads = Object.values(useUnifiedStore.getState().upload.uploads)
-            .filter(u => u.status === 'completed');
+            .filter((u: any) => u.status === 'completed');
           
           const newUploads = completedUploads.slice(previous.completedUploads);
           
-          newUploads.forEach(upload => {
+          newUploads.forEach((upload: any) => {
             useUnifiedStore.getState().session.addMessage({
               role: 'system',
               content: `File uploaded: ${upload.file.name}`,
               metadata: {
                 attachments: [upload.id],
-                uploadResult: upload.result
+                uploadResult: (upload as { uploadResult?: any })?.uploadResult || upload.result
               }
             });
           });
@@ -239,19 +237,19 @@ export class StoreSubscriptionManager {
       
       switch (event.type) {
         case 'agent_network_update':
-          this.handleAgentNetworkUpdate(event.data as AgentNetworkUpdate);
+          this.handleAgentNetworkUpdate(event.data as unknown as AgentNetworkUpdate);
           break;
           
         case 'connection':
-          this.handleConnectionEvent(event.data as ConnectionEvent);
+          this.handleConnectionEvent(event.data as unknown as ConnectionEvent);
           break;
           
         case 'agent_start':
-          this.handleAgentTaskEvent({ ...event.data, status: 'started' } as AgentTaskEvent);
+          this.handleAgentTaskEvent({ ...(typeof event.data === 'object' && event.data ? event.data : {}), status: 'started' } as AgentTaskEvent);
           break;
           
         case 'agent_complete':
-          this.handleAgentTaskEvent({ ...event.data, status: 'completed' } as AgentTaskEvent);
+          this.handleAgentTaskEvent({ ...(typeof event.data === 'object' && event.data ? event.data : {}), status: 'completed' } as AgentTaskEvent);
           break;
           
         case 'error':
@@ -389,7 +387,6 @@ export class StoreSubscriptionManager {
           timestamp: Date.now(),
           metadata: {
             agentId: data.agent_id,
-            agentName: data.agent_name,
             taskResult: data.result
           }
         });
