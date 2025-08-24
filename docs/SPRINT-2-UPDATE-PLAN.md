@@ -58,25 +58,27 @@ Sprint 2 requires significant updates to achieve 100% PRD compliance. Analysis r
 ### Required Packages Installation
 
 ```bash
-cd /Users/nick/Development/vana/frontend
+cd frontend
 
 # Core Authentication Dependencies
-bun add @react-oauth/google@0.12.1
-bun add google-auth-library@9.0.0
-bun add jose@5.0.0
-bun add js-cookie@3.0.5
+bun add @react-oauth/google@^0.12.1
+bun add google-auth-library@^9.14.0
+bun add jose@^5.6.3
+bun add js-cookie@^3.0.5
 
 # Type Definitions
-bun add -D @types/js-cookie@3.0.6
+bun add -D @types/js-cookie@^3.0.7
 
 # Security Dependencies
-bun add crypto-js@4.2.0
-bun add -D @types/crypto-js@4.2.0
+bun add crypto-js@^4.2.0
+bun add -D @types/crypto-js@^4.2.2
 
 # Testing Dependencies
-bun add -D @testing-library/react-hooks@8.0.1
-bun add -D msw@2.0.0
-bun add -D @playwright/test@1.40.0
+bun add -D @testing-library/react@^14.3.1
+bun add -D msw@^2.3.5
+bun add -D @playwright/test@^1.46.0
+bun add -D npm-audit@^1.0.1
+bun add -D @axe-core/cli@^4.8.2
 ```
 
 ### Environment Configuration
@@ -322,6 +324,11 @@ NEXT_PUBLIC_JWT_PUBLIC_KEY=your-public-key
    - Mitigation: Use recommended versions
    - Rollback: Jest-only testing initially
 
+6. **Feature Flag Rollback**
+   - Risk: New features breaking production
+   - Mitigation: Feature flags with instant rollback
+   - Rollback: Disable flags via environment variables
+
 ---
 
 ## ✅ Updated Acceptance Criteria
@@ -347,15 +354,17 @@ NEXT_PUBLIC_JWT_PUBLIC_KEY=your-public-key
 - [ ] Input sanitization active
 - [ ] XSS protection verified
 - [ ] Token validation working
-- [ ] Security scan passes
+- [ ] Security scan passes (npm audit, Snyk)
 - [ ] Vulnerability-free
+- [ ] Accessibility verified (axe-core)
 
 #### Testing (100% complete)
 - [ ] 80% code coverage
 - [ ] E2E tests passing
-- [ ] Security tests passing
+- [ ] Security tests passing (npm audit, Snyk)
 - [ ] Performance tests passing
 - [ ] Visual regression tests passing
+- [ ] Accessibility tests passing (axe-core)
 
 ---
 

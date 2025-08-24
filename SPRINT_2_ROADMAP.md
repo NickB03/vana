@@ -9,7 +9,7 @@
 
 ## 🗓️ Visual Timeline
 
-```
+```text
 Week 1 (Aug 24-30)
 ├── Day 1-2: PR #4 State Management [state-architect]
 ├── Day 2-3: PR #5 OAuth Implementation [auth-specialist] 
@@ -31,19 +31,22 @@ Week 2 (Aug 31-Sep 6)
 
 ```bash
 # Navigate to frontend
-cd /Users/nick/Development/vana/frontend
+cd frontend
 
 # Authentication Dependencies
-bun add @react-oauth/google@0.12.1 google-auth-library@9.0.0 jose@5.0.0 js-cookie@3.0.5
+bun add @react-oauth/google@^0.12.1 google-auth-library@^9.14.0 jose@^5.6.3 js-cookie@^3.0.5
 
 # Type Definitions
-bun add -D @types/js-cookie@3.0.6 @types/crypto-js@4.2.0
+bun add -D @types/js-cookie@^3.0.7 @types/crypto-js@^4.2.2
 
 # Security
-bun add crypto-js@4.2.0
+bun add crypto-js@^4.2.0
 
 # Testing Infrastructure
-bun add -D @testing-library/react-hooks@8.0.1 msw@2.0.0 @playwright/test@1.40.0
+bun add -D @testing-library/react@^14.3.1 msw@^2.3.5 @playwright/test@^1.46.0
+
+# Security & Accessibility Tools
+bun add -D npm-audit@^1.0.1 @axe-core/cli@^4.8.2
 
 # Verify installation
 bun list | grep -E "oauth|jose|cookie|crypto|msw|playwright"
@@ -55,7 +58,7 @@ bun list | grep -E "oauth|jose|cookie|crypto|msw|playwright"
 
 ### 1. Create `.env.local` file:
 ```bash
-# /Users/nick/Development/vana/frontend/.env.local
+# frontend/.env.local
 
 # Google OAuth
 NEXT_PUBLIC_GOOGLE_CLIENT_ID=your-client-id-here
@@ -72,11 +75,10 @@ NEXT_PUBLIC_JWT_PUBLIC_KEY=your-public-key
 ### 2. Start development servers:
 ```bash
 # Terminal 1: Backend
-cd /Users/nick/Development/vana
 make dev-backend  # Port 8000
 
 # Terminal 2: Frontend
-cd /Users/nick/Development/vana/frontend
+cd frontend
 bun run dev  # Port 5173
 ```
 
@@ -318,7 +320,7 @@ gh pr create --title "Hotfix: Auth" --label "urgent"
 **Start Command:**
 ```bash
 # Begin Sprint 2
-cd /Users/nick/Development/vana/frontend
+cd frontend
 bun install  # Install dependencies
 git checkout -b feat/sprint-2-pr-4-state-management
 # Start coding!
