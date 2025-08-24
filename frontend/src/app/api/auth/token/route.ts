@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
       body: new URLSearchParams({
         code,
         client_id,
-        client_secret: process.env.GOOGLE_CLIENT_SECRET || '',
+        client_secret: process.env['GOOGLE_CLIENT_SECRET'] || '',
         redirect_uri,
         grant_type,
         code_verifier
