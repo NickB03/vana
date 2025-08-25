@@ -34,12 +34,13 @@ const PUBLIC_ROUTES = [
 // ];
 
 // Admin-only routes - Using prefix-based protection for defense-in-depth
-const ADMIN_ROUTES = [
-  '/admin',
-  '/admin/users',
-  '/admin/settings',
-  '/admin/analytics'
-];
+// Note: Currently using startsWith('/admin') check instead of array
+// const ADMIN_ROUTES = [
+//   '/admin',
+//   '/admin/users',
+//   '/admin/settings',
+//   '/admin/analytics'
+// ];
 
 interface JWTPayload {
   exp?: number;

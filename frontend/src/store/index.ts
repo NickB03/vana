@@ -1224,7 +1224,7 @@ export const useStorePerformance = () => {
   React.useEffect(() => {
     const unsubscribe = useUnifiedStore.subscribe(
       (state) => state, // Watch entire state for any changes
-      (state, prevState) => {
+      (_state, _prevState) => {
         const startTime = performance.now();
         
         // Measure update time

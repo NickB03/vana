@@ -11,10 +11,7 @@ function performanceMiddlewareImpl<T>(
   return (set, get, api) => {
   const originalSet = set;
   
-  const wrappedSet: typeof set = (
-    partial: T | Partial<T> | ((state: T) => T | Partial<T>),
-    replace?: boolean | undefined
-  ) => {
+  const wrappedSet: typeof set = (partial: any, replace?: any) => {
     const startTime = performance.now();
     
     const result = originalSet(partial, replace);
@@ -61,10 +58,7 @@ function validationMiddlewareImpl<T>(
   return (set, get, api) => {
   const originalSet = set;
   
-  const wrappedSet: typeof set = (
-    partial: T | Partial<T> | ((state: T) => T | Partial<T>),
-    replace?: boolean | undefined
-  ) => {
+  const wrappedSet: typeof set = (partial: any, replace?: any) => {
     // Only validate in development
     if (process.env.NODE_ENV === 'development' && validators) {
       const currentState = get();
@@ -162,10 +156,7 @@ function errorHandlingMiddlewareImpl<T>(
   return (set, get, api) => {
   const originalSet = set;
   
-  const wrappedSet: typeof set = (
-    partial: T | Partial<T> | ((state: T) => T | Partial<T>),
-    replace?: boolean | undefined
-  ) => {
+  const wrappedSet: typeof set = (partial: any, replace?: any) => {
     try {
       return originalSet(partial, replace);
     } catch (error) {
@@ -218,10 +209,7 @@ function rateLimitMiddlewareImpl<T>(
   
   const originalSet = set;
   
-  const wrappedSet: typeof set = (
-    partial: T | Partial<T> | ((state: T) => T | Partial<T>),
-    replace?: boolean | undefined
-  ) => {
+  const wrappedSet: typeof set = (partial: any, replace?: any) => {
     const now = Date.now();
     
     // Reset counters every second
