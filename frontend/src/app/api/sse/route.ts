@@ -33,13 +33,13 @@ export async function GET(request: NextRequest) {
   const writer = stream.writable.getWriter();
 
   // Helper function to send SSE events
-  const sendEvent = async (event: any) => {
+  const sendEvent = async (event: Record<string, unknown>) => {
     const data = `data: ${JSON.stringify(event)}\n\n`;
     await writer.write(encoder.encode(data));
   };
 
   // Helper function to send typed events
-  const sendTypedEvent = async (type: string, data: any, id?: string) => {
+  const sendTypedEvent = async (type: string, data: Record<string, unknown>, id?: string) => {
     let message = '';
     if (id) message += `id: ${id}\n`;
     if (type !== 'message') message += `event: ${type}\n`;
@@ -94,7 +94,7 @@ export async function GET(request: NextRequest) {
                 try {
                   const data = JSON.parse(line.slice(6));
                   await sendEvent(data);
-                } catch (e) {
+                } catch {
                   // Not JSON, send as-is
                   await writer.write(encoder.encode(line + '\n'));
                 }
@@ -148,7 +148,7 @@ export async function GET(request: NextRequest) {
 
 // Mock event stream for development
 async function startMockEventStream(
-  sendEvent: (type: string, data: any, id?: string) => Promise<void>,
+  sendEvent: (type: string, data: Record<string, unknown>, id?: string) => Promise<void>,
   sessionId: string
 ) {
   // Simulate agent updates

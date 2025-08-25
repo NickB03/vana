@@ -54,8 +54,8 @@ vi.mock('next/headers', () => ({
 // Mock next/image
 vi.mock('next/image', () => ({
   default: (props: any) => {
-    // eslint-disable-next-line @next/next/no-img-element, jsx-a11y/alt-text
-    return <img {...props} />
+    // Return a simple mock component
+    return props
   },
 }))
 

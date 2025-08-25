@@ -109,9 +109,8 @@ export function ExportSystem({ content, mode, className }: ExportSystemProps) {
     const blob = new Blob([content.content], { type: mimeType });
     
     // Use SSR-safe URL and document access
-    const { safeCreateObjectURL, safeRevokeObjectURL, safeDocument } = require('@/lib/ssr-utils');
-    const url = safeCreateObjectURL(blob);
-    const doc = safeDocument();
+    const url = typeof window !== 'undefined' && window.URL ? URL.createObjectURL(blob) : null;
+    const doc = typeof document !== 'undefined' ? document : null;
     
     if (url && doc) {
       const link = doc.createElement('a');
@@ -120,7 +119,9 @@ export function ExportSystem({ content, mode, className }: ExportSystemProps) {
       doc.body.appendChild(link);
       link.click();
       doc.body.removeChild(link);
-      safeRevokeObjectURL(url);
+      if (typeof window !== 'undefined' && window.URL) {
+        URL.revokeObjectURL(url);
+      }
     }
   }, [content, mode]);
 

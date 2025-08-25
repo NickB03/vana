@@ -19,11 +19,9 @@ const nextConfig: NextConfig = {
     ];
   },
   // Note: Security headers are now handled by middleware.ts for better CSP nonce support
-  // Enable experimental features for better development experience
-  experimental: {
-    turbo: {
-      // Turbopack configuration
-    },
+  // Turbopack configuration (moved from experimental.turbo)
+  turbopack: {
+    // Turbopack configuration
   },
   // Disable x-powered-by header
   poweredByHeader: false,

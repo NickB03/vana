@@ -3,10 +3,10 @@
  * Clears all authentication tokens
  */
 
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 
-export async function POST(_request: NextRequest) {
+export async function POST() {
   try {
     const cookieStore = await cookies();
     
@@ -45,7 +45,7 @@ export async function POST(_request: NextRequest) {
   }
 }
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   // Support GET for easier testing
-  return POST(request);
+  return POST();
 }

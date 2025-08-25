@@ -77,6 +77,7 @@ export function SessionIndicator({
       const timer = setTimeout(() => setIsVisible(false), 5000);
       return () => clearTimeout(timer);
     }
+    return undefined;
   }, [autoHide, isAuthenticated]);
 
   if (!isAuthenticated || !user) {

@@ -11,11 +11,11 @@ import React from 'react';
 import {
   useSSE,
   useSSEEvent,
-  useAgentNetworkEvents,
-  useSSEConnectionEvents,
+  useSSEAgentUpdates,
+  useSSEConnection,
   useSSEHealth
 } from '@/hooks/useSSE';
-import { AgentNetworkUpdate, ConnectionEvent, MessageEvent } from '@/lib/sse/types';
+import { AgentUpdatePayload, MessageEvent } from '@/lib/sse/types';
 
 // ============================================================================
 // Example 1: Basic SSE Connection
@@ -25,7 +25,7 @@ export function BasicSSEExample() {
   const {
     isConnected,
     isConnecting,
-    connectionError,
+    error,
     connect,
     disconnect
   } = useSSE({
@@ -69,7 +69,7 @@ export function BasicSSEExample() {
 
 export function EventHandlingExample() {
   const [messages, setMessages] = React.useState<MessageEvent[]>([]);
-  const [agentUpdates, setAgentUpdates] = React.useState<AgentNetworkUpdate[]>([]);
+  const [agentUpdates, setAgentUpdates] = React.useState<AgentUpdatePayload[]>([]);
 
   // Listen for message events
   useSSEEvent('message', (data, event) => {
@@ -78,7 +78,7 @@ export function EventHandlingExample() {
   });
 
   // Listen for agent network updates
-  useAgentNetworkEvents((data, event) => {
+  useSSEAgentUpdates((data) => {
     console.log('Agent network update:', data);
     setAgentUpdates(prev => [...prev, data].slice(-5)); // Keep last 5 updates
   });
@@ -104,8 +104,9 @@ export function EventHandlingExample() {
           <div className="space-y-1 max-h-32 overflow-y-auto">
             {agentUpdates.map((update, index) => (
               <div key={index} className="text-sm bg-blue-100 p-2 rounded">
-                <div>Active Agents: {update.active_count}</div>
-                <div>State: {update.network_state}</div>
+                <div>Agent: {update.agentId}</div>
+                <div>Status: {update.status}</div>
+                <div>Progress: {update.progress ? Math.round(update.progress * 100) + '%' : 'N/A'}</div>
               </div>
             ))}
           </div>
@@ -120,10 +121,8 @@ export function EventHandlingExample() {
 // ============================================================================
 
 export function ConnectionHealthExample() {
-  const { health, metrics, isConnected } = useSSEHealth({
-    autoConnect: true,
-    heartbeatInterval: 5000,
-  });
+  const { health, metrics, latency, uptime } = useSSEHealth();
+  const { isConnected } = useSSEConnection();
 
   return (
     <div className="p-4 border rounded">
@@ -133,21 +132,21 @@ export function ConnectionHealthExample() {
         <div>
           <h4 className="font-medium mb-2">Health Status</h4>
           <div className="space-y-1">
-            <p>Healthy: {health.isHealthy ? '✅' : '❌'}</p>
+            <p>Healthy: {health?.connected ? '✅' : '❌'}</p>
             <p>Connected: {isConnected ? '✅' : '❌'}</p>
-            <p>Average Latency: {Math.round(health.averageLatency)}ms</p>
-            <p>Uptime: {Math.round(health.connectionUptime / 1000)}s</p>
+            <p>Average Latency: {latency ? Math.round(latency) + 'ms' : 'N/A'}</p>
+            <p>Uptime: {uptime ? Math.round(uptime / 1000) + 's' : 'N/A'}</p>
           </div>
         </div>
         
         <div>
           <h4 className="font-medium mb-2">Connection Metrics</h4>
           <div className="space-y-1 text-sm">
-            <p>Attempts: {metrics.connectionsAttempted}</p>
-            <p>Successful: {metrics.connectionsSuccessful}</p>
-            <p>Failed: {metrics.connectionsFailed}</p>
-            <p>Messages: {metrics.messagesReceived}</p>
-            <p>Parse Errors: {metrics.messagesParseErrors}</p>
+            <p>Attempts: {metrics?.connectionAttempts || 0}</p>
+            <p>Successful: {metrics?.connectionSuccess || 0}</p>
+            <p>Failed: {metrics?.connectionFailures || 0}</p>
+            <p>Messages: {metrics?.messagesReceived || 0}</p>
+            <p>Parse Errors: {metrics?.errors || 0}</p>
           </div>
         </div>
       </div>
@@ -163,62 +162,62 @@ export function AdvancedSSEExample() {
   const [connectionHistory, setConnectionHistory] = React.useState<string[]>([]);
   
   const {
-    client,
+    state,
     isConnected,
-    connectionState,
-    addEventListener,
-    updateSession,
-    updateAuthToken
+    subscribe,
+    connect,
+    disconnect,
+    error
   } = useSSE({
-    autoConnect: false,
-    maxRetries: 5,
-    exponentialBackoff: true,
-    heartbeatInterval: 10000,
-    onConnectionChange: (state) => {
+    onError: (error) => {
+      console.error('SSE Error:', error);
       const timestamp = new Date().toLocaleTimeString();
       setConnectionHistory(prev => [
         ...prev,
-        `${timestamp}: ${state.state} (type: ${state.connectionType})`
+        `${timestamp}: Error - ${error.message}`
       ].slice(-10));
-    },
-    onError: (error) => {
-      console.error('SSE Error:', error);
-    },
-    onHeartbeat: (latency) => {
-      console.log('Heartbeat latency:', latency + 'ms');
     },
   });
 
   // Manual event listener with cleanup
   React.useEffect(() => {
-    if (!client) return;
-
-    const unsubscribeStatus = addEventListener('status', (event) => {
+    const unsubscribeStatus = subscribe('status', (event) => {
       console.log('Status update:', event.data);
+      const timestamp = new Date().toLocaleTimeString();
+      setConnectionHistory(prev => [
+        ...prev,
+        `${timestamp}: Status - ${JSON.stringify(event.data)}`
+      ].slice(-10));
     });
 
-    const unsubscribeConnection = addEventListener('connection', (event) => {
-      const data = event.data as ConnectionEvent;
-      console.log('Connection event:', data.status);
+    const unsubscribeMessage = subscribe('message', (event) => {
+      console.log('Message event:', event.data);
+      const timestamp = new Date().toLocaleTimeString();
+      setConnectionHistory(prev => [
+        ...prev,
+        `${timestamp}: Message received`
+      ].slice(-10));
     });
 
     return () => {
       unsubscribeStatus();
-      unsubscribeConnection();
+      unsubscribeMessage();
     };
-  }, [client, addEventListener]);
+  }, [subscribe]);
 
   const handleSessionChange = () => {
     const newSessionId = prompt('Enter new session ID:');
     if (newSessionId) {
-      updateSession(newSessionId);
+      // Note: Session update would need to be handled at store level
+      console.log('Session change requested:', newSessionId);
     }
   };
 
   const handleTokenUpdate = () => {
     const newToken = prompt('Enter new auth token:');
     if (newToken) {
-      updateAuthToken(newToken);
+      // Note: Token update would need to be handled at store level
+      console.log('Token update requested');
     }
   };
 
@@ -230,12 +229,12 @@ export function AdvancedSSEExample() {
         <div>
           <h4 className="font-medium mb-2">Connection State</h4>
           <div className="grid grid-cols-2 gap-2 text-sm">
-            <p>Connected: {connectionState.connected ? '✅' : '❌'}</p>
-            <p>State: {connectionState.state}</p>
-            <p>Type: {connectionState.connectionType}</p>
-            <p>Retries: {connectionState.retryCount}</p>
-            <p>Last Event ID: {connectionState.lastEventId || 'N/A'}</p>
-            <p>Latency: {connectionState.networkLatency ? Math.round(connectionState.networkLatency) + 'ms' : 'N/A'}</p>
+            <p>Connected: {isConnected ? '✅' : '❌'}</p>
+            <p>State: {state}</p>
+            <p>Error: {error ? error.message : 'None'}</p>
+            <p>Type: SSE Connection</p>
+            <p>Last Event ID: N/A</p>
+            <p>Latency: N/A</p>
           </div>
         </div>
 
@@ -290,9 +289,9 @@ export function MultiEventExample() {
     const eventTypes = ['message', 'agent-update', 'status', 'heartbeat', 'error'];
     
     const unsubscribers = eventTypes.map(eventType => 
-      sse.addEventListenerGeneric(eventType, (event) => {
+      sse.subscribe(eventType, (event) => {
         setEventLog(prev => [{
-          type: event.type,
+          type: event.type || eventType,
           data: event.data,
           timestamp: new Date().toLocaleTimeString()
         }, ...prev].slice(0, 50)); // Keep last 50 events

@@ -5,7 +5,7 @@
 
 'use client';
 
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/hooks/use-auth';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -15,7 +15,7 @@ import { UserProfileDropdown } from '@/components/auth/UserProfileDropdown';
 import { GoogleLoginButton } from '@/components/auth/GoogleLoginButton';
 
 export default function HomePage() {
-  const { isAuthenticated, user, loading } = useAuth();
+  const { isAuthenticated } = useAuth();
   const router = useRouter();
 
   const features = [
@@ -187,7 +187,7 @@ export default function HomePage() {
             ) : (
               <GoogleLoginButton
                 size="lg"
-                variant="secondary"
+                variant="outline"
                 text="Sign Up Free"
                 className="text-lg px-8"
               />

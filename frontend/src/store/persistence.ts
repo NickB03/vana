@@ -122,7 +122,7 @@ class EnhancedStorage {
   setItem(key: string, value: string): void {
     try {
       let data = value;
-      let metadata = {
+      const metadata = {
         version: this.config.version,
         timestamp: Date.now(),
         ttl: this.config.ttl ? Date.now() + this.config.ttl : null,
@@ -285,45 +285,42 @@ export const createEnhancedStorage = (config: PersistenceConfig) => {
 export const createPersistOptions = <T extends Partial<UnifiedStore>>(
   config: PersistenceConfig,
   partialize?: (state: UnifiedStore) => T,
-  onRehydrateStorage?: (state?: T) => void
-): PersistOptions<UnifiedStore> => {
+  onRehydrateStorage?: (state?: UnifiedStore) => void
+): PersistOptions<UnifiedStore, T> => {
   const storage = createEnhancedStorage(config);
   
   return {
     name: config.name,
     storage: createJSONStorage(() => storage),
     version: config.version,
-    partialize: partialize || ((state) => state as T),
-    onRehydrateStorage: onRehydrateStorage ? () => onRehydrateStorage : undefined,
+    partialize: partialize || ((state) => state as unknown as T),
+    onRehydrateStorage: onRehydrateStorage ? () => (state, error) => {
+      if (error) {
+        console.error(`Failed to rehydrate ${config.name}:`, error);
+        storage.clear();
+      } else if (state && onRehydrateStorage) {
+        onRehydrateStorage(state);
+      }
+    } : undefined,
     
     // Migration function for version changes
-    migrate: (persistedState: any, version: number) => {
+    migrate: (persistedState: unknown, version: number) => {
       console.log(`Migrating ${config.name} from version ${version} to ${config.version}`);
       
       // Add migration logic here based on version differences
       if (version < config.version) {
         // Perform migration
-        return persistedState;
+        return persistedState as T;
       }
       
-      return persistedState;
+      return persistedState as T;
     },
     
-    // Error handling
-    onRehydrateStorage: () => (state, error) => {
-      if (error) {
-        console.error(`Failed to rehydrate ${config.name}:`, error);
-        // Clear corrupted data
-        storage.clear();
-      } else if (state && onRehydrateStorage) {
-        onRehydrateStorage(state);
-      }
-    }
   };
 };
 
 // Selective persistence configuration for the unified store
-export const getUnifiedStorePersistOptions = (): PersistOptions<UnifiedStore> => {
+export const getUnifiedStorePersistOptions = (): PersistOptions<UnifiedStore, Partial<UnifiedStore>> => {
   return createPersistOptions(
     PERSISTENCE_CONFIGS.session,
     
@@ -363,7 +360,7 @@ export const getUnifiedStorePersistOptions = (): PersistOptions<UnifiedStore> =>
     } as Partial<UnifiedStore>),
     
     // Rehydration callback
-    (state?: Partial<UnifiedStore>) => {
+    (state?: UnifiedStore) => {
       if (state) {
         console.log('🔄 Store rehydrated successfully');
         
@@ -391,8 +388,12 @@ export const getUIPersistOptions = () => {
         sidebarWidth: state.ui.sidebarWidth,
         preferences: state.ui.preferences,
         selectedTools: state.ui.selectedTools,
+        sidebarOpen: state.ui.sidebarOpen,
+        chatInputHeight: state.ui.chatInputHeight,
+        showTyping: state.ui.showTyping,
+        activeModal: state.ui.activeModal,
       }
-    })
+    }) as Partial<UnifiedStore>
   );
 };
 
@@ -403,8 +404,10 @@ export const getSessionPersistOptions = () => {
       session: {
         sessions: state.session.sessions,
         currentSession: state.session.currentSession,
+        isLoading: state.session.isLoading,
+        error: state.session.error,
       }
-    })
+    }) as Partial<UnifiedStore>
   );
 };
 
@@ -413,9 +416,11 @@ export const getAuthPersistOptions = () => {
     PERSISTENCE_CONFIGS.auth,
     (state: UnifiedStore) => ({
       auth: {
-        user: state.auth.user, // Only persist user, not tokens
+        user: state.auth.user, // Only persist user, not tokens - tokens stored in httpOnly cookies
+        isLoading: state.auth.isLoading,
+        error: state.auth.error,
       }
-    })
+    }) as Partial<UnifiedStore>
   );
 };
 

@@ -16,7 +16,7 @@ import {
   AgentUpdatePayload,
   ProgressPayload
 } from '@/lib/sse/types';
-import { useVanaStore } from '@/store';
+import { useAuth, useSession, useChat } from '@/store';
 
 // Main SSE Hook
 export function useSSE(config?: Partial<SSEConfig>) {
@@ -26,14 +26,14 @@ export function useSSE(config?: Partial<SSEConfig>) {
   const clientRef = useRef<SSEClient | null>(null);
   
   // Get auth token from store
-  const { accessToken } = useVanaStore((state) => state.auth);
-  const { currentSession } = useVanaStore((state) => state.session);
+  const { tokens } = useAuth();
+  const { currentSession } = useSession();
   
   // Initialize SSE client
   useEffect(() => {
     if (!currentSession?.id) return;
     
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+    const baseUrl = process.env['NEXT_PUBLIC_API_URL'] || 'http://localhost:8000';
     const sseUrl = `${baseUrl}/api/sse/stream`;
     
     const sseConfig: SSEConfig = {
@@ -41,7 +41,7 @@ export function useSSE(config?: Partial<SSEConfig>) {
       withCredentials: true,
       headers: {
         'X-Session-ID': currentSession.id,
-        ...(accessToken && { 'Authorization': `Bearer ${accessToken}` })
+        ...(tokens?.access_token && { 'Authorization': `Bearer ${tokens.access_token}` })
       },
       reconnect: true,
       reconnectAttempts: 3,
@@ -97,7 +97,7 @@ export function useSSE(config?: Partial<SSEConfig>) {
         clientRef.current = null;
       }
     };
-  }, [currentSession?.id, accessToken, config]);
+  }, [currentSession?.id, tokens?.access_token, config]);
   
   // Connect manually
   const connect = useCallback(() => {
@@ -134,6 +134,7 @@ export function useSSE(config?: Partial<SSEConfig>) {
     disconnect,
     subscribe,
     isConnected: state === SSEConnectionState.CONNECTED,
+    isConnecting: state === SSEConnectionState.CONNECTING,
     isReconnecting: state === SSEConnectionState.RECONNECTING,
     isError: state === SSEConnectionState.ERROR
   };
@@ -158,20 +159,21 @@ export function useSSEEvent<T = any>(
 
 // Hook for message events
 export function useSSEMessages(onMessage: (message: MessagePayload) => void) {
-  const { addMessage } = useVanaStore((state) => state.chat);
+  const { addMessage, activeConversation } = useChat();
   
   useSSEEvent<MessagePayload>(
     SSEEventType.MESSAGE,
     (data) => {
-      // Add to store
-      addMessage({
-        id: data.id,
-        content: data.content,
-        role: data.role,
-        timestamp: Date.now(),
-        sessionId: data.sessionId,
-        metadata: data.metadata
-      });
+      // Add to store if there's an active conversation
+      if (activeConversation) {
+        addMessage(activeConversation, {
+          id: data.id,
+          content: data.content,
+          role: data.role,
+          timestamp: Date.now(),
+          metadata: data.metadata
+        });
+      }
       
       // Call handler
       onMessage(data);

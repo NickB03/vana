@@ -4,12 +4,13 @@ import { create } from 'zustand';
 import { subscribeWithSelector, devtools, persist, createJSONStorage } from 'zustand/middleware';
 import { immer } from 'zustand/middleware/immer';
 import { safeLocalStorage } from '@/lib/ssr-utils';
+import { getDefaultPersonality } from '@/lib/agent-defaults';
 
 // Import existing types
 import type { AuthState, LoginCredentials, RegisterCredentials } from '@/types/auth';
 import type { SessionState, ChatSession, ChatMessage, SSEAgentEvent } from '@/types/session';
-import type { Agent, AgentRole, AgentMessage, AgentThread, AgentConversation } from '@/types/agents';
-import type { CanvasState, CanvasContent, CanvasMode, CollaborativeSession, AgentSuggestion } from '@/types/canvas';
+import type { Agent, AgentRole, AgentConversation } from '@/types/agents';
+import type { CanvasContent, CanvasMode, CollaborativeSession, AgentSuggestion } from '@/types/canvas';
 
 // New store slice types for the unified architecture
 export interface ChatStore {
@@ -178,7 +179,6 @@ export interface UnifiedStore {
   // Global actions
   resetAll: () => void;
   getState: () => UnifiedStore;
-  subscribe: (listener: (state: UnifiedStore, prevState: UnifiedStore) => void) => () => void;
 }
 
 // Utility functions
@@ -567,8 +567,9 @@ export const useUnifiedStore = create<UnifiedStore>()(
             },
             
             handleSSEEvent: (event: SSEAgentEvent) => {
-              set((state) => {
+              set(() => {
                 // Handle various SSE events and update session state accordingly
+                // TODO: Implement event handlers when needed
                 switch (event.type) {
                   case 'agent_network_update':
                     // Update agent network state
@@ -620,33 +621,15 @@ export const useUnifiedStore = create<UnifiedStore>()(
               set((state) => {
                 const conversation = state.chat.conversations[conversationId];
                 if (conversation && conversation.threads[0]) {
-                  conversation.threads[0].messages.push({
+                  // Create an AgentMessage from the ChatMessage
+                  const agentMessage = {
                     ...message,
-                    agentId: 'user',
-                    agentRole: 'coordinator' as AgentRole,
-                    personality: {
-                      style: 'collaborative',
-                      tone: 'professional',
-                      formality: 'semi-formal',
-                      expertise: 'intermediate',
-                      responsePattern: {
-                        structure: 'conversational',
-                        length: 'moderate',
-                        examples: true,
-                        questions: true,
-                        suggestions: false
-                      },
-                      colors: {
-                        primary: '#3b82f6',
-                        secondary: '#1e40af',
-                        accent: '#60a5fa',
-                        background: '#eff6ff',
-                        text: '#1e40af',
-                        border: '#3b82f6'
-                      },
-                      emoji: '👤'
-                    }
-                  });
+                    agentId: message.role === 'user' ? 'user' : 'assistant',
+                    agentRole: (message.role === 'user' ? 'coordinator' : 'assistant') as AgentRole,
+                    personality: getDefaultPersonality(message.role)
+                  };
+                  
+                  conversation.threads[0].messages.push(agentMessage);
                   conversation.lastActivity = Date.now();
                   conversation.threads[0].updatedAt = Date.now();
                 }
@@ -693,10 +676,10 @@ export const useUnifiedStore = create<UnifiedStore>()(
           
           // Canvas slice
           canvas: {
-            currentMode: 'markdown',
+            currentMode: 'markdown' as CanvasMode,
             content: {
               id: generateId(),
-              mode: 'markdown',
+              mode: 'markdown' as CanvasMode,
               title: 'Untitled',
               content: '',
               lastModified: new Date()
@@ -781,7 +764,7 @@ export const useUnifiedStore = create<UnifiedStore>()(
                     color: agent.personality.colors.primary,
                     avatar: agent.avatar,
                     capabilities: agent.capabilities,
-                    status: agent.status,
+                    status: (agent.status === 'error' ? 'offline' : agent.status === 'busy' || agent.status === 'thinking' ? 'working' : agent.status) as 'active' | 'idle' | 'working' | 'offline',
                     lastActivity: new Date(agent.lastActivity || Date.now())
                   })),
                   cursors: {},
@@ -864,7 +847,7 @@ export const useUnifiedStore = create<UnifiedStore>()(
                 }
                 // Update in available agents as well
                 const agentIndex = state.agentDeck.availableAgents.findIndex(a => a.id === agentId);
-                if (agentIndex >= 0) {
+                if (agentIndex >= 0 && state.agentDeck.availableAgents[agentIndex]) {
                   state.agentDeck.availableAgents[agentIndex].status = status;
                   state.agentDeck.availableAgents[agentIndex].lastActivity = Date.now();
                 }
@@ -976,7 +959,8 @@ export const useUnifiedStore = create<UnifiedStore>()(
             clearCompleted: () => {
               set((state) => {
                 Object.keys(state.upload.uploads).forEach(uploadId => {
-                  if (state.upload.uploads[uploadId].status === 'completed') {
+                  const upload = state.upload.uploads[uploadId];
+                  if (upload && upload.status === 'completed') {
                     delete state.upload.uploads[uploadId];
                     delete state.upload.progress[uploadId];
                     delete state.upload.errors[uploadId];
@@ -1178,10 +1162,7 @@ export const useUnifiedStore = create<UnifiedStore>()(
             });
           },
           
-          getState: () => get(),
-          subscribe: (listener: (state: UnifiedStore, prevState: UnifiedStore) => void) => {
-            return useUnifiedStore.subscribe(listener);
-          }
+          getState: () => get()
         })),
         {
           name: 'vana-unified-store',
@@ -1241,23 +1222,26 @@ export const useStorePerformance = () => {
   });
 
   React.useEffect(() => {
-    const unsubscribe = useUnifiedStore.subscribe((state, prevState) => {
-      const startTime = performance.now();
-      
-      // Measure update time
-      const updateDuration = performance.now() - startTime;
-      
-      setMetrics(prev => ({
-        lastUpdateTime: Date.now(),
-        updateDuration,
-        updateCount: prev.updateCount + 1
-      }));
-      
-      // Warn if update takes longer than 50ms
-      if (updateDuration > 50) {
-        console.warn(`Store update took ${updateDuration.toFixed(2)}ms - exceeds 50ms target`);
+    const unsubscribe = useUnifiedStore.subscribe(
+      (state) => state, // Watch entire state for any changes
+      (_state, _prevState) => {
+        const startTime = performance.now();
+        
+        // Measure update time
+        const updateDuration = performance.now() - startTime;
+        
+        setMetrics(prev => ({
+          lastUpdateTime: Date.now(),
+          updateDuration,
+          updateCount: prev.updateCount + 1
+        }));
+        
+        // Warn if update takes longer than 50ms
+        if (updateDuration > 50) {
+          console.warn(`Store update took ${updateDuration.toFixed(2)}ms - exceeds 50ms target`);
+        }
       }
-    });
+    );
     
     return unsubscribe;
   }, []);

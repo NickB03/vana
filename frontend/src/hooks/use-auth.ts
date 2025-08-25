@@ -3,6 +3,8 @@
 import { useEffect } from 'react';
 import { useAuthStore } from '@/store/auth-store';
 
+export type UseAuthReturn = ReturnType<typeof useAuth>;
+
 export function useAuth() {
   const {
     user,
@@ -27,18 +29,8 @@ export function useAuth() {
     checkAuth();
   }, []); // Remove checkAuth from dependencies to prevent infinite loop
 
-  // Auto-refresh token
-  useEffect(() => {
-    if (!isAuthenticated) return;
-
-    const refreshInterval = setInterval(() => {
-      refreshToken().catch(() => {
-        // Token refresh failed, user will be logged out
-      });
-    }, 15 * 60 * 1000); // Refresh every 15 minutes
-
-    return () => clearInterval(refreshInterval);
-  }, [isAuthenticated, refreshToken]);
+  // Token refresh is handled by useTokenRefresh hook
+  // Removed duplicate auto-refresh logic to prevent race conditions
 
   return {
     // State

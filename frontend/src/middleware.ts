@@ -24,21 +24,23 @@ const PUBLIC_ROUTES = [
 ];
 
 // Routes that require authentication
-const PROTECTED_ROUTES = [
-  '/chat',
-  '/canvas',
-  '/agents',
-  '/settings',
-  '/profile'
-];
+// TODO: Re-enable when auth middleware is fully implemented
+// const PROTECTED_ROUTES = [
+//   '/chat',
+//   '/canvas',
+//   '/agents',
+//   '/settings',
+//   '/profile'
+// ];
 
-// Admin-only routes
-const ADMIN_ROUTES = [
-  '/admin',
-  '/admin/users',
-  '/admin/settings',
-  '/admin/analytics'
-];
+// Admin-only routes - Using prefix-based protection for defense-in-depth
+// Note: Currently using startsWith('/admin') check instead of array
+// const ADMIN_ROUTES = [
+//   '/admin',
+//   '/admin/users',
+//   '/admin/settings',
+//   '/admin/analytics'
+// ];
 
 interface JWTPayload {
   exp?: number;
@@ -97,9 +99,10 @@ export function middleware(request: NextRequest) {
       return response;
     }
 
-    // Check admin routes
-    if (ADMIN_ROUTES.some(route => pathname.startsWith(route))) {
-      if (payload.role !== 'admin') {
+    // Check admin routes with prefix-based protection for defense-in-depth
+    // This blocks ALL paths starting with /admin for non-admin users
+    if (pathname.startsWith('/admin')) {
+      if (!payload.role || payload.role !== 'admin') {
         // Redirect to 403 Forbidden
         const url = request.nextUrl.clone();
         url.pathname = '/403';

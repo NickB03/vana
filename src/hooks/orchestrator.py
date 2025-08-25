@@ -27,12 +27,13 @@ from contextlib import asynccontextmanager
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
-from typing import Any
+from typing import Any, Dict, List
 
 from .config.hook_config import HookConfig, ValidationLevel
 from .feedback.realtime_feedback import RealtimeFeedback
 from .monitors.performance_monitor import PerformanceMonitor
 from .validators.context_sanitizer import ContextSanitizer
+from .validators.enhanced_error_context import EnhancedErrorContextCapture
 from .validators.security_scanner import SecurityScanner
 from .validators.shell_validator import ShellValidator
 
@@ -109,6 +110,9 @@ class HookOrchestrator:
         self.context_sanitizer = ContextSanitizer(self.config.context_sanitizer)
         self.shell_validator = ShellValidator(self.config.shell_validator)
         self.security_scanner = SecurityScanner(self.config.security_scanner)
+        
+        # Initialize enhanced error capture
+        self.error_capture = EnhancedErrorContextCapture()
 
         # Initialize monitoring and feedback
         self.performance_monitor = PerformanceMonitor()
@@ -122,6 +126,10 @@ class HookOrchestrator:
             ToolType.READ: [self.context_sanitizer],
             ToolType.EDIT: [self.context_sanitizer, self.security_scanner],
         }
+        
+        # Enhanced error tracking
+        self.error_session_id = f"session_{int(time.time())}"
+        self.current_errors = []
 
         # Metrics storage
         self.validation_metrics = {
@@ -133,10 +141,15 @@ class HookOrchestrator:
             "validator_performance": {},
             "security_incidents": 0,
             "performance_improvements": 0,
+            "typescript_errors": 0,
+            "error_reports_generated": 0,
         }
 
         # Thread safety
         self._lock = threading.RLock()
+        
+        # Start error cleanup task
+        asyncio.create_task(self._periodic_error_cleanup())
 
         logger.info(
             "Hook orchestrator initialized with validation level: %s",
@@ -182,6 +195,10 @@ class HookOrchestrator:
             execution_time = time.time() - start_time
             await self._update_metrics(validation_report, execution_time)
 
+            # Capture and analyze errors if validation failed
+            if validation_report.validation_result == ValidationResult.FAILED:
+                await self._capture_enhanced_errors(tool_call, validation_report)
+            
             # Send real-time feedback
             await self.feedback.send_validation_update(validation_report)
 
@@ -523,6 +540,122 @@ class HookOrchestrator:
                 )
 
         return recommendations
+    
+    async def _capture_enhanced_errors(
+        self,
+        tool_call: ToolCall,
+        validation_report: ValidationReport
+    ) -> None:
+        """Capture enhanced error context for failed validations."""
+        try:
+            # For file operations, capture TypeScript errors
+            if tool_call.tool_type in [ToolType.WRITE, ToolType.MULTI_EDIT, ToolType.EDIT]:
+                file_path = tool_call.parameters.get("file_path")
+                if file_path and (file_path.endswith(".ts") or file_path.endswith(".tsx")):
+                    # Capture TypeScript errors for this file
+                    error_contexts = await self.error_capture.capture_typescript_errors()
+                    
+                    if error_contexts:
+                        self.current_errors.extend(error_contexts)
+                        self.validation_metrics["typescript_errors"] += len(error_contexts)
+                        
+                        # Generate enhanced report
+                        enhanced_report = await self.error_capture.generate_comprehensive_report(
+                            self.error_session_id,
+                            error_contexts
+                        )
+                        
+                        self.validation_metrics["error_reports_generated"] += 1
+                        
+                        # Add enhanced error context to validation report
+                        validation_report.recommendations.extend([
+                            "🔍 Enhanced Error Analysis Available",
+                            f"Found {len(error_contexts)} TypeScript compilation errors",
+                            f"Estimated resolution time: {enhanced_report.resolution_time_estimate}",
+                            "Run enhanced error capture for detailed fixing instructions"
+                        ])
+                        
+                        logger.info(
+                            f"Captured {len(error_contexts)} enhanced errors for {file_path}"
+                        )
+        
+        except Exception as e:
+            logger.error(f"Failed to capture enhanced errors: {e}")
+    
+    async def _periodic_error_cleanup(self) -> None:
+        """Periodically clean up old error reports."""
+        while True:
+            try:
+                await asyncio.sleep(3600)  # Run every hour
+                cleaned_count = await self.error_capture.cleanup_old_error_reports()
+                if cleaned_count > 0:
+                    logger.info(f"Cleaned up {cleaned_count} old error reports")
+            except Exception as e:
+                logger.error(f"Error during periodic cleanup: {e}")
+                await asyncio.sleep(3600)  # Wait an hour before retrying
+    
+    async def get_sparc_error_summary(self) -> Dict[str, Any]:
+        """Get SPARC-optimized error summary."""
+        try:
+            return await self.error_capture.get_error_summary_for_sparc(self.error_session_id)
+        except Exception as e:
+            logger.error(f"Failed to get SPARC error summary: {e}")
+            return {"error": "Failed to generate error summary", "details": str(e)}
+    
+    async def capture_current_typescript_errors(self) -> List[Any]:
+        """Capture current TypeScript errors for immediate analysis."""
+        try:
+            return await self.error_capture.capture_typescript_errors()
+        except Exception as e:
+            logger.error(f"Failed to capture TypeScript errors: {e}")
+            return []
+    
+    async def generate_actionable_error_report(self) -> Dict[str, Any]:
+        """Generate an actionable error report for SPARC agents."""
+        try:
+            # Capture latest TypeScript errors
+            error_contexts = await self.error_capture.capture_typescript_errors()
+            
+            if not error_contexts:
+                return {
+                    "status": "no_errors",
+                    "message": "No TypeScript compilation errors found",
+                    "sparc_actions": ["Task('Validation Complete', 'All validations passed', 'validator')"]
+                }
+            
+            # Generate comprehensive report
+            report = await self.error_capture.generate_comprehensive_report(
+                f"actionable_{int(time.time())}",
+                error_contexts
+            )
+            
+            # Format for SPARC agents
+            actionable_report = {
+                "status": "errors_found",
+                "total_errors": report.total_errors,
+                "critical_errors": report.errors_by_severity.get("critical", 0),
+                "compilation_blocked": not report.compilation_successful,
+                "resolution_time_estimate": report.resolution_time_estimate,
+                "actionable_summary": report.actionable_summary,
+                "next_steps": report.next_steps,
+                "sparc_command_sequence": self.error_capture._generate_sparc_command_sequence(error_contexts),
+                "priority_files": self.error_capture._get_priority_files(error_contexts),
+                "error_categories": report.errors_by_category,
+                "dependency_issues": report.dependency_issues,
+                "timestamp": report.timestamp.isoformat()
+            }
+            
+            self.validation_metrics["error_reports_generated"] += 1
+            
+            return actionable_report
+            
+        except Exception as e:
+            logger.error(f"Failed to generate actionable error report: {e}")
+            return {
+                "status": "error",
+                "message": "Failed to generate error report",
+                "error": str(e)
+            }
 
     # Context manager for temporary configuration changes
 

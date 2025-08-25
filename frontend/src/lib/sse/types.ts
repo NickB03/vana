@@ -170,6 +170,13 @@ export interface SSEMetrics {
   uptime: number;
 }
 
+// Connection Event (for examples)
+export interface ConnectionEvent {
+  status: string;
+  timestamp: number;
+  details?: any;
+}
+
 // Health Status
 export interface SSEHealthStatus {
   connected: boolean;

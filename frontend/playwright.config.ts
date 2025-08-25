@@ -5,8 +5,12 @@ import path from 'path'
  * Read environment variables from .env.local file.
  * https://github.com/motdotla/dotenv
  */
-import dotenv from 'dotenv'
-dotenv.config({ path: path.resolve(__dirname, '.env.local') })
+try {
+  const dotenv = require('dotenv')
+  dotenv.config({ path: path.resolve(__dirname, '.env.local') })
+} catch (e) {
+  // dotenv not available, skip
+}
 
 /**
  * See https://playwright.dev/docs/test-configuration.
@@ -18,13 +22,13 @@ export default defineConfig({
   fullyParallel: true,
   
   /* Fail the build on CI if you accidentally left test.only in the source code. */
-  forbidOnly: !!process.env.CI,
+  forbidOnly: !!process.env['CI'],
   
   /* Retry on CI only */
-  retries: process.env.CI ? 2 : 1,
+  retries: process.env['CI'] ? 2 : 1,
   
   /* Opt out of parallel tests on CI. */
-  workers: process.env.CI ? 1 : undefined,
+  workers: process.env['CI'] ? 1 : undefined,
   
   /* Timeout settings */
   timeout: 30 * 1000,
@@ -35,13 +39,13 @@ export default defineConfig({
     ['html', { outputFolder: 'playwright-report' }],
     ['json', { outputFile: 'test-results/results.json' }],
     ['junit', { outputFile: 'test-results/results.xml' }],
-    process.env.CI ? ['github'] : ['list'],
+    process.env['CI'] ? ['github'] : ['list'],
   ],
   
   /* Shared settings for all projects */
   use: {
     /* Base URL to use in actions like `await page.goto('/')`. */
-    baseURL: process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:5173',
+    baseURL: process.env['PLAYWRIGHT_BASE_URL'] || 'http://localhost:5173',
     
     /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
     trace: 'on-first-retry',
@@ -151,7 +155,7 @@ export default defineConfig({
     {
       command: 'npm run dev',
       port: 5173,
-      reuseExistingServer: !process.env.CI,
+      reuseExistingServer: !process.env['CI'],
       timeout: 120 * 1000,
       env: {
         NODE_ENV: 'test',
@@ -161,7 +165,7 @@ export default defineConfig({
     {
       command: 'cd ../app && make dev-backend',
       port: 8000,
-      reuseExistingServer: !process.env.CI,
+      reuseExistingServer: !process.env['CI'],
       timeout: 120 * 1000,
       env: {
         NODE_ENV: 'test',
@@ -173,9 +177,9 @@ export default defineConfig({
   outputDir: 'test-results/',
   
   /* Test artifacts */
-  testConfig: {
-    // Custom test configuration
-    maxDiffPixels: 100,
-    threshold: 0.3,
-  },
+  // testConfig: {
+  //   // Custom test configuration
+  //   maxDiffPixels: 100,
+  //   threshold: 0.3,
+  // },
 })
