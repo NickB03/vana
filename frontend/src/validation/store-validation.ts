@@ -6,7 +6,7 @@
 import { useUnifiedStore } from '../store/index';
 import { subscriptionManager } from '../store/subscriptions';
 import { PERSISTENCE_CONFIGS, getPersistenceStats } from '../store/persistence';
-import { getStoreMetrics, getMemoryUsage, checkStoreHealth } from '../store/middleware';
+// Note: middleware utilities will be imported when needed
 
 // Validation results interface
 interface ValidationResults {
@@ -47,7 +47,7 @@ export function validateUnifiedStore(): ValidationResults['unifiedStore'] {
     // Check global methods
     const requiredMethods = ['resetAll', 'getState', 'subscribe'];
     for (const method of requiredMethods) {
-      if (typeof store[method] !== 'function') {
+      if (typeof (store as any)[method] !== 'function') {
         console.error(`❌ Global method ${method} not found`);
         return false;
       }
@@ -312,10 +312,15 @@ export function validateTypeScript(): boolean {
     // We can check if store methods have proper typing
     const store = useUnifiedStore.getState();
     
-    // Try to access typed properties
+    // Try to access typed properties to verify TypeScript types
     const user = store.auth.user;
     const theme = store.ui.theme;
     const sessions = store.session.sessions;
+    
+    // Use the variables to avoid unused variable warnings
+    if (user !== undefined && theme !== undefined && sessions !== undefined) {
+      // Types are properly defined
+    }
     
     console.log('✅ TypeScript interfaces validated (compile-time)');
     return true;

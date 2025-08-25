@@ -47,7 +47,7 @@ describe('Google OAuth Client', () => {
     sessionStorage.clear();
     (fetch as jest.Mock).mockClear();
     // Set env variable for testing
-    process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID = 'test-client-id';
+    process.env['NEXT_PUBLIC_GOOGLE_CLIENT_ID'] = 'test-client-id';
     googleOAuthClient = getGoogleOAuthClient();
   });
 

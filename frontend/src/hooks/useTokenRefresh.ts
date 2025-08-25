@@ -4,7 +4,7 @@
  */
 
 import { useEffect, useRef, useCallback } from 'react';
-import { useAuth } from './useAuth';
+import { useAuth } from './use-auth';
 import { tokenManager } from '@/lib/auth/token-manager';
 
 /**
@@ -56,6 +56,7 @@ export function useTokenRefresh(config: TokenRefreshConfig = {}) {
   const intervalRef = useRef<NodeJS.Timeout>();
   const retryCountRef = useRef(0);
   const isRefreshingRef = useRef(false);
+  const retryTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   
   /**
    * Perform token refresh with retry logic
@@ -107,7 +108,12 @@ export function useTokenRefresh(config: TokenRefreshConfig = {}) {
       if (retryCountRef.current < retryAttempts) {
         retryCountRef.current++;
         
-        setTimeout(() => {
+        // Clear any existing retry timeout
+        if (retryTimeoutRef.current) {
+          clearTimeout(retryTimeoutRef.current);
+        }
+        
+        retryTimeoutRef.current = setTimeout(() => {
           performRefresh();
         }, retryDelay * retryCountRef.current);
       } else {
@@ -177,6 +183,11 @@ export function useTokenRefresh(config: TokenRefreshConfig = {}) {
     return () => {
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
+        intervalRef.current = undefined;
+      }
+      if (retryTimeoutRef.current) {
+        clearTimeout(retryTimeoutRef.current);
+        retryTimeoutRef.current = null;
       }
     };
   }, [enabled, isAuthenticated, checkInterval, checkRefreshNeeded]);

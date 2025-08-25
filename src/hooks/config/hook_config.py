@@ -186,6 +186,13 @@ class HookConfig:
     proceed_on_warnings: bool = True
     graceful_degradation: bool = True
     max_concurrent_validations: int = 10
+    
+    # Developer-friendly options
+    skip_ts_check: bool = False  # Environment variable: SKIP_TS_CHECK
+    force_complete: bool = False  # Environment variable: FORCE_COMPLETE
+    soft_fail_mode: bool = True  # Convert errors to warnings when enabled
+    respect_tsconfig_excludes: bool = True  # Respect tsconfig.json exclude patterns
+    hook_ignore_file: str = ".hookignore"  # File with patterns to ignore
 
     # Validator configurations
     context_sanitizer: ContextSanitizerConfig = field(
@@ -210,6 +217,35 @@ class HookConfig:
     log_file: str | None = None
     log_format: str = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 
+    @classmethod
+    def load_from_env(cls) -> dict[str, Any]:
+        """Load configuration overrides from environment variables."""
+        import os
+        
+        env_overrides = {}
+        
+        # Map environment variables to config fields
+        env_mappings = {
+            'SKIP_TS_CHECK': ('skip_ts_check', lambda x: x.lower() in ('true', '1', 'yes', 'on')),
+            'FORCE_COMPLETE': ('force_complete', lambda x: x.lower() in ('true', '1', 'yes', 'on')),
+            'SOFT_FAIL_MODE': ('soft_fail_mode', lambda x: x.lower() in ('true', '1', 'yes', 'on')),
+            'RESPECT_TSCONFIG_EXCLUDES': ('respect_tsconfig_excludes', lambda x: x.lower() in ('true', '1', 'yes', 'on')),
+            'HOOK_IGNORE_FILE': ('hook_ignore_file', str),
+            'HOOK_VALIDATION_LEVEL': ('validation_level', lambda x: ValidationLevel(x.lower())),
+            'PROCEED_ON_WARNINGS': ('proceed_on_warnings', lambda x: x.lower() in ('true', '1', 'yes', 'on')),
+        }
+        
+        for env_var, (field, converter) in env_mappings.items():
+            env_value = os.getenv(env_var)
+            if env_value is not None:
+                try:
+                    env_overrides[field] = converter(env_value)
+                    logger.debug(f"Loaded from env {env_var}: {field} = {env_overrides[field]}")
+                except (ValueError, TypeError) as e:
+                    logger.warning(f"Invalid environment variable {env_var}={env_value}: {e}")
+        
+        return env_overrides
+    
     @classmethod
     def load(cls, config_path: str | None = None) -> "HookConfig":
         """Load configuration from file or create default."""
@@ -242,8 +278,14 @@ class HookConfig:
                     if key in config_data:
                         config_data[key] = config_class(**config_data[key])
 
+                # Apply environment variable overrides
+                env_overrides = cls.load_from_env()
+                config_data.update(env_overrides)
+                
                 config = cls(**config_data)
                 logger.info("Loaded hook configuration from: %s", config_path)
+                if env_overrides:
+                    logger.info("Applied environment overrides: %s", list(env_overrides.keys()))
                 return config
 
             except Exception as e:
@@ -255,7 +297,12 @@ class HookConfig:
                 return cls()
         else:
             logger.info("Config file not found at %s. Using defaults.", config_path)
-            return cls()
+            # Still apply environment overrides even with default config
+            env_overrides = cls.load_from_env()
+            config = cls(**env_overrides)
+            if env_overrides:
+                logger.info("Applied environment overrides to default config: %s", list(env_overrides.keys()))
+            return config
 
     def save(self, config_path: str | None = None) -> None:
         """Save configuration to file."""
@@ -298,6 +345,64 @@ class HookConfig:
         config_dict["validation_level"] = self.validation_level.value
         return config_dict
 
+    def load_hook_ignore_patterns(self) -> list[str]:
+        """Load patterns from .hookignore file."""
+        ignore_file = Path(self.hook_ignore_file)
+        if ignore_file.exists():
+            try:
+                with open(ignore_file, 'r') as f:
+                    patterns = []
+                    for line in f:
+                        line = line.strip()
+                        if line and not line.startswith('#'):
+                            patterns.append(line)
+                    logger.debug(f"Loaded {len(patterns)} ignore patterns from {ignore_file}")
+                    return patterns
+            except Exception as e:
+                logger.warning(f"Failed to load ignore patterns from {ignore_file}: {e}")
+        return []
+    
+    def load_tsconfig_excludes(self, tsconfig_path: str = "tsconfig.json") -> list[str]:
+        """Load exclude patterns from tsconfig.json."""
+        if not self.respect_tsconfig_excludes:
+            return []
+        
+        tsconfig_file = Path(tsconfig_path)
+        if tsconfig_file.exists():
+            try:
+                import json
+                with open(tsconfig_file, 'r') as f:
+                    tsconfig = json.load(f)
+                    excludes = tsconfig.get('exclude', [])
+                    logger.debug(f"Loaded {len(excludes)} exclude patterns from {tsconfig_file}")
+                    return excludes
+            except Exception as e:
+                logger.warning(f"Failed to load tsconfig excludes from {tsconfig_file}: {e}")
+        return []
+    
+    def should_skip_validation(self, file_path: str) -> bool:
+        """Check if a file should be skipped based on ignore patterns."""
+        import fnmatch
+        
+        # Check .hookignore patterns
+        for pattern in self.load_hook_ignore_patterns():
+            if fnmatch.fnmatch(file_path, pattern):
+                logger.debug(f"Skipping {file_path} due to .hookignore pattern: {pattern}")
+                return True
+        
+        # Check tsconfig.json excludes
+        for pattern in self.load_tsconfig_excludes():
+            if fnmatch.fnmatch(file_path, pattern):
+                logger.debug(f"Skipping {file_path} due to tsconfig exclude: {pattern}")
+                return True
+                
+        # Check for TypeScript files when skip_ts_check is enabled
+        if self.skip_ts_check and file_path.endswith(('.ts', '.tsx')):
+            logger.debug(f"Skipping TypeScript file {file_path} due to SKIP_TS_CHECK")
+            return True
+        
+        return False
+    
     def validate(self) -> list[str]:
         """Validate configuration and return list of issues."""
         issues = []

@@ -10,7 +10,7 @@ import { SSEConnectionState } from '@/lib/sse/types';
 import { cn } from '@/lib/utils';
 
 export function SSEConnectionIndicator() {
-  const { state, isConnected, isHealthy, retryCount } = useSSEConnection();
+  const { state, isConnected, retryCount } = useSSEConnection();
 
   const getStatusColor = () => {
     switch (state) {

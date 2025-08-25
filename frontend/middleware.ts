@@ -22,6 +22,7 @@ function getCSPHeader(nonce: string, isDevelopment: boolean): string {
       "'strict-dynamic'",
       // Monaco Editor and worker requirements
       "'unsafe-eval'", // Required for Monaco Editor
+      "'wasm-unsafe-eval'", // Required for WebAssembly
       // Development mode requirements
       ...(isDevelopment ? [
         "'unsafe-inline'", // For development hot reload
@@ -131,12 +132,6 @@ function getCSPHeader(nonce: string, isDevelopment: boolean): string {
     'media-src': [
       "'self'",
       "data:",
-      "blob:"
-    ],
-    // WebAssembly support for Monaco Editor and other components
-    'wasm-src': [
-      "'self'",
-      "'unsafe-eval'", // Required for WebAssembly
       "blob:"
     ],
     // Prefetch directives for performance

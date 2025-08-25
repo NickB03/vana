@@ -4,12 +4,11 @@
  * @module google-oauth
  */
 
-import { GoogleOAuthProvider, useGoogleLogin, TokenResponse } from '@react-oauth/google';
 import { jwtDecode } from 'jwt-decode';
 import { v4 as uuidv4 } from 'uuid';
 import { tokenManager } from './token-manager';
 import { secureStorage } from './secure-storage';
-import type { AuthState } from '@/store/slices/auth';
+import type { AuthState } from '@/types/auth';
 
 /**
  * Google OAuth configuration
@@ -271,19 +270,29 @@ export class GoogleOAuthClient {
     
     // Return auth state
     return {
-      isAuthenticated: true,
       user: {
-        id: payload.sub,
-        email: payload.email,
-        name: payload.name || '',
-        picture: payload.picture,
-        emailVerified: payload.email_verified
+        id: parseInt(payload.sub, 10) || 0,
+        email: payload.email || '',
+        username: payload.email?.split('@')[0] || '',
+        first_name: payload.given_name,
+        last_name: payload.family_name,
+        full_name: payload.name || '',
+        is_active: true,
+        is_verified: payload.email_verified || false,
+        is_superuser: false,
+        google_cloud_identity: payload.sub,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
       },
-      accessToken: tokens.access_token,
-      idToken: tokens.id_token,
-      expiresAt: Date.now() + (tokens.expires_in * 1000),
-      error: null,
-      loading: false
+      tokens: {
+        access_token: tokens.access_token,
+        token_type: 'Bearer',
+        expires_in: tokens.expires_in,
+        refresh_token: tokens.refresh_token || null,
+        issued_at: Date.now()
+      },
+      isLoading: false,
+      error: null
     };
   }
 
@@ -497,7 +506,7 @@ let googleOAuthClientInstance: GoogleOAuthClient | null = null;
 
 export const getGoogleOAuthClient = (): GoogleOAuthClient => {
   if (!googleOAuthClientInstance) {
-    const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || '';
+    const clientId = process.env['NEXT_PUBLIC_GOOGLE_CLIENT_ID'] || '';
     if (!clientId && typeof window !== 'undefined') {
       console.warn('Google OAuth client ID not configured');
     }
@@ -514,4 +523,4 @@ export const googleOAuthClient = typeof window !== 'undefined'
   : null;
 
 // Export utilities for testing
-export { PKCEUtil, CSRFProtection, GoogleOAuthClient };
+export { PKCEUtil, CSRFProtection };

@@ -216,7 +216,7 @@ export class SSEClient {
     }
   }
 
-  private handleError(event: Event): void {
+  private handleError(_event: Event): void {
     const error: SSEError = {
       type: SSEErrorType.CONNECTION,
       message: 'Connection error occurred',
@@ -403,7 +403,7 @@ export class SSEClient {
       const cookies = document.cookie.split(';');
       for (const cookie of cookies) {
         const [name, value] = cookie.trim().split('=');
-        if (name === 'auth-token') {
+        if (name === 'auth-token' && value) {
           return decodeURIComponent(value);
         }
       }

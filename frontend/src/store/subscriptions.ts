@@ -1,9 +1,7 @@
 'use client';
 
 import { useUnifiedStore } from './index';
-import type { UnifiedStore } from './index';
 import type { SSEAgentEvent, AgentNetworkUpdate, ConnectionEvent, AgentTaskEvent } from '@/types/session';
-import type { Agent } from '@/types/agents';
 
 // Subscription manager for cross-store coordination
 export class StoreSubscriptionManager {
@@ -32,12 +30,12 @@ export class StoreSubscriptionManager {
   // Auth <-> Session coordination
   private setupAuthSessionSubscription() {
     const unsubscribe = useUnifiedStore.subscribe(
-      (state) => ({
+      (state: any) => ({
         user: state.auth.user,
         isLoading: state.auth.isLoading,
         currentSession: state.session.currentSession,
       }),
-      (current, previous) => {
+      (current: any, previous: any) => {
         // When user logs out, clear sessions
         if (previous.user && !current.user) {
           console.log('🔐 User logged out, clearing sessions');
@@ -60,12 +58,12 @@ export class StoreSubscriptionManager {
   // Session <-> Chat coordination
   private setupSessionChatSubscription() {
     const unsubscribe = useUnifiedStore.subscribe(
-      (state) => ({
+      (state: any) => ({
         currentSession: state.session.currentSession,
         activeConversation: state.chat.activeConversation,
         sessions: state.session.sessions.length,
       }),
-      (current, previous) => {
+      (current: any, previous: any) => {
         // When session changes, sync chat conversation
         if (current.currentSession?.id !== previous.currentSession?.id) {
           console.log('💬 Session changed, syncing chat conversation');
@@ -106,13 +104,13 @@ export class StoreSubscriptionManager {
   // AgentDeck <-> Chat coordination
   private setupAgentDeckChatSubscription() {
     const unsubscribe = useUnifiedStore.subscribe(
-      (state) => ({
+      (state: any) => ({
         selectedAgents: state.agentDeck.selectedAgents,
         agentStatus: state.agentDeck.agentStatus,
         activeConversation: state.chat.activeConversation,
         isProcessing: state.chat.isProcessing,
       }),
-      (current, previous) => {
+      (current: any, previous: any) => {
         // When selected agents change, update active conversation
         if (JSON.stringify(current.selectedAgents) !== JSON.stringify(previous.selectedAgents)) {
           console.log('🤖 Selected agents changed, updating conversation');
@@ -158,12 +156,12 @@ export class StoreSubscriptionManager {
   // Canvas <-> Agent coordination
   private setupCanvasAgentSubscription() {
     const unsubscribe = useUnifiedStore.subscribe(
-      (state) => ({
+      (state: any) => ({
         selectedAgents: state.agentDeck.selectedAgents,
         collaborativeSession: state.canvas.collaborativeSession,
         agentSuggestions: state.canvas.agentSuggestions.length,
       }),
-      (current, previous) => {
+      (current: any, previous: any) => {
         // When agents are selected and canvas is active, start collaboration
         if (current.selectedAgents.length > 0 && !current.collaborativeSession) {
           const agents = useUnifiedStore.getState().agentDeck.getSelectedAgents();
@@ -178,7 +176,7 @@ export class StoreSubscriptionManager {
         // When collaboration ends, update agent status
         if (previous.collaborativeSession && !current.collaborativeSession) {
           console.log('🎨 Canvas collaboration ended');
-          current.selectedAgents.forEach(agentId => {
+          current.selectedAgents.forEach((agentId: string) => {
             useUnifiedStore.getState().agentDeck.updateAgentStatus(agentId, 'idle');
           });
         }
@@ -199,28 +197,28 @@ export class StoreSubscriptionManager {
   // Upload <-> Session coordination
   private setupUploadSessionSubscription() {
     const unsubscribe = useUnifiedStore.subscribe(
-      (state) => ({
+      (state: any) => ({
         uploads: Object.keys(state.upload.uploads).length,
-        completedUploads: Object.values(state.upload.uploads).filter(u => u.status === 'completed').length,
+        completedUploads: Object.values(state.upload.uploads).filter((u: any) => u.status === 'completed').length,
         currentSession: state.session.currentSession,
       }),
-      (current, previous) => {
+      (current: any, previous: any) => {
         // When uploads complete, add them to current session
         if (current.completedUploads > previous.completedUploads && current.currentSession) {
           console.log('📁 File upload completed, adding to session');
           
           const completedUploads = Object.values(useUnifiedStore.getState().upload.uploads)
-            .filter(u => u.status === 'completed');
+            .filter((u: any) => u.status === 'completed');
           
           const newUploads = completedUploads.slice(previous.completedUploads);
           
-          newUploads.forEach(upload => {
+          newUploads.forEach((upload: any) => {
             useUnifiedStore.getState().session.addMessage({
               role: 'system',
               content: `File uploaded: ${upload.file.name}`,
               metadata: {
                 attachments: [upload.id],
-                uploadResult: upload.result
+                uploadResult: (upload as { uploadResult?: any })?.uploadResult || upload.result
               }
             });
           });
@@ -239,19 +237,19 @@ export class StoreSubscriptionManager {
       
       switch (event.type) {
         case 'agent_network_update':
-          this.handleAgentNetworkUpdate(event.data as AgentNetworkUpdate);
+          this.handleAgentNetworkUpdate(event.data as unknown as AgentNetworkUpdate);
           break;
           
         case 'connection':
-          this.handleConnectionEvent(event.data as ConnectionEvent);
+          this.handleConnectionEvent(event.data as unknown as ConnectionEvent);
           break;
           
         case 'agent_start':
-          this.handleAgentTaskEvent({ ...event.data, status: 'started' } as AgentTaskEvent);
+          this.handleAgentTaskEvent({ ...(typeof event.data === 'object' && event.data ? event.data : {}), status: 'started' } as AgentTaskEvent);
           break;
           
         case 'agent_complete':
-          this.handleAgentTaskEvent({ ...event.data, status: 'completed' } as AgentTaskEvent);
+          this.handleAgentTaskEvent({ ...(typeof event.data === 'object' && event.data ? event.data : {}), status: 'completed' } as AgentTaskEvent);
           break;
           
         case 'error':
@@ -389,7 +387,6 @@ export class StoreSubscriptionManager {
           timestamp: Date.now(),
           metadata: {
             agentId: data.agent_id,
-            agentName: data.agent_name,
             taskResult: data.result
           }
         });
@@ -480,7 +477,7 @@ export const syncStores = () => {
 
 // Development helpers
 export const debugSubscriptions = () => {
-  if (process.env.NODE_ENV !== 'development') return;
+  if (process.env['NODE_ENV'] !== 'development') return;
   
   console.group('🔗 Store Subscriptions Debug');
   console.log('Status:', subscriptionManager.getSubscriptionStatus());
@@ -489,7 +486,7 @@ export const debugSubscriptions = () => {
 };
 
 // Export for global access in development
-if (process.env.NODE_ENV === 'development' && typeof window !== 'undefined') {
+if (process.env['NODE_ENV'] === 'development' && typeof window !== 'undefined') {
   (window as any).__VANA_STORE_SUBSCRIPTIONS = {
     manager: subscriptionManager,
     syncStores,

@@ -1,36 +1,20 @@
 'use client';
 
-import { StateCreator, StoreMutatorIdentifier } from 'zustand';
+import { StateCreator } from 'zustand';
 import { immer as immerMiddleware } from 'zustand/middleware/immer';
-import { devtools as devtoolsMiddleware, persist as persistMiddleware, PersistOptions, createJSONStorage, subscribeWithSelector } from 'zustand/middleware';
-import { safeLocalStorage } from '@/lib/ssr-utils';
-
-// Custom middleware types
-type Immer<T> = (
-  config: StateCreator<T, [], [], T>,
-  impl: StateCreator<T, [], [], T>
-) => StateCreator<T, [], [], T>;
-
-type DevTools<T> = (
-  config: StateCreator<T, [], [], T>,
-  impl: StateCreator<T, [], [], T>
-) => StateCreator<T, [], [], T>;
-
-type Persist<T> = (
-  config: StateCreator<T, [], [], T>,
-  options: PersistOptions<T>
-) => StateCreator<T, [], [], T>;
+import { devtools as devtoolsMiddleware, persist as persistMiddleware, PersistOptions, subscribeWithSelector } from 'zustand/middleware';
 
 // Performance monitoring middleware
-export const performanceMiddleware = <T>(
+function performanceMiddlewareImpl<T>(
   config: StateCreator<T, [], [], T>
-): StateCreator<T, [], [], T> => (set, get, api) => {
+): StateCreator<T, [], [], T> {
+  return (set, get, api) => {
   const originalSet = set;
   
-  const wrappedSet: typeof set = (...args) => {
+  const wrappedSet: typeof set = (partial: any, replace?: any) => {
     const startTime = performance.now();
     
-    const result = originalSet(...args);
+    const result = originalSet(partial, replace);
     
     const duration = performance.now() - startTime;
     
@@ -46,7 +30,7 @@ export const performanceMiddleware = <T>(
         lastUpdate: {
           timestamp: Date.now(),
           duration,
-          args: args[0] // First argument contains the update
+          args: partial // First argument contains the update
         },
         totalUpdates: ((window as any).__VANA_STORE_METRICS?.totalUpdates || 0) + 1,
         averageDuration: (
@@ -61,30 +45,34 @@ export const performanceMiddleware = <T>(
   };
   
   return config(wrappedSet, get, api);
-};
+  };
+}
+
+export const performanceMiddleware = performanceMiddlewareImpl;
 
 // Validation middleware
-export const validationMiddleware = <T>(
+function validationMiddlewareImpl<T>(
   config: StateCreator<T, [], [], T>,
   validators?: Partial<Record<keyof T, (value: any) => boolean>>
-): StateCreator<T, [], [], T> => (set, get, api) => {
+): StateCreator<T, [], [], T> {
+  return (set, get, api) => {
   const originalSet = set;
   
-  const wrappedSet: typeof set = (...args) => {
+  const wrappedSet: typeof set = (partial: any, replace?: any) => {
     // Only validate in development
     if (process.env.NODE_ENV === 'development' && validators) {
       const currentState = get();
       
       // Extract the partial state from the update
       let partialUpdate: Partial<T> = {};
-      if (typeof args[0] === 'function') {
+      if (typeof partial === 'function') {
         // If it's a function, we need to simulate the update to validate
         const tempState = { ...currentState };
-        const updater = args[0] as (state: T) => void;
+        const updater = partial as (state: T) => void;
         updater(tempState);
         partialUpdate = tempState;
-      } else if (typeof args[0] === 'object') {
-        partialUpdate = args[0] as Partial<T>;
+      } else if (typeof partial === 'object') {
+        partialUpdate = partial as Partial<T>;
       }
       
       // Run validators
@@ -96,16 +84,20 @@ export const validationMiddleware = <T>(
       });
     }
     
-    return originalSet(...args);
+    return originalSet(partial, replace);
   };
   
   return config(wrappedSet, get, api);
-};
+  };
+}
+
+export const validationMiddleware = validationMiddlewareImpl;
 
 // Memory optimization middleware
-export const memoryOptimizationMiddleware = <T>(
+function memoryOptimizationMiddlewareImpl<T>(
   config: StateCreator<T, [], [], T>
-): StateCreator<T, [], [], T> => (set, get, api) => {
+): StateCreator<T, [], [], T> {
+  return (set, get, api) => {
   // Track memory usage in development
   if (process.env.NODE_ENV === 'development' && typeof window !== 'undefined') {
     let memoryCheckInterval: ReturnType<typeof setInterval> | null = null;
@@ -134,16 +126,12 @@ export const memoryOptimizationMiddleware = <T>(
     // Store interval reference for cleanup
     (window as any).__VANA_MEMORY_CHECK_INTERVAL = memoryCheckInterval;
     
-    // Cleanup on unmount (though this is tricky with Zustand)
-    const originalDestroy = api.destroy;
-    if (originalDestroy) {
-      api.destroy = () => {
-        if (memoryCheckInterval) {
-          clearInterval(memoryCheckInterval);
-        }
-        originalDestroy();
-      };
-    }
+    // Store cleanup function for manual cleanup if needed
+    (api as any).__cleanup = () => {
+      if (memoryCheckInterval) {
+        clearInterval(memoryCheckInterval);
+      }
+    };
     
     // Also add cleanup on window unload
     if (typeof window !== 'undefined') {
@@ -156,17 +144,21 @@ export const memoryOptimizationMiddleware = <T>(
   }
   
   return config(set, get, api);
-};
+  };
+}
+
+export const memoryOptimizationMiddleware = memoryOptimizationMiddlewareImpl;
 
 // Error handling middleware
-export const errorHandlingMiddleware = <T>(
+function errorHandlingMiddlewareImpl<T>(
   config: StateCreator<T, [], [], T>
-): StateCreator<T, [], [], T> => (set, get, api) => {
+): StateCreator<T, [], [], T> {
+  return (set, get, api) => {
   const originalSet = set;
   
-  const wrappedSet: typeof set = (...args) => {
+  const wrappedSet: typeof set = (partial: any, replace?: any) => {
     try {
-      return originalSet(...args);
+      return originalSet(partial, replace);
     } catch (error) {
       console.error('Store update failed:', error);
       
@@ -182,80 +174,32 @@ export const errorHandlingMiddleware = <T>(
   };
   
   return config(wrappedSet, get, api);
-};
+  };
+}
+
+export const errorHandlingMiddleware = errorHandlingMiddlewareImpl;
 
 // Custom immer middleware with optimizations
-export const optimizedImmer = <T>(
-  config: StateCreator<T, [], [], T>
-): StateCreator<T, [], [], T> => {
-  return immerMiddleware(config);
-};
+// Use the actual immer middleware directly - no wrapper needed
+export const optimizedImmer = immerMiddleware;
 
 // Custom devtools middleware with enhanced features
-export const enhancedDevtools = <T>(
-  config: StateCreator<T, [], [], T>,
-  options?: {
-    name?: string;
-    trace?: boolean;
-    traceLimit?: number;
-  }
-): StateCreator<T, [], [], T> => {
-  const devtoolsOptions = {
-    name: options?.name || 'vana-store',
-    trace: options?.trace ?? process.env.NODE_ENV === 'development',
-    traceLimit: options?.traceLimit ?? 25,
-  };
-  
-  return devtoolsMiddleware(config, devtoolsOptions);
-};
+// Use the actual devtools middleware directly
+export const enhancedDevtools = devtoolsMiddleware;
 
 // Custom persistence middleware with selective persistence
-export const selectivePersist = <T>(
-  config: StateCreator<T, [], [], T>,
-  options: PersistOptions<T> & {
-    selectiveKeys?: (keyof T)[];
-    compressionThreshold?: number; // Size in bytes before compression
-  }
-): StateCreator<T, [], [], T> => {
-  const persistOptions: PersistOptions<T> = {
-    ...options,
-    storage: options.storage || createJSONStorage(() => safeLocalStorage()),
-    partialize: options.partialize || ((state) => {
-      if (options.selectiveKeys) {
-        const result: Partial<T> = {};
-        options.selectiveKeys.forEach(key => {
-          result[key] = state[key];
-        });
-        return result;
-      }
-      return state;
-    }),
-    // Custom serialization with compression support
-    serialize: options.serialize || ((state) => {
-      const serialized = JSON.stringify(state);
-      
-      // If compression threshold is set and data is large, you could add compression here
-      if (options.compressionThreshold && serialized.length > options.compressionThreshold) {
-        // Note: This would require a compression library like pako or lz-string
-        // For now, just warn about large state
-        console.warn(`Persisted state is ${serialized.length} bytes - consider optimizing`);
-      }
-      
-      return serialized;
-    }),
-  };
-  
-  return persistMiddleware(config, persistOptions);
-};
+// Use the actual persist middleware directly
+export const selectivePersist = persistMiddleware;
 
 // Rate limiting middleware for actions
-export const rateLimitMiddleware = <T>(
+function rateLimitMiddlewareImpl<T>(
   config: StateCreator<T, [], [], T>,
   options: {
     maxUpdatesPerSecond?: number;
     burstLimit?: number;
   } = {}
-): StateCreator<T, [], [], T> => (set, get, api) => {
+): StateCreator<T, [], [], T> {
+  return (set, get, api) => {
   const { maxUpdatesPerSecond = 60, burstLimit = 10 } = options;
   
   let updateCount = 0;
@@ -265,7 +209,7 @@ export const rateLimitMiddleware = <T>(
   
   const originalSet = set;
   
-  const wrappedSet: typeof set = (...args) => {
+  const wrappedSet: typeof set = (partial: any, replace?: any) => {
     const now = Date.now();
     
     // Reset counters every second
@@ -294,13 +238,16 @@ export const rateLimitMiddleware = <T>(
     updateCount++;
     burstCount++;
     
-    return originalSet(...args);
+    return originalSet(partial, replace);
   };
   
   return config(wrappedSet, get, api);
-};
+  };
+}
 
-// Combine all middleware into a single function
+export const rateLimitMiddleware = rateLimitMiddlewareImpl;
+
+// Combine all middleware into a single function with proper type flow
 export const createMiddleware = <T>(
   config: StateCreator<T, [], [], T>,
   options?: {
@@ -320,41 +267,52 @@ export const createMiddleware = <T>(
       burstLimit?: number;
     };
   }
-) => {
-  let finalConfig = config;
+): StateCreator<
+  T,
+  [
+    ['zustand/subscribeWithSelector', never],
+    ['zustand/devtools', never],
+    ['zustand/persist', unknown],
+    ['zustand/immer', never]
+  ],
+  [],
+  T
+> => {
+  // Start with the base config
+  let finalConfig: any = config;
   
-  // Apply middleware in reverse order (innermost first)
+  // Apply middleware in the correct order for type composition
   
-  // Error handling (innermost)
+  // Error handling (innermost - no type change)
   finalConfig = errorHandlingMiddleware(finalConfig);
   
-  // Memory optimization
+  // Memory optimization (no type change)
   finalConfig = memoryOptimizationMiddleware(finalConfig);
   
-  // Performance monitoring
+  // Performance monitoring (no type change)
   if (options?.enablePerformanceMonitoring !== false) {
     finalConfig = performanceMiddleware(finalConfig);
   }
   
-  // Validation
+  // Validation (no type change)
   if (options?.enableValidation && options.validators) {
     finalConfig = validationMiddleware(finalConfig, options.validators);
   }
   
-  // Rate limiting
+  // Rate limiting (no type change)
   if (options?.enableRateLimit) {
     finalConfig = rateLimitMiddleware(finalConfig, options.rateLimitOptions);
   }
   
-  // Immer (for immutable updates)
+  // Immer - adds mutator type
   finalConfig = optimizedImmer(finalConfig);
   
-  // Persistence
+  // Persistence - adds mutator type
   if (options?.enablePersistence !== false && options?.persistenceOptions) {
     finalConfig = selectivePersist(finalConfig, options.persistenceOptions);
   }
   
-  // DevTools
+  // DevTools - adds mutator type
   if (options?.enableDevtools !== false) {
     finalConfig = enhancedDevtools(finalConfig, {
       name: options?.name || 'vana-store',
@@ -363,23 +321,13 @@ export const createMiddleware = <T>(
     });
   }
   
-  // Subscribe with selector (outermost)
+  // Subscribe with selector - adds mutator type (outermost)
   finalConfig = subscribeWithSelector(finalConfig);
   
   return finalConfig;
 };
 
-// Export middleware components for individual use
-export {
-  optimizedImmer as immer,
-  enhancedDevtools as devtools,
-  selectivePersist as persist,
-  performanceMiddleware,
-  validationMiddleware,
-  memoryOptimizationMiddleware,
-  errorHandlingMiddleware,
-  rateLimitMiddleware
-};
+// Middleware components are already exported individually above
 
 // Type helpers for middleware composition
 export type MiddlewareConfig<T> = StateCreator<
@@ -406,7 +354,7 @@ export const getMemoryUsage = () => {
 };
 
 // Debug utilities for development
-export const debugStore = <T>(store: any) => {
+export const debugStore = (store: any) => {
   if (process.env.NODE_ENV !== 'development') return;
   
   console.group('🏪 Vana Store Debug');
@@ -417,7 +365,7 @@ export const debugStore = <T>(store: any) => {
 };
 
 // Store health checker
-export const checkStoreHealth = (store: any) => {
+export const checkStoreHealth = (_store: any) => {
   const metrics = getStoreMetrics();
   const memory = getMemoryUsage();
   

@@ -20,7 +20,7 @@ interface Props {
 interface State {
   hasError: boolean;
   error: Error | null;
-  errorInfo: any;
+  errorInfo: React.ErrorInfo | null;
 }
 
 export class AuthErrorBoundary extends Component<Props, State> {
@@ -41,7 +41,7 @@ export class AuthErrorBoundary extends Component<Props, State> {
     };
   }
 
-  componentDidCatch(error: Error, errorInfo: any) {
+  override componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     console.error('Auth Error Boundary caught:', error, errorInfo);
     this.setState({
       error,
@@ -58,7 +58,7 @@ export class AuthErrorBoundary extends Component<Props, State> {
     this.props.onReset?.();
   };
 
-  render() {
+  override render() {
     if (this.state.hasError) {
       if (this.props.fallback) {
         return <>{this.props.fallback}</>;
@@ -159,6 +159,8 @@ export function AuthErrorAlert({
             size="sm"
             onClick={onDismiss}
             className="ml-2 h-auto p-1"
+            aria-label="Dismiss error"
+            title="Dismiss error"
           >
             <Icons.x className="h-3 w-3" />
           </Button>
