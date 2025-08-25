@@ -34,13 +34,11 @@ export default function HomePage() {
   };
 
   return (
-    <ProtectedRoute requireAuth={true}>
-      <MainLayout 
-        onSelectSession={handleSelectSession} 
-        showSidebar={true}
-      >
-        <HeroSection onStartChat={handleStartChat} />
-      </MainLayout>
-    </ProtectedRoute>
+    <MainLayout 
+      onSelectSession={handleSelectSession} 
+      showSidebar={true}
+    >
+      <HeroSection onStartChat={handleStartChat} />
+    </MainLayout>
   );
 }
