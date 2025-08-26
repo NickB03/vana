@@ -142,7 +142,14 @@ export async function GET(request: NextRequest) {
         };
         
         // Handle client disconnection
-        request.signal.addEventListener('abort', cleanup);
+        const abortHandler = () => cleanup();
+        request.signal.addEventListener('abort', abortHandler, { once: true });
+
+        // Store cleanup function for potential manual cleanup
+        (controller as any).cleanup = () => {
+          request.signal.removeEventListener('abort', abortHandler);
+          cleanup();
+        };
         
         // Store cleanup function for potential manual cleanup
         (controller as any).cleanup = cleanup;
