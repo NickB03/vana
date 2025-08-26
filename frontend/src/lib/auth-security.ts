@@ -378,7 +378,11 @@ export class SessionSecurityManager {
     // Redirect to login
     if (typeof window !== 'undefined') {
       const currentPath = window.location.pathname + window.location.search;
-      window.location.href = `/auth/login?redirect=${encodeURIComponent(currentPath)}`;
+      // Validate that the redirect path is relative and safe
+      const safePath = currentPath.startsWith('/') && !currentPath.startsWith('//')
+        ? currentPath
+        : '/';
+      window.location.href = `/auth/login?redirect=${encodeURIComponent(safePath)}`;
     }
   }
 
