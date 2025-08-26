@@ -1,0 +1,241 @@
+/**
+ * Rate Limiting Configuration
+ * Production-ready rate limiting with Redis backend support
+ */
+
+export interface RateLimitRule {
+  window: number; // Time window in seconds
+  max: number;    // Maximum requests in window
+  message?: string;
+  skipSuccessfulRequests?: boolean;
+  skipFailedRequests?: boolean;
+  keyPrefix?: string;
+}
+
+export interface RateLimitConfig {
+  backend: 'redis' | 'memory';
+  redis?: {
+    host: string;
+    port: number;
+    password?: string;
+    db?: number;
+    family?: 4 | 6;
+    maxRetriesPerRequest?: number;
+  };
+  limits: {
+    [key: string]: RateLimitRule;
+  };
+}
+
+export const RATE_LIMIT_CONFIG: RateLimitConfig = {
+  // Use Redis in production for distributed rate limiting, memory in development
+  backend: process.env.NODE_ENV === 'production' ? 'redis' : 'memory',
+  
+  redis: {
+    host: process.env.REDIS_HOST || 'localhost',
+    port: parseInt(process.env.REDIS_PORT || '6379'),
+    password: process.env.REDIS_PASSWORD,
+    db: parseInt(process.env.REDIS_DB || '0'),
+    family: 4, // IPv4
+    maxRetriesPerRequest: 3,
+  },
+  
+  limits: {
+    // General API endpoints
+    api: {
+      window: 60, // 1 minute
+      max: 100,   // 100 requests per minute per IP
+      message: 'Too many API requests, please slow down',
+      keyPrefix: 'api'
+    },
+    
+    // Authentication endpoints (stricter)
+    auth: {
+      window: 300, // 5 minutes
+      max: 5,      // 5 attempts per 5 minutes per IP
+      message: 'Too many authentication attempts, please wait',
+      skipSuccessfulRequests: false,
+      keyPrefix: 'auth'
+    },
+    
+    // SSE connections
+    sse: {
+      window: 60, // 1 minute
+      max: 20,    // 20 connection attempts per minute per IP
+      message: 'Too many SSE connection attempts',
+      keyPrefix: 'sse'
+    },
+    
+    // File uploads
+    upload: {
+      window: 60, // 1 minute  
+      max: 10,    // 10 uploads per minute per IP
+      message: 'Too many upload attempts, please wait',
+      keyPrefix: 'upload'
+    },
+    
+    // Password reset requests
+    passwordReset: {
+      window: 3600, // 1 hour
+      max: 3,       // 3 attempts per hour per email
+      message: 'Too many password reset requests, please wait',
+      keyPrefix: 'pwd_reset'
+    },
+    
+    // OAuth callback
+    oauth: {
+      window: 60, // 1 minute
+      max: 10,    // 10 OAuth attempts per minute per IP
+      message: 'Too many OAuth attempts, please wait',
+      keyPrefix: 'oauth'
+    },
+    
+    // Health check endpoint (more lenient)
+    health: {
+      window: 60, // 1 minute
+      max: 300,   // 300 requests per minute
+      message: 'Health check rate limit exceeded',
+      keyPrefix: 'health'
+    },
+    
+    // WebSocket connections
+    websocket: {
+      window: 60, // 1 minute
+      max: 30,    // 30 connection attempts per minute per IP
+      message: 'Too many WebSocket connection attempts',
+      keyPrefix: 'ws'
+    }
+  }
+};
+
+/**
+ * Get rate limit configuration for a specific endpoint type
+ */
+export function getRateLimitConfig(type: string): RateLimitRule | null {
+  return RATE_LIMIT_CONFIG.limits[type] || null;
+}
+
+/**
+ * Get Redis configuration if Redis backend is enabled
+ */
+export function getRedisConfig() {
+  if (RATE_LIMIT_CONFIG.backend !== 'redis') {
+    return null;
+  }
+  return RATE_LIMIT_CONFIG.redis;
+}
+
+/**
+ * Check if rate limiting is using Redis backend
+ */
+export function isRedisBackend(): boolean {
+  return RATE_LIMIT_CONFIG.backend === 'redis';
+}
+
+/**
+ * Get rate limit key for a request
+ */
+export function getRateLimitKey(type: string, identifier: string): string {
+  const config = getRateLimitConfig(type);
+  const prefix = config?.keyPrefix || type;
+  return `rate_limit:${prefix}:${identifier}`;
+}
+
+/**
+ * Environment-specific configurations
+ */
+export const ENVIRONMENT_CONFIGS = {
+  development: {
+    ...RATE_LIMIT_CONFIG,
+    backend: 'memory' as const,
+    limits: {
+      ...RATE_LIMIT_CONFIG.limits,
+      // More lenient limits for development
+      api: { ...RATE_LIMIT_CONFIG.limits.api, max: 1000 },
+      auth: { ...RATE_LIMIT_CONFIG.limits.auth, max: 50 },
+      sse: { ...RATE_LIMIT_CONFIG.limits.sse, max: 100 }
+    }
+  },
+  
+  test: {
+    ...RATE_LIMIT_CONFIG,
+    backend: 'memory' as const,
+    limits: {
+      ...RATE_LIMIT_CONFIG.limits,
+      // Very high limits for testing
+      api: { ...RATE_LIMIT_CONFIG.limits.api, max: 10000 },
+      auth: { ...RATE_LIMIT_CONFIG.limits.auth, max: 1000 },
+      sse: { ...RATE_LIMIT_CONFIG.limits.sse, max: 1000 }
+    }
+  },
+  
+  staging: {
+    ...RATE_LIMIT_CONFIG,
+    backend: 'redis' as const,
+    limits: {
+      ...RATE_LIMIT_CONFIG.limits,
+      // Slightly more lenient than production
+      api: { ...RATE_LIMIT_CONFIG.limits.api, max: 200 },
+      auth: { ...RATE_LIMIT_CONFIG.limits.auth, max: 10 }
+    }
+  },
+  
+  production: RATE_LIMIT_CONFIG
+};
+
+/**
+ * Get configuration for current environment
+ */
+export function getEnvironmentConfig(): RateLimitConfig {
+  const env = process.env.NODE_ENV as keyof typeof ENVIRONMENT_CONFIGS;
+  return ENVIRONMENT_CONFIGS[env] || ENVIRONMENT_CONFIGS.production;
+}
+
+/**
+ * Validate rate limit configuration
+ */
+export function validateRateLimitConfig(config: RateLimitConfig): boolean {
+  try {
+    // Check backend type
+    if (!['redis', 'memory'].includes(config.backend)) {
+      console.error('Invalid rate limit backend:', config.backend);
+      return false;
+    }
+    
+    // Check Redis config if Redis backend
+    if (config.backend === 'redis' && config.redis) {
+      if (!config.redis.host || !config.redis.port) {
+        console.error('Redis backend requires host and port');
+        return false;
+      }
+      
+      if (isNaN(config.redis.port) || config.redis.port < 1 || config.redis.port > 65535) {
+        console.error('Invalid Redis port:', config.redis.port);
+        return false;
+      }
+    }
+    
+    // Check limits configuration
+    for (const [type, rule] of Object.entries(config.limits)) {
+      if (typeof rule.window !== 'number' || rule.window <= 0) {
+        console.error(`Invalid window for ${type}:`, rule.window);
+        return false;
+      }
+      
+      if (typeof rule.max !== 'number' || rule.max <= 0) {
+        console.error(`Invalid max for ${type}:`, rule.max);
+        return false;
+      }
+    }
+    
+    return true;
+  } catch (error) {
+    console.error('Error validating rate limit config:', error);
+    return false;
+  }
+}
+
+// Validate configuration on import
+if (!validateRateLimitConfig(RATE_LIMIT_CONFIG)) {
+  console.warn('Rate limit configuration validation failed, using defaults');
+}
