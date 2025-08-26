@@ -103,9 +103,11 @@ function getCSPHeader(nonce: string, isDevelopment: boolean): string {
       "ws://localhost:8000",
       "https://localhost:8000",
       "wss://localhost:8000",
-      // SSE endpoints
-      "http://localhost:8000/agent_network_sse",
-      "http://localhost:8000/agent_network_events",
+      // SSE endpoints (only in production - development covered by wildcard)
+      ...(!isDevelopment ? [
+        "http://localhost:8000/agent_network_sse",
+        "http://localhost:8000/agent_network_events"
+      ] : []),
       // Development WebSocket connections
       ...(isDevelopment ? [
         "http://localhost:*",

@@ -63,6 +63,7 @@ export function HeroSection({ onStartChat }: HeroSectionProps) {
   return (
     <div className="flex-1 overflow-y-auto p-8">
       <motion.div
+        id="main-content"
         className="text-center max-w-4xl mx-auto"
         initial="initial"
         animate="animate"

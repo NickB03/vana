@@ -99,6 +99,10 @@ export function MonacoSandbox({
 
     // Handle messages from iframe
     const handleMessage = (event: MessageEvent) => {
+      // Only accept messages from the same origin
+      if (event.origin !== window.location.origin) {
+        return;
+      }
       if (event.data.type === 'monaco-change' && onChange) {
         onChange(event.data.value);
       } else if (event.data.type === 'monaco-ready') {
@@ -113,10 +117,10 @@ export function MonacoSandbox({
     };
   }, [language, options]);
 
-  // Update value in iframe when prop changes
-  useEffect(() => {
-    if (!isReady || !iframeRef.current?.contentWindow) return;
-
+    iframeRef.current.contentWindow.postMessage({
+      type: 'monaco-update',
+      value
+    }, window.location.origin);
     iframeRef.current.contentWindow.postMessage({
       type: 'monaco-update',
       value

@@ -78,7 +78,8 @@ export function ChatInterface({ className, initialMessage }: ChatInterfaceProps)
     
     try {
       // Use withCredentials to send cookies securely (no token in URL)
-      const eventSource = new EventSource(sseUrl, { withCredentials: true } as EventSourceInit);
+      const options: EventSourceInit = { withCredentials: true };
+      const eventSource = new EventSource(sseUrl, options);
       eventSourceRef.current = eventSource;
       
       eventSource.onopen = () => {

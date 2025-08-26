@@ -126,7 +126,7 @@ export function MainLayout({
                       <div className="flex items-center gap-3">
                         <Avatar className="w-8 h-8">
                           <AvatarImage src={user.picture} alt={user.full_name} />
-                          <AvatarFallback>
+                          <AvatarFallback role="img" aria-label={`Avatar of ${user.full_name}`}>
                             {getUserInitials(user.full_name)}
                           </AvatarFallback>
                         </Avatar>
@@ -145,6 +145,7 @@ export function MainLayout({
                         variant="ghost"
                         size="sm"
                         onClick={logout}
+                        aria-label="Log out"
                       >
                         <LogOut className="w-4 h-4" />
                       </Button>

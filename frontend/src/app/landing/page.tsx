@@ -169,6 +169,7 @@ export default function LandingPage() {
                 target="_blank"
                 rel="noreferrer"
                 className="font-medium underline underline-offset-4"
+                aria-label="Open Vana repository on GitHub (opens in a new tab)"
               >
                 GitHub
               </Link>
