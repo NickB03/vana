@@ -97,9 +97,19 @@ export class SSEClient {
   }
 
   private async connectSSE(): Promise<void> {
-    const url = new URL(`/agent_network_sse/${this.config.sessionId}`, this.config.baseUrl);
+    // For secure connection, use the Next.js proxy route
+    const url = new URL(`/api/sse`, window.location.origin);
+    url.searchParams.set('session_id', this.config.sessionId);
+    
     if (this.state.lastEventId) {
       url.searchParams.set('lastEventId', this.state.lastEventId);
+    }
+    
+    // Add token if available in headers
+    const authHeader = this.config.headers['Authorization'];
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      const token = authHeader.replace('Bearer ', '');
+      url.searchParams.set('token', token);
     }
 
     this.eventSource = new EventSource(url.toString());
@@ -161,13 +171,26 @@ export class SSEClient {
   private startPolling() {
     this.pollingInterval = setInterval(async () => {
       try {
-        const url = new URL(`/agent_network_sse/${this.config.sessionId}`, this.config.baseUrl);
+        // Use the Next.js proxy route for polling as well
+        const url = new URL(`/api/sse`, window.location.origin);
+        url.searchParams.set('session_id', this.config.sessionId);
+        url.searchParams.set('polling', 'true'); // Indicate polling mode
+        
         if (this.state.lastEventId) {
           url.searchParams.set('lastEventId', this.state.lastEventId);
         }
+        
+        // Add token if available in headers
+        const authHeader = this.config.headers['Authorization'];
+        if (authHeader && authHeader.startsWith('Bearer ')) {
+          const token = authHeader.replace('Bearer ', '');
+          url.searchParams.set('token', token);
+        }
 
         const response = await fetch(url.toString(), {
-          headers: this.config.headers,
+          headers: {
+            'Accept': 'application/json',
+          },
         });
 
         if (!response.ok) {

@@ -72,17 +72,14 @@ export function ChatInterface({ className, initialMessage }: ChatInterfaceProps)
       eventSourceRef.current.close();
     }
     
-    const baseUrl = process.env.NODE_ENV === 'production'
-      ? 'https://your-backend-url'
-      : 'http://localhost:8000';
-    
-    // Note: EventSource doesn't support custom headers, so we pass the token as query param
-    // However, the backend expects Authorization header. For production, consider using
-    // the useSSE hook which has polling fallback with proper header support.
-    const sseUrl = `${baseUrl}/agent_network_sse/${currentSession.id}?token=${tokens.access_token}`;
+    // Use the Next.js proxy route for secure SSE connection
+    // This allows us to pass the token via Authorization header server-side
+    const sseUrl = `/api/sse?session_id=${currentSession.id}`;
     
     try {
-      const eventSource = new EventSource(sseUrl);
+      // Since EventSource doesn't support Authorization header, we need to pass token via query param
+      // The proxy route will handle this securely
+      const eventSource = new EventSource(`${sseUrl}&token=${encodeURIComponent(tokens.access_token)}`);
       eventSourceRef.current = eventSource;
       
       eventSource.onopen = () => {

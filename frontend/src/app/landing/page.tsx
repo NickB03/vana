@@ -88,18 +88,26 @@ export default function LandingPage() {
             <Button
               size="lg"
               variant="outline"
-              onClick={() => router.push('/about')}
+              asChild
               className="text-lg px-8"
             >
-              Learn More
-              <Icons.arrowRight className="ml-2 h-5 w-5" />
+              <Link
+                href="#features"
+                onClick={(e) => {
+                  e.preventDefault();
+                  document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' });
+                }}
+              >
+                Learn More
+                <Icons.arrowRight className="ml-2 h-5 w-5" />
+              </Link>
             </Button>
           </div>
         </div>
       </section>
 
       {/* Features Section */}
-      <section className="container px-4 py-16">
+      <section id="features" className="container px-4 py-16">
         <div className="mx-auto max-w-6xl">
           <h2 className="mb-12 text-center text-3xl font-bold">
             Powerful Features for Enterprise Research
@@ -167,13 +175,28 @@ export default function LandingPage() {
             </p>
           </div>
           <div className="flex gap-4">
-            <Link href="/terms" className="text-sm text-muted-foreground hover:underline">
+            <Link 
+              href="https://github.com/NickB03/vana/blob/main/docs/terms.md" 
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-sm text-muted-foreground hover:underline"
+            >
               Terms
             </Link>
-            <Link href="/privacy" className="text-sm text-muted-foreground hover:underline">
+            <Link 
+              href="https://github.com/NickB03/vana/blob/main/docs/privacy.md" 
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-sm text-muted-foreground hover:underline"
+            >
               Privacy
             </Link>
-            <Link href="/support" className="text-sm text-muted-foreground hover:underline">
+            <Link 
+              href="https://github.com/NickB03/vana/issues" 
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-sm text-muted-foreground hover:underline"
+            >
               Support
             </Link>
           </div>
