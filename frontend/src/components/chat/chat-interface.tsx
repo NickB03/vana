@@ -34,7 +34,7 @@ export function ChatInterface({ className, initialMessage }: ChatInterfaceProps)
   const [currentStreamingMessage, setCurrentStreamingMessage] = useState<ChatMessage | null>(null);
   
   const eventSourceRef = useRef<EventSource | null>(null);
-  const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
   // Auto-scroll to bottom when new messages arrive
@@ -72,14 +72,14 @@ export function ChatInterface({ className, initialMessage }: ChatInterfaceProps)
       eventSourceRef.current.close();
     }
     
-    const baseUrl = process.env.NODE_ENV === 'production'
-      ? 'https://your-backend-url'
-      : 'http://localhost:8000';
-    
-    const sseUrl = `${baseUrl}/api/events/stream?session_id=${currentSession.id}&token=${tokens.access_token}`;
+    // Use the Next.js proxy route for secure SSE connection
+    // Token should be sent via httpOnly cookie, not in URL
+    const sseUrl = `/api/sse?session_id=${encodeURIComponent(currentSession.id)}`;
     
     try {
-      const eventSource = new EventSource(sseUrl);
+      // Use withCredentials to send cookies securely (no token in URL)
+      const options: EventSourceInit = { withCredentials: true };
+      const eventSource = new EventSource(sseUrl, options);
       eventSourceRef.current = eventSource;
       
       eventSource.onopen = () => {
@@ -100,18 +100,10 @@ export function ChatInterface({ className, initialMessage }: ChatInterfaceProps)
       eventSource.onerror = (error) => {
         console.error('SSE Error:', error);
         setIsConnected(false);
-        setConnectionError('Connection lost. Attempting to reconnect...');
+        setConnectionError('Connection lost. EventSource will auto-reconnect...');
         
-        // Attempt to reconnect after a delay
-        if (reconnectTimeoutRef.current) {
-          clearTimeout(reconnectTimeoutRef.current);
-        }
-        
-        reconnectTimeoutRef.current = setTimeout(() => {
-          if (currentSession?.id && tokens?.access_token) {
-            connectToSSE();
-          }
-        }, 5000);
+        // EventSource automatically attempts reconnection
+        // No need for manual reconnect logic
       };
       
       // Handle different event types
@@ -394,7 +386,7 @@ export function ChatInterface({ className, initialMessage }: ChatInterfaceProps)
       
       {/* Messages Area */}
       <section 
-        className="flex-1 overflow-hidden"
+        className="flex-1 overflow-y-auto"
         aria-label="Chat messages"
         role="log"
         aria-live="polite"

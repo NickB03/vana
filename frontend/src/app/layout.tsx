@@ -42,7 +42,7 @@ export default async function RootLayout({
   const nonce = await getNonce();
   
   return (
-    <html lang="en" className="dark" suppressHydrationWarning>
+    <html lang="en" className="dark" suppressHydrationWarning style={{ colorScheme: 'dark' }}>
       <head>
         {/* CSP nonce meta tag for client-side access */}
         {nonce && <meta name="csp-nonce" content={nonce} />}
@@ -60,7 +60,7 @@ export default async function RootLayout({
         <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
         <link rel="dns-prefetch" href="https://fonts.gstatic.com" />
       </head>
-      <body className="font-sans antialiased" suppressHydrationWarning>
+      <body className="font-sans antialiased bg-background text-foreground" suppressHydrationWarning>
         {/* Skip to main content link for keyboard users */}
         <a 
           href="#main-content" 

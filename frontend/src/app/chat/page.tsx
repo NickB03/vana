@@ -6,6 +6,7 @@ import { AuthGuard } from '@/components/auth/auth-guard';
 import { MainLayout } from '@/components/layout/main-layout';
 import { ChatInterface } from '@/components/chat/chat-interface';
 import { useSessionStore } from '@/store/session-store';
+import { ErrorBoundary } from '@/components/error-boundary';
 
 function ChatPageContent() {
   const searchParams = useSearchParams();
@@ -35,12 +36,14 @@ function ChatPageContent() {
 
 export default function ChatPage() {
   return (
-    <Suspense fallback={
-      <div className="flex h-screen items-center justify-center">
-        <div className="h-32 w-32 animate-spin rounded-full border-b-2 border-primary"></div>
-      </div>
-    }>
-      <ChatPageContent />
-    </Suspense>
+    <ErrorBoundary>
+      <Suspense fallback={
+        <div className="flex h-screen items-center justify-center">
+          <div className="h-32 w-32 animate-spin rounded-full border-b-2 border-primary"></div>
+        </div>
+      }>
+        <ChatPageContent />
+      </Suspense>
+    </ErrorBoundary>
   );
 }
