@@ -76,7 +76,10 @@ export function ChatInterface({ className, initialMessage }: ChatInterfaceProps)
       ? 'https://your-backend-url'
       : 'http://localhost:8000';
     
-    const sseUrl = `${baseUrl}/api/events/stream?session_id=${currentSession.id}&token=${tokens.access_token}`;
+    // Note: EventSource doesn't support custom headers, so we pass the token as query param
+    // However, the backend expects Authorization header. For production, consider using
+    // the useSSE hook which has polling fallback with proper header support.
+    const sseUrl = `${baseUrl}/agent_network_sse/${currentSession.id}?token=${tokens.access_token}`;
     
     try {
       const eventSource = new EventSource(sseUrl);

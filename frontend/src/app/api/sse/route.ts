@@ -68,7 +68,7 @@ export async function GET(request: NextRequest) {
 
       // Connect to backend SSE stream if available
       const backendUrl = process.env['BACKEND_URL'] || 'http://localhost:8000';
-      const backendSSEUrl = `${backendUrl}/api/v1/sse/stream/${sessionId}`;
+      const backendSSEUrl = `${backendUrl}/agent_network_sse/${sessionId}`;
       
       try {
         const backendResponse = await fetch(backendSSEUrl, {
