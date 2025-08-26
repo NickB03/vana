@@ -144,14 +144,12 @@ function getClientIP(request: NextRequest): string {
   }
   
   // Fallback to request IP (NextRequest doesn't have ip property, use remote address if available)
-  // @ts-ignore - NextRequest may have socket property in some environments
-  const socket = request.socket;
-  // @ts-ignore
-  if (socket && socket.remoteAddress) {
-    // @ts-ignore
-    return socket.remoteAddress;
+  // Fallback to request IP (safely check for socket property)
+  const reqWithSocket = request as any;
+  if (reqWithSocket.socket?.remoteAddress) {
+    return reqWithSocket.socket.remoteAddress;
   }
-  
+
   return 'unknown';
 }
 
