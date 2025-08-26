@@ -73,13 +73,12 @@ export function ChatInterface({ className, initialMessage }: ChatInterfaceProps)
     }
     
     // Use the Next.js proxy route for secure SSE connection
-    // This allows us to pass the token via Authorization header server-side
-    const sseUrl = `/api/sse?session_id=${currentSession.id}`;
+    // Token should be sent via httpOnly cookie, not in URL
+    const sseUrl = `/api/sse?session_id=${encodeURIComponent(currentSession.id)}`;
     
     try {
-      // Since EventSource doesn't support Authorization header, we need to pass token via query param
-      // The proxy route will handle this securely
-      const eventSource = new EventSource(`${sseUrl}&token=${encodeURIComponent(tokens.access_token)}`);
+      // Use withCredentials to send cookies securely (no token in URL)
+      const eventSource = new EventSource(sseUrl, { withCredentials: true } as EventSourceInit);
       eventSourceRef.current = eventSource;
       
       eventSource.onopen = () => {

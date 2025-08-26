@@ -22,10 +22,11 @@ export async function GET(request: NextRequest) {
     return new Response('Session ID required', { status: 400 });
   }
 
-  // Get auth token
+  // Get auth token from cookies or Authorization header (NOT from URL)
+  // Priority: httpOnly cookie > Authorization header
+  const authCookie = request.cookies.get('auth-token');
   const authHeader = request.headers.get('Authorization');
-  const token = authHeader?.replace('Bearer ', '') || 
-               request.nextUrl.searchParams.get('token');
+  const token = authCookie?.value || authHeader?.replace('Bearer ', '');
 
   // Create a transform stream
   const encoder = new TextEncoder();

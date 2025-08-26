@@ -28,9 +28,9 @@ export default function HomePage() {
     }
   };
 
-  const handleSelectSession = (session: ChatSession) => {
+  const handleSelectSession = (sessionId: string) => {
     // Navigate to selected session
-    router.push(`/chat?session=${session.id}`);
+    router.push(`/chat?session=${sessionId}`);
   };
 
   return (

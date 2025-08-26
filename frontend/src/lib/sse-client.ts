@@ -97,22 +97,16 @@ export class SSEClient {
   }
 
   private async connectSSE(): Promise<void> {
-    // For secure connection, use the Next.js proxy route
-    const url = new URL(`/api/sse`, window.location.origin);
-    url.searchParams.set('session_id', this.config.sessionId);
-    
+    // Build a relative URL; rely on same-origin cookies via the proxy
+    const qs = new URLSearchParams({ session_id: this.config.sessionId });
     if (this.state.lastEventId) {
-      url.searchParams.set('lastEventId', this.state.lastEventId);
+      qs.set('lastEventId', this.state.lastEventId);
     }
+    const url = `/api/sse?${qs.toString()}`;
     
-    // Add token if available in headers
-    const authHeader = this.config.headers['Authorization'];
-    if (authHeader && authHeader.startsWith('Bearer ')) {
-      const token = authHeader.replace('Bearer ', '');
-      url.searchParams.set('token', token);
-    }
-
-    this.eventSource = new EventSource(url.toString());
+    // Send cookies for auth; proxy should translate to Authorization for the backend
+    // Note: Store auth token in httpOnly cookie instead of passing in URL
+    this.eventSource = new EventSource(url, { withCredentials: true } as EventSourceInit);
 
     this.eventSource.onopen = () => {
       this.setState({
@@ -171,25 +165,25 @@ export class SSEClient {
   private startPolling() {
     this.pollingInterval = setInterval(async () => {
       try {
-        // Use the Next.js proxy route for polling as well
-        const url = new URL(`/api/sse`, window.location.origin);
-        url.searchParams.set('session_id', this.config.sessionId);
-        url.searchParams.set('polling', 'true'); // Indicate polling mode
+        // Build relative URL for polling; no tokens in query params
+        const qs = new URLSearchParams({ 
+          session_id: this.config.sessionId,
+          polling: 'true' 
+        });
         
         if (this.state.lastEventId) {
-          url.searchParams.set('lastEventId', this.state.lastEventId);
+          qs.set('lastEventId', this.state.lastEventId);
         }
         
-        // Add token if available in headers
+        const url = `/api/sse?${qs.toString()}`;
+        
+        // Use credentials and Authorization header for secure auth
         const authHeader = this.config.headers['Authorization'];
-        if (authHeader && authHeader.startsWith('Bearer ')) {
-          const token = authHeader.replace('Bearer ', '');
-          url.searchParams.set('token', token);
-        }
-
-        const response = await fetch(url.toString(), {
+        const response = await fetch(url, {
+          credentials: 'include', // Send cookies
           headers: {
             'Accept': 'application/json',
+            ...(authHeader ? { 'Authorization': authHeader } : {}),
           },
         });
 

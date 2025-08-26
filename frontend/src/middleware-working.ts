@@ -41,8 +41,8 @@ function getCSPHeader(nonce: string, isDevelopment: boolean): string {
       "'self'",
       `'nonce-${nonce}'`,
       "'strict-dynamic'",
-      // Monaco Editor and worker requirements
-      "'unsafe-eval'", // Required for Monaco Editor
+      // Monaco Editor sandboxed separately - no unsafe-eval in main CSP
+      // "'unsafe-eval'", // REMOVED for security - sandbox Monaco instead
       "'wasm-unsafe-eval'", // Required for WebAssembly
       // Development mode requirements
       ...(isDevelopment ? [
