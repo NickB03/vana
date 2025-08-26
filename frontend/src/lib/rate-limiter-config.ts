@@ -31,64 +31,72 @@ export interface RateLimitConfig {
 function getDefaultRateLimits(): Record<string, RateLimitRule> {
   return {
     api: {
-      window: parseInt(process.env['NEXT_PUBLIC_RATE_LIMIT_API_WINDOW'] || '60'),
-      max: parseInt(process.env['NEXT_PUBLIC_RATE_LIMIT_API_MAX'] || '100'),
-      message: 'Too many API requests, please slow down',
+function getDefaultRateLimits(): Record<string, RateLimitRule> {
+  const parseIntWithDefault = (value: string | undefined, defaultValue: number): number => {
+    const parsed = parseInt(value || '');
+    return isNaN(parsed) || parsed <= 0 ? defaultValue : parsed;
+  };
+
+  return {
+    api: {
+      window: parseIntWithDefault(process.env['NEXT_PUBLIC_RATE_LIMIT_API_WINDOW'], 60),
+      max:   parseIntWithDefault(process.env['NEXT_PUBLIC_RATE_LIMIT_API_MAX'],    100),
+      message:   'Too many API requests, please slow down',
       keyPrefix: 'api'
     },
     auth: {
       window: parseInt(process.env['NEXT_PUBLIC_RATE_LIMIT_AUTH_WINDOW'] || '300'),
-      max: parseInt(process.env['NEXT_PUBLIC_RATE_LIMIT_AUTH_MAX'] || '5'),
-      message: 'Too many authentication attempts, please wait',
+      max:    parseInt(process.env['NEXT_PUBLIC_RATE_LIMIT_AUTH_MAX']    || '5'),
+      message:           'Too many authentication attempts, please wait',
       skipSuccessfulRequests: false,
-      keyPrefix: 'auth'
+      keyPrefix:         'auth'
     },
     sse: {
       window: parseInt(process.env['NEXT_PUBLIC_RATE_LIMIT_SSE_WINDOW'] || '60'),
-      max: parseInt(process.env['NEXT_PUBLIC_RATE_LIMIT_SSE_MAX'] || '20'),
-      message: 'Too many SSE connection attempts',
+      max:    parseInt(process.env['NEXT_PUBLIC_RATE_LIMIT_SSE_MAX']    || '20'),
+      message:   'Too many SSE connection attempts',
       keyPrefix: 'sse'
     },
     upload: {
       window: parseInt(process.env['NEXT_PUBLIC_RATE_LIMIT_UPLOAD_WINDOW'] || '300'),
-      max: parseInt(process.env['NEXT_PUBLIC_RATE_LIMIT_UPLOAD_MAX'] || '10'),
-      message: 'Too many upload attempts, please wait',
+      max:    parseInt(process.env['NEXT_PUBLIC_RATE_LIMIT_UPLOAD_MAX']    || '10'),
+      message:   'Too many upload attempts, please wait',
       keyPrefix: 'upload'
     },
     search: {
       window: parseInt(process.env['NEXT_PUBLIC_RATE_LIMIT_SEARCH_WINDOW'] || '10'),
-      max: parseInt(process.env['NEXT_PUBLIC_RATE_LIMIT_SEARCH_MAX'] || '30'),
-      message: 'Too many search requests, please wait',
+      max:    parseInt(process.env['NEXT_PUBLIC_RATE_LIMIT_SEARCH_MAX']    || '30'),
+      message:   'Too many search requests, please wait',
       keyPrefix: 'search'
     },
     chat: {
       window: parseInt(process.env['NEXT_PUBLIC_RATE_LIMIT_CHAT_WINDOW'] || '60'),
-      max: parseInt(process.env['NEXT_PUBLIC_RATE_LIMIT_CHAT_MAX'] || '60'),
-      message: 'Too many chat messages, please slow down',
+      max:    parseInt(process.env['NEXT_PUBLIC_RATE_LIMIT_CHAT_MAX']    || '60'),
+      message:   'Too many chat messages, please slow down',
       keyPrefix: 'chat'
     },
     passwordReset: {
       window: 3600,
-      max: 3,
-      message: 'Too many password reset requests, please wait',
+      max:    3,
+      message:   'Too many password reset requests, please wait',
       keyPrefix: 'pwd_reset'
     },
     oauth: {
       window: 60,
-      max: 10,
-      message: 'Too many OAuth attempts, please wait',
+      max:    10,
+      message:   'Too many OAuth attempts, please wait',
       keyPrefix: 'oauth'
     },
     health: {
       window: 60,
-      max: 300,
-      message: 'Health check rate limit exceeded',
+      max:    300,
+      message:   'Health check rate limit exceeded',
       keyPrefix: 'health'
     },
     websocket: {
       window: 60,
-      max: 30,
-      message: 'Too many WebSocket connection attempts',
+      max:    30,
+      message:   'Too many WebSocket connection attempts',
       keyPrefix: 'ws'
     }
   };
