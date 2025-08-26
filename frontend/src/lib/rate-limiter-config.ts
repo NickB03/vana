@@ -208,9 +208,10 @@ export const ENVIRONMENT_CONFIGS = {
     limits: {
       ...RATE_LIMIT_CONFIG.limits,
       // More lenient limits for development
-      api: { ...RATE_LIMIT_CONFIG.limits['api']!, max: 1000 },
-      auth: { ...RATE_LIMIT_CONFIG.limits['auth']!, max: 50 },
-      sse: { ...RATE_LIMIT_CONFIG.limits['sse']!, max: 100 }
+       // More lenient limits for development
+       api: { ...(RATE_LIMIT_CONFIG.limits['api'] || { window: 60, max: 100 }), max: 1000 },
+       auth: { ...(RATE_LIMIT_CONFIG.limits['auth'] || { window: 300, max: 5 }), max: 50 },
+       sse: { ...(RATE_LIMIT_CONFIG.limits['sse'] || { window: 60, max: 20 }), max: 100 }
     }
   },
   
