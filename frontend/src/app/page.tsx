@@ -9,8 +9,6 @@ import { useRouter } from 'next/navigation';
 import { useSessionStore } from '@/store/session-store';
 import { MainLayout } from '@/components/layout/main-layout';
 import { HeroSection } from '@/components/home/hero-section';
-import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
-import { ChatSession } from '@/types/session';
 
 export default function HomePage() {
   const router = useRouter();

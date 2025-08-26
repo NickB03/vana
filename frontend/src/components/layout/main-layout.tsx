@@ -159,8 +159,25 @@ export function MainLayout({
           {/* Resize Handle */}
           {sidebarOpen && (
             <div
-              className="w-1 bg-border cursor-col-resize hover:bg-primary/20 active:bg-primary/40 transition-colors"
+              className="w-1 bg-border cursor-col-resize hover:bg-primary/20 active:bg-primary/40 transition-colors focus:bg-primary/30 focus:outline-none"
               onMouseDown={handleMouseDown}
+              role="separator"
+              aria-orientation="vertical"
+              aria-label="Resize sidebar"
+              aria-valuenow={sidebarWidth}
+              aria-valuemin={250}
+              aria-valuemax={600}
+              tabIndex={0}
+              onKeyDown={(e) => {
+                if (e.key === 'ArrowLeft') {
+                  e.preventDefault();
+                  setSidebarWidth(Math.max(250, sidebarWidth - 20));
+                }
+                if (e.key === 'ArrowRight') {
+                  e.preventDefault();
+                  setSidebarWidth(Math.min(600, sidebarWidth + 20));
+                }
+              }}
             />
           )}
         </>

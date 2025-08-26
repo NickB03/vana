@@ -83,7 +83,9 @@ export function middleware(request: NextRequest) {
 
   // TODO: Temporarily disable auth middleware for development
   // Re-enable when auth is fully implemented
-  console.log('🔒 Auth middleware temporarily disabled for development');
+  if (process.env.NODE_ENV === 'development') {
+    console.log('🔒 Auth middleware temporarily disabled for development');
+  }
   return NextResponse.next();
 
   // DISABLED AUTH CODE (re-enable when ready):

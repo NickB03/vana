@@ -126,13 +126,17 @@ export function HeroSection({ onStartChat }: HeroSectionProps) {
                 transition={{ delay: index * 0.1 }}
               >
                 <Card 
-                  className="cursor-pointer transition-all duration-200 hover:shadow-lg hover:-translate-y-1 group"
-                  onClick={() => onStartChat(suggestion.description)}
+                  className="transition-all duration-200 hover:shadow-lg hover:-translate-y-1 group"
                 >
-                  <CardContent className="p-6">
+                  <button
+                    type="button"
+                    className="w-full text-left p-6 focus:outline-none focus:ring-2 focus:ring-primary/50 rounded-lg"
+                    onClick={() => onStartChat(suggestion.description)}
+                    aria-label={`Start chat about ${suggestion.title}: ${suggestion.description}`}
+                  >
                     <div className="flex flex-col items-center text-center">
                       <div className="mb-4 p-3 rounded-full bg-primary/10 group-hover:bg-primary/20 transition-colors">
-                        <suggestion.icon className="w-6 h-6 text-primary" />
+                        <suggestion.icon className="w-6 h-6 text-primary" aria-hidden="true" />
                       </div>
                       
                       <Badge variant="outline" className="mb-2 text-xs">
@@ -147,7 +151,7 @@ export function HeroSection({ onStartChat }: HeroSectionProps) {
                         {suggestion.description}
                       </p>
                     </div>
-                  </CardContent>
+                  </button>
                 </Card>
               </motion.div>
             ))}

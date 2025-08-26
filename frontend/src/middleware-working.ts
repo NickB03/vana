@@ -232,7 +232,9 @@ function parseJWTPayload(token: string): Record<string, any> | null {
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   
-  console.log('🔒 Middleware running for:', pathname);
+  if (process.env.NODE_ENV === 'development') {
+    console.log('🔒 Middleware running for:', pathname);
+  }
   
   // Skip middleware for static assets and internal Next.js routes
   if (
@@ -283,7 +285,9 @@ export function middleware(request: NextRequest) {
 
   // TODO: Enable authentication when ready
   // For now, just apply security headers without auth checks
-  console.log('🔒 Auth middleware temporarily disabled for development');
+  if (process.env.NODE_ENV === 'development') {
+    console.log('🔒 Auth middleware temporarily disabled for development');
+  }
   return response;
 
   // DISABLED AUTH CODE (uncomment and adjust when auth is ready):
