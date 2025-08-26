@@ -346,9 +346,29 @@ export class SessionSecurityManager {
       this.sessionCheckInterval = null;
     }
 
-    this.sessionCheckInterval = window.setInterval(async () => {
-      await this.validateSession();
-    }, 60000); // Check every minute
+private startSessionValidation(): void {
+  if (this.sessionCheckInterval) {
+    // Use the explicit window namespace for clarity
+    window.clearInterval(this.sessionCheckInterval);
+    this.sessionCheckInterval = null;
+  }
+
+  // Kick off the periodic session check
+  const intervalId = window.setInterval(async () => {
+    await this.validateSession();
+  }, 60000); // Check every minute
+
+  this.sessionCheckInterval = intervalId;
+
+  // Ensure we tear down everything if the user closes or reloads the page
+  window.addEventListener(
+    'beforeunload',
+    () => {
+      this.destroy();
+    },
+    { once: true }
+  );
+}
   }
 
   /**
