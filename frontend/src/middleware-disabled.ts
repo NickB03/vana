@@ -42,8 +42,14 @@ const PUBLIC_ROUTES = [
 // ];
 
 /**
- * Simple JWT payload extraction without using jwt-decode (which uses eval)
- * This is safe for Edge Runtime environment
+ * Extracts and returns the payload object from a compact JWT string without using eval.
+ *
+ * The function expects a JWT in compact serialization (three dot-separated parts: `header.payload.signature`).
+ * It base64-decodes the payload (handling URL-safe base64 and missing padding) and parses it as JSON.
+ * Returns `null` for malformed tokens, decoding/parsing errors, or when the token does not have exactly three parts.
+ *
+ * @param token - JWT string in compact form (`header.payload.signature`)
+ * @returns The parsed payload as an object, or `null` if the token is invalid or cannot be decoded
  */
 function parseJWTPayload(token: string): Record<string, any> | null {
   try {
@@ -63,6 +69,21 @@ function parseJWTPayload(token: string): Record<string, any> | null {
   }
 }
 
+/**
+ * Edge middleware that enforces route checks for authentication and authorization.
+ *
+ * Currently performs lightweight routing decisions:
+ * - Skips processing for static assets, image files, and most API routes (all `/api/*` except `/api/auth`).
+ * - Allows requests to any path listed in `PUBLIC_ROUTES` (exact match or as a prefix).
+ * - Temporarily disables full auth checks in development (logs a notice and forwards the request).
+ *
+ * When re-enabled, the middleware is intended to:
+ * - Validate `access_token` / `id_token` cookies, handle expiration, redirect to `/auth/login` with a `redirect` query, and clear cookies as needed.
+ * - Enforce admin-only access for paths starting with `/admin`.
+ * - Inject basic user identifiers into request headers (`x-user-id`, `x-user-email`, `x-user-role`) for downstream use.
+ *
+ * @returns A `NextResponse` that either continues the request (`NextResponse.next()`) or redirects the client.
+ */
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   

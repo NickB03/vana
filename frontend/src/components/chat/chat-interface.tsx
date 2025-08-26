@@ -24,6 +24,13 @@ interface ChatInterfaceProps {
   initialMessage?: string;
 }
 
+/**
+ * Chat UI component that manages session lifecycle, sends user messages, and streams AI responses via Server-Sent Events (SSE).
+ *
+ * Renders the full chat interface including connection status, message list, and input. Requires an authenticated user; it will show a login prompt when unauthenticated and initialize a session when none exists. Outgoing messages are added to the UI immediately and delivered to the backend over an HTTP POST; AI responses are received asynchronously over SSE and rendered as streaming assistant messages.
+ *
+ * @param initialMessage - Optional message to send automatically when a newly created session is empty.
+ */
 export function ChatInterface({ className, initialMessage }: ChatInterfaceProps) {
   const { user, tokens } = useAuth();
   const { currentSession, addMessage, createSession } = useSessionStore();

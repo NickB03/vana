@@ -13,6 +13,31 @@ const SSE_HEADERS = {
   'X-Accel-Buffering': 'no', // Disable Nginx buffering
 };
 
+/**
+ * Server-Sent Events (SSE) endpoint that streams events for a given session.
+ *
+ * Accepts a Next.js GET request and establishes an SSE stream that forwards events
+ * from a backend SSE source or emits a development mock stream when the backend
+ * is unavailable. Requires a session identifier supplied via the `X-Session-ID`
+ * header or the `session_id` query parameter; returns 400 if missing.
+ *
+ * Authentication: prefers an httpOnly cookie named `auth-token`, falling back to
+ * an `Authorization: Bearer <token>` header when the cookie is absent. The token,
+ * if present, is forwarded to the backend SSE endpoint.
+ *
+ * Behavior:
+ * - Sends an initial `status` event on connection and periodic `heartbeat`
+ *   events every 30 seconds.
+ * - Attempts to connect to the backend SSE at `${BACKEND_URL || 'http://localhost:8000'}/agent_network_sse/{sessionId}`.
+ *   When connected, it forwards `data:` and `event:` lines from the backend to clients,
+ *   attempting to JSON-parse `data:` payloads before forwarding.
+ * - On backend connection failure, emits a recoverable `error` event and, if
+ *   running in development, starts a mock event stream via `startMockEventStream`.
+ * - Cleans up heartbeat interval and closes the stream writer when the client
+ *   aborts the request, and emits a non-recoverable `error` event on unexpected errors.
+ *
+ * @returns A Response whose body is a readable stream delivering SSE events with SSE_HEADERS.
+ */
 export async function GET(request: NextRequest) {
   // Get session ID from headers or query params
   const sessionId = request.headers.get('X-Session-ID') || 

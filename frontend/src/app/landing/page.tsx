@@ -14,6 +14,16 @@ import Link from 'next/link';
 import { GoogleLoginButton } from '@/components/auth/GoogleLoginButton';
 import { useEffect } from 'react';
 
+/**
+ * Landing page component for unauthenticated users.
+ *
+ * Renders the marketing/hero layout, feature grid, CTA card, navigation and footer.
+ * If the user is authenticated, redirects to the app root ("/"). Action buttons use
+ * the GoogleLoginButton component for sign-in/sign-up; the "Learn More" control
+ * smooth-scrolls to the features section.
+ *
+ * @returns The landing page React element.
+ */
 export default function LandingPage() {
   const { isAuthenticated } = useAuth();
   const router = useRouter();

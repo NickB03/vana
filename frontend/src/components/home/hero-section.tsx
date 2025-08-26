@@ -59,6 +59,20 @@ interface HeroSectionProps {
   onStartChat: (prompt?: string) => void;
 }
 
+/**
+ * Hero/landing section that introduces the virtual agent, shows feature badges,
+ * a quick-start button, and clickable prompt suggestion cards.
+ *
+ * The component renders animated headings, feature badges, a "Start New Chat"
+ * button (which starts an empty chat), and a responsive grid of suggestion
+ * cards. Clicking a suggestion card invokes `onStartChat` with that suggestion's
+ * description as the initial prompt.
+ *
+ * @param onStartChat - Callback invoked to begin a chat. Called with no arguments
+ *                      to start an empty chat, or with a string prompt when a
+ *                      suggestion card is selected.
+ * @returns A React element containing the hero section UI.
+ */
 export function HeroSection({ onStartChat }: HeroSectionProps) {
   return (
     <div className="flex-1 overflow-y-auto p-8">

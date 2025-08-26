@@ -34,6 +34,23 @@ export function generateViewport() {
   }
 }
 
+/**
+ * Root HTML layout component for the application.
+ *
+ * Renders the document <html> and <body> structure used by all pages, including:
+ * - html attributes: lang="en", dark class, and color-scheme style.
+ * - accessibility and performance meta/link tags (viewport, theme-color, preconnect, dns-prefetch).
+ * - a keyboard-accessible "Skip to main content" link.
+ *
+ * When a Content-Security-Policy nonce is available (awaited via getNonce), the component:
+ * - emits a meta tag `name="csp-nonce"` with the nonce for client-side access, and
+ * - injects a CSP-compliant inline script (using the same nonce) that initializes the UI theme from localStorage,
+ *   updates the theme-color meta tag, and announces the applied theme to assistive technologies where supported.
+ *
+ * This is a server component and therefore awaits the nonce on the server before rendering CSP-protected elements.
+ *
+ * @param children - The page content to render inside the document body.
+ */
 export default async function RootLayout({
   children,
 }: Readonly<{

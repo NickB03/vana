@@ -22,7 +22,11 @@ const PUBLIC_ROUTES = [
 ];
 
 /**
- * Generate a cryptographically secure nonce for CSP
+ * Create a cryptographically secure nonce suitable for use in a Content Security Policy.
+ *
+ * Produces a 16-byte random value encoded as a 32-character lowercase hex string.
+ *
+ * @returns A hex-encoded nonce (32 hex characters) that can be used in `script-src`/`style-src` CSP directives.
  */
 function generateNonce(): string {
   const array = new Uint8Array(16);
@@ -31,8 +35,16 @@ function generateNonce(): string {
 }
 
 /**
- * Content Security Policy configuration for Vana frontend
- * Enhanced for Next.js 15 with comprehensive security directives
+ * Build the Content-Security-Policy header value used by the Vana frontend.
+ *
+ * Returns a single CSP string composed from a curated set of directives tailored
+ * for Next.js edge runtime. The `nonce` is injected into script/style directives
+ * to allow trusted inline resources; `isDevelopment` enables relaxed sources
+ * (localhosts, webpack, ws) needed during development.
+ *
+ * @param nonce - A cryptographic nonce value to be included as `nonce-<value>` in script/style directives.
+ * @param isDevelopment - When true, enables development-only sources (hot-reload, local websockets, localhost APIs).
+ * @returns The final CSP header string (to be set as the value of Content-Security-Policy).
  */
 function getCSPHeader(nonce: string, isDevelopment: boolean): string {
   const baseConfig = {
@@ -172,7 +184,18 @@ function getCSPHeader(nonce: string, isDevelopment: boolean): string {
 }
 
 /**
- * Additional security headers for enhanced protection
+ * Returns a set of HTTP security headers to apply to responses.
+ *
+ * The returned object includes headers that:
+ * - prevent MIME type sniffing (X-Content-Type-Options),
+ * - block framing (X-Frame-Options),
+ * - enforce a strict referrer policy (Referrer-Policy),
+ * - restrict browser features via Permissions-Policy,
+ * - enforce cross-origin embedding/opener/resource policies,
+ * and, when NODE_ENV is "production", adds Strict-Transport-Security for HSTS.
+ *
+ * @returns An object mapping header names to header values. The `Strict-Transport-Security`
+ * header is only present when running in production.
  */
 function getSecurityHeaders() {
   return {
@@ -206,8 +229,14 @@ function getSecurityHeaders() {
 }
 
 /**
- * Simple JWT payload extraction without using jwt-decode (which uses eval)
- * This is safe for Edge Runtime environment
+ * Extracts and returns the decoded payload object from a JWT without executing code.
+ *
+ * Decodes the middle segment of a JWT (header.payload.signature) handling URL-safe
+ * base64 variants and missing padding. Returns the parsed payload object, or `null`
+ * if the token is not a valid JWT or if decoding/parsing fails.
+ *
+ * @param token - The JWT string to decode.
+ * @returns The JWT payload as an object, or `null` on invalid format or parse errors.
  */
 function parseJWTPayload(token: string): Record<string, any> | null {
   try {
@@ -227,6 +256,24 @@ function parseJWTPayload(token: string): Record<string, any> | null {
   }
 }
 
+/**
+ * Next.js Edge middleware that applies a nonce-based Content Security Policy and additional security headers,
+ * while bypassing static/internal routes and public endpoints.
+ *
+ * This middleware:
+ * - Skips processing for Next.js internals, static assets, and most API routes (except /api/auth).
+ * - Generates a cryptographically secure nonce and builds a CSP using that nonce.
+ * - Attaches the CSP (with reporting endpoints in production), other security headers, and an `x-nonce` header to the response.
+ * - Sets a `Report-To` header for CSP reporting in production.
+ * - Immediately returns for PUBLIC_ROUTES without performing authentication.
+ *
+ * Authentication scaffolding is present but currently disabled; when enabled the middleware will validate tokens,
+ * handle expirations, enforce admin protection on /admin routes, and inject user info into request headers or
+ * redirect unauthenticated requests to /auth/login.
+ *
+ * @param request - The NextRequest provided by the Next.js Edge runtime.
+ * @returns A NextResponse with security headers applied, or a redirect/NextResponse produced by authentication logic when enabled.
+ */
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   

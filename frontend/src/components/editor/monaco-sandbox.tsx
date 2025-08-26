@@ -14,6 +14,22 @@ interface MonacoSandboxProps {
   className?: string;
 }
 
+/**
+ * Renders a sandboxed iframe running Monaco Editor and keeps its content synchronized with the parent React state.
+ *
+ * The iframe is injected with a self-contained HTML document that loads Monaco from a CDN and configures a
+ * content-security-policy allowing Monaco's runtime requirements (including `unsafe-eval`). The parent and iframe
+ * communicate via postMessage:
+ * - iframe -> parent: { type: 'monaco-change', value } when the editor content changes, and { type: 'monaco-ready' } when ready.
+ * - parent -> iframe: { type: 'monaco-update', value } to set editor content.
+ *
+ * @param value - Initial and controlled editor content; updates to this prop are posted to the iframe once the editor signals readiness.
+ * @param language - Monaco language identifier to use for the editor (default: `'javascript'`).
+ * @param onChange - Optional callback invoked with the editor value when the editor posts a `monaco-change` message.
+ * @param options - Additional Monaco editor options merged into the created editor instance.
+ * @param className - Additional CSS classes applied to the iframe element.
+ * @returns A React element: an iframe that hosts the sandboxed Monaco Editor.
+ */
 export function MonacoSandbox({
   value,
   language = 'javascript',

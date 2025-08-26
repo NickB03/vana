@@ -23,6 +23,16 @@ interface MainLayoutProps {
   showSidebar?: boolean;
 }
 
+/**
+ * Client-side layout component providing a two-column UI with an optional, resizable left sidebar and a main content area.
+ *
+ * The sidebar contains a header, optional session history (rendered when `onSelectSession` is provided), and a user section with avatar and logout. A narrow drag handle beside the sidebar enables horizontal resizing; the width is clamped to the [250, 600] pixel range. Mouse event listeners used for resizing are attached via an SSR-safe utility.
+ *
+ * @param children - Page content to render in the main area.
+ * @param onSelectSession - Optional callback invoked when a session is selected; its presence enables rendering of the SessionHistory panel.
+ * @param showSidebar - Whether to render the left sidebar and its resize handle (default: `true`).
+ * @returns The layout JSX element.
+ */
 export function MainLayout({ 
   children, 
   onSelectSession, 
