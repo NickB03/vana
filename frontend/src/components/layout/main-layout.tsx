@@ -126,7 +126,7 @@ export function MainLayout({
                       <div className="flex items-center gap-3">
                         <Avatar className="w-8 h-8">
                           <AvatarImage src={user.picture} alt={user.full_name} />
-                          <AvatarFallback>
+                          <AvatarFallback role="img" aria-label={`Avatar of ${user.full_name}`}>
                             {getUserInitials(user.full_name)}
                           </AvatarFallback>
                         </Avatar>
@@ -145,6 +145,7 @@ export function MainLayout({
                         variant="ghost"
                         size="sm"
                         onClick={logout}
+                        aria-label="Log out"
                       >
                         <LogOut className="w-4 h-4" />
                       </Button>
@@ -158,8 +159,25 @@ export function MainLayout({
           {/* Resize Handle */}
           {sidebarOpen && (
             <div
-              className="w-1 bg-border cursor-col-resize hover:bg-primary/20 active:bg-primary/40 transition-colors"
+              className="w-1 bg-border cursor-col-resize hover:bg-primary/20 active:bg-primary/40 transition-colors focus:bg-primary/30 focus:outline-none"
               onMouseDown={handleMouseDown}
+              role="separator"
+              aria-orientation="vertical"
+              aria-label="Resize sidebar"
+              aria-valuenow={sidebarWidth}
+              aria-valuemin={250}
+              aria-valuemax={600}
+              tabIndex={0}
+              onKeyDown={(e) => {
+                if (e.key === 'ArrowLeft') {
+                  e.preventDefault();
+                  setSidebarWidth(Math.max(250, sidebarWidth - 20));
+                }
+                if (e.key === 'ArrowRight') {
+                  e.preventDefault();
+                  setSidebarWidth(Math.min(600, sidebarWidth + 20));
+                }
+              }}
             />
           )}
         </>
@@ -212,7 +230,7 @@ export function MainLayout({
         </div>
 
         {/* Page Content */}
-        <div className="flex-1 overflow-hidden">
+        <div className="flex-1 overflow-y-auto">
           {children}
         </div>
       </div>

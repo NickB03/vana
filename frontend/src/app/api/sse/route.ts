@@ -22,10 +22,11 @@ export async function GET(request: NextRequest) {
     return new Response('Session ID required', { status: 400 });
   }
 
-  // Get auth token
+  // Get auth token from cookies or Authorization header (NOT from URL)
+  // Priority: httpOnly cookie > Authorization header
+  const authCookie = request.cookies.get('auth-token');
   const authHeader = request.headers.get('Authorization');
-  const token = authHeader?.replace('Bearer ', '') || 
-               request.nextUrl.searchParams.get('token');
+  const token = authCookie?.value || authHeader?.replace('Bearer ', '');
 
   // Create a transform stream
   const encoder = new TextEncoder();
@@ -68,44 +69,72 @@ export async function GET(request: NextRequest) {
 
       // Connect to backend SSE stream if available
       const backendUrl = process.env['BACKEND_URL'] || 'http://localhost:8000';
-      const backendSSEUrl = `${backendUrl}/api/v1/sse/stream/${sessionId}`;
+      const backendSSEUrl = `${backendUrl}/agent_network_sse/${sessionId}`;
+      const abortController = new AbortController();
       
       try {
         const backendResponse = await fetch(backendSSEUrl, {
           headers: {
             'Accept': 'text/event-stream',
             ...(token && { 'Authorization': `Bearer ${token}` })
-          }
+          },
+          signal: abortController.signal
         });
 
-        if (backendResponse.ok && backendResponse.body) {
+        if (!backendResponse.ok) {
+          // Handle non-OK backend responses
+          await sendTypedEvent('error', {
+            code: 'BACKEND_BAD_STATUS',
+            message: `Backend SSE responded with ${backendResponse.status}`,
+            status: backendResponse.status,
+            recoverable: backendResponse.status >= 500
+          });
+        } else if (backendResponse.body) {
           const reader = backendResponse.body.getReader();
           const decoder = new TextDecoder();
+          let buffer = '';
 
-          while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
+          try {
+            while (true) {
+              const { done, value } = await reader.read();
+              if (done) break;
 
-            const chunk = decoder.decode(value, { stream: true });
-            const lines = chunk.split('\n');
-            
-            for (const line of lines) {
-              if (line.startsWith('data: ')) {
-                try {
-                  const data = JSON.parse(line.slice(6));
-                  await sendEvent(data);
-                } catch {
-                  // Not JSON, send as-is
+              const chunk = decoder.decode(value, { stream: true });
+              buffer += chunk;
+              const lines = buffer.split('\n');
+              
+              // Keep the incomplete line in the buffer
+              buffer = lines.pop() || '';
+              
+              for (const line of lines) {
+                if (line.startsWith('data: ')) {
+                  try {
+                    const data = JSON.parse(line.slice(6));
+                    await sendEvent(data);
+                  } catch {
+                    // Not JSON, send as-is
+                    await writer.write(encoder.encode(line + '\n'));
+                  }
+                } else if (line.startsWith('event: ')) {
+                  // Forward event type
                   await writer.write(encoder.encode(line + '\n'));
+                } else if (line.startsWith('id: ')) {
+                  // Forward event ID for reconnection support
+                  await writer.write(encoder.encode(line + '\n'));
+                } else if (line.startsWith('retry: ')) {
+                  // Forward retry directive
+                  await writer.write(encoder.encode(line + '\n'));
+                } else if (line.startsWith(':')) {
+                  // Forward SSE comments
+                  await writer.write(encoder.encode(line + '\n'));
+                } else if (line === '') {
+                  // End of event
+                  await writer.write(encoder.encode('\n'));
                 }
-              } else if (line.startsWith('event: ')) {
-                // Forward event type
-                await writer.write(encoder.encode(line + '\n'));
-              } else if (line === '') {
-                // End of event
-                await writer.write(encoder.encode('\n'));
               }
             }
+          } finally {
+            reader.releaseLock();
           }
         }
       } catch (backendError) {
@@ -127,7 +156,16 @@ export async function GET(request: NextRequest) {
       // Clean up on close
       request.signal.addEventListener('abort', () => {
         clearInterval(heartbeatInterval);
-        writer.close();
+        try {
+          abortController.abort();
+        } catch {
+          // Ignore abort errors
+        }
+        try {
+          writer.close();
+        } catch {
+          // Ignore close errors
+        }
       });
 
     } catch (error) {

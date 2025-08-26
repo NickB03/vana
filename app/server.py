@@ -48,17 +48,23 @@ from app.utils.tracing import CloudTraceLoggingSpanExporter
 from app.utils.typing import Feedback
 
 # Get the project ID from Google Cloud authentication
-try:
-    _, project_id = google.auth.default()
-    if not project_id:
-        project_id = os.environ.get("GOOGLE_CLOUD_PROJECT", "analystai-454200")
-        print(f"Using project ID from environment/config: {project_id}")
-    else:
-        print(f"Using authenticated project ID: {project_id}")
-except Exception as e:
-    print(f"Authentication setup: {e}")
-    project_id = "analystai-454200"
-    print(f"Using project ID: {project_id}")
+# Handle CI environment where credentials might not be available
+if os.environ.get("CI") == "true":
+    # In CI environment, skip authentication and use environment variable
+    project_id = os.environ.get("GOOGLE_CLOUD_PROJECT", "analystai-454200")
+    print(f"CI Environment: Using project ID from environment: {project_id}")
+else:
+    try:
+        _, project_id = google.auth.default()
+        if not project_id:
+            project_id = os.environ.get("GOOGLE_CLOUD_PROJECT", "analystai-454200")
+            print(f"Using project ID from environment/config: {project_id}")
+        else:
+            print(f"Using authenticated project ID: {project_id}")
+    except Exception as e:
+        print(f"Authentication setup: {e}")
+        project_id = "analystai-454200"
+        print(f"Using project ID: {project_id}")
 # Set up logging based on environment
 if USE_CLOUD_LOGGING:
     try:
@@ -83,34 +89,43 @@ allow_origins = (
 )
 
 # Create bucket name for the project
-bucket_name = f"{project_id}-vana-logs-data"
-if bucket_name:
-    try:
-        create_bucket_if_not_exists(
-            bucket_name=bucket_name, project=project_id, location="us-central1"
-        )
-    except Exception as e:
-        if hasattr(logger, "log_struct"):
-            logger.log_struct(
-                {
-                    "message": "Could not create bucket, continuing without it",
-                    "error": str(e),
-                },
-                severity="WARNING",
+# Skip bucket creation in CI environment
+if os.environ.get("CI") == "true":
+    print("CI Environment: Skipping bucket creation")
+    bucket_name = None
+else:
+    bucket_name = f"{project_id}-vana-logs-data"
+    if bucket_name:
+        try:
+            create_bucket_if_not_exists(
+                bucket_name=bucket_name, project=project_id, location="us-central1"
             )
-        else:
-            logger.warning(f"Could not create bucket, continuing without it: {e}")
+        except Exception as e:
+            if hasattr(logger, "log_struct"):
+                logger.log_struct(
+                    {
+                        "message": "Could not create bucket, continuing without it",
+                        "error": str(e),
+                    },
+                    severity="WARNING",
+                )
+            else:
+                logger.warning(f"Could not create bucket, continuing without it: {e}")
 
 # Set up tracing for the project
-try:
-    provider = TracerProvider()
-    processor = export.BatchSpanProcessor(CloudTraceLoggingSpanExporter())
-    provider.add_span_processor(processor)
-    trace.set_tracer_provider(provider)
-    print(f"Tracing initialized for project: {project_id}")
-except Exception as e:
-    print(f"Could not initialize tracing: {e}")
-    # Continue without tracing
+# Skip tracing in CI environment to avoid authentication issues
+if os.environ.get("CI") == "true":
+    print("CI Environment: Skipping tracing initialization")
+else:
+    try:
+        provider = TracerProvider()
+        processor = export.BatchSpanProcessor(CloudTraceLoggingSpanExporter())
+        provider.add_span_processor(processor)
+        trace.set_tracer_provider(provider)
+        print(f"Tracing initialized for project: {project_id}")
+    except Exception as e:
+        print(f"Could not initialize tracing: {e}")
+        # Continue without tracing
 
 AGENT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # Persistent session storage configuration

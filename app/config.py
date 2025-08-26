@@ -25,19 +25,25 @@ from app.models import CRITIC_MODEL, WORKER_MODEL, ModelType
 #    GOOGLE_API_KEY=PASTE_YOUR_ACTUAL_API_KEY_HERE
 # 2. This will override the default Vertex AI configuration
 # Get the project ID from Google Cloud authentication
-try:
-    _, project_id = google.auth.default()
-    if not project_id:
-        # Fallback to environment variable or your specific project
-        project_id = os.environ.get("GOOGLE_CLOUD_PROJECT", "analystai-454200")
-        print(f"Using project ID from environment/config: {project_id}")
-    else:
-        print(f"Using authenticated project ID: {project_id}")
-except Exception as e:
-    print(f"Authentication error: {e}")
-    # Use your specific project ID as fallback
-    project_id = "analystai-454200"
-    print(f"Using fallback project ID: {project_id}")
+# Handle CI environment where credentials might not be available
+if os.environ.get("CI") == "true":
+    # In CI environment, skip authentication and use environment variable
+    project_id = os.environ.get("GOOGLE_CLOUD_PROJECT", "analystai-454200")
+    print(f"CI Environment: Using project ID from environment: {project_id}")
+else:
+    try:
+        _, project_id = google.auth.default()
+        if not project_id:
+            # Fallback to environment variable or your specific project
+            project_id = os.environ.get("GOOGLE_CLOUD_PROJECT", "analystai-454200")
+            print(f"Using project ID from environment/config: {project_id}")
+        else:
+            print(f"Using authenticated project ID: {project_id}")
+    except Exception as e:
+        print(f"Authentication error: {e}")
+        # Use your specific project ID as fallback
+        project_id = "analystai-454200"
+        print(f"Using fallback project ID: {project_id}")
 
 os.environ.setdefault("GOOGLE_CLOUD_PROJECT", project_id)
 os.environ.setdefault("GOOGLE_CLOUD_LOCATION", "global")
