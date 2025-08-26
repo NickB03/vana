@@ -268,6 +268,15 @@ pytest-report.xml
 *-report.xml
 test-results/
 
+# Work files and PR documentation
+docs/PR-*.md
+docs/security-*.md
+frontend/docs/
+**/lint-results.txt
+**/typecheck-results.txt
+frontend/src/__tests__/
+frontend/src/test-*.ts
+
 
 # Claude Flow generated files
 .claude/settings.local.json
