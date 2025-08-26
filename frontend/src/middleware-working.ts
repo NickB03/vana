@@ -10,6 +10,15 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { jwtVerify, importSPKI, type JWTPayload } from 'jose';
+
+// JWT Configuration
+const JWT_SECRET = process.env.JWT_SECRET || '';
+const JWT_PUBLIC_KEY = process.env.JWT_PUBLIC_KEY || '';
+const JWT_ISSUER = process.env.JWT_ISSUER || 'vana-api';
+const JWT_AUDIENCE = process.env.JWT_AUDIENCE || 'vana-frontend';
+const JWKS_URL = process.env.JWKS_URL || '';
+const CLOCK_SKEW_SECONDS = 30; // Allow 30 seconds clock skew
 
 // Rate limiting configuration
 interface RateLimit {
@@ -23,9 +32,33 @@ interface RequestValidationResult {
   riskLevel: 'low' | 'medium' | 'high';
 }
 
-// In-memory rate limit store (use Redis in production)
-const rateLimitStore = new Map<string, RateLimit>();
+// Import storage implementations
+import { StorageInterface } from '@/lib/storage';
+import { RedisStorage } from '@/lib/redis-storage';
+import { InMemoryStorage } from '@/lib/in-memory-storage';
+import { RATE_LIMIT_CONFIG } from '@/lib/rate-limiter-config';
+
+interface VerifiedJWTPayload extends JWTPayload {
+  role?: string;
+  permissions?: string[];
+  userId?: string;
+  email?: string;
+}
+
+// Security incidents store
 const securityIncidents = new Map<string, number>();
+
+// Initialize storage based on environment
+let storage: StorageInterface;
+
+// Initialize storage based on environment
+if (process.env.NODE_ENV === 'production' && RATE_LIMIT_CONFIG.backend === 'redis' && RATE_LIMIT_CONFIG.redis) {
+  storage = new RedisStorage(RATE_LIMIT_CONFIG.redis);
+  console.log('Using Redis storage for rate limiting');
+} else {
+  storage = new InMemoryStorage();
+  console.log('Using in-memory storage for rate limiting');
+}
 
 // Rate limiting configurations
 const RATE_LIMITS = {
@@ -33,7 +66,7 @@ const RATE_LIMITS = {
   sse: { requests: 10, window: 60000 },  // 10 SSE connections per minute
   auth: { requests: 20, window: 300000 }, // 20 auth requests per 5 minutes
   default: { requests: 200, window: 60000 } // 200 requests per minute default
-} as const;
+};
 
 // SSE endpoints that need special CORS handling
 const SSE_ENDPOINTS = [
@@ -42,14 +75,28 @@ const SSE_ENDPOINTS = [
   '/agent_network_events'
 ];
 
-// High-risk patterns for request validation
-const SECURITY_PATTERNS = {
-  sqlInjection: /(union|select|insert|update|delete|drop|create|alter|exec|script)/i,
-  xss: /<script|javascript:|on\w+=/i,
-  pathTraversal: /\.\.[\\/\\]|\.[\\/\\]\.[\\/\\]/,
-  commandInjection: /[;&|`$(){}\\[\\]]/,
-  suspiciousHeaders: /[<>"']/
-};
+// Import the new security validator
+import securityValidator, { 
+  ValidationContext, 
+  configureSecurityValidator 
+} from '@/lib/security-validator';
+
+// Configure security validator with custom settings
+configureSecurityValidator({
+  minEntropyThreshold: 0.6,
+  maxRiskScore: 100,
+  // Disable certain rules that might cause false positives in your app
+  disabledRules: process.env.NODE_ENV === 'development' ? ['high_entropy'] : [],
+  // Map common field names to types
+  fieldTypeMapping: {
+    'search': 'search',
+    'q': 'search',
+    'query': 'search',
+    'message': 'comment',
+    'feedback': 'comment',
+    'description': 'comment'
+  }
+});
 
 // Public routes that don't require authentication
 const PUBLIC_ROUTES = [
@@ -96,86 +143,211 @@ function getClientIP(request: NextRequest): string {
     return cfConnectingIP;
   }
   
-  // Fallback to request IP
-  return request.ip || 'unknown';
+  // Fallback to request IP (NextRequest doesn't have ip property, use remote address if available)
+  // @ts-ignore - NextRequest may have socket property in some environments
+  const socket = request.socket;
+  // @ts-ignore
+  if (socket && socket.remoteAddress) {
+    // @ts-ignore
+    return socket.remoteAddress;
+  }
+  
+  return 'unknown';
 }
 
 /**
- * Rate limiting implementation
+ * Rate limiting implementation using pluggable storage
  */
-function checkRateLimit(
+async function checkRateLimit(
   identifier: string, 
   config: { requests: number; window: number }
-): { allowed: boolean; resetTime?: number } {
+): Promise<{ allowed: boolean; resetTime?: number; remaining?: number }> {
   const now = Date.now();
-  const key = identifier;
-  const rateLimit = rateLimitStore.get(key);
+  const key = `rate_limit:${identifier}`;
+  const windowSeconds = Math.floor(config.window / 1000);
   
-  if (!rateLimit || now > rateLimit.resetTime) {
-    // Reset or create new rate limit
-    rateLimitStore.set(key, {
-      count: 1,
-      resetTime: now + config.window
-    });
-    return { allowed: true };
+  try {
+    // Try to increment the counter
+    const count = await storage.increment(key, 1, windowSeconds);
+    
+    if (count === 1) {
+      // First request in this window
+      return { 
+        allowed: true, 
+        remaining: config.requests - 1,
+        resetTime: now + config.window
+      };
+    } else if (count <= config.requests) {
+      // Within limit
+      return { 
+        allowed: true, 
+        remaining: config.requests - count,
+        resetTime: now + config.window
+      };
+    } else {
+      // Exceeded limit
+      // Get the TTL to calculate reset time
+      const ttl = await storage.increment(key, 0); // Get current value without incrementing
+      return { 
+        allowed: false, 
+        remaining: 0,
+        resetTime: now + (windowSeconds * 1000)
+      };
+    }
+  } catch (error) {
+    console.error('Rate limit check failed, allowing request:', error);
+    // Fail open - allow the request if storage fails
+    return { allowed: true, remaining: config.requests };
   }
-  
-  if (rateLimit.count >= config.requests) {
-    return {
-      allowed: false,
-      resetTime: rateLimit.resetTime
-    };
-  }
-  
-  rateLimit.count++;
-  return { allowed: true };
 }
 
 /**
- * Request validation to detect malicious patterns
+ * Request validation using context-aware security patterns
  */
 function validateRequest(request: NextRequest): RequestValidationResult {
   const url = request.url;
   const userAgent = request.headers.get('user-agent') || '';
   const referer = request.headers.get('referer') || '';
+  const contentType = request.headers.get('content-type') || '';
   
-  let riskLevel: 'low' | 'medium' | 'high' = 'low';
+  let overallRiskLevel: 'low' | 'medium' | 'high' = 'low';
+  let validationErrors: string[] = [];
   
-  // Check URL for suspicious patterns
-  if (SECURITY_PATTERNS.sqlInjection.test(url) ||
-      SECURITY_PATTERNS.xss.test(url) ||
-      SECURITY_PATTERNS.pathTraversal.test(url)) {
-    return {
-      isValid: false,
-      error: 'Suspicious URL pattern detected',
-      riskLevel: 'high'
-    };
-  }
+  // Parse URL components for targeted validation
+  const urlObj = new URL(url);
+  const pathname = urlObj.pathname;
+  const searchParams = urlObj.searchParams;
   
-  // Check for command injection patterns in query parameters
-  if (SECURITY_PATTERNS.commandInjection.test(url)) {
-    riskLevel = 'medium';
-  }
+  // Validate URL path with appropriate context
+  const pathValidation = securityValidator.validateInput(pathname, {
+    fieldType: 'url',
+    fieldName: 'pathname',
+    minLength: 1,
+    maxLength: 2048
+  });
   
-  // Check user agent for suspicious patterns
-  if (!userAgent || userAgent.length < 10 || userAgent.length > 512) {
-    riskLevel = 'medium';
-  }
-  
-  // Check headers for XSS attempts
-  for (const [key, value] of request.headers.entries()) {
-    if (SECURITY_PATTERNS.suspiciousHeaders.test(value)) {
+  if (!pathValidation.isValid) {
+    const highSeverityViolations = pathValidation.violations.filter(v => v.severity === 'high');
+    if (highSeverityViolations.length > 0) {
       return {
         isValid: false,
-        error: 'Suspicious header content detected',
+        error: `Security violation in URL path: ${highSeverityViolations[0].description}`,
         riskLevel: 'high'
       };
     }
   }
   
+  // Validate query parameters with appropriate context
+  const paramValidations: Record<string, any> = {};
+  for (const [key, value] of searchParams.entries()) {
+    // Determine field type based on parameter name
+    let fieldType: ValidationContext['fieldType'] = 'general';
+    
+    // Common search/query parameters should be validated as search fields
+    if (['q', 'query', 'search', 'term', 'keyword'].includes(key.toLowerCase())) {
+      fieldType = 'search';
+    } else if (key.toLowerCase().includes('code') || key.toLowerCase().includes('sql')) {
+      fieldType = 'code';
+    } else if (key.toLowerCase().includes('file') || key.toLowerCase().includes('path')) {
+      fieldType = 'filename';
+    }
+    
+    const paramValidation = securityValidator.validateInput(value, {
+      fieldType,
+      fieldName: key,
+      contentType,
+      minLength: 1,
+      maxLength: 1024,
+      // Skip certain patterns for known safe parameters
+      skipPatterns: fieldType === 'search' ? ['sql_injection_union', 'command_injection_pipe'] : []
+    });
+    
+    paramValidations[key] = paramValidation;
+    
+    if (!paramValidation.isValid) {
+      validationErrors.push(`Parameter '${key}': ${paramValidation.violations[0].description}`);
+      overallRiskLevel = 'high';
+    } else if (paramValidation.riskScore > 50) {
+      overallRiskLevel = overallRiskLevel === 'high' ? 'high' : 'medium';
+    }
+  }
+  
+  // Validate critical headers with appropriate context
+  const headerValidations: Record<string, any> = {};
+  const criticalHeaders = ['referer', 'origin', 'x-forwarded-for', 'x-real-ip'];
+  
+  for (const headerName of criticalHeaders) {
+    const headerValue = request.headers.get(headerName);
+    if (headerValue) {
+      const headerValidation = securityValidator.validateInput(headerValue, {
+        fieldType: headerName === 'referer' || headerName === 'origin' ? 'url' : 'general',
+        fieldName: headerName,
+        maxLength: 512,
+        // Headers shouldn't contain HTML or script content
+        skipPatterns: ['sql_injection_union', 'sql_injection_drop']
+      });
+      
+      headerValidations[headerName] = headerValidation;
+      
+      if (!headerValidation.isValid) {
+        return {
+          isValid: false,
+          error: `Suspicious content in ${headerName} header`,
+          riskLevel: 'high'
+        };
+      }
+    }
+  }
+  
+  // Check user agent for suspicious patterns (but be lenient)
+  if (userAgent) {
+    const uaValidation = securityValidator.validateInput(userAgent, {
+      fieldType: 'general',
+      fieldName: 'user-agent',
+      minLength: 5,
+      maxLength: 1024,
+      // User agents can contain various special characters, so skip most patterns
+      skipPatterns: [
+        'command_injection_pipe',
+        'command_injection_backtick',
+        'command_injection_dollar',
+        'sql_injection_union',
+        'xss_script_tag'
+      ]
+    });
+    
+    if (uaValidation.riskScore > 80) {
+      overallRiskLevel = 'medium';
+    }
+  } else {
+    // Missing user agent is suspicious but not blocking
+    overallRiskLevel = overallRiskLevel === 'low' ? 'medium' : overallRiskLevel;
+  }
+  
+  // Calculate final risk level based on all validations
+  const totalRiskScore = 
+    (pathValidation.riskScore || 0) +
+    Object.values(paramValidations).reduce((sum: number, v: any) => sum + (v.riskScore || 0), 0) +
+    Object.values(headerValidations).reduce((sum: number, v: any) => sum + (v.riskScore || 0), 0);
+  
+  if (totalRiskScore > 80) {
+    overallRiskLevel = 'high';
+  } else if (totalRiskScore > 40) {
+    overallRiskLevel = 'medium';
+  }
+  
+  // Return validation result
+  if (validationErrors.length > 0 && overallRiskLevel === 'high') {
+    return {
+      isValid: false,
+      error: validationErrors[0],
+      riskLevel: 'high'
+    };
+  }
+  
   return {
     isValid: true,
-    riskLevel
+    riskLevel: overallRiskLevel
   };
 }
 
@@ -228,7 +400,7 @@ function getCORSHeaders(
   // Allowed origins
   const allowedOrigins = isDevelopment 
     ? ['http://localhost:3000', 'http://localhost:5173', 'http://localhost:8000']
-    : [process.env.FRONTEND_URL].filter(Boolean);
+    : [process.env['FRONTEND_URL']].filter(Boolean);
   
   const headers: Record<string, string> = {};
   
@@ -343,14 +515,13 @@ function getCSPHeader(nonce: string, isDevelopment: boolean): string {
       "ws://localhost:8000",
       "https://localhost:8000",
       "wss://localhost:8000",
-      // SSE endpoints - explicitly allowed for all environments
-      "http://localhost:8000/agent_network_sse",
-      "http://localhost:8000/agent_network_events",
-      "http://localhost:8000/api/sse",
+      // Only allow connections to our own API proxy endpoints
+      "/api/sse",
+      "/api/agent-network/events",
       // Production SSE endpoints
       ...(!isDevelopment ? [
-        process.env.BACKEND_URL,
-        process.env.BACKEND_WSS_URL
+        process.env['BACKEND_URL'],
+        process.env['BACKEND_WSS_URL']
       ].filter(Boolean) : []),
       // Development WebSocket connections
       ...(isDevelopment ? [
@@ -452,28 +623,69 @@ function getSecurityHeaders() {
 }
 
 /**
- * Simple JWT payload extraction without using jwt-decode (which uses eval)
- * This is safe for Edge Runtime environment
+ * Verify JWT with proper signature validation using jose library
+ * This is safe and compatible with Edge Runtime environment
  */
-function parseJWTPayload(token: string): Record<string, any> | null {
+async function verifyJWT(token: string): Promise<VerifiedJWTPayload | null> {
   try {
-    // JWT format: header.payload.signature
+    let secret: Uint8Array | CryptoKey;
+    
+    // Determine the key type and import it
+    if (JWT_PUBLIC_KEY) {
+      // Use RSA/ECDSA public key if available
+      const publicKey = await importSPKI(JWT_PUBLIC_KEY, 'RS256');
+      secret = publicKey as CryptoKey;
+    } else if (JWKS_URL) {
+      // Use JWKS endpoint if configured (would need additional implementation)
+      // For now, fall back to symmetric key
+      if (!JWT_SECRET) {
+        console.error('No JWT secret or public key configured');
+        return null;
+      }
+      secret = new TextEncoder().encode(JWT_SECRET);
+    } else if (JWT_SECRET) {
+      // Use symmetric key (HS256)
+      secret = new TextEncoder().encode(JWT_SECRET);
+    } else {
+      console.error('No JWT verification key configured');
+      return null;
+    }
+    
+    // Verify the JWT with proper validation
+    const { payload } = await jwtVerify(token, secret, {
+      issuer: JWT_ISSUER || undefined,
+      audience: JWT_AUDIENCE || undefined,
+      clockTolerance: CLOCK_SKEW_SECONDS,
+      algorithms: JWT_PUBLIC_KEY ? ['RS256', 'ES256'] : ['HS256']
+    });
+    
+    return payload as VerifiedJWTPayload;
+  } catch (error) {
+    // Log the verification error for security monitoring
+    console.error('JWT verification failed:', error);
+    return null;
+  }
+}
+
+/**
+ * Legacy JWT payload extraction (DEPRECATED - DO NOT USE)
+ * Kept for reference only - this function does NOT verify signatures
+ */
+function unsafeParseJWTPayload(token: string): Record<string, any> | null {
+  console.warn('SECURITY WARNING: Using unsafe JWT parsing without signature verification');
+  try {
     const parts = token.split('.');
     if (parts.length !== 3) return null;
-    
-    // Decode base64 payload (second part)
     const payload = parts[1];
-    // Add padding if needed for base64 decoding
     const padded = payload + '='.repeat((4 - payload.length % 4) % 4);
     const decoded = atob(padded.replace(/-/g, '+').replace(/_/g, '/'));
-    
     return JSON.parse(decoded);
   } catch {
     return null;
   }
 }
 
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const clientIP = getClientIP(request);
   const userAgent = request.headers.get('user-agent') || '';
@@ -525,7 +737,7 @@ export function middleware(request: NextRequest) {
     rateLimitConfig = RATE_LIMITS.api;
   }
   
-  const rateLimit = checkRateLimit(rateLimitKey, rateLimitConfig);
+  const rateLimit = await checkRateLimit(rateLimitKey, rateLimitConfig);
   if (!rateLimit.allowed) {
     logSecurityIncident(request, 'RATE_LIMIT_EXCEEDED', {
       rateLimitConfig,
@@ -536,15 +748,15 @@ export function middleware(request: NextRequest) {
       {
         error: 'Rate limit exceeded',
         code: 'RATE_LIMIT_EXCEEDED',
-        retryAfter: Math.ceil((rateLimit.resetTime! - Date.now()) / 1000)
+        retryAfter: Math.ceil(((rateLimit.resetTime || 0) - Date.now()) / 1000)
       },
       { 
         status: 429,
         headers: {
-          'Retry-After': Math.ceil((rateLimit.resetTime! - Date.now()) / 1000).toString(),
+          'Retry-After': Math.ceil(((rateLimit.resetTime || 0) - Date.now()) / 1000).toString(),
           'X-RateLimit-Limit': rateLimitConfig.requests.toString(),
           'X-RateLimit-Remaining': '0',
-          'X-RateLimit-Reset': rateLimit.resetTime!.toString()
+          'X-RateLimit-Reset': (rateLimit.resetTime || 0).toString()
         }
       }
     );
@@ -595,10 +807,10 @@ export function middleware(request: NextRequest) {
   });
   
   // Add rate limiting headers
-  const remaining = rateLimitConfig.requests - (rateLimitStore.get(rateLimitKey)?.count || 0);
+  const remaining = rateLimit.remaining !== undefined ? rateLimit.remaining : rateLimitConfig.requests;
   response.headers.set('X-RateLimit-Limit', rateLimitConfig.requests.toString());
   response.headers.set('X-RateLimit-Remaining', Math.max(0, remaining).toString());
-  response.headers.set('X-RateLimit-Reset', (Date.now() + rateLimitConfig.window).toString());
+  response.headers.set('X-RateLimit-Reset', (rateLimit.resetTime || (Date.now() + rateLimitConfig.window)).toString());
 
   // Add nonce to request headers for use in components
   response.headers.set('x-nonce', nonce);
@@ -691,20 +903,34 @@ export function middleware(request: NextRequest) {
     }
 
     try {
-      // Validate token using Edge Runtime compatible parsing
+      // Properly verify token with signature validation
       const tokenToValidate = bearerToken || idToken;
-      const payload = tokenToValidate ? parseJWTPayload(tokenToValidate) : null;
       
-      if (!payload) {
-        throw new Error('Invalid token format');
+      if (!tokenToValidate) {
+        throw new Error('No token provided');
       }
       
-      // Check token expiration
-      if (payload.exp && payload.exp * 1000 < Date.now()) {
+      // Verify JWT signature and validate claims
+      const payload = await verifyJWT(tokenToValidate);
+      
+      if (!payload) {
+        // Log security incident for failed verification
+        logSecurityIncident(request, 'JWT_VERIFICATION_FAILED', {
+          pathname,
+          tokenType: bearerToken ? 'bearer' : 'id',
+          timestamp: new Date().toISOString()
+        });
+        throw new Error('JWT verification failed');
+      }
+      
+      // Token expiration is already checked by jose during verification
+      // But we can do additional custom expiry checks if needed
+      const currentTime = Math.floor(Date.now() / 1000);
+      if (payload.exp && payload.exp < currentTime - CLOCK_SKEW_SECONDS) {
         logSecurityIncident(request, 'EXPIRED_TOKEN_ACCESS', {
           pathname,
           tokenExp: payload.exp,
-          currentTime: Date.now() / 1000
+          currentTime: currentTime
         });
         
         // Token expired
@@ -735,11 +961,13 @@ export function middleware(request: NextRequest) {
 
       // Check admin routes with prefix-based protection
       if (pathname.startsWith('/admin')) {
-        if (!payload.role || payload.role !== 'admin') {
+        // Ensure payload has proper type from verified JWT
+        const verifiedPayload = payload as VerifiedJWTPayload;
+        if (!verifiedPayload.role || verifiedPayload.role !== 'admin') {
           logSecurityIncident(request, 'UNAUTHORIZED_ADMIN_ACCESS', {
             pathname,
-            userRole: payload.role,
-            userId: payload.sub
+            userRole: verifiedPayload.role || 'none',
+            userId: verifiedPayload.sub || 'unknown'
           });
           
           if (pathname.startsWith('/api/')) {
@@ -759,23 +987,28 @@ export function middleware(request: NextRequest) {
       }
 
       // Add user info to response headers for downstream use
-      response.headers.set('x-user-id', payload.sub || '');
-      response.headers.set('x-user-email', payload.email || '');
-      response.headers.set('x-user-role', payload.role || 'user');
+      const verifiedPayload = payload as VerifiedJWTPayload;
+      response.headers.set('x-user-id', verifiedPayload.sub || '');
+      response.headers.set('x-user-email', verifiedPayload.email || '');
+      response.headers.set('x-user-role', verifiedPayload.role || 'user');
       response.headers.set('x-authenticated', 'true');
       
       // Log successful authentication for monitoring
       if (isDevelopment) {
-        console.log(`🔐 Authenticated request: ${payload.email || payload.sub} -> ${pathname}`);
+        console.log(`🔐 Authenticated request: ${verifiedPayload.email || verifiedPayload.sub} -> ${pathname}`);
       }
       
     } catch (error) {
-      logSecurityIncident(request, 'AUTHENTICATION_ERROR', {
+      // Token verification or validation failed
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      
+      logSecurityIncident(request, 'JWT_VERIFICATION_ERROR', {
         pathname,
-        error: error instanceof Error ? error.message : 'Unknown error',
+        error: errorMessage,
         hasAccessToken: !!accessToken,
         hasIdToken: !!idToken,
-        hasBearerToken: !!bearerToken
+        hasBearerToken: !!bearerToken,
+        timestamp: new Date().toISOString()
       });
       
       // Invalid token

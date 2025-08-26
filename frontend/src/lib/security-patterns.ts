@@ -23,8 +23,7 @@ export const SECURITY_PATTERNS: Record<string, RegExp> = {
   pathTraversal: /(^|[\/\\])\.\.([\/\\]|$)|%2e%2e|%252e%252e|0x2e0x2e/i,
   
   // Command Injection - require command context to reduce false positives
-  commandInjection: /(^|[\s&;|])(rm|ls|cat|echo|eval|exec|sh|bash|cmd|powershell)[\s&;|]|(\|\||&&)[\s]*[a-z]+|`[^`]*`|\$\([^)]*\)|\${[^}]*}/i,
-  
+  commandInjection: /(\s|^|;|&&|\|\|)(rm\s+-rf|eval\s+|exec\s+|sh\s+-c|bash\s+-c|cmd\s+\/c|powershell\s+-Command)[\s"']|`[^`]*\$[^`]*`|\$\([^)]*[;&|]\s*[^)]*\)/i,
   // Suspicious Headers - potential header injection
   suspiciousHeaders: /(\r\n|\n|\r|%0d|%0a|%00|<|>|"|'|\\x3c|\\x3e)/i,
   
