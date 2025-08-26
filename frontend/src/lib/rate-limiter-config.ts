@@ -156,6 +156,10 @@ export const RATE_LIMIT_CONFIG: RateLimitConfig = {
     db: parseInt(process.env['REDIS_DB'] || '0'),
     family: 4, // IPv4
     maxRetriesPerRequest: 3,
+    connectTimeout: parseInt(process.env['REDIS_CONNECT_TIMEOUT'] || '10000'),
+    commandTimeout: parseInt(process.env['REDIS_COMMAND_TIMEOUT'] || '5000'),
+    retryStrategy: (times: number) => Math.min(times * 50, 2000),
+    enableOfflineQueue: false, // Fail fast in production
   },
   
   limits: parseRateLimitsConfig()
