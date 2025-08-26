@@ -94,6 +94,21 @@ function getDefaultRateLimits(): Record<string, RateLimitRule> {
   };
 }
 
+// Helper function to safely parse rate limits config
+function parseRateLimitsConfig(): Record<string, RateLimitRule> {
+  const configStr = process.env['NEXT_PUBLIC_RATE_LIMITS_CONFIG'];
+  if (!configStr) {
+    return getDefaultRateLimits();
+  }
+  
+  try {
+    return JSON.parse(configStr);
+  } catch (error) {
+    console.error('Failed to parse NEXT_PUBLIC_RATE_LIMITS_CONFIG:', error);
+    return getDefaultRateLimits();
+  }
+}
+
 export const RATE_LIMIT_CONFIG: RateLimitConfig = {
   // Use Redis in production for distributed rate limiting, memory in development
   backend: process.env['NODE_ENV'] === 'production' ? 'redis' : 'memory',
@@ -107,9 +122,7 @@ export const RATE_LIMIT_CONFIG: RateLimitConfig = {
     maxRetriesPerRequest: 3,
   },
   
-  limits: process.env['NEXT_PUBLIC_RATE_LIMITS_CONFIG'] 
-    ? JSON.parse(process.env['NEXT_PUBLIC_RATE_LIMITS_CONFIG'])
-    : getDefaultRateLimits()
+  limits: parseRateLimitsConfig()
 };
 
 /**
@@ -155,9 +168,9 @@ export const ENVIRONMENT_CONFIGS = {
     limits: {
       ...RATE_LIMIT_CONFIG.limits,
       // More lenient limits for development
-      api: { ...RATE_LIMIT_CONFIG.limits['api'], max: 1000 },
-      auth: { ...RATE_LIMIT_CONFIG.limits['auth'], max: 50 },
-      sse: { ...RATE_LIMIT_CONFIG.limits['sse'], max: 100 }
+      api: { ...RATE_LIMIT_CONFIG.limits['api']!, max: 1000 },
+      auth: { ...RATE_LIMIT_CONFIG.limits['auth']!, max: 50 },
+      sse: { ...RATE_LIMIT_CONFIG.limits['sse']!, max: 100 }
     }
   },
   
@@ -167,9 +180,9 @@ export const ENVIRONMENT_CONFIGS = {
     limits: {
       ...RATE_LIMIT_CONFIG.limits,
       // Very high limits for testing
-      api: { ...RATE_LIMIT_CONFIG.limits['api'], max: 10000 },
-      auth: { ...RATE_LIMIT_CONFIG.limits['auth'], max: 1000 },
-      sse: { ...RATE_LIMIT_CONFIG.limits['sse'], max: 1000 }
+      api: { ...RATE_LIMIT_CONFIG.limits['api']!, max: 10000 },
+      auth: { ...RATE_LIMIT_CONFIG.limits['auth']!, max: 1000 },
+      sse: { ...RATE_LIMIT_CONFIG.limits['sse']!, max: 1000 }
     }
   },
   
@@ -179,8 +192,8 @@ export const ENVIRONMENT_CONFIGS = {
     limits: {
       ...RATE_LIMIT_CONFIG.limits,
       // Slightly more lenient than production
-      api: { ...RATE_LIMIT_CONFIG.limits['api'], max: 200 },
-      auth: { ...RATE_LIMIT_CONFIG.limits['auth'], max: 10 }
+      api: { ...RATE_LIMIT_CONFIG.limits['api']!, max: 200 },
+      auth: { ...RATE_LIMIT_CONFIG.limits['auth']!, max: 10 }
     }
   },
   

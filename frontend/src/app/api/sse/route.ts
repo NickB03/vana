@@ -17,7 +17,7 @@ import { tokenManager } from '@/lib/auth-security';
  * SSE endpoint with enhanced security
  */
 export async function GET(request: NextRequest) {
-  const clientIP = request.ip || request.headers.get('x-forwarded-for') || 'unknown';
+  const clientIP = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown';
   const userAgent = request.headers.get('user-agent') || '';
   const origin = request.headers.get('origin');
   
