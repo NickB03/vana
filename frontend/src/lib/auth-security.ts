@@ -689,12 +689,13 @@ export function secureTokenCompare(token1: string, token2: string): boolean {
  * Hash token using Node.js crypto or Web Crypto API
  */
 export function hashToken(token: string): string {
+export async function hashToken(token: string): Promise<string> {
   if (nodeCrypto?.createHash) {
     return nodeCrypto.createHash('sha256').update(token, 'utf8').digest('hex');
   }
-  
-  // For client-side, this should be handled async with Web Crypto API
-  throw new Error('Token hashing requires server-side Node.js crypto or async Web Crypto API');
+
+  // Client-side: use Web Crypto API
+  return await hashString(token);
 }
 
 // ====================
