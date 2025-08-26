@@ -31,39 +31,39 @@ export interface RateLimitConfig {
 function getDefaultRateLimits(): Record<string, RateLimitRule> {
   return {
     api: {
-      window: parseInt(process.env.NEXT_PUBLIC_RATE_LIMIT_API_WINDOW || '60'),
-      max: parseInt(process.env.NEXT_PUBLIC_RATE_LIMIT_API_MAX || '100'),
+      window: parseInt(process.env['NEXT_PUBLIC_RATE_LIMIT_API_WINDOW'] || '60'),
+      max: parseInt(process.env['NEXT_PUBLIC_RATE_LIMIT_API_MAX'] || '100'),
       message: 'Too many API requests, please slow down',
       keyPrefix: 'api'
     },
     auth: {
-      window: parseInt(process.env.NEXT_PUBLIC_RATE_LIMIT_AUTH_WINDOW || '300'),
-      max: parseInt(process.env.NEXT_PUBLIC_RATE_LIMIT_AUTH_MAX || '5'),
+      window: parseInt(process.env['NEXT_PUBLIC_RATE_LIMIT_AUTH_WINDOW'] || '300'),
+      max: parseInt(process.env['NEXT_PUBLIC_RATE_LIMIT_AUTH_MAX'] || '5'),
       message: 'Too many authentication attempts, please wait',
       skipSuccessfulRequests: false,
       keyPrefix: 'auth'
     },
     sse: {
-      window: parseInt(process.env.NEXT_PUBLIC_RATE_LIMIT_SSE_WINDOW || '60'),
-      max: parseInt(process.env.NEXT_PUBLIC_RATE_LIMIT_SSE_MAX || '20'),
+      window: parseInt(process.env['NEXT_PUBLIC_RATE_LIMIT_SSE_WINDOW'] || '60'),
+      max: parseInt(process.env['NEXT_PUBLIC_RATE_LIMIT_SSE_MAX'] || '20'),
       message: 'Too many SSE connection attempts',
       keyPrefix: 'sse'
     },
     upload: {
-      window: parseInt(process.env.NEXT_PUBLIC_RATE_LIMIT_UPLOAD_WINDOW || '300'),
-      max: parseInt(process.env.NEXT_PUBLIC_RATE_LIMIT_UPLOAD_MAX || '10'),
+      window: parseInt(process.env['NEXT_PUBLIC_RATE_LIMIT_UPLOAD_WINDOW'] || '300'),
+      max: parseInt(process.env['NEXT_PUBLIC_RATE_LIMIT_UPLOAD_MAX'] || '10'),
       message: 'Too many upload attempts, please wait',
       keyPrefix: 'upload'
     },
     search: {
-      window: parseInt(process.env.NEXT_PUBLIC_RATE_LIMIT_SEARCH_WINDOW || '10'),
-      max: parseInt(process.env.NEXT_PUBLIC_RATE_LIMIT_SEARCH_MAX || '30'),
+      window: parseInt(process.env['NEXT_PUBLIC_RATE_LIMIT_SEARCH_WINDOW'] || '10'),
+      max: parseInt(process.env['NEXT_PUBLIC_RATE_LIMIT_SEARCH_MAX'] || '30'),
       message: 'Too many search requests, please wait',
       keyPrefix: 'search'
     },
     chat: {
-      window: parseInt(process.env.NEXT_PUBLIC_RATE_LIMIT_CHAT_WINDOW || '60'),
-      max: parseInt(process.env.NEXT_PUBLIC_RATE_LIMIT_CHAT_MAX || '60'),
+      window: parseInt(process.env['NEXT_PUBLIC_RATE_LIMIT_CHAT_WINDOW'] || '60'),
+      max: parseInt(process.env['NEXT_PUBLIC_RATE_LIMIT_CHAT_MAX'] || '60'),
       message: 'Too many chat messages, please slow down',
       keyPrefix: 'chat'
     },
@@ -96,19 +96,19 @@ function getDefaultRateLimits(): Record<string, RateLimitRule> {
 
 export const RATE_LIMIT_CONFIG: RateLimitConfig = {
   // Use Redis in production for distributed rate limiting, memory in development
-  backend: process.env.NODE_ENV === 'production' ? 'redis' : 'memory',
+  backend: process.env['NODE_ENV'] === 'production' ? 'redis' : 'memory',
   
   redis: {
-    host: process.env.REDIS_HOST || 'localhost',
-    port: parseInt(process.env.REDIS_PORT || '6379'),
-    password: process.env.REDIS_PASSWORD,
-    db: parseInt(process.env.REDIS_DB || '0'),
+    host: process.env['REDIS_HOST'] || 'localhost',
+    port: parseInt(process.env['REDIS_PORT'] || '6379'),
+    password: process.env['REDIS_PASSWORD'],
+    db: parseInt(process.env['REDIS_DB'] || '0'),
     family: 4, // IPv4
     maxRetriesPerRequest: 3,
   },
   
-  limits: process.env.NEXT_PUBLIC_RATE_LIMITS_CONFIG 
-    ? JSON.parse(process.env.NEXT_PUBLIC_RATE_LIMITS_CONFIG)
+  limits: process.env['NEXT_PUBLIC_RATE_LIMITS_CONFIG'] 
+    ? JSON.parse(process.env['NEXT_PUBLIC_RATE_LIMITS_CONFIG'])
     : getDefaultRateLimits()
 };
 
@@ -155,9 +155,9 @@ export const ENVIRONMENT_CONFIGS = {
     limits: {
       ...RATE_LIMIT_CONFIG.limits,
       // More lenient limits for development
-      api: { ...RATE_LIMIT_CONFIG.limits.api, max: 1000 },
-      auth: { ...RATE_LIMIT_CONFIG.limits.auth, max: 50 },
-      sse: { ...RATE_LIMIT_CONFIG.limits.sse, max: 100 }
+      api: { ...RATE_LIMIT_CONFIG.limits['api'], max: 1000 },
+      auth: { ...RATE_LIMIT_CONFIG.limits['auth'], max: 50 },
+      sse: { ...RATE_LIMIT_CONFIG.limits['sse'], max: 100 }
     }
   },
   
@@ -167,9 +167,9 @@ export const ENVIRONMENT_CONFIGS = {
     limits: {
       ...RATE_LIMIT_CONFIG.limits,
       // Very high limits for testing
-      api: { ...RATE_LIMIT_CONFIG.limits.api, max: 10000 },
-      auth: { ...RATE_LIMIT_CONFIG.limits.auth, max: 1000 },
-      sse: { ...RATE_LIMIT_CONFIG.limits.sse, max: 1000 }
+      api: { ...RATE_LIMIT_CONFIG.limits['api'], max: 10000 },
+      auth: { ...RATE_LIMIT_CONFIG.limits['auth'], max: 1000 },
+      sse: { ...RATE_LIMIT_CONFIG.limits['sse'], max: 1000 }
     }
   },
   
@@ -179,8 +179,8 @@ export const ENVIRONMENT_CONFIGS = {
     limits: {
       ...RATE_LIMIT_CONFIG.limits,
       // Slightly more lenient than production
-      api: { ...RATE_LIMIT_CONFIG.limits.api, max: 200 },
-      auth: { ...RATE_LIMIT_CONFIG.limits.auth, max: 10 }
+      api: { ...RATE_LIMIT_CONFIG.limits['api'], max: 200 },
+      auth: { ...RATE_LIMIT_CONFIG.limits['auth'], max: 10 }
     }
   },
   
@@ -191,7 +191,7 @@ export const ENVIRONMENT_CONFIGS = {
  * Get configuration for current environment
  */
 export function getEnvironmentConfig(): RateLimitConfig {
-  const env = process.env.NODE_ENV as keyof typeof ENVIRONMENT_CONFIGS;
+  const env = process.env['NODE_ENV'] as keyof typeof ENVIRONMENT_CONFIGS;
   return ENVIRONMENT_CONFIGS[env] || ENVIRONMENT_CONFIGS.production;
 }
 

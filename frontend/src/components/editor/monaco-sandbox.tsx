@@ -7,11 +7,9 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { 
-  sanitizeHtml, 
   sanitizeText, 
   containsMaliciousPatterns, 
-  logSecurityViolation,
-  isValidUuid
+  logSecurityViolation
 } from '@/lib/security';
 import { getNonce } from '@/lib/csp';
 

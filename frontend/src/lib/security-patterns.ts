@@ -51,67 +51,67 @@ export const SECURITY_PATTERNS: Record<string, RegExp> = {
 export const DETAILED_SECURITY_PATTERNS: SecurityPattern[] = [
   {
     name: 'SQL Injection',
-    pattern: SECURITY_PATTERNS.sqlInjection,
+    pattern: SECURITY_PATTERNS['sqlInjection'],
     description: 'Detects SQL injection attempts including UNION, SELECT, INSERT, UPDATE, DELETE, DROP statements',
     severity: 'critical'
   },
   {
     name: 'Cross-Site Scripting (XSS)',
-    pattern: SECURITY_PATTERNS.xss,
+    pattern: SECURITY_PATTERNS['xss'],
     description: 'Detects XSS attempts including script tags, javascript URLs, and event handlers',
     severity: 'critical'
   },
   {
     name: 'Path Traversal',
-    pattern: SECURITY_PATTERNS.pathTraversal,
+    pattern: SECURITY_PATTERNS['pathTraversal'],
     description: 'Detects directory traversal attempts using ../ or encoded variations',
     severity: 'high'
   },
   {
     name: 'Command Injection',
-    pattern: SECURITY_PATTERNS.commandInjection,
+    pattern: SECURITY_PATTERNS['commandInjection'],
     description: 'Detects shell command injection attempts using pipes, semicolons, and command substitution',
     severity: 'critical'
   },
   {
     name: 'Header Injection',
-    pattern: SECURITY_PATTERNS.suspiciousHeaders,
+    pattern: SECURITY_PATTERNS['suspiciousHeaders'],
     description: 'Detects HTTP header injection attempts using CRLF characters',
     severity: 'high'
   },
   {
     name: 'LDAP Injection',
-    pattern: SECURITY_PATTERNS.ldapInjection,
+    pattern: SECURITY_PATTERNS['ldapInjection'],
     description: 'Detects LDAP injection attempts using special LDAP characters',
     severity: 'high'
   },
   {
     name: 'NoSQL Injection',
-    pattern: SECURITY_PATTERNS.nosqlInjection,
+    pattern: SECURITY_PATTERNS['nosqlInjection'],
     description: 'Detects NoSQL injection attempts using MongoDB operators',
     severity: 'high'
   },
   {
     name: 'Template Injection',
-    pattern: SECURITY_PATTERNS.templateInjection,
+    pattern: SECURITY_PATTERNS['templateInjection'],
     description: 'Detects server-side template injection attempts',
     severity: 'high'
   },
   {
     name: 'Dangerous File Upload',
-    pattern: SECURITY_PATTERNS.dangerousFileTypes,
+    pattern: SECURITY_PATTERNS['dangerousFileTypes'],
     description: 'Detects uploads of potentially dangerous file types',
     severity: 'medium'
   },
   {
     name: 'Suspicious URLs',
-    pattern: SECURITY_PATTERNS.suspiciousUrls,
+    pattern: SECURITY_PATTERNS['suspiciousUrls'],
     description: 'Detects suspicious URL schemes that could be used for attacks',
     severity: 'medium'
   },
   {
     name: 'Email Injection',
-    pattern: SECURITY_PATTERNS.emailInjection,
+    pattern: SECURITY_PATTERNS['emailInjection'],
     description: 'Detects email header injection attempts',
     severity: 'high'
   }
@@ -293,28 +293,28 @@ export function validateByContext(
 ): ValidationResult {
   const contextPatterns: Record<string, Record<string, RegExp>> = {
     url: {
-      suspiciousUrls: SECURITY_PATTERNS.suspiciousUrls,
-      xss: SECURITY_PATTERNS.xss
+      suspiciousUrls: SECURITY_PATTERNS['suspiciousUrls'],
+      xss: SECURITY_PATTERNS['xss']
     },
     email: {
-      emailInjection: SECURITY_PATTERNS.emailInjection,
-      xss: SECURITY_PATTERNS.xss
+      emailInjection: SECURITY_PATTERNS['emailInjection'],
+      xss: SECURITY_PATTERNS['xss']
     },
     filename: {
-      pathTraversal: SECURITY_PATTERNS.pathTraversal,
-      dangerousFileTypes: SECURITY_PATTERNS.dangerousFileTypes
+      pathTraversal: SECURITY_PATTERNS['pathTraversal'],
+      dangerousFileTypes: SECURITY_PATTERNS['dangerousFileTypes']
     },
     sql: {
-      sqlInjection: SECURITY_PATTERNS.sqlInjection,
-      nosqlInjection: SECURITY_PATTERNS.nosqlInjection
+      sqlInjection: SECURITY_PATTERNS['sqlInjection'],
+      nosqlInjection: SECURITY_PATTERNS['nosqlInjection']
     },
     html: {
-      xss: SECURITY_PATTERNS.xss,
-      templateInjection: SECURITY_PATTERNS.templateInjection
+      xss: SECURITY_PATTERNS['xss'],
+      templateInjection: SECURITY_PATTERNS['templateInjection']
     },
     json: {
-      nosqlInjection: SECURITY_PATTERNS.nosqlInjection,
-      templateInjection: SECURITY_PATTERNS.templateInjection
+      nosqlInjection: SECURITY_PATTERNS['nosqlInjection'],
+      templateInjection: SECURITY_PATTERNS['templateInjection']
     },
     general: SECURITY_PATTERNS
   };
@@ -329,7 +329,7 @@ export function validateBatch(
   inputs: Array<{ value: string; context?: string; id?: string }>
 ): Array<ValidationResult & { id?: string }> {
   return inputs.map(({ value, context = 'general', id }) => ({
-    ...validateByContext(value, context as 'url' | 'email' | 'filename' | 'sql' | 'html' | 'json' | 'general'),
+    ...validateByContext(value, context as ('url' | 'email' | 'filename' | 'sql' | 'html' | 'json' | 'general')),
     id
   }));
 }

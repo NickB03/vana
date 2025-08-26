@@ -12,17 +12,15 @@ import { Badge } from '@/components/ui/badge';
 import { AlertCircle, Wifi, WifiOff } from 'lucide-react';
 import { ChatMessage } from '@/types/session';
 import { 
-  sanitizeHtml, 
   sanitizeText, 
   chatMessageSchema, 
   sseEventSchema,
   containsMaliciousPatterns,
   isRateLimited,
-  logSecurityViolation,
-  setTextContentSafely
+  logSecurityViolation
 } from '@/lib/security';
 import { createCORSAwareEventSource, handleSSECORS } from '@/lib/cors';
-import { tokenManager, authManager } from '@/lib/auth-security';
+import { tokenManager } from '@/lib/auth-security';
 
 // File validation constants
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
@@ -338,7 +336,7 @@ export function ChatInterface({ className, initialMessage }: ChatInterfaceProps)
     
     if (!messageValidation.success) {
       console.error('Message validation failed:', messageValidation.error);
-      const errorMsg = messageValidation.error.errors.map(e => e.message).join(', ');
+      const errorMsg = messageValidation.error.issues.map((e: any) => e.message).join(', ');
       setConnectionError(`Invalid message: ${errorMsg}`);
       return;
     }
@@ -361,8 +359,8 @@ export function ChatInterface({ className, initialMessage }: ChatInterfaceProps)
     
     // Send to backend with security headers and validation
     try {
-      const baseUrl = process.env.NODE_ENV === 'production'
-        ? process.env.NEXT_PUBLIC_API_URL || 'https://api.vana.ai'
+      const baseUrl = process.env['NODE_ENV'] === 'production'
+        ? process.env['NEXT_PUBLIC_API_URL'] || 'https://api.vana.ai'
         : 'http://localhost:8000';
       
       const formData = new FormData();
@@ -373,6 +371,7 @@ export function ChatInterface({ className, initialMessage }: ChatInterfaceProps)
       if (files) {
         for (let i = 0; i < files.length; i++) {
           const file = files[i];
+          if (!file) continue; // Check if file is defined
           
           // Additional file validation using constants
           if (file.size > MAX_FILE_SIZE) {
