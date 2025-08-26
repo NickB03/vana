@@ -7,12 +7,22 @@ import { jwtTokenSchema } from './security';
 import { z } from 'zod';
 
 // Node.js crypto import for server-side operations
-let nodeCrypto: typeof import('crypto');
-try {
-  // This will only work in Node.js environment (server-side)
-  nodeCrypto = require('crypto');
-} catch (e) {
-  // Browser environment - use Web Crypto API instead
+let nodeCrypto: typeof import('crypto') | undefined;
+
+// Conditionally import Node.js crypto for server-side operations.
+// This uses top-level await, which is supported in modern bundlers and ES modules.
+// It ensures that the crypto module is loaded before any other code in this module executes
+// on the server. In the browser, this block is skipped.
+if (typeof window === 'undefined') {
+  try {
+    nodeCrypto = await import('crypto');
+  } catch (error) {
+    console.error(
+      'Failed to dynamically import Node.js crypto module. ' +
+      'Server-side crypto-dependent functions will use fallbacks or may fail.',
+      error
+    );
+  }
 }
 
 // ====================
@@ -59,12 +69,22 @@ export function decodeJWT(token: string): { header: JWTHeader | null; payload: J
       return { header: null, payload: null, error: 'Invalid JWT structure' };
     }
 
+    const decodeBase64Url = (base64Url: string) => {
+      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+      if (typeof window !== 'undefined' && typeof window.atob === 'function') {
+        return window.atob(base64);
+      } else {
+        // This is for server-side, assuming Buffer is available
+        return Buffer.from(base64, 'base64').toString('utf8');
+      }
+    };
+
     // Decode header
-    const headerDecoded = atob(parts[0].replace(/-/g, '+').replace(/_/g, '/'));
+    const headerDecoded = decodeBase64Url(parts[0]!);
     const header: JWTHeader = JSON.parse(headerDecoded);
 
     // Decode payload
-    const payloadDecoded = atob(parts[1].replace(/-/g, '+').replace(/_/g, '/'));
+    const payloadDecoded = decodeBase64Url(parts[1]!);
     const payload: JWTPayload = JSON.parse(payloadDecoded);
 
     return { header, payload };
@@ -108,7 +128,7 @@ export function validateJWTPayload(payload: any): TokenValidationResult {
     return {
       valid: false,
       error: error instanceof z.ZodError ? 
-        `Token validation failed: ${error.errors.map(e => e.message).join(', ')}` :
+        `Token validation failed: ${error.issues.map(e => e.message).join(', ')}` :
         'Token validation failed'
     };
   }
@@ -323,6 +343,7 @@ export class SessionSecurityManager {
   private startSessionValidation(): void {
     if (this.sessionCheckInterval) {
       clearInterval(this.sessionCheckInterval);
+      this.sessionCheckInterval = null;
     }
 
     this.sessionCheckInterval = window.setInterval(async () => {
@@ -608,15 +629,13 @@ export function timingSafeEqual(a: string, b: string): boolean {
   }
   
   // Client-side fallback: manual constant-time comparison
-  if (a.length !== b.length) {
-    return false;
+  const maxLength = Math.max(a.length, b.length);
+  let result = a.length === b.length ? 0 : 1;
+  for (let i = 0; i < maxLength; i++) {
+    const charA = i < a.length ? a.charCodeAt(i) : 0;
+    const charB = i < b.length ? b.charCodeAt(i) : 0;
+    result |= charA ^ charB;
   }
-
-  let result = 0;
-  for (let i = 0; i < a.length; i++) {
-    result |= a.charCodeAt(i) ^ b.charCodeAt(i);
-  }
-
   return result === 0;
 }
 

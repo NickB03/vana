@@ -102,7 +102,35 @@ function parseRateLimitsConfig(): Record<string, RateLimitRule> {
   }
   
   try {
-    return JSON.parse(configStr);
+    // Parse the JSON configuration
+    const parsedConfig = JSON.parse(configStr);
+    
+    // Validate that parsed config is an object
+    if (typeof parsedConfig !== 'object' || parsedConfig === null || Array.isArray(parsedConfig)) {
+      console.error('NEXT_PUBLIC_RATE_LIMITS_CONFIG must be a valid object, got:', typeof parsedConfig);
+      return getDefaultRateLimits();
+    }
+    
+    // Validate that each rule has required properties
+    for (const [key, rule] of Object.entries(parsedConfig)) {
+      if (typeof rule !== 'object' || rule === null) {
+        console.error(`Invalid rate limit rule for key '${key}': must be an object`);
+        return getDefaultRateLimits();
+      }
+      
+      const rateRule = rule as RateLimitRule;
+      if (typeof rateRule.window !== 'number' || rateRule.window <= 0) {
+        console.error(`Invalid window for rule '${key}': must be a positive number, got:`, rateRule.window);
+        return getDefaultRateLimits();
+      }
+      
+      if (typeof rateRule.max !== 'number' || rateRule.max <= 0) {
+        console.error(`Invalid max for rule '${key}': must be a positive number, got:`, rateRule.max);
+        return getDefaultRateLimits();
+      }
+    }
+    
+    return parsedConfig as Record<string, RateLimitRule>;
   } catch (error) {
     console.error('Failed to parse NEXT_PUBLIC_RATE_LIMITS_CONFIG:', error);
     return getDefaultRateLimits();
@@ -211,7 +239,7 @@ export function getEnvironmentConfig(): RateLimitConfig {
 /**
  * Validate rate limit configuration
  */
-export function validateRateLimitConfig(config: RateLimitConfig): boolean {
+function validateRateLimitConfig(config: RateLimitConfig): boolean {
   try {
     // Check backend type
     if (!['redis', 'memory'].includes(config.backend)) {
@@ -220,7 +248,11 @@ export function validateRateLimitConfig(config: RateLimitConfig): boolean {
     }
     
     // Check Redis config if Redis backend
-    if (config.backend === 'redis' && config.redis) {
+    if (config.backend === 'redis') {
+      if (!config.redis) {
+        console.error('Redis backend requires redis configuration');
+        return false;
+      }
       if (!config.redis.host || !config.redis.port) {
         console.error('Redis backend requires host and port');
         return false;
