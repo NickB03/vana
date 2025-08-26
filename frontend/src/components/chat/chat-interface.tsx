@@ -24,6 +24,10 @@ import {
 import { createCORSAwareEventSource, handleSSECORS } from '@/lib/cors';
 import { tokenManager, authManager } from '@/lib/auth-security';
 
+// File validation constants
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+const ALLOWED_FILE_TYPES = ['image/png', 'image/jpeg', 'image/jpg', 'image/gif', 'text/plain', 'application/pdf'];
+
 interface SSEEvent {
   type: string;
   data: unknown;
@@ -370,13 +374,12 @@ export function ChatInterface({ className, initialMessage }: ChatInterfaceProps)
         for (let i = 0; i < files.length; i++) {
           const file = files[i];
           
-          // Additional file validation
-          if (file.size > 10 * 1024 * 1024) { // 10MB limit
+          // Additional file validation using constants
+          if (file.size > MAX_FILE_SIZE) {
             throw new Error(`File ${file.name} is too large (max 10MB)`);
           }
           
-          const allowedTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/gif', 'text/plain', 'application/pdf'];
-          if (!allowedTypes.includes(file.type)) {
+          if (!ALLOWED_FILE_TYPES.includes(file.type)) {
             throw new Error(`File type ${file.type} not allowed`);
           }
           

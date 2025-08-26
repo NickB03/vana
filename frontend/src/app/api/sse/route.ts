@@ -133,7 +133,7 @@ export async function GET(request: NextRequest) {
             clearInterval(heartbeatInterval);
             controller.close();
           }
-        }, 30000); // 30-second heartbeat
+        }, parseInt(process.env.SSE_HEARTBEAT_INTERVAL || '30000')); // Configurable heartbeat interval
         
         // Clean up on connection close
         const cleanup = () => {
