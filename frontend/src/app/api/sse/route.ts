@@ -1,249 +1,246 @@
 /**
- * SSE Server Endpoint
- * Next.js API route for Server-Sent Events
+ * Secure Server-Sent Events (SSE) endpoint
+ * Implements comprehensive security measures for real-time communication
  */
 
 import { NextRequest } from 'next/server';
+import { handleSSECORS } from '@/lib/cors';
+import { 
+  sanitizeText, 
+  isValidUuid, 
+  logSecurityViolation,
+  isRateLimited
+} from '@/lib/security';
+import { tokenManager } from '@/lib/auth-security';
 
-// SSE headers
-const SSE_HEADERS = {
-  'Content-Type': 'text/event-stream',
-  'Cache-Control': 'no-cache, no-transform',
-  'Connection': 'keep-alive',
-  'X-Accel-Buffering': 'no', // Disable Nginx buffering
-};
-
+/**
+ * SSE endpoint with enhanced security
+ */
 export async function GET(request: NextRequest) {
-  // Get session ID from headers or query params
-  const sessionId = request.headers.get('X-Session-ID') || 
-                   request.nextUrl.searchParams.get('session_id');
-                   
-  if (!sessionId) {
-    return new Response('Session ID required', { status: 400 });
-  }
-
-  // Get auth token from cookies or Authorization header (NOT from URL)
-  // Priority: httpOnly cookie > Authorization header
-  const authCookie = request.cookies.get('auth-token');
-  const authHeader = request.headers.get('Authorization');
-  const token = authCookie?.value || authHeader?.replace('Bearer ', '');
-
-  // Create a transform stream
-  const encoder = new TextEncoder();
-  const stream = new TransformStream();
-  const writer = stream.writable.getWriter();
-
-  // Helper function to send SSE events
-  const sendEvent = async (event: Record<string, unknown>) => {
-    const data = `data: ${JSON.stringify(event)}\n\n`;
-    await writer.write(encoder.encode(data));
-  };
-
-  // Helper function to send typed events
-  const sendTypedEvent = async (type: string, data: Record<string, unknown>, id?: string) => {
-    let message = '';
-    if (id) message += `id: ${id}\n`;
-    if (type !== 'message') message += `event: ${type}\n`;
-    message += `data: ${JSON.stringify(data)}\n\n`;
-    await writer.write(encoder.encode(message));
-  };
-
-  // Start async processing
-  (async () => {
-    try {
-      // Send initial connection event
-      await sendTypedEvent('status', {
-        code: 200,
-        message: 'Connected to SSE stream',
-        sessionId,
-        timestamp: Date.now()
+  const clientIP = request.ip || request.headers.get('x-forwarded-for') || 'unknown';
+  const userAgent = request.headers.get('user-agent') || '';
+  const origin = request.headers.get('origin');
+  
+  try {
+    // CORS validation for SSE
+    const corsResult = handleSSECORS(origin, userAgent);
+    if (!corsResult.isValid) {
+      logSecurityViolation('invalid_input', {
+        source: 'sse-cors',
+        origin,
+        ip: clientIP
       });
-
-      // Set up heartbeat
-      const heartbeatInterval = setInterval(async () => {
-        await sendTypedEvent('heartbeat', {
-          timestamp: Date.now(),
-          sessionId
-        });
-      }, 30000);
-
-      // Connect to backend SSE stream if available
-      const backendUrl = process.env['BACKEND_URL'] || 'http://localhost:8000';
-      const backendSSEUrl = `${backendUrl}/agent_network_sse/${sessionId}`;
-      const abortController = new AbortController();
       
-      try {
-        const backendResponse = await fetch(backendSSEUrl, {
-          headers: {
-            'Accept': 'text/event-stream',
-            ...(token && { 'Authorization': `Bearer ${token}` })
-          },
-          signal: abortController.signal
-        });
-
-        if (!backendResponse.ok) {
-          // Handle non-OK backend responses
-          await sendTypedEvent('error', {
-            code: 'BACKEND_BAD_STATUS',
-            message: `Backend SSE responded with ${backendResponse.status}`,
-            status: backendResponse.status,
-            recoverable: backendResponse.status >= 500
-          });
-        } else if (backendResponse.body) {
-          const reader = backendResponse.body.getReader();
-          const decoder = new TextDecoder();
-          let buffer = '';
-
-          try {
-            while (true) {
-              const { done, value } = await reader.read();
-              if (done) break;
-
-              const chunk = decoder.decode(value, { stream: true });
-              buffer += chunk;
-              const lines = buffer.split('\n');
-              
-              // Keep the incomplete line in the buffer
-              buffer = lines.pop() || '';
-              
-              for (const line of lines) {
-                if (line.startsWith('data: ')) {
-                  try {
-                    const data = JSON.parse(line.slice(6));
-                    await sendEvent(data);
-                  } catch {
-                    // Not JSON, send as-is
-                    await writer.write(encoder.encode(line + '\n'));
-                  }
-                } else if (line.startsWith('event: ')) {
-                  // Forward event type
-                  await writer.write(encoder.encode(line + '\n'));
-                } else if (line.startsWith('id: ')) {
-                  // Forward event ID for reconnection support
-                  await writer.write(encoder.encode(line + '\n'));
-                } else if (line.startsWith('retry: ')) {
-                  // Forward retry directive
-                  await writer.write(encoder.encode(line + '\n'));
-                } else if (line.startsWith(':')) {
-                  // Forward SSE comments
-                  await writer.write(encoder.encode(line + '\n'));
-                } else if (line === '') {
-                  // End of event
-                  await writer.write(encoder.encode('\n'));
-                }
-              }
-            }
-          } finally {
-            reader.releaseLock();
-          }
+      return new Response('CORS policy violation', {
+        status: 403,
+        headers: {
+          'Content-Type': 'text/plain',
+          'Access-Control-Allow-Origin': 'none'
         }
-      } catch (backendError) {
-        console.error('Backend SSE connection failed:', backendError);
-        
-        // Send error event but keep connection open
-        await sendTypedEvent('error', {
-          code: 'BACKEND_CONNECTION_FAILED',
-          message: 'Failed to connect to backend SSE stream',
-          recoverable: true
+      });
+    }
+    
+    // Rate limiting for SSE connections
+    const connectionKey = `sse_connection_${clientIP}`;
+    if (isRateLimited(connectionKey, 5, 60000)) { // 5 connections per minute per IP
+      logSecurityViolation('rate_limit_exceeded', {
+        source: 'sse-endpoint',
+        ip: clientIP,
+        type: 'connection_limit'
+      });
+      
+      return new Response('Too many SSE connection attempts', {
+        status: 429,
+        headers: {
+          'Retry-After': '60',
+          'Content-Type': 'text/plain'
+        }
+      });
+    }
+    
+    // Validate and sanitize session ID
+    const sessionId = request.nextUrl.searchParams.get('session_id');
+    if (!sessionId) {
+      return new Response('Session ID required', {
+        status: 400,
+        headers: { 'Content-Type': 'text/plain' }
+      });
+    }
+    
+    const sanitizedSessionId = sanitizeText(sessionId);
+    if (!isValidUuid(sanitizedSessionId)) {
+      logSecurityViolation('invalid_input', {
+        source: 'sse-session-id',
+        sessionId: sessionId.substring(0, 20),
+        ip: clientIP
+      });
+      
+      return new Response('Invalid session ID format', {
+        status: 400,
+        headers: { 'Content-Type': 'text/plain' }
+      });
+    }
+    
+    // Authentication validation
+    try {
+      const tokens = await tokenManager.validateAndRefreshSession();
+      if (!tokens) {
+        return new Response('Authentication required', {
+          status: 401,
+          headers: { 
+            'Content-Type': 'text/plain',
+            'WWW-Authenticate': 'Bearer'
+          }
         });
-
-        // Fallback to mock events for development
-        if (process.env.NODE_ENV === 'development') {
-          await startMockEventStream(sendTypedEvent, sessionId);
+      }
+    } catch (error) {
+      logSecurityViolation('invalid_input', {
+        source: 'sse-auth',
+        error: error instanceof Error ? error.message : 'Unknown auth error',
+        ip: clientIP
+      });
+      
+      return new Response('Authentication failed', {
+        status: 401,
+        headers: { 'Content-Type': 'text/plain' }
+      });
+    }
+    
+    // Create SSE response with security headers
+    const encoder = new TextEncoder();
+    const readable = new ReadableStream({
+      start(controller) {
+        // Send initial connection message
+        const connectMessage = `data: ${JSON.stringify({
+          type: 'connection_established',
+          sessionId: sanitizedSessionId,
+          timestamp: new Date().toISOString()
+        })}\n\n`;
+        
+        controller.enqueue(encoder.encode(connectMessage));
+        
+        // Set up heartbeat to keep connection alive
+        const heartbeatInterval = setInterval(() => {
+          try {
+            const heartbeat = `data: ${JSON.stringify({
+              type: 'heartbeat',
+              timestamp: new Date().toISOString()
+            })}\n\n`;
+            
+            controller.enqueue(encoder.encode(heartbeat));
+          } catch (error) {
+            console.error('SSE heartbeat error:', error);
+            clearInterval(heartbeatInterval);
+            controller.close();
+          }
+        }, 30000); // 30-second heartbeat
+        
+        // Clean up on connection close
+        const cleanup = () => {
+          clearInterval(heartbeatInterval);
+          console.log('SSE connection closed for session:', sanitizedSessionId);
+        };
+        
+        // Handle client disconnection
+        request.signal.addEventListener('abort', cleanup);
+        
+        // Store cleanup function for potential manual cleanup
+        (controller as any).cleanup = cleanup;
+      },
+      
+      cancel() {
+        // Called when client disconnects
+        if ((this as any).cleanup) {
+          (this as any).cleanup();
         }
       }
+    });
+    
+    return new Response(readable, {
+      headers: {
+        ...corsResult.headers,
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Connection': 'keep-alive',
+        'Access-Control-Allow-Credentials': 'true',
+        'X-Accel-Buffering': 'no', // Disable nginx buffering
+        'X-Session-Id': sanitizedSessionId // For debugging (sanitized)
+      }
+    });
+    
+  } catch (error) {
+    console.error('SSE endpoint error:', error);
+    
+    logSecurityViolation('invalid_input', {
+      source: 'sse-endpoint',
+      error: error instanceof Error ? error.message : 'Unknown error',
+      ip: clientIP
+    });
+    
+    return new Response('Internal server error', {
+      status: 500,
+      headers: { 'Content-Type': 'text/plain' }
+    });
+  }
+}
 
-      // Clean up on close
-      request.signal.addEventListener('abort', () => {
-        clearInterval(heartbeatInterval);
-        try {
-          abortController.abort();
-        } catch {
-          // Ignore abort errors
-        }
-        try {
-          writer.close();
-        } catch {
-          // Ignore close errors
-        }
-      });
-
-    } catch (error) {
-      console.error('SSE stream error:', error);
-      await sendTypedEvent('error', {
-        code: 'STREAM_ERROR',
-        message: 'Internal stream error',
-        recoverable: false
-      });
-      writer.close();
+/**
+ * Handle OPTIONS preflight requests for SSE
+ */
+export async function OPTIONS(request: NextRequest) {
+  const origin = request.headers.get('origin');
+  const corsResult = handleSSECORS(origin);
+  
+  return new Response(null, {
+    status: 200,
+    headers: {
+      ...corsResult.headers,
+      'Access-Control-Allow-Methods': 'GET, OPTIONS',
+      'Access-Control-Allow-Headers': 'Authorization, Content-Type, Last-Event-ID',
+      'Access-Control-Max-Age': '86400' // 24 hours
     }
-  })();
-
-  return new Response(stream.readable, {
-    headers: SSE_HEADERS,
   });
 }
 
-// Mock event stream for development
-async function startMockEventStream(
-  sendEvent: (type: string, data: Record<string, unknown>, id?: string) => Promise<void>,
-  sessionId: string
-) {
-  // Simulate agent updates
-  const agents = ['agent-1', 'agent-2', 'agent-3'];
-  let messageCount = 0;
-
-  // Send initial agent status
-  for (const agentId of agents) {
-    await sendEvent('agent-update', {
-      agentId,
-      status: 'idle',
-      message: `Agent ${agentId} initialized`
-    });
-  }
-
-  // Simulate periodic messages
-  const messageInterval = setInterval(async () => {
-    messageCount++;
-    
-    // Send a message
-    await sendEvent('message', {
-      id: `msg-${messageCount}`,
-      content: `Test message ${messageCount}`,
-      role: 'assistant',
-      sessionId,
-      timestamp: Date.now()
-    });
-
-    // Update a random agent
-    const randomAgent = agents[Math.floor(Math.random() * agents.length)];
-    const statuses = ['idle', 'thinking', 'working', 'complete'];
-    const randomStatus = statuses[Math.floor(Math.random() * statuses.length)];
-    
-    await sendEvent('agent-update', {
-      agentId: randomAgent,
-      status: randomStatus,
-      message: `Agent ${randomAgent} is ${randomStatus}`,
-      progress: Math.random() * 100
-    });
-
-    // Send progress update
-    if (messageCount % 3 === 0) {
-      await sendEvent('progress', {
-        taskId: 'task-1',
-        current: messageCount,
-        total: 20,
-        message: `Processing step ${messageCount}`
-      });
+/**
+ * Reject all other HTTP methods
+ */
+export async function POST() {
+  return new Response('Method not allowed', {
+    status: 405,
+    headers: {
+      'Allow': 'GET, OPTIONS',
+      'Content-Type': 'text/plain'
     }
+  });
+}
 
-    // Stop after 20 messages
-    if (messageCount >= 20) {
-      clearInterval(messageInterval);
-      await sendEvent('status', {
-        code: 200,
-        message: 'Mock stream complete'
-      });
+export async function PUT() {
+  return new Response('Method not allowed', {
+    status: 405,
+    headers: {
+      'Allow': 'GET, OPTIONS',
+      'Content-Type': 'text/plain'
     }
-  }, 2000);
+  });
+}
+
+export async function DELETE() {
+  return new Response('Method not allowed', {
+    status: 405,
+    headers: {
+      'Allow': 'GET, OPTIONS',
+      'Content-Type': 'text/plain'
+    }
+  });
+}
+
+export async function PATCH() {
+  return new Response('Method not allowed', {
+    status: 405,
+    headers: {
+      'Allow': 'GET, OPTIONS',
+      'Content-Type': 'text/plain'
+    }
+  });
 }

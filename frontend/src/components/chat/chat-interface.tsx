@@ -11,6 +11,18 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { AlertCircle, Wifi, WifiOff } from 'lucide-react';
 import { ChatMessage } from '@/types/session';
+import { 
+  sanitizeHtml, 
+  sanitizeText, 
+  chatMessageSchema, 
+  sseEventSchema,
+  containsMaliciousPatterns,
+  isRateLimited,
+  logSecurityViolation,
+  setTextContentSafely
+} from '@/lib/security';
+import { createCORSAwareEventSource, handleSSECORS } from '@/lib/cors';
+import { tokenManager, authManager } from '@/lib/auth-security';
 
 interface SSEEvent {
   type: string;
@@ -60,10 +72,18 @@ export function ChatInterface({ className, initialMessage }: ChatInterfaceProps)
     }
   }, [initialMessage, currentSession]);
   
-  // SSE Connection Management
-  const connectToSSE = () => {
-    if (!currentSession?.id || !tokens?.access_token) {
-      console.log('Cannot connect to SSE: missing session or token');
+  // SSE Connection Management with Enhanced Security
+  const connectToSSE = async () => {
+    if (!currentSession?.id) {
+      console.log('Cannot connect to SSE: missing session ID');
+      return;
+    }
+    
+    // Validate authentication tokens
+    const tokens = await tokenManager.validateAndRefreshSession();
+    if (!tokens) {
+      console.error('Cannot connect to SSE: invalid or expired tokens');
+      setConnectionError('Authentication required');
       return;
     }
     
@@ -72,14 +92,26 @@ export function ChatInterface({ className, initialMessage }: ChatInterfaceProps)
       eventSourceRef.current.close();
     }
     
-    // Use the Next.js proxy route for secure SSE connection
-    // Token should be sent via httpOnly cookie, not in URL
-    const sseUrl = `/api/sse?session_id=${encodeURIComponent(currentSession.id)}`;
+    // Rate limiting check
+    const connectionKey = `sse_connection_${currentSession.id}`;
+    if (isRateLimited(connectionKey, 10, 60000)) {
+      console.warn('SSE connection rate limited');
+      setConnectionError('Too many connection attempts. Please wait.');
+      return;
+    }
+    
+    // Use secure SSE URL with validated session ID
+    const sseUrl = `/api/sse?session_id=${encodeURIComponent(sanitizeText(currentSession.id))}`;
     
     try {
-      // Use withCredentials to send cookies securely (no token in URL)
-      const options: EventSourceInit = { withCredentials: true };
-      const eventSource = new EventSource(sseUrl, options);
+      // Validate CORS configuration for SSE
+      const corsResult = handleSSECORS(window.location.origin);
+      if (!corsResult.isValid) {
+        throw new Error('CORS validation failed for SSE endpoint');
+      }
+      
+      // Create CORS-aware EventSource with credentials
+      const eventSource = createCORSAwareEventSource(sseUrl);
       eventSourceRef.current = eventSource;
       
       eventSource.onopen = () => {
@@ -90,10 +122,27 @@ export function ChatInterface({ className, initialMessage }: ChatInterfaceProps)
       
       eventSource.onmessage = (event) => {
         try {
-          const data: SSEEvent = JSON.parse(event.data);
-          handleSSEEvent(data);
+          // Sanitize and validate incoming event data
+          const rawData = sanitizeText(event.data);
+          if (!rawData || containsMaliciousPatterns(rawData)) {
+            console.error('Potentially malicious SSE data blocked');
+            logSecurityViolation('xss_attempt', { data: event.data, source: 'sse' });
+            return;
+          }
+          
+          const data: SSEEvent = JSON.parse(rawData);
+          
+          // Validate event structure
+          const validatedEvent = sseEventSchema.safeParse(data);
+          if (!validatedEvent.success) {
+            console.error('Invalid SSE event structure:', validatedEvent.error);
+            return;
+          }
+          
+          handleSSEEvent(validatedEvent.data);
         } catch (error) {
           console.error('Failed to parse SSE event:', error);
+          logSecurityViolation('invalid_input', { error: error instanceof Error ? error.message : 'Unknown', source: 'sse' });
         }
       };
       
@@ -106,27 +155,31 @@ export function ChatInterface({ className, initialMessage }: ChatInterfaceProps)
         // No need for manual reconnect logic
       };
       
-      // Handle different event types
-      eventSource.addEventListener('agent_response_start', (event) => {
-        const data = JSON.parse(event.data);
-        handleResponseStart(data);
-      });
+      // Handle different event types with security validation
+      const handleSecureEvent = (eventType: string, handler: (data: any) => void) => {
+        eventSource.addEventListener(eventType, (event) => {
+          try {
+            const messageEvent = event as MessageEvent;
+            const sanitizedData = sanitizeText(messageEvent.data);
+            
+            if (containsMaliciousPatterns(sanitizedData)) {
+              console.error(`Potentially malicious ${eventType} data blocked`);
+              logSecurityViolation('xss_attempt', { eventType, data: messageEvent.data });
+              return;
+            }
+            
+            const data = JSON.parse(sanitizedData);
+            handler(data);
+          } catch (error) {
+            console.error(`Failed to parse ${eventType} event:`, error);
+          }
+        });
+      };
       
-      eventSource.addEventListener('agent_response_chunk', (event) => {
-        const data = JSON.parse(event.data);
-        handleResponseChunk(data);
-      });
-      
-      eventSource.addEventListener('agent_response_complete', (event) => {
-        const data = JSON.parse(event.data);
-        handleResponseComplete(data);
-      });
-      
-      eventSource.addEventListener('error', (event) => {
-        const messageEvent = event as MessageEvent;
-        const data = JSON.parse(messageEvent.data);
-        handleErrorEvent(data);
-      });
+      handleSecureEvent('agent_response_start', handleResponseStart);
+      handleSecureEvent('agent_response_chunk', handleResponseChunk);
+      handleSecureEvent('agent_response_complete', handleResponseComplete);
+      handleSecureEvent('error', handleErrorEvent);
       
     } catch (error) {
       console.error('Failed to create SSE connection:', error);
@@ -142,13 +195,23 @@ export function ChatInterface({ className, initialMessage }: ChatInterfaceProps)
   const handleResponseStart = (data: { message: ChatMessage; messageId?: string; model?: string }) => {
     setIsStreaming(true);
     
+    // Sanitize and validate incoming data
+    const messageId = data.messageId ? sanitizeText(data.messageId) : `temp_${Date.now()}`;
+    const model = data.model ? sanitizeText(data.model) : undefined;
+    
+    // Validate message ID format
+    if (data.messageId && !data.messageId.match(/^[a-zA-Z0-9_-]+$/)) {
+      console.error('Invalid message ID format');
+      return;
+    }
+    
     const streamingMessage: ChatMessage = {
-      id: data.messageId || `temp_${Date.now()}`,
+      id: messageId,
       role: 'assistant',
       content: '',
       timestamp: Date.now(),
       metadata: {
-        model: data.model,
+        model,
         streaming: true
       }
     };
@@ -158,23 +221,43 @@ export function ChatInterface({ className, initialMessage }: ChatInterfaceProps)
   
   const handleResponseChunk = (data: { content: string; messageId: string }) => {
     if (currentStreamingMessage) {
+      // Sanitize chunk content to prevent XSS
+      const sanitizedContent = sanitizeText(data.content || '');
+      const sanitizedMessageId = sanitizeText(data.messageId);
+      
+      // Validate that message ID matches current streaming message
+      if (sanitizedMessageId && sanitizedMessageId !== currentStreamingMessage.id) {
+        console.warn('Message ID mismatch in chunk, ignoring');
+        return;
+      }
+      
       setCurrentStreamingMessage(prev => prev ? {
         ...prev,
-        content: prev.content + (data.content || '')
+        content: prev.content + sanitizedContent
       } : null);
     }
   };
   
   const handleResponseComplete = (data: { messageId: string; content?: string; model?: string; tool_calls?: unknown[] }) => {
     if (currentStreamingMessage) {
+      // Sanitize final content and metadata
+      const sanitizedContent = data.content ? sanitizeText(data.content) : currentStreamingMessage.content;
+      const sanitizedModel = data.model ? sanitizeText(data.model) : undefined;
+      const sanitizedMessageId = sanitizeText(data.messageId);
+      
+      // Validate message ID matches
+      if (sanitizedMessageId !== currentStreamingMessage.id) {
+        console.warn('Message ID mismatch in completion, using current message');
+      }
+      
       const finalMessage: ChatMessage = {
         ...currentStreamingMessage,
-        content: data.content || currentStreamingMessage.content,
+        content: sanitizedContent,
         metadata: {
           ...currentStreamingMessage.metadata,
           streaming: false,
-          model: data.model,
-          tool_calls: data.tool_calls
+          model: sanitizedModel,
+          tool_calls: data.tool_calls // Tool calls are handled separately and don't contain user-displayable content
         }
       };
       
@@ -186,15 +269,20 @@ export function ChatInterface({ className, initialMessage }: ChatInterfaceProps)
   };
   
   const handleErrorEvent = (data: { error: string; messageId?: string }) => {
-    console.error('Agent error:', data);
+    // Sanitize error message to prevent XSS
+    const sanitizedError = sanitizeText(data.error || 'An unexpected error occurred');
+    const sanitizedMessageId = data.messageId ? sanitizeText(data.messageId) : undefined;
+    
+    console.error('Agent error:', { error: sanitizedError, messageId: sanitizedMessageId });
     
     const errorMessage: ChatMessage = {
       id: `error_${Date.now()}`,
       role: 'assistant',
-      content: `Error: ${data.error || 'An unexpected error occurred'}`,
+      content: `Error: ${sanitizedError}`,
       timestamp: Date.now(),
       metadata: {
-        error: data.error
+        error: sanitizedError,
+        messageId: sanitizedMessageId
       }
     };
     
@@ -219,46 +307,91 @@ export function ChatInterface({ className, initialMessage }: ChatInterfaceProps)
     };
   }, [currentSession?.id, tokens?.access_token]);
   
-  // Handle sending messages
+  // Handle sending messages with comprehensive security validation
   const handleSendMessage = async (content: string, files?: File[]) => {
-    if (!currentSession || !tokens?.access_token) {
-      console.error('Cannot send message: missing session or token');
+    // Validate authentication
+    const tokens = await tokenManager.validateAndRefreshSession();
+    if (!currentSession || !tokens) {
+      console.error('Cannot send message: missing session or invalid token');
+      setConnectionError('Authentication required');
       return;
     }
     
-    // Add user message immediately
+    // Rate limiting check
+    const messageKey = `send_message_${currentSession.id}`;
+    if (isRateLimited(messageKey, 30, 60000)) { // 30 messages per minute
+      console.warn('Message sending rate limited');
+      setConnectionError('Too many messages. Please slow down.');
+      return;
+    }
+    
+    // Validate and sanitize message content
+    const messageValidation = chatMessageSchema.safeParse({
+      content,
+      sessionId: currentSession.id,
+      files: files?.map(f => ({ name: f.name, size: f.size, type: f.type }))
+    });
+    
+    if (!messageValidation.success) {
+      console.error('Message validation failed:', messageValidation.error);
+      const errorMsg = messageValidation.error.errors.map(e => e.message).join(', ');
+      setConnectionError(`Invalid message: ${errorMsg}`);
+      return;
+    }
+    
+    // Sanitize content for display
+    const sanitizedContent = sanitizeText(content);
+    
+    // Add user message immediately with sanitized content
     const userMessage: ChatMessage = {
       id: `user_${Date.now()}`,
       role: 'user',
-      content,
+      content: sanitizedContent,
       timestamp: Date.now(),
-      metadata: files ? { attachments: files.map(f => f.name) } : undefined
+      metadata: files ? { 
+        attachments: files.map(f => sanitizeText(f.name))
+      } : undefined
     };
     
     addMessage(userMessage);
     
-    // Send to backend
+    // Send to backend with security headers and validation
     try {
       const baseUrl = process.env.NODE_ENV === 'production'
-        ? 'https://your-backend-url'
+        ? process.env.NEXT_PUBLIC_API_URL || 'https://api.vana.ai'
         : 'http://localhost:8000';
       
       const formData = new FormData();
-      formData.append('message', content);
-      formData.append('session_id', currentSession.id);
+      formData.append('message', sanitizedContent); // Use sanitized content
+      formData.append('session_id', sanitizeText(currentSession.id));
       
-      // Add files if provided
+      // Add files if provided (with validation)
       if (files) {
-        files.forEach((file, index) => {
-          formData.append(`file_${index}`, file);
-        });
+        for (let i = 0; i < files.length; i++) {
+          const file = files[i];
+          
+          // Additional file validation
+          if (file.size > 10 * 1024 * 1024) { // 10MB limit
+            throw new Error(`File ${file.name} is too large (max 10MB)`);
+          }
+          
+          const allowedTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/gif', 'text/plain', 'application/pdf'];
+          if (!allowedTypes.includes(file.type)) {
+            throw new Error(`File type ${file.type} not allowed`);
+          }
+          
+          formData.append(`file_${i}`, file);
+        }
       }
       
+      // Use secure fetch with authentication token from secure storage
       const response = await fetch(`${baseUrl}/api/chat/send`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${tokens.access_token}`
+          // Don't send Authorization header - use httpOnly cookies instead
+          'X-Requested-With': 'XMLHttpRequest', // CSRF protection
         },
+        credentials: 'include', // Send httpOnly cookies
         body: formData
       });
       
