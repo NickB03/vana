@@ -51,14 +51,6 @@ const securityIncidents = new Map<string, number>();
 // Initialize storage based on environment
 let storage: StorageInterface;
 
-// Initialize storage based on environment
-if (process.env.NODE_ENV === 'production' && RATE_LIMIT_CONFIG.backend === 'redis' && RATE_LIMIT_CONFIG.redis) {
-  storage = new RedisStorage(RATE_LIMIT_CONFIG.redis);
-  console.log('Using Redis storage for rate limiting');
-} else {
-  storage = new InMemoryStorage();
-  console.log('Using in-memory storage for rate limiting');
-}
 
 // Rate limiting configurations
 const RATE_LIMITS = {
