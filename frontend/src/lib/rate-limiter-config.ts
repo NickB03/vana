@@ -27,6 +27,73 @@ export interface RateLimitConfig {
   };
 }
 
+// Helper function to get environment-driven rate limits
+function getDefaultRateLimits(): Record<string, RateLimitRule> {
+  return {
+    api: {
+      window: parseInt(process.env.NEXT_PUBLIC_RATE_LIMIT_API_WINDOW || '60'),
+      max: parseInt(process.env.NEXT_PUBLIC_RATE_LIMIT_API_MAX || '100'),
+      message: 'Too many API requests, please slow down',
+      keyPrefix: 'api'
+    },
+    auth: {
+      window: parseInt(process.env.NEXT_PUBLIC_RATE_LIMIT_AUTH_WINDOW || '300'),
+      max: parseInt(process.env.NEXT_PUBLIC_RATE_LIMIT_AUTH_MAX || '5'),
+      message: 'Too many authentication attempts, please wait',
+      skipSuccessfulRequests: false,
+      keyPrefix: 'auth'
+    },
+    sse: {
+      window: parseInt(process.env.NEXT_PUBLIC_RATE_LIMIT_SSE_WINDOW || '60'),
+      max: parseInt(process.env.NEXT_PUBLIC_RATE_LIMIT_SSE_MAX || '20'),
+      message: 'Too many SSE connection attempts',
+      keyPrefix: 'sse'
+    },
+    upload: {
+      window: parseInt(process.env.NEXT_PUBLIC_RATE_LIMIT_UPLOAD_WINDOW || '300'),
+      max: parseInt(process.env.NEXT_PUBLIC_RATE_LIMIT_UPLOAD_MAX || '10'),
+      message: 'Too many upload attempts, please wait',
+      keyPrefix: 'upload'
+    },
+    search: {
+      window: parseInt(process.env.NEXT_PUBLIC_RATE_LIMIT_SEARCH_WINDOW || '10'),
+      max: parseInt(process.env.NEXT_PUBLIC_RATE_LIMIT_SEARCH_MAX || '30'),
+      message: 'Too many search requests, please wait',
+      keyPrefix: 'search'
+    },
+    chat: {
+      window: parseInt(process.env.NEXT_PUBLIC_RATE_LIMIT_CHAT_WINDOW || '60'),
+      max: parseInt(process.env.NEXT_PUBLIC_RATE_LIMIT_CHAT_MAX || '60'),
+      message: 'Too many chat messages, please slow down',
+      keyPrefix: 'chat'
+    },
+    passwordReset: {
+      window: 3600,
+      max: 3,
+      message: 'Too many password reset requests, please wait',
+      keyPrefix: 'pwd_reset'
+    },
+    oauth: {
+      window: 60,
+      max: 10,
+      message: 'Too many OAuth attempts, please wait',
+      keyPrefix: 'oauth'
+    },
+    health: {
+      window: 60,
+      max: 300,
+      message: 'Health check rate limit exceeded',
+      keyPrefix: 'health'
+    },
+    websocket: {
+      window: 60,
+      max: 30,
+      message: 'Too many WebSocket connection attempts',
+      keyPrefix: 'ws'
+    }
+  };
+}
+
 export const RATE_LIMIT_CONFIG: RateLimitConfig = {
   // Use Redis in production for distributed rate limiting, memory in development
   backend: process.env.NODE_ENV === 'production' ? 'redis' : 'memory',
@@ -40,72 +107,9 @@ export const RATE_LIMIT_CONFIG: RateLimitConfig = {
     maxRetriesPerRequest: 3,
   },
   
-  limits: {
-    // General API endpoints
-    api: {
-      window: 60, // 1 minute
-      max: 100,   // 100 requests per minute per IP
-      message: 'Too many API requests, please slow down',
-      keyPrefix: 'api'
-    },
-    
-    // Authentication endpoints (stricter)
-    auth: {
-      window: 300, // 5 minutes
-      max: 5,      // 5 attempts per 5 minutes per IP
-      message: 'Too many authentication attempts, please wait',
-      skipSuccessfulRequests: false,
-      keyPrefix: 'auth'
-    },
-    
-    // SSE connections
-    sse: {
-      window: 60, // 1 minute
-      max: 20,    // 20 connection attempts per minute per IP
-      message: 'Too many SSE connection attempts',
-      keyPrefix: 'sse'
-    },
-    
-    // File uploads
-    upload: {
-      window: 60, // 1 minute  
-      max: 10,    // 10 uploads per minute per IP
-      message: 'Too many upload attempts, please wait',
-      keyPrefix: 'upload'
-    },
-    
-    // Password reset requests
-    passwordReset: {
-      window: 3600, // 1 hour
-      max: 3,       // 3 attempts per hour per email
-      message: 'Too many password reset requests, please wait',
-      keyPrefix: 'pwd_reset'
-    },
-    
-    // OAuth callback
-    oauth: {
-      window: 60, // 1 minute
-      max: 10,    // 10 OAuth attempts per minute per IP
-      message: 'Too many OAuth attempts, please wait',
-      keyPrefix: 'oauth'
-    },
-    
-    // Health check endpoint (more lenient)
-    health: {
-      window: 60, // 1 minute
-      max: 300,   // 300 requests per minute
-      message: 'Health check rate limit exceeded',
-      keyPrefix: 'health'
-    },
-    
-    // WebSocket connections
-    websocket: {
-      window: 60, // 1 minute
-      max: 30,    // 30 connection attempts per minute per IP
-      message: 'Too many WebSocket connection attempts',
-      keyPrefix: 'ws'
-    }
-  }
+  limits: process.env.NEXT_PUBLIC_RATE_LIMITS_CONFIG 
+    ? JSON.parse(process.env.NEXT_PUBLIC_RATE_LIMITS_CONFIG)
+    : getDefaultRateLimits()
 };
 
 /**

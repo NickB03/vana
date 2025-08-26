@@ -13,8 +13,8 @@ export interface SecurityPattern {
 
 // Core security patterns with improved accuracy
 export const SECURITY_PATTERNS: Record<string, RegExp> = {
-  // SQL Injection - with word boundaries to prevent false positives
-  sqlInjection: /\b(union\s+(all\s+)?select|select\s+.*\s+from|insert\s+into|update\s+\w+\s+set|delete\s+from|drop\s+(table|database|schema)|alter\s+\w+|exec(ute)?)\b/i,
+  // SQL Injection - more context-aware pattern to reduce false positives
+  sqlInjection: /\b(union\s+(all\s+)?select|select\s+[\w\*,\s]+\s+from\s+\w+|insert\s+into\s+\w+|update\s+\w+\s+set\s+\w+\s*=|delete\s+from\s+\w+|drop\s+(table|database|schema)\s+\w+|alter\s+(table|database)\s+\w+|exec(ute)?\s*\()\b/i,
   
   // XSS - improved detection with better patterns
   xss: /(<\s*script\b[^>]*>|javascript\s*:|data\s*:\s*text\/html|on[a-z]+\s*=|<\s*iframe\b|<\s*object\b|<\s*embed\b|<\s*link\b[^>]*href\s*=\s*[\"']javascript:)/i,
@@ -22,8 +22,8 @@ export const SECURITY_PATTERNS: Record<string, RegExp> = {
   // Path Traversal - directory traversal attempts
   pathTraversal: /(^|[\/\\])\.\.([\/\\]|$)|%2e%2e|%252e%252e|0x2e0x2e/i,
   
-  // Command Injection - shell command injection
-  commandInjection: /(\|\||&&|;|\||`|\$\([^)]*\)|\${[^}]*}|\\x[0-9a-f]{2})/i,
+  // Command Injection - require command context to reduce false positives
+  commandInjection: /(^|[\s&;|])(rm|ls|cat|echo|eval|exec|sh|bash|cmd|powershell)[\s&;|]|(\|\||&&)[\s]*[a-z]+|`[^`]*`|\$\([^)]*\)|\${[^}]*}/i,
   
   // Suspicious Headers - potential header injection
   suspiciousHeaders: /(\r\n|\n|\r|%0d|%0a|%00|<|>|"|'|\\x3c|\\x3e)/i,
@@ -329,7 +329,7 @@ export function validateBatch(
   inputs: Array<{ value: string; context?: string; id?: string }>
 ): Array<ValidationResult & { id?: string }> {
   return inputs.map(({ value, context = 'general', id }) => ({
-    ...validateByContext(value, context as any),
+    ...validateByContext(value, context as 'url' | 'email' | 'filename' | 'sql' | 'html' | 'json' | 'general'),
     id
   }));
 }
