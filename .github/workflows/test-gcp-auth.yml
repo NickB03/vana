@@ -1,0 +1,53 @@
+name: Test GCP Authentication
+
+on:
+  workflow_dispatch:
+
+env:
+  PROJECT_ID: analystai-454200
+  REGION: us-central1
+
+jobs:
+  test-auth:
+    name: Test GCP Authentication
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Authenticate to Google Cloud
+        id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+          
+      - name: Setup Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+        
+      - name: Verify Authentication
+        run: |
+          echo "Testing authentication..."
+          gcloud config list
+          echo ""
+          echo "Project ID: $(gcloud config get-value project)"
+          echo "Account: $(gcloud config get-value account)"
+          echo ""
+          echo "Testing permissions..."
+          
+          # Test Cloud Run access
+          echo "Cloud Run services:"
+          gcloud run services list --region=${{ env.REGION }} || echo "No Cloud Run services or missing permissions"
+          
+          # Test Container Registry access  
+          echo ""
+          echo "Container Registry images:"
+          gcloud container images list --repository=gcr.io/${{ env.PROJECT_ID }} || echo "No images or missing permissions"
+          
+          # Test service account permissions
+          echo ""
+          echo "Service account info:"
+          gcloud iam service-accounts describe analystai-backend-sa@${{ env.PROJECT_ID }}.iam.gserviceaccount.com
+          
+          echo ""
+          echo "✅ Authentication successful!"

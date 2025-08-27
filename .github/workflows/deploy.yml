@@ -1,0 +1,338 @@
+name: Deploy to Cloud Run
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deployment environment'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+          - staging
+          - production
+      skip_tests:
+        description: 'Skip integration tests'
+        required: false
+        default: false
+        type: boolean
+
+env:
+  PROJECT_ID: analystai-454200
+  REGION: us-central1
+  SERVICE_NAME: vana
+  PYTHON_VERSION: '3.11'
+
+permissions:
+  contents: read
+  id-token: write
+  deployments: write
+  pull-requests: write
+
+jobs:
+  # ============================================================================
+  # BUILD & PUSH CONTAINER
+  # ============================================================================
+  build:
+    name: Build Container
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    outputs:
+      image_tag: ${{ steps.image.outputs.tag }}
+      image_url: ${{ steps.image.outputs.url }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        
+      # Authenticate to Google Cloud
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+          
+      - name: Setup Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+        
+      - name: Configure Docker for GCR
+        run: |
+          gcloud auth configure-docker gcr.io
+          
+      - name: Set image tag
+        id: image
+        run: |
+          TAG="${GITHUB_SHA:0:7}-$(date +%Y%m%d-%H%M%S)"
+          echo "tag=${TAG}" >> $GITHUB_OUTPUT
+          echo "url=gcr.io/${{ env.PROJECT_ID }}/${{ env.SERVICE_NAME }}:${TAG}" >> $GITHUB_OUTPUT
+          
+      - name: Build and push container
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: |
+            gcr.io/${{ env.PROJECT_ID }}/${{ env.SERVICE_NAME }}:${{ steps.image.outputs.tag }}
+            gcr.io/${{ env.PROJECT_ID }}/${{ env.SERVICE_NAME }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            COMMIT_SHA=${{ github.sha }}
+
+  # ============================================================================
+  # DEPLOY TO STAGING
+  # ============================================================================
+  deploy-staging:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    needs: build
+    environment:
+      name: staging
+      url: https://${{ env.SERVICE_NAME }}-staging-${{ env.PROJECT_ID }}.a.run.app
+    timeout-minutes: 10
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+          
+      - name: Setup Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+        
+      - name: Deploy to Cloud Run Staging
+        id: deploy
+        run: |
+          gcloud run deploy ${{ env.SERVICE_NAME }}-staging \
+            --image ${{ needs.build.outputs.image_url }} \
+            --region ${{ env.REGION }} \
+            --platform managed \
+            --allow-unauthenticated \
+            --min-instances 1 \
+            --max-instances 5 \
+            --memory 4Gi \
+            --cpu 2 \
+            --timeout 60 \
+            --concurrency 100 \
+            --set-env-vars "ENVIRONMENT=staging,COMMIT_SHA=${{ github.sha }}" \
+            --labels "environment=staging,commit=${{ github.sha }}" \
+            --update-labels "last-deployed=$(date +%Y%m%d-%H%M%S)"
+            
+      - name: Get service URL
+        id: service
+        run: |
+          URL=$(gcloud run services describe ${{ env.SERVICE_NAME }}-staging \
+            --region ${{ env.REGION }} \
+            --format 'value(status.url)')
+          echo "url=${URL}" >> $GITHUB_OUTPUT
+          
+      - name: Smoke test deployment
+        run: |
+          echo "Testing deployment at ${{ steps.service.outputs.url }}"
+          for i in {1..30}; do
+            if curl -s -f "${{ steps.service.outputs.url }}/health" > /dev/null; then
+              echo "✅ Health check passed"
+              break
+            elif [ $i -eq 30 ]; then
+              echo "❌ Health check failed after 30 attempts"
+              exit 1
+            else
+              echo "Waiting for service to be ready... (attempt $i/30)"
+              sleep 5
+            fi
+          done
+
+  # ============================================================================
+  # INTEGRATION TESTS
+  # ============================================================================
+  integration-tests:
+    name: Run Integration Tests
+    runs-on: ubuntu-latest
+    needs: deploy-staging
+    if: github.event.inputs.skip_tests != 'true'
+    timeout-minutes: 15
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          
+      - name: Install UV
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+          
+      - name: Install dependencies
+        run: |
+          uv sync --dev
+          
+      - name: Run integration tests against staging
+        env:
+          TEST_API_URL: https://${{ env.SERVICE_NAME }}-staging-${{ env.PROJECT_ID }}.a.run.app
+          CI: "true"
+          RUNNING_IN_CI: "true"
+        run: |
+          uv run pytest tests/integration/ -v --tb=short
+
+  # ============================================================================
+  # DEPLOY TO PRODUCTION
+  # ============================================================================
+  deploy-production:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: [build, integration-tests]
+    if: github.ref == 'refs/heads/main'
+    environment:
+      name: production
+      url: https://${{ env.SERVICE_NAME }}-${{ env.PROJECT_ID }}.a.run.app
+    timeout-minutes: 10
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+          
+      - name: Setup Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+        
+      - name: Deploy to Cloud Run Production
+        id: deploy
+        run: |
+          # Deploy with blue-green strategy
+          gcloud run deploy ${{ env.SERVICE_NAME }} \
+            --image ${{ needs.build.outputs.image_url }} \
+            --region ${{ env.REGION }} \
+            --platform managed \
+            --allow-unauthenticated \
+            --min-instances 2 \
+            --max-instances 10 \
+            --memory 4Gi \
+            --cpu 2 \
+            --timeout 60 \
+            --concurrency 100 \
+            --set-env-vars "ENVIRONMENT=production,COMMIT_SHA=${{ github.sha }}" \
+            --labels "environment=production,commit=${{ github.sha }}" \
+            --update-labels "last-deployed=$(date +%Y%m%d-%H%M%S)" \
+            --tag "rev-${{ github.sha:0:7 }}"
+            
+      - name: Get service URL
+        id: service
+        run: |
+          URL=$(gcloud run services describe ${{ env.SERVICE_NAME }} \
+            --region ${{ env.REGION }} \
+            --format 'value(status.url)')
+          echo "url=${URL}" >> $GITHUB_OUTPUT
+          
+      - name: Verify production deployment
+        run: |
+          echo "Verifying deployment at ${{ steps.service.outputs.url }}"
+          for i in {1..30}; do
+            if curl -s -f "${{ steps.service.outputs.url }}/health" > /dev/null; then
+              echo "✅ Production health check passed"
+              break
+            elif [ $i -eq 30 ]; then
+              echo "❌ Production health check failed"
+              # Rollback to previous revision
+              echo "Rolling back to previous revision..."
+              gcloud run services update-traffic ${{ env.SERVICE_NAME }} \
+                --region ${{ env.REGION }} \
+                --to-latest=0 \
+                --to-revisions=LATEST-1=100
+              exit 1
+            else
+              echo "Waiting for service... (attempt $i/30)"
+              sleep 5
+            fi
+          done
+          
+      - name: Gradual traffic migration
+        if: success()
+        run: |
+          # Start with 10% traffic to new revision
+          gcloud run services update-traffic ${{ env.SERVICE_NAME }} \
+            --region ${{ env.REGION }} \
+            --to-tags "rev-${{ github.sha:0:7 }}=10"
+          
+          echo "Monitoring initial traffic (10%)..."
+          sleep 30
+          
+          # Increase to 50% if healthy
+          gcloud run services update-traffic ${{ env.SERVICE_NAME }} \
+            --region ${{ env.REGION }} \
+            --to-tags "rev-${{ github.sha:0:7 }}=50"
+          
+          echo "Monitoring increased traffic (50%)..."
+          sleep 30
+          
+          # Full traffic migration
+          gcloud run services update-traffic ${{ env.SERVICE_NAME }} \
+            --region ${{ env.REGION }} \
+            --to-latest
+
+  # ============================================================================
+  # NOTIFICATIONS
+  # ============================================================================
+  notify:
+    name: Send Notifications
+    runs-on: ubuntu-latest
+    needs: [deploy-staging, deploy-production]
+    if: always()
+    
+    steps:
+      - name: Deployment Status
+        run: |
+          if [[ "${{ needs.deploy-production.result }}" == "success" ]]; then
+            echo "✅ Production deployment successful!"
+            MESSAGE="🚀 Production deployment successful for ${{ github.sha:0:7 }}"
+            STATUS="success"
+          elif [[ "${{ needs.deploy-staging.result }}" == "success" ]]; then
+            echo "✅ Staging deployment successful!"
+            MESSAGE="🔧 Staging deployment successful for ${{ github.sha:0:7 }}"
+            STATUS="success"
+          else
+            echo "❌ Deployment failed"
+            MESSAGE="❌ Deployment failed for ${{ github.sha:0:7 }}"
+            STATUS="failure"
+          fi
+          
+          echo "MESSAGE=${MESSAGE}" >> $GITHUB_ENV
+          echo "STATUS=${STATUS}" >> $GITHUB_ENV
+          
+      - name: Create GitHub Deployment
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const environment = '${{ needs.deploy-production.result }}' === 'success' ? 'production' : 'staging';
+            const deployment = await github.rest.repos.createDeployment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              ref: context.sha,
+              environment: environment,
+              auto_merge: false,
+              required_contexts: [],
+              description: '${{ env.MESSAGE }}'
+            });
+            
+            await github.rest.repos.createDeploymentStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              deployment_id: deployment.data.id,
+              state: '${{ env.STATUS }}',
+              environment: environment,
+              description: '${{ env.MESSAGE }}'
+            });

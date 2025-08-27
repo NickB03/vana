@@ -5,6 +5,7 @@ Provides fixtures, test utilities, and configuration for comprehensive testing.
 
 import asyncio
 import json
+import os
 import tempfile
 import time
 from pathlib import Path
@@ -12,6 +13,10 @@ from typing import Any
 from unittest.mock import AsyncMock, Mock
 
 import pytest
+
+# Import CI-specific configuration if in CI environment
+if os.getenv('CI') or os.getenv('RUNNING_IN_CI'):
+    from .ci_conftest import *
 
 # Test configuration - pytest_asyncio is auto-discovered when installed
 

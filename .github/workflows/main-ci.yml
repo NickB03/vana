@@ -31,13 +31,13 @@ on:
 env:
   NODE_VERSION: '18'
   PYTHON_VERSION: '3.11'
-  UV_VERSION: '0.5.11'
-  CACHE_VERSION: 'v2'  # Increment to bust caches
+  UV_VERSION: '0.6.12'  # Standardized version matching Dockerfile
+  CACHE_VERSION: 'v3'  # Increment to bust caches with new UV version
   PERFORMANCE_MODE: ${{ github.event.inputs.performance_mode || 'true' }}
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
   contents: read
@@ -125,9 +125,10 @@ jobs:
       - name: Install UV (cached)
         run: |
           if [ ! -f ~/.local/bin/uv ]; then
-            curl -LsSf "https://astral.sh/uv/${{ env.UV_VERSION }}/install.sh" | sh
+            curl -LsSf https://astral.sh/uv/install.sh | sh
           fi
           echo "$HOME/.local/bin" >> $GITHUB_PATH
+          uv --version
           
       - name: Parallel syntax checks
         run: |
@@ -148,9 +149,10 @@ jobs:
           
       - name: Quick import verification
         env:
-          GOOGLE_CLOUD_PROJECT: "analystai-454200"
+          GOOGLE_CLOUD_PROJECT: "test-project"
           GOOGLE_APPLICATION_CREDENTIALS: ""
           CI: "true"
+          RUNNING_IN_CI: "true"
         run: |
           uv sync --no-dev --quiet
           # Test basic imports with better error handling for CI
@@ -246,9 +248,10 @@ jobs:
       - name: Install UV (cached)
         run: |
           if [ ! -f ~/.local/bin/uv ]; then
-            curl -LsSf "https://astral.sh/uv/${{ env.UV_VERSION }}/install.sh" | sh
+            curl -LsSf https://astral.sh/uv/install.sh | sh
           fi
           echo "$HOME/.local/bin" >> $GITHUB_PATH
+          uv --version
           
       - name: Cache Python dependencies
         uses: actions/cache@v4
@@ -266,8 +269,9 @@ jobs:
           
       - name: Run ${{ matrix.test-group }} tests
         env:
-          GOOGLE_CLOUD_PROJECT: "analystai-454200"
+          GOOGLE_CLOUD_PROJECT: "test-project"
           CI: "true"
+          RUNNING_IN_CI: "true"
         run: ${{ matrix.commands }}
         
       - name: Upload test results
@@ -355,8 +359,9 @@ jobs:
           
       - name: Install UV (stable)
         run: |
-          curl -LsSf "https://astral.sh/uv/${{ env.UV_VERSION }}/install.sh" | sh
+          curl -LsSf https://astral.sh/uv/install.sh | sh
           echo "$HOME/.local/bin" >> $GITHUB_PATH
+          uv --version
           
       - name: Restore caches
         uses: actions/cache@v4
@@ -425,8 +430,9 @@ jobs:
           
       - name: Install UV (stable)
         run: |
-          curl -LsSf "https://astral.sh/uv/${{ env.UV_VERSION }}/install.sh" | sh
+          curl -LsSf https://astral.sh/uv/install.sh | sh
           echo "$HOME/.local/bin" >> $GITHUB_PATH
+          uv --version
           
       - name: Install security tools
         run: |
