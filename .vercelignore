@@ -1,0 +1,45 @@
+# Backend files
+/app
+/tests
+/scripts
+/deployment
+/.cloudbuild
+/.claude_workspace
+
+# Python files
+*.py
+pyproject.toml
+uv.lock
+requirements.txt
+Dockerfile
+
+# Documentation
+/docs
+*.md
+!README.md
+
+# Git files
+.git
+.gitignore
+.github
+
+# Environment files
+.env*
+!.env.example
+
+# IDE files
+.vscode
+.idea
+
+# Cache and build artifacts
+__pycache__
+*.pyc
+.pytest_cache
+.coverage
+venv
+.venv
+
+# Terraform
+*.tf
+*.tfvars
+.terraform

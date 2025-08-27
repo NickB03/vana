@@ -8,8 +8,10 @@
 [![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)](LICENSE)
 
 [![CI Pipeline](https://github.com/NickB03/vana/actions/workflows/main-ci.yml/badge.svg)](https://github.com/NickB03/vana/actions/workflows/main-ci.yml)
+[![Deployment](https://github.com/NickB03/vana/actions/workflows/deploy.yml/badge.svg)](https://github.com/NickB03/vana/actions/workflows/deploy.yml)
 [![Security Scan](https://github.com/NickB03/vana/actions/workflows/security-scan.yml/badge.svg)](https://github.com/NickB03/vana/actions/workflows/security-scan.yml)
 [![Dependency Check](https://github.com/NickB03/vana/actions/workflows/dependency-check.yml/badge.svg)](https://github.com/NickB03/vana/actions/workflows/dependency-check.yml)
+[![Vercel](https://vitalit.vercel.app/api/deployment-badge?projectName=vana&teamName=nickb03)](https://vercel.com/nickb03/vana)
 
 **Multi-Agent AI Research System Built on Google's Agent Development Kit**
 
