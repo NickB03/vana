@@ -20,6 +20,12 @@ const JWT_AUDIENCE = process.env.JWT_AUDIENCE || 'vana-frontend';
 const JWKS_URL = process.env.JWKS_URL || '';
 const CLOCK_SKEW_SECONDS = 30; // Allow 30 seconds clock skew
 
+// Import storage implementations
+import { StorageInterface } from '@/lib/storage';
+import { RedisStorage } from '@/lib/redis-storage';
+import { InMemoryStorage } from '@/lib/in-memory-storage';
+import { RATE_LIMIT_CONFIG } from '@/lib/rate-limiter-config';
+
 // Rate limiting configuration
 interface RateLimit {
   count: number;
@@ -31,12 +37,6 @@ interface RequestValidationResult {
   error?: string;
   riskLevel: 'low' | 'medium' | 'high';
 }
-
-// Import storage implementations
-import { StorageInterface } from '@/lib/storage';
-import { RedisStorage } from '@/lib/redis-storage';
-import { InMemoryStorage } from '@/lib/in-memory-storage';
-import { RATE_LIMIT_CONFIG } from '@/lib/rate-limiter-config';
 
 interface VerifiedJWTPayload extends JWTPayload {
   role?: string;
@@ -50,7 +50,6 @@ const securityIncidents = new Map<string, number>();
 
 // Initialize storage based on environment
 let storage: StorageInterface;
-
 
 // Rate limiting configurations
 const RATE_LIMITS = {
@@ -135,7 +134,6 @@ function getClientIP(request: NextRequest): string {
     return cfConnectingIP;
   }
   
-  // Fallback to request IP (NextRequest doesn't have ip property, use remote address if available)
   // Fallback to request IP (safely check for socket property)
   const reqWithSocket = request as any;
   if (reqWithSocket.socket?.remoteAddress) {
@@ -390,7 +388,7 @@ function getCORSHeaders(
   // Allowed origins
   const allowedOrigins = isDevelopment 
     ? ['http://localhost:3000', 'http://localhost:5173', 'http://localhost:8000']
-    : [process.env['FRONTEND_URL']].filter(Boolean);
+    : [process.env.FRONTEND_URL].filter(Boolean);
   
   const headers: Record<string, string> = {};
   
@@ -510,8 +508,8 @@ function getCSPHeader(nonce: string, isDevelopment: boolean): string {
       "/api/agent-network/events",
       // Production SSE endpoints
       ...(!isDevelopment ? [
-        process.env['BACKEND_URL'],
-        process.env['BACKEND_WSS_URL']
+        process.env.BACKEND_URL,
+        process.env.BACKEND_WSS_URL
       ].filter(Boolean) : []),
       // Development WebSocket connections
       ...(isDevelopment ? [

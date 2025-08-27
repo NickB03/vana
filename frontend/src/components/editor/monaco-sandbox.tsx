@@ -145,6 +145,7 @@ export function MonacoSandbox({
       </head>
       <body>
         <div id="editor"></div>
+<<<<<<< HEAD
         <script nonce="${nonce}" src="https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs/loader.js"
                 crossorigin="anonymous"></script>
         <script nonce="${nonce}">

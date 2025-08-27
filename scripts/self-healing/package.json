@@ -1,0 +1,28 @@
+{
+  "name": "auto-recovery-system",
+  "version": "1.0.0",
+  "description": "Automatic recovery system for development environment issues",
+  "main": "auto-recovery.js",
+  "scripts": {
+    "test": "node auto-recovery.js test-recover",
+    "install-deps": "npm install",
+    "setup": "npm install @babel/parser @babel/traverse @babel/generator"
+  },
+  "dependencies": {
+    "@babel/generator": "^7.28.3",
+    "@babel/parser": "^7.28.3",
+    "@babel/traverse": "^7.28.3",
+    "chalk": "^5.6.0",
+    "commander": "^14.0.0",
+    "lodash": "^4.17.21"
+  },
+  "keywords": [
+    "recovery",
+    "automation",
+    "self-healing",
+    "debugging",
+    "error-handling"
+  ],
+  "author": "Auto-Recovery System",
+  "license": "MIT"
+}
