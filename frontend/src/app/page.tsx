@@ -9,6 +9,7 @@ import { useRouter } from 'next/navigation';
 import { useSessionStore } from '@/store/session-store';
 import { MainLayout } from '@/components/layout/main-layout';
 import { HeroSection } from '@/components/home/hero-section';
+import { ChatSession } from '@/types/session';
 
 export default function HomePage() {
   const router = useRouter();
@@ -26,9 +27,9 @@ export default function HomePage() {
     }
   };
 
-  const handleSelectSession = (sessionId: string) => {
+  const handleSelectSession = (session: ChatSession) => {
     // Navigate to selected session
-    router.push(`/chat?session=${sessionId}`);
+    router.push(`/chat?session=${session.id}`);
   };
 
   return (

@@ -1,16 +1,11 @@
 
-# Source common functions
-SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-source "$SCRIPT_DIR/common-functions.sh"
 #!/bin/bash
 EXIT_CODE=$?
 COMMAND="$1"
 EXECUTION_TIME="$2"
 
 # Store execution metrics
-# Memory store using file-based fallback
-    mkdir -p .claude/memory
-    echo --key "swarm/hooks/performance/$(date +%s)" --value "{\"command\": \"$COMMAND\", \"exitCode\": $EXIT_CODE, \"executionTime\": \"$EXECUTION_TIME\"}"
+npx claude-flow@alpha hooks memory-store --key "swarm/hooks/performance/$(date +%s)" --value "{\"command\": \"$COMMAND\", \"exitCode\": $EXIT_CODE, \"executionTime\": \"$EXECUTION_TIME\"}"
 
 # Handle non-zero exit codes
 if [ $EXIT_CODE -ne 0 ]; then

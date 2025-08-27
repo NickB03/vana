@@ -1,7 +1,4 @@
 
-# Source common functions
-SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-source "$SCRIPT_DIR/common-functions.sh"
 #!/bin/bash
 TASK_DESCRIPTION="$1"
 
@@ -27,8 +24,6 @@ chmod 755 logs tmp cache
 npx claude-flow@alpha hooks session-restore --session-id "swarm-$(date +%Y%m%d)" || true
 
 # Store preparation metrics
-# Memory store using file-based fallback
-    mkdir -p .claude/memory
-    echo --key "swarm/hooks/coordination/preparation/$(date +%s)" --value "{\"task\": \"$TASK_DESCRIPTION\", \"timestamp\": \"$(date -u +%Y-%m-%dT%H:%M:%S.%3NZ)\", \"status\": \"prepared\"}"
+npx claude-flow@alpha hooks memory-store --key "swarm/hooks/coordination/preparation/$(date +%s)" --value "{\"task\": \"$TASK_DESCRIPTION\", \"timestamp\": \"$(date -u +%Y-%m-%dT%H:%M:%S.%3NZ)\", \"status\": \"prepared\"}"
 
 echo "✅ Environment prepared successfully"

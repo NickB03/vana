@@ -29,9 +29,6 @@ export interface RateLimitConfig {
 
 // Helper function to get environment-driven rate limits
 function getDefaultRateLimits(): Record<string, RateLimitRule> {
-  return {
-    api: {
-function getDefaultRateLimits(): Record<string, RateLimitRule> {
   const parseIntWithDefault = (value: string | undefined, defaultValue: number): number => {
     const parsed = parseInt(value || '');
     return isNaN(parsed) || parsed <= 0 ? defaultValue : parsed;
@@ -155,11 +152,7 @@ export const RATE_LIMIT_CONFIG: RateLimitConfig = {
     password: process.env['REDIS_PASSWORD'],
     db: parseInt(process.env['REDIS_DB'] || '0'),
     family: 4, // IPv4
-    maxRetriesPerRequest: 3,
-    connectTimeout: parseInt(process.env['REDIS_CONNECT_TIMEOUT'] || '10000'),
-    commandTimeout: parseInt(process.env['REDIS_COMMAND_TIMEOUT'] || '5000'),
-    retryStrategy: (times: number) => Math.min(times * 50, 2000),
-    enableOfflineQueue: false, // Fail fast in production
+    maxRetriesPerRequest: 3
   },
   
   limits: parseRateLimitsConfig()
