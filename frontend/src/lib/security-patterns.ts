@@ -318,17 +318,19 @@ export function validateByContext(
     general: SECURITY_PATTERNS
   };
   
-  return validateInput(input, contextPatterns[context]);
+  return validateInput(input, contextPatterns[context] ?? SECURITY_PATTERNS);
 }
 
 /**
  * Batch validation for multiple inputs
  */
+type ValidationContext = Parameters<typeof validateByContext>[1];
+
 export function validateBatch(
-  inputs: Array<{ value: string; context?: string; id?: string }>
+  inputs: Array<{ value: string; context?: ValidationContext; id?: string }>
 ): Array<ValidationResult & { id?: string }> {
   return inputs.map(({ value, context = 'general', id }) => ({
-    ...validateByContext(value, context as ('url' | 'email' | 'filename' | 'sql' | 'html' | 'json' | 'general')),
+    ...validateByContext(value, context),
     id
   }));
 }
