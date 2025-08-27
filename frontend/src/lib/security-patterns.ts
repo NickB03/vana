@@ -182,7 +182,7 @@ export function validateInput(
     violations.reduce((max, v) => {
       const severityOrder = { low: 1, medium: 2, high: 3, critical: 4 };
       return severityOrder[v.severity] > severityOrder[max] ? v.severity : max;
-    }, 'low' as const) : 
+    }, 'low' as SecurityViolation['severity']) : 
     null;
   
   return {
