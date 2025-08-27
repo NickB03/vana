@@ -292,28 +292,28 @@ export function validateByContext(
 ): ValidationResult {
   const contextPatterns: Record<string, Record<string, RegExp>> = {
     url: {
-      suspiciousUrls: SECURITY_PATTERNS['suspiciousUrls'],
-      xss: SECURITY_PATTERNS['xss']
+      suspiciousUrls: SECURITY_PATTERNS['suspiciousUrls']!,
+      xss: SECURITY_PATTERNS['xss']!
     },
     email: {
-      emailInjection: SECURITY_PATTERNS['emailInjection'],
-      xss: SECURITY_PATTERNS['xss']
+      emailInjection: SECURITY_PATTERNS['emailInjection']!,
+      xss: SECURITY_PATTERNS['xss']!
     },
     filename: {
-      pathTraversal: SECURITY_PATTERNS['pathTraversal'],
-      dangerousFileTypes: SECURITY_PATTERNS['dangerousFileTypes']
+      pathTraversal: SECURITY_PATTERNS['pathTraversal']!,
+      dangerousFileTypes: SECURITY_PATTERNS['dangerousFileTypes']!
     },
     sql: {
-      sqlInjection: SECURITY_PATTERNS['sqlInjection'],
-      nosqlInjection: SECURITY_PATTERNS['nosqlInjection']
+      sqlInjection: SECURITY_PATTERNS['sqlInjection']!,
+      nosqlInjection: SECURITY_PATTERNS['nosqlInjection']!
     },
     html: {
-      xss: SECURITY_PATTERNS['xss'],
-      templateInjection: SECURITY_PATTERNS['templateInjection']
+      xss: SECURITY_PATTERNS['xss']!,
+      templateInjection: SECURITY_PATTERNS['templateInjection']!
     },
     json: {
-      nosqlInjection: SECURITY_PATTERNS['nosqlInjection'],
-      templateInjection: SECURITY_PATTERNS['templateInjection']
+      nosqlInjection: SECURITY_PATTERNS['nosqlInjection']!,
+      templateInjection: SECURITY_PATTERNS['templateInjection']!
     },
     general: SECURITY_PATTERNS
   };
