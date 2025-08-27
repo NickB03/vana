@@ -1,0 +1,46 @@
+{
+  "timestamp": "2025-08-26T11:05:01.724Z",
+  "tests": [
+    {
+      "test": "missing-dependency-detection",
+      "status": "failed",
+      "message": "Expected error but test passed",
+      "timestamp": "2025-08-26T11:05:02.227Z"
+    },
+    {
+      "test": "error-detection",
+      "status": "passed",
+      "message": "Error detector working correctly",
+      "timestamp": "2025-08-26T11:05:02.334Z"
+    },
+    {
+      "test": "auto-recovery",
+      "status": "passed",
+      "message": "Auto-recovery system working",
+      "timestamp": "2025-08-26T11:05:02.885Z"
+    },
+    {
+      "test": "syntax-error-detection",
+      "status": "passed",
+      "message": "Syntax errors properly detected",
+      "timestamp": "2025-08-26T11:05:02.941Z"
+    },
+    {
+      "test": "pattern-learning",
+      "status": "passed",
+      "message": "Pattern learning system functional",
+      "timestamp": "2025-08-26T11:05:03.752Z"
+    },
+    {
+      "test": "package-installation",
+      "status": "passed",
+      "message": "Commander installed and working",
+      "timestamp": "2025-08-26T11:05:04.330Z"
+    }
+  ],
+  "summary": {
+    "total": 6,
+    "passed": 5,
+    "failed": 1
+  }
+}

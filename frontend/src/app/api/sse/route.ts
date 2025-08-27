@@ -133,6 +133,7 @@ export async function GET(request: NextRequest) {
             clearInterval(heartbeatInterval);
             controller.close();
           }
+<<<<<<< HEAD
         }, parseInt(process.env.SSE_HEARTBEAT_INTERVAL || '30000', 10)); // Configurable heartbeat interval
         
         // Clean up on connection close
@@ -150,9 +151,6 @@ export async function GET(request: NextRequest) {
           request.signal.removeEventListener('abort', abortHandler);
           cleanup();
         };
-        
-        // Store cleanup function for potential manual cleanup
-        (controller as any).cleanup = cleanup;
       },
       
       cancel() {
