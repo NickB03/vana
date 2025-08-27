@@ -318,7 +318,7 @@ export function validateByContext(
     general: SECURITY_PATTERNS
   };
   
-  return validateInput(input, contextPatterns[context] || SECURITY_PATTERNS);
+  return validateInput(input, contextPatterns[context]);
 }
 
 /**
