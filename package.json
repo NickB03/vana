@@ -1,12 +1,25 @@
 {
-  "name": "vana-coderabbit",
+  "name": "vana-monorepo",
   "version": "2.0.0",
   "private": true,
   "scripts": {
     "crr": "./scripts/crr.sh",
-    "coderabbit-apply": "./scripts/crr.sh"
+    "coderabbit-apply": "./scripts/crr.sh",
+    "dev": "cd frontend && npm run dev",
+    "build": "cd frontend && npm run build",
+    "start": "cd frontend && npm run start",
+    "lint": "cd frontend && npm run lint",
+    "test": "cd frontend && npm run test",
+    "install:frontend": "cd frontend && npm install",
+    "vercel-build": "cd frontend && npm install && npm run build"
   },
   "devDependencies": {
     "@octokit/rest": "^22.0.0"
+  },
+  "workspaces": [
+    "frontend"
+  ],
+  "engines": {
+    "node": ">=18.0.0"
   }
 }

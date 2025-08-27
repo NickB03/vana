@@ -7,11 +7,9 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { 
-  sanitizeHtml, 
   sanitizeText, 
   containsMaliciousPatterns, 
-  logSecurityViolation,
-  isValidUuid
+  logSecurityViolation
 } from '@/lib/security';
 import { getNonce } from '@/lib/csp';
 
@@ -147,8 +145,9 @@ export function MonacoSandbox({
       </head>
       <body>
         <div id="editor"></div>
-        <script nonce="${nonce}" src="https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs/loader.js" 
-          integrity="sha384-example" crossorigin="anonymous"></script>
+<<<<<<< HEAD
+        <script nonce="${nonce}" src="https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs/loader.js"
+                crossorigin="anonymous"></script>
         <script nonce="${nonce}">
           const SANDBOX_ID = '${securityContextRef.current}';
           const MAX_CONTENT_LENGTH = ${maxLength};
@@ -163,14 +162,16 @@ export function MonacoSandbox({
               return { valid: false, error: \`Content exceeds maximum length of \${MAX_CONTENT_LENGTH} characters\` };
             }
             
-            // Basic XSS pattern detection
-            const dangerousPatterns = [
+            // Context-aware XSS pattern detection - only check for web languages
+            const shouldCheckXSS = ['html', 'javascript', 'typescript', 'jsx', 'tsx'].includes('${language}');
+            
+            const dangerousPatterns = shouldCheckXSS ? [
               /<script[^>]*>/i,
               /javascript:/i,
               /on\w+\s*=/i,
               /eval\s*\(/i,
               /document\.(write|writeln)\s*\(/i
-            ];
+            ] : [];
             
             for (const pattern of dangerousPatterns) {
               if (pattern.test(content)) {

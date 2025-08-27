@@ -17,7 +17,7 @@ import { tokenManager } from '@/lib/auth-security';
  * SSE endpoint with enhanced security
  */
 export async function GET(request: NextRequest) {
-  const clientIP = request.ip || request.headers.get('x-forwarded-for') || 'unknown';
+  const clientIP = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown';
   const userAgent = request.headers.get('user-agent') || '';
   const origin = request.headers.get('origin');
   
@@ -133,7 +133,8 @@ export async function GET(request: NextRequest) {
             clearInterval(heartbeatInterval);
             controller.close();
           }
-        }, 30000); // 30-second heartbeat
+<<<<<<< HEAD
+        }, parseInt(process.env.SSE_HEARTBEAT_INTERVAL || '30000', 10)); // Configurable heartbeat interval
         
         // Clean up on connection close
         const cleanup = () => {
@@ -142,10 +143,14 @@ export async function GET(request: NextRequest) {
         };
         
         // Handle client disconnection
-        request.signal.addEventListener('abort', cleanup);
-        
+        const abortHandler = () => cleanup();
+        request.signal.addEventListener('abort', abortHandler, { once: true });
+
         // Store cleanup function for potential manual cleanup
-        (controller as any).cleanup = cleanup;
+        (controller as any).cleanup = () => {
+          request.signal.removeEventListener('abort', abortHandler);
+          cleanup();
+        };
       },
       
       cancel() {
