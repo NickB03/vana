@@ -1,7 +1,4 @@
 
-# Source common functions
-SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-source "$SCRIPT_DIR/common-functions.sh"
 #!/bin/bash
 LEVEL="$1"
 MESSAGE="$2"
@@ -14,9 +11,7 @@ LOG_ENTRY="{\"level\": \"$LEVEL\", \"message\": \"$MESSAGE\", \"context\": \"$CO
 echo "$LOG_ENTRY" >> "logs/notifications.log"
 
 # Store in memory
-# Memory store using file-based fallback
-    mkdir -p .claude/memory
-    echo --key "swarm/hooks/recovery/notifications/$(date +%s)" --value "$LOG_ENTRY"
+npx claude-flow@alpha hooks memory-store --key "swarm/hooks/recovery/notifications/$(date +%s)" --value "$LOG_ENTRY"
 
 # Console output with color
 case "$LEVEL" in

@@ -359,8 +359,8 @@ export function ChatInterface({ className, initialMessage }: ChatInterfaceProps)
     
     // Send to backend with security headers and validation
     try {
-      const baseUrl = process.env.NODE_ENV === 'production'
-        ? process.env.NEXT_PUBLIC_API_URL || 'https://api.vana.ai'
+      const baseUrl = process.env['NODE_ENV'] === 'production'
+        ? process.env['NEXT_PUBLIC_API_URL'] || 'https://api.vana.ai'
         : 'http://localhost:8000';
       
       const formData = new FormData();

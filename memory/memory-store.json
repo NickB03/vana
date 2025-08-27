@@ -14,5 +14,13 @@
       "namespace": "debug",
       "timestamp": 1755130042345
     }
+  ],
+  "default": [
+    {
+      "key": "test-key",
+      "value": "test-value",
+      "namespace": "default",
+      "timestamp": 1756266718671
+    }
   ]
 }

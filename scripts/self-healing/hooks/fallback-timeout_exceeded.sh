@@ -1,4 +1,7 @@
 
+# Source common functions
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+source "$SCRIPT_DIR/common-functions.sh"
 #!/bin/bash
 TRIGGER_TYPE="$trigger"
 CONTEXT="$1"
@@ -11,7 +14,9 @@ COMMAND=$(echo "$CONTEXT" | jq -r '.command // "unknown"' 2>/dev/null || echo "u
 ERROR_CODE=$(echo "$CONTEXT" | jq -r '.exitCode // "unknown"' 2>/dev/null || echo "unknown")
 
 # Log the fallback attempt
-npx claude-flow@alpha hooks memory-store --key "swarm/hooks/errors/$(date +%s)" --value "{\"trigger\": \"$TRIGGER_TYPE\", \"command\": \"$COMMAND\", \"errorCode\": \"$ERROR_CODE\", \"retryCount\": \"$RETRY_COUNT\", \"timestamp\": \"$(date -u +%Y-%m-%dT%H:%M:%S.%3NZ)\"}"
+# Memory store using file-based fallback
+    mkdir -p .claude/memory
+    echo --key "swarm/hooks/errors/$(date +%s)" --value "{\"trigger\": \"$TRIGGER_TYPE\", \"command\": \"$COMMAND\", \"errorCode\": \"$ERROR_CODE\", \"retryCount\": \"$RETRY_COUNT\", \"timestamp\": \"$(date -u +%Y-%m-%dT%H:%M:%S.%3NZ)\"}"
 
 # Handle different trigger types
 case "$TRIGGER_TYPE" in

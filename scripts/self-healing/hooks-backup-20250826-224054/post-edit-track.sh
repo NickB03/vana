@@ -1,7 +1,4 @@
 
-# Source common functions
-SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-source "$SCRIPT_DIR/common-functions.sh"
 #!/bin/bash
 FILE_PATH="$1"
 MEMORY_KEY="$2"
@@ -29,8 +26,6 @@ fi
 FILE_SIZE=$(wc -c < "$FILE_PATH" 2>/dev/null || echo "0")
 FILE_LINES=$(wc -l < "$FILE_PATH" 2>/dev/null || echo "0")
 
-# Memory store using file-based fallback
-    mkdir -p .claude/memory
-    echo --key "$MEMORY_KEY" --value "{\"file\": \"$FILE_PATH\", \"size\": $FILE_SIZE, \"lines\": $FILE_LINES, \"timestamp\": \"$(date -u +%Y-%m-%dT%H:%M:%S.%3NZ)\"}"
+npx claude-flow@alpha hooks memory-store --key "$MEMORY_KEY" --value "{\"file\": \"$FILE_PATH\", \"size\": $FILE_SIZE, \"lines\": $FILE_LINES, \"timestamp\": \"$(date -u +%Y-%m-%dT%H:%M:%S.%3NZ)\"}"
 
 echo "✅ File tracking completed for $FILE_PATH"

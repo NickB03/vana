@@ -342,33 +342,26 @@ export class SessionSecurityManager {
    */
   private startSessionValidation(): void {
     if (this.sessionCheckInterval) {
-      clearInterval(this.sessionCheckInterval);
+      // Use the explicit window namespace for clarity
+      window.clearInterval(this.sessionCheckInterval);
       this.sessionCheckInterval = null;
     }
 
-private startSessionValidation(): void {
-  if (this.sessionCheckInterval) {
-    // Use the explicit window namespace for clarity
-    window.clearInterval(this.sessionCheckInterval);
-    this.sessionCheckInterval = null;
-  }
+    // Kick off the periodic session check
+    const intervalId = window.setInterval(async () => {
+      await this.validateSession();
+    }, 60000); // Check every minute
 
-  // Kick off the periodic session check
-  const intervalId = window.setInterval(async () => {
-    await this.validateSession();
-  }, 60000); // Check every minute
+    this.sessionCheckInterval = intervalId;
 
-  this.sessionCheckInterval = intervalId;
-
-  // Ensure we tear down everything if the user closes or reloads the page
-  window.addEventListener(
-    'beforeunload',
-    () => {
-      this.destroy();
-    },
-    { once: true }
-  );
-}
+    // Ensure we tear down everything if the user closes or reloads the page
+    window.addEventListener(
+      'beforeunload',
+      () => {
+        this.destroy();
+      },
+      { once: true }
+    );
   }
 
   /**
@@ -688,7 +681,6 @@ export function secureTokenCompare(token1: string, token2: string): boolean {
 /**
  * Hash token using Node.js crypto or Web Crypto API
  */
-export function hashToken(token: string): string {
 export async function hashToken(token: string): Promise<string> {
   if (nodeCrypto?.createHash) {
     return nodeCrypto.createHash('sha256').update(token, 'utf8').digest('hex');
