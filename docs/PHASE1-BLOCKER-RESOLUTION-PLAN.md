@@ -41,11 +41,12 @@ This document provides **EXTREMELY DETAILED** step-by-step instructions to resol
 
 ### **GitHub Issue to Create:**
 ```markdown
-Title: Fix TypeScript compilation error in security-patterns.ts:182
-Labels: bug, critical, typescript
+Title: Fix TypeScript compilation error in security-patterns.ts reduce function
+Labels: bug, high-priority, typescript
 Description:
-TypeScript build is failing due to type mismatch in reduce function at line 182.
+TypeScript build is failing due to type mismatch in reduce accumulator.
 Error: TS2769 - No overload matches this call.
+Location: security-patterns.ts - reduce function for severity calculation
 Blocks all frontend development and deployment.
 ```
 
@@ -54,7 +55,7 @@ Blocks all frontend development and deployment.
 #### **Step 1: Create Issue & Branch**
 ```bash
 # Create issue via GitHub UI or CLI
-gh issue create --title "Fix TypeScript compilation error in security-patterns.ts:182" \
+gh issue create --title "Fix TypeScript compilation error in security-patterns.ts reduce function" \
   --label "bug,critical,typescript" \
   --body "TypeScript build failing due to reduce function type mismatch"
 
@@ -66,35 +67,36 @@ git checkout -b fix/typescript-security-patterns-182
 
 #### **Step 2: Apply The Fix**
 **File:** `/frontend/src/lib/security-patterns.ts`  
-**Line:** 185 (not 182 - the actual reduce line)
+**Location:** Line 185 - reduce function accumulator
 
 **CURRENT CODE (BROKEN):**
 ```typescript
 }, 'low' as const) :
 ```
 
-**REPLACE WITH:**
+**CORRECT FIX:**
 ```typescript
-}, violations[0].severity) :
+}, 'low' as SecurityViolation['severity']) :
 ```
 
 **WHY THIS WORKS:**
-- Uses first violation's severity as initial value
-- Ensures type consistency in reduce accumulator
-- No logic change, just type alignment
+- Changes literal type `'low'` to union type matching `v.severity`
+- Ensures accumulator type matches return type
+- No runtime behavior change, purely type-level fix
+- Safer than using `violations[0].severity` (avoids empty array issues)
 
 #### **Step 3: Verify Fix Locally**
 ```bash
 cd frontend
 
-# Type check only this file
-npx tsc --noEmit src/lib/security-patterns.ts
-
-# Full type check
+# Full project typecheck (required - single file check misses project types)
 npm run typecheck
 
-# Run related tests
-npm test -- security-patterns
+# Verify build succeeds
+npm run build
+
+# Run security pattern tests if they exist
+npm test -- security-patterns 2>/dev/null || echo "No specific tests found"
 ```
 
 #### **Step 4: Commit & Push**
@@ -196,8 +198,8 @@ rm -f package-lock.json
 rm -rf node_modules
 rm -rf frontend/node_modules
 
-# Clear npm cache
-npm cache clean --force
+# Clear npm cache only if experiencing corruption (rarely needed)
+# npm cache clean --force  # Usually not required
 ```
 
 #### **Step 3: Regenerate Clean Lockfile**
@@ -281,11 +283,15 @@ npm install
 
 #### **Step 3: Verify Jest Works**
 ```bash
-# Test ts-jest is found
-npx jest --version
+# Verify ts-jest is actually installed and resolvable
+npm ls ts-jest
+node -e "try { console.log('ts-jest found at:', require.resolve('ts-jest')); } catch(e) { console.error('ts-jest NOT found'); process.exit(1); }"
+
+# Test that Jest can run with TypeScript
 npm run test -- --listTests
 
-# Test eslint is found
+# Verify eslint is installed
+npm ls eslint
 npx eslint --version
 ```
 
@@ -364,9 +370,16 @@ cat > docs/BACKEND-SETUP.md << 'EOF'
    pip install -e .
    ```
 
-2. **Set minimal environment variables:**
+2. **Set environment variables (use .env file for security):**
    ```bash
-   export SECRET_KEY="dev-secret-key-$(date +%s)"
+   # Create .env file (never commit this!)
+   cat > .env << 'EOF'
+   SECRET_KEY=dev-secret-key-CHANGEME
+   VANA_PORT=8000
+   EOF
+   
+   # Or export if needed for quick testing
+   export SECRET_KEY="dev-secret-$(openssl rand -hex 16)"
    export VANA_PORT="8000"
    ```
 
@@ -479,4 +492,4 @@ If blocked:
 - Rollback if needed (git revert)
 - Ask for help in team chat
 
-This plan ensures **ZERO RISK** with complete rollback capability at every step.
+This plan ensures **MINIMAL RISK** with documented rollback procedures at every step.
