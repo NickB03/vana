@@ -6,6 +6,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 
+// Ensure this route is always dynamic and never cached
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 const GOOGLE_TOKEN_URL = 'https://oauth2.googleapis.com/token';
 const COOKIE_OPTIONS = {
   httpOnly: true,
@@ -16,7 +21,7 @@ const COOKIE_OPTIONS = {
 
 export async function GET() {
   try {
-    const cookieStore = await cookies();
+    const cookieStore = cookies();
     
     const accessToken = cookieStore.get('access_token');
     const idToken = cookieStore.get('id_token');
@@ -88,7 +93,7 @@ export async function POST(request: NextRequest) {
     }
 
     const tokens = await tokenResponse.json();
-    const cookieStore = await cookies();
+    const cookieStore = cookies();
 
     // Store tokens in httpOnly cookies
     cookieStore.set('access_token', tokens.access_token, {

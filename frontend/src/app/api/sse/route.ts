@@ -11,7 +11,7 @@ import {
   logSecurityViolation,
   isRateLimited
 } from '@/lib/security';
-import { tokenManager } from '@/lib/auth-security';
+import { getTokenManager } from '@/lib/auth-security';
 
 /**
  * SSE endpoint with enhanced security
@@ -84,6 +84,7 @@ export async function GET(request: NextRequest) {
     // Authentication validation - skip during build
     if (process.env.NODE_ENV !== 'production' || process.env['NEXT_PHASE'] !== 'phase-production-build') {
       try {
+        const tokenManager = getTokenManager();
         const tokens = await tokenManager.validateAndRefreshSession();
         if (!tokens) {
           return new Response('Authentication required', {
@@ -115,6 +116,8 @@ export async function GET(request: NextRequest) {
     
     // Create SSE response with security headers
     const encoder = new TextEncoder();
+    let cleanupFn: (() => void) | null = null;
+    
     const readable = new ReadableStream({
       start(controller) {
         // Send initial connection message
@@ -152,8 +155,8 @@ export async function GET(request: NextRequest) {
         const abortHandler = () => cleanup();
         request.signal.addEventListener('abort', abortHandler, { once: true });
 
-        // Store cleanup function for potential manual cleanup
-        (controller as any).cleanup = () => {
+        // Store cleanup function in closure variable
+        cleanupFn = () => {
           request.signal.removeEventListener('abort', abortHandler);
           cleanup();
         };
@@ -161,8 +164,8 @@ export async function GET(request: NextRequest) {
       
       cancel() {
         // Called when client disconnects
-        if ((this as any).cleanup) {
-          (this as any).cleanup();
+        if (cleanupFn) {
+          cleanupFn();
         }
       }
     });
