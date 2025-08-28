@@ -48,6 +48,59 @@ interface VerifiedJWTPayload extends JWTPayload {
 // Security incidents store
 const securityIncidents = new Map<string, number>();
 
+// Redis URL parser utility function
+interface RedisConfig {
+  host: string;
+  port: number;
+  password?: string;
+  db?: number;
+}
+
+/**
+ * Parse Redis URL string into config object
+ * Supports formats like:
+ * - redis://localhost:6379
+ * - redis://password@host:6379/0
+ * - redis://host (uses default port 6379)
+ * - rediss://host:port (SSL, treated same as redis://)
+ */
+function parseRedisUrl(redisUrl: string): RedisConfig {
+  try {
+    // Handle Edge Runtime compatibility by using standard URL constructor
+    const url = new URL(redisUrl);
+    
+    // Extract host (remove IPv6 brackets if present)
+    const host = url.hostname.replace(/^\[|\]$/g, '') || 'localhost';
+    
+    // Extract port with fallback to default Redis port
+    const port = url.port ? parseInt(url.port, 10) : 6379;
+    
+    // Extract password from userinfo
+    const password = url.password || undefined;
+    
+    // Extract database number from pathname
+    let db: number | undefined = undefined;
+    if (url.pathname && url.pathname !== '/') {
+      const dbPath = url.pathname.substring(1); // Remove leading slash
+      const dbNum = parseInt(dbPath, 10);
+      if (!isNaN(dbNum) && dbNum >= 0) {
+        db = dbNum;
+      }
+    }
+    
+    return {
+      host,
+      port,
+      password,
+      db
+    };
+  } catch (error) {
+    // Fallback for malformed URLs
+    console.error('Failed to parse Redis URL:', error);
+    throw new Error(`Invalid Redis URL format: ${redisUrl}`);
+  }
+}
+
 // Initialize storage based on environment
 let storage: StorageInterface;
 
@@ -57,7 +110,9 @@ const initializeStorage = (): StorageInterface => {
   
   if (redisUrl) {
     try {
-      return new RedisStorage(redisUrl);
+      // Parse the Redis URL string into a config object
+      const redisConfig = parseRedisUrl(redisUrl);
+      return new RedisStorage(redisConfig);
     } catch (error) {
       console.warn('Failed to initialize Redis storage, falling back to in-memory:', error);
       return new InMemoryStorage();
