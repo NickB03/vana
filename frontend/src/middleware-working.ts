@@ -50,7 +50,7 @@ const securityIncidents = new Map<string, number>();
  * - redis://localhost:6379
  * - redis://password@host:6379/0
  * - redis://host (uses default port 6379)
- * - rediss://host:port (SSL, treated same as redis://)
+ * - rediss://host:port (TLS enabled)
  */
 function parseRedisUrl(redisUrl: string): RedisConfig {
   try {
