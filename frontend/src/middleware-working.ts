@@ -51,6 +51,24 @@ const securityIncidents = new Map<string, number>();
 // Initialize storage based on environment
 let storage: StorageInterface;
 
+// Initialize storage with Redis if available, otherwise fallback to in-memory
+const initializeStorage = (): StorageInterface => {
+  const redisUrl = process.env['REDIS_URL'];
+  
+  if (redisUrl) {
+    try {
+      return new RedisStorage(redisUrl);
+    } catch (error) {
+      console.warn('Failed to initialize Redis storage, falling back to in-memory:', error);
+      return new InMemoryStorage();
+    }
+  } else {
+    return new InMemoryStorage();
+  }
+};
+
+storage = initializeStorage();
+
 // Rate limiting configurations
 const RATE_LIMITS = {
   api: { requests: 100, window: 60000 }, // 100 requests per minute for API
