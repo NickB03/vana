@@ -54,6 +54,8 @@ interface RedisConfig {
   port: number;
   password?: string;
   db?: number;
+  username?: string;
+  tls?: boolean;
 }
 
 /**
@@ -69,14 +71,30 @@ function parseRedisUrl(redisUrl: string): RedisConfig {
     // Handle Edge Runtime compatibility by using standard URL constructor
     const url = new URL(redisUrl);
     
+    // Validate protocol
+    if (url.protocol !== 'redis:' && url.protocol !== 'rediss:') {
+      throw new Error('Invalid protocol: must be redis: or rediss:');
+    }
+    
     // Extract host (remove IPv6 brackets if present)
     const host = url.hostname.replace(/^\[|\]$/g, '') || 'localhost';
     
     // Extract port with fallback to default Redis port
     const port = url.port ? parseInt(url.port, 10) : 6379;
     
+    // Validate port range
+    if (port < 1 || port > 65535) {
+      throw new Error('Invalid port: must be between 1-65535');
+    }
+    
+    // Extract username from userinfo
+    const username = url.username || undefined;
+    
     // Extract password from userinfo
     const password = url.password || undefined;
+    
+    // Set TLS based on protocol
+    const tls = url.protocol === 'rediss:';
     
     // Extract database number from pathname
     let db: number | undefined = undefined;
@@ -91,13 +109,15 @@ function parseRedisUrl(redisUrl: string): RedisConfig {
     return {
       host,
       port,
+      username,
       password,
+      tls,
       db
     };
   } catch (error) {
-    // Fallback for malformed URLs
+    // Fallback for malformed URLs - don't expose the URL to prevent credential leaks
     console.error('Failed to parse Redis URL:', error);
-    throw new Error(`Invalid Redis URL format: ${redisUrl}`);
+    throw new Error('Invalid Redis URL format');
   }
 }
 
