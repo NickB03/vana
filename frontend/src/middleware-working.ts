@@ -13,11 +13,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { jwtVerify, importSPKI, type JWTPayload } from 'jose';
 
 // JWT Configuration
-const JWT_SECRET = process.env.JWT_SECRET || '';
-const JWT_PUBLIC_KEY = process.env.JWT_PUBLIC_KEY || '';
-const JWT_ISSUER = process.env.JWT_ISSUER || 'vana-api';
-const JWT_AUDIENCE = process.env.JWT_AUDIENCE || 'vana-frontend';
-const JWKS_URL = process.env.JWKS_URL || '';
+const JWT_SECRET = process.env['JWT_SECRET'] || '';
+const JWT_PUBLIC_KEY = process.env['JWT_PUBLIC_KEY'] || '';
+const JWT_ISSUER = process.env['JWT_ISSUER'] || 'vana-api';
+const JWT_AUDIENCE = process.env['JWT_AUDIENCE'] || 'vana-frontend';
+const JWKS_URL = process.env['JWKS_URL'] || '';
 const CLOCK_SKEW_SECONDS = 30; // Allow 30 seconds clock skew
 
 // Import storage implementations
@@ -388,7 +388,7 @@ function getCORSHeaders(
   // Allowed origins
   const allowedOrigins = isDevelopment 
     ? ['http://localhost:3000', 'http://localhost:5173', 'http://localhost:8000']
-    : [process.env.FRONTEND_URL].filter(Boolean);
+    : [process.env['FRONTEND_URL']].filter(Boolean);
   
   const headers: Record<string, string> = {};
   
@@ -508,8 +508,8 @@ function getCSPHeader(nonce: string, isDevelopment: boolean): string {
       "/api/agent-network/events",
       // Production SSE endpoints
       ...(!isDevelopment ? [
-        process.env.BACKEND_URL,
-        process.env.BACKEND_WSS_URL
+        process.env['BACKEND_URL'],
+        process.env['BACKEND_WSS_URL']
       ].filter(Boolean) : []),
       // Development WebSocket connections
       ...(isDevelopment ? [
