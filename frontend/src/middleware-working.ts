@@ -22,7 +22,7 @@ const CLOCK_SKEW_SECONDS = 30; // Allow 30 seconds clock skew
 
 // Import storage implementations
 import { StorageInterface } from '@/lib/storage';
-import { RedisStorage } from '@/lib/redis-storage';
+import { RedisStorage, RedisConfig } from '@/lib/redis-storage';
 import { InMemoryStorage } from '@/lib/in-memory-storage';
 import { RATE_LIMIT_CONFIG } from '@/lib/rate-limiter-config';
 
@@ -49,15 +49,6 @@ interface VerifiedJWTPayload extends JWTPayload {
 const securityIncidents = new Map<string, number>();
 
 // Redis URL parser utility function
-interface RedisConfig {
-  host: string;
-  port: number;
-  password?: string;
-  db?: number;
-  username?: string;
-  tls?: boolean;
-}
-
 /**
  * Parse Redis URL string into config object
  * Supports formats like:
