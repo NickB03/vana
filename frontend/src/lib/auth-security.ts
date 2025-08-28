@@ -704,6 +704,12 @@ export async function hashToken(token: string): Promise<string> {
 // Export instances and utilities
 // ====================
 
+// Use lazy getters to avoid instantiation at module import time
+export const getTokenManager = () => SecureTokenManager.getInstance();
+export const getSessionManager = () => SessionSecurityManager.getInstance();
+export const getAuthManager = () => AuthSecurityManager.getInstance();
+
+// For backward compatibility, export the instances as well but deprecate them
 export const tokenManager = SecureTokenManager.getInstance();
 export const sessionManager = SessionSecurityManager.getInstance();
 export const authManager = AuthSecurityManager.getInstance();
