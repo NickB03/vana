@@ -4,7 +4,7 @@
 
 1. **Install Python dependencies:**
    ```bash
-   cd /Users/nick/Development/vana
+   cd <repo-root>  # Navigate to the directory where you cloned the repository
    python -m venv venv
    source venv/bin/activate  # On Windows: venv\Scripts\activate
    pip install -e .
