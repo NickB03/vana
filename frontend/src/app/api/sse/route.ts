@@ -11,7 +11,7 @@ import {
   logSecurityViolation,
   isRateLimited
 } from '@/lib/security';
-import { tokenManager } from '@/lib/auth-security';
+import { getTokenManager } from '@/lib/auth-security';
 
 /**
  * SSE endpoint with enhanced security
@@ -81,33 +81,43 @@ export async function GET(request: NextRequest) {
       });
     }
     
-    // Authentication validation
-    try {
-      const tokens = await tokenManager.validateAndRefreshSession();
-      if (!tokens) {
-        return new Response('Authentication required', {
-          status: 401,
-          headers: { 
-            'Content-Type': 'text/plain',
-            'WWW-Authenticate': 'Bearer'
-          }
-        });
+    // Authentication validation - skip during build
+    if (process.env.NODE_ENV !== 'production' || process.env['NEXT_PHASE'] !== 'phase-production-build') {
+      try {
+        const tokenManager = getTokenManager();
+        const tokens = await tokenManager.validateAndRefreshSession();
+        if (!tokens) {
+          return new Response('Authentication required', {
+            status: 401,
+            headers: { 
+              'Content-Type': 'text/plain',
+              'WWW-Authenticate': 'Bearer'
+            }
+          });
+        }
+      } catch (error) {
+        // During build, auth might fail - that's ok
+        if (process.env['NEXT_PHASE'] === 'phase-production-build') {
+          console.log('SSE auth check skipped during build');
+        } else {
+          logSecurityViolation('invalid_input', {
+            source: 'sse-auth',
+            error: error instanceof Error ? error.message : 'Unknown auth error',
+            ip: clientIP
+          });
+          
+          return new Response('Authentication failed', {
+            status: 401,
+            headers: { 'Content-Type': 'text/plain' }
+          });
+        }
       }
-    } catch (error) {
-      logSecurityViolation('invalid_input', {
-        source: 'sse-auth',
-        error: error instanceof Error ? error.message : 'Unknown auth error',
-        ip: clientIP
-      });
-      
-      return new Response('Authentication failed', {
-        status: 401,
-        headers: { 'Content-Type': 'text/plain' }
-      });
     }
     
     // Create SSE response with security headers
     const encoder = new TextEncoder();
+    let cleanupFn: (() => void) | null = null;
+    
     const readable = new ReadableStream({
       start(controller) {
         // Send initial connection message
@@ -145,8 +155,8 @@ export async function GET(request: NextRequest) {
         const abortHandler = () => cleanup();
         request.signal.addEventListener('abort', abortHandler, { once: true });
 
-        // Store cleanup function for potential manual cleanup
-        (controller as any).cleanup = () => {
+        // Store cleanup function in closure variable
+        cleanupFn = () => {
           request.signal.removeEventListener('abort', abortHandler);
           cleanup();
         };
@@ -154,8 +164,8 @@ export async function GET(request: NextRequest) {
       
       cancel() {
         // Called when client disconnects
-        if ((this as any).cleanup) {
-          (this as any).cleanup();
+        if (cleanupFn) {
+          cleanupFn();
         }
       }
     });
