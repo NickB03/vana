@@ -182,6 +182,11 @@ export class SecureTokenManager {
    */
   async getTokens(): Promise<TokenStorage | null> {
     try {
+      // During static generation, we don't have access to cookies
+      if (typeof window === 'undefined' && process.env['NEXT_PHASE'] === 'phase-production-build') {
+        return null;
+      }
+      
       const response = await fetch('/api/auth/token', {
         method: 'GET',
         credentials: 'include',
@@ -210,6 +215,11 @@ export class SecureTokenManager {
    */
   async refreshTokens(): Promise<TokenStorage | null> {
     try {
+      // During static generation, we don't have access to cookies
+      if (typeof window === 'undefined' && process.env['NEXT_PHASE'] === 'phase-production-build') {
+        return null;
+      }
+      
       const response = await fetch('/api/auth/refresh', {
         method: 'POST',
         credentials: 'include',

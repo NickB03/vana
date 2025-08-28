@@ -81,29 +81,36 @@ export async function GET(request: NextRequest) {
       });
     }
     
-    // Authentication validation
-    try {
-      const tokens = await tokenManager.validateAndRefreshSession();
-      if (!tokens) {
-        return new Response('Authentication required', {
-          status: 401,
-          headers: { 
-            'Content-Type': 'text/plain',
-            'WWW-Authenticate': 'Bearer'
-          }
-        });
+    // Authentication validation - skip during build
+    if (process.env.NODE_ENV !== 'production' || process.env['NEXT_PHASE'] !== 'phase-production-build') {
+      try {
+        const tokens = await tokenManager.validateAndRefreshSession();
+        if (!tokens) {
+          return new Response('Authentication required', {
+            status: 401,
+            headers: { 
+              'Content-Type': 'text/plain',
+              'WWW-Authenticate': 'Bearer'
+            }
+          });
+        }
+      } catch (error) {
+        // During build, auth might fail - that's ok
+        if (process.env['NEXT_PHASE'] === 'phase-production-build') {
+          console.log('SSE auth check skipped during build');
+        } else {
+          logSecurityViolation('invalid_input', {
+            source: 'sse-auth',
+            error: error instanceof Error ? error.message : 'Unknown auth error',
+            ip: clientIP
+          });
+          
+          return new Response('Authentication failed', {
+            status: 401,
+            headers: { 'Content-Type': 'text/plain' }
+          });
+        }
       }
-    } catch (error) {
-      logSecurityViolation('invalid_input', {
-        source: 'sse-auth',
-        error: error instanceof Error ? error.message : 'Unknown auth error',
-        ip: clientIP
-      });
-      
-      return new Response('Authentication failed', {
-        status: 401,
-        headers: { 'Content-Type': 'text/plain' }
-      });
     }
     
     // Create SSE response with security headers
