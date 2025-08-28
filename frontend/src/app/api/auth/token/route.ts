@@ -6,6 +6,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 
+// Ensure this route is always dynamic and never cached
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 const GOOGLE_TOKEN_URL = 'https://oauth2.googleapis.com/token';
 const COOKIE_OPTIONS = {
   httpOnly: true,
@@ -13,6 +18,36 @@ const COOKIE_OPTIONS = {
   sameSite: 'strict' as const,
   path: '/'
 };
+
+export async function GET() {
+  try {
+    const cookieStore = cookies();
+    
+    const accessToken = cookieStore.get('access_token');
+    const idToken = cookieStore.get('id_token');
+    const expiresIn = cookieStore.get('token_expires_in');
+    
+    if (!accessToken || !idToken) {
+      return NextResponse.json(
+        { error: 'No tokens found' },
+        { status: 401 }
+      );
+    }
+    
+    return NextResponse.json({
+      accessToken: accessToken.value,
+      idToken: idToken.value,
+      expiresAt: expiresIn ? Number(expiresIn.value) : undefined,
+      sessionId: cookieStore.get('session_id')?.value
+    });
+  } catch (error) {
+    console.error('Failed to retrieve tokens:', error);
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -58,7 +93,7 @@ export async function POST(request: NextRequest) {
     }
 
     const tokens = await tokenResponse.json();
-    const cookieStore = await cookies();
+    const cookieStore = cookies();
 
     // Store tokens in httpOnly cookies
     cookieStore.set('access_token', tokens.access_token, {
