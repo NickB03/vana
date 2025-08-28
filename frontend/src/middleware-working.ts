@@ -24,13 +24,8 @@ const CLOCK_SKEW_SECONDS = 30; // Allow 30 seconds clock skew
 import { StorageInterface } from '@/lib/storage';
 import { RedisStorage, RedisConfig } from '@/lib/redis-storage';
 import { InMemoryStorage } from '@/lib/in-memory-storage';
-import { RATE_LIMIT_CONFIG } from '@/lib/rate-limiter-config';
 
-// Rate limiting configuration
-interface RateLimit {
-  count: number;
-  resetTime: number;
-}
+// Rate limiting configuration interfaces are defined inline where used
 
 interface RequestValidationResult {
   isValid: boolean;
@@ -70,12 +65,17 @@ function parseRedisUrl(redisUrl: string): RedisConfig {
     // Extract host (remove IPv6 brackets if present)
     const host = url.hostname.replace(/^\[|\]$/g, '') || 'localhost';
     
-    // Extract port with fallback to default Redis port
-    const port = url.port ? parseInt(url.port, 10) : 6379;
-    
-    // Validate port range
-    if (port < 1 || port > 65535) {
-      throw new Error('Invalid port: must be between 1-65535');
+    // Extract port with protocol-aware defaults
+    let port: number;
+    if (url.port) {
+      port = parseInt(url.port, 10);
+      // Harden port validation with Number.isInteger check
+      if (!Number.isInteger(port) || port < 1 || port > 65535) {
+        throw new Error('Invalid port: must be a valid integer between 1-65535');
+      }
+    } else {
+      // Protocol-aware defaults: 6380 for rediss (SSL), 6379 for redis
+      port = url.protocol === 'rediss:' ? 6380 : 6379;
     }
     
     // Extract username from userinfo
@@ -205,7 +205,8 @@ function getClientIP(request: NextRequest): string {
   // Check common proxy headers in order of preference
   const forwardedFor = request.headers.get('x-forwarded-for');
   if (forwardedFor) {
-    return forwardedFor.split(',')[0].trim();
+    const firstIP = forwardedFor.split(',')[0];
+    return firstIP ? firstIP.trim() : 'unknown';
   }
   
   const realIP = request.headers.get('x-real-ip');
@@ -258,8 +259,6 @@ async function checkRateLimit(
       };
     } else {
       // Exceeded limit
-      // Get the TTL to calculate reset time
-      const ttl = await storage.increment(key, 0); // Get current value without incrementing
       return { 
         allowed: false, 
         remaining: 0,
@@ -279,7 +278,6 @@ async function checkRateLimit(
 function validateRequest(request: NextRequest): RequestValidationResult {
   const url = request.url;
   const userAgent = request.headers.get('user-agent') || '';
-  const referer = request.headers.get('referer') || '';
   const contentType = request.headers.get('content-type') || '';
   
   let overallRiskLevel: 'low' | 'medium' | 'high' = 'low';
@@ -301,9 +299,10 @@ function validateRequest(request: NextRequest): RequestValidationResult {
   if (!pathValidation.isValid) {
     const highSeverityViolations = pathValidation.violations.filter(v => v.severity === 'high');
     if (highSeverityViolations.length > 0) {
+      const firstViolation = highSeverityViolations[0];
       return {
         isValid: false,
-        error: `Security violation in URL path: ${highSeverityViolations[0].description}`,
+        error: `Security violation in URL path: ${firstViolation?.description || 'Unknown violation'}`,
         riskLevel: 'high'
       };
     }
@@ -337,7 +336,8 @@ function validateRequest(request: NextRequest): RequestValidationResult {
     paramValidations[key] = paramValidation;
     
     if (!paramValidation.isValid) {
-      validationErrors.push(`Parameter '${key}': ${paramValidation.violations[0].description}`);
+      const firstViolation = paramValidation.violations[0];
+      validationErrors.push(`Parameter '${key}': ${firstViolation?.description || 'Invalid parameter'}`);
       overallRiskLevel = 'high';
     } else if (paramValidation.riskScore > 50) {
       overallRiskLevel = overallRiskLevel === 'high' ? 'high' : 'medium';
@@ -743,12 +743,14 @@ async function verifyJWT(token: string): Promise<VerifiedJWTPayload | null> {
  * Legacy JWT payload extraction (DEPRECATED - DO NOT USE)
  * Kept for reference only - this function does NOT verify signatures
  */
+// @ts-ignore - Legacy function kept for reference
 function unsafeParseJWTPayload(token: string): Record<string, any> | null {
   console.warn('SECURITY WARNING: Using unsafe JWT parsing without signature verification');
   try {
     const parts = token.split('.');
     if (parts.length !== 3) return null;
     const payload = parts[1];
+    if (!payload) return null;
     const padded = payload + '='.repeat((4 - payload.length % 4) % 4);
     const decoded = atob(padded.replace(/-/g, '+').replace(/_/g, '/'));
     return JSON.parse(decoded);
@@ -760,7 +762,6 @@ function unsafeParseJWTPayload(token: string): Record<string, any> | null {
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const clientIP = getClientIP(request);
-  const userAgent = request.headers.get('user-agent') || '';
   
   console.log('🔒 Middleware running for:', pathname, 'from IP:', clientIP);
   

@@ -33,6 +33,11 @@ class EdgeRedisClient implements RedisClient {
     // Configuration is stored but not used in this placeholder implementation
     // In a real implementation, these would be used to connect to Redis
     void config; // Acknowledge the parameter
+    
+    // Check if Edge Redis is enabled
+    if (!process.env['EDGE_REDIS_ENABLED']) {
+      throw new Error('Edge Redis client is not enabled. Set EDGE_REDIS_ENABLED=true or implement a real Redis client.');
+    }
   }
   
   // In a real implementation, you would use a proper Redis client
@@ -92,7 +97,7 @@ export class RedisStorage implements StorageInterface {
       return await this.client.get(_key);
     } catch (error) {
       console.error('Redis GET error:', error);
-      return null;
+      throw error;
     }
   }
   
@@ -102,6 +107,7 @@ export class RedisStorage implements StorageInterface {
       await this.client.set(key, value, options);
     } catch (error) {
       console.error('Redis SET error:', error);
+      throw error;
     }
   }
   
@@ -122,7 +128,7 @@ export class RedisStorage implements StorageInterface {
       return result;
     } catch (error) {
       console.error('Redis INCR error:', error);
-      return 0;
+      throw error;
     }
   }
   
@@ -131,6 +137,7 @@ export class RedisStorage implements StorageInterface {
       await this.client.del(key);
     } catch (error) {
       console.error('Redis DEL error:', error);
+      throw error;
     }
   }
   

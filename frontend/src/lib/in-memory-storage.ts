@@ -48,6 +48,7 @@ export class InMemoryStorage implements StorageInterface {
   async increment(key: string, amount: number = 1, ttl?: number): Promise<number> {
     const item = this.store.get(key);
     let currentValue = 0;
+    let existingExpiry: number | undefined;
     
     // Check if item exists and hasn't expired
     if (item) {
@@ -56,6 +57,8 @@ export class InMemoryStorage implements StorageInterface {
         if (!isNaN(parsed)) {
           currentValue = parsed;
         }
+        // Preserve existing expiry if no new TTL is provided
+        existingExpiry = item.expiry;
       } else {
         // Item expired, remove it
         this.store.delete(key);
@@ -63,7 +66,8 @@ export class InMemoryStorage implements StorageInterface {
     }
     
     const newValue = currentValue + amount;
-    const expiry = ttl ? Date.now() + (ttl * 1000) : undefined;
+    // Use new TTL if provided, otherwise preserve existing expiry
+    const expiry = ttl ? Date.now() + (ttl * 1000) : existingExpiry;
     this.store.set(key, { value: newValue.toString(), expiry });
     
     return newValue;
