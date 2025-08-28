@@ -21,7 +21,7 @@ const COOKIE_OPTIONS = {
 
 export async function GET() {
   try {
-    const cookieStore = cookies();
+    const cookieStore = await cookies();
     
     const accessToken = cookieStore.get('access_token');
     const idToken = cookieStore.get('id_token');
@@ -93,7 +93,7 @@ export async function POST(request: NextRequest) {
     }
 
     const tokens = await tokenResponse.json();
-    const cookieStore = cookies();
+    const cookieStore = await cookies();
 
     // Store tokens in httpOnly cookies
     cookieStore.set('access_token', tokens.access_token, {
