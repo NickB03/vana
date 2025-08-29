@@ -1,4 +1,7 @@
 {
+  "git": {
+    "deploymentEnabled": false
+  },
   "framework": "nextjs",
   "rootDirectory": "frontend",
   "installCommand": "npm ci",
