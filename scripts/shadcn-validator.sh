@@ -40,7 +40,7 @@ fi
 # Show existing components
 if [[ "${SHADCN_SILENT}" != "true" ]]; then
     echo -e "${GREEN}📦 Existing shadcn components:${NC}"
-    ls frontend/src/components/ui/*.tsx 2>/dev/null | xargs -n1 basename | sed 's/\.tsx$//' | column || echo "  None found"
+    find frontend/src/components/ui -name "*.tsx" -print0 2>/dev/null | xargs -0 -n1 basename | sed 's/\.tsx$//' | column || echo "  None found"
     
     echo -e "${YELLOW}💡 shadcn CLI Commands:${NC}"
     echo "  • Add: npx shadcn@latest add @shadcn/[name]"

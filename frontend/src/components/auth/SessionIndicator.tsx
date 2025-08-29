@@ -12,7 +12,6 @@ import { useAuth } from '@/hooks/use-auth';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
-import { formatDistanceToNow } from 'date-fns';
 
 interface SessionIndicatorProps {
   className?: string;
@@ -33,9 +32,7 @@ export function SessionIndicator({
 }: SessionIndicatorProps) {
   const { isAuthenticated, user } = useAuth();
   // Mock token refresh data to prevent loops
-  const nextRefresh = null;
   const isRefreshing = false;
-  const lastRefresh = null;
   const [timeRemaining, setTimeRemaining] = useState<string>('');
   const [sessionProgress, setSessionProgress] = useState(100);
   const [isVisible, setIsVisible] = useState(!autoHide);
@@ -126,9 +123,9 @@ export function SessionIndicator({
               <span>{timeRemaining}</span>
             </div>
           )}
-          {showRefreshStatus && lastRefresh && (
+          {showRefreshStatus && (
             <div className="text-xs text-muted-foreground">
-              Last refresh: {formatDistanceToNow(lastRefresh, { addSuffix: true })}
+              Last refresh: Never (Mock Mode)
             </div>
           )}
         </div>

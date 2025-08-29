@@ -95,12 +95,12 @@ bash scripts/claude-hooks.sh pre-write "frontend/src/components/ui/new.tsx"
 
 ## Hook Behavior
 
-### What Gets Blocked:
+### What Gets Blocked
 - ❌ Creating NEW files in `components/ui/`
 - ❌ Writing new UI components manually
 - ❌ Copy-pasting component code
 
-### What's Always Allowed:
+### What's Always Allowed
 - ✅ Editing existing UI components
 - ✅ Creating components outside `ui/` directory
 - ✅ Extending components via imports
@@ -131,7 +131,7 @@ bash scripts/claude-hooks.sh pre-write "frontend/src/components/ui/new.tsx"
 
 ## Integration with shadcn CLI
 
-### Correct Workflow (Enforced by Hooks):
+### Correct Workflow (Enforced by Hooks)
 ```bash
 # 1. Search for component
 npx shadcn@latest search @shadcn
@@ -146,7 +146,7 @@ npx shadcn@latest add @shadcn/accordion
 # Now you can edit frontend/src/components/ui/accordion.tsx
 ```
 
-### Blocked Workflow (Prevented by Hooks):
+### Blocked Workflow (Prevented by Hooks)
 ```bash
 # ❌ These will be blocked:
 touch frontend/src/components/ui/custom.tsx  # Blocked

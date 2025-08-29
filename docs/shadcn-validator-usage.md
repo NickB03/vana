@@ -5,13 +5,13 @@ The `shadcn-validator.sh` script prevents manual UI component creation and enfor
 
 ## Features
 
-### What It Does:
+### What It Does
 - **Blocks**: Creating NEW files in `components/ui/` directory
 - **Allows**: Editing existing shadcn components
 - **Allows**: All other file operations
 - **Provides**: Bypass mechanism for exceptions
 
-### What It Does NOT Block:
+### What It Does NOT Block
 - ✅ Editing existing UI components
 - ✅ Extending components in other directories
 - ✅ Creating wrapper components outside `ui/`
@@ -49,7 +49,7 @@ Would need to be added to Claude Code settings to run automatically.
 
 ## Bypass Mechanism
 
-### Temporary Bypass:
+### Temporary Bypass
 ```bash
 # For single command
 SHADCN_BYPASS=true bash scripts/shadcn-validator.sh
@@ -59,7 +59,7 @@ export SHADCN_BYPASS=true
 bash scripts/shadcn-validator.sh  # Will be bypassed
 ```
 
-### Silent Mode:
+### Silent Mode
 ```bash
 # Hide informational messages
 export SHADCN_SILENT=true
@@ -71,7 +71,7 @@ export SHADCN_SILENT=true
 
 ## Examples
 
-### Blocked Operation:
+### Blocked Operation
 ```bash
 $ bash scripts/shadcn-validator.sh "components/ui/custom.tsx" "create"
 🔍 shadcn Validator Active
@@ -79,14 +79,14 @@ $ bash scripts/shadcn-validator.sh "components/ui/custom.tsx" "create"
 💡 Bypass: export SHADCN_BYPASS=true
 ```
 
-### Allowed Operation:
+### Allowed Operation
 ```bash
 $ bash scripts/shadcn-validator.sh "src/app/page.tsx" "edit"
 🔍 shadcn Validator Active
 ✅ Operation allowed
 ```
 
-### With Bypass:
+### With Bypass
 ```bash
 $ SHADCN_BYPASS=true bash scripts/shadcn-validator.sh "components/ui/test.tsx" "create"
 🔓 Bypassed

@@ -326,16 +326,16 @@ Remember: **Claude Flow coordinates, Claude Code creates!**
 
 ## 🚨 CRITICAL: UI COMPONENT RULES - MUST FOLLOW
 
-### ❌ ABSOLUTELY FORBIDDEN:
+### ❌ ABSOLUTELY FORBIDDEN
 1. **NEVER manually create UI components** - No writing component code from scratch
 2. **NEVER copy/paste from shadcn docs** - Use CLI instead
 3. **NEVER modify core shadcn files directly** - Extend via imports
 4. **NEVER guess component implementation** - Use view command first
 5. **NEVER ignore existing components** - Always check what's installed
 
-### ✅ MANDATORY UI WORKFLOW:
+### ✅ MANDATORY UI WORKFLOW
 
-#### Adding New UI Components:
+#### Adding New UI Components
 ```bash
 # 1. ALWAYS check existing components first
 ls frontend/src/components/ui/
@@ -353,7 +353,7 @@ npx shadcn@latest add @shadcn/[component]
 cat frontend/src/components/ui/[component].tsx
 ```
 
-#### Updating UI Components:
+#### Updating UI Components
 ```bash
 # 1. Check for updates
 npx shadcn@latest diff [component]
@@ -362,20 +362,20 @@ npx shadcn@latest diff [component]
 npx shadcn@latest add @shadcn/[component] --overwrite
 ```
 
-### 📦 Currently Installed shadcn Components:
+### 📦 Currently Installed shadcn Components
 - alert, avatar, badge, button, card, dialog
 - dropdown-menu, form, icons, input, label, progress
 - scroll-area, select, separator, sheet, sidebar
 - skeleton, tabs, tooltip
 
-### 🔧 Configuration:
+### 🔧 Configuration
 - **Config**: `frontend/components.json`
 - **Components**: `frontend/src/components/ui/`
 - **Imports**: Use `@/components/ui/[component]`
 - **CLI Version**: v3.0.0
 - **MCP Server**: Connected and functional
 
-### 🎯 UI Development Checklist:
+### 🎯 UI Development Checklist
 Before ANY UI work:
 - [ ] Did I check existing components with `ls`?
 - [ ] Did I use `search` to find the component?
@@ -388,7 +388,7 @@ After UI work:
 - [ ] Are imports using `@/components/ui/`?
 - [ ] Did I test the component?
 
-### Common UI Commands Reference:
+### Common UI Commands Reference
 ```bash
 # Add single component
 npx shadcn@latest add @shadcn/accordion

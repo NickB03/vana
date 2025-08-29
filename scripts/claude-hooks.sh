@@ -14,7 +14,6 @@ NC='\033[0m'
 # Get hook type and parameters
 HOOK_TYPE="${1:-pre-edit}"
 FILE_PATH="${2:-}"
-ACTION="${3:-}"
 
 # Project root
 PROJECT_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
@@ -99,7 +98,7 @@ case "$HOOK_TYPE" in
         
     "list-components")
         echo -e "${GREEN}📦 Installed shadcn components:${NC}"
-        ls -1 frontend/src/components/ui/*.tsx 2>/dev/null | xargs -n1 basename | sed 's/\.tsx$//' | column || echo "None found"
+        find frontend/src/components/ui -name "*.tsx" -print0 2>/dev/null | xargs -0 -n1 basename | sed 's/\.tsx$//' | column || echo "None found"
         ;;
         
     "validate-all")
@@ -114,7 +113,7 @@ case "$HOOK_TYPE" in
         
         # Check UI directory
         if [[ -d "frontend/src/components/ui" ]]; then
-            count=$(ls -1 frontend/src/components/ui/*.tsx 2>/dev/null | wc -l)
+            count=$(find frontend/src/components/ui -name "*.tsx" 2>/dev/null | wc -l)
             echo -e "${GREEN}✅ UI directory found with $count components${NC}"
         else
             echo -e "${RED}❌ UI directory missing${NC}"
