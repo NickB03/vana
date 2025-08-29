@@ -1,8 +1,10 @@
 name: Deploy to Cloud Run
 
+# NOTE: Deployment workflow disabled by default to avoid GCP dependency failures
+# Uncomment the 'on' section below and ensure GCP credentials are configured to enable
 on:
-  push:
-    branches: [main]
+  # push:
+  #   branches: [main]
   workflow_dispatch:
     inputs:
       environment:
@@ -16,6 +18,11 @@ on:
       skip_tests:
         description: 'Skip integration tests'
         required: false
+        default: false
+        type: boolean
+      force_deploy:
+        description: 'Force deployment (requires GCP credentials)'
+        required: true
         default: false
         type: boolean
 
@@ -39,6 +46,8 @@ jobs:
     name: Build Container
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    # Only run if force_deploy is true or this is a manual dispatch
+    if: github.event.inputs.force_deploy == 'true' || github.event_name == 'workflow_dispatch'
     outputs:
       image_tag: ${{ steps.image.outputs.tag }}
       image_url: ${{ steps.image.outputs.url }}
