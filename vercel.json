@@ -1,9 +1,9 @@
 {
   "framework": "nextjs",
-  "outputDirectory": ".next",
-  "installCommand": "npm install",
-  "buildCommand": "npm run build",
-  "devCommand": "npm run dev",
+  "outputDirectory": "frontend/.next",
+  "installCommand": "cd frontend && npm install",
+  "buildCommand": "cd frontend && npm run build",
+  "devCommand": "cd frontend && npm run dev",
   "cleanUrls": true,
   "trailingSlash": false,
   "rewrites": [
