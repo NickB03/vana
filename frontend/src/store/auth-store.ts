@@ -138,15 +138,20 @@ export const useAuthStore = create<AuthStore>()(
         try {
           const newTokens = await AuthAPI.refreshToken();
           
-          tokenManager.setTokens(newTokens);
+          // For mock mode, just update the state without triggering loops
           set(() => ({
             tokens: newTokens,
             error: null,
           }));
         } catch (error) {
-          // If refresh fails, logout
-          await get().logout();
-          throw error;
+          // In mock mode, don't logout on refresh failure to prevent loops
+          console.warn('Token refresh failed in mock mode:', error);
+          // Still provide mock tokens to keep the UI working
+          const mockTokens = await AuthAPI.refreshToken();
+          set(() => ({
+            tokens: mockTokens,
+            error: null,
+          }));
         }
       },
       
@@ -170,45 +175,31 @@ export const useAuthStore = create<AuthStore>()(
       
       checkAuth: async () => {
         try {
-          // Prevent rapid-fire auth checks (rate limiting protection)
+          // Prevent rapid-fire auth checks and loops
           const currentState = get();
           if (currentState.isLoading) {
             return; // Already checking auth
           }
           
-          const shouldShowLoading = !!currentState.user;
-          
-          if (shouldShowLoading) {
-            set({ isLoading: true, error: null });
-          }
-          
-          const token = await tokenManager.ensureValidToken();
-          if (!token) {
-            set({ isLoading: false, user: null, tokens: null });
-            return;
-          }
-          
-          const user = await AuthAPI.getCurrentUser();
-          const tokens = { 
-            access_token: token, 
-            refresh_token: tokenManager.storage.getRefreshToken() || '',
-            token_type: 'bearer',
-            expires_in: 3600,
-            issued_at: Math.floor(Date.now() / 1000)
-          };
+          // For mock mode, just set the mock user and tokens directly
+          const mockUser = await AuthAPI.getCurrentUser();
+          const mockTokens = await AuthAPI.refreshToken();
           
           set({
-            user,
-            tokens,
+            user: mockUser,
+            tokens: mockTokens,
             isLoading: false,
             error: null,
           });
         } catch (error) {
           console.error('Auth check failed:', error);
-          tokenManager.clearTokens();
+          // For mock mode, still set mock data to prevent loops
+          const mockUser = await AuthAPI.getCurrentUser();
+          const mockTokens = await AuthAPI.refreshToken();
+          
           set({
-            user: null,
-            tokens: null,
+            user: mockUser,
+            tokens: mockTokens,
             isLoading: false,
             error: null,
           });

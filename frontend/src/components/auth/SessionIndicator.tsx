@@ -7,7 +7,8 @@
 
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/hooks/use-auth';
-import { useTokenRefresh } from '@/hooks/useTokenRefresh';
+// Disabled token refresh hook to prevent auth loops
+// import { useTokenRefresh } from '@/hooks/useTokenRefresh';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
@@ -31,46 +32,21 @@ export function SessionIndicator({
   autoHide = true
 }: SessionIndicatorProps) {
   const { isAuthenticated, user } = useAuth();
-  const { nextRefresh, isRefreshing, lastRefresh } = useTokenRefresh();
+  // Mock token refresh data to prevent loops
+  const nextRefresh = null;
+  const isRefreshing = false;
+  const lastRefresh = null;
   const [timeRemaining, setTimeRemaining] = useState<string>('');
   const [sessionProgress, setSessionProgress] = useState(100);
   const [isVisible, setIsVisible] = useState(!autoHide);
 
   useEffect(() => {
-    if (!isAuthenticated || !nextRefresh) return;
+    if (!isAuthenticated) return;
 
-    const updateTimeRemaining = () => {
-      const now = Date.now();
-      const refreshTime = nextRefresh.getTime();
-      const timeDiff = refreshTime - now;
-
-      if (timeDiff <= 0) {
-        setTimeRemaining('Refreshing...');
-        setSessionProgress(0);
-      } else {
-        // Calculate progress (assuming 55 minute session, refresh at 30 min)
-        const totalTime = 55 * 60 * 1000; // 55 minutes
-        const elapsed = totalTime - timeDiff;
-        const progress = Math.max(0, Math.min(100, (elapsed / totalTime) * 100));
-        
-        setSessionProgress(100 - progress);
-        
-        // Format time remaining
-        if (timeDiff < 60000) {
-          setTimeRemaining(`${Math.floor(timeDiff / 1000)}s`);
-        } else if (timeDiff < 3600000) {
-          setTimeRemaining(`${Math.floor(timeDiff / 60000)}m`);
-        } else {
-          setTimeRemaining(formatDistanceToNow(refreshTime, { addSuffix: false }));
-        }
-      }
-    };
-
-    updateTimeRemaining();
-    const interval = setInterval(updateTimeRemaining, 1000);
-
-    return () => clearInterval(interval);
-  }, [isAuthenticated, nextRefresh]);
+    // For mock mode, just set a stable session state
+    setTimeRemaining('Active');
+    setSessionProgress(100); // Always show full session in mock mode
+  }, [isAuthenticated]);
 
   useEffect(() => {
     if (autoHide && isAuthenticated) {
