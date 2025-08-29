@@ -78,7 +78,7 @@ class AuthSettings(BaseSettings):
     )
 
     model_config = ConfigDict(
-        env_file=".env.local",
+        env_file=".env.local" if os.path.exists(".env.local") else None,
         env_prefix="AUTH_",
         extra="ignore",  # Ignore extra fields from .env.local
     )

@@ -1,7 +1,10 @@
 {
+  "git": {
+    "deploymentEnabled": false
+  },
   "framework": "nextjs",
-  "outputDirectory": ".next",
-  "installCommand": "npm install",
+  "rootDirectory": "frontend",
+  "installCommand": "npm ci",
   "buildCommand": "npm run build",
   "devCommand": "npm run dev",
   "cleanUrls": true,

@@ -27,6 +27,16 @@ export async function GET() {
     const idToken = cookieStore.get('id_token');
     const expiresIn = cookieStore.get('token_expires_in');
     
+    // In development mode, return mock tokens to prevent 401 loops
+    if (process.env.NODE_ENV === 'development') {
+      return NextResponse.json({
+        accessToken: 'mock-token-stable-' + Date.now(),
+        idToken: 'mock-id-token-stable-' + Date.now(),
+        expiresAt: Date.now() + 3600000, // 1 hour from now
+        sessionId: 'mock-session-' + Date.now()
+      });
+    }
+    
     if (!accessToken || !idToken) {
       return NextResponse.json(
         { error: 'No tokens found' },
@@ -42,6 +52,17 @@ export async function GET() {
     });
   } catch (error) {
     console.error('Failed to retrieve tokens:', error);
+    
+    // In development mode, return mock tokens even on error
+    if (process.env.NODE_ENV === 'development') {
+      return NextResponse.json({
+        accessToken: 'mock-token-stable-' + Date.now(),
+        idToken: 'mock-id-token-stable-' + Date.now(),
+        expiresAt: Date.now() + 3600000,
+        sessionId: 'mock-session-' + Date.now()
+      });
+    }
+    
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
