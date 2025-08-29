@@ -324,9 +324,95 @@ Message 4: Write "file.js"
 
 Remember: **Claude Flow coordinates, Claude Code creates!**
 
+## 🚨 CRITICAL: UI COMPONENT RULES - MUST FOLLOW
+
+### ❌ ABSOLUTELY FORBIDDEN:
+1. **NEVER manually create UI components** - No writing component code from scratch
+2. **NEVER copy/paste from shadcn docs** - Use CLI instead
+3. **NEVER modify core shadcn files directly** - Extend via imports
+4. **NEVER guess component implementation** - Use view command first
+5. **NEVER ignore existing components** - Always check what's installed
+
+### ✅ MANDATORY UI WORKFLOW:
+
+#### Adding New UI Components:
+```bash
+# 1. ALWAYS check existing components first
+ls frontend/src/components/ui/
+
+# 2. Search for the component
+npx shadcn@latest search @shadcn
+
+# 3. Preview before adding
+npx shadcn@latest view @shadcn/[component]
+
+# 4. Add via CLI ONLY
+npx shadcn@latest add @shadcn/[component]
+
+# 5. Verify installation
+cat frontend/src/components/ui/[component].tsx
+```
+
+#### Updating UI Components:
+```bash
+# 1. Check for updates
+npx shadcn@latest diff [component]
+
+# 2. Update with overwrite flag if needed
+npx shadcn@latest add @shadcn/[component] --overwrite
+```
+
+### 📦 Currently Installed shadcn Components:
+- alert, avatar, badge, button, card, dialog
+- dropdown-menu, form, icons, input, label, progress
+- scroll-area, select, separator, sheet, sidebar
+- skeleton, tabs, tooltip
+
+### 🔧 Configuration:
+- **Config**: `frontend/components.json`
+- **Components**: `frontend/src/components/ui/`
+- **Imports**: Use `@/components/ui/[component]`
+- **CLI Version**: v3.0.0
+- **MCP Server**: Connected and functional
+
+### 🎯 UI Development Checklist:
+Before ANY UI work:
+- [ ] Did I check existing components with `ls`?
+- [ ] Did I use `search` to find the component?
+- [ ] Did I use `view` to preview it?
+- [ ] Am I using CLI to add it?
+
+After UI work:
+- [ ] Did the CLI command succeed?
+- [ ] Is the component in `src/components/ui/`?
+- [ ] Are imports using `@/components/ui/`?
+- [ ] Did I test the component?
+
+### Common UI Commands Reference:
+```bash
+# Add single component
+npx shadcn@latest add @shadcn/accordion
+
+# Add multiple components
+npx shadcn@latest add @shadcn/accordion @shadcn/toast
+
+# Search components
+npx shadcn@latest search @shadcn
+
+# View before adding
+npx shadcn@latest view @shadcn/button
+
+# Check for updates
+npx shadcn@latest diff button
+
+# Get project info
+npx shadcn@latest info
+```
+
 # important-instruction-reminders
 Do what has been asked; nothing more, nothing less.
 NEVER create files unless they're absolutely necessary for achieving your goal.
 ALWAYS prefer editing an existing file to creating a new one.
 NEVER proactively create documentation files (*.md) or README files. Only create documentation files if explicitly requested by the User.
 Never save working files, text/mds and tests to the root folder.
+ALWAYS use shadcn CLI for UI components - NEVER create them manually.
