@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useCallback, useRef, useEffect } from 'react';
+import DOMPurify from 'dompurify';
 import { useToast } from '@/hooks/use-toast';
 import { CanvasToolbar } from './canvas-toolbar';
 import { CanvasEditor } from './canvas-editor';
@@ -57,7 +58,7 @@ export function CanvasContainer({
     }
     
     return {
-      content: initialContent,
+      content: initialContent ? DOMPurify.sanitize(initialContent) : '',
       mode: initialMode,
       language: initialLanguage,
       versions: [],
@@ -186,7 +187,9 @@ export function CanvasContainer({
 
     const reader = new FileReader();
     reader.onload = (e) => {
-      const content = e.target?.result as string;
+      const rawContent = e.target?.result as string;
+      // Sanitize imported content to prevent XSS
+      const content = DOMPurify.sanitize(rawContent);
       handleContentChange(content);
       
       // Auto-detect mode based on file extension

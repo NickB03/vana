@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
+import DOMPurify from 'dompurify';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { AlertTriangle, CheckCircle } from 'lucide-react';
@@ -70,7 +71,7 @@ export function CanvasPreview({ content, mode, className }: CanvasPreviewProps) 
               srcDoc={previewContent}
               className="w-full h-96 border border-border rounded-lg bg-white"
               title="Web Preview"
-              sandbox="allow-scripts allow-same-origin"
+              sandbox="allow-scripts"
             />
           ) : (
             <div
@@ -86,7 +87,7 @@ export function CanvasPreview({ content, mode, className }: CanvasPreviewProps) 
 
 function renderMarkdown(content: string): string {
   // Simple markdown renderer - in a real app, use a library like marked or remark
-  return content
+  const html = content
     .replace(/^# (.*$)/gim, '<h1 class="text-3xl font-bold mb-4">$1</h1>')
     .replace(/^## (.*$)/gim, '<h2 class="text-2xl font-semibold mb-3">$1</h2>')
     .replace(/^### (.*$)/gim, '<h3 class="text-xl font-medium mb-2">$1</h3>')
@@ -97,6 +98,9 @@ function renderMarkdown(content: string): string {
     .replace(/^\* (.*$)/gim, '<li class="ml-4">$1</li>')
     .replace(/^\d+\. (.*$)/gim, '<li class="ml-4">$1</li>')
     .replace(/\n/g, '<br>');
+  
+  // Sanitize the generated HTML to prevent XSS
+  return DOMPurify.sanitize(html);
 }
 
 function renderWebPreview(content: string): string {

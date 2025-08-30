@@ -188,7 +188,7 @@ export function AgentTaskDeck({
   const { addEventListener } = useSSE({
     autoConnect: enableRealTimeUpdates,
     baseUrl: process.env.NODE_ENV === 'production'
-      ? (process.env.NEXT_PUBLIC_API_URL || 'https://api.vana.ai')
+      ? (process.env['NEXT_PUBLIC_API_URL'] || 'https://api.vana.ai')
       : 'http://localhost:8000'
   });
   // Initialize agents with mock data if empty
