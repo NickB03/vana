@@ -2,8 +2,8 @@ import { test, expect } from '@playwright/test';
 
 test.describe('Vana Frontend Functionality Tests', () => {
   test.beforeEach(async ({ page }) => {
-    // Wait for dev server to be ready
-    await page.waitForTimeout(2000);
+    // Wait for the server to respond
+    await page.goto('http://localhost:5173', { waitUntil: 'networkidle' });
   });
 
   test.describe('Homepage', () => {
