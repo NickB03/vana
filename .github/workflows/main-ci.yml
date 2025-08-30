@@ -8,13 +8,23 @@ on:
   # DISABLED: Using simplified ci.yml instead
   # To re-enable: Remove this comment and the workflow_dispatch restriction
   workflow_dispatch:
-    inputs:
-      enable_legacy_ci:
-        description: 'This workflow is deprecated. Use ci.yml instead.'
-        required: true
-        default: false
-        type: boolean
-    inputs:
+   workflow_dispatch:
+     inputs:
+       enable_legacy_ci:
+         description: 'This workflow is deprecated. Use ci.yml instead.'
+         required: true
+         default: false
+         type: boolean
+       skip_tests:
+         description: 'Skip test execution'
+         required: false
+         default: false
+         type: boolean
+       performance_mode:
+         description: 'Enable performance mode'
+         required: false
+         default: true
+         type: boolean
       skip_tests:
         description: 'Skip test execution'
         required: false
