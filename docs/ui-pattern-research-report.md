@@ -412,8 +412,7 @@ xxl: 1400px
 <!-- ARIA landmarks -->
 <main id="main-content" role="main">
 <nav role="navigation" aria-label="Main navigation">
-<region role="complementary" aria-label="Chat controls">
-```
+<section role="complementary" aria-label="Chat controls">
 
 ## 11. Mobile vs Desktop Differences
 
