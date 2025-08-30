@@ -1,11 +1,15 @@
 name: Local Build & Test
 
 on:
-  push:
-    branches: [main, develop, feat/*]
-  pull_request:
-    branches: [main]
+  # DISABLED: Using simplified ci.yml instead
+  # This workflow attempted Docker operations not available in GitHub Actions
   workflow_dispatch:
+    inputs:
+      enable_local_build:
+        description: 'This workflow is deprecated. Use ci.yml instead.'
+        required: true
+        default: false
+        type: boolean
 
 env:
   NODE_VERSION: '18'

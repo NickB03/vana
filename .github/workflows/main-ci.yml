@@ -5,21 +5,15 @@ name: Local Build & Test Pipeline
 # Cloud deployment will be re-enabled after local stability is achieved
 
 on:
-  push:
-    branches: [main, develop]
-    paths-ignore:
-      - '**.md'
-      - 'docs/**'
-      - '.claude_workspace/**'
-      - '*.txt'
-  pull_request:
-    branches: [main]
-    paths-ignore:
-      - '**.md'
-      - 'docs/**'
-      - '.claude_workspace/**'
-      - '*.txt'
+  # DISABLED: Using simplified ci.yml instead
+  # To re-enable: Remove this comment and the workflow_dispatch restriction
   workflow_dispatch:
+    inputs:
+      enable_legacy_ci:
+        description: 'This workflow is deprecated. Use ci.yml instead.'
+        required: true
+        default: false
+        type: boolean
     inputs:
       skip_tests:
         description: 'Skip test execution'

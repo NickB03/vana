@@ -1,10 +1,14 @@
 name: CodeRabbit Review Notification
 
 on:
-  issue_comment:
-    types: [created]
-  pull_request_review_comment:
-    types: [created]
+  # DISABLED: CodeRabbit integration needs PUSHOVER_TOKEN and PUSHOVER_USER secrets
+  workflow_dispatch:
+    inputs:
+      enable_notifications:
+        description: 'Configure PUSHOVER_TOKEN and PUSHOVER_USER secrets first'
+        required: true
+        default: false
+        type: boolean
 
 jobs:
   notify-pushover:
