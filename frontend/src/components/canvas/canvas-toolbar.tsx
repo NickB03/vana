@@ -136,6 +136,8 @@ export function CanvasToolbar({
               size="sm"
               onClick={onTogglePreview}
               className="flex items-center gap-2"
+              aria-pressed={isPreviewEnabled}
+              aria-label={isPreviewEnabled ? 'Hide preview' : 'Show preview'}
             >
               {isPreviewEnabled ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               <span className="hidden sm:inline">
