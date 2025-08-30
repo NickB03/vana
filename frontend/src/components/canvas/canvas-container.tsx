@@ -245,6 +245,17 @@ export function CanvasContainer({
   const handleExport = useCallback(async (options: ExportOptions) => {
     let content = state.content;
     
+    // Validate content length to prevent memory issues
+    const MAX_CONTENT_SIZE = 50 * 1024 * 1024; // 50MB limit
+    if (content.length > MAX_CONTENT_SIZE) {
+      toast({
+        title: 'Export failed',
+        description: 'Content is too large to export',
+        variant: 'destructive',
+      });
+      return;
+    }
+    
     if (options.includeMetadata) {
       const metadata = `---
 Mode: ${state.mode}
