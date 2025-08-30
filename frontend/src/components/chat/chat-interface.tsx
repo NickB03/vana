@@ -321,15 +321,15 @@ export function ChatInterface({ className, initialMessage }: ChatInterfaceProps)
       
       eventSource.onmessage = (event) => {
         try {
-          // Sanitize and validate incoming event data
-          const rawData = sanitizeText(event.data);
-          if (!rawData || containsMaliciousPatterns(rawData)) {
+          // Parse JSON first, then sanitize specific fields to prevent JSON corruption
+          const data: SSEEvent = JSON.parse(event.data);
+          
+          // Sanitize and validate parsed data fields
+          if (containsMaliciousPatterns(event.data)) {
             console.error('Potentially malicious SSE data blocked');
             logSecurityViolation('xss_attempt', { data: event.data, source: 'sse' });
             return;
           }
-          
-          const data: SSEEvent = JSON.parse(rawData);
           
           // Validate event structure
           const validatedEvent = sseEventSchema.safeParse(data);
@@ -359,15 +359,15 @@ export function ChatInterface({ className, initialMessage }: ChatInterfaceProps)
         eventSource.addEventListener(eventType, (event) => {
           try {
             const messageEvent = event as MessageEvent;
-            const sanitizedData = sanitizeText(messageEvent.data);
             
-            if (containsMaliciousPatterns(sanitizedData)) {
+            if (containsMaliciousPatterns(messageEvent.data)) {
               console.error(`Potentially malicious ${eventType} data blocked`);
               logSecurityViolation('xss_attempt', { eventType, data: messageEvent.data });
               return;
             }
             
-            const data = JSON.parse(sanitizedData) as T;
+            // Parse JSON first, then sanitize specific fields
+            const data = JSON.parse(messageEvent.data) as T;
             handler(data);
           } catch (error) {
             console.error(`Failed to parse ${eventType} event:`, error);
@@ -419,41 +419,49 @@ export function ChatInterface({ className, initialMessage }: ChatInterfaceProps)
   };
   
   const handleResponseChunk = (data: AgentResponseChunkData) => {
-    if (currentStreamingMessage) {
-      // Sanitize chunk content to prevent XSS
-      const sanitizedContent = sanitizeText(data.content || '');
-      const sanitizedMessageId = sanitizeText(data.messageId);
+    // Sanitize chunk content to prevent XSS
+    const sanitizedContent = sanitizeText(data.content || '');
+    const sanitizedMessageId = sanitizeText(data.messageId);
+    
+    // Use functional state update to prevent stale state capture
+    setCurrentStreamingMessage(prev => {
+      if (!prev) return null;
       
       // Validate that message ID matches current streaming message
-      if (sanitizedMessageId && currentStreamingMessage?.id && sanitizedMessageId !== currentStreamingMessage.id) {
+      if (sanitizedMessageId && prev.id && sanitizedMessageId !== prev.id) {
         console.warn('Message ID mismatch in chunk, ignoring');
-        return;
+        return prev;
       }
       
-      setCurrentStreamingMessage(prev => prev ? {
+      return {
         ...prev,
         content: prev.content + sanitizedContent
-      } : null);
-    }
+      };
+    });
   };
   
   const handleResponseComplete = (data: AgentResponseCompleteData) => {
-    if (currentStreamingMessage) {
-      // Sanitize final content and metadata
-      const sanitizedContent = data.content ? sanitizeText(data.content) : currentStreamingMessage.content;
-      const sanitizedModel = data.model ? sanitizeText(data.model) : undefined;
-      const sanitizedMessageId = sanitizeText(data.messageId);
+    // Sanitize final content and metadata
+    const sanitizedModel = data.model ? sanitizeText(data.model) : undefined;
+    const sanitizedMessageId = sanitizeText(data.messageId);
+    
+    // Use functional state update to prevent stale state capture
+    setCurrentStreamingMessage(prev => {
+      if (!prev) return null;
+      
+      // Sanitize content, using current message content as fallback
+      const sanitizedContent = data.content ? sanitizeText(data.content) : prev.content;
       
       // Validate message ID matches
-      if (currentStreamingMessage?.id && sanitizedMessageId !== currentStreamingMessage.id) {
+      if (prev.id && sanitizedMessageId !== prev.id) {
         console.warn('Message ID mismatch in completion, using current message');
       }
       
       const finalMessage: ChatMessage = {
-        ...currentStreamingMessage,
+        ...prev,
         content: sanitizedContent,
         metadata: {
-          ...currentStreamingMessage.metadata,
+          ...prev.metadata,
           streaming: false,
           model: sanitizedModel,
           tool_calls: data.tool_calls // Tool calls are handled separately and don't contain user-displayable content
@@ -461,8 +469,8 @@ export function ChatInterface({ className, initialMessage }: ChatInterfaceProps)
       };
       
       addMessage(finalMessage);
-      setCurrentStreamingMessage(null);
-    }
+      return null;
+    });
     
     setIsStreaming(false);
   };
