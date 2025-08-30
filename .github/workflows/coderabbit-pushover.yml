@@ -9,6 +9,18 @@ on:
         required: true
         default: false
         type: boolean
+      pr_number:
+        description: 'Pull request number'
+        required: true
+        type: string
+      pr_title:
+        description: 'Pull request title'
+        required: true
+        type: string
+      pr_url:
+        description: 'Pull request URL'
+        required: true
+        type: string
 
 jobs:
   notify-pushover:
