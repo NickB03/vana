@@ -438,25 +438,35 @@ async function main() {
 
   try {
     switch (command) {
-      case 'all':
+      case 'all': {
         const result = await verifier.verifyAll();
         process.exit(result.success ? 0 : 1);
         break;
+      }
 
-      case 'single':
+      case 'single': {
         const filePath = args[1];
         if (!filePath) {
           console.error('Please provide a component file path');
           process.exit(1);
         }
         await verifier.verifyComponent(filePath);
+        await verifier.generateMetrics();
+        const out = verifier.generateReport();
+        process.exit(out.success ? 0 : 1);
         break;
+      }
 
-      case 'shadcn':
+      case 'shadcn': {
+        const before = verifier.results.violations.length;
         await verifier.verifyShadcnCompliance();
+        const after = verifier.results.violations.length;
+        // Exit non-zero if verification added violations
+        process.exit(after > before ? 1 : 0);
         break;
+      }
 
-      case 'api':
+      case 'api': {
         const componentPath = args[1];
         if (!componentPath) {
           console.error('Please provide a component file path');
@@ -465,6 +475,7 @@ async function main() {
         const apiChecks = await verifyComponentAPI(componentPath);
         console.log('API Verification:', apiChecks);
         break;
+      }
 
       default:
         console.log(`
@@ -482,7 +493,6 @@ Examples:
   node verify-components.js shadcn
         `);
         break;
-    }
   } catch (error) {
     console.error(`\n💥 Error: ${error.message}`);
     process.exit(1);
