@@ -357,7 +357,7 @@ const ViewToggle = () => (
       variant={selectedView === 'chat' ? 'default' : 'ghost'}
       size="icon"
       onClick={() => setSelectedView('chat')}
-      title="Chat view"
+      aria-label="Chat view"
     >
       <MessageSquare className="w-4 h-4" />
     </Button>
@@ -365,7 +365,7 @@ const ViewToggle = () => (
       variant={selectedView === 'canvas' ? 'default' : 'ghost'}
       size="icon"
       onClick={() => setSelectedView('canvas')}
-      title="Canvas view"
+      aria-label="Canvas view"
     >
       <Code2 className="w-4 h-4" />
     </Button>
