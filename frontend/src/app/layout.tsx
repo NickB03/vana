@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
-// import { Inter } from "next/font/google"; // Temporarily commented out for CSP testing
-// import "./globals.css"; // Temporarily commented out for CSP testing
+import { Inter } from "next/font/google";
+import "./globals.css";
 import { getNonce } from "@/lib/csp";
 import { Toaster } from "@/components/ui/sonner";
+
+const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "Vana - Virtual Autonomous Network Agent",
@@ -61,7 +63,7 @@ export default async function RootLayout({
         <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
         <link rel="dns-prefetch" href="https://fonts.gstatic.com" />
       </head>
-      <body className="font-sans antialiased bg-background text-foreground" suppressHydrationWarning>
+      <body className={`${inter.className} antialiased bg-background text-foreground`} suppressHydrationWarning>
         {/* Skip to main content link for keyboard users */}
         <a 
           href="#main-content" 
