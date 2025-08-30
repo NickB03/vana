@@ -78,11 +78,11 @@ jobs:
           
       - name: Test Docker Compose
         run: |
-          docker-compose up -d
+          docker compose up -d
           sleep 10
           curl -f http://localhost:8000/health || echo "Backend health check failed"
           curl -f http://localhost:5173 || echo "Frontend check failed"
-          docker-compose down
+          docker compose down
           
       - name: Generate Build Report
         if: always()
@@ -152,9 +152,14 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         
+      - name: Build Docker Images
+        run: |
+          docker build -f Dockerfile.local -t vana-backend:local .
+          docker build -f frontend/Dockerfile -t vana-frontend:local ./frontend
+          
       - name: Setup Environment
         run: |
-          docker-compose up -d
+          docker compose up -d
           sleep 15
           
       - name: Run Load Test
@@ -170,7 +175,7 @@ jobs:
       - name: Cleanup
         if: always()
         run: |
-          docker-compose down
+          docker compose down
 
   # ============================================================================
   # INTEGRATION
@@ -185,9 +190,14 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         
+      - name: Build Docker Images
+        run: |
+          docker build -f Dockerfile.local -t vana-backend:local .
+          docker build -f frontend/Dockerfile -t vana-frontend:local ./frontend
+          
       - name: Start Services
         run: |
-          docker-compose up -d
+          docker compose up -d
           echo "Waiting for services to start..."
           sleep 20
           
@@ -200,10 +210,10 @@ jobs:
           curl -f http://localhost:5173 || exit 1
           
           echo "Checking database..."
-          docker-compose exec -T postgres pg_isready || exit 1
+          docker compose exec -T postgres pg_isready || exit 1
           
           echo "Checking Redis..."
-          docker-compose exec -T redis redis-cli ping || exit 1
+          docker compose exec -T redis redis-cli ping || exit 1
           
       - name: Run Integration Tests
         run: |
@@ -213,7 +223,7 @@ jobs:
       - name: Cleanup
         if: always()
         run: |
-          docker-compose down -v
+          docker compose down -v
 
   # ============================================================================
   # FINAL STATUS
