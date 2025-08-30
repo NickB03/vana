@@ -66,19 +66,19 @@ export function CanvasPreview({ content, mode, className }: CanvasPreviewProps) 
       {/* Preview Content */}
       <ScrollArea className="flex-1">
         <div className="p-4">
-          {mode === 'web' ? (
+            {mode === 'web' ? (
             <iframe
               srcDoc={previewContent}
               className="w-full h-96 border border-border rounded-lg bg-white"
               title="Web Preview"
               sandbox="allow-scripts"
             />
-          ) : (
+            ) : (
             <div
               className="prose prose-slate dark:prose-invert max-w-none"
-              dangerouslySetInnerHTML={{ __html: previewContent }}
+              dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(previewContent) }}
             />
-          )}
+            )}
         </div>
       </ScrollArea>
     </div>

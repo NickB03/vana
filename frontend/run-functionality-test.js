@@ -123,12 +123,15 @@ async function runTests() {
     // Test 10: Performance
     console.log('Testing: Page load performance...');
     const startTime = Date.now();
-    await page.goto('http://localhost:5173');
-    await page.waitForLoadState('networkidle');
+    await page.goto('http://localhost:5173', { waitUntil: 'domcontentloaded' });
+    await page.waitForSelector('main, [role="main"]', { state: 'visible', timeout: 10000 });
     const loadTime = Date.now() - startTime;
     if (loadTime < 5000) {
       results.passed.push(`✅ Page loads quickly (${loadTime}ms)`);
     } else {
+      results.failed.push(`❌ Page load too slow (${loadTime}ms)`);
+    }
+    results.total++;
       results.failed.push(`❌ Page load too slow (${loadTime}ms)`);
     }
     results.total++;

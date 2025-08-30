@@ -155,11 +155,11 @@ function ChatPageContent() {
             
             {selectedView === 'canvas' && (
               <div className="flex-1">
-                <CanvasContainer 
-                  className="h-full"
-                  initialMode="markdown"
-                  initialContent="# Welcome to the Canvas\n\nStart creating content here..."
-                />
+              <CanvasContainer 
+                className="h-full"
+                initialMode="markdown"
+                initialContent="# Welcome to the Canvas\n\nStart creating content here..."
+              />
               </div>
             )}
             

@@ -58,7 +58,8 @@ export function CanvasContainer({
     }
     
     return {
-      content: initialContent ? DOMPurify.sanitize(initialContent) : '',
+    return {
+      content: initialContent || '',
       mode: initialMode,
       language: initialLanguage,
       versions: [],
@@ -244,7 +245,6 @@ export function CanvasContainer({
     event.target.value = '';
   }, [handleContentChange, handleModeChange, handleLanguageChange, toast]);
 
-  // Export content
   const handleExport = useCallback(async (options: ExportOptions) => {
     let content = state.content;
     
@@ -270,11 +270,54 @@ Created: ${new Date().toISOString()}
       content = metadata + content;
     }
 
-    const blob = new Blob([content], { type: 'text/plain' });
+    // Determine MIME + filename
+    const mimeByFormat: Record<ExportOptions['format'], string> = {
+      txt: 'text/plain;charset=utf-8',
+      md: 'text/markdown;charset=utf-8',
+      html: 'text/html;charset=utf-8',
+      pdf: 'application/pdf',
+    };
+    if (options.format === 'pdf') {
+      toast({
+        title: 'PDF export not available yet',
+        description: 'Please choose TXT, Markdown, or HTML.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    const mime = mimeByFormat[options.format];
+    // Ensure filename has the right extension
+    const ensureExt = (name: string, ext: string) =>
+      name.toLowerCase().endsWith(`.${ext}`) ? name : `${name}.${ext}`;
+    const filename = ensureExt(options.filename, options.format);
+
+    const blob = new Blob([content], { type: mime });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = options.filename;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    toast({
+      title: 'File exported',
+      description: `Exported as "${options.filename}"`,
+    });
+  }, [state.content, state.mode, state.language, toast]);
+    }
+    const mime = mimeByFormat[options.format];
+    // Ensure filename has the right extension
+    const ensureExt = (name: string, ext: string) =>
+      name.toLowerCase().endsWith(`.${ext}`) ? name : `${name}.${ext}`;
+    const filename = ensureExt(options.filename, options.format);
+
+    const blob = new Blob([content], { type: mime });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);

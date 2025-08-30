@@ -135,16 +135,31 @@ const SidebarContent: React.FC<SidebarContentProps> = ({
             </div>
           ) : (
             filteredSessions.map((session) => (
-              <div
-                key={session.id}
-                className={cn(
+                <div
+                  key={session.id}
+                  className={cn(
                   "group relative flex items-center gap-3 px-3 py-2 rounded-md cursor-pointer transition-colors",
                   currentSession?.id === session.id
                     ? "bg-gray-700 text-white"
                     : "hover:bg-gray-800 text-gray-300"
-                )}
-                onClick={() => handleSessionSelect(session)}
-              >
+                  )}
+                  onClick={() => handleSessionSelect(session)}
+                  role="button"
+                  tabIndex={0}
+                  aria-current={currentSession?.id === session.id ? 'true' : undefined}
+                  onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    handleSessionSelect(session);
+                  }
+                  }}
+                >
+                  if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  handleSessionSelect(session);
+                  }
+                }}
+                >
                 <MessageSquare className="w-4 h-4 flex-shrink-0" />
                 <span className="flex-1 truncate text-sm">{session.title}</span>
                 

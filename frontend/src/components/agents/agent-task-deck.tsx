@@ -185,11 +185,9 @@ export function AgentTaskDeck({
   const [thoughtBubbles, setThoughtBubbles] = useState<ThoughtBubble[]>([]);
 
   // SSE for real-time updates
+  // Use the secure SSE hook that proxies via /api/sse and uses httpOnly cookies
   const { addEventListener } = useSSE({
-    autoConnect: enableRealTimeUpdates,
-    baseUrl: process.env.NODE_ENV === 'production'
-      ? (process.env['NEXT_PUBLIC_API_URL'] || 'https://api.vana.ai')
-      : 'http://localhost:8000'
+    autoConnect: enableRealTimeUpdates
   });
   // Initialize agents with mock data if empty
   const mockAgents = useMemo(() => {
@@ -328,12 +326,15 @@ export function AgentTaskDeck({
     return `${Math.floor(diff / 3600000)}h ago`;
   };
 
-  const gridColsClass = {
-    2: 'grid-cols-2',
-    3: 'grid-cols-3',
-    4: 'grid-cols-4',
-    6: 'grid-cols-6'
-  }[gridCols];
+  // Explicitly reference all possible grid-cols classes for Tailwind CSS safelisting
+  // Explicitly reference all possible grid-cols classes for Tailwind CSS safelisting
+  const gridColsClass = cn(
+    gridCols === 2 && 'grid-cols-2',
+    gridCols === 3 && 'grid-cols-3',
+    gridCols === 4 && 'grid-cols-4',
+    gridCols === 6 && 'grid-cols-6',
+    'grid gap-4'
+  );
 
   return (
     <div className={cn('space-y-6', className)}>
@@ -362,13 +363,45 @@ export function AgentTaskDeck({
             const statusColor = getStatusColor(agent.status);
             const recentThought = thoughtBubbles.find(t => t.agentId === agent.id);
             
-            return (
               <motion.div
                 key={agent.id}
                 layout
-                initial={{ opacity: 0, y: 20 }}
-                animate={isSelected ? 'selected' : ANIMATION_VARIANTS[agent.status] || 'idle'}
+                variants={ANIMATION_VARIANTS}
+                initial="idle"
+                animate={isSelected
+                  ? 'selected'
+                  : (ANIMATION_VARIANTS[agent.status] ? agent.status : 'idle')
+                }
                 exit={{ opacity: 0, scale: 0.9 }}
+                whileHover={{
+                  scale: 1.02,
+                  transition: { duration: 0.2 }
+                }}
+              >
+                  : (ANIMATION_VARIANTS[agent.status] ? agent.status : 'idle')
+                }
+                exit={{ opacity: 0, scale: 0.9 }}
+                whileHover={{
+                  scale: 1.02,
+                  transition: { duration: 0.2 }
+                }}
+              >
+                  : (ANIMATION_VARIANTS[agent.status] ? agent.status : 'idle')
+                }
+                exit={{ opacity: 0, scale: 0.9 }}
+                whileHover={{
+                  scale: 1.02,
+                  transition: { duration: 0.2 }
+                }}
+              >
+                  : (ANIMATION_VARIANTS[agent.status] ? agent.status : 'idle')
+                }
+                exit={{ opacity: 0, scale: 0.9 }}
+                whileHover={{
+                  scale: 1.02,
+                  transition: { duration: 0.2 }
+                }}
+              >
                 whileHover={{ 
                   scale: 1.02,
                   transition: { duration: 0.2 }
@@ -377,8 +410,11 @@ export function AgentTaskDeck({
                 className="relative"
               >
                 <HoverCard>
-                  <HoverCardTrigger asChild>
-                    <Card 
+                    <Card
+                      role="button"
+                      tabIndex={0}
+                      aria-label={`Select agent ${agent.name}`}
+                      aria-selected={isSelected}
                       className={cn(
                         'cursor-pointer transition-all duration-200 hover:shadow-lg',
                         'border-2',
@@ -386,6 +422,133 @@ export function AgentTaskDeck({
                         agent.status === 'error' && 'border-red-300',
                       )}
                       onClick={() => handleAgentClick(agent)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          handleAgentClick(agent);
+                        }
+                      }}
+                    >
+                        agent.status === 'error' && 'border-red-300',
+                      )}
+                      onClick={() => handleAgentClick(agent)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          handleAgentClick(agent);
+                        }
+                      }}
+                    >
+                        agent.status === 'error' && 'border-red-300',
+                      )}
+                      onClick={() => handleAgentClick(agent)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          handleAgentClick(agent);
+                        }
+                      }}
+                    >
+                        agent.status === 'error' && 'border-red-300',
+                      )}
+                      onClick={() => handleAgentClick(agent)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          handleAgentClick(agent);
+                        }
+                      }}
+                    >
+                        agent.status === 'error' && 'border-red-300',
+                      )}
+                      onClick={() => handleAgentClick(agent)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          handleAgentClick(agent);
+                        }
+                      }}
+                    >
+                        agent.status === 'error' && 'border-red-300',
+                      )}
+                      onClick={() => handleAgentClick(agent)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          handleAgentClick(agent);
+                        }
+                      }}
+                    >
+                        agent.status === 'error' && 'border-red-300',
+                      )}
+                      onClick={() => handleAgentClick(agent)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          handleAgentClick(agent);
+                        }
+                      }}
+                    >
+                        agent.status === 'error' && 'border-red-300',
+                      )}
+                      onClick={() => handleAgentClick(agent)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          handleAgentClick(agent);
+                        }
+                      }}
+                    >
+                        agent.status === 'error' && 'border-red-300',
+                      )}
+                      onClick={() => handleAgentClick(agent)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          handleAgentClick(agent);
+                        }
+                      }}
+                    >
+                        agent.status === 'error' && 'border-red-300',
+                      )}
+                      onClick={() => handleAgentClick(agent)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          handleAgentClick(agent);
+                        }
+                      }}
+                    >
+                        agent.status === 'error' && 'border-red-300',
+                      )}
+                      onClick={() => handleAgentClick(agent)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          handleAgentClick(agent);
+                        }
+                      }}
+                    >
+                        isSelected && 'ring-2 ring-blue-500 ring-offset-2',
+                        agent.status === 'error' && 'border-red-300',
+                      )}
+                      onClick={() => handleAgentClick(agent)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          handleAgentClick(agent);
+                        }
+                      }}
+                    >
+                        agent.status === 'error' && 'border-red-300',
+                      )}
+                      onClick={() => handleAgentClick(agent)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          handleAgentClick(agent);
+                        }
+                      }}
                     >
                       <CardHeader className="pb-3">
                         <div className="flex items-start justify-between">

@@ -852,42 +852,42 @@ export function ChatInterface({ className, initialMessage }: ChatInterfaceProps)
                 <div className={`flex-1 max-w-3xl ${
                   message.role === 'user' ? 'text-right' : 'text-left'
                 }`}>
-                  <div className={`inline-block p-4 rounded-2xl ${
-                    message.role === 'user'
+                    <div className={`inline-block p-4 rounded-2xl ${
+                      message.role === 'user'
                       ? 'bg-primary text-primary-foreground ml-12'
                       : 'bg-muted mr-12'
-                  }`}>
-                    <div className="prose prose-sm dark:prose-invert max-w-none">
+                    }`}>
+                      <div className="prose prose-sm dark:prose-invert max-w-none">
                       <ReactMarkdown
                         components={{
-                          code: ({ className, children, ...props }: any) => {
-            const inline = !props.className;
-                            const match = /language-(\w+)/.exec(className || '');
-                            return !inline && match ? (
-                              <SyntaxHighlighter
-                                style={oneDark}
-                                language={match[1]}
-                                PreTag="div"
-                                className="rounded-md my-2"
-                                {...props}
-                              >
-                                {String(children).replace(/\n$/, '')}
-                              </SyntaxHighlighter>
-                            ) : (
-                              <code className="bg-background/50 px-1.5 py-0.5 rounded text-sm font-mono" {...props}>
-                                {children}
-                              </code>
-                            );
-                          },
-                          p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
-                          ul: ({ children }) => <ul className="list-disc list-inside mb-2">{children}</ul>,
-                          ol: ({ children }) => <ol className="list-decimal list-inside mb-2">{children}</ol>,
+                        code: ({ className, children, ...props }: any) => {
+                          const inline = !props.className;
+                          const match = /language-(\w+)/.exec(className || '');
+                          return !inline && match ? (
+                          <SyntaxHighlighter
+                            style={oneDark}
+                            language={match[1]}
+                            PreTag="div"
+                            className="rounded-md my-2"
+                            {...props}
+                          >
+                            {String(children).replace(/\n$/, '')}
+                          </SyntaxHighlighter>
+                          ) : (
+                          <code className="bg-background/50 px-1.5 py-0.5 rounded text-sm font-mono" {...props}>
+                            {children}
+                          </code>
+                          );
+                        },
+                        p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
+                        ul: ({ children }) => <ul className="list-disc list-inside mb-2">{children}</ul>,
+                        ol: ({ children }) => <ol className="list-decimal list-inside mb-2">{children}</ol>,
                         }}
                       >
                         {message.content}
                       </ReactMarkdown>
+                      </div>
                     </div>
-                  </div>
 
                   {/* Message Metadata */}
                   <div className={`text-xs text-muted-foreground mt-1 ${
