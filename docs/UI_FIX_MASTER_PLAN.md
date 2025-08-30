@@ -160,15 +160,16 @@ border-gray-700 → border-border/80
 ```bash
 # Create branch
 git checkout -b refactor/css-variables
-git checkout main -- .
 
 # Use sed to replace colors (macOS)
-find frontend/src -type f -name "*.tsx" -o -name "*.ts" | xargs sed -i '' \
-  -e 's/bg-\[#131314\]/bg-background/g' \
-  -e 's/bg-\[#1F1F20\]/bg-card/g' \
-  -e 's/bg-\[#2A2B2C\]/bg-secondary/g' \
-  -e 's/bg-\[#3C3C3C\]/bg-muted/g' \
-  -e 's/border-\[#3C3C3C\]/border-border/g'
+find frontend/src \( -name "*.tsx" -o -name "*.ts" \) -type f -print0 | \
+  xargs -0 sed -i.bak \
+    -e 's/bg-\[#131314\]/bg-background/g' \
+    -e 's/bg-\[#1F1F20\]/bg-card/g' \
+    -e 's/bg-\[#2A2B2C\]/bg-secondary/g' \
+    -e 's/bg-\[#3C3C3C\]/bg-muted/g' \
+    -e 's/border-\[#3C3C3C\]/border-border/g'
+# Linux note: GNU sed also supports -i.bak; remove *.bak after verifying.
 
 # Verify changes
 npm run dev
