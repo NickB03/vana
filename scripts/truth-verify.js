@@ -283,13 +283,14 @@ class TruthVerifier {
   async captureA11yMetrics() {
     try {
       // Run axe-core accessibility tests
-      const axeResults = execSync(
-        'npx axe-core src/components --tags=wcag2a,wcag2aa --format=json',
+      // Run accessibility checks via the @axe-core/cli on a live URL
+      const axeJson = execSync(
+        'npx @axe-core/cli http://localhost:5173 --tags wcag2a,wcag2aa --format json',
         { encoding: 'utf8' }
       );
 
       const a11yMetrics = {
-        axe: JSON.parse(axeResults),
+        axe: JSON.parse(axeJson),
         timestamp: new Date().toISOString(),
       };
 
