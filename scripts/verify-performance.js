@@ -153,7 +153,7 @@ class PerformanceVerifier {
       pageChunks.forEach(chunk => {
         if (chunk.endsWith('.js')) {
           try {
-            const chunkPath = path.join(buildPath, 'static', chunk);
+            const chunkPath = path.join(buildPath, chunk.replace(/^\/?_next\//, ''));
             if (fs.existsSync(chunkPath)) {
               const size = fs.statSync(chunkPath).size;
               chunks[chunk] = size;
