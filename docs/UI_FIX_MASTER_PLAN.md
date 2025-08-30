@@ -57,16 +57,13 @@ npm run typecheck
 # Create PR
 git checkout -b fix/restore-css-imports
 git add src/app/layout.tsx
-git commit -m "fix: restore CSS and font imports for styling system
+git commit -m "fix: restore CSS and font imports for styling system" \
+  -m "Uncomment globals.css import to restore CSS variables
+Uncomment and configure Inter font import
+Add font variable to body className
+Fix broken styling across entire application
 
-- Uncomment globals.css import to restore CSS variables
-- Uncomment and configure Inter font import
-- Add font variable to body className
-- Fixes broken styling across entire application
-
-Resolves: Broken UI styling
-"
-
+Resolves: Broken UI styling"
 # Push and create PR
 git push origin fix/restore-css-imports
 gh pr create \
