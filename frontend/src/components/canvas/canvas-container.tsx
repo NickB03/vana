@@ -113,7 +113,7 @@ export function CanvasContainer({
   // Save version
   const handleSave = useCallback(() => {
     const version: CanvasVersion = {
-      id: `version-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      id: `version-${Date.now()}-${crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substr(2, 9)}`,
       timestamp: new Date(),
       content: state.content,
       mode: state.mode,
