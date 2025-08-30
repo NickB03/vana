@@ -96,9 +96,12 @@ export function CanvasToolbar({
                 key={modeKey}
                 value={modeKey}
                 className="flex items-center gap-2 min-w-0"
+                aria-label={modeLabels[modeKey as CanvasMode]}
               >
                 <Icon className="w-4 h-4" />
-                <span className="hidden sm:inline">{modeLabels[modeKey as CanvasMode]}</span>
+                <span className="hidden sm:inline">
+                  {modeLabels[modeKey as CanvasMode]}
+                </span>
               </TabsTrigger>
             ))}
           </TabsList>
