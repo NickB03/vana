@@ -17,9 +17,6 @@ RUN uv sync --frozen
 # Copy application code
 COPY ./app ./app
 
-# Copy frontend build (if needed)
-COPY ./frontend/out ./frontend/out
-
 # Set environment for local development
 ENV ENVIRONMENT=local
 ENV PORT=8080
