@@ -156,8 +156,9 @@ const THRESHOLDS = {
     seo: 90,           // Lighthouse SEO score
   },
   coreWebVitals: {
+  coreWebVitals: {
     LCP: 2500,         // Largest Contentful Paint (ms)
-    FID: 100,          // First Input Delay (ms)
+    INP: 200,          // Interaction to Next Paint (ms)
     CLS: 0.1,          // Cumulative Layout Shift
   },
   bundle: {
