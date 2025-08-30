@@ -148,17 +148,11 @@ const SidebarContent: React.FC<SidebarContentProps> = ({
                   tabIndex={0}
                   aria-current={currentSession?.id === session.id ? 'true' : undefined}
                   onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    handleSessionSelect(session);
-                  }
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      handleSessionSelect(session);
+                    }
                   }}
-                >
-                  if (e.key === 'Enter' || e.key === ' ') {
-                  e.preventDefault();
-                  handleSessionSelect(session);
-                  }
-                }}
                 >
                 <MessageSquare className="w-4 h-4 flex-shrink-0" />
                 <span className="flex-1 truncate text-sm">{session.title}</span>

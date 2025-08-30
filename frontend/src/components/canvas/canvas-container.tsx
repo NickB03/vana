@@ -58,7 +58,6 @@ export function CanvasContainer({
     }
     
     return {
-    return {
       content: initialContent || '',
       mode: initialMode,
       language: initialLanguage,
@@ -284,28 +283,6 @@ Created: ${new Date().toISOString()}
         variant: 'destructive',
       });
       return;
-    }
-    const mime = mimeByFormat[options.format];
-    // Ensure filename has the right extension
-    const ensureExt = (name: string, ext: string) =>
-      name.toLowerCase().endsWith(`.${ext}`) ? name : `${name}.${ext}`;
-    const filename = ensureExt(options.filename, options.format);
-
-    const blob = new Blob([content], { type: mime });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-
-    toast({
-      title: 'File exported',
-      description: `Exported as "${options.filename}"`,
-    });
-  }, [state.content, state.mode, state.language, toast]);
     }
     const mime = mimeByFormat[options.format];
     // Ensure filename has the right extension

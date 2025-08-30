@@ -377,39 +377,11 @@ export function AgentTaskDeck({
                   scale: 1.02,
                   transition: { duration: 0.2 }
                 }}
-              >
-                  : (ANIMATION_VARIANTS[agent.status] ? agent.status : 'idle')
-                }
-                exit={{ opacity: 0, scale: 0.9 }}
-                whileHover={{
-                  scale: 1.02,
-                  transition: { duration: 0.2 }
-                }}
-              >
-                  : (ANIMATION_VARIANTS[agent.status] ? agent.status : 'idle')
-                }
-                exit={{ opacity: 0, scale: 0.9 }}
-                whileHover={{
-                  scale: 1.02,
-                  transition: { duration: 0.2 }
-                }}
-              >
-                  : (ANIMATION_VARIANTS[agent.status] ? agent.status : 'idle')
-                }
-                exit={{ opacity: 0, scale: 0.9 }}
-                whileHover={{
-                  scale: 1.02,
-                  transition: { duration: 0.2 }
-                }}
-              >
-                whileHover={{ 
-                  scale: 1.02,
-                  transition: { duration: 0.2 }
-                }}
                 whileTap={{ scale: 0.98 }}
                 className="relative"
               >
                 <HoverCard>
+                  <HoverCardTrigger asChild>
                     <Card
                       role="button"
                       tabIndex={0}
