@@ -152,6 +152,7 @@ export function CanvasVersionHistory({
                             size="sm"
                             onClick={() => setPreviewVersion(version)}
                             className="h-8 w-8 p-0"
+                            aria-label={`Preview version ${version.title}`}
                           >
                             <Eye className="w-4 h-4" />
                           </Button>
@@ -162,6 +163,7 @@ export function CanvasVersionHistory({
                               size="sm"
                               onClick={() => onRestoreVersion(version)}
                               className="h-8 w-8 p-0"
+                              aria-label={`Restore version ${version.title}`}
                             >
                               <RotateCcw className="w-4 h-4" />
                             </Button>
@@ -172,6 +174,7 @@ export function CanvasVersionHistory({
                             size="sm"
                             onClick={() => onExportVersion(version)}
                             className="h-8 w-8 p-0"
+                            aria-label={`Export version ${version.title}`}
                           >
                             <Download className="w-4 h-4" />
                           </Button>
@@ -182,6 +185,7 @@ export function CanvasVersionHistory({
                             onClick={() => onDeleteVersion(version.id)}
                             className="h-8 w-8 p-0 text-destructive hover:text-destructive"
                             disabled={isCurrentVersion}
+                            aria-label={`Delete version ${version.title}`}
                           >
                             <Trash2 className="w-4 h-4" />
                           </Button>
