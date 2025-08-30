@@ -1,27 +1,14 @@
-name: Deploy to Cloud Run
+name: Deploy to Cloud Run (DISABLED - Local Build Priority)
 
-# NOTE: Deployment workflow disabled by default to avoid GCP dependency failures
-# Uncomment the 'on' section below and ensure GCP credentials are configured to enable
+# IMPORTANT: Cloud Run deployment is currently disabled
+# Focus is on local development and build process
+# To re-enable: Configure GCP credentials and uncomment the workflow_dispatch trigger
+
 on:
-  # push:
-  #   branches: [main]
   workflow_dispatch:
     inputs:
-      environment:
-        description: 'Deployment environment'
-        required: true
-        default: 'staging'
-        type: choice
-        options:
-          - staging
-          - production
-      skip_tests:
-        description: 'Skip integration tests'
-        required: false
-        default: false
-        type: boolean
-      force_deploy:
-        description: 'Force deployment (requires GCP credentials)'
+      enable_deployment:
+        description: 'This workflow is disabled. Set to true only after local builds are stable'
         required: true
         default: false
         type: boolean
@@ -40,14 +27,29 @@ permissions:
 
 jobs:
   # ============================================================================
-  # BUILD & PUSH CONTAINER
+  # WORKFLOW DISABLED CHECK
+  # ============================================================================
+  check-enabled:
+    name: Check if Deployment is Enabled
+    runs-on: ubuntu-latest
+    if: github.event.inputs.enable_deployment != 'true'
+    steps:
+      - name: Deployment Disabled
+        run: |
+          echo "❌ Cloud Run deployment is currently disabled"
+          echo "📝 Focus on local development and testing first"
+          echo "✅ Once local builds are stable, enable this workflow"
+          exit 1
+
+  # ============================================================================
+  # BUILD & PUSH CONTAINER (DISABLED)
   # ============================================================================
   build:
-    name: Build Container
+    name: Build Container (DISABLED)
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    # Only run if force_deploy is true or this is a manual dispatch
-    if: github.event.inputs.force_deploy == 'true' || github.event_name == 'workflow_dispatch'
+    # Only run if explicitly enabled
+    if: github.event.inputs.enable_deployment == 'true'
     outputs:
       image_tag: ${{ steps.image.outputs.tag }}
       image_url: ${{ steps.image.outputs.url }}

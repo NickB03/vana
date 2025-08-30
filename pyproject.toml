@@ -46,6 +46,8 @@ dev = [
     "psutil>=5.9.0,<6.0.0",
     "bandit[toml]>=1.7.0,<2.0.0",
     "safety>=2.3.0,<4.0.0",
+    "ruff>=0.1.0,<1.0.0",  # Added ruff to dev group for CI compatibility
+    "mypy>=1.0.0,<2.0.0",  # Added mypy to dev group for CI compatibility
 ]
 lint = [
     "ruff>=0.1.0,<1.0.0",
@@ -56,6 +58,9 @@ lint = [
 ]
 
 [project.optional-dependencies]
+dev = [
+    "bandit~=1.7.5",
+]
 jupyter = [
     "jupyter>=1.0.0,<2.0.0",
 ]

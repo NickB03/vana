@@ -29,31 +29,72 @@ playground:
 	@echo "==============================================================================="
 	uv run --env-file .env.local adk web --port 8501
 
-# Deploy the agent remotely
-# Usage: make backend [IAP=true] [PORT=8080] - Set IAP=true to enable Identity-Aware Proxy, PORT to specify container port
-backend:
-	PROJECT_ID=$$(gcloud config get-value project) && \
-	gcloud beta run deploy my-project \
-		--source . \
-		--memory "4Gi" \
-		--project $$PROJECT_ID \
-		--region "us-central1" \
-		--no-allow-unauthenticated \
-		--no-cpu-throttling \
-		--labels "created-by=adk" \
-		--set-env-vars \
-		"COMMIT_SHA=$(shell git rev-parse HEAD)" \
-		$(if $(IAP),--iap) \
-		$(if $(PORT),--port=$(PORT))
+# Cloud Run deployment (DISABLED - focusing on local builds)
+# To re-enable: Uncomment after local development is stable and GCP credentials are configured
+# backend:
+# 	PROJECT_ID=$$(gcloud config get-value project) && \
+# 	gcloud beta run deploy my-project \
+# 		--source . \
+# 		--memory "4Gi" \
+# 		--project $$PROJECT_ID \
+# 		--region "us-central1" \
+# 		--no-allow-unauthenticated \
+# 		--no-cpu-throttling \
+# 		--labels "created-by=adk" \
+# 		--set-env-vars \
+# 		"COMMIT_SHA=$(shell git rev-parse HEAD)" \
+# 		$(if $(IAP),--iap) \
+# 		$(if $(PORT),--port=$(PORT))
+
+# Local build and test (PRIMARY FOCUS)
+build-local:
+	@echo "🏠 Building and testing locally..."
+	@$(MAKE) test
+	@$(MAKE) lint
+	@$(MAKE) typecheck
+	@echo "✅ Local build successful!"
 
 # Launch local development server with hot-reload
 local-backend:
 	uv run --env-file .env.local uvicorn app.server:app --host 0.0.0.0 --port 8000 --reload
 
-# Set up development environment resources using Terraform
-setup-dev-env:
-	PROJECT_ID=$$(gcloud config get-value project) && \
-	(cd deployment/terraform/dev && terraform init && terraform apply --var-file vars/env.tfvars --var dev_project_id=$$PROJECT_ID --auto-approve)
+# Docker-based local development
+docker-up:
+	@echo "🐳 Starting Docker services..."
+	docker-compose up -d
+	@echo "✅ Services running at:"
+	@echo "   - Backend: http://localhost:8000"
+	@echo "   - Frontend: http://localhost:5173"
+
+docker-down:
+	@echo "🛑 Stopping Docker services..."
+	docker-compose down -v
+
+docker-build:
+	@echo "🔨 Building Docker images..."
+	docker build -f Dockerfile.local -t vana-backend:local .
+	docker build -f frontend/Dockerfile -t vana-frontend:local ./frontend
+	@echo "✅ Docker images built!"
+
+docker-logs:
+	docker-compose logs -f
+
+docker-restart:
+	@$(MAKE) docker-down
+	@$(MAKE) docker-build
+	@$(MAKE) docker-up
+
+# Terraform setup (DISABLED - focusing on local development)
+# To re-enable: Uncomment after local development is stable
+# setup-dev-env:
+# 	PROJECT_ID=$$(gcloud config get-value project) && \
+# 	(cd deployment/terraform/dev && terraform init && terraform apply --var-file vars/env.tfvars --var dev_project_id=$$PROJECT_ID --auto-approve)
+
+# Local development environment setup
+setup-local-env:
+	@echo "🔧 Setting up local development environment..."
+	@$(MAKE) install
+	@echo "✅ Local environment ready!"
 
 # Run unit and integration tests
 test:

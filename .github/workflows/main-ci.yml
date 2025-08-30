@@ -1,8 +1,8 @@
-name: Main CI/CD Pipeline (Performance Optimized)
+name: Local Build & Test Pipeline
 
-# NOTE: Google Cloud dependencies have been disabled to prevent CI failures
-# Backend startup and full integration tests are commented out
-# To re-enable: configure GCP service account key and uncomment backend sections
+# FOCUS: Local development and testing without cloud dependencies
+# This pipeline prioritizes local builds and comprehensive testing
+# Cloud deployment will be re-enabled after local stability is achieved
 
 on:
   push:

@@ -4,6 +4,8 @@ export { AgentStatus } from './agent-status';
 export { AgentSelector } from './agent-selector';
 export { AgentActivity } from './agent-activity';
 export { AgentCapabilities } from './agent-capabilities';
+export { AgentTaskDeck } from './agent-task-deck';
+export { AgentTaskDeckDemo } from './agent-task-deck-demo';
 
 // Types
 export type { 
