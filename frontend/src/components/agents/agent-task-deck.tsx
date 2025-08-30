@@ -363,6 +363,7 @@ export function AgentTaskDeck({
             const statusColor = getStatusColor(agent.status);
             const recentThought = thoughtBubbles.find(t => t.agentId === agent.id);
             
+            return (
               <motion.div
                 key={agent.id}
                 layout
@@ -391,127 +392,6 @@ export function AgentTaskDeck({
                         'cursor-pointer transition-all duration-200 hover:shadow-lg',
                         'border-2',
                         isSelected && 'ring-2 ring-blue-500 ring-offset-2',
-                        agent.status === 'error' && 'border-red-300',
-                      )}
-                      onClick={() => handleAgentClick(agent)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
-                          e.preventDefault();
-                          handleAgentClick(agent);
-                        }
-                      }}
-                    >
-                        agent.status === 'error' && 'border-red-300',
-                      )}
-                      onClick={() => handleAgentClick(agent)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
-                          e.preventDefault();
-                          handleAgentClick(agent);
-                        }
-                      }}
-                    >
-                        agent.status === 'error' && 'border-red-300',
-                      )}
-                      onClick={() => handleAgentClick(agent)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
-                          e.preventDefault();
-                          handleAgentClick(agent);
-                        }
-                      }}
-                    >
-                        agent.status === 'error' && 'border-red-300',
-                      )}
-                      onClick={() => handleAgentClick(agent)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
-                          e.preventDefault();
-                          handleAgentClick(agent);
-                        }
-                      }}
-                    >
-                        agent.status === 'error' && 'border-red-300',
-                      )}
-                      onClick={() => handleAgentClick(agent)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
-                          e.preventDefault();
-                          handleAgentClick(agent);
-                        }
-                      }}
-                    >
-                        agent.status === 'error' && 'border-red-300',
-                      )}
-                      onClick={() => handleAgentClick(agent)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
-                          e.preventDefault();
-                          handleAgentClick(agent);
-                        }
-                      }}
-                    >
-                        agent.status === 'error' && 'border-red-300',
-                      )}
-                      onClick={() => handleAgentClick(agent)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
-                          e.preventDefault();
-                          handleAgentClick(agent);
-                        }
-                      }}
-                    >
-                        agent.status === 'error' && 'border-red-300',
-                      )}
-                      onClick={() => handleAgentClick(agent)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
-                          e.preventDefault();
-                          handleAgentClick(agent);
-                        }
-                      }}
-                    >
-                        agent.status === 'error' && 'border-red-300',
-                      )}
-                      onClick={() => handleAgentClick(agent)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
-                          e.preventDefault();
-                          handleAgentClick(agent);
-                        }
-                      }}
-                    >
-                        agent.status === 'error' && 'border-red-300',
-                      )}
-                      onClick={() => handleAgentClick(agent)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
-                          e.preventDefault();
-                          handleAgentClick(agent);
-                        }
-                      }}
-                    >
-                        agent.status === 'error' && 'border-red-300',
-                      )}
-                      onClick={() => handleAgentClick(agent)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
-                          e.preventDefault();
-                          handleAgentClick(agent);
-                        }
-                      }}
-                    >
-                        isSelected && 'ring-2 ring-blue-500 ring-offset-2',
-                        agent.status === 'error' && 'border-red-300',
-                      )}
-                      onClick={() => handleAgentClick(agent)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
-                          e.preventDefault();
-                          handleAgentClick(agent);
-                        }
-                      }}
-                    >
                         agent.status === 'error' && 'border-red-300',
                       )}
                       onClick={() => handleAgentClick(agent)}
