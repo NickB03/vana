@@ -49,6 +49,29 @@ interface SSEEvent {
   timestamp?: string;
 }
 
+interface AgentResponseStartData {
+  message: ChatMessage;
+  messageId?: string;
+  model?: string;
+}
+
+interface AgentResponseChunkData {
+  content: string;
+  messageId: string;
+}
+
+interface AgentResponseCompleteData {
+  messageId: string;
+  content?: string;
+  model?: string;
+  tool_calls?: unknown[];
+}
+
+interface AgentErrorData {
+  error: string;
+  messageId?: string;
+}
+
 interface ChatInterfaceProps {
   className?: string;
   initialMessage?: string;
@@ -140,7 +163,7 @@ function TypingIndicator({ agents, isVisible }: TypingIndicatorProps) {
             <Loader2 className="w-3 h-3" />
           </motion.div>
           <span>
-            {agents.length === 1 ? agents[0]?.name : `${agents.length} agents`} typing...
+            {agents.length === 1 ? agents[0]?.name ?? 'Agent' : `${agents.length} agents`} typing...
           </span>
         </div>
       </motion.div>
@@ -177,21 +200,21 @@ function StreamingIndicator({ content, isStreaming }: StreamingIndicatorProps) {
     <div className="relative">
       <ReactMarkdown
         components={{
-          code: ({ className, children, ...props }: any) => {
-            const inline = !props.className;
+          code: (props) => {
+            const { className, children, ...restProps } = props;
+            const inline = !className;
             const match = /language-(\w+)/.exec(className || '');
             return !inline && match ? (
               <SyntaxHighlighter
-                style={oneDark}
+                style={oneDark as { [key: string]: React.CSSProperties }}
                 language={match[1]}
                 PreTag="div"
                 className="rounded-md"
-                {...props}
               >
                 {String(children).replace(/\n$/, '')}
               </SyntaxHighlighter>
             ) : (
-              <code className="bg-muted px-1 py-0.5 rounded text-sm" {...props}>
+              <code className="bg-muted px-1 py-0.5 rounded text-sm" {...restProps}>
                 {children}
               </code>
             );
@@ -332,7 +355,7 @@ export function ChatInterface({ className, initialMessage }: ChatInterfaceProps)
       };
       
       // Handle different event types with security validation
-      const handleSecureEvent = (eventType: string, handler: (data: any) => void) => {
+      const handleSecureEvent = <T = unknown>(eventType: string, handler: (data: T) => void) => {
         eventSource.addEventListener(eventType, (event) => {
           try {
             const messageEvent = event as MessageEvent;
@@ -344,7 +367,7 @@ export function ChatInterface({ className, initialMessage }: ChatInterfaceProps)
               return;
             }
             
-            const data = JSON.parse(sanitizedData);
+            const data = JSON.parse(sanitizedData) as T;
             handler(data);
           } catch (error) {
             console.error(`Failed to parse ${eventType} event:`, error);
@@ -352,10 +375,10 @@ export function ChatInterface({ className, initialMessage }: ChatInterfaceProps)
         });
       };
       
-      handleSecureEvent('agent_response_start', handleResponseStart);
-      handleSecureEvent('agent_response_chunk', handleResponseChunk);
-      handleSecureEvent('agent_response_complete', handleResponseComplete);
-      handleSecureEvent('error', handleErrorEvent);
+      handleSecureEvent<AgentResponseStartData>('agent_response_start', handleResponseStart);
+      handleSecureEvent<AgentResponseChunkData>('agent_response_chunk', handleResponseChunk);
+      handleSecureEvent<AgentResponseCompleteData>('agent_response_complete', handleResponseComplete);
+      handleSecureEvent<AgentErrorData>('error', handleErrorEvent);
       
     } catch (error) {
       console.error('Failed to create SSE connection:', error);
@@ -368,7 +391,7 @@ export function ChatInterface({ className, initialMessage }: ChatInterfaceProps)
     console.log('SSE Event:', event.type, event.data);
   };
   
-  const handleResponseStart = (data: { message: ChatMessage; messageId?: string; model?: string }) => {
+  const handleResponseStart = (data: AgentResponseStartData) => {
     setIsStreaming(true);
     
     // Sanitize and validate incoming data
@@ -395,14 +418,14 @@ export function ChatInterface({ className, initialMessage }: ChatInterfaceProps)
     setCurrentStreamingMessage(streamingMessage);
   };
   
-  const handleResponseChunk = (data: { content: string; messageId: string }) => {
+  const handleResponseChunk = (data: AgentResponseChunkData) => {
     if (currentStreamingMessage) {
       // Sanitize chunk content to prevent XSS
       const sanitizedContent = sanitizeText(data.content || '');
       const sanitizedMessageId = sanitizeText(data.messageId);
       
       // Validate that message ID matches current streaming message
-      if (sanitizedMessageId && sanitizedMessageId !== currentStreamingMessage.id) {
+      if (sanitizedMessageId && currentStreamingMessage?.id && sanitizedMessageId !== currentStreamingMessage.id) {
         console.warn('Message ID mismatch in chunk, ignoring');
         return;
       }
@@ -414,7 +437,7 @@ export function ChatInterface({ className, initialMessage }: ChatInterfaceProps)
     }
   };
   
-  const handleResponseComplete = (data: { messageId: string; content?: string; model?: string; tool_calls?: unknown[] }) => {
+  const handleResponseComplete = (data: AgentResponseCompleteData) => {
     if (currentStreamingMessage) {
       // Sanitize final content and metadata
       const sanitizedContent = data.content ? sanitizeText(data.content) : currentStreamingMessage.content;
@@ -422,7 +445,7 @@ export function ChatInterface({ className, initialMessage }: ChatInterfaceProps)
       const sanitizedMessageId = sanitizeText(data.messageId);
       
       // Validate message ID matches
-      if (sanitizedMessageId !== currentStreamingMessage.id) {
+      if (currentStreamingMessage?.id && sanitizedMessageId !== currentStreamingMessage.id) {
         console.warn('Message ID mismatch in completion, using current message');
       }
       
@@ -444,7 +467,7 @@ export function ChatInterface({ className, initialMessage }: ChatInterfaceProps)
     setIsStreaming(false);
   };
   
-  const handleErrorEvent = (data: { error: string; messageId?: string }) => {
+  const handleErrorEvent = (data: AgentErrorData) => {
     // Sanitize error message to prevent XSS
     const sanitizedError = sanitizeText(data.error || 'An unexpected error occurred');
     const sanitizedMessageId = data.messageId ? sanitizeText(data.messageId) : undefined;
@@ -510,7 +533,7 @@ export function ChatInterface({ className, initialMessage }: ChatInterfaceProps)
     
     if (!messageValidation.success) {
       console.error('Message validation failed:', messageValidation.error);
-      const errorMsg = messageValidation.error.issues.map((e: any) => e.message).join(', ');
+      const errorMsg = messageValidation.error.issues.map((e) => e.message).join(', ');
       setConnectionError(`Invalid message: ${errorMsg}`);
       return;
     }
@@ -615,7 +638,7 @@ export function ChatInterface({ className, initialMessage }: ChatInterfaceProps)
     const messagesToKeep = currentSession.messages.slice(0, messageIndex);
     const lastUserMessage = messagesToKeep.findLast(m => m.role === 'user');
     
-    if (lastUserMessage) {
+    if (lastUserMessage?.content) {
       handleSendMessage(lastUserMessage.content);
     }
   }, [currentSession]);
@@ -860,21 +883,21 @@ export function ChatInterface({ className, initialMessage }: ChatInterfaceProps)
                       <div className="prose prose-sm dark:prose-invert max-w-none">
                       <ReactMarkdown
                         components={{
-                        code: ({ className, children, ...props }: any) => {
-                          const inline = !props.className;
+                        code: (props) => {
+                          const { className, children, ...restProps } = props;
+                          const inline = !className;
                           const match = /language-(\w+)/.exec(className || '');
                           return !inline && match ? (
                           <SyntaxHighlighter
-                            style={oneDark}
+                            style={oneDark as { [key: string]: React.CSSProperties }}
                             language={match[1]}
                             PreTag="div"
                             className="rounded-md my-2"
-                            {...props}
                           >
                             {String(children).replace(/\n$/, '')}
                           </SyntaxHighlighter>
                           ) : (
-                          <code className="bg-background/50 px-1.5 py-0.5 rounded text-sm font-mono" {...props}>
+                          <code className="bg-background/50 px-1.5 py-0.5 rounded text-sm font-mono" {...restProps}>
                             {children}
                           </code>
                           );

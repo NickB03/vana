@@ -43,10 +43,24 @@ export function CanvasContainer({
       try {
         const saved = localStorage.getItem(STORAGE_KEY);
         if (saved) {
-          const parsed = JSON.parse(saved);
+          const parsed = JSON.parse(saved) as {
+            content: string;
+            mode: CanvasMode;
+            language: CodeLanguage;
+            versions: Array<{
+              id: string;
+              timestamp: string;
+              content: string;
+              mode: CanvasMode;
+              language?: CodeLanguage;
+              title: string;
+            }>;
+            isPreviewEnabled: boolean;
+            isVersionHistoryOpen: boolean;
+          };
           return {
             ...parsed,
-            versions: parsed.versions.map((v: any) => ({
+            versions: parsed.versions.map((v) => ({
               ...v,
               timestamp: new Date(v.timestamp),
             })),
@@ -185,11 +199,64 @@ export function CanvasContainer({
     const file = event.target.files?.[0];
     if (!file) return;
 
+    // Validate file size (max 10MB)
+    const MAX_FILE_SIZE = 10 * 1024 * 1024;
+    if (file.size > MAX_FILE_SIZE) {
+      toast({
+        title: 'File too large',
+        description: 'Please select a file smaller than 10MB',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // Validate file type
+    const allowedExtensions = ['txt', 'md', 'html', 'htm', 'js', 'ts', 'py', 'json', 'css', 'yaml', 'yml'];
+    const fileExtension = file.name.split('.').pop()?.toLowerCase();
+    
+    if (!fileExtension || !allowedExtensions.includes(fileExtension)) {
+      toast({
+        title: 'Invalid file type',
+        description: 'Please select a supported file type: ' + allowedExtensions.join(', '),
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // Validate MIME type for additional security
+    const allowedMimeTypes = [
+      'text/plain', 'text/markdown', 'text/html', 'text/javascript', 'text/typescript',
+      'text/css', 'application/json', 'text/yaml', 'application/x-yaml'
+    ];
+    
+    if (!file.type.startsWith('text/') && !allowedMimeTypes.includes(file.type)) {
+      toast({
+        title: 'Invalid file format',
+        description: 'File format not supported for security reasons',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     const reader = new FileReader();
     reader.onload = (e) => {
       const rawContent = e.target?.result as string;
+      
+      // Additional content validation
+      if (rawContent.includes('<script') || rawContent.includes('javascript:') || rawContent.includes('data:')) {
+        toast({
+          title: 'Security warning',
+          description: 'File contains potentially dangerous content that has been sanitized',
+          variant: 'destructive',
+        });
+      }
+      
       // Sanitize imported content to prevent XSS
-      const content = DOMPurify.sanitize(rawContent);
+      const content = DOMPurify.sanitize(rawContent, {
+        ALLOWED_TAGS: [],
+        ALLOWED_ATTR: [],
+        KEEP_CONTENT: true
+      });
       handleContentChange(content);
       
       // Auto-detect mode based on file extension

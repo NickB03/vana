@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useCallback, useMemo } from 'react';
+import DOMPurify from 'dompurify';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -39,7 +40,7 @@ export function CanvasModes({
 
   const renderMarkdown = useCallback((markdown: string) => {
     // Basic markdown rendering - in production, use a proper markdown parser
-    return markdown
+    const html = markdown
       .replace(/^# (.*$)/gim, '<h1>$1</h1>')
       .replace(/^## (.*$)/gim, '<h2>$1</h2>')
       .replace(/^### (.*$)/gim, '<h3>$1</h3>')
@@ -50,6 +51,9 @@ export function CanvasModes({
       .replace(/^\- (.*$)/gim, '<li>$1</li>')
       .replace(/(\<li\>.*\<\/li\>)/s, '<ul>$1</ul>')
       .replace(/\n/gim, '<br>');
+    
+    // Sanitize the generated HTML to prevent XSS
+    return DOMPurify.sanitize(html);
   }, []);
 
   const runSandboxCode = useCallback(async () => {
@@ -65,19 +69,38 @@ export function CanvasModes({
       const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
       if (!iframeDoc) throw new Error('Cannot access iframe document');
       
-      // Prepare the code execution
+      // Validate and sanitize the user code before execution
+      const sanitizedCode = content
+        .replace(/<script[^>]*>.*?<\/script>/gis, '') // Remove script tags
+        .replace(/javascript:/gi, '') // Remove javascript: protocol
+        .replace(/on\w+\s*=/gi, '') // Remove event handlers
+        .replace(/eval\s*\(/gi, 'Math.abs(') // Replace eval with safe function
+        .replace(/Function\s*\(/gi, 'Math.abs(') // Replace Function constructor
+        .replace(/setTimeout|setInterval/gi, '// blocked'); // Block timers
+      
+      // Prepare the code execution with additional security
       const wrappedCode = `
         <html>
           <head>
+            <meta charset="UTF-8">
+            <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline';">
             <style>
               body { font-family: monospace; padding: 20px; }
-              .output { background: #f5f5f5; padding: 10px; margin: 10px 0; border-radius: 4px; }
+              .output { background: #f5f5f5; padding: 10px; margin: 10px 0; border-radius: 4px; white-space: pre-wrap; }
               .error { background: #fee; color: #c00; }
             </style>
           </head>
           <body>
             <div id="output"></div>
             <script>
+              // Disable dangerous globals
+              window.eval = undefined;
+              window.Function = undefined;
+              window.setTimeout = undefined;
+              window.setInterval = undefined;
+              window.XMLHttpRequest = undefined;
+              window.fetch = undefined;
+              
               const originalLog = console.log;
               const originalError = console.error;
               const output = document.getElementById('output');
@@ -85,7 +108,9 @@ export function CanvasModes({
               console.log = (...args) => {
                 const div = document.createElement('div');
                 div.className = 'output';
-                div.textContent = args.join(' ');
+                div.textContent = args.map(arg => 
+                  typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
+                ).join(' ');
                 output.appendChild(div);
                 originalLog(...args);
               };
@@ -93,15 +118,16 @@ export function CanvasModes({
               console.error = (...args) => {
                 const div = document.createElement('div');
                 div.className = 'output error';
-                div.textContent = 'Error: ' + args.join(' ');
+                div.textContent = 'Error: ' + args.map(arg => String(arg)).join(' ');
                 output.appendChild(div);
                 originalError(...args);
               };
               
               try {
-                ${content}
+                // Execute user code in a try-catch block
+                ${sanitizedCode}
               } catch (error) {
-                console.error(error.message);
+                console.error(error.message || 'Unknown error occurred');
               }
             </script>
           </body>
@@ -234,7 +260,7 @@ export function CanvasModes({
                 <iframe
                   srcDoc={content}
                   className="w-full h-full border-0"
-                  sandbox="allow-scripts allow-same-origin"
+                  sandbox="allow-scripts"
                   title={`${title} - Web Preview`}
                 />
               ) : (
@@ -328,7 +354,7 @@ export function CanvasModes({
                       ) : (
                         <div 
                           className="font-mono text-sm"
-                          dangerouslySetInnerHTML={{ __html: sandboxOutput || 'No output yet. Run the code to see results.' }}
+                          dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(sandboxOutput) || 'No output yet. Run the code to see results.' }}
                         />
                       )}
                     </ScrollArea>

@@ -177,7 +177,7 @@ export function CanvasEditor({
         className="h-full resize-none border-none bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 font-mono text-sm leading-relaxed"
         style={{
           minHeight: '100%',
-        } as React.CSSProperties}
+        }}
       />
     </div>
   );

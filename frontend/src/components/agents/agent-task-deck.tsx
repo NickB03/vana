@@ -484,7 +484,7 @@ export function AgentTaskDeck({
                         )}
 
                         {/* Thought Bubble */}
-                        {recentThought && (
+                        {recentThought?.thought && (
                           <motion.div
                             initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
@@ -502,13 +502,13 @@ export function AgentTaskDeck({
                             <div>
                               <span className="text-muted-foreground">Success:</span>
                               <span className="ml-1 font-medium">
-                                {Math.round(agent.stats.success_rate * 100)}%
+                                {Math.round((agent.stats?.success_rate ?? 0) * 100)}%
                               </span>
                             </div>
                             <div>
                               <span className="text-muted-foreground">Tasks:</span>
                               <span className="ml-1 font-medium">
-                                {agent.stats.tasks_completed}
+                                {agent.stats?.tasks_completed ?? 0}
                               </span>
                             </div>
                           </div>
@@ -516,16 +516,16 @@ export function AgentTaskDeck({
 
                         {/* Capabilities preview */}
                         <div className="flex flex-wrap gap-1">
-                          {agent.capabilities.slice(0, 2).map((capability) => (
+                          {agent.capabilities?.slice(0, 2).map((capability) => (
                             <Badge 
                               key={capability} 
                               variant="secondary" 
                               className="text-xs px-2 py-0"
                             >
-                              {capability.split('-')[0]}
+                              {capability?.split('-')[0] ?? capability}
                             </Badge>
                           ))}
-                          {agent.capabilities.length > 2 && (
+                          {agent.capabilities && agent.capabilities.length > 2 && (
                             <Badge variant="secondary" className="text-xs px-2 py-0">
                               +{agent.capabilities.length - 2}
                             </Badge>
@@ -562,21 +562,21 @@ export function AgentTaskDeck({
                       <div className="space-y-2">
                         <h4 className="text-sm font-medium">Statistics</h4>
                         <div className="grid grid-cols-2 gap-2 text-sm">
-                          <div>Success Rate: {Math.round(agent.stats.success_rate * 100)}%</div>
-                          <div>Avg Response: {agent.stats.average_response_time}ms</div>
-                          <div>Tasks: {agent.stats.tasks_completed}</div>
-                          <div>Messages: {agent.stats.messages_sent}</div>
+                          <div>Success Rate: {Math.round((agent.stats?.success_rate ?? 0) * 100)}%</div>
+                          <div>Avg Response: {agent.stats?.average_response_time ?? 0}ms</div>
+                          <div>Tasks: {agent.stats?.tasks_completed ?? 0}</div>
+                          <div>Messages: {agent.stats?.messages_sent ?? 0}</div>
                         </div>
                       </div>
                       
                       <div className="space-y-2">
                         <h4 className="text-sm font-medium">Capabilities</h4>
                         <div className="flex flex-wrap gap-1">
-                          {agent.capabilities.map((capability) => (
+                          {agent.capabilities?.map((capability) => (
                             <Badge key={capability} variant="outline" className="text-xs">
                               {capability}
                             </Badge>
-                          ))}
+                          )) ?? []}
                         </div>
                       </div>
                     </div>
@@ -612,15 +612,15 @@ export function AgentTaskDeck({
                   >
                     <Avatar className="h-6 w-6">
                       <AvatarFallback className="text-xs">
-                        {agent.personality.emoji}
+                        {agent.personality?.emoji ?? '🤖'}
                       </AvatarFallback>
                     </Avatar>
                     
                     <div className="flex-1 min-w-0">
                       <p className="text-sm truncate">
-                        <span className="font-medium">{agent.name}</span> {activity.activity}
+                        <span className="font-medium">{agent.name ?? 'Agent'}</span> {activity.activity ?? 'Working'}
                       </p>
-                      {activity.progress && (
+                      {activity.progress !== undefined && activity.progress > 0 && (
                         <Progress value={activity.progress} className="h-1 mt-1" />
                       )}
                     </div>

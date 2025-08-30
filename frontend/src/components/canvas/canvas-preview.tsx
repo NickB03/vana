@@ -71,7 +71,7 @@ export function CanvasPreview({ content, mode, className }: CanvasPreviewProps) 
               srcDoc={previewContent}
               className="w-full h-96 border border-border rounded-lg bg-white"
               title="Web Preview"
-              sandbox="allow-scripts"
+              sandbox="allow-scripts allow-popups"
             />
             ) : (
             <div
@@ -104,6 +104,14 @@ function renderMarkdown(content: string): string {
 }
 
 function renderWebPreview(content: string): string {
+  // Sanitize user content to prevent XSS attacks
+  const sanitizedContent = DOMPurify.sanitize(content, {
+    ALLOWED_TAGS: ['div', 'span', 'p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'strong', 'em', 'u', 'br', 'ul', 'ol', 'li', 'a', 'img', 'code', 'pre', 'blockquote', 'table', 'thead', 'tbody', 'tr', 'td', 'th'],
+    ALLOWED_ATTR: ['href', 'src', 'alt', 'title', 'class', 'id', 'style'],
+    FORBID_TAGS: ['script', 'object', 'embed', 'iframe', 'form', 'input', 'button'],
+    FORBID_ATTR: ['onload', 'onerror', 'onclick', 'onmouseover', 'onmouseout', 'onfocus', 'onblur']
+  });
+  
   // Basic HTML template with dark theme support
   return `
     <!DOCTYPE html>
@@ -131,7 +139,7 @@ function renderWebPreview(content: string): string {
       </style>
     </head>
     <body>
-      ${content}
+      ${sanitizedContent}
     </body>
     </html>
   `;
