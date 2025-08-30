@@ -5,6 +5,15 @@
  * 
  * Verifies performance metrics and regressions for the 6-PR UI fix implementation.
  * Compares current performance against baseline measurements.
+ * 
+ * Environment Variables:
+ * - BASE_URL or AUDIT_URL: The URL to audit (default: http://localhost:3000)
+ * - PORT: Automatically derived from BASE_URL and passed to dev server
+ * 
+ * Examples:
+ *   BASE_URL=http://localhost:5173 node verify-performance.js verify  # Vite
+ *   BASE_URL=http://localhost:3000 node verify-performance.js verify  # Next.js (default)
+ *   AUDIT_URL=http://localhost:8080 node verify-performance.js verify # Custom port
  */
 
 const fs = require('fs');
@@ -38,6 +47,17 @@ class PerformanceVerifier {
   constructor() {
     this.baselinePath = path.join(process.cwd(), 'verification/baseline');
     this.reportsPath = path.join(process.cwd(), 'verification/performance-reports');
+    
+    // Configurable base URL with Next.js default
+    this.baseUrl = process.env.BASE_URL || process.env.AUDIT_URL || 'http://localhost:3000';
+    
+    // Extract port from baseUrl
+    const urlParts = new URL(this.baseUrl);
+    this.port = urlParts.port || (urlParts.protocol === 'https:' ? '443' : '80');
+    if (this.port === '80' && this.baseUrl.includes('localhost')) {
+      this.port = '3000'; // Default for localhost without explicit port
+    }
+    
     this.results = {
       timestamp: new Date().toISOString(),
       metrics: {},
@@ -224,7 +244,7 @@ class PerformanceVerifier {
   }
 
   async runLighthouseAudit() {
-    console.log('🔍 Running Lighthouse audit...');
+    console.log(`🔍 Running Lighthouse audit on ${this.baseUrl}...`);
     
     try {
       // Start dev server if not running
@@ -232,14 +252,14 @@ class PerformanceVerifier {
       let serverProcess = null;
       
       if (!isServerRunning) {
-        console.log('   Starting dev server...');
+        console.log(`   Starting dev server on port ${this.port}...`);
         serverProcess = this.startDevServer();
         await this.waitForServer();
       }
 
       // Run Lighthouse
       const lighthouseCmd = [
-        'npx lighthouse http://localhost:5173',
+        `npx lighthouse ${this.baseUrl}`,
         '--output=json',
         '--quiet',
         '--chrome-flags="--headless --no-sandbox"',
@@ -274,7 +294,7 @@ class PerformanceVerifier {
 
   async checkServerRunning() {
     try {
-      const response = await fetch('http://localhost:5173', { 
+      const response = await fetch(this.baseUrl, { 
         method: 'HEAD',
         timeout: 1000,
       });
@@ -286,23 +306,29 @@ class PerformanceVerifier {
 
   startDevServer() {
     const { spawn } = require('child_process');
+    // Set PORT environment variable for the dev server
+    const env = { ...process.env, PORT: this.port };
+    
     return spawn('npm', ['run', 'dev'], {
       cwd: path.join(process.cwd(), 'frontend'),
       stdio: 'pipe',
+      env: env,
     });
   }
 
   async waitForServer(maxWait = 30000) {
     const startTime = Date.now();
+    console.log(`   Waiting for server at ${this.baseUrl}...`);
     
     while (Date.now() - startTime < maxWait) {
       if (await this.checkServerRunning()) {
+        console.log(`   ✅ Server is running at ${this.baseUrl}`);
         return true;
       }
       await new Promise(resolve => setTimeout(resolve, 1000));
     }
     
-    throw new Error('Server failed to start within timeout');
+    throw new Error(`Server failed to start at ${this.baseUrl} within timeout`);
   }
 
   extractCoreWebVitals(lighthouse) {
@@ -597,6 +623,14 @@ Commands:
   baseline  - Capture current metrics as baseline
   lighthouse - Run Lighthouse audit only
   bundle    - Analyze bundle size only
+
+Environment Variables:
+  BASE_URL or AUDIT_URL - URL to audit (default: http://localhost:3000)
+  
+Examples:
+  BASE_URL=http://localhost:5173 node verify-performance.js verify  # Vite
+  BASE_URL=http://localhost:3000 node verify-performance.js verify  # Next.js
+  AUDIT_URL=http://localhost:8080 node verify-performance.js verify # Custom
         `);
         break;
     }
