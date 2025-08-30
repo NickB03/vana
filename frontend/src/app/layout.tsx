@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 // import { Inter } from "next/font/google"; // Temporarily commented out for CSP testing
 // import "./globals.css"; // Temporarily commented out for CSP testing
 import { getNonce } from "@/lib/csp";
+import { Toaster } from "@/components/ui/sonner";
 
 export const metadata: Metadata = {
   title: "Vana - Virtual Autonomous Network Agent",
@@ -70,6 +71,9 @@ export default async function RootLayout({
         </a>
         
         {children}
+        
+        {/* Toast notifications */}
+        <Toaster />
         
         {/* CSP-compliant theme initialization script */}
         {nonce && (

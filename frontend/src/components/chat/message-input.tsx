@@ -4,6 +4,8 @@ import React, { useState, useRef, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
 import { 
   Send, 
   Paperclip, 
@@ -346,7 +348,7 @@ export function MessageInput({
         </Button>
         
         {/* Hidden file input */}
-        <input
+        <Input
           ref={fileInputRef}
           type="file"
           multiple
@@ -377,7 +379,7 @@ export function MessageInput({
         <label htmlFor="message-input" className="sr-only">
           Type your message
         </label>
-        <textarea
+        <Textarea
           id="message-input"
           ref={textareaRef}
           value={input}
@@ -385,10 +387,10 @@ export function MessageInput({
           onKeyDown={handleKeyDown}
           placeholder={isDragging ? "Drop files here..." : placeholder}
           disabled={disabled}
-          className={
-            "flex-1 resize-none bg-transparent border-0 outline-none min-h-[24px] max-h-[150px] "
-            + "placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 rounded"
-          }
+          className={cn(
+            "flex-1 resize-none bg-transparent border-0 outline-none min-h-[24px] max-h-[150px]",
+            "placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+          )}
           rows={1}
           aria-label="Type your message"
           aria-describedby="message-input-help"
