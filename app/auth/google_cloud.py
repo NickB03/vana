@@ -225,7 +225,22 @@ def create_google_cloud_user_binding(user_email: str, role: str) -> bool:
 
 
 # Global IAM instance for reuse
-google_iam = GoogleCloudIAM() if os.getenv("GOOGLE_CLOUD_PROJECT") else None
+# Check for CI environment and credentials availability
+def _should_initialize_iam() -> bool:
+    """Check if IAM should be initialized based on environment and credentials."""
+    if not os.getenv("GOOGLE_CLOUD_PROJECT"):
+        return False
+
+    # Skip initialization in CI environments unless credentials are available
+    if os.getenv("CI") == "true" or os.getenv("RUNNING_IN_CI") == "true":
+        # Check if we have valid credentials
+        creds_path = os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
+        if not creds_path or not os.path.exists(creds_path):
+            return False
+
+    return True
+
+google_iam = GoogleCloudIAM() if _should_initialize_iam() else None
 
 
 def get_google_iam() -> GoogleCloudIAM | None:

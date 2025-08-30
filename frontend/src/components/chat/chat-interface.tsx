@@ -1,16 +1,32 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import ReactMarkdown from 'react-markdown';
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { useAuth } from '@/hooks/use-auth';
 import { useSessionStore } from '@/store/session-store';
-import { MessageList } from './message-list';
 import { MessageInput } from './message-input';
-import { Card } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
-import { AlertCircle, Wifi, WifiOff } from 'lucide-react';
-import { ChatMessage } from '@/types/session';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { 
+  AlertCircle, 
+  Wifi, 
+  WifiOff, 
+  Copy, 
+  RotateCcw, 
+  Edit, 
+  User, 
+  Bot, 
+  Sparkles,
+  Loader2
+} from 'lucide-react';
+import { ChatMessage, AgentInfo } from '@/types/session';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
   sanitizeText, 
   chatMessageSchema, 
@@ -33,9 +49,189 @@ interface SSEEvent {
   timestamp?: string;
 }
 
+interface AgentResponseStartData {
+  message: ChatMessage;
+  messageId?: string;
+  model?: string;
+}
+
+interface AgentResponseChunkData {
+  content: string;
+  messageId: string;
+}
+
+interface AgentResponseCompleteData {
+  messageId: string;
+  content?: string;
+  model?: string;
+  tool_calls?: unknown[];
+}
+
+interface AgentErrorData {
+  error: string;
+  messageId?: string;
+}
+
 interface ChatInterfaceProps {
   className?: string;
   initialMessage?: string;
+}
+
+interface MessageActionsProps {
+  message: ChatMessage;
+  onCopy: () => void;
+  onRegenerate: () => void;
+  onEdit: () => void;
+}
+
+interface TypingIndicatorProps {
+  agents: AgentInfo[];
+  isVisible: boolean;
+}
+
+interface StreamingIndicatorProps {
+  content: string;
+  isStreaming: boolean;
+}
+
+// Message Actions Component
+function MessageActions({ message, onCopy, onRegenerate, onEdit }: MessageActionsProps) {
+  return (
+    <motion.div 
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="flex items-center gap-1 mt-2"
+    >
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button variant="ghost" size="sm" onClick={onCopy}>
+            <Copy className="w-3 h-3" />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>Copy message</TooltipContent>
+      </Tooltip>
+      
+      {message.role === 'assistant' && (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button variant="ghost" size="sm" onClick={onRegenerate}>
+              <RotateCcw className="w-3 h-3" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>Regenerate response</TooltipContent>
+        </Tooltip>
+      )}
+      
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button variant="ghost" size="sm" onClick={onEdit}>
+            <Edit className="w-3 h-3" />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>Edit message</TooltipContent>
+      </Tooltip>
+    </motion.div>
+  );
+}
+
+// Typing Indicator Component
+function TypingIndicator({ agents, isVisible }: TypingIndicatorProps) {
+  if (!isVisible || agents.length === 0) return null;
+
+  return (
+    <AnimatePresence>
+      <motion.div
+        initial={{ opacity: 0, height: 0 }}
+        animate={{ opacity: 1, height: 'auto' }}
+        exit={{ opacity: 0, height: 0 }}
+        className="flex items-center gap-2 px-4 py-2 text-sm text-muted-foreground"
+      >
+        <div className="flex -space-x-2">
+          {agents.slice(0, 3).map((agent) => (
+            <Avatar key={agent.id} className="w-6 h-6 border-2 border-background">
+              <AvatarFallback className="text-xs">
+                {agent.name.slice(0, 2).toUpperCase()}
+              </AvatarFallback>
+            </Avatar>
+          ))}
+        </div>
+        <div className="flex items-center gap-1">
+          <motion.div
+            animate={{ rotate: 360 }}
+            transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
+          >
+            <Loader2 className="w-3 h-3" />
+          </motion.div>
+          <span>
+            {agents.length === 1 ? agents[0]?.name ?? 'Agent' : `${agents.length} agents`} typing...
+          </span>
+        </div>
+      </motion.div>
+    </AnimatePresence>
+  );
+}
+
+// Streaming Indicator Component
+function StreamingIndicator({ content, isStreaming }: StreamingIndicatorProps) {
+  const [displayContent, setDisplayContent] = useState('');
+
+  useEffect(() => {
+    if (!isStreaming) {
+      setDisplayContent(content);
+      return;
+    }
+
+    const words = content.split(' ');
+    let currentIndex = 0;
+
+    const timer = setInterval(() => {
+      if (currentIndex < words.length) {
+        setDisplayContent(words.slice(0, currentIndex + 1).join(' '));
+        currentIndex++;
+      } else {
+        clearInterval(timer);
+      }
+    }, 50);
+
+    return () => clearInterval(timer);
+  }, [content, isStreaming]);
+
+  return (
+    <div className="relative">
+      <ReactMarkdown
+        components={{
+          code: (props) => {
+            const { className, children, ...restProps } = props;
+            const inline = !className;
+            const match = /language-(\w+)/.exec(className || '');
+            return !inline && match ? (
+              <SyntaxHighlighter
+                style={oneDark as { [key: string]: React.CSSProperties }}
+                language={match[1]}
+                PreTag="div"
+                className="rounded-md"
+              >
+                {String(children).replace(/\n$/, '')}
+              </SyntaxHighlighter>
+            ) : (
+              <code className="bg-muted px-1 py-0.5 rounded text-sm" {...restProps}>
+                {children}
+              </code>
+            );
+          }
+        }}
+      >
+        {displayContent}
+      </ReactMarkdown>
+      {isStreaming && (
+        <motion.span
+          animate={{ opacity: [1, 0] }}
+          transition={{ duration: 1, repeat: Infinity, ease: 'easeInOut' }}
+          className="inline-block w-2 h-4 bg-primary ml-1 rounded-sm"
+        />
+      )}
+    </div>
+  );
 }
 
 export function ChatInterface({ className, initialMessage }: ChatInterfaceProps) {
@@ -46,6 +242,7 @@ export function ChatInterface({ className, initialMessage }: ChatInterfaceProps)
   const [isStreaming, setIsStreaming] = useState(false);
   const [connectionError, setConnectionError] = useState<string | null>(null);
   const [currentStreamingMessage, setCurrentStreamingMessage] = useState<ChatMessage | null>(null);
+  const [activeAgents] = useState<AgentInfo[]>([]);
   
   const eventSourceRef = useRef<EventSource | null>(null);
   const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -124,15 +321,15 @@ export function ChatInterface({ className, initialMessage }: ChatInterfaceProps)
       
       eventSource.onmessage = (event) => {
         try {
-          // Sanitize and validate incoming event data
-          const rawData = sanitizeText(event.data);
-          if (!rawData || containsMaliciousPatterns(rawData)) {
+          // Parse JSON first, then sanitize specific fields to prevent JSON corruption
+          const data: SSEEvent = JSON.parse(event.data);
+          
+          // Sanitize and validate parsed data fields
+          if (containsMaliciousPatterns(event.data)) {
             console.error('Potentially malicious SSE data blocked');
             logSecurityViolation('xss_attempt', { data: event.data, source: 'sse' });
             return;
           }
-          
-          const data: SSEEvent = JSON.parse(rawData);
           
           // Validate event structure
           const validatedEvent = sseEventSchema.safeParse(data);
@@ -158,19 +355,19 @@ export function ChatInterface({ className, initialMessage }: ChatInterfaceProps)
       };
       
       // Handle different event types with security validation
-      const handleSecureEvent = (eventType: string, handler: (data: any) => void) => {
+      const handleSecureEvent = <T = unknown>(eventType: string, handler: (data: T) => void) => {
         eventSource.addEventListener(eventType, (event) => {
           try {
             const messageEvent = event as MessageEvent;
-            const sanitizedData = sanitizeText(messageEvent.data);
             
-            if (containsMaliciousPatterns(sanitizedData)) {
+            if (containsMaliciousPatterns(messageEvent.data)) {
               console.error(`Potentially malicious ${eventType} data blocked`);
               logSecurityViolation('xss_attempt', { eventType, data: messageEvent.data });
               return;
             }
             
-            const data = JSON.parse(sanitizedData);
+            // Parse JSON first, then sanitize specific fields
+            const data = JSON.parse(messageEvent.data) as T;
             handler(data);
           } catch (error) {
             console.error(`Failed to parse ${eventType} event:`, error);
@@ -178,10 +375,10 @@ export function ChatInterface({ className, initialMessage }: ChatInterfaceProps)
         });
       };
       
-      handleSecureEvent('agent_response_start', handleResponseStart);
-      handleSecureEvent('agent_response_chunk', handleResponseChunk);
-      handleSecureEvent('agent_response_complete', handleResponseComplete);
-      handleSecureEvent('error', handleErrorEvent);
+      handleSecureEvent<AgentResponseStartData>('agent_response_start', handleResponseStart);
+      handleSecureEvent<AgentResponseChunkData>('agent_response_chunk', handleResponseChunk);
+      handleSecureEvent<AgentResponseCompleteData>('agent_response_complete', handleResponseComplete);
+      handleSecureEvent<AgentErrorData>('error', handleErrorEvent);
       
     } catch (error) {
       console.error('Failed to create SSE connection:', error);
@@ -194,7 +391,7 @@ export function ChatInterface({ className, initialMessage }: ChatInterfaceProps)
     console.log('SSE Event:', event.type, event.data);
   };
   
-  const handleResponseStart = (data: { message: ChatMessage; messageId?: string; model?: string }) => {
+  const handleResponseStart = (data: AgentResponseStartData) => {
     setIsStreaming(true);
     
     // Sanitize and validate incoming data
@@ -221,42 +418,50 @@ export function ChatInterface({ className, initialMessage }: ChatInterfaceProps)
     setCurrentStreamingMessage(streamingMessage);
   };
   
-  const handleResponseChunk = (data: { content: string; messageId: string }) => {
-    if (currentStreamingMessage) {
-      // Sanitize chunk content to prevent XSS
-      const sanitizedContent = sanitizeText(data.content || '');
-      const sanitizedMessageId = sanitizeText(data.messageId);
+  const handleResponseChunk = (data: AgentResponseChunkData) => {
+    // Sanitize chunk content to prevent XSS
+    const sanitizedContent = sanitizeText(data.content || '');
+    const sanitizedMessageId = sanitizeText(data.messageId);
+    
+    // Use functional state update to prevent stale state capture
+    setCurrentStreamingMessage(prev => {
+      if (!prev) return null;
       
       // Validate that message ID matches current streaming message
-      if (sanitizedMessageId && sanitizedMessageId !== currentStreamingMessage.id) {
+      if (sanitizedMessageId && prev.id && sanitizedMessageId !== prev.id) {
         console.warn('Message ID mismatch in chunk, ignoring');
-        return;
+        return prev;
       }
       
-      setCurrentStreamingMessage(prev => prev ? {
+      return {
         ...prev,
         content: prev.content + sanitizedContent
-      } : null);
-    }
+      };
+    });
   };
   
-  const handleResponseComplete = (data: { messageId: string; content?: string; model?: string; tool_calls?: unknown[] }) => {
-    if (currentStreamingMessage) {
-      // Sanitize final content and metadata
-      const sanitizedContent = data.content ? sanitizeText(data.content) : currentStreamingMessage.content;
-      const sanitizedModel = data.model ? sanitizeText(data.model) : undefined;
-      const sanitizedMessageId = sanitizeText(data.messageId);
+  const handleResponseComplete = (data: AgentResponseCompleteData) => {
+    // Sanitize final content and metadata
+    const sanitizedModel = data.model ? sanitizeText(data.model) : undefined;
+    const sanitizedMessageId = sanitizeText(data.messageId);
+    
+    // Use functional state update to prevent stale state capture
+    setCurrentStreamingMessage(prev => {
+      if (!prev) return null;
+      
+      // Sanitize content, using current message content as fallback
+      const sanitizedContent = data.content ? sanitizeText(data.content) : prev.content;
       
       // Validate message ID matches
-      if (sanitizedMessageId !== currentStreamingMessage.id) {
+      if (prev.id && sanitizedMessageId !== prev.id) {
         console.warn('Message ID mismatch in completion, using current message');
       }
       
       const finalMessage: ChatMessage = {
-        ...currentStreamingMessage,
+        ...prev,
         content: sanitizedContent,
         metadata: {
-          ...currentStreamingMessage.metadata,
+          ...prev.metadata,
           streaming: false,
           model: sanitizedModel,
           tool_calls: data.tool_calls // Tool calls are handled separately and don't contain user-displayable content
@@ -264,13 +469,13 @@ export function ChatInterface({ className, initialMessage }: ChatInterfaceProps)
       };
       
       addMessage(finalMessage);
-      setCurrentStreamingMessage(null);
-    }
+      return null;
+    });
     
     setIsStreaming(false);
   };
   
-  const handleErrorEvent = (data: { error: string; messageId?: string }) => {
+  const handleErrorEvent = (data: AgentErrorData) => {
     // Sanitize error message to prevent XSS
     const sanitizedError = sanitizeText(data.error || 'An unexpected error occurred');
     const sanitizedMessageId = data.messageId ? sanitizeText(data.messageId) : undefined;
@@ -336,7 +541,7 @@ export function ChatInterface({ className, initialMessage }: ChatInterfaceProps)
     
     if (!messageValidation.success) {
       console.error('Message validation failed:', messageValidation.error);
-      const errorMsg = messageValidation.error.issues.map((e: any) => e.message).join(', ');
+      const errorMsg = messageValidation.error.issues.map((e) => e.message).join(', ');
       setConnectionError(`Invalid message: ${errorMsg}`);
       return;
     }
@@ -425,124 +630,378 @@ export function ChatInterface({ className, initialMessage }: ChatInterfaceProps)
     connectToSSE();
   };
   
+  // Message actions handlers
+  const handleCopyMessage = useCallback((content: string) => {
+    navigator.clipboard.writeText(content);
+  }, []);
+
+  const handleRegenerateMessage = useCallback((messageId: string) => {
+    // Find the message and regenerate response
+    if (!currentSession) return;
+    
+    const messageIndex = currentSession.messages.findIndex(m => m.id === messageId);
+    if (messageIndex === -1) return;
+    
+    // Remove all messages after this one and regenerate
+    const messagesToKeep = currentSession.messages.slice(0, messageIndex);
+    const lastUserMessage = messagesToKeep.findLast(m => m.role === 'user');
+    
+    if (lastUserMessage?.content) {
+      handleSendMessage(lastUserMessage.content);
+    }
+  }, [currentSession]);
+
+  const handleEditMessage = useCallback((messageId: string) => {
+    // Implementation for editing messages
+    console.log('Edit message:', messageId);
+  }, []);
+
   if (!user) {
     return (
-      <main className="flex items-center justify-center h-full" role="main">
-        <Card className="p-6 text-center" role="alert">
-          <AlertCircle className="w-12 h-12 mx-auto mb-4 text-muted-foreground" aria-hidden="true" />
-          <h2 className="text-lg font-semibold mb-2">Authentication Required</h2>
-          <p className="text-muted-foreground mb-4">
-            Please log in to start chatting with the AI assistant.
-          </p>
-          <Button 
-            onClick={() => window.location.href = '/auth/login'}
-            aria-label="Navigate to login page"
-          >
-            Go to Login
-          </Button>
-        </Card>
+      <main className="flex items-center justify-center h-full bg-[#131314]" role="main">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+        >
+          <Card className="p-8 text-center border-border/50 bg-card/50 backdrop-blur-sm" role="alert">
+            <CardContent className="pt-6">
+              <motion.div
+                animate={{ rotate: [0, 10, -10, 0] }}
+                transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+              >
+                <AlertCircle className="w-16 h-16 mx-auto mb-4 text-muted-foreground" aria-hidden="true" />
+              </motion.div>
+              <h2 className="text-xl font-semibold mb-3 text-foreground">Authentication Required</h2>
+              <p className="text-muted-foreground mb-6 max-w-sm">
+                Please log in to start chatting with the AI assistant and unlock the full potential of collaborative intelligence.
+              </p>
+              <Button 
+                onClick={() => window.location.href = '/auth/login'}
+                aria-label="Navigate to login page"
+                className="bg-primary hover:bg-primary/90"
+              >
+                <User className="w-4 h-4 mr-2" />
+                Go to Login
+              </Button>
+            </CardContent>
+          </Card>
+        </motion.div>
       </main>
     );
   }
   
   if (!currentSession) {
     return (
-      <main className="flex items-center justify-center h-full" role="main">
-        <div className="space-y-4 w-full max-w-md" aria-label="Loading chat interface">
-          <Skeleton className="h-4 w-full" aria-hidden="true" />
-          <Skeleton className="h-4 w-3/4" aria-hidden="true" />
-          <Skeleton className="h-4 w-1/2" aria-hidden="true" />
+      <main className="flex items-center justify-center h-full bg-[#131314]" role="main">
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="space-y-6 w-full max-w-md"
+          aria-label="Loading chat interface"
+        >
+          <div className="text-center">
+            <motion.div
+              animate={{ 
+                scale: [1, 1.1, 1],
+                rotate: [0, 180, 360]
+              }}
+              transition={{ 
+                duration: 2, 
+                repeat: Infinity, 
+                ease: 'easeInOut'
+              }}
+            >
+              <Sparkles className="w-8 h-8 mx-auto mb-4 text-primary" />
+            </motion.div>
+            <h3 className="text-lg font-medium text-foreground mb-2">Initializing Chat</h3>
+            <p className="text-sm text-muted-foreground">Setting up your AI assistant...</p>
+          </div>
+          <div className="space-y-3">
+            <Skeleton className="h-3 w-full bg-muted/50" aria-hidden="true" />
+            <Skeleton className="h-3 w-4/5 bg-muted/50" aria-hidden="true" />
+            <Skeleton className="h-3 w-3/5 bg-muted/50" aria-hidden="true" />
+          </div>
           <span className="sr-only">Loading chat interface, please wait...</span>
-        </div>
+        </motion.div>
       </main>
     );
   }
   
   return (
     <section 
-      className={`flex flex-col h-full ${className}`}
+      className={`flex flex-col h-full bg-[#131314] ${className}`}
       role="application"
       aria-label="AI Chat Interface"
     >
-      {/* Connection Status Bar */}
-      <header 
-        className="flex items-center justify-between px-4 py-2 border-b"
+      {/* Enhanced Connection Status Bar */}
+      <motion.header 
+        initial={{ y: -20, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        className="flex items-center justify-between px-6 py-3 border-b border-border/50 bg-card/30 backdrop-blur-sm"
         role="status"
         aria-live="polite"
       >
-        <div className="flex items-center gap-2">
-          {isConnected ? (
-            <Wifi className="w-4 h-4 text-green-500" aria-hidden="true" />
-          ) : (
-            <WifiOff className="w-4 h-4 text-red-500" aria-hidden="true" />
-          )}
+        <div className="flex items-center gap-3">
+          <motion.div
+            animate={isConnected ? { scale: 1 } : { scale: [1, 0.8, 1] }}
+            transition={{ duration: 1, repeat: isConnected ? 0 : Infinity }}
+          >
+            {isConnected ? (
+              <Wifi className="w-5 h-5 text-emerald-500" aria-hidden="true" />
+            ) : (
+              <WifiOff className="w-5 h-5 text-red-500" aria-hidden="true" />
+            )}
+          </motion.div>
+          
           <Badge 
             variant={isConnected ? 'default' : 'destructive'}
+            className={`${isConnected ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' : ''}`}
             aria-label={`Connection status: ${isConnected ? 'Connected' : 'Disconnected'}`}
           >
             {isConnected ? 'Connected' : 'Disconnected'}
           </Badge>
-          {isStreaming && (
-            <Badge 
-              variant="secondary" 
-              className="animate-pulse"
-              aria-label="AI is currently typing a response"
-            >
-              AI is typing...
-            </Badge>
-          )}
+          
+          <AnimatePresence>
+            {isStreaming && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.8 }}
+              >
+                <Badge 
+                  variant="secondary" 
+                  className="bg-blue-500/10 text-blue-500 border-blue-500/20 flex items-center gap-2"
+                  aria-label="AI is currently generating a response"
+                >
+                  <motion.div
+                    animate={{ rotate: 360 }}
+                    transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
+                  >
+                    <Bot className="w-3 h-3" />
+                  </motion.div>
+                  AI generating...
+                </Badge>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
         
         {connectionError && (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleRetryConnection}
-            aria-label="Retry connection to AI service"
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
           >
-            Retry Connection
-          </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleRetryConnection}
+              aria-label="Retry connection to AI service"
+              className="border-border/50 hover:bg-muted/50"
+            >
+              <RotateCcw className="w-4 h-4 mr-2" />
+              Retry Connection
+            </Button>
+          </motion.div>
         )}
-      </header>
+      </motion.header>
       
-      {/* Error Banner */}
-      {connectionError && (
-        <div 
-          className="px-4 py-2 bg-destructive/10 border-b border-destructive/20"
-          role="alert"
-          aria-live="assertive"
-        >
-          <div className="flex items-center gap-2 text-sm text-destructive">
-            <AlertCircle className="w-4 h-4" aria-hidden="true" />
-            <span>{connectionError}</span>
-          </div>
-        </div>
-      )}
+      {/* Enhanced Error Banner */}
+      <AnimatePresence>
+        {connectionError && (
+          <motion.div 
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            className="px-6 py-3 bg-red-500/10 border-b border-red-500/20 backdrop-blur-sm"
+            role="alert"
+            aria-live="assertive"
+          >
+            <div className="flex items-center gap-3 text-sm text-red-400">
+              <motion.div
+                animate={{ rotate: [0, 15, -15, 0] }}
+                transition={{ duration: 2, repeat: Infinity }}
+              >
+                <AlertCircle className="w-4 h-4" aria-hidden="true" />
+              </motion.div>
+              <span className="flex-1">{connectionError}</span>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setConnectionError(null)}
+                className="text-red-400 hover:text-red-300 hover:bg-red-500/20"
+              >
+                Dismiss
+              </Button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Typing Indicator */}
+      <TypingIndicator agents={activeAgents} isVisible={isStreaming} />
       
-      {/* Messages Area */}
+      {/* Enhanced Messages Area */}
       <section 
-        className="flex-1 overflow-y-auto"
+        className="flex-1 overflow-y-auto scroll-smooth px-4 py-2"
         aria-label="Chat messages"
         role="log"
         aria-live="polite"
         aria-relevant="additions"
       >
-        <MessageList
-          messages={currentSession.messages}
-          streamingMessage={currentStreamingMessage}
-          isLoading={isStreaming}
-        />
+        <div className="max-w-4xl mx-auto space-y-6">
+          <AnimatePresence mode="popLayout">
+            {currentSession.messages.map((message, index) => (
+              <motion.div
+                key={message.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                transition={{ duration: 0.3, delay: index * 0.1 }}
+                className={`flex gap-4 group ${
+                  message.role === 'user' ? 'flex-row-reverse' : 'flex-row'
+                }`}
+              >
+                {/* Avatar */}
+                <div className="flex-shrink-0">
+                  <Avatar className={`w-8 h-8 ${
+                    message.role === 'user' 
+                      ? 'bg-primary text-primary-foreground' 
+                      : 'bg-muted'
+                  }`}>
+                    <AvatarFallback>
+                      {message.role === 'user' ? (
+                        <User className="w-4 h-4" />
+                      ) : (
+                        <Bot className="w-4 h-4" />
+                      )}
+                    </AvatarFallback>
+                  </Avatar>
+                </div>
+
+                {/* Message Content */}
+                <div className={`flex-1 max-w-3xl ${
+                  message.role === 'user' ? 'text-right' : 'text-left'
+                }`}>
+                    <div className={`inline-block p-4 rounded-2xl ${
+                      message.role === 'user'
+                      ? 'bg-primary text-primary-foreground ml-12'
+                      : 'bg-muted mr-12'
+                    }`}>
+                      <div className="prose prose-sm dark:prose-invert max-w-none">
+                      <ReactMarkdown
+                        components={{
+                        code: (props) => {
+                          const { className, children, ...restProps } = props;
+                          const inline = !className;
+                          const match = /language-(\w+)/.exec(className || '');
+                          return !inline && match ? (
+                          <SyntaxHighlighter
+                            style={oneDark as { [key: string]: React.CSSProperties }}
+                            language={match[1]}
+                            PreTag="div"
+                            className="rounded-md my-2"
+                          >
+                            {String(children).replace(/\n$/, '')}
+                          </SyntaxHighlighter>
+                          ) : (
+                          <code className="bg-background/50 px-1.5 py-0.5 rounded text-sm font-mono" {...restProps}>
+                            {children}
+                          </code>
+                          );
+                        },
+                        p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
+                        ul: ({ children }) => <ul className="list-disc list-inside mb-2">{children}</ul>,
+                        ol: ({ children }) => <ol className="list-decimal list-inside mb-2">{children}</ol>,
+                        }}
+                      >
+                        {message.content}
+                      </ReactMarkdown>
+                      </div>
+                    </div>
+
+                  {/* Message Metadata */}
+                  <div className={`text-xs text-muted-foreground mt-1 ${
+                    message.role === 'user' ? 'text-right' : 'text-left'
+                  }`}>
+                    {new Date(message.timestamp).toLocaleTimeString()}
+                    {message.metadata?.model && (
+                      <span className="ml-2">• {message.metadata.model}</span>
+                    )}
+                  </div>
+
+                  {/* Message Actions */}
+                  <div className={`opacity-0 group-hover:opacity-100 transition-opacity duration-200 mt-2 ${
+                    message.role === 'user' ? 'flex justify-end' : 'flex justify-start'
+                  }`}>
+                    <MessageActions
+                      message={message}
+                      onCopy={() => handleCopyMessage(message.content)}
+                      onRegenerate={() => handleRegenerateMessage(message.id)}
+                      onEdit={() => handleEditMessage(message.id)}
+                    />
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </AnimatePresence>
+
+          {/* Streaming Message */}
+          <AnimatePresence>
+            {currentStreamingMessage && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                className="flex gap-4"
+              >
+                <div className="flex-shrink-0">
+                  <Avatar className="w-8 h-8 bg-muted">
+                    <AvatarFallback>
+                      <motion.div
+                        animate={{ rotate: 360 }}
+                        transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
+                      >
+                        <Bot className="w-4 h-4" />
+                      </motion.div>
+                    </AvatarFallback>
+                  </Avatar>
+                </div>
+                <div className="flex-1 max-w-3xl">
+                  <div className="inline-block p-4 rounded-2xl bg-muted mr-12">
+                    <StreamingIndicator
+                      content={currentStreamingMessage.content}
+                      isStreaming={isStreaming}
+                    />
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
         <div ref={messagesEndRef} aria-hidden="true" />
       </section>
       
-      {/* Input Area */}
-      <footer className="border-t">
-        <MessageInput
-          onSendMessage={handleSendMessage}
-          disabled={!isConnected || isStreaming}
-          placeholder={!isConnected ? 'Connecting...' : 'Type your message...'}
-        />
-      </footer>
+      {/* Enhanced Input Area */}
+      <motion.footer 
+        initial={{ y: 20, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        className="border-t border-border/50 bg-card/30 backdrop-blur-sm"
+      >
+        <div className="max-w-4xl mx-auto px-4 py-3">
+          <MessageInput
+            onSendMessage={handleSendMessage}
+            disabled={!isConnected || isStreaming}
+            placeholder={
+              !isConnected 
+                ? 'Connecting to AI assistant...'
+                : isStreaming
+                ? 'AI is thinking...'
+                : 'Message your AI assistant...'
+            }
+          />
+        </div>
+      </motion.footer>
     </section>
   );
 }

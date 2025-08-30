@@ -1,0 +1,76 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.local
+    ports:
+      - "8000:8080"
+    volumes:
+      - ./app:/app/app
+      - ./tests:/app/tests
+      - ./.env.local:/app/.env.local
+    environment:
+      - ENVIRONMENT=local
+      - ALLOW_ORIGINS=*
+      - LOG_LEVEL=INFO
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - vana-network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    environment:
+      - NODE_ENV=development
+      - NEXT_PUBLIC_API_URL=http://localhost:8000
+    command: npm run dev
+    depends_on:
+      - backend
+    networks:
+      - vana-network
+
+  # Optional: PostgreSQL for local testing
+  postgres:
+    image: postgres:15-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=vana
+      - POSTGRES_PASSWORD=localdev
+      - POSTGRES_DB=vana_dev
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - vana-network
+
+  # Optional: Redis for caching
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    networks:
+      - vana-network
+
+networks:
+  vana-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  redis_data:
