@@ -272,12 +272,12 @@ class PerformanceVerifier {
     }
   }
 
-  async checkServerRunning() {
+  async checkServerRunning(url) {
     try {
-      const response = await fetch('http://localhost:5173', { 
-        method: 'HEAD',
-        timeout: 1000,
-      });
+      const ac = new AbortController();
+      const t = setTimeout(() => ac.abort(), 1500);
+      const response = await fetch(url, { method: 'HEAD', signal: ac.signal });
+      clearTimeout(t);
       return response.ok;
     } catch {
       return false;
