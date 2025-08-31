@@ -50,8 +50,21 @@ const config: Config = {
           DEFAULT: 'hsl(var(--card))',
           foreground: 'hsl(var(--card-foreground))',
         },
+        sidebar: {
+          DEFAULT: 'hsl(var(--sidebar))',
+          foreground: 'hsl(var(--sidebar-foreground))',
+          primary: 'hsl(var(--sidebar-primary))',
+          'primary-foreground': 'hsl(var(--sidebar-primary-foreground))',
+          accent: 'hsl(var(--sidebar-accent))',
+          'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
+          border: 'hsl(var(--sidebar-border))',
+          input: 'hsl(var(--sidebar-input))',
+          ring: 'hsl(var(--sidebar-ring))',
+          muted: 'hsl(var(--sidebar-muted))',
+          hover: 'hsl(var(--sidebar-hover))',
+        },
         'chat-input': 'hsl(var(--chat-input))',
-        'hover-card': 'hsl(var(--hover-card))',
+        'hover-card': 'hsl(var(--hover-card))'
       },
       borderRadius: {
         lg: 'var(--radius)',
@@ -72,10 +85,20 @@ const config: Config = {
         'accordion-down': 'accordion-down 0.2s ease-out',
         'accordion-up': 'accordion-up 0.2s ease-out',
       },
+      width: {
+        'sidebar': 'var(--sidebar-width)',
+        'sidebar-icon': 'var(--sidebar-width-icon)',
+        'sidebar-mobile': 'var(--sidebar-width-mobile)',
+      },
+      spacing: {
+        'sidebar': 'var(--sidebar-width)',
+        'sidebar-icon': 'var(--sidebar-width-icon)',
+        'sidebar-mobile': 'var(--sidebar-width-mobile)',
+      },
     },
   },
   plugins: [
-    require('tailwindcss-animate')
+    // require('tailwindcss-animate')
   ],
 }
 

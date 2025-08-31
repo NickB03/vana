@@ -4,7 +4,6 @@ import "./globals.css";
 import { getNonce } from "@/lib/csp";
 import { Toaster } from "@/components/ui/sonner";
 import { ThemeProvider } from "@/components/providers/theme-provider";
-import { SidebarProvider } from "@/components/ui/sidebar";
 
 const inter = Inter({ 
   subsets: ["latin"],
@@ -74,11 +73,9 @@ export default async function RootLayout({
             Skip to main content
           </a>
           
-          <SidebarProvider defaultOpen={true}>
-            <div className="min-h-screen flex flex-col" id="main-content">
-              {children}
-            </div>
-          </SidebarProvider>
+          <div className="min-h-screen flex flex-col" id="main-content">
+            {children}
+          </div>
           
           {/* Toast notifications */}
           <Toaster />

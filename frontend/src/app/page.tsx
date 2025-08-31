@@ -20,6 +20,7 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarProvider,
   SidebarTrigger
 } from '@/components/ui/sidebar';
 import { 
@@ -63,11 +64,22 @@ function GeminiSidebar() {
   return (
     <Sidebar side="left" className="border-r border-sidebar-border bg-sidebar">
       <SidebarHeader className="border-b border-sidebar-border/50">
-        <div className="flex items-center gap-3 px-3 py-2">
-          <div className="w-8 h-8 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center">
-            <Sparkles className="w-5 h-5 text-white" />
+        <div className="flex items-center justify-between px-3 py-2">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center">
+              <Sparkles className="w-5 h-5 text-white" />
+            </div>
+            <span className="text-xl font-semibold text-sidebar-foreground">Vana</span>
           </div>
-          <span className="text-xl font-semibold text-sidebar-foreground">Vana</span>
+          <div className="flex items-center gap-2">
+            <div className="relative flex-1 max-w-xs">
+              <input
+                type="text"
+                placeholder="Search conversations..."
+                className="w-full px-3 py-1.5 text-sm bg-sidebar-input border border-sidebar-border rounded-md text-sidebar-foreground placeholder:text-sidebar-muted focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+              />
+            </div>
+          </div>
         </div>
       </SidebarHeader>
       
@@ -75,7 +87,7 @@ function GeminiSidebar() {
         <div className="px-3 py-2">
           <Button 
             variant="outline" 
-            className="w-full justify-start gap-2 mb-4 bg-sidebar border-sidebar-border hover:bg-sidebar-accent"
+            className="w-full justify-start gap-2 mb-4 bg-sidebar border-sidebar-border hover:bg-[rgba(59,130,246,0.1)]"
           >
             <Plus className="w-4 h-4" />
             New chat
@@ -86,7 +98,7 @@ function GeminiSidebar() {
           <div className="text-xs font-medium text-sidebar-foreground/70 px-2 py-1 mb-2">Recent</div>
           {recentChats.map((chat) => (
             <SidebarMenuItem key={chat.id}>
-              <SidebarMenuButton className="w-full justify-between group">
+              <SidebarMenuButton className="w-full justify-between group hover:bg-[rgba(59,130,246,0.1)]">
                 <div className="flex items-center gap-2 min-w-0">
                   <MessageSquare className="w-4 h-4 shrink-0 text-sidebar-foreground/60" />
                   <span className="truncate text-sm text-sidebar-foreground">{chat.title}</span>
@@ -153,7 +165,7 @@ export default function HomePage() {
   };
 
   return (
-    <>
+    <SidebarProvider defaultOpen={true}>
       <GeminiSidebar />
       <SidebarInset>
         <div className="flex flex-col h-screen bg-background text-foreground">
@@ -309,6 +321,6 @@ export default function HomePage() {
           </motion.div>
         </div>
       </SidebarInset>
-    </>
+    </SidebarProvider>
   );
 }

@@ -1,0 +1,11 @@
+{
+  "title": "Vana - Virtual Autonomous Network Agent",
+  "bodyClasses": "__variable_e8ce0c font-sans antialiased bg-background text-foreground",
+  "hasHeader": false,
+  "hasSidebar": true,
+  "hasMainContent": true,
+  "navItems": [],
+  "colorScheme": "dark",
+  "layout": "sidebar-main",
+  "sidebarWidth": 255
+}

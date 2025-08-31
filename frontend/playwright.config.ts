@@ -16,7 +16,9 @@ try {
  * See https://playwright.dev/docs/test-configuration.
  */
 export default defineConfig({
-  testDir: './src/__tests__/e2e',
+  testDir: './src/__tests__',
+  testMatch: ['**/e2e/**/*.spec.ts', '**/visual/**/*.spec.ts'],
+  testIgnore: ['**/vitest.setup.ts', '**/jest.setup.ts'],
   
   /* Run tests in files in parallel */
   fullyParallel: true,
@@ -151,27 +153,15 @@ export default defineConfig({
   globalTeardown: require.resolve('./src/__tests__/e2e/global.teardown.ts'),
 
   /* Web server configuration - start dev server */
-  webServer: [
-    {
-      command: 'npm run dev',
-      port: 5173,
-      reuseExistingServer: true,
-      timeout: 120 * 1000,
-      env: {
-        NODE_ENV: 'test',
-      },
+  webServer: {
+    command: 'npm run dev',
+    port: 5173,
+    reuseExistingServer: true,
+    timeout: 120 * 1000,
+    env: {
+      NODE_ENV: 'test',
     },
-    // Optional: Start backend server for full E2E testing
-    {
-      command: 'cd ../app && make dev-backend',
-      port: 8000,
-      reuseExistingServer: true,
-      timeout: 120 * 1000,
-      env: {
-        NODE_ENV: 'test',
-      },
-    },
-  ],
+  },
 
   /* Output directories */
   outputDir: 'test-results/',
