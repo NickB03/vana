@@ -1,3 +1,0 @@
-#!/bin/bash
-# CodeRabbit Review shortcut - just calls the main script
-exec "$(dirname "$(readlink -f "$0" 2>/dev/null || echo "$0")")/scripts/crr.sh" "$@"
