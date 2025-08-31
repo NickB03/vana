@@ -1,10 +1,16 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { getNonce } from "@/lib/csp";
 import { Toaster } from "@/components/ui/sonner";
+import { ThemeProvider } from "@/components/providers/theme-provider";
+import { SidebarProvider } from "@/components/ui/sidebar";
 
-const inter = Inter({ subsets: ["latin"] });
+const inter = Inter({ 
+  subsets: ["latin"],
+  variable: '--font-inter',
+  display: 'swap'
+});
 
 export const metadata: Metadata = {
   title: "Vana - Virtual Autonomous Network Agent",
@@ -26,15 +32,15 @@ export const metadata: Metadata = {
   },
 };
 
-export function generateViewport() {
-  return {
-    width: 'device-width',
-    initialScale: 1,
-    themeColor: [
-      { media: "(prefers-color-scheme: light)", color: "#ffffff" },
-      { media: "(prefers-color-scheme: dark)", color: "#131314" },
-    ],
-  }
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
+    { media: "(prefers-color-scheme: dark)", color: "#131314" },
+  ],
 }
 
 export default async function RootLayout({
@@ -45,15 +51,10 @@ export default async function RootLayout({
   const nonce = await getNonce();
   
   return (
-    <html lang="en" className="dark" suppressHydrationWarning style={{ colorScheme: 'dark' }}>
+    <html lang="en" suppressHydrationWarning>
       <head>
         {/* CSP nonce meta tag for client-side access */}
         {nonce && <meta name="csp-nonce" content={nonce} />}
-        
-        {/* Accessibility meta tags */}
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <meta name="theme-color" content="#131314" media="(prefers-color-scheme: dark)" />
-        <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
         
         {/* Preconnect to external domains for performance */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -63,61 +64,41 @@ export default async function RootLayout({
         <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
         <link rel="dns-prefetch" href="https://fonts.gstatic.com" />
       </head>
-      <body className={`${inter.className} antialiased bg-background text-foreground`} suppressHydrationWarning>
-        {/* Skip to main content link for keyboard users */}
-        <a 
-          href="#main-content" 
-          className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-primary focus:text-primary-foreground focus:rounded focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
-        >
-          Skip to main content
-        </a>
+      <body className={`${inter.variable} font-sans antialiased bg-background text-foreground`} suppressHydrationWarning>
+        <ThemeProvider>
+          {/* Skip to main content link for keyboard users */}
+          <a 
+            href="#main-content" 
+            className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-primary focus:text-primary-foreground focus:rounded focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+          >
+            Skip to main content
+          </a>
+          
+          <SidebarProvider defaultOpen={false}>
+            <div className="min-h-screen flex flex-col" id="main-content">
+              {children}
+            </div>
+          </SidebarProvider>
+          
+          {/* Toast notifications */}
+          <Toaster />
+        </ThemeProvider>
         
-        {children}
-        
-        {/* Toast notifications */}
-        <Toaster />
-        
-        {/* CSP-compliant theme initialization script */}
+        {/* CSP-compliant theme initialization script - handled by next-themes */}
         {nonce && (
           <script
             nonce={nonce}
             dangerouslySetInnerHTML={{
               __html: `
-                // SSR-safe theme detection and initialization with accessibility
+                // Prevent flash of unstyled content
                 (function() {
                   try {
-                    // Check if we're in a browser environment
-                    if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
-                      const theme = localStorage.getItem('theme') || 'dark';
-                      document.documentElement.className = theme;
-                      
-                      // Update theme-color meta tag dynamically
-                      const themeColorMeta = document.querySelector('meta[name="theme-color"]');
-                      if (themeColorMeta) {
-                        themeColorMeta.setAttribute('content', theme === 'dark' ? '#131314' : '#ffffff');
-                      }
-                      
-                      // Announce theme change to screen readers
-                      if (window.speechSynthesis) {
-                        const announcement = document.createElement('div');
-                        announcement.setAttribute('aria-live', 'polite');
-                        announcement.setAttribute('aria-atomic', 'true');
-                        announcement.className = 'sr-only';
-                        announcement.textContent = 'Theme set to ' + theme + ' mode';
-                        document.body.appendChild(announcement);
-                        setTimeout(() => document.body.removeChild(announcement), 1000);
-                      }
-                    } else {
-                      // Server-side or localStorage unavailable - use dark theme
-                      if (typeof document !== 'undefined') {
-                        document.documentElement.className = 'dark';
-                      }
-                    }
+                    const theme = localStorage.getItem('theme') || 'dark';
+                    document.documentElement.classList.add(theme);
+                    document.documentElement.style.colorScheme = theme;
                   } catch (e) {
-                    // Fallback to dark theme if any error occurs
-                    if (typeof document !== 'undefined') {
-                      document.documentElement.className = 'dark';
-                    }
+                    document.documentElement.classList.add('dark');
+                    document.documentElement.style.colorScheme = 'dark';
                   }
                 })();
               `

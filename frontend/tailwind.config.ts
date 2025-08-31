@@ -7,7 +7,6 @@ const config: Config = {
     './src/components/**/*.{js,ts,jsx,tsx,mdx}',
     './src/app/**/*.{js,ts,jsx,tsx,mdx}',
   ],
-  prefix: '',
   theme: {
     container: {
       center: true,
@@ -51,6 +50,8 @@ const config: Config = {
           DEFAULT: 'hsl(var(--card))',
           foreground: 'hsl(var(--card-foreground))',
         },
+        'chat-input': 'hsl(var(--chat-input))',
+        'hover-card': 'hsl(var(--hover-card))',
       },
       borderRadius: {
         lg: 'var(--radius)',
@@ -73,7 +74,9 @@ const config: Config = {
       },
     },
   },
-  plugins: [require('tailwindcss-animate')],
+  plugins: [
+    require('tailwindcss-animate')
+  ],
 }
 
 export default config
