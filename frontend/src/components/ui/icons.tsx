@@ -51,6 +51,10 @@ import {
   Users,
   X,
   Zap,
+  Gem,
+  BookOpen,
+  Brain,
+  Clock,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -105,6 +109,10 @@ export const Icons = {
   users: Users,
   x: X,
   zap: Zap,
+  gem: Gem,
+  bookOpen: BookOpen,
+  brain: Brain,
+  clock: Clock,
   
   // Custom Google icon
   google: (props: any) => (

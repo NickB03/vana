@@ -155,7 +155,7 @@ export default defineConfig({
     {
       command: 'npm run dev',
       port: 5173,
-      reuseExistingServer: !process.env['CI'],
+      reuseExistingServer: true,
       timeout: 120 * 1000,
       env: {
         NODE_ENV: 'test',
@@ -165,7 +165,7 @@ export default defineConfig({
     {
       command: 'cd ../app && make dev-backend',
       port: 8000,
-      reuseExistingServer: !process.env['CI'],
+      reuseExistingServer: true,
       timeout: 120 * 1000,
       env: {
         NODE_ENV: 'test',
