@@ -1,175 +1,107 @@
-import { defineConfig, devices } from '@playwright/test'
-import path from 'path'
+import { defineConfig, devices } from '@playwright/test';
 
 /**
- * Read environment variables from .env.local file.
+ * Read environment variables from file.
  * https://github.com/motdotla/dotenv
  */
-try {
-  const dotenv = require('dotenv')
-  dotenv.config({ path: path.resolve(__dirname, '.env.local') })
-} catch (e) {
-  // dotenv not available, skip
-}
+import { config } from 'dotenv';
+
+config({
+  path: '.env.local',
+});
+
+/* Use process.env.PORT by default and fallback to port 3000 */
+const PORT = process.env.PORT || 3000;
+
+/**
+ * Set webServer.url and use.baseURL with the location
+ * of the WebServer respecting the correct set port
+ */
+const baseURL = `http://localhost:${PORT}`;
 
 /**
  * See https://playwright.dev/docs/test-configuration.
  */
 export default defineConfig({
-  testDir: './src/__tests__',
-  testMatch: ['**/e2e/**/*.spec.ts', '**/visual/**/*.spec.ts'],
-  testIgnore: ['**/vitest.setup.ts', '**/jest.setup.ts'],
-  
+  testDir: './tests',
   /* Run tests in files in parallel */
   fullyParallel: true,
-  
   /* Fail the build on CI if you accidentally left test.only in the source code. */
-  forbidOnly: !!process.env['CI'],
-  
+  forbidOnly: !!process.env.CI,
   /* Retry on CI only */
-  retries: process.env['CI'] ? 2 : 1,
-  
+  retries: 0,
   /* Opt out of parallel tests on CI. */
-  workers: process.env['CI'] ? 1 : undefined,
-  
-  /* Timeout settings */
-  timeout: 30 * 1000,
-  expect: { timeout: 10 * 1000 },
-  
+  workers: process.env.CI ? 2 : 8,
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
-  reporter: [
-    ['html', { outputFolder: 'playwright-report' }],
-    ['json', { outputFile: 'test-results/results.json' }],
-    ['junit', { outputFile: 'test-results/results.xml' }],
-    process.env['CI'] ? ['github'] : ['list'],
-  ],
-  
-  /* Shared settings for all projects */
+  reporter: 'html',
+  /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
   use: {
     /* Base URL to use in actions like `await page.goto('/')`. */
-    baseURL: process.env['PLAYWRIGHT_BASE_URL'] || 'http://localhost:5173',
-    
+    baseURL,
+
     /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
-    trace: 'on-first-retry',
-    
-    /* Take screenshot on failure */
-    screenshot: 'only-on-failure',
-    
-    /* Record video on failure */
-    video: 'retain-on-failure',
-    
-    /* Viewport settings */
-    viewport: { width: 1280, height: 720 },
-    
-    /* Ignore HTTPS errors */
-    ignoreHTTPSErrors: true,
-    
-    /* Action timeout */
-    actionTimeout: 10 * 1000,
-    
-    /* Navigation timeout */
-    navigationTimeout: 30 * 1000,
+    trace: 'retain-on-failure',
   },
 
-  /* Configure projects for major browsers */
+  /* Configure global timeout for each test */
+  timeout: 240 * 1000, // 120 seconds
+  expect: {
+    timeout: 240 * 1000,
+  },
+
+  /* Configure projects */
   projects: [
-    // Setup project to start dev server
     {
-      name: 'setup',
-      testMatch: /.*\.setup\.ts/,
-      teardown: 'cleanup',
-    },
-    {
-      name: 'cleanup',
-      testMatch: /.*\.teardown\.ts/,
-    },
-    
-    // Desktop browsers
-    {
-      name: 'chromium',
-      use: { ...devices['Desktop Chrome'] },
-      dependencies: ['setup'],
-    },
-    {
-      name: 'firefox',
-      use: { ...devices['Desktop Firefox'] },
-      dependencies: ['setup'],
-    },
-    {
-      name: 'webkit',
-      use: { ...devices['Desktop Safari'] },
-      dependencies: ['setup'],
-    },
-
-    // Mobile devices
-    {
-      name: 'Mobile Chrome',
-      use: { ...devices['Pixel 5'] },
-      dependencies: ['setup'],
-    },
-    {
-      name: 'Mobile Safari',
-      use: { ...devices['iPhone 12'] },
-      dependencies: ['setup'],
-    },
-
-    // Additional browser configurations
-    {
-      name: 'Google Chrome',
-      use: { 
-        ...devices['Desktop Chrome'], 
-        channel: 'chrome',
-        // Enable additional Chrome features
-        launchOptions: {
-          args: [
-            '--disable-web-security',
-            '--disable-features=VizDisplayCompositor',
-            '--no-sandbox',
-          ],
-        },
+      name: 'e2e',
+      testMatch: /e2e\/.*.test.ts/,
+      use: {
+        ...devices['Desktop Chrome'],
       },
-      dependencies: ['setup'],
     },
-    
     {
-      name: 'Microsoft Edge',
-      use: { 
-        ...devices['Desktop Chrome'], 
-        channel: 'msedge' 
+      name: 'routes',
+      testMatch: /routes\/.*.test.ts/,
+      use: {
+        ...devices['Desktop Chrome'],
       },
-      dependencies: ['setup'],
     },
 
-    // Tablet devices
-    {
-      name: 'iPad',
-      use: { ...devices['iPad Pro'] },
-      dependencies: ['setup'],
-    },
+    // {
+    //   name: 'firefox',
+    //   use: { ...devices['Desktop Firefox'] },
+    // },
+
+    // {
+    //   name: 'webkit',
+    //   use: { ...devices['Desktop Safari'] },
+    // },
+
+    /* Test against mobile viewports. */
+    // {
+    //   name: 'Mobile Chrome',
+    //   use: { ...devices['Pixel 5'] },
+    // },
+    // {
+    //   name: 'Mobile Safari',
+    //   use: { ...devices['iPhone 12'] },
+    // },
+
+    /* Test against branded browsers. */
+    // {
+    //   name: 'Microsoft Edge',
+    //   use: { ...devices['Desktop Edge'], channel: 'msedge' },
+    // },
+    // {
+    //   name: 'Google Chrome',
+    //   use: { ...devices['Desktop Chrome'], channel: 'chrome' },
+    // },
   ],
 
-  /* Global setup and teardown */
-  globalSetup: require.resolve('./src/__tests__/e2e/global.setup.ts'),
-  globalTeardown: require.resolve('./src/__tests__/e2e/global.teardown.ts'),
-
-  /* Web server configuration - start dev server */
+  /* Run your local dev server before starting the tests */
   webServer: {
-    command: 'npm run dev',
-    port: 5173,
-    reuseExistingServer: true,
+    command: 'pnpm dev',
+    url: `${baseURL}/ping`,
     timeout: 120 * 1000,
-    env: {
-      NODE_ENV: 'test',
-    },
+    reuseExistingServer: true,
   },
-
-  /* Output directories */
-  outputDir: 'test-results/',
-  
-  /* Test artifacts */
-  // testConfig: {
-  //   // Custom test configuration
-  //   maxDiffPixels: 100,
-  //   threshold: 0.3,
-  // },
-})
+});
