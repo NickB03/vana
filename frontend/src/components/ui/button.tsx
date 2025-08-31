@@ -5,21 +5,21 @@ import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "@/lib/utils"
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all cursor-pointer disabled:pointer-events-none disabled:opacity-50 disabled:cursor-not-allowed [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive",
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all cursor-pointer disabled:pointer-events-none disabled:opacity-50 disabled:cursor-not-allowed [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 aria-invalid:border-destructive",
   {
     variants: {
       variant: {
         default:
-          "bg-blue-600 text-white shadow-xs hover:bg-blue-700 hover:shadow-md dark:bg-blue-600 dark:hover:bg-blue-500 transition-all duration-200 ease-in-out transform hover:scale-[1.02]",
+          "bg-primary text-primary-foreground shadow-xs hover:bg-primary/90 hover:shadow-md transition-all duration-200 ease-in-out transform hover:scale-[1.02]",
         destructive:
-          "bg-red-600 text-white shadow-xs hover:bg-red-700 hover:shadow-md focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40 transition-all duration-200 ease-in-out transform hover:scale-[1.02]",
+          "bg-destructive text-destructive-foreground shadow-xs hover:bg-destructive/90 hover:shadow-md focus-visible:ring-destructive/20 transition-all duration-200 ease-in-out transform hover:scale-[1.02]",
         outline:
-          "border border-gray-300 bg-white shadow-xs hover:bg-gray-50 hover:border-gray-400 hover:shadow-md dark:bg-gray-800 dark:border-gray-600 dark:hover:bg-gray-700 dark:hover:border-gray-500 transition-all duration-200 ease-in-out transform hover:scale-[1.02]",
+          "border border-input bg-background shadow-xs hover:bg-accent hover:text-accent-foreground hover:shadow-md transition-all duration-200 ease-in-out transform hover:scale-[1.02]",
         secondary:
-          "bg-gray-100 text-gray-900 shadow-xs hover:bg-gray-200 hover:shadow-md dark:bg-gray-700 dark:text-gray-100 dark:hover:bg-gray-600 transition-all duration-200 ease-in-out transform hover:scale-[1.02]",
+          "bg-secondary text-secondary-foreground shadow-xs hover:bg-secondary/80 hover:shadow-md transition-all duration-200 ease-in-out transform hover:scale-[1.02]",
         ghost:
-          "hover:bg-gray-100 hover:text-gray-900 dark:hover:bg-gray-800 dark:hover:text-gray-100 transition-all duration-200 ease-in-out transform hover:scale-[1.02]",
-        link: "text-blue-600 underline-offset-4 hover:underline hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 transition-all duration-200 ease-in-out",
+          "hover:bg-accent hover:text-accent-foreground transition-all duration-200 ease-in-out transform hover:scale-[1.02]",
+        link: "text-primary underline-offset-4 hover:underline hover:text-primary/80 transition-all duration-200 ease-in-out",
       },
       size: {
         default: "h-9 px-4 py-2 has-[>svg]:px-3",
