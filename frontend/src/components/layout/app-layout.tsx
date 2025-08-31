@@ -39,6 +39,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 
 import { useAuth } from '@/hooks/use-auth';
 import { useUIStore } from '@/store/ui-store';
+import { useTheme } from 'next-themes';
 import { ChatSession } from '@/types/session';
 import { cn } from '@/lib/utils';
 
@@ -208,7 +209,7 @@ const SidebarContent: React.FC<SidebarContentProps> = ({
  */
 const UserProfileDropdown: React.FC = () => {
   const { user, logout } = useAuth();
-  const { theme, toggleTheme } = useUIStore();
+  const { theme, setTheme } = useTheme();
 
   if (!user) return null;
 
@@ -263,7 +264,7 @@ const UserProfileDropdown: React.FC = () => {
         </DropdownMenuItem>
         
         <DropdownMenuItem 
-          onClick={toggleTheme}
+          onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
           className="hover:bg-gray-800"
         >
           {theme === 'dark' ? (

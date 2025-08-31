@@ -1,5 +1,5 @@
 import '@testing-library/jest-dom'
-import 'whatwg-fetch'
+// import 'whatwg-fetch' // Commented out due to dependency issues
 
 // Extended DOM APIs
 import { TextEncoder, TextDecoder } from 'util'
@@ -170,24 +170,28 @@ Object.defineProperty(window, 'sessionStorage', {
   writable: true,
 })
 
-// Mock window.location
-Object.defineProperty(window, 'location', {
-  value: {
-    href: 'http://localhost:3000',
-    origin: 'http://localhost:3000',
-    protocol: 'http:',
-    host: 'localhost:3000',
-    hostname: 'localhost',
-    port: '3000',
-    pathname: '/',
-    search: '',
-    hash: '',
-    assign: jest.fn(),
-    replace: jest.fn(),
-    reload: jest.fn(),
-  },
-  writable: true,
-})
+// Mock window.location - check if already defined
+if (!window.location || typeof window.location.assign === 'undefined') {
+  delete window.location
+  Object.defineProperty(window, 'location', {
+    value: {
+      href: 'http://localhost:3000',
+      origin: 'http://localhost:3000',
+      protocol: 'http:',
+      host: 'localhost:3000',
+      hostname: 'localhost',
+      port: '3000',
+      pathname: '/',
+      search: '',
+      hash: '',
+      assign: jest.fn(),
+      replace: jest.fn(),
+      reload: jest.fn(),
+    },
+    writable: true,
+    configurable: true,
+  })
+}
 
 // Mock window.history
 Object.defineProperty(window, 'history', {
