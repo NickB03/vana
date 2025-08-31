@@ -32,16 +32,8 @@ const customJestConfig = {
     '^uuid$': 'uuid',
   },
   
-  // Transform configuration for TypeScript and ES modules
-  transform: {
-    '^.+\\.(js|jsx|ts|tsx)$': ['ts-jest', {
-      tsconfig: {
-        jsx: 'react-jsx',
-        esModuleInterop: true,
-        allowSyntheticDefaultImports: true,
-      },
-    }],
-  },
+  // Transform configuration handled by Next.js Jest
+  // No manual transform needed - Next.js handles TypeScript compilation
   
   // Transform ignore patterns
   transformIgnorePatterns: [
@@ -62,6 +54,8 @@ const customJestConfig = {
     '<rootDir>/coverage/',
     '<rootDir>/dist/',
     '<rootDir>/build/',
+    '<rootDir>/src/__tests__/e2e/',
+    '<rootDir>/playwright/',
   ],
   
   // Coverage configuration
@@ -123,24 +117,17 @@ const customJestConfig = {
   testTimeout: 10000,
   
   // Reporter configuration
-  reporters: [
-    'default',
-    ['jest-html-reporters', {
-      publicPath: '<rootDir>/coverage/html-report',
-      filename: 'report.html',
-      expand: true,
-    }],
-  ],
+  reporters: ['default'],
   
   // Global setup and teardown
   globalSetup: undefined,
   globalTeardown: undefined,
   
-  // Watch plugins for better development experience
-  watchPlugins: [
-    'jest-watch-typeahead/filename',
-    'jest-watch-typeahead/testname',
-  ],
+  // Watch plugins for better development experience - temporarily disabled
+  // watchPlugins: [
+  //   'jest-watch-typeahead/filename',
+  //   'jest-watch-typeahead/testname',
+  // ],
   
   // Error handling
   errorOnDeprecated: false,

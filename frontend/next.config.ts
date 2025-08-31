@@ -18,6 +18,10 @@ const nextConfig: NextConfig = {
       },
     ];
   },
+  // CSS configuration
+  experimental: {
+    optimizeCss: false,
+  },
   // Note: Security headers are now handled by middleware.ts for better CSP nonce support
   // Turbopack configuration (moved from experimental.turbo)
   turbopack: {
