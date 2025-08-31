@@ -323,7 +323,7 @@ wheels = [
 
 [[package]]
 name = "bandit"
-version = "1.8.6"
+version = "1.7.10"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "colorama", marker = "sys_platform == 'win32'" },
@@ -331,9 +331,9 @@ dependencies = [
     { name = "rich" },
     { name = "stevedore" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/fb/b5/7eb834e213d6f73aace21938e5e90425c92e5f42abafaf8a6d5d21beed51/bandit-1.8.6.tar.gz", hash = "sha256:dbfe9c25fc6961c2078593de55fd19f2559f9e45b99f1272341f5b95dea4e56b", size = 4240271 }
+sdist = { url = "https://files.pythonhosted.org/packages/38/26/bdd962d6ee781f6229c3fb83483cf9e09d87959150a9000789806d750f3c/bandit-1.7.10.tar.gz", hash = "sha256:59ed5caf5d92b6ada4bf65bc6437feea4a9da1093384445fed4d472acc6cff7b", size = 4228540 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/48/ca/ba5f909b40ea12ec542d5d7bdd13ee31c4d65f3beed20211ef81c18fa1f3/bandit-1.8.6-py3-none-any.whl", hash = "sha256:3348e934d736fcdb68b6aa4030487097e23a501adf3e7827b63658df464dddd0", size = 133808 },
+    { url = "https://files.pythonhosted.org/packages/9e/9c/491231d973d54f6465002812b4cadc663f208436407745be473254725f55/bandit-1.7.10-py3-none-any.whl", hash = "sha256:665721d7bebbb4485a339c55161ac0eedde27d51e638000d91c8c2d68343ad02", size = 130756 },
 ]
 
 [package.optional-dependencies]
@@ -5697,6 +5697,9 @@ dependencies = [
 ]
 
 [package.optional-dependencies]
+dev = [
+    { name = "bandit" },
+]
 jupyter = [
     { name = "jupyter" },
 ]
@@ -5704,11 +5707,13 @@ jupyter = [
 [package.dev-dependencies]
 dev = [
     { name = "bandit", extra = ["toml"] },
+    { name = "mypy" },
     { name = "nest-asyncio" },
     { name = "psutil" },
     { name = "pytest" },
     { name = "pytest-asyncio" },
     { name = "pytest-cov" },
+    { name = "ruff" },
     { name = "safety" },
 ]
 lint = [
@@ -5724,6 +5729,7 @@ requires-dist = [
     { name = "aiofiles", specifier = ">=24.1.0" },
     { name = "aiohttp", specifier = ">=3.10.0" },
     { name = "alembic", specifier = ">=1.13.0" },
+    { name = "bandit", marker = "extra == 'dev'", specifier = "~=1.7.5" },
     { name = "chromadb", specifier = ">=1.0.15" },
     { name = "email-validator", specifier = ">=2.0.0" },
     { name = "fastapi", specifier = "~=0.115.8" },
@@ -5752,11 +5758,13 @@ requires-dist = [
 [package.metadata.requires-dev]
 dev = [
     { name = "bandit", extras = ["toml"], specifier = ">=1.7.0,<2.0.0" },
+    { name = "mypy", specifier = ">=1.0.0,<2.0.0" },
     { name = "nest-asyncio", specifier = ">=1.5.6,<2.0.0" },
     { name = "psutil", specifier = ">=5.9.0,<6.0.0" },
     { name = "pytest", specifier = ">=7.4.0,<9.0.0" },
     { name = "pytest-asyncio", specifier = ">=0.21.0,<1.0.0" },
     { name = "pytest-cov", specifier = ">=4.1.0,<6.0.0" },
+    { name = "ruff", specifier = ">=0.1.0,<1.0.0" },
     { name = "safety", specifier = ">=2.3.0,<4.0.0" },
 ]
 lint = [
