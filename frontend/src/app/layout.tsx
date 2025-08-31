@@ -74,7 +74,7 @@ export default async function RootLayout({
             Skip to main content
           </a>
           
-          <SidebarProvider defaultOpen={false}>
+          <SidebarProvider defaultOpen={true}>
             <div className="min-h-screen flex flex-col" id="main-content">
               {children}
             </div>

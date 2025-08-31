@@ -11,7 +11,7 @@ import { useRouter } from 'next/navigation';
 import { useSessionStore } from '@/store/session-store';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { 
+import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
@@ -19,7 +19,8 @@ import {
   SidebarInset,
   SidebarMenu,
   SidebarMenuButton,
-  SidebarMenuItem
+  SidebarMenuItem,
+  SidebarTrigger
 } from '@/components/ui/sidebar';
 import { 
   Sparkles, 
@@ -156,6 +157,11 @@ export default function HomePage() {
       <GeminiSidebar />
       <SidebarInset>
         <div className="flex flex-col h-screen bg-background text-foreground">
+          {/* Sidebar trigger button */}
+          <div className="absolute top-4 left-4 z-50 md:hidden">
+            <SidebarTrigger />
+          </div>
+
           {/* Main content area - centered greeting */}
           <div className="flex-1 flex flex-col items-center justify-center px-6">
             <motion.div
@@ -168,9 +174,71 @@ export default function HomePage() {
                 <h1 className="text-5xl md:text-6xl font-normal mb-6 bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 bg-clip-text text-transparent">
                   Hello, Nick
                 </h1>
-                <p className="text-lg text-muted-foreground leading-relaxed">
+                <p className="text-lg text-muted-foreground leading-relaxed mb-8">
                   How can I help you today?
                 </p>
+              </motion.div>
+
+              {/* Suggestion Cards */}
+              <motion.div
+                className="grid grid-cols-1 md:grid-cols-2 gap-3 max-w-2xl mx-auto mt-8"
+                variants={fadeInUp}
+              >
+                <motion.button
+                  onClick={() => setInputValue('Help me debug this code')}
+                  className="p-4 text-left bg-card/50 backdrop-blur-sm rounded-xl border border-border/50 hover:border-border hover:bg-card/70 transition-all duration-200 group"
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="text-2xl">🐛</div>
+                    <span className="text-sm text-foreground group-hover:text-primary transition-colors">
+                      Help me debug this code
+                    </span>
+                  </div>
+                </motion.button>
+
+                <motion.button
+                  onClick={() => setInputValue('Analyze my data')}
+                  className="p-4 text-left bg-card/50 backdrop-blur-sm rounded-xl border border-border/50 hover:border-border hover:bg-card/70 transition-all duration-200 group"
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="text-2xl">📊</div>
+                    <span className="text-sm text-foreground group-hover:text-primary transition-colors">
+                      Analyze my data
+                    </span>
+                  </div>
+                </motion.button>
+
+                <motion.button
+                  onClick={() => setInputValue('Plan my project')}
+                  className="p-4 text-left bg-card/50 backdrop-blur-sm rounded-xl border border-border/50 hover:border-border hover:bg-card/70 transition-all duration-200 group"
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="text-2xl">📋</div>
+                    <span className="text-sm text-foreground group-hover:text-primary transition-colors">
+                      Plan my project
+                    </span>
+                  </div>
+                </motion.button>
+
+                <motion.button
+                  onClick={() => setInputValue('Automate this task')}
+                  className="p-4 text-left bg-card/50 backdrop-blur-sm rounded-xl border border-border/50 hover:border-border hover:bg-card/70 transition-all duration-200 group"
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="text-2xl">⚡</div>
+                    <span className="text-sm text-foreground group-hover:text-primary transition-colors">
+                      Automate this task
+                    </span>
+                  </div>
+                </motion.button>
               </motion.div>
             </motion.div>
           </div>
