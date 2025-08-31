@@ -97,6 +97,7 @@
   
   body {
     @apply bg-background text-foreground;
+    color-scheme: dark;
     font-feature-settings: "rlig" 1, "calt" 1;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
@@ -119,11 +120,20 @@
     @apply bg-muted-foreground/30;
   }
   
+  /* Firefox scrollbar support */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--border)) transparent;
+  }
+  
   /* Hide scrollbar for mobile but keep functionality */
   @media (max-width: 768px) {
     ::-webkit-scrollbar {
       width: 0;
       height: 0;
+    }
+    * {
+      scrollbar-width: none;
     }
   }
 }
@@ -155,13 +165,19 @@
     animation: gradient 3s ease infinite;
   }
   
+  @media (prefers-reduced-motion: reduce) {
+    .gradient-text {
+      animation: none;
+    }
+  }
+  
   .glass-effect {
     @apply backdrop-blur-lg backdrop-saturate-150;
-    background: rgba(31, 31, 32, 0.7);
+    background-color: hsl(var(--card) / 0.7);
   }
   
   .focus-ring {
-    @apply focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background;
+    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background;
   }
   
   /* Sidebar specific utilities */
