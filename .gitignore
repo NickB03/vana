@@ -302,3 +302,10 @@ claude-flow
 claude-flow.bat
 claude-flow.ps1
 hive-mind-prompt-*.txt
+
+# Archive directories (one-time docs and scripts)
+archive/
+**/archive/
+frontend/archive/
+docs/archive/
+tests/archive/
