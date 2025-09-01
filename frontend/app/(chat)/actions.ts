@@ -2,6 +2,8 @@
 
 import { generateText, type UIMessage } from 'ai';
 import { cookies } from 'next/headers';
+import { auth } from '@/app/(auth)/auth';
+import { getChatById } from '@/lib/db/queries';
 import {
   deleteMessagesByChatIdAfterTimestamp,
   getMessageById,
@@ -34,8 +36,19 @@ export async function generateTitleFromUserMessage({
 }
 
 export async function deleteTrailingMessages({ id }: { id: string }) {
-  const [message] = await getMessageById({ id });
+  // 1. Authenticate the user session
+  const session = await auth();
+  if (!session?.user) return;
 
+  // 2. Fetch the message and handle missing case
+  const [message] = await getMessageById({ id });
+  if (!message) return;
+
+  // 3. Ensure the authenticated user owns the chat
+  const chat = await getChatById({ id: message.chatId });
+  if (!chat || chat.userId !== session.user.id) return;
+
+  // 4. Perform the delete only after all checks pass
   await deleteMessagesByChatIdAfterTimestamp({
     chatId: message.chatId,
     timestamp: message.createdAt,

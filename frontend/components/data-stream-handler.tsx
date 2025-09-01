@@ -12,14 +12,20 @@ export function DataStreamHandler() {
   const lastProcessedIndex = useRef(-1);
 
   useEffect(() => {
-    if (!dataStream?.length) return;
+    if (!dataStream) return;
+    // Reset when a new stream starts or the stream shrinks.
+    if (dataStream.length === 0 || lastProcessedIndex.current >= dataStream.length) {
+      lastProcessedIndex.current = -1;
+      return;
+    }
 
-    const newDeltas = dataStream.slice(lastProcessedIndex.current + 1);
+    const start = lastProcessedIndex.current + 1;
+    const newDeltas = dataStream.slice(start);
     lastProcessedIndex.current = dataStream.length - 1;
 
     newDeltas.forEach((delta) => {
       const artifactDefinition = artifactDefinitions.find(
-        (artifactDefinition) => artifactDefinition.kind === artifact.kind,
+        (artifactDefinition) => artifactDefinition.kind === artifact?.kind,
       );
 
       if (artifactDefinition?.onStreamPart) {
