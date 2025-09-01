@@ -10,11 +10,11 @@ import type { ChatMessage } from '@/lib/types';
 
 interface ArtifactMessagesProps {
   chatId: string;
-  status: UseChatHelpers<ChatMessage>['status'];
+  status: UseChatHelpers<any>['status'];
   votes: Array<Vote> | undefined;
   messages: ChatMessage[];
-  setMessages: UseChatHelpers<ChatMessage>['setMessages'];
-  regenerate: UseChatHelpers<ChatMessage>['regenerate'];
+  setMessages: UseChatHelpers<any>['setMessages'];
+  regenerate: UseChatHelpers<any>['regenerate'];
   isReadonly: boolean;
   artifactStatus: UIArtifact['status'];
 }

@@ -39,21 +39,21 @@ export function DataStreamHandler() {
           case 'data-id':
             return {
               ...draftArtifact,
-              documentId: delta.data,
+              documentId: delta.data as string,
               status: 'streaming',
             };
 
           case 'data-title':
             return {
               ...draftArtifact,
-              title: delta.data,
+              title: delta.data as string,
               status: 'streaming',
             };
 
           case 'data-kind':
             return {
               ...draftArtifact,
-              kind: delta.data,
+              kind: delta.data as any,
               status: 'streaming',
             };
 

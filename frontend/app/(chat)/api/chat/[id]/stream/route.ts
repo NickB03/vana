@@ -62,7 +62,7 @@ export async function GET(
     return new ChatSDKError('not_found:stream').toResponse();
   }
 
-  const emptyDataStream = createUIMessageStream<ChatMessage>({
+  const emptyDataStream = createUIMessageStream({
     execute: () => {},
   });
 
@@ -92,7 +92,7 @@ export async function GET(
       return new Response(emptyDataStream, { status: 200 });
     }
 
-    const restoredStream = createUIMessageStream<ChatMessage>({
+    const restoredStream = createUIMessageStream({
       execute: ({ writer }) => {
         writer.write({
           type: 'data-appendMessage',

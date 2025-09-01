@@ -12,11 +12,11 @@ import { Conversation, ConversationContent, ConversationScrollButton } from './e
 
 interface MessagesProps {
   chatId: string;
-  status: UseChatHelpers<ChatMessage>['status'];
+  status: UseChatHelpers<any>['status'];
   votes: Array<Vote> | undefined;
   messages: ChatMessage[];
-  setMessages: UseChatHelpers<ChatMessage>['setMessages'];
-  regenerate: UseChatHelpers<ChatMessage>['regenerate'];
+  setMessages: UseChatHelpers<any>['setMessages'];
+  regenerate: UseChatHelpers<any>['regenerate'];
   isReadonly: boolean;
   isArtifactVisible: boolean;
 }

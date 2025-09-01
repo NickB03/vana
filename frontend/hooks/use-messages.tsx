@@ -8,7 +8,7 @@ export function useMessages({
   status,
 }: {
   chatId: string;
-  status: UseChatHelpers<ChatMessage>['status'];
+  status: UseChatHelpers<any>['status'];
 }) {
   const {
     containerRef,

@@ -42,7 +42,7 @@ export async function POST(request: Request) {
     // Check if chat exists, create if not
     const chat = await getChatById({ id });
     if (!chat) {
-      const title = await generateTitleFromUserMessage({ message });
+      const title = await generateTitleFromUserMessage({ message: message as any });
       await saveChat({
         id,
         userId: session.user.id,

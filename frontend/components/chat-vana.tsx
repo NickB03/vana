@@ -6,42 +6,25 @@ import { Messages } from './messages';
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import { vanaClient } from '@/lib/vana-client';
 import { VanaDataStreamProvider } from './vana-data-stream-provider';
-import type { ChatMessage } from '@/lib/types';
-import { extractMessageContent, getMessageCreatedAt } from '@/lib/types';
 
 interface ChatProps {
   id: string;
-  initialMessages?: ChatMessage[];
+  initialMessages?: Message[];
   session: any;
 }
 
-// Convert ChatMessage to Message for useVanaChat
-function chatMessageToMessage(chatMessage: ChatMessage): Message {
-  const content = extractMessageContent(chatMessage);
-  const createdAtString = getMessageCreatedAt(chatMessage);
-  
-  // Ensure we have valid content - if empty, provide a fallback
-  const finalContent = content || (chatMessage.content as string) || '';
-  
-  // Parse the date string safely
-  let createdAt: Date;
-  try {
-    createdAt = new Date(createdAtString);
-    // Check if date is valid
-    if (isNaN(createdAt.getTime())) {
-      createdAt = new Date();
-    }
-  } catch {
-    createdAt = new Date();
-  }
-  
-  return {
-    id: chatMessage.id,
-    role: chatMessage.role,
-    content: finalContent,
-    createdAt,
-    attachments: [],
-  };
+// Simple ChatMessage type for compatibility with Messages component
+interface ChatMessage {
+  id: string;
+  role: 'user' | 'assistant' | 'system';
+  content?: string;
+  createdAt?: string;
+  parts: Array<{
+    type: string;
+    text?: string;
+    [key: string]: any;
+  }>;
+  metadata?: any;
 }
 
 // Convert Message to ChatMessage for Messages component
@@ -57,16 +40,43 @@ function messageToChatMessage(message: Message): ChatMessage {
         text: message.content,
       }
     ],
-  } as ChatMessage;
+  };
+}
+
+// Convert ChatMessage to Message for useVanaChat
+function chatMessageToMessage(chatMessage: ChatMessage): Message {
+  // Extract text content from parts or use content directly
+  const content = chatMessage.parts?.find(part => part.type === 'text')?.text ||
+                  chatMessage.content || '';
+
+  // Parse the date string safely
+  let createdAt: Date;
+  try {
+    createdAt = chatMessage.createdAt ? new Date(chatMessage.createdAt) : new Date();
+    // Check if date is valid
+    if (isNaN(createdAt.getTime())) {
+      createdAt = new Date();
+    }
+  } catch {
+    createdAt = new Date();
+  }
+
+  return {
+    id: chatMessage.id,
+    role: chatMessage.role,
+    content,
+    createdAt,
+    attachments: [],
+  };
 }
 
 export function Chat({ id, initialMessages = [], session }: ChatProps) {
   const [isConnected, setIsConnected] = useState(false);
   const [connectionError, setConnectionError] = useState<string | null>(null);
 
-  // Convert initial messages to Message format for useVanaChat
+  // initialMessages are already in Message format for useVanaChat
   const initialVanaMessages = useMemo(
-    () => initialMessages.map(chatMessageToMessage),
+    () => initialMessages,
     [initialMessages]
   );
 
@@ -124,7 +134,8 @@ export function Chat({ id, initialMessages = [], session }: ChatProps) {
     setChatMessages(prev => prev.slice(0, userMessageIndex + 1));
     
     // Set the input to the user message content and resubmit
-    setInput(extractMessageContent(userMessage));
+    const content = userMessage.parts?.find(part => part.type === 'text')?.text || userMessage.content || '';
+    setInput(content);
     setTimeout(() => handleSubmit(), 0);
   }, [chatMessages, setChatMessages, setInput, handleSubmit]);
 
@@ -174,7 +185,8 @@ export function Chat({ id, initialMessages = [], session }: ChatProps) {
             setMessages={setChatMessages}
             sendMessage={async (message) => {
               if (message) {
-                const content = extractMessageContent(message as ChatMessage);
+                const chatMsg = message as ChatMessage;
+                const content = chatMsg.parts?.find(part => part.type === 'text')?.text || chatMsg.content || '';
                 if (content) {
                   setInput(content);
                 }

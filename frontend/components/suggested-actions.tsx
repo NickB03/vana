@@ -9,7 +9,7 @@ import { Suggestion } from './elements/suggestion';
 
 interface SuggestedActionsProps {
   chatId: string;
-  sendMessage: UseChatHelpers<ChatMessage>['sendMessage'];
+  sendMessage: UseChatHelpers<any>['sendMessage'];
   selectedVisibilityType: VisibilityType;
 }
 

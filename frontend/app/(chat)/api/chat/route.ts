@@ -106,7 +106,7 @@ export async function POST(request: Request) {
 
     if (!chat) {
       const title = await generateTitleFromUserMessage({
-        message,
+        message: message as any,
       });
 
       await saveChat({
@@ -154,7 +154,7 @@ export async function POST(request: Request) {
         const result = streamText({
           model: myProvider.languageModel(selectedChatModel),
           system: systemPrompt({ selectedChatModel, requestHints }),
-          messages: convertToModelMessages(uiMessages),
+          messages: convertToModelMessages(uiMessages as any as any as any as any as any as any as any),
           stopWhen: stepCountIs(5),
           experimental_activeTools:
             selectedChatModel === 'chat-model-reasoning'

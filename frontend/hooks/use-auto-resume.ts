@@ -8,8 +8,8 @@ import { useDataStream } from '@/components/vana-data-stream-provider';
 export interface UseAutoResumeParams {
   autoResume: boolean;
   initialMessages: ChatMessage[];
-  resumeStream: UseChatHelpers<ChatMessage>['resumeStream'];
-  setMessages: UseChatHelpers<ChatMessage>['setMessages'];
+  resumeStream: UseChatHelpers<any>['resumeStream'];
+  setMessages: UseChatHelpers<any>['setMessages'];
 }
 
 export function useAutoResume({
@@ -40,7 +40,7 @@ export function useAutoResume({
     const dataPart = dataStream[0];
 
     if (dataPart.type === 'data-appendMessage') {
-      const message = JSON.parse(dataPart.data);
+      const message = JSON.parse(dataPart.data as string);
       setMessages([...initialMessages, message]);
     }
   }, [dataStream, initialMessages, setMessages]);

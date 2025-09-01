@@ -45,8 +45,8 @@ const PurePreviewMessage = ({
   message: ChatMessage;
   vote: Vote | undefined;
   isLoading: boolean;
-  setMessages: UseChatHelpers<ChatMessage>['setMessages'];
-  regenerate: UseChatHelpers<ChatMessage>['regenerate'];
+  setMessages: UseChatHelpers<any>['setMessages'];
+  regenerate: UseChatHelpers<any>['regenerate'];
   isReadonly: boolean;
   requiresScrollPadding: boolean;
 }) => {
@@ -99,8 +99,8 @@ const PurePreviewMessage = ({
                     key={attachment.url}
                     attachment={{
                       name: attachment.filename ?? 'file',
-                      contentType: attachment.mediaType,
-                      url: attachment.url,
+                      contentType: attachment.mediaType || 'application/octet-stream',
+                      url: attachment.url || '',
                     }}
                   />
                 ))}
@@ -111,12 +111,12 @@ const PurePreviewMessage = ({
               const { type } = part;
               const key = `message-${message.id}-part-${index}`;
 
-              if (type === 'reasoning' && part.text?.trim().length > 0) {
+              if (type === 'reasoning' && (part.text || "")?.trim().length > 0) {
                 return (
                   <MessageReasoning
                     key={key}
                     isLoading={isLoading}
-                    reasoning={part.text}
+                    reasoning={part.text || ""}
                   />
                 );
               }
@@ -151,7 +151,7 @@ const PurePreviewMessage = ({
                           'bg-transparent': message.role === 'assistant',
                         })}
                       >
-                        <Response>{sanitizeText(part.text)}</Response>
+                        <Response>{sanitizeText(part.text || "")}</Response>
                       </MessageContent>
                     </div>
                   );

@@ -10,8 +10,50 @@ import React, {
   useRef 
 } from 'react';
 import type { DataUIPart } from 'ai';
-import type { CustomUIDataTypes, ChatMessage } from '@/lib/types';
-import { extractMessageContent, getMessageCreatedAt } from '@/lib/types';
+import type { CustomUIDataTypes } from '@/lib/types';
+
+// Simple ChatMessage type for compatibility
+interface ChatMessage {
+  id: string;
+  role: 'user' | 'assistant' | 'system';
+  content?: string;
+  createdAt?: string;
+  parts?: Array<{
+    type: string;
+    text?: string;
+    [key: string]: any;
+  }>;
+  metadata?: any;
+}
+
+// Helper functions
+function extractMessageContent(message: ChatMessage): string {
+  if (!message) return '';
+
+  // If content is a string, return it directly
+  if (typeof message.content === 'string') {
+    return message.content;
+  }
+
+  // If message has parts property, extract text from text parts
+  if (message.parts && Array.isArray(message.parts)) {
+    return message.parts
+      .filter((part) => part.type === 'text' && part.text)
+      .map((part) => part.text)
+      .join('');
+  }
+
+  return '';
+}
+
+function getMessageCreatedAt(message: ChatMessage): string {
+  if (message.createdAt) {
+    return message.createdAt;
+  }
+
+  // Fallback to current timestamp
+  return new Date().toISOString();
+}
 import { 
   SSEConnectionError, 
   VanaBackendError, 

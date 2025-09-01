@@ -17,8 +17,8 @@ import { getTextFromMessage } from '@/lib/utils';
 export type MessageEditorProps = {
   message: ChatMessage;
   setMode: Dispatch<SetStateAction<'view' | 'edit'>>;
-  setMessages: UseChatHelpers<ChatMessage>['setMessages'];
-  regenerate: UseChatHelpers<ChatMessage>['regenerate'];
+  setMessages: UseChatHelpers<any>['setMessages'];
+  regenerate: UseChatHelpers<any>['regenerate'];
 };
 
 export function MessageEditor({

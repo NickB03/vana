@@ -58,7 +58,7 @@ export function Chat({
     stop,
     regenerate,
     resumeStream,
-  } = useChat<ChatMessage>({
+  } = useChat<any>({
     id,
     messages: initialMessages,
     experimental_throttle: 100,
@@ -79,7 +79,7 @@ export function Chat({
       },
     }),
     onData: (dataPart) => {
-      setDataStream((ds) => (ds ? [...ds, dataPart] : []));
+      setDataStream((ds) => (ds ? [...ds, dataPart as any] : []));
     },
     onFinish: () => {
       mutate(unstable_serialize(getChatHistoryPaginationKey));

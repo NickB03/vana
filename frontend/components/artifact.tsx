@@ -71,15 +71,15 @@ function PureArtifact({
   chatId: string;
   input: string;
   setInput: Dispatch<SetStateAction<string>>;
-  status: UseChatHelpers<ChatMessage>['status'];
-  stop: UseChatHelpers<ChatMessage>['stop'];
+  status: UseChatHelpers<any>['status'];
+  stop: UseChatHelpers<any>['stop'];
   attachments: Attachment[];
   setAttachments: Dispatch<SetStateAction<Attachment[]>>;
   messages: ChatMessage[];
-  setMessages: UseChatHelpers<ChatMessage>['setMessages'];
+  setMessages: UseChatHelpers<any>['setMessages'];
   votes: Array<Vote> | undefined;
-  sendMessage: UseChatHelpers<ChatMessage>['sendMessage'];
-  regenerate: UseChatHelpers<ChatMessage>['regenerate'];
+  sendMessage: UseChatHelpers<any>['sendMessage'];
+  regenerate: UseChatHelpers<any>['regenerate'];
   isReadonly: boolean;
   selectedVisibilityType: VisibilityType;
 }) {

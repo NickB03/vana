@@ -50,13 +50,13 @@ function PureMultimodalInput({
   chatId: string;
   input: string;
   setInput: Dispatch<SetStateAction<string>>;
-  status: UseChatHelpers<ChatMessage>['status'];
+  status: UseChatHelpers<any>['status'];
   stop: () => void;
   attachments: Array<Attachment>;
   setAttachments: Dispatch<SetStateAction<Array<Attachment>>>;
-  messages: Array<UIMessage>;
-  setMessages: UseChatHelpers<ChatMessage>['setMessages'];
-  sendMessage: UseChatHelpers<ChatMessage>['sendMessage'];
+  messages: Array<ChatMessage>;
+  setMessages: UseChatHelpers<any>['setMessages'];
+  sendMessage: UseChatHelpers<any>['sendMessage'];
   className?: string;
   selectedVisibilityType: VisibilityType;
 }) {
@@ -119,7 +119,7 @@ function PureMultimodalInput({
       parts: [
         ...attachments.map((attachment) => ({
           type: 'file' as const,
-          url: attachment.url,
+          url: attachment.url || "",
           name: attachment.name,
           mediaType: attachment.contentType,
         })),
@@ -353,7 +353,7 @@ function PureAttachmentsButton({
   status,
 }: {
   fileInputRef: React.MutableRefObject<HTMLInputElement | null>;
-  status: UseChatHelpers<ChatMessage>['status'];
+  status: UseChatHelpers<any>['status'];
 }) {
   return (
     <Button
@@ -378,7 +378,7 @@ function PureStopButton({
   setMessages,
 }: {
   stop: () => void;
-  setMessages: UseChatHelpers<ChatMessage>['setMessages'];
+  setMessages: UseChatHelpers<any>['setMessages'];
 }) {
   return (
     <Button
