@@ -20,7 +20,7 @@ export const sheetArtifact = new Artifact<'sheet', Metadata>({
     if (streamPart.type === 'data-sheetDelta') {
       setArtifact((draftArtifact) => ({
         ...draftArtifact,
-        content: streamPart.data,
+        content: typeof streamPart.data === 'string' ? streamPart.data : '',
         isVisible: true,
         status: 'streaming',
       }));

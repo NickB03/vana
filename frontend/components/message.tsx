@@ -16,7 +16,7 @@ import {
 } from './elements/tool';
 import { MessageActions } from './message-actions';
 import { PreviewAttachment } from './preview-attachment';
-import { Weather } from './weather';
+import { Weather, type WeatherAtLocation } from './weather';
 import equal from 'fast-deep-equal';
 import { cn, sanitizeText } from '@/lib/utils';
 import { Button } from './ui/button';
@@ -25,7 +25,7 @@ import { MessageEditor } from './message-editor';
 import { DocumentPreview } from './document-preview';
 import { MessageReasoning } from './message-reasoning';
 import type { UseChatHelpers } from '@ai-sdk/react';
-import type { ChatMessage } from '@/lib/types';
+import type { ChatMessage, ArtifactRef } from '@/lib/types';
 import { useDataStream } from './vana-data-stream-provider';
 
 // Type narrowing is handled by TypeScript's control flow analysis
@@ -186,7 +186,7 @@ const PurePreviewMessage = ({
                       )}
                       {state === 'output-available' && (
                         <ToolOutput
-                          output={<Weather weatherAtLocation={part.output} />}
+                          output={<Weather weatherAtLocation={part.output as WeatherAtLocation | undefined} />}
                           errorText={undefined}
                         />
                       )}
@@ -208,14 +208,14 @@ const PurePreviewMessage = ({
                       {state === 'output-available' && (
                         <ToolOutput
                           output={
-                            'error' in part.output ? (
+                            part.output && typeof part.output === 'object' && 'error' in part.output ? (
                               <div className="p-2 text-red-500 rounded border">
-                                Error: {String(part.output.error)}
+                                Error: {String((part.output as any).error)}
                               </div>
                             ) : (
                               <DocumentPreview
                                 isReadonly={isReadonly}
-                                result={part.output}
+                                result={part.output as any}
                               />
                             )
                           }
@@ -240,14 +240,14 @@ const PurePreviewMessage = ({
                       {state === 'output-available' && (
                         <ToolOutput
                           output={
-                            'error' in part.output ? (
+                            part.output && typeof part.output === 'object' && 'error' in part.output ? (
                               <div className="p-2 text-red-500 rounded border">
-                                Error: {String(part.output.error)}
+                                Error: {String((part.output as any).error)}
                               </div>
                             ) : (
                               <DocumentToolResult
                                 type="update"
-                                result={part.output}
+                                result={part.output as ArtifactRef}
                                 isReadonly={isReadonly}
                               />
                             )
@@ -273,14 +273,14 @@ const PurePreviewMessage = ({
                       {state === 'output-available' && (
                         <ToolOutput
                           output={
-                            'error' in part.output ? (
+                            part.output && typeof part.output === 'object' && 'error' in part.output ? (
                               <div className="p-2 text-red-500 rounded border">
-                                Error: {String(part.output.error)}
+                                Error: {String((part.output as any).error)}
                               </div>
                             ) : (
                               <DocumentToolResult
                                 type="request-suggestions"
-                                result={part.output}
+                                result={part.output as ArtifactRef}
                                 isReadonly={isReadonly}
                               />
                             )
