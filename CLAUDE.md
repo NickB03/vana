@@ -87,9 +87,17 @@ Client → FastAPI Server → Google ADK Runtime → Agent Fleet → AI Models
 
 #### Testing (`/tests`)
 - **unit/**: Component isolation tests
-- **integration/**: API and agent workflow tests  
+- **integration/**: API and agent workflow tests
 - **performance/**: Memory leak detection, benchmarking
 - **e2e/**: Full workflow validation
+
+### Hivemind CRDT & Gossip
+- Data types: G-Counter, PN-Counter, LWW-Register, OR-Set, OR-Map, RGA, Vector Clocks
+- Sync: Gossip + anti-entropy with vector-clock-based reconciliation and Byzantine-tolerant checks
+- Paths: `src/hive-mind/crdt/**`, `src/hive-mind/gossip/**`, `src/hive-mind/consensus/**`
+- Core APIs: `applyDelta()`, `merge()`, `snapshot()`, `startSync()`, `stopSync()`
+- Config env: `HIVEMIND_NODE_ID`, `HIVEMIND_PEERS`, `HIVEMIND_GOSSIP_INTERVAL_MS`
+- Testing: `pnpm test` (ensure CRDT suites are included)
 
 ### Authentication Flow
 The system supports multiple authentication modes configured via environment:
