@@ -16,6 +16,7 @@ const nextConfig: NextConfig = {
   },
   // API proxy configuration for development
   async rewrites() {
+    if (process.env.NODE_ENV !== 'development') return [];
     return [
       {
         source: '/api/vana/:path*',
