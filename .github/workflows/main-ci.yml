@@ -33,10 +33,10 @@ on:
         type: boolean
 
 env:
-  NODE_VERSION: '18'
+  NODE_VERSION: '20'
   PYTHON_VERSION: '3.11'
   UV_VERSION: '0.6.12'  # Standardized version matching Dockerfile
-  CACHE_VERSION: 'v3'  # Increment to bust caches with new UV version
+  CACHE_VERSION: 'v4'  # Increment to bust caches with Node 20 update
   PERFORMANCE_MODE: ${{ github.event.inputs.performance_mode || 'true' }}
 
 concurrency:
@@ -117,6 +117,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
+          check-latest: true
           cache: 'npm'
           cache-dependency-path: 'frontend/package-lock.json'
           
@@ -308,6 +309,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
+          check-latest: true
           cache: 'npm'
           cache-dependency-path: 'frontend/package-lock.json'
           
@@ -358,6 +360,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
+          check-latest: true
           cache: 'npm'
           cache-dependency-path: 'frontend/package-lock.json'
           
@@ -373,8 +376,6 @@ jobs:
           path: |
             ~/.cache/uv
             .venv
-            ~/.npm
-            frontend/node_modules
           key: integration-${{ runner.os }}-${{ env.NODE_VERSION }}-${{ env.PYTHON_VERSION }}-${{ hashFiles('pyproject.toml', 'frontend/package-lock.json') }}
           
       - name: Install all dependencies
