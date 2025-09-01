@@ -1,6 +1,9 @@
 import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
+  // Output configuration for Docker deployment
+  output: 'standalone',
+
   experimental: {
     ppr: true,
   },
@@ -11,7 +14,7 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-  // Allow connection to Vana backend
+  // API proxy configuration for development
   async rewrites() {
     return [
       {
