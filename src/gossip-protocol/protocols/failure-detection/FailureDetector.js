@@ -108,12 +108,10 @@ export class FailureDetector extends EventEmitter {
   
   // Phi Accrual Failure Detection Algorithm
   calculatePhi(peerId, now = Date.now()) {
-    const history = this.heartbeatHistory.get(peerId);
-    const lastHeartbeat = this.lastHeartbeats.get(peerId);
-    
-    if (!history || history.length === 0 || !lastHeartbeat) {
-      return 0;
-    }
+    const history = this.heartbeatHistory.get(peerId) ?? [];
+    const state = this.failureStates.get(peerId);
+    const lastHeartbeat = this.lastHeartbeats.get(peerId) ?? state?.lastHeartbeat;
+    if (!lastHeartbeat) return 0;
     
     // Calculate time since last heartbeat
     const timeSinceLastHeartbeat = now - lastHeartbeat;

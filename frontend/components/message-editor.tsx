@@ -79,28 +79,26 @@ export function MessageEditor({
           disabled={isSubmitting}
           onClick={async () => {
             setIsSubmitting(true);
-
-            await deleteTrailingMessages({
-              id: message.id,
-            });
-
-            setMessages((messages) => {
-              const index = messages.findIndex((m) => m.id === message.id);
-
-              if (index !== -1) {
-                const updatedMessage: ChatMessage = {
-                  ...message,
-                  parts: [{ type: 'text', text: draftContent }],
-                };
-
-                return [...messages.slice(0, index), updatedMessage];
-              }
-
-              return messages;
-            });
-
-            setMode('view');
-            regenerate();
+            try {
+              await deleteTrailingMessages({ id: message.id });
+              setMessages((messages) => {
+                const index = messages.findIndex((m) => m.id === message.id);
+                if (index !== -1) {
+                  const updatedMessage: ChatMessage = {
+                    ...message,
+                    parts: [{ type: 'text', text: draftContent }],
+                  };
+                  return [...messages.slice(0, index), updatedMessage];
+                }
+                return messages;
+              });
+              setMode('view');
+              regenerate();
+            } catch (err) {
+              console.error('Message update failed', err);
+            } finally {
+              setIsSubmitting(false);
+            }
           }}
         >
           {isSubmitting ? 'Sending...' : 'Send'}

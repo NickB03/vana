@@ -89,7 +89,6 @@ function areEqual(
     return true;
 
   if (prevProps.status !== nextProps.status) return false;
-  if (prevProps.status && nextProps.status) return false;
   if (prevProps.messages.length !== nextProps.messages.length) return false;
   if (!equal(prevProps.votes, nextProps.votes)) return false;
 

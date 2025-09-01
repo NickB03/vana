@@ -329,12 +329,15 @@ export class EpidemicProtocol extends EventEmitter {
   
   selectRandomPeers(count, exclude = []) {
     // Mock peer selection - in real implementation, would use PeerManager
-    const mockPeers = [
+    const pool = [
       { id: 'peer1' }, { id: 'peer2' }, { id: 'peer3' },
       { id: 'peer4' }, { id: 'peer5' }, { id: 'peer6' }
-    ].filter(peer => !exclude.includes(peer.id) && peer.id !== this.nodeId);
-    
-    return mockPeers.slice(0, count);
+    ].filter(p => !exclude.includes(p.id) && p.id !== this.nodeId);
+    const sample = [];
+    while (sample.length < count && pool.length) {
+      sample.push(pool.splice(Math.floor(Math.random() * pool.length), 1)[0]);
+    }
+    return sample;
   }
   
   getPeerCount() {

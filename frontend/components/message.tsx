@@ -94,9 +94,9 @@ const PurePreviewMessage = ({
                 data-testid={`message-attachments`}
                 className="flex flex-row gap-2 justify-end"
               >
-                {attachmentsFromMessage.map((attachment) => (
+                {attachmentsFromMessage.map((attachment, idx) => (
                   <PreviewAttachment
-                    key={attachment.url}
+                    key={`${attachment.url ?? 'no-url'}:${attachment.filename ?? idx}`}
                     attachment={{
                       name: attachment.filename ?? 'file',
                       contentType: attachment.mediaType || 'application/octet-stream',
@@ -320,7 +320,7 @@ export const PreviewMessage = memo(
     if (!equal(prevProps.message.parts, nextProps.message.parts)) return false;
     if (!equal(prevProps.vote, nextProps.vote)) return false;
 
-    return false;
+    return true;
   },
 );
 

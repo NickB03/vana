@@ -73,9 +73,12 @@ export class ConvergenceMonitor extends EventEmitter {
   
   // Message Tracking
   recordMessage(message, senderId) {
-    const messageId = message.id;
+    const messageId = message?.id ?? message?.messageId;
+    if (messageId == null) {
+      return; // cannot track messages without a stable ID
+    }
     const timestamp = Date.now();
-    
+
     if (!this.messageTracker.has(messageId)) {
       this.messageTracker.set(messageId, {
         id: messageId,
@@ -346,10 +349,10 @@ export class ConvergenceMonitor extends EventEmitter {
     return this.getRecentMessages().length;
   }
   
-  getNetworkStateS ummary() {
+  getNetworkStateSummary() {
     const activeNodes = [];
     const inactiveNodes = [];
-    
+
     for (const [nodeId, state] of this.networkState) {
       if (this.isNodeActive(state)) {
         activeNodes.push(nodeId);
@@ -357,7 +360,7 @@ export class ConvergenceMonitor extends EventEmitter {
         inactiveNodes.push(nodeId);
       }
     }
-    
+
     return {
       totalNodes: this.networkState.size,
       activeNodes: activeNodes.length,
@@ -397,7 +400,7 @@ export class ConvergenceMonitor extends EventEmitter {
       ...this.metrics,
       recentConvergenceEvents: this.getRecentConvergenceEvents().length,
       pendingMessages: this.getRecentMessages().filter(msg => !msg.isConverged).length,
-      networkSummary: this.getNetworkStateS ummary()
+      networkSummary: this.getNetworkStateSummary()
     };
   }
   
@@ -415,7 +418,7 @@ export class ConvergenceMonitor extends EventEmitter {
       networkCoverage: this.metrics.networkCoverage,
       stabilityScore: this.metrics.stabilityScore,
       slowMessages: slowMessages.length,
-      networkState: this.getNetworkStateS ummary(),
+      networkState: this.getNetworkStateSummary(),
       recentHistory: recentEvents.slice(-10) // Last 10 events
     };
   }

@@ -97,7 +97,7 @@ interface VanaDataStreamContextValue {
   agentProgress: Map<string, VanaAgentProgress>;
   
   // Error handling state
-  connectionState: 'connected' | 'disconnected' | 'reconnecting' | 'failed';
+  connectionState: 'connecting' | 'connected' | 'disconnected' | 'reconnecting' | 'failed';
   lastError: Error | null;
   reconnectAttempts: number;
   maxReconnectAttempts: number;
@@ -111,7 +111,7 @@ interface VanaDataStreamContextValue {
   // Event subscriptions
   onVanaEvent: (handler: (event: VanaSSEEvent) => void) => () => void;
   onAgentProgress: (handler: (progress: VanaAgentProgress) => void) => () => void;
-  onConnectionStateChange: (handler: (state: 'connected' | 'disconnected' | 'reconnecting' | 'failed') => void) => () => void;
+  onConnectionStateChange: (handler: (state: 'connecting' | 'connected' | 'disconnected' | 'reconnecting' | 'failed') => void) => () => void;
   onError: (handler: (error: Error) => void) => () => void;
 }
 
@@ -153,7 +153,8 @@ export function VanaDataStreamProvider({
   const [agentProgress, setAgentProgress] = useState<Map<string, VanaAgentProgress>>(new Map());
   
   // Enhanced error handling state
-  const [connectionState, setConnectionState] = useState<'connected' | 'disconnected' | 'reconnecting' | 'failed'>('disconnected');
+  type ConnectionState = 'connecting' | 'connected' | 'disconnected' | 'reconnecting' | 'failed';
+  const [connectionState, setConnectionState] = useState<ConnectionState>('disconnected');
   const [lastError, setLastError] = useState<Error | null>(null);
   const [reconnectAttempts, setReconnectAttempts] = useState(0);
   
@@ -161,7 +162,7 @@ export function VanaDataStreamProvider({
   const eventSourceRef = useRef<EventSource | null>(null);
   const eventHandlersRef = useRef<Set<(event: VanaSSEEvent) => void>>(new Set());
   const progressHandlersRef = useRef<Set<(progress: VanaAgentProgress) => void>>(new Set());
-  const connectionStateHandlersRef = useRef<Set<(state: 'connected' | 'disconnected' | 'reconnecting' | 'failed') => void>>(new Set());
+  const connectionStateHandlersRef = useRef<Set<(state: ConnectionState) => void>>(new Set());
   const errorHandlersRef = useRef<Set<(error: Error) => void>>(new Set());
   const reconnectAttemptsRef = useRef(0);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -286,7 +287,11 @@ export function VanaDataStreamProvider({
       // Handle agent progress updates
       if (event.type === 'agent_progress') {
         const progress = event.data as VanaAgentProgress;
-        setAgentProgress(prev => new Map(prev.set(progress.agent_id, progress)));
+        setAgentProgress(prev => {
+          const next = new Map(prev);
+          next.set(progress.agent_id, progress);
+          return next;
+        });
         
         // Notify progress handlers
         progressHandlersRef.current.forEach(handler => {
@@ -489,7 +494,7 @@ export function VanaDataStreamProvider({
 
       setIsVanaConnected(false);
       setCurrentTaskId(null);
-      setConnectionState('connecting' as any);
+      setConnectionState('connecting');
       setLastError(null);
       
       // Send message to Vana backend with timeout
@@ -746,7 +751,7 @@ export function VanaDataStreamProvider({
   /**
    * Subscribe to connection state changes
    */
-  const onConnectionStateChange = useCallback((handler: (state: 'connected' | 'disconnected' | 'reconnecting' | 'failed') => void) => {
+  const onConnectionStateChange = useCallback((handler: (state: 'connecting' | 'connected' | 'disconnected' | 'reconnecting' | 'failed') => void) => {
     connectionStateHandlersRef.current.add(handler);
     return () => connectionStateHandlersRef.current.delete(handler);
   }, []);

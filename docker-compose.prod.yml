@@ -59,7 +59,7 @@ services:
       - GOOGLE_APPLICATION_CREDENTIALS=${GOOGLE_APPLICATION_CREDENTIALS}
       - GOOGLE_PROJECT_ID=${GOOGLE_PROJECT_ID}
       - LOG_LEVEL=INFO
-      - ALLOW_ORIGINS=${NEXTAUTH_URL}
+      - ALLOW_ORIGINS=${FRONTEND_URL}
     volumes:
       - ${GOOGLE_APPLICATION_CREDENTIALS}:${GOOGLE_APPLICATION_CREDENTIALS}:ro
     depends_on:
@@ -104,7 +104,7 @@ services:
       - vana-network
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      test: ["CMD-SHELL", "redis-cli -a \"$REDIS_PASSWORD\" --no-auth-warning PING | grep -q PONG"]
       interval: 30s
       timeout: 10s
       retries: 3

@@ -6,7 +6,7 @@ This guide provides comprehensive instructions for deploying the VANA applicatio
 
 The VANA application consists of:
 - **Frontend**: Next.js 15 application with SSE streaming
-- **Backend**: Python FastAPI with Google ADK integration
+- **Backend**: Python FastAPI with Google SDK integration
 - **Database**: PostgreSQL for data persistence
 - **Cache**: Redis for session and caching
 - **Reverse Proxy**: Nginx for production load balancing

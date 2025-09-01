@@ -96,7 +96,7 @@ export async function GET(
       execute: ({ writer }) => {
         writer.write({
           type: 'data-appendMessage',
-          data: JSON.stringify(mostRecentMessage),
+          data: mostRecentMessage,
           transient: true,
         });
       },
