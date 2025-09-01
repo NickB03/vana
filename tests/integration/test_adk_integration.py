@@ -119,14 +119,14 @@ class TestADKAgentIntegration:
             # Import after patching to ensure the mock is in place
             import importlib
             import sys
-            
+
             # Remove the module from cache if it exists
             if "app.server" in sys.modules:
                 del sys.modules["app.server"]
-            
+
             # Now import with the mock in place
             from app.server import AGENT_DIR
-            
+
             # Verify that get_fast_api_app was called with correct parameters
             mock_get_app.assert_called_once()
             call_args = mock_get_app.call_args
