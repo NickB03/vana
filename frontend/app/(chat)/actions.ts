@@ -3,8 +3,8 @@
 import { generateText, type UIMessage } from 'ai';
 import { cookies } from 'next/headers';
 import { auth } from '@/app/(auth)/auth';
-import { getChatById } from '@/lib/db/queries';
 import {
+  getChatById,
   deleteMessagesByChatIdAfterTimestamp,
   getMessageById,
   updateChatVisiblityById,
@@ -13,8 +13,13 @@ import type { VisibilityType } from '@/components/visibility-selector';
 import { myProvider } from '@/lib/ai/providers';
 
 export async function saveChatModelAsCookie(model: string) {
-  const cookieStore = await cookies();
-  cookieStore.set('chat-model', model);
+  const cookieStore = cookies();
+  cookieStore.set('chat-model', model, {
+    path: '/',
+    sameSite: 'lax',
+    secure: process.env.NODE_ENV === 'production',
+    maxAge: 60 * 60 * 24 * 30, // 30 days
+  });
 }
 
 export async function generateTitleFromUserMessage({
@@ -62,5 +67,14 @@ export async function updateChatVisibility({
   chatId: string;
   visibility: VisibilityType;
 }) {
+  // 1. Authenticate the user session
+  const session = await auth();
+  if (!session?.user) return;
+
+  // 2. Ensure the authenticated user owns the chat
+  const chat = await getChatById({ id: chatId });
+  if (!chat || chat.userId !== session.user.id) return;
+
+  // 3. Perform the update only after all checks pass
   await updateChatVisiblityById({ chatId, visibility });
 }
