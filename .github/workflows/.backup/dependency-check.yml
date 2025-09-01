@@ -1,0 +1,57 @@
+name: Dependency Check
+
+on:
+  schedule:
+    - cron: '0 6 * * 1'  # Weekly on Mondays at 6 AM
+  workflow_dispatch:
+  push:
+    paths:
+      - 'pyproject.toml'
+      - 'uv.lock'
+
+permissions:
+  contents: read
+
+jobs:
+  dependency-check:
+    name: Dependency Security & Compatibility Check
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install UV package manager (stable)
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+          uv --version
+
+      - name: Check dependency resolution
+        run: |
+          echo "::group::Dependency Resolution Check"
+          uv sync --dev --no-install-project
+          echo "✓ Dependencies resolved successfully"
+          echo "::endgroup::"
+
+      - name: Basic vulnerability scan
+        run: |
+          echo "::group::Vulnerability Scan"
+          uv sync --dev
+          uv run safety check --short-report || echo "⚠️ Vulnerabilities found - review required"
+          echo "::endgroup::"
+
+      - name: Generate dependency summary
+        run: |
+          echo "## Dependency Check Summary" >> $GITHUB_STEP_SUMMARY
+          echo "- **Python version**: $(python --version)" >> $GITHUB_STEP_SUMMARY
+          echo "- **UV version**: $(uv --version)" >> $GITHUB_STEP_SUMMARY
+          echo "- **Dependencies resolved**: ✅" >> $GITHUB_STEP_SUMMARY
+          echo "- **Security scan**: $(uv run safety check --short-report > /dev/null 2>&1 && echo '✅ Clean' || echo '⚠️ Issues found')" >> $GITHUB_STEP_SUMMARY
