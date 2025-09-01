@@ -93,7 +93,7 @@ function PureChatHeader({
                   ? 'bg-blue-600 hover:bg-blue-700 text-white border-blue-600'
                   : ''
               }`}
-              onClick={() => onToggleVana && onToggleVana(!useVanaBackend)}
+              onClick={() => onToggleVana?.(!useVanaBackend)}
               disabled={!vanaAvailable}
             >
               <div className={`w-2 h-2 rounded-full mr-2 ${

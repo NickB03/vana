@@ -4,19 +4,22 @@ import { DEFAULT_CHAT_MODEL } from '@/lib/ai/models';
 import { generateUUID } from '@/lib/utils';
 import { DataStreamHandler } from '@/components/data-stream-handler';
 
-// Minimal auth session for Vana with proper type
-const vanaSession = {
-  user: {
-    id: 'vana-user',
-    email: 'user@vana.local',
-    name: 'Vana User',
-    type: 'regular' as const,
-  },
-  expires: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
-};
+// Function to create a fresh Vana session with current timestamp
+function createVanaSession() {
+  return {
+    user: {
+      id: 'vana-user',
+      email: 'user@vana.local',
+      name: 'Vana User',
+      type: 'regular' as const,
+    },
+    expires: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+  };
+}
 
 export default async function VanaPage() {
   const id = generateUUID();
+  const vanaSession = createVanaSession();
   
   const cookieStore = await cookies();
   const modelIdFromCookie = cookieStore.get('chat-model');

@@ -34,36 +34,51 @@ export async function GET(
 
   const vanaBaseUrl = process.env.VANA_BASE_URL || 'http://localhost:8000';
 
+  // Create abort controller for connection cleanup
+  const abortController = new AbortController();
+  
   // Create readable stream for SSE
   const stream = new ReadableStream({
     async start(controller) {
       const encoder = new TextEncoder();
+      let messageId = 0;
       
-      // Helper function to send SSE message
-      const sendSSE = (data: any, event?: string) => {
-        const message = `${event ? `event: ${event}\n` : ''}data: ${JSON.stringify(data)}\n\n`;
-        controller.enqueue(encoder.encode(message));
+      // Helper function to send SSE message with proper formatting
+      const sendSSE = (data: any, event?: string, id?: string) => {
+        const messageLines = [
+          id ? `id: ${id}` : `id: ${++messageId}`,
+          event ? `event: ${event}` : undefined,
+          'retry: 3000',
+          `data: ${typeof data === 'string' ? data : JSON.stringify(data)}`,
+          '', // Empty line to end message
+          ''
+        ].filter(Boolean).join('\n');
+        
+        controller.enqueue(encoder.encode(messageLines));
       };
 
       try {
-        // Connect to Vana backend SSE stream
+        // Connect to Vana backend SSE stream with abort signal
         const vanaStreamUrl = `${vanaBaseUrl}/chat/${chatId}/stream?task_id=${taskId}`;
         const response = await fetch(vanaStreamUrl, {
           headers: {
             'Accept': 'text/event-stream',
+            'Cache-Control': 'no-cache',
             'X-User-ID': session.user.id,
             'X-Session-ID': chatId,
           },
+          signal: abortController.signal,
         });
 
         if (!response.ok) {
-          sendSSE({ type: 'error', data: { message: 'Failed to connect to Vana backend' } });
+          const errorMessage = `Failed to connect to Vana backend: ${response.status} ${response.statusText}`;
+          sendSSE({ type: 'error', data: { message: errorMessage } }, 'error');
           controller.close();
           return;
         }
 
         if (!response.body) {
-          sendSSE({ type: 'error', data: { message: 'No response body from Vana backend' } });
+          sendSSE({ type: 'error', data: { message: 'No response body from Vana backend' } }, 'error');
           controller.close();
           return;
         }
@@ -71,25 +86,36 @@ export async function GET(
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
         let buffer = '';
-        let assistantMessages: ChatMessage[] = [];
+        const assistantMessages: ChatMessage[] = [];
 
         try {
           while (true) {
+            // Check if abort signal was triggered
+            if (abortController.signal.aborted) {
+              console.log('SSE stream aborted by client');
+              break;
+            }
+            
             const { done, value } = await reader.read();
             
             if (done) {
               // Save any pending messages to database
               if (assistantMessages.length > 0) {
-                await saveMessages({
-                  messages: assistantMessages.map(message => ({
-                    id: message.id,
-                    role: message.role,
-                    parts: message.parts,
-                    chatId,
-                    attachments: [],
-                    createdAt: new Date(),
-                  })),
-                });
+                try {
+                  await saveMessages({
+                    messages: assistantMessages.map(message => ({
+                      id: message.id,
+                      role: message.role,
+                      parts: message.parts,
+                      chatId,
+                      attachments: [],
+                      createdAt: new Date(),
+                    })),
+                  });
+                } catch (dbError) {
+                  console.error('Failed to save messages to database:', dbError);
+                  // Don't throw here as stream is ending anyway
+                }
               }
               break;
             }
@@ -109,11 +135,13 @@ export async function GET(
                   // Transform Vana events to AI SDK format
                   const transformedEvent = transformVanaEvent(eventData);
                   if (transformedEvent) {
-                    // Forward to client
-                    sendSSE(transformedEvent);
+                    // Forward to client with proper event type and id
+                    const eventType = transformedEvent.type.replace('data-', '');
+                    const eventId = eventData.message_id || `msg-${messageId}`;
+                    sendSSE(transformedEvent.data, eventType, eventId);
                     
                     // Collect messages for database save
-                    if (transformedEvent.type === 'message_complete') {
+                    if (transformedEvent.type === 'data-appendMessage') {
                       assistantMessages.push({
                         id: eventData.message_id || Date.now().toString(),
                         role: 'assistant',
@@ -124,43 +152,95 @@ export async function GET(
                       } as ChatMessage);
                     }
                   }
-                } catch (error) {
-                  console.error('Error parsing Vana SSE event:', error);
+                } catch (parseError) {
+                  console.error('Error parsing Vana SSE event:', parseError);
+                  const errorMessage = parseError instanceof Error ? parseError.message : 'Unknown parse error';
                   sendSSE({ 
                     type: 'error', 
-                    data: { message: `Parse error: ${error.message}` } 
-                  });
+                    data: { message: `Parse error: ${errorMessage}` } 
+                  }, 'error');
                 }
               }
             }
           }
+        } catch (readerError) {
+          console.error('Reader error:', readerError);
+          if (readerError instanceof Error && readerError.name !== 'AbortError') {
+            const errorMessage = readerError.message || 'Reader error occurred';
+            sendSSE({ 
+              type: 'error', 
+              data: { message: `Reader error: ${errorMessage}` } 
+            }, 'error');
+          }
         } finally {
-          reader.releaseLock();
+          try {
+            reader.releaseLock();
+          } catch (lockError) {
+            console.warn('Failed to release reader lock:', lockError);
+          }
         }
 
-      } catch (error) {
-        console.error('Vana stream error:', error);
-        sendSSE({ 
-          type: 'error', 
-          data: { message: `Stream error: ${error.message}` } 
-        });
+      } catch (streamError) {
+        console.error('Vana stream error:', streamError);
+        
+        // Handle specific error types
+        if (streamError instanceof Error) {
+          if (streamError.name === 'AbortError') {
+            console.log('Stream aborted by client');
+            return; // Don't send error for client-initiated abort
+          }
+          
+          if (streamError.name === 'TypeError' && streamError.message.includes('fetch')) {
+            sendSSE({ 
+              type: 'error', 
+              data: { message: 'Network error: Unable to connect to Vana backend' } 
+            }, 'error');
+          } else {
+            const errorMessage = streamError.message || 'Unknown stream error';
+            sendSSE({ 
+              type: 'error', 
+              data: { message: `Stream error: ${errorMessage}` } 
+            }, 'error');
+          }
+        } else {
+          sendSSE({ 
+            type: 'error', 
+            data: { message: 'Unknown error occurred during streaming' } 
+          }, 'error');
+        }
       } finally {
-        // Send completion event
-        sendSSE({ type: 'task_complete', data: { task_id: taskId } });
-        controller.close();
+        // Send completion event only if not aborted
+        if (!abortController.signal.aborted) {
+          sendSSE({ type: 'task_complete', data: { task_id: taskId } }, 'complete');
+        }
+        
+        try {
+          controller.close();
+        } catch (closeError) {
+          console.warn('Failed to close controller:', closeError);
+        }
       }
     },
+    
+    cancel() {
+      // Handle client disconnect
+      console.log('SSE stream cancelled by client');
+      abortController.abort();
+    }
   });
 
-  // Return SSE response
+  // Return SSE response with production-ready headers
   return new Response(stream, {
     headers: {
       'Content-Type': 'text/event-stream',
-      'Cache-Control': 'no-cache',
+      'Cache-Control': 'no-cache, no-store, must-revalidate',
       'Connection': 'keep-alive',
+      'X-Accel-Buffering': 'no', // Disable nginx buffering
+      'Transfer-Encoding': 'chunked', // Enable chunked encoding
       'Access-Control-Allow-Origin': '*',
       'Access-Control-Allow-Methods': 'GET',
-      'Access-Control-Allow-Headers': 'Cache-Control',
+      'Access-Control-Allow-Headers': 'Cache-Control, X-Requested-With',
+      'Access-Control-Expose-Headers': 'X-Accel-Buffering, Transfer-Encoding',
     },
   });
 }
@@ -168,8 +248,20 @@ export async function GET(
 /**
  * Transform Vana backend events to AI SDK compatible format
  */
-function transformVanaEvent(vanaEvent: any) {
-  switch (vanaEvent.type) {
+function transformVanaEvent(vanaEvent: any): { type: string; data: any } | null {
+  // Validate input
+  if (!vanaEvent || typeof vanaEvent !== 'object') {
+    console.warn('Invalid Vana event data:', vanaEvent);
+    return null;
+  }
+
+  const eventType = vanaEvent.type;
+  if (typeof eventType !== 'string') {
+    console.warn('Vana event missing type field:', vanaEvent);
+    return null;
+  }
+
+  switch (eventType) {
     case 'message_delta':
       return {
         type: 'data-textDelta',
@@ -179,28 +271,31 @@ function transformVanaEvent(vanaEvent: any) {
     case 'message_complete':
       return {
         type: 'data-appendMessage',
-        data: JSON.stringify({
+        data: {
           id: vanaEvent.message_id || Date.now().toString(),
           role: 'assistant',
           content: vanaEvent.content || '',
           createdAt: new Date().toISOString(),
-        }),
+        },
       };
     
-    case 'agent_progress':
+    case 'agent_progress': {
+      const progressPercent = typeof vanaEvent.progress === 'number' 
+        ? Math.round(vanaEvent.progress * 100) 
+        : 0;
       return {
         type: 'data-textDelta',
-        data: `\n\n**Agent Progress:** ${vanaEvent.agent_id} - ${vanaEvent.message} (${Math.round(vanaEvent.progress * 100)}%)\n\n`,
+        data: `\n\n**Agent Progress:** ${vanaEvent.agent_id || 'Unknown'} - ${vanaEvent.message || 'Processing'} (${progressPercent}%)\n\n`,
       };
+    }
     
     case 'tool_call':
       return {
         type: 'data-textDelta',
-        data: `\n\n**Using Tool:** ${vanaEvent.tool_name}\n`,
+        data: `\n\n**Using Tool:** ${vanaEvent.tool_name || 'Unknown tool'}\n`,
       };
     
     case 'artifact_create':
-      // Convert to existing artifact system format
       return {
         type: 'data-kind',
         data: vanaEvent.artifact_type || 'text',
@@ -208,18 +303,27 @@ function transformVanaEvent(vanaEvent: any) {
     
     case 'error':
       return {
-        type: 'data-textDelta',
-        data: `\n\n**Error:** ${vanaEvent.message}\n\n`,
+        type: 'data-error',
+        data: {
+          message: vanaEvent.message || 'Unknown error occurred',
+          code: vanaEvent.code || 'UNKNOWN_ERROR',
+        },
       };
     
     case 'task_complete':
       return {
         type: 'data-finish',
-        data: null,
+        data: {
+          task_id: vanaEvent.task_id,
+          completed_at: new Date().toISOString(),
+        },
       };
     
     default:
-      console.warn('Unknown Vana event type:', vanaEvent.type);
-      return null;
+      console.warn('Unknown Vana event type:', eventType);
+      return {
+        type: 'data-textDelta',
+        data: `\n\n**Unknown Event:** ${eventType}\n\n`,
+      };
   }
 }

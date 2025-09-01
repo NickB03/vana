@@ -1,5 +1,6 @@
 'use client';
 
+import { useRef } from 'react';
 import { Chat } from '@/components/chat-vana';
 import { AppSidebar } from '@/components/app-sidebar';
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
@@ -19,7 +20,7 @@ export default function VanaChatPage() {
     expires: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
   };
 
-  const id = generateUUID();
+  const idRef = useRef<string>(generateUUID());
   const [isCollapsed] = useLocalStorage('sidebar:state', false);
 
   return (
@@ -28,8 +29,8 @@ export default function VanaChatPage() {
         <AppSidebar user={session.user} />
         <SidebarInset>
           <Chat
-            key={id}
-            id={id}
+            key={idRef.current}
+            id={idRef.current}
             initialMessages={[]}
             session={session}
           />

@@ -7,6 +7,7 @@ import { useEffect, useState, useCallback, useMemo } from 'react';
 import { vanaClient } from '@/lib/vana-client';
 import { VanaDataStreamProvider } from './vana-data-stream-provider';
 import type { ChatMessage } from '@/lib/types';
+import { extractMessageContent, getMessageCreatedAt } from '@/lib/types';
 
 interface ChatProps {
   id: string;
@@ -16,11 +17,29 @@ interface ChatProps {
 
 // Convert ChatMessage to Message for useVanaChat
 function chatMessageToMessage(chatMessage: ChatMessage): Message {
+  const content = extractMessageContent(chatMessage);
+  const createdAtString = getMessageCreatedAt(chatMessage);
+  
+  // Ensure we have valid content - if empty, provide a fallback
+  const finalContent = content || (chatMessage.content as string) || '';
+  
+  // Parse the date string safely
+  let createdAt: Date;
+  try {
+    createdAt = new Date(createdAtString);
+    // Check if date is valid
+    if (isNaN(createdAt.getTime())) {
+      createdAt = new Date();
+    }
+  } catch {
+    createdAt = new Date();
+  }
+  
   return {
     id: chatMessage.id,
     role: chatMessage.role,
-    content: chatMessage.content,
-    createdAt: chatMessage.createdAt ? new Date(chatMessage.createdAt) : new Date(),
+    content: finalContent,
+    createdAt,
     attachments: [],
   };
 }
@@ -89,7 +108,9 @@ export function Chat({ id, initialMessages = [], session }: ChatProps) {
   }, [setVanaMessages]);
 
   // Create regenerate function for Messages component
-  const regenerate = useCallback(async (messageId: string) => {
+  const regenerate = useCallback(async (options?: { messageId?: string }) => {
+    const messageId = options?.messageId;
+    if (!messageId) return;
     const messageIndex = chatMessages.findIndex(m => m.id === messageId);
     if (messageIndex === -1) return;
 
@@ -103,7 +124,7 @@ export function Chat({ id, initialMessages = [], session }: ChatProps) {
     setChatMessages(prev => prev.slice(0, userMessageIndex + 1));
     
     // Set the input to the user message content and resubmit
-    setInput(userMessage.content);
+    setInput(extractMessageContent(userMessage));
     setTimeout(() => handleSubmit(), 0);
   }, [chatMessages, setChatMessages, setInput, handleSubmit]);
 
@@ -149,10 +170,18 @@ export function Chat({ id, initialMessages = [], session }: ChatProps) {
             stop={stop}
             attachments={[]}
             setAttachments={() => {}}
-            messages={vanaMessages}
-            setMessages={() => {}}
+            messages={chatMessages}
+            setMessages={setChatMessages}
             sendMessage={async (message) => {
-              await handleSubmit();
+              if (message) {
+                const content = extractMessageContent(message as ChatMessage);
+                if (content) {
+                  setInput(content);
+                }
+                await handleSubmit();
+              } else {
+                await handleSubmit();
+              }
             }}
             selectedVisibilityType="public"
           />
@@ -161,6 +190,7 @@ export function Chat({ id, initialMessages = [], session }: ChatProps) {
             <div className="mt-2 text-red-600 text-sm text-center w-full">
               Error: {error.message}
               <button 
+                type="button"
                 onClick={reload}
                 className="ml-2 underline hover:no-underline"
               >

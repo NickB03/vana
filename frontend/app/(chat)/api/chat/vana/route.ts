@@ -2,8 +2,7 @@ import { auth } from '@/app/(auth)/auth';
 import { getChatById, saveChat, saveMessages } from '@/lib/db/queries';
 import { ChatSDKError } from '@/lib/errors';
 import type { ChatMessage } from '@/lib/types';
-import { generateUUID } from '@/lib/utils';
-import { generateTitleFromUserMessage } from '../../actions';
+import { generateTitleFromUserMessage } from '@/app/(chat)/actions';
 import type { VisibilityType } from '@/components/visibility-selector';
 
 export const maxDuration = 60;
@@ -152,7 +151,7 @@ export async function GET(request: Request) {
   } catch (error) {
     return Response.json({
       available: false,
-      error: error.message,
+      error: error instanceof Error ? error.message : 'Unknown error occurred',
       url: vanaBaseUrl,
     });
   }
