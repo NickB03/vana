@@ -253,13 +253,13 @@ class HookConfig:
             ),
         }
 
-        for env_var, (field, converter) in env_mappings.items():
+        for env_var, (field_name, converter) in env_mappings.items():
             env_value = os.getenv(env_var)
             if env_value is not None:
                 try:
-                    env_overrides[field] = converter(env_value)
+                    env_overrides[field_name] = converter(env_value)
                     logger.debug(
-                        f"Loaded from env {env_var}: {field} = {env_overrides[field]}"
+                        f"Loaded from env {env_var}: {field_name} = {env_overrides[field_name]}"
                     )
                 except (ValueError, TypeError) as e:
                     logger.warning(

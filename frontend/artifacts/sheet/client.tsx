@@ -10,10 +10,7 @@ import { SpreadsheetEditor } from '@/components/sheet-editor';
 import { parse, unparse } from 'papaparse';
 import { toast } from 'sonner';
 
-interface Metadata {
-  // Add specific metadata properties as they are used
-  // Currently no specific metadata properties are used
-}
+type Metadata = {}
 
 export const sheetArtifact = new Artifact<'sheet', Metadata>({
   kind: 'sheet',

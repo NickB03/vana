@@ -420,7 +420,7 @@ Examples:
                     print("🚨 Active Alerts:")
                     for alert in alerts[-5:]:  # Show last 5
                         severity_emoji = {
-                            "info": "ℹ️",
+                            "info": "[INFO]",
                             "warning": "⚠️",
                             "critical": "🔴",
                             "emergency": "🆘",
@@ -451,7 +451,7 @@ Examples:
             print("=" * 80)
             for alert in alerts:
                 severity_emoji = {
-                    "info": "ℹ️",
+                    "info": "[INFO]",
                     "warning": "⚠️",
                     "critical": "🔴",
                     "emergency": "🆘",

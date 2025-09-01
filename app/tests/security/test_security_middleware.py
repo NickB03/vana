@@ -430,7 +430,7 @@ class TestMiddlewareIntegration:
     def test_rate_limiting_with_auth(self):
         """Test rate limiting combined with authentication."""
         # Make requests up to rate limit on public endpoint
-        for i in range(5):
+        for _i in range(5):
             response = self.client.get("/public")
             assert response.status_code == 200
 
@@ -474,7 +474,7 @@ class TestMiddlewareIntegration:
         start_time = time.time()
 
         # Make multiple requests
-        for i in range(10):
+        for _i in range(10):
             response = self.client.get("/public")
             assert response.status_code in [200, 429]  # Either success or rate limited
 
@@ -487,7 +487,7 @@ class TestMiddlewareIntegration:
     def test_middleware_memory_usage(self):
         """Test that middleware don't cause memory leaks."""
         # Make many requests to test for memory leaks
-        for i in range(100):
+        for _i in range(100):
             response = self.client.get("/public")
             assert response.status_code in [200, 429]
 
@@ -600,7 +600,7 @@ class TestMiddlewareSecurity:
 
         # Rapid requests should be rate limited
         responses = []
-        for i in range(10):
+        for _i in range(10):
             response = client.get("/test")
             responses.append(response.status_code)
 

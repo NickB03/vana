@@ -39,7 +39,7 @@ class TestRateLimitMiddleware:
     def test_allows_requests_under_limit(self):
         """Test that requests under the rate limit are allowed."""
         # Make requests under the limit
-        for i in range(5):
+        for _i in range(5):
             response = self.client.get("/auth/login")
             assert response.status_code == 200
             assert response.json() == {"message": "success"}
@@ -47,7 +47,7 @@ class TestRateLimitMiddleware:
     def test_blocks_requests_over_limit(self):
         """Test that requests over the rate limit are blocked."""
         # Make requests up to the limit
-        for i in range(10):
+        for _i in range(10):
             response = self.client.get("/auth/login")
             assert response.status_code == 200
 
@@ -60,7 +60,7 @@ class TestRateLimitMiddleware:
     def test_only_applies_to_auth_endpoints(self):
         """Test that rate limiting only applies to auth endpoints."""
         # Make many requests to non-auth endpoint
-        for i in range(15):
+        for _i in range(15):
             response = self.client.get("/api/data")
             assert response.status_code == 200
 
@@ -74,7 +74,7 @@ class TestRateLimitMiddleware:
         with patch.object(self.rate_limiter, "get_client_ip") as mock_get_ip:
             # First IP makes requests up to limit
             mock_get_ip.return_value = "192.168.1.1"
-            for i in range(10):
+            for _i in range(10):
                 response = self.client.get("/auth/login")
                 assert response.status_code == 200
 
@@ -94,7 +94,7 @@ class TestRateLimitMiddleware:
             mock_time.return_value = 0
 
             # Make requests up to limit
-            for i in range(10):
+            for _i in range(10):
                 response = self.client.get("/auth/login")
                 assert response.status_code == 200
 
@@ -145,7 +145,7 @@ class TestRateLimitMiddleware:
 
         for case in test_cases:
             mock_request = Mock()
-            mock_request.headers.get.side_effect = lambda key: case["headers"].get(key)
+            mock_request.headers.get.side_effect = lambda key, c=case: c["headers"].get(key)
             mock_request.client.host = "127.0.0.1"
 
             ip = self.rate_limiter.get_client_ip(mock_request)
@@ -168,7 +168,7 @@ class TestRateLimitMiddleware:
             headers = {"X-Forwarded-For": spoofed_ip}
 
             # Make requests up to limit
-            for i in range(10):
+            for _i in range(10):
                 response = self.client.get("/auth/login", headers=headers)
                 assert response.status_code == 200
 
@@ -189,7 +189,7 @@ class TestRateLimitMiddleware:
 
         # Launch concurrent requests
         threads = []
-        for i in range(20):  # More than the rate limit
+        for _i in range(20):  # More than the rate limit
             thread = threading.Thread(target=make_request)
             threads.append(thread)
             thread.start()
@@ -217,7 +217,7 @@ class TestRateLimitMiddleware:
             mock_time.return_value = 0
 
             # Make some requests
-            for i in range(5):
+            for _i in range(5):
                 response = self.client.get("/auth/login")
                 assert response.status_code == 200
 
@@ -245,17 +245,17 @@ class TestRateLimitMiddleware:
         instances = []
         for i in range(3):
             app = FastAPI()
-            rate_limiter = RateLimitMiddleware(app, calls=5, period=60)
+            RateLimitMiddleware(app, calls=5, period=60)
 
             @app.get("/auth/login")
-            async def endpoint():
-                return {"message": f"instance_{i}"}
+            async def endpoint(idx=i):
+                return {"message": f"instance_{idx}"}
 
             instances.append((app, TestClient(app)))
 
         # Each instance should have its own rate limit
-        for app, client in instances:
-            for i in range(5):
+        for _app, client in instances:
+            for _i in range(5):
                 response = client.get("/auth/login")
                 assert response.status_code == 200
 
@@ -294,7 +294,7 @@ class TestAdvancedRateLimiting:
         rate_limiter = SlidingWindowRateLimit(max_requests=5, window_size=10)
 
         # Should allow initial requests
-        for i in range(5):
+        for _i in range(5):
             assert rate_limiter.is_allowed("client1") is True
 
         # Should block additional requests
@@ -332,7 +332,7 @@ class TestAdvancedRateLimiting:
         rate_limiter = TokenBucketRateLimit(capacity=3, refill_rate=1)
 
         # Should allow initial burst
-        for i in range(3):
+        for _i in range(3):
             assert rate_limiter.is_allowed("client1") is True
 
         # Should block after burst
@@ -380,14 +380,14 @@ class TestAdvancedRateLimiting:
 
         # Normal load - should allow up to base limit
         rate_limiter.current_load = 0.5
-        for i in range(10):
+        for _i in range(10):
             assert rate_limiter.is_allowed("client1") is True
         assert rate_limiter.is_allowed("client1") is False
 
         # High load - should reduce limit
         rate_limiter.current_load = 0.9
         rate_limiter.requests.clear()
-        for i in range(2):  # Should only allow 2 (base_limit // 4)
+        for _i in range(2):  # Should only allow 2 (base_limit // 4)
             assert rate_limiter.is_allowed("client2") is True
         assert rate_limiter.is_allowed("client2") is False
 
@@ -419,7 +419,7 @@ class TestAdvancedRateLimiting:
 
         for attempt_headers in bypass_attempts:
             # Use up the rate limit
-            for i in range(3):
+            for _i in range(3):
                 response = client.get("/auth/login", headers=attempt_headers)
                 assert response.status_code == 200
 
@@ -433,7 +433,7 @@ class TestAdvancedRateLimiting:
     def test_rate_limit_error_responses(self):
         """Test rate limit error response security."""
         app = FastAPI()
-        rate_limiter = RateLimitMiddleware(app, calls=2, period=60)
+        RateLimitMiddleware(app, calls=2, period=60)
 
         @app.get("/auth/login")
         async def endpoint():
@@ -442,7 +442,7 @@ class TestAdvancedRateLimiting:
         client = TestClient(app)
 
         # Use up rate limit
-        for i in range(2):
+        for _i in range(2):
             response = client.get("/auth/login")
             assert response.status_code == 200
 
@@ -477,7 +477,7 @@ class TestAdvancedRateLimiting:
     def test_rate_limit_with_authentication(self):
         """Test rate limiting behavior with different authentication states."""
         app = FastAPI()
-        rate_limiter = RateLimitMiddleware(app, calls=5, period=60)
+        RateLimitMiddleware(app, calls=5, period=60)
 
         @app.get("/auth/login")
         async def login_endpoint():
@@ -493,7 +493,7 @@ class TestAdvancedRateLimiting:
         total_requests = 0
 
         # Mix of login and register requests
-        for i in range(3):
+        for _i in range(3):
             response = client.get("/auth/login")
             assert response.status_code == 200
             total_requests += 1
@@ -512,7 +512,7 @@ class TestAdvancedRateLimiting:
         # For now, test in-memory behavior
 
         app = FastAPI()
-        rate_limiter = RateLimitMiddleware(app, calls=3, period=60)
+        RateLimitMiddleware(app, calls=3, period=60)
 
         @app.get("/auth/login")
         async def endpoint():
@@ -521,7 +521,7 @@ class TestAdvancedRateLimiting:
         client = TestClient(app)
 
         # Make some requests
-        for i in range(3):
+        for _i in range(3):
             response = client.get("/auth/login")
             assert response.status_code == 200
 
