@@ -8,7 +8,8 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import Enum
-from typing import Any
+from typing import Any, Optional
+import re
 
 logger = logging.getLogger(__name__)
 
@@ -197,7 +198,7 @@ class PatternRule(ValidationRule):
             self.compiled_pattern = re.compile(pattern)
         except re.error as e:
             logger.error(f"Invalid regex pattern {pattern}: {e}")
-            self.compiled_pattern = None
+            self.compiled_pattern: Optional[re.Pattern[str]] = None
 
     def validate(
         self, field_name: str, value: Any, context: dict[str, Any]
