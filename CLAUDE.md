@@ -157,6 +157,36 @@ AUTH_REQUIRED=false         # For development
 4. Run `make test && make lint`
 5. Update documentation if needed
 
+#### Creating Pull Requests with CodeRabbit Review
+```bash
+# 1. Create and push your feature branch
+git checkout -b feature/your-feature
+git add .
+git commit -m "feat: your feature description"
+git push origin feature/your-feature
+
+# 2. Create PR via GitHub CLI (CodeRabbit auto-reviews)
+gh pr create --title "feat: your feature" --body "Description of changes"
+
+# 3. Apply CodeRabbit suggestions automatically
+make coderabbit-apply PR=123  # Replace 123 with your PR number
+
+# Or use the quick command
+make crr ARGS="--pr 123 --apply"
+
+# 4. CodeRabbit will automatically:
+# - Review security, type safety, best practices
+# - Check MyPy annotations for Python
+# - Validate TypeScript types for frontend
+# - Suggest improvements in PR comments
+```
+
+#### CodeRabbit Commands in PR Comments
+You can trigger CodeRabbit actions by commenting on your PR:
+- `@coderabbitai review` - Request comprehensive review
+- `@coderabbitai mypy` - Check type annotations
+- `@coderabbitai summary` - Generate PR summary
+
 #### Debugging SSE Streaming
 - Check `/health` endpoint first
 - Monitor browser DevTools Network tab

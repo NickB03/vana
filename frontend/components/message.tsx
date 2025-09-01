@@ -52,9 +52,8 @@ const PurePreviewMessage = ({
 }) => {
   const [mode, setMode] = useState<'view' | 'edit'>('view');
 
-  const attachmentsFromMessage = message.parts.filter(
-    (part) => part.type === 'file',
-  );
+  const attachmentsFromMessage =
+    message.parts?.filter((part) => part.type === 'file') ?? [];
 
   useDataStream();
 
@@ -96,7 +95,7 @@ const PurePreviewMessage = ({
               >
                 {attachmentsFromMessage.map((attachment, idx) => (
                   <PreviewAttachment
-                    key={`${attachment.url ?? 'no-url'}:${attachment.filename ?? idx}`}
+                    key={`${message.id}:${attachment.url ?? 'no-url'}:${attachment.filename ?? 'file'}:${idx}`}
                     attachment={{
                       name: attachment.filename ?? 'file',
                       contentType: attachment.mediaType || 'application/octet-stream',
@@ -317,6 +316,8 @@ export const PreviewMessage = memo(
     if (prevProps.message.id !== nextProps.message.id) return false;
     if (prevProps.requiresScrollPadding !== nextProps.requiresScrollPadding)
       return false;
+    if (prevProps.isReadonly !== nextProps.isReadonly) return false;
+    if (prevProps.chatId !== nextProps.chatId) return false;
     if (!equal(prevProps.message.parts, nextProps.message.parts)) return false;
     if (!equal(prevProps.vote, nextProps.vote)) return false;
 

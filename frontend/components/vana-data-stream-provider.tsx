@@ -10,21 +10,7 @@ import React, {
   useRef 
 } from 'react';
 import type { DataUIPart } from 'ai';
-import type { CustomUIDataTypes } from '@/lib/types';
-
-// Simple ChatMessage type for compatibility
-interface ChatMessage {
-  id: string;
-  role: 'user' | 'assistant' | 'system';
-  content?: string;
-  createdAt?: string;
-  parts?: Array<{
-    type: string;
-    text?: string;
-    [key: string]: any;
-  }>;
-  metadata?: any;
-}
+import type { CustomUIDataTypes, ChatMessage } from '@/lib/types';
 
 // Helper functions
 function extractMessageContent(message: ChatMessage): string {
@@ -163,6 +149,17 @@ export function VanaDataStreamProvider({
   const eventHandlersRef = useRef<Set<(event: VanaSSEEvent) => void>>(new Set());
   const progressHandlersRef = useRef<Set<(progress: VanaAgentProgress) => void>>(new Set());
   const connectionStateHandlersRef = useRef<Set<(state: ConnectionState) => void>>(new Set());
+
+  // Notify subscribers on any connectionState change
+  useEffect(() => {
+    connectionStateHandlersRef.current.forEach((h) => {
+      try {
+        h(connectionState);
+      } catch (e) {
+        console.warn('Connection state handler error:', e);
+      }
+    });
+  }, [connectionState]);
   const errorHandlersRef = useRef<Set<(error: Error) => void>>(new Set());
   const reconnectAttemptsRef = useRef(0);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -289,7 +286,7 @@ export function VanaDataStreamProvider({
         const progress = event.data as VanaAgentProgress;
         setAgentProgress(prev => {
           const next = new Map(prev);
-          next.set(progress.agent_id, progress);
+          next.set(`${progress.task_id ?? 'default'}:${progress.agent_id}`, progress);
           return next;
         });
         
@@ -686,19 +683,18 @@ export function VanaDataStreamProvider({
       });
 
       eventSource.addEventListener('error', (event) => {
-        try {
-          const messageEvent = event as MessageEvent;
-          const data = JSON.parse(messageEvent.data);
-          handleVanaEvent({ type: 'error', data }, options);
-        } catch (error) {
-          const parseError = new StreamParsingError(
-            'Failed to parse error event',
-            (event as MessageEvent).data,
-            'event',
-            error instanceof Error ? error : undefined
-          );
-          handleError(parseError, options);
+        const msg = event as MessageEvent;
+        if (typeof msg.data === 'string' && msg.data.trim()) {
+          try {
+            const data = JSON.parse(msg.data);
+            handleVanaEvent({ type: 'error', data }, options);
+            return;
+          } catch { /* fall through */ }
         }
+        handleError(new SSEConnectionError('SSE connection failed', {
+          retryable: enableReconnect && reconnectAttempts < maxReconnectAttempts,
+          reconnectAttempt: reconnectAttempts
+        }), options);
       });
 
     } catch (error) {
