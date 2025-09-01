@@ -54,7 +54,7 @@ function chatMessageToMessage(chatMessage: ChatMessage): Message {
   try {
     createdAt = chatMessage.createdAt ? new Date(chatMessage.createdAt) : new Date();
     // Check if date is valid
-    if (isNaN(createdAt.getTime())) {
+    if (Number.isNaN(createdAt.getTime())) {
       createdAt = new Date();
     }
   } catch {
