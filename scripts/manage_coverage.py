@@ -13,7 +13,7 @@ from pathlib import Path
 class CoverageManager:
     """Manages pytest coverage files with archiving and cleanup."""
 
-    def __init__(self, project_root: Path = None):
+    def __init__(self, project_root: Path | None = None):
         self.project_root = project_root or Path.cwd()
         self.coverage_dir = self.project_root / ".coverage_archive"
         self.coverage_db = self.coverage_dir / "coverage_history.db"

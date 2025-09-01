@@ -117,7 +117,6 @@ class TestADKAgentIntegration:
         """Test ADK FastAPI app configuration."""
         with patch("google.adk.cli.fast_api.get_fast_api_app") as mock_get_app:
             # Import after patching to ensure the mock is in place
-            import importlib
             import sys
 
             # Remove the module from cache if it exists

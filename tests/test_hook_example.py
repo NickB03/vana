@@ -9,4 +9,4 @@ def test_example():
 
 def test_another():
     """Another test"""
-    assert True == True
+    assert True

@@ -149,7 +149,7 @@ class HookOrchestrator:
         self._lock = threading.RLock()
 
         # Start error cleanup task
-        asyncio.create_task(self._periodic_error_cleanup())
+        self._cleanup_task = asyncio.create_task(self._periodic_error_cleanup())
 
         logger.info(
             "Hook orchestrator initialized with validation level: %s",

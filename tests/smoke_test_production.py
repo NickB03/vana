@@ -121,7 +121,7 @@ class ProductionSmokeTest:
                     if resp.status in [200, 201]:
                         print("✅ User registration works")
                     elif resp.status == 400:
-                        print("ℹ️ User already exists (expected if re-running)")
+                        print("[INFO] User already exists (expected if re-running)")
                     else:
                         print(f"⚠️ Registration returned: {resp.status}")
             except Exception as e:
@@ -175,10 +175,10 @@ class ProductionSmokeTest:
                                 print("✅ Protected endpoint also works")
                             elif resp.status == 403:
                                 print(
-                                    "ℹ️ Protected endpoint requires additional setup (but token is valid)"
+                                    "[INFO] Protected endpoint requires additional setup (but token is valid)"
                                 )
                             else:
-                                print(f"ℹ️ Protected endpoint returned: {resp.status}")
+                                print(f"[INFO] Protected endpoint returned: {resp.status}")
                     else:
                         print(
                             f"❌ Token doesn't look like valid JWT: {len(parts)} parts"
@@ -254,13 +254,13 @@ class ProductionSmokeTest:
                     print(f"❌ Excessive memory growth: {memory_growth:.2f} MB")
             else:
                 # Process ended, which is fine - just means it didn't crash from memory issues
-                print("ℹ️ Process ended during test - assuming stable memory")
+                print("[INFO] Process ended during test - assuming stable memory")
                 self.results["memory_stable"] = True
                 print("✅ Memory appears stable (process ended cleanly)")
 
         except (psutil.ZombieProcess, psutil.NoSuchProcess, psutil.AccessDenied) as e:
             # Process is zombie/gone/inaccessible - this is actually good (no memory leaks caused crash)
-            print(f"ℹ️ Process ended during memory test: {type(e).__name__}")
+            print(f"[INFO] Process ended during memory test: {type(e).__name__}")
             self.results["memory_stable"] = True
             print("✅ Memory appears stable (no memory-related crashes)")
         except Exception as e:
