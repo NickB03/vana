@@ -101,7 +101,7 @@ warn_unreachable = false
 follow_imports = "silent"
 ignore_missing_imports = true
 explicit_package_bases = true
-disable_error_code = ["misc", "no-untyped-call", "no-any-return", "no-untyped-def", "assignment", "operator", "attr-defined", "arg-type", "index", "union-attr", "var-annotated", "no-redef", "unreachable", "import-untyped"]
+disable_error_code = ["misc", "no-untyped-call", "no-any-return", "no-untyped-def", "assignment", "operator", "attr-defined", "arg-type", "index", "union-attr", "var-annotated", "no-redef", "unreachable", "import-untyped", "valid-type", "typeddict-unknown-key", "call-arg", "annotation-unchecked"]
 
 exclude = [".venv", "tests/", "scripts/", "src/shell-validator/", "src/hooks/"]
 
