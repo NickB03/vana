@@ -240,6 +240,7 @@ def _should_initialize_iam() -> bool:
 
     return True
 
+
 google_iam = GoogleCloudIAM() if _should_initialize_iam() else None
 
 

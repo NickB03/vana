@@ -217,7 +217,9 @@ class RealtimeFeedback:
             logger.error("Failed to start WebSocket server: %s", str(e))
             raise
 
-    async def _handle_websocket_client(self, websocket: WebSocketServerProtocol) -> None:
+    async def _handle_websocket_client(
+        self, websocket: WebSocketServerProtocol
+    ) -> None:
         """Handle a new WebSocket client connection."""
         peer = websocket.remote_address or ("unknown", 0)
         client_id = f"{peer[0]}:{peer[1]}"
@@ -266,7 +268,9 @@ class RealtimeFeedback:
                 self.connected_clients.discard(websocket)
                 self.metrics["clients_connected"] = len(self.connected_clients)
 
-    async def _handle_client_message(self, websocket: WebSocketServerProtocol, data: dict[str, Any]) -> None:
+    async def _handle_client_message(
+        self, websocket: WebSocketServerProtocol, data: dict[str, Any]
+    ) -> None:
         """Handle incoming message from WebSocket client."""
         message_type = data.get("type")
 
@@ -300,7 +304,10 @@ class RealtimeFeedback:
 
             if events:
                 for event in events:
-                    event_data: dict[str, Any] = {"type": "buffered_event", "event": asdict(event)}
+                    event_data: dict[str, Any] = {
+                        "type": "buffered_event",
+                        "event": asdict(event),
+                    }
                     # Convert datetime to ISO string
                     event_dict = event_data["event"]
                     if isinstance(event_dict, dict):
@@ -316,7 +323,10 @@ class RealtimeFeedback:
         if not self.connected_clients:
             return
 
-        event_data: dict[str, Any] = {"type": "validation_event", "event": asdict(event)}
+        event_data: dict[str, Any] = {
+            "type": "validation_event",
+            "event": asdict(event),
+        }
         # Convert datetime to ISO string
         event_dict = event_data["event"]
         if isinstance(event_dict, dict):
