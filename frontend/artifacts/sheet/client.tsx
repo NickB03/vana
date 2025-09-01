@@ -10,7 +10,7 @@ import { SpreadsheetEditor } from '@/components/sheet-editor';
 import { parse, unparse } from 'papaparse';
 import { toast } from 'sonner';
 
-type Metadata = any;
+type Metadata = {}
 
 export const sheetArtifact = new Artifact<'sheet', Metadata>({
   kind: 'sheet',
@@ -20,7 +20,7 @@ export const sheetArtifact = new Artifact<'sheet', Metadata>({
     if (streamPart.type === 'data-sheetDelta') {
       setArtifact((draftArtifact) => ({
         ...draftArtifact,
-        content: streamPart.data,
+        content: typeof streamPart.data === 'string' ? streamPart.data : '',
         isVisible: true,
         status: 'streaming',
       }));

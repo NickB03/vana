@@ -45,22 +45,7 @@ class Session:
     last_activity: datetime = None
 
 
-@dataclass
-class User:
-    """Mock User class for testing."""
-    id: str
-    email: str
-    display_name: str
-
-
-@dataclass
-class Session:
-    """Mock Session model to match test usage."""
-
-    id: str
-    user_id: str
-    created_at: float  # Tests use UNIX timestamps
-    last_activity: float | None = None
+# Duplicate classes removed - using the ones defined above
     updated_at: float | None = None
     state: dict[str, Any] = field(default_factory=dict)
 
@@ -567,7 +552,7 @@ class TestSessionStorage:
         sessions_created = 0
 
         try:
-            for i in range(1000):  # Attempt 1000 sessions × 10KB = 10MB
+            for i in range(1000):  # Attempt 1000 sessions x 10KB = 10MB
                 session_id = f"large_session_{i}"
                 cursor.execute(
                     """

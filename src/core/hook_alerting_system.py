@@ -461,7 +461,11 @@ class AlertManager:
     async def _send_notifications(self, alert: Alert) -> None:
         """Send notifications for alert"""
         for target in self.notification_targets:
-            if target.enabled and target.severity_filter and alert.severity in target.severity_filter:
+            if (
+                target.enabled
+                and target.severity_filter
+                and alert.severity in target.severity_filter
+            ):
                 try:
                     await self._send_notification(alert, target)
                 except Exception as e:
@@ -469,7 +473,9 @@ class AlertManager:
                         f"Notification failed for {target.channel.value}: {e}"
                     )
 
-    async def _send_notification(self, alert: Alert, target: NotificationTarget) -> None:
+    async def _send_notification(
+        self, alert: Alert, target: NotificationTarget
+    ) -> None:
         """Send notification to specific target"""
 
         if target.channel == NotificationChannel.LOG:
@@ -543,7 +549,9 @@ class AlertManager:
     ) -> None:
         """Record notification attempt (async wrapper)"""
         try:
-            await asyncio.to_thread(self._record_notification_sync, alert_id, channel, status, error_message)
+            await asyncio.to_thread(
+                self._record_notification_sync, alert_id, channel, status, error_message
+            )
         except Exception as e:
             self.logger.error(f"Failed to record notification: {e}")
 
@@ -641,7 +649,9 @@ class AlertManager:
         except Exception as e:
             self.logger.error(f"Failed to store metric: {e}")
 
-    async def _check_metric_thresholds(self, metric_name: str, current_value: float) -> None:
+    async def _check_metric_thresholds(
+        self, metric_name: str, current_value: float
+    ) -> None:
         """Check if metric thresholds are exceeded"""
         for threshold in self.metric_thresholds:
             if threshold.enabled and threshold.metric_name == metric_name:

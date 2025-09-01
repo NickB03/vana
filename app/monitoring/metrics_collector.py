@@ -1,12 +1,11 @@
 """Comprehensive metrics collection and performance monitoring system."""
 
 import asyncio
-import json
 import logging
 import time
 from collections import defaultdict, deque
 from collections.abc import Callable
-from dataclasses import asdict, dataclass, field
+from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Any
 
@@ -389,7 +388,9 @@ class MetricsCollector:
 
             data = asdict(self.current_metrics)
             # Minimal sanitize: ensure min_response_time is JSON-safe
-            if isinstance(data.get("min_response_time"), float) and not math.isfinite(data["min_response_time"]):
+            if isinstance(data.get("min_response_time"), float) and not math.isfinite(
+                data["min_response_time"]
+            ):
                 data["min_response_time"] = None
             return json.dumps(data, default=str, allow_nan=False)
         else:

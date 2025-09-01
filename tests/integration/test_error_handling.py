@@ -402,7 +402,7 @@ class TestDataValidationErrors:
             "🎉🔥💯",  # Emoji
             "Café naïve résumé",  # Accented characters
             "\x00\x01\x02",  # Control characters
-            "𝕌𝕟𝕚𝕔𝕠𝕕𝕖",  # Mathematical Unicode
+            "𝕌𝕟𝕚𝕔𝕠𝕕𝕖",  # Mathematical Unicode  # noqa: RUF001
             "\udcff\udcfe",  # Surrogate characters
         ]
 
@@ -659,7 +659,7 @@ class TestSystemLimitsAndBoundaries:
         # Generate load
         load_operations = []
 
-        for i in range(1000):
+        for _i in range(1000):
             # Multiple types of operations
             operations = [
                 lambda: self.client.get("/health"),
@@ -669,7 +669,7 @@ class TestSystemLimitsAndBoundaries:
                     json={
                         "score": 3,
                         "invocation_id": str(uuid.uuid4()),
-                        "text": f"Load test {i}",
+                        "text": f"Load test {uuid.uuid4().hex[:8]}",
                     },
                 ),
             ]

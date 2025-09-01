@@ -475,9 +475,7 @@ class EnhancedSSEBroadcaster:
                     pass  # Queue wasn't in the list
 
     @asynccontextmanager
-    async def subscribe(
-        self, session_id: str
-    ) -> AsyncIterator[MemoryOptimizedQueue]:
+    async def subscribe(self, session_id: str) -> AsyncIterator[MemoryOptimizedQueue]:
         """Context manager for safe subscription management."""
         queue = await self.add_subscriber(session_id)
         try:
@@ -485,7 +483,9 @@ class EnhancedSSEBroadcaster:
         finally:
             await self.remove_subscriber(session_id, queue)
 
-    async def broadcast_event(self, session_id: str, event_data: dict[str, Any]) -> None:
+    async def broadcast_event(
+        self, session_id: str, event_data: dict[str, Any]
+    ) -> None:
         """Broadcast event to all subscribers of a session."""
         # Ensure cleanup is running
         if not self._running:

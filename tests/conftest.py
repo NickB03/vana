@@ -15,9 +15,9 @@ from unittest.mock import AsyncMock, Mock
 import pytest
 
 # Import CI-specific configuration if in CI environment
-if os.getenv('CI') or os.getenv('RUNNING_IN_CI'):
+if os.getenv("CI") or os.getenv("RUNNING_IN_CI"):
     try:
-        from ci_conftest import *
+        from ci_conftest import *  # noqa: F403
     except ImportError:
         # CI conftest not critical for all tests
         pass

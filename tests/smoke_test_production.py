@@ -39,21 +39,25 @@ class ProductionSmokeTest:
         try:
             # Start server in background
             env = os.environ.copy()
-            
+
             # Load CI environment configuration if available
-            ci_env_file = os.path.join(os.path.dirname(os.path.dirname(__file__)), ".env.ci")
+            ci_env_file = os.path.join(
+                os.path.dirname(os.path.dirname(__file__)), ".env.ci"
+            )
             if os.path.exists(ci_env_file):
                 print(f"Loading CI configuration from {ci_env_file}")
                 with open(ci_env_file) as f:
                     for line in f:
                         line = line.strip()
-                        if line and not line.startswith('#') and '=' in line:
-                            key, value = line.split('=', 1)
+                        if line and not line.startswith("#") and "=" in line:
+                            key, value = line.split("=", 1)
                             env[key] = value
-            
+
             env["USE_OPENROUTER"] = "false"  # Don't use external APIs in CI
             env["CI"] = "true"
-            env["AUTH_REQUIRE_SSE_AUTH"] = "false"  # Allow unauthenticated access for testing
+            env["AUTH_REQUIRE_SSE_AUTH"] = (
+                "false"  # Allow unauthenticated access for testing
+            )
 
             self.process = subprocess.Popen(
                 ["uv", "run", "uvicorn", "app.server:app", "--port", "8000"],
@@ -117,7 +121,7 @@ class ProductionSmokeTest:
                     if resp.status in [200, 201]:
                         print("✅ User registration works")
                     elif resp.status == 400:
-                        print("ℹ️ User already exists (expected if re-running)")
+                        print("[INFO] User already exists (expected if re-running)")
                     else:
                         print(f"⚠️ Registration returned: {resp.status}")
             except Exception as e:
@@ -157,11 +161,11 @@ class ProductionSmokeTest:
             if token:
                 try:
                     # Just verify we got a valid-looking JWT token
-                    parts = token.split('.')
+                    parts = token.split(".")
                     if len(parts) == 3:
                         self.results["auth_works"] = True
                         print("✅ JWT token format is valid")
-                        
+
                         # Optional: Try to access a protected endpoint, but don't fail if it doesn't work
                         headers = {"Authorization": f"Bearer {token}"}
                         async with session.get(
@@ -170,11 +174,15 @@ class ProductionSmokeTest:
                             if resp.status == 200:
                                 print("✅ Protected endpoint also works")
                             elif resp.status == 403:
-                                print("ℹ️ Protected endpoint requires additional setup (but token is valid)")
+                                print(
+                                    "[INFO] Protected endpoint requires additional setup (but token is valid)"
+                                )
                             else:
-                                print(f"ℹ️ Protected endpoint returned: {resp.status}")
+                                print(f"[INFO] Protected endpoint returned: {resp.status}")
                     else:
-                        print(f"❌ Token doesn't look like valid JWT: {len(parts)} parts")
+                        print(
+                            f"❌ Token doesn't look like valid JWT: {len(parts)} parts"
+                        )
                 except Exception as e:
                     print(f"⚠️ Token validation error: {e}")
             else:
@@ -191,11 +199,15 @@ class ProductionSmokeTest:
                 self.initial_memory = process.memory_info().rss / 1024 / 1024  # MB
                 print(f"Initial memory: {self.initial_memory:.2f} MB")
             else:
-                print("⚠️ Process not available for memory monitoring - skipping memory test")
+                print(
+                    "⚠️ Process not available for memory monitoring - skipping memory test"
+                )
                 self.results["memory_stable"] = True
                 return
         except (psutil.ZombieProcess, psutil.NoSuchProcess, psutil.AccessDenied):
-            print("⚠️ Process not accessible for memory monitoring - skipping memory test")
+            print(
+                "⚠️ Process not accessible for memory monitoring - skipping memory test"
+            )
             self.results["memory_stable"] = True
             return
 
@@ -242,13 +254,13 @@ class ProductionSmokeTest:
                     print(f"❌ Excessive memory growth: {memory_growth:.2f} MB")
             else:
                 # Process ended, which is fine - just means it didn't crash from memory issues
-                print("ℹ️ Process ended during test - assuming stable memory")
+                print("[INFO] Process ended during test - assuming stable memory")
                 self.results["memory_stable"] = True
                 print("✅ Memory appears stable (process ended cleanly)")
 
         except (psutil.ZombieProcess, psutil.NoSuchProcess, psutil.AccessDenied) as e:
             # Process is zombie/gone/inaccessible - this is actually good (no memory leaks caused crash)
-            print(f"ℹ️ Process ended during memory test: {type(e).__name__}")
+            print(f"[INFO] Process ended during memory test: {type(e).__name__}")
             self.results["memory_stable"] = True
             print("✅ Memory appears stable (no memory-related crashes)")
         except Exception as e:

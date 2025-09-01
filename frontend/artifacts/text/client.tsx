@@ -31,17 +31,23 @@ export const textArtifact = new Artifact<'text', TextArtifactMetadata>({
   onStreamPart: ({ streamPart, setMetadata, setArtifact }) => {
     if (streamPart.type === 'data-suggestion') {
       setMetadata((metadata) => {
-        return {
-          suggestions: [...metadata.suggestions, streamPart.data],
-        };
+        // Validate that streamPart.data is a valid Suggestion object
+        const suggestion = streamPart.data as Suggestion;
+        if (suggestion && typeof suggestion === 'object') {
+          return {
+            suggestions: [...metadata.suggestions, suggestion],
+          };
+        }
+        return metadata;
       });
     }
 
     if (streamPart.type === 'data-textDelta') {
       setArtifact((draftArtifact) => {
+        const textData = typeof streamPart.data === 'string' ? streamPart.data : '';
         return {
           ...draftArtifact,
-          content: draftArtifact.content + streamPart.data,
+          content: draftArtifact.content + textData,
           isVisible:
             draftArtifact.status === 'streaming' &&
             draftArtifact.content.length > 400 &&

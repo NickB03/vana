@@ -39,21 +39,23 @@ export function DataStreamHandler() {
           case 'data-id':
             return {
               ...draftArtifact,
-              documentId: delta.data,
+              documentId: typeof delta.data === 'string' ? delta.data : draftArtifact.documentId,
               status: 'streaming',
             };
 
           case 'data-title':
             return {
               ...draftArtifact,
-              title: delta.data,
+              title: typeof delta.data === 'string' ? delta.data : draftArtifact.title,
               status: 'streaming',
             };
 
           case 'data-kind':
             return {
               ...draftArtifact,
-              kind: delta.data,
+              kind: typeof delta.data === 'string' && ['text', 'code', 'image', 'sheet'].includes(delta.data) 
+                ? (delta.data as 'text' | 'code' | 'image' | 'sheet') 
+                : draftArtifact.kind,
               status: 'streaming',
             };
 

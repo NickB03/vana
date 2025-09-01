@@ -5,8 +5,6 @@ Tests all critical integration points identified in the issues report
 
 import asyncio
 import json
-
-# Import the actual application components
 import sys
 from pathlib import Path
 
@@ -17,7 +15,9 @@ from fastapi.testclient import TestClient
 # Add the project root to the path dynamically
 project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root))
-from app.server import app
+
+# Import the actual application components
+from app.server import app  # noqa: E402
 
 
 # Test stub classes for missing components
