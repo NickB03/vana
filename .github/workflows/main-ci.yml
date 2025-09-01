@@ -118,8 +118,24 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           check-latest: true
-          cache: 'pnpm'
-          cache-dependency-path: 'frontend/pnpm-lock.yaml'
+          
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 8
+          run_install: false
+          
+      - name: Get pnpm store directory
+        shell: bash
+        run: echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+        
+      - name: Setup pnpm cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: pnpm-${{ hashFiles('frontend/pnpm-lock.yaml') }}
+          restore-keys: |
+            pnpm-
           
       - name: Cache UV installation
         uses: actions/cache@v4
@@ -146,7 +162,6 @@ jobs:
           
           (
             echo "Checking Node.js dependencies..."
-            npm install -g pnpm
             cd frontend && pnpm install --frozen-lockfile
             echo "✅ Frontend dependencies OK"
           ) &
@@ -311,13 +326,28 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           check-latest: true
-          cache: 'pnpm'
-          cache-dependency-path: 'frontend/pnpm-lock.yaml'
+          
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 8
+          run_install: false
+          
+      - name: Get pnpm store directory  
+        shell: bash
+        run: echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+        
+      - name: Setup pnpm cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: pnpm-${{ hashFiles('frontend/pnpm-lock.yaml') }}
+          restore-keys: |
+            pnpm-
           
       - name: Install dependencies
         run: |
           cd frontend
-          npm install -g pnpm
           pnpm install --frozen-lockfile
           
       - name: Run linting
@@ -363,8 +393,24 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           check-latest: true
-          cache: 'pnpm'
-          cache-dependency-path: 'frontend/pnpm-lock.yaml'
+          
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 8
+          run_install: false
+          
+      - name: Get pnpm store directory  
+        shell: bash
+        run: echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+        
+      - name: Setup pnpm cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: pnpm-${{ hashFiles('frontend/pnpm-lock.yaml') }}
+          restore-keys: |
+            pnpm-
           
       - name: Install UV (stable)
         run: |
@@ -383,7 +429,6 @@ jobs:
       - name: Install all dependencies
         run: |
           uv sync --dev
-          npm install -g pnpm
           cd frontend && pnpm install --frozen-lockfile
           
       # NOTE: Backend startup disabled due to Google Cloud dependencies
