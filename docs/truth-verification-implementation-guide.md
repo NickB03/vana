@@ -288,10 +288,12 @@ jobs:
   verify:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: 'frontend/package-lock.json'
       
       - name: Install dependencies
         run: |
@@ -304,7 +306,7 @@ jobs:
           npm run verify:all
           
       - name: Upload verification reports
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: verification-reports
           path: verification/reports/

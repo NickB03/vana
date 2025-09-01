@@ -34,13 +34,13 @@ This document outlines the update from Node.js 18 to Node.js 20 LTS across the V
 ## Benefits of Node.js 20 LTS
 
 ### Performance Improvements
-- **V8 Engine**: Updated to version 11.3+ with better performance
+- **V8 Engine**: Updated V8 with notable performance improvements
 - **HTTP/2**: Enhanced HTTP/2 support and performance
 - **Memory**: Improved garbage collection and memory management
 - **Startup Time**: Faster application startup times
 
 ### Security Enhancements
-- **OpenSSL**: Updated to OpenSSL 3.0.8+ with latest security patches
+- **OpenSSL**: Includes the latest OpenSSL 3 updates and security patches
 - **Dependencies**: Updated core dependencies with security fixes
 - **CVE Fixes**: Addresses multiple security vulnerabilities from Node 18
 
@@ -48,6 +48,8 @@ This document outlines the update from Node.js 18 to Node.js 20 LTS across the V
 - **Official Support**: Next.js 15 officially supports and recommends Node 20+
 - **Features**: Access to latest Next.js features and optimizations
 - **Stability**: Better stability with React 19 and modern JavaScript features
+
+**Note**: React 19 compatibility shown above is informational for future planning. This project currently uses React 18.x.
 
 ### EOL Avoidance
 - **Support Timeline**: Node.js 18 enters maintenance mode in October 2024
@@ -59,7 +61,7 @@ This document outlines the update from Node.js 18 to Node.js 20 LTS across the V
 | Component | Node 18 | Node 20 | Status |
 |-----------|---------|---------|--------|
 | Next.js 15 | ⚠️ Limited | ✅ Full | **Recommended** |
-| React 19 | ⚠️ Limited | ✅ Full | **Recommended** |
+| React 19 | ⚠️ Limited | ✅ Full | **Future Ready** |
 | TypeScript 5.x | ✅ Compatible | ✅ Compatible | **Enhanced** |
 | Vercel Deployment | ✅ Compatible | ✅ Default | **Optimized** |
 | Docker Builds | ✅ Compatible | ✅ Compatible | **Faster** |

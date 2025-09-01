@@ -81,7 +81,7 @@ jobs:
           docker compose up -d
           sleep 10
           curl -f http://localhost:8000/health || echo "Backend health check failed"
-          curl -f http://localhost:5173 || echo "Frontend check failed"
+          curl -f http://localhost:3000 || echo "Frontend check failed"
           docker compose down
           
       - name: Generate Build Report
