@@ -29,16 +29,20 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
     ports:
-      - "5173:5173"
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
+      - "3000:3000"
     environment:
-      - NODE_ENV=development
-      - NEXT_PUBLIC_API_URL=http://localhost:8000
-    command: npm run dev
+      - NODE_ENV=production
+      - NEXT_PUBLIC_VANA_BASE_URL=http://backend:8080
+      - VANA_BASE_URL=http://backend:8080
+      - POSTGRES_URL=postgresql://vana:localdev@postgres:5432/vana_dev
+      - REDIS_URL=redis://redis:6379
+      - AUTH_SECRET=local-development-secret-key-not-for-production
+      - NEXTAUTH_URL=http://localhost:3000
+      - NEXTAUTH_SECRET=local-development-secret-key-not-for-production
     depends_on:
       - backend
+      - postgres
+      - redis
     networks:
       - vana-network
 
