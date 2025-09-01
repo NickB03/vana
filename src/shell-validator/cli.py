@@ -241,7 +241,7 @@ class CLIInterface:
     def _display_text_results(self, results: list[ValidationResult], args):
         """Display results in human-readable text format"""
         if not results:
-            print(ColorFormatter.info("ℹ️  No files to validate"))
+            print(ColorFormatter.info("[INFO] No files to validate"))
             return
 
         # Header
@@ -325,7 +325,7 @@ class CLIInterface:
 
         # Display info issues if configured
         if info_issues and self.config["severity_levels"]["show_info"]:
-            print(ColorFormatter.info("ℹ️  INFORMATIONAL ISSUES"))
+            print(ColorFormatter.info("[INFO] INFORMATIONAL ISSUES"))
             print(ColorFormatter.info("-" * 25))
             for file_path, issue in info_issues:
                 self._display_issue(file_path, issue, args)
@@ -360,7 +360,7 @@ class CLIInterface:
             icon = "⚠️"
             color_func = ColorFormatter.warning
         else:
-            icon = "ℹ️"
+            icon = "[INFO]"
             color_func = ColorFormatter.info
 
         # Issue header
@@ -487,7 +487,7 @@ class CLIInterface:
         if files_fixed > 0:
             print(f"\n🎉 Applied {total_fixes} fixes to {files_fixed} file(s)")
         else:
-            print("\nℹ️  No auto-fixable issues found")
+            print("\n[INFO] No auto-fixable issues found")
 
     def _install_git_hooks(self, args) -> int:
         """Install Git hooks"""

@@ -411,7 +411,9 @@ class HookSafetySystem:
             validation_result["validated"] = True
             violations_obj = validation_result.get("violations", [])
             warnings_obj = validation_result.get("warnings", [])
-            violations: list[Any] = violations_obj if isinstance(violations_obj, list) else []
+            violations: list[Any] = (
+                violations_obj if isinstance(violations_obj, list) else []
+            )
             warnings: list[Any] = warnings_obj if isinstance(warnings_obj, list) else []
             if violations:
                 warnings.extend(violations)
@@ -422,12 +424,12 @@ class HookSafetySystem:
         elif self.enforcement_level == EnforcementLevel.SOFT:
             # Allow with override option
             violations_obj = validation_result.get("violations", [])
-            violations_list: list[Any] = violations_obj if isinstance(violations_obj, list) else []
+            violations_list: list[Any] = (
+                violations_obj if isinstance(violations_obj, list) else []
+            )
             if violations_list:
                 safety_metadata["override_available"] = True
-                safety_metadata["override_codes"] = list(
-                    self.bypass_codes.keys()
-                )
+                safety_metadata["override_codes"] = list(self.bypass_codes.keys())
             safety_metadata["enforcement_action"] = "soft_enforce"
 
         elif self.enforcement_level == EnforcementLevel.ENFORCE:
@@ -626,7 +628,9 @@ class HookSafetySystem:
             "timestamp": datetime.now().isoformat(),
         }
 
-    async def _record_metrics(self, execution_time_ms: float, result: dict[str, Any]) -> None:
+    async def _record_metrics(
+        self, execution_time_ms: float, result: dict[str, Any]
+    ) -> None:
         """Record performance and result metrics"""
 
         # Get system metrics
@@ -785,7 +789,9 @@ class HookSafetySystem:
         # Save alerts
         await self._save_alerts()
 
-    async def _handle_critical_alert(self, rule: AlertRule, alert: dict[str, Any]) -> None:
+    async def _handle_critical_alert(
+        self, rule: AlertRule, alert: dict[str, Any]
+    ) -> None:
         """Handle critical alerts with automatic actions"""
 
         if rule.name == "critical_error_rate":

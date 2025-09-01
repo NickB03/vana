@@ -104,7 +104,7 @@ async def query_adk_chromadb(
     }
 
 
-async def adk_expert_mcp_tool(action: str, params: dict = None):
+async def adk_expert_mcp_tool(action: str, params: dict | None = None):
     """Mock MCP tool function."""
     return {
         "status": "success",
@@ -121,7 +121,7 @@ async def create_adk_expert_llm_agent():
 
 
 async def query_adk_expert(
-    query: str, query_type: str = None, include_examples: bool = False
+    query: str, query_type: str | None = None, include_examples: bool = False
 ):
     """Mock function to query ADK expert."""
     return {

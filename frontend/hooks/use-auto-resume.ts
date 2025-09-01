@@ -40,7 +40,8 @@ export function useAutoResume({
     const dataPart = dataStream[0];
 
     if (dataPart.type === 'data-appendMessage') {
-      const message = JSON.parse(dataPart.data);
+      const messageData = typeof dataPart.data === 'string' ? dataPart.data : '{}';
+      const message = JSON.parse(messageData);
       setMessages([...initialMessages, message]);
     }
   }, [dataStream, initialMessages, setMessages]);

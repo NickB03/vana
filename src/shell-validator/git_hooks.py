@@ -115,7 +115,7 @@ class GitHookValidator:
         staged_files = self.get_staged_shell_files()
 
         if not staged_files:
-            print("ℹ️  No staged shell script files found.")
+            print("[INFO] No staged shell script files found.")
             return [], True
 
         print(f"🔍 Validating {len(staged_files)} staged shell script(s)...")
@@ -200,7 +200,7 @@ class GitHookValidator:
                         print()
 
                 if info_issues:
-                    print("   ℹ️  INFO ISSUES:")
+                    print("   [INFO] INFO ISSUES:")
                     for issue in info_issues:
                         print(f"      Line {issue.line_number}: {issue.message}")
                         print(f"      Fix:  {issue.suggested_fix}")
@@ -263,7 +263,7 @@ class GitHookValidator:
             ]
 
             if not shell_files:
-                print("ℹ️  No shell script files found in repository.")
+                print("[INFO] No shell script files found in repository.")
                 return 0
 
             print(f"🔍 Validating {len(shell_files)} shell script(s) in repository...")
@@ -445,7 +445,7 @@ exit $?
         if removed_count > 0:
             print(f"✅ Removed {removed_count} validation hook(s)")
         else:
-            print("ℹ️  No validation hooks found to remove")
+            print("[INFO] No validation hooks found to remove")
 
         return True
 

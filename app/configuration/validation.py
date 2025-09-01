@@ -197,7 +197,7 @@ class PatternRule(ValidationRule):
             self.compiled_pattern = re.compile(pattern)
         except re.error as e:
             logger.error(f"Invalid regex pattern {pattern}: {e}")
-            self.compiled_pattern = None
+            self.compiled_pattern: re.Pattern[str] | None = None
 
     def validate(
         self, field_name: str, value: Any, context: dict[str, Any]

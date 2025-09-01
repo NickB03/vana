@@ -485,9 +485,7 @@ class EnhancedSSEBroadcaster:
                     pass  # Queue wasn't in the list
 
     @asynccontextmanager
-    async def subscribe(
-        self, session_id: str
-    ) -> AsyncIterator[MemoryOptimizedQueue]:
+    async def subscribe(self, session_id: str) -> AsyncIterator[MemoryOptimizedQueue]:
         """Context manager for safe subscription management."""
         queue = await self.add_subscriber(session_id)
         try:
