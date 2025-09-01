@@ -33,10 +33,10 @@ on:
         type: boolean
 
 env:
-  NODE_VERSION: '18'
+  NODE_VERSION: '20'
   PYTHON_VERSION: '3.11'
   UV_VERSION: '0.6.12'  # Standardized version matching Dockerfile
-  CACHE_VERSION: 'v3'  # Increment to bust caches with new UV version
+  CACHE_VERSION: 'v4'  # Increment to bust caches with Node 20 update
   PERFORMANCE_MODE: ${{ github.event.inputs.performance_mode || 'true' }}
 
 concurrency:
