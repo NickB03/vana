@@ -1,39 +1,26 @@
 {
-  "name": "vana-monorepo",
+  "name": "vana-project",
   "version": "2.0.0",
-  "private": true,
+  "description": "Vana AI Platform - Unified Frontend and Backend",
   "scripts": {
-    "crr": "./scripts/crr.sh",
-    "coderabbit-apply": "./scripts/crr.sh",
-    "dev": "npm run dev -w frontend",
-    "build": "npm run build -w frontend",
-    "start": "npm run start -w frontend",
-    "lint": "npm run lint -w frontend",
-    "test": "npm run test -w frontend",
-    "typecheck": "npm run typecheck -w frontend",
+    "dev": "concurrently \"npm run backend:dev\" \"npm run frontend:dev\"",
+    "frontend:dev": "cd frontend && npm run dev",
+    "backend:dev": "cd app && python -m uvicorn server:app --reload --port 8000",
+    "frontend:build": "cd frontend && npm run build",
+    "frontend:start": "cd frontend && npm start",
+    "backend:start": "cd app && python -m uvicorn server:app --port 8000",
+    "start": "concurrently \"npm run backend:start\" \"npm run frontend:start\"",
     "install:frontend": "cd frontend && npm install",
-    "vercel-build": "npm run build -w frontend"
+    "install:backend": "cd app && pip install -r requirements.txt",
+    "install:all": "npm install && npm run install:frontend",
+    "test": "cd frontend && npm test",
+    "lint": "cd frontend && npm run lint",
+    "clean": "rm -rf node_modules frontend/node_modules frontend/.next"
   },
+  "keywords": ["ai", "chat", "vana", "nextjs", "fastapi"],
+  "author": "Vana Team",
+  "license": "MIT",
   "devDependencies": {
-    "@eslint/eslintrc": "^3.3.1",
-    "@octokit/rest": "^22.0.0",
-    "@tailwindcss/postcss": "^4.1.12",
-    "@typescript-eslint/eslint-plugin": "^8.41.0",
-    "@typescript-eslint/parser": "^8.41.0",
-    "autoprefixer": "^10.4.21",
-    "browserslist": "^4.24.3",
-    "eslint": "^9.34.0",
-    "eslint-config-next": "^15.5.2",
-    "nanoid": "^3.3.7",
-    "picocolors": "^1.1.1",
-    "postcss": "^8.5.6",
-    "source-map-js": "^1.2.1",
-    "tailwindcss": "^4.1.12"
-  },
-  "workspaces": [
-    "frontend"
-  ],
-  "engines": {
-    "node": "^18.18.0 || ^20.9.0 || >=21.1.0"
+    "concurrently": "^8.2.2"
   }
 }
