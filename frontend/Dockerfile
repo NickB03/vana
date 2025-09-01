@@ -38,16 +38,21 @@ RUN pnpm build
 FROM node:20-alpine AS runner
 WORKDIR /app
 
-# Create non-root user for security
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nextjs
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
 
-# Copy built application
-COPY --from=builder /app/public ./public
+# Create non-root user for security (Alpine syntax)
+RUN addgroup -S -g 1001 nodejs
+RUN adduser -S -u 1001 -G nodejs nextjs
 
-# Set correct permissions for prerender cache
-RUN mkdir .next
-RUN chown nextjs:nodejs .next
+# Install curl for health checks
+RUN apk add --no-cache curl
+
+# Copy the public folder
+COPY --from=builder --chown=nextjs:nodejs /app/public ./public
+
+# Set correct permissions for ISR/prerender cache
+RUN mkdir -p .next/cache && chown -R nextjs:nodejs .next
 
 # Copy standalone build
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
@@ -61,8 +66,7 @@ EXPOSE 3000
 
 # Set environment
 ENV PORT=3000
-ENV NODE_ENV=production
-ENV NEXT_TELEMETRY_DISABLED=1
+ENV HOSTNAME=0.0.0.0
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
