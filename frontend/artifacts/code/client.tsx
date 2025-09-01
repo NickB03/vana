@@ -16,6 +16,20 @@ import {
   type ConsoleOutputContent,
 } from '@/components/console';
 
+// Pyodide type declarations
+interface PyodideInterface {
+  setStdout(config: { batched: (output: string) => void }): void;
+  loadPackagesFromImports(
+    code: string,
+    options: { messageCallback: (message: string) => void }
+  ): Promise<void>;
+  runPythonAsync(code: string): Promise<void>;
+}
+
+declare global {
+  var loadPyodide: (config: { indexURL: string }) => Promise<PyodideInterface>;
+}
+
 const OUTPUT_HANDLERS = {
   matplotlib: `
     import io
@@ -133,7 +147,7 @@ export const codeArtifact = new Artifact<'code', Metadata>({
         }));
 
         try {
-          // @ts-expect-error - loadPyodide is not defined
+          // Use the globally declared loadPyodide function
           const currentPyodideInstance = await globalThis.loadPyodide({
             indexURL: 'https://cdn.jsdelivr.net/pyodide/v0.23.4/full/',
           });
@@ -193,14 +207,14 @@ export const codeArtifact = new Artifact<'code', Metadata>({
               },
             ],
           }));
-        } catch (error: any) {
+        } catch (error: unknown) {
           setMetadata((metadata) => ({
             ...metadata,
             outputs: [
               ...metadata.outputs.filter((output) => output.id !== runId),
               {
                 id: runId,
-                contents: [{ type: 'text', value: error.message }],
+                contents: [{ type: 'text', value: error instanceof Error ? error.message : String(error) }],
                 status: 'failed',
               },
             ],

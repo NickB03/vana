@@ -210,12 +210,16 @@ const PurePreviewMessage = ({
                           output={
                             part.output && typeof part.output === 'object' && 'error' in part.output ? (
                               <div className="p-2 text-red-500 rounded border">
-                                Error: {String((part.output as any).error)}
+                                Error: {String(
+                                  typeof part.output === 'object' && part.output && 'error' in part.output
+                                    ? (part.output as { error: unknown }).error
+                                    : 'Unknown error'
+                                )}
                               </div>
                             ) : (
                               <DocumentPreview
                                 isReadonly={isReadonly}
-                                result={part.output as any}
+                                result={part.output as ArtifactRef}
                               />
                             )
                           }
@@ -242,7 +246,11 @@ const PurePreviewMessage = ({
                           output={
                             part.output && typeof part.output === 'object' && 'error' in part.output ? (
                               <div className="p-2 text-red-500 rounded border">
-                                Error: {String((part.output as any).error)}
+                                Error: {String(
+                                  typeof part.output === 'object' && part.output && 'error' in part.output
+                                    ? (part.output as { error: unknown }).error
+                                    : 'Unknown error'
+                                )}
                               </div>
                             ) : (
                               <DocumentToolResult
@@ -275,7 +283,11 @@ const PurePreviewMessage = ({
                           output={
                             part.output && typeof part.output === 'object' && 'error' in part.output ? (
                               <div className="p-2 text-red-500 rounded border">
-                                Error: {String((part.output as any).error)}
+                                Error: {String(
+                                  typeof part.output === 'object' && part.output && 'error' in part.output
+                                    ? (part.output as { error: unknown }).error
+                                    : 'Unknown error'
+                                )}
                               </div>
                             ) : (
                               <DocumentToolResult

@@ -48,6 +48,7 @@ class Session:
 @dataclass
 class User:
     """Mock User class for testing."""
+
     id: str
     email: str
     display_name: str

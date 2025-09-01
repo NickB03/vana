@@ -123,7 +123,7 @@ class PlaceholderGenerator:
         """Generate API key placeholder preserving format"""
         original = match_obj.group(0)
         low = original.lower()
-        
+
         if low.startswith("sk-"):
             return "sk-***API_KEY***"
         elif original.upper().startswith("BSA-"):
