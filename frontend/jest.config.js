@@ -15,6 +15,8 @@ const customJestConfig = {
     '<rootDir>/tests/', // Ignore Playwright tests
     '<rootDir>/playwright-report/',
     '<rootDir>/test-results/',
+    '\\.spec\\.(ts|js)$', // Ignore all .spec.ts/js files (Playwright convention)
+    '\\.e2e\\.(ts|js)$',  // Ignore E2E test files
   ],
   testMatch: [
     '**/__tests__/**/*.(test|spec).(js|jsx|ts|tsx)',
@@ -31,7 +33,7 @@ const customJestConfig = {
     '!**/*.mock.{js,ts}',
     '!**/node_modules/**',
   ],
-  moduleNameMapping: {
+  moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/$1',
   },
 }
