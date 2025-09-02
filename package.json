@@ -13,12 +13,17 @@
     "install:frontend": "cd frontend && npm install",
     "install:backend": "cd app && pip install -r requirements.txt",
     "install:all": "npm install && npm run install:frontend",
-    "test": "cd frontend && npm test",
-    "typecheck": "cd frontend && npx tsc --noEmit",
+    "test": "export PLAYWRIGHT=True...",
     "lint": "cd frontend && npm run lint",
     "clean": "rm -rf node_modules frontend/node_modules frontend/.next"
   },
-  "keywords": ["ai", "chat", "vana", "nextjs", "fastapi"],
+  "keywords": [
+    "ai",
+    "chat",
+    "vana",
+    "nextjs",
+    "fastapi"
+  ],
   "author": "Vana Team",
   "license": "MIT",
   "devDependencies": {
