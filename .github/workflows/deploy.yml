@@ -4,6 +4,7 @@ name: Deploy to Cloud Run (DISABLED - Local Build Priority)
 # Focus is on local development and build process
 # To re-enable: Configure GCP credentials and uncomment the workflow_dispatch trigger
 
+# This workflow is disabled and only runs on manual dispatch
 on:
   workflow_dispatch:
     inputs:
