@@ -143,6 +143,12 @@ This project uses SPARC (Specification, Pseudocode, Architecture, Refinement, Co
 ```bash
 # Add Claude Flow MCP server
 claude mcp add claude-flow npx claude-flow@alpha mcp start
+
+# Add Browsertools MCP server for UI testing
+claude mcp add browsertools npx @browsertools/mcp
+
+# Add Shadcn MCP server for UI components
+claude mcp add shadcn npx shadcn-mcp
 ```
 
 ## MCP Tool Categories
@@ -161,6 +167,52 @@ claude mcp add claude-flow npx claude-flow@alpha mcp start
 
 ### System
 `benchmark_run`, `features_detect`, `swarm_monitor`
+
+### Browser Automation (browsertools)
+`mcp__browsertools__` - Browser control and automation via MCP
+
+## 🌐 Browsertools MCP Configuration
+
+### Installation
+```bash
+# Install browsertools MCP
+claude mcp add browsertools npx @browsertools/mcp
+
+# Verify installation
+claude mcp list | grep browser
+```
+
+### Capabilities
+- **Browser Control**: Launch, navigate, and control browsers
+- **Screenshot**: Capture page screenshots for verification
+- **DOM Interaction**: Click, type, and interact with elements
+- **Page Analysis**: Extract text, check element presence
+- **Network Monitoring**: Track requests and responses
+- **Cookie Management**: Read/write browser cookies
+
+### Usage Examples
+```javascript
+// Navigate to page
+mcp__browsertools__navigate("http://localhost:3000")
+
+// Take screenshot
+mcp__browsertools__screenshot("verification.png")
+
+// Click element
+mcp__browsertools__click("button[data-testid='submit']")
+
+// Extract text
+mcp__browsertools__getText(".message")
+```
+
+### When to Use Browsertools vs Playwright
+- **Browsertools**: Quick UI checks, screenshots, simple interactions
+- **Playwright**: Complex E2E tests, CI/CD integration, test suites
+
+### Troubleshooting
+- Requires Claude Code restart after installation
+- Check `claude mcp list` for connection status
+- Ensure Chrome/Chromium is installed on system
 
 ## 🚀 Agent Execution Flow with Claude Code
 
