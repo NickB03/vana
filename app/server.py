@@ -128,6 +128,8 @@ else:
         # Continue without tracing
 
 AGENT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+# For ADK UI, use the agents subdirectory
+AGENTS_DIR = os.path.join(AGENT_DIR, "agents")
 # Persistent session storage configuration
 # For Cloud Run deployment, we'll use a persistent volume or environment-based configuration
 session_storage_bucket = f"{project_id}-vana-session-storage"
@@ -248,7 +250,7 @@ except Exception as e:
     print(f"Warning: Could not initialize auth database: {e}")
 
 app: FastAPI = get_fast_api_app(
-    agents_dir=AGENT_DIR,
+    agents_dir=AGENTS_DIR,  # Use the agents subdirectory for proper ADK UI discovery
     web=True,
     artifact_service_uri=f"gs://{bucket_name}" if bucket_name else None,
     allow_origins=allow_origins,

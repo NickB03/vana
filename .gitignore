@@ -309,3 +309,5 @@ archive/
 frontend/archive/
 docs/archive/
 tests/archive/
+*.tsbuildinfo
+uv.lock
