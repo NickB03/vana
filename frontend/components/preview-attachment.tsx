@@ -42,6 +42,7 @@ export const PreviewAttachment = ({
           size="sm"
           variant="destructive"
           className="absolute top-0.5 right-0.5 opacity-0 group-hover:opacity-100 transition-opacity size-4 p-0 rounded-full"
+          aria-label="Remove attachment"
         >
           <CrossSmallIcon size={8} />
         </Button>

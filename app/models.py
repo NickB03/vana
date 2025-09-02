@@ -8,13 +8,20 @@ The system uses the Google AI Studio API key directly when available.
 """
 
 import os
+import logging
 
-# Set Google API key if provided
-GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY", "AIzaSyDBnz8MA7VuNR9jIZ4dGf1IOzZhpLfE5Z0")
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+# Set Google API key if provided - NO DEFAULT FOR SECURITY
+GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
 if GOOGLE_API_KEY:
     os.environ["GOOGLE_API_KEY"] = GOOGLE_API_KEY
     # Keep Vertex AI enabled for RAG functionality
     # The API key will be used for Gemini models through AI Studio when needed
+else:
+    logger.warning("GOOGLE_API_KEY environment variable not set. Google AI features will not be available.")
 
 # Type alias for model configuration
 ModelType = str
@@ -23,7 +30,11 @@ ModelType = str
 CRITIC_MODEL: ModelType = "gemini-2.5-pro"
 WORKER_MODEL: ModelType = "gemini-2.5-flash"
 
-print("[Models] ✅ PRIMARY: Using Google Gemini 2.5 models")
-print(f"[Models] CRITIC: {CRITIC_MODEL} | WORKER: {WORKER_MODEL}")
-print(f"[Models] Google API Key configured: {'✅' if GOOGLE_API_KEY else '❌'}")
-print(f"[Models] Brave API Key configured: {bool(os.getenv('BRAVE_API_KEY'))}")
+logger.info("[Models] ✅ PRIMARY: Using Google Gemini 2.5 models")
+logger.info(f"[Models] CRITIC: {CRITIC_MODEL} | WORKER: {WORKER_MODEL}")
+logger.info(f"[Models] Google API Key configured: {'✅' if GOOGLE_API_KEY else '❌'}")
+logger.info(f"[Models] Brave API Key configured: {bool(os.getenv('BRAVE_API_KEY'))}")
+
+# Security validation
+if not GOOGLE_API_KEY:
+    logger.error("[SECURITY] Google API Key not configured. Set GOOGLE_API_KEY environment variable.")
