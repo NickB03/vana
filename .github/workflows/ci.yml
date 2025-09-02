@@ -205,7 +205,7 @@ jobs:
         working-directory: ${{ needs.detect-structure.outputs.frontend_path }}
         run: |
           echo "📝 Running TypeScript checks..."
-          npx tsc --noEmit
+          pnpm typecheck
       
       - name: Run tests
         if: matrix.task == 'test'
