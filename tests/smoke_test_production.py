@@ -62,8 +62,8 @@ class ProductionSmokeTest:
             self.process = subprocess.Popen(
                 ["uv", "run", "uvicorn", "app.server:app", "--port", "8000"],
                 env=env,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.STDOUT,
             )
 
             # Wait for server to start

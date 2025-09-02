@@ -173,20 +173,18 @@ class PerformanceLoadTester:
 
             import requests
 
-            session = requests.Session()
-            session.timeout = 10
-
-            for _ in range(iterations):
-                start_time = time.time()
-                try:
-                    response = session.get(f"{self.base_url}{endpoint}")
-                    duration = time.time() - start_time
-                    durations.append(duration)
-                    if 200 <= response.status_code < 400:
-                        successes += 1
-                except Exception:
-                    duration = time.time() - start_time
-                    durations.append(duration)
+            with requests.Session() as session:
+                for _ in range(iterations):
+                    start_time = time.time()
+                    try:
+                        response = session.get(f"{self.base_url}{endpoint}", timeout=10)
+                        duration = time.time() - start_time
+                        durations.append(duration)
+                        if 200 <= response.status_code < 400:
+                            successes += 1
+                    except Exception:
+                        duration = time.time() - start_time
+                        durations.append(duration)
 
             if durations:
                 results[endpoint] = {
