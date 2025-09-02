@@ -416,29 +416,25 @@ export function EnhancedChat({
           onToggleVana={(enabled) => setUseVanaBackend(enabled)}
         />
 
-        {/* Connection Status and Error Display */}
-        {useVanaBackend && (
+        {/* Connection Status - Only show when there's an issue */}
+        {useVanaBackend && connectionState !== 'connected' && connectionState !== 'disconnected' && (
           <div className="border-b border-border">
             {/* Connection Status Bar */}
             <div className={`px-3 py-2 text-xs flex items-center gap-2 ${
-              connectionState === 'connected' ? 'bg-green-50 text-green-700 border-green-200' :
               connectionState === 'reconnecting' ? 'bg-yellow-50 text-yellow-700 border-yellow-200' :
               connectionState === 'failed' ? 'bg-red-50 text-red-700 border-red-200' :
               'bg-gray-50 text-gray-700 border-gray-200'
             }`}>
               <div className={`w-2 h-2 rounded-full ${
-                connectionState === 'connected' ? 'bg-green-500' :
                 connectionState === 'reconnecting' ? 'bg-yellow-500 animate-pulse' :
                 connectionState === 'failed' ? 'bg-red-500' :
                 'bg-gray-500'
               }`} />
               
               <span className="font-medium">
-                VANA Backend: {
-                  connectionState === 'connected' ? 'Connected' :
-                  connectionState === 'reconnecting' ? `Reconnecting... (${reconnectAttempts}/${maxReconnectAttempts})` :
+                {connectionState === 'reconnecting' ? `Reconnecting... (${reconnectAttempts}/${maxReconnectAttempts})` :
                   connectionState === 'failed' ? 'Connection Failed' :
-                  'Disconnected'
+                  'Connecting...'
                 }
               </span>
               
@@ -458,12 +454,12 @@ export function EnhancedChat({
               )}
             </div>
 
-            {/* Recent Connection Errors */}
-            {connectionErrors.length > 0 && (
+            {/* Recent Connection Errors - Only show critical errors */}
+            {connectionErrors.length > 0 && connectionState === 'failed' && (
               <div className="px-3 py-2 bg-red-50 border-t border-red-200">
                 <div className="text-xs text-red-600 space-y-1">
-                  <div className="font-medium">Recent Connection Issues:</div>
-                  {connectionErrors.slice(-2).map((error, index) => (
+                  <div className="font-medium">Connection Issue:</div>
+                  {connectionErrors.slice(-1).map((error, index) => (
                     <div key={index} className="text-xs opacity-75">
                       • {error.message}
                     </div>
