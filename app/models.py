@@ -13,7 +13,8 @@ import os
 GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY", "AIzaSyDBnz8MA7VuNR9jIZ4dGf1IOzZhpLfE5Z0")
 if GOOGLE_API_KEY:
     os.environ["GOOGLE_API_KEY"] = GOOGLE_API_KEY
-    os.environ["GOOGLE_GENAI_USE_VERTEXAI"] = "FALSE"  # Use AI Studio instead of Vertex AI
+    # Keep Vertex AI enabled for RAG functionality
+    # The API key will be used for Gemini models through AI Studio when needed
 
 # Type alias for model configuration
 ModelType = str
