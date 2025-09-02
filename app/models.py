@@ -7,8 +7,8 @@ Vana uses Google Gemini 2.5 models as the primary AI system:
 The system uses the Google AI Studio API key directly when available.
 """
 
-import os
 import logging
+import os
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -21,7 +21,9 @@ if GOOGLE_API_KEY:
     # Keep Vertex AI enabled for RAG functionality
     # The API key will be used for Gemini models through AI Studio when needed
 else:
-    logger.warning("GOOGLE_API_KEY environment variable not set. Google AI features will not be available.")
+    logger.warning(
+        "GOOGLE_API_KEY environment variable not set. Google AI features will not be available."
+    )
 
 # Type alias for model configuration
 ModelType = str
@@ -37,4 +39,6 @@ logger.info(f"[Models] Brave API Key configured: {bool(os.getenv('BRAVE_API_KEY'
 
 # Security validation
 if not GOOGLE_API_KEY:
-    logger.error("[SECURITY] Google API Key not configured. Set GOOGLE_API_KEY environment variable.")
+    logger.error(
+        "[SECURITY] Google API Key not configured. Set GOOGLE_API_KEY environment variable."
+    )

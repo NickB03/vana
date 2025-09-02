@@ -11,6 +11,11 @@ on:
       - 'pyproject.toml'
       - 'uv.lock'
 
+env:
+  PYTHON_VERSION: '3.11'
+  UV_VERSION: '0.6.12'
+  CACHE_VERSION: 'v4'
+
 permissions:
   contents: read
 
@@ -29,35 +34,55 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
-          cache: 'pip'
+          python-version: ${{ env.PYTHON_VERSION }}
 
-      - name: Install UV package manager (stable)
-        run: |
-          curl -LsSf https://astral.sh/uv/install.sh | sh
-          echo "$HOME/.local/bin" >> $GITHUB_PATH
-          uv --version
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          version: ${{ env.UV_VERSION }}
+          enable-cache: true
+      
+      - name: Cache dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/uv
+            .venv
+          key: security-${{ env.CACHE_VERSION }}-${{ runner.os }}-${{ env.PYTHON_VERSION }}-${{ hashFiles('pyproject.toml', 'uv.lock') }}
+          restore-keys: |
+            security-${{ env.CACHE_VERSION }}-${{ runner.os }}-${{ env.PYTHON_VERSION }}-
 
-      - name: Install dependencies
+      - name: Install dependencies and security tools
         run: |
           uv sync --dev
+          uv pip install bandit[toml] pip-audit
 
       - name: Run security checks
         run: |
           echo "::group::Bandit Security Scan"
           uv run bandit -r app/ -ll --format=txt || echo "⚠️ Security issues detected"
+          uv run bandit -r app/ -ll --format=json -o bandit-report.json || echo "⚠️ Security issues detected"
           echo "::endgroup::"
           
-          echo "::group::Safety Vulnerability Check"
-          # Note: Safety tool has compatibility issues, checking dependencies manually
-          echo "Checking for known vulnerable packages..."
-          uv pip list | grep -E "(flask|django|requests|urllib3|pyyaml|pillow|jinja2)" || echo "No critical packages found"
+          echo "::group::pip-audit Vulnerability Check"
+          uv run pip-audit --format=json --output=audit-report.json || echo "⚠️ Vulnerabilities detected"
+          uv run pip-audit || echo "⚠️ Vulnerabilities detected"
           echo "::endgroup::"
 
+      - name: Upload security reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: security-reports-${{ github.sha }}
+          path: |
+            bandit-report.json
+            audit-report.json
+          retention-days: 7
+      
       - name: Generate security summary
         run: |
           echo "## Security Scan Summary" >> $GITHUB_STEP_SUMMARY
           echo "- **Bandit scan**: $(uv run bandit -r app/ -ll --format=txt > /dev/null 2>&1 && echo '✅ No HIGH/MEDIUM issues' || echo '⚠️ Issues found')" >> $GITHUB_STEP_SUMMARY
-          echo "- **Dependency check**: ✅ Manual check completed" >> $GITHUB_STEP_SUMMARY
+          echo "- **pip-audit check**: $(uv run pip-audit --quiet > /dev/null 2>&1 && echo '✅ No vulnerabilities' || echo '⚠️ Issues found')" >> $GITHUB_STEP_SUMMARY
           echo "- **Files scanned**: $(find app/ -name '*.py' | wc -l)" >> $GITHUB_STEP_SUMMARY
-          echo "- **Security fixes applied**: ✅ All critical vulnerabilities addressed" >> $GITHUB_STEP_SUMMARY
+          echo "- **Reports uploaded**: ✅ Available as workflow artifacts" >> $GITHUB_STEP_SUMMARY

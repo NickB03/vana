@@ -56,7 +56,7 @@ def mock_gcp_in_ci(monkeypatch):
             pass
 
         yield
-        
+
         # Cleanup patchers
         patcher.stop()
         if adk_patcher:

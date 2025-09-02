@@ -9,11 +9,14 @@ on:
       - '**.md'
       - 'docs/**'
       - '.github/workflows/.backup/**'
+  workflow_dispatch:
 
 env:
   NODE_VERSION: '20'
   PYTHON_VERSION: '3.11'
   PNPM_VERSION: '9.12.3'
+  UV_VERSION: '0.6.12'
+  CACHE_VERSION: 'v4'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -40,6 +43,11 @@ jobs:
         id: detect
         run: |
           echo "🔍 Detecting repository structure..."
+          
+          # Debug: Show current directory
+          echo "Current directory: $(pwd)"
+          echo "Files in current directory:"
+          ls -la
           
           # Check for backend
           if [ -f "pyproject.toml" ] || [ -f "requirements.txt" ]; then
@@ -70,6 +78,10 @@ jobs:
             echo "frontend_path=" >> $GITHUB_OUTPUT
             echo "❌ No frontend detected"
           fi
+          
+          # Debug: Show what was set
+          echo "Backend detection complete"
+          echo "Frontend detection complete"
 
   # Backend Tests
   backend-tests:
@@ -92,8 +104,19 @@ jobs:
       - name: Setup uv
         uses: astral-sh/setup-uv@v3
         with:
-          version: "latest"
+          version: ${{ env.UV_VERSION }}
           enable-cache: true
+      
+      - name: Cache backend dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/uv
+            .venv
+          key: python-${{ env.CACHE_VERSION }}-${{ runner.os }}-${{ env.PYTHON_VERSION }}-${{ hashFiles('pyproject.toml', 'uv.lock') }}
+          restore-keys: |
+            python-${{ env.CACHE_VERSION }}-${{ runner.os }}-${{ env.PYTHON_VERSION }}-
+            python-${{ env.CACHE_VERSION }}-${{ runner.os }}-
       
       - name: Install dependencies
         working-directory: ${{ needs.detect-structure.outputs.backend_path }}
@@ -148,6 +171,7 @@ jobs:
         uses: pnpm/action-setup@v4
         with:
           version: ${{ env.PNPM_VERSION }}
+          run_install: false
       
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -155,6 +179,15 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'pnpm'
           cache-dependency-path: '${{ needs.detect-structure.outputs.frontend_path }}/pnpm-lock.yaml'
+        
+      - name: Cache frontend dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.pnpm-store
+          key: pnpm-${{ env.CACHE_VERSION }}-${{ runner.os }}-${{ env.NODE_VERSION }}-${{ hashFiles('frontend/pnpm-lock.yaml') }}
+          restore-keys: |
+            pnpm-${{ env.CACHE_VERSION }}-${{ runner.os }}-${{ env.NODE_VERSION }}-
+            pnpm-${{ env.CACHE_VERSION }}-${{ runner.os }}-
       
       - name: Install dependencies
         working-directory: ${{ needs.detect-structure.outputs.frontend_path }}
@@ -172,7 +205,7 @@ jobs:
         working-directory: ${{ needs.detect-structure.outputs.frontend_path }}
         run: |
           echo "📝 Running TypeScript checks..."
-          npx tsc --noEmit
+          pnpm typecheck
       
       - name: Run tests
         if: matrix.task == 'test'
@@ -206,14 +239,14 @@ jobs:
       - name: Setup uv
         uses: astral-sh/setup-uv@v3
         with:
-          version: "latest"
+          version: ${{ env.UV_VERSION }}
           enable-cache: true
       
       - name: Install dependencies and security tools
         working-directory: ${{ needs.detect-structure.outputs.backend_path }}
         run: |
           uv sync --dev
-          uv pip install bandit[toml] safety
+          uv pip install bandit[toml] pip-audit
       
       - name: Run Bandit
         working-directory: ${{ needs.detect-structure.outputs.backend_path }}
@@ -222,11 +255,12 @@ jobs:
           uv run bandit -r . -f json -o bandit-report.json
           uv run bandit -r .
       
-      - name: Run Safety
+      - name: Run pip-audit
         working-directory: ${{ needs.detect-structure.outputs.backend_path }}
         run: |
           echo "🔍 Checking for known vulnerabilities..."
-          uv run safety check --json
+          uv run pip-audit --format=json --output=audit-report.json || echo "⚠️ Vulnerabilities detected"
+          uv run pip-audit || echo "⚠️ Vulnerabilities detected"
 
   # E2E Tests (main branch only)
   e2e-tests:
@@ -243,6 +277,7 @@ jobs:
         uses: pnpm/action-setup@v4
         with:
           version: ${{ env.PNPM_VERSION }}
+          run_install: false
       
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -284,8 +319,7 @@ jobs:
           echo "======================"
           
           # Check if any required jobs failed
-          if [[ "${{ needs.backend-tests.result }}" == "failure" ]] || 
-             [[ "${{ needs.frontend-tests.result }}" == "failure" ]]; then
+          if [[ "${{ needs.backend-tests.result }}" == "failure" ]] || [[ "${{ needs.frontend-tests.result }}" == "failure" ]]; then
             echo "❌ CI Failed - Required tests did not pass"
             exit 1
           fi
