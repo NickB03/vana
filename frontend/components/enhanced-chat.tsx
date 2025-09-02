@@ -19,10 +19,9 @@ import type { Session } from 'next-auth';
 import { useSearchParams } from 'next/navigation';
 import { useChatVisibility } from '@/hooks/use-chat-visibility';
 import { useAutoResume } from '@/hooks/use-auto-resume';
-import { ChatSDKError } from '@/lib/errors';
+import { ChatSDKError , VanaBackendError, SSEConnectionError, isRetryableError } from '@/lib/errors';
 import type { Attachment, ChatMessage } from '@/lib/types';
 import { useVanaDataStream } from './vana-data-stream-provider';
-import { VanaBackendError, SSEConnectionError, isRetryableError } from '@/lib/errors';
 import { useErrorHandler } from './error-boundary';
 
 interface EnhancedChatProps {
@@ -425,7 +424,7 @@ export function EnhancedChat({
               connectionState === 'failed' ? 'bg-red-50 text-red-700 border-red-200' :
               'bg-gray-50 text-gray-700 border-gray-200'
             }`}>
-              <div className={`w-2 h-2 rounded-full ${
+              <div className={`size-2 rounded-full ${
                 connectionState === 'reconnecting' ? 'bg-yellow-500 animate-pulse' :
                 connectionState === 'failed' ? 'bg-red-500' :
                 'bg-gray-500'
@@ -440,6 +439,7 @@ export function EnhancedChat({
               
               {lastError && connectionState === 'failed' && (
                 <button
+                  type="button"
                   onClick={async () => {
                     try {
                       await retryConnection();
@@ -460,7 +460,7 @@ export function EnhancedChat({
                 <div className="text-xs text-red-600 space-y-1">
                   <div className="font-medium">Connection Issue:</div>
                   {connectionErrors.slice(-1).map((error, index) => (
-                    <div key={index} className="text-xs opacity-75">
+                    <div key={`connection-error-${index}-${error.message.slice(0, 20)}`} className="text-xs opacity-75">
                       • {error.message}
                     </div>
                   ))}

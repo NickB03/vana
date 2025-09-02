@@ -4,9 +4,10 @@ const nextConfig: NextConfig = {
   // Output configuration for Docker deployment
   output: 'standalone',
 
-  experimental: {
-    ppr: true,
-  },
+  // Disable experimental features temporarily for stable build
+  // experimental: {
+  //   ppr: true,
+  // },
   images: {
     remotePatterns: [
       {

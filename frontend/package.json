@@ -8,7 +8,8 @@
   },
   "scripts": {
     "dev": "next dev --turbo --port 3000",
-    "build": "tsx lib/db/migrate && next build",
+    "build": "next build",
+    "build:with-db": "tsx lib/db/migrate && next build",
     "start": "next start --port 3000",
     "lint": "next lint && biome lint --write --unsafe",
     "lint:fix": "next lint --fix && biome lint --write --unsafe",
@@ -20,7 +21,7 @@
     "db:pull": "drizzle-kit pull",
     "db:check": "drizzle-kit check",
     "db:up": "drizzle-kit up",
-    "test": "export PLAYWRIGHT=True && pnpm exec playwright test"
+    "test": "export PLAYWRIGHT=True && export PORT=3000 && export NEXTAUTH_URL=http://localhost:3000 && export AUTH_URL=http://localhost:3000 && export NEXTAUTH_URL_INTERNAL=http://localhost:3000 && export NEXT_PUBLIC_APP_URL=http://localhost:3000 && pnpm exec playwright test"
   },
   "dependencies": {
     "@ai-sdk/provider": "2.0.0",

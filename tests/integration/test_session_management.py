@@ -44,8 +44,7 @@ class Session:
     created_at: datetime = None
     last_activity: datetime = None
 
-
-# Duplicate classes removed - using the ones defined above
+    # Duplicate classes removed - using the ones defined above
     updated_at: float | None = None
     state: dict[str, Any] = field(default_factory=dict)
 
