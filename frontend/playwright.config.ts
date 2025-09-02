@@ -10,7 +10,7 @@ config({
   path: '.env.local',
 });
 
-/* Use process.env.PORT by default and fallback to port 3000 */
+/* Use process.env.PORT by default and fallback to port 3000 for testing */
 const PORT = process.env.PORT || 3000;
 
 /**
@@ -99,7 +99,7 @@ export default defineConfig({
 
   /* Run your local dev server before starting the tests */
   webServer: {
-    command: 'pnpm dev',
+    command: `pnpm dev --port ${PORT}`,
     url: `${baseURL}/ping`,
     timeout: 120 * 1000,
     reuseExistingServer: true,

@@ -24,10 +24,11 @@ test.describe
         request = request.redirectedFrom() as any;
       }
 
+      const PORT = process.env.PORT || 3000;
       expect(chain).toEqual([
-        'http://localhost:3000/',
-        'http://localhost:3000/api/auth/guest?redirectUrl=http%3A%2F%2Flocalhost%3A3000%2F',
-        'http://localhost:3000/',
+        `http://localhost:${PORT}/`,
+        `http://localhost:${PORT}/api/auth/guest?redirectUrl=http%3A%2F%2Flocalhost%3A${PORT}%2F`,
+        `http://localhost:${PORT}/`,
       ]);
     });
 
@@ -66,7 +67,8 @@ test.describe
         request = request.redirectedFrom() as any;
       }
 
-      expect(chain).toEqual(['http://localhost:3000/']);
+      const PORT = process.env.PORT || 3000;
+      expect(chain).toEqual([`http://localhost:${PORT}/`]);
     });
 
     test('Allow navigating to /login as guest user', async ({ page }) => {
@@ -193,7 +195,6 @@ test.describe('Entitlements', () => {
   });
 
   test('Guest user cannot send more than 20 messages/day', async () => {
-    test.fixme();
     await chatPage.createNewChat();
 
     for (let i = 0; i <= 20; i++) {

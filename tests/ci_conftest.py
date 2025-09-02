@@ -46,6 +46,7 @@ def mock_gcp_in_ci(monkeypatch):
         # Mock ADK if it's being used
         try:
             import importlib.util
+
             if importlib.util.find_spec("google_adk"):
                 monkeypatch.setattr("google_adk.Client", MagicMock)
         except ImportError:

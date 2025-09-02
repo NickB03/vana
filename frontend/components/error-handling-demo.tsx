@@ -244,7 +244,7 @@ function BackoffCalculatorDemo() {
           <div className="space-y-2">
             <div className="text-xs font-medium">Retry Delays:</div>
             {attempts.map((delay, index) => (
-              <div key={index} className="text-xs flex justify-between items-center">
+              <div key={`attempt-${index}-${delay}`} className="text-xs flex justify-between items-center">
                 <span>Attempt {index + 1}:</span>
                 <span className="font-mono">{Math.round(delay)}ms ({Math.round(delay/1000)}s)</span>
               </div>
@@ -290,7 +290,7 @@ function ConnectionStateDemo() {
           connectionState === 'failed' ? 'bg-red-50 text-red-700 border-red-200' :
           'bg-gray-50 text-gray-700 border-gray-200'
         }`}>
-          <div className={`w-2 h-2 rounded-full ${
+          <div className={`size-2 rounded-full ${
             connectionState === 'connected' ? 'bg-green-500' :
             connectionState === 'reconnecting' ? 'bg-yellow-500 animate-pulse' :
             connectionState === 'failed' ? 'bg-red-500' :
@@ -349,7 +349,7 @@ function ConnectionStateDemo() {
             <AlertDescription className="text-xs">
               <div className="font-medium">Recent Connection Issues:</div>
               {errors.slice(-2).map((error, index) => (
-                <div key={index} className="opacity-75">
+                <div key={`error-${index}-${error.message.slice(0, 20)}`} className="opacity-75">
                   • {error.message}
                 </div>
               ))}
@@ -396,8 +396,8 @@ export function ErrorHandlingDemo() {
                 <div>
                   <strong>Triggered Errors ({triggeredErrors.length}):</strong>
                   <div className="text-xs mt-1">
-                    {triggeredErrors.slice(-3).map((name, index) => (
-                      <div key={index}>• {name}</div>
+                    {triggeredErrors.slice(-3).map((name) => (
+                      <div key={`error-${name}-${Date.now()}`}>• {name}</div>
                     ))}
                   </div>
                 </div>
