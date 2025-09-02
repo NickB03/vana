@@ -1,0 +1,299 @@
+name: CI Pipeline
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - '.github/workflows/.backup/**'
+
+env:
+  NODE_VERSION: '20'
+  PYTHON_VERSION: '3.11'
+  PNPM_VERSION: '9.12.3'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: write
+  checks: write
+
+jobs:
+  # Detect repository structure
+  detect-structure:
+    runs-on: ubuntu-latest
+    outputs:
+      has_backend: ${{ steps.detect.outputs.has_backend }}
+      has_frontend: ${{ steps.detect.outputs.has_frontend }}
+      backend_path: ${{ steps.detect.outputs.backend_path }}
+      frontend_path: ${{ steps.detect.outputs.frontend_path }}
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Detect Repository Structure
+        id: detect
+        run: |
+          echo "🔍 Detecting repository structure..."
+          
+          # Check for backend
+          if [ -f "pyproject.toml" ] || [ -f "requirements.txt" ]; then
+            echo "has_backend=true" >> $GITHUB_OUTPUT
+            echo "backend_path=." >> $GITHUB_OUTPUT
+            echo "✅ Backend detected at root"
+          elif [ -f "backend/pyproject.toml" ] || [ -f "backend/requirements.txt" ]; then
+            echo "has_backend=true" >> $GITHUB_OUTPUT
+            echo "backend_path=backend" >> $GITHUB_OUTPUT
+            echo "✅ Backend detected at backend/"
+          else
+            echo "has_backend=false" >> $GITHUB_OUTPUT
+            echo "backend_path=" >> $GITHUB_OUTPUT
+            echo "❌ No backend detected"
+          fi
+          
+          # Check for frontend
+          if [ -f "frontend/package.json" ]; then
+            echo "has_frontend=true" >> $GITHUB_OUTPUT
+            echo "frontend_path=frontend" >> $GITHUB_OUTPUT
+            echo "✅ Frontend detected at frontend/"
+          elif [ -f "package.json" ]; then
+            echo "has_frontend=true" >> $GITHUB_OUTPUT
+            echo "frontend_path=." >> $GITHUB_OUTPUT
+            echo "✅ Frontend detected at root"
+          else
+            echo "has_frontend=false" >> $GITHUB_OUTPUT
+            echo "frontend_path=" >> $GITHUB_OUTPUT
+            echo "❌ No frontend detected"
+          fi
+
+  # Backend Tests
+  backend-tests:
+    needs: detect-structure
+    if: needs.detect-structure.outputs.has_backend == 'true'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        test-type: [lint, unit, integration]
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          version: "latest"
+          enable-cache: true
+      
+      - name: Install dependencies
+        working-directory: ${{ needs.detect-structure.outputs.backend_path }}
+        run: |
+          uv sync --dev
+      
+      - name: Run Linting
+        if: matrix.test-type == 'lint'
+        working-directory: ${{ needs.detect-structure.outputs.backend_path }}
+        run: |
+          echo "🔍 Running linting checks..."
+          uv run ruff check .
+          uv run ruff format --check .
+          uv run mypy . --ignore-missing-imports
+      
+      - name: Run Unit Tests
+        if: matrix.test-type == 'unit'
+        working-directory: ${{ needs.detect-structure.outputs.backend_path }}
+        run: |
+          echo "🧪 Running unit tests..."
+          if [ -d "tests/unit" ]; then
+            uv run pytest tests/unit -v --tb=short
+          else
+            uv run pytest -v --tb=short -k "not integration"
+          fi
+      
+      - name: Run Integration Tests
+        if: matrix.test-type == 'integration'
+        working-directory: ${{ needs.detect-structure.outputs.backend_path }}
+        run: |
+          echo "🔗 Running integration tests..."
+          if [ -d "tests/integration" ]; then
+            uv run pytest tests/integration -v --tb=short
+          else
+            uv run pytest -v --tb=short -k "integration"
+          fi
+
+  # Frontend Tests
+  frontend-tests:
+    needs: detect-structure
+    if: needs.detect-structure.outputs.has_frontend == 'true'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        task: [lint, typecheck, test, build]
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+          cache-dependency-path: '${{ needs.detect-structure.outputs.frontend_path }}/pnpm-lock.yaml'
+      
+      - name: Install dependencies
+        working-directory: ${{ needs.detect-structure.outputs.frontend_path }}
+        run: pnpm install --frozen-lockfile
+      
+      - name: Run linting
+        if: matrix.task == 'lint'
+        working-directory: ${{ needs.detect-structure.outputs.frontend_path }}
+        run: |
+          echo "🔍 Running ESLint..."
+          pnpm lint
+      
+      - name: Type checking
+        if: matrix.task == 'typecheck'
+        working-directory: ${{ needs.detect-structure.outputs.frontend_path }}
+        run: |
+          echo "📝 Running TypeScript checks..."
+          npx tsc --noEmit
+      
+      - name: Run tests
+        if: matrix.task == 'test'
+        working-directory: ${{ needs.detect-structure.outputs.frontend_path }}
+        run: |
+          echo "🧪 Running tests..."
+          pnpm test
+      
+      - name: Build project
+        if: matrix.task == 'build'
+        working-directory: ${{ needs.detect-structure.outputs.frontend_path }}
+        run: |
+          echo "🏗️ Building project..."
+          pnpm build
+
+  # Security Scan (main branch only)
+  security-scan:
+    needs: detect-structure
+    if: github.ref == 'refs/heads/main' && needs.detect-structure.outputs.has_backend == 'true'
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          version: "latest"
+          enable-cache: true
+      
+      - name: Install dependencies and security tools
+        working-directory: ${{ needs.detect-structure.outputs.backend_path }}
+        run: |
+          uv sync --dev
+          uv pip install bandit[toml] safety
+      
+      - name: Run Bandit
+        working-directory: ${{ needs.detect-structure.outputs.backend_path }}
+        run: |
+          echo "🔒 Running Bandit security scan..."
+          uv run bandit -r . -f json -o bandit-report.json
+          uv run bandit -r .
+      
+      - name: Run Safety
+        working-directory: ${{ needs.detect-structure.outputs.backend_path }}
+        run: |
+          echo "🔍 Checking for known vulnerabilities..."
+          uv run safety check --json
+
+  # E2E Tests (main branch only)
+  e2e-tests:
+    needs: [detect-structure, frontend-tests]
+    if: github.ref == 'refs/heads/main' && needs.detect-structure.outputs.has_frontend == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    continue-on-error: true
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+          cache-dependency-path: '${{ needs.detect-structure.outputs.frontend_path }}/pnpm-lock.yaml'
+      
+      - name: Install dependencies
+        working-directory: ${{ needs.detect-structure.outputs.frontend_path }}
+        run: pnpm install --frozen-lockfile
+      
+      - name: Install Playwright
+        working-directory: ${{ needs.detect-structure.outputs.frontend_path }}
+        run: pnpm exec playwright install --with-deps chromium
+      
+      - name: Run E2E tests
+        working-directory: ${{ needs.detect-structure.outputs.frontend_path }}
+        run: pnpm exec playwright test
+      
+      - name: Upload test artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: ${{ needs.detect-structure.outputs.frontend_path }}/playwright-report/
+          retention-days: 7
+
+  # CI Status Check
+  ci-status:
+    if: always()
+    needs: [detect-structure, backend-tests, frontend-tests, security-scan, e2e-tests]
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Check CI Status
+        run: |
+          echo "📊 CI Pipeline Summary"
+          echo "======================"
+          
+          # Check if any required jobs failed
+          if [[ "${{ needs.backend-tests.result }}" == "failure" ]] || 
+             [[ "${{ needs.frontend-tests.result }}" == "failure" ]]; then
+            echo "❌ CI Failed - Required tests did not pass"
+            exit 1
+          fi
+          
+          echo "✅ CI Passed - All required checks successful"
+          
+          # Report optional job status
+          echo ""
+          echo "Optional Jobs:"
+          echo "- Security Scan: ${{ needs.security-scan.result }}"
+          echo "- E2E Tests: ${{ needs.e2e-tests.result }}"
