@@ -45,6 +45,51 @@
 - `/scripts` - Utility scripts
 - `/examples` - Example code
 
+## 🔄 Repository Workflow Pattern
+
+This project uses a **two-repository development pattern** for sophisticated frontend development:
+
+### Repository Structure
+```
+NickB03/vana (PRIMARY - Source of Truth)
+├── Full-stack application
+├── Backend (Python/FastAPI with Google ADK)
+├── Frontend (Next.js)
+└── All production code
+
+NickB03/ai-chatbot (STAGING - Frontend Sandbox)
+├── Fork of vercel/ai-chatbot
+├── Frontend UI experimentation
+├── Testing ground for new features
+└── Upstream sync from Vercel
+```
+
+### Development Workflow
+1. **Primary Development**: Always work in `/Users/nick/Development/vana`
+2. **UI Testing**: Use `ai-chatbot` fork for isolated frontend experiments
+3. **Integration**: Port tested features back to `vana` repository
+4. **Deployment**: Always deploy from `vana` (never from fork)
+
+### Git Remote Configuration
+- **vana remote**: `https://github.com/NickB03/vana.git` (PRIMARY)
+- **ai-chatbot remote**: `https://github.com/NickB03/ai-chatbot.git` (STAGING)
+
+### Best Practices
+- ✅ Keep `vana` as the source of truth
+- ✅ Use `ai-chatbot` for UI experimentation only
+- ✅ Document feature origins (upstream vs custom)
+- ❌ Never put backend code in `ai-chatbot` fork
+- ❌ Never deploy from the fork
+
+### Pulling Upstream Updates
+```bash
+# In ai-chatbot fork
+git remote add upstream https://github.com/vercel/ai-chatbot
+git fetch upstream
+git merge upstream/main
+# Cherry-pick useful updates to vana
+```
+
 ## Project Overview
 
 This project uses SPARC (Specification, Pseudocode, Architecture, Refinement, Completion) methodology with Claude-Flow orchestration for systematic Test-Driven Development.
