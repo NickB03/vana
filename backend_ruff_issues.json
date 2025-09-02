@@ -1,0 +1,19 @@
+[
+  {
+    "cell": null,
+    "code": "E902",
+    "end_location": {
+      "column": 1,
+      "row": 1
+    },
+    "filename": "/Users/nick/Development/vana/backend",
+    "fix": null,
+    "location": {
+      "column": 1,
+      "row": 1
+    },
+    "message": "No such file or directory (os error 2)",
+    "noqa_row": null,
+    "url": "https://docs.astral.sh/ruff/rules/io-error"
+  }
+]

@@ -39,19 +39,28 @@ def mock_gcp_in_ci(monkeypatch):
         monkeypatch.setenv("GOOGLE_CLOUD_PROJECT", "test-project")
         monkeypatch.setenv("CI", "true")
 
-        # Mock Google Cloud clients
-        with patch("google.cloud.logging.Client") as mock_logging:
-            mock_logging.return_value = MagicMock()
+        # Mock Google Cloud clients using proper patcher pattern
+        patcher = patch("google.cloud.logging.Client")
+        mock_logging = patcher.start()
+        mock_logging.return_value = MagicMock()
 
         # Mock ADK if it's being used
+        adk_patcher = None
         try:
             import importlib.util
+
             if importlib.util.find_spec("google_adk"):
-                monkeypatch.setattr("google_adk.Client", MagicMock)
+                adk_patcher = patch("google_adk.Client", MagicMock)
+                adk_patcher.start()
         except ImportError:
             pass
 
         yield
+        
+        # Cleanup patchers
+        patcher.stop()
+        if adk_patcher:
+            adk_patcher.stop()
     else:
         # Not in CI, don't mock anything
         yield

@@ -74,12 +74,12 @@ class TestCIValidation(unittest.TestCase):
         project_root = Path(__file__).parent.parent.parent
         frontend_dir = project_root / "frontend"
 
-        # Essential frontend files
+        # Essential frontend files - use files that actually exist
         required_frontend_files = [
-            "src/app/page.tsx",
-            "src/components/ui",
+            "app/(chat)/page.tsx",  # Main chat page that exists
+            "components/ui",  # UI components directory
             "tailwind.config.ts",  # Tailwind config is TypeScript
-            "tsconfig.json",
+            "tsconfig.json",  # TypeScript config
         ]
 
         for file_path in required_frontend_files:

@@ -155,19 +155,19 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
       <div className="flex items-center gap-2 text-sm mb-4">
         {connectionStatus === 'connected' && (
           <>
-            <Wifi className="w-4 h-4 text-green-600" />
+            <Wifi className="size-4 text-green-600" />
             <span className="text-green-600">Connected</span>
           </>
         )}
         {connectionStatus === 'disconnected' && (
           <>
-            <WifiOff className="w-4 h-4 text-red-600" />
+            <WifiOff className="size-4 text-red-600" />
             <span className="text-red-600">Disconnected</span>
           </>
         )}
         {connectionStatus === 'reconnecting' && (
           <>
-            <RefreshCw className="w-4 h-4 text-yellow-600 animate-spin" />
+            <RefreshCw className="size-4 text-yellow-600 animate-spin" />
             <span className="text-yellow-600">Reconnecting...</span>
           </>
         )}
@@ -180,7 +180,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
       return (
         <div className="space-y-3">
           <Alert>
-            <AlertCircle className="h-4 w-4" />
+            <AlertCircle className="size-4" />
             <AlertDescription>
               Server connection lost. This is usually temporary and will be restored automatically.
             </AlertDescription>
@@ -198,7 +198,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
       return (
         <div className="space-y-3">
           <Alert>
-            <AlertCircle className="h-4 w-4" />
+            <AlertCircle className="size-4" />
             <AlertDescription>
               VANA backend service is experiencing issues. 
               {error.retryable ? ' The system will retry automatically.' : ' Please try again later.'}
@@ -218,7 +218,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
       return (
         <div className="space-y-3">
           <Alert>
-            <AlertCircle className="h-4 w-4" />
+            <AlertCircle className="size-4" />
             <AlertDescription>
               Unable to parse streaming data. This may be due to a temporary network issue.
             </AlertDescription>
@@ -234,7 +234,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
 
     return (
       <Alert>
-        <AlertCircle className="h-4 w-4" />
+        <AlertCircle className="size-4" />
         <AlertDescription>
           An unexpected error occurred: {error.message}
         </AlertDescription>
@@ -258,7 +258,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
           <Card className="w-full max-w-md">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <AlertCircle className="h-5 w-5 text-red-600" />
+                <AlertCircle className="size-5 text-red-600" />
                 Connection Error
               </CardTitle>
               <CardDescription>
@@ -280,12 +280,12 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
                   >
                     {isRetrying ? (
                       <>
-                        <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                        <RefreshCw className="size-4 mr-2 animate-spin" />
                         Retrying...
                       </>
                     ) : (
                       <>
-                        <RefreshCw className="w-4 h-4 mr-2" />
+                        <RefreshCw className="size-4 mr-2" />
                         Retry Now
                       </>
                     )}
