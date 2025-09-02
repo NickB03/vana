@@ -33,9 +33,9 @@ WORKER_MODEL: ModelType
 
 if USE_OPENROUTER:
     # PRIMARY: LiteLLM with OpenRouter using Qwen 3 Coder (FREE tier)
-    # This is a capable coding model available on OpenRouter at no cost
-    CRITIC_MODEL = LiteLlm(model="openrouter/qwen/qwen-3-coder:free")
-    WORKER_MODEL = LiteLlm(model="openrouter/qwen/qwen-3-coder:free")
+    # This is the correct working model ID for the free Qwen coder model
+    CRITIC_MODEL = LiteLlm(model="openrouter/qwen/qwen3-coder:free")
+    WORKER_MODEL = LiteLlm(model="openrouter/qwen/qwen3-coder:free")
 
     print("[Models] ✅ PRIMARY: Using OpenRouter with Qwen 3 Coder model (FREE tier)")
     print(f"[Models] Brave API Key configured: {bool(os.environ.get('BRAVE_API_KEY'))}")
