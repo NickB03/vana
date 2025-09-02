@@ -309,8 +309,7 @@ jobs:
           echo "======================"
           
           # Check if any required jobs failed
-          if [[ "${{ needs.backend-tests.result }}" == "failure" ]] || 
-             [[ "${{ needs.frontend-tests.result }}" == "failure" ]]; then
+          if [[ "${{ needs.backend-tests.result }}" == "failure" ]] || [[ "${{ needs.frontend-tests.result }}" == "failure" ]]; then
             echo "❌ CI Failed - Required tests did not pass"
             exit 1
           fi
