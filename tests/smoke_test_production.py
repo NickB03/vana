@@ -178,7 +178,9 @@ class ProductionSmokeTest:
                                     "[INFO] Protected endpoint requires additional setup (but token is valid)"
                                 )
                             else:
-                                print(f"[INFO] Protected endpoint returned: {resp.status}")
+                                print(
+                                    f"[INFO] Protected endpoint returned: {resp.status}"
+                                )
                     else:
                         print(
                             f"❌ Token doesn't look like valid JWT: {len(parts)} parts"

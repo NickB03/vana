@@ -95,7 +95,7 @@ function PureChatHeader({
               onClick={() => onToggleVana?.(!useVanaBackend)}
               disabled={!vanaAvailable}
             >
-              <div className={`w-2 h-2 rounded-full mr-2 ${
+              <div className={`size-2 rounded-full mr-2 ${
                 isVanaConnected
                   ? 'bg-green-300 animate-pulse'
                   : vanaAvailable

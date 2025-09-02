@@ -40,7 +40,10 @@ export async function createAuthenticatedContext({
   const email = `test-${name}@playwright.com`;
   const password = generateId();
 
-  await page.goto('http://localhost:3000/register');
+  // Use the same baseURL logic as playwright.config.ts
+  const PORT = process.env.PORT || 3000;
+  const baseURL = `http://localhost:${PORT}`;
+  await page.goto(`${baseURL}/register`);
   await page.getByPlaceholder('user@acme.com').click();
   await page.getByPlaceholder('user@acme.com').fill(email);
   await page.getByLabel('Password').click();

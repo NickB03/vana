@@ -26,4 +26,4 @@ WORKER_MODEL: ModelType = "gemini-2.5-flash"
 print("[Models] ✅ PRIMARY: Using Google Gemini 2.5 models")
 print(f"[Models] CRITIC: {CRITIC_MODEL} | WORKER: {WORKER_MODEL}")
 print(f"[Models] Google API Key configured: {'✅' if GOOGLE_API_KEY else '❌'}")
-print(f"[Models] Brave API Key configured: {bool(os.environ.get('BRAVE_API_KEY'))}")
+print(f"[Models] Brave API Key configured: {bool(os.getenv('BRAVE_API_KEY'))}")

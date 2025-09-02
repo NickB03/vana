@@ -222,6 +222,8 @@ export async function POST(request: Request) {
     if (error instanceof ChatSDKError) {
       return error.toResponse();
     }
+    // Fallback for unexpected errors
+    return new ChatSDKError('internal:api').toResponse();
   }
 }
 
