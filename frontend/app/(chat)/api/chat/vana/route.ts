@@ -69,21 +69,25 @@ export async function POST(request: Request) {
     const vanaBaseUrl = process.env.VANA_BASE_URL || 'http://localhost:8000';
     
     try {
-      // Use the correct backend API endpoint and format
-      const vanaResponse = await fetch(`${vanaBaseUrl}/run`, {
+      const vanaResponse = await fetch(`${vanaBaseUrl}/chat/${id}/message`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'X-User-ID': session.user.id,
+          'X-Session-ID': id,
         },
         body: JSON.stringify({
-          appName: 'vana',
-          userId: session.user.id,
-          sessionId: id,
-          newMessage: {
-            type: 'text',
-            text: message.parts.find(part => part.type === 'text')?.text || '',
+          message: message.parts.find(part => part.type === 'text')?.text || '',
+          message_id: message.id,
+          model: vanaOptions.model || 'gemini-pro',
+          agents: vanaOptions.agents || [],
+          enable_progress: vanaOptions.enableProgress ?? true,
+          metadata: {
+            role: message.role,
+            created_at: new Date().toISOString(),
+            user_id: session.user.id,
+            chat_id: id,
           },
-          streaming: false,
         }),
         signal: AbortSignal.timeout(30000), // 30 second timeout
       });
@@ -95,14 +99,12 @@ export async function POST(request: Request) {
       }
 
       const vanaData = await vanaResponse.json();
-      console.log('Vana backend response:', vanaData);
-
-      // The /run endpoint returns an array of events, we'll use the session ID as task ID
+      
       const response: VanaResponse = {
-        task_id: id, // Use session ID as task ID for now
+        task_id: vanaData.task_id,
         message_id: message.id,
         status: 'started',
-        stream_url: `/api/chat/vana/${id}/stream?task_id=${id}`,
+        stream_url: `/api/chat/vana/${id}/stream?task_id=${vanaData.task_id}`,
       };
 
       return Response.json(response, { status: 200 });

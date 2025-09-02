@@ -59,6 +59,18 @@
       "value": "PHASE_2_CI_FIX_IMPLEMENTATION_PLANS",
       "namespace": "devops",
       "timestamp": 1756844069391
+    },
+    {
+      "key": "ci_consumption_analysis",
+      "value": "{\n  \"current_monthly_usage\": {\n    \"estimated_minutes_per_pr\": 45,\n    \"prs_per_month\": 11,\n    \"push_to_main\": 15,\n    \"scheduled_workflows\": 8,\n    \"total_estimated_monthly\": 1180,\n    \"breakdown\": {\n      \"main_ci_workflow\": 32,\n      \"security_scans\": 8,\n      \"dependency_checks\": 5,\n      \"e2e_tests_main_only\": 18,\n      \"scheduled_security\": 12\n    }\n  },\n  \"current_inefficiencies\": [\n    \"Redundant dependency installations across matrix jobs\",\n    \"Missing path-based filtering for backend/frontend\",\n    \"E2E tests running unnecessarily often\",\n    \"Security scans running on every main push\",\n    \"Separate dependency check workflows\",\n    \"No build artifact reuse between jobs\"\n  ],\n  \"analysis_date\": \"2025-09-02\"\n}",
+      "namespace": "devops",
+      "timestamp": 1756846601808
+    },
+    {
+      "key": "ci_optimization_plan",
+      "value": "{\n  \"optimizations\": {\n    \"quick_wins_5_10_min\": [\n      {\n        \"name\": \"Smart Path Filtering\",\n        \"description\": \"Add path filters to prevent unnecessary backend/frontend job runs\",\n        \"estimated_savings_per_run\": \"15 minutes\",\n        \"monthly_savings\": \"390 minutes\",\n        \"implementation_effort\": \"5 minutes\"\n      },\n      {\n        \"name\": \"Consolidate Security Workflows\",\n        \"description\": \"Merge security-scan.yml and dependency-check.yml into main CI\",\n        \"estimated_savings_per_run\": \"3 minutes\",\n        \"monthly_savings\": \"78 minutes\",\n        \"implementation_effort\": \"10 minutes\"\n      }\n    ],\n    \"medium_efforts_30_60_min\": [\n      {\n        \"name\": \"Dependency Caching Optimization\",\n        \"description\": \"Share cached dependencies between matrix jobs using artifacts\",\n        \"estimated_savings_per_run\": \"8 minutes\",\n        \"monthly_savings\": \"208 minutes\",\n        \"implementation_effort\": \"45 minutes\"\n      },\n      {\n        \"name\": \"Job Consolidation\",\n        \"description\": \"Merge backend matrix jobs into single job with conditional steps\",\n        \"estimated_savings_per_run\": \"6 minutes\",\n        \"monthly_savings\": \"156 minutes\",\n        \"implementation_effort\": \"30 minutes\"\n      }\n    ],\n    \"long_term_improvements\": [\n      {\n        \"name\": \"Intelligent E2E Triggering\",\n        \"description\": \"Run E2E tests only when frontend changes significantly\",\n        \"estimated_savings_per_run\": \"12 minutes\",\n        \"monthly_savings\": \"180 minutes\",\n        \"implementation_effort\": \"2 hours\"\n      }\n    ]\n  },\n  \"projected_monthly_usage\": {\n    \"current\": 1180,\n    \"after_quick_wins\": 712,\n    \"after_medium_efforts\": 348,\n    \"after_long_term\": 168,\n    \"total_reduction_percentage\": \"85.8%\"\n  },\n  \"priority_order\": [\n    \"Smart Path Filtering\",\n    \"Consolidate Security Workflows\",\n    \"Dependency Caching Optimization\",\n    \"Job Consolidation\",\n    \"Intelligent E2E Triggering\"\n  ]\n}",
+      "namespace": "devops",
+      "timestamp": 1756846620686
     }
   ]
 }
