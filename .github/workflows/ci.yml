@@ -9,6 +9,7 @@ on:
       - '**.md'
       - 'docs/**'
       - '.github/workflows/.backup/**'
+  workflow_dispatch:
 
 env:
   NODE_VERSION: '20'
