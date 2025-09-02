@@ -59,11 +59,13 @@ export async function GET(
 
       try {
         // Connect to Vana backend SSE stream with abort signal
-        const vanaStreamUrl = `${vanaBaseUrl}/agent_network_sse/${chatId}`;
+        const vanaStreamUrl = `${vanaBaseUrl}/chat/${chatId}/stream?task_id=${taskId}`;
         const response = await fetch(vanaStreamUrl, {
           headers: {
             'Accept': 'text/event-stream',
             'Cache-Control': 'no-cache',
+            'X-User-ID': session.user.id,
+            'X-Session-ID': chatId,
           },
           signal: abortController.signal,
         });

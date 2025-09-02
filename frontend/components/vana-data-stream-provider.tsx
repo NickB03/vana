@@ -458,8 +458,7 @@ export function VanaDataStreamProvider({
       
       let response: Response;
       try {
-        // Call the frontend API endpoint instead of backend directly
-        response = await fetch('/api/chat/vana', {
+        response = await fetch(`${finalBaseUrl}/chat/${chatId}/message`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -467,13 +466,12 @@ export function VanaDataStreamProvider({
           },
           signal: controller.signal,
           body: JSON.stringify({
-            id: chatId,
-            message: message,
-            selectedVisibilityType: 'private',
-            vanaOptions: {
-              model: options.model || 'gemini-pro',
-              agents: ['research', 'analysis', 'synthesis'],
-              enableProgress: true,
+            message: extractMessageContent(message),
+            message_id: message.id,
+            model: options.model || 'gemini-pro',
+            metadata: {
+              role: message.role,
+              created_at: getMessageCreatedAt(message),
             },
           }),
         });
@@ -511,9 +509,9 @@ export function VanaDataStreamProvider({
       setCurrentTaskId(taskId);
 
       // Establish SSE connection with comprehensive error handling
-      const sseUrl = `/api/chat/vana/${chatId}/stream?task_id=${taskId}`;
+      const sseUrl = `${finalBaseUrl}/chat/${chatId}/stream?task_id=${taskId}`;
       console.log('Connecting to Vana SSE:', sseUrl);
-
+      
       const eventSource = new EventSource(sseUrl);
       eventSourceRef.current = eventSource;
 
