@@ -22,7 +22,6 @@ from typing import Any
 
 # Load environment variables FIRST
 from dotenv import load_dotenv
-import os
 
 # Get the project root directory and load .env.local
 project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
