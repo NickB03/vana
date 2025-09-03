@@ -19,6 +19,7 @@ export const PreviewAttachment = ({
   return (
     <div data-testid="input-attachment-preview" className="group relative size-16 rounded-lg overflow-hidden bg-muted border">
       {contentType?.startsWith('image') ? (
+        /* eslint-disable-next-line @next/next/no-img-element */
         <img
           src={url}
           alt={name ?? 'An image attachment'}
