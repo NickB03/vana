@@ -1,0 +1,342 @@
+name: CI Pipeline (Self-Hosted)
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - '.github/workflows/.backup/**'
+  workflow_dispatch:
+
+env:
+  NODE_VERSION: '20'
+  PYTHON_VERSION: '3.11'
+  PNPM_VERSION: '9.12.3'
+  UV_VERSION: '0.6.12'
+  CACHE_VERSION: 'v4'
+
+# Optimize concurrency for single runner
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: write
+  checks: write
+
+jobs:
+  # Quick structure detection on self-hosted runner
+  detect-structure:
+    runs-on: self-hosted
+    outputs:
+      has_backend: ${{ steps.detect.outputs.has_backend }}
+      has_frontend: ${{ steps.detect.outputs.has_frontend }}
+      backend_path: ${{ steps.detect.outputs.backend_path }}
+      frontend_path: ${{ steps.detect.outputs.frontend_path }}
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Detect Repository Structure
+        id: detect
+        run: |
+          echo "🔍 Detecting repository structure on self-hosted runner..."
+          
+          # Check for backend
+          if [ -f "pyproject.toml" ] || [ -f "requirements.txt" ]; then
+            echo "has_backend=true" >> $GITHUB_OUTPUT
+            echo "backend_path=." >> $GITHUB_OUTPUT
+            echo "✅ Backend detected at root"
+          elif [ -f "backend/pyproject.toml" ] || [ -f "backend/requirements.txt" ]; then
+            echo "has_backend=true" >> $GITHUB_OUTPUT
+            echo "backend_path=backend" >> $GITHUB_OUTPUT
+            echo "✅ Backend detected at backend/"
+          else
+            echo "has_backend=false" >> $GITHUB_OUTPUT
+            echo "backend_path=" >> $GITHUB_OUTPUT
+            echo "❌ No backend detected"
+          fi
+          
+          # Check for frontend
+          if [ -f "frontend/package.json" ]; then
+            echo "has_frontend=true" >> $GITHUB_OUTPUT
+            echo "frontend_path=frontend" >> $GITHUB_OUTPUT
+            echo "✅ Frontend detected at frontend/"
+          elif [ -f "package.json" ]; then
+            echo "has_frontend=true" >> $GITHUB_OUTPUT
+            echo "frontend_path=." >> $GITHUB_OUTPUT
+            echo "✅ Frontend detected at root"
+          else
+            echo "has_frontend=false" >> $GITHUB_OUTPUT
+            echo "frontend_path=" >> $GITHUB_OUTPUT
+            echo "❌ No frontend detected"
+          fi
+
+  # Backend tests in Docker container for isolation
+  backend-tests:
+    needs: detect-structure
+    if: needs.detect-structure.outputs.has_backend == 'true'
+    runs-on: self-hosted
+    strategy:
+      # Limit to 2 concurrent jobs for optimal resource usage
+      max-parallel: 2
+      fail-fast: false
+      matrix:
+        test-type: [lint, unit, integration]
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Run Backend Tests in Docker
+        run: |
+          echo "🐳 Running ${{ matrix.test-type }} tests in Docker container..."
+          
+          # Ensure Python container is available
+          if ! docker image inspect vana-runner-python:latest >/dev/null 2>&1; then
+            echo "Building Python container..."
+            docker build -f scripts/docker/Dockerfile.python -t vana-runner-python .
+          fi
+          
+          # Run tests in isolated container
+          docker run --rm \
+            --name "vana-backend-${{ matrix.test-type }}-${{ github.run_id }}" \
+            --network actions-network \
+            -v "${{ github.workspace }}:/workspace" \
+            -w "/workspace/${{ needs.detect-structure.outputs.backend_path }}" \
+            -e "PYTHONUNBUFFERED=1" \
+            -e "UV_CACHE_DIR=/tmp/.cache/uv" \
+            vana-runner-python:latest \
+            bash -c "
+              echo '📦 Installing dependencies...'
+              uv sync --dev --frozen
+              
+              case '${{ matrix.test-type }}' in
+                'lint')
+                  echo '🔍 Running linting checks...'
+                  uv run ruff check .
+                  uv run ruff format --check .
+                  uv run mypy . --ignore-missing-imports
+                  ;;
+                'unit')
+                  echo '🧪 Running unit tests...'
+                  if [ -f 'scripts/test-runner.sh' ]; then
+                    ./scripts/test-runner.sh unit --maxfail=5
+                  elif [ -d 'tests/unit' ]; then
+                    uv run pytest tests/unit -v --tb=short --timeout=300 -m 'not requires_server and not performance'
+                  else
+                    uv run pytest -v --tb=short --timeout=300 -k 'not integration and not requires_server and not performance'
+                  fi
+                  ;;
+                'integration')
+                  echo '🔗 Running integration tests...'
+                  if [ -f 'scripts/test-runner.sh' ]; then
+                    ./scripts/test-runner.sh integration --maxfail=3
+                  elif [ -d 'tests/integration' ]; then
+                    uv run pytest tests/integration -v --tb=short --timeout=300 -m 'not requires_server'
+                  else
+                    uv run pytest -v --tb=short --timeout=300 -k 'integration and not requires_server'
+                  fi
+                  ;;
+              esac
+            "
+
+  # Frontend tests in Node.js container
+  frontend-tests:
+    needs: detect-structure
+    if: needs.detect-structure.outputs.has_frontend == 'true'
+    runs-on: self-hosted
+    strategy:
+      # Limit to 2 concurrent jobs for optimal resource usage
+      max-parallel: 2
+      fail-fast: false
+      matrix:
+        task: [lint, typecheck, test, build]
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Run Frontend Tests in Docker
+        env:
+          # Required environment variables for TypeScript/build
+          POSTGRES_URL: postgresql://test:test@localhost:5432/test_db
+          AUTH_SECRET: test-secret-key-for-ci-build-only-not-for-production-use-32-chars
+          NEXTAUTH_SECRET: test-secret-key-for-ci
+          NEXTAUTH_URL: http://localhost:3000
+          AUTH_URL: http://localhost:3000
+          NEXT_PUBLIC_APP_URL: http://localhost:3000
+        run: |
+          echo "🐳 Running ${{ matrix.task }} in Docker container..."
+          
+          # Ensure Node.js container is available
+          if ! docker image inspect vana-runner-node:latest >/dev/null 2>&1; then
+            echo "Building Node.js container..."
+            docker build -f scripts/docker/Dockerfile.node -t vana-runner-node .
+          fi
+          
+          # Run frontend tasks in isolated container
+          docker run --rm \
+            --name "vana-frontend-${{ matrix.task }}-${{ github.run_id }}" \
+            --network actions-network \
+            -v "${{ github.workspace }}:/workspace" \
+            -w "/workspace/${{ needs.detect-structure.outputs.frontend_path }}" \
+            -e "NODE_ENV=development" \
+            -e "PNPM_HOME=/home/runner/.local/share/pnpm" \
+            -e "PATH=/home/runner/.local/share/pnpm:/usr/local/bin:/usr/bin:/bin" \
+            -e "POSTGRES_URL=${POSTGRES_URL}" \
+            -e "AUTH_SECRET=${AUTH_SECRET}" \
+            -e "NEXTAUTH_SECRET=${NEXTAUTH_SECRET}" \
+            -e "NEXTAUTH_URL=${NEXTAUTH_URL}" \
+            -e "AUTH_URL=${AUTH_URL}" \
+            -e "NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL}" \
+            vana-runner-node:latest \
+            bash -c "
+              echo '📦 Installing dependencies...'
+              pnpm install --frozen-lockfile
+              
+              case '${{ matrix.task }}' in
+                'lint')
+                  echo '🔍 Running ESLint...'
+                  pnpm lint
+                  ;;
+                'typecheck')
+                  echo '📝 Running TypeScript checks...'
+                  pnpm typecheck
+                  ;;
+                'test')
+                  echo '🧪 Running tests...'
+                  pnpm test
+                  ;;
+                'build')
+                  echo '🏗️ Building project...'
+                  pnpm build
+                  ;;
+              esac
+            "
+
+  # Combined security scan for main branch
+  security-scan:
+    needs: [detect-structure, backend-tests]
+    if: github.ref == 'refs/heads/main' && needs.detect-structure.outputs.has_backend == 'true'
+    runs-on: self-hosted
+    continue-on-error: true
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Run Security Scan in Docker
+        run: |
+          echo "🔒 Running security scan in Docker container..."
+          
+          docker run --rm \
+            --name "vana-security-scan-${{ github.run_id }}" \
+            -v "${{ github.workspace }}:/workspace" \
+            -w "/workspace/${{ needs.detect-structure.outputs.backend_path }}" \
+            vana-runner-python:latest \
+            bash -c "
+              echo '📦 Installing security tools...'
+              uv sync --dev --frozen
+              uv pip install bandit[toml] pip-audit
+              
+              echo '🔒 Running Bandit security scan...'
+              uv run bandit -r . -f json -o bandit-report.json || true
+              uv run bandit -r . || true
+              
+              echo '🔍 Checking for known vulnerabilities...'
+              uv run pip-audit --format=json --output=audit-report.json || echo '⚠️ Vulnerabilities detected'
+              uv run pip-audit || echo '⚠️ Vulnerabilities detected'
+            "
+
+  # E2E tests with Playwright (main branch only, resource intensive)
+  e2e-tests:
+    needs: [detect-structure, frontend-tests]
+    if: github.ref == 'refs/heads/main' && needs.detect-structure.outputs.has_frontend == 'true'
+    runs-on: self-hosted
+    timeout-minutes: 15
+    continue-on-error: true
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Run E2E Tests
+        run: |
+          echo "🎭 Running E2E tests with Playwright..."
+          
+          # Use host network for E2E tests to avoid container networking complexity
+          docker run --rm \
+            --name "vana-e2e-tests-${{ github.run_id }}" \
+            --network host \
+            -v "${{ github.workspace }}:/workspace" \
+            -w "/workspace/${{ needs.detect-structure.outputs.frontend_path }}" \
+            -e "CI=true" \
+            vana-runner-node:latest \
+            bash -c "
+              echo '📦 Installing dependencies...'
+              pnpm install --frozen-lockfile
+              
+              echo '🎭 Installing Playwright...'
+              pnpm exec playwright install --with-deps chromium
+              
+              echo '🧪 Running E2E tests...'
+              pnpm exec playwright test --reporter=line
+            "
+      
+      - name: Upload Playwright Report
+        if: always()
+        run: |
+          # Copy artifacts from container to host
+          mkdir -p playwright-report
+          if [ -d "${{ needs.detect-structure.outputs.frontend_path }}/playwright-report" ]; then
+            cp -r "${{ needs.detect-structure.outputs.frontend_path }}/playwright-report/" ./playwright-report/
+            echo "📊 Playwright report saved to ./playwright-report/"
+          fi
+
+  # Optimized CI status check
+  ci-status:
+    if: always()
+    needs: [detect-structure, backend-tests, frontend-tests, security-scan, e2e-tests]
+    runs-on: self-hosted
+    
+    steps:
+      - name: Cleanup Docker Resources
+        run: |
+          echo "🧹 Cleaning up Docker resources..."
+          
+          # Remove stopped containers from this run
+          docker ps -aq --filter "name=vana-*-${{ github.run_id }}" | xargs -r docker rm -f
+          
+          # Clean up unused images (keep base images)
+          docker system prune -f --filter "until=24h"
+          
+          # Clean up unused networks
+          docker network prune -f
+      
+      - name: Check CI Status
+        run: |
+          echo "📊 CI Pipeline Summary (Self-Hosted)"
+          echo "===================================="
+          
+          # System resource usage
+          echo "💻 System Resources:"
+          echo "- Memory: $(vm_stat | grep "Pages free" | awk '{print $3}' | sed 's/\.//')KB free"
+          echo "- CPU Load: $(uptime | awk -F'load averages:' '{print $2}')"
+          echo "- Docker: $(docker system df --format 'table {{.Type}}\t{{.Size}}\t{{.Reclaimable}}')"
+          
+          # Check if any required jobs failed
+          if [[ "${{ needs.backend-tests.result }}" == "failure" ]] || [[ "${{ needs.frontend-tests.result }}" == "failure" ]]; then
+            echo "❌ CI Failed - Required tests did not pass"
+            exit 1
+          fi
+          
+          echo "✅ CI Passed - All required checks successful"
+          
+          # Report optional job status
+          echo ""
+          echo "Optional Jobs:"
+          echo "- Security Scan: ${{ needs.security-scan.result }}"
+          echo "- E2E Tests: ${{ needs.e2e-tests.result }}"
+          
+          echo ""
+          echo "🚀 Ready for deployment!"

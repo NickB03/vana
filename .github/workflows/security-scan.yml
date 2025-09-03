@@ -22,7 +22,8 @@ permissions:
 jobs:
   security-scan:
     name: Security Scan
-    runs-on: ubuntu-latest
+    # Migrated to self-hosted runner - 2025-09-03
+    runs-on: [self-hosted, docker]
     timeout-minutes: 20
     
     steps:

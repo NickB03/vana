@@ -311,3 +311,4 @@ docs/archive/
 tests/archive/
 *.tsbuildinfo
 uv.lock
+runner.md
