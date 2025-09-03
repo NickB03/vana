@@ -22,6 +22,13 @@ if os.getenv("CI") or os.getenv("RUNNING_IN_CI"):
         # CI conftest not critical for all tests
         pass
 
+# Import server check functionality
+try:
+    from conftest_server_check import *  # noqa: F403
+except ImportError:
+    # Server check not critical if not available
+    pass
+
 # Test configuration - pytest_asyncio is auto-discovered when installed
 
 

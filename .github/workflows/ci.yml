@@ -137,10 +137,12 @@ jobs:
         working-directory: ${{ needs.detect-structure.outputs.backend_path }}
         run: |
           echo "🧪 Running unit tests..."
-          if [ -d "tests/unit" ]; then
-            uv run pytest tests/unit -v --tb=short
+          if [ -f "scripts/test-runner.sh" ]; then
+            ./scripts/test-runner.sh unit --maxfail=5
+          elif [ -d "tests/unit" ]; then
+            uv run pytest tests/unit -v --tb=short --timeout=300 -m "not requires_server and not performance"
           else
-            uv run pytest -v --tb=short -k "not integration"
+            uv run pytest -v --tb=short --timeout=300 -k "not integration and not requires_server and not performance"
           fi
       
       - name: Run Integration Tests
@@ -148,10 +150,13 @@ jobs:
         working-directory: ${{ needs.detect-structure.outputs.backend_path }}
         run: |
           echo "🔗 Running integration tests..."
-          if [ -d "tests/integration" ]; then
-            uv run pytest tests/integration -v --tb=short
+          echo "⚠️  Integration tests require server - running only tests that don't need localhost:8000"
+          if [ -f "scripts/test-runner.sh" ]; then
+            ./scripts/test-runner.sh integration --maxfail=3
+          elif [ -d "tests/integration" ]; then
+            uv run pytest tests/integration -v --tb=short --timeout=300 -m "not requires_server"
           else
-            uv run pytest -v --tb=short -k "integration"
+            uv run pytest -v --tb=short --timeout=300 -k "integration and not requires_server"
           fi
 
   # Frontend Tests

@@ -11,6 +11,9 @@ from collections.abc import AsyncGenerator
 import httpx
 import pytest
 
+# Mark all tests as requiring server - skip if server not running
+pytestmark = [pytest.mark.requires_server, pytest.mark.timeout(30)]
+
 BACKEND_URL = "http://localhost:8000"
 TEST_SESSION_ID = "test-session-e2e"
 

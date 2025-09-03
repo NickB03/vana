@@ -12,6 +12,10 @@ import time
 from typing import Any
 
 import aiohttp
+import pytest
+
+# Mark all tests as requiring server and performance tests
+pytestmark = [pytest.mark.requires_server, pytest.mark.performance, pytest.mark.timeout(60)]
 
 
 class PerformanceLoadTester:
