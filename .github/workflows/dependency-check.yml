@@ -20,7 +20,8 @@ permissions:
 jobs:
   dependency-check:
     name: Dependency Security & Compatibility Check
-    runs-on: ubuntu-latest
+    # Migrated to self-hosted runner - 2025-09-03
+    runs-on: [self-hosted, docker]
     timeout-minutes: 8
     
     steps:
