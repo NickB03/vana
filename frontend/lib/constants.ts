@@ -67,3 +67,9 @@ export const SUCCESS_MESSAGES = {
   DOCUMENT_UPDATED: 'Document updated successfully',
   SETTINGS_UPDATED: 'Settings updated successfully',
 } as const;
+
+// Guest User Configuration
+export const guestRegex = /^guest-/i;
+
+// Authentication Constants
+export const DUMMY_PASSWORD = '$2b$10$dummyHashForTimingAttackPrevention.dummy';
