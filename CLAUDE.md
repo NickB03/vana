@@ -45,50 +45,72 @@
 - `/scripts` - Utility scripts
 - `/examples` - Example code
 
-## 🔄 Repository Workflow Pattern
+## 🔄 Repository Structure & Workflow
 
-This project uses a **two-repository development pattern** for sophisticated frontend development:
+### 🚨 CRITICAL: Work ONLY in /vana Repository
 
-### Repository Structure
+**THIS PROJECT HAS ONE PRIMARY REPOSITORY:**
 ```
-NickB03/vana (PRIMARY - Source of Truth)
-├── Full-stack application
-├── Backend (Python/FastAPI with Google ADK)
-├── Frontend (Next.js)
-└── All production code
-
-NickB03/ai-chatbot (STAGING - Frontend Sandbox)
-├── Fork of vercel/ai-chatbot
-├── Frontend UI experimentation
-├── Testing ground for new features
-└── Upstream sync from Vercel
+/Users/nick/Development/vana (PRODUCTION - Only Repository for Development)
+├── /app                    # Backend (Python/FastAPI with Google ADK)
+├── /frontend               # Frontend (Next.js) - THIS IS THE PRODUCTION FRONTEND
+├── /tests                  # Integration and unit tests
+├── /docs                   # Documentation
+└── All production code lives here
 ```
 
-### Development Workflow
-1. **Primary Development**: Always work in `/Users/nick/Development/vana`
-2. **UI Testing**: Use `ai-chatbot` fork for isolated frontend experiments
-3. **Integration**: Port tested features back to `vana` repository
-4. **Deployment**: Always deploy from `vana` (never from fork)
+### ⚠️ DO NOT CONFUSE WITH ai-chatbot Repository
 
-### Git Remote Configuration
-- **vana remote**: `https://github.com/NickB03/vana.git` (PRIMARY)
-- **ai-chatbot remote**: `https://github.com/NickB03/ai-chatbot.git` (STAGING)
-
-### Best Practices
-- ✅ Keep `vana` as the source of truth
-- ✅ Use `ai-chatbot` for UI experimentation only
-- ✅ Document feature origins (upstream vs custom)
-- ❌ Never put backend code in `ai-chatbot` fork
-- ❌ Never deploy from the fork
-
-### Pulling Upstream Updates
-```bash
-# In ai-chatbot fork
-git remote add upstream https://github.com/vercel/ai-chatbot
-git fetch upstream
-git merge upstream/main
-# Cherry-pick useful updates to vana
+**The ai-chatbot repository is DEPRECATED for this project:**
 ```
+/Users/nick/Development/ai-chatbot (IGNORE - Not used for Vana development)
+├── Separate experimental fork of vercel/ai-chatbot
+├── NOT connected to Vana backend
+├── DO NOT make changes here for Vana project
+└── Used only for separate UI experiments unrelated to Vana
+```
+
+### 📍 Development Workflow - ALWAYS USE /vana
+
+1. **ALL Frontend Development**: Work in `/vana/frontend/` directory
+2. **ALL Backend Development**: Work in `/vana/app/` directory  
+3. **ALL Testing**: Run tests from `/vana/` root
+4. **ALL Commits**: Make commits in `/vana/` repository
+5. **ALL PRs**: Create PRs against `NickB03/vana` repository
+
+### ❌ Common Mistakes to Avoid
+
+- **WRONG**: Making frontend changes in `/ai-chatbot` repository
+- **WRONG**: Trying to sync changes between repositories
+- **WRONG**: Looking for frontend code in `/ai-chatbot`
+- **RIGHT**: ALL work happens in `/vana/frontend/` and `/vana/app/`
+
+### ✅ Correct File Paths for Development
+
+**Frontend Files:**
+- `/vana/frontend/app/(chat)/` - Chat UI components
+- `/vana/frontend/app/api/` - API routes
+- `/vana/frontend/components/` - Shared components
+- `/vana/frontend/lib/` - Utilities and helpers
+
+**Backend Files:**
+- `/vana/app/server.py` - Main FastAPI server
+- `/vana/app/models.py` - Data models
+- `/vana/app/auth/` - Authentication logic
+- `/vana/app/routes/` - API endpoints
+
+### 🎯 Git Configuration
+
+**Only One Remote Matters:**
+- **origin**: `https://github.com/NickB03/vana.git` (The ONLY repository)
+
+### 📝 Summary
+
+- **ALWAYS** work in `/Users/nick/Development/vana/`
+- **NEVER** work in `/Users/nick/Development/ai-chatbot/` for Vana features
+- **Frontend** is in `/vana/frontend/` NOT in ai-chatbot
+- **Backend** is in `/vana/app/`
+- **Deploy** from `/vana/` repository only
 
 ## Project Overview
 

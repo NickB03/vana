@@ -308,6 +308,7 @@ export function VanaDataStreamProvider({
       
       handleError(handlingError, options);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [convertVanaEventToDataPart]);
 
   /**
@@ -364,6 +365,7 @@ export function VanaDataStreamProvider({
         description: 'An unexpected error occurred. Please refresh the page.',
       });
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps  
   }, [reconnectAttempts, maxReconnectAttempts]);
 
   /**
@@ -397,6 +399,7 @@ export function VanaDataStreamProvider({
         }
       }
     }, delay);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [reconnectAttempts, reconnectDelay, maxReconnectAttempts]);
 
   /**
@@ -421,6 +424,7 @@ export function VanaDataStreamProvider({
     } else {
       throw new Error('No previous connection to retry');
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   /**
@@ -664,7 +668,7 @@ export function VanaDataStreamProvider({
       handleError(streamError, options);
       throw streamError;
     }
-  }, [baseUrl, enableReconnect, maxReconnectAttempts, reconnectDelay, handleVanaEvent, handleError, reconnectAttempts]);
+  }, [baseUrl, enableReconnect, maxReconnectAttempts, handleVanaEvent, handleError, reconnectAttempts]);
 
   /**
    * Enhanced stop function with cleanup

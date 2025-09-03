@@ -15,12 +15,26 @@
 import asyncio
 import json
 import os
+import uuid
 from collections.abc import AsyncGenerator
 from datetime import datetime
 from typing import Any
 
+# Load environment variables FIRST
+from dotenv import load_dotenv
+
+# Get the project root directory and load .env.local
+project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+env_path = os.path.join(project_root, '.env.local')
+load_dotenv(env_path)
+# Security fix: Only log sensitive information in development mode
+if os.getenv("NODE_ENV") == "development":
+    print(f"Loading environment from: {env_path}")
+    print(f"GOOGLE_API_KEY loaded: {'Yes' if os.getenv('GOOGLE_API_KEY') else 'No'}")
+
 import google.auth
-from fastapi import FastAPI
+import google.generativeai as genai
+from fastapi import FastAPI, HTTPException, Body, Header
 from fastapi.responses import StreamingResponse
 from google.adk.cli.fast_api import get_fast_api_app
 
@@ -84,9 +98,16 @@ else:
 
     logging.basicConfig(level=logging.INFO)
     logger = logging.getLogger(__name__)
-allow_origins = (
-    os.getenv("ALLOW_ORIGINS", "").split(",") if os.getenv("ALLOW_ORIGINS") else None
-)
+# Security fix: Proper CORS configuration based on environment
+allowed_origins_env = os.getenv("ALLOW_ORIGINS", "")
+if allowed_origins_env:
+    allow_origins = [origin.strip() for origin in allowed_origins_env.split(",") if origin.strip()]
+else:
+    # Default secure origins based on environment
+    if os.getenv("NODE_ENV") == "production":
+        allow_origins = []  # No wildcards in production
+    else:
+        allow_origins = ["http://localhost:3000", "http://127.0.0.1:3000"]
 
 # Create bucket name for the project
 # Skip bucket creation in CI environment
@@ -274,16 +295,37 @@ app.add_middleware(AuditLogMiddleware)
 
 @app.get("/health")
 async def health_check() -> dict[str, str | bool | None]:
-    """Health check endpoint for service validation.
+    """Health check endpoint for service validation with environment migration status.
 
     Returns:
-        Health status with timestamp and service information
+        Health status with timestamp, service information, and migration status
     """
+    try:
+        from app.utils.migration_helper import EnvironmentMigrationHelper
+        migration_status = EnvironmentMigrationHelper.get_migration_status()
+        
+        environment_info = {
+            "current": migration_status.current_env,
+            "source": migration_status.source,
+            "migration_complete": migration_status.migration_complete,
+            "phase": migration_status.phase.value,
+            "conflicts": migration_status.conflicts if migration_status.conflicts else None
+        }
+    except ImportError:
+        # Fallback if migration helper not available
+        current_env = os.getenv("NODE_ENV") or os.getenv("ENVIRONMENT") or os.getenv("ENV") or "development"
+        environment_info = {
+            "current": current_env,
+            "source": "fallback",
+            "migration_complete": None
+        }
+    
     return {
         "status": "healthy",
         "timestamp": datetime.utcnow().isoformat(),
         "service": "vana",
         "version": "1.0.0",
+        "environment": environment_info,
         "session_storage_enabled": session_service_uri is not None,
         "session_storage_uri": session_service_uri,
         "session_storage_bucket": session_storage_bucket,
@@ -437,11 +479,255 @@ async def agent_network_sse(
             "Cache-Control": "no-cache",
             "Connection": "keep-alive",
             "X-Accel-Buffering": "no",  # Disable nginx buffering
-            "Access-Control-Allow-Origin": "*",
+            # Security fix: Use proper origin validation instead of wildcard
+            "Access-Control-Allow-Origin": "null",  # Will be set by middleware
             "Access-Control-Allow-Headers": "Cache-Control",
         },
     )
 
+
+# Security fix: Bounded task storage to prevent memory leaks
+class BoundedTaskStorage:
+    def __init__(self, max_size: int = 1000):
+        self.max_size = max_size
+        self.tasks = {}
+        self.access_order = []
+    
+    def __setitem__(self, key: str, value: dict):
+        if key in self.tasks:
+            # Update existing task, move to end
+            self.access_order.remove(key)
+        elif len(self.tasks) >= self.max_size:
+            # Remove oldest task
+            oldest_key = self.access_order.pop(0)
+            del self.tasks[oldest_key]
+            logger.info(f"Evicted old task {oldest_key} due to storage limit")
+        
+        self.tasks[key] = value
+        self.access_order.append(key)
+    
+    def __getitem__(self, key: str):
+        return self.tasks[key]
+    
+    def __contains__(self, key: str):
+        return key in self.tasks
+    
+    def get(self, key: str, default=None):
+        return self.tasks.get(key, default)
+    
+    def __delitem__(self, key: str):
+        if key in self.tasks:
+            del self.tasks[key]
+            self.access_order.remove(key)
+
+# Global task storage for streaming responses with bounded size
+chat_tasks = BoundedTaskStorage(max_size=1000)
+
+@app.post("/chat/{chat_id}/message")
+async def create_chat_message(
+    chat_id: str,
+    request: dict = Body(...),
+    x_user_id: str = Header(None, alias="X-User-ID"),
+    x_session_id: str = Header(None, alias="X-Session-ID")
+):
+    """Handle chat messages from the frontend."""
+    try:
+        message = request.get("message", "")
+        message_id = request.get("message_id", str(uuid.uuid4()))
+        model = request.get("model", "gemini-2.5-flash")
+        
+        if not message:
+            raise HTTPException(status_code=400, detail="Message is required")
+        
+        # Create a task ID for this chat session
+        task_id = str(uuid.uuid4())
+        
+        # Configure Google Generative AI
+        api_key = os.getenv("GOOGLE_API_KEY")
+        if not api_key:
+            # Security fix: Generic error message for API key issues
+            logger.error("Google API key not configured for chat request")
+            raise HTTPException(status_code=500, detail="Service configuration error")
+        
+        genai.configure(api_key=api_key)
+        
+        # Initialize the model
+        try:
+            gemini_model = genai.GenerativeModel(model)
+        except Exception as model_error:
+            logger.error(f"Error initializing model {model}: {model_error}")
+            # Fallback to basic model
+            gemini_model = genai.GenerativeModel("gemini-1.5-flash")
+        
+        # Store task for streaming
+        chat_tasks[task_id] = {
+            "chat_id": chat_id,
+            "message_id": message_id,
+            "message": message,
+            "model": gemini_model,
+            "status": "started",
+            "response_queue": asyncio.Queue(),
+            "created_at": datetime.now()
+        }
+        
+        # Process message asynchronously
+        asyncio.create_task(process_chat_message(task_id))
+        
+        return {
+            "task_id": task_id,
+            "message_id": message_id,
+            "status": "started",
+            "chat_id": chat_id
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error creating chat message: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+async def process_chat_message(task_id: str):
+    """Process chat message with Gemini and stream response."""
+    try:
+        task = chat_tasks.get(task_id)
+        if not task:
+            logger.error(f"Task {task_id} not found")
+            return
+        
+        model = task["model"]
+        message = task["message"]
+        queue = task["response_queue"]
+        
+        # Update task status
+        task["status"] = "processing"
+        
+        # Generate response with streaming
+        try:
+            response = model.generate_content(
+                message,
+                stream=True,
+                generation_config=genai.types.GenerationConfig(
+                    temperature=0.7,
+                    top_p=0.8,
+                    top_k=40,
+                    max_output_tokens=2048,
+                )
+            )
+            
+            full_response = ""
+            for chunk in response:
+                if chunk.text:
+                    full_response += chunk.text
+                    await queue.put({
+                        "type": "message_delta",
+                        "content": chunk.text,
+                        "task_id": task_id
+                    })
+            
+            # Send completion message
+            await queue.put({
+                "type": "message_complete",
+                "content": full_response,
+                "task_id": task_id
+            })
+            
+            task["status"] = "completed"
+            task["response"] = full_response
+            
+        except Exception as gen_error:
+            logger.error(f"Error generating response: {gen_error}")
+            await queue.put({
+                "type": "error",
+                "error": str(gen_error),
+                "task_id": task_id
+            })
+            task["status"] = "error"
+        
+        # Send task completion
+        await queue.put({
+            "type": "task_complete",
+            "task_id": task_id,
+            "status": task["status"]
+        })
+        
+    except Exception as e:
+        logger.error(f"Error in process_chat_message: {e}")
+        if task_id in chat_tasks:
+            task = chat_tasks[task_id]
+            task["status"] = "error"
+            await task["response_queue"].put({
+                "type": "error",
+                "error": str(e),
+                "task_id": task_id
+            })
+
+@app.get("/chat/{chat_id}/stream")
+async def stream_chat_response(
+    chat_id: str,
+    task_id: str = None
+):
+    """Stream chat response using Server-Sent Events."""
+    
+    if not task_id:
+        raise HTTPException(status_code=400, detail="task_id is required")
+    
+    task = chat_tasks.get(task_id)
+    if not task:
+        raise HTTPException(status_code=404, detail="Task not found")
+    
+    if task["chat_id"] != chat_id:
+        raise HTTPException(status_code=403, detail="Task does not belong to this chat")
+    
+    async def event_generator():
+        """Generate SSE events for chat response."""
+        try:
+            queue = task["response_queue"]
+            
+            # Send initial connection event
+            yield f"data: {json.dumps({'type': 'connection', 'status': 'connected', 'task_id': task_id})}\n\n"
+            
+            while True:
+                try:
+                    # Wait for events with timeout
+                    event = await asyncio.wait_for(queue.get(), timeout=30.0)
+                    yield f"data: {json.dumps(event)}\n\n"
+                    
+                    # Check if task is complete
+                    if event.get("type") in ["task_complete", "error"]:
+                        break
+                        
+                except asyncio.TimeoutError:
+                    # Send heartbeat
+                    yield f"data: {json.dumps({'type': 'heartbeat', 'timestamp': datetime.now().isoformat()})}\n\n"
+                    
+        except asyncio.CancelledError:
+            logger.info(f"SSE connection cancelled for task {task_id}")
+        except Exception as e:
+            logger.error(f"Error in SSE stream: {e}")
+            yield f"data: {json.dumps({'type': 'error', 'error': str(e)})}\n\n"
+        finally:
+            # Clean up old task after some time
+            asyncio.create_task(cleanup_task(task_id, delay=300))  # 5 minutes
+    
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",
+            # Security fix: Use proper origin validation instead of wildcard
+            "Access-Control-Allow-Origin": "null",  # Will be set by middleware
+            "Access-Control-Allow-Headers": "Cache-Control",
+            "Access-Control-Allow-Methods": "GET, OPTIONS",
+        },
+    )
+
+async def cleanup_task(task_id: str, delay: int = 300):
+    """Clean up completed task after delay."""
+    await asyncio.sleep(delay)
+    if task_id in chat_tasks:
+        del chat_tasks[task_id]
+        logger.info(f"Cleaned up task {task_id}")
 
 @app.get("/agent_network_history")
 async def get_agent_network_history(

@@ -63,6 +63,44 @@ export function getStreamContext() {
 }
 
 export async function POST(request: Request) {
+  // Security fix: Only log configuration in development
+  if (process.env.NODE_ENV === 'development') {
+    console.log('POST /api/chat - Starting request processing', {
+      useVercelAI: process.env.NEXT_PUBLIC_USE_VERCEL_AI,
+      timestamp: new Date().toISOString()
+    });
+  }
+
+  // Redirect to Vana backend if configured
+  const useVanaBackend = process.env.NEXT_PUBLIC_USE_VERCEL_AI !== 'true';
+  
+  if (useVanaBackend) {
+    try {
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Attempting to import Vana route module...');
+      }
+      // Directly call the Vana route module with error handling
+      const vanaModule = await import('./vana/route');
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Successfully imported Vana module, delegating to Vana handler');
+      }
+      return vanaModule.POST(request);
+    } catch (vanaImportError) {
+      // Security fix: Log errors without exposing sensitive details in production
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Failed to import or execute Vana route module:', {
+          error: vanaImportError,
+          message: vanaImportError instanceof Error ? vanaImportError.message : 'Unknown error',
+          stack: vanaImportError instanceof Error ? vanaImportError.stack : undefined,
+          timestamp: new Date().toISOString()
+        });
+        console.log('Falling back to Vercel AI implementation due to Vana import failure');
+      } else {
+        console.error('Vana route module import failed, falling back to Vercel AI');
+      }
+    }
+  }
+
   let requestBody: PostRequestBody;
 
   try {
@@ -219,9 +257,26 @@ export async function POST(request: Request) {
       return new Response(stream.pipeThrough(new JsonToSseTransformStream()));
     }
   } catch (error) {
+    // Security fix: Structured logging without sensitive data exposure
+    if (process.env.NODE_ENV === 'development') {
+      console.error('Unexpected error in POST /api/chat:', {
+        error: error,
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined,
+        timestamp: new Date().toISOString(),
+        requestUrl: request.url
+      });
+    } else {
+      console.error('Unexpected error in chat API:', {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        timestamp: new Date().toISOString()
+      });
+    }
+    
     if (error instanceof ChatSDKError) {
       return error.toResponse();
     }
+    
     // Fallback for unexpected errors
     return new ChatSDKError('internal:api').toResponse();
   }
