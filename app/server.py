@@ -295,16 +295,37 @@ app.add_middleware(AuditLogMiddleware)
 
 @app.get("/health")
 async def health_check() -> dict[str, str | bool | None]:
-    """Health check endpoint for service validation.
+    """Health check endpoint for service validation with environment migration status.
 
     Returns:
-        Health status with timestamp and service information
+        Health status with timestamp, service information, and migration status
     """
+    try:
+        from app.utils.migration_helper import EnvironmentMigrationHelper
+        migration_status = EnvironmentMigrationHelper.get_migration_status()
+        
+        environment_info = {
+            "current": migration_status.current_env,
+            "source": migration_status.source,
+            "migration_complete": migration_status.migration_complete,
+            "phase": migration_status.phase.value,
+            "conflicts": migration_status.conflicts if migration_status.conflicts else None
+        }
+    except ImportError:
+        # Fallback if migration helper not available
+        current_env = os.getenv("NODE_ENV") or os.getenv("ENVIRONMENT") or os.getenv("ENV") or "development"
+        environment_info = {
+            "current": current_env,
+            "source": "fallback",
+            "migration_complete": None
+        }
+    
     return {
         "status": "healthy",
         "timestamp": datetime.utcnow().isoformat(),
         "service": "vana",
         "version": "1.0.0",
+        "environment": environment_info,
         "session_storage_enabled": session_service_uri is not None,
         "session_storage_uri": session_service_uri,
         "session_storage_bucket": session_storage_bucket,
