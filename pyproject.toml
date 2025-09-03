@@ -42,6 +42,7 @@ dev = [
     "pytest>=7.4.0,<9.0.0",
     "pytest-asyncio>=0.21.0,<1.0.0",
     "pytest-cov>=4.1.0,<6.0.0",
+    "pytest-timeout>=2.1.0,<3.0.0",
     "nest-asyncio>=1.5.6,<2.0.0",
     "psutil>=5.9.0,<6.0.0",
     "bandit[toml]>=1.7.0,<2.0.0",
@@ -129,11 +130,12 @@ addopts = [
     "--tb=short",
     "--strict-markers",
     "--disable-warnings",
-    "--durations=10"
+    "--durations=10",
+    "--timeout=300"
 ]
 testpaths = ["tests"]
 python_files = ["test_*.py", "*_test.py"]
-norecursedirs = ["tests/load_test"]
+norecursedirs = ["tests/load_test", "tests/performance_load_test.py", "tests/smoke_test_production.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
 filterwarnings = [
@@ -146,7 +148,8 @@ markers = [
     "e2e: mark test as end-to-end test", 
     "performance: mark test as performance test",
     "slow: mark test as slow running",
-    "hook_validation: mark test as hook validation test"
+    "hook_validation: mark test as hook validation test",
+    "requires_server: mark test as requiring running server"
 ]
 
 [tool.hatch.build.targets.wheel]

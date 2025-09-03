@@ -12,6 +12,9 @@ import pytest
 import websockets
 from fastapi.testclient import TestClient
 
+# Mark all tests as requiring server - skip if server not running
+pytestmark = [pytest.mark.requires_server, pytest.mark.timeout(30)]
+
 # Add the project root to the path dynamically
 project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root))
@@ -92,7 +95,7 @@ class TestMessageFormatValidation:
     @pytest.mark.asyncio
     async def test_websocket_message_format(self):
         """Test WebSocket message format consistency"""
-        async with websockets.connect("ws://localhost:8000/ws") as websocket:
+        async with websockets.connect("ws://localhost:8000/ws", timeout=10) as websocket:
             # Send frontend format
             await websocket.send(
                 json.dumps({"type": "user_message", "content": "Test WebSocket"})
@@ -187,7 +190,7 @@ class TestWebSocketLifecycle:
     @pytest.mark.asyncio
     async def test_websocket_connection(self):
         """Test WebSocket connection establishment"""
-        async with websockets.connect("ws://localhost:8000/ws") as ws:
+        async with websockets.connect("ws://localhost:8000/ws", timeout=10) as ws:
             # Connection should be established
             assert ws.open
 
@@ -199,18 +202,18 @@ class TestWebSocketLifecycle:
     async def test_websocket_reconnection(self):
         """Test WebSocket reconnection logic"""
         # First connection
-        ws1 = await websockets.connect("ws://localhost:8000/ws")
+        ws1 = await websockets.connect("ws://localhost:8000/ws", timeout=10)
         await ws1.close()
 
         # Reconnection should work
-        ws2 = await websockets.connect("ws://localhost:8000/ws")
+        ws2 = await websockets.connect("ws://localhost:8000/ws", timeout=10)
         assert ws2.open
         await ws2.close()
 
     @pytest.mark.asyncio
     async def test_websocket_heartbeat(self):
         """Test WebSocket heartbeat mechanism"""
-        async with websockets.connect("ws://localhost:8000/ws") as ws:
+        async with websockets.connect("ws://localhost:8000/ws", timeout=10) as ws:
             # Send heartbeat
             await ws.send(json.dumps({"type": "ping"}))
 
@@ -274,7 +277,7 @@ class TestErrorHandling:
     @pytest.mark.asyncio
     async def test_websocket_error_handling(self):
         """Test WebSocket error handling"""
-        async with websockets.connect("ws://localhost:8000/ws") as ws:
+        async with websockets.connect("ws://localhost:8000/ws", timeout=10) as ws:
             # Send invalid JSON
             await ws.send("invalid json")
 
@@ -294,7 +297,7 @@ class TestMemoryLeaks:
 
         # Create multiple connections
         for _ in range(10):
-            ws = await websockets.connect("ws://localhost:8000/ws")
+            ws = await websockets.connect("ws://localhost:8000/ws", timeout=10)
             connections.append(ws)
 
         # Close all connections

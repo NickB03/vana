@@ -46,6 +46,7 @@ def get_google_user_info(access_token: str) -> dict[str, Any]:
         response = httpx.get(
             "https://www.googleapis.com/oauth2/v2/userinfo",
             headers={"Authorization": f"Bearer {access_token}"},
+            timeout=30.0,
         )
         response.raise_for_status()
         return response.json()
