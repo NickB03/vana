@@ -19,8 +19,8 @@ dist/
 downloads/
 eggs/
 .eggs/
-lib/
-lib64/
+/lib/
+/lib64/
 parts/
 sdist/
 var/
@@ -312,3 +312,4 @@ tests/archive/
 *.tsbuildinfo
 uv.lock
 runner.md
+frontend/tsconfig.tsbuildinfo

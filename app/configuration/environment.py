@@ -465,14 +465,45 @@ class EnvironmentManager:
             logger.error(f"Failed to load environments file: {e}")
 
     def _detect_current_environment(self) -> None:
-        """Detect current environment from environment variables."""
-        env_name = os.environ.get("ENVIRONMENT", os.environ.get("ENV", "development"))
-
+        """Detect current environment with NODE_ENV priority and backwards compatibility."""
+        # Priority order: NODE_ENV → ENVIRONMENT → ENV → default
+        env_name = (
+            os.environ.get("NODE_ENV") or 
+            os.environ.get("ENVIRONMENT") or 
+            os.environ.get("ENV") or 
+            "development"
+        )
+        
+        # Log migration status for monitoring
+        self._log_migration_status()
+        
         try:
             self.current_environment = Environment(env_name.lower())
         except ValueError:
             logger.warning(f"Unknown environment {env_name}, defaulting to development")
             self.current_environment = Environment.DEVELOPMENT
+    
+    def _log_migration_status(self) -> None:
+        """Log environment variable migration status for monitoring."""
+        node_env = os.environ.get("NODE_ENV")
+        environment = os.environ.get("ENVIRONMENT")
+        env = os.environ.get("ENV")
+        
+        # Log migration progress
+        if node_env and not (environment or env):
+            logger.info(f"✅ Environment migration complete: Using NODE_ENV={node_env}")
+        elif node_env and (environment or env):
+            if (environment and node_env.lower() == environment.lower()) or \
+               (env and node_env.lower() == env.lower()):
+                logger.info(f"⚠️ Environment migration in progress: NODE_ENV={node_env} (legacy vars present)")
+            else:
+                legacy_val = environment or env
+                legacy_name = "ENVIRONMENT" if environment else "ENV"
+                logger.warning(f"🚨 Environment variable conflict: NODE_ENV={node_env} vs {legacy_name}={legacy_val}")
+        elif environment and not node_env:
+            logger.warning(f"🔄 Using legacy ENVIRONMENT={environment}. Please migrate to NODE_ENV={environment}")
+        elif env and not node_env:
+            logger.warning(f"🔄 Using legacy ENV={env}. Please migrate to NODE_ENV={env}")
 
     def _save_environment_configs(self) -> None:
         """Save environment configurations to file."""
@@ -497,6 +528,12 @@ def get_environment_manager() -> EnvironmentManager:
     if _environment_manager is None:
         _environment_manager = EnvironmentManager()
     return _environment_manager
+
+
+def reset_environment_manager() -> None:
+    """Reset the global environment manager (useful for testing)."""
+    global _environment_manager
+    _environment_manager = None
 
 
 def get_current_config() -> EnvironmentConfig:

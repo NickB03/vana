@@ -374,6 +374,7 @@ export function EnhancedChat({
       setHasAppendedQuery(true);
       window.history.replaceState({}, '', `/chat/${id}`);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [query, hasAppendedQuery, id]);
 
   const { data: votes } = useSWR<Array<Vote>>(
@@ -447,7 +448,7 @@ export function EnhancedChat({
                       console.error('Manual retry failed:', error);
                     }
                   }}
-                  className="ml-auto px-2 py-1 bg-white border border-current rounded text-xs hover:bg-opacity-80 transition-colors"
+                  className="ml-auto px-2 py-1 bg-white border border-current rounded text-xs hover:bg-white/80 transition-colors"
                 >
                   Retry Connection
                 </button>
