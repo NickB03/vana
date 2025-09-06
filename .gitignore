@@ -313,3 +313,6 @@ tests/archive/
 uv.lock
 runner.md
 frontend/tsconfig.tsbuildinfo
+# Archived frontend directories
+archived/frontend-*
+archived/frontend-docs-*
