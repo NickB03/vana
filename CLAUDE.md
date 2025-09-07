@@ -4,7 +4,7 @@
 
 **ABSOLUTE RULES**:
 1. ALL operations MUST be concurrent/parallel in a single message
-2. **NEVER save working files, text/mds and tests to the root folder**
+2. **NEVER save working files, text/mds to the root folder**
 3. ALWAYS organize files in appropriate subdirectories
 4. **USE CLAUDE CODE'S TASK TOOL** for spawning agents concurrently, not just MCP
 
@@ -38,12 +38,10 @@
 ### 📁 File Organization Rules
 
 **NEVER save to root folder. Use these directories:**
-- `/src` - Source code files
-- `/tests` - Test files
+- `/app` - Backend source code files
 - `/docs` - Documentation and markdown files
+- `/scripts` - Utility scripts and automation
 - `/config` - Configuration files
-- `/scripts` - Utility scripts
-- `/examples` - Example code
 
 ## 🔄 Repository Structure & Workflow
 
@@ -51,53 +49,52 @@
 
 **THIS PROJECT HAS ONE PRIMARY REPOSITORY:**
 ```
-/Users/nick/Development/vana (PRODUCTION - Only Repository for Development)
-├── /app                    # Backend (Python/FastAPI with Google ADK)
-├── /frontend               # Frontend (Next.js) - THIS IS THE PRODUCTION FRONTEND
-├── /tests                  # Integration and unit tests
-├── /docs                   # Documentation
-└── All production code lives here
+/Users/nick/Development/vana (PRODUCTION - Backend-Only Repository)
+├── /app                    # Backend (Python/FastAPI with Google Cloud)
+├── /scripts               # CI/CD and utility scripts
+├── /docs                  # Documentation
+└── Backend-only production code
 ```
 
-### ⚠️ DO NOT CONFUSE WITH ai-chatbot Repository
+### 🏗️ Backend-Only Architecture
 
-**The ai-chatbot repository is DEPRECATED for this project:**
+**This is a backend-only API project:**
 ```
-/Users/nick/Development/ai-chatbot (IGNORE - Not used for Vana development)
-├── Separate experimental fork of vercel/ai-chatbot
-├── NOT connected to Vana backend
-├── DO NOT make changes here for Vana project
-└── Used only for separate UI experiments unrelated to Vana
+- Python/FastAPI backend in /app
+- Google Cloud integration
+- VPS deployment at 134.209.170.75
+- Simple CI/CD pipeline
+- No frontend or UI components
 ```
 
 ### 📍 Development Workflow - ALWAYS USE /vana
 
-1. **ALL Frontend Development**: Work in `/vana/frontend/` directory
-2. **ALL Backend Development**: Work in `/vana/app/` directory  
-3. **ALL Testing**: Run tests from `/vana/` root
+1. **ALL Backend Development**: Work in `/vana/app/` directory
+2. **ALL Scripts**: CI/CD and utilities in `/vana/scripts/`
+3. **ALL Documentation**: Place in `/vana/docs/`
 4. **ALL Commits**: Make commits in `/vana/` repository
 5. **ALL PRs**: Create PRs against `NickB03/vana` repository
 
 ### ❌ Common Mistakes to Avoid
 
-- **WRONG**: Making frontend changes in `/ai-chatbot` repository
-- **WRONG**: Trying to sync changes between repositories
-- **WRONG**: Looking for frontend code in `/ai-chatbot`
-- **RIGHT**: ALL work happens in `/vana/frontend/` and `/vana/app/`
+- **WRONG**: Looking for frontend code - this is backend-only
+- **WRONG**: Creating UI components or tests
+- **WRONG**: Setting up npm/node build processes
+- **RIGHT**: ALL work happens in `/vana/app/` for backend code
 
 ### ✅ Correct File Paths for Development
-
-**Frontend Files:**
-- `/vana/frontend/app/(chat)/` - Chat UI components
-- `/vana/frontend/app/api/` - API routes
-- `/vana/frontend/components/` - Shared components
-- `/vana/frontend/lib/` - Utilities and helpers
 
 **Backend Files:**
 - `/vana/app/server.py` - Main FastAPI server
 - `/vana/app/models.py` - Data models
 - `/vana/app/auth/` - Authentication logic
 - `/vana/app/routes/` - API endpoints
+- `/vana/app/utils/` - Utility functions
+- `/vana/app/config/` - Configuration files
+
+**Infrastructure Files:**
+- `/vana/scripts/runner-manager.sh` - VPS deployment script
+- `/vana/.github/workflows/` - CI/CD workflows
 
 ### 🎯 Git Configuration
 
@@ -107,10 +104,10 @@
 ### 📝 Summary
 
 - **ALWAYS** work in `/Users/nick/Development/vana/`
-- **NEVER** work in `/Users/nick/Development/ai-chatbot/` for Vana features
-- **Frontend** is in `/vana/frontend/` NOT in ai-chatbot
+- **Backend-only** architecture - no frontend
 - **Backend** is in `/vana/app/`
-- **Deploy** from `/vana/` repository only
+- **Scripts** are in `/vana/scripts/`
+- **Deploy** to VPS at 134.209.170.75
 
 ## Project Overview
 
@@ -129,11 +126,11 @@ This project uses SPARC (Specification, Pseudocode, Architecture, Refinement, Co
 - `npx claude-flow sparc pipeline "<task>"` - Full pipeline processing
 - `npx claude-flow sparc concurrent <mode> "<tasks-file>"` - Multi-task processing
 
-### Build Commands
-- `npm run build` - Build project
-- `npm run test` - Run tests
-- `npm run lint` - Linting
-- `npm run typecheck` - Type checking
+### Backend Commands
+- `python -m pytest` - Run Python tests
+- `python -m app.server` - Start FastAPI server
+- `python -m flake8 app/` - Linting
+- `python -m mypy app/` - Type checking
 
 ## SPARC Workflow Phases
 
@@ -151,7 +148,7 @@ This project uses SPARC (Specification, Pseudocode, Architecture, Refinement, Co
 - **Clean Architecture**: Separate concerns
 - **Documentation**: Keep updated
 
-## 🚀 Available Agents (54 Total)
+## 🚀 Available Agents (Backend-Focused)
 
 ### Core Development
 `coder`, `reviewer`, `tester`, `planner`, `researcher`
@@ -172,7 +169,7 @@ This project uses SPARC (Specification, Pseudocode, Architecture, Refinement, Co
 `sparc-coord`, `sparc-coder`, `specification`, `pseudocode`, `architecture`, `refinement`
 
 ### Specialized Development
-`backend-dev`, `mobile-dev`, `ml-developer`, `cicd-engineer`, `api-docs`, `system-architect`, `code-analyzer`, `base-template-generator`
+`backend-dev`, `ml-developer`, `cicd-engineer`, `api-docs`, `system-architect`, `code-analyzer`
 
 ### Testing & Validation
 `tdd-london-swarm`, `production-validator`
@@ -210,12 +207,6 @@ This project uses SPARC (Specification, Pseudocode, Architecture, Refinement, Co
 ```bash
 # Add Claude Flow MCP server
 claude mcp add claude-flow npx claude-flow@alpha mcp start
-
-# Add Browsertools MCP server for UI testing
-claude mcp add browsertools npx @browsertools/mcp
-
-# Add Shadcn MCP server for UI components
-claude mcp add shadcn npx shadcn-mcp
 ```
 
 ## MCP Tool Categories
@@ -235,51 +226,6 @@ claude mcp add shadcn npx shadcn-mcp
 ### System
 `benchmark_run`, `features_detect`, `swarm_monitor`
 
-### Browser Automation (browsertools)
-`mcp__browsertools__` - Browser control and automation via MCP
-
-## 🌐 Browsertools MCP Configuration
-
-### Installation
-```bash
-# Install browsertools MCP
-claude mcp add browsertools npx @browsertools/mcp
-
-# Verify installation
-claude mcp list | grep browser
-```
-
-### Capabilities
-- **Browser Control**: Launch, navigate, and control browsers
-- **Screenshot**: Capture page screenshots for verification
-- **DOM Interaction**: Click, type, and interact with elements
-- **Page Analysis**: Extract text, check element presence
-- **Network Monitoring**: Track requests and responses
-- **Cookie Management**: Read/write browser cookies
-
-### Usage Examples
-```javascript
-// Navigate to page
-mcp__browsertools__navigate("http://localhost:3000")
-
-// Take screenshot
-mcp__browsertools__screenshot("verification.png")
-
-// Click element
-mcp__browsertools__click("button[data-testid='submit']")
-
-// Extract text
-mcp__browsertools__getText(".message")
-```
-
-### When to Use Browsertools vs Playwright
-- **Browsertools**: Quick UI checks, screenshots, simple interactions
-- **Playwright**: Complex E2E tests, CI/CD integration, test suites
-
-### Troubleshooting
-- Requires Claude Code restart after installation
-- Check `claude mcp list` for connection status
-- Ensure Chrome/Chromium is installed on system
 
 ## 🚀 Agent Execution Flow with Claude Code
 
@@ -290,25 +236,25 @@ mcp__browsertools__getText(".message")
 3. **REQUIRED**: Each agent runs hooks for coordination
 4. **REQUIRED**: Batch all operations in single messages
 
-### Example Full-Stack Development:
+### Example Backend Development:
 
 ```javascript
 // Single message with all agent spawning via Claude Code's Task tool
 [Parallel Agent Execution]:
-  Task("Backend Developer", "Build REST API with Express. Use hooks for coordination.", "backend-dev")
-  Task("Frontend Developer", "Create React UI. Coordinate with backend via memory.", "coder")
-  Task("Database Architect", "Design PostgreSQL schema. Store schema in memory.", "code-analyzer")
-  Task("Test Engineer", "Write Jest tests. Check memory for API contracts.", "tester")
-  Task("DevOps Engineer", "Setup Docker and CI/CD. Document in memory.", "cicd-engineer")
-  Task("Security Auditor", "Review authentication. Report findings via hooks.", "reviewer")
+  Task("Backend Developer", "Build REST API with FastAPI. Use hooks for coordination.", "backend-dev")
+  Task("Database Architect", "Design database schema. Store schema in memory.", "code-analyzer")
+  Task("API Designer", "Design API contracts and documentation.", "api-docs")
+  Task("DevOps Engineer", "Setup VPS deployment and CI/CD. Document in memory.", "cicd-engineer")
+  Task("Security Auditor", "Review authentication and security. Report findings via hooks.", "reviewer")
   
   // All todos batched together
   TodoWrite { todos: [...8-10 todos...] }
   
   // All file operations together
-  Write "backend/server.js"
-  Write "frontend/App.jsx"
-  Write "database/schema.sql"
+  Write "app/server.py"
+  Write "app/models.py"
+  Write "app/routes/api.py"
+  Write "scripts/deploy.sh"
 ```
 
 ## 📋 Agent Coordination Protocol
@@ -367,11 +313,11 @@ npx claude-flow@alpha hooks session-end --export-metrics true
   ]}
   
   // Parallel file operations
-  Bash "mkdir -p app/{src,tests,docs,config}"
-  Write "app/package.json"
-  Write "app/src/server.js"
-  Write "app/tests/server.test.js"
-  Write "app/docs/API.md"
+  Bash "mkdir -p app/{routes,models,utils,config}"
+  Write "app/requirements.txt"
+  Write "app/server.py"
+  Write "app/routes/api.py"
+  Write "docs/API.md"
 ```
 
 ### ❌ WRONG (Multiple Messages):
@@ -443,95 +389,54 @@ Message 4: Write "file.js"
 
 Remember: **Claude Flow coordinates, Claude Code creates!**
 
-## 🚨 CRITICAL: UI COMPONENT RULES - MUST FOLLOW
+## 🚨 CRITICAL: BACKEND-ONLY PROJECT RULES - MUST FOLLOW
 
 ### ❌ ABSOLUTELY FORBIDDEN
-1. **NEVER manually create UI components** - No writing component code from scratch
-2. **NEVER copy/paste from shadcn docs** - Use CLI instead
-3. **NEVER modify core shadcn files directly** - Extend via imports
-4. **NEVER guess component implementation** - Use view command first
-5. **NEVER ignore existing components** - Always check what's installed
+1. **NEVER create frontend/UI components** - This is backend-only
+2. **NEVER reference React, Next.js, or frontend frameworks**
+3. **NEVER create npm/node build processes**
+4. **NEVER add browser-related tools or dependencies**
+5. **NEVER create test directories** - Keep tests in app/
 
-### ✅ MANDATORY UI WORKFLOW
+### ✅ MANDATORY BACKEND WORKFLOW
 
-#### Adding New UI Components
+#### Backend Development Focus
 ```bash
-# 1. ALWAYS check existing components first
-ls frontend/src/components/ui/
+# 1. ALWAYS work in /app directory
+ls app/
 
-# 2. Search for the component
-npx shadcn@latest search @shadcn
+# 2. Use Python/FastAPI patterns
+python -m app.server
 
-# 3. Preview before adding
-npx shadcn@latest view @shadcn/[component]
-
-# 4. Add via CLI ONLY
-npx shadcn@latest add @shadcn/[component]
-
-# 5. Verify installation
-cat frontend/src/components/ui/[component].tsx
+# 3. Focus on API endpoints and models
+# 4. Deploy to VPS at 134.209.170.75
+# 5. Use GitHub Actions for CI/CD
 ```
 
-#### Updating UI Components
-```bash
-# 1. Check for updates
-npx shadcn@latest diff [component]
+### 🔧 Backend Configuration
+- **Main Server**: `app/server.py`
+- **Models**: `app/models.py`
+- **Routes**: `app/routes/`
+- **Config**: `app/config/`
+- **Deployment**: VPS runner at 134.209.170.75
 
-# 2. Update with overwrite flag if needed
-npx shadcn@latest add @shadcn/[component] --overwrite
-```
+### 🎯 Backend Development Checklist
+Before ANY backend work:
+- [ ] Am I working in the /app directory?
+- [ ] Am I using Python/FastAPI patterns?
+- [ ] Am I focusing on API functionality?
+- [ ] Am I avoiding frontend concepts?
 
-### 📦 Currently Installed shadcn Components
-- alert, avatar, badge, button, card, dialog
-- dropdown-menu, form, icons, input, label, progress
-- scroll-area, select, separator, sheet, sidebar
-- skeleton, tabs, tooltip
-
-### 🔧 Configuration
-- **Config**: `frontend/components.json`
-- **Components**: `frontend/src/components/ui/`
-- **Imports**: Use `@/components/ui/[component]`
-- **CLI Version**: v3.0.0
-- **MCP Server**: Connected and functional
-
-### 🎯 UI Development Checklist
-Before ANY UI work:
-- [ ] Did I check existing components with `ls`?
-- [ ] Did I use `search` to find the component?
-- [ ] Did I use `view` to preview it?
-- [ ] Am I using CLI to add it?
-
-After UI work:
-- [ ] Did the CLI command succeed?
-- [ ] Is the component in `src/components/ui/`?
-- [ ] Are imports using `@/components/ui/`?
-- [ ] Did I test the component?
-
-### Common UI Commands Reference
-```bash
-# Add single component
-npx shadcn@latest add @shadcn/accordion
-
-# Add multiple components
-npx shadcn@latest add @shadcn/accordion @shadcn/toast
-
-# Search components
-npx shadcn@latest search @shadcn
-
-# View before adding
-npx shadcn@latest view @shadcn/button
-
-# Check for updates
-npx shadcn@latest diff button
-
-# Get project info
-npx shadcn@latest info
-```
+After backend work:
+- [ ] Does the FastAPI server start correctly?
+- [ ] Are API endpoints properly defined?
+- [ ] Is the code following Python best practices?
+- [ ] Are changes ready for VPS deployment?
 
 # important-instruction-reminders
 Do what has been asked; nothing more, nothing less.
 NEVER create files unless they're absolutely necessary for achieving your goal.
 ALWAYS prefer editing an existing file to creating a new one.
 NEVER proactively create documentation files (*.md) or README files. Only create documentation files if explicitly requested by the User.
-Never save working files, text/mds and tests to the root folder.
-ALWAYS use shadcn CLI for UI components - NEVER create them manually.
+Never save working files, text/mds to the root folder.
+This is a BACKEND-ONLY project - NO frontend/UI work.
