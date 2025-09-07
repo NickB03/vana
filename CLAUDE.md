@@ -59,8 +59,9 @@ Vana is a multi-agent AI research platform built on Google's Agent Development K
 - PostgreSQL, ChromaDB for data storage
 - JWT/OAuth2 authentication
 
-**Frontend:**
-- Next.js with shadcn/ui components (under development)
+**Frontend (Under Development):**
+- Next.js with shadcn/ui components on port 3000
+- Modern React components with TypeScript and Tailwind CSS
 
 ## Commands
 
@@ -90,13 +91,16 @@ make docker-logs    # View Docker logs
 
 ### Testing
 ```bash
-# Run specific test categories
-uv run pytest tests/unit -v           # Unit tests
-uv run pytest tests/integration -v    # Integration tests
-uv run pytest tests/performance -v    # Performance tests
+# Run all tests (unit + integration)
+make test                              # Primary test command
 
-# Run with coverage
-uv run pytest --cov=app --cov-report=html tests/
+# Run specific test categories
+make test-unit                         # Unit tests only
+make test-integration                  # Integration tests only
+make test-performance                  # Performance tests only
+
+# Run with coverage reporting
+make test-coverage                     # All tests with HTML coverage report
 ```
 
 ### Claude Flow Integration
@@ -125,10 +129,12 @@ make build-with-hooks
 │   ├── /auth              # Authentication logic
 │   ├── /configuration     # Config management
 │   └── /monitoring        # Metrics and logging
-├── /tests                  # Test suite
-│   ├── /unit              # Unit tests
-│   ├── /integration       # Integration tests
+├── /tests                  # Test suite (NEW STRUCTURE)
+│   ├── /unit              # Unit tests (app/, auth/, security/)
+│   ├── /integration       # Integration tests (api/, sse/, adk/)
 │   └── /performance       # Performance tests
+├── /.claude_workspace/     # Claude working files and archives
+│   └── /archived/         # Archived old test files
 ├── /docs                   # Documentation
 ├── /scripts               # Utility scripts
 └── /deployment            # Deployment configs
@@ -166,7 +172,7 @@ OPENROUTER_API_KEY=your-key  # Optional fallback
 
 # Authentication
 JWT_SECRET_KEY=your-jwt-secret  # For JWT auth
-# OR set AUTH_REQUIRED=false for development
+# OR set AUTH_REQUIRE_SSE_AUTH=false for development
 ```
 
 ### AI Model Selection
@@ -184,7 +190,7 @@ Multiple auth methods supported:
 - OAuth2/JWT (primary)
 - Firebase Auth
 - API keys
-- Development mode (AUTH_REQUIRED=false)
+- Development mode (AUTH_REQUIRE_SSE_AUTH=false)
 
 See `app/auth/` for implementation details.
 
@@ -193,17 +199,55 @@ SSE implementation in `app/server.py` with memory leak prevention (see `tests/un
 
 ## CI/CD Pipeline
 
-**Note**: The CI/CD pipeline is currently being rebuilt and optimized. We use a Digital Ocean VPS for local runners. Check `.github/workflows/` for the latest workflow configurations.
+### GitHub Actions Configuration
+- **Self-hosted runners**: All CI/CD runs on Digital Ocean VPS (not GitHub cloud runners)
+- **Automatic triggers**: PRs to main, pushes to main, manual dispatch via GitHub UI
+- **Current workflow**: `.github/workflows/test.yml` - basic runner verification
+- **Test structure**: Now uses proper `tests/` directory with unit/integration/performance subdirectories
+- **Available commands**: `make test`, `make test-unit`, `make test-integration`, `make test-performance`, `make lint`, `make typecheck`
+
+### GitHub Integration Changes
+**Pull Request Workflow:**
+- Automatic test execution on PR creation/updates using `make test`
+- Status checks prevent merging failing code
+- All tests run on your VPS infrastructure with proper test structure
+
+**Continuous Integration:**
+- Immediate feedback on main branch commits
+- Self-hosted environment maintains consistency with local development
+- No GitHub Actions minutes consumed (runs on your VPS)
+- Proper test categorization (unit, integration, performance)
+
+**Manual Testing:**
+- `workflow_dispatch` enables on-demand test runs from GitHub UI
+- Can run specific test categories via make commands
+- Useful for testing specific scenarios or debugging CI issues
+
+**Test Archive:**
+- Previous test files archived in `.claude_workspace/archived/tests_backup_*`
+- Ready for migration to new structure when needed
+
+Check `.github/workflows/` for current configurations.
 
 ## Testing Strategy
 
 Test coverage target: 85%+
 
-Key test files for understanding the system:
-- `tests/unit/test_auth.py` - Authentication logic
-- `tests/integration/test_adk_integration.py` - ADK agent testing
-- `tests/integration/test_sse_connections.py` - SSE streaming
-- `tests/unit/test_sse_memory_leak_fixes.py` - Memory management
+### Current Test Structure:
+- **Unit Tests** (`tests/unit/`): App logic, auth, security components
+- **Integration Tests** (`tests/integration/`): API endpoints, SSE streaming, ADK agents  
+- **Performance Tests** (`tests/performance/`): Load testing, benchmarks
+
+### Previous Test Files (Archived):
+Legacy test files preserved in `.claude_workspace/archived/tests_backup_*`:
+- Health endpoint tests
+- Security middleware tests  
+- Rate limiting tests
+
+### Test Commands:
+- `make test` - Run unit + integration tests
+- `make test-coverage` - Generate HTML coverage reports
+- `make lint` - Code quality checks (includes test files)
 
 ## 🎯 Claude Code vs MCP Tools
 
