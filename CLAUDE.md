@@ -1,4 +1,6 @@
-# Claude Code Configuration - SPARC Development Environment
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ## 🚨 CRITICAL: CONCURRENT EXECUTION & FILE MANAGEMENT
 
@@ -17,168 +19,204 @@
 - **Bash commands**: ALWAYS batch ALL terminal operations in ONE message
 - **Memory operations**: ALWAYS batch ALL memory store/retrieve in ONE message
 
-### 🎯 CRITICAL: Claude Code Task Tool for Agent Execution
-
-**Claude Code's Task tool is the PRIMARY way to spawn agents:**
-```javascript
-// ✅ CORRECT: Use Claude Code's Task tool for parallel agent execution
-[Single Message]:
-  Task("Research agent", "Analyze requirements and patterns...", "researcher")
-  Task("Coder agent", "Implement core features...", "coder")
-  Task("Tester agent", "Create comprehensive tests...", "tester")
-  Task("Reviewer agent", "Review code quality...", "reviewer")
-  Task("Architect agent", "Design system architecture...", "system-architect")
-```
-
-**MCP tools are ONLY for coordination setup:**
-- `mcp__claude-flow__swarm_init` - Initialize coordination topology
-- `mcp__claude-flow__agent_spawn` - Define agent types for coordination
-- `mcp__claude-flow__task_orchestrate` - Orchestrate high-level workflows
-
 ### 📁 File Organization Rules
 
 **NEVER save to root folder. Use these directories:**
+- `.claude_workspace/` - **Working documents, drafts, notes, and temporary files during development**
+- `/docs` - **Official project documentation only (API docs, architecture docs, etc.)**
 - `/src` - Source code files
 - `/tests` - Test files
-- `/docs` - Documentation and markdown files
 - `/config` - Configuration files
 - `/scripts` - Utility scripts
 - `/examples` - Example code
+- `/app` - Backend application code
+- `/frontend` - Frontend code (when implemented)
+
+**IMPORTANT DISTINCTION:**
+- `.claude_workspace/` = Your workspace for drafts, analysis, working notes, temporary docs
+- `/docs` = Final, polished project documentation for the repository
 
 ## 🔄 Repository Structure & Workflow
 
-### 🚨 CRITICAL: Work ONLY in /vana Repository
-
-**THIS PROJECT HAS ONE PRIMARY REPOSITORY:**
+**PROJECT REPOSITORY:**
 ```
-/Users/nick/Development/vana (PRODUCTION - Only Repository for Development)
+/Users/nick/Development/vana (Primary Repository)
 ├── /app                    # Backend (Python/FastAPI with Google ADK)
-├── /frontend               # Frontend (Next.js) - THIS IS THE PRODUCTION FRONTEND
+├── /frontend               # Frontend (Next.js) - PLANNED, NOT YET IMPLEMENTED
 ├── /tests                  # Integration and unit tests
 ├── /docs                   # Documentation
 └── All production code lives here
 ```
 
-### ⚠️ DO NOT CONFUSE WITH ai-chatbot Repository
-
-**The ai-chatbot repository is DEPRECATED for this project:**
-```
-/Users/nick/Development/ai-chatbot (IGNORE - Not used for Vana development)
-├── Separate experimental fork of vercel/ai-chatbot
-├── NOT connected to Vana backend
-├── DO NOT make changes here for Vana project
-└── Used only for separate UI experiments unrelated to Vana
-```
-
-### 📍 Development Workflow - ALWAYS USE /vana
-
-1. **ALL Frontend Development**: Work in `/vana/frontend/` directory
-2. **ALL Backend Development**: Work in `/vana/app/` directory  
-3. **ALL Testing**: Run tests from `/vana/` root
-4. **ALL Commits**: Make commits in `/vana/` repository
-5. **ALL PRs**: Create PRs against `NickB03/vana` repository
-
-### ❌ Common Mistakes to Avoid
-
-- **WRONG**: Making frontend changes in `/ai-chatbot` repository
-- **WRONG**: Trying to sync changes between repositories
-- **WRONG**: Looking for frontend code in `/ai-chatbot`
-- **RIGHT**: ALL work happens in `/vana/frontend/` and `/vana/app/`
-
-### ✅ Correct File Paths for Development
-
-**Frontend Files:**
-- `/vana/frontend/app/(chat)/` - Chat UI components
-- `/vana/frontend/app/api/` - API routes
-- `/vana/frontend/components/` - Shared components
-- `/vana/frontend/lib/` - Utilities and helpers
-
-**Backend Files:**
-- `/vana/app/server.py` - Main FastAPI server
-- `/vana/app/models.py` - Data models
-- `/vana/app/auth/` - Authentication logic
-- `/vana/app/routes/` - API endpoints
-
-### 🎯 Git Configuration
-
-**Only One Remote Matters:**
-- **origin**: `https://github.com/NickB03/vana.git` (The ONLY repository)
-
-### 📝 Summary
-
-- **ALWAYS** work in `/Users/nick/Development/vana/`
-- **NEVER** work in `/Users/nick/Development/ai-chatbot/` for Vana features
-- **Frontend** is in `/vana/frontend/` NOT in ai-chatbot
-- **Backend** is in `/vana/app/`
-- **Deploy** from `/vana/` repository only
-
 ## Project Overview
 
-This project uses SPARC (Specification, Pseudocode, Architecture, Refinement, Completion) methodology with Claude-Flow orchestration for systematic Test-Driven Development.
+Vana is a multi-agent AI research platform built on Google's Agent Development Kit (ADK) that transforms complex research questions into comprehensive reports. The system orchestrates 8 specialized AI agents working collaboratively with real-time streaming capabilities via Server-Sent Events (SSE).
 
-## SPARC Commands
+## Tech Stack
 
-### Core Commands
-- `npx claude-flow sparc modes` - List available modes
-- `npx claude-flow sparc run <mode> "<task>"` - Execute specific mode
-- `npx claude-flow sparc tdd "<feature>"` - Run complete TDD workflow
-- `npx claude-flow sparc info <mode>` - Get mode details
+**Backend:**
+- Python 3.10+ with FastAPI
+- Google ADK 1.8.0 for agent orchestration
+- Google Gemini 2.5 Pro/Flash via AI Studio (primary - FREE with rate limits) / OpenRouter (fallback) for AI models
+- PostgreSQL, ChromaDB for data storage
+- JWT/OAuth2 authentication
 
-### Batchtools Commands
-- `npx claude-flow sparc batch <modes> "<task>"` - Parallel execution
-- `npx claude-flow sparc pipeline "<task>"` - Full pipeline processing
-- `npx claude-flow sparc concurrent <mode> "<tasks-file>"` - Multi-task processing
+**Frontend:**
+- Currently being developed (frontend directory not yet present)
+- Planned: Next.js with shadcn/ui components
 
-### Build Commands
-- `npm run build` - Build project
-- `npm run test` - Run tests
-- `npm run lint` - Linting
-- `npm run typecheck` - Type checking
+## Commands
 
-## SPARC Workflow Phases
+### Development
+```bash
+# Install dependencies (uses uv package manager)
+make install
 
-1. **Specification** - Requirements analysis (`sparc run spec-pseudocode`)
-2. **Pseudocode** - Algorithm design (`sparc run spec-pseudocode`)
-3. **Architecture** - System design (`sparc run architect`)
-4. **Refinement** - TDD implementation (`sparc tdd`)
-5. **Completion** - Integration (`sparc run integration`)
+# Start backend development server
+make dev-backend     # Runs on http://localhost:8000
 
-## Code Style & Best Practices
+# Run ADK playground
+make playground      # Runs on http://localhost:8501
 
-- **Modular Design**: Files under 500 lines
-- **Environment Safety**: Never hardcode secrets
-- **Test-First**: Write tests before implementation
-- **Clean Architecture**: Separate concerns
-- **Documentation**: Keep updated
+# Run tests with coverage
+make test           # Runs unit and integration tests
 
-## 🚀 Available Agents (54 Total)
+# Code quality checks
+make lint           # Runs codespell, ruff, mypy
+make typecheck      # Type checking only
 
-### Core Development
-`coder`, `reviewer`, `tester`, `planner`, `researcher`
+# Docker development
+make docker-up      # Start services in Docker
+make docker-down    # Stop Docker services
+make docker-logs    # View Docker logs
+```
 
-### Swarm Coordination
-`hierarchical-coordinator`, `mesh-coordinator`, `adaptive-coordinator`, `collective-intelligence-coordinator`, `swarm-memory-manager`
+### Testing
+```bash
+# Run specific test categories
+uv run pytest tests/unit -v           # Unit tests
+uv run pytest tests/integration -v    # Integration tests
+uv run pytest tests/performance -v    # Performance tests
 
-### Consensus & Distributed
-`byzantine-coordinator`, `raft-manager`, `gossip-coordinator`, `consensus-builder`, `crdt-synchronizer`, `quorum-manager`, `security-manager`
+# Run with coverage
+uv run pytest --cov=app --cov-report=html tests/
+```
 
-### Performance & Optimization
-`perf-analyzer`, `performance-benchmarker`, `task-orchestrator`, `memory-coordinator`, `smart-agent`
+### Claude Flow Integration
+```bash
+# Hook commands for task coordination
+make cf-pre-task TASK_DESC="description"    # Before starting task
+make cf-post-task TASK_ID=123              # After completing task
+make cf-session-end SESSION_ID=abc         # End session
 
-### GitHub & Repository
-`github-modes`, `pr-manager`, `code-review-swarm`, `issue-tracker`, `release-manager`, `workflow-automation`, `project-board-sync`, `repo-architect`, `multi-repo-swarm`
+# Development with hooks
+make dev-with-hooks
+make test-with-hooks
+make build-with-hooks
+```
 
-### SPARC Methodology
-`sparc-coord`, `sparc-coder`, `specification`, `pseudocode`, `architecture`, `refinement`
+## Project Architecture
 
-### Specialized Development
-`backend-dev`, `mobile-dev`, `ml-developer`, `cicd-engineer`, `api-docs`, `system-architect`, `code-analyzer`, `base-template-generator`
+### Directory Structure
+```
+/vana
+├── /app                    # Backend (FastAPI + Google ADK)
+│   ├── server.py          # Main FastAPI server
+│   ├── agent.py           # ADK agent implementation
+│   ├── models.py          # Data models
+│   ├── config.py          # Configuration
+│   ├── /auth              # Authentication logic
+│   ├── /configuration     # Config management
+│   └── /monitoring        # Metrics and logging
+├── /tests                  # Test suite
+│   ├── /unit              # Unit tests
+│   ├── /integration       # Integration tests
+│   └── /performance       # Performance tests
+├── /docs                   # Documentation
+├── /scripts               # Utility scripts
+└── /deployment            # Deployment configs
+```
 
-### Testing & Validation
-`tdd-london-swarm`, `production-validator`
+### Key Components
 
-### Migration & Planning
-`migration-planner`, `swarm-init`
+**Multi-Agent System:**
+- Team Leader: Coordinates research process
+- Plan Generator & Section Planner: Research strategy
+- Section Researcher & Enhanced Search: Information gathering
+- Research Evaluator & Escalation Checker: Quality control
+- Report Writer: Final report synthesis
+
+**API Endpoints:**
+- `/health` - Health check
+- `/api/run_sse` - Execute research with SSE streaming
+- `/api/apps/{app}/users/{user}/sessions` - Session management
+- `/auth/login` - Authentication
+
+## Configuration
+
+### Environment Variables (.env.local)
+```bash
+# Required
+BRAVE_API_KEY=your-brave-search-api-key
+GOOGLE_CLOUD_PROJECT=your-project-id
+
+# AI Model Configuration
+# Primary: Google AI Studio (FREE with rate limits for development)
+GOOGLE_API_KEY=your-google-ai-studio-api-key  # Get from https://aistudio.google.com/apikey
+
+# Fallback: OpenRouter (optional - used when Google rate limits hit)
+OPENROUTER_API_KEY=your-key  # Optional fallback
+
+# Authentication
+JWT_SECRET_KEY=your-jwt-secret  # For JWT auth
+# OR set AUTH_REQUIRED=false for development
+```
+
+### AI Model Selection
+- **Primary**: Google Gemini 2.5 Pro/Flash via AI Studio (FREE tier with rate limits) - used for development to reduce API costs
+- **Fallback**: OpenRouter with Qwen 3 Coder - automatically used when Google rate limits are hit or GOOGLE_API_KEY not set
+- The system automatically handles model switching based on availability and rate limits
+
+## Development Workflow
+
+### Working with Agents
+The codebase includes comprehensive agent tests in `tests/integration/test_adk_integration.py` and `tests/integration/test_agent.py` that demonstrate agent orchestration patterns.
+
+### Authentication System
+Multiple auth methods supported:
+- OAuth2/JWT (primary)
+- Firebase Auth
+- API keys
+- Development mode (AUTH_REQUIRED=false)
+
+See `app/auth/` for implementation details.
+
+### Real-time Streaming
+SSE implementation in `app/server.py` with memory leak prevention (see `tests/unit/test_sse_memory_leak_fixes.py`).
+
+## CI/CD Pipeline
+
+The project uses GitHub Actions with performance-optimized workflows:
+- **CI-Fixed**: Frontend-focused validation (8-10 min)
+- **Local Build**: Full-stack testing (10-12 min)
+- **Security Scan**: Weekly vulnerability checks
+- **Dependency Check**: Package security validation
+
+Pipeline features:
+- UV package manager for 50% faster dependency installation
+- Parallel test execution across categories
+- Smart change detection to skip unnecessary jobs
+- Multi-layer caching with 90%+ cache hit rate
+
+## Testing Strategy
+
+Test coverage target: 85%+
+
+Key test files for understanding the system:
+- `tests/unit/test_auth.py` - Authentication logic
+- `tests/integration/test_adk_integration.py` - ADK agent testing
+- `tests/integration/test_sse_connections.py` - SSE streaming
+- `tests/unit/test_sse_memory_leak_fixes.py` - Memory management
 
 ## 🎯 Claude Code vs MCP Tools
 
@@ -205,111 +243,46 @@ This project uses SPARC (Specification, Pseudocode, Architecture, Refinement, Co
 
 **KEY**: MCP coordinates the strategy, Claude Code's Task tool executes with real agents.
 
-## 🚀 Quick Setup
+## 🚀 Available Agents (54 Total)
 
-```bash
-# Add Claude Flow MCP server
-claude mcp add claude-flow npx claude-flow@alpha mcp start
+### Core Development
+`coder`, `reviewer`, `tester`, `planner`, `researcher`
 
-# Add Browsertools MCP server for UI testing
-claude mcp add browsertools npx @browsertools/mcp
+### Swarm Coordination
+`hierarchical-coordinator`, `mesh-coordinator`, `adaptive-coordinator`
 
-# Add Shadcn MCP server for UI components
-claude mcp add shadcn npx shadcn-mcp
-```
+### Specialized Development
+`backend-dev`, `mobile-dev`, `ml-developer`, `cicd-engineer`, `api-docs`, `system-architect`, `code-analyzer`, `base-template-generator`
 
-## MCP Tool Categories
+### GitHub & Repository
+`github-modes`, `pr-manager`, `code-review-swarm`, `issue-tracker`, `release-manager`, `workflow-automation`, `project-board-sync`, `repo-architect`, `multi-repo-swarm`
 
-### Coordination
-`swarm_init`, `agent_spawn`, `task_orchestrate`
+### SPARC Methodology
+`sparc-coord`, `sparc-coder`, `specification`, `pseudocode`, `architecture`, `refinement`
 
-### Monitoring
-`swarm_status`, `agent_list`, `agent_metrics`, `task_status`, `task_results`
+### Testing & Validation
+`tdd-london-swarm`, `production-validator`
 
-### Memory & Neural
-`memory_usage`, `neural_status`, `neural_train`, `neural_patterns`
+### Performance & Optimization
+`perf-analyzer`, `performance-benchmarker`, `task-orchestrator`, `memory-coordinator`, `smart-agent`
 
-### GitHub Integration
-`github_swarm`, `repo_analyze`, `pr_enhance`, `issue_triage`, `code_review`
+### Consensus & Distributed
+`byzantine-coordinator`, `raft-manager`, `gossip-coordinator`, `crdt-synchronizer`, `quorum-manager`, `security-manager`
 
-### System
-`benchmark_run`, `features_detect`, `swarm_monitor`
+## SPARC Development Methodology
 
-### Browser Automation (browsertools)
-`mcp__browsertools__` - Browser control and automation via MCP
+### Core Commands
+- `npx claude-flow sparc modes` - List available modes
+- `npx claude-flow sparc run <mode> "<task>"` - Execute specific mode
+- `npx claude-flow sparc tdd "<feature>"` - Run complete TDD workflow
+- `npx claude-flow sparc info <mode>` - Get mode details
 
-## 🌐 Browsertools MCP Configuration
-
-### Installation
-```bash
-# Install browsertools MCP
-claude mcp add browsertools npx @browsertools/mcp
-
-# Verify installation
-claude mcp list | grep browser
-```
-
-### Capabilities
-- **Browser Control**: Launch, navigate, and control browsers
-- **Screenshot**: Capture page screenshots for verification
-- **DOM Interaction**: Click, type, and interact with elements
-- **Page Analysis**: Extract text, check element presence
-- **Network Monitoring**: Track requests and responses
-- **Cookie Management**: Read/write browser cookies
-
-### Usage Examples
-```javascript
-// Navigate to page
-mcp__browsertools__navigate("http://localhost:3000")
-
-// Take screenshot
-mcp__browsertools__screenshot("verification.png")
-
-// Click element
-mcp__browsertools__click("button[data-testid='submit']")
-
-// Extract text
-mcp__browsertools__getText(".message")
-```
-
-### When to Use Browsertools vs Playwright
-- **Browsertools**: Quick UI checks, screenshots, simple interactions
-- **Playwright**: Complex E2E tests, CI/CD integration, test suites
-
-### Troubleshooting
-- Requires Claude Code restart after installation
-- Check `claude mcp list` for connection status
-- Ensure Chrome/Chromium is installed on system
-
-## 🚀 Agent Execution Flow with Claude Code
-
-### The Correct Pattern:
-
-1. **Optional**: Use MCP tools to set up coordination topology
-2. **REQUIRED**: Use Claude Code's Task tool to spawn agents that do actual work
-3. **REQUIRED**: Each agent runs hooks for coordination
-4. **REQUIRED**: Batch all operations in single messages
-
-### Example Full-Stack Development:
-
-```javascript
-// Single message with all agent spawning via Claude Code's Task tool
-[Parallel Agent Execution]:
-  Task("Backend Developer", "Build REST API with Express. Use hooks for coordination.", "backend-dev")
-  Task("Frontend Developer", "Create React UI. Coordinate with backend via memory.", "coder")
-  Task("Database Architect", "Design PostgreSQL schema. Store schema in memory.", "code-analyzer")
-  Task("Test Engineer", "Write Jest tests. Check memory for API contracts.", "tester")
-  Task("DevOps Engineer", "Setup Docker and CI/CD. Document in memory.", "cicd-engineer")
-  Task("Security Auditor", "Review authentication. Report findings via hooks.", "reviewer")
-  
-  // All todos batched together
-  TodoWrite { todos: [...8-10 todos...] }
-  
-  // All file operations together
-  Write "backend/server.js"
-  Write "frontend/App.jsx"
-  Write "database/schema.sql"
-```
+### Workflow Phases
+1. **Specification** - Requirements analysis (`sparc run spec-pseudocode`)
+2. **Pseudocode** - Algorithm design (`sparc run spec-pseudocode`)
+3. **Architecture** - System design (`sparc run architect`)
+4. **Refinement** - TDD implementation (`sparc tdd`)
+5. **Completion** - Integration (`sparc run integration`)
 
 ## 📋 Agent Coordination Protocol
 
@@ -333,117 +306,7 @@ npx claude-flow@alpha hooks post-task --task-id "[task]"
 npx claude-flow@alpha hooks session-end --export-metrics true
 ```
 
-## 🎯 Concurrent Execution Examples
-
-### ✅ CORRECT WORKFLOW: MCP Coordinates, Claude Code Executes
-
-```javascript
-// Step 1: MCP tools set up coordination (optional, for complex tasks)
-[Single Message - Coordination Setup]:
-  mcp__claude-flow__swarm_init { topology: "mesh", maxAgents: 6 }
-  mcp__claude-flow__agent_spawn { type: "researcher" }
-  mcp__claude-flow__agent_spawn { type: "coder" }
-  mcp__claude-flow__agent_spawn { type: "tester" }
-
-// Step 2: Claude Code Task tool spawns ACTUAL agents that do the work
-[Single Message - Parallel Agent Execution]:
-  // Claude Code's Task tool spawns real agents concurrently
-  Task("Research agent", "Analyze API requirements and best practices. Check memory for prior decisions.", "researcher")
-  Task("Coder agent", "Implement REST endpoints with authentication. Coordinate via hooks.", "coder")
-  Task("Database agent", "Design and implement database schema. Store decisions in memory.", "code-analyzer")
-  Task("Tester agent", "Create comprehensive test suite with 90% coverage.", "tester")
-  Task("Reviewer agent", "Review code quality and security. Document findings.", "reviewer")
-  
-  // Batch ALL todos in ONE call
-  TodoWrite { todos: [
-    {id: "1", content: "Research API patterns", status: "in_progress", priority: "high"},
-    {id: "2", content: "Design database schema", status: "in_progress", priority: "high"},
-    {id: "3", content: "Implement authentication", status: "pending", priority: "high"},
-    {id: "4", content: "Build REST endpoints", status: "pending", priority: "high"},
-    {id: "5", content: "Write unit tests", status: "pending", priority: "medium"},
-    {id: "6", content: "Integration tests", status: "pending", priority: "medium"},
-    {id: "7", content: "API documentation", status: "pending", priority: "low"},
-    {id: "8", content: "Performance optimization", status: "pending", priority: "low"}
-  ]}
-  
-  // Parallel file operations
-  Bash "mkdir -p app/{src,tests,docs,config}"
-  Write "app/package.json"
-  Write "app/src/server.js"
-  Write "app/tests/server.test.js"
-  Write "app/docs/API.md"
-```
-
-### ❌ WRONG (Multiple Messages):
-```javascript
-Message 1: mcp__claude-flow__swarm_init
-Message 2: Task("agent 1")
-Message 3: TodoWrite { todos: [single todo] }
-Message 4: Write "file.js"
-// This breaks parallel coordination!
-```
-
-## Performance Benefits
-
-- **84.8% SWE-Bench solve rate**
-- **32.3% token reduction**
-- **2.8-4.4x speed improvement**
-- **27+ neural models**
-
-## Hooks Integration
-
-### Pre-Operation
-- Auto-assign agents by file type
-- Validate commands for safety
-- Prepare resources automatically
-- Optimize topology by complexity
-- Cache searches
-
-### Post-Operation
-- Auto-format code
-- Train neural patterns
-- Update memory
-- Analyze performance
-- Track token usage
-
-### Session Management
-- Generate summaries
-- Persist state
-- Track metrics
-- Restore context
-- Export workflows
-
-## Advanced Features (v2.0.0)
-
-- 🚀 Automatic Topology Selection
-- ⚡ Parallel Execution (2.8-4.4x speed)
-- 🧠 Neural Training
-- 📊 Bottleneck Analysis
-- 🤖 Smart Auto-Spawning
-- 🛡️ Self-Healing Workflows
-- 💾 Cross-Session Memory
-- 🔗 GitHub Integration
-
-## Integration Tips
-
-1. Start with basic swarm init
-2. Scale agents gradually
-3. Use memory for context
-4. Monitor progress regularly
-5. Train patterns from success
-6. Enable hooks automation
-7. Use GitHub tools first
-
-## Support
-
-- Documentation: https://github.com/ruvnet/claude-flow
-- Issues: https://github.com/ruvnet/claude-flow/issues
-
----
-
-Remember: **Claude Flow coordinates, Claude Code creates!**
-
-## 🚨 CRITICAL: UI COMPONENT RULES - MUST FOLLOW
+## 🚨 CRITICAL: UI Component Rules - MUST FOLLOW
 
 ### ❌ ABSOLUTELY FORBIDDEN
 1. **NEVER manually create UI components** - No writing component code from scratch
@@ -472,66 +335,39 @@ npx shadcn@latest add @shadcn/[component]
 cat frontend/src/components/ui/[component].tsx
 ```
 
-#### Updating UI Components
-```bash
-# 1. Check for updates
-npx shadcn@latest diff [component]
-
-# 2. Update with overwrite flag if needed
-npx shadcn@latest add @shadcn/[component] --overwrite
-```
-
 ### 📦 Currently Installed shadcn Components
 - alert, avatar, badge, button, card, dialog
 - dropdown-menu, form, icons, input, label, progress
 - scroll-area, select, separator, sheet, sidebar
 - skeleton, tabs, tooltip
 
-### 🔧 Configuration
-- **Config**: `frontend/components.json`
-- **Components**: `frontend/src/components/ui/`
-- **Imports**: Use `@/components/ui/[component]`
-- **CLI Version**: v3.0.0
-- **MCP Server**: Connected and functional
+## MCP Server Configuration
 
-### 🎯 UI Development Checklist
-Before ANY UI work:
-- [ ] Did I check existing components with `ls`?
-- [ ] Did I use `search` to find the component?
-- [ ] Did I use `view` to preview it?
-- [ ] Am I using CLI to add it?
-
-After UI work:
-- [ ] Did the CLI command succeed?
-- [ ] Is the component in `src/components/ui/`?
-- [ ] Are imports using `@/components/ui/`?
-- [ ] Did I test the component?
-
-### Common UI Commands Reference
+### Quick Setup
 ```bash
-# Add single component
-npx shadcn@latest add @shadcn/accordion
+# Add Claude Flow MCP server
+claude mcp add claude-flow npx claude-flow@alpha mcp start
 
-# Add multiple components
-npx shadcn@latest add @shadcn/accordion @shadcn/toast
+# Add Browsertools MCP server for UI testing
+claude mcp add browsertools npx @browsertools/mcp
 
-# Search components
-npx shadcn@latest search @shadcn
-
-# View before adding
-npx shadcn@latest view @shadcn/button
-
-# Check for updates
-npx shadcn@latest diff button
-
-# Get project info
-npx shadcn@latest info
+# Add Shadcn MCP server for UI components
+claude mcp add shadcn npx shadcn-mcp
 ```
 
-# important-instruction-reminders
-Do what has been asked; nothing more, nothing less.
-NEVER create files unless they're absolutely necessary for achieving your goal.
-ALWAYS prefer editing an existing file to creating a new one.
-NEVER proactively create documentation files (*.md) or README files. Only create documentation files if explicitly requested by the User.
-Never save working files, text/mds and tests to the root folder.
-ALWAYS use shadcn CLI for UI components - NEVER create them manually.
+### MCP Tool Categories
+- **Coordination**: `swarm_init`, `agent_spawn`, `task_orchestrate`
+- **Monitoring**: `swarm_status`, `agent_list`, `agent_metrics`, `task_status`, `task_results`
+- **Memory & Neural**: `memory_usage`, `neural_status`, `neural_train`, `neural_patterns`
+- **GitHub Integration**: `github_swarm`, `repo_analyze`, `pr_enhance`, `issue_triage`, `code_review`
+- **Browser Automation**: `mcp__browsertools__` - Browser control via MCP
+- **UI Components**: `mcp__shadcn__` - Component management via MCP
+
+## Important Notes
+
+- **Frontend Status**: Frontend directory is planned but not yet implemented. The project currently focuses on backend API development.
+- **Docker Support**: Full Docker support available via docker-compose for local development.
+- **Production Deployment**: Cloud Run deployment commands are available but currently disabled in Makefile (see commented sections).
+- **Session Persistence**: Sessions are persisted to allow resuming work across restarts.
+- **Memory Management**: Comprehensive memory leak prevention for long-running deployments.
+- **Concurrent Execution**: ALL operations must be batched in single messages for proper parallel execution.
