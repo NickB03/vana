@@ -1,0 +1,21 @@
+name: Test Runner
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    name: Quick Test
+    runs-on: self-hosted
+    timeout-minutes: 5
+    
+    steps:
+      - name: Test Runner
+        run: |
+          echo "✅ Runner is working!"
+          echo "Runner: ${{ runner.name }}"
+          echo "OS: ${{ runner.os }}"
