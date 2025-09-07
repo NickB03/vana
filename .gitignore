@@ -313,3 +313,8 @@ tests/archive/
 uv.lock
 runner.md
 frontend/tsconfig.tsbuildinfo
+
+# Test backups and temporary files
+frontend-test-backup/
+.playwright-mcp/
+archived/

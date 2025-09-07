@@ -1,0 +1,67 @@
+{
+  "mcpServers": {
+    "claude-flow": {
+      "command": "npx",
+      "args": ["claude-flow@alpha", "mcp", "start"],
+      "env": {
+        "PRO_MODE": "true",
+        "RATE_LIMIT": "100"
+      },
+      "enabled": true,
+      "timeout": 30000,
+      "retries": 3
+    },
+    "ruv-swarm": {
+      "command": "npx",
+      "args": ["ruv-swarm", "mcp", "start"],
+      "env": {
+        "PRO_MODE": "true"
+      },
+      "enabled": true,
+      "timeout": 30000,
+      "retries": 3
+    },
+    "shadcn": {
+      "command": "bunx",
+      "args": ["@jpisnice/shadcn-ui-mcp-server"],
+      "enabled": true,
+      "timeout": 15000,
+      "retries": 2
+    },
+    "playwright": {
+      "command": "npx",
+      "args": ["@playwright/mcp"],
+      "enabled": true,
+      "timeout": 20000,
+      "retries": 3
+    },
+    "brightdata": {
+      "command": "npx",
+      "args": ["@brightdata/mcp"],
+      "env": {
+        "BRIGHTDATA_API_KEY": "${BRAVE_API_KEY}",
+        "BRIGHTDATA_PROXY_ENDPOINT": "https://brd-customer-hl_15f2b7b8-zone-datacenter_proxy1:8fhtflm9mpg7@brd.superproxy.io:22225",
+        "BRIGHTDATA_ZONE": "datacenter_proxy1",
+        "PRO_MODE": "true",
+        "RATE_LIMIT": "50"
+      },
+      "enabled": true,
+      "timeout": 45000,
+      "retries": 5
+    },
+    "ide": {
+      "command": "node",
+      "args": ["/Applications/Claude Code.app/Contents/Resources/app/node_modules/@vscode/mcp/bin/vscode-mcp.js"],
+      "enabled": true,
+      "timeout": 10000,
+      "retries": 2
+    }
+  },
+  "globalSettings": {
+    "logLevel": "info",
+    "maxConcurrentConnections": 10,
+    "defaultTimeout": 30000,
+    "healthCheckInterval": 60000,
+    "retryDelay": 1000
+  }
+}
