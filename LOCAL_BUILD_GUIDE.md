@@ -94,7 +94,7 @@ vana/
 
 The `docker-compose.yml` provides:
 - **Backend**: FastAPI server on port 8000
-- **Frontend**: Next.js on port 5173
+- **Frontend**: Next.js on port 3000 (primary) / 5173 (fallback)
 - **PostgreSQL**: Database on port 5432
 - **Redis**: Cache on port 6379
 
@@ -140,7 +140,7 @@ make docker-up
 
 # Test endpoints
 curl http://localhost:8000/health
-curl http://localhost:5173
+curl http://localhost:3000
 ```
 
 ### 3. CI Validation
@@ -192,7 +192,7 @@ ENVIRONMENT=local
 ALLOW_ORIGINS=*
 LOG_LEVEL=INFO
 
-# Frontend
+# Frontend (Under Development - Port 3000 Primary)
 NODE_ENV=development
 NEXT_PUBLIC_API_URL=http://localhost:8000
 
@@ -213,7 +213,7 @@ make docker-down
 
 # Check for running processes
 lsof -i :8000
-lsof -i :5173
+lsof -i :3000
 ```
 
 #### Docker Build Failures
