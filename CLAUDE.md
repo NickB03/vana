@@ -24,13 +24,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 **NEVER save to root folder. Use these directories:**
 - `.claude_workspace/` - **Working documents, drafts, notes, and temporary files during development**
 - `/docs` - **Official project documentation only (API docs, architecture docs, etc.)**
-- `/src` - Source code files
-- `/tests` - Test files
-- `/config` - Configuration files
-- `/scripts` - Utility scripts
-- `/examples` - Example code
 - `/app` - Backend application code
-- `/frontend` - Frontend code (when implemented)
+- `/frontend` - Frontend code (under development)
+- `/tests` - Test files
+- `/scripts` - Utility scripts
+- `/deployment` - Deployment configurations
 
 **IMPORTANT DISTINCTION:**
 - `.claude_workspace/` = Your workspace for drafts, analysis, working notes, temporary docs
@@ -42,7 +40,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ```
 /Users/nick/Development/vana (Primary Repository)
 ├── /app                    # Backend (Python/FastAPI with Google ADK)
-├── /frontend               # Frontend (Next.js) - PLANNED, NOT YET IMPLEMENTED
+├── /frontend               # Frontend (Next.js) - Under development
 ├── /tests                  # Integration and unit tests
 ├── /docs                   # Documentation
 └── All production code lives here
@@ -62,8 +60,7 @@ Vana is a multi-agent AI research platform built on Google's Agent Development K
 - JWT/OAuth2 authentication
 
 **Frontend:**
-- Currently being developed (frontend directory not yet present)
-- Planned: Next.js with shadcn/ui components
+- Next.js with shadcn/ui components (under development)
 
 ## Commands
 
@@ -196,17 +193,7 @@ SSE implementation in `app/server.py` with memory leak prevention (see `tests/un
 
 ## CI/CD Pipeline
 
-The project uses GitHub Actions with performance-optimized workflows:
-- **CI-Fixed**: Frontend-focused validation (8-10 min)
-- **Local Build**: Full-stack testing (10-12 min)
-- **Security Scan**: Weekly vulnerability checks
-- **Dependency Check**: Package security validation
-
-Pipeline features:
-- UV package manager for 50% faster dependency installation
-- Parallel test execution across categories
-- Smart change detection to skip unnecessary jobs
-- Multi-layer caching with 90%+ cache hit rate
+**Note**: The CI/CD pipeline is currently being rebuilt and optimized. We use a Digital Ocean VPS for local runners. Check `.github/workflows/` for the latest workflow configurations.
 
 ## Testing Strategy
 
@@ -243,7 +230,7 @@ Key test files for understanding the system:
 
 **KEY**: MCP coordinates the strategy, Claude Code's Task tool executes with real agents.
 
-## 🚀 Available Agents (54 Total)
+## 🚀 Available Agents
 
 ### Core Development
 `coder`, `reviewer`, `tester`, `planner`, `researcher`
@@ -365,7 +352,7 @@ claude mcp add shadcn npx shadcn-mcp
 
 ## Important Notes
 
-- **Frontend Status**: Frontend directory is planned but not yet implemented. The project currently focuses on backend API development.
+- **Frontend Status**: Frontend is under active development with Next.js and shadcn/ui components.
 - **Docker Support**: Full Docker support available via docker-compose for local development.
 - **Production Deployment**: Cloud Run deployment commands are available but currently disabled in Makefile (see commented sections).
 - **Session Persistence**: Sessions are persisted to allow resuming work across restarts.
