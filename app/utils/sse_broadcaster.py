@@ -46,7 +46,7 @@ from typing import Any
 # Optional import for memory monitoring
 try:
     import psutil  # type: ignore
-except Exception:  # psutil may not be installed
+except ImportError:  # psutil may not be installed
     psutil = None  # type: ignore[assignment]
 
 logger = logging.getLogger(__name__)
