@@ -7,6 +7,11 @@ on:
     branches: [main]
   workflow_dispatch:
 
+# Prevent multiple runs from stacking up and burning minutes
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   NODE_VERSION: '20'
   PYTHON_VERSION: '3.11'
@@ -16,6 +21,7 @@ jobs:
   # Quick structure detection
   detect:
     runs-on: [self-hosted, macOS, ARM64]
+    timeout-minutes: 5
     outputs:
       has_backend: ${{ steps.detect.outputs.has_backend }}
       has_frontend: ${{ steps.detect.outputs.has_frontend }}
@@ -32,6 +38,7 @@ jobs:
     needs: detect
     if: needs.detect.outputs.has_backend == 'true'
     runs-on: [self-hosted, macOS, ARM64]
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       
@@ -77,6 +84,7 @@ jobs:
     needs: detect
     if: needs.detect.outputs.has_frontend == 'true'
     runs-on: [self-hosted, macOS, ARM64]
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       
@@ -122,6 +130,7 @@ jobs:
     if: always()
     needs: [backend, frontend]
     runs-on: [self-hosted, macOS, ARM64]
+    timeout-minutes: 5
     steps:
       - name: Report status
         run: |

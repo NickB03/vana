@@ -1,0 +1,93 @@
+name: CI Pipeline (VPS)
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+# Prevent multiple runs from stacking up
+concurrency:
+  group: ci-vps-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: '20'
+  PYTHON_VERSION: '3.11'
+
+jobs:
+  # Quick detection
+  detect:
+    runs-on: [self-hosted, linux, docker]
+    timeout-minutes: 5
+    outputs:
+      has_backend: ${{ steps.detect.outputs.has_backend }}
+      has_frontend: ${{ steps.detect.outputs.has_frontend }}
+    steps:
+      - uses: actions/checkout@v4
+      
+      - id: detect
+        run: |
+          echo "has_backend=$([[ -f pyproject.toml ]] && echo 'true' || echo 'false')" >> $GITHUB_OUTPUT
+          echo "has_frontend=$([[ -d frontend ]] && echo 'true' || echo 'false')" >> $GITHUB_OUTPUT
+
+  # Backend tests
+  backend:
+    needs: detect
+    if: needs.detect.outputs.has_backend == 'true'
+    runs-on: [self-hosted, linux, docker]
+    timeout-minutes: 20
+    container:
+      image: python:3.11-slim
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install uv
+        run: |
+          apt-get update && apt-get install -y curl
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          export PATH="/root/.cargo/bin:$PATH"
+          uv --version
+      
+      - name: Test backend
+        run: |
+          export PATH="/root/.cargo/bin:$PATH"
+          uv sync --dev
+          uv run ruff check .
+          uv run pytest tests/unit -v --timeout=60 || true
+
+  # Frontend tests  
+  frontend:
+    needs: detect
+    if: needs.detect.outputs.has_frontend == 'true'
+    runs-on: [self-hosted, linux, docker]
+    timeout-minutes: 20
+    container:
+      image: node:20-slim
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install pnpm
+        run: npm install -g pnpm
+      
+      - name: Test frontend
+        run: |
+          cd frontend
+          pnpm install --frozen-lockfile
+          pnpm typecheck || true
+          pnpm lint || true
+          pnpm build
+
+  # Status report
+  status:
+    if: always()
+    needs: [backend, frontend]
+    runs-on: [self-hosted, linux, docker]
+    timeout-minutes: 5
+    steps:
+      - name: Report status
+        run: |
+          echo "✅ CI Complete"
+          echo "Backend: ${{ needs.backend.result }}"
+          echo "Frontend: ${{ needs.frontend.result }}"

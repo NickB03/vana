@@ -1,0 +1,50 @@
+name: Deploy Pipeline
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deployment environment'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+          - staging
+          - production
+
+# Prevent concurrent deployments
+concurrency:
+  group: deploy-${{ github.ref }}-${{ inputs.environment || 'staging' }}
+  cancel-in-progress: false  # Don't cancel deployments
+
+jobs:
+  # Deploy job with Docker - runs on Linux VPS
+  deploy:
+    name: Deploy to GCP
+    # Use Linux runner for Docker operations
+    runs-on: [self-hosted, linux, docker]
+    timeout-minutes: 30  # Prevent stuck deployments
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      
+      # ... rest of your Docker deployment steps
+      
+  # Notification job - can run on any runner
+  notify:
+    name: Send deployment notification
+    needs: deploy
+    if: always()
+    runs-on: [self-hosted, macOS, ARM64]  # Or Linux
+    timeout-minutes: 5
+    
+    steps:
+      - name: Notify status
+        run: |
+          echo "Deployment status: ${{ needs.deploy.result }}"
+          # Add Slack/Discord/email notification here

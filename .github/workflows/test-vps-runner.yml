@@ -1,0 +1,42 @@
+name: Test VPS Runner
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: [self-hosted, linux, docker]
+    timeout-minutes: 5
+    
+    steps:
+      - name: Check system info
+        run: |
+          echo "🖥️ System Information"
+          echo "===================="
+          echo "Hostname: $(hostname)"
+          echo "CPU: $(nproc) cores"
+          echo "RAM: $(free -h | awk '/^Mem:/ {print $2}')"
+          echo "Disk: $(df -h / | awk 'NR==2 {print $4}' ) free"
+          echo "OS: $(lsb_release -ds)"
+          echo "Kernel: $(uname -r)"
+          echo "Architecture: $(uname -m)"
+          
+      - name: Check Docker
+        run: |
+          echo "🐳 Docker Status"
+          echo "==============="
+          docker --version
+          docker ps
+          
+      - name: Check runner
+        run: |
+          echo "🏃 Runner Status"
+          echo "==============="
+          echo "Runner labels: ${{ join(runner.labels, ', ') }}"
+          echo "Runner name: ${{ runner.name }}"
+          echo "Runner OS: ${{ runner.os }}"
+          
+      - name: Test container action
+        uses: docker://alpine:latest
+        with:
+          args: echo "✅ Container actions work!"

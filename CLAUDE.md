@@ -38,12 +38,62 @@
 ### 📁 File Organization Rules
 
 **NEVER save to root folder. Use these directories:**
-- `/src` - Source code files
+- `/app` - Backend source code (Python/FastAPI)
+- `/frontend` - Frontend source code (Next.js)
 - `/tests` - Test files
-- `/docs` - Documentation and markdown files
+- `/docs` - FINALIZED documentation only
 - `/config` - Configuration files
 - `/scripts` - Utility scripts
-- `/examples` - Example code
+- `/.claude_workspace` - TEMPORARY work and draft documentation
+
+## 📝 Documentation Creation & Storage Guidelines
+
+### CRITICAL: Document Management Rules
+
+**1. ALWAYS use `.claude_workspace` for NEW documentation:**
+- `.claude_workspace/docs/` - Draft documentation being worked on
+- `.claude_workspace/planning/` - Planning docs, architecture notes
+- `.claude_workspace/temp/` - Temporary analysis and reports
+
+**2. NEVER create docs in root directory:**
+- ❌ WRONG: Creating `README.md`, `NOTES.md`, `TODO.md` in root
+- ✅ RIGHT: Create in `.claude_workspace/docs/` first
+
+**3. Documentation workflow:**
+1. CREATE in `.claude_workspace/docs/`
+2. REVIEW and refine
+3. MOVE to `/docs` when finalized
+4. ARCHIVE old docs to `/archive/YYYY-MM-DD-cleanup/`
+
+**4. File naming conventions:**
+- Use descriptive names: `frontend-architecture.md`, not `notes.md`
+- Date temporary files: `2024-09-07-analysis.md`
+- Prefix drafts: `DRAFT-feature-spec.md`
+
+### 🗂️ Archive & Cleanup Policy
+
+**Automatic archival triggers:**
+- Files older than 30 days in `.claude_workspace`
+- Superseded documentation
+- Test artifacts after CI runs
+- Build outputs and caches
+
+**Archive structure:**
+```
+/archive/YYYY-MM-DD-description/
+├── configs/         # Old configuration files
+├── docs/           # Outdated documentation
+├── scripts/        # Deprecated scripts
+├── temp-files/     # Temporary work files
+└── CLEANUP_LOG.md  # What was archived and why
+```
+
+**Before creating ANY file, ask:**
+1. Is this temporary? → `.claude_workspace/temp/`
+2. Is this documentation? → `.claude_workspace/docs/` (then move to `/docs`)
+3. Is this a script? → `/scripts/`
+4. Is this configuration? → `/config/`
+5. Is this outdated? → `/archive/`
 
 ## 🔄 Repository Structure & Workflow
 
@@ -535,3 +585,33 @@ ALWAYS prefer editing an existing file to creating a new one.
 NEVER proactively create documentation files (*.md) or README files. Only create documentation files if explicitly requested by the User.
 Never save working files, text/mds and tests to the root folder.
 ALWAYS use shadcn CLI for UI components - NEVER create them manually.
+
+## 🚨 FINAL REMINDERS - FILE CREATION CHECKLIST
+
+Before creating ANY file, STOP and check:
+
+1. **Is this a documentation file?**
+   - CREATE in `.claude_workspace/docs/` FIRST
+   - NEVER in root directory
+   - MOVE to `/docs` only when finalized
+
+2. **Is this a temporary file?**
+   - CREATE in `.claude_workspace/temp/`
+   - DELETE or archive after use
+
+3. **Is this a one-time script?**
+   - CREATE in `.claude_workspace/temp/`
+   - ARCHIVE when done
+
+4. **Is this production code?**
+   - Frontend → `/frontend/`
+   - Backend → `/app/`
+   - Tests → `/tests/`
+   - Scripts → `/scripts/`
+
+5. **NEVER CREATE IN ROOT:**
+   - No `analysis.md`, `notes.md`, `TODO.md`
+   - No `test.py`, `temp.js`, `scratch.txt`
+   - No backup files or copies
+
+**Repository should stay clean and organized at all times!**
