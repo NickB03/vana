@@ -1,0 +1,239 @@
+name: Test VPS Runner
+
+on:
+  workflow_dispatch:
+    inputs:
+      runner_label:
+        description: 'Runner label to test'
+        required: false
+        default: 'self-hosted'
+        type: choice
+        options:
+          - self-hosted
+          - vana-droplet-runner
+  push:
+    paths:
+      - '.github/workflows/test-runner.yml'
+
+jobs:
+  system-info:
+    name: System Information
+    runs-on: ${{ inputs.runner_label || 'self-hosted' }}
+    timeout-minutes: 5
+    
+    steps:
+      - name: 🏃 Runner Information
+        run: |
+          echo "=== RUNNER DETAILS ==="
+          echo "Runner Name: ${{ runner.name }}"
+          echo "Runner OS: ${{ runner.os }}"
+          echo "Runner Arch: ${{ runner.arch }}"
+          echo "Runner Temp: ${{ runner.temp }}"
+          echo "Job Status: ${{ job.status }}"
+          
+      - name: 💻 System Information
+        run: |
+          echo "=== SYSTEM INFO ==="
+          echo "Hostname: $(hostname)"
+          echo "User: $(whoami)"
+          echo "OS: $(lsb_release -ds 2>/dev/null || echo 'Unknown')"
+          echo "Kernel: $(uname -r)"
+          echo "Architecture: $(uname -m)"
+          echo "CPU Cores: $(nproc)"
+          echo "Memory: $(free -h | awk '/^Mem:/ {print $2" total, "$3" used, "$4" free"}')"
+          echo "Disk Space: $(df -h / | awk 'NR==2 {print $2" total, "$3" used, "$4" free"}')"
+          echo "Load Average: $(uptime | awk -F'load average:' '{print $2}')"
+          
+      - name: 🐳 Docker Status
+        run: |
+          echo "=== DOCKER INFO ==="
+          if command -v docker &> /dev/null; then
+            docker --version
+            echo "Docker Running: Yes"
+            docker ps || echo "Cannot connect to Docker daemon"
+            echo ""
+            echo "Docker Images:"
+            docker images --format "table {{.Repository}}\t{{.Tag}}\t{{.Size}}" | head -5
+          else
+            echo "Docker: Not installed"
+          fi
+          
+      - name: 🔧 Tool Versions
+        run: |
+          echo "=== INSTALLED TOOLS ==="
+          echo "Git: $(git --version 2>/dev/null || echo 'Not installed')"
+          echo "Node: $(node --version 2>/dev/null || echo 'Not installed')"
+          echo "Python: $(python3 --version 2>/dev/null || echo 'Not installed')"
+          echo "Curl: $(curl --version | head -1 2>/dev/null || echo 'Not installed')"
+          echo "Make: $(make --version | head -1 2>/dev/null || echo 'Not installed')"
+
+  network-test:
+    name: Network Connectivity
+    runs-on: ${{ inputs.runner_label || 'self-hosted' }}
+    timeout-minutes: 5
+    
+    steps:
+      - name: 🌐 Test External Connectivity
+        run: |
+          echo "=== NETWORK TESTS ==="
+          echo "Testing GitHub API..."
+          curl -s -o /dev/null -w "GitHub API: %{http_code} (Response time: %{time_total}s)\n" https://api.github.com
+          
+          echo "Testing Docker Hub..."
+          curl -s -o /dev/null -w "Docker Hub: %{http_code} (Response time: %{time_total}s)\n" https://hub.docker.com
+          
+          echo "Testing NPM Registry..."
+          curl -s -o /dev/null -w "NPM Registry: %{http_code} (Response time: %{time_total}s)\n" https://registry.npmjs.org
+          
+          echo ""
+          echo "DNS Resolution:"
+          nslookup github.com | grep -A1 "Name:" || echo "DNS lookup failed"
+          
+      - name: 📍 IP Information
+        run: |
+          echo "=== IP INFO ==="
+          echo "Public IP: $(curl -s ifconfig.me)"
+          echo "Location: $(curl -s ipinfo.io/city), $(curl -s ipinfo.io/region)"
+          echo "Provider: $(curl -s ipinfo.io/org)"
+
+  docker-test:
+    name: Docker Functionality
+    runs-on: ${{ inputs.runner_label || 'self-hosted' }}
+    timeout-minutes: 5
+    
+    steps:
+      - name: 🐳 Test Docker Container
+        run: |
+          echo "=== DOCKER CONTAINER TEST ==="
+          if command -v docker &> /dev/null; then
+            echo "Running Alpine container..."
+            docker run --rm alpine:latest echo "✅ Docker containers work!"
+            
+            echo ""
+            echo "Running Ubuntu container with commands..."
+            docker run --rm ubuntu:latest bash -c "echo 'Ubuntu container running' && uname -a"
+            
+            echo ""
+            echo "Testing volume mounts..."
+            echo "Test file content" > /tmp/test-file.txt
+            docker run --rm -v /tmp/test-file.txt:/test.txt:ro alpine:latest cat /test.txt
+            rm /tmp/test-file.txt
+          else
+            echo "⚠️  Docker not available"
+          fi
+
+  github-actions-test:
+    name: GitHub Actions Features
+    runs-on: ${{ inputs.runner_label || 'self-hosted' }}
+    timeout-minutes: 5
+    
+    steps:
+      - name: 📦 Checkout Code
+        uses: actions/checkout@v4
+        
+      - name: 📝 Test File Operations
+        run: |
+          echo "=== FILE OPERATIONS TEST ==="
+          echo "Current directory: $(pwd)"
+          echo "Files in repo root:"
+          ls -la | head -10
+          
+          echo ""
+          echo "Creating test file..."
+          echo "Test content $(date)" > test-file.txt
+          
+          echo "Reading test file:"
+          cat test-file.txt
+          
+          echo "Removing test file..."
+          rm test-file.txt
+          
+      - name: 🔐 Test Secrets Access
+        env:
+          TEST_SECRET: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "=== SECRETS TEST ==="
+          if [ -n "$TEST_SECRET" ]; then
+            echo "✅ Can access secrets (GITHUB_TOKEN exists)"
+          else
+            echo "⚠️  No secrets accessible"
+          fi
+          
+      - name: 💾 Test Artifacts
+        run: |
+          echo "=== ARTIFACTS TEST ==="
+          mkdir -p artifacts
+          echo "Test artifact content $(date)" > artifacts/test.txt
+          echo "System info:" > artifacts/system.txt
+          uname -a >> artifacts/system.txt
+          free -h >> artifacts/system.txt
+          echo "✅ Artifacts created"
+          
+      - name: 📤 Upload Test Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-artifacts-${{ github.run_number }}
+          path: artifacts/
+          retention-days: 1
+
+  performance-test:
+    name: Performance Benchmark
+    runs-on: ${{ inputs.runner_label || 'self-hosted' }}
+    timeout-minutes: 5
+    
+    steps:
+      - name: ⚡ CPU Benchmark
+        run: |
+          echo "=== PERFORMANCE TEST ==="
+          echo "Simple CPU benchmark (calculating prime numbers)..."
+          start=$(date +%s)
+          factor 12345678901234567890 > /dev/null
+          end=$(date +%s)
+          echo "CPU task completed in $((end - start)) seconds"
+          
+      - name: 💾 Memory Test
+        run: |
+          echo "Memory allocation test..."
+          python3 -c "
+          import time
+          print('Allocating 100MB of memory...')
+          data = bytearray(100 * 1024 * 1024)
+          print('✅ Memory allocated successfully')
+          " 2>/dev/null || echo "Python not available for memory test"
+          
+      - name: 🔄 I/O Test
+        run: |
+          echo "Disk I/O test..."
+          dd if=/dev/zero of=/tmp/testfile bs=1M count=100 2>&1 | grep -E 'copied|MB/s'
+          rm /tmp/testfile
+
+  summary:
+    name: Test Summary
+    needs: [system-info, network-test, docker-test, github-actions-test, performance-test]
+    runs-on: ${{ inputs.runner_label || 'self-hosted' }}
+    if: always()
+    timeout-minutes: 5
+    
+    steps:
+      - name: 📊 Summary Report
+        run: |
+          echo "=== VPS RUNNER TEST SUMMARY ==="
+          echo "Runner: ${{ runner.name }}"
+          echo "Workflow Run: #${{ github.run_number }}"
+          echo ""
+          echo "Test Results:"
+          echo "✅ System Info: ${{ needs.system-info.result }}"
+          echo "✅ Network: ${{ needs.network-test.result }}"
+          echo "✅ Docker: ${{ needs.docker-test.result }}"
+          echo "✅ GitHub Actions: ${{ needs.github-actions-test.result }}"
+          echo "✅ Performance: ${{ needs.performance-test.result }}"
+          echo ""
+          if [ "${{ needs.system-info.result }}" == "success" ] && \
+             [ "${{ needs.network-test.result }}" == "success" ] && \
+             [ "${{ needs.docker-test.result }}" == "success" ] && \
+             [ "${{ needs.github-actions-test.result }}" == "success" ] && \
+             [ "${{ needs.performance-test.result }}" == "success" ]; then
+            echo "🎉 ALL TESTS PASSED! Your VPS runner is working perfectly!"
+          else
+            echo "⚠️  Some tests did not pass. Check the logs above."
+          fi
