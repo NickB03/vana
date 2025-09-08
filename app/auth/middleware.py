@@ -60,33 +60,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         return request.client.host if request.client else "unknown"
 
 
-class SecurityHeadersMiddleware(BaseHTTPMiddleware):
-    """Add security headers to responses."""
-
-    async def dispatch(self, request: Request, call_next):
-        response = await call_next(request)
-
-        # Add security headers
-        response.headers["X-Content-Type-Options"] = "nosniff"
-        response.headers["X-Frame-Options"] = "DENY"
-        response.headers["X-XSS-Protection"] = "1; mode=block"
-        response.headers["Strict-Transport-Security"] = (
-            "max-age=31536000; includeSubDomains"
-        )
-        response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
-
-        # Content Security Policy for API endpoints
-        if request.url.path.startswith("/auth/") or request.url.path.startswith(
-            "/api/"
-        ):
-            response.headers["Content-Security-Policy"] = (
-                "default-src 'none'; "
-                "frame-ancestors 'none'; "
-                "form-action 'none'; "
-                "base-uri 'none'"
-            )
-
-        return response
+# Removed duplicate SecurityHeadersMiddleware - use app.middleware.security.SecurityHeadersMiddleware instead
 
 
 class AuthenticationMiddleware(BaseHTTPMiddleware):
