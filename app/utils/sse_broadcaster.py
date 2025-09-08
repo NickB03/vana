@@ -45,11 +45,9 @@ from typing import Any
 
 # Optional import for memory monitoring
 try:
-    import psutil
-
-    HAS_PSUTIL = True
-except ImportError:
-    HAS_PSUTIL = False
+    import psutil  # type: ignore
+except ImportError:  # psutil may not be installed
+    psutil = None  # type: ignore[assignment]
 
 logger = logging.getLogger(__name__)
 
@@ -124,7 +122,7 @@ class MemoryOptimizedQueue:
 
     def __init__(self, maxsize: int = 0):
         self.maxsize = maxsize
-        self._queue: deque = deque()
+        self._queue: deque[Any] = deque()
         self._condition = asyncio.Condition()
         self._closed = False
         self._last_activity = time.time()
@@ -266,7 +264,7 @@ class EnhancedSSEBroadcaster:
         self._lock = threading.Lock()
 
         # Session-specific event history with bounded deques
-        self._event_history: dict[str, deque] = defaultdict(
+        self._event_history: dict[str, deque[SSEEvent]] = defaultdict(
             lambda: deque(maxlen=self.config.max_history_per_session)
         )
 
@@ -275,10 +273,10 @@ class EnhancedSSEBroadcaster:
 
         # Metrics tracking
         self._metrics = MemoryMetrics()
-        self._process = psutil.Process(os.getpid()) if HAS_PSUTIL else None
+        self._process = psutil.Process(os.getpid()) if psutil else None
 
         # Background cleanup task
-        self._cleanup_task: asyncio.Task | None = None
+        self._cleanup_task: asyncio.Task[None] | None = None
         self._running = False
 
         # Start background cleanup if event loop is available
@@ -293,8 +291,12 @@ class EnhancedSSEBroadcaster:
         """Start the background cleanup task."""
         if not self._running:
             self._running = True
-            loop = asyncio.get_running_loop()
-            self._cleanup_task = loop.create_task(self._background_cleanup())
+            try:
+                loop = asyncio.get_running_loop()
+                self._cleanup_task = loop.create_task(self._background_cleanup())
+            except RuntimeError:
+                # No event loop running, will start when needed
+                pass
 
     async def _background_cleanup(self) -> None:
         """Background task for periodic cleanup."""
@@ -331,7 +333,7 @@ class EnhancedSSEBroadcaster:
         # Clean up dead queues
         with self._lock:
             for session_id, queues in list(self._subscribers.items()):
-                alive_queues: list[MemoryOptimizedQueue] = []
+                alive_queues = []
                 for queue in queues:
                     if not queue._closed and not queue.is_stale(
                         self.config.max_subscriber_idle_time
@@ -341,12 +343,8 @@ class EnhancedSSEBroadcaster:
                         dead_queues += 1
                         queue.close()
 
-                removed_count = len(queues) - len(alive_queues)
                 if alive_queues:
                     self._subscribers[session_id] = alive_queues
-                    # Adjust subscriber count to match alive queues
-                    for _ in range(removed_count):
-                        self._session_manager.decrement_subscribers(session_id)
                 else:
                     # No alive queues, remove session and reset subscriber count
                     del self._subscribers[session_id]
@@ -390,7 +388,7 @@ class EnhancedSSEBroadcaster:
         """Update memory usage metrics."""
         try:
             # Only check process memory if we have psutil available and configured
-            if HAS_PSUTIL and self._process and self.config.enable_metrics:
+            if self._process and self.config.enable_metrics:
                 try:
                     memory_info = self._process.memory_info()
                     process_memory_mb = memory_info.rss / (1024 * 1024)
@@ -613,7 +611,7 @@ class EnhancedSSEBroadcaster:
 
                 logger.info("Reset all subscribers")
 
-    def get_stats(self) -> dict:
+    def get_stats(self) -> dict[str, Any]:
         """Get comprehensive broadcaster statistics."""
         with self._lock:
             session_stats = {}

@@ -32,6 +32,7 @@ dependencies = [
     "sqlalchemy>=2.0.0",
     "alembic>=1.13.0",
     "pydantic-settings>=2.0.0",
+    "google-generativeai>=0.8.5",
 ]
 
 requires-python = ">=3.10,<3.14"
@@ -47,10 +48,11 @@ dev = [
     "psutil>=5.9.0,<6.0.0",
     "bandit[toml]>=1.7.0,<2.0.0",
     "safety>=2.3.0,<4.0.0",
-    "ruff>=0.1.0,<1.0.0",  # Added ruff to dev group for CI compatibility
-    "mypy>=1.0.0,<2.0.0",  # Added mypy to dev group for CI compatibility
-    "types-pyyaml>=6.0.12,<7.0.0",  # Add type stubs for mypy
-    "types-requests>=2.31.0,<3.0.0",  # Add type stubs for mypy
+    "ruff>=0.1.0,<1.0.0", # Added ruff to dev group for CI compatibility
+    "mypy>=1.0.0,<2.0.0", # Added mypy to dev group for CI compatibility
+    "types-pyyaml>=6.0.12,<7.0.0", # Add type stubs for mypy
+    "types-requests>=2.31.0,<3.0.0", # Add type stubs for mypy
+    "codespell>=2.2.6",
 ]
 lint = [
     "ruff>=0.1.0,<1.0.0",
