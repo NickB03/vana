@@ -64,7 +64,7 @@ docker-up:
 	docker-compose up -d
 	@echo "✅ Services running at:"
 	@echo "   - Backend: http://localhost:8000"
-	@echo "   - Frontend: http://localhost:5173"
+	@echo "   - Frontend: http://localhost:3000"
 
 docker-down:
 	@echo "🛑 Stopping Docker services..."

@@ -291,8 +291,12 @@ class EnhancedSSEBroadcaster:
         """Start the background cleanup task."""
         if not self._running:
             self._running = True
-            loop = asyncio.get_running_loop()
-            self._cleanup_task = loop.create_task(self._background_cleanup())
+            try:
+                loop = asyncio.get_running_loop()
+                self._cleanup_task = loop.create_task(self._background_cleanup())
+            except RuntimeError:
+                # No event loop running, will start when needed
+                pass
 
     async def _background_cleanup(self) -> None:
         """Background task for periodic cleanup."""

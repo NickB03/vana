@@ -5699,6 +5699,7 @@ jupyter = [
 [package.dev-dependencies]
 dev = [
     { name = "bandit", extra = ["toml"] },
+    { name = "codespell" },
     { name = "mypy" },
     { name = "nest-asyncio" },
     { name = "psutil" },
@@ -5754,6 +5755,7 @@ provides-extras = ["dev", "jupyter"]
 [package.metadata.requires-dev]
 dev = [
     { name = "bandit", extras = ["toml"], specifier = ">=1.7.0,<2.0.0" },
+    { name = "codespell", specifier = ">=2.2.6" },
     { name = "mypy", specifier = ">=1.0.0,<2.0.0" },
     { name = "nest-asyncio", specifier = ">=1.5.6,<2.0.0" },
     { name = "psutil", specifier = ">=5.9.0,<6.0.0" },

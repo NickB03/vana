@@ -94,7 +94,7 @@ vana/
 
 The `docker-compose.yml` provides:
 - **Backend**: FastAPI server on port 8000
-- **Frontend**: Next.js on port 3000 (primary) / 5173 (fallback)
+- **Frontend**: Next.js on port 3000 (primary development port)
 - **PostgreSQL**: Database on port 5432
 - **Redis**: Cache on port 6379
 
@@ -192,7 +192,7 @@ ENVIRONMENT=local
 ALLOW_ORIGINS=*
 LOG_LEVEL=INFO
 
-# Frontend (Under Development - Port 3000 Primary)
+# Frontend (Next.js on port 3000)
 NODE_ENV=development
 NEXT_PUBLIC_API_URL=http://localhost:8000
 
