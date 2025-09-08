@@ -277,7 +277,7 @@ class CORSMiddleware(BaseHTTPMiddleware):
         allowed_headers: list | None = None,
     ):
         super().__init__(app)
-        self.allowed_origins = allowed_origins or ["http://localhost:5173"]
+        self.allowed_origins = allowed_origins or ["http://localhost:3000"]
         self.allowed_methods = allowed_methods or [
             "GET",
             "POST",
