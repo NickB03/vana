@@ -11,6 +11,7 @@ from datetime import datetime, timezone
 # Optional import for system metrics with graceful fallback
 try:
     import psutil
+
     PSUTIL_AVAILABLE = True
 except ImportError as e:
     logger = logging.getLogger(__name__)
@@ -180,10 +181,18 @@ class MetricsCollector:
             if hasattr(self, "_last_network_stats"):
                 time_delta = time.time() - self._last_network_time
                 if time_delta > 0:
-                    bytes_recv_delta = network.bytes_recv - self._last_network_stats.bytes_recv
-                    bytes_sent_delta = network.bytes_sent - self._last_network_stats.bytes_sent
-                    self.current_metrics.network_in = bytes_recv_delta / time_delta / 1024  # KB/s
-                    self.current_metrics.network_out = bytes_sent_delta / time_delta / 1024  # KB/s
+                    bytes_recv_delta = (
+                        network.bytes_recv - self._last_network_stats.bytes_recv
+                    )
+                    bytes_sent_delta = (
+                        network.bytes_sent - self._last_network_stats.bytes_sent
+                    )
+                    self.current_metrics.network_in = (
+                        bytes_recv_delta / time_delta / 1024
+                    )  # KB/s
+                    self.current_metrics.network_out = (
+                        bytes_sent_delta / time_delta / 1024
+                    )  # KB/s
 
             self._last_network_stats = network
             self._last_network_time = time.time()
@@ -213,9 +222,7 @@ class MetricsCollector:
 
         # Check response time
         if metrics.p95_response_time > self.alert_thresholds["response_time_p95"]:
-            logger.warning(
-                f"High P95 response time: {metrics.p95_response_time:.2f}ms"
-            )
+            logger.warning(f"High P95 response time: {metrics.p95_response_time:.2f}ms")
 
         # Check error rate
         if metrics.error_rate > self.alert_thresholds["error_rate"]:
@@ -244,10 +251,7 @@ class MetricsCollector:
         self.current_metrics.concurrent_requests = len(self.active_requests)
 
     def record_request_end(
-        self,
-        request_id: str,
-        success: bool = True,
-        endpoint: str | None = None
+        self, request_id: str, success: bool = True, endpoint: str | None = None
     ) -> None:
         """Record the completion of a request."""
         if request_id not in self.active_requests:
