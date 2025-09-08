@@ -6,7 +6,9 @@ import os
 import sys
 
 # Add the project root to the Python path
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+sys.path.insert(
+    0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+)
 
 from app.utils.sse_broadcaster import BroadcasterConfig, EnhancedSSEBroadcaster
 
@@ -19,7 +21,7 @@ async def minimal_test():
     config = BroadcasterConfig(
         max_queue_size=10,
         cleanup_interval=300.0,  # Very long cleanup interval to avoid background tasks
-        enable_metrics=False,    # Disable metrics to avoid psutil issues
+        enable_metrics=False,  # Disable metrics to avoid psutil issues
     )
 
     broadcaster = EnhancedSSEBroadcaster(config)
@@ -31,10 +33,9 @@ async def minimal_test():
         print("   ✓ Subscriber created")
 
         print("2. Broadcasting event...")
-        await broadcaster.broadcast_event(session_id, {
-            "type": "test",
-            "data": {"message": "Hello"}
-        })
+        await broadcaster.broadcast_event(
+            session_id, {"type": "test", "data": {"message": "Hello"}}
+        )
         print("   ✓ Event broadcast")
 
         print("3. Receiving event (5s timeout)...")

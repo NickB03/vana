@@ -11,7 +11,9 @@ import sys
 import time
 
 # Add the project root to the Python path
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+sys.path.insert(
+    0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+)
 
 from app.utils.sse_broadcaster import (
     BroadcasterConfig,
@@ -144,9 +146,9 @@ async def test_multiple_subscribers():
             try:
                 event = await asyncio.wait_for(queue.get(), timeout=5.0)
                 received_events.append(event)
-                print(f"    ✓ Subscriber {i+1} received event")
+                print(f"    ✓ Subscriber {i + 1} received event")
             except asyncio.TimeoutError:
-                raise AssertionError(f"Subscriber {i+1} did not receive event")
+                raise AssertionError(f"Subscriber {i + 1} did not receive event")
 
         # Verify all events
         assert len(received_events) == num_subscribers
@@ -250,11 +252,11 @@ async def test_event_formatting():
         type="test_event",
         data={"message": "test", "number": 42, "boolean": True},
         id="test_id_123",
-        retry=5000
+        retry=5000,
     )
 
     formatted = event.to_sse_format()
-    lines = formatted.split('\n')
+    lines = formatted.split("\n")
 
     # Check format
     assert "id: test_id_123" in lines
@@ -282,7 +284,7 @@ async def test_event_formatting():
                 "boolean": True,
                 "null": None,
                 "array": [1, 2, 3],
-                "object": {"nested": "value"}
+                "object": {"nested": "value"},
             },
         }
 
@@ -349,7 +351,9 @@ async def test_cleanup_functionality():
         final_events = final_stats["totalEvents"]
 
         print(f"  - Events after cleanup: {final_events}")
-        print(f"  - Cleanup metrics: {final_stats['metrics']['expired_events_cleaned']} events cleaned")
+        print(
+            f"  - Cleanup metrics: {final_stats['metrics']['expired_events_cleaned']} events cleaned"
+        )
 
         # Some events should have been cleaned up due to TTL
         # (Note: this is somewhat timing-dependent, so we're lenient)

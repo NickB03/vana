@@ -62,11 +62,13 @@ class SSEPerformanceBenchmark:
         self,
         concurrent_connections: int = 100,
         events_per_connection: int = 100,
-        duration_seconds: float = 60.0
+        duration_seconds: float = 60.0,
     ) -> PerformanceMetrics:
         """Benchmark event throughput under load."""
-        print(f"Starting throughput benchmark: {concurrent_connections} connections, "
-              f"{events_per_connection} events each")
+        print(
+            f"Starting throughput benchmark: {concurrent_connections} connections, "
+            f"{events_per_connection} events each"
+        )
 
         start_time = time.time()
         self.latency_measurements.clear()
@@ -155,17 +157,14 @@ class SSEPerformanceBenchmark:
 
         # Start all client workers
         client_tasks = [
-            asyncio.create_task(client_worker(i))
-            for i in range(concurrent_connections)
+            asyncio.create_task(client_worker(i)) for i in range(concurrent_connections)
         ]
 
         # Start event broadcasting
         broadcast_task = asyncio.create_task(event_broadcaster())
 
         # Memory monitoring task
-        monitor_task = asyncio.create_task(
-            self._monitor_memory_usage(duration_seconds)
-        )
+        monitor_task = asyncio.create_task(self._monitor_memory_usage(duration_seconds))
 
         # Wait for all tasks to complete
         client_results = await asyncio.gather(*client_tasks)
@@ -186,7 +185,9 @@ class SSEPerformanceBenchmark:
 
         # Calculate performance metrics
         events_per_second = events_sent / total_duration if total_duration > 0 else 0
-        connections_per_second = successful_connections / total_duration if total_duration > 0 else 0
+        connections_per_second = (
+            successful_connections / total_duration if total_duration > 0 else 0
+        )
 
         # Latency statistics
         if all_latencies:
@@ -202,8 +203,10 @@ class SSEPerformanceBenchmark:
         peak_memory = max(self.memory_samples) if self.memory_samples else 0.0
 
         # Success rates
-        event_delivery_rate = (total_events_received / events_sent * 100) if events_sent > 0 else 0
-        connection_success_rate = (successful_connections / concurrent_connections * 100)
+        event_delivery_rate = (
+            (total_events_received / events_sent * 100) if events_sent > 0 else 0
+        )
+        connection_success_rate = successful_connections / concurrent_connections * 100
 
         return PerformanceMetrics(
             test_name="throughput_benchmark",
@@ -226,8 +229,7 @@ class SSEPerformanceBenchmark:
         )
 
     async def benchmark_connection_scalability(
-        self,
-        connection_counts: list[int] = [10, 50, 100, 200, 500]
+        self, connection_counts: list[int] = [10, 50, 100, 200, 500]
     ) -> list[PerformanceMetrics]:
         """Benchmark scalability with increasing connection counts."""
         results = []
@@ -239,7 +241,7 @@ class SSEPerformanceBenchmark:
             metrics = await self.benchmark_throughput(
                 concurrent_connections=connection_count,
                 events_per_connection=50,
-                duration_seconds=30.0
+                duration_seconds=30.0,
             )
 
             metrics.test_name = f"scalability_{connection_count}_connections"
@@ -252,12 +254,12 @@ class SSEPerformanceBenchmark:
         return results
 
     async def benchmark_latency_distribution(
-        self,
-        event_count: int = 1000,
-        connection_count: int = 10
+        self, event_count: int = 1000, connection_count: int = 10
     ) -> PerformanceMetrics:
         """Benchmark latency distribution for detailed analysis."""
-        print(f"Starting latency benchmark: {connection_count} connections, {event_count} events")
+        print(
+            f"Starting latency benchmark: {connection_count} connections, {event_count} events"
+        )
 
         start_time = time.time()
         self.latency_measurements.clear()
@@ -353,7 +355,9 @@ class SSEPerformanceBenchmark:
             max_latency_ms=max_latency,
             peak_memory_mb=0.0,
             avg_cpu_percent=0.0,
-            event_delivery_rate=(events_received / events_sent * 100) if events_sent > 0 else 0,
+            event_delivery_rate=(events_received / events_sent * 100)
+            if events_sent > 0
+            else 0,
             connection_success_rate=100.0,
         )
 
@@ -406,7 +410,9 @@ class SSEPerformanceBenchmark:
         print("")
         print("Throughput:")
         print(f"  Events/sec: {metrics.events_per_second:.1f}")
-        print(f"  Connections: {metrics.successful_connections}/{metrics.total_connections}")
+        print(
+            f"  Connections: {metrics.successful_connections}/{metrics.total_connections}"
+        )
         print(f"  Connection success rate: {metrics.connection_success_rate:.1f}%")
         print("")
         print("Event Delivery:")
@@ -453,9 +459,7 @@ class TestSSEPerformance:
     async def test_moderate_throughput_benchmark(self, benchmark):
         """Test moderate throughput performance."""
         metrics = await benchmark.benchmark_throughput(
-            concurrent_connections=50,
-            events_per_connection=100,
-            duration_seconds=30.0
+            concurrent_connections=50, events_per_connection=100, duration_seconds=30.0
         )
 
         benchmark.print_metrics(metrics)
@@ -472,9 +476,7 @@ class TestSSEPerformance:
     async def test_high_throughput_benchmark(self, benchmark):
         """Test high throughput performance."""
         metrics = await benchmark.benchmark_throughput(
-            concurrent_connections=100,
-            events_per_connection=200,
-            duration_seconds=45.0
+            concurrent_connections=100, events_per_connection=200, duration_seconds=45.0
         )
 
         benchmark.print_metrics(metrics)
@@ -495,11 +497,13 @@ class TestSSEPerformance:
 
         print("\n=== Connection Scalability Results ===")
         for metrics in results:
-            print(f"Connections: {metrics.total_connections:3d} | "
-                  f"Events/s: {metrics.events_per_second:6.1f} | "
-                  f"Success: {metrics.connection_success_rate:5.1f}% | "
-                  f"Latency P95: {metrics.p95_latency_ms:6.1f}ms | "
-                  f"Memory: {metrics.peak_memory_mb:5.1f}MB")
+            print(
+                f"Connections: {metrics.total_connections:3d} | "
+                f"Events/s: {metrics.events_per_second:6.1f} | "
+                f"Success: {metrics.connection_success_rate:5.1f}% | "
+                f"Latency P95: {metrics.p95_latency_ms:6.1f}ms | "
+                f"Memory: {metrics.peak_memory_mb:5.1f}MB"
+            )
 
         # Check that performance doesn't degrade too much with scale
         baseline = results[0]  # 10 connections
@@ -507,7 +511,9 @@ class TestSSEPerformance:
 
         # Events per second should not degrade by more than 50%
         throughput_ratio = high_load.events_per_second / baseline.events_per_second
-        assert throughput_ratio >= 0.5, f"Throughput degraded too much: {throughput_ratio:.2f}"
+        assert throughput_ratio >= 0.5, (
+            f"Throughput degraded too much: {throughput_ratio:.2f}"
+        )
 
         # Latency should not increase by more than 5x
         latency_ratio = high_load.p95_latency_ms / baseline.p95_latency_ms
@@ -517,8 +523,7 @@ class TestSSEPerformance:
     async def test_latency_distribution(self, benchmark):
         """Test latency distribution analysis."""
         metrics = await benchmark.benchmark_latency_distribution(
-            event_count=500,
-            connection_count=20
+            event_count=500, connection_count=20
         )
 
         benchmark.print_metrics(metrics)
@@ -535,9 +540,7 @@ class TestSSEPerformance:
         """Test performance under sustained load."""
         # Longer duration test to check for performance degradation
         metrics = await benchmark.benchmark_throughput(
-            concurrent_connections=75,
-            events_per_connection=300,
-            duration_seconds=90.0
+            concurrent_connections=75, events_per_connection=300, duration_seconds=90.0
         )
 
         benchmark.print_metrics(metrics)
@@ -579,7 +582,9 @@ class TestSSEPerformance:
                     }
 
                     task = asyncio.create_task(
-                        benchmark.broadcaster.broadcast_event(session_target, event_data)
+                        benchmark.broadcaster.broadcast_event(
+                            session_target, event_data
+                        )
                     )
                     tasks.append(task)
 
@@ -633,7 +638,7 @@ if __name__ == "__main__":
             throughput_metrics = await benchmark.benchmark_throughput(
                 concurrent_connections=100,
                 events_per_connection=100,
-                duration_seconds=45.0
+                duration_seconds=45.0,
             )
             benchmark.print_metrics(throughput_metrics)
 
@@ -644,8 +649,7 @@ if __name__ == "__main__":
             # Run latency test
             print("\n=== Latency Distribution Test ===")
             latency_metrics = await benchmark.benchmark_latency_distribution(
-                event_count=500,
-                connection_count=20
+                event_count=500, connection_count=20
             )
             benchmark.print_metrics(latency_metrics)
 

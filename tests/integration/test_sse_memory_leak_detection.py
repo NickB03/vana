@@ -16,6 +16,7 @@ import pytest
 
 try:
     import psutil
+
     HAS_PSUTIL = True
 except ImportError:
     HAS_PSUTIL = False
@@ -77,7 +78,9 @@ class AdvancedMemoryProfiler:
             tracemalloc.stop()
             self.tracemalloc_enabled = False
 
-    def take_snapshot(self, broadcaster: EnhancedSSEBroadcaster | None = None) -> MemorySnapshot:
+    def take_snapshot(
+        self, broadcaster: EnhancedSSEBroadcaster | None = None
+    ) -> MemorySnapshot:
         """Take a comprehensive memory snapshot."""
         # Force garbage collection
         gc.collect()
@@ -101,27 +104,31 @@ class AdvancedMemoryProfiler:
             f"generation_{i}": len(gc.get_objects(i))
             for i in range(len(gc.get_stats()))
         }
-        gc_stats.update({
-            "collected": gc.collect(),
-            "threshold": gc.get_threshold(),
-        })
+        gc_stats.update(
+            {
+                "collected": gc.collect(),
+                "threshold": gc.get_threshold(),
+            }
+        )
 
         # Get tracemalloc stats
         tracemalloc_stats = None
         if self.tracemalloc_enabled:
             snapshot = tracemalloc.take_snapshot()
-            top_stats = snapshot.statistics('lineno')
+            top_stats = snapshot.statistics("lineno")
 
             tracemalloc_stats = {
                 "total_size_mb": sum(stat.size for stat in top_stats) / (1024 * 1024),
                 "top_allocations": [
                     {
-                        "filename": stat.traceback.format()[-1] if stat.traceback else "unknown",
+                        "filename": stat.traceback.format()[-1]
+                        if stat.traceback
+                        else "unknown",
                         "size_mb": stat.size / (1024 * 1024),
                         "count": stat.count,
                     }
                     for stat in top_stats[:10]
-                ]
+                ],
             }
 
         # Get broadcaster stats
@@ -149,12 +156,14 @@ class AdvancedMemoryProfiler:
         initial_snapshot: MemorySnapshot,
         final_snapshot: MemorySnapshot,
         threshold_mb: float = 10.0,
-        growth_threshold_percent: float = 20.0
+        growth_threshold_percent: float = 20.0,
     ) -> MemoryLeakReport:
         """Analyze snapshots for potential memory leaks."""
 
         # Calculate memory growth
-        memory_growth_mb = final_snapshot.process_memory_mb - initial_snapshot.process_memory_mb
+        memory_growth_mb = (
+            final_snapshot.process_memory_mb - initial_snapshot.process_memory_mb
+        )
         memory_growth_percent = (
             (memory_growth_mb / initial_snapshot.process_memory_mb) * 100
             if initial_snapshot.process_memory_mb > 0
@@ -163,8 +172,8 @@ class AdvancedMemoryProfiler:
 
         # Determine if leak is detected
         leak_detected = (
-            memory_growth_mb > threshold_mb or
-            memory_growth_percent > growth_threshold_percent
+            memory_growth_mb > threshold_mb
+            or memory_growth_percent > growth_threshold_percent
         )
 
         # Calculate confidence based on multiple factors
@@ -176,7 +185,9 @@ class AdvancedMemoryProfiler:
 
         # Factor 2: Percentage growth
         if memory_growth_percent > growth_threshold_percent:
-            confidence_factors.append(min(memory_growth_percent / growth_threshold_percent, 2.0) * 0.3)
+            confidence_factors.append(
+                min(memory_growth_percent / growth_threshold_percent, 2.0) * 0.3
+            )
 
         # Factor 3: Object count growth
         object_growth = final_snapshot.objects_count - initial_snapshot.objects_count
@@ -188,13 +199,19 @@ class AdvancedMemoryProfiler:
         # Generate recommendations
         recommendations = []
         if leak_detected:
-            recommendations.append("Memory leak detected - investigate object retention")
+            recommendations.append(
+                "Memory leak detected - investigate object retention"
+            )
 
             if memory_growth_mb > 50:
-                recommendations.append("Large memory growth detected - check for unbounded collections")
+                recommendations.append(
+                    "Large memory growth detected - check for unbounded collections"
+                )
 
             if object_growth > 5000:
-                recommendations.append("Significant object growth - check for circular references")
+                recommendations.append(
+                    "Significant object growth - check for circular references"
+                )
 
         # Detailed analysis
         detailed_analysis = {
@@ -208,11 +225,16 @@ class AdvancedMemoryProfiler:
             initial_stats = initial_snapshot.broadcaster_stats
             final_stats = final_snapshot.broadcaster_stats
 
-            detailed_analysis.update({
-                "sessions_growth": final_stats["totalSessions"] - initial_stats["totalSessions"],
-                "subscribers_growth": final_stats["totalSubscribers"] - initial_stats["totalSubscribers"],
-                "events_growth": final_stats["totalEvents"] - initial_stats["totalEvents"],
-            })
+            detailed_analysis.update(
+                {
+                    "sessions_growth": final_stats["totalSessions"]
+                    - initial_stats["totalSessions"],
+                    "subscribers_growth": final_stats["totalSubscribers"]
+                    - initial_stats["totalSubscribers"],
+                    "events_growth": final_stats["totalEvents"]
+                    - initial_stats["totalEvents"],
+                }
+            )
 
         return MemoryLeakReport(
             test_name=test_name,
@@ -301,15 +323,21 @@ class TestSSEMemoryLeakDetection:
             initial_snapshot,
             final_snapshot,
             threshold_mb=20.0,
-            growth_threshold_percent=25.0
+            growth_threshold_percent=25.0,
         )
 
         # Print report
         print(f"\n=== Memory Leak Analysis: {report.test_name} ===")
         print(f"Duration: {report.duration_seconds:.1f}s")
-        print(f"Memory growth: {report.memory_growth_mb:.2f}MB ({report.memory_growth_percent:.1f}%)")
-        print(f"Leak detected: {report.leak_detected} (confidence: {report.leak_confidence:.2f})")
-        print(f"Object growth: {report.detailed_analysis.get('object_count_growth', 0)}")
+        print(
+            f"Memory growth: {report.memory_growth_mb:.2f}MB ({report.memory_growth_percent:.1f}%)"
+        )
+        print(
+            f"Leak detected: {report.leak_detected} (confidence: {report.leak_confidence:.2f})"
+        )
+        print(
+            f"Object growth: {report.detailed_analysis.get('object_count_growth', 0)}"
+        )
 
         if report.recommendations:
             print("Recommendations:")
@@ -317,8 +345,9 @@ class TestSSEMemoryLeakDetection:
                 print(f"  - {rec}")
 
         # Assert no significant leak
-        assert not report.leak_detected or report.leak_confidence < 0.7, \
+        assert not report.leak_detected or report.leak_confidence < 0.7, (
             f"Memory leak detected with confidence {report.leak_confidence:.2f}"
+        )
 
     @pytest.mark.asyncio
     async def test_high_volume_event_leak_detection(self, broadcaster, profiler):
@@ -381,19 +410,24 @@ class TestSSEMemoryLeakDetection:
             initial_snapshot,
             final_snapshot,
             threshold_mb=30.0,
-            growth_threshold_percent=30.0
+            growth_threshold_percent=30.0,
         )
 
         # Print report
         print(f"\n=== Memory Leak Analysis: {report.test_name} ===")
         print(f"Duration: {report.duration_seconds:.1f}s")
-        print(f"Memory growth: {report.memory_growth_mb:.2f}MB ({report.memory_growth_percent:.1f}%)")
-        print(f"Leak detected: {report.leak_detected} (confidence: {report.leak_confidence:.2f})")
+        print(
+            f"Memory growth: {report.memory_growth_mb:.2f}MB ({report.memory_growth_percent:.1f}%)"
+        )
+        print(
+            f"Leak detected: {report.leak_detected} (confidence: {report.leak_confidence:.2f})"
+        )
         print("Events processed: ~5000")
 
         # Assert no significant leak
-        assert not report.leak_detected or report.leak_confidence < 0.8, \
+        assert not report.leak_detected or report.leak_confidence < 0.8, (
             f"Memory leak detected with confidence {report.leak_confidence:.2f}"
+        )
 
     @pytest.mark.asyncio
     async def test_queue_overflow_leak_detection(self, broadcaster, profiler):
@@ -441,18 +475,23 @@ class TestSSEMemoryLeakDetection:
             initial_snapshot,
             final_snapshot,
             threshold_mb=15.0,
-            growth_threshold_percent=20.0
+            growth_threshold_percent=20.0,
         )
 
         # Print report
         print(f"\n=== Memory Leak Analysis: {report.test_name} ===")
         print(f"Duration: {report.duration_seconds:.1f}s")
-        print(f"Memory growth: {report.memory_growth_mb:.2f}MB ({report.memory_growth_percent:.1f}%)")
-        print(f"Leak detected: {report.leak_detected} (confidence: {report.leak_confidence:.2f})")
+        print(
+            f"Memory growth: {report.memory_growth_mb:.2f}MB ({report.memory_growth_percent:.1f}%)"
+        )
+        print(
+            f"Leak detected: {report.leak_detected} (confidence: {report.leak_confidence:.2f})"
+        )
 
         # For overflow conditions, we allow some memory growth
-        assert not report.leak_detected or report.leak_confidence < 0.9, \
+        assert not report.leak_detected or report.leak_confidence < 0.9, (
             f"Significant memory leak detected with confidence {report.leak_confidence:.2f}"
+        )
 
     @pytest.mark.asyncio
     async def test_long_running_session_leak_detection(self, broadcaster, profiler):
@@ -509,18 +548,23 @@ class TestSSEMemoryLeakDetection:
             initial_snapshot,
             final_snapshot,
             threshold_mb=25.0,
-            growth_threshold_percent=25.0
+            growth_threshold_percent=25.0,
         )
 
         # Print report
         print(f"\n=== Memory Leak Analysis: {report.test_name} ===")
         print(f"Duration: {report.duration_seconds:.1f}s")
-        print(f"Memory growth: {report.memory_growth_mb:.2f}MB ({report.memory_growth_percent:.1f}%)")
-        print(f"Leak detected: {report.leak_detected} (confidence: {report.leak_confidence:.2f})")
+        print(
+            f"Memory growth: {report.memory_growth_mb:.2f}MB ({report.memory_growth_percent:.1f}%)"
+        )
+        print(
+            f"Leak detected: {report.leak_detected} (confidence: {report.leak_confidence:.2f})"
+        )
         print(f"Events processed: {event_count}")
 
-        assert not report.leak_detected or report.leak_confidence < 0.7, \
+        assert not report.leak_detected or report.leak_confidence < 0.7, (
             f"Memory leak detected with confidence {report.leak_confidence:.2f}"
+        )
 
     @pytest.mark.asyncio
     async def test_cleanup_effectiveness(self, broadcaster, profiler):
@@ -564,10 +608,18 @@ class TestSSEMemoryLeakDetection:
         after_cleanup_snapshot = profiler.take_snapshot(broadcaster)
 
         # Analyze cleanup effectiveness
-        creation_growth = after_creation_snapshot.process_memory_mb - initial_snapshot.process_memory_mb
-        cleanup_reduction = after_creation_snapshot.process_memory_mb - after_cleanup_snapshot.process_memory_mb
+        creation_growth = (
+            after_creation_snapshot.process_memory_mb
+            - initial_snapshot.process_memory_mb
+        )
+        cleanup_reduction = (
+            after_creation_snapshot.process_memory_mb
+            - after_cleanup_snapshot.process_memory_mb
+        )
 
-        cleanup_effectiveness = (cleanup_reduction / creation_growth) * 100 if creation_growth > 0 else 0
+        cleanup_effectiveness = (
+            (cleanup_reduction / creation_growth) * 100 if creation_growth > 0 else 0
+        )
 
         print("\n=== Cleanup Effectiveness Analysis ===")
         print(f"Memory growth during creation: {creation_growth:.2f}MB")
@@ -575,8 +627,9 @@ class TestSSEMemoryLeakDetection:
         print(f"Cleanup effectiveness: {cleanup_effectiveness:.1f}%")
 
         # Cleanup should be at least 70% effective
-        assert cleanup_effectiveness >= 70.0, \
+        assert cleanup_effectiveness >= 70.0, (
             f"Cleanup effectiveness too low: {cleanup_effectiveness:.1f}%"
+        )
 
     def test_queue_memory_optimization(self):
         """Test memory optimization of individual queues."""
@@ -607,11 +660,14 @@ class TestSSEMemoryLeakDetection:
         print("\n=== Queue Memory Optimization ===")
         print(f"Objects after queue creation: +{creation_growth}")
         print(f"Objects after cleanup: +{final_growth}")
-        print(f"Cleanup ratio: {((creation_growth - final_growth) / creation_growth * 100):.1f}%")
+        print(
+            f"Cleanup ratio: {((creation_growth - final_growth) / creation_growth * 100):.1f}%"
+        )
 
         # Should clean up most objects
-        assert final_growth < creation_growth * 0.3, \
+        assert final_growth < creation_growth * 0.3, (
             "Queue cleanup not effective enough"
+        )
 
 
 if __name__ == "__main__":
@@ -634,10 +690,14 @@ if __name__ == "__main__":
             print("Running advanced memory leak detection tests...")
 
             # Run subscriber lifecycle test
-            await test_suite.test_subscriber_lifecycle_leak_detection(broadcaster, profiler)
+            await test_suite.test_subscriber_lifecycle_leak_detection(
+                broadcaster, profiler
+            )
 
             # Run high volume test
-            await test_suite.test_high_volume_event_leak_detection(broadcaster, profiler)
+            await test_suite.test_high_volume_event_leak_detection(
+                broadcaster, profiler
+            )
 
             # Run cleanup effectiveness test
             await test_suite.test_cleanup_effectiveness(broadcaster, profiler)

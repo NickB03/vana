@@ -1,7 +1,7 @@
 """Comprehensive SSE Load Testing and Stress Testing.
 
 This module provides extensive load testing for the SSE broadcaster system,
-testing hundreds of concurrent connections, rapid event broadcasting, 
+testing hundreds of concurrent connections, rapid event broadcasting,
 memory leak detection, and production-level stress scenarios.
 """
 
@@ -77,7 +77,9 @@ class SSELoadTester:
                 while time.time() < end_time:
                     try:
                         event_start = time.time()
-                        event = await asyncio.wait_for(queue.get(timeout=1.0), timeout=2.0)
+                        event = await asyncio.wait_for(
+                            queue.get(timeout=1.0), timeout=2.0
+                        )
                         event_end = time.time()
 
                         response_time_ms = (event_end - event_start) * 1000
@@ -146,7 +148,9 @@ class SSELoadTester:
         self, num_connections: int = 100, duration_seconds: float = 30.0
     ) -> LoadTestMetrics:
         """Stress test with multiple concurrent connections."""
-        logger.info(f"Starting stress test: {num_connections} connections for {duration_seconds}s")
+        logger.info(
+            f"Starting stress test: {num_connections} connections for {duration_seconds}s"
+        )
 
         start_time = time.time()
         self.metrics = LoadTestMetrics()
@@ -178,9 +182,15 @@ class SSELoadTester:
         results = await asyncio.gather(*all_tasks, return_exceptions=True)
 
         # Process client results
-        client_results = results[:len(client_tasks)]
-        successful_clients = [r for r in client_results if isinstance(r, dict) and r.get("success", False)]
-        failed_clients = [r for r in client_results if not (isinstance(r, dict) and r.get("success", False))]
+        client_results = results[: len(client_tasks)]
+        successful_clients = [
+            r for r in client_results if isinstance(r, dict) and r.get("success", False)
+        ]
+        failed_clients = [
+            r
+            for r in client_results
+            if not (isinstance(r, dict) and r.get("success", False))
+        ]
 
         self.metrics.successful_connections = len(successful_clients)
         self.metrics.failed_connections = len(failed_clients)
@@ -196,7 +206,9 @@ class SSELoadTester:
                 all_response_times.extend(response_times)
 
         if all_response_times:
-            self.metrics.avg_response_time_ms = sum(all_response_times) / len(all_response_times)
+            self.metrics.avg_response_time_ms = sum(all_response_times) / len(
+                all_response_times
+            )
             self.metrics.max_response_time_ms = max(all_response_times)
             self.metrics.min_response_time_ms = min(all_response_times)
 
@@ -212,14 +224,18 @@ class SSELoadTester:
         stats = self.broadcaster.get_stats()
         self.metrics.memory_usage_mb = stats.get("memoryUsageMB", 0.0)
 
-        logger.info(f"Stress test completed: {self.metrics.successful_connections}/{self.metrics.total_connections} successful")
+        logger.info(
+            f"Stress test completed: {self.metrics.successful_connections}/{self.metrics.total_connections} successful"
+        )
         return self.metrics
 
     async def memory_leak_test(
         self, cycles: int = 10, connections_per_cycle: int = 20
     ) -> dict[str, Any]:
         """Test for memory leaks over multiple cycles."""
-        logger.info(f"Starting memory leak test: {cycles} cycles, {connections_per_cycle} connections each")
+        logger.info(
+            f"Starting memory leak test: {cycles} cycles, {connections_per_cycle} connections each"
+        )
 
         memory_snapshots = []
 
@@ -249,17 +265,21 @@ class SSELoadTester:
             final_stats = self.broadcaster.get_stats()
             final_memory = final_stats.get("memoryUsageMB", 0.0)
 
-            memory_snapshots.append({
-                "cycle": cycle,
-                "initial_memory_mb": initial_memory,
-                "final_memory_mb": final_memory,
-                "memory_delta_mb": final_memory - initial_memory,
-                "connections": connections_per_cycle,
-                "events_sent": metrics.events_sent,
-                "events_received": metrics.events_received,
-            })
+            memory_snapshots.append(
+                {
+                    "cycle": cycle,
+                    "initial_memory_mb": initial_memory,
+                    "final_memory_mb": final_memory,
+                    "memory_delta_mb": final_memory - initial_memory,
+                    "connections": connections_per_cycle,
+                    "events_sent": metrics.events_sent,
+                    "events_received": metrics.events_received,
+                }
+            )
 
-            logger.info(f"Cycle {cycle}: Memory delta: {final_memory - initial_memory:.2f}MB")
+            logger.info(
+                f"Cycle {cycle}: Memory delta: {final_memory - initial_memory:.2f}MB"
+            )
 
             # Small delay between cycles
             await asyncio.sleep(1.0)
@@ -309,7 +329,9 @@ class TestSSELoadTesting:
         assert metrics.max_response_time_ms < 2000  # Under 2s max
 
         print("Moderate load test results:")
-        print(f"  Successful connections: {metrics.successful_connections}/{metrics.total_connections}")
+        print(
+            f"  Successful connections: {metrics.successful_connections}/{metrics.total_connections}"
+        )
         print(f"  Events sent: {metrics.events_sent}")
         print(f"  Events received: {metrics.events_received}")
         print(f"  Avg response time: {metrics.avg_response_time_ms:.2f}ms")
@@ -330,7 +352,9 @@ class TestSSELoadTesting:
         assert metrics.memory_usage_mb < 200  # Under memory threshold
 
         print("High load test results:")
-        print(f"  Successful connections: {metrics.successful_connections}/{metrics.total_connections}")
+        print(
+            f"  Successful connections: {metrics.successful_connections}/{metrics.total_connections}"
+        )
         print(f"  Events sent: {metrics.events_sent}")
         print(f"  Events received: {metrics.events_received}")
         print(f"  Avg response time: {metrics.avg_response_time_ms:.2f}ms")
@@ -369,14 +393,18 @@ class TestSSELoadTesting:
         print(f"  Events sent: {load_tester.metrics.events_sent}")
         print(f"  Events received: {client_result['events_received']}")
         print(f"  Duration: {duration:.2f}s")
-        print(f"  Throughput: {load_tester.metrics.events_sent / duration:.2f} events/s")
+        print(
+            f"  Throughput: {load_tester.metrics.events_sent / duration:.2f} events/s"
+        )
 
     @pytest.mark.asyncio
     async def test_memory_leak_detection(self, load_tester):
         """Test for memory leaks over multiple connection cycles."""
         result = await load_tester.memory_leak_test(cycles=5, connections_per_cycle=30)
 
-        assert not result["memory_leak_detected"], f"Memory leak detected! Max delta: {result['max_memory_delta_mb']:.2f}MB"
+        assert not result["memory_leak_detected"], (
+            f"Memory leak detected! Max delta: {result['max_memory_delta_mb']:.2f}MB"
+        )
         assert result["avg_memory_delta_mb"] < 5.0  # Average delta should be small
 
         print("Memory leak test results:")
@@ -450,17 +478,21 @@ class TestSSELoadTesting:
 
         # Send different events to each session
         for i, session_id in enumerate(sessions):
-            await load_tester.broadcast_events_rapidly(
-                session_id, 50, 100
-            )
+            await load_tester.broadcast_events_rapidly(session_id, 50, 100)
 
         # Wait for all clients to finish
         results = await asyncio.gather(*client_tasks, return_exceptions=True)
 
         # Verify session isolation
-        session_a_events = sum(1 for r in results[:3] if isinstance(r, dict) and r["events_received"] > 0)
-        session_b_events = sum(1 for r in results[3:6] if isinstance(r, dict) and r["events_received"] > 0)
-        session_c_events = sum(1 for r in results[6:9] if isinstance(r, dict) and r["events_received"] > 0)
+        session_a_events = sum(
+            1 for r in results[:3] if isinstance(r, dict) and r["events_received"] > 0
+        )
+        session_b_events = sum(
+            1 for r in results[3:6] if isinstance(r, dict) and r["events_received"] > 0
+        )
+        session_c_events = sum(
+            1 for r in results[6:9] if isinstance(r, dict) and r["events_received"] > 0
+        )
 
         assert session_a_events >= 2  # Most clients should receive events
         assert session_b_events >= 2
@@ -482,7 +514,9 @@ class TestSSELoadTesting:
             while True:
                 session_id = random.choice(sessions)
                 event_data = {
-                    "type": random.choice(["agent_start", "agent_complete", "agent_update"]),
+                    "type": random.choice(
+                        ["agent_start", "agent_complete", "agent_update"]
+                    ),
                     "data": {
                         "agent_id": f"agent_{random.randint(1, 20)}",
                         "message": f"Production event {time.time()}",
@@ -524,7 +558,9 @@ class TestSSELoadTesting:
         results = await asyncio.gather(*client_tasks, return_exceptions=True)
 
         # Analyze results
-        successful = [r for r in results if isinstance(r, dict) and r.get("success", False)]
+        successful = [
+            r for r in results if isinstance(r, dict) and r.get("success", False)
+        ]
         total_events_received = sum(r.get("events_received", 0) for r in successful)
 
         # Get final stats
