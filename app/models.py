@@ -13,7 +13,7 @@ from dotenv import load_dotenv
 
 # Get the project root directory and load .env.local
 project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-env_path = os.path.join(project_root, '.env.local')
+env_path = os.path.join(project_root, ".env.local")
 
 # Try to load .env.local first, fall back to .env if not found
 if os.path.exists(env_path):
@@ -21,7 +21,7 @@ if os.path.exists(env_path):
     print(f"✅ Loaded environment from {env_path}")
 else:
     # Try standard .env as fallback
-    fallback_env = os.path.join(project_root, '.env')
+    fallback_env = os.path.join(project_root, ".env")
     if os.path.exists(fallback_env):
         load_dotenv(fallback_env)
         print(f"✅ Loaded environment from {fallback_env}")
@@ -38,12 +38,16 @@ from pydantic import BaseModel, Field, field_validator
 class ResearchRequest(BaseModel):
     """Request model for research queries."""
 
-    query: str = Field(..., description="The research question or topic", min_length=1, max_length=2000)
+    query: str = Field(
+        ..., description="The research question or topic", min_length=1, max_length=2000
+    )
     session_id: str | None = Field(None, description="Session ID for tracking")
     user_id: str | None = Field(None, description="User ID for attribution")
-    preferences: dict[str, Any] | None = Field(default_factory=dict, description="User preferences")
+    preferences: dict[str, Any] | None = Field(
+        default_factory=dict, description="User preferences"
+    )
 
-    @field_validator('query')
+    @field_validator("query")
     @classmethod
     def validate_query(cls, v):
         if not v or not v.strip():
@@ -59,7 +63,9 @@ class ResearchResponse(BaseModel):
     message: str = Field(..., description="Status message")
     progress: float | None = Field(None, description="Progress percentage (0-100)")
     data: dict[str, Any] | None = Field(None, description="Response data")
-    timestamp: datetime = Field(default_factory=datetime.utcnow, description="Response timestamp")
+    timestamp: datetime = Field(
+        default_factory=datetime.utcnow, description="Response timestamp"
+    )
 
 
 class SessionInfo(BaseModel):
@@ -67,8 +73,12 @@ class SessionInfo(BaseModel):
 
     session_id: str = Field(..., description="Unique session identifier")
     user_id: str | None = Field(None, description="User identifier")
-    created_at: datetime = Field(default_factory=datetime.utcnow, description="Session creation time")
-    last_active: datetime = Field(default_factory=datetime.utcnow, description="Last activity time")
+    created_at: datetime = Field(
+        default_factory=datetime.utcnow, description="Session creation time"
+    )
+    last_active: datetime = Field(
+        default_factory=datetime.utcnow, description="Last activity time"
+    )
     status: str = Field("active", description="Session status")
     query: str | None = Field(None, description="Current/last query")
     progress: float = Field(0.0, description="Progress percentage")
@@ -81,15 +91,38 @@ class ErrorResponse(BaseModel):
     error: str = Field(..., description="Error type")
     message: str = Field(..., description="Error message")
     details: dict[str, Any] | None = Field(None, description="Additional error details")
-    timestamp: datetime = Field(default_factory=datetime.utcnow, description="Error timestamp")
+    timestamp: datetime = Field(
+        default_factory=datetime.utcnow, description="Error timestamp"
+    )
+
+
+class EnvironmentInfo(BaseModel):
+    """Environment information model."""
+
+    current: str = Field(..., description="Current environment")
+    source: str = Field(..., description="Environment source")
+    migration_complete: bool | None = Field(
+        None, description="Migration completion status"
+    )
+    phase: str | None = Field(None, description="Migration phase")
+    conflicts: list[str] | None = Field(None, description="Environment conflicts")
 
 
 class HealthResponse(BaseModel):
     """Health check response model."""
 
     status: str = Field("healthy", description="Health status")
-    timestamp: datetime = Field(default_factory=datetime.utcnow, description="Check timestamp")
+    timestamp: str = Field(..., description="Check timestamp")
+    service: str = Field("vana", description="Service name")
     version: str = Field("1.0.0", description="API version")
+    environment: EnvironmentInfo = Field(..., description="Environment information")
+    session_storage_enabled: bool | None = Field(
+        None, description="Session storage availability"
+    )
+    session_storage_uri: str | None = Field(None, description="Session storage URI")
+    session_storage_bucket: str | None = Field(
+        None, description="Session storage bucket"
+    )
     uptime: float | None = Field(None, description="Uptime in seconds")
 
 
@@ -101,7 +134,9 @@ class AgentStatus(BaseModel):
     status: str = Field(..., description="Agent status")
     task: str | None = Field(None, description="Current task")
     progress: float = Field(0.0, description="Task progress")
-    last_update: datetime = Field(default_factory=datetime.utcnow, description="Last status update")
+    last_update: datetime = Field(
+        default_factory=datetime.utcnow, description="Last status update"
+    )
 
 
 class TeamStatus(BaseModel):
@@ -109,10 +144,14 @@ class TeamStatus(BaseModel):
 
     session_id: str = Field(..., description="Session identifier")
     team_status: str = Field(..., description="Overall team status")
-    agents: list[AgentStatus] = Field(default_factory=list, description="Individual agent statuses")
+    agents: list[AgentStatus] = Field(
+        default_factory=list, description="Individual agent statuses"
+    )
     progress: float = Field(0.0, description="Overall progress")
     current_phase: str | None = Field(None, description="Current research phase")
-    estimated_completion: datetime | None = Field(None, description="Estimated completion time")
+    estimated_completion: datetime | None = Field(
+        None, description="Estimated completion time"
+    )
 
 
 class AuthToken(BaseModel):
@@ -130,8 +169,12 @@ class UserProfile(BaseModel):
     user_id: str = Field(..., description="Unique user identifier")
     username: str = Field(..., description="Username")
     email: str | None = Field(None, description="User email")
-    created_at: datetime = Field(default_factory=datetime.utcnow, description="Account creation time")
-    preferences: dict[str, Any] = Field(default_factory=dict, description="User preferences")
+    created_at: datetime = Field(
+        default_factory=datetime.utcnow, description="Account creation time"
+    )
+    preferences: dict[str, Any] = Field(
+        default_factory=dict, description="User preferences"
+    )
     subscription_tier: str = Field("free", description="Subscription tier")
 
 
@@ -140,6 +183,7 @@ JSONData = dict[str, Any]
 QueryData = Union[str, dict[str, Any]]
 ResponseData = Union[dict[str, Any], list[Any], str, int, float, bool]
 ModelType = str  # Model type alias for AI models
+HealthResponseData = dict[str, Union[str, bool, int, float, EnvironmentInfo, None]]
 
 # Model constants
 CRITIC_MODEL = "gemini-2.5-pro-latest"
