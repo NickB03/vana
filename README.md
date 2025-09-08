@@ -204,7 +204,7 @@ OPENROUTER_API_KEY=your-openrouter-key  # Enables free Qwen 3 Coder model
 
 # Authentication (choose one)
 JWT_SECRET_KEY=your-jwt-secret-key    # For JWT auth
-# OR set AUTH_REQUIRED=false for development
+# OR set AUTH_REQUIRE_SSE_AUTH=false for development
 
 # Optional: Force Gemini instead of OpenRouter
 # USE_OPENROUTER=false  # Only if you want to use Gemini fallback
@@ -520,7 +520,7 @@ make dev           # Full stack
 
 # Development URLs
 # Backend API: http://localhost:8000
-# Frontend: http://localhost:5173 (when available)
+# Frontend: http://localhost:3000 (under development)
 # API Docs: http://localhost:8000/docs
 # Health: http://localhost:8000/health
 ```

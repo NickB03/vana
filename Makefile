@@ -64,7 +64,7 @@ docker-up:
 	docker-compose up -d
 	@echo "✅ Services running at:"
 	@echo "   - Backend: http://localhost:8000"
-	@echo "   - Frontend: http://localhost:5173"
+	@echo "   - Frontend: http://localhost:3000"
 
 docker-down:
 	@echo "🛑 Stopping Docker services..."
@@ -98,8 +98,22 @@ setup-local-env:
 
 # Run unit and integration tests
 test:
-	uv run pytest tests/unit && uv run pytest tests/integration
+	uv run pytest tests/unit -v && uv run pytest tests/integration -v
 	@$(MAKE) coverage-clean
+
+# Run specific test categories
+test-unit:
+	uv run pytest tests/unit -v
+
+test-integration:
+	uv run pytest tests/integration -v
+
+test-performance:
+	uv run pytest tests/performance -v
+
+# Run all tests with coverage
+test-coverage:
+	uv run pytest --cov=app --cov-report=html --cov-report=term tests/
 
 # Run code quality checks (codespell, ruff, mypy)
 lint:

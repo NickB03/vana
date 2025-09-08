@@ -262,9 +262,7 @@ def before_agent_callback(callback_context: CallbackContext) -> None:
             try:
                 metrics_collector = get_metrics_collector()
                 request_id = f"agent_{agent_name}_{start_time}"
-                metrics_collector.record_request_start(
-                    request_id, f"agent:{agent_name}"
-                )
+                metrics_collector.record_request_start(request_id)
                 callback_context.state[f"{agent_name}_metrics_request_id"] = request_id
             except Exception as e:
                 logger.error(f"Failed to record performance metrics: {e}")
