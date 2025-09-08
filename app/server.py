@@ -34,7 +34,7 @@ if os.getenv("NODE_ENV") == "development":
 
 import google.auth
 import google.generativeai as genai
-from fastapi import FastAPI, HTTPException, Body, Header
+from fastapi import Body, FastAPI, Header, HTTPException
 from fastapi.responses import StreamingResponse
 from google.adk.cli.fast_api import get_fast_api_app
 
@@ -303,7 +303,7 @@ async def health_check() -> dict[str, str | bool | None]:
     try:
         from app.utils.migration_helper import EnvironmentMigrationHelper
         migration_status = EnvironmentMigrationHelper.get_migration_status()
-        
+
         environment_info = {
             "current": migration_status.current_env,
             "source": migration_status.source,
@@ -319,7 +319,7 @@ async def health_check() -> dict[str, str | bool | None]:
             "source": "fallback",
             "migration_complete": None
         }
-    
+
     return {
         "status": "healthy",
         "timestamp": datetime.utcnow().isoformat(),
@@ -492,7 +492,7 @@ class BoundedTaskStorage:
         self.max_size = max_size
         self.tasks = {}
         self.access_order = []
-    
+
     def __setitem__(self, key: str, value: dict):
         if key in self.tasks:
             # Update existing task, move to end
@@ -502,19 +502,19 @@ class BoundedTaskStorage:
             oldest_key = self.access_order.pop(0)
             del self.tasks[oldest_key]
             logger.info(f"Evicted old task {oldest_key} due to storage limit")
-        
+
         self.tasks[key] = value
         self.access_order.append(key)
-    
+
     def __getitem__(self, key: str):
         return self.tasks[key]
-    
+
     def __contains__(self, key: str):
         return key in self.tasks
-    
+
     def get(self, key: str, default=None):
         return self.tasks.get(key, default)
-    
+
     def __delitem__(self, key: str):
         if key in self.tasks:
             del self.tasks[key]
@@ -535,22 +535,22 @@ async def create_chat_message(
         message = request.get("message", "")
         message_id = request.get("message_id", str(uuid.uuid4()))
         model = request.get("model", "gemini-2.5-flash")
-        
+
         if not message:
             raise HTTPException(status_code=400, detail="Message is required")
-        
+
         # Create a task ID for this chat session
         task_id = str(uuid.uuid4())
-        
+
         # Configure Google Generative AI
         api_key = os.getenv("GOOGLE_API_KEY")
         if not api_key:
             # Security fix: Generic error message for API key issues
             logger.error("Google API key not configured for chat request")
             raise HTTPException(status_code=500, detail="Service configuration error")
-        
+
         genai.configure(api_key=api_key)
-        
+
         # Initialize the model
         try:
             gemini_model = genai.GenerativeModel(model)
@@ -558,7 +558,7 @@ async def create_chat_message(
             logger.error(f"Error initializing model {model}: {model_error}")
             # Fallback to basic model
             gemini_model = genai.GenerativeModel("gemini-1.5-flash")
-        
+
         # Store task for streaming
         chat_tasks[task_id] = {
             "chat_id": chat_id,
@@ -569,10 +569,10 @@ async def create_chat_message(
             "response_queue": asyncio.Queue(),
             "created_at": datetime.now()
         }
-        
+
         # Process message asynchronously
         asyncio.create_task(process_chat_message(task_id))
-        
+
         return {
             "task_id": task_id,
             "message_id": message_id,
@@ -592,14 +592,14 @@ async def process_chat_message(task_id: str):
         if not task:
             logger.error(f"Task {task_id} not found")
             return
-        
+
         model = task["model"]
         message = task["message"]
         queue = task["response_queue"]
-        
+
         # Update task status
         task["status"] = "processing"
-        
+
         # Generate response with streaming
         try:
             response = model.generate_content(
@@ -612,7 +612,7 @@ async def process_chat_message(task_id: str):
                     max_output_tokens=2048,
                 )
             )
-            
+
             full_response = ""
             for chunk in response:
                 if chunk.text:
@@ -622,17 +622,17 @@ async def process_chat_message(task_id: str):
                         "content": chunk.text,
                         "task_id": task_id
                     })
-            
+
             # Send completion message
             await queue.put({
                 "type": "message_complete",
                 "content": full_response,
                 "task_id": task_id
             })
-            
+
             task["status"] = "completed"
             task["response"] = full_response
-            
+
         except Exception as gen_error:
             logger.error(f"Error generating response: {gen_error}")
             await queue.put({
@@ -641,14 +641,14 @@ async def process_chat_message(task_id: str):
                 "task_id": task_id
             })
             task["status"] = "error"
-        
+
         # Send task completion
         await queue.put({
             "type": "task_complete",
             "task_id": task_id,
             "status": task["status"]
         })
-        
+
     except Exception as e:
         logger.error(f"Error in process_chat_message: {e}")
         if task_id in chat_tasks:
@@ -666,39 +666,39 @@ async def stream_chat_response(
     task_id: str = None
 ):
     """Stream chat response using Server-Sent Events."""
-    
+
     if not task_id:
         raise HTTPException(status_code=400, detail="task_id is required")
-    
+
     task = chat_tasks.get(task_id)
     if not task:
         raise HTTPException(status_code=404, detail="Task not found")
-    
+
     if task["chat_id"] != chat_id:
         raise HTTPException(status_code=403, detail="Task does not belong to this chat")
-    
+
     async def event_generator():
         """Generate SSE events for chat response."""
         try:
             queue = task["response_queue"]
-            
+
             # Send initial connection event
             yield f"data: {json.dumps({'type': 'connection', 'status': 'connected', 'task_id': task_id})}\n\n"
-            
+
             while True:
                 try:
                     # Wait for events with timeout
                     event = await asyncio.wait_for(queue.get(), timeout=30.0)
                     yield f"data: {json.dumps(event)}\n\n"
-                    
+
                     # Check if task is complete
                     if event.get("type") in ["task_complete", "error"]:
                         break
-                        
+
                 except asyncio.TimeoutError:
                     # Send heartbeat
                     yield f"data: {json.dumps({'type': 'heartbeat', 'timestamp': datetime.now().isoformat()})}\n\n"
-                    
+
         except asyncio.CancelledError:
             logger.info(f"SSE connection cancelled for task {task_id}")
         except Exception as e:
@@ -707,7 +707,7 @@ async def stream_chat_response(
         finally:
             # Clean up old task after some time
             asyncio.create_task(cleanup_task(task_id, delay=300))  # 5 minutes
-    
+
     return StreamingResponse(
         event_generator(),
         media_type="text/event-stream",

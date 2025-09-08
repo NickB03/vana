@@ -29,22 +29,22 @@ else:
         print("⚠️ No .env.local or .env file found, using environment variables only")
 
 # Now import everything else
-import time
 from datetime import datetime
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Union
 
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 
 
 class ResearchRequest(BaseModel):
     """Request model for research queries."""
-    
+
     query: str = Field(..., description="The research question or topic", min_length=1, max_length=2000)
-    session_id: Optional[str] = Field(None, description="Session ID for tracking")
-    user_id: Optional[str] = Field(None, description="User ID for attribution")
-    preferences: Optional[Dict[str, Any]] = Field(default_factory=dict, description="User preferences")
-    
-    @validator('query')
+    session_id: str | None = Field(None, description="Session ID for tracking")
+    user_id: str | None = Field(None, description="User ID for attribution")
+    preferences: dict[str, Any] | None = Field(default_factory=dict, description="User preferences")
+
+    @field_validator('query')
+    @classmethod
     def validate_query(cls, v):
         if not v or not v.strip():
             raise ValueError("Query cannot be empty")
@@ -53,92 +53,92 @@ class ResearchRequest(BaseModel):
 
 class ResearchResponse(BaseModel):
     """Response model for research results."""
-    
+
     session_id: str = Field(..., description="Session ID")
     status: str = Field(..., description="Response status")
     message: str = Field(..., description="Status message")
-    progress: Optional[float] = Field(None, description="Progress percentage (0-100)")
-    data: Optional[Dict[str, Any]] = Field(None, description="Response data")
+    progress: float | None = Field(None, description="Progress percentage (0-100)")
+    data: dict[str, Any] | None = Field(None, description="Response data")
     timestamp: datetime = Field(default_factory=datetime.utcnow, description="Response timestamp")
 
 
 class SessionInfo(BaseModel):
     """Session information model."""
-    
+
     session_id: str = Field(..., description="Unique session identifier")
-    user_id: Optional[str] = Field(None, description="User identifier")
+    user_id: str | None = Field(None, description="User identifier")
     created_at: datetime = Field(default_factory=datetime.utcnow, description="Session creation time")
     last_active: datetime = Field(default_factory=datetime.utcnow, description="Last activity time")
     status: str = Field("active", description="Session status")
-    query: Optional[str] = Field(None, description="Current/last query")
+    query: str | None = Field(None, description="Current/last query")
     progress: float = Field(0.0, description="Progress percentage")
-    results: Optional[Dict[str, Any]] = Field(None, description="Session results")
+    results: dict[str, Any] | None = Field(None, description="Session results")
 
 
 class ErrorResponse(BaseModel):
     """Error response model."""
-    
+
     error: str = Field(..., description="Error type")
     message: str = Field(..., description="Error message")
-    details: Optional[Dict[str, Any]] = Field(None, description="Additional error details")
+    details: dict[str, Any] | None = Field(None, description="Additional error details")
     timestamp: datetime = Field(default_factory=datetime.utcnow, description="Error timestamp")
 
 
 class HealthResponse(BaseModel):
     """Health check response model."""
-    
+
     status: str = Field("healthy", description="Health status")
     timestamp: datetime = Field(default_factory=datetime.utcnow, description="Check timestamp")
     version: str = Field("1.0.0", description="API version")
-    uptime: Optional[float] = Field(None, description="Uptime in seconds")
-    
-    
+    uptime: float | None = Field(None, description="Uptime in seconds")
+
+
 class AgentStatus(BaseModel):
     """Agent status model."""
-    
+
     agent_id: str = Field(..., description="Agent identifier")
     name: str = Field(..., description="Agent name")
     status: str = Field(..., description="Agent status")
-    task: Optional[str] = Field(None, description="Current task")
+    task: str | None = Field(None, description="Current task")
     progress: float = Field(0.0, description="Task progress")
     last_update: datetime = Field(default_factory=datetime.utcnow, description="Last status update")
 
 
 class TeamStatus(BaseModel):
     """Multi-agent team status model."""
-    
+
     session_id: str = Field(..., description="Session identifier")
     team_status: str = Field(..., description="Overall team status")
-    agents: List[AgentStatus] = Field(default_factory=list, description="Individual agent statuses")
+    agents: list[AgentStatus] = Field(default_factory=list, description="Individual agent statuses")
     progress: float = Field(0.0, description="Overall progress")
-    current_phase: Optional[str] = Field(None, description="Current research phase")
-    estimated_completion: Optional[datetime] = Field(None, description="Estimated completion time")
+    current_phase: str | None = Field(None, description="Current research phase")
+    estimated_completion: datetime | None = Field(None, description="Estimated completion time")
 
 
 class AuthToken(BaseModel):
     """Authentication token model."""
-    
+
     access_token: str = Field(..., description="JWT access token")
     token_type: str = Field("bearer", description="Token type")
     expires_in: int = Field(3600, description="Token expiration in seconds")
-    refresh_token: Optional[str] = Field(None, description="Refresh token")
+    refresh_token: str | None = Field(None, description="Refresh token")
 
 
 class UserProfile(BaseModel):
     """User profile model."""
-    
+
     user_id: str = Field(..., description="Unique user identifier")
     username: str = Field(..., description="Username")
-    email: Optional[str] = Field(None, description="User email")
+    email: str | None = Field(None, description="User email")
     created_at: datetime = Field(default_factory=datetime.utcnow, description="Account creation time")
-    preferences: Dict[str, Any] = Field(default_factory=dict, description="User preferences")
+    preferences: dict[str, Any] = Field(default_factory=dict, description="User preferences")
     subscription_tier: str = Field("free", description="Subscription tier")
 
 
 # Type aliases for common data structures
-JSONData = Dict[str, Any]
-QueryData = Union[str, Dict[str, Any]]
-ResponseData = Union[Dict[str, Any], List[Any], str, int, float, bool]
+JSONData = dict[str, Any]
+QueryData = Union[str, dict[str, Any]]
+ResponseData = Union[dict[str, Any], list[Any], str, int, float, bool]
 ModelType = str  # Model type alias for AI models
 
 # Model constants

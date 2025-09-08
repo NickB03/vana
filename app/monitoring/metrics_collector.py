@@ -7,7 +7,6 @@ from collections import defaultdict, deque
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from typing import Any
 
 # Optional import for system metrics with graceful fallback
 try:
@@ -166,8 +165,8 @@ class MetricsCollector:
             return
 
         try:
-            # CPU and memory metrics
-            self.current_metrics.cpu_usage = psutil.cpu_percent(interval=0.1)
+            # CPU and memory metrics (normalize CPU from 0-100 to 0-1)
+            self.current_metrics.cpu_usage = psutil.cpu_percent(interval=0.1) / 100.0
             memory = psutil.virtual_memory()
             self.current_metrics.memory_usage = memory.percent / 100.0
             self.current_metrics.memory_available = memory.available / (1024**3)  # GB
@@ -201,9 +200,9 @@ class MetricsCollector:
         sorted_times = sorted(self.response_times)
         total = len(sorted_times)
 
-        # P95 and P99 percentiles
-        p95_index = int(0.95 * total)
-        p99_index = int(0.99 * total)
+        # P95 and P99 percentiles (fix off-by-one errors)
+        p95_index = min(int(0.95 * total), total - 1)
+        p99_index = min(int(0.99 * total), total - 1)
 
         self.current_metrics.p95_response_time = sorted_times[p95_index]
         self.current_metrics.p99_response_time = sorted_times[p99_index]
@@ -233,7 +232,7 @@ class MetricsCollector:
     async def _cleanup_old_metrics(self) -> None:
         """Clean up old metrics data."""
         current_time = time.time()
-        
+
         # Clean up old response times (keep last hour)
         cutoff_time = current_time - 3600
         while self.response_times and self.response_times[0] < cutoff_time:
@@ -245,9 +244,9 @@ class MetricsCollector:
         self.current_metrics.concurrent_requests = len(self.active_requests)
 
     def record_request_end(
-        self, 
-        request_id: str, 
-        success: bool = True, 
+        self,
+        request_id: str,
+        success: bool = True,
         endpoint: str | None = None
     ) -> None:
         """Record the completion of a request."""

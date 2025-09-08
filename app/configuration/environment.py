@@ -468,27 +468,27 @@ class EnvironmentManager:
         """Detect current environment with NODE_ENV priority and backwards compatibility."""
         # Priority order: NODE_ENV → ENVIRONMENT → ENV → default
         env_name = (
-            os.environ.get("NODE_ENV") or 
-            os.environ.get("ENVIRONMENT") or 
-            os.environ.get("ENV") or 
+            os.environ.get("NODE_ENV") or
+            os.environ.get("ENVIRONMENT") or
+            os.environ.get("ENV") or
             "development"
         )
-        
+
         # Log migration status for monitoring
         self._log_migration_status()
-        
+
         try:
             self.current_environment = Environment(env_name.lower())
         except ValueError:
             logger.warning(f"Unknown environment {env_name}, defaulting to development")
             self.current_environment = Environment.DEVELOPMENT
-    
+
     def _log_migration_status(self) -> None:
         """Log environment variable migration status for monitoring."""
         node_env = os.environ.get("NODE_ENV")
         environment = os.environ.get("ENVIRONMENT")
         env = os.environ.get("ENV")
-        
+
         # Log migration progress
         if node_env and not (environment or env):
             logger.info(f"✅ Environment migration complete: Using NODE_ENV={node_env}")
