@@ -89,11 +89,46 @@ jobs:
           echo "✅ Python version: $(python3 --version)"
           echo "✅ Virtual environment ready"
 
-  lint:
-    name: Code Quality & Linting
+  security:
+    name: Security Scanning
     runs-on: self-hosted
     needs: [setup]
     if: always() && needs.setup.result == 'success'
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'pull_request_target' && github.event.pull_request.head.sha || github.sha }}
+
+      - name: Restore Dependencies
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cache/uv
+            .venv
+          key: uv-${{ runner.os }}-python-3.10.17-${{ hashFiles('**/pyproject.toml') }}
+
+      - name: Security Scanning
+        env:
+          SECURITY_SCAN_ENABLED: true
+          SECURITY_FAIL_ON_CRITICAL: true
+        run: |
+          echo "🔒 Running security scans..."
+          python3 scripts/security_scan.py
+
+      - name: Upload Security Report
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: security-report
+          path: security-report.json
+          retention-days: 30
+
+  lint:
+    name: Code Quality & Linting
+    runs-on: self-hosted
+    needs: [setup, security]
+    if: always() && needs.setup.result == 'success' && needs.security.result == 'success'
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4

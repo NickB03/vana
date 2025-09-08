@@ -199,35 +199,155 @@ SSE implementation in `app/server.py` with memory leak prevention (see `tests/un
 
 ## CI/CD Pipeline
 
-### GitHub Actions Configuration
-- **Self-hosted runners**: All CI/CD runs on Digital Ocean VPS (not GitHub cloud runners)
-- **Automatic triggers**: PRs to main, pushes to main, manual dispatch via GitHub UI
-- **Current workflow**: `.github/workflows/test.yml` - basic runner verification
-- **Test structure**: Now uses proper `tests/` directory with unit/integration/performance subdirectories
-- **Available commands**: `make test`, `make test-unit`, `make test-integration`, `make test-performance`, `make lint`, `make typecheck`
+### Enterprise-Grade Optimized Pipeline
+The project uses a sophisticated, multi-stage CI/CD pipeline (`ci-cd.yml`) with advanced security, performance optimization, and testing coordination running on self-hosted Digital Ocean VPS infrastructure.
 
-### GitHub Integration Changes
-**Pull Request Workflow:**
-- Automatic test execution on PR creation/updates using `make test`
-- Status checks prevent merging failing code
-- All tests run on your VPS infrastructure with proper test structure
+### Pipeline Architecture
 
-**Continuous Integration:**
-- Immediate feedback on main branch commits
-- Self-hosted environment maintains consistency with local development
-- No GitHub Actions minutes consumed (runs on your VPS)
-- Proper test categorization (unit, integration, performance)
+#### Security Gate System
+- **Fork PR Protection**: Automatic security validation for external contributions
+- **Repository Trust Verification**: Blocks untrusted fork PRs from self-hosted runners
+- **Security Scanning**: Comprehensive vulnerability detection with artifact reporting
+- **SBOM Generation**: Software Bill of Materials for compliance and security tracking
 
-**Manual Testing:**
-- `workflow_dispatch` enables on-demand test runs from GitHub UI
-- Can run specific test categories via make commands
-- Useful for testing specific scenarios or debugging CI issues
+#### Performance Optimizations
+- **Intelligent Caching**: Multi-level UV dependency caching with restore keys
+- **Path-based Triggering**: Ignores documentation-only changes (`.md`, `docs/`, `.claude_workspace/`)
+- **Conditional Execution**: Jobs run only when dependencies succeed
+- **Parallel Processing**: Matrix strategy for concurrent test execution
 
-**Test Archive:**
-- Previous test files archived in `.claude_workspace/archived/tests_backup_*`
-- Ready for migration to new structure when needed
+#### Testing Strategy
+- **Matrix Testing**: Parallel execution of unit and integration test suites
+- **Fail-Fast Disabled**: Ensures all test categories complete for comprehensive feedback
+- **Relaxed Validation**: Optimized for development phase with warning tolerance
+- **Artifact Collection**: Test results, coverage reports, and security scans preserved
 
-Check `.github/workflows/` for current configurations.
+### Pipeline Stages
+
+#### 1. Security Gate (Fork PR Protection)
+```yaml
+Triggers: pull_request_target events
+Security: Validates repository trust before self-hosted execution
+Output: Approval status for subsequent jobs
+```
+
+#### 2. Setup & Dependency Management
+```yaml
+Caching Strategy: Multi-level UV cache with Python version pinning
+Performance: Cache-hit optimization reduces setup time significantly  
+Environment: Python 3.10.17 with UV package manager
+```
+
+#### 3. Security Scanning
+```yaml
+Tools: Custom security scanner (scripts/security_scan.py)
+Reporting: JSON security reports with 30-day retention
+Configuration: Fail-on-critical vulnerabilities enabled
+```
+
+#### 4. Code Quality & Linting
+```yaml
+Checks: Ruff formatting, linting, codespell, mypy type checking
+Strategy: Relaxed validation with warning tolerance
+Performance: Runs in parallel with testing for efficiency
+```
+
+#### 5. Matrix Testing
+```yaml
+Strategy: Parallel unit and integration test execution
+Matrix Dimensions: [unit, integration]
+Failure Handling: Non-blocking failures during optimization phase
+Artifacts: Test results, coverage reports (7-day retention)
+```
+
+#### 6. Build & Validation
+```yaml
+Validation: Application structure and dependency verification
+SBOM: Automated Software Bill of Materials generation
+Artifacts: Build artifacts and frozen requirements (30-day retention)
+```
+
+#### 7. Pipeline Summary
+```yaml
+Reporting: Comprehensive status summary across all stages
+Decision Logic: Smart success/failure determination
+Monitoring: Critical vs. warning-level failure classification
+```
+
+### Advanced Features
+
+#### Smart Triggering
+- **Events**: `push` (main), `pull_request_target` (main), `workflow_dispatch`
+- **Path Exclusions**: Documentation and workspace changes ignored
+- **Security Context**: Different handling for internal vs. external PRs
+
+#### Artifact Management
+- **Security Reports**: 30-day retention for compliance tracking
+- **Test Results**: 7-day retention for debugging and analysis
+- **Build Artifacts**: SBOM and frozen dependencies for deployment
+- **Coverage Reports**: HTML coverage reports for quality monitoring
+
+#### Self-Hosted Infrastructure
+- **Platform**: Digital Ocean VPS runners for consistent environment
+- **Performance**: No GitHub Actions minute consumption
+- **Security**: Isolated execution environment for sensitive operations
+- **Scalability**: Dedicated resources for parallel job execution
+
+#### Environment Configuration
+```bash
+# Optimized environment variables
+UV_CACHE_DIR: ~/.cache/uv          # UV package manager cache
+PYTHONDONTWRITEBYTECODE: 1         # Performance optimization  
+PYTHONUNBUFFERED: 1                # Real-time output streaming
+CI: true                           # CI environment detection
+NODE_ENV: test                     # Frontend testing configuration
+```
+
+### Pipeline Commands
+
+#### Available Make Commands
+```bash
+make test                    # Full test suite (unit + integration)
+make test-unit              # Unit tests only
+make test-integration       # Integration tests only  
+make test-performance       # Performance benchmarks
+make lint                   # Code quality checks
+make typecheck             # Type validation
+make install               # Dependency installation
+```
+
+#### Manual Execution
+- **GitHub UI**: `workflow_dispatch` for on-demand pipeline runs
+- **Local Testing**: All pipeline commands available via Makefile
+- **Debugging**: Individual stage execution for troubleshooting
+
+### Quality Gates
+
+#### Success Criteria
+- **Critical**: Setup and Build stages must succeed
+- **Optional**: Linting and testing may have warnings during optimization
+- **Security**: All security scans must pass for deployment readiness
+
+#### Failure Handling
+- **Graceful Degradation**: Warnings don't block pipeline completion
+- **Comprehensive Reporting**: All failures logged with context
+- **Smart Recovery**: Cache restoration and dependency retry logic
+
+### Integration Benefits
+
+#### Development Workflow
+- **Fast Feedback**: Parallel execution reduces pipeline time
+- **Quality Assurance**: Multi-layered validation ensures code quality
+- **Security First**: Automated vulnerability detection and prevention
+- **Artifact Preservation**: Long-term retention for compliance and debugging
+
+#### Deployment Readiness
+- **SBOM Compliance**: Automated software inventory for security teams
+- **Dependency Tracking**: Frozen requirements for reproducible deployments  
+- **Security Validation**: Comprehensive scanning before production release
+- **Quality Metrics**: Coverage and performance data for monitoring
+
+This enterprise-grade pipeline provides robust CI/CD capabilities with advanced security, performance optimization, and comprehensive testing while maintaining development velocity through intelligent caching and parallel execution strategies.
 
 ## Testing Strategy
 

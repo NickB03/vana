@@ -198,9 +198,9 @@ class TestSSEIntegration:
                 if '"sequence":' in event:
                     # Extract sequence number (simple parsing)
                     start = event.find('"sequence":') + 11
-                    end = event.find(',', start)
+                    end = event.find(",", start)
                     if end == -1:
-                        end = event.find('}', start)
+                        end = event.find("}", start)
                     sequences.append(int(event[start:end]))
 
             assert sequences == list(range(5))
@@ -377,7 +377,9 @@ class TestSSEIntegration:
 
                 while time.time() < end_time:
                     try:
-                        event = await asyncio.wait_for(queue.get(timeout=1.0), timeout=2.0)
+                        event = await asyncio.wait_for(
+                            queue.get(timeout=1.0), timeout=2.0
+                        )
                         if isinstance(event, str) and "concurrent_event" in event:
                             events_received.append(event)
                     except asyncio.TimeoutError:
@@ -407,7 +409,9 @@ class TestSSEIntegration:
         broadcast_task = asyncio.create_task(broadcaster_task())
 
         # Wait for all to complete
-        results = await asyncio.gather(*subscriber_tasks, broadcast_task, return_exceptions=True)
+        results = await asyncio.gather(
+            *subscriber_tasks, broadcast_task, return_exceptions=True
+        )
 
         # Check subscriber results
         subscriber_results = results[:-1]  # Exclude broadcast task result
@@ -474,7 +478,9 @@ class TestSSEIntegration:
 
         # Verify cleanup
         assert not broadcaster._running
-        assert broadcaster._cleanup_task is None or broadcaster._cleanup_task.cancelled()
+        assert (
+            broadcaster._cleanup_task is None or broadcaster._cleanup_task.cancelled()
+        )
 
         # All queues should be closed
         for queue in subscribers:
@@ -509,7 +515,9 @@ class TestSSEIntegration:
             lines = event.strip().split("\n")
 
             # Find the event type line
-            event_line = next((line for line in lines if line.startswith("event:")), None)
+            event_line = next(
+                (line for line in lines if line.startswith("event:")), None
+            )
             assert event_line == "event: format_test"
 
             # Find the data line
