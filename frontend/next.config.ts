@@ -1,12 +1,11 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  experimental: {
-    turbo: {
-      devIndicators: {
-        position: "bottom-right"
-      }
-    }
+  turbopack: {
+    root: "/Users/nick/Development/vana/frontend"
+  },
+  devIndicators: {
+    position: "bottom-right"
   }
 };
 

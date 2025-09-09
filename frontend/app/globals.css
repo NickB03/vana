@@ -188,10 +188,29 @@
     letter-spacing: var(--tracking-normal);
   }
   
-  /* Remove any list markers globally */
-  ul, ol {
+  /* Remove list markers only for navigation and UI components */
+  nav ul,
+  nav ol,
+  aside[role="navigation"] ul,
+  aside[role="navigation"] ol,
+  .sidebar ul,
+  .sidebar ol,
+  .menu ul,
+  .menu ol {
     list-style: none;
     margin: 0;
     padding: 0;
+  }
+  
+  /* Preserve list markers for content */
+  article ul,
+  article ol,
+  .prose ul,
+  .prose ol,
+  main ul:not(.menu ul):not(.sidebar ul),
+  main ol:not(.menu ol):not(.sidebar ol) {
+    list-style: revert;
+    margin: revert;
+    padding: revert;
   }
 }

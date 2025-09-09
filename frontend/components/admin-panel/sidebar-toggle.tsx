@@ -16,6 +16,9 @@ export function SidebarToggle({ isOpen, setIsOpen }: SidebarToggleProps) {
         className="rounded-md w-8 h-8"
         variant="outline"
         size="icon"
+        aria-expanded={isOpen}
+        aria-label={isOpen ? "Collapse sidebar" : "Expand sidebar"}
+        aria-controls="main-sidebar"
       >
         <ChevronLeft
           className={cn(
