@@ -35,15 +35,26 @@ const Sidebar = React.forwardRef<HTMLElement, SidebarProps>(
     ({ className, children, defaultCollapsed = false, ...props }, ref) => {
         const [isCollapsed, setIsCollapsed] = useState(defaultCollapsed);
 
+        const handleSidebarClick = (e: React.MouseEvent) => {
+            // Don't toggle if clicking on a link or button
+            if (e.target instanceof HTMLElement) {
+                const isInteractive = e.target.closest('a, button, [role="button"]');
+                if (!isInteractive) {
+                    setIsCollapsed(prev => !prev);
+                }
+            }
+        };
+
         return (
             <SidebarContext.Provider value={{ isCollapsed, setIsCollapsed }}>
                 <aside
                     ref={ref}
                     className={cn(
-                        "relative bg-[#000000] text-gray-200 transition-all duration-300 ease-in-out flex flex-col",
+                        "relative bg-[#000000] text-gray-200 transition-all duration-300 ease-in-out flex flex-col cursor-pointer",
                         isCollapsed ? "w-20" : "w-64",
                         className
                     )}
+                    onClick={handleSidebarClick}
                     {...props}
                 >
                     {children}
@@ -68,7 +79,7 @@ const SidebarToggle = React.forwardRef<HTMLButtonElement, React.HTMLAttributes<H
                 ref={ref}
                 onClick={handleToggle}
                 className={cn(
-                    "absolute -right-3 top-1/2 -translate-y-1/2 z-10 h-7 w-7 flex items-center justify-center bg-gray-800 rounded-full text-gray-400 hover:bg-gray-700 hover:text-white transition-colors group",
+                    "absolute -right-3 top-6 z-10 h-7 w-7 flex items-center justify-center bg-gray-800 rounded-full text-gray-400 hover:bg-gray-700 hover:text-white transition-colors group",
                     className
                 )}
                 aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
@@ -142,7 +153,7 @@ SidebarNavItem.displayName = "SidebarNavItem";
 const SidebarNavLink = React.forwardRef<HTMLAnchorElement, React.AnchorHTMLAttributes<HTMLAnchorElement>>(
     ({ className, href, children, ...props }, ref) => {
         return (
-            <a ref={ref} href={href} className={cn("flex items-center p-2 text-sm rounded-lg hover:bg-gray-700/80 transition-colors overflow-hidden", className)} {...props}>
+            <a ref={ref} href={href} className={cn("flex items-center p-2 text-sm rounded-lg hover:bg-gray-700/80 transition-colors overflow-hidden cursor-pointer", className)} {...props}>
                 {children}
             </a>
         );
