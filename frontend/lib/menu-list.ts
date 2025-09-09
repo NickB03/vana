@@ -1,8 +1,5 @@
 import {
   Plus,
-  Package,
-  User,
-  MessageSquare,
   Search,
   Bot,
   Settings,

@@ -1,6 +1,6 @@
 "use client";
 
-import { Plus, Bot, Search, Settings } from "lucide-react";
+import { Plus, Settings } from "lucide-react";
 import {
   Sidebar,
   SidebarToggle,

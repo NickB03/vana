@@ -14,7 +14,7 @@ export interface StreamingResponse {
 }
 
 // Simulate SSE streaming response
-export async function* streamChatResponse(message: string): AsyncGenerator<StreamingResponse> {
+export async function* streamChatResponse(_message: string): AsyncGenerator<StreamingResponse> {
   // This will eventually connect to the backend's /api/run_sse endpoint
   const responses = [
     "I'm Vana, your AI research assistant. ",
